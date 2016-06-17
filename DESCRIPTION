@@ -1,13 +1,21 @@
-Package: glmproj
-Title: glmproj
-Version: 0.0.0.9000
-Author: Aki Vehtari, Juho Piironen, Markus Paasiniemi
-Description: glmproj
+Package:
+    glmproj
+Type:
+    Package
+Title:
+    glmproj
+Version:
+    0.0.0.9000
+Authors:
+    Aki Vehtari, Juho Piironen, Markus Paasiniemi
+Description:
+    An R package to perform projection predictive variable
+    selection for generalized linear models fitted with rstanarm.
 Depends:
     R (>= 3.1.2)
 Imports:
     rstanarm, parallel
 License: GPL-3
 Encoding: UTF-8
-LazyData: true
+LazyData: TRUE
 RoxygenNote: 5.0.1
