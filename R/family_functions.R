@@ -79,6 +79,7 @@ family_kls <- function(family) {
   )
   linkfs <- switch(family$link,
       'logit' = list(dme = dme_logit),
+      'probit' = list(dme = dme_probit),
       'log' = list(dme = dme_log),
       'identity' = list(dme = dme_id)
   )
