@@ -3,30 +3,30 @@
 #' Find parameters that minimize the KL divergence between the full model
 #' and the submodel.
 #'
-#' @param mu_p Fitted values of the full model.
-#' @param x A model matrix.
-#' @param b_p Sampled estimates of the coefficient of the full model.
-#' @param w Observation weights.
-#' @param dis_p Dispersion parameter of the full model.
-#' @param funs List of family-specific functions for the NR.
-#' @param chosen Indices for features used in the submodel.
-#' @param cores Number of cores used.
+#' @param \code{mu_p} Fitted values of the full model.
+#' @param \code{x} A model matrix.
+#' @param \code{b_p} Sampled estimates of the coefficient of the full model.
+#' @param \code{w} Observation weights.
+#' @param \code{dis_p} Dispersion parameter of the full model.
+#' @param \code{funs} List of family-specific functions for the NR.
+#' @param \code{chosen} Indices for features used in the submodel.
+#' @param \code{cores} Number of cores used.
 
-proj_params <- function(mu_p, x, b_p, w, dis_p, funs, chosen, mc.cores) {
+proj_params <- function(mu_p, x, b_p, w, dis_p, funs, chosen, cores) {
   d <- length(chosen)
   inds <- 1:d
 
   helperf <- function(ind) kl_over_samples(mu_p, x[, chosen[1:ind], drop = F], b_p[chosen[1:ind], , drop = F], w, dis_p, funs)
 
-  if (mc.cores == 1 ) {
+  if (cores == 1 ) {
     l_res <- lapply(inds,helperf)
   } else {
     if (.Platform$OS.type == "windows") {
-      cl <- makePSOCKcluster(mc.cores)
+      cl <- makePSOCKcluster(cores)
       on.exit(stopCluster(cl))
       l_res <- parLapply(cl, inds, helperf)
     } else {
-      l_res <- mclapply(inds, helperf, mc.cores = mc.cores)
+      l_res <- mclapply(inds, helperf, mc.cores = cores)
     }
   }
 

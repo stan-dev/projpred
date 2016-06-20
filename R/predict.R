@@ -2,10 +2,12 @@
 #'
 #' A predict method for glmproj objects.
 #'
-#' @param object A glmproj object.
-#' @param x A model matrix.
-#' @param d The number of features to be used in the prediction.
+#' @param \code{object} A glmproj object.
+#' @param \code{x} A model matrix.
+#' @param \code{d} The number of features to be used in the prediction.
 #'  If not provided, uses all features.
+#'
+#' @return \code{n*s} matrix of predictions using \code{d} features.
 #'
 #' @export
 

@@ -1,7 +1,7 @@
 #' Observation weights
 #'
 #' Get the observation weights from a stanreg object.
-#' @param fit A stanreg object.
+#' @param \code{fit} A stanreg object.
 
 get_weights <- function(fit) {
 

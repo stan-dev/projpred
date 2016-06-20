@@ -7,7 +7,7 @@
 get_weights(fit)
 }
 \arguments{
-\item{fit}{A stanreg object.}
+\item{\code{fit}}{A stanreg object.}
 }
 \description{
 Get the observation weights from a stanreg object.

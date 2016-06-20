@@ -1,8 +1,12 @@
 #' Helper functions for the NR-algorithm
 #'
-#' Contains functions for calculating KL divergence
-#' and its first and second derivatives for
-#' for different families and link functions.
+#' Contains functions for calculating KL divergence and its first and second
+#' derivatives for different families and link functions.
+#'
+#' The NR-algorithm is general in the sense that in order to add a new model /
+#' link function one simply needs to implement corresponding KL-divergence,
+#' it's first and second derivatives + first and second derivatives of the
+#' mu-parameter w.r.t eta.
 
 kl_gauss <- function(mu_p, x, mu_q, w, dis_p, dis_q) {
   log(dis_q)-log(dis_p)

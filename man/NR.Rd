@@ -7,21 +7,21 @@
 NR(mu_p, x, b_p, w, dis_p, funs, max_it = 50, eps = 1e-10)
 }
 \arguments{
-\item{mu_p}{Fitted values of the full model.}
+\item{\code{mu_p}}{Fitted values of the full model.}
 
-\item{x}{A model matrix of the selected variables.}
+\item{\code{x}}{A model matrix of the selected variables.}
 
-\item{b_p}{Sampled estimates of the coefficient of the full model.}
+\item{\code{b_p}}{Sampled estimates of the coefficient of the full model.}
 
-\item{w}{Observation weights.}
+\item{\code{w}}{Observation weights.}
 
-\item{dis_p}{dispersion parameter of the full model.}
+\item{\code{dis_p}}{dispersion parameter of the full model.}
 
-\item{funs}{List of family-specific functions for the NR.}
+\item{\code{funs}}{List of family-specific functions for the NR.}
 
-\item{max_it}{Maximum number of iterations for the algorithm. Defaults to 50.}
+\item{\code{max_it}}{Maximum number of iterations for the algorithm. Defaults to 50.}
 
-\item{eps}{Tolerance, when derivative to any direction is at most eps, algorithm stops. Defaults to 1e-10.}
+\item{\code{eps}}{Tolerance, when derivative to any direction is at most eps, algorithm stops. Defaults to 1e-10.}
 }
 \description{
 Minimizes the KL divergence between the full model and the submodel

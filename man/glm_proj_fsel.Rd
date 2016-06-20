@@ -4,29 +4,26 @@
 \alias{glm_proj_fsel}
 \title{GLM projection to submodel using forward selection}
 \usage{
-glm_proj_fsel(x, b_p, w, dis_p, n_out, n_sel, d, family, mc.cores)
+glm_proj_fsel(x, b_p, w, dis_p, family, args)
 }
 \arguments{
-\item{x}{A model matrix.}
+\item{\code{x}}{A model matrix (incl. intercept).}
 
-\item{b_p}{Sampled estimates of the coefficient of the full model.}
+\item{\code{b_p}}{Sampled estimates of the coefficient of the full model.}
 
-\item{w}{Observation weights.}
+\item{\code{w}}{Observation weights.}
 
-\item{dis_p}{dispersion parameter of the full model.}
+\item{\code{dis_p}}{dispersion parameter of the full model.}
 
-\item{n_out}{Number of samples used in the projection.}
+\item{\code{family}}{A \code{\link{family}}-object.}
 
-\item{n_sel}{Number of samples used in the variable selection.}
-
-\item{d}{Maximum number of features in the projection (incl. intercept).}
-
-\item{family}{A \code{\link{family}}-object.}
-
-\item{mc.cores}{Number of cores used.}
+\item{\code{args}}{For possible additional arguments, see the
+documentation of \code{\link{glm_proj}}.}
 }
 \description{
 A helper function that calls the forward selection
-and the projection functions.
+and the projection functions. In order to use another
+selection method, replace chosen <- fsel(...) with another
+function.
 }
 

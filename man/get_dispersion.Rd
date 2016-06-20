@@ -7,7 +7,7 @@
 get_dispersion(fit)
 }
 \arguments{
-\item{fit}{A stanreg object.}
+\item{\code{fit}}{A stanreg object.}
 }
 \description{
 Get the parameter related to dispersion for some models from a stanreg object.

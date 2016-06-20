@@ -7,17 +7,17 @@
 kl_over_samples(mu_p, x, b_p, w, dis_p, funs)
 }
 \arguments{
-\item{mu_p}{Fitted values of the full model.}
+\item{\code{mu_p}}{Fitted values of the full model.}
 
-\item{x}{A model matrix of the selected variables.}
+\item{\code{x}}{A model matrix of the selected variables.}
 
-\item{b_p}{Sampled estimates of the coefficients of the selected variables.}
+\item{\code{b_p}}{Sampled estimates of the coefficients of the selected variables.}
 
-\item{w}{Observation weights.}
+\item{\code{w}}{Observation weights.}
 
-\item{dis_p}{dispersion parameter of the full model.}
+\item{\code{dis_p}}{dispersion parameter of the full model.}
 
-\item{funs}{List of family-specific functions for the NR.}
+\item{\code{funs}}{List of family-specific functions for the NR.}
 }
 \description{
 Calculates the KL divergence over ns samples.

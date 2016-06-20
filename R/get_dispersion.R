@@ -1,7 +1,7 @@
 #' Dispersion parameter
 #'
 #' Get the parameter related to dispersion for some models from a stanreg object.
-#' @param fit A stanreg object.
+#' @param \code{fit} A stanreg object.
 
 get_dispersion <- function(fit) {
 

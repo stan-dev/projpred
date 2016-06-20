@@ -4,30 +4,53 @@
 \alias{glm_proj}
 \title{GLM projection to submodel.}
 \usage{
-glm_proj(fit, n_out, n_sel, d, mc.cores)
+glm_proj(fit, ...)
 }
 \arguments{
-\item{fit}{Either a stanreg object or a list with the model matrix, the weight vector
-a \code{\link{family}}-object and the dispersion parameter, if applicable.}
+\item{fit}{Either a stanreg object or a list with the model matrix \code{x}, the observation
+weights \code{w}, a \code{\link{family}}-object and the dispersion parameter \code{dis}, if applicable.}
 
-\item{n_out}{Number of samples used in the projection.
-If not provided, \code{min(400, ncol(b))} is used.}
-
-\item{n_sel}{Number of samples used in the variable selection.
-If not provided, average of mu is used instead of the samples.}
-
-\item{d}{Maximum number of features in the projection (incl. intercept).
-If not provided, \code{ncol(x)} - 1 is used.}
-
-\item{mc.cores}{Number of cores used when averaging KL divergence over samples.
-If not provided, defaults to \code{getOption("loo.cores", parallel::detectCores())}.}
+\item{...}{Optional arguments. Possible arguments and their defaults are:
+\describe{
+ \item{\code{n_out = min(400, [number of samples])}}{
+   Number of samples used in the projection.}
+ \item{\code{n_sel = min(800, [number of samples])}}{
+   Number of samples used in the variable selection.}
+ \item{\code{avg = FALSE}}{
+   A logical value indicating whether selection is done using KL divergence
+   between average of the samples instead of average KL divergence for each
+   sample. If \code{TRUE}, \code{n_sel} is ignored.}
+ \item{\code{d = ncol(x) - 1}}{
+   Maximum number of features to be used in the projection (incl. intercept).}
+ \item{\code{glmproj.cores = getOption('glmproj.cores', parallel::detectCores())}}{
+   Number of cores used when averaging KL divergence over samples. This can be
+   set for an entire R session by \code{options('glmproj.cores' = NUMBER)}.}
+}}
 }
 \value{
-A list with class \code{'glmproj'} containing
-sequence of features added, distributions of the parameters
-of the submodels, the corresponding KL divergences and the model family.
+A list with class \code{'glmproj'} containing the following elements:
+\describe{
+ \item{\code{chosen}}{The order in which the features were added.}
+ \item{\code{kl}}{KL divergences with corresponding features added to the model.}
+ \item{\code{b}}{Projected weight vectors.}
+ \item{\code{dis}}{Projected dispersion parameters if the model has a dispersion parameter.}
+ \item{\code{family}}{A \code{\link{family}}-object.}
+}
 }
 \description{
 GLM projection to submodel.
+}
+\examples{
+\dontrun{
+### Usage with stanreg objects
+# use 400 samples to select the model, project results
+# using 800 samples:
+gproj <- glm_proj(fit, n_sel = 400, n_out = 800)
+
+# or use average of the samples in the selection
+# (significantly faster, but potentially less accurate)
+gproj <- glm_proj(fit, n_out = 800, avg = TRUE)
+}
+
 }
 

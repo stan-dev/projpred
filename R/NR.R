@@ -3,14 +3,14 @@
 #' Minimizes the KL divergence between the full model and the submodel
 #' using Newton-Rhapson algorithm.
 #'
-#' @param mu_p Fitted values of the full model.
-#' @param x A model matrix of the selected variables.
-#' @param b_p Sampled estimates of the coefficient of the full model.
-#' @param w Observation weights.
-#' @param dis_p dispersion parameter of the full model.
-#' @param funs List of family-specific functions for the NR.
-#' @param max_it Maximum number of iterations for the algorithm. Defaults to 50.
-#' @param eps Tolerance, when derivative to any direction is at most eps, algorithm stops. Defaults to 1e-10.
+#' @param \code{mu_p} Fitted values of the full model.
+#' @param \code{x} A model matrix of the selected variables.
+#' @param \code{b_p} Sampled estimates of the coefficient of the full model.
+#' @param \code{w} Observation weights.
+#' @param \code{dis_p} dispersion parameter of the full model.
+#' @param \code{funs} List of family-specific functions for the NR.
+#' @param \code{max_it} Maximum number of iterations for the algorithm. Defaults to 50.
+#' @param \code{eps} Tolerance, when derivative to any direction is at most eps, algorithm stops. Defaults to 1e-10.
 
 NR <- function(mu_p, x, b_p, w, dis_p, funs, max_it = 50, eps = 1e-10) {
 

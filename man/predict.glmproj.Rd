@@ -7,12 +7,15 @@
 \method{predict}{glmproj}(object, x, d)
 }
 \arguments{
-\item{object}{A glmproj object.}
+\item{\code{object}}{A glmproj object.}
 
-\item{x}{A model matrix.}
+\item{\code{x}}{A model matrix.}
 
-\item{d}{The number of features to be used in the prediction.
+\item{\code{d}}{The number of features to be used in the prediction.
 If not provided, uses all features.}
+}
+\value{
+\code{n*s} matrix of predictions using \code{d} features.
 }
 \description{
 A predict method for glmproj objects.

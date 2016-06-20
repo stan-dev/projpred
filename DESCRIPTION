@@ -1,11 +1,6 @@
-Package:
-    glmproj
-Type:
-    Package
-Title:
-    glmproj
-Version:
-    0.0.0.9000
+Package: glmproj
+Title: glmproj
+Version: 0.1.0
 Authors:
     Aki Vehtari, Juho Piironen, Markus Paasiniemi
 Description:

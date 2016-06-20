@@ -7,8 +7,13 @@
 kl_gauss(mu_p, x, mu_q, w, dis_p, dis_q)
 }
 \description{
-Contains functions for calculating KL divergence
-and its first and second derivatives for
-for different families and link functions.
+Contains functions for calculating KL divergence and its first and second
+derivatives for different families and link functions.
+}
+\details{
+The NR-algorithm is general in the sense that in order to add a new model /
+link function one simply needs to implement corresponding KL-divergence,
+it's first and second derivatives + first and second derivatives of the
+mu-parameter w.r.t eta.
 }
 

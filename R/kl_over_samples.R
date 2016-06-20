@@ -2,12 +2,12 @@
 #'
 #' Calculates the KL divergence over ns samples.
 #'
-#' @param mu_p Fitted values of the full model.
-#' @param x A model matrix of the selected variables.
-#' @param b_p Sampled estimates of the coefficients of the selected variables.
-#' @param w Observation weights.
-#' @param dis_p dispersion parameter of the full model.
-#' @param funs List of family-specific functions for the NR.
+#' @param \code{mu_p} Fitted values of the full model.
+#' @param \code{x} A model matrix of the selected variables.
+#' @param \code{b_p} Sampled estimates of the coefficients of the selected variables.
+#' @param \code{w} Observation weights.
+#' @param \code{dis_p} dispersion parameter of the full model.
+#' @param \code{funs} List of family-specific functions for the NR.
 
 kl_over_samples <- function(mu_p, x, b_p, w, dis_p, funs) {
 
