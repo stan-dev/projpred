@@ -17,7 +17,7 @@ proj_params(mu_p, x, b_p, w, dis_p, funs, chosen, cores)
 
 \item{\code{dis_p}}{Dispersion parameter of the full model.}
 
-\item{\code{funs}}{List of family-specific functions for the NR.}
+\item{\code{funs}}{Model-specific helper functions.}
 
 \item{\code{chosen}}{Indices for features used in the submodel.}
 

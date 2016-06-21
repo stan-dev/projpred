@@ -1,7 +1,7 @@
 #' Observation weights
 #'
-#' Get the observation weights from a stanreg object.
-#' @param \code{fit} A stanreg object.
+#' Get the observation weights from a stanreg object (currently only for binomial model).
+#' @param \code{fit} A \link[=stanreg-objects]{stanreg} object.
 
 get_weights <- function(fit) {
 

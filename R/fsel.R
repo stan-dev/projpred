@@ -4,21 +4,21 @@
 #' the 'optimal' order of the parameters.
 #'
 #' @param \code{mu_p} Fitted values of the full model.
-#' @param \code{x} A model matrix (incl. intercept).
+#' @param \code{x} A model matrix.
 #' @param \code{b_p} Sampled estimates of the coefficient of the full model.
 #' @param \code{w} Observation weights.
 #' @param \code{dis_p} dispersion parameter of the full model.
-#' @param \code{funs} List of family-specific functions for the NR.
+#' @param \code{funs} Model-specific helper functions.
 #' @param \code{avg} If TRUE, KL divergence of the average of the samples
 #'  is used instead of the average of the KL divergences for each sample.
-#' @param \code{d} Maximum number of features in the projection (incl. intercept).
+#' @param \code{d} Maximum number of features in the projection.
 #' @param \code{cores} Number of cores used.
 #'
 #' @importFrom parallel mclapply makePSOCKcluster stopCluster parLapply
 
 fsel <- function(mu_p, x, b_p, w, dis_p, funs, avg, d, cores) {
 
-  chosen <- 1
+  chosen <- NULL
   cols <- 1:ncol(x)
   notchosen <- setdiff(cols, chosen)
 
@@ -32,7 +32,7 @@ fsel <- function(mu_p, x, b_p, w, dis_p, funs, avg, d, cores) {
   }
 
   # start adding variables one at a time
-  for (k in 2:d) {
+  for (k in 1:d) {
 
     # with avg there the overhead of mclapply is too large
     # (this might not be the case if d >> 100)

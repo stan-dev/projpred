@@ -17,7 +17,7 @@ NR(mu_p, x, b_p, w, dis_p, funs, max_it = 50, eps = 1e-10)
 
 \item{\code{dis_p}}{dispersion parameter of the full model.}
 
-\item{\code{funs}}{List of family-specific functions for the NR.}
+\item{\code{funs}}{Model-specific helper functions.}
 
 \item{\code{max_it}}{Maximum number of iterations for the algorithm. Defaults to 50.}
 

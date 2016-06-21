@@ -2,7 +2,7 @@
 
 An R package to perform projection predictive variable selection for generalized linear models fitted with [rstanarm][]. 
 
-The package uses forward search as a search heuristic, that is, starting from a submodel model with only intercept, and adds variables one at a time, each time choosing the variable that decreases the KL-divergence to the full model the most. 
+The package uses forward search as a search heuristic, that is, starting from the empty submodel model, adds variables one at a time, each time choosing the variable that decreases the KL-divergence to the full model the most. 
 
 Currently, supported models include gaussian with identity link function, binomial with probit and logit link functions and poisson with log link function.
 
@@ -26,18 +26,20 @@ Example
     
     data('crimedata', package = 'glmproj')
     n <- nrow(crimedata)
-	n_train <- 1000
-	n_test <- n - n_train
+    n_train <- 1000
+    n_test <- n - n_train
     d <- ncol(crimedata)
     y_train <- crimedata[1:n_train, 1]
-	x_train <- crimedata[1:n_train, 2:d]
-	x_test <- cbind(rep(1, n_test), crimedata[(n_train+1):n, 2:d])
+    x_train <- crimedata[1:n_train, 2:d]
+    x_test <- cbind(rep(1, n_test), crimedata[(n_train+1):n, 2:d])
 
     family <- gaussian()
     prior <- hs(df = 3)
     fit <- stan_glm(y_train ~ x_train, family = family, prior = prior)
 
-    gproj <- glm_proj(fit)
+    # run forward selection until 40 variables have been added
+    # and project the output using 400 samples.
+    gproj <- glm_proj(fit, d = 40, n_out = 400)
     
     # predict using 20 variables
     y_pred <- predict(gproj, x = x_test, d = 20)

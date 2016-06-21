@@ -7,7 +7,7 @@
 #' @param \code{b_p} Sampled estimates of the coefficients of the selected variables.
 #' @param \code{w} Observation weights.
 #' @param \code{dis_p} dispersion parameter of the full model.
-#' @param \code{funs} List of family-specific functions for the NR.
+#' @param \code{funs} Model-specific helper functions.
 
 kl_over_samples <- function(mu_p, x, b_p, w, dis_p, funs) {
 

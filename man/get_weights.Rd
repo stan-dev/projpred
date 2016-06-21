@@ -7,9 +7,9 @@
 get_weights(fit)
 }
 \arguments{
-\item{\code{fit}}{A stanreg object.}
+\item{\code{fit}}{A \link[=stanreg-objects]{stanreg} object.}
 }
 \description{
-Get the observation weights from a stanreg object.
+Get the observation weights from a stanreg object (currently only for binomial model).
 }
 

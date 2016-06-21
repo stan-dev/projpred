@@ -1,19 +1,21 @@
 #' GLM projection to submodel.
 #'
-#' @param fit Either a stanreg object or a list with the model matrix \code{x}, the observation
-#'  weights \code{w}, a \code{\link{family}}-object and the dispersion parameter \code{dis}, if applicable.
+#' @param fit A \link[=stanreg-objects]{stanreg} object.
 #' @param ... Optional arguments. Possible arguments and their defaults are:
 #' \describe{
 #'  \item{\code{n_out = min(400, [number of samples])}}{
-#'    Number of samples used in the projection.}
+#'    Number of samples used in the projection.
+#'    Cannot be larger than the number of samples.}
 #'  \item{\code{n_sel = min(800, [number of samples])}}{
-#'    Number of samples used in the variable selection.}
+#'    Number of samples used in the variable selection.
+#'    Cannot be larger than the number of samples.}
 #'  \item{\code{avg = FALSE}}{
 #'    A logical value indicating whether selection is done using KL divergence
 #'    between average of the samples instead of average KL divergence for each
-#'    sample. If \code{TRUE}, \code{n_sel} is ignored.}
+#'    sample. If \code{avg = TRUE}, \code{n_sel} is ignored.}
 #'  \item{\code{d = ncol(x) - 1}}{
-#'    Maximum number of features to be used in the projection (incl. intercept).}
+#'    Maximum number of features to be used in the projection (incl. intercept).
+#'    Cannot be larger than \code{ncol(x) - 1}.}
 #'  \item{\code{glmproj.cores = getOption('glmproj.cores', parallel::detectCores())}}{
 #'    Number of cores used when averaging KL divergence over samples. This can be
 #'    set for an entire R session by \code{options('glmproj.cores' = NUMBER)}.}
@@ -40,7 +42,7 @@
 #' gproj <- glm_proj(fit, n_out = 800, avg = TRUE)
 #' }
 #'
-#' @importFrom rstanarm get_x
+#' @importFrom rstan extract
 #'
 #' @export glm_proj
 
@@ -53,35 +55,16 @@ glm_proj <- function(fit, ...) {
 glm_proj.stanreg <- function(fit, ...) {
 
   args <- list(...)
-  x <- unname(get_x(fit))
-  b_p <- unname(t(apply(as.array(fit$stanfit), 3, rbind)[, colnames(get_x(fit)), drop = FALSE]))
+  x <- get_x(fit)
+  family <- fit$family
+
+  e <- extract(fit$stanfit)
+  b_p <- t(e$beta)
+  if('alpha' %in% names(e)) b_p <- rbind(drop(e$alpha), b_p)
+  dis_p <- e$dispersion
+
   w <- get_weights(fit)
-  dis_p <- get_dispersion(fit)
-  family <- fit$family
 
-  res <- glm_proj_fsel(x, b_p, w, dis_p, family, args)
-  structure(res, class = 'glmproj')
-}
-
-#' @export
-
-glm_proj.list <- function(fit, ...) {
-
-  if(any(!(c('x','b','family') %in% names(fit))))
-    stop('fit must contain elements x, b and family')
-
-  args <- list(...)
-  x <- fit$x
-  b_p <- fit$b
-  w <- fit$w
-  dis_p <- fit$dis
-  family <- fit$family
-
-  if(is.null(dis_p)) dis_p <- NA
-  if(is.null(w)) w <- rep(1, nrow(x))
-  if(family$family %in% c('gaussian','Gamma') && is.na(dis_p))
-    stop('dispersion parameter not provided')
-
-  res <- glm_proj_fsel(x, b_p, w, dis_p, family, args)
+  res <- glm_proj_helper(x, b_p, w, dis_p, family, args)
   structure(res, class = 'glmproj')
 }

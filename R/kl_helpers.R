@@ -1,4 +1,4 @@
-#' Helper functions for the NR-algorithm
+#' Model-specific helper functions.
 #'
 #' Contains functions for calculating KL divergence and its first and second
 #' derivatives for different families and link functions.
@@ -71,7 +71,7 @@ disp_ga <- function(mu_p, x, mu_q, dis_p) {
   sqrt(dis_p^2 + sum((mu_p-mu_q)^2)*ninv)
 }
 
-family_kls <- function(family) {
+kl_helpers <- function(family) {
   famfs <- switch(family$family,
       'gaussian' = list(kl = kl_gauss, dkl = dkl_gauss, dis = disp_ga),
       'binomial' = list(kl = kl_bin, dkl = dkl_bin, dis = disp_na),

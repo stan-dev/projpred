@@ -5,7 +5,7 @@
 #' selection method, replace chosen <- fsel(...) with another
 #' function.
 #'
-#' @param \code{x} A model matrix (incl. intercept).
+#' @param \code{x} A model matrix.
 #' @param \code{b_p} Sampled estimates of the coefficient of the full model.
 #' @param \code{w} Observation weights.
 #' @param \code{dis_p} dispersion parameter of the full model.
@@ -14,7 +14,12 @@
 #'  documentation of \code{\link{glm_proj}}.
 #'
 
-glm_proj_fsel <- function(x, b_p, w, dis_p, family, args) {
+glm_proj_helper <- function(x, b_p, w, dis_p, family, args) {
+
+  x <- unname(x)
+  b_p <- unname(b_p)
+  w <- unname(w)
+  dis_p <- unname(dis_p)
 
   # number of samples
   ns <- ncol(b_p)
@@ -28,13 +33,13 @@ glm_proj_fsel <- function(x, b_p, w, dis_p, family, args) {
   glmproj.cores <- ifelse(is.null(args$glmproj.cores),
                           getOption('glmproj.cores', parallel::detectCores()),
                           args$glmproj.cores)
-  if(ncol(x) < 3)
-    stop('data must have at least 3 features.')
+  if(ncol(x) < 2)
+    stop('data must have at least 2 features.')
   if(!(family$family %in% c('gaussian','binomial','poisson')))
     stop(paste0(family$family, 'family not yet supported'))
 
   # helper functions (kl, derivatives etc.)
-  funs <- family_kls(family)
+  funs <- kl_helpers(family)
 
   # fitted values of the full model
   mu_p <- family$linkinv(x%*%b_p)

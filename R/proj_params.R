@@ -8,7 +8,7 @@
 #' @param \code{b_p} Sampled estimates of the coefficient of the full model.
 #' @param \code{w} Observation weights.
 #' @param \code{dis_p} Dispersion parameter of the full model.
-#' @param \code{funs} List of family-specific functions for the NR.
+#' @param \code{funs} Model-specific helper functions.
 #' @param \code{chosen} Indices for features used in the submodel.
 #' @param \code{cores} Number of cores used.
 

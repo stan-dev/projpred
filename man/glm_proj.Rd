@@ -7,21 +7,23 @@
 glm_proj(fit, ...)
 }
 \arguments{
-\item{fit}{Either a stanreg object or a list with the model matrix \code{x}, the observation
-weights \code{w}, a \code{\link{family}}-object and the dispersion parameter \code{dis}, if applicable.}
+\item{fit}{A \link[=stanreg-objects]{stanreg} object.}
 
 \item{...}{Optional arguments. Possible arguments and their defaults are:
 \describe{
  \item{\code{n_out = min(400, [number of samples])}}{
-   Number of samples used in the projection.}
+   Number of samples used in the projection.
+   Cannot be larger than the number of samples.}
  \item{\code{n_sel = min(800, [number of samples])}}{
-   Number of samples used in the variable selection.}
+   Number of samples used in the variable selection.
+   Cannot be larger than the number of samples.}
  \item{\code{avg = FALSE}}{
    A logical value indicating whether selection is done using KL divergence
    between average of the samples instead of average KL divergence for each
-   sample. If \code{TRUE}, \code{n_sel} is ignored.}
+   sample. If \code{avg = TRUE}, \code{n_sel} is ignored.}
  \item{\code{d = ncol(x) - 1}}{
-   Maximum number of features to be used in the projection (incl. intercept).}
+   Maximum number of features to be used in the projection (incl. intercept).
+   Cannot be larger than \code{ncol(x) - 1}.}
  \item{\code{glmproj.cores = getOption('glmproj.cores', parallel::detectCores())}}{
    Number of cores used when averaging KL divergence over samples. This can be
    set for an entire R session by \code{options('glmproj.cores' = NUMBER)}.}

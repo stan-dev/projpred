@@ -17,7 +17,7 @@ kl_over_samples(mu_p, x, b_p, w, dis_p, funs)
 
 \item{\code{dis_p}}{dispersion parameter of the full model.}
 
-\item{\code{funs}}{List of family-specific functions for the NR.}
+\item{\code{funs}}{Model-specific helper functions.}
 }
 \description{
 Calculates the KL divergence over ns samples.

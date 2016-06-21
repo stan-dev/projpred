@@ -9,7 +9,7 @@ fsel(mu_p, x, b_p, w, dis_p, funs, avg, d, cores)
 \arguments{
 \item{\code{mu_p}}{Fitted values of the full model.}
 
-\item{\code{x}}{A model matrix (incl. intercept).}
+\item{\code{x}}{A model matrix.}
 
 \item{\code{b_p}}{Sampled estimates of the coefficient of the full model.}
 
@@ -17,12 +17,12 @@ fsel(mu_p, x, b_p, w, dis_p, funs, avg, d, cores)
 
 \item{\code{dis_p}}{dispersion parameter of the full model.}
 
-\item{\code{funs}}{List of family-specific functions for the NR.}
+\item{\code{funs}}{Model-specific helper functions.}
 
 \item{\code{avg}}{If TRUE, KL divergence of the average of the samples
 is used instead of the average of the KL divergences for each sample.}
 
-\item{\code{d}}{Maximum number of features in the projection (incl. intercept).}
+\item{\code{d}}{Maximum number of features in the projection.}
 
 \item{\code{cores}}{Number of cores used.}
 }
