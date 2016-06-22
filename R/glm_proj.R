@@ -13,12 +13,15 @@
 #'    A logical value indicating whether selection is done using KL divergence
 #'    between average of the samples instead of average KL divergence for each
 #'    sample. If \code{avg = TRUE}, \code{n_sel} is ignored.}
-#'  \item{\code{d = ncol(x) - 1}}{
+#'  \item{\code{d = min(ncol(x) - 1, rankMatrix(x))}}{
 #'    Maximum number of features to be used in the projection (incl. intercept).
-#'    Cannot be larger than \code{ncol(x) - 1}.}
+#'    Cannot be larger than \code{min(ncol(x) - 1, rankMatrix(x))}.}
 #'  \item{\code{glmproj.cores = getOption('glmproj.cores', parallel::detectCores())}}{
 #'    Number of cores used when averaging KL divergence over samples. This can be
 #'    set for an entire R session by \code{options('glmproj.cores' = NUMBER)}.}
+#'  \item{\code{verbose = FALSE}}{
+#'    If \code{verbose = TRUE}, prints information about the progress of the
+#'    variable selection (and about the progress of the projection if only a single core is used).}
 #' }
 #'
 #' @return A list with class \code{'glmproj'} containing the following elements:
@@ -43,6 +46,7 @@
 #' }
 #'
 #' @importFrom rstan extract
+#' @importFrom rstanarm get_x
 #'
 #' @export glm_proj
 

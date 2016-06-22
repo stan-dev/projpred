@@ -13,10 +13,11 @@
 #'  is used instead of the average of the KL divergences for each sample.
 #' @param \code{d} Maximum number of features in the projection.
 #' @param \code{cores} Number of cores used.
+#' @param \code{verbose} If \code{TRUE}, intermediate progress is printed (if only one core is used).
 #'
 #' @importFrom parallel mclapply makePSOCKcluster stopCluster parLapply
 
-fsel <- function(mu_p, x, b_p, w, dis_p, funs, avg, d, cores) {
+fsel <- function(mu_p, x, b_p, w, dis_p, funs, avg, d, cores, verbose) {
 
   chosen <- NULL
   cols <- 1:ncol(x)
@@ -49,7 +50,7 @@ fsel <- function(mu_p, x, b_p, w, dis_p, funs, avg, d, cores) {
     }
 
     imin <- which.min(unlist(l_res))
-
+    if(verbose) print(paste0(k, " of ", d, " variables selected."))
     chosen <- c(chosen, notchosen[imin])
     notchosen <- setdiff(cols, chosen)
   }

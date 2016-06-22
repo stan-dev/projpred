@@ -11,12 +11,16 @@
 #' @param \code{funs} Model-specific helper functions.
 #' @param \code{chosen} Indices for features used in the submodel.
 #' @param \code{cores} Number of cores used.
+#' @param \code{verbose} If \code{TRUE}, intermediate progress is printed (if only one core is used).
 
-proj_params <- function(mu_p, x, b_p, w, dis_p, funs, chosen, cores) {
+proj_params <- function(mu_p, x, b_p, w, dis_p, funs, chosen, cores, verbose) {
   d <- length(chosen)
   inds <- 1:d
 
-  helperf <- function(ind) kl_over_samples(mu_p, x[, chosen[1:ind], drop = F], b_p[chosen[1:ind], , drop = F], w, dis_p, funs)
+  helperf <- function(ind){
+    if(verbose) print(paste0('Projecting model of size ', ind,'.'))
+    kl_over_samples(mu_p, x[, chosen[1:ind], drop = F], b_p[chosen[1:ind], , drop = F], w, dis_p, funs)
+  }
 
   if (cores == 1 ) {
     l_res <- lapply(inds,helperf)

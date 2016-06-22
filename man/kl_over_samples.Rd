@@ -20,6 +20,7 @@ kl_over_samples(mu_p, x, b_p, w, dis_p, funs)
 \item{\code{funs}}{Model-specific helper functions.}
 }
 \description{
-Calculates the KL divergence over ns samples.
+Calculates the KL divergence over ns samples. For gaussian likelihood,
+uses analytical solution to make computation a lot faster.
 }
 

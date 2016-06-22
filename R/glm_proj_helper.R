@@ -13,6 +13,8 @@
 #' @param \code{args} For possible additional arguments, see the
 #'  documentation of \code{\link{glm_proj}}.
 #'
+#' @importFrom Matrix rankMatrix
+#'
 
 glm_proj_helper <- function(x, b_p, w, dis_p, family, args) {
 
@@ -27,12 +29,13 @@ glm_proj_helper <- function(x, b_p, w, dis_p, family, args) {
   # set additional argumets to defaults if they are missing etc.
   n_out <- min(ifelse(is.null(args$n_out), 800, args$n_out), ns)
   n_sel <- min(ifelse(is.null(args$n_sel), 400, args$n_sel), ns)
-  d <- min(ncol(x)-1, args$d)
+  d <- min(ncol(x)-1, args$d, rankMatrix(x))
   avg <- ifelse(is.null(args$avg), F, args$avg)
   if(avg) n_sel <- ns
   glmproj.cores <- ifelse(is.null(args$glmproj.cores),
                           getOption('glmproj.cores', parallel::detectCores()),
                           args$glmproj.cores)
+  verbose <- ifelse(is.null(args$verbose), F, args$verbose)
   if(ncol(x) < 2)
     stop('data must have at least 2 features.')
   if(!(family$family %in% c('gaussian','binomial','poisson')))
@@ -49,10 +52,13 @@ glm_proj_helper <- function(x, b_p, w, dis_p, family, args) {
   oind <- round(seq(1, ns, length.out  = n_out))
 
   # find 'optimal' sequence with forward selection
-  chosen <- fsel(mu_p[, sind, drop = F], x, b_p[, sind, drop = F], w, dis_p[sind], funs, avg, d, glmproj.cores)
+  if(verbose) print(paste0('Starting forward selection for up to ', d, ' variables...'))
+  chosen <- fsel(mu_p[, sind, drop = F], x, b_p[, sind, drop = F], w, dis_p[sind], funs, avg, d, glmproj.cores, verbose)
+  if(verbose) print('Done.')
 
-  # project parameters to submodels
-  proj <- proj_params(mu_p[, oind, drop = F], x, b_p[, oind, drop = F], w, dis_p[oind], funs, chosen, glmproj.cores)
+  if(verbose) print(paste0('Projecting parameters to submodels of size 1 to ', d, '.'))
+  proj <- proj_params(mu_p[, oind, drop = F], x, b_p[, oind, drop = F], w, dis_p[oind], funs, chosen, glmproj.cores, verbose)
+  if(verbose) print('Done.')
   proj$family <- family
 
   c(chosen = list(chosen), proj)

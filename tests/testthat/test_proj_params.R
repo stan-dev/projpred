@@ -14,18 +14,17 @@ chosen <- 1:(d-1)
 helperf <- function(ind) coef(lm(mu_p[, ind] ~ x[, 1:(d-1)] - 1))
 exp_beta <- unname(sapply(1:s, helperf))
 
-
 context("Parameter projection")
 test_that("Check that projection works for 4 samples with 1 core", {
   cores <- 1
-  beta <- proj_params(mu_p, x, b_p, w, dis_p, funs, chosen, cores)$b[[d-1]]
+  beta <- proj_params(mu_p, x, b_p, w, dis_p, funs, chosen, cores, F)$b[[d-1]]
 
   expect_equal(exp_beta, beta, tolerance = 0.001)
 })
 
 test_that("Check that projection works for 4 samples and multiple cores", {
   cores <- min(2, parallel::detectCores())
-  beta <- proj_params(mu_p, x, b_p, w, dis_p, funs, chosen, cores)$b[[d-1]]
+  beta <- proj_params(mu_p, x, b_p, w, dis_p, funs, chosen, cores, F)$b[[d-1]]
 
   expect_equal(exp_beta, beta, tolerance = 0.001)
 })

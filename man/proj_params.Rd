@@ -4,7 +4,7 @@
 \alias{proj_params}
 \title{Project parameters}
 \usage{
-proj_params(mu_p, x, b_p, w, dis_p, funs, chosen, cores)
+proj_params(mu_p, x, b_p, w, dis_p, funs, chosen, cores, verbose)
 }
 \arguments{
 \item{\code{mu_p}}{Fitted values of the full model.}
@@ -22,6 +22,8 @@ proj_params(mu_p, x, b_p, w, dis_p, funs, chosen, cores)
 \item{\code{chosen}}{Indices for features used in the submodel.}
 
 \item{\code{cores}}{Number of cores used.}
+
+\item{\code{verbose}}{If \code{TRUE}, intermediate progress is printed (if only one core is used).}
 }
 \description{
 Find parameters that minimize the KL divergence between the full model

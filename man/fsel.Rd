@@ -4,7 +4,7 @@
 \alias{fsel}
 \title{Forward selection}
 \usage{
-fsel(mu_p, x, b_p, w, dis_p, funs, avg, d, cores)
+fsel(mu_p, x, b_p, w, dis_p, funs, avg, d, cores, verbose)
 }
 \arguments{
 \item{\code{mu_p}}{Fitted values of the full model.}
@@ -25,6 +25,8 @@ is used instead of the average of the KL divergences for each sample.}
 \item{\code{d}}{Maximum number of features in the projection.}
 
 \item{\code{cores}}{Number of cores used.}
+
+\item{\code{verbose}}{If \code{TRUE}, intermediate progress is printed (if only one core is used).}
 }
 \description{
 Performs forward selection on the data and returns

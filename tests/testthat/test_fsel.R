@@ -17,7 +17,7 @@ test_that("Forward selection returns the correct sequence
           when avg = F and using a single core", {
   avg <- F
   cores <- 1
-  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores)
+  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F)
 
   expect_equal(chosen, exp_chosen)
 })
@@ -26,7 +26,7 @@ test_that("Forward selection returns the correct sequence
           when avg = F and using multiple cores", {
   avg <- F
   cores <- min(2, parallel::detectCores())
-  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores)
+  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F)
 
   expect_equal(chosen, exp_chosen)
 })
@@ -35,7 +35,7 @@ test_that("Forward selection returns the correct sequence
           when avg = T", {
   avg <- T
   cores <- 1
-  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores)
+  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F)
 
   expect_equal(chosen, exp_chosen)
 })
