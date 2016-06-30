@@ -1,4 +1,5 @@
-library(glmproj)
+library(glmproj, quietly = T)
+suppressPackageStartupMessages(library(rstanarm, quietly = T))
 
 set.seed(1234)
 n <- 100

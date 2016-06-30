@@ -1,4 +1,4 @@
-library(glmproj)
+library(glmproj, quietly = T)
 
 context("Model-specific helper functions")
 test_that("gaussian family returns the correct helper functions",{

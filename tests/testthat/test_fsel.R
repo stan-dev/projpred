@@ -1,4 +1,5 @@
-library(glmproj)
+library(glmproj, quietly = T)
+
 set.seed(1234)
 n <- 80
 d <- 10
@@ -17,7 +18,7 @@ test_that("Forward selection returns the correct sequence
           when avg = F and using a single core", {
   avg <- F
   cores <- 1
-  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F)
+  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F, F)
 
   expect_equal(chosen, exp_chosen)
 })
@@ -26,7 +27,7 @@ test_that("Forward selection returns the correct sequence
           when avg = F and using multiple cores", {
   avg <- F
   cores <- min(2, parallel::detectCores())
-  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F)
+  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F, F)
 
   expect_equal(chosen, exp_chosen)
 })
@@ -35,10 +36,16 @@ test_that("Forward selection returns the correct sequence
           when avg = T", {
   avg <- T
   cores <- 1
-  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F)
+  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F, F)
 
   expect_equal(chosen, exp_chosen)
 })
 
+test_that("Forward selection returns the intercept first
+          when intercept = T", {
+  avg <- T
+  cores <- 1
+  chosen <- fsel(mu_p, x, b_p, w, dis_p, funs, avg, d - 1, cores, F, T)
 
-
+  expect_equal(chosen[1], 1)
+})

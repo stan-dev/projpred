@@ -1,6 +1,6 @@
-library(glmproj)
+library(glmproj, quietly = T)
 
-set.seed(1337)
+set.seed(1234)
 n <- 40
 d_p <- 10
 d_q <- d_p - 5

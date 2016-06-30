@@ -30,7 +30,8 @@ glm_proj_helper <- function(x, b_p, w, dis_p, family, args) {
   n_out <- min(ifelse(is.null(args$n_out), 800, args$n_out), ns)
   n_sel <- min(ifelse(is.null(args$n_sel), 400, args$n_sel), ns)
   d <- min(ncol(x)-1, args$d, rankMatrix(x))
-  avg <- ifelse(is.null(args$avg), F, args$avg)
+  avg <- ifelse(is.null(args$avg), FALSE, args$avg)
+  intercept <- ifelse(is.null(args$intercept), FALSE, args$intercept)
   if(avg) n_sel <- ns
   glmproj.cores <- ifelse(is.null(args$glmproj.cores),
                           getOption('glmproj.cores', parallel::detectCores()),
@@ -53,11 +54,13 @@ glm_proj_helper <- function(x, b_p, w, dis_p, family, args) {
 
   # find 'optimal' sequence with forward selection
   if(verbose) print(paste0('Starting forward selection for up to ', d, ' variables...'))
-  chosen <- fsel(mu_p[, sind, drop = F], x, b_p[, sind, drop = F], w, dis_p[sind], funs, avg, d, glmproj.cores, verbose)
+  chosen <- fsel(mu_p[, sind, drop = F], x, b_p[, sind, drop = F], w,
+                 dis_p[sind], funs, avg, d, glmproj.cores, verbose, intercept)
   if(verbose) print('Done.')
 
   if(verbose) print(paste0('Projecting parameters to submodels of size 1 to ', d, '.'))
-  proj <- proj_params(mu_p[, oind, drop = F], x, b_p[, oind, drop = F], w, dis_p[oind], funs, chosen, glmproj.cores, verbose)
+  proj <- proj_params(mu_p[, oind, drop = F], x, b_p[, oind, drop = F], w,
+                      dis_p[oind], funs, chosen, glmproj.cores, verbose)
   if(verbose) print('Done.')
   proj$family <- family
 

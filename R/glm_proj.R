@@ -64,7 +64,10 @@ glm_proj.stanreg <- function(fit, ...) {
 
   e <- extract(fit$stanfit)
   b_p <- t(e$beta)
-  if('alpha' %in% names(e)) b_p <- rbind(drop(e$alpha), b_p)
+  if('alpha' %in% names(e)) {
+    b_p <- rbind(drop(e$alpha), b_p)
+    args$intercept <- TRUE
+  }
   dis_p <- e$dispersion
 
   w <- get_weights(fit)

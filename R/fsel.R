@@ -14,12 +14,18 @@
 #' @param \code{d} Maximum number of features in the projection.
 #' @param \code{cores} Number of cores used.
 #' @param \code{verbose} If \code{TRUE}, intermediate progress is printed (if only one core is used).
+#' @param \code{intercept} If \code{TRUE}, intercept is always added first.
 #'
 #' @importFrom parallel mclapply makePSOCKcluster stopCluster parLapply
 
-fsel <- function(mu_p, x, b_p, w, dis_p, funs, avg, d, cores, verbose) {
+fsel <- function(mu_p, x, b_p, w, dis_p, funs, avg, d, cores, verbose, intercept) {
 
-  chosen <- NULL
+  if(intercept) {
+    chosen <- 1
+    d <- d - 1
+  } else {
+    chosen <- NULL
+  }
   cols <- 1:ncol(x)
   notchosen <- setdiff(cols, chosen)
 

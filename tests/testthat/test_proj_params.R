@@ -1,4 +1,4 @@
-library(glmproj)
+library(glmproj, quietly = T)
 
 set.seed(1234)
 n <- 80
