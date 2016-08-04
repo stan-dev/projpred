@@ -9,51 +9,49 @@
 #' @param \code{w} Observation weights.
 #' @param \code{dis_p} dispersion parameter of the full model.
 #' @param \code{funs} Model-specific helper functions.
-#' @param \code{max_it} Maximum number of iterations for the algorithm. Defaults to 50.
+#' @param \code{max_it} Maximum number of iterations for the algorithm. Defaults to 30.
 #' @param \code{eps} Tolerance, when derivative to any direction is at most eps, algorithm stops. Defaults to 1e-10.
 
-NR <- function(mu_p, x, b_p, w, dis_p, funs, max_it = 50, eps = 1e-10) {
+NR <- function(p, d, b0, family, max_it = 30, eps = 1e-10) {
 
-  # initial estimate for b_q
-  b_q <- b_p
+  q <- list(b = b0)
 
   it <- 1
 
-  eta_q <- x%*%b_q
-  mu_q <- funs$linkinv(x%*%b_q)
-  dis_q <- funs$dis(mu_p, x, mu_q, dis_p)
-  kl <- funs$kl(mu_p, x, mu_q, w, dis_p, dis_q)
+  q$eta <- d$x%*%q$b
+  q$mu <- family$linkinv(d$x%*%q$b)
+  q$dis <- family$dis(p, d, q)
+  kl <- family$kl(p, d, q)
 
   alpha <- 0.1
   beta <- 0.5
 
   while(it < max_it) {
 
-    dme <- funs$dme(mu_q, eta_q)
-    dkl <- funs$dkl(mu_p, x, mu_q, eta_q, w, dme)
-    db_q <- solve(dkl$s, dkl$f)
-    incr <- crossprod(dkl$f,db_q)
+    dkl <- family$dkl(p, d, q, family$dme(q))
+    db <- solve(dkl$s, dkl$f)
+    decr <- crossprod(dkl$f, db)
 
     # check convergence
-    if(incr*0.5 < eps) break
+    if(decr*0.5 < eps) break
 
     step <- 1
 
-    eta_q <- x%*%(b_q - step*db_q)
-    mu_q <- funs$linkinv(eta_q)
-    dis_q <- funs$dis(mu_p, x, mu_q, dis_p)
-    kl_new <- funs$kl(mu_p, x, mu_q, w, dis_p, dis_q)
+    q$eta <- d$x%*%(q$b - step*db)
+    q$mu <- family$linkinv(q$eta)
+    q$dis <- family$dis(p, d, q)
+    kl_new <- family$kl(p, d, q)
 
     # find stepsize
-    while(kl_new > kl + alpha*step*incr) {
+    while(kl_new > kl - alpha*step*decr) {
       step <- step*beta
-      eta_q <- x%*%(b_q - step*db_q)
-      mu_q <- funs$linkinv(eta_q)
-      dis_q <- funs$dis(mu_p, x, mu_q, dis_p)
-      kl_new <- funs$kl(mu_p, x, mu_q, w, dis_p, dis_q)
+      q$eta <- d$x%*%(q$b - step*db)
+      q$mu <- family$linkinv(q$eta)
+      q$dis <- family$dis(p, d, q)
+      kl_new <- family$kl(p, d, q)
     }
 
-    b_q <- b_q - step*db_q
+    q$b <- q$b - step*db
     kl <- kl_new
 
     # check convergence
@@ -62,7 +60,10 @@ NR <- function(mu_p, x, b_p, w, dis_p, funs, max_it = 50, eps = 1e-10) {
     it <- it + 1
   }
 
-  if(it >= max_it) warning(paste0('Maximum number of iterations reached.'))
+  if(it >= max_it)
+    warning(paste0("Maximum number of iterations reached."))
 
-  list(kl = kl, b = b_q, dis = dis_q)
+  res <- list(kl = kl, b = q$b)
+  if(family$family %in% c('gaussian','Gamma')) res$dis <- q$dis
+  res
 }

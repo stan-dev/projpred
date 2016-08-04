@@ -4,7 +4,7 @@
 \alias{kl_gauss}
 \title{Model-specific helper functions.}
 \usage{
-kl_gauss(mu_p, x, mu_q, w, dis_p, dis_q)
+kl_gauss(p, d, q)
 }
 \description{
 Contains functions for calculating KL divergence and its first and second

@@ -8,74 +8,86 @@
 #' it's first and second derivatives + first and second derivatives of the
 #' mu-parameter w.r.t eta.
 
-kl_gauss <- function(mu_p, x, mu_q, w, dis_p, dis_q) {
-  log(dis_q)-log(dis_p)
+kl_gauss <- function(p, d, q) {
+  log(q$dis) - log(q$dis)
 }
 
-dkl_gauss <- function(mu_p, x, mu_q, eta_q, w, dme) {
-  list(f = crossprod(x, mu_q - mu_p), s = crossprod(x))
+dkl_gauss <- function(p, d, q, dme) {
+  list(f = crossprod(d$x, q$mu - p$mu), s = crossprod(d$x))
 }
 
-kl_bin <- function(mu_p, x, mu_q, w, dis_p, dis_q) {
-  ninv <- 1/length(mu_p)
-  sum(w*(mu_p*(log(mu_p)-log(mu_q)) + (1-mu_p)*(log1p(-mu_p)-log1p(-mu_q))))*ninv
+kl_bin <- function(p, d, q) {
+  sum(d$w*(p$mu*(log(p$mu)-log(q$mu)) +
+           (1-p$mu)*(log1p(-1*p$mu)-log1p(-1*q$mu))))/length(q$mu)
 }
 
-dkl_bin <- function(mu_p, x, mu_q, eta_q, w, dme) {
-  pq <- mu_p/mu_q
-  pq1 <- (1-mu_p)/(1-mu_q)
-  ninv <- 1/length(mu_p)
-  tmp1 <- -w*(pq - pq1)*dme$f*ninv
-  tmp2 <- w*((pq/mu_q + pq1/(1-mu_q))*dme$f^2 - (pq - pq1)*dme$s)*ninv
+dkl_bin <- function(p, d, q, dme) {
+  ninv <- 1/length(q$mu)
+  pq <- p$mu/q$mu
+  pq1 <- (1-p$mu)/(1-q$mu)
 
-  list(f = crossprod(x,tmp1), s = crossprod(x*drop(tmp2),x))
+  list(f = ninv*crossprod(d$x,d$w*(pq1 - pq)*dme$f),
+       s = ninv*crossprod(d$x*drop(d$w*((pq1 - pq)*dme$s) +
+                                    (pq/q$mu + pq1/(1-q$mu))*dme$f^2), d$x))
 }
 
-kl_poiss <- function(mu_p, x, mu_q, w, dis_p, dis_q) {
-  ninv <- 1/length(mu_p)
-  sum(- mu_p + mu_q + mu_p*(log(mu_p)-log(mu_q)))*ninv
+kl_poiss <- function(p, d, q) {
+  sum(q$mu - p$mu + p$mu*(log(p$mu)-log(q$mu)))/length(q$mu)
 }
 
-dkl_poiss <- function(mu_p, x, mu_q, eta_q, w, dme) {
-  pq <- mu_p/mu_q
-  ninv <- 1/length(mu_p)
-  tmp1 <- (1-pq)*dme$f*ninv
-  tmp2 <- (pq/mu_q*dme$f^2 + (1-pq)*dme$s)*ninv
+dkl_poiss <- function(p, d, q, dme) {
+  ninv <- 1/length(q$mu)
+  pq <- q$mu/q$mu
 
-  list(f = crossprod(x,tmp1), s = crossprod(x*drop(tmp2),x))
+  list(f = ninv*crossprod(d$x,(1-pq)*dme$f),
+       s = ninv*crossprod(d$x*drop((pq/q$mu*dme$f^2 + (1-pq)*dme$s)),d$x))
 }
 
 # d mu / d eta
-dme_logit <- function(mu_q, eta_q) {
-  tmp <- mu_q*(1-mu_q)
-  list(f = tmp, s = tmp*(1-2*mu_q))
+dme_logit <- function(q) {
+  tmp <- q$mu*(1-q$mu)
+  list(f = tmp, s = tmp*(1-2*q$mu))
 }
-dme_probit <- function(mu_q, eta_q) {
-  tmp <- dnorm(eta_q)
-  list(f = tmp, s = tmp*(-eta_q))
+dme_probit <- function(q) {
+  tmp <- dnorm(q$eta)
+  list(f = tmp, s = -1*tmp*(q$eta))
 }
-dme_log <- function(mu_q, eta_q) {
-  list(f = mu_q, s = mu_q)
+dme_log <- function(q) {
+  list(f = q$mu, s = q$mu)
 }
-dme_id <- function(mu_q, eta_q) {
-  tmp <- rep(1, length(mu_q))
+dme_id <- function(q) {
+  tmp <- 1
   list(f = tmp, s = tmp)
 }
 
 # dispersions
 disp_na <- function(...) NA
 
-disp_ga <- function(mu_p, x, mu_q, dis_p) {
-  ninv <- 1/length(mu_p)
+disp_ga <- function(p, d, q) {
+  sqrt(dis_p^2 + sum((p$mu-q$mu)^2)/length(q$mu))
+}
 
-  sqrt(dis_p^2 + sum((mu_p-mu_q)^2)*ninv)
+# log likelihoods for test data
+ll_gauss <- function(mu, dis, y, w) {
+  dnorm(y, mean = mu, sd = rep(dis, each = length(y)), log = T)
+}
+
+ll_bin <- function(mu, dis, y, w) {
+  dbinom(y, size = w, prob = mu, log = T)
+}
+
+ll_poiss <- function(mu, dis, y, w) {
+  dpois(y, mu, log = T)
 }
 
 kl_helpers <- function(family) {
   famfs <- switch(family$family,
-      'gaussian' = list(kl = kl_gauss, dkl = dkl_gauss, dis = disp_ga),
-      'binomial' = list(kl = kl_bin, dkl = dkl_bin, dis = disp_na),
-      'poisson' = list(kl = kl_poiss, dkl = dkl_poiss, dis = disp_na)
+      'gaussian' = list(kl = kl_gauss, dkl = dkl_gauss,
+                        dis = disp_ga, ll_fun = ll_gauss),
+      'binomial' = list(kl = kl_bin, dkl = dkl_bin,
+                        dis = disp_na, ll_fun = ll_bin),
+      'poisson' = list(kl = kl_poiss, dkl = dkl_poiss,
+                       dis = disp_na, ll_fun = ll_pois)
   )
   linkfs <- switch(family$link,
       'logit' = list(dme = dme_logit),

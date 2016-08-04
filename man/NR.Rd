@@ -4,7 +4,7 @@
 \alias{NR}
 \title{Newton-Rhapson}
 \usage{
-NR(mu_p, x, b_p, w, dis_p, funs, max_it = 50, eps = 1e-10)
+NR(p, d, b0, family, max_it = 30, eps = 1e-10)
 }
 \arguments{
 \item{\code{mu_p}}{Fitted values of the full model.}
@@ -19,7 +19,7 @@ NR(mu_p, x, b_p, w, dis_p, funs, max_it = 50, eps = 1e-10)
 
 \item{\code{funs}}{Model-specific helper functions.}
 
-\item{\code{max_it}}{Maximum number of iterations for the algorithm. Defaults to 50.}
+\item{\code{max_it}}{Maximum number of iterations for the algorithm. Defaults to 30.}
 
 \item{\code{eps}}{Tolerance, when derivative to any direction is at most eps, algorithm stops. Defaults to 1e-10.}
 }

@@ -1,65 +1,93 @@
-#' Forward selection
-#'
-#' Performs forward selection on the data and returns
-#' the 'optimal' order of the parameters.
-#'
-#' @param \code{mu_p} Fitted values of the full model.
-#' @param \code{x} A model matrix.
-#' @param \code{b_p} Sampled estimates of the coefficient of the full model.
-#' @param \code{w} Observation weights.
-#' @param \code{dis_p} dispersion parameter of the full model.
-#' @param \code{funs} Model-specific helper functions.
-#' @param \code{avg} If TRUE, KL divergence of the average of the samples
-#'  is used instead of the average of the KL divergences for each sample.
-#' @param \code{d} Maximum number of features in the projection.
-#' @param \code{cores} Number of cores used.
-#' @param \code{verbose} If \code{TRUE}, intermediate progress is printed (if only one core is used).
-#' @param \code{intercept} If \code{TRUE}, intercept is always added first.
-#'
-#' @importFrom parallel mclapply makePSOCKcluster stopCluster parLapply
 
-fsel <- function(mu_p, x, b_p, w, dis_p, funs, avg, d, cores, verbose, intercept) {
+fsel <- function(p, d, d_test, p_means = NULL, b0, args) {
 
-  if(intercept) {
+  # use analytical solution for gaussian
+  # and precompute some values
+  if(args$family$family == 'gaussian') {
+    d$covX <- crossprod(d$x)
+    p$x_mu <- crossprod(d$x,p$mu)
+    p$dis2 <- p$dis^2
+    if(args$avg) {
+      p_means$x_mu <- crossprod(d$x,p_means$mu)
+      p_means$dis2 <- p_means$dis^2
+    }
+    kl_ind <- function(ind, chosen, p, d, b0, family) {
+      varinds <- c(chosen, ind)
+      q <- list(b = solve(d$covX[varinds, varinds, drop = F], p$x_mu[varinds, , drop = F]))
+      q$dis <- sqrt(p$dis2 + colMeans((p$mu - d$x[, varinds, drop = F]%*%q$b)^2))
+      q$kl <- sum(log(q$dis) - log(p$dis))/length(q$dis)
+      q
+    }
+  } else {
+    # function to calculate kl over samples
+    kl_ind <- function(ind, chosen, p, d, b0, family) {
+      varinds <- c(ind, chosen)
+      s <- ncol(p$mu)
+      res <- sapply(1:s, function(sind) {
+        NR(list(mu = p$mu[, sind, drop = F], dis = p$dis[sind]),
+           list(x = d$x[, varinds, drop = F], w = d$w), b0[varinds,], family)
+      })
+      q <- list(kl = sum(unlist(res['kl',]))/s, b = do.call(cbind, res['b',]))
+      if('dis' %in% rownames(res)) q$dis <- unlist(res['dis',])
+      q
+    }
+  }
+
+  kl <- rep(NA_real_, args$d)
+  test_stats <- matrix(NA_real_, nrow = args$d, ncol = 4, dimnames = list(NULL, c('mse', 'mlpd', 'r2', 'pctcorr')))
+
+  i <- 1
+
+  if(args$intercept) {
     chosen <- 1
-    d <- d - 1
+    # calculate KL divergence with just intercept
+    q <- kl_ind(NULL, chosen, p, d, b0, args$family)
+    kl[i] <- q$kl
+    if(is.list(d_test)) test_stats[i,] <- test_stat(q, chosen, d_test, args$family)
+    #if(args$verbose) print(paste0(i, " of ", args$d, " variables selected."))
+    i <- i + 1
   } else {
     chosen <- NULL
   }
-  cols <- 1:ncol(x)
-  notchosen <- setdiff(cols, chosen)
 
-  if(avg) {
-    mu_p_mean <- rowMeans(mu_p)
-    b_p_mean <- rowMeans(b_p)
-    dis_p_mean <- sqrt(mean(dis_p^2))
-    helperf <- function(ind) NR(mu_p_mean, x[, c(chosen, ind), drop = F], b_p_mean[c(chosen, ind)], w, dis_p_mean, funs)$kl
-  } else {
-    helperf <- function(ind) kl_over_samples(mu_p, x[, c(chosen, ind), drop = F], b_p[c(chosen, ind), , drop = F], w, dis_p, funs)$kl
-  }
+  cols <- 1:ncol(d$x)
+  notchosen <- setdiff(cols, chosen)
+  if(args$verbose) iq <- ceiling(quantile(1:args$d, 1:10/10))
 
   # start adding variables one at a time
-  for (k in 1:d) {
+  while(i <= args$d) {
 
-    # with avg there the overhead of mclapply is too large
-    # (this might not be the case if d >> 100)
-    if (cores == 1 || avg) {
-      l_res <- lapply(notchosen, helperf)
+    if(args$avg) {
+      q <- sapply(notchosen, kl_ind, chosen, p_means, d, b0, args$family)
     } else {
-      if (.Platform$OS.type == 'windows') {
-        cl <- makePSOCKcluster(cores)
-        on.exit(stopCluster(cl))
-        l_res <- parLapply(cl, notchosen, helperf)
-      } else {
-        l_res <- mclapply(notchosen, helperf, mc.cores = cores)
-      }
+      q <- sapply(notchosen, kl_ind, chosen, p, d, b0, args$family)
     }
 
-    imin <- which.min(unlist(l_res))
-    if(verbose) print(paste0(k, " of ", d, " variables selected."))
+    imin <- which.min(q['kl',])
     chosen <- c(chosen, notchosen[imin])
+
+    if(args$avg) {
+      q <- kl_ind(NULL, chosen, p, d, b0, args$family)
+      kl[i] <- q$kl
+      if(is.list(d_test)) test_stats[i,] <- test_stat(q, chosen, d_test, args$family)
+    } else {
+      kl[i] <- q[['kl',imin]]
+      if(is.list(d_test)) test_stats[i,] <- test_stat(q[, imin], chosen, d_test, args$family)
+    }
+
+    if(args$verbose && i %in% iq)
+      print(paste0(names(iq)[max(which(i == iq))], " of variables selected."))
     notchosen <- setdiff(cols, chosen)
+    i <- i + 1
   }
 
-  chosen
+  res <- list(chosen = chosen, kl = kl)
+  if(is.list(d_test)) {
+    res$mse <- test_stats[,'mse']
+    res$mlpd <- test_stats[,'mlpd']
+    if(args$family$family == 'gaussian') res$r2 <- test_stats[,'r2']
+    if(args$family$family == 'binomial') res$pctcorr <- test_stats[,'pctcorr']
+  }
+
+  res
 }
