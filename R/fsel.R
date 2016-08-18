@@ -1,93 +1,103 @@
 
 fsel <- function(p, d, d_test, p_means = NULL, b0, args) {
 
-  # use analytical solution for gaussian
-  # and precompute some values
-  if(args$family$family == 'gaussian') {
+
+  # for gaussian, precompute some values
+  if(args$family_kl$family == 'gaussian') {
     d$covX <- crossprod(d$x)
-    p$x_mu <- crossprod(d$x,p$mu)
+    p$x_mu <- crossprod(d$x, p$mu)
     p$dis2 <- p$dis^2
     if(args$avg) {
       p_means$x_mu <- crossprod(d$x,p_means$mu)
       p_means$dis2 <- p_means$dis^2
     }
-    kl_ind <- function(ind, chosen, p, d, b0, family) {
-      varinds <- c(chosen, ind)
-      q <- list(b = solve(d$covX[varinds, varinds, drop = F], p$x_mu[varinds, , drop = F]))
-      q$dis <- sqrt(p$dis2 + colMeans((p$mu - d$x[, varinds, drop = F]%*%q$b)^2))
-      q$kl <- sum(log(q$dis) - log(p$dis))/length(q$dis)
+  }
+
+  # initialize forward selection
+  # proj calculates
+  proj <- .get_proj_handle(args$family_kl$family)
+  i <- 1
+  iq <- ceiling(quantile(1:args$nv, 1:10/10))
+  cols <- 1:ncol(d$x)
+  chosen <- NULL
+  kl <- rep(NA_real_, args$nv)
+  mu <- vector('list', args$nv)
+  lppd <- vector('list', args$nv)
+  p_fsel <- if(args$avg) p_means else p
+
+  # if the full model has intercept, add it to the submodel 'as first variable'
+  if(args$intercept) {
+    chosen <- 1
+    q <- proj(NULL, chosen, p_fsel, d, b0, args)
+    kl[i] <- q$kl
+    mu_temp <- args$family_kl$linkinv(d_test$x[,chosen]%*%q$b)
+    mu[[i]] <- rowMeans(mu_temp)
+    lppd[[i]] <- apply(args$family_kl$ll_fun(mu_temp, q$dis, d_test$y, d_test$w), 1, log_mean_exp)
+    i <- i + 1
+  }
+
+  # start adding variables one at a time
+  while(i <= args$nv) {
+
+    notchosen <- setdiff(cols, chosen)
+
+    q <- sapply(notchosen, proj, chosen, p_fsel, d, b0, args)
+    kl_temp <- unlist(q['kl',])
+    if(min(kl_temp) == Inf) {
+      warning(paste0('Numerical problems in the projection for a submodel of size ', i, '. Ending forward selection.'))
+      return(list(chosen = chosen[1:(i-1)], kl = kl[1:(i-1)], mu = mu[1:(i-1)], lppd = lppd[1:(i-1)]))
+    }
+    imin <- which.min(kl_temp)
+
+    q_sel <- if(args$avg) proj(notchosen[imin], chosen, p_fsel, d, b0, args) else q[,imin]
+    chosen <- c(chosen, notchosen[imin])
+
+    kl[i] <- q_sel$kl
+    mu_temp <- args$family_kl$linkinv(d_test$x[,chosen]%*%q_sel$b + d_test$offset)
+    lppd[[i]] <- apply(args$family_kl$ll_fun(mu_temp, q_sel$dis, d_test$y, d_test$w), 1, log_mean_exp)
+    mu[[i]] <- rowMeans(mu_temp)
+
+    if(args$verbose && i %in% iq) print(paste0(names(iq)[max(which(i == iq))], " of variables selected."))
+    i <- i + 1
+  }
+
+  list(chosen = chosen, kl = kl, mu = mu, lppd = lppd)
+}
+
+.get_proj_handle <- function(family) {
+
+  # use analytical solution for gaussian
+  if(family == 'gaussian') {
+    function(v_ind, chosen, p, d, b0, args) {
+      v_inds <- c(chosen, v_ind)
+      covx <- d$covX[v_inds, v_inds, drop = F]
+
+      if(ncol(d$x) - args$rank_x + length(v_inds) > ncol(covx)) {
+        if(rankMatrix(covx) < length(v_inds)) return(list(b = NA, dis = NA, kl = Inf))
+      }
+
+      q <- list(b = solve(covx, p$x_mu[v_inds, , drop = F]))
+      q$dis <- sqrt(p$dis2 + colMeans((p$mu - d$x[, v_inds, drop = F]%*%q$b)^2))
+      q$kl <- sum(log(q$dis) - log(p$dis))/args$ns
       q
     }
+
   } else {
-    # function to calculate kl over samples
-    kl_ind <- function(ind, chosen, p, d, b0, family) {
-      varinds <- c(ind, chosen)
-      s <- ncol(p$mu)
-      res <- sapply(1:s, function(sind) {
-        NR(list(mu = p$mu[, sind, drop = F], dis = p$dis[sind]),
-           list(x = d$x[, varinds, drop = F], w = d$w), b0[varinds,], family)
+    proj <- function(v_ind, chosen, p, d, b0, args) {
+      v_inds <- c(chosen, v_ind)
+
+      if(ncol(d$x) - args$rank_x + length(v_inds) > ncol(d$x[, v_inds, drop =F])) {
+        if(rankMatrix(d$x[, v_inds, drop =F]) < length(v_inds)) return(list(b = NA, dis = NA, kl = Inf))
+      }
+
+      res <- sapply(1:args$ns, function(s_ind) {
+        NR(list(mu = p$mu[, s_ind, drop = F], dis = p$dis[s_ind]),
+           list(x = d$x[, v_inds, drop = F], w = d$w, offset = d$offset), b0[v_inds,], args$family_kl)
       })
-      q <- list(kl = sum(unlist(res['kl',]))/s, b = do.call(cbind, res['b',]))
+
+      q <- list(kl = sum(unlist(res['kl',]))/args$ns, b = do.call(cbind, res['b',]))
       if('dis' %in% rownames(res)) q$dis <- unlist(res['dis',])
       q
     }
   }
-
-  kl <- rep(NA_real_, args$d)
-  test_stats <- matrix(NA_real_, nrow = args$d, ncol = 4, dimnames = list(NULL, c('mse', 'mlpd', 'r2', 'pctcorr')))
-
-  i <- 1
-
-  if(args$intercept) {
-    chosen <- 1
-    # calculate KL divergence with just intercept
-    q <- kl_ind(NULL, chosen, p, d, b0, args$family)
-    kl[i] <- q$kl
-    if(is.list(d_test)) test_stats[i,] <- test_stat(q, chosen, d_test, args$family)
-    #if(args$verbose) print(paste0(i, " of ", args$d, " variables selected."))
-    i <- i + 1
-  } else {
-    chosen <- NULL
-  }
-
-  cols <- 1:ncol(d$x)
-  notchosen <- setdiff(cols, chosen)
-  if(args$verbose) iq <- ceiling(quantile(1:args$d, 1:10/10))
-
-  # start adding variables one at a time
-  while(i <= args$d) {
-
-    if(args$avg) {
-      q <- sapply(notchosen, kl_ind, chosen, p_means, d, b0, args$family)
-    } else {
-      q <- sapply(notchosen, kl_ind, chosen, p, d, b0, args$family)
-    }
-
-    imin <- which.min(q['kl',])
-    chosen <- c(chosen, notchosen[imin])
-
-    if(args$avg) {
-      q <- kl_ind(NULL, chosen, p, d, b0, args$family)
-      kl[i] <- q$kl
-      if(is.list(d_test)) test_stats[i,] <- test_stat(q, chosen, d_test, args$family)
-    } else {
-      kl[i] <- q[['kl',imin]]
-      if(is.list(d_test)) test_stats[i,] <- test_stat(q[, imin], chosen, d_test, args$family)
-    }
-
-    if(args$verbose && i %in% iq)
-      print(paste0(names(iq)[max(which(i == iq))], " of variables selected."))
-    notchosen <- setdiff(cols, chosen)
-    i <- i + 1
-  }
-
-  res <- list(chosen = chosen, kl = kl)
-  if(is.list(d_test)) {
-    res$mse <- test_stats[,'mse']
-    res$mlpd <- test_stats[,'mlpd']
-    if(args$family$family == 'gaussian') res$r2 <- test_stats[,'r2']
-    if(args$family$family == 'binomial') res$pctcorr <- test_stats[,'pctcorr']
-  }
-
-  res
 }

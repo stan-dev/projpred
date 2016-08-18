@@ -4,7 +4,7 @@
 \alias{NR}
 \title{Newton-Rhapson}
 \usage{
-NR(p, d, b0, family, max_it = 30, eps = 1e-10)
+NR(p, d, b0, family_kl, max_it = 30, eps = 1e-10)
 }
 \arguments{
 \item{\code{mu_p}}{Fitted values of the full model.}
