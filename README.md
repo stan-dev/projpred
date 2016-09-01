@@ -11,14 +11,6 @@ Installation
 
     devtools::install_github('paasim/glmproj')
     
-Usage
------
-
-The package provides the following functions:
-* varsel
-* cv\_varsel
-* 
-
 Example
 -------
 
@@ -28,14 +20,12 @@ Example
     options(mc.cores = parallel::detectCores())
     set.seed(1)
 
-    # Gaussian and Binomial examples from the glmnet-package
+    # Gaussian examples from the glmnet-package
     data('QuickStartExample', package = 'glmnet')
-    #data('BinomialExample', package = 'glmnet')
     df1 <- list(x = x, y = y)
 
     # fit the full model with a sparsifying prior
-    fit <- stan\_glm(y ~ x, gaussian(), df1, prior = hs(df = 1))
-    #fit <- stan_glm(y ~ x, binomial(), df1, prior = hs(df = 1))
+    fit <- stan_glm(y ~ x, gaussian(), df1, prior = hs(df = 1))
 
     # perform the variable selection
     vars <- varsel(fit, verbose = T)
