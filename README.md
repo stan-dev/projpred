@@ -8,42 +8,51 @@ Currently, supported models include gaussian with identity link function, binomi
 
 Installation
 ------------
+
     devtools::install_github('paasim/glmproj')
-    
     
 Usage
 -----
 
-The package provides two functions, `glm_proj` and `predict`. The first function can be used to perform variable selection and to project the information in the posterior of the full model onto the submodels. The latter can be used to predict with the submodels. For additional information about the functions (eg. function arguments), use `?glm_proj` or `?predict.glmproj` in R.
-
+The package provides the following functions:
+* varsel
+* cv\_varsel
+* 
 
 Example
 -------
 
+    rm(list=ls())
     library(glmproj)
     library(rstanarm)
     options(mc.cores = parallel::detectCores())
-    
-    data('crimedata', package = 'glmproj')
-    n <- nrow(crimedata)
-    n_train <- 1000
-    n_test <- n - n_train
-    d <- ncol(crimedata)
-    y_train <- crimedata[1:n_train, 1]
-    x_train <- crimedata[1:n_train, 2:d]
-    x_test <- cbind(rep(1, n_test), crimedata[(n_train+1):n, 2:d])
+    set.seed(1)
 
-    family <- gaussian()
-    prior <- hs(df = 3)
-    fit <- stan_glm(y_train ~ x_train, family = family, prior = prior)
+    # Gaussian and Binomial examples from the glmnet-package
+    data('QuickStartExample', package = 'glmnet')
+    #data('BinomialExample', package = 'glmnet')
+    df1 <- list(x = x, y = y)
 
-    # run forward selection until 40 variables have been added
-    # and project the output using 400 samples.
-    gproj <- glm_proj(fit, d = 40, n_out = 400)
-    
-    # predict using 20 variables
-    y_pred <- predict(gproj, x = x_test, d = 20)
+    # fit the full model with a sparsifying prior
+    fit <- stan\_glm(y ~ x, gaussian(), df1, prior = hs(df = 1))
+    #fit <- stan_glm(y ~ x, binomial(), df1, prior = hs(df = 1))
 
+    # perform the variable selection
+    vars <- varsel(fit, verbose = T)
+    # print the results
+    vars
+
+    # project the parameters for a model of size 5 and 8
+    projection <- project(vars, fit, size = c(5,8))
+    projection
+
+    # perform cross-validation for the variable selection
+    # this takes some time to complete, especially for the non-gaussian case.
+    fits <- cv_fit(fit)
+    cv_vars <- cv_varsel(fit, fits, verbose = T)
+
+    # plot the results
+    plot(cv_vars)
 
 References
 ------------

@@ -4,27 +4,13 @@
 \alias{NR}
 \title{Newton-Rhapson}
 \usage{
-NR(p, d, b0, family_kl, max_it = 30, eps = 1e-10)
-}
-\arguments{
-\item{\code{mu_p}}{Fitted values of the full model.}
-
-\item{\code{x}}{A model matrix of the selected variables.}
-
-\item{\code{b_p}}{Sampled estimates of the coefficient of the full model.}
-
-\item{\code{w}}{Observation weights.}
-
-\item{\code{dis_p}}{dispersion parameter of the full model.}
-
-\item{\code{funs}}{Model-specific helper functions.}
-
-\item{\code{max_it}}{Maximum number of iterations for the algorithm. Defaults to 30.}
-
-\item{\code{eps}}{Tolerance, when derivative to any direction is at most eps, algorithm stops. Defaults to 1e-10.}
+NR(p_full, d_train, b0, family_kl, max_it = 30, eps = 1e-10)
 }
 \description{
 Minimizes the KL divergence between the full model and the submodel
 using Newton-Rhapson algorithm.
+}
+\details{
+Naming convention described in fsel.R.
 }
 
