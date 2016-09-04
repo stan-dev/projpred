@@ -27,14 +27,15 @@ cv_fit <- function(fit, k = 10) {
 cv_fit.stanreg <- function(fit, k = 10) {
   n <- nobs(fit)
   if(k > n) stop('Not enough observations for cross-validation.')
+  rperm <- sample(1:n)
 
-  t(sapply(1:k, function(i, fit, k, n, d_full) {
+  t(sapply(1:k, function(i, fit, k, n, d_full, rperm) {
     print(paste0('Fitting model ', i, ' out of ', k))
-    i_test <- seq(i, n, k)
+    i_test <- rperm[seq(i, n, k)]
     d_test <- list(x = d_full$x[i_test,], y = d_full$y[i_test],
                    w = d_full$w[i_test], offset = d_full$offset[i_test])
     list(fit = update(fit, subset = !(1:n %in% i_test), refresh = 0),
          d_test = d_test)
-  }, fit, k, n, .extract_vars(fit)))
+  }, fit, k, n, .extract_vars(fit), rperm))
 }
 
