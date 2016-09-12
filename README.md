@@ -20,14 +20,19 @@ Example
     options(mc.cores = parallel::detectCores())
     set.seed(1)
 
-    # Gaussian examples from the glmnet-package
+    # Gaussian and Binomial examples from the glmnet-package
     data('QuickStartExample', package = 'glmnet')
+    #data('BinomialExample', package = 'glmnet') 
     df1 <- list(x = x, y = y)
 
     # fit the full model with a sparsifying prior
     fit <- stan_glm(y ~ x, gaussian(), df1, prior = hs(df = 1))
+    #fit <- stan_glm(y ~ x, binomial(), df1, prior = hs(df = 1))
+
 
     # perform the variable selection
+    # note that this may take some time for other GLMs than 
+    # gaussian with identity link
     vars <- varsel(fit, verbose = T)
     # print the results
     vars

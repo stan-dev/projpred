@@ -128,10 +128,6 @@ $(document).ready(function () {
 <h2>Installation</h2>
 <pre><code>devtools::install_github('paasim/glmproj')</code></pre>
 </div>
-<div id="usage" class="section level2">
-<h2>Usage</h2>
-<p>The package provides the following functions: * varsel * cv_varsel *</p>
-</div>
 <div id="example" class="section level2">
 <h2>Example</h2>
 <pre><code>rm(list=ls())
@@ -142,14 +138,17 @@ set.seed(1)
 
 # Gaussian and Binomial examples from the glmnet-package
 data('QuickStartExample', package = 'glmnet')
-#data('BinomialExample', package = 'glmnet')
+#data('BinomialExample', package = 'glmnet') 
 df1 &lt;- list(x = x, y = y)
 
 # fit the full model with a sparsifying prior
-fit &lt;- stan\_glm(y ~ x, gaussian(), df1, prior = hs(df = 1))
+fit &lt;- stan_glm(y ~ x, gaussian(), df1, prior = hs(df = 1))
 #fit &lt;- stan_glm(y ~ x, binomial(), df1, prior = hs(df = 1))
 
+
 # perform the variable selection
+# note that this may take some time for other GLMs than 
+# gaussian with identity link
 vars &lt;- varsel(fit, verbose = T)
 # print the results
 vars

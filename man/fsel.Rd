@@ -9,8 +9,8 @@ fsel(p_full, d_train, d_test, p_clust = NULL, b0, args)
 \description{
 p_full contains the parameters of the full model, d_train contains the data
 and p_sub contains the parameters of the submodel. b0 is a guess for the
-initial weight vector in the submodel. In addition, if a subset for the
-variable selection, p_clust contains parameters of the full model using
-only those samples.
+initial weight vector in the submodel. In addition, if a subset of the
+samples is used for the variable selection, p_clust contains parameters
+of the full model using only those samples.
 }
 

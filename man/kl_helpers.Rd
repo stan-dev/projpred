@@ -4,18 +4,13 @@
 \alias{kl_helpers}
 \title{Model-specific helper functions.}
 \usage{
-kl_helpers(family)
+kl_helpers(fam)
 }
 \description{
-Contains functions for calculating KL divergence and its first and second
-derivatives for different families and link functions.
+\code{kl_helpers(fam)} returns a family object augmented with functions for
+KL divergence, log predictive density and dispersion.
 }
 \details{
-The NR-algorithm is general in the sense that in order to add a new model /
-link function one simply needs to implement corresponding KL-divergence,
-it's first and second derivatives + first and second derivatives of the
-mu-parameter w.r.t eta.
-
 Naming convention described in fsel.R.
 }
 

@@ -12,7 +12,7 @@
 #'  \item{\code{ns = min(400, [number of samples])}}{
 #'    Number of samples used in the variable selection.
 #'    Cannot be larger than the number of samples.}
-#'  \item{\code{nc = 0}}{
+#'  \item{\code{nc = min(0, ns/4}}{
 #'    If nonzero, samples are clustered and the cluster centers are
 #'    used in the variable selection instead of the actual samples.
 #'  }
@@ -44,60 +44,66 @@
 #'
 
 #' @export
-cv_varsel <- function(fit, fits = NA, ...) {
+cv_varsel <- function(fit, fits = NULL, ...) {
   UseMethod('cv_varsel')
 }
 
 #' @export
-cv_varsel.stanreg <- function(fit, fits = NA, ...) {
+cv_varsel.stanreg <- function(fit, fits = NULL, ...) {
 
-  if(!is.list(fits)) fits <- cv_fit(fit)
+  pfv <- .prob_for_varsel(fit)
+  if(!is.null(pfv)) stop(pfv)
+  if(is.null(fits)) fits <- cv_fit(fit) # change to use kfold
+  if(!all(apply(fits, 1, function(fitrow, fit) {
+    is.null(.prob_for_varsel(fitrow$fit)) && is.vector(fitrow$ind_test) &&
+      max(fitrow$ind_test) <= nobs(fit) && all(fitrow$ind_test > 0)}, fit)))
+    stop('fits does not have the correct form.')
+
   k <- nrow(fits)
-  verbose <- ifelse(is.null(list(...)$verbose), F, list(...)$verbose)
   vars <- .extract_vars(fit)
-  family_kl <- kl_helpers(family(fit))
-  if(ncol(vars$x) < 2)
-    stop('Data must have at least 2 features.')
-  if(!(family_kl$family %in% c('gaussian','binomial','poisson')))
-    stop(paste0(family_kl$family, 'family not yet supported.'))
-  # max number of variables
-  cv_nv <- min(sapply(c(list(fit), fits[,'fit']), function(f) rankMatrix(get_x(f))))
+  args <- .init_args(c(list(...), cv = T), vars, family(fit))
+
+  d_test <- lapply(fits[,'ind_test'], function(inds, d_full) {
+    list(x = d_full$x[inds,], y = d_full$y[inds],
+         weights = d_full$weights[inds], offset = d_full$offset[inds])
+  }, vars)
+
+  # max number of variables to be projected
+  args$nv <- min(c(sapply(c(list(fit), fits[,'fit']),
+                          function(f) rankMatrix(get_x(f))), args$nv))
 
   msgs <- paste('Forward selection for the',
                 c('full model.', paste0('fold number ', 1:k,'/',k,'.')))
+  # perform the forward selection
+  sel <- mapply(function(fit, d_test, msg, args) {
+    if(args$verbose) print(msg)
+    do.call(varsel, c(list(fit = fit, d_test = d_test), args))
+  }, c(list(full = fit), fits[,'fit']), c(list(full = NA), d_test),
+  msgs, MoreArgs = list(args))
 
-  # perform forward selection
-  sel <- mapply(function(fit, d_test, msg, cv_nv, verbose) {
-    if(verbose) print(msg)
-    varsel(fit, d_test, ..., cv = T, cv_nv = cv_nv)
-  }, c(list(fit = fit), fits[,'fit']),
-  c(list(d_test = NA), fits[,'d_test']), msgs, MoreArgs = list(cv_nv, verbose))
-
-  # combine cross-validation results
+  # combine cross validated results
   combcv <- function(x) as.list(data.frame(apply(x, 1, function(x) do.call(c, x))))
-  d_cv <- combcv(simplify2array(fits[,'d_test'])[c('y','w','offset'),])
+  d_cv <- combcv(simplify2array(d_test)[c('y', 'weights', 'offset'),])
   mu_cv <- combcv(simplify2array(sel['mu',-1]))
   lppd_cv <- combcv(simplify2array(sel['lppd',-1]))
 
   # evaluate performance on test data and
-  # use bayesian bootstrap to get 5% credible intervals
-  n <- length(d_cv$y)
-  nvs <- c(1:(length(sel[['mu',2]])-1), ncol(vars$x)) - vars$intercept
-  n_boot <- 1000
-  b_weights <- matrix(rexp(n * n_boot, 1), ncol = n)
-  b_weights <- b_weights/rowSums(b_weights)
-  test_stats <- .bootstrap_stats(mu_cv, lppd_cv, d_cv, nvs, family_kl, b_weights, 'test')
+  # use bayesian bootstrap to get 95% credible intervals
+  b_weights <- .gen_bootstrap_ws(length(d_cv$y), args$n_boot)
+  nv <- c(1:(length(sel[['mu',2]])-1), nrow(vars$b)) - args$intercept
+  stats <- rbind(sel[['stats',1]],
+    .bootstrap_stats(sel[['mu',1]], sel[['lppd',1]], nv, vars, args$family_kl, b_weights, 'train'),
+    .bootstrap_stats(mu_cv, lppd_cv, nv, d_cv, args$family_kl, b_weights, 'test'), make.row.names = F)
 
   # find out how many of cross-validated forward selection iterations select
   # the same variables as the forward selection that uses all the data.
-  sub_chosen <- do.call(cbind, sel['chosen',-1])
-  res <- list(chosen = sel[['chosen',1]])
-  res$pctch <- mapply(function(var_ind, ind, arr, k) sum(arr[1:ind, ] == var_ind)/k,
-                      res$chosen, seq_along(res$chosen), MoreArgs = list(sub_chosen, k))
+  chosen_full <- sel[['chosen',1]]
+  pctch <- mapply(function(var_ind, ind, arr, k) sum(arr[1:ind, ] == var_ind)/k,
+                  chosen_full, seq_along(chosen_full),
+                  MoreArgs = list(do.call(cbind, sel['chosen',-1]), k))
 
-  res$stats <- rbind(sel[['stats',1]], test_stats, make.row.names = F)
-  res$family <- family(fit)
-  if(!is.null(list(...)$nc) && list(...)$nc > 0) res$cl <- sel[['cl',1]]
+  res <- list(chosen = chosen_full, pctch = pctch, stats = stats, family = family(fit))
+  if(args$clust) res$cl <- sel[['cl',1]]
 
   structure(res, class = 'varsel')
 }

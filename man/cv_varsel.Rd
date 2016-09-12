@@ -4,7 +4,7 @@
 \alias{cv_varsel}
 \title{Variable selection for generalized linear models with cross-validation}
 \usage{
-cv_varsel(fit, fits = NA, ...)
+cv_varsel(fit, fits = NULL, ...)
 }
 \arguments{
 \item{fit}{A \link[=stanreg-objects]{stanreg} object.}
@@ -19,7 +19,7 @@ get the array.}
  \item{\code{ns = min(400, [number of samples])}}{
    Number of samples used in the variable selection.
    Cannot be larger than the number of samples.}
- \item{\code{nc = 0}}{
+ \item{\code{nc = min(0, ns/4}}{
    If nonzero, samples are clustered and the cluster centers are
    used in the variable selection instead of the actual samples.
  }
