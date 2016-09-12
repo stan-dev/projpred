@@ -47,7 +47,7 @@ Example
     cv_vars <- cv_varsel(fit, fits, verbose = T)
 
     # plot the results
-    plot(cv_vars)
+    plot(cv_vars, deltas = T)
 
 References
 ------------
