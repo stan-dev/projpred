@@ -46,8 +46,7 @@ varsel <- function(fit, d_test = NA, ...) {
 #' @export
 varsel.stanreg <- function(fit, d_test = NA, ...) {
 
-  pfv <- .prob_for_varsel(fit)
-  if(!is.null(pfv)) stop(pfv)
+  .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
   args <- .init_args(list(...), vars, family(fit))
 

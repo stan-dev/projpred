@@ -51,13 +51,12 @@ cv_varsel <- function(fit, fits = NULL, ...) {
 #' @export
 cv_varsel.stanreg <- function(fit, fits = NULL, ...) {
 
-  pfv <- .prob_for_varsel(fit)
-  if(!is.null(pfv)) stop(pfv)
+  .validate_for_varsel(fit)
   if(is.null(fits)) fits <- cv_fit(fit) # change to use kfold
-  if(!all(apply(fits, 1, function(fitrow, fit) {
-    is.null(.prob_for_varsel(fitrow$fit)) && is.vector(fitrow$ind_test) &&
-      max(fitrow$ind_test) <= nobs(fit) && all(fitrow$ind_test > 0)}, fit)))
-    stop('fits does not have the correct form.')
+  if(!all(apply(fits, 1, function(fits, fit) {
+    .validate_for_varsel(fits$fit)
+    is.vector(fits$ind_test) && max(fits$ind_test) <= nobs(fit) && all(fits$ind_test > 0)
+  }, fit))) stop('fits does not have the correct form.')
 
   k <- nrow(fits)
   vars <- .extract_vars(fit)

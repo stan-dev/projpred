@@ -8,21 +8,24 @@ log_mean_exp <- function(x) {
   max_x <- max(x)
   max_x + log(sum(exp(x - max_x))) - log(length(x))
 }
+is.stanreg <- function(x) inherits(x, "stanreg")
+
 
 # check if the fit object is suitable for variable selection
-.prob_for_varsel <- function(fit) {
-  # probably could use just one switch-statement
-  if(!(substr(fit$call[1], nchar(fit$call[1])-7,nchar(fit$call[1])) == 'stan_glm' ||
-       substr(fit$call[1], nchar(fit$call[1])-6,nchar(fit$call[1])) == 'stan_lm'))
-    return('Only \'stan_lm\' and \'stan_glm\' are supported.')
+.validate_for_varsel <- function(fit) {
+  if(!is.stanreg(fit))
+    stop('Object is not a stanreg object')
+
+  if(!(gsub('rstanarm::', '', fit$call[1]) %in% c("stan_glm", "stan_lm")))
+    stop('Only \'stan_lm\' and \'stan_glm\' are supported.')
+
   families <- c('gaussian','binomial','poisson')
   if(!(family(fit)$family %in% families))
-    return(paste0('Only families ', paste(families, collapse = ', '),
-                  ' are supported.'))
-  if(NCOL(get_x(fit)) < 4)
-    return('Not enought explanatory variables for variable selection')
+    stop(paste0('Only the following families are supported:\n',
+                paste(families, collapse = ', '), '.'))
 
-  NULL
+  if(NCOL(get_x(fit)) < 4)
+    stop('Not enought explanatory variables for variable selection')
 }
 
 # from rstanarm
