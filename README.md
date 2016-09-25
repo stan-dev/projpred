@@ -23,7 +23,7 @@ Example
     # Gaussian and Binomial examples from the glmnet-package
     data('QuickStartExample', package = 'glmnet')
     #data('BinomialExample', package = 'glmnet') 
-    df1 <- list(x = x, y = y)
+    df1 <- data.frame(x = I(x), y = y)
 
     # fit the full model with a sparsifying prior
     fit <- stan_glm(y ~ x, gaussian(), df1, prior = hs(df = 1))
