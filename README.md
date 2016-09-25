@@ -43,8 +43,8 @@ Example
 
     # perform cross-validation for the variable selection
     # this takes some time to complete, especially for the non-gaussian case.
-    fits <- cv_fit(fit)
-    cv_vars <- cv_varsel(fit, fits, verbose = T)
+    k_fold <- glmproj::kfold(fit, save_fits = T)
+    cv_vars <- cv_varsel(fit, k_fold, verbose = T)
 
     # plot the results
     plot(cv_vars, deltas = T)

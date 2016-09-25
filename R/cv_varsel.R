@@ -49,27 +49,28 @@ cv_varsel <- function(fit, fits = NULL, ...) {
 }
 
 #' @export
-cv_varsel.stanreg <- function(fit, fits = NULL, ...) {
+cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
 
   .validate_for_varsel(fit)
-  if(is.null(fits)) fits <- cv_fit(fit) # change to use kfold
-  if(!all(apply(fits, 1, function(fits, fit) {
+  if(is.null(k_fold)) k_fold <- glmproj::kfold(fit, save_fits = T)
+
+  if(!all(apply(k_fold$fits, 1, function(fits, fit) {
     .validate_for_varsel(fits$fit)
-    is.vector(fits$ind_test) && max(fits$ind_test) <= nobs(fit) && all(fits$ind_test > 0)
+    is.vector(fits$omitted) && max(fits$omitted) <= nobs(fit) && all(fits$omitted > 0)
   }, fit))) stop('fits does not have the correct form.')
 
-  k <- nrow(fits)
+  k <- attr(k_fold, 'K')
   vars <- .extract_vars(fit)
   args <- .init_args(c(list(...), cv = T), vars, family(fit))
 
-  d_test <- lapply(fits[,'ind_test'], function(inds, d_full) {
-    list(x = d_full$x[inds,], y = d_full$y[inds],
-         weights = d_full$weights[inds], offset = d_full$offset[inds])
+  d_test <- lapply(k_fold$fits[,'omitted'], function(omitted, d_full) {
+    list(x = d_full$x[omitted,], y = d_full$y[omitted],
+         weights = d_full$weights[omitted], offset = d_full$offset[omitted])
   }, vars)
 
   # max number of variables to be projected
-  args$nv <- min(c(sapply(c(list(fit), fits[,'fit']),
-                          function(f) rankMatrix(get_x(f))), args$nv))
+  args$nv <- min(c(sapply(k_fold$fits[,'fit'], function(fit)
+    rankMatrix(get_x(fit))), args$nv))
 
   msgs <- paste('Forward selection for the',
                 c('full model.', paste0('fold number ', 1:k,'/',k,'.')))
@@ -77,7 +78,7 @@ cv_varsel.stanreg <- function(fit, fits = NULL, ...) {
   sel <- mapply(function(fit, d_test, msg, args) {
     if(args$verbose) print(msg)
     do.call(varsel, c(list(fit = fit, d_test = d_test), args))
-  }, c(list(full = fit), fits[,'fit']), c(list(full = NA), d_test),
+  }, c(list(full = fit), k_fold$fits[,'fit']), c(list(full = NA), d_test),
   msgs, MoreArgs = list(args))
 
   # combine cross validated results
