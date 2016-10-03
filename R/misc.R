@@ -102,7 +102,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
     intercept = vars$intercept %ORifNULL% F,
     verbose = args$verbose %ORifNULL% F,
     cv = args$cv %ORifNULL% F,
-    regul = args$regul %ORifNULL% 0,
+    regul = args$regul %ORifNULL% 1e-10, #small regul as in Dupuis & Robert
     max_it = args$max_it %ORifNULL% 300,
     epsilon = args$epsilon %ORifNULL% 1e-8,
     family_kl = kl_helpers(fam)

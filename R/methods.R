@@ -64,7 +64,7 @@ predict.proj <- function(object, newdata, ...) {
 }
 
 #' @export
-plot.varsel <- function(x, summaries = NULL, deltas = F, train = F,...) {
+plot.varsel <- function(x, summaries = NULL, deltas = F, train = F, nv = NULL, ...) {
 
   data_remove <- if(train) 'test' else 'train'
   if(is.null(summaries)) {
@@ -76,18 +76,20 @@ plot.varsel <- function(x, summaries = NULL, deltas = F, train = F,...) {
       stop(paste0('summaries must contain at least one of the following values: ',
                   paste0(unique(x$stats$summary), collapse = ','), '.'))
   }
+  if(is.null(nv)) nv <- max(arr$size)
   ylab <- if(deltas) 'delta' else 'value'
   ggplot(data = arr, mapping = aes(x = size)) +
     geom_ribbon(aes(ymin = lq, ymax = uq), alpha = 0.3) +
     geom_line(aes(y = value)) +
     geom_hline(aes(yintercept = value), subset(arr, size == max(size)),
                color = 'darkred') +
+    coord_cartesian(xlim = c(0, nv)) +
     labs(x = 'Number of variables in the submodel', y = ylab) +
     facet_grid(summary ~ ., scales = 'free_y')
 }
 
 #' @export
-summary.varsel <- function(object, ..., digits = 3) {
+summary.varsel <- function(object, nv = NULL, ..., digits = 3) {
   if('test' %in% object$stats$data) {
     summaries <- setdiff(unique(object$stats$summary), c('kl'))
     # suffixes are to ensure unique column names when doing merge.
@@ -100,34 +102,36 @@ summary.varsel <- function(object, ..., digits = 3) {
                  chosen = c(object$chosen,NA),
                  pctch = c(object$pctch,NA))
     arr <- setNames(arr, c('size', summaries, 'kl', 'chosen', 'pctch'))
-    print(arr, digits = digits, width = 12, right = T, row.names = F)
   } else {
-    print(object, ..., digits = digits)
+    arr <- data.frame(subset(x$stats, summary == 'kl' & value > 0,
+                             c('size','value')), chosen = x$chosen)
+    if(!is.null(x$pctch)) arr$pctch <- x$pctch
+    names(arr)[2] <- 'kl'
   }
+  arr
 }
 
 #' @export
-print.varsel <- function(x, digits = 3, ...) {
+print.varsel <- function(x, digits = 3, nv = NULL, ...) {
   # switch from kl & value > 0 to size < max(size)
   cat('\nTable of the model size, the index',
       'of the variable added last')
-  cols <- c('size','kl','chosen')
+  if(is.null(nv)) nv <- max(x$stats$size)
   if(!is.null(x$pctch)) {
-    cols <- c(cols,'pctch')
     cat(',\nfraction of cv-runs that included the selected variable to a',
         '\nmodel of same size ')
   } else {cat('\n')}
   cat('and the respective KL divergence.\n\n')
   arr <- data.frame(
-    subset(x$stats, summary == 'kl' & value > 0, c('size','value')),
-    chosen = x$chosen)
-  if(!is.null(x$pctch)) arr <- cbind(arr, pctch = x$pctch)
-  names(arr)[1:2] <- c('size','kl')
-  print(arr[,cols], digits = digits, width = 12, right = T, row.names = F)
+    subset(x$stats, summary == 'kl' & value > 0 & size <= nv, c('size','value')))
+  arr$chosen <- x$chosen[1:nrow(arr)]
+  if(!is.null(x$pctch)) arr$pctch <- x$pctch[1:nrow(arr)]
+  names(arr)[2] <- 'kl'
+  print(arr, digits = digits, width = 12, right = T, row.names = F)
 }
 
 #' @export
-print.proj <- function(x, digits = 3, ...) {
+print.proj <- function(x, digits = 5, ...) {
   cat('\nProjected coefficients for the submodels.\n')
   lapply(x$proj_params, function(pars, weights, chosen, digits) {
     coefs <- round(drop(pars$b%*%weights)/length(weights), digits = digits)
