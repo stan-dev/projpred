@@ -2,9 +2,12 @@
 
 An R package to perform projection predictive variable selection for generalized linear models fitted with [rstanarm][]. 
 
-The package uses forward search as a search heuristic, that is, starting from the empty submodel model, adds variables one at a time, each time choosing the variable that decreases the KL-divergence to the full model the most. 
+The package uses forward search starting from the empty submodel model, adds variables one at a time, each time choosing the variable that decreases the KL-divergence from the projection to the full model the most. 
 
-Currently, supported models include gaussian with identity link function, binomial with probit and logit link functions and poisson with log link function.
+Currently, supported models include
+ * Gaussian with identity link function
+ * Binomial with probit and logit link functions
+ * Poisson with log link function.
 
 Installation
 ------------
@@ -32,7 +35,7 @@ Example
 
     # perform the variable selection
     # note that this may take some time for other GLMs than 
-    # gaussian with identity link
+    # Gaussian with identity link
     vars <- varsel(fit, verbose = T)
     # print the results
     vars
@@ -42,7 +45,7 @@ Example
     projection
 
     # perform cross-validation for the variable selection
-    # this takes some time to complete, especially for the non-gaussian case.
+    # this takes some time to complete, especially for the non-Gaussian case.
     k_fold <- glmproj::kfold(fit, save_fits = T)
     cv_vars <- cv_varsel(fit, k_fold, verbose = T)
 
