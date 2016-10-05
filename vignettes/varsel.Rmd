@@ -24,9 +24,9 @@ This vignette explains how to perform projection predictive variable selection f
 
 One of the tasks related to model selection is to identify which of the available candidate variables are the most relevant according to some selected criterion. Furthermore, if only a small portion of the variables are relevant, decreased measurement or computational costs as well as improved model interpretability may be obtained by using only a subset of the variables.
 
-In predictive model selection methods, the relevance of a model is evaluated based on its predictive power. While the predictive power might not always be the only target criterion, it is, however, often a sensible one as interpreting the parameters of a model with no predictive power makes little sense. Moreover, the idea behind the projection predictive method  (Goutis and Robert, 1998; Dupuis and Robert, 2003) is to project the information of the full model (that is, a model using all the candidate variables) to a subset of the variables. The steps of the projection predictive variable selection are:
+In predictive model selection methods, the relevance of a model is evaluated based on its predictive power. While the predictive power might not always be the only target criterion, it is, however, often a sensible one as interpreting the parameters of a model with no predictive power makes little sense. Moreover, the idea behind the projection predictive method  (Goutis and Robert, 1998; Dupuis and Robert, 2003) is to project the information of the full model (that is, a model using all the variables) to a subset of the variables. The steps of the projection predictive variable selection are:
 
-  1. Fit the full model with all the candidate variables and the best possible prior information.
+  1. Fit the full model with all the variables and the best possible prior information.
   1. Perform the variable selection using the projection predictive method.
   
 Especially in high-dimensional settings, the best possible prior information often includes some sort of idea about sparsity. The next section reviews the hierarchical shrinkage (`hs`) prior, which is one way of expressing this in __rstanarm__. The following sections also review the details of the projection predictive method and provide two examples using real world data.
@@ -94,7 +94,7 @@ In addition, the discrepancy between the full model and a submodel is defined as
 
 Note, that the quantity above is easy to approximate using the posterior samples from the full model fitted with __rstanarm__. 
 
-Now that we have are able to compare different submodels using the discrepancy above, the missing piece is a search heuristic as doing the projection for all the possible parameter combinations is not feasible. Currently, the submodel is found using forward selection, which seems to work well in practice __[Juho/Aki: did this have a reference, ?]__ while being computationally efficient enough. In forward selection, the variables are added one at a time selecting the candidate variable that decreases the discrepancy the most.
+Now that we have are able to compare different submodels using the discrepancy above, the missing piece is a search heuristic as doing the projection for all the possible parameter combinations is not feasible. Forward selection seems to work well in practice while being computationally efficient. In forward selection, the variables are added one at a time selecting the candidate variable that decreases the discrepancy the most.
 
 Furthermore, the performances of the submodels of different sizes can be assessed using cross-validation (Piironen and Vehtari, 2016). In this case the full model is fitted $K$ with all but $n/K$ observations withheld for testing, running the forward selection and evaluating the performance on the test set. In addition to more traditional performance metrics such as mean squared error, the procedure also produces $K$ possibly different search paths, the similarity of which can also be used to decide the correct size for the submodel. 
 
@@ -116,7 +116,7 @@ data_raw_crime <- read.delim(
 data_relevant <- data_raw_crime[,c(6:(147-18), 146)]
 
 # remove variables and instances with missing values and one observations with a
-# target value of 0 so the target can be log-transformed to make it closer to a gaussian
+# target value of 0 so the target can be log-transformed to make it closer to a Gaussian
 data_nomiss <- data_relevant[,!sapply(data_relevant, function(x) sum(is.na(x))>1000)]
 nv_c <- ncol(data_nomiss)
 data_nomiss <- data_nomiss[!apply(data_nomiss, 1, anyNA) & data_nomiss[,nv_c] > 0,]
@@ -178,7 +178,7 @@ kfold3 <- glmproj::kfold(fit3, save_fits = T)
 
 ## Variable selection
 
-After we have fitted the full model, we can proceed to the variable selection. We use 100 posterior samples to approximate the expectation of the KL divergence, although if there prolems with sampling the full model, more might be required.
+After we have fitted the full model, we can proceed to the variable selection. We use 100 posterior draws to approximate the expectation of the KL divergence. Depending on the model, sometime more draws might be required.
 
 ```{r, crime-varsel, results = "hide"}
 library(glmproj)
@@ -238,7 +238,7 @@ __[there are probably some other results that would be interesting]__
 
 # Binomial Example
 
-Performing the variable selection for other than gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore the performing the projection is slightly slower. As an example, we use the [Spambase Data Set](https://archive.ics.uci.edu/ml/datasets/Spambase), which deals with classifying emails to spam or non-spam given some word frequency attributes.
+Performing the variable selection for non-Gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore the performing the projection is slightly slower. As an example, we use the [Spambase Data Set](https://archive.ics.uci.edu/ml/datasets/Spambase), which deals with classifying emails to spam or non-spam given some word frequency attributes.
 
 ## Preliminaries
 
@@ -292,4 +292,4 @@ Dupuis, J. A. and Robert, C. P. (2003). _Variable selection in qualitative model
 
 Goutis, C. and Robert, C. P. (1998). _Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections._ Biometrika, 85(1):29–37.
 
-Juho Piironen and Aki Vehtari (2016). _Comparison of Bayesian predictive methods for model selection._ Statistics and Computing.
+Juho Piironen and Aki Vehtari (2016). _Comparison of Bayesian predictive methods for model selection._ Statistics and Computing, [doi:10.1007/s11222-016-9649-y](http://link.springer.com/article/10.1007/s11222-016-9649-y)
