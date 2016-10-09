@@ -4,10 +4,7 @@ An R package to perform projection predictive variable selection for generalized
 
 The package uses forward search starting from the empty submodel model, adds variables one at a time, each time choosing the variable that decreases the KL-divergence from the projection to the full model the most. 
 
-Currently, supported models include
- * Gaussian with identity link function
- * Binomial with probit and logit link functions
- * Poisson with log link function.
+Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families.
 
 Installation
 ------------
@@ -41,7 +38,7 @@ Example
     vars
 
     # project the parameters for a model of size 5 and 8
-    projection <- project(vars, fit, size = c(5,8))
+    projection <- project(vars, fit, nv = c(5,8))
     projection
 
     # perform cross-validation for the variable selection
@@ -59,7 +56,6 @@ Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models
 Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. Biometrika, 85(1):29–37.
 
 Juho Piironen and Aki Vehtari (2016). Comparison of Bayesian predictive methods for model selection. Statistics and Computing, ([online][piironenvehtari]).
-
 
 
   [rstanarm]: https://github.com/stan-dev/rstanarm

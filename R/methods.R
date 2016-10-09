@@ -1,16 +1,18 @@
 #' @export
-project <- function(object, fit, size, ...) {
+project <- function(object, fit, nv, ...) {
   UseMethod('project')
 }
 
 #' @export
-project.varsel <- function(object, fit, size, ...) {
+project.varsel <- function(object, fit, nv, ...) {
+  if(is.null(nv)) stop('nv not provided')
+  if(is.null(fit)) stop('fit not provided')
   vars <- .extract_vars(fit)
   ns_total <- ncol(vars$b)
   args <- .init_args(list(...), vars, family(fit))
-  args$rank_x <- Inf # dont check if matrix is invertible anymore
+  if(args$intercept) nv <- nv + 1
   nc_sel <- length(object$cl$size)
-  v_inds_max <- object$chosen[1:max(size)]
+  v_inds_max <- object$chosen[1:max(nv)]
   if(args$intercept) vars$x <- cbind(1, vars$x)
 
   d_train <- list(x = vars$x[,v_inds_max],
@@ -32,7 +34,7 @@ project.varsel <- function(object, fit, size, ...) {
 
   proj <- .get_proj_handle(args$family_kl)
 
-  p_sub <- lapply(size, function(s, p_full, d_train, b0, args) {
+  p_sub <- lapply(nv, function(s, p_full, d_train, b0, args) {
     vars <- proj(NULL, 1:s, p_full, d_train, b0, args)
     vars$kl <- NULL
     vars
@@ -45,9 +47,9 @@ project.varsel <- function(object, fit, size, ...) {
 }
 
 #' @export
-predict.varsel <- function(object, fit, size, newdata, ...) {
+predict.varsel <- function(object, fit, nv, newdata, ...) {
   # does the projection first, if a projection object is not provided
-  predict(project(object, fit, size, ...), newdata, ...)
+  predict(project(object, fit, nv, ...), newdata, ...)
 }
 
 #' @export
@@ -64,7 +66,7 @@ predict.proj <- function(object, newdata, ...) {
 }
 
 #' @export
-plot.varsel <- function(x, summaries = NULL, deltas = F, train = F, nv = NULL, ...) {
+plot.varsel <- function(x, summaries = NULL, deltas = T, train = F, nv = NULL, ...) {
 
   data_remove <- if(train) 'test' else 'train'
   if(is.null(summaries)) {
@@ -78,7 +80,7 @@ plot.varsel <- function(x, summaries = NULL, deltas = F, train = F, nv = NULL, .
   }
   if(is.null(nv)) nv <- max(arr$size)
   ylab <- if(deltas) 'delta' else 'value'
-  ggplot(data = arr, mapping = aes(x = size)) +
+  ggplot(data = subset(arr, size <= nv), mapping = aes(x = size)) +
     geom_ribbon(aes(ymin = lq, ymax = uq), alpha = 0.3) +
     geom_line(aes(y = value)) +
     geom_hline(aes(yintercept = value), subset(arr, size == max(size)),
@@ -90,6 +92,7 @@ plot.varsel <- function(x, summaries = NULL, deltas = F, train = F, nv = NULL, .
 
 #' @export
 summary.varsel <- function(object, nv = NULL, ..., digits = 3) {
+  if(is.null(nv)) nv <- max(object$stats$size)
   if('test' %in% object$stats$data) {
     summaries <- setdiff(unique(object$stats$summary), c('kl'))
     # suffixes are to ensure unique column names when doing merge.
@@ -108,13 +111,13 @@ summary.varsel <- function(object, nv = NULL, ..., digits = 3) {
     if(!is.null(x$pctch)) arr$pctch <- x$pctch
     names(arr)[2] <- 'kl'
   }
-  arr
+  subset(arr, size <= nv)
 }
 
 #' @export
 print.varsel <- function(x, digits = 3, nv = NULL, ...) {
   # switch from kl & value > 0 to size < max(size)
-  cat('\nTable of the model size, the index',
+  cat('Table of the model size, the index',
       'of the variable added last')
   if(is.null(nv)) nv <- max(x$stats$size)
   if(!is.null(x$pctch)) {
@@ -123,22 +126,23 @@ print.varsel <- function(x, digits = 3, nv = NULL, ...) {
   } else {cat('\n')}
   cat('and the respective KL divergence.\n\n')
   arr <- data.frame(
-    subset(x$stats, summary == 'kl' & value > 0 & size <= nv, c('size','value')))
-  arr$chosen <- x$chosen[1:nrow(arr)]
-  if(!is.null(x$pctch)) arr$pctch <- x$pctch[1:nrow(arr)]
+    subset(x$stats, summary == 'kl' & value > 0, c('size','value')))
+  arr$chosen <- x$chosen
+  if(!is.null(x$pctch)) arr$pctch <- x$pctch
   names(arr)[2] <- 'kl'
-  print(arr, digits = digits, width = 12, right = T, row.names = F)
+  print(subset(arr, size <= nv), digits = digits, width = 12, right = T, row.names = F)
 }
 
 #' @export
 print.proj <- function(x, digits = 5, ...) {
-  cat('\nProjected coefficients for the submodels.\n')
+  cat('Projected coefficients for the submodels.\n')
   lapply(x$proj_params, function(pars, weights, chosen, digits) {
-    coefs <- round(drop(pars$b%*%weights)/length(weights), digits = digits)
-    cat(paste0('\nModel size : ', NROW(pars$b), '.\nChosen variables: ',
-               paste0(chosen[1:NROW(pars$b)], collapse = ' '), '.\nCoefs: ',
+    coefs <- round(drop(pars$b%*%weights), digits = digits)
+    cat(paste0('\nModel size : ', NROW(pars$b) - x$intercept, '.\nChosen variables: ',
+               paste0(chosen[1:NROW(pars$b)], collapse = ' '), '.\nCoefficients: ',
                paste0(coefs, collapse = ' '), '.\n'))
-    # if model has dispersion, print dispersion...
+    if('dis' %in% names(pars))
+      cat(paste0('Dispersion parameter: ', round(sqrt(pars$dis^2%*%weights), digits), '.\n'))
   }, x$cluster_w, x$chosen, digits)
   invisible(x)
 

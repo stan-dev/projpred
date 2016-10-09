@@ -5,3 +5,4 @@
 .Rbuildignore
 .Rapp.history
 
+inst/doc

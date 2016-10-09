@@ -9,15 +9,15 @@
 #' get the array.
 #' @param ... Optional arguments. Possible arguments and their defaults are:
 #' \describe{
-#'  \item{\code{ns = min(400, [number of samples])}}{
-#'    Number of samples used in the variable selection.
-#'    Cannot be larger than the number of samples.}
-#'  \item{\code{nc = min(0, ns/4}}{
-#'    If nonzero, samples are clustered and the cluster centers are
-#'    used in the variable selection instead of the actual samples.
-#'  }
+#'  \item{\code{ns = min(400, [number of draws])}}{
+#'    Number of draws used in the variable selection.
+#'    Cannot be larger than the number of draws in the full model.}
+#'  \item{\code{nc = 0}}{
+#'    If nonzero, a clustering with \code{nc} clusters is performed for
+#'    the draws and the cluster centers are used in the variable selection
+#'    instead of the actual draws.}
 #'  \item{\code{nv = min(ncol(x) - 1, rankMatrix(x))}}{
-#'    Maximum number of features to be used in the projection (incl. intercept).
+#'    Maximum number of variables to be used in the projection (incl. intercept).
 #'    Cannot be larger than \code{min(ncol(x) - 1, rankMatrix(x))}.}
 #'  \item{\code{verbose = FALSE}}{
 #'    If \code{verbose = TRUE}, prints information about the progress of the
@@ -26,7 +26,7 @@
 #'
 #' @return A list with class \code{'varsel'} containing the following elements:
 #' \describe{
-#'  \item{\code{chosen}}{The order in which the features were added to the submodel.}
+#'  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
 #'  \item{\code{pctch}}{Percentage of cross-validation runs that included the given
 #'    variable to a model of given size.}
 #'  \item{\code{stats}}{An array with statistics of the submodel performance.}
@@ -76,7 +76,7 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
                 c('full model.', paste0('fold number ', 1:k,'/',k,'.')))
   # perform the forward selection
   sel <- mapply(function(fit, d_test, msg, args) {
-    if(args$verbose) print(msg)
+    print(msg)
     do.call(varsel, c(list(fit = fit, d_test = d_test), args))
   }, c(list(full = fit), k_fold$fits[,'fit']), c(list(full = NA), d_test),
   msgs, MoreArgs = list(args))
@@ -96,9 +96,9 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
     .bootstrap_stats(mu_cv, lppd_cv, nv, d_cv, args$family_kl, b_weights, 'test'), make.row.names = F)
 
   # find out how many of cross-validated forward selection iterations select
-  # the same variables as the forward selection that uses all the data.
+  # the same variables as the forward selection with all the data.
   chosen_full <- sel[['chosen',1]]
-  pctch <- mapply(function(var_ind, ind, arr, k) sum(arr[1:ind, ] == var_ind)/k,
+  pctch <- mapply(function(var_ind, ind, arr, k) sum(arr[1:min(ind+0, nrow(arr)), ] == var_ind)/k,
                   chosen_full, seq_along(chosen_full),
                   MoreArgs = list(do.call(cbind, sel['chosen',-1]), k))
 

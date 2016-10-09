@@ -76,6 +76,13 @@ kfold <- function (x, K = 10, save_fits = FALSE)
               dis = unname(e[[dis_name]]) %ORifNULL% rep(1, nrow(e$beta)),
               offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
               intercept = attr(fit$terms,'intercept') %ORifNULL% F)
+
+  # undo the random permutation to make results reproducible
+  perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
+                       fit$stanfit@sim$permutation, 1:fit$stanfit@sim$chains - 1))
+  res$b <- res$b[, perm_inv]
+  res$dis <- res$dis[perm_inv]
+
   res$x <- res$x[, as.logical(attr(res$x, 'assign'))]
   attr(res$x, 'assign') <- NULL
 
@@ -102,7 +109,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
     intercept = vars$intercept %ORifNULL% F,
     verbose = args$verbose %ORifNULL% F,
     cv = args$cv %ORifNULL% F,
-    regul = args$regul %ORifNULL% 1e-10, #small regul as in Dupuis & Robert
+    regul = args$regul %ORifNULL% 1e-15, #small regul as in Dupuis & Robert
     max_it = args$max_it %ORifNULL% 300,
     epsilon = args$epsilon %ORifNULL% 1e-8,
     family_kl = kl_helpers(fam)
@@ -114,7 +121,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   if(!is.null(args$ns) && args$ns > res$ns)
     print(paste0('Setting the number of samples to ', res$ns, '.'))
 
-  res$nv <- min(ncol(vars$x) - 1 + res$intercept, args$nv, res$rank_x)
+  res$nv <- min(ncol(vars$x) - res$intercept, args$nv, res$rank_x)
   if(!is.null(args$nv) && args$nv > res$nv)
     print(paste0(
       'Setting the max number of variables in the projection to ', res$nv, '.'))
@@ -143,19 +150,12 @@ kfold <- function (x, K = 10, save_fits = FALSE)
     function(v_ind, chosen, p_full, d_train, b0, args) {
       v_inds <- c(chosen, v_ind)
       w <- sqrt(d_train$weights)
-      # for forward selection, these measures are precalculated
-
-      # check if covariance matrix is invertible if it seems possible that it might not be
-      if(args$rank_x - 2  <= length(v_inds)) {
-        if(rankMatrix(crossprod(w*d_train$x[,v_inds, drop = F])) < length(v_inds))
-          return(list(b = NA, dis = NA, kl = Inf))
-      }
 
       regulvec <- c((1-args$intercept)*args$regul, rep(args$regul, length(v_inds) - 1))
       regulmat <- diag(regulvec, length(regulvec), length(regulvec))
       # Solution for the gaussian case (with l2-regularization)
       p_sub <- list(b = solve(crossprod(w*d_train$x[,v_inds, drop = F]) + regulmat,
-                              crossprod(w*d_train$x[, v_inds, drop = F], w*p_full$mu)))
+                              crossprod(w*d_train$x[,v_inds, drop = F], w*p_full$mu)))
       p_sub$dis <- sqrt(colMeans(d_train$weights*(
         p_full$mu - d_train$x[, v_inds, drop = F]%*%p_sub$b)^2) + p_full$dis^2)
       p_sub$kl <- weighted.mean(log(p_sub$dis) - log(p_full$dis) + colSums(p_sub$b^2*regulvec), p_full$cluster_w)
@@ -165,13 +165,6 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   } else {
     function(v_ind, chosen, p_full, d_train, b0, args) {
       v_inds <- c(chosen, v_ind)
-
-      # check if covariance matrix is invertible if it seems possible that it might not be
-      # preferably this could be removed if NR could be guaranteed not to fail.
-      if(args$rank_x - 2  <= length(v_inds)) {
-        if(rankMatrix(d_train$x[, v_inds, drop =F]) < length(v_inds))
-          return(list(b = NA, dis = NA, kl = Inf))
-      }
 
       # perform the projection over samples
       res <- sapply(1:ncol(p_full$mu), function(s_ind) {

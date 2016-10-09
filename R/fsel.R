@@ -32,19 +32,12 @@ fsel <- function(p_full, d_train, d_test, p_clust = NULL, b0, args) {
   }
 
   # start adding variables one at a time
-  while(i <= args$nv) {
+  while(i <= args$nv + args$intercept) {
 
     notchosen <- setdiff(cols, chosen)
 
     p_sub <- sapply(notchosen, proj, chosen, p_fsel, d_train, b0, args)
     imin <- which.min(p_sub['kl',])
-
-    if(p_sub[['kl',imin]] == Inf) {
-      warning(paste0('Numerical problems in the projection for a submodel of size ',
-                     i, '. Ending forward selection.'))
-      return(list(chosen = chosen[1:(i-1)], kl = kl[1:(i-1)],
-                  mu = mu[1:(i-1)], lppd = lppd[1:(i-1)]))
-    }
 
     # p_sel is the selected submodel
     p_sel <- if(args$clust) proj(notchosen[imin], chosen, p_full, d_train, b0, args) else p_sub[,imin]

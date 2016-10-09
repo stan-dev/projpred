@@ -16,15 +16,15 @@ get the array.}
 
 \item{...}{Optional arguments. Possible arguments and their defaults are:
 \describe{
- \item{\code{ns = min(400, [number of samples])}}{
-   Number of samples used in the variable selection.
-   Cannot be larger than the number of samples.}
- \item{\code{nc = min(0, ns/4}}{
-   If nonzero, samples are clustered and the cluster centers are
-   used in the variable selection instead of the actual samples.
- }
+ \item{\code{ns = min(400, [number of draws])}}{
+   Number of draws used in the variable selection.
+   Cannot be larger than the number of draws in the full model.}
+ \item{\code{nc = 0}}{
+   If nonzero, a clustering with \code{nc} clusters is performed for
+   the draws and the cluster centers are used in the variable selection
+   instead of the actual draws.}
  \item{\code{nv = min(ncol(x) - 1, rankMatrix(x))}}{
-   Maximum number of features to be used in the projection (incl. intercept).
+   Maximum number of variables to be used in the projection (incl. intercept).
    Cannot be larger than \code{min(ncol(x) - 1, rankMatrix(x))}.}
  \item{\code{verbose = FALSE}}{
    If \code{verbose = TRUE}, prints information about the progress of the
@@ -34,7 +34,7 @@ get the array.}
 \value{
 A list with class \code{'varsel'} containing the following elements:
 \describe{
- \item{\code{chosen}}{The order in which the features were added to the submodel.}
+ \item{\code{chosen}}{The order in which the variables were added to the submodel.}
  \item{\code{pctch}}{Percentage of cross-validation runs that included the given
    variable to a model of given size.}
  \item{\code{stats}}{An array with statistics of the submodel performance.}

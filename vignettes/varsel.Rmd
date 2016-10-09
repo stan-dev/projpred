@@ -18,6 +18,7 @@ params:
 ```
 ```{r, child="children/SETTINGS-rstan.txt"}
 ```
+
 # Introduction
 
 This vignette explains how to perform projection predictive variable selection for generalized linear models (GLMs) fitted using the `stan_glm` function in the __rstanarm__ package. The vignette is based on Piironen and Vehtari (2015), which also discusses some of the details more thoroughly.
@@ -89,14 +90,14 @@ In addition, the discrepancy between the full model and a submodel is defined as
 \delta(\boldsymbol{\theta}^*, \boldsymbol{\theta}^\bot)= \frac{1}{n} 
 \sum_{i=1}^n\mathbb{E}_{\boldsymbol{\theta}^*\, |\, \boldsymbol{X},\boldsymbol{Y}}\,\mathrm{KL}(
   p(\tilde{y}\, |\, \boldsymbol{x}_i, \boldsymbol{\theta}^*)\ \|\ 
-  p(\tilde{y}\, |\, \boldsymbol{x}_i, \boldsymbol{\theta}^\bot)).
+  p(\tilde{y}\, |\, \boldsymbol{x}_i, \boldsymbol{\theta}^\bot))
 \]
 
-Note, that the quantity above is easy to approximate using the posterior samples from the full model fitted with __rstanarm__. 
+which can be approximated using the posterior draws of the full model.
 
-Now that we have are able to compare different submodels using the discrepancy above, the missing piece is a search heuristic as doing the projection for all the possible parameter combinations is not feasible. Forward selection seems to work well in practice while being computationally efficient. In forward selection, the variables are added one at a time selecting the candidate variable that decreases the discrepancy the most.
+Now that we have are able to compare different submodels using the discrepancy above, the missing piece is a search heuristic as doing the projection for all the possible parameter combinations is not feasible. For this, forward selection seems to work well in practice while being computationally efficient. In forward selection, the variables are added one at a time selecting the candidate variable that decreases the discrepancy the most.
 
-Furthermore, the performances of the submodels of different sizes can be assessed using cross-validation (Piironen and Vehtari, 2016). In this case the full model is fitted $K$ with all but $n/K$ observations withheld for testing, running the forward selection and evaluating the performance on the test set. In addition to more traditional performance metrics such as mean squared error, the procedure also produces $K$ possibly different search paths, the similarity of which can also be used to decide the correct size for the submodel. 
+For assessing the performance of the submodels as a function of the submodel size, we can use cross-validation (Piironen and Vehtari, 2016). The full model is fitted $K$ times with all but $n/K$ observations withheld for testing, running the forward selection and evaluating the performance on the test set. In addition to more traditional performance metrics such as mean squared error, the procedure also produces $K$ possibly different search paths, the similarity of which can also be used to decide the correct size for the submodel. 
 
 
 # Gaussian Example
@@ -108,30 +109,32 @@ As an example, we use the [Communities and Crime data set](https://archive.ics.u
 ```{r, crime-preprocess1}
 # Download the data and remove the variables and instances
 # with missing observations
-data_raw_crime <- read.delim(
-  'https://archive.ics.uci.edu/ml/machine-learning-databases/00211/CommViolPredUnnormalizedData.txt', 
-  header = F, sep = ',', na.strings = '?', as.is = T)
+url_c <- 'https://archive.ics.uci.edu/ml/machine-learning-databases/00211/CommViolPredUnnormalizedData.txt'
+data_raw_crime <- read.delim(url_c, header = F, sep = ',', na.strings = '?', as.is = T)
 
-# extract the predictive variables and the target variable
-data_relevant <- data_raw_crime[,c(6:(147-18), 146)]
+# extract the target and the predictive variables
+data_proc <- data_raw_crime[,c(146, 6:(147-18))]
 
 # remove variables and instances with missing values and one observations with a
 # target value of 0 so the target can be log-transformed to make it closer to a Gaussian
-data_nomiss <- data_relevant[,!sapply(data_relevant, function(x) sum(is.na(x))>1000)]
-nv_c <- ncol(data_nomiss)
-data_nomiss <- data_nomiss[!apply(data_nomiss, 1, anyNA) & data_nomiss[,nv_c] > 0,]
+data_proc <- data_proc[,!sapply(data_proc, function(x) sum(is.na(x))>1000)]
+data_proc <- data_proc[!apply(data_proc, 1, anyNA) & data_proc[,1] > 0,]
+
+# Remove 2 redundant columns to avoid numerical problems
+qr_p <- qr(data_proc)$pivot 
+data_proc <- data_proc[, qr_p[qr_p == cummax(qr_p)]]
 
 # standardize the variables and log-standardize the target
-crimedata <- data.frame(x = I(matrix(scale(data_nomiss[,-nv_c]), ncol = nv_c-1)),
-                        y = c(scale(log(data_nomiss[,nv_c]))))
+crimedata <- data.frame(x = I(matrix(scale(data_proc[,-1]), ncol = ncol(data_proc)-1)),
+                        y = c(scale(log(data_proc[,1]))))
 ```
 
-After preprocessing, the data has 1992 instances and 102 variables. To illustrate the variable selection, we furthermore randomly split the data randomly into training set of size 200 and leave the rest for evaluating the performance.
+After preprocessing, the data has 1992 instances and 100 variables. To illustrate the variable selection, we furthermore randomly split the data randomly into training set of size 100 and leave the rest for evaluating the performance.
 
 ```{r, crime-preprocess2}
 set.seed(12345)
 n <- nrow(crimedata$x)
-n_train <- 200
+n_train <- 100
 n_test <- n - n_train
 
 ind_train <- sample(1:nrow(crimedata$x), n_train)
@@ -143,122 +146,115 @@ d_test <- data.frame(x = crimedata$x[ind_test,], y = crimedata$y[ind_test])
 
 ## Full model
 
-Given, that the data is a combination of census information, law enforcement data it seems likely, that there are great differences among the importances of the variables. Therefore the data seems to be an ideal application for the hierarchical shrinkage prior. Moreover, we try using the hierarchical shrinkage priors with $\nu = 1$ and $\nu = 3$. Note, that the hierarchical shrinkage prior is not applied for the intercept term and for that we use a weakly informative $N(0, 5)$ prior.
+Given, that the data is a combination of census information, law enforcement data it seems likely, that there are great differences among the importances of the variables. Therefore the data seems to be an ideal application for the hierarchical shrinkage prior. In this example we use a Gaussian linear model with `hs(df = 3)` prior. Note, that the hierarchical shrinkage prior is not applied for the intercept term and for that we use a weakly informative `normal(0, 5)` prior. In order to find out a sufficient submodel size, we also save the cross-validated fits in a separate object.
 
-```{r, crime-full1, results="hide"}
+```{r, crime-full, results="hide"}
 library(rstanarm)
-fit1 <- stan_glm(y ~ x, family = gaussian(), data = d_train,
-                 prior = hs(df = 1), prior_intercept = normal(0, 5),
-                 iter = ITER, chains = CHAINS, cores = CORES, seed = SEED)
 fit3 <- stan_glm(y ~ x, family = gaussian(), data = d_train,
                  prior = hs(df = 3), prior_intercept = normal(0, 5),
-                 iter = ITER, chains = CHAINS, cores = CORES, seed = SEED)
-```
-
-However, as we see from the figure below, the models have essentially the same predictions and coefficients. Therefore we will continue the analysis with the model $\nu=3$ as it is slightly more robust to sample from (e.g. sampling is faster and less divergent samples).
-
-```{r, crime-full2,  fig.height=2, fig.width=5}
-stats <- rbind(data.frame(nu1 = coef(fit1), nu3 = coef(fit3), type = 'coefficients'),
-               data.frame(nu1 = predict(fit1), nu3 = predict(fit3), type = 'predictions'))
-
-ggplot(stats, aes(x = nu1, y = nu3)) +
-  geom_segment(aes(x = -2, y = -2, xend = 2, yend = 2), color = 'red') +
-  geom_point() +
-  coord_fixed() +
-  facet_grid(.~ type)
-  
-```
-
-
-In order to find out a sufficient the submodel size, we also save cross-validated fits in a separate object.
-
-```{r, crime-full3, results="hide"}
-kfold3 <- glmproj::kfold(fit3, save_fits = T)
+                 iter = 300, chains = CHAINS, cores = CORES, seed = 12345)
+kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
 ```
 
 ## Variable selection
 
-After we have fitted the full model, we can proceed to the variable selection. We use 100 posterior draws to approximate the expectation of the KL divergence. Depending on the model, sometime more draws might be required.
+After we have fitted the full model, we can proceed to the variable selection. We use 100 posterior draws to approximate the expectation of the KL divergence, although in some situations more samples might be needed. We also run the variable selection only up to 50 variables.
 
 ```{r, crime-varsel, results = "hide"}
 library(glmproj)
-vars <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 100, verbose = T)
-
+vars <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 100, nv = 50)
 ```
 
-To assess how much the full model can be simplified, we can for example plot some performance metrics calculated with cross-validation.
+To assess how much the full model can be simplified, we can plot some performance metrics calculated with cross-validation.
 
-```{r, crime-varsel-plot, ,  fig.height=5, fig.width=5}
-plot(vars, summaries = c('kl','mse','mlpd'), deltas = T, nv = 40)
-
+```{r, crime-varsel-plot, fig.height=5, fig.width=5}
+plot(vars, summaries = c('kl','mse','mlpd'), deltas = T, nv = 50)
 ```
 
-The plot above shows the difference in KL-divergence (kl), mean log predictive density (mldp) and mean squared error (mse) between the submodel and the full model. The gray bars denote the 95% credible interval for the difference. It seems that after 40 variables the models are identical. On the other hand, it seems that using as few as 5-10 variables might already produce essentially the same results as the full model. 
+The plot above shows the difference in KL-divergence (kl), the mean log predictive density (mldp) and the mean squared error (mse) between the submodel and the full model. The gray bars denote the 95% credible interval for the difference. It seems that after 30 variables or so, the difference in the performance of the models is so close to zero that using 30 variables should definitely be enough. On the other hand, it seems that using as few as 10 variables might already produce relatively good results compared to the full model. 
 
 The same statics can also be obtained in numerical form with the `summary(vars)` command. Therefore, we can also calculate additional quantities that may be of interest.
 
-```{r, crime-varsel-print1}
-# Percentage increase in MSE for models of size 5 and 40
-mse_full <- subset(summary(vars), size == 102, 'mse', drop = T)
-mse_sub <- subset(summary(vars), size %in% c(5,40), 'mse', drop = T)
-(mse_sub - mse_full) / mse_full
+```{r, results = "asis", crime-varsel-print}
+# Average difference in RMSE for models of size 10 and 30 compared to the full model
+submodel_sizes <- c(10, 30)
+rmse_diff <- sqrt(subset(summary(vars), size %in% submodel_sizes, 'mse', drop = T)) -
+  sqrt(subset(summary(vars), size == 100, 'mse', drop = T))
+kable(cbind(submodel_sizes, rmse_diff), align = 'c',
+             col.names = c('Submodel size', 'Difference in RMSE'),
+             caption = 'Difference in RMSE averaged over 10 cross-validated searches.')
 ```
 
 We can also evaluate the uncertainty related to variable selection by checking, how much the cross-validated projections agree on the selected variables.
 
 ```{r, crime-varsel-print2}
 
-print(vars, nv = 20)
+kable(
+  subset(summary(vars), size <= 10, c('size','chosen','pctch')), 
+  align = 'c', col.names = c(
+    'Submodel size',
+    'Index of the variable selected latest',
+    'Proportion that include the variable'),
+  caption = 'Selected variables and the proportion of the cross-validated searches that include the same variable to a model of given size.')
 
 ```
+
+Note, that while none of the cross-validated searches included the variable #40 to a model with four variables, it is still possible that it some of them select if for example as the fifth variable. However, the table above shows that there is great uncertainty related to the variable selection and therefore no clear choice which variables to add to the model after the first few.
 
 ## Results
 
-Given a selected model size, we can extract the projected coefficient vectors use them for predictions.
+Given a selected model size, we can obtain the projected coefficient vectors and print them.
 
-```{r, crime-varsel-predict}
-proj <- project(vars, fit3, size = c(5,40))
-
-predictions_sub <- predict(proj, newdata = d_test)
-pred_full <- predict(fit3, newdata = d_test)
-
-# MSE of the full model in the test data
-mse_full_true <- mean((d_test$y - pred_full)^2)
-
-# MSE of the submodels
-mse_sub_true <- sapply(predictions_sub, function(pred, y) mean((pred-y)^2),d_test$y)
-
-# Percentage change
-(mse_sub_true - mse_full_true) / mse_full_true
+```{r, crime-varsel-project}
+project(vars, fit3, nv = 5, ns = 100)
 ```
 
-Soe comments about the results.
+The projections can also be used to predict similarly to using the full model.
 
-__[there are probably some other results that would be interesting]__
+```{r, crime-varsel-predict}
+proj10_30 <- project(vars, fit3, nv = submodel_sizes, ns = 100)
+pred_sub <- predict(proj10_30, newdata = d_test)
+pred_full <- predict(fit3, newdata = d_test)
+
+# RMSE of the submodels
+rmse_diff_test <- sqrt(sapply(pred_sub, function(pred, y) mean((y-pred)^2), d_test$y)) -
+  sqrt(mean((d_test$y - pred_full)^2))
+
+knitr::kable(cbind(submodel_sizes, rmse_diff_test), align = 'c',
+             col.names = c('Submodel size', 'Difference in RMSE'),
+             caption = 'Difference in RMSE on the test set.')
+```
+
+This means that in this case the submodels have actually performed better than the full model.
 
 # Binomial Example
 
-Performing the variable selection for non-Gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore the performing the projection is slightly slower. As an example, we use the [Spambase Data Set](https://archive.ics.uci.edu/ml/datasets/Spambase), which deals with classifying emails to spam or non-spam given some word frequency attributes.
+Performing the variable selection for non-Gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore performing the projection is slightly slower. As an example, we use the [Spambase Data Set](https://archive.ics.uci.edu/ml/datasets/Spambase), which deals with classifying emails to spam or non-spam given some word frequency attributes. We also drop some variables that are almost always a constant to avoid having constant variables in the trainig set. Note, that this is done only for the purposes of this vignette and in reality the approach is suboptimal.
 
 ## Preliminaries
 
 ```{r, spam-preprocess1}
-# Download the data and remove the variables and instances
-# with missing observations
+# Download the data
 url_s <- 'https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data'
 data_raw_spam <- read.delim(url_s, header = F, sep = ',', na.strings = '?', as.is = T)
-nv_s <- ncol(data_raw_spam)
-spamdata <- data.frame(x = I(matrix(scale(data_raw_spam[,-nv_s]), ncol = nv_s-1)),
-                       y = data_raw_spam[,nv_s])
+
+# Drop a few variables that don't have enough observations differing from its mode.
+# This is to prevent having constant variables in the training set (especially for cross-validaton).
+diff_than_mode <- apply(data_raw_spam, 2, function(x) sum(sort(table(x), decreasing = T)[-1]))
+data_proc <- data_raw_spam[,diff_than_mode/nrow(data_raw_spam) >= 0.05]
+
+spamdata <- data.frame(x = I(matrix(scale(data_proc[,-ncol(data_proc)]),
+                                    ncol = ncol(data_proc)-1)),
+                       y = data_proc[,ncol(data_proc)])
 
 ```
 
-After preprocessing, the data has 4601 instances and 57 variables. We split the data again randomly to training and tests sets, again having 400 observations in the training set and leaving the rest for the test set.
+After preprocessing, the data has 4601 instances and XX variables. We split the data again randomly to training and tests sets, again having 100 observations in the training set and leaving the rest for the test set.
 
 ```{r, spam-preprocess2}
 set.seed(12345)
 n <- nrow(spamdata$x)
-n_train <- 400
+n_train <- 100
 n_test <- n - n_train
 
 ind_train <- sample(1:nrow(spamdata$x), n_train)
@@ -270,7 +266,14 @@ d_test <- data.frame(x = spamdata$x[ind_test,], y = spamdata$y[ind_test])
 
 ## Full model
 
-It is likely that there exists again some words that are very predictive of the email being spam, 
+It is likely that there are a few words that are very predictive of the email being spam, while most of the words are probably not important in the classification task. We continue the analysis with the `hs(df = 4)` prior.
+
+```{r, spam-full, results="hide"}
+#fit3 <- stan_glm(y ~ x, family = binomial(), data = d_train,
+#                 prior = hs(df = 4), prior_intercept = normal(0, 5),
+#                 iter = 300, chains = CHAINS, cores = CORES, seed = 12345)
+#kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
+```
 
 
 ## Variable selection
@@ -280,16 +283,16 @@ It is likely that there exists again some words that are very predictive of the 
 
 # References
 
-Datasets.
+Carvalho, C. M., Polson, N. G., and Scott, J. G. (2009). _Handling sparsity via the horseshoe._ In Proceedings of the 12th International Conference on Artificial Intelligence and Statistics, pages 73–80.
 
-Datta Gosh
-
-van der 
-
-Carvalho x 2
+Carvalho, C. M., Polson, N. G., and Scott, J. G. (2010). _The horseshoe estimator for sparse signals._ Biometrika, 97(2):465–480.
 
 Dupuis, J. A. and Robert, C. P. (2003). _Variable selection in qualitative models via an entropic explanatory power._ Journal of Statistical Planning and Inference, 111(1-2):77–94.
 
 Goutis, C. and Robert, C. P. (1998). _Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections._ Biometrika, 85(1):29–37.
 
-Juho Piironen and Aki Vehtari (2016). _Comparison of Bayesian predictive methods for model selection._ Statistics and Computing, [doi:10.1007/s11222-016-9649-y](http://link.springer.com/article/10.1007/s11222-016-9649-y)
+Lichman, M. (2013). _[UCI Machine Learning Repository]( (http://archive.ics.uci.edu/ml)_. Irvine, CA: University of California, School of Information and Computer Science.
+
+Piironen, Juho and Vehtari, Aki (2015). _Projection predictive variable selection using Stan+R._ [arXiv:1508.02502](https://arxiv.org/abs/1508.02502)
+
+Piironen, Juho and Vehtari, Aki (2016). _Comparison of Bayesian predictive methods for model selection._ Statistics and Computing, [doi:10.1007/s11222-016-9649-y](http://link.springer.com/article/10.1007/s11222-016-9649-y)
