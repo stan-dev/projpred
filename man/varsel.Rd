@@ -30,7 +30,8 @@ not provided, training data is used.}
 }}
 }
 \value{
-A list with class \code{'varsel'} containing the following elements:
+The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
+which is a list containing the following elements:
 \describe{
  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
  \item{\code{stats}}{An array with statistics of the submodel performance.}
@@ -45,8 +46,8 @@ linear model fitted with rstanarm.
 \dontrun{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
-vars <- varsel(fit)
-plot(vars)
+fit_v <- varsel(fit)
+plot_varsel(fit_v)
 }
 
 }

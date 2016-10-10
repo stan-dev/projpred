@@ -24,7 +24,8 @@
 #'    variable selection.}
 #' }
 #'
-#' @return A list with class \code{'varsel'} containing the following elements:
+#' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
+#' which is a list containing the following elements:
 #' \describe{
 #'  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
 #'  \item{\code{pctch}}{Percentage of cross-validation runs that included the given
@@ -37,9 +38,9 @@
 #' \dontrun{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
-#' fits <- cv_fit(fit)
-#' vars <- cv_varsel(fit, fits)
-#' plot(vars)
+#' fits <- kfold(fit)
+#' fit_v <- cv_varsel(fit, fits)
+#' plot_varsel(fit_v)
 #' }
 #'
 
@@ -102,8 +103,9 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
                   chosen_full, seq_along(chosen_full),
                   MoreArgs = list(do.call(cbind, sel['chosen',-1]), k))
 
-  res <- list(chosen = chosen_full, pctch = pctch, stats = stats, family = family(fit))
+  res <- list(chosen = chosen_full, pctch = pctch, stats = stats)
   if(args$clust) res$cl <- sel[['cl',1]]
 
-  structure(res, class = 'varsel')
+  fit$varsel <- res
+  fit
 }

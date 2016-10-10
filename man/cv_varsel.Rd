@@ -32,7 +32,8 @@ get the array.}
 }}
 }
 \value{
-A list with class \code{'varsel'} containing the following elements:
+The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
+which is a list containing the following elements:
 \describe{
  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
  \item{\code{pctch}}{Percentage of cross-validation runs that included the given
@@ -49,9 +50,9 @@ linear model fitted with rstanarm.
 \dontrun{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
-fits <- cv_fit(fit)
-vars <- cv_varsel(fit, fits)
-plot(vars)
+fits <- kfold(fit)
+fit_v <- cv_varsel(fit, fits)
+plot_varsel(fit_v)
 }
 
 }

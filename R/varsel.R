@@ -22,7 +22,8 @@
 #'    variable selection.}
 #' }
 #'
-#' @return A list with class \code{'varsel'} containing the following elements:
+#' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
+#' which is a list containing the following elements:
 #' \describe{
 #'  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
 #'  \item{\code{stats}}{An array with statistics of the submodel performance.}
@@ -33,8 +34,8 @@
 #' \dontrun{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
-#' vars <- varsel(fit)
-#' plot(vars)
+#' fit_v <- varsel(fit)
+#' plot_varsel(fit_v)
 #' }
 #'
 
@@ -95,8 +96,9 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
   stats <- rbind(kl, .bootstrap_stats(mu_all, lppd_all, nv, d_test, args$family_kl,
                                       b_weights, eval_data), make.row.names = F)
 
-  res <- list(chosen = sel$chosen, stats = stats, family = family(fit))
+  res <- list(chosen = sel$chosen, stats = stats)
   if(args$clust) res$cl <- clust$cl
 
-  structure(res, class = 'varsel')
+  fit$varsel <- res
+  fit
 }

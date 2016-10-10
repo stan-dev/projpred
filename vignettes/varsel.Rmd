@@ -162,13 +162,13 @@ After we have fitted the full model, we can proceed to the variable selection. W
 
 ```{r, crime-varsel, results = "hide"}
 library(glmproj)
-vars <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 100, nv = 50)
+fit3_v <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 200, nv = 50)
 ```
 
 To assess how much the full model can be simplified, we can plot some performance metrics calculated with cross-validation.
 
 ```{r, crime-varsel-plot, fig.height=5, fig.width=5}
-plot(vars, summaries = c('kl','mse','mlpd'), deltas = T, nv = 50)
+plot_varsel(fit3_v, summaries = c('kl','mse','mlpd'), nv = 50)
 ```
 
 The plot above shows the difference in KL-divergence (kl), the mean log predictive density (mldp) and the mean squared error (mse) between the submodel and the full model. The gray bars denote the 95% credible interval for the difference. It seems that after 30 variables or so, the difference in the performance of the models is so close to zero that using 30 variables should definitely be enough. On the other hand, it seems that using as few as 10 variables might already produce relatively good results compared to the full model. 
@@ -178,8 +178,8 @@ The same statics can also be obtained in numerical form with the `summary(vars)`
 ```{r, results = "asis", crime-varsel-print}
 # Average difference in RMSE for models of size 10 and 30 compared to the full model
 submodel_sizes <- c(10, 30)
-rmse_diff <- sqrt(subset(summary(vars), size %in% submodel_sizes, 'mse', drop = T)) -
-  sqrt(subset(summary(vars), size == 100, 'mse', drop = T))
+rmse_diff <- sqrt(subset(summary_varsel(fit3_v), size %in% submodel_sizes, 'mse', drop = T)) -
+  sqrt(subset(summary_varsel(fit3_v), size == 100, 'mse', drop = T))
 kable(cbind(submodel_sizes, rmse_diff), align = 'c',
              col.names = c('Submodel size', 'Difference in RMSE'),
              caption = 'Difference in RMSE averaged over 10 cross-validated searches.')
@@ -189,13 +189,13 @@ We can also evaluate the uncertainty related to variable selection by checking, 
 
 ```{r, crime-varsel-print2}
 
-kable(
-  subset(summary(vars), size <= 10, c('size','chosen','pctch')), 
-  align = 'c', col.names = c(
-    'Submodel size',
-    'Index of the variable selected latest',
-    'Proportion that include the variable'),
-  caption = 'Selected variables and the proportion of the cross-validated searches that include the same variable to a model of given size.')
+#kable(
+#  subset(summary_varsel(fit3_v), size <= 10, c('size','chosen','pctch')), 
+#  align = 'c', col.names = c(
+#    'Submodel size',
+#    'Index of the variable selected latest',
+#    'Proportion that include the variable'),
+#  caption = 'Selected variables and the proportion of the cross-validated searches that include the same variable to a model of given size.')
 
 ```
 
@@ -206,14 +206,15 @@ Note, that while none of the cross-validated searches included the variable #40 
 Given a selected model size, we can obtain the projected coefficient vectors and print them.
 
 ```{r, crime-varsel-project}
-project(vars, fit3, nv = 5, ns = 100)
+fit3_p5 <- project(fit3_v, nv = 5, ns = 100)
+coef_proj(fit3_p)
 ```
 
-The projections can also be used to predict similarly to using the full model.
+The projections can also be used to predict similarly to using the full model. For example, the table below shows that in this case the submodels perform essentially identically to the full model on the test data.
 
 ```{r, crime-varsel-predict}
-proj10_30 <- project(vars, fit3, nv = submodel_sizes, ns = 100)
-pred_sub <- predict(proj10_30, newdata = d_test)
+fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
+pred_sub <- predict_proj(fit3_p, newdata = d_test)
 pred_full <- predict(fit3, newdata = d_test)
 
 # RMSE of the submodels
@@ -225,34 +226,27 @@ knitr::kable(cbind(submodel_sizes, rmse_diff_test), align = 'c',
              caption = 'Difference in RMSE on the test set.')
 ```
 
-This means that in this case the submodels have actually performed better than the full model.
 
-# Binomial Example
+# Non-Gaussian models
 
-Performing the variable selection for non-Gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore performing the projection is slightly slower. As an example, we use the [Spambase Data Set](https://archive.ics.uci.edu/ml/datasets/Spambase), which deals with classifying emails to spam or non-spam given some word frequency attributes. We also drop some variables that are almost always a constant to avoid having constant variables in the trainig set. Note, that this is done only for the purposes of this vignette and in reality the approach is suboptimal.
+Performing the variable selection for non-Gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore performing the projection is slightly slower. As an example, we use the [Spambase Data Set](https://archive.ics.uci.edu/ml/datasets/Spambase), which deals with classifying emails to spam or non-spam given some word frequency attributes. We also drop some variables that are almost always a constant to avoid having constant variables in the trainig set.
 
-## Preliminaries
+After preprocessing, the data has 4601 instances and 49 variables. We split the data again randomly to training and tests sets, again having 100 observations in the training set and leaving the rest for the test set.
 
 ```{r, spam-preprocess1}
 # Download the data
 url_s <- 'https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data'
 data_raw_spam <- read.delim(url_s, header = F, sep = ',', na.strings = '?', as.is = T)
 
-# Drop a few variables that don't have enough observations differing from its mode.
+# Drop a few variables that don't have enough observations differing from their mode.
 # This is to prevent having constant variables in the training set (especially for cross-validaton).
 diff_than_mode <- apply(data_raw_spam, 2, function(x) sum(sort(table(x), decreasing = T)[-1]))
 data_proc <- data_raw_spam[,diff_than_mode/nrow(data_raw_spam) >= 0.05]
 
-spamdata <- data.frame(x = I(matrix(scale(data_proc[,-ncol(data_proc)]),
-                                    ncol = ncol(data_proc)-1)),
-                       y = data_proc[,ncol(data_proc)])
+spamdata <- data.frame(
+  x = I(matrix(scale(data_proc[,-ncol(data_proc)]), ncol = ncol(data_proc)-1)),
+  y = data_proc[,ncol(data_proc)])
 
-```
-
-After preprocessing, the data has 4601 instances and XX variables. We split the data again randomly to training and tests sets, again having 100 observations in the training set and leaving the rest for the test set.
-
-```{r, spam-preprocess2}
-set.seed(12345)
 n <- nrow(spamdata$x)
 n_train <- 100
 n_test <- n - n_train
@@ -262,23 +256,41 @@ ind_test <- setdiff(1:nrow(spamdata$x), ind_train)
 
 d_train <- data.frame(x = spamdata$x[ind_train,], y = spamdata$y[ind_train])
 d_test <- data.frame(x = spamdata$x[ind_test,], y = spamdata$y[ind_test])
-```
 
-## Full model
+```
 
 It is likely that there are a few words that are very predictive of the email being spam, while most of the words are probably not important in the classification task. We continue the analysis with the `hs(df = 4)` prior.
 
 ```{r, spam-full, results="hide"}
-#fit3 <- stan_glm(y ~ x, family = binomial(), data = d_train,
-#                 prior = hs(df = 4), prior_intercept = normal(0, 5),
-#                 iter = 300, chains = CHAINS, cores = CORES, seed = 12345)
-#kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
+fit3 <- stan_glm(y ~ x, family = binomial(), data = d_train,
+                 prior = hs(df = 4), prior_intercept = normal(0, 5),
+                 iter = 400, chains = CHAINS, cores = CORES, seed = 12345)
+kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
 ```
 
+As noted, for the non-Gaussian GLMs there is no closed form solution for the projected parameters and therefore the projection takes longer. To do the variable selection faster, we compare the candidate variables by projecting the information in the posterior to only one sample instead of `ns `samples. This is done by setting `nc = 1`. After the variables have been selected, the projection is done onto the submodel using the `ns` samples.
 
-## Variable selection
+In practice, the described approach seems to yield similar results to using `ns` samples in the selection, but currently it is not recommended for final statistical inference.
 
-## Results
+```{r, spam-varsel, results = "hide"}
+library(glmproj)
+fit3_v <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 100, nc = 1)
+```
+
+For a classification task, we can also plot the cross-validated classification accuracy. In general the functionality is the same as with the Gaussian case.
+
+```{r, spam-varsel-plot-results, fig.height=5, fig.width=5}
+plot_varsel(fit3_v, summaries = c('kl','pctcorr'), deltas = F)
+
+submodel_sizes <- c(5, 10, 30)
+
+fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
+
+# 
+pred_sub <- predict(proj5_10_30, newdata = d_test, type = 'response')
+pred_full <- predict(fit3, newdata = d_test, type = 'response')
+```
+
 
 
 # References

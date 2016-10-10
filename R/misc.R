@@ -101,17 +101,17 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 # initialize arguments to their default values if they are not specified
 .init_args <- function(args, vars, fam) {
   res <- list(
-    ns_total = ncol(vars$b),
-    rank_x = rankMatrix(vars$x),
+    ns_total = ncol(vars$b), # number of samples available
+    rank_x = rankMatrix(vars$x), # nv is set to <= rank_x
     ns = min(args$ns %ORifNULL% 400, ncol(vars$b)),
-    nc = min(args$nc %ORifNULL% 0, 100, args$ns, round(ncol(vars$b)/4)),
-    n_boot = args$n_boot %ORifNULL% 1000,
+    nc = min(args$nc %ORifNULL% 0, 40), # number of clusters, if samples are clustered
+    n_boot = args$n_boot %ORifNULL% 1000, # bootstrap sample size
     intercept = vars$intercept %ORifNULL% F,
     verbose = args$verbose %ORifNULL% F,
-    cv = args$cv %ORifNULL% F,
-    regul = args$regul %ORifNULL% 1e-15, #small regul as in Dupuis & Robert
-    max_it = args$max_it %ORifNULL% 300,
-    epsilon = args$epsilon %ORifNULL% 1e-8,
+    cv = args$cv %ORifNULL% F, # was function called from cv_varsel?
+    regul = args$regul %ORifNULL% 1e-12, # small regul as in Dupuis & Robert
+    max_it = args$max_it %ORifNULL% 300, # max IRLS steps
+    epsilon = args$epsilon %ORifNULL% 1e-8, # used to determine if IRLS has converged
     family_kl = kl_helpers(fam)
   )
   res$clust <- res$nc > 0
@@ -123,8 +123,8 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   res$nv <- min(ncol(vars$x) - res$intercept, args$nv, res$rank_x)
   if(!is.null(args$nv) && args$nv > res$nv)
-    print(paste0(
-      'Setting the max number of variables in the projection to ', res$nv, '.'))
+    print(paste0('Setting the max number of variables
+                 in the projection to ', res$nv, '.'))
 
   res
 }

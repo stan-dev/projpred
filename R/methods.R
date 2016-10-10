@@ -1,85 +1,115 @@
 #' @export
-project <- function(object, fit, nv, ...) {
+project <- function(object, nv, ...) {
   UseMethod('project')
 }
 
 #' @export
-project.varsel <- function(object, fit, nv, ...) {
+project.stanreg <- function(object, nv, ...) {
   if(is.null(nv)) stop('nv not provided')
-  if(is.null(fit)) stop('fit not provided')
-  vars <- .extract_vars(fit)
+  .validate_for_varsel(object)
+  if(!('varsel' %in% names(object)))
+    stop(paste('The stanreg object doesn\'t contain information about the variable',
+               'selection. Run the variable selection first.'))
+  if(max(nv) >= length(object$varsel$chosen))
+    stop(paste('Cannot perform the projection with', max(nv), 'variables, because the',
+               'variable selection has been run only up to',
+               length(object$varsel$chosen), 'variables.'))
+
+  vars <- .extract_vars(object)
   ns_total <- ncol(vars$b)
-  args <- .init_args(list(...), vars, family(fit))
+  args <- .init_args(list(...), vars, family(object))
   if(args$intercept) nv <- nv + 1
-  nc_sel <- length(object$cl$size)
-  v_inds_max <- object$chosen[1:max(nv)]
+  v_inds_max <- object$varsel$chosen[1:max(nv)]
   if(args$intercept) vars$x <- cbind(1, vars$x)
 
   d_train <- list(x = vars$x[,v_inds_max],
-                  weights = vars$weights, offset = vars$offset)
+                  weights = vars$weights,
+                  offset = vars$offset)
 
   mu <- args$family_kl$linkinv(vars$x%*%vars$b + d_train$offset)
   dis <- vars$dis
-  b0 <- matrix(unname(coef(fit))[v_inds_max], ncol = 1)
+  b0 <- matrix(coef(object)[v_inds_max], ncol = 1)
 
-  if(args$clust) {
-    # if clustering has been already performed, use that
-    cl <- if(args$nc == nc_sel) object$cl else NULL
-    clust <- .get_p_clust(mu, dis, args, cl)
-    p_full <- clust$p
-  } else {
-    s_ind <- round(seq(1, ns_total, length.out  = args$ns))
-    p_full <- list(mu = mu[, s_ind], dis = dis[s_ind], cluster_w = rep(1/args$ns, args$ns))
-  }
+  s_ind <- round(seq(1, ns_total, length.out  = args$ns))
+  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind], cluster_w = rep(1/args$ns, args$ns))
 
-  proj <- .get_proj_handle(args$family_kl)
+  projfun <- .get_proj_handle(args$family_kl)
 
-  p_sub <- lapply(nv, function(s, p_full, d_train, b0, args) {
-    vars <- proj(NULL, 1:s, p_full, d_train, b0, args)
+  object$proj <- lapply(nv, function(nv, p_full, d_train, b0, args, names) {
+    vars <- projfun(NULL, 1:nv, p_full, d_train, unname(b0), args)
+    rownames(vars$b) <- names[1:nrow(vars$b)]
     vars$kl <- NULL
     vars
-  }, p_full, d_train, b0, args)
+  }, p_full, d_train, b0, args, names(coef(object))[v_inds_max])
 
-  res <- list(proj_params = p_sub, chosen = v_inds_max, family = family(fit),
-              cluster_w = p_full$cluster_w, intercept = vars$intercept)
-
-  structure(res, class = 'proj')
+  object
 }
 
 #' @export
-predict.varsel <- function(object, fit, nv, newdata, ...) {
-  # does the projection first, if a projection object is not provided
-  predict(project(object, fit, nv, ...), newdata, ...)
+predict_proj <- function(object, ..., newdata = NULL, type = c('link', 'response'), se.fit = FALSE) {
+  .validate_for_varsel(object)
+  if(!('proj' %in% names(object)))
+    stop(paste('The stanreg object doesn\'t contain information about the projection.',
+               'Run the projection first.'))
+  type <- match.arg(type)
+  dat <- rstanarm:::pp_data(object, newdata)
+
+  res <- lapply(object$proj, function(proj, dat, chosen) {
+    dat$x[, chosen[1:nrow(proj$b)], drop = F]%*%proj$b + dat$offset
+  }, dat, object$varsel$chosen)
+
+  if(type == 'response') res <- lapply(res, function(x) family(object)$linkinv(x))
+
+  lapply(res, rowMeans)
 }
 
 #' @export
-predict.proj <- function(object, newdata, ...) {
-  if(!is.list(newdata)) newdata <- list(x = newdata)
-  if(object$intercept) newdata$x <- cbind(1, newdata$x)
-  if(is.null(newdata$offset)) newdata$offset <- rep(0, nrow(newdata$x))
-
-  lapply(object$proj_params, function(proj, newdata, inds, w, family) {
-    drop(newdata$x[, object$chosen[1:nrow(proj$b)], drop = F]%*%(proj$b%*%w)) +
-      newdata$offset
-  }, newdata, object$chosen, object$cluster_w, object$family)
-
+coef_proj <- function(object, ...) {
+  .validate_for_varsel(object)
+  if(!('proj' %in% names(object)))
+    stop(paste('The stanreg object doesn\'t contain information about the projection.',
+               'Run the projection first.'))
+  lapply(object$proj, function(x) rowMeans(x$b))
 }
 
 #' @export
-plot.varsel <- function(x, summaries = NULL, deltas = T, train = F, nv = NULL, ...) {
+se_proj <- function(object, ...) {
+  .validate_for_varsel(object)
+  if(!('proj' %in% names(object)))
+    stop(paste('The stanreg object doesn\'t contain information about the projection.',
+               'Run the projection first.'))
+  lapply(object$proj, function(x) apply(x$b, 1, sd))
+}
+
+#' @export
+sigma_proj <- function(object, ...) {
+  .validate_for_varsel(object)
+  if(!('proj' %in% names(object)))
+    stop(paste('The stanreg object doesn\'t contain information about the projection.',
+               'Run the projection first.'))
+  lapply(object$proj, function(x) if('dis' %in% names(x)) sqrt(mean(x$dis^2)) else 1)
+}
+
+# Functionality similar to these is needed, but maybe functions
+# named with x_varsel is not the best way to do this.
+#' @export
+plot_varsel <- function(x, ..., nv = NULL, summaries = NULL, deltas = T, train = F) {
+  if(!('varsel' %in% names(x)))
+    stop(paste('Stanreg object doesn\'t contain information about the variable',
+               'selection. Run the variable selection first!'))
 
   data_remove <- if(train) 'test' else 'train'
-  if(is.null(summaries)) {
-    arr <- subset(x$stats, data != data_remove & (delta == deltas | summary == 'kl'))
-  } else {
-    arr <- subset(x$stats, data != data_remove & (delta == deltas | summary == 'kl')
-                   & summary %in% summaries)
-    if(nrow(arr) == 0)
-      stop(paste0('summaries must contain at least one of the following values: ',
-                  paste0(unique(x$stats$summary), collapse = ','), '.'))
-  }
+  if(is.null(summaries)) summaries <- as.character(unique(x$varsel$stats$summary))
+  arr <- subset(x$varsel$stats, data != data_remove & (delta == deltas | summary == 'kl')
+                & summary %in% summaries)
+
+  if(nrow(arr) == 0)
+    stop(paste0('summaries must contain at least one of the following values: ',
+                paste0(unique(x$varsel$stats$summary), collapse = ', '), '.'))
+
   if(is.null(nv)) nv <- max(arr$size)
-  ylab <- if(deltas) 'delta' else 'value'
+  ylab <- if(deltas) expression(Delta) else 'value'
+
   ggplot(data = subset(arr, size <= nv), mapping = aes(x = size)) +
     geom_ribbon(aes(ymin = lq, ymax = uq), alpha = 0.3) +
     geom_line(aes(y = value)) +
@@ -91,59 +121,30 @@ plot.varsel <- function(x, summaries = NULL, deltas = T, train = F, nv = NULL, .
 }
 
 #' @export
-summary.varsel <- function(object, nv = NULL, ..., digits = 3) {
-  if(is.null(nv)) nv <- max(object$stats$size)
-  if('test' %in% object$stats$data) {
-    summaries <- setdiff(unique(object$stats$summary), c('kl'))
-    # suffixes are to ensure unique column names when doing merge.
-    arr <- Reduce(function(x, y) merge(x, y, by = 'size', suffixes = c(-ncol(x),ncol(x))),
-           c(lapply(summaries, function(sum, stats) {
-             subset(stats, data == 'test' & summary == sum & !delta, c('size', 'value'))
-           }, object$stats),
-           list(kl = subset(object$stats, summary == 'kl', c('size', 'value')))))
-    arr <- cbind(arr,
-                 chosen = c(object$chosen,NA),
-                 pctch = c(object$pctch,NA))
-    arr <- setNames(arr, c('size', summaries, 'kl', 'chosen', 'pctch'))
-  } else {
-    arr <- data.frame(subset(x$stats, summary == 'kl' & value > 0,
-                             c('size','value')), chosen = x$chosen)
-    if(!is.null(x$pctch)) arr$pctch <- x$pctch
-    names(arr)[2] <- 'kl'
-  }
-  subset(arr, size <= nv)
-}
+summary_varsel <- function(object, ..., nv = NULL, deltas = F, train = F) {
+  if(!('varsel' %in% names(object)))
+     stop(paste('Stanreg object doesn\'t contain information about the variable',
+                'selection.\nRun the variable selection first!'))
+  if(is.null(nv)) nv <- max(object$varsel$stats$size)
+  data_remove <- if(train) 'test' else 'train'
 
-#' @export
-print.varsel <- function(x, digits = 3, nv = NULL, ...) {
-  # switch from kl & value > 0 to size < max(size)
-  cat('Table of the model size, the index',
-      'of the variable added last')
-  if(is.null(nv)) nv <- max(x$stats$size)
-  if(!is.null(x$pctch)) {
-    cat(',\nfraction of cv-runs that included the selected variable to a',
-        '\nmodel of same size ')
-  } else {cat('\n')}
-  cat('and the respective KL divergence.\n\n')
-  arr <- data.frame(
-    subset(x$stats, summary == 'kl' & value > 0, c('size','value')))
-  arr$chosen <- x$chosen
-  if(!is.null(x$pctch)) arr$pctch <- x$pctch
-  names(arr)[2] <- 'kl'
-  print(subset(arr, size <= nv), digits = digits, width = 12, right = T, row.names = F)
-}
+  summaries <- as.character(unique(object$varsel$stats$summary))
+  arr_list <- lapply(summaries, function(sname, stats, dr) {
+    res <- subset(stats, summary == sname & (delta == deltas | summary == 'kl')
+                  & data != dr, c('size', 'value'))
+    setNames(res, c('size', sname))
+  }, object$varsel$stats, data_remove)
+  # combine the arrays
+  arr <- Reduce(merge, arr_list)
+  # If no test data and results from training data are not wanted, return only KL
+  if(nrow(arr) == 0)  arr <- setNames(subset(
+    object$varsel$stats, summary == 'kl', c('size','value')), c('size', 'kl'))
 
-#' @export
-print.proj <- function(x, digits = 5, ...) {
-  cat('Projected coefficients for the submodels.\n')
-  lapply(x$proj_params, function(pars, weights, chosen, digits) {
-    coefs <- round(drop(pars$b%*%weights), digits = digits)
-    cat(paste0('\nModel size : ', NROW(pars$b) - x$intercept, '.\nChosen variables: ',
-               paste0(chosen[1:NROW(pars$b)], collapse = ' '), '.\nCoefficients: ',
-               paste0(coefs, collapse = ' '), '.\n'))
-    if('dis' %in% names(pars))
-      cat(paste0('Dispersion parameter: ', round(sqrt(pars$dis^2%*%weights), digits), '.\n'))
-  }, x$cluster_w, x$chosen, digits)
-  invisible(x)
+  # make sure that the list is ordered
+  arr <- arr[order(arr$size),]
 
+  arr$chosen <- c(object$varsel$chosen, NA)
+  if('pctch' %in% names(object$varsel)) arr$pctch <- c(object$varsel$pctch, NA)
+
+  subset(arr, size <= nv, c('size', intersect(colnames(arr), summaries)))
 }
