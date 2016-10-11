@@ -56,6 +56,7 @@ where $t_\nu^+$ is a half-Student-$t$ prior with $\nu$ degrees of freedom. In so
 To get further intuition, we define another variable $\kappa_j = 1 / (1 + \lambda_j^2)$. In this case, having $\kappa_j \approx 1$ (or equivalently $\lambda_j^2\approx 0$) means complete shrinkage for the coefficient $\beta_j$, whereas having $\kappa_j \approx 0$ means no shrinkage for the coefficient $\beta_j$. We can see the effect of $\nu$ to the local shrinkage by sampling $\kappa_j$ for different choices of $\nu$.
 
 ```{r, kappa-fig, fig.height=2, fig.width=5}
+library(ggplot2)
 n <- 50000
 drawkappa <- function(n, df) 1/(1 + rt(n, df)^2)
 kappa <- data.frame(df = c(rep(1, n), rep(3, n)))
@@ -106,7 +107,8 @@ For assessing the performance of the submodels as a function of the submodel siz
 
 As an example, we use the [Communities and Crime data set](https://archive.ics.uci.edu/ml/datasets/Communities+and+Crime+Unnormalized). The data set is a combination of socio-economic census information and law enforcement data from different areas in the US. The target variable chosen for this example is the total number of violent crimes per population. The data is preprocessed by removing the variables and instances with missing observations, normalizing the predictor variables and log-normalizing the target variable.
 
-```{r, crime-preprocess1}
+```{r, crime-preprocess}
+set.seed(12345)
 # Download the data and remove the variables and instances
 # with missing observations
 url_c <- 'https://archive.ics.uci.edu/ml/machine-learning-databases/00211/CommViolPredUnnormalizedData.txt'
@@ -127,22 +129,17 @@ data_proc <- data_proc[, qr_p[qr_p == cummax(qr_p)]]
 # standardize the variables and log-standardize the target
 crimedata <- data.frame(x = I(matrix(scale(data_proc[,-1]), ncol = ncol(data_proc)-1)),
                         y = c(scale(log(data_proc[,1]))))
+
+n_train <- 100
+
+ind_train <- sample(1:nrow(crimedata$x), n_train)
+ind_test <- setdiff(1:nrow(crimedata$x), ind_train)
+d_train <- data.frame(x = crimedata$x[ind_train,], y = crimedata$y[ind_train])
+d_test <- data.frame(x = crimedata$x[ind_test,], y = crimedata$y[ind_test])
 ```
 
 After preprocessing, the data has 1992 instances and 100 variables. To illustrate the variable selection, we furthermore randomly split the data randomly into training set of size 100 and leave the rest for evaluating the performance.
 
-```{r, crime-preprocess2}
-set.seed(12345)
-n <- nrow(crimedata$x)
-n_train <- 100
-n_test <- n - n_train
-
-ind_train <- sample(1:nrow(crimedata$x), n_train)
-ind_test <- setdiff(1:nrow(crimedata$x), ind_train)
-
-d_train <- data.frame(x = crimedata$x[ind_train,], y = crimedata$y[ind_train])
-d_test <- data.frame(x = crimedata$x[ind_test,], y = crimedata$y[ind_test])
-```
 
 ## Full model
 
@@ -158,7 +155,7 @@ kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
 
 ## Variable selection
 
-After we have fitted the full model, we can proceed to the variable selection. We use 100 posterior draws to approximate the expectation of the KL divergence, although in some situations more samples might be needed. We also run the variable selection only up to 50 variables.
+After we have fitted the full model, we can proceed to the variable selection. We use 200 posterior draws to approximate the expectation of the KL divergence, although in some situations more samples might be needed. We also run the variable selection only up to 50 variables.
 
 ```{r, crime-varsel, results = "hide"}
 library(glmproj)
@@ -168,7 +165,7 @@ fit3_v <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 200, nv = 50)
 To assess how much the full model can be simplified, we can plot some performance metrics calculated with cross-validation.
 
 ```{r, crime-varsel-plot, fig.height=5, fig.width=5}
-plot_varsel(fit3_v, summaries = c('kl','mse','mlpd'), nv = 50)
+varsel_plot(fit3_v, summaries = c('kl','mse','mlpd'), nv = 50)
 ```
 
 The plot above shows the difference in KL-divergence (kl), the mean log predictive density (mldp) and the mean squared error (mse) between the submodel and the full model. The gray bars denote the 95% credible interval for the difference. It seems that after 30 variables or so, the difference in the performance of the models is so close to zero that using 30 variables should definitely be enough. On the other hand, it seems that using as few as 10 variables might already produce relatively good results compared to the full model. 
@@ -177,29 +174,27 @@ The same statics can also be obtained in numerical form with the `summary(vars)`
 
 ```{r, results = "asis", crime-varsel-print}
 # Average difference in RMSE for models of size 10 and 30 compared to the full model
+library(knitr)
 submodel_sizes <- c(10, 30)
-rmse_diff <- sqrt(subset(summary_varsel(fit3_v), size %in% submodel_sizes, 'mse', drop = T)) -
-  sqrt(subset(summary_varsel(fit3_v), size == 100, 'mse', drop = T))
+rmse_diff <- sqrt(subset(varsel_summary(fit3_v), size %in% submodel_sizes, 'mse', drop = T)) -
+  sqrt(subset(varsel_summary(fit3_v), size == 100, 'mse', drop = T))
 kable(cbind(submodel_sizes, rmse_diff), align = 'c',
              col.names = c('Submodel size', 'Difference in RMSE'),
-             caption = 'Difference in RMSE averaged over 10 cross-validated searches.')
+             caption = 'Difference in RMSE to the full model averaged over 10 cross-validated searches.')
 ```
 
-We can also evaluate the uncertainty related to variable selection by checking, how much the cross-validated projections agree on the selected variables.
+We can also evaluate the uncertainty related to variable selection by checking, how much the cross-validated projections agree on the selected variables. In this case we notice that there is great uncertainty related to the variable selection and therefore no clear choice which variables to add to the model after the first few.
 
 ```{r, crime-varsel-print2}
-
-#kable(
-#  subset(summary_varsel(fit3_v), size <= 10, c('size','chosen','pctch')), 
-#  align = 'c', col.names = c(
-#    'Submodel size',
-#    'Index of the variable selected latest',
-#    'Proportion that include the variable'),
-#  caption = 'Selected variables and the proportion of the cross-validated searches that include the same variable to a model of given size.')
-
+kable(
+  varsel_summary(fit3_v, nv = 6)[, c('size','chosen','pctch')],
+  align = 'c', col.names = c(
+    'Submodel size',
+    'Index of the variable selected latest',
+    'Proportion that include the variable'),
+  caption = 'Selected variables and the proportion of the cross-validated searches that include the same variable to a model of given size.')
 ```
 
-Note, that while none of the cross-validated searches included the variable #40 to a model with four variables, it is still possible that it some of them select if for example as the fifth variable. However, the table above shows that there is great uncertainty related to the variable selection and therefore no clear choice which variables to add to the model after the first few.
 
 ## Results
 
@@ -207,19 +202,21 @@ Given a selected model size, we can obtain the projected coefficient vectors and
 
 ```{r, crime-varsel-project}
 fit3_p5 <- project(fit3_v, nv = 5, ns = 100)
-coef_proj(fit3_p)
+proj_coef(fit3_p5)
 ```
 
 The projections can also be used to predict similarly to using the full model. For example, the table below shows that in this case the submodels perform essentially identically to the full model on the test data.
 
 ```{r, crime-varsel-predict}
 fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
-pred_sub <- predict_proj(fit3_p, newdata = d_test)
-pred_full <- predict(fit3, newdata = d_test)
+
+# means of the predictions for RMSE
+pred_sub_mean <- lapply(proj_linpred(fit3_p, newdata = d_test), colMeans)
+pred_full_mean <- colMeans(posterior_linpred(fit3, newdata = d_test))
 
 # RMSE of the submodels
-rmse_diff_test <- sqrt(sapply(pred_sub, function(pred, y) mean((y-pred)^2), d_test$y)) -
-  sqrt(mean((d_test$y - pred_full)^2))
+rmse_diff_test <- sqrt(sapply(pred_sub_mean, function(yhat) mean((d_test$y-yhat)^2))) -
+  sqrt(mean((d_test$y - pred_full_mean)^2))
 
 knitr::kable(cbind(submodel_sizes, rmse_diff_test), align = 'c',
              col.names = c('Submodel size', 'Difference in RMSE'),
@@ -229,42 +226,31 @@ knitr::kable(cbind(submodel_sizes, rmse_diff_test), align = 'c',
 
 # Non-Gaussian models
 
-Performing the variable selection for non-Gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore performing the projection is slightly slower. As an example, we use the [Spambase Data Set](https://archive.ics.uci.edu/ml/datasets/Spambase), which deals with classifying emails to spam or non-spam given some word frequency attributes. We also drop some variables that are almost always a constant to avoid having constant variables in the trainig set.
+Performing the variable selection for non-Gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore performing the projection is slightly slower. As an example, we use the [Wine Data Set](https://archive.ics.uci.edu/ml/datasets/Wine), which deals with classifying wines to three classes. In this example we try to differentiate the most frequent class from the other two.
 
-After preprocessing, the data has 4601 instances and 49 variables. We split the data again randomly to training and tests sets, again having 100 observations in the training set and leaving the rest for the test set.
-
-```{r, spam-preprocess1}
+```{r, wine-preprocess1}
 # Download the data
-url_s <- 'https://archive.ics.uci.edu/ml/machine-learning-databases/spambase/spambase.data'
-data_raw_spam <- read.delim(url_s, header = F, sep = ',', na.strings = '?', as.is = T)
+url_w <- 'https://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data'
+data_raw_wine <- read.delim(url_w, header = F, sep = ',', na.strings = '?', as.is = T)
 
-# Drop a few variables that don't have enough observations differing from their mode.
-# This is to prevent having constant variables in the training set (especially for cross-validaton).
-diff_than_mode <- apply(data_raw_spam, 2, function(x) sum(sort(table(x), decreasing = T)[-1]))
-data_proc <- data_raw_spam[,diff_than_mode/nrow(data_raw_spam) >= 0.05]
+winedata <- data.frame(
+  x = I(matrix(scale(data_raw_wine[,-1]), ncol = ncol(data_raw_wine)-1)),
+  y = as.numeric(data_raw_wine[,1] == 2))
 
-spamdata <- data.frame(
-  x = I(matrix(scale(data_proc[,-ncol(data_proc)]), ncol = ncol(data_proc)-1)),
-  y = data_proc[,ncol(data_proc)])
-
-n <- nrow(spamdata$x)
-n_train <- 100
-n_test <- n - n_train
-
-ind_train <- sample(1:nrow(spamdata$x), n_train)
-ind_test <- setdiff(1:nrow(spamdata$x), ind_train)
-
-d_train <- data.frame(x = spamdata$x[ind_train,], y = spamdata$y[ind_train])
-d_test <- data.frame(x = spamdata$x[ind_test,], y = spamdata$y[ind_test])
+n_train <- 60
+ind_train <- sample(1:nrow(winedata$x), n_train)
+ind_test <- setdiff(1:nrow(winedata$x), ind_train)
+d_train <- data.frame(x = winedata$x[ind_train,], y = winedata$y[ind_train])
+d_test <- data.frame(x = winedata$x[ind_test,], y = winedata$y[ind_test])
 
 ```
 
-It is likely that there are a few words that are very predictive of the email being spam, while most of the words are probably not important in the classification task. We continue the analysis with the `hs(df = 4)` prior.
+With this data set the classes are separable, which means that we definitely want to shrink the parameters. We continue the analysis with the `hs(df = 5)` prior.
 
 ```{r, spam-full, results="hide"}
 fit3 <- stan_glm(y ~ x, family = binomial(), data = d_train,
-                 prior = hs(df = 4), prior_intercept = normal(0, 5),
-                 iter = 400, chains = CHAINS, cores = CORES, seed = 12345)
+                 prior = hs(df = 5), prior_intercept = normal(0, 5),
+                 iter = 300, chains = CHAINS, cores = CORES, seed = 12345)
 kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
 ```
 
@@ -273,24 +259,33 @@ As noted, for the non-Gaussian GLMs there is no closed form solution for the pro
 In practice, the described approach seems to yield similar results to using `ns` samples in the selection, but currently it is not recommended for final statistical inference.
 
 ```{r, spam-varsel, results = "hide"}
-library(glmproj)
 fit3_v <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 100, nc = 1)
 ```
 
-For a classification task, we can also plot the cross-validated classification accuracy. In general the functionality is the same as with the Gaussian case.
+For a classification task, we can also plot the cross-validated classification accuracy. In general, the functionality is the same as with the Gaussian case.
 
-```{r, spam-varsel-plot-results, fig.height=5, fig.width=5}
-plot_varsel(fit3_v, summaries = c('kl','pctcorr'), deltas = F)
-
-submodel_sizes <- c(5, 10, 30)
-
-fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
-
-# 
-pred_sub <- predict(proj5_10_30, newdata = d_test, type = 'response')
-pred_full <- predict(fit3, newdata = d_test, type = 'response')
+```{r, spam-varsel-plot, fig.height=5, fig.width=5}
+varsel_plot(fit3_v, summaries = c('kl','pctcorr'), deltas = F)
 ```
 
+As with the gaussian case, the actual percentage of correctly classified objects in the test set resembles closely the percentage calculated with cross-validation.
+
+```{r, spam-varsel-coefs}
+submodel_sizes <- c(2, 6)
+fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
+
+pred_sub <- proj_linpred(fit3_p, transform = T, newdata = d_test)
+pred_full <- posterior_linpred(fit3, transform = T, newdata = d_test)
+
+acc_sub <- sapply(pred_sub, function(x) sum(round(colMeans(x),0)==d_test$y))
+acc_full <- sum(round(colMeans(pred_full),0)==d_test$y)
+accuracies <- cbind(c(paste('Submodel, nv =',c(submodel_sizes)),'Full model'),
+                    round(c(acc_sub, acc_full)/length(d_test$y)*100,2))
+
+knitr::kable(accuracies, align = 'c',
+             col.names = c('Model', 'Correctly classified (%)'),
+             caption = 'Percentage of correctly classified instances on the test set.')
+```
 
 
 # References

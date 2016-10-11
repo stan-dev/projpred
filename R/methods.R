@@ -46,25 +46,23 @@ project.stanreg <- function(object, nv, ...) {
 }
 
 #' @export
-predict_proj <- function(object, ..., newdata = NULL, type = c('link', 'response'), se.fit = FALSE) {
+proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the projection.',
                'Run the projection first.'))
-  type <- match.arg(type)
-  dat <- rstanarm:::pp_data(object, newdata)
 
-  res <- lapply(object$proj, function(proj, dat, chosen) {
-    dat$x[, chosen[1:nrow(proj$b)], drop = F]%*%proj$b + dat$offset
+  dat <- rstanarm:::pp_data(object, newdata, offset = offset)
+
+  lapply(object$proj, function(proj, dat, chosen) {
+    res <- t(dat$x[, chosen[1:nrow(proj$b)], drop = F]%*%proj$b + dat$offset)
+    if(transform) family(object)$linkinv(res) else res
   }, dat, object$varsel$chosen)
 
-  if(type == 'response') res <- lapply(res, function(x) family(object)$linkinv(x))
-
-  lapply(res, rowMeans)
 }
 
 #' @export
-coef_proj <- function(object, ...) {
+proj_coef <- function(object, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the projection.',
@@ -73,7 +71,7 @@ coef_proj <- function(object, ...) {
 }
 
 #' @export
-se_proj <- function(object, ...) {
+proj_se <- function(object, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the projection.',
@@ -82,7 +80,7 @@ se_proj <- function(object, ...) {
 }
 
 #' @export
-sigma_proj <- function(object, ...) {
+proj_sigma <- function(object, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the projection.',
@@ -90,10 +88,9 @@ sigma_proj <- function(object, ...) {
   lapply(object$proj, function(x) if('dis' %in% names(x)) sqrt(mean(x$dis^2)) else 1)
 }
 
-# Functionality similar to these is needed, but maybe functions
-# named with x_varsel is not the best way to do this.
+
 #' @export
-plot_varsel <- function(x, ..., nv = NULL, summaries = NULL, deltas = T, train = F) {
+varsel_plot <- function(x, ..., nv = NULL, summaries = NULL, deltas = T, train = F) {
   if(!('varsel' %in% names(x)))
     stop(paste('Stanreg object doesn\'t contain information about the variable',
                'selection. Run the variable selection first!'))
@@ -121,7 +118,7 @@ plot_varsel <- function(x, ..., nv = NULL, summaries = NULL, deltas = T, train =
 }
 
 #' @export
-summary_varsel <- function(object, ..., nv = NULL, deltas = F, train = F) {
+varsel_summary <- function(object, ..., nv = NULL, deltas = F, train = F) {
   if(!('varsel' %in% names(object)))
      stop(paste('Stanreg object doesn\'t contain information about the variable',
                 'selection.\nRun the variable selection first!'))
@@ -146,5 +143,6 @@ summary_varsel <- function(object, ..., nv = NULL, deltas = F, train = F) {
   arr$chosen <- c(object$varsel$chosen, NA)
   if('pctch' %in% names(object$varsel)) arr$pctch <- c(object$varsel$pctch, NA)
 
-  subset(arr, size <= nv, c('size', intersect(colnames(arr), summaries)))
+  subset(arr, size <= nv, c('size', intersect(colnames(arr),
+                                              c(summaries, 'chosen', 'pctch'))))
 }

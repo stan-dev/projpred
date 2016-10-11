@@ -26,8 +26,8 @@ Example
     df1 <- data.frame(x = I(x), y = y)
 
     # fit the full model with a sparsifying prior
-    fit <- stan_glm(y ~ x, gaussian(), df1, prior = hs(df = 3), iter = 500)
-    #fit <- stan_glm(y ~ x, binomial(), df1, prior = hs(df = 4), iter = 500)
+    fit <- stan_glm(y ~ x, gaussian(), df1, prior = hs(df = 3), iter = 500, seed = 1)
+    #fit <- stan_glm(y ~ x, binomial(), df1, prior = hs(df = 4), iter = 500, seed = 1)
 
 
     # perform the variable selection
@@ -35,19 +35,20 @@ Example
     # Gaussian with identity link
     fit_v <- varsel(fit, verbose = T)
     # print the results
-    summary_varsel(fit_v)
+    varsel_summary(fit_v)
 
     # project the parameters for a model of size 5 and 8
-    fit_p <- predict_proj(fit_v, nv = c(5,8))
-    coef(fit_p)
+    fit_p <- project(fit_v, nv = c(5,8))
+    proj_coef(fit_p)
+    
 
     # perform cross-validation for the variable selection
     # this takes some time to complete, especially for the non-Gaussian case.
     k_fold <- glmproj::kfold(fit, save_fits = T)
-    fit_v <- cv_varsel(fit, k_fold, verbose = T)
+    fit_v <- cv_varsel(fit, k_fold)
 
     # plot the results
-    plot_varsel(fit_v)
+    varsel_plot(fit_v)
 
 References
 ------------
