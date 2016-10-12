@@ -25,10 +25,10 @@ This vignette explains how to perform projection predictive variable selection f
 
 One of the tasks related to model selection is to identify which of the available candidate variables are the most relevant according to some selected criterion. Furthermore, if only a small portion of the variables are relevant, decreased measurement or computational costs as well as improved model interpretability may be obtained by using only a subset of the variables.
 
-In predictive model selection methods, the relevance of a model is evaluated based on its predictive power. While the predictive power might not always be the only target criterion, it is, however, often a sensible one as interpreting the parameters of a model with no predictive power makes little sense. Moreover, the idea behind the projection predictive method  (Goutis and Robert, 1998; Dupuis and Robert, 2003) is to project the information of the full model (that is, a model using all the variables) to a subset of the variables. The steps of the projection predictive variable selection are:
+In predictive model selection methods, the relevance of a model is evaluated based on its predictive power. While the predictive power might not always be the only target criterion, it is, however, often a sensible one as interpreting the parameters of a model with no predictive power makes little sense. Moreover, the idea behind the projection predictive method  (Goutis and Robert, 1998; Dupuis and Robert, 2003) is to project the information of the full model (that is, a model using all the variables) to model using only a subset of the variables. The steps of the projection predictive variable selection are:
 
   1. Fit the full model with all the variables and the best possible prior information.
-  1. Perform the variable selection using the projection predictive method.
+  1. Perform the variable selection (model reduction) using the projection predictive method.
   
 Especially in high-dimensional settings, the best possible prior information often includes some sort of idea about sparsity. The next section reviews the hierarchical shrinkage (`hs`) prior, which is one way of expressing this in __rstanarm__. The following sections also review the details of the projection predictive method and provide two examples using real world data.
 
@@ -96,7 +96,7 @@ In addition, the discrepancy between the full model and a submodel is defined as
 
 which can be approximated using the posterior draws of the full model.
 
-Now that we have are able to compare different submodels using the discrepancy above, the missing piece is a search heuristic as doing the projection for all the possible parameter combinations is not feasible. For this, forward selection seems to work well in practice while being computationally efficient. In forward selection, the variables are added one at a time selecting the candidate variable that decreases the discrepancy the most.
+Now that we are able to compare different submodels using the discrepancy above, the missing piece is a search heuristic as doing the projection for all the possible parameter combinations is not usually computational feasible. For this, forward selection seems to work well in practice while being computationally efficient. In forward selection, the variables are added one at a time selecting the candidate variable that decreases the discrepancy the most.
 
 For assessing the performance of the submodels as a function of the submodel size, we can use cross-validation (Piironen and Vehtari, 2016). The full model is fitted $K$ times with all but $n/K$ observations withheld for testing, running the forward selection and evaluating the performance on the test set. In addition to more traditional performance metrics such as mean squared error, the procedure also produces $K$ possibly different search paths, the similarity of which can also be used to decide the correct size for the submodel. 
 
@@ -143,7 +143,7 @@ After preprocessing, the data has 1992 instances and 100 variables. To illustrat
 
 ## Full model
 
-Given, that the data is a combination of census information, law enforcement data it seems likely, that there are great differences among the importances of the variables. Therefore the data seems to be an ideal application for the hierarchical shrinkage prior. In this example we use a Gaussian linear model with `hs(df = 3)` prior. Note, that the hierarchical shrinkage prior is not applied for the intercept term and for that we use a weakly informative `normal(0, 5)` prior. In order to find out a sufficient submodel size, we also save the cross-validated fits in a separate object.
+Given, that the data is a combination of census information and law enforcement data it seems likely, that there are great differences among the importances of the variables. Therefore the data seems to be an ideal application for the hierarchical shrinkage prior. In this example we use a Gaussian linear model with `hs(df = 3)` prior. Note, that the hierarchical shrinkage prior is not applied for the intercept term and for that we use a weakly informative `normal(0, 5)` prior. In order to find out a sufficient submodel size, we also save the cross-validated fits in a separate object.
 
 ```{r, crime-full, results="hide"}
 library(rstanarm)
@@ -168,7 +168,7 @@ To assess how much the full model can be simplified, we can plot some performanc
 varsel_plot(fit3_v, summaries = c('kl','mse','mlpd'), nv = 50)
 ```
 
-The plot above shows the difference in KL-divergence (kl), the mean log predictive density (mldp) and the mean squared error (mse) between the submodel and the full model. The gray bars denote the 95% credible interval for the difference. It seems that after 30 variables or so, the difference in the performance of the models is so close to zero that using 30 variables should definitely be enough. On the other hand, it seems that using as few as 10 variables might already produce relatively good results compared to the full model. 
+The plot above shows the difference in KL-divergence (kl), the mean log predictive density (mldp) and the mean squared error (mse) between the submodel and the full model. The gray bars denote the 95% credible interval for the difference. It seems that after 30 variables or so, the difference in the performance of the models is so close to zero that using 30 variables should  be enough. On the other hand, it seems that using as few as 10 variables  already produces relatively good results compared to the full model. 
 
 The same statics can also be obtained in numerical form with the `summary(vars)` command. Therefore, we can also calculate additional quantities that may be of interest.
 
@@ -183,7 +183,7 @@ kable(cbind(submodel_sizes, rmse_diff), align = 'c',
              caption = 'Difference in RMSE to the full model averaged over 10 cross-validated searches.')
 ```
 
-We can also evaluate the uncertainty related to variable selection by checking, how much the cross-validated projections agree on the selected variables. In this case we notice that there is great uncertainty related to the variable selection and therefore no clear choice which variables to add to the model after the first few.
+We can also evaluate the uncertainty related to the variable selection by checking, how much the cross-validated projections agree on the selected variables. In this case we notice that there is great uncertainty related to the variable selection and therefore no clear choice which variables to add to the model after the first few. This is likely due to correlations between variables, so that any variable from a correlating group variables is a good choice for addition.
 
 ```{r, crime-varsel-print2}
 kable(
@@ -205,7 +205,7 @@ fit3_p5 <- project(fit3_v, nv = 5, ns = 100)
 proj_coef(fit3_p5)
 ```
 
-The projections can also be used to predict similarly to using the full model. For example, the table below shows that in this case the submodels perform essentially identically to the full model on the test data.
+The projected submodels can also be used to make predictions. For example, the table below shows that in this case the submodels perform essentially identically to the full model on the test data.
 
 ```{r, crime-varsel-predict}
 fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
@@ -254,7 +254,7 @@ fit3 <- stan_glm(y ~ x, family = binomial(), data = d_train,
 kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
 ```
 
-As noted, for the non-Gaussian GLMs there is no closed form solution for the projected parameters and therefore the projection takes longer. To do the variable selection faster, we compare the candidate variables by projecting the information in the posterior to only one sample instead of `ns `samples. This is done by setting `nc = 1`. After the variables have been selected, the projection is done onto the submodel using the `ns` samples.
+As noted, for the non-Gaussian GLMs there is no closed form solution for the projected parameters and therefore the projection takes longer. To do the variable selection faster, we compare the candidate variables by projecting the information in the posterior to only one sample instead of `ns `samples. This is done by setting `nc = 1`. After the variables have been selected, the projection is remade for the selected submodels using `ns` samples.
 
 In practice, the described approach seems to yield similar results to using `ns` samples in the selection, but currently it is not recommended for final statistical inference.
 
@@ -268,7 +268,7 @@ For a classification task, we can also plot the cross-validated classification a
 varsel_plot(fit3_v, summaries = c('kl','pctcorr'), deltas = F)
 ```
 
-As with the gaussian case, the actual percentage of correctly classified objects in the test set resembles closely the percentage calculated with cross-validation.
+As with the Gaussian case, the actual percentage of correctly classified objects in the test set resembles closely the percentage calculated with cross-validation.
 
 ```{r, spam-varsel-coefs}
 submodel_sizes <- c(2, 6)
