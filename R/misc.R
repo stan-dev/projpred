@@ -249,3 +249,17 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   b_weights <- matrix(rexp(n_obs * n_boot, 1), ncol = n_obs)
   b_weights/rowSums(b_weights)
 }
+
+.varsel_errors <- function(e) {
+  if(grepl('computationally singular', e$message)) {
+    stop(paste(
+      'Numerical problems with inverting the covariance matrix. Possibly a',
+      'problem with the convergence of the stan model?, If not, consider adding',
+      'a small value to the diagonal elements by setting e.g. regul = 1e-10 or',
+      'stopping the variable selection early by setting the variable nv accordingly.'
+    ))
+  } else {
+    stop(e$message)
+  }
+}
+

@@ -70,10 +70,13 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
   b0 <- matrix(unname(coef(fit)), ncol = 1)
 
   s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
-  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind], cluster_w = rep(1/args$ns, args$ns))
+  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind],
+                 cluster_w = rep(1/args$ns, args$ns))
   clust <- if(args$clust) .get_p_clust(mu, dis, args) else NULL
 
-  sel <- fsel(p_full, d_train, d_test, clust$p, b0, args)
+  # Slightly more informative error messages for certain problems.
+  tryCatch(sel <- fsel(p_full, d_train, d_test, clust$p, b0, args),
+           'error' = .varsel_errors)
 
   full_stats_temp <- .summary_stats(
     d_test, 1:nrow(vars$b), list(b = vars$b[, s_ind], dis = vars$dis[s_ind]), args)

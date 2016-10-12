@@ -53,12 +53,16 @@ cv_varsel <- function(fit, fits = NULL, ...) {
 cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
 
   .validate_for_varsel(fit)
-  if(is.null(k_fold)) k_fold <- glmproj::kfold(fit, save_fits = T)
+  if(is.null(k_fold)) {
+    print(paste('k_fold not provided, performing 10-fold cross-validation',
+                'for the stan model.'))
+    k_fold <- glmproj::kfold(fit, save_fits = T)
+  }
 
   if(!all(apply(k_fold$fits, 1, function(fits, fit) {
     .validate_for_varsel(fits$fit)
     is.vector(fits$omitted) && max(fits$omitted) <= nobs(fit) && all(fits$omitted > 0)
-  }, fit))) stop('fits does not have the correct form.')
+  }, fit))) stop('k_fold does not have the correct form.')
 
   k <- attr(k_fold, 'K')
   vars <- .extract_vars(fit)
