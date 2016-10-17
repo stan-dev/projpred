@@ -21,26 +21,48 @@ params:
 
 # Introduction
 
-This vignette explains how to perform projection predictive variable selection for generalized linear models (GLMs) fitted using the `stan_glm` function in the __rstanarm__ package. The vignette is based on Piironen and Vehtari (2015), which also discusses some of the details more thoroughly.
+This vignette explains how to perform projection predictive variable selection
+for generalized linear models (GLMs) fitted using the `stan_glm` function in the
+__rstanarm__ package. The vignette is based on Piironen and Vehtari (2015),
+which also discusses some of the details more thoroughly.
 
-One of the tasks related to model selection is to identify which of the available candidate variables are the most relevant according to some selected criterion. Furthermore, if only a small portion of the variables are relevant, decreased measurement or computational costs as well as improved model interpretability may be obtained by using only a subset of the variables.
+One of the tasks related to model selection is to identify which of the
+available candidate variables are the most relevant according to some selected
+criterion. Furthermore, if only a small portion of the variables are relevant,
+decreased measurement or computational costs as well as improved model
+interpretability may be obtained by using only a subset of the variables.
 
-In predictive model selection methods, the relevance of a model is evaluated based on its predictive power. While the predictive power might not always be the only target criterion, it is, however, often a sensible one as interpreting the parameters of a model with no predictive power makes little sense. Moreover, the idea behind the projection predictive method  (Goutis and Robert, 1998; Dupuis and Robert, 2003) is to project the information of the full model (that is, a model using all the variables) to a subset of the variables. The steps of the projection predictive variable selection are:
+In predictive model selection methods, the relevance of a model is evaluated
+based on its predictive power. While the predictive power might not always be
+the only target criterion, it is, however, often a sensible one as interpreting
+the parameters of a model with no predictive power makes little sense. Moreover,
+the idea behind the projection predictive method  (Goutis and Robert, 1998;
+Dupuis and Robert, 2003) is to project the information of the full model (that
+is, a model using all the variables) to a subset of the variables. The steps of
+the projection predictive variable selection are:
 
   1. Fit the full model with all the variables and the best possible prior information.
   1. Perform the variable selection using the projection predictive method.
   
-Especially in high-dimensional settings, the best possible prior information often includes some sort of idea about sparsity. The next section reviews the hierarchical shrinkage (`hs`) prior, which is one way of expressing this in __rstanarm__. The following sections also review the details of the projection predictive method and provide two examples using real world data.
+Especially in high-dimensional settings, the best possible prior information
+often includes some sort of idea about sparsity. The next section reviews the
+hierarchical shrinkage (`hs`) prior, which is one way of expressing this in
+__rstanarm__. The following sections also review the details of the projection
+predictive method and provide two examples using real world data.
 
 # Hierarchical shrinkage
 
-Consider a single output generalized linear model where the relationship between the input $\boldsymbol{X}$ and the target $\boldsymbol{Y}$ is
+Consider a single output generalized linear model where the relationship between
+the input $\boldsymbol{X}$ and the target $\boldsymbol{Y}$ is
 
 \[
 E[\boldsymbol{Y}|\boldsymbol{X}] \ = \  g^{-1}(\boldsymbol{\eta}) = g^{-1}(\alpha + \boldsymbol{\beta}^T\boldsymbol{X})
 \]
 
-where $\boldsymbol{\eta}$ is the linear predictor, $\alpha$ and $\boldsymbol{\beta}^T = (\beta_1,...,\beta_{nv})$ are the intercept term and the regression coefficients and $g^{-1}(\cdot)$ is the inverse of the link function which maps the linear predictor to the target space.
+where $\boldsymbol{\eta}$ is the linear predictor, $\alpha$ and
+$\boldsymbol{\beta}^T = (\beta_1,...,\beta_{nv})$ are the intercept term and the
+regression coefficients and $g^{-1}(\cdot)$ is the inverse of the link function
+which maps the linear predictor to the target space.
 
 A hierarchical shrinkage prior for the coefficient vector is
 
@@ -51,9 +73,20 @@ A hierarchical shrinkage prior for the coefficient vector is
 \end{align}
 \]
 
-where $t_\nu^+$ is a half-Student-$t$ prior with $\nu$ degrees of freedom. In some sense, $\tau$ is a global shrinkage parameter as it shrinks all the coefficients identically. Conversely, $\lambda_j$ is a local shrinkage parameter as each coefficient has its own $\lambda_j$. Therefore, by adjusting the prior distribution of $\lambda_j$ one can control the 'shrinkage profile' of the coefficients. For example, setting $\nu=1$ yields the Horseshoe prior (Carvalho et al. 2009, 2010). 
+where $t_\nu^+$ is a half-Student-$t$ prior with $\nu$ degrees of freedom. In
+some sense, $\tau$ is a global shrinkage parameter as it shrinks all the
+coefficients identically. Conversely, $\lambda_j$ is a local shrinkage parameter
+as each coefficient has its own $\lambda_j$. Therefore, by adjusting the prior
+distribution of $\lambda_j$ one can control the 'shrinkage profile' of the
+coefficients. For example, setting $\nu=1$ yields the Horseshoe prior (Carvalho
+et al. 2009, 2010).
 
-To get further intuition, we define another variable $\kappa_j = 1 / (1 + \lambda_j^2)$. In this case, having $\kappa_j \approx 1$ (or equivalently $\lambda_j^2\approx 0$) means complete shrinkage for the coefficient $\beta_j$, whereas having $\kappa_j \approx 0$ means no shrinkage for the coefficient $\beta_j$. We can see the effect of $\nu$ to the local shrinkage by sampling $\kappa_j$ for different choices of $\nu$.
+To get further intuition, we define another variable $\kappa_j = 1 / (1 +
+\lambda_j^2)$. In this case, having $\kappa_j \approx 1$ (or equivalently
+$\lambda_j^2\approx 0$) means complete shrinkage for the coefficient $\beta_j$,
+whereas having $\kappa_j \approx 0$ means no shrinkage for the coefficient
+$\beta_j$. We can see the effect of $\nu$ to the local shrinkage by sampling
+$\kappa_j$ for different choices of $\nu$.
 
 ```{r, kappa-fig, fig.height=2, fig.width=5}
 library(ggplot2)
@@ -71,12 +104,19 @@ ggplot(kappa, aes(x = value)) +
         axis.ticks.y = element_blank())
 ```
 
-The figures above illustrate the difference between setting the degrees of freedom parameter to $1$ and $3$. While both options would result in most coefficients getting shrunk moderately and some a lot, the former would also allow some coefficients not getting shrunk at all.
+The figures above illustrate the difference between setting the degrees of
+freedom parameter to $1$ and $3$. While both options would result in most
+coefficients getting shrunk moderately and some a lot, the former would also
+allow some coefficients not getting shrunk at all.
 
 
 # Projection Predictive Method
 
-As discussed, the idea of the projection predictive method is to project the information in the coefficient vector of the full model $\boldsymbol{\theta}^* = (\alpha^*,\boldsymbol{\beta}^*)$ to a coefficient vector $\boldsymbol{\theta}^\bot=(\alpha^\bot,\boldsymbol{\beta}^\bot)$ of given dimensionality such that
+As discussed, the idea of the projection predictive method is to project the
+information in the coefficient vector of the full model $\boldsymbol{\theta}^* =
+(\alpha^*,\boldsymbol{\beta}^*)$ to a coefficient vector
+$\boldsymbol{\theta}^\bot=(\alpha^\bot,\boldsymbol{\beta}^\bot)$ of given
+dimensionality such that
 
 \[
 \boldsymbol{\theta}^\bot = \arg\min_\theta \frac{1}{n} 
@@ -85,7 +125,9 @@ As discussed, the idea of the projection predictive method is to project the inf
   p(\tilde{y}\, |\, \boldsymbol{x}_i, \boldsymbol{\theta})).
 \]
 
-In addition, the discrepancy between the full model and a submodel is defined as an expectation of the above KL-divergence over the posterior of the full model's coefficient vector
+In addition, the discrepancy between the full model and a submodel is defined as
+an expectation of the above KL-divergence over the posterior of the full model's
+coefficient vector
 
 \[
 \delta(\boldsymbol{\theta}^*, \boldsymbol{\theta}^\bot)= \frac{1}{n} 
@@ -96,16 +138,33 @@ In addition, the discrepancy between the full model and a submodel is defined as
 
 which can be approximated using the posterior draws of the full model.
 
-Now that we have are able to compare different submodels using the discrepancy above, the missing piece is a search heuristic as doing the projection for all the possible parameter combinations is not feasible. For this, forward selection seems to work well in practice while being computationally efficient. In forward selection, the variables are added one at a time selecting the candidate variable that decreases the discrepancy the most.
+Now that we have are able to compare different submodels using the discrepancy
+above, the missing piece is a search heuristic as doing the projection for all
+the possible parameter combinations is not feasible. For this, forward selection
+seems to work well in practice while being computationally efficient. In forward
+selection, the variables are added one at a time selecting the candidate
+variable that decreases the discrepancy the most.
 
-For assessing the performance of the submodels as a function of the submodel size, we can use cross-validation (Piironen and Vehtari, 2016). The full model is fitted $K$ times with all but $n/K$ observations withheld for testing, running the forward selection and evaluating the performance on the test set. In addition to more traditional performance metrics such as mean squared error, the procedure also produces $K$ possibly different search paths, the similarity of which can also be used to decide the correct size for the submodel. 
+For assessing the performance of the submodels as a function of the submodel
+size, we can use cross-validation (Piironen and Vehtari, 2016). The full model
+is fitted $K$ times with all but $n/K$ observations withheld for testing,
+running the forward selection and evaluating the performance on the test set. In
+addition to more traditional performance metrics such as mean squared error, the
+procedure also produces $K$ possibly different search paths, the similarity of
+which can also be used to decide the correct size for the submodel.
 
 
 # Gaussian Example
 
 ## Preliminaries
 
-As an example, we use the [Communities and Crime data set](https://archive.ics.uci.edu/ml/datasets/Communities+and+Crime+Unnormalized). The data set is a combination of socio-economic census information and law enforcement data from different areas in the US. The target variable chosen for this example is the total number of violent crimes per population. The data is preprocessed by removing the variables and instances with missing observations, normalizing the predictor variables and log-normalizing the target variable.
+As an example, we use the [Communities and Crime data
+set](https://archive.ics.uci.edu/ml/datasets/Communities+and+Crime+Unnormalized).
+The data set is a combination of socio-economic census information and law
+enforcement data from different areas in the US. The target variable chosen for
+this example is the total number of violent crimes per population. The data is
+preprocessed by removing the variables and instances with missing observations,
+normalizing the predictor variables and log-normalizing the target variable.
 
 ```{r, crime-preprocess}
 set.seed(12345)
@@ -138,12 +197,22 @@ d_train <- data.frame(x = crimedata$x[ind_train,], y = crimedata$y[ind_train])
 d_test <- data.frame(x = crimedata$x[ind_test,], y = crimedata$y[ind_test])
 ```
 
-After preprocessing, the data has 1992 instances and 100 variables. To illustrate the variable selection, we furthermore randomly split the data randomly into training set of size 100 and leave the rest for evaluating the performance.
+After preprocessing, the data has 1992 instances and 100 variables. To
+illustrate the variable selection, we furthermore randomly split the data
+randomly into training set of size 100 and leave the rest for evaluating the
+performance.
 
 
 ## Full model
 
-Given, that the data is a combination of census information, law enforcement data it seems likely, that there are great differences among the importances of the variables. Therefore the data seems to be an ideal application for the hierarchical shrinkage prior. In this example we use a Gaussian linear model with `hs(df = 3)` prior. Note, that the hierarchical shrinkage prior is not applied for the intercept term and for that we use a weakly informative `normal(0, 5)` prior. In order to find out a sufficient submodel size, we also save the cross-validated fits in a separate object.
+Given, that the data is a combination of census information, law enforcement
+data it seems likely, that there are great differences among the importances of
+the variables. Therefore the data seems to be an ideal application for the
+hierarchical shrinkage prior. In this example we use a Gaussian linear model
+with `hs(df = 3)` prior. Note, that the hierarchical shrinkage prior is not
+applied for the intercept term and for that we use a weakly informative
+`normal(0, 5)` prior. In order to find out a sufficient submodel size, we also
+save the cross-validated fits in a separate object.
 
 ```{r, crime-full, results="hide"}
 library(rstanarm)
@@ -155,22 +224,35 @@ kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
 
 ## Variable selection
 
-After we have fitted the full model, we can proceed to the variable selection. We use 200 posterior draws to approximate the expectation of the KL divergence, although in some situations more samples might be needed. We also run the variable selection only up to 50 variables.
+After we have fitted the full model, we can proceed to the variable selection.
+We use 200 posterior draws to approximate the expectation of the KL divergence,
+although in some situations more samples might be needed. We also run the
+variable selection only up to 50 variables.
 
 ```{r, crime-varsel, results = "hide"}
 library(glmproj)
 fit3_v <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 200, nv = 50)
 ```
 
-To assess how much the full model can be simplified, we can plot some performance metrics calculated with cross-validation.
+To assess how much the full model can be simplified, we can plot some
+performance metrics calculated with cross-validation.
 
 ```{r, crime-varsel-plot, fig.height=5, fig.width=5}
 varsel_plot(fit3_v, summaries = c('kl','mse','mlpd'), nv = 50)
 ```
 
-The plot above shows the difference in KL-divergence (kl), the mean log predictive density (mldp) and the mean squared error (mse) between the submodel and the full model. The gray bars denote the 95% credible interval for the difference. It seems that after 30 variables or so, the difference in the performance of the models is so close to zero that using 30 variables should definitely be enough. On the other hand, it seems that using as few as 10 variables might already produce relatively good results compared to the full model. 
+The plot above shows the difference in KL-divergence (kl), the mean log
+predictive density (mldp) and the mean squared error (mse) between the submodel
+and the full model. The gray bars denote the 95% credible interval for the
+difference. It seems that after 30 variables or so, the difference in the
+performance of the models is so close to zero that using 30 variables should
+definitely be enough. On the other hand, it seems that using as few as 10
+variables might already produce relatively good results compared to the full
+model.
 
-The same statics can also be obtained in numerical form with the `summary(vars)` command. Therefore, we can also calculate additional quantities that may be of interest.
+The same statics can also be obtained in numerical form with the `summary(vars)`
+command. Therefore, we can also calculate additional quantities that may be of
+interest.
 
 ```{r, results = "asis", crime-varsel-print}
 # Average difference in RMSE for models of size 10 and 30 compared to the full model
@@ -183,7 +265,11 @@ kable(cbind(submodel_sizes, rmse_diff), align = 'c',
              caption = 'Difference in RMSE to the full model averaged over 10 cross-validated searches.')
 ```
 
-We can also evaluate the uncertainty related to variable selection by checking, how much the cross-validated projections agree on the selected variables. In this case we notice that there is great uncertainty related to the variable selection and therefore no clear choice which variables to add to the model after the first few.
+We can also evaluate the uncertainty related to variable selection by checking,
+how much the cross-validated projections agree on the selected variables. In
+this case we notice that there is great uncertainty related to the variable
+selection and therefore no clear choice which variables to add to the model
+after the first few.
 
 ```{r, crime-varsel-print2}
 kable(
@@ -198,14 +284,17 @@ kable(
 
 ## Results
 
-Given a selected model size, we can obtain the projected coefficient vectors and print them.
+Given a selected model size, we can obtain the projected coefficient vectors and
+print them.
 
 ```{r, crime-varsel-project}
 fit3_p5 <- project(fit3_v, nv = 5, ns = 100)
 proj_coef(fit3_p5)
 ```
 
-The projections can also be used to predict similarly to using the full model. For example, the table below shows that in this case the submodels perform essentially identically to the full model on the test data.
+The projections can also be used to predict similarly to using the full model.
+For example, the table below shows that in this case the submodels perform
+essentially identically to the full model on the test data.
 
 ```{r, crime-varsel-predict}
 fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
@@ -226,7 +315,13 @@ knitr::kable(cbind(submodel_sizes, rmse_diff_test), align = 'c',
 
 # Non-Gaussian models
 
-Performing the variable selection for non-Gaussian models works similarly, although in this case the expectation of the KL divergence is not available in closed form, and therefore performing the projection is slightly slower. As an example, we use the [Wine Data Set](https://archive.ics.uci.edu/ml/datasets/Wine), which deals with classifying wines to three classes. In this example we try to differentiate the most frequent class from the other two.
+Performing the variable selection for non-Gaussian models works similarly,
+although in this case the expectation of the KL divergence is not available in
+closed form, and therefore performing the projection is slightly slower. As an
+example, we use the [Wine Data
+Set](https://archive.ics.uci.edu/ml/datasets/Wine), which deals with classifying
+wines to three classes. In this example we try to differentiate the most
+frequent class from the other two.
 
 ```{r, wine-preprocess1}
 # Download the data
@@ -245,7 +340,9 @@ d_test <- data.frame(x = winedata$x[ind_test,], y = winedata$y[ind_test])
 
 ```
 
-With this data set the classes are separable, which means that we definitely want to shrink the parameters. We continue the analysis with the `hs(df = 5)` prior.
+With this data set the classes are separable, which means that we definitely
+want to shrink the parameters. We continue the analysis with the `hs(df = 5)`
+prior.
 
 ```{r, spam-full, results="hide"}
 fit3 <- stan_glm(y ~ x, family = binomial(), data = d_train,
@@ -254,21 +351,31 @@ fit3 <- stan_glm(y ~ x, family = binomial(), data = d_train,
 kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = T)
 ```
 
-As noted, for the non-Gaussian GLMs there is no closed form solution for the projected parameters and therefore the projection takes longer. To do the variable selection faster, we compare the candidate variables by projecting the information in the posterior to only one sample instead of `ns `samples. This is done by setting `nc = 1`. After the variables have been selected, the projection is done onto the submodel using the `ns` samples.
+As noted, for the non-Gaussian GLMs there is no closed form solution for the
+projected parameters and therefore the projection takes longer. To do the
+variable selection faster, we compare the candidate variables by projecting the
+information in the posterior to only one sample instead of `ns `samples. This is
+done by setting `nc = 1`. After the variables have been selected, the projection
+is done onto the submodel using the `ns` samples.
 
-In practice, the described approach seems to yield similar results to using `ns` samples in the selection, but currently it is not recommended for final statistical inference.
+In practice, the described approach seems to yield similar results to using `ns`
+samples in the selection, but currently it is not recommended for final
+statistical inference.
 
 ```{r, spam-varsel, results = "hide"}
 fit3_v <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 100, nc = 1)
 ```
 
-For a classification task, we can also plot the cross-validated classification accuracy. In general, the functionality is the same as with the Gaussian case.
+For a classification task, we can also plot the cross-validated classification 
+accuracy. In general, the functionality is the same as with the Gaussian case.
 
 ```{r, spam-varsel-plot, fig.height=5, fig.width=5}
 varsel_plot(fit3_v, summaries = c('kl','pctcorr'), deltas = F)
 ```
 
-As with the gaussian case, the actual percentage of correctly classified objects in the test set resembles closely the percentage calculated with cross-validation.
+As with the gaussian case, the actual percentage of correctly classified objects
+in the test set resembles closely the percentage calculated with
+cross-validation.
 
 ```{r, spam-varsel-coefs}
 submodel_sizes <- c(2, 6)
