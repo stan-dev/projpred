@@ -17,7 +17,7 @@ b0 <- matrix(rowMeans(b))
 context("Forward selection")
 test_that("Forward selection returns a sensible sequence
           with a gaussian likelihood.", {
-  sel <- fsel(p_full, d_train, d_train, p_clust = NULL, b0, args)
-  expect_equal(sel$chosen[1:4], chosen[1:4])
+  chosen <- fsel(p_full, d_train, b0, args)
+  expect_equal(chosen[1:4], chosen[1:4])
 })
 

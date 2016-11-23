@@ -64,7 +64,7 @@ IRLS <- function(p_full, d_train, b0, args) {
   p_sub <- list(mu = mu)
   p_sub$dis <- fam$dis(p_full, d_train, p_sub)
   res <- list(kl = fam$kl(p_full, d_train, p_sub) + sum(b^2*regulvec), b = b)
-  if(fam$family %in% c('gaussian','Gamma')) res$dis <- p_sub$dis
+  res$dis <- p_sub$dis
   res
 }
 

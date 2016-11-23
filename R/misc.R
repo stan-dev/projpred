@@ -147,30 +147,28 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   # Use analytical solution for gaussian as it is a lot faster
   if(family_kl$family == 'gaussian' && family_kl$link == 'identity') {
-    function(v_ind, chosen, p_full, d_train, b0, args) {
-      v_inds <- c(chosen, v_ind)
+    function(chosen, p_full, d_train, b0, args) {
       w <- sqrt(d_train$weights)
 
-      regulvec <- c((1-args$intercept)*args$regul, rep(args$regul, length(v_inds) - 1))
+      regulvec <- c((1-args$intercept)*args$regul, rep(args$regul, length(chosen) - 1))
       regulmat <- diag(regulvec, length(regulvec), length(regulvec))
       # Solution for the gaussian case (with l2-regularization)
-      p_sub <- list(b = solve(crossprod(w*d_train$x[,v_inds, drop = F]) + regulmat,
-                              crossprod(w*d_train$x[,v_inds, drop = F], w*p_full$mu)))
+      p_sub <- list(b = solve(crossprod(w*d_train$x[,chosen, drop = F]) + regulmat,
+                              crossprod(w*d_train$x[,chosen, drop = F], w*p_full$mu)))
       p_sub$dis <- sqrt(colMeans(d_train$weights*(
-        p_full$mu - d_train$x[, v_inds, drop = F]%*%p_sub$b)^2) + p_full$dis^2)
+        p_full$mu - d_train$x[, chosen, drop = F]%*%p_sub$b)^2) + p_full$dis^2)
       p_sub$kl <- weighted.mean(log(p_sub$dis) - log(p_full$dis) + colSums(p_sub$b^2*regulvec), p_full$cluster_w)
       p_sub
     }
 
   } else {
-    function(v_ind, chosen, p_full, d_train, b0, args) {
-      v_inds <- c(chosen, v_ind)
+    function(chosen, p_full, d_train, b0, args) {
 
       # perform the projection over samples
       res <- sapply(1:ncol(p_full$mu), function(s_ind) {
         IRLS(list(mu = p_full$mu[, s_ind, drop = F], dis = p_full$dis[s_ind]),
-             list(x = d_train$x[, v_inds, drop = F], weights = d_train$weights,
-                  offset = d_train$offset), b0[v_inds,], args)
+             list(x = d_train$x[, chosen, drop = F], weights = d_train$weights,
+                  offset = d_train$offset), b0[chosen,], args)
       })
 
       # weight the results by sample weights (that are all 1 unless p_clust is used)
@@ -183,17 +181,35 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 }
 
 # calculate everything that needs to be saved from the submodel
-.summary_stats <- function(d_test, chosen, p, args) {
-  mu_temp <- args$family_kl$linkinv(d_test$x[,chosen]%*%p$b + d_test$offset)
-  if(is.null(p$dis)) {
-    dis_temp <- NA
-  } else {
-    dis_temp <- matrix(rep(p$dis, each = length(d_test$y)), ncol = NCOL(mu_temp))
-  }
+.summary_stats <- function(chosen, d_train, d_test, p_full, b_full, b0, args) {
 
-  list(mu = rowMeans(mu_temp),
-       lppd = apply(args$family_kl$ll_fun(
-         mu_temp, dis_temp, d_test$y, d_test$weights), 1, log_mean_exp))
+  projfun <- .get_proj_handle(args$family_kl)
+
+  p_sub <- sapply(seq_along(chosen), function(x) {
+    res <- projfun(chosen[1:x], p_full, d_train, b0, args)
+    res$mu <- args$family_kl$linkinv(d_test$x[,chosen[1:x]]%*%res$b + d_test$offset)
+    res$b <- NULL
+    res
+  })
+
+  kl_list <- c(unlist(p_sub['kl',]), 0)
+
+  mu_full <- args$family_kl$linkinv(d_test$x%*%b_full + d_test$offset)
+  mu_list <- c(p_sub['mu',], list(mu_full))
+
+  dis_full <- p_full$dis %ORifNULL% rep(1, length(d_test$y))
+  dis_list <- lapply(c(p_sub['dis',], list(dis_full)), function(x) {
+    matrix(rep(x, each = length(d_test$y)), ncol = NCOL(mu_full))
+  })
+
+  lppd_list <- mapply(function(mu, dis) {
+    apply(args$family_kl$ll_fun(mu, dis, d_test$y, d_test$weights), 1, log_mean_exp)
+  }, mu_list, dis_list, SIMPLIFY = F)
+
+  list(kl = kl_list,
+       mu = lapply(mu_list, rowMeans),
+       dis = lapply(dis_list, rowMeans),
+       lppd = lppd_list)
 }
 
 # get bootstrapped 95%-intervals for the estimates

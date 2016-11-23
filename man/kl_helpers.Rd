@@ -12,5 +12,8 @@ KL divergence, log predictive density and dispersion.
 }
 \details{
 Naming convention described in fsel.R.
+
+Missing: Quasi-families not implemented. If dis_gamma is the correct shape
+parameter for projected Gamma regression, everything should be OK for gamma.
 }
 

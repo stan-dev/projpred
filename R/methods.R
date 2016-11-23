@@ -36,7 +36,7 @@ project.stanreg <- function(object, nv, ...) {
   projfun <- .get_proj_handle(args$family_kl)
 
   object$proj <- lapply(nv, function(nv, p_full, d_train, b0, args, names) {
-    vars <- projfun(NULL, 1:nv, p_full, d_train, unname(b0), args)
+    vars <- projfun(1:nv, p_full, d_train, unname(b0), args)
     rownames(vars$b) <- names[1:nrow(vars$b)]
     vars$kl <- NULL
     vars

@@ -4,7 +4,7 @@
 \alias{fsel}
 \title{The forward selection algorithm}
 \usage{
-fsel(p_full, d_train, d_test, p_clust = NULL, b0, args)
+fsel(p_full, d_train, b0, args)
 }
 \description{
 p_full contains the parameters of the full model, d_train contains the data

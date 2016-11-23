@@ -73,22 +73,21 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
   p_full <- list(mu = mu[, s_ind], dis = dis[s_ind],
                  cluster_w = rep(1/args$ns, args$ns))
   clust <- if(args$clust) .get_p_clust(mu, dis, args) else NULL
+  p_sel <- if(args$clust) clust$p else p_full
 
   # Slightly more informative error messages for certain problems.
-  tryCatch(sel <- fsel(p_full, d_train, d_test, clust$p, b0, args),
+  tryCatch(chosen <- fsel(p_sel, d_train, b0, args),
            'error' = .varsel_errors)
 
-  full_stats_temp <- .summary_stats(
-    d_test, 1:nrow(vars$b), list(b = vars$b[, s_ind], dis = vars$dis[s_ind]), args)
-  mu_all <- c(sel$mu, list(full_stats_temp$mu))
-  lppd_all <- c(sel$lppd, list(full_stats_temp$lppd))
-  nv <- c(1:length(sel$mu), nrow(b)) - args$intercept
+  sel <- .summary_stats(chosen, d_train, d_test, p_full, vars$b[, s_ind], b0, args)
+
+  nv <- c(1:(length(sel$mu)-1), nrow(b)) - args$intercept
   kl <- data.frame(data = 'sel', size = nv, delta = F, summary = 'kl',
-                   value = c(sel$kl, 0), lq = NA, uq = NA)
+                   value = sel$kl, lq = NA, uq = NA)
 
   # if function was called by cv_varsel, return also mu and lppd,
   if(args$cv) {
-    res <- list(chosen = sel$chosen, mu = mu_all, lppd = lppd_all, stats = kl)
+    res <- list(chosen = chosen, mu = sel$mu, lppd = sel$lppd, stats = kl)
     if(args$clust) res$cl <- clust$cl
     return(res)
   }
@@ -96,10 +95,10 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
   # evaluate performance on test data and
   # use bayesian bootstrap to get 95% credible intervals
   b_weights <- .gen_bootstrap_ws(length(d_test$y), args$n_boot)
-  stats <- rbind(kl, .bootstrap_stats(mu_all, lppd_all, nv, d_test, args$family_kl,
+  stats <- rbind(kl, .bootstrap_stats(sel$mu, sel$lppd, nv, d_test, args$family_kl,
                                       b_weights, eval_data), make.row.names = F)
 
-  res <- list(chosen = sel$chosen, stats = stats)
+  res <- list(chosen = chosen, stats = stats)
   if(args$clust) res$cl <- clust$cl
 
   fit$varsel <- res
