@@ -92,7 +92,7 @@ proj_sigma <- function(object, ...) {
 #' @export
 varsel_plot <- function(x, ..., nv = NULL, summaries = NULL, deltas = T, train = F) {
   if(!('varsel' %in% names(x)))
-    stop(paste('Stanreg object doesn\'t contain information about the variable',
+    stop(paste('The stanreg object doesn\'t contain information about the variable',
                'selection. Run the variable selection first!'))
 
   data_remove <- if(train) 'test' else 'train'

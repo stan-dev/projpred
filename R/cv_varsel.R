@@ -95,10 +95,10 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
   # evaluate performance on test data and
   # use bayesian bootstrap to get 95% credible intervals
   b_weights <- .gen_bootstrap_ws(length(d_cv$y), args$n_boot)
-  nv <- c(1:(length(sel[['mu',2]])-1), nrow(vars$b)) - args$intercept
+  nv_list <- c(1:(length(sel[['mu',2]])-1), nrow(vars$b)) - args$intercept
   stats <- rbind(sel[['stats',1]],
-    .bootstrap_stats(sel[['mu',1]], sel[['lppd',1]], nv, vars, args$family_kl, b_weights, 'train'),
-    .bootstrap_stats(mu_cv, lppd_cv, nv, d_cv, args$family_kl, b_weights, 'test'), make.row.names = F)
+    .bootstrap_stats(sel[['mu',1]], sel[['lppd',1]], nv_list, vars, args$family_kl, b_weights, 'train'),
+    .bootstrap_stats(mu_cv, lppd_cv, nv_list, d_cv, args$family_kl, b_weights, 'test'), make.row.names = F)
 
   # find out how many of cross-validated forward selection iterations select
   # the same variables as the forward selection with all the data.

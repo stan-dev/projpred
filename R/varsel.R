@@ -53,6 +53,23 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
 
   d_train <- list(x = if(args$intercept) cbind(1, vars$x) else vars$x,
                   weights = vars$weights, offset = vars$offset)
+  b <- vars$b
+  mu <- args$family_kl$linkinv(d_train$x%*%b + d_train$offset)
+  dis <- vars$dis
+  b0 <- matrix(unname(coef(fit)), ncol = 1)
+
+  # indices of samples that are used in the projection
+  s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
+  p_full <- list(b = b[, s_ind], mu = mu[, s_ind], dis = dis[s_ind],
+                 cluster_w = rep(1/args$ns, args$ns))
+
+  # is clustering used in the variable selection
+  clust <- if(args$clust) .get_p_clust(mu, dis, args) else NULL
+  p_sel <- if(args$clust) clust$p else p_full
+
+  # Variable selection
+  tryCatch(chosen <- fsel(p_sel, d_train, b0, args),
+           'error' = .varsel_errors)
 
   # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
   eval_data <- ifelse(is.list(d_test), 'test', 'train')
@@ -64,30 +81,17 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
     if(is.null(d_test$offset)) d_test$offset <- rep(0, nrow(d_test$x))
   }
 
-  b <- vars$b
-  mu <- args$family_kl$linkinv(d_train$x%*%b + d_train$offset)
-  dis <- vars$dis
-  b0 <- matrix(unname(coef(fit)), ncol = 1)
+  # Perform the projection for the chosen variables and calculate lppds
+  stats <- .summary_stats(chosen, d_train, d_test, p_full, b0, args)
 
-  s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
-  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind],
-                 cluster_w = rep(1/args$ns, args$ns))
-  clust <- if(args$clust) .get_p_clust(mu, dis, args) else NULL
-  p_sel <- if(args$clust) clust$p else p_full
-
-  # Slightly more informative error messages for certain problems.
-  tryCatch(chosen <- fsel(p_sel, d_train, b0, args),
-           'error' = .varsel_errors)
-
-  sel <- .summary_stats(chosen, d_train, d_test, p_full, vars$b[, s_ind], b0, args)
-
-  nv <- c(1:(length(sel$mu)-1), nrow(b)) - args$intercept
-  kl <- data.frame(data = 'sel', size = nv, delta = F, summary = 'kl',
-                   value = sel$kl, lq = NA, uq = NA)
+  nv_list <- c(1:(length(stats$mu)-1), nrow(b)) - args$intercept
+  stats_array <- data.frame(data = 'sel', size = nv_list, delta = F,
+                            summary = 'kl', value = stats$kl, lq = NA, uq = NA)
 
   # if function was called by cv_varsel, return also mu and lppd,
   if(args$cv) {
-    res <- list(chosen = chosen, mu = sel$mu, lppd = sel$lppd, stats = kl)
+    res <- list(chosen = chosen, mu = stats$mu,
+                lppd = stats$lppd, stats = stats_array)
     if(args$clust) res$cl <- clust$cl
     return(res)
   }
@@ -95,10 +99,11 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
   # evaluate performance on test data and
   # use bayesian bootstrap to get 95% credible intervals
   b_weights <- .gen_bootstrap_ws(length(d_test$y), args$n_boot)
-  stats <- rbind(kl, .bootstrap_stats(sel$mu, sel$lppd, nv, d_test, args$family_kl,
-                                      b_weights, eval_data), make.row.names = F)
+  b_stats <- .bootstrap_stats(stats$mu, stats$lppd, nv_list, d_test,
+                              args$family_kl, b_weights, eval_data)
 
-  res <- list(chosen = chosen, stats = stats)
+  stats_array <- rbind(stats_array, b_stats, make.row.names = F)
+  res <- list(chosen = chosen, stats = stats_array)
   if(args$clust) res$cl <- clust$cl
 
   fit$varsel <- res

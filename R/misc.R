@@ -181,7 +181,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 }
 
 # calculate everything that needs to be saved from the submodel
-.summary_stats <- function(chosen, d_train, d_test, p_full, b_full, b0, args) {
+.summary_stats <- function(chosen, d_train, d_test, p_full, b0, args) {
 
   projfun <- .get_proj_handle(args$family_kl)
 
@@ -194,7 +194,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   kl_list <- c(unlist(p_sub['kl',]), 0)
 
-  mu_full <- args$family_kl$linkinv(d_test$x%*%b_full + d_test$offset)
+  mu_full <- args$family_kl$linkinv(d_test$x%*%p_full$b+ d_test$offset)
   mu_list <- c(p_sub['mu',], list(mu_full))
 
   dis_full <- p_full$dis %ORifNULL% rep(1, length(d_test$y))
