@@ -40,3 +40,54 @@ fsel <- function(p_full, d_train, b0, args) {
 
   chosen
 }
+
+
+
+search_L1 <- function(p_full, d_train, b0, args) {
+	
+	# prediction of full model (integrated over uncertainty about f)
+	mu <- rowMeans(family$linkinv(f))
+	
+	# L1-penalized projection (projection path)
+	search <- glm_elnet(x,mu,family)
+	
+	if (relax) {
+		# sort the variables according to the order in which they enter
+		# the model in the L1-path
+		order <- sort(apply(search$beta!=0,1,function(num) which(num)[1]), index.return=TRUE)$ix;
+		
+		# compute the relaxed (unregularized) projection for the selected models
+		relax <- lapply(1:length(order), function(j){
+			out <- glm_ridge(x[,order(1:j)],mu,family)
+			return(list(beta=out$beta, beta0=out$beta0))
+		})
+		
+	}
+	
+	stop('Not finished yet.')
+	return(proj)
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
