@@ -10,7 +10,7 @@ project.stanreg <- function(object, nv, ...) {
   if(!('varsel' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the variable',
                'selection. Run the variable selection first.'))
-  if(max(nv) >= length(object$varsel$chosen))
+  if(max(nv) > length(object$varsel$chosen))
     stop(paste('Cannot perform the projection with', max(nv), 'variables, because the',
                'variable selection has been run only up to',
                length(object$varsel$chosen), 'variables.'))
