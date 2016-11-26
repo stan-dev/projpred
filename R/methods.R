@@ -8,17 +8,17 @@ project.stanreg <- function(object, nv, ...) {
   if(is.null(nv)) stop('nv not provided')
   .validate_for_varsel(object)
   if(!('varsel' %in% names(object)))
-    stop(paste('The stanreg object doesn\'t contain information about the variable',
-               'selection. Run the variable selection first.'))
-  if(max(nv) > length(object$varsel$chosen))
-    stop(paste('Cannot perform the projection with', max(nv), 'variables, because the',
-               'variable selection has been run only up to',
-               length(object$varsel$chosen), 'variables.'))
+    stop(paste('The stanreg object doesn\'t contain information about the ',
+               'variable selection. Run the variable selection first.'))
 
   vars <- .extract_vars(object)
-  ns_total <- ncol(vars$b)
   args <- .init_args(list(...), vars, family(object))
-  if(args$intercept) nv <- nv + 1
+
+  if(max(nv) > length(object$varsel$chosen))
+    stop(paste('Cannot perform the projection with', max(nv), 'variables,',
+               'because the variable selection has been run only up to',
+               length(object$varsel$chosen), 'variables.'))
+  ns_total <- ncol(vars$b)
   v_inds_max <- object$varsel$chosen[1:max(nv)]
   if(args$intercept) vars$x <- cbind(1, vars$x)
 
@@ -31,7 +31,8 @@ project.stanreg <- function(object, nv, ...) {
   b0 <- matrix(coef(object)[v_inds_max], ncol = 1)
 
   s_ind <- round(seq(1, ns_total, length.out  = args$ns))
-  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind], cluster_w = rep(1/args$ns, args$ns))
+  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind],
+                 cluster_w = rep(1/args$ns, args$ns))
 
   projfun <- .get_proj_handle(args$family_kl)
 
@@ -46,15 +47,28 @@ project.stanreg <- function(object, nv, ...) {
 }
 
 #' @export
-proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, ...) {
+proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, nv = NULL, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
-    stop(paste('The stanreg object doesn\'t contain information about the projection.',
-               'Run the projection first.'))
+    stop(paste('The stanreg object doesn\'t contain information about the',
+               'projection. Run the projection first.'))
 
   dat <- rstanarm:::pp_data(object, newdata, offset = offset)
 
-  lapply(object$proj, function(proj, dat, chosen) {
+  # project only model the sizes of which are specified in nv
+  projected_sizes <- sapply(object$proj, function(x) NROW(x$b))
+  if(is.null(nv)) {
+    nv <- sapply(object$proj, function(x) NROW(x$b))
+  } else {
+    if(!all(nv %in% projected_sizes))
+      stop(paste0('Linear prediction requested for nv = ', paste(nv,collapse=', '),
+                  ', but projection performed only for nv = ',
+                  paste(projected_sizes, collapse = ', '), '.'))
+  }
+
+  projs <- Filter(function(x) NROW(x$b) %in% nv, object$proj)
+
+  lapply(projs, function(proj, dat, chosen) {
     res <- t(dat$x[, chosen[1:nrow(proj$b)], drop = F]%*%proj$b + dat$offset)
     if(transform) family(object)$linkinv(res) else res
   }, dat, object$varsel$chosen)
