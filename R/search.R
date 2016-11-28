@@ -45,28 +45,28 @@ fsel <- function(p_full, d_train, b0, args) {
 
 search_L1 <- function(p_full, d_train, b0, args) {
 	
-	# prediction of full model (integrated over uncertainty about f)
-	mu <- rowMeans(family$linkinv(f))
+	# prediction of full model (integrate over uncertainty about f)
+	mu <- rowMeans(p_full$mu)
+	
+	# create a grid of lambda values
+	lambda_min_ratio <- 1e-3 # this should be small enough so that the computation does not stop before pmax
+	nlam <- 100 # should be dense enough
+	lambda <- lambda_grid(d_train$x, mu, args$family_kl, alpha=1.0, eps=lambda_min_ratio, nlam=nlam)
+	# add a few very small lambda values to proceed the variable selection almost up to the full model
+	lambda <- c(lambda, rev(seq(log(1e-15), log(min(lambda)),  by=log(10))))
+	
 	
 	# L1-penalized projection (projection path)
-	search <- glm_elnet(x,mu,family)
+	pmax <- dim(d_train$x)[2] # TODO: THIS SHOULD BE GIVEN AS AN INPUT
+	search <- glm_elnet(d_train$x, mu, args$family_kl, lambda=lambda, pmax=pmax, pmax_strict=FALSE,
+						offset=d_train$offset, weights=d_train$weights)
 	
-	if (relax) {
-		# sort the variables according to the order in which they enter
-		# the model in the L1-path
-		order <- sort(apply(search$beta!=0,1,function(num) which(num)[1]), index.return=TRUE)$ix;
-		
-		# compute the relaxed (unregularized) projection for the selected models
-		relax <- lapply(1:length(order), function(j){
-			out <- glm_ridge(x[,order(1:j)],mu,family)
-			return(list(beta=out$beta, beta0=out$beta0))
-		})
-		
-	}
+	# sort the variables according to the order in which they enter the model in the L1-path
+	entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1])
+	order <- sort(entering_indices, index.return=TRUE)$ix
 	
-	stop('Not finished yet.')
-	return(proj)
-	
+	print(entering_indices)
+	return(order)
 }
 
 
