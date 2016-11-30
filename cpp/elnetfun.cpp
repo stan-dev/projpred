@@ -29,6 +29,7 @@ void coord_descent(	arma::vec& beta,
 					arma::vec& w,
 					double& lambda,
 					double& alpha,
+					bool intercept,
 					std::set<int>& varind,
 					std::set<int>& active_set,
 					bool until_convergence,
@@ -52,9 +53,11 @@ void coord_descent(	arma::vec& beta,
 	while (iter < maxiter) {
 		
 		// update the intercept
-		f = f - beta0;
-		beta0 = sum(w % (z - f)) / sum(w);
-		f = f + beta0;
+		if (intercept) {
+		    f = f - beta0;
+		    beta0 = sum(w % (z - f)) / sum(w);
+		    f = f + beta0;
+		}
 		
 		active_set.clear();
 		
@@ -109,6 +112,7 @@ List glm_elnet_c(mat x,
                Function pseudo_obs,
                vec lambda,
                double alpha,
+               bool intercept,
                double thresh,
                int qa_updates_max,
                int pmax,
@@ -186,11 +190,11 @@ List glm_elnet_c(mat x,
 
                 // iterate within the current active set until convergence (this might update the variable active_set_old,
                 // if some variable goes to zero)
-                coord_descent(beta, beta0, f, x, z, w, lam, alpha, active_set, active_set_old, true, npasses, 0.01*thresh*loss_initial);
+                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, 0.01*thresh*loss_initial);
                 
                 // perfom one pass over all the variables and check if the active set changes (this might update the
                 // variable active_set)
-                coord_descent(beta, beta0, f, x, z, w, lam, alpha, varind_all, active_set, false, npasses, 0.01*thresh*loss_initial);
+                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, 0.01*thresh*loss_initial);
                 
                 ++asu;
 

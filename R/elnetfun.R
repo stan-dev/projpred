@@ -31,7 +31,7 @@ lambda_grid <- function(x, y, family, alpha=1.0, eps=1e-2, nlam=100) {
 glm_elnet <- function(x,y,family=gaussian(),nlambda=100,lambda_min_ratio=1e-3,lambda=NULL,alpha=1.0,thresh=1e-6, 
 					  qa_updates_max=ifelse(family$family=='gaussian', 1, 100), 
 					  pmax=dim(as.matrix(x))[2], pmax_strict=FALSE,
-					  weights=NULL, offset=NULL) {
+					  weights=NULL, offset=NULL, intercept=TRUE) {
 	#
 	# Fits GLM with elastic net penalty on the regression coefficients.
 	# Computes the whole regularization path.
@@ -47,7 +47,7 @@ glm_elnet <- function(x,y,family=gaussian(),nlambda=100,lambda_min_ratio=1e-3,la
 	if (is.null(offset))
 		offset <- 0.0
 	pseudo_obs <- function(f) {return(pseudo_data(f,y,family,offset=offset,weights=weights))}
-	out <- glm_elnet_c(x,pseudo_obs,lambda,alpha,thresh,qa_updates_max,pmax,pmax_strict)
+	out <- glm_elnet_c(x,pseudo_obs,lambda,alpha,intercept,thresh,qa_updates_max,pmax,pmax_strict)
 	return(list( beta=out[[1]], beta0=as.vector(out[[2]]), npasses=out[[3]], 
 				 updates_qa=as.vector(out[[4]]), updates_as=as.vector(out[[5]]) ))
 }
