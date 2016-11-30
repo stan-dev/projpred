@@ -70,7 +70,7 @@ varsel.stanreg <- function(fit, d_test = NA, method='L1', ...) {
   # Variable selection
   # t0 <- Sys.time()
   if (tolower(method) == 'l1') {
-  	chosen <- search_L1(p_full, d_train, b0, args)
+  	chosen <- search_L1(p_sel, d_train, b0, args)
   } else if (tolower(method) == 'forward') {
   	tryCatch(chosen <- fsel(p_sel, d_train, b0, args),
   			 'error' = .varsel_errors)
