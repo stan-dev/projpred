@@ -87,18 +87,22 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
   msgs, MoreArgs = list(args))
 
   # combine cross validated results
-  combcv <- function(x) as.list(data.frame(apply(x, 1, function(x) do.call(c, x))))
-  d_cv <- combcv(simplify2array(d_test)[c('y', 'weights', 'offset'),])
-  mu_cv <- combcv(simplify2array(sel['mu',-1]))
-  lppd_cv <- combcv(simplify2array(sel['lppd',-1]))
+  d_cv <- as.list(data.frame(apply(
+    simplify2array(d_test)[c('y', 'weights', 'offset'),],
+    1, function(x) do.call(c, x))))
+
+  # extract and combine mu and lppd from sel[stats_list,-1]
+  stop('Does not work at the moment.')
 
   # evaluate performance on test data and
   # use bayesian bootstrap to get 95% credible intervals
   b_weights <- .gen_bootstrap_ws(length(d_cv$y), args$n_boot)
-  nv_list <- c(1:(length(sel[['mu',2]])-1), nrow(vars$b)) - args$intercept
-  stats <- rbind(sel[['stats',1]],
-    .bootstrap_stats(sel[['mu',1]], sel[['lppd',1]], nv_list, vars, args$family_kl, b_weights, 'train'),
-    .bootstrap_stats(mu_cv, lppd_cv, nv_list, d_cv, args$family_kl, b_weights, 'test'), make.row.names = F)
+  nv_list <- 1:length(stats$sub$mu) - args$intercept
+  b_stats <- rbind(sel[['stats',1]],
+    .bootstrap_stats(sel[['stats_list',1]], nv_list, vars, args$family_kl,
+                     b_weights, 'train', args$intercept),
+    .bootstrap_stats(mu_cv, lppd_cv, nv_list, d_cv, args$family_kl, b_weights,
+                     'test', args$intercept), make.row.names = F)
 
   # find out how many of cross-validated forward selection iterations select
   # the same variables as the forward selection with all the data.
@@ -107,7 +111,7 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
                   chosen_full, seq_along(chosen_full),
                   MoreArgs = list(do.call(cbind, sel['chosen',-1]), k))
 
-  res <- list(chosen = chosen_full, pctch = pctch, stats = stats)
+  res <- list(chosen = chosen_full, pctch = pctch, stats = b_stats)
   if(args$clust) res$cl <- sel[['cl',1]]
 
   fit$varsel <- res
