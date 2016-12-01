@@ -125,7 +125,6 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 }
 
 # perform clustering over the samples
-<<<<<<< HEAD
 .get_p_clust <- function(mu, dis, args, cl = NULL) {
     
   # THIS FUNCTION WORKS CURRENTLY ONLY FOR GAUSSIAN FAMILY.
@@ -151,6 +150,8 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   list(cl = cl, p = p)
 }
 
+
+
 .split_coef <- function(b, intercept) {
   if(intercept) {
     list(alpha = b[1, ], beta = b[-1, , drop = F])
@@ -158,6 +159,9 @@ kfold <- function (x, K = 10, save_fits = FALSE)
     list(alpha = rep(0, NROW(b)), beta = b)
   }
 }
+
+
+
 # function handle for the projection over samples. Gaussian case
 # uses analytical solution to do the projection over samples.
 .get_proj_handle <- function(family_kl) {

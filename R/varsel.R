@@ -45,7 +45,7 @@ varsel <- function(fit, d_test = NA, ...) {
 }
 
 #' @export
-varsel.stanreg <- function(fit, d_test = NA, ...) {
+varsel.stanreg <- function(fit, d_test = NA, method='L1', ...) {
 
   .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
@@ -70,9 +70,19 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
   p_sel <- if(args$clust) clust$p else p_full
 
   # Variable selection
-  tryCatch(chosen <- fsel(p_sel, d_train, family_kl, args$intercept, args$nv,
-                          args$regul, coef_init, args$verbose),
-           'error' = .varsel_errors)
+  # t0 <- Sys.time()
+  if (tolower(method) == 'l1') {
+  	chosen <- search_L1(p_sel, d_train, b0, args)
+  } else if (tolower(method) == 'forward') {
+  	# tryCatch(chosen <- fsel(p_sel, d_train, b0, args),
+  			 # 'error' = .varsel_errors)
+    tryCatch(chosen <- fsel(p_sel, d_train, family_kl, args$intercept, args$nv,
+                            args$regul, coef_init, args$verbose),
+                        'error' = .varsel_errors)
+  } else {
+  	stop(sprintf('Unknown search method: %s', method))
+  }
+  # print(Sys.time()-t0)
 
   # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
   eval_data <- ifelse(is.list(d_test), 'test', 'train')
