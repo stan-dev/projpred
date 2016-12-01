@@ -4,6 +4,7 @@ project <- function(object, nv, ...) {
 }
 
 #' @export
+#' @export
 project.stanreg <- function(object, nv, ...) {
   if(is.null(nv)) stop('nv not provided')
   .validate_for_varsel(object)
@@ -19,7 +20,13 @@ project.stanreg <- function(object, nv, ...) {
     stop(paste('Cannot perform the projection with', max(nv), 'variables,',
                'because the variable selection has been run only up to',
                length(object$varsel$chosen), 'variables.'))
+
+  if(0 %in% nv && vars$intercept==0)
+    stop('Cannot perform the projection with nv=0 and no intercept.')
+
   v_inds_max <- object$varsel$chosen[1:max(nv)]
+  # the line above fails with nv=0 (ie. projection with only intercept)
+  if(length(nv) == 1 && nv == 0) v_inds_max <- 0
 
   d_train <- list(x = vars$x[,v_inds_max],
                   weights = vars$weights,
@@ -40,10 +47,11 @@ project.stanreg <- function(object, nv, ...) {
   if(vars$intercept) names <- names[-1]
 
   object$proj <- lapply(nv, function(nv, names) {
-    proj <- projfun(1:nv, p_full, d_train, vars$intercept, args$regul,
+    seq <- if(nv>0) 1:nv else 0
+    proj <- projfun(seq, p_full, d_train, vars$intercept, args$regul,
                     coef_init)
-    rownames(proj$beta) <- names[1:nrow(proj$beta)]
-    proj$b <- proj$beta
+    rownames(proj$beta) <- names[seq]
+    proj$b <- proj$beta[seq, , drop = F]
     proj$intercept <- vars$intercept
     if(proj$intercept) {
       proj$b <- rbind(proj$alpha, proj$b)

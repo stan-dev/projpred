@@ -126,15 +126,15 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
 # perform clustering over the samples
 .get_p_clust <- function(mu, dis, args, cl = NULL) {
-    
+
   # THIS FUNCTION WORKS CURRENTLY ONLY FOR GAUSSIAN FAMILY.
   # SHOULD TAKE FAMILY AS AN INPUT AND ACT ACCORDINGLY
-  
+
   # cluster the mu-samples
   cl <- cl %ORifNULL% kmeans(t(mu), args$nc, iter.max = 50)
-  
+
   # compute the dispersion parameters for each cluster
-  disps <- sapply(1:args$nc, 
+  disps <- sapply(1:args$nc,
                   function(cl_ind) {
                     ind <- which(cl$cluster== cl_ind)
                     if (length(ind) > 1)
@@ -142,7 +142,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
                     else
                         sqrt(mean(dis[ind]^2))
                   })
-  
+
   # combine the results
   p <- list(mu = unname(t(cl$centers)),
             dis = disps,
