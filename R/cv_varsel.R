@@ -113,3 +113,5 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
   fit$varsel <- res
   fit
 }
+
+
