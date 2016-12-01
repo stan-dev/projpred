@@ -12,36 +12,49 @@ project.stanreg <- function(object, nv, ...) {
                'variable selection. Run the variable selection first.'))
 
   vars <- .extract_vars(object)
-  args <- .init_args(list(...), vars, family(object))
+  args <- .init_args(list(...), vars)
+  family_kl <- kl_helpers(family(object))
 
   if(max(nv) > length(object$varsel$chosen))
     stop(paste('Cannot perform the projection with', max(nv), 'variables,',
                'because the variable selection has been run only up to',
                length(object$varsel$chosen), 'variables.'))
-  ns_total <- ncol(vars$b)
   v_inds_max <- object$varsel$chosen[1:max(nv)]
-  if(args$intercept) vars$x <- cbind(1, vars$x)
 
   d_train <- list(x = vars$x[,v_inds_max],
                   weights = vars$weights,
                   offset = vars$offset)
 
-  mu <- args$family_kl$linkinv(vars$x%*%vars$b + d_train$offset)
+  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset,
+                         vars$intercept)
   dis <- vars$dis
-  b0 <- matrix(coef(object)[v_inds_max], ncol = 1)
+  coef_init <- list(alpha = median(vars$alpha),
+                    beta = matrix(apply(vars$beta, 1, median), ncol = 1))
 
-  s_ind <- round(seq(1, ns_total, length.out  = args$ns))
+  s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
   p_full <- list(mu = mu[, s_ind], dis = dis[s_ind],
                  cluster_w = rep(1/args$ns, args$ns))
 
-  projfun <- .get_proj_handle(args$family_kl)
+  projfun <- .get_proj_handle(family_kl)
+  names <- names(coef(object))
+  if(vars$intercept) names <- names[-1]
 
-  object$proj <- lapply(nv, function(nv, p_full, d_train, b0, args, names) {
-    vars <- projfun(1:nv, p_full, d_train, unname(b0), args)
-    rownames(vars$b) <- names[1:nrow(vars$b)]
-    vars$kl <- NULL
-    vars
-  }, p_full, d_train, b0, args, names(coef(object))[v_inds_max])
+  object$proj <- lapply(nv, function(nv, names) {
+    proj <- projfun(1:nv, p_full, d_train, vars$intercept, args$regul,
+                    coef_init)
+    rownames(proj$beta) <- names[1:nrow(proj$beta)]
+    proj$b <- proj$beta
+    proj$intercept <- vars$intercept
+    if(proj$intercept) {
+      proj$b <- rbind(proj$alpha, proj$b)
+      rownames(proj$b)[1] <- names(coef(object))[1]
+    }
+    proj$kl <- NULL
+    proj$beta <- NULL
+    proj$alpha <- NULL
+    if(!(family_kl$family %in% c('gaussian', 'Gamma'))) proj$dis <- NULL
+    proj
+  }, names[v_inds_max])
 
   object
 }
@@ -56,7 +69,7 @@ proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NUL
   dat <- rstanarm:::pp_data(object, newdata, offset = offset)
 
   # project only model the sizes of which are specified in nv
-  projected_sizes <- sapply(object$proj, function(x) NROW(x$b))
+  projected_sizes <- sapply(object$proj, function(x) NROW(x$b) - x$intercept)
   if(is.null(nv)) {
     nv <- sapply(object$proj, function(x) NROW(x$b))
   } else {
@@ -66,12 +79,14 @@ proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NUL
                   paste(projected_sizes, collapse = ', '), '.'))
   }
 
-  projs <- Filter(function(x) NROW(x$b) %in% nv, object$proj)
+  projs <- Filter(function(x) (NROW(x$b) - x$intercept) %in% nv, object$proj)
+  chosen <- object$varsel$chosen
+  if(projs[[1]]$intercept) chosen <- c(1, chosen + 1)
 
-  lapply(projs, function(proj, dat, chosen) {
+  lapply(projs, function(proj) {
     res <- t(dat$x[, chosen[1:nrow(proj$b)], drop = F]%*%proj$b + dat$offset)
     if(transform) family(object)$linkinv(res) else res
-  }, dat, object$varsel$chosen)
+  })
 
 }
 
@@ -104,19 +119,21 @@ proj_sigma <- function(object, ...) {
 
 
 #' @export
-varsel_plot <- function(x, ..., nv = NULL, summaries = NULL, deltas = T, train = F) {
+varsel_plot <- function(x, ..., nv = NULL, summaries = NULL, deltas = T,
+                        data = 'test') {
   if(!('varsel' %in% names(x)))
     stop(paste('The stanreg object doesn\'t contain information about the variable',
                'selection. Run the variable selection first!'))
 
-  data_remove <- if(train) 'test' else 'train'
+  data_remove <- if(data=='train') 'test' else 'train'
   if(is.null(summaries)) summaries <- as.character(unique(x$varsel$stats$summary))
   arr <- subset(x$varsel$stats, data != data_remove & (delta == deltas | summary == 'kl')
                 & summary %in% summaries)
 
   if(nrow(arr) == 0)
-    stop(paste0('summaries must contain at least one of the following values: ',
-                paste0(unique(x$varsel$stats$summary), collapse = ', '), '.'))
+    stop(paste0(ifelse(length(summaries)==1, 'Summaries ', 'Summary '),
+                paste0(unique(summaries), collapse = ', '),
+                ' not evaluated on ', data, ' data.'))
 
   if(is.null(nv)) nv <- max(arr$size)
   ylab <- if(deltas) expression(Delta) else 'value'

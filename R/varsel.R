@@ -49,26 +49,29 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
 
   .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
-  args <- .init_args(list(...), vars, family(fit))
+  args <- .init_args(list(...), vars)
+  family_kl <- kl_helpers(family(fit))
+  # for models with no intercept, alpha = rep(0, nrow(beta))
+  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset,
+                         args$intercept)
 
-  d_train <- list(x = if(args$intercept) cbind(1, vars$x) else vars$x,
-                  weights = vars$weights, offset = vars$offset)
-  b <- vars$b
-  mu <- args$family_kl$linkinv(d_train$x%*%b + d_train$offset)
-  dis <- vars$dis
-  b0 <- matrix(unname(coef(fit)), ncol = 1)
+  d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
+  coef_init <- list(alpha = median(vars$alpha),
+                    beta = matrix(apply(vars$beta, 1, median), ncol = 1))
 
   # indices of samples that are used in the projection
   s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
-  p_full <- list(b = b[, s_ind], mu = mu[, s_ind], dis = dis[s_ind],
+  p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
                  cluster_w = rep(1/args$ns, args$ns))
 
+
   # is clustering used in the variable selection
-  clust <- if(args$clust) .get_p_clust(mu, dis, args) else NULL
+  clust <- if(args$clust) .get_p_clust(mu, vars$dis, args$nc) else NULL
   p_sel <- if(args$clust) clust$p else p_full
 
   # Variable selection
-  tryCatch(chosen <- fsel(p_sel, d_train, b0, args),
+  tryCatch(chosen <- fsel(p_sel, d_train, family_kl, args$intercept, args$nv,
+                          args$regul, coef_init, args$verbose),
            'error' = .varsel_errors)
 
   # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
@@ -76,22 +79,23 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
   if(eval_data == 'train') {
     d_test <- within(d_train, y <- vars$y)
   } else {
-    if(args$intercept) d_test$x <- cbind(1, d_test$x)
     if(is.null(d_test$weights)) d_test$weights <- rep(1, nrow(d_test$x))
     if(is.null(d_test$offset)) d_test$offset <- rep(0, nrow(d_test$x))
   }
 
-  # Perform the projection for the chosen variables and calculate lppds
-  stats <- .summary_stats(chosen, d_train, d_test, p_full, b0, args)
+  coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
 
-  nv_list <- c(1:(length(stats$mu)-1), nrow(b)) - args$intercept
+  # Perform the projection for the chosen variables and calculate lppds
+  stats_list <- .summary_stats(chosen, d_train, d_test, p_full, family_kl,
+                          args$intercept, args$regul, coef_init, coef_full)
+
+  nv_list <- 1:length(stats_list$sub$mu) - args$intercept
   stats_array <- data.frame(data = 'sel', size = nv_list, delta = F,
-                            summary = 'kl', value = stats$kl, lq = NA, uq = NA)
+                            summary = 'kl', value = stats_list$kl, lq = NA, uq = NA)
 
   # if function was called by cv_varsel, return also mu and lppd,
   if(args$cv) {
-    res <- list(chosen = chosen, mu = stats$mu,
-                lppd = stats$lppd, stats = stats_array)
+    res <- list(chosen = chosen, stats_list = stats_list, stats = stats_array)
     if(args$clust) res$cl <- clust$cl
     return(res)
   }
@@ -99,8 +103,8 @@ varsel.stanreg <- function(fit, d_test = NA, ...) {
   # evaluate performance on test data and
   # use bayesian bootstrap to get 95% credible intervals
   b_weights <- .gen_bootstrap_ws(length(d_test$y), args$n_boot)
-  b_stats <- .bootstrap_stats(stats$mu, stats$lppd, nv_list, d_test,
-                              args$family_kl, b_weights, eval_data)
+  b_stats <- .bootstrap_stats(stats_list, nv_list, d_test, family_kl, b_weights,
+                              eval_data, args$intercept)
 
   stats_array <- rbind(stats_array, b_stats, make.row.names = F)
   res <- list(chosen = chosen, stats = stats_array)
