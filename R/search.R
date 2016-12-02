@@ -39,29 +39,27 @@ fsel <- function(p_full, d_train, family_kl, intercept, nv, regul, coef_init,
 
 
 
-search_L1 <- function(p_full, d_train, b0, args) {
+search_L1 <- function(p_full, d_train, family, intercept, nv) {
 	
-	# prediction of full model (integrate over uncertainty about f)
+	# prediction of full model (integrate over the uncertainty about f)
 	mu <- rowMeans(p_full$mu)
 	
 	# create a grid of lambda values
 	lambda_min_ratio <- 1e-3 # this should be small enough so that the computation does not stop before pmax
 	nlam <- 100 # should be dense enough
-	lambda <- lambda_grid(d_train$x, mu, args$family_kl, alpha=1.0, eps=lambda_min_ratio, nlam=nlam)
+	lambda <- lambda_grid(d_train$x, mu, family, alpha=1.0, eps=lambda_min_ratio, nlam=nlam)
 	# add a few very small lambda values to proceed the variable selection almost up to the full model
 	lambda <- c(lambda, rev(seq(log(1e-15), log(min(lambda)),  by=log(10))))
 	
 	
 	# L1-penalized projection (projection path)
-	pmax <- dim(d_train$x)[2] # TODO: THIS SHOULD BE GIVEN AS AN INPUT
-	search <- glm_elnet(d_train$x, mu, args$family_kl, lambda=lambda, pmax=pmax, pmax_strict=FALSE,
-						offset=d_train$offset, weights=d_train$weights)
+	search <- glm_elnet(d_train$x, mu, family, lambda=lambda, pmax=nv, pmax_strict=FALSE,
+						offset=d_train$offset, weights=d_train$weights, intercept=intercept)
 	
 	# sort the variables according to the order in which they enter the model in the L1-path
 	entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1])
 	order <- sort(entering_indices, index.return=TRUE)$ix
 	
-	print(entering_indices)
 	return(order)
 }
 
