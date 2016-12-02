@@ -1,6 +1,17 @@
-
+#
+# The functions in this file are used to compute the elastic net coefficient paths
+# for a GLM. The main function is glm_elnet, other functions are auxiliary ones.
+# The L1-regularized projection path is computed by replacing the actual data y
+# by the fit of the full model when calling glm_elnet. Uses functions glm_elnet_c
+# from elnetfun.cpp.
+#
 
 pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,length(f)) ) {
+    #
+    # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
+    # based on the quadratic approximation to the loss function (negative log likelihood) at 
+    # when the given fit f = eta = x*beta + beta0.
+    #
 	mu <- family$linkinv(f)
 	dmu_df <- family$mu.eta(f)
 	z <- (f - offset) + (y - mu)/dmu_df
@@ -36,7 +47,7 @@ lambda_grid <- function(x, y, family, alpha=1.0, eps=1e-2, nlam=100) {
 
 
 glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-3,
-                      lambda=NULL, alpha=1.0, thresh=1e-6, 
+                      lambda=NULL, alpha=1.0, thresh=1e-5, 
 					  qa_updates_max=ifelse(family$family=='gaussian', 1, 100), 
 					  pmax=dim(as.matrix(x))[2], pmax_strict=FALSE,
 					  weights=NULL, offset=NULL, intercept=TRUE) {
@@ -45,7 +56,6 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 	# Computes the whole regularization path.
 	# Does not handle any dispersion parameters.
 	#
-	
 	if (is.null(lambda))
 		lambda <- lambda_grid(x,y,family,alpha,nlam=nlambda,eps=lambda_min_ratio)
 	
