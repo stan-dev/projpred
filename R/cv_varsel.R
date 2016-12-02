@@ -119,3 +119,43 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
 }
 
 
+loo_varsel <- function(fit, ...) {
+    
+    # TODO, ADD COMMENTS
+    vars <- .extract_vars(fit)
+    args <- .init_args(list(...), vars)
+    family_kl <- kl_helpers(family(fit))
+    mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset,
+                           args$intercept)
+    
+    # d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
+    # p_full <- list(mu = mu, dis = vars$dis, cluster_w = rep(1/n, n))
+    
+    # compute the log-likelihood for the full model to obtain the LOO weights
+    loglik <- log_lik(fit)
+    lw <- psislw(-loglik)$lw_smooth
+    
+    n <- dim(lw)[2]
+    print(n)
+    print(dim(mu))
+    print(dim(lw))
+    for (i in 1:n) {
+        
+        mu_loo_i <- mu %*% exp(lw[,i])
+        p_full <- list(mu=mu_loo_i)
+        # chosen <- search_L1(p_full, d_train, family_kl, args$intercept, args$nv)
+        # print(dim(  )) 
+    }
+    
+    # p_full <- list(b = b[, s_ind], mu = mu[, s_ind], dis = dis[s_ind],
+    #                cluster_w = rep(1/args$ns, args$ns))
+    
+}
+
+
+    
+    
+    
+    
+    
+    
