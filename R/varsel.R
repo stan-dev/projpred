@@ -64,21 +64,14 @@ varsel.stanreg <- function(fit, d_test = NA, method='L1', ...) {
   p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
                  cluster_w = rep(1/args$ns, args$ns))
 
-
-  # is clustering used in the variable selection
+  # cluster the samples of the full model if clustering is wanted
+  # for the variable selection
   clust <- if(args$clust) .get_p_clust(mu, vars$dis, args$nc) else NULL
   p_sel <- if(args$clust) clust$p else p_full
 
-  # Variable selection
-  if (tolower(method) == 'l1') {
-  	chosen <- search_L1(p_full, d_train, family_kl, args$intercept, args$nv)
-  } else if (tolower(method) == 'forward') {
-    tryCatch(chosen <- fsel(p_sel, d_train, family_kl, args$intercept, args$nv,
-                            args$regul, coef_init, args$verbose),
-                        'error' = .varsel_errors)
-  } else {
-  	stop(sprintf('Unknown search method: %s', method))
-  }
+  # the actual selection
+  chosen <- select(method, p_sel, d_train, family_kl, args$intercept, args$nv,
+                     args$regul, coef_init, args$verbose)
 
   # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
   eval_data <- ifelse(is.list(d_test), 'test', 'train')
@@ -119,3 +112,37 @@ varsel.stanreg <- function(fit, d_test = NA, method='L1', ...) {
   fit$varsel <- res
   fit
 }
+
+
+
+select <- function(method, p_sel, d_train, family_kl, intercept, pmax,
+                   regul, coef_init, verbose) 
+{
+    #
+    # Auxiliary function, performs variable selection with the given method,
+    # and returns the variable ordering.
+    #
+    if (tolower(method) == 'l1') {
+        chosen <- search_L1(p_sel, d_train, family_kl, intercept, pmax)
+    } else if (tolower(method) == 'forward') {
+        tryCatch(chosen <- fsel(p_sel, d_train, family_kl, intercept, pmax,
+                                regul, coef_init, verbose),
+                 'error' = .varsel_errors)
+    } else {
+        stop(sprintf('Unknown search method: %s', method))
+    }
+    return(chosen)
+}
+
+
+# function() {
+#     # indices of samples that are used in the projection
+#     s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
+#     p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
+#                    cluster_w = rep(1/args$ns, args$ns))
+#     
+#     # cluster the samples of the full model if clustering is wanted
+#     # for the variable selection
+#     clust <- if(args$clust) .get_p_clust(mu, vars$dis, args$nc) else NULL
+#     p_sel <- if(args$clust) clust$p else p_full
+# }
