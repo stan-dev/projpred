@@ -2,7 +2,6 @@
 
 
 
-# THIS FUNCTION IS CURRENTLY UNUSED
 project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, coef_init=NULL) 
 {
     
