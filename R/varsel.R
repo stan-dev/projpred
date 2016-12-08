@@ -62,7 +62,7 @@ varsel.stanreg <- function(fit, d_test = NA, method='L1', ...) {
   # indices of samples that are used in the projection
   s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
   p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
-                 cluster_w = rep(1/args$ns, args$ns))
+                 weights = rep(1/args$ns, args$ns))
 
 
   # is clustering used in the variable selection

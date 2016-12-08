@@ -40,7 +40,7 @@ project.stanreg <- function(object, nv, ...) {
 
   s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
   p_full <- list(mu = mu[, s_ind], dis = dis[s_ind],
-                 cluster_w = rep(1/args$ns, args$ns))
+                 weights = rep(1/args$ns, args$ns))
 
   projfun <- .get_proj_handle(family_kl)
   names <- names(coef(object))
