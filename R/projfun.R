@@ -3,40 +3,50 @@
 
 
 # THIS FUNCTION IS CURRENTLY UNUSED
-project_gaussian_new <- function(ind, f, sigma2, x, wobs=rep(1.0,dim(as.matrix(x)[1])),
-                            wsample=rep(1.0,dim(as.matrix(x)[2])),
-                            type='one-to-one', intercept=TRUE, regul=1e-12) 
+project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, coef_init=NULL) 
 {
     
+    x <- d_train$x
+    mu <- p_full$mu
+    dis <- p_full$dis
+    if ("wobs" %in% names(d_train))
+        wobs <- d_train$weights
+    else
+        wobs <- rep(1.0, dim(as.matrix(mu))[1])
+    if ("weights" %in% names(p_full))
+        wsample <- p_full$weights
+    else
+        wsample <- rep(1.0, dim(as.matrix(mu))[2])
+    
     if(intercept) {
+        # add vector of ones to x and transform the variable indices
         x <- cbind(1, x)
         ind <- c(1, ind + 1)
     }
     
     xp <- x[, ind, drop = F]
     Dp <- dim(xp)[2]
-    regulvec <- regul*rep(1.0, Dp) # c((1-intercept)*regul, rep(regul, length(ind) - 1))
-    regulmat <- diag(regulvec, length(regulvec), length(regulvec))
+    regulmat <- diag(regul*rep(1.0, Dp), Dp, Dp)
     
     # normalize the weights
     wobs <- wobs/sum(wobs)
     wsample <- wsample/sum(wsample)
     
-    # Solution for the gaussian case (with l2-regularization)
+    # Solve the projection equations (with l2-regularization)
     w <- sqrt(wobs)
-    b <- solve( crossprod(w*xp)+regulmat, crossprod(w*xp, w*f) )
-    dis <- sqrt( colSums(wobs*(f - xp%*%b)^2) + sigma2 ) ## check this!!
-    kl <- weighted.mean(log(dis) - log(sqrt(sigma2)), wsample)
-    p_sub <- list(kl = kl, dis = dis)
+    beta_sub <- solve( crossprod(w*xp)+regulmat, crossprod(w*xp, w*mu) )
+    dis_sub <- sqrt( colSums(wobs*(mu - xp%*%beta_sub)^2) + dis^2 ) 
+    kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
+    p_sub <- list(kl = kl, weights = wsample, dis = dis_sub)
     
     # split b to alpha and beta, add it to p_sub and return the result
-    c(p_sub, .split_coef(b, intercept))
+    c(p_sub, .split_coef(beta_sub, intercept))
 }
 
 
 
 
-project_gaussian <- function(chosen, p_full, d_train, intercept, regul, coef_init) {
+project_gaussian_old <- function(chosen, p_full, d_train, intercept, regul, coef_init) {
     
     if(intercept) {
         d_train$x <- cbind(1, d_train$x)
@@ -53,7 +63,7 @@ project_gaussian <- function(chosen, p_full, d_train, intercept, regul, coef_ini
     dis <- sqrt(colMeans(d_train$weights*(
         p_full$mu - d_train$x[, chosen, drop = F]%*%b)^2) + p_full$dis^2)
     p_sub <- list(kl = weighted.mean(log(dis) - log(p_full$dis) +
-                                         colSums(b^2*regulvec), p_full$cluster_w),
+                                         colSums(b^2*regulvec), p_full$weights),
                   dis = dis)
     # split b to alpha and beta, add it to p_sub and return the result
     c(p_sub, .split_coef(b, intercept))
@@ -71,7 +81,7 @@ project_nongaussian <- function(chosen, p_full, d_train, intercept, regul, coef_
     })
     
     # weight the results by sample/cluster weights
-    list(kl = weighted.mean(unlist(res['kl',]), p_full$cluster_w),
+    list(kl = weighted.mean(unlist(res['kl',]), p_full$weights),
          alpha = unlist(res['alpha',]),
          beta = do.call(cbind, res['beta',]),
          dis = unlist(res['dis',]))

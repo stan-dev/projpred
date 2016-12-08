@@ -169,7 +169,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   # combine the results
   p <- list(mu = unname(t(cl$centers)),
             dis = disps,
-            cluster_w = wcluster)
+            weights = wcluster)
   list(cl = cl, p = p)
 }
 
