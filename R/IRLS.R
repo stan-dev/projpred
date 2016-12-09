@@ -70,7 +70,7 @@ IRLS <- function(p_full, d_train, family_kl, intercept, regul, coef_init,
     warning("Numerical problems in the projection.")
 
   p_sub <- list(mu = mu)
-  p_sub$dis <- family_kl$dis(p_full, d_train, p_sub)
+  p_sub$dis <- family_kl$dis_fun(p_full, d_train, p_sub)
   res <- list(kl = family_kl$kl(p_full, d_train, p_sub) + sum(b^2*regulvec))
   res$dis <- p_sub$dis
   # split b to alpha and beta, add it to p_sub and return the result

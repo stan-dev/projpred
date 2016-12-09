@@ -10,6 +10,12 @@ log_mean_exp <- function(x) {
 }
 is.stanreg <- function(x) inherits(x, "stanreg")
 
+#
+log_weighted_mean_exp <- function(x, w) {
+  x <- x + log(w)
+  max_x <- max(x)
+  max_x + log(sum(exp(x - max_x)))
+}
 # Updated version of the kfold function in the rstanarm-package
 
 #' @export
@@ -75,7 +81,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
                        fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
   res <- list(
     x = unname(get_x(fit)),
-    alpha = unname(drop(e$alpha %ORifNULL% rep(0, nobs(fit))))[perm_inv],
+    alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv],
     beta = t(unname(drop(e$beta)))[, perm_inv],
     dis = unname(e[['dispersion']]) %ORifNULL% rep(1, nrow(e$beta))[perm_inv],
     offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
@@ -133,12 +139,12 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   # cluster the mu-samples if no clustering provided
   cl <- cl %ORifNULL% kmeans(t(mu), nc, iter.max = 50)
-  
+
   if (typeof(cl)=='double') {
       # only cluster-indices provided, so create the list and put them there
       cl <- list(cluster=cl)
   }
-  
+
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
   nc <- max(cl$cluster) # number of clusters (assumes labeling 1,...,nc)
@@ -152,7 +158,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   }
   cl$centers <- centers
   wcluster <- wcluster/sum(wcluster)
-  
+
   # compute the dispersion parameters for each cluster
   disps <- sapply(1:nc,
                   function(cl_ind) {
@@ -179,7 +185,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   if(intercept) {
     list(alpha = b[1, ], beta = b[-1, , drop = F])
   } else {
-    list(alpha = rep(0, NROW(b)), beta = b)
+    list(alpha = rep(0, NCOL(b)), beta = b)
   }
 }
 
@@ -193,19 +199,34 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   projfun <- .get_proj_handle(family_kl)
 
+  # helper for re-evaluating dis and kl on test data
+  mu_sub_kl <- function(mu, p_full, d_test) {
+    ns <- NCOL(p_full$mu)
+    dis <- family_kl$dis_fun(p_full, d_test, list(mu = mu))
+    kl <- sapply(1:NCOL(p_full$mu), function(x) {
+      family_kl$kl(p_full = list(mu = p_full$mu[,x], dis = p_full$dis[x]),
+                   d_test, p_sub = list(mu = mu[,x], dis = dis[x]))
+    })
+    list(kl = kl, mu = mu, dis = dis)
+  }
+
   p_sub <- sapply(seq_along(chosen), function(x) {
     res <- projfun(chosen[1:x], p_full, d_train, intercept, regul, coef_init)
-    res$mu <- family_kl$mu_fun(d_test$x[,chosen[1:x]], res$alpha,
+    mu_sub <- family_kl$mu_fun(d_test$x[,chosen[1:x]], res$alpha,
                                res$beta[1:x,], d_test$offset, intercept)
-    res
+    mu_sub_kl(mu_sub, p_full, d_test)
   })
+
+  # do the projection also without any variables
   if(intercept) {
-    # do the projection also without any variables
     p_null <- projfun(0, p_full, d_train, 1, regul, coef_init)
-    p_null$mu <- family_kl$mu_fun(d_test$x[,0], p_null$alpha, p_null$beta[0,],
+    mu_null <- family_kl$mu_fun(d_test$x[,0], p_null$alpha, p_null$beta[0,],
                                       d_test$offset, intercept)
-    p_sub <- cbind(p_null, p_sub)
+  } else {
+    mu_null <- family_kl$linkinv(matrix(0, NROW(p_full$mu), NCOL(p_full$mu)))
   }
+  # add null model to the array of submodels
+  p_sub <- cbind(mu_sub_kl(mu_null, p_full, d_test), p_sub)
 
   kl_list <- unname(unlist(p_sub['kl',]))
 
@@ -216,16 +237,20 @@ kfold <- function (x, K = 10, save_fits = FALSE)
     matrix(rep(x, each = length(d_test$y)), ncol = NCOL(mu_full))
   }
   lppd_fun <- function(mu, dis) {
-    apply(family_kl$ll_fun(mu, dis, d_test$y, d_test$weights), 1, log_mean_exp)
+    apply(family_kl$ll_fun(mu, dis, d_test$y, d_test$weights), 1,
+          log_weighted_mean_exp, p_full$weights)
   }
   lppd_sub <- mapply(lppd_fun, p_sub['mu',], lapply(p_sub['dis',], dis_rep),
                      SIMPLIFY = F)
   # should somehow have dis calculated with test-data?
   lppd_full <- lppd_fun(mu_full, dis_rep(p_full$dis))
 
-  list(kl = kl_list,
-       sub = list(mu = lapply(p_sub['mu',], rowMeans), lppd = lppd_sub),
-       full = list(mu = rowMeans(mu_full), lppd = lppd_full))
+  # helper to avg mu and kl by sample weights
+  avg_ <- function(x) c(x%*%p_full$weights)
+
+  list(kl = sapply(p_sub['kl',], avg_),
+       sub = list(mu = lapply(p_sub['mu',], avg_), lppd = lppd_sub),
+       full = list(mu = avg_(mu_full), lppd = lppd_full))
 }
 
 # get bootstrapped 95%-intervals for the estimates

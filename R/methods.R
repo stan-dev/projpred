@@ -21,9 +21,6 @@ project.stanreg <- function(object, nv, ...) {
                'because the variable selection has been run only up to',
                length(object$varsel$chosen), 'variables.'))
 
-  if(0 %in% nv && vars$intercept==0)
-    stop('Cannot perform the projection with nv=0 and no intercept.')
-
   v_inds_max <- object$varsel$chosen[1:max(nv)]
   # the line above fails with nv=0 (ie. projection with only intercept)
   if(length(nv) == 1 && nv == 0) v_inds_max <- 0
@@ -47,6 +44,16 @@ project.stanreg <- function(object, nv, ...) {
   if(vars$intercept) names <- names[-1]
 
   object$proj <- lapply(nv, function(nv, names) {
+    # if no intercept and 0 variables, return 'trivial'  result
+    if(nv == 0 & vars$intercept == F) {
+      mu_null <- family_kl$linkinv(matrix(0, NROW(p_full$mu), NCOL(p_full$mu)))
+      return(list(weights = p_full$weights,
+                  dis = family_kl$dis_fun(p_full, d_train, list(mu = mu_null)),
+                  b = matrix(0, 1, NCOL(p_full$mu)),
+                  intercept = 0,
+                  nv = nv))
+    }
+
     seq <- if(nv>0) 1:nv else 0
     proj <- projfun(seq, p_full, d_train, vars$intercept, args$regul,
                     coef_init)
@@ -61,6 +68,7 @@ project.stanreg <- function(object, nv, ...) {
     proj$beta <- NULL
     proj$alpha <- NULL
     if(!(family_kl$family %in% c('gaussian', 'Gamma'))) proj$dis <- NULL
+    proj$nv <- nv
     proj
   }, names[v_inds_max])
 
@@ -77,17 +85,15 @@ proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NUL
   dat <- rstanarm:::pp_data(object, newdata, offset = offset)
 
   # project only model the sizes of which are specified in nv
-  projected_sizes <- sapply(object$proj, function(x) NROW(x$b) - x$intercept)
-  if(is.null(nv)) {
-    nv <- sapply(object$proj, function(x) NROW(x$b))
-  } else {
-    if(!all(nv %in% projected_sizes))
-      stop(paste0('Linear prediction requested for nv = ', paste(nv,collapse=', '),
-                  ', but projection performed only for nv = ',
-                  paste(projected_sizes, collapse = ', '), '.'))
-  }
+  if(is.null(nv)) nv <- sapply(object$proj, function(x) x$nv)
+  projected_sizes <- sapply(object$proj, function(x) x$nv)
+  if(!all(nv %in% projected_sizes))
+    stop(paste0('Linear prediction requested for nv = ',
+                paste(nv, collapse = ', '),
+                ', but projection performed only for nv = ',
+                paste(projected_sizes, collapse = ', '), '.'))
 
-  projs <- Filter(function(x) (NROW(x$b) - x$intercept) %in% nv, object$proj)
+  projs <- Filter(function(x) x$nv %in% nv, object$proj)
   chosen <- object$varsel$chosen
   if(projs[[1]]$intercept) chosen <- c(1, chosen + 1)
 

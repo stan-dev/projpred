@@ -4,13 +4,17 @@
 \alias{varsel}
 \title{Variable selection for generalized linear models}
 \usage{
-varsel(fit, d_test = NA, ...)
+varsel(fit, d_test = NA, method = "L1", ...)
 }
 \arguments{
 \item{fit}{A \link[=stanreg-objects]{stanreg} object.}
 
-\item{d_test}{A test dataset, which is used to evaluate model performance. If
-not provided, training data is used.}
+\item{d_test}{A test dataset, which is used to evaluate model performance.
+If not provided, training data is used.}
+
+\item{method}{The method used in the variable selection. Possible options are
+\code{'L1'} for L1-search and \code{'forward'} for forward selection.
+Defaults to \code{'L1'}.}
 
 \item{...}{Optional arguments. Possible arguments and their defaults are:
 \describe{

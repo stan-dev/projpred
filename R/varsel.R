@@ -3,8 +3,11 @@
 #' Perform the projection predictive variable selection for a generalized
 #' linear model fitted with rstanarm.
 #' @param fit A \link[=stanreg-objects]{stanreg} object.
-#' @param d_test A test dataset, which is used to evaluate model performance. If
-#' not provided, training data is used.
+#' @param d_test A test dataset, which is used to evaluate model performance.
+#' If not provided, training data is used.
+#' @param method The method used in the variable selection. Possible options are
+#' \code{'L1'} for L1-search and \code{'forward'} for forward selection.
+#' Defaults to \code{'L1'}.
 #' @param ... Optional arguments. Possible arguments and their defaults are:
 #' \describe{
 #'  \item{\code{ns = min(400, [number of draws])}}{
@@ -40,7 +43,7 @@
 #'
 
 #' @export
-varsel <- function(fit, d_test = NA, ...) {
+varsel <- function(fit, d_test = NA, method='L1', ...) {
   UseMethod('varsel')
 }
 
@@ -93,9 +96,9 @@ varsel.stanreg <- function(fit, d_test = NA, method='L1', ...) {
 
   # Perform the projection for the chosen variables and calculate lppds
   stats_list <- .summary_stats(chosen, d_train, d_test, p_full, family_kl,
-                          args$intercept, args$regul, coef_init, coef_full)
+                              args$intercept, args$regul, coef_init, coef_full)
 
-  nv_list <- 1:length(stats_list$sub$mu) - args$intercept
+  nv_list <- 0:length(chosen)
   stats_array <- data.frame(data = 'sel', size = nv_list, delta = F,
                             summary = 'kl', value = stats_list$kl, lq = NA, uq = NA)
 
