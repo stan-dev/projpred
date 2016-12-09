@@ -110,7 +110,7 @@ proj_coef <- function(object, ...) {
   if(!('proj' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the projection.',
                'Run the projection first.'))
-  lapply(object$proj, function(x) rowMeans(x$b))
+  lapply(object$proj, function(x) drop(x$b%*%x$weights))
 }
 
 #' @export
@@ -119,7 +119,12 @@ proj_se <- function(object, ...) {
   if(!('proj' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the projection.',
                'Run the projection first.'))
-  lapply(object$proj, function(x) apply(x$b, 1, sd))
+  # weighted standard deviation (using cluster weights)
+  lapply(object$proj, function(x) {
+    n0 <- sum(x$weights>0)
+    drop(sqrt(((x$b - rowMeans(x$b))^2)%*%x$weights /
+                ((n0-1)/n0*sum(x$weights))))
+  })
 }
 
 #' @export
