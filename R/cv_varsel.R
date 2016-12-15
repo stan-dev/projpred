@@ -119,20 +119,22 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
 }
 
 
-loo_varsel <- function(fit, ...) {
+loo_varsel <- function(fit, method='L1', ...) {
     
     # TODO, ADD COMMENTS
     vars <- .extract_vars(fit)
     args <- .init_args(list(...), vars)
     family_kl <- kl_helpers(family(fit))
     mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, args$intercept)
+    dis <- vars$dis
     
+    # training data and the fit of the full model
     d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
-    p_full <- list(mu = mu, dis = vars$dis, weights = rep(1/n, n))
+    p_full <- list(mu = mu, dis = dis)
     
     # perform the clustering for the full model
     # TODO DUMMY SOLUTION, USE ONE CLUSTER
-    clind <- rep(1,n)
+    cl <- rep(1,n)
     
     # compute the log-likelihood for the full model to obtain the LOO weights
     loglik <- log_lik(fit)
@@ -142,13 +144,21 @@ loo_varsel <- function(fit, ...) {
     print(n)
     print(dim(mu))
     print(dim(lw))
+    # res <- rep(0,n)
+    
+    tic()
+    chosen_mat <- matrix(rep(0, n*args$nv), nrow=n)
     for (i in 1:n) {
     	
     	# reweight the clusters according to the is-loo weights
-    	p_sel <- .get_p_clust(mu, dis, cl=clind, wsample=exp(lw[,i]))$p
+    	p_sel <- .get_p_clust(mu, dis, cl=cl, wsample=exp(lw[,i]))$p
+    	
+    	# res[i] <- p_sel$mu[i]-y[i]
     	
     	# perform selection
-    	
+    	chosen <- select(method, p_sel, d_train, family_kl, args$intercept, args$nv,
+    					 args$regul, NA, args$verbose)
+    	chosen_mat[i,] <- chosen
     	
     	# project onto the selected models
     	
@@ -163,9 +173,18 @@ loo_varsel <- function(fit, ...) {
         # chosen <- search_L1(p_full, d_train, family_kl, args$intercept, args$nv)
         # print(dim(  )) 
     }
+    toc()
     
     # p_full <- list(b = b[, s_ind], mu = mu[, s_ind], dis = dis[s_ind],
     #                cluster_w = rep(1/args$ns, args$ns))
+    
+    # mse <- mean((apply(mu,1,'mean')-y)^2)
+    # mse_loo <- mean(res^2)
+    # 
+    # print(mse)
+    # print(mse_loo)
+    
+    return(chosen_mat)
     
 }
 
