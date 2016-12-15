@@ -83,7 +83,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
     x = unname(get_x(fit)),
     alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv],
     beta = t(unname(drop(e$beta)))[, perm_inv],
-    dis = unname(e[['dispersion']]) %ORifNULL% rep(1, nrow(e$beta))[perm_inv],
+    dis = unname(e[['dispersion']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
     offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
     intercept = attr(fit$terms,'intercept') %ORifNULL% F)
 
