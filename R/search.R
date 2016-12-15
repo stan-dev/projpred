@@ -41,8 +41,8 @@ fsel <- function(p_full, d_train, family_kl, intercept, nv, regul, coef_init,
 
 search_L1 <- function(p_full, d_train, family, intercept, nv) {
 	
-	# prediction of full model (integrate over the uncertainty about f)
-	mu <- rowMeans(p_full$mu)
+	# prediction of full model (integrate over the uncertainty about the model parameters)
+	mu <- p_full$mu %*% p_full$weights
 	
 	# create a grid of lambda values
 	lambda_min_ratio <- 1e-3 # this should be small enough so that the computation does not stop before pmax

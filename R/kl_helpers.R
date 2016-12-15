@@ -29,7 +29,7 @@ kl_helpers <- function(fam) {
   }
 
   # for gaussian dispersion is sigma and for gamma it is the shape param
-  dis_na <- function(p_full, d_train, p_sub) 1
+  dis_na <- function(p_full, d_train, p_sub) rep(1, length(p_full$dis))
   dis_gauss <- function(p_full, d_train, p_sub) {
     sqrt(mean(d_train$weights*(p_full$mu - p_sub$mu)^2) + p_full$dis^2)
   }
@@ -47,10 +47,10 @@ kl_helpers <- function(fam) {
 
   # return the family object with the correct function handles
   c(switch(fam$family,
-      'binomial' = list(kl = kl_binom, ll_fun = ll_binom, dis = dis_na),
-      'poisson' = list(kl = kl_poiss, ll_fun = ll_poiss, dis = dis_na),
-      'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis = dis_gauss),
-      'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis = dis_gamma))
+      'binomial' = list(kl = kl_binom, ll_fun = ll_binom, dis_fun = dis_na),
+      'poisson' = list(kl = kl_poiss, ll_fun = ll_poiss, dis_fun = dis_na),
+      'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss),
+      'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma))
   , list(mu_fun = function(x, alpha, beta, offset, intercept) {
       fam$linkinv(cbind(1*intercept, x)%*%rbind(alpha, beta) + offset)
     }), fam)
