@@ -125,11 +125,14 @@ loo_varsel <- function(fit, ...) {
     vars <- .extract_vars(fit)
     args <- .init_args(list(...), vars)
     family_kl <- kl_helpers(family(fit))
-    mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset,
-                           args$intercept)
+    mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, args$intercept)
     
-    # d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
-    # p_full <- list(mu = mu, dis = vars$dis, cluster_w = rep(1/n, n))
+    d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
+    p_full <- list(mu = mu, dis = vars$dis, weights = rep(1/n, n))
+    
+    # perform the clustering for the full model
+    # TODO DUMMY SOLUTION, USE ONE CLUSTER
+    clind <- rep(1,n)
     
     # compute the log-likelihood for the full model to obtain the LOO weights
     loglik <- log_lik(fit)
@@ -140,9 +143,23 @@ loo_varsel <- function(fit, ...) {
     print(dim(mu))
     print(dim(lw))
     for (i in 1:n) {
+    	
+    	# reweight the clusters according to the is-loo weights
+    	p_sel <- .get_p_clust(mu, dis, cl=clind, wsample=exp(lw[,i]))$p
+    	
+    	# perform selection
+    	
+    	
+    	# project onto the selected models
+    	
+    	
+    	# compute the difference between training and loo density for the left-out point
+    	
+    	
         
-        mu_loo_i <- mu %*% exp(lw[,i])
-        p_full <- list(mu=mu_loo_i)
+        # mu_loo_i <- mu %*% exp(lw[,i])
+        # p_full <- list(mu=mu_loo_i)
+        
         # chosen <- search_L1(p_full, d_train, family_kl, args$intercept, args$nv)
         # print(dim(  )) 
     }

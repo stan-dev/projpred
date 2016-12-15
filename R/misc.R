@@ -131,7 +131,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 }
 
 # perform clustering over the samples
-.get_p_clust <- function(mu, dis, nc, wsample=rep(1,dim(mu)[2]), cl = NULL) {
+.get_p_clust <- function(mu, dis, nc=1, wsample=rep(1,dim(mu)[2]), cl = NULL) {
 
   # TODO
   # THIS FUNCTION WORKS CURRENTLY ONLY FOR GAUSSIAN FAMILY.
@@ -152,7 +152,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   wcluster <- rep(0,nc) # cluster weights
   for (j in 1:nc) {
       ind <- which(cl$cluster==j)
-      ws <- wsample[ind]/sum(wsample[ind]) # normalized weights within the cluster
+      ws <- wsample[ind]/sum(wsample[ind]) # normalized sample weights within the cluster
       centers[j,] <- mu[,ind] %*% ws
       wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
   }
@@ -163,7 +163,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   disps <- sapply(1:nc,
                   function(cl_ind) {
                     ind <- which(cl$cluster== cl_ind)
-                    ws <- wsample[ind]/sum(wsample[ind]) # normalized weights within the cluster
+                    ws <- wsample[ind]/sum(wsample[ind]) # normalized sample weights within the cluster
                     if (length(ind) > 1) {
                         mu_mean <- mu[,ind] %*% ws
                         mu_var <- mu[,ind]^2 %*% ws - mu_mean^2
