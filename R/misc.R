@@ -230,8 +230,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   kl_list <- unname(unlist(p_sub['kl',]))
 
-  mu_full <- family_kl$linkinv(d_test$offset +
-    cbind(1, d_test$x)%*%rbind(coef_full$alpha, coef_full$beta))
+  mu_full <- family_kl$mu_fun(d_test$x, coef_full$alpha, coef_full$beta, d_test$offset)
 
   dis_rep <- function(x) {
     matrix(rep(x, each = length(d_test$y)), ncol = NCOL(mu_full))
