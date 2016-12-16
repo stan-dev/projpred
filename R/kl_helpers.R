@@ -44,16 +44,19 @@ kl_helpers <- function(fam) {
   ll_poiss <- function(mu, dis, y, weights) weights*dpois(y, mu, log=T)
   ll_gauss <- function(mu, dis, y, weights) weights*dnorm(y, mu, dis, log=T)
   ll_gamma <- function(mu, dis, y, weights) weights*dgamma(y, dis,dis/mu,log=T)
+  
+  # function for computing mu = E(y)
+  mu_fun <- function(x, alpha, beta, offset, intercept) {
+                fam$linkinv(cbind(1*intercept, x)%*%rbind(alpha, beta) + offset)
+            }
 
   # return the family object with the correct function handles
   c(switch(fam$family,
       'binomial' = list(kl = kl_binom, ll_fun = ll_binom, dis_fun = dis_na),
       'poisson' = list(kl = kl_poiss, ll_fun = ll_poiss, dis_fun = dis_na),
       'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss),
-      'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma))
-  , list(mu_fun = function(x, alpha, beta, offset, intercept) {
-      fam$linkinv(cbind(1*intercept, x)%*%rbind(alpha, beta) + offset)
-    }), fam)
+      'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma)),
+    list(mu_fun = mu_fun), fam)
 
 }
 

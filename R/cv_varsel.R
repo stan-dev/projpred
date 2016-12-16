@@ -160,10 +160,13 @@ loo_varsel <- function(fit, method='L1', ...) {
     					 args$regul, NA, args$verbose)
     	chosen_mat[i,] <- chosen
     	
-    	# project onto the selected models
-    	
-    	
-    	# compute the difference between training and loo density for the left-out point
+    	# project onto the selected models and compute the difference between
+    	# training and loo density for the left-out point
+    	d_test = list(x=x[i,], y=y[i], offset=d_train$offset[i], weights=1.0)
+    	# x y offset weights
+    	coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
+    	.summary_stats(chosen, d_train, d_test, p_full, family_kl,
+    	               args$intercept, args$regul, NA, coef_full) 
     	
     	
         
