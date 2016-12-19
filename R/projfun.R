@@ -20,6 +20,10 @@ project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, 
         # add vector of ones to x and transform the variable indices
         x <- cbind(1, x)
         ind <- c(1, ind + 1)
+    } else if (length(ind) == 0) {
+        # no intercept used and ind is empty, so projecting to the completely 
+        # null model with eta=0 always
+        # TODO FILL THIS IN
     }
 
     xp <- x[, ind, drop = F]
@@ -91,7 +95,22 @@ project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept=TR
 
 
 
-
+.get_submodels <- function(chosen, nv, family_kl, p_full, d_train, intercept) {
+    #
+    # Project onto given model sizes nv. Returns a list of submodels.
+    #
+    projfun <- .get_proj_handle(family_kl)
+    
+    p_sub <- sapply(nv,
+        function(nv) {
+            if (nv == 0)
+                ind <- 0
+            else
+                ind <- chosen[1:nv]
+            return(projfun(ind, p_full, d_train, intercept))
+        })
+    return(p_sub)
+}
 
 
 

@@ -193,6 +193,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
 
 
+
 # calculate everything that needs to be saved from the submodel
 .summary_stats <- function(chosen, d_train, d_test, p_full, family_kl,
                            intercept, regul, coef_init, coef_full) {
