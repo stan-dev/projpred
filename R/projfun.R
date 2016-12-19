@@ -117,6 +117,9 @@ project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept=TR
 }
 
 
+.get_subpred <- function(psub) {
+    
+}
 
 
 
