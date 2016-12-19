@@ -40,10 +40,16 @@ kl_helpers <- function(fam) {
     }
     
     # log likelihoods
-    ll_binom <- function(mu, dis, y, weights) dbinom(weights*y, weights,mu,log=T)
+    ll_binom <- function(mu, dis, y, weights) dbinom(weights*y, weights, mu, log=T)
     ll_poiss <- function(mu, dis, y, weights) weights*dpois(y, mu, log=T)
-    ll_gauss <- function(mu, dis, y, weights) weights*dnorm(y, mu, dis, log=T)
-    ll_gamma <- function(mu, dis, y, weights) weights*dgamma(y, dis,dis/mu,log=T)
+    ll_gauss <- function(mu, dis, y, weights) {
+        dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
+        weights*dnorm(y, mu, dis, log=T)
+    }
+    ll_gamma <- function(mu, dis, y, weights) {
+        dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
+        weights*dgamma(y, dis, dis/matrix(mu), log=T)
+    }
     
     # function for computing mu = E(y)
     mu_fun <- function(x, alpha, beta, offset, intercept=TRUE) {
