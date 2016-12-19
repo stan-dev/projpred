@@ -233,17 +233,14 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   mu_full <- family_kl$mu_fun(d_test$x, coef_full$alpha, coef_full$beta, d_test$offset)
 
-  dis_rep <- function(x) {
-    matrix(rep(x, each = length(d_test$y)), ncol = NCOL(mu_full))
-  }
   lppd_fun <- function(mu, dis) {
     apply(family_kl$ll_fun(mu, dis, d_test$y, d_test$weights), 1,
           log_weighted_mean_exp, p_full$weights)
   }
-  lppd_sub <- mapply(lppd_fun, p_sub['mu',], lapply(p_sub['dis',], dis_rep),
-                     SIMPLIFY = F)
+  lppd_sub <- mapply(lppd_fun, p_sub['mu',], p_sub['dis',], SIMPLIFY = F)
+  
   # should somehow have dis calculated with test-data?
-  lppd_full <- lppd_fun(mu_full, dis_rep(p_full$dis))
+  lppd_full <- lppd_fun(mu_full, p_full$dis)
 
   # helper to avg mu and kl by sample weights
   avg_ <- function(x) c(x%*%p_full$weights)
@@ -252,6 +249,51 @@ kfold <- function (x, K = 10, save_fits = FALSE)
        sub = list(mu = lapply(p_sub['mu',], avg_), lppd = lppd_sub),
        full = list(mu = avg_(mu_full), lppd = lppd_full))
 }
+
+
+
+.get_sub_summaries <- function(chosen, nv, d_train, d_test, p_full, family_kl, intercept) {
+    
+    
+    # project onto the given model sizes
+    psub <- .get_submodels(chosen, nv, family_kl, p_full, d_train, intercept)
+    
+    # compute the summaries on the test data for each sub model
+    summaries <- lapply(1:length(nv),
+                    function(j) {
+                        if (nv[j] == 0)
+                            ind <- integer(length=0) # empty 
+                        else
+                            ind <- chosen[1:nv[j]]
+                        if (is.null(dim(d_test$x)))
+                            # only one test point
+                            xt <- d_test$x[ind]
+                        else
+                            xt <- d_test$x[,ind]
+                        
+                        mu <- family_kl$mu_fun(xt, psub[[j]]$alpha, psub[[j]]$beta, d_test$offset)
+                        
+                        loglik <- family_kl$ll_fun(mu, psub[[j]]$dis, d_test$y, d_test$weights)
+                        print(j)
+                        print(p_full$weights)
+                        lppd <- apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
+                        
+                        return(list(lppd = lppd))
+                    })
+    
+    # lppdsub <- lapply(1:length(nv),
+    #                 function(j) {
+    #                     loglik <- family_kl$ll_fun(musub[[j]], psub[[j]]$dis, d_test$y, d_test$weights)
+    #                     apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
+    #                   })
+
+    return(summaries)
+    
+}
+
+
+
+
 
 # get bootstrapped 95%-intervals for the estimates
 .bootstrap_stats <- function(stats, nv_list, d_test, family_kl, b_weights,
