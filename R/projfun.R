@@ -2,8 +2,7 @@
 
 
 
-project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, coef_init=NULL)
-{
+project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, coef_init=NULL) {
 
     x <- d_train$x
     mu <- p_full$mu
@@ -16,20 +15,28 @@ project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, 
         wsample <- p_full$weights
     else
         wsample <- rep(1.0, dim(as.matrix(mu))[2])
+    
+    # ensure the weights are normalized
+    wobs <- wobs/sum(wobs)
+    wsample <- wsample/sum(wsample)
 
     if(intercept) {
         # add vector of ones to x and transform the variable indices
         x <- cbind(1, x)
         ind <- c(1, ind + 1)
+    } else if (length(ind) == 0) {
+        # no intercept used and ind is empty, so projecting to the completely 
+        # null model with eta=0 always
+        beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
+        dis_sub <- sqrt( colSums(wobs*mu^2) + dis^2 )
+        kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
+        p_sub <- list(kl = kl, weights = wsample, dis = dis_sub)
+        return(c(p_sub, .split_coef(beta_sub, intercept)))
     }
 
     xp <- x[, ind, drop = F]
     Dp <- dim(xp)[2]
     regulmat <- diag(regul*rep(1.0, Dp), Dp, Dp)
-
-    # normalize the weights
-    wobs <- wobs/sum(wobs)
-    wsample <- wsample/sum(wsample)
 
     # Solve the projection equations (with l2-regularization)
     w <- sqrt(wobs)
@@ -45,39 +52,22 @@ project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, 
 
 
 
-project_gaussian_old <- function(chosen, p_full, d_train, intercept, regul, coef_init) {
+project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept=TRUE,
+                                regul=1e-12, coef_init=NULL) {
 
-    if(intercept) {
-        d_train$x <- cbind(1, d_train$x)
-        chosen <- c(1, chosen + 1)
+    if (is.null(coef_init)) {
+        # initialize at the origin
+        coef_init <- list( alpha=0, beta=matrix(rep(0,length(chosen)), ncol=1) )
+    } else {
+        # simply pick up the relevant indices from beta
+        coef_init <- within(coef_init, beta <- coef_init$beta[chosen])
     }
-
-    regulvec <- c((1-intercept)*regul, rep(regul, length(chosen) - 1))
-    regulmat <- diag(regulvec, length(regulvec), length(regulvec))
-
-    w <- sqrt(d_train$weights)
-    # Solution for the gaussian case (with l2-regularization)
-    b <- solve(crossprod(w*d_train$x[, chosen, drop = F]) + regulmat,
-               crossprod(w*d_train$x[, chosen, drop = F], w*p_full$mu))
-    dis <- sqrt(colMeans(d_train$weights*(
-        p_full$mu - d_train$x[, chosen, drop = F]%*%b)^2) + p_full$dis^2)
-    p_sub <- list(kl = weighted.mean(log(dis) - log(p_full$dis) +
-                                         colSums(b^2*regulvec), p_full$weights),
-                  dis = dis)
-    # split b to alpha and beta, add it to p_sub and return the result
-    c(p_sub, .split_coef(b, intercept))
-}
-
-
-project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept,
-                                regul, coef_init) {
-
+    
     # perform the projection over samples
     res <- sapply(1:ncol(p_full$mu), function(s_ind) {
         IRLS(list(mu = p_full$mu[, s_ind, drop = F], dis = p_full$dis[s_ind]),
              list(x = d_train$x[, chosen, drop = F], weights = d_train$weights,
-                  offset = d_train$offset), family_kl, intercept, regul,
-             within(coef_init, beta <- coef_init$beta[chosen]))
+                  offset = d_train$offset), family_kl, intercept, regul, coef_init)
     })
 
     # weight the results by sample/cluster weights
@@ -99,11 +89,40 @@ project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept,
     } else {
       # return handle to project_nongaussian with family_kl set accordingly
       return(
-        function(chosen, p_full, d_train, intercept,regul, coef_init) {
-          project_nongaussian(chosen, p_full, d_train, family_kl = family_kl,
-                              intercept, regul, coef_init)
-        } )
+        function(chosen, p_full, d_train, intercept, regul=1e-12, coef_init=NULL) {
+          project_nongaussian(chosen, p_full, d_train, family_kl, intercept, regul, coef_init)
+        })
     }
 }
+
+
+
+
+
+.get_submodels <- function(chosen, nv, family_kl, p_full, d_train, intercept) {
+    #
+    # Project onto given model sizes nv. Returns a list of submodels.
+    #
+    projfun <- .get_proj_handle(family_kl)
+    
+    p_sub <- lapply(nv,
+        function(nv) {
+            if (nv == 0)
+                ind <- integer(length=0) # empty 
+            else
+                ind <- chosen[1:nv]
+            return(projfun(ind, p_full, d_train, intercept))
+        })
+    return(p_sub)
+}
+
+
+
+
+
+
+
+
+
 
 

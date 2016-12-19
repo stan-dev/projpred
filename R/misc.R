@@ -83,7 +83,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
     x = unname(get_x(fit)),
     alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv],
     beta = t(unname(drop(e$beta)))[, perm_inv],
-    dis = unname(e[['dispersion']]) %ORifNULL% rep(1, nrow(e$beta))[perm_inv],
+    dis = unname(e[['dispersion']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
     offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
     intercept = attr(fit$terms,'intercept') %ORifNULL% F)
 
@@ -193,6 +193,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
 
 
+
 # calculate everything that needs to be saved from the submodel
 .summary_stats <- function(chosen, d_train, d_test, p_full, family_kl,
                            intercept, regul, coef_init, coef_full) {
@@ -230,8 +231,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   kl_list <- unname(unlist(p_sub['kl',]))
 
-  mu_full <- family_kl$linkinv(d_test$offset +
-    cbind(1, d_test$x)%*%rbind(coef_full$alpha, coef_full$beta))
+  mu_full <- family_kl$mu_fun(d_test$x, coef_full$alpha, coef_full$beta, d_test$offset)
 
   dis_rep <- function(x) {
     matrix(rep(x, each = length(d_test$y)), ncol = NCOL(mu_full))
