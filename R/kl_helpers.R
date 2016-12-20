@@ -53,14 +53,11 @@ kl_helpers <- function(fam) {
     
     # function for computing mu = E(y)
     mu_fun <- function(x, alpha, beta, offset, intercept=TRUE) {
-        # TODO, WE SHOULD MAKE A POLICY ABOUT HOW TO INTERPRET X AND BETA
-        # WHEN THEY ARE VECTORS. THROW AN ERROR IF THEY ARE VECTORS?
-        if (is.null(dim(x)))
-            # x is a vector (prediction for only one data point)
-            xaug <- c(1*intercept, x)
-        else
-            xaug <- cbind(1*intercept, x)
-        fam$linkinv(xaug %*% rbind(alpha, beta) + offset)
+        if (!is.matrix(x))
+            stop('x must be a matrix.')
+        if (!is.matrix(beta))
+            stop('beta must be a matrix')
+        fam$linkinv(cbind(1*intercept, x) %*% rbind(alpha, beta) + offset)
     }
     
     # return the family object with the correct function handles

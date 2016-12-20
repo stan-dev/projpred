@@ -213,8 +213,8 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
   p_sub <- sapply(seq_along(chosen), function(x) {
     res <- projfun(chosen[1:x], p_full, d_train, intercept, regul, coef_init)
-    mu_sub <- family_kl$mu_fun(d_test$x[,chosen[1:x]], res$alpha,
-                               res$beta[1:x,], d_test$offset, intercept)
+    mu_sub <- family_kl$mu_fun( matrix(d_test$x[,chosen[1:x]], ncol=x), res$alpha,
+                                matrix(res$beta[1:x,], nrow=x), d_test$offset, intercept)
     mu_sub_kl(mu_sub, p_full, d_test)
   })
 
@@ -276,7 +276,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
                         loglik <- family_kl$ll_fun(mu, psub[[j]]$dis, d_test$y, d_test$weights)
                         print(j)
                         print(p_full$weights)
-                        lppd <- apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
+                        lppd <- 0;#apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
                         
                         return(list(lppd = lppd))
                     })

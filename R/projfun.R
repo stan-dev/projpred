@@ -10,11 +10,11 @@ project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, 
     if ("wobs" %in% names(d_train))
         wobs <- d_train$weights
     else
-        wobs <- rep(1.0, dim(as.matrix(mu))[1])
+        wobs <- rep(1.0, NROW(mu))
     if ("weights" %in% names(p_full))
         wsample <- p_full$weights
     else
-        wsample <- rep(1.0, dim(as.matrix(mu))[2])
+        wsample <- rep(1.0, NCOL(mu))
     
     # ensure the weights are normalized
     wobs <- wobs/sum(wobs)
