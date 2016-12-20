@@ -146,8 +146,12 @@ loo_varsel <- function(fit, method='L1', ...) {
     print(dim(lw))
     # res <- rep(0,n)
     
+    nv <- c(0:args$nv) # TODO IMPLEMENT THIS PROPERLY
+    pmax <- max(nv) ## TODO
+    
     tic()
-    chosen_mat <- matrix(rep(0, n*args$nv), nrow=n)
+    chosen_mat <- matrix(rep(0, n*pmax), nrow=n)
+    loo <- matrix(nrow=n, ncol=length(nv))
     for (i in 1:n) {
     	
     	# reweight the clusters according to the is-loo weights
@@ -156,14 +160,20 @@ loo_varsel <- function(fit, method='L1', ...) {
     	# res[i] <- p_sel$mu[i]-y[i]
     	
     	# perform selection
-    	chosen <- select(method, p_sel, d_train, fam, args$intercept, args$nv,
-    					 args$regul, NA, args$verbose)
+    	chosen <- select(method, p_sel, d_train, fam, args$intercept, pmax, args$regul, NA, args$verbose)
     	chosen_mat[i,] <- chosen
     	
     	# project onto the selected models and compute the difference between
     	# training and loo density for the left-out point
-    	psub <- .get_submodels(chosen, nv, fam, p_sel, d_train, args$intercept)
-    	d_test = list(x=x[i,], y=y[i], offset=d_train$offset[i], weights=1.0)
+    	#psub <- .get_submodels(chosen, nv, fam, p_sel, d_train, args$intercept)
+    	d_test = list(x=matrix(x[i,],nrow=1), y=y[i], offset=d_train$offset[i], weights=1.0)
+    	summaries <- .get_sub_summaries(chosen, nv, d_train, d_test, p_sel, fam, args$intercept)
+    	
+    	
+    	for (k in 1:length(nv)) {
+    	    loo[i,k] <- summaries[[k]]$lppd
+    	}
+    	
     	
     	#coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
     	#.summary_stats(chosen, d_train, d_test, p_full, fam,
@@ -176,6 +186,7 @@ loo_varsel <- function(fit, method='L1', ...) {
         
         # chosen <- search_L1(p_full, d_train, fam, args$intercept, args$nv)
         # print(dim(  )) 
+    	print(sprintf('i = %d', i))
     }
     toc()
     
@@ -188,7 +199,7 @@ loo_varsel <- function(fit, method='L1', ...) {
     # print(mse)
     # print(mse_loo)
     
-    return(chosen_mat)
+    return(loo)
     
 }
 
