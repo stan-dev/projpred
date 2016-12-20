@@ -254,6 +254,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
 
 .get_sub_summaries <- function(chosen, nv, d_train, d_test, p_full, family_kl, intercept) {
     
+    # TODO FILL IN HOW TO SELECT WHICH SUMMARIES ARE COMPUTED (AND IMPLEMENT MSE, ACCURACY ETC.)
     
     # project onto the given model sizes
     psub <- .get_submodels(chosen, nv, family_kl, p_full, d_train, intercept)
@@ -267,26 +268,17 @@ kfold <- function (x, K = 10, save_fits = FALSE)
                             ind <- chosen[1:nv[j]]
                         if (is.null(dim(d_test$x)))
                             # only one test point
-                            xt <- d_test$x[ind]
+                            xt <- matrix(d_test$x[ind], nrow=1)
                         else
-                            xt <- d_test$x[,ind]
-                        
+                            xt <- matrix(d_test$x[,ind], nrow=NROW(d_test$x))
+
                         mu <- family_kl$mu_fun(xt, psub[[j]]$alpha, psub[[j]]$beta, d_test$offset)
+                        loglik <- family_kl$ll_fun(mu, psub[[j]]$dis, d_test$y)
+                        lppd <- apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
                         
-                        loglik <- family_kl$ll_fun(mu, psub[[j]]$dis, d_test$y, d_test$weights)
-                        print(j)
-                        print(p_full$weights)
-                        lppd <- 0;#apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
-                        
-                        return(list(lppd = lppd))
+                        return(list(lppd = lppd, loglik=loglik, mu=mu, dis=psub[[j]]$dis))
                     })
     
-    # lppdsub <- lapply(1:length(nv),
-    #                 function(j) {
-    #                     loglik <- family_kl$ll_fun(musub[[j]], psub[[j]]$dis, d_test$y, d_test$weights)
-    #                     apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
-    #                   })
-
     return(summaries)
     
 }
