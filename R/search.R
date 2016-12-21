@@ -6,19 +6,18 @@
 #' samples is used for the variable selection, p_clust contains parameters
 #' of the full model using only those samples.
 
-fsel <- function(p_full, d_train, family_kl, intercept, nv, regul, coef_init,
-                 verbose) {
+fsel <- function(p_full, d_train, family_kl, intercept, nvmax, regul, coef_init, verbose) {
 
   # initialize the forward selection
   # proj performs the projection over samples
   proj <- .get_proj_handle(family_kl)
   i <- 1
-  iq <- ceiling(quantile(1:nv, 1:10/10))
+  iq <- ceiling(quantile(1:nvmax, 1:10/10))
   cols <- 1:ncol(d_train$x)
   chosen <- NULL
 
   # start adding variables one at a time
-  while(i <= nv) {
+  while(i <= nvmax) {
 
     notchosen <- setdiff(cols, chosen)
     cands <- lapply(notchosen, function(x) c(chosen, x))
@@ -39,7 +38,7 @@ fsel <- function(p_full, d_train, family_kl, intercept, nv, regul, coef_init,
 
 
 
-search_L1 <- function(p_full, d_train, family, intercept, nv) {
+search_L1 <- function(p_full, d_train, family, intercept, nvmax) {
 	
 	# prediction of full model (integrate over the uncertainty about the model parameters)
 	mu <- p_full$mu %*% p_full$weights
@@ -53,12 +52,12 @@ search_L1 <- function(p_full, d_train, family, intercept, nv) {
 	
 	
 	# L1-penalized projection (projection path)
-	search <- glm_elnet(d_train$x, mu, family, lambda=lambda, pmax=nv, pmax_strict=FALSE,
+	search <- glm_elnet(d_train$x, mu, family, lambda=lambda, pmax=nvmax, pmax_strict=FALSE,
 						offset=d_train$offset, weights=d_train$weights, intercept=intercept)
 	
 	# sort the variables according to the order in which they enter the model in the L1-path
 	entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1])
-	order <- sort(entering_indices, index.return=TRUE)$ix
+	order <- sort(entering_indices, index.return=TRUE)$ix[1:nvmax]
 	
 	return(order)
 }
