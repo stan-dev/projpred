@@ -141,11 +141,6 @@ loo_varsel <- function(fit, method='L1', ...) {
     lw <- psislw(-loglik)$lw_smooth
     
     n <- dim(lw)[2]
-    print(n)
-    print(dim(mu))
-    print(dim(lw))
-    # res <- rep(0,n)
-    
     nv <- c(0:args$nv) # TODO IMPLEMENT THIS PROPERLY
     pmax <- max(nv) ## TODO
     
@@ -157,7 +152,10 @@ loo_varsel <- function(fit, method='L1', ...) {
     	# reweight the clusters according to the is-loo weights
     	p_sel <- .get_p_clust(mu, dis, cl=cl, wsample=exp(lw[,i]))$p
     	
-    	# res[i] <- p_sel$mu[i]-y[i]
+    	
+    	#######
+    	return(p_sel)
+    	########
     	
     	# perform selection
     	chosen <- select(method, p_sel, d_train, fam, args$intercept, pmax, args$regul, NA, args$verbose)
@@ -165,7 +163,6 @@ loo_varsel <- function(fit, method='L1', ...) {
     	
     	# project onto the selected models and compute the difference between
     	# training and loo density for the left-out point
-    	#psub <- .get_submodels(chosen, nv, fam, p_sel, d_train, args$intercept)
     	d_test = list(x=matrix(x[i,],nrow=1), y=y[i], offset=d_train$offset[i], weights=1.0)
     	summaries <- .get_sub_summaries(chosen, nv, d_train, d_test, p_sel, fam, args$intercept)
     	
@@ -174,30 +171,9 @@ loo_varsel <- function(fit, method='L1', ...) {
     	    loo[i,k] <- summaries[[k]]$lppd
     	}
     	
-    	
-    	#coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
-    	#.summary_stats(chosen, d_train, d_test, p_full, fam,
-    	#               args$intercept, args$regul, NA, coef_full) 
-    	
-    	
-        
-        # mu_loo_i <- mu %*% exp(lw[,i])
-        # p_full <- list(mu=mu_loo_i)
-        
-        # chosen <- search_L1(p_full, d_train, fam, args$intercept, args$nv)
-        # print(dim(  )) 
     	print(sprintf('i = %d', i))
     }
     toc()
-    
-    # p_full <- list(b = b[, s_ind], mu = mu[, s_ind], dis = dis[s_ind],
-    #                cluster_w = rep(1/args$ns, args$ns))
-    
-    # mse <- mean((apply(mu,1,'mean')-y)^2)
-    # mse_loo <- mean(res^2)
-    # 
-    # print(mse)
-    # print(mse_loo)
     
     return(loo)
     
