@@ -276,7 +276,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
                         loglik <- family_kl$ll_fun(mu, psub[[j]]$dis, d_test$y)
                         lppd <- apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
                         
-                        return(list(lppd = lppd, loglik=loglik, mu=mu, dis=psub[[j]]$dis))
+                        return(list(lppd = lppd))
                     })
     
     return(summaries)
