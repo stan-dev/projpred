@@ -270,13 +270,13 @@ kfold <- function (x, K = 10, save_fits = FALSE)
                             # only one test point
                             xt <- matrix(d_test$x[ind], nrow=1)
                         else
-                            xt <- matrix(d_test$x[,ind], nrow=NROW(d_test$x))
+                            xt <- d_test$x[,ind,drop=F]
 
                         mu <- family_kl$mu_fun(xt, psub[[j]]$alpha, psub[[j]]$beta, d_test$offset)
                         loglik <- matrix(family_kl$ll_fun(mu, psub[[j]]$dis, d_test$y), nrow=NROW(xt))
                         lppd <- apply(loglik, 1, log_weighted_mean_exp, p_full$weights)
                         
-                        return(list(lppd = lppd, loglik=loglik, mu=mu, dis=psub[[j]]$dis))
+                        return(list(lppd = lppd))
                     })
     
     return(summaries)
