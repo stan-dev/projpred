@@ -270,7 +270,7 @@ kfold <- function (x, K = 10, save_fits = FALSE)
                             # only one test point
                             xt <- matrix(d_test$x[ind], nrow=1)
                         else
-                            xt <- matrix(d_test$x[,ind], nrow=NROW(d_test$x))
+                            xt <- d_test$x[,ind,drop=F]
 
                         mu <- family_kl$mu_fun(xt, psub[[j]]$alpha, psub[[j]]$beta, d_test$offset)
                         loglik <- family_kl$ll_fun(mu, psub[[j]]$dis, d_test$y)
