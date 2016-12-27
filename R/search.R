@@ -44,11 +44,13 @@ search_L1 <- function(p_full, d_train, family, intercept, nvmax) {
 	mu <- p_full$mu %*% p_full$weights
 	
 	# create a grid of lambda values
-	lambda_min_ratio <- 1e-3 # this should be small enough so that the computation does not stop before pmax
-	nlam <- 100 # should be dense enough
+	lambda_min_ratio <- 1e-3 # this is the relative value above which we use fairly dense grid
+	nlam <- 100 # how many values in the grid before lambda_min_ratio
 	lambda <- lambda_grid(d_train$x, mu, family, alpha=1.0, eps=lambda_min_ratio, nlam=nlam)
-	# add a few very small lambda values to proceed the variable selection almost up to the full model
-	lambda <- c(lambda, rev(seq(log(1e-15), log(min(lambda)),  by=log(10))))
+	
+	# add a sparser grid of very small lambda values to proceed the variable selection almost up to the full model
+	lambda_min <- 1e-15 # ultimate minimum for lambda
+	lambda <- c(lambda, rev(seq(log(lambda_min), log(min(lambda)),  by=log(10))))
 	
 	
 	# L1-penalized projection (projection path)
@@ -57,9 +59,10 @@ search_L1 <- function(p_full, d_train, family, intercept, nvmax) {
 	
 	# sort the variables according to the order in which they enter the model in the L1-path
 	entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1])
-	order <- sort(entering_indices, index.return=TRUE)$ix[1:nvmax]
+	entered_variables <- c(1:NCOL(d_train$x))[!is.na(entering_indices)] # variables that entered at some point
+	order_of_entered <- sort(entering_indices, index.return=TRUE)$ix[1:nvmax]
 	
-	return(order)
+	return(entered_variables[order_of_entered])
 }
 
 

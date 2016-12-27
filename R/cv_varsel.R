@@ -152,11 +152,6 @@ loo_varsel <- function(fit, method='L1', ...) {
     	# reweight the clusters according to the is-loo weights
     	p_sel <- .get_p_clust(mu, dis, cl=cl, wsample=exp(lw[,i]))$p
     	
-    	
-    	#######
-    	return(p_sel)
-    	########
-    	
     	# perform selection
     	chosen <- select(method, p_sel, d_train, fam, args$intercept, pmax, args$regul, NA, args$verbose)
     	chosen_mat[i,] <- chosen
@@ -166,7 +161,6 @@ loo_varsel <- function(fit, method='L1', ...) {
     	d_test = list(x=matrix(x[i,],nrow=1), y=y[i], offset=d_train$offset[i], weights=1.0)
     	summaries <- .get_sub_summaries(chosen, nv, d_train, d_test, p_sel, fam, args$intercept)
     	
-    	
     	for (k in 1:length(nv)) {
     	    loo[i,k] <- summaries[[k]]$lppd
     	}
@@ -175,7 +169,8 @@ loo_varsel <- function(fit, method='L1', ...) {
     }
     toc()
     
-    return(loo)
+    out = list(loo=loo, chosen=chosen_mat)
+    return(out)
     
 }
 
