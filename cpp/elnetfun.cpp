@@ -42,7 +42,7 @@ void coord_descent(	vec& beta, // regression coefficients
 					std::set<int>& active_set, // active set
 					bool until_convergence, // true = until convergence, false = one pass through varind
 					int& npasses, // counts total passes through the variables
-					double thresh_abs, // stop when change in the loss is smaller than this
+					double thresh, // stop when relative change in the loss is smaller than this
 					int maxiter = 1000) // maximum number of iterations (passes) through varind
 {
 	
@@ -96,7 +96,8 @@ void coord_descent(	vec& beta, // regression coefficients
 		loss = loss_approx(beta,f,z,w,lambda,alpha);
 		
 		if (until_convergence) {
-			if (fabs(loss-loss_old) < thresh_abs) {
+		    
+		    if (fabs(loss-loss_old) / fabs(loss) < thresh) {
 				break;
 			} else {
 				// continue iterating
@@ -176,14 +177,12 @@ List glm_elnet_c(mat x, // input matrix
     double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha); // initial loss
     double loss_old = loss_initial; // will be updated iteratively
     double loss; // will be updated iteratively
-    double thresh_descent = 0.01*thresh*loss_initial; // threshold for convergence in coord_descent
     
     // loop over lambda values
     for (k=0; k<nlam; ++k) {
         
         lam = lambda(k);
     	
-        // for (qau=1; qau<=qa_updates_max; ++qau) {
         qau = 0;
         while (qau < qa_updates_max) {
             
@@ -194,6 +193,9 @@ List glm_elnet_c(mat x, // input matrix
             w = as<vec>(obs["w"]);
             ++qau;
             
+            // current value of the (approximate) loss function
+            loss_old = loss_approx(beta, f, z, w, lam, alpha);
+            
             // run the coordinate descent until convergence for the current
             //  quadratic approximation
             asu = 0;
@@ -201,11 +203,11 @@ List glm_elnet_c(mat x, // input matrix
 
                 // iterate within the current active set until convergence (this might update 
                 // active_set_old, if some variable goes to zero)
-                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, thresh_descent);
+                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, thresh);
                 
                 // perfom one pass over all the variables and check if the active set changes 
                 // (this might update active_set)
-                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, thresh_descent);
+                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, thresh);
                 
                 ++asu;
 
@@ -217,15 +219,13 @@ List glm_elnet_c(mat x, // input matrix
             }
             as_updates(k) = as_updates(k) + asu;
             
+            // the loss after updating the coefficients
             loss = loss_approx(beta, f, z, w, lam, alpha);
             
             // check if converged
-            if (fabs(loss-loss_old) < thresh * fabs(loss_initial)) {
+            if (fabs(loss-loss_old) / fabs(loss) < thresh) {
                 // convergence reached; proceed to the next lambda value
                 break;
-            } else {
-                // continue iterating
-                loss_old = loss;
             }
         }
         // store the current solution
