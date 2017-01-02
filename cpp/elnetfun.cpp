@@ -187,8 +187,7 @@ List glm_elnet_c(mat x, // input matrix
         qau = 0;
         while (qau < qa_updates_max) {
             
-            // update the quadratic likelihood approximation (would be needed only
-            // for likelihoods other than gaussian) 
+            // update the quadratic likelihood approximation
             obs = pseudo_obs(f);
             z = as<vec>(obs["z"]);
             w = as<vec>(obs["w"]);
@@ -235,10 +234,11 @@ List glm_elnet_c(mat x, // input matrix
         qa_updates(k) = qau;
         
         if (qau == qa_updates_max && qa_updates_max > 1)
-        	std::cout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate!\n";
+        	std::cout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
         
-        if (active_set.size() >= pmax || active_set.size() == D) {
-			// obtained solution with more than pmax variables (or the number of columns in x), so terminate
+        if ((alpha > 0.0) && (active_set.size() >= pmax || active_set.size() == D)) {
+			// obtained solution with more than pmax variables (or the number of columns in x)
+			// when no ridge regression considered, so terminate
 			if (pmax_strict) {
 			    // return solutions only up to the previous lambda value
 			    beta0_path = beta0_path.head(k);
@@ -259,6 +259,92 @@ List glm_elnet_c(mat x, // input matrix
 
 
 
+
+// [[Rcpp::export]]
+List glm_ridge_c(mat x,
+                 Function pseudo_obs,
+                 double lambda,
+                 bool intercept,
+                 double thresh,
+                 int qa_updates_max)
+{
+    // for gaussian pseudo data
+    List obs;
+    vec z; // observations
+    vec w; // weights (inverse variances)
+    
+    if (intercept)
+        // add a vector of ones to x
+        x = join_horiz(ones<vec>(x.n_rows), x);
+    
+    int n = x.n_rows;
+    int D = x.n_cols;
+    double alpha = 0;
+    int qau;
+    int j;
+    
+    // initialization
+    vec beta(D); beta.zeros();
+    vec beta_new(D); beta_new.zeros();
+    vec dbeta(D); dbeta.zeros();
+    vec f = x*beta;
+    
+    // this will be the weighted x
+    mat xw(n,D);
+    
+    obs = pseudo_obs(f);
+    z = as<vec>(obs["z"]);
+    w = as<vec>(obs["w"]);
+    double loss_initial = loss_approx(beta, f, z, w, lambda, alpha); // initial loss
+    double loss_old = loss_initial; // will be updated iteratively
+    double loss; // will be updated iteratively
+    double tol = thresh*fabs(loss_initial); // criterion for convergence
+    
+    
+    qau = 0;
+    while (qau < qa_updates_max) {
+        
+        // update the quadratic likelihood approximation
+        obs = pseudo_obs(f);
+        z = as<vec>(obs["z"]);
+        w = as<vec>(obs["w"]);
+        ++qau;
+        
+        // weight the observations
+        for (j=0; j<D; ++j)
+            xw.col(j) = x.col(j) % sqrt(w);
+        
+        // weighted least squares solution
+        beta_new = solve(xw.t()*xw + lambda*eye(D,D), xw.t()*(sqrt(w)%z) );
+        
+        // line search
+        // 
+        dbeta = beta_new - beta;
+        // TODO
+        beta = beta + dbeta;
+        
+        f = x*beta;
+        loss = loss_approx(beta, f, z, w, lambda, alpha);
+        
+        // check if converged
+        if (fabs(loss-loss_old) < thresh * fabs(loss_initial)) {
+            // convergence reached
+            break;
+        } else {
+            // continue iterating
+            loss_old = loss;
+        }
+    }
+    if (qau == qa_updates_max && qa_updates_max > 1)
+        std::cout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
+    
+    if (intercept) 
+        return List::create(vec(beta.tail(D)), beta(0), qau);
+    else 
+        return List::create(beta, 0.0, qau);
+    
+    
+}
 
 
 
