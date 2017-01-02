@@ -43,99 +43,100 @@
 #'
 
 #' @export
-varsel <- function(fit, d_test = NA, method='L1', ...) {
+varsel <- function(fit, d_test = NA, method = 'L1', ns = 400L,
+                   nv_max = NULL, intercept = NULL, verbose = F, ...) {
     UseMethod('varsel')
 }
 
 #' @export
-varsel.stanreg <- function(fit, d_test = NA, method='L1', ...) {
-    
-    .validate_for_varsel(fit)
-    vars <- .extract_vars(fit)
-    args <- .init_args(list(...), vars)
-    family_kl <- kl_helpers(family(fit))
-    # for models with no intercept, alpha = rep(0, nrow(beta))
-    mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset,
-                           args$intercept)
-    
-    d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
-    coef_init <- list(alpha = median(vars$alpha),
-                      beta = matrix(apply(vars$beta, 1, median), ncol = 1))
-    
-    # indices of samples that are used in the projection
-    s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
-    p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
-                   weights = rep(1/args$ns, args$ns))
-    
-    # cluster the samples of the full model if clustering is wanted
-    # for the variable selection
-    clust <- if(args$clust) .get_p_clust(mu, vars$dis, args$nc) else NULL
-    p_sel <- if(args$clust) clust$p else p_full
-    
-    # the actual selection
-    chosen <- select(method, p_sel, d_train, family_kl, args$intercept, args$nv,
-                     args$regul, coef_init, args$verbose)
-    
-    # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
-    eval_data <- ifelse(is.list(d_test), 'test', 'train')
-    if(eval_data == 'train') {
-        d_test <- within(d_train, y <- vars$y)
-    } else {
-        if(is.null(d_test$weights)) d_test$weights <- rep(1, nrow(d_test$x))
-        if(is.null(d_test$offset)) d_test$offset <- rep(0, nrow(d_test$x))
-    }
-    
-    coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
-    
-    # Perform the projection for the chosen variables and calculate lppds
-    stats_list <- .summary_stats(chosen, d_train, d_test, p_full, family_kl,
-                                 args$intercept, args$regul, coef_init, coef_full)
-    
-    nv_list <- 0:length(chosen)
-    stats_array <- data.frame(data = 'sel', size = nv_list, delta = F,
-                              summary = 'kl', value = stats_list$kl, lq = NA, uq = NA)
-    
-    # if function was called by cv_varsel, return also mu and lppd,
-    if(args$cv) {
-        res <- list(chosen = chosen, stats_list = stats_list, stats = stats_array)
-        if(args$clust) res$cl <- clust$cl
-        return(res)
-    }
-    
-    # evaluate performance on test data and
-    # use bayesian bootstrap to get 95% credible intervals
-    b_weights <- .gen_bootstrap_ws(length(d_test$y), args$n_boot)
-    b_stats <- .bootstrap_stats(stats_list, nv_list, d_test, family_kl, b_weights,
-                                eval_data, args$intercept)
-    
-    stats_array <- rbind(stats_array, b_stats, make.row.names = F)
-    res <- list(chosen = chosen, stats = stats_array)
-    if(args$clust) res$cl <- clust$cl
-    
-    fit$varsel <- res
-    fit
+varsel.stanreg <- function(fit, d_test = NA, method = 'L1', ns = 400L,
+                           nv_max = NULL, intercept = NULL, verbose = F, ...) {
+  .validate_for_varsel(fit)
+  vars <- .extract_vars(fit)
+  family_kl <- kl_helpers(family(fit))
+  if(is.null(intercept)) intercept <- vars$intercept
+  if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
+
+  e <- construct_objects(fit, vars, d_test, intercept, ns, family_kl)
+
+  chosen <- select(method, e$p_full, e$d_train, family_kl, intercept, nv_max,
+                   verbose)
+
+  sub_list <- .get_sub_summaries2(chosen, e$d_train, e$d_test, e$p_full,
+                                  family_kl, intercept)
+  full_list <- .get_full_summaries(e$d_test, e$p_full, e$coef_full, family_kl)
+
+  b_weights <- .gen_bootstrap_ws(length(e$d_test$y))
+
+  stats <- stats_arr(sub_list, full_list, e$d_test, family_kl, intercept,
+                     b_weights)
+  fit$varsel <- list(chosen = chosen, stats = stats)
+
+  fit
 }
 
-
-
-select <- function(method, p_sel, d_train, family_kl, intercept, pmax,
-                   regul, coef_init, verbose) 
-{
-    #
-    # Auxiliary function, performs variable selection with the given method,
-    # and returns the variable ordering.
-    #
-    if (tolower(method) == 'l1') {
-        chosen <- search_L1(p_sel, d_train, family_kl, intercept, pmax)
-    } else if (tolower(method) == 'forward') {
-        tryCatch(chosen <- fsel(p_sel, d_train, family_kl, intercept, pmax,
-                                regul, coef_init, verbose),
-                 'error' = .varsel_errors)
-    } else {
-        stop(sprintf('Unknown search method: %s', method))
-    }
-    return(chosen)
+select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
+                   verbose) {
+  #
+  # Auxiliary function, performs variable selection with the given method,
+  # and returns the variable ordering.
+  #
+  if (tolower(method) == 'l1') {
+    chosen <- search_L1(p_full, d_train, family_kl, intercept, nv_max)
+  } else if (tolower(method) == 'forward') {
+    tryCatch(chosen <- search_forward(p_full, d_train, family_kl, intercept,
+                                      nv_max, verbose),
+             'error' = .varsel_errors)
+  } else {
+    stop(sprintf('Unknown search method: %s.', method))
+  }
+  return(chosen)
 }
 
+construct_objects <- function(fit, vars, d_test, intercept, ns, family_kl) {
 
+  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
 
+  d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
+
+  # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
+  if(is.list(d_test)) {
+    if(is.null(d_test$weights)) d_test$weights <- rep(1, nrow(d_test$x))
+    if(is.null(d_test$offset)) d_test$offset <- rep(0, nrow(d_test$x))
+    d_test$is_d_train <- F
+  } else {
+    d_test <- vars[c('x', 'weights', 'offset', 'y')]
+    d_test$is_d_train <- T
+  }
+  # indices of samples that are used in the projection
+  s_ind <- round(seq(1, ncol(vars$beta), length.out  = ns))
+  p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
+                 weights = rep(1/ns, ns))
+  coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
+
+  # cluster the samples of the full model if clustering is wanted
+  # for the variable selection
+  do_clust <- F
+  clust <- if(do_clust) get_p_clust(mu, vars$dis, ns) else NULL
+  if(do_clust) p_full <- clust
+
+  list(mu = mu, d_train = d_train, d_test = d_test,
+       p_full = p_full, coef_full = coef_full)
+}
+
+stats_arr <- function(sub_list, full_list, d_test, family_kl,
+                      intercept, b_weights) {
+
+  kl_list <- sapply(sub_list, function(x) x$kl)
+  stats_array <- data.frame(data = 'sel', size = seq_along(sub_list)-1,
+                            delta = F, summary = 'kl', value = kl_list,
+                            lq = NA, uq = NA)
+
+  # evaluate performance on test data and
+  # use bayesian bootstrap to get 95% credible intervals
+  b_stats <- cbind(data = ifelse(d_test$is_d_train, 'train', 'test'),
+                   .bootstrap_stats(sub_list, full_list, d_test, family_kl,
+                                    b_weights, intercept))
+
+  rbind(stats_array, b_stats, make.row.names = F)
+}

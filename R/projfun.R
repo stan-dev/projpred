@@ -2,7 +2,7 @@
 
 
 
-project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, coef_init=NULL) {
+project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 
     x <- d_train$x
     mu <- p_full$mu
@@ -15,7 +15,7 @@ project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, 
         wsample <- p_full$weights
     else
         wsample <- rep(1.0, NCOL(mu))
-    
+
     # ensure the weights are normalized
     wobs <- wobs/sum(wobs)
     wsample <- wsample/sum(wsample)
@@ -25,7 +25,7 @@ project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, 
         x <- cbind(1, x)
         ind <- c(1, ind + 1)
     } else if (length(ind) == 0) {
-        # no intercept used and ind is empty, so projecting to the completely 
+        # no intercept used and ind is empty, so projecting to the completely
         # null model with eta=0 always
         beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
         dis_sub <- sqrt( colSums(wobs*mu^2) + dis^2 )
@@ -52,22 +52,13 @@ project_gaussian <- function(ind, p_full, d_train, intercept=TRUE, regul=1e-12, 
 
 
 
-project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept=TRUE,
-                                regul=1e-12, coef_init=NULL) {
+project_nongaussian <- function(chosen, p_full, d_train, intercept, family_kl) {
 
-    if (is.null(coef_init)) {
-        # initialize at the origin
-        coef_init <- list( alpha=0, beta=matrix(rep(0,length(chosen)), ncol=1) )
-    } else {
-        # simply pick up the relevant indices from beta
-        coef_init <- within(coef_init, beta <- coef_init$beta[chosen])
-    }
-    
     # perform the projection over samples
     res <- sapply(1:ncol(p_full$mu), function(s_ind) {
         IRLS(list(mu = p_full$mu[, s_ind, drop = F], dis = p_full$dis[s_ind]),
              list(x = d_train$x[, chosen, drop = F], weights = d_train$weights,
-                  offset = d_train$offset), family_kl, intercept, regul, coef_init)
+                  offset = d_train$offset), family_kl, intercept)
     })
 
     # weight the results by sample/cluster weights
@@ -89,8 +80,8 @@ project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept=TR
     } else {
       # return handle to project_nongaussian with family_kl set accordingly
       return(
-        function(chosen, p_full, d_train, intercept, regul=1e-12, coef_init=NULL) {
-          project_nongaussian(chosen, p_full, d_train, family_kl, intercept, regul, coef_init)
+        function(chosen, p_full, d_train, intercept) {
+          project_nongaussian(chosen, p_full, d_train, intercept, family_kl)
         })
     }
 }
@@ -104,11 +95,11 @@ project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept=TR
     # Project onto given model sizes nv. Returns a list of submodels.
     #
     projfun <- .get_proj_handle(family_kl)
-    
+
     p_sub <- lapply(nv,
         function(nv) {
             if (nv == 0)
-                ind <- integer(length=0) # empty 
+                ind <- integer(length=0) # empty
             else
                 ind <- chosen[1:nv]
             return(projfun(ind, p_full, d_train, intercept))
@@ -118,7 +109,7 @@ project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept=TR
 
 
 .get_subpred <- function(psub) {
-    
+
 }
 
 

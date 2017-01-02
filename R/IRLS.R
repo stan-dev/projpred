@@ -3,17 +3,18 @@
 #' Does the projection from the full model to the submodel.
 #'
 #' Written by hand because glm.fit in R is too slow.
-#' - eps and max_it cannot be changed currently.
-#' - assumes d_train$x has intercept as the first column.
+#' - Initialization of b currenly quite ad hoc
 #'
 
-IRLS <- function(p_full, d_train, family_kl, intercept, regul, coef_init,
+IRLS <- function(p_full, d_train, family_kl, intercept, regul = 1e-12,
                  eps = 1e-12, max_it = 300) {
-  b <- coef_init$beta
+  b <- matrix(0, ncol(d_train$x), 1)
   if(intercept) {
-    b <- c(coef_init$alpha, b)
+    b <- c(0, b)
     d_train$x <- cbind(1, d_train$x)
   }
+  # if initializing b to 0 doesn't produce valid eta, set it to 1
+  if(!family_kl$valideta(drop(d_train$x%*%b))) b <- b + 1
 
   eta <- drop(d_train$x%*%b)
   mu <- family_kl$linkinv(eta + d_train$offset)
@@ -29,7 +30,7 @@ IRLS <- function(p_full, d_train, family_kl, intercept, regul, coef_init,
   }
   if(stepsize <= eps) stop('Can\'t initialize the projection.')
 
-  regulvec <- c((1-intercept)*regul, rep(regul, NCOL(d_train$x) - 1))
+  regulvec <- c((1-intercept)*regul, rep(regul, max(NCOL(d_train$x) - 1, 0)))
   regulmat <- diag(regulvec, length(regulvec), length(regulvec))
 
   it <- 1

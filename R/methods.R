@@ -5,7 +5,8 @@ project <- function(object, nv, ...) {
 
 #' @export
 #' @export
-project.stanreg <- function(object, nv, ...) {
+project.stanreg <- function(object, nv, ns = 400L, intercept = NULL, ...) {
+  # Missing: Clustering!
   if(is.null(nv)) stop('nv not provided')
   .validate_for_varsel(object)
   if(!('varsel' %in% names(object)))
@@ -13,7 +14,10 @@ project.stanreg <- function(object, nv, ...) {
                'variable selection. Run the variable selection first.'))
 
   vars <- .extract_vars(object)
-  args <- .init_args(list(...), vars)
+  if(ns > ncol(vars$beta))
+    warning(paste0('Setting the number of samples to ', ncol(vars$beta),'.'))
+  if(is.null(intercept)) intercept <- vars$intercept
+
   family_kl <- kl_helpers(family(object))
 
   if(max(nv) > length(object$varsel$chosen))
@@ -21,31 +25,27 @@ project.stanreg <- function(object, nv, ...) {
                'because the variable selection has been run only up to',
                length(object$varsel$chosen), 'variables.'))
 
-  v_inds_max <- object$varsel$chosen[1:max(nv)]
+  nv_max <- object$varsel$chosen[1:max(nv)]
   # the line above fails with nv=0 (ie. projection with only intercept)
-  if(length(nv) == 1 && nv == 0) v_inds_max <- 0
+  if(length(nv) == 1 && nv == 0) nv_max <- 0
 
-  d_train <- list(x = vars$x[,v_inds_max],
+  d_train <- list(x = vars$x[,nv_max],
                   weights = vars$weights,
                   offset = vars$offset)
 
-  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset,
-                         vars$intercept)
+  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
   dis <- vars$dis
-  coef_init <- list(alpha = median(vars$alpha),
-                    beta = matrix(apply(vars$beta, 1, median), ncol = 1))
 
-  s_ind <- round(seq(1, args$ns_total, length.out  = args$ns))
-  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind],
-                 weights = rep(1/args$ns, args$ns))
+  s_ind <- round(seq(1, ncol(vars$beta), length.out  = ns))
+  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind], weights = rep(1/ns, ns))
 
   projfun <- .get_proj_handle(family_kl)
   names <- names(coef(object))
-  if(vars$intercept) names <- names[-1]
+  if(intercept) names <- names[-1]
 
   object$proj <- lapply(nv, function(nv, names) {
     # if no intercept and 0 variables, return 'trivial'  result
-    if(nv == 0 & vars$intercept == F) {
+    if(nv == 0 & intercept == F) {
       mu_null <- family_kl$linkinv(matrix(0, NROW(p_full$mu), NCOL(p_full$mu)))
       return(list(weights = p_full$weights,
                   dis = family_kl$dis_fun(p_full, d_train, list(mu = mu_null)),
@@ -55,11 +55,10 @@ project.stanreg <- function(object, nv, ...) {
     }
 
     seq <- if(nv>0) 1:nv else 0
-    proj <- projfun(seq, p_full, d_train, vars$intercept, args$regul,
-                    coef_init)
+    proj <- projfun(seq, p_full, d_train, intercept)
     rownames(proj$beta) <- names[seq]
     proj$b <- proj$beta[seq, , drop = F]
-    proj$intercept <- vars$intercept
+    proj$intercept <- intercept
     if(proj$intercept) {
       proj$b <- rbind(proj$alpha, proj$b)
       rownames(proj$b)[1] <- names(coef(object))[1]
