@@ -268,10 +268,6 @@ List glm_ridge_c(mat x,
                  double thresh,
                  int qa_updates_max)
 {
-    // for gaussian pseudo data
-    List obs;
-    vec z; // observations
-    vec w; // weights (inverse variances)
     
     if (intercept)
         // add a vector of ones to x
@@ -280,7 +276,7 @@ List glm_ridge_c(mat x,
     int n = x.n_rows;
     int D = x.n_cols;
     double alpha = 0;
-    int qau;
+    int qau; // counts quadratic approximation updates
     int j;
     
     // initialization
@@ -289,13 +285,14 @@ List glm_ridge_c(mat x,
     vec dbeta(D); dbeta.zeros();
     vec f = x*beta;
     
-    // this will be the weighted x
-    mat xw(n,D);
+    mat xw(n,D); // this will be the weighted x
+    mat regmat = lambda*eye(D,D); // regularization matrix
     
-    obs = pseudo_obs(f);
-    z = as<vec>(obs["z"]);
-    w = as<vec>(obs["w"]);
-    double loss_initial = loss_approx(beta, f, z, w, lambda, alpha); // initial loss
+    // initial quadratic approximation
+    List obs = pseudo_obs(f);
+    vec z = as<vec>(obs["z"]);
+    vec w = as<vec>(obs["w"]);
+    double loss_initial = obs["dev"];
     double loss_old = loss_initial; // will be updated iteratively
     double loss; // will be updated iteratively
     double tol = thresh*fabs(loss_initial); // criterion for convergence
@@ -304,30 +301,34 @@ List glm_ridge_c(mat x,
     qau = 0;
     while (qau < qa_updates_max) {
         
-        // update the quadratic likelihood approximation
-        obs = pseudo_obs(f);
-        z = as<vec>(obs["z"]);
-        w = as<vec>(obs["w"]);
-        ++qau;
         
         // weight the observations
         for (j=0; j<D; ++j)
             xw.col(j) = x.col(j) % sqrt(w);
         
         // weighted least squares solution
-        beta_new = solve(xw.t()*xw + lambda*eye(D,D), xw.t()*(sqrt(w)%z) );
+        beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
         
-        // line search
-        // 
-        dbeta = beta_new - beta;
-        // TODO
-        beta = beta + dbeta;
+        // line search: halve the step until decrement in deviance achieved
+        dbeta = 2*(beta_new - beta);
+        while (true) {
+            
+            dbeta = 0.5*dbeta;
+            beta = beta + dbeta;
+            f = x*beta;
+            obs = pseudo_obs(f);
+            z = as<vec>(obs["z"]);
+            w = as<vec>(obs["w"]);
+            loss = obs["dev"];
+            
+            if (loss < loss_old)
+                break;
+        }
         
-        f = x*beta;
-        loss = loss_approx(beta, f, z, w, lambda, alpha);
+        ++qau;
         
         // check if converged
-        if (fabs(loss-loss_old) < thresh * fabs(loss_initial)) {
+        if (loss_old - loss < tol) {
             // convergence reached
             break;
         } else {
