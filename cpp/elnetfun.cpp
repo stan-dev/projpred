@@ -42,7 +42,7 @@ void coord_descent(	vec& beta, // regression coefficients
 					std::set<int>& active_set, // active set
 					bool until_convergence, // true = until convergence, false = one pass through varind
 					int& npasses, // counts total passes through the variables
-					double thresh, // stop when relative change in the loss is smaller than this
+					double tol, // stop when change in the loss is smaller than this
 					int maxiter = 1000) // maximum number of iterations (passes) through varind
 {
 	
@@ -97,7 +97,7 @@ void coord_descent(	vec& beta, // regression coefficients
 		
 		if (until_convergence) {
 		    
-		    if (fabs(loss-loss_old) / fabs(loss) < thresh) {
+		    if (fabs(loss_old-loss) < tol) {
 				break;
 			} else {
 				// continue iterating
@@ -177,6 +177,7 @@ List glm_elnet_c(mat x, // input matrix
     double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha); // initial loss
     double loss_old = loss_initial; // will be updated iteratively
     double loss; // will be updated iteratively
+    double tol = thresh*fabs(loss_initial); // convergence criterion for coordinate descent
     
     // loop over lambda values
     for (k=0; k<nlam; ++k) {
@@ -203,11 +204,11 @@ List glm_elnet_c(mat x, // input matrix
 
                 // iterate within the current active set until convergence (this might update 
                 // active_set_old, if some variable goes to zero)
-                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, thresh);
+                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, tol);
                 
                 // perfom one pass over all the variables and check if the active set changes 
                 // (this might update active_set)
-                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, thresh);
+                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, tol);
                 
                 ++asu;
 
@@ -223,7 +224,7 @@ List glm_elnet_c(mat x, // input matrix
             loss = loss_approx(beta, f, z, w, lam, alpha);
             
             // check if converged
-            if (fabs(loss-loss_old) / fabs(loss) < thresh) {
+            if (fabs(loss_old-loss) < tol) {
                 // convergence reached; proceed to the next lambda value
                 break;
             }

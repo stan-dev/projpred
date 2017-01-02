@@ -38,7 +38,7 @@ lambda_grid <- function(x, y, family, alpha=1.0, eps=1e-2, nlam=100) {
 
 
 glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-3,
-                      lambda=NULL, alpha=1.0, thresh=1e-5, 
+                      lambda=NULL, alpha=1.0, thresh=1e-6, 
 					  qa_updates_max=ifelse(family$family=='gaussian', 1, 100), 
 					  pmax=dim(as.matrix(x))[2], pmax_strict=FALSE,
 					  weights=NULL, offset=NULL, intercept=TRUE) {
