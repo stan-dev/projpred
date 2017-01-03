@@ -17,7 +17,8 @@ kl_helpers <- function(fam) {
   # for binomial and poisson it is the mean of the dev.resids divided by 2
   kl_dev <- function(p_full, data, p_sub) {
     if(NCOL(p_full$mu)>1) {
-      colMeans(fam$dev.resids(p_full$mu, p_sub$mu, data$weights))/2
+      w <- rep(data$weights, NCOL(p_full$mu))
+      colMeans(fam$dev.resids(p_full$mu, p_sub$mu, w))/2
     } else {
       mean(fam$dev.resids(p_full$mu, p_sub$mu, data$weights))/2
     }

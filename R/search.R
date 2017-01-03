@@ -1,10 +1,5 @@
-#' The forward selection algorithm
+#' Search heuristics
 #'
-#' p_full contains the parameters of the full model, d_train contains the data
-#' and p_sub contains the parameters of the submodel. b0 is a guess for the
-#' initial weight vector in the submodel. In addition, if a subset of the
-#' samples is used for the variable selection, p_clust contains parameters
-#' of the full model using only those samples.
 
 search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
                            verbose) {

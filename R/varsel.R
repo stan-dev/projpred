@@ -57,20 +57,26 @@ varsel.stanreg <- function(fit, d_test = NA, method = 'L1', ns = 400L,
   if(is.null(intercept)) intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
-  e <- construct_objects(fit, vars, d_test, intercept, ns, family_kl)
+  e <- get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
 
   chosen <- select(method, e$p_full, e$d_train, family_kl, intercept, nv_max,
                    verbose)
 
-  sub_list <- .get_sub_summaries2(chosen, e$d_train, e$d_test, e$p_full,
-                                  family_kl, intercept)
-  full_list <- .get_full_summaries(e$d_test, e$p_full, e$coef_full, family_kl)
+  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
+                          e$d_train, intercept)
+  sub_summaries <- .get_sub_summaries2(p_sub, chosen, e$d_eval, e$p_full, family_kl,
+                                       intercept)
+  full_summaries <- .get_full_summaries(e$d_eval, e$p_full, e$coef_full,
+                                        family_kl, intercept)
 
-  b_weights <- .gen_bootstrap_ws(length(e$d_test$y))
+  b_weights <- .get_bootstrap_ws(NROW(e$d_test$x))
 
-  stats <- stats_arr(sub_list, full_list, e$d_test, family_kl, intercept,
-                     b_weights)
-  fit$varsel <- list(chosen = chosen, stats = stats)
+  metrics <- .bootstrap_metrics(sub_summaries, full_summaries, e$d_eval,
+                                family_kl, intercept, b_weights,
+                                e$eval_is_test)
+  kl <- .get_kl_array(p_sub)
+
+  fit$varsel <- list(chosen = chosen, metrics = rbind(kl, metrics))
 
   fit
 }
@@ -93,20 +99,22 @@ select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
   return(chosen)
 }
 
-construct_objects <- function(fit, vars, d_test, intercept, ns, family_kl) {
+get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
+  # construct d_train/test, p_full and coef_full
 
   mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
 
   d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
 
   # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
-  if(is.list(d_test)) {
-    if(is.null(d_test$weights)) d_test$weights <- rep(1, nrow(d_test$x))
-    if(is.null(d_test$offset)) d_test$offset <- rep(0, nrow(d_test$x))
-    d_test$is_d_train <- F
+  eval_is_test <- is.list(d_test)
+  if(eval_is_test) {
+    # check that d_test is of the correct form?
+    d_eval <- d_test
+    if(is.null(d_eval$weights)) d_eval$weights <- rep(1, nrow(d_eval$x))
+    if(is.null(d_eval$offset)) d_eval$offset <- rep(0, nrow(d_eval$x))
   } else {
-    d_test <- vars[c('x', 'weights', 'offset', 'y')]
-    d_test$is_d_train <- T
+    d_eval <- vars[c('x', 'weights', 'offset', 'y')]
   }
   # indices of samples that are used in the projection
   s_ind <- round(seq(1, ncol(vars$beta), length.out  = ns))
@@ -120,23 +128,8 @@ construct_objects <- function(fit, vars, d_test, intercept, ns, family_kl) {
   clust <- if(do_clust) get_p_clust(mu, vars$dis, ns) else NULL
   if(do_clust) p_full <- clust
 
-  list(mu = mu, d_train = d_train, d_test = d_test,
-       p_full = p_full, coef_full = coef_full)
+  list(d_train = d_train, d_eval = d_eval, p_full = p_full,
+       coef_full = coef_full, eval_is_test = eval_is_test)
 }
 
-stats_arr <- function(sub_list, full_list, d_test, family_kl,
-                      intercept, b_weights) {
 
-  kl_list <- sapply(sub_list, function(x) x$kl)
-  stats_array <- data.frame(data = 'sel', size = seq_along(sub_list)-1,
-                            delta = F, summary = 'kl', value = kl_list,
-                            lq = NA, uq = NA)
-
-  # evaluate performance on test data and
-  # use bayesian bootstrap to get 95% credible intervals
-  b_stats <- cbind(data = ifelse(d_test$is_d_train, 'train', 'test'),
-                   .bootstrap_stats(sub_list, full_list, d_test, family_kl,
-                                    b_weights, intercept))
-
-  rbind(stats_array, b_stats, make.row.names = F)
-}

@@ -4,11 +4,21 @@
 #'
 #' Written by hand because glm.fit in R is too slow.
 #' - Initialization of b currenly quite ad hoc
+#' - rewrite in C?
 #'
 
 IRLS <- function(p_full, d_train, family_kl, intercept, regul = 1e-12,
                  eps = 1e-12, max_it = 300) {
-  b <- matrix(0, ncol(d_train$x), 1)
+
+  # check if no intercept and no explanatory variables
+  if(NCOL(d_train$x) == 0 && !intercept) {
+    mu <- family_kl$linkinv(rep(0, NROW(d_train$x)))
+    dis <- family_kl$dis_fun(p_full, d_train, list(mu = mu))
+    kl <- family_kl$kl(p_full, d_train, list(mu = mu, dis = dis))
+    return(c(list(kl = kl, dis = dis),  .split_coef(matrix(0,0,1), intercept)))
+  }
+
+  b <- matrix(0, NCOL(d_train$x), 1)
   if(intercept) {
     b <- c(0, b)
     d_train$x <- cbind(1, d_train$x)

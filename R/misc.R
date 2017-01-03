@@ -18,7 +18,7 @@ log_weighted_mean_exp <- function(x, w) {
 # Updated version of the kfold function in the rstanarm-package
 
 #' @export
-kfold <- function (x, K = 10, save_fits = FALSE)
+kfold_ <- function (x, K = 10, save_fits = FALSE)
 {
   #validate_stanreg_object(x)
   #if (!used.sampling(x))
@@ -113,9 +113,8 @@ kfold <- function (x, K = 10, save_fits = FALSE)
   if(grepl('computationally singular', e$message)) {
     stop(paste(
       'Numerical problems with inverting the covariance matrix. Possibly a',
-      'problem with the convergence of the stan model?, If not, consider adding',
-      'a small value to the diagonal elements by setting e.g. regul = 1e-10 or',
-      'stopping the variable selection early by setting the variable nv accordingly.'
+      'problem with the convergence of the stan model?, If not, consider',
+      'stopping the selection early by setting the variable nv_max accordingly.'
     ))
   } else {
     stop(e$message)

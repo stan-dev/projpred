@@ -29,7 +29,7 @@ project.stanreg <- function(object, nv, ns = 400L, intercept = NULL, ...) {
   # the line above fails with nv=0 (ie. projection with only intercept)
   if(length(nv) == 1 && nv == 0) nv_max <- 0
 
-  d_train <- list(x = vars$x[,nv_max],
+  d_train <- list(x = vars$x[, nv_max],
                   weights = vars$weights,
                   offset = vars$offset)
 

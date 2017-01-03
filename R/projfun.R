@@ -1,6 +1,5 @@
-
-
-
+#' Function handles for the projection
+#'
 
 project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 
@@ -50,8 +49,6 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 }
 
 
-
-
 project_nongaussian <- function(chosen, p_full, d_train, intercept, family_kl) {
 
     # perform the projection over samples
@@ -70,8 +67,6 @@ project_nongaussian <- function(chosen, p_full, d_train, intercept, family_kl) {
 }
 
 
-# function handle for the projection over samples. Gaussian case
-# uses analytical solution to do the projection over samples.
 .get_proj_handle <- function(family_kl) {
 
     # Use analytical solution for gaussian as it is a lot faster
@@ -85,9 +80,6 @@ project_nongaussian <- function(chosen, p_full, d_train, intercept, family_kl) {
         })
     }
 }
-
-
-
 
 
 .get_submodels <- function(chosen, nv, family_kl, p_full, d_train, intercept) {
@@ -111,12 +103,3 @@ project_nongaussian <- function(chosen, p_full, d_train, intercept, family_kl) {
 .get_subpred <- function(psub) {
 
 }
-
-
-
-
-
-
-
-
-

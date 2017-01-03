@@ -1,4 +1,6 @@
-# perform clustering over the samples
+#' Function(s) to perform the clustering over the samples
+#'
+
 get_p_clust <- function(mu, dis, nc, wsample=rep(1,dim(mu)[2]), cl = NULL) {
 
   # TODO
