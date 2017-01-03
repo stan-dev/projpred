@@ -64,16 +64,15 @@ varsel.stanreg <- function(fit, d_test = NA, method = 'L1', ns = 400L,
 
   p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
                           e$d_train, intercept)
-  sub_summaries <- .get_sub_summaries2(p_sub, chosen, e$d_eval, e$p_full, family_kl,
+  sub_summaries <- .get_sub_summaries2(chosen, e$p_full, e$data, p_sub, family_kl,
                                        intercept)
-  full_summaries <- .get_full_summaries(e$d_eval, e$p_full, e$coef_full,
+  full_summaries <- .get_full_summaries(e$p_full, e$data, e$coef_full,
                                         family_kl, intercept)
 
   b_weights <- .get_bootstrap_ws(NROW(e$d_test$x))
 
-  metrics <- .bootstrap_metrics(sub_summaries, full_summaries, e$d_eval,
-                                family_kl, intercept, b_weights,
-                                e$eval_is_test)
+  metrics <- .bootstrap_metrics(sub_summaries, full_summaries, e$data,
+                                family_kl, intercept, e$is_test, b_weights)
   kl <- .get_kl_array(p_sub)
 
   fit$varsel <- list(chosen = chosen, metrics = rbind(kl, metrics))
@@ -100,21 +99,23 @@ select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
 }
 
 get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
-  # construct d_train/test, p_full and coef_full
+  # - Returns d_train, data, p_full, coef_full, is_test.
+  # - If d_test is NA, data equals to d_train and is_test is FALSE.
+  #   Otherwise data is set to d_train and is_test is TRUE.
 
   mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
 
   d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
 
   # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
-  eval_is_test <- is.list(d_test)
-  if(eval_is_test) {
+  is_test <- is.list(d_test)
+  if(is_test) {
     # check that d_test is of the correct form?
-    d_eval <- d_test
-    if(is.null(d_eval$weights)) d_eval$weights <- rep(1, nrow(d_eval$x))
-    if(is.null(d_eval$offset)) d_eval$offset <- rep(0, nrow(d_eval$x))
+    data <- d_test
+    if(is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
+    if(is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
   } else {
-    d_eval <- vars[c('x', 'weights', 'offset', 'y')]
+    data <- vars[c('x', 'weights', 'offset', 'y')]
   }
   # indices of samples that are used in the projection
   s_ind <- round(seq(1, ncol(vars$beta), length.out  = ns))
@@ -128,8 +129,8 @@ get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
   clust <- if(do_clust) get_p_clust(mu, vars$dis, ns) else NULL
   if(do_clust) p_full <- clust
 
-  list(d_train = d_train, d_eval = d_eval, p_full = p_full,
-       coef_full = coef_full, eval_is_test = eval_is_test)
+  list(d_train = d_train, data = data, p_full = p_full,
+       coef_full = coef_full, is_test = is_test)
 }
 
 

@@ -35,25 +35,25 @@
 
 }
 
-.get_sub_summaries2 <- function(p_sub, chosen, d_test, p_full, family_kl, intercept) {
+.get_sub_summaries2 <- function(chosen, p_full, data, p_sub, family_kl, intercept) {
 
   res <- lapply(p_sub, function(p_sub) {
     if(NROW(p_sub$beta) == 0) {
-      xt <- matrix(0, nrow = length(d_test$weights), ncol = 0)
-    } else if(!is.matrix(d_test$x)) {
-      xt <- matrix(d_test$x[inds], nrow = 1)
+      xt <- matrix(0, nrow = length(data$weights), ncol = 0)
+    } else if(!is.matrix(data$x)) {
+      xt <- matrix(data$x[inds], nrow = 1)
     } else {
-      xt <- d_test$x[, chosen[1:NROW(p_sub$beta)], drop = F]
+      xt <- data$x[, chosen[1:NROW(p_sub$beta)], drop = F]
     }
 
-    mu <- family_kl$mu_fun(xt, p_sub$alpha, p_sub$beta, d_test$offset,
+    mu <- family_kl$mu_fun(xt, p_sub$alpha, p_sub$beta, data$offset,
                            intercept)
-    .weighted_summary_means(d_test, family_kl, p_full, mu, p_sub$dis)
+    .weighted_summary_means(data, family_kl, p_full, mu, p_sub$dis)
   })
 }
 
 
-.get_full_summaries <- function(data, p_full, coef_full, family_kl, intercept) {
+.get_full_summaries <- function(p_full, data, coef_full, family_kl, intercept) {
   mu <- family_kl$mu_fun(data$x, coef_full$alpha, coef_full$beta, data$offset,
                          intercept)
   .weighted_summary_means(data, family_kl, p_full, mu, p_full$dis)
@@ -68,30 +68,21 @@
        lppd = apply(loglik, 1, log_weighted_mean_exp, p_full$weights))
 }
 
-.weighted_summary_means2 <- function(data, family_kl, p_full, mu, dis) {
-  loglik <- family_kl$ll_fun(mu, dis, data$y)
-  kl <- family_kl$kl(p_full, data, list(mu = mu, dis = dis))
-  avg_ <- function(x) c(x%*%p_full$weights)
 
-  list(mu = avg_(mu), dis = avg_(dis), kl = avg_(kl),
-       lppd = apply(loglik, 1, log_weighted_mean_exp, p_full$weights))
-}
+.bootstrap_metrics <- function(sub_summaries, full_summaries, data, family_kl,
+                               intercept, is_test, b_weights, alpha = 0.05) {
 
-
-.bootstrap_metrics <- function(sub_summaries, full_summaries, d_eval, family_kl,
-                               intercept, b_weights, eval_is_test, alpha = 0.05) {
-
-  equal_weights <- matrix(1/NROW(d_eval$x), 1, NROW(d_eval$x))
+  equal_weights <- matrix(1/NROW(data$x), 1, NROW(data$x))
 
   sub <- lapply(sub_summaries, function(x) {
-    list(metrics = .calc_metrics(x$mu, x$lppd, d_eval, family_kl, equal_weights),
-         boot = .calc_metrics(x$mu, x$lppd, d_eval, family_kl, b_weights))
+    list(metrics = .calc_metrics(x$mu, x$lppd, data, family_kl, equal_weights),
+         boot = .calc_metrics(x$mu, x$lppd, data, family_kl, b_weights))
   })
 
   full <- list(metrics = .calc_metrics(full_summaries$mu, full_summaries$lppd,
-                                       d_eval, family_kl, equal_weights),
+                                       data, family_kl, equal_weights),
                boot = .calc_metrics(full_summaries$mu, full_summaries$lppd,
-                                    d_eval, family_kl, b_weights))
+                                    data, family_kl, b_weights))
 
   # apply over submodel sizes
   quantiles <- mapply(function(sub, size) {
@@ -108,7 +99,7 @@
 
   # rbind the elements into one data.frame and add a column which indicates
   # whether the summaries are calculated from test or training data.
-  cbind(data = ifelse(eval_is_test, 'test', 'train'),
+  cbind(data = ifelse(is_test, 'test', 'train'),
         do.call(rbind, c(unlist(quantiles, recursive = F), make.row.names = F)))
 }
 

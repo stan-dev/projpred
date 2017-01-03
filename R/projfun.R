@@ -49,7 +49,7 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 }
 
 
-project_nongaussian <- function(chosen, p_full, d_train, intercept, family_kl) {
+project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept) {
 
     # perform the projection over samples
     res <- sapply(1:ncol(p_full$mu), function(s_ind) {
@@ -76,7 +76,7 @@ project_nongaussian <- function(chosen, p_full, d_train, intercept, family_kl) {
       # return handle to project_nongaussian with family_kl set accordingly
       return(
         function(chosen, p_full, d_train, intercept) {
-          project_nongaussian(chosen, p_full, d_train, intercept, family_kl)
+          project_nongaussian(chosen, p_full, d_train, family_kl, intercept)
         })
     }
 }

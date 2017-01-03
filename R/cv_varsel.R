@@ -103,9 +103,9 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, method = 'L1', ns = 400L,
                    e$d_train, intercept)
   }, chosen_cv, e_cv, SIMPLIFY = F)
 
-  sub_summaries <- .get_sub_summaries2(p_sub, chosen, e$d_eval, e$p_full,
+  sub_summaries <- .get_sub_summaries2(chosen, e$p_full, e$data, p_sub,
                                        family_kl, intercept)
-  full_summaries <- .get_full_summaries(e$d_eval, e$p_full, e$coef_full,
+  full_summaries <- .get_full_summaries(e$p_full, e$data, e$coef_full,
                                         family_kl, intercept)
 
   # extract and combine mu and lppd from the list
@@ -113,13 +113,13 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, method = 'L1', ns = 400L,
 
   sub_summaries_cv <- apply(
     mapply(function(p_sub, e) {
-      lapply(.get_sub_summaries2(p_sub, chosen, e$d_eval, e$p_full,
+      lapply(.get_sub_summaries2(chosen, e$p_full, e$data, p_sub,
                                  family_kl, intercept), data.frame)
     }, p_sub_cv, e_cv),
   1, hf)
 
   full_summaries_cv <- hf(lapply(e_cv, function(e) {
-    data.frame(.get_full_summaries(e$d_eval, e$p_full, e$coef_full,
+    data.frame(.get_full_summaries(e$p_full, e$data, e$coef_full,
                                    family_kl, intercept))
   }))
 
@@ -129,11 +129,11 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, method = 'L1', ns = 400L,
 
   # evaluate performance on test data and
   # use bayesian bootstrap to get 95% credible intervals
-  b_weights <- .get_bootstrap_ws(NROW(e$d_eval$x))
-  metrics <- .bootstrap_metrics(sub_summaries, full_summaries, e$d_eval,
-                               family_kl, intercept, b_weights, F)
+  b_weights <- .get_bootstrap_ws(NROW(e$data$x))
+  metrics <- .bootstrap_metrics(sub_summaries, full_summaries, e$data,
+                               family_kl, intercept, F, b_weights)
   metrics_cv <- .bootstrap_metrics(sub_summaries_cv, full_summaries_cv, d_cv,
-                                   family_kl, intercept, b_weights, T)
+                                   family_kl, intercept, T, b_weights)
   kl <- .get_kl_array(p_sub)
 
   # find out how many of cross-validated forward selection iterations select
