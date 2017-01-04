@@ -4,7 +4,8 @@
 \alias{varsel}
 \title{Variable selection for generalized linear models}
 \usage{
-varsel(fit, d_test = NA, method = "L1", ...)
+varsel(fit, d_test = NA, method = "L1", ns = 400L, nv_max = NULL,
+  intercept = NULL, verbose = F, ...)
 }
 \arguments{
 \item{fit}{A \link[=stanreg-objects]{stanreg} object.}

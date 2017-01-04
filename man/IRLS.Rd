@@ -4,7 +4,7 @@
 \alias{IRLS}
 \title{Iteratively reweighted least squared}
 \usage{
-IRLS(p_full, d_train, family_kl, intercept, regul, coef_init, eps = 1e-12,
+IRLS(p_full, d_train, family_kl, intercept, regul = 1e-12, eps = 1e-12,
   max_it = 300)
 }
 \description{
@@ -12,7 +12,7 @@ Does the projection from the full model to the submodel.
 }
 \details{
 Written by hand because glm.fit in R is too slow.
-- eps and max_it cannot be changed currently.
-- assumes d_train$x has intercept as the first column.
+- Initialization of b currenly quite ad hoc
+- rewrite in C?
 }
 
