@@ -74,12 +74,13 @@ varsel.stanreg <- function(fit, d_test = NA, method = 'L1', ns = 400L,
   full_summaries <- .get_full_summaries(e$p_full, e$data, e$coef_full,
                                         family_kl, intercept)
 
-  b_weights <- .get_bootstrap_ws(NROW(e$d_test$x))
+  b_weights <- .get_bootstrap_ws(NROW(e$data$x))
 
   metrics <- .bootstrap_metrics(sub_summaries, full_summaries, e$data,
                                 family_kl, intercept, e$is_test, b_weights)
   kl <- .get_kl_array(p_sub)
 
+  fit$proj <- NULL
   fit$varsel <- list(chosen = chosen, metrics = rbind(kl, metrics))
 
   fit

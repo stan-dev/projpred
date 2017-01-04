@@ -57,11 +57,10 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, method = 'L1', ns = 400L,
 
   .validate_for_varsel(fit)
   if(is.null(k_fold)) {
-    print(paste('k_fold not provided, performing 10-fold cross-validation',
-                'for the stan model.'))
-    #k_fold <- glmproj::kfold_(fit, save_fits = T)
     if(is.null(K)) K <- 10
-    k_fold <- kfold_(fit, K, save_fits = T)
+    print(paste0('k_fold not provided, performing ', K,
+                 '-fold cross-validation for the stan model.'))
+    k_fold <- glmproj::kfold_(fit, save_fits = T)
   }
 
   if(!all(apply(k_fold$fits, 1, function(fits, fit) {
@@ -144,6 +143,7 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, method = 'L1', ns = 400L,
   })
   names(pctch) <- chosen
 
+  fit$proj <- NULL
   fit$varsel <- list(chosen = chosen, pctch = pctch,
                      metrics = rbind(kl, metrics, metrics_cv))
   fit

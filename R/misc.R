@@ -84,7 +84,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
     beta = t(unname(drop(e$beta)))[, perm_inv],
     dis = unname(e[['dispersion']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
     offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
-    intercept = attr(fit$terms,'intercept') %ORifNULL% F)
+    intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
 
   res$x <- res$x[, as.logical(attr(res$x, 'assign'))]
   attr(res$x, 'assign') <- NULL

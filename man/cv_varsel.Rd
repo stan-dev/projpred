@@ -4,7 +4,8 @@
 \alias{cv_varsel}
 \title{Variable selection for generalized linear models with cross-validation}
 \usage{
-cv_varsel(fit, fits = NULL, ...)
+cv_varsel(fit, fits = NULL, method = "L1", ns = 400L, nv_max = NULL,
+  intercept = NULL, verbose = F, ...)
 }
 \arguments{
 \item{fit}{A \link[=stanreg-objects]{stanreg} object.}
