@@ -14,8 +14,10 @@ project.stanreg <- function(object, nv, ns = 400L, intercept = NULL, ...) {
                'variable selection. Run the variable selection first.'))
 
   vars <- .extract_vars(object)
-  if(ns > ncol(vars$beta))
+  if(ns > ncol(vars$beta)) {
     warning(paste0('Setting the number of samples to ', ncol(vars$beta),'.'))
+    ns <- ncol(vars$beta)
+  }
   if(is.null(intercept)) intercept <- vars$intercept
 
   family_kl <- kl_helpers(family(object))
@@ -25,51 +27,32 @@ project.stanreg <- function(object, nv, ns = 400L, intercept = NULL, ...) {
                'because the variable selection has been run only up to',
                length(object$varsel$chosen), 'variables.'))
 
-  nv_max <- object$varsel$chosen[1:max(nv)]
-  # the line above fails with nv=0 (ie. projection with only intercept)
-  if(length(nv) == 1 && nv == 0) nv_max <- 0
+  e <- get_data_and_parameters(vars, NA, intercept, ns, family_kl)
+  # p_sub <- .get_submodels(object$varsel$chosen, nv, family_kl, e$p_full,
+  #                         e$d_train, intercept)
+  #
+  # names <- names(coef(object))[object$varsel$chosen]
+  # if(intercept) names <- names[-1]
+  #
+  # object$proj <- mapply(function(p_sub, nv) {
+  #   p_sub$kl <- NULL
+  #   p_sub$b <- p_sub$beta
+  #   if(nv>0) rownames(p_sub$b) <- names[1:nv]
+  #   if(intercept) {
+  #     p_sub$b <- rbind(p_sub$alpha, p_sub$b)
+  #     rownames(p_sub$b)[1] <- names(coef(object))[1]
+  #   }
+  #   p_sub$kl <- NULL
+  #   p_sub$beta <- NULL
+  #   p_sub$alpha <- NULL
+  #   if(!(family_kl$family %in% c('gaussian', 'Gamma'))) p_sub$dis <- NULL
+  #   p_sub$nv <- nv
+  # }, p_sub, nv, SIMPLIFY = F)
 
-  d_train <- list(x = vars$x[, nv_max],
-                  weights = vars$weights,
-                  offset = vars$offset)
-
-  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
-  dis <- vars$dis
-
-  s_ind <- round(seq(1, ncol(vars$beta), length.out  = ns))
-  p_full <- list(mu = mu[, s_ind], dis = dis[s_ind], weights = rep(1/ns, ns))
-
-  projfun <- .get_proj_handle(family_kl)
-  names <- names(coef(object))
-  if(intercept) names <- names[-1]
-
-  object$proj <- lapply(nv, function(nv, names) {
-    # if no intercept and 0 variables, return 'trivial'  result
-    if(nv == 0 & intercept == F) {
-      mu_null <- family_kl$linkinv(matrix(0, NROW(p_full$mu), NCOL(p_full$mu)))
-      return(list(weights = p_full$weights,
-                  dis = family_kl$dis_fun(p_full, d_train, list(mu = mu_null)),
-                  b = matrix(0, 1, NCOL(p_full$mu)),
-                  intercept = 0,
-                  nv = nv))
-    }
-
-    seq <- if(nv>0) 1:nv else 0
-    proj <- projfun(seq, p_full, d_train, intercept)
-    rownames(proj$beta) <- names[seq]
-    proj$b <- proj$beta[seq, , drop = F]
-    proj$intercept <- intercept
-    if(proj$intercept) {
-      proj$b <- rbind(proj$alpha, proj$b)
-      rownames(proj$b)[1] <- names(coef(object))[1]
-    }
-    proj$kl <- NULL
-    proj$beta <- NULL
-    proj$alpha <- NULL
-    if(!(family_kl$family %in% c('gaussian', 'Gamma'))) proj$dis <- NULL
-    proj$nv <- nv
-    proj
-  }, names[v_inds_max])
+  object$proj <- list(
+    p_sub = .get_submodels(object$varsel$chosen, nv, family_kl,
+                           e$p_full, e$d_train, intercept),
+    intercept = intercept)
 
   object
 }
@@ -81,23 +64,26 @@ proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NUL
     stop(paste('The stanreg object doesn\'t contain information about the',
                'projection. Run the projection first.'))
 
-  dat <- rstanarm:::pp_data(object, newdata, offset = offset)
+  data <- rstanarm:::pp_data(object, newdata, offset = offset)
+
 
   # project only model the sizes of which are specified in nv
-  if(is.null(nv)) nv <- sapply(object$proj, function(x) x$nv)
-  projected_sizes <- sapply(object$proj, function(x) x$nv)
+  projected_sizes <- sapply(object$proj$p_sub, function(x) NROW(x$beta))
+  if(is.null(nv)) nv <- projected_sizes
+
   if(!all(nv %in% projected_sizes))
     stop(paste0('Linear prediction requested for nv = ',
                 paste(nv, collapse = ', '),
                 ', but projection performed only for nv = ',
                 paste(projected_sizes, collapse = ', '), '.'))
 
-  projs <- Filter(function(x) x$nv %in% nv, object$proj)
+  projs <- Filter(function(x) NROW(x$beta) %in% nv, object$proj$p_sub)
   chosen <- object$varsel$chosen
-  if(projs[[1]]$intercept) chosen <- c(1, chosen + 1)
+  if(object$proj$intercept) chosen <- c(1, chosen + 1)
 
   lapply(projs, function(proj) {
-    res <- t(dat$x[, chosen[1:nrow(proj$b)], drop = F]%*%proj$b + dat$offset)
+    family_kl$mu_fun(x[,chosen])
+    res <- t(dat$x[, chosen[1:nrow(proj$b)], drop = F]%*%proj$beta +  + dat$offset)
     if(transform) family(object)$linkinv(res) else res
   })
 

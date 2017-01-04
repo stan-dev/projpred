@@ -54,6 +54,11 @@ varsel.stanreg <- function(fit, d_test = NA, method = 'L1', ns = 400L,
   .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
   family_kl <- kl_helpers(family(fit))
+  if(ns > ncol(vars$beta)) {
+    warning(paste0('Setting the number of samples to ', ncol(vars$beta),'.'))
+    ns <- ncol(vars$beta)
+  }
+
   if(is.null(intercept)) intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
