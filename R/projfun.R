@@ -79,6 +79,20 @@ project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept=TR
 }
 
 
+project_nongaussian_new <- function(ind, p_full, d_train, family_kl, intercept=TRUE,
+									regul=1e-12, coef_init=NULL) {
+	
+	# find the projected regression coefficients for each sample
+	res <- sapply(1:ncol(p_full$mu),
+				  function(s) {
+				  	glm_ridge(x = d_train$x[, ind, drop = F], y = p_full$mu[, s, drop = F],
+				  			  family=family_kl, lambda=regul, weights=d_train$weights,
+				  			  offset=d_train$offset, intercept=intercept) 
+				  })
+	
+}
+
+
 # function handle for the projection over samples. Gaussian case
 # uses analytical solution to do the projection over samples.
 .get_proj_handle <- function(family_kl) {
