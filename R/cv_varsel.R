@@ -45,18 +45,22 @@
 #'
 
 #' @export
-cv_varsel <- function(fit, fits = NULL, ...) {
+cv_varsel <- function(fit, fits = NULL, method = 'L1', ns = 400L,
+                      nv_max = NULL, intercept = NULL, verbose = F, ...) {
   UseMethod('cv_varsel')
 }
 
 #' @export
-cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
+cv_varsel.stanreg <- function(fit, k_fold = NULL, method = 'L1', ns = 400L,
+                              nv_max = NULL, intercept = NULL, verbose = F,
+                              K = NULL, ...) {
 
   .validate_for_varsel(fit)
   if(is.null(k_fold)) {
-    print(paste('k_fold not provided, performing 10-fold cross-validation',
-                'for the stan model.'))
-    k_fold <- glmproj::kfold(fit, save_fits = T)
+    if(is.null(K)) K <- 10
+    print(paste0('k_fold not provided, performing ', K,
+                 '-fold cross-validation for the stan model.'))
+    k_fold <- glmproj::kfold_(fit, save_fits = T)
   }
 
   if(!all(apply(k_fold$fits, 1, function(fits, fit) {
@@ -65,56 +69,83 @@ cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
   }, fit))) stop('k_fold does not have the correct form.')
 
   k <- attr(k_fold, 'K')
+  msgs <- paste0(method, ' search for the fold number ', 1:k, '/', k, '.')
+
   vars <- .extract_vars(fit)
-  args <- .init_args(c(list(...), cv = T), vars, family(fit))
+  vars_cv <- lapply(k_fold$fits[,'fit'], function(fit) .extract_vars(fit))
+  family_kl <- kl_helpers(family(fit))
+  if(is.null(intercept)) intercept <- vars$intercept
+  if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
   d_test <- lapply(k_fold$fits[,'omitted'], function(omitted, d_full) {
     list(x = d_full$x[omitted,], y = d_full$y[omitted],
          weights = d_full$weights[omitted], offset = d_full$offset[omitted])
   }, vars)
 
-  # max number of variables to be projected
-  args$nv <- min(c(sapply(k_fold$fits[,'fit'], function(fit)
-    rankMatrix(get_x(fit))), args$nv))
+  e <- get_data_and_parameters(vars, NA, intercept, ns, family_kl)
+  e_cv <- mapply(function(vars, d_test) {
+    get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
+  }, vars_cv, d_test, SIMPLIFY = F)
 
-  msgs <- paste('Forward selection for the',
-                c('full model.', paste0('fold number ', 1:k,'/',k,'.')))
-  # perform the forward selection
-  sel <- mapply(function(fit, d_test, msg, args) {
+  paste(method, 'search for the full model.')
+  chosen <- select(method, e$p_full, e$d_train, family_kl, intercept, nv_max,
+                   verbose)
+  chosen_cv <- mapply(function(e, msg) {
     print(msg)
-    do.call(varsel, c(list(fit = fit, d_test = d_test), args))
-  }, c(list(full = fit), k_fold$fits[,'fit']), c(list(full = NA), d_test),
-  msgs, MoreArgs = list(args))
+    select(method, e$p_full, e$d_train, family_kl, intercept, nv_max, verbose)
+  }, e_cv, msgs, SIMPLIFY = F)
 
-  # combine cross validated results
-  d_cv <- as.list(data.frame(apply(
-    simplify2array(d_test)[c('y', 'weights', 'offset'),],
-    1, function(x) do.call(c, x))))
+  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
+                          e$d_train, intercept)
+  p_sub_cv <- mapply(function(chosen, e) {
+    .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
+                   e$d_train, intercept)
+  }, chosen_cv, e_cv, SIMPLIFY = F)
 
-  # extract and combine mu and lppd from sel[stats_list,-1]
-  stop('Does not work at the moment.')
+  sub_summaries <- .get_sub_summaries2(chosen, e$p_full, e$data, p_sub,
+                                       family_kl, intercept)
+  full_summaries <- .get_full_summaries(e$p_full, e$data, e$coef_full,
+                                        family_kl, intercept)
+
+  # extract and combine mu and lppd from the list
+  hf <- function(x) as.list(do.call(rbind, x))
+
+  sub_summaries_cv <- apply(
+    mapply(function(p_sub, e) {
+      lapply(.get_sub_summaries2(chosen, e$p_full, e$data, p_sub,
+                                 family_kl, intercept), data.frame)
+    }, p_sub_cv, e_cv),
+  1, hf)
+
+  full_summaries_cv <- hf(lapply(e_cv, function(e) {
+    data.frame(.get_full_summaries(e$p_full, e$data, e$coef_full,
+                                   family_kl, intercept))
+  }))
+
+  d_cv <- hf(lapply(d_test, function(d) {
+    data.frame(d[c('y', 'weights', 'offset')])}))
+  d_cv$x <- do.call(rbind, lapply(d_test, function(d) d$x))
 
   # evaluate performance on test data and
   # use bayesian bootstrap to get 95% credible intervals
-  b_weights <- .gen_bootstrap_ws(length(d_cv$y), args$n_boot)
-  nv_list <- 1:length(stats$sub$mu) - args$intercept
-  b_stats <- rbind(sel[['stats',1]],
-    .bootstrap_stats(sel[['stats_list',1]], nv_list, vars, args$family_kl,
-                     b_weights, 'train', args$intercept),
-    .bootstrap_stats(mu_cv, lppd_cv, nv_list, d_cv, args$family_kl, b_weights,
-                     'test', args$intercept), make.row.names = F)
+  b_weights <- .get_bootstrap_ws(NROW(e$data$x))
+  metrics <- .bootstrap_metrics(sub_summaries, full_summaries, e$data,
+                               family_kl, intercept, F, b_weights)
+  metrics_cv <- .bootstrap_metrics(sub_summaries_cv, full_summaries_cv, d_cv,
+                                   family_kl, intercept, T, b_weights)
+  kl <- .get_kl_array(p_sub)
 
   # find out how many of cross-validated forward selection iterations select
   # the same variables as the forward selection with all the data.
-  chosen_full <- sel[['chosen',1]]
-  pctch <- mapply(function(var_ind, ind, arr, k) sum(arr[1:min(ind+0, nrow(arr)), ] == var_ind)/k,
-                  chosen_full, seq_along(chosen_full),
-                  MoreArgs = list(do.call(cbind, sel['chosen',-1]), k))
+  chosen_array <- do.call(rbind, chosen_cv)
+  pctch <- sapply(seq_along(chosen), function(ind) {
+    sum(chosen_array[, 1:ind] == chosen[ind])/k
+  })
+  names(pctch) <- chosen
 
-  res <- list(chosen = chosen_full, pctch = pctch, stats = b_stats)
-  if(args$clust) res$cl <- sel[['cl',1]]
-
-  fit$varsel <- res
+  fit$proj <- NULL
+  fit$varsel <- list(chosen = chosen, pctch = pctch,
+                     metrics = rbind(kl, metrics, metrics_cv))
   fit
 }
 
