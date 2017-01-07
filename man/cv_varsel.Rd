@@ -4,16 +4,12 @@
 \alias{cv_varsel}
 \title{Variable selection for generalized linear models with cross-validation}
 \usage{
-cv_varsel(fit, fits = NULL, method = "L1", ns = 400L, nv_max = NULL,
-  intercept = NULL, verbose = F, ...)
+cv_varsel(fit, method = "L1", cv_method = "kfold", ns = 400L,
+  nv_max = NULL, intercept = NULL, verbose = F, K = NULL,
+  k_fold = NULL, ...)
 }
 \arguments{
 \item{fit}{A \link[=stanreg-objects]{stanreg} object.}
-
-\item{fits}{An array with cross-validated stanfits and the respective
-test datasets returned by \link[=stanreg-objects]{cv_fit}(fit).
-If not provided, \link[=stanreg-objects]{cv_fit}(fit) is called to
-get the array.}
 
 \item{...}{Optional arguments. Possible arguments and their defaults are:
 \describe{
@@ -31,6 +27,11 @@ get the array.}
    If \code{verbose = TRUE}, prints information about the progress of the
    variable selection.}
 }}
+
+\item{fits}{An array with cross-validated stanfits and the respective
+test datasets returned by \link[=stanreg-objects]{cv_fit}(fit).
+If not provided, \link[=stanreg-objects]{cv_fit}(fit) is called to
+get the array.}
 }
 \value{
 The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',

@@ -4,7 +4,7 @@
 \alias{varsel}
 \title{Variable selection for generalized linear models}
 \usage{
-varsel(fit, d_test = NA, method = "L1", ns = 400L, nv_max = NULL,
+varsel(fit, d_test = NULL, method = "L1", ns = 400L, nv_max = NULL,
   intercept = NULL, verbose = F, ...)
 }
 \arguments{

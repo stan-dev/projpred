@@ -1,61 +1,5 @@
-#' @export
-project <- function(object, nv, ...) {
-  UseMethod('project')
-}
-
-#' @export
-#' @export
-project.stanreg <- function(object, nv, ns = 400L, intercept = NULL, ...) {
-  # Missing: Clustering!
-  if(is.null(nv)) stop('nv not provided')
-  .validate_for_varsel(object)
-  if(!('varsel' %in% names(object)))
-    stop(paste('The stanreg object doesn\'t contain information about the ',
-               'variable selection. Run the variable selection first.'))
-
-  vars <- .extract_vars(object)
-  if(ns > ncol(vars$beta)) {
-    warning(paste0('Setting the number of samples to ', ncol(vars$beta),'.'))
-    ns <- ncol(vars$beta)
-  }
-  if(is.null(intercept)) intercept <- vars$intercept
-
-  family_kl <- kl_helpers(family(object))
-
-  if(max(nv) > length(object$varsel$chosen))
-    stop(paste('Cannot perform the projection with', max(nv), 'variables,',
-               'because the variable selection has been run only up to',
-               length(object$varsel$chosen), 'variables.'))
-
-  e <- get_data_and_parameters(vars, NA, intercept, ns, family_kl)
-  # p_sub <- .get_submodels(object$varsel$chosen, nv, family_kl, e$p_full,
-  #                         e$d_train, intercept)
-  #
-  # names <- names(coef(object))[object$varsel$chosen]
-  # if(intercept) names <- names[-1]
-  #
-  # object$proj <- mapply(function(p_sub, nv) {
-  #   p_sub$kl <- NULL
-  #   p_sub$b <- p_sub$beta
-  #   if(nv>0) rownames(p_sub$b) <- names[1:nv]
-  #   if(intercept) {
-  #     p_sub$b <- rbind(p_sub$alpha, p_sub$b)
-  #     rownames(p_sub$b)[1] <- names(coef(object))[1]
-  #   }
-  #   p_sub$kl <- NULL
-  #   p_sub$beta <- NULL
-  #   p_sub$alpha <- NULL
-  #   if(!(family_kl$family %in% c('gaussian', 'Gamma'))) p_sub$dis <- NULL
-  #   p_sub$nv <- nv
-  # }, p_sub, nv, SIMPLIFY = F)
-
-  object$proj <- list(
-    p_sub = .get_submodels(object$varsel$chosen, nv, family_kl,
-                           e$p_full, e$d_train, intercept),
-    intercept = intercept)
-
-  object
-}
+# All functions that users will use to extract model parameters,
+# plot variable selection statistics etc.
 
 #' @export
 proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, nv = NULL, ...) {
@@ -153,26 +97,25 @@ proj_sigma <- function(object, ...) {
   })
 }
 
-
 #' @export
-varsel_plot <- function(x, ..., nv_max = NULL, metrics = NULL, deltas = T,
-                        data = 'test') {
+varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
+                        n_boot = 1000, alpha = 0.05) {
   if(!('varsel' %in% names(x)))
     stop(paste('The stanreg object doesn\'t contain information about the',
                'variable selection. Run the variable selection first!'))
 
-  data_remove <- if(data=='train') 'test' else 'train'
-  if(is.null(metrics)) metrics <- as.character(unique(x$varsel$metrics$metric))
-  arr <- subset(x$varsel$metrics, data != data_remove &
-                  (delta == deltas | metric == 'kl') & metric %in% metrics)
+  stats <- subset(.bootstrap_stats(x$varsel, n_boot, alpha),
+                  delta == deltas | statistic == 'kl')
+  if(is.null(statistics)) statistics <- as.character(unique(stats$statistic))
+  arr <- subset(stats, statistic %in% statistics)
 
-  if(nrow(arr) == 0)
-    stop(paste0(ifelse(length(metrics)==1, 'Summaries ', 'Summary '),
-                paste0(unique(metrics), collapse = ', '),
-                ' not evaluated on ', data, ' data.'))
+  if(NROW(arr) == 0) {
+    stop(paste0(ifelse(length(statistics)==1, 'Statistics ', 'Statistic '),
+                paste0(unique(statistics), collapse=', '), ' not available.'))
+  }
 
   if(is.null(nv_max)) nv_max <- max(arr$size)
-  ylab <- if(deltas) expression(Delta) else 'value'
+  ylab <- if(deltas) 'Difference to the full model' else 'value'
 
   ggplot(data = subset(arr, size <= nv_max), mapping = aes(x = size)) +
     geom_ribbon(aes(ymin = lq, ymax = uq), alpha = 0.3) +
@@ -181,36 +124,29 @@ varsel_plot <- function(x, ..., nv_max = NULL, metrics = NULL, deltas = T,
                color = 'darkred') +
     coord_cartesian(xlim = c(0, nv_max)) +
     labs(x = 'Number of variables in the submodel', y = ylab) +
-    facet_grid(metric ~ ., scales = 'free_y')
+    facet_grid(statistic ~ ., scales = 'free_y')
 }
 
 #' @export
-varsel_summary <- function(object, ..., nv_max = NULL, deltas = F, data = 'test') {
+varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
   if(!('varsel' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the',
                'variable selection. Run the variable selection first!'))
 
-  if(is.null(nv_max)) nv_max <- max(object$varsel$metrics$size)
-  data_remove <- if(data=='train') 'test' else 'train'
+  stats <- subset(.bootstrap_stats(object$varsel, NULL, 0.5),
+                  delta == deltas | statistic == 'kl')
+  statistics <- as.character(unique(stats$statistic))
 
-  metrics <- as.character(unique(object$varsel$metrics$metric))
-  arr_list <- lapply(metrics, function(sname, metrics_arr, dr) {
-    res <- subset(metrics_arr, metric == sname & (delta == deltas | metric == 'kl')
-                  & data != dr, c('size', 'value'))
-    setNames(res, c('size', sname))
-  }, object$varsel$metrics, data_remove)
-  # combine the arrays
-  arr <- Reduce(merge, arr_list)
-  # If no test data and results from training data are not wanted, return only KL
-  if(nrow(arr) == 0)  arr <- setNames(subset(
-    object$varsel$metrics, metric == 'kl', c('size','value')), c('size', 'kl'))
+  arr <- data.frame(sapply(statistics, function(sname) {
+    unname(subset(stats, statistic == sname, 'value'))
+  }))
+  arr <- cbind(size = unique(stats$size), arr)
 
-  # make sure that the list is ordered
-  arr <- arr[order(arr$size),]
+  if(is.null(nv_max)) nv_max <- max(stats$size)
 
   arr$chosen <- c(NA, object$varsel$chosen)
   if('pctch' %in% names(object$varsel)) arr$pctch <- c(NA, object$varsel$pctch)
 
-  subset(arr, size <= nv_max, c('size', intersect(colnames(arr),
-                                              c(metrics, 'chosen', 'pctch'))))
+  subset(arr, size <= nv_max)
 }
+
