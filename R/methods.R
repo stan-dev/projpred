@@ -30,9 +30,9 @@ proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NUL
 
   mapply(function(proj, nv) {
     ch <- object$varsel$chosen[min(nv,1):nv]
-    mu <- family_kl$mu_fun(data$x[, ch, drop = F],
-                           proj$alpha,
-                           proj$beta, data$offset, object$proj$intercept)
+    mu <- t(family_kl$mu_fun(data$x[, ch, drop = F],
+                             proj$alpha,
+                             proj$beta, data$offset, object$proj$intercept))
     if(transform) mu else family_kl$linkfun(mu)
   }, projs, nv, SIMPLIFY = F)
 

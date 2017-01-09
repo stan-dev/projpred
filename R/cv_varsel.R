@@ -98,45 +98,63 @@ kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
   #  - list (d_test) with test outputs y, test weights and data type (string)
   #  - list with submodel and full model summaries
 
+  # Construct the kfold-objects. The resulting list contains an element 'fits',
+  # which is a K x 2 dimensional array. Each row corresponds to one of the K
+  # folds. First column contains the rstanarm-objects and the second column
+  # the indices of the omitted observations (aka test data).
   if(is.null(k_fold)) {
     if(is.null(K)) K <- 10
     print(paste0('k_fold not provided, performing ', K,
                  '-fold cross-validation for the stan model.'))
-    k_fold <- glmproj::kfold_(fit, save_fits = T)
+    k_fold <- kfold_(fit, K = K, save_fits = T)
   }
   family_kl <- kl_helpers(family(fit))
 
+  # check that the fit-objects are valid for variable selection
   if(!all(apply(k_fold$fits, 1, function(fits, fit) {
     .validate_for_varsel(fits$fit)
     is.vector(fits$omitted) && max(fits$omitted) <= nobs(fit) && all(fits$omitted > 0)
   }, fit))) stop('k_fold does not have the correct form.')
   K <- attr(k_fold, 'K')
 
+  # extract variables from each fit-object (stan-samples, x, y, etc.)
+  # to a list of size K
   vars_cv <- lapply(k_fold$fits[,'fit'], .extract_vars)
 
-  d_test <- lapply(k_fold$fits[,'omitted'], function(omitted, d_full) {
-    list(x = d_full$x[omitted,], y = d_full$y[omitted],
-         weights = d_full$weights[omitted], offset = d_full$offset[omitted])
-  }, vars)
+  # List of size K with test data for each fold (note that vars is from
+  # the full model, not from the cross-validated models).
+  d_test <- lapply(k_fold$fits[,'omitted'], function(omitted) {
+    list(x = vars$x[omitted,], y = vars$y[omitted],
+         weights = vars$weights[omitted], offset = vars$offset[omitted])
+  })
 
+  # List of K elements, each containing d_train, p_full, etc. corresponding
+  # to the corresponding fold.
   e_cv <- mapply(function(vars, d_test) {
     .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
   }, vars_cv, d_test, SIMPLIFY = F)
 
+  # List of K elements, each a list of the variables selected for the
+  # corresponding fold.
   msgs <- paste0(method, ' search for the fold number ', 1:K, '/', K, '.')
   chosen_cv <- mapply(function(e, msg) {
     print(msg)
     select(method, e$p_full, e$d_train, family_kl, intercept, nv_max, verbose)
   }, e_cv, msgs, SIMPLIFY = F)
 
+  # Construct p_sub for each fold using .get_submodels.
   p_sub_cv <- mapply(function(chosen, e) {
     .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
                    e$d_train, intercept)
   }, chosen_cv, e_cv, SIMPLIFY = F)
 
-  # extract and combine mu and lppd from the list
+  # Helper function extract and combine mu and lppd from K lists with each
+  # n/K of the elements to one list with n elements
   hf <- function(x) as.list(do.call(rbind, x))
 
+  # Apply some magic to manipulate the structure of the list so that instead of
+  # list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
+  # one sub_summary-list that contains with all n mu:s and lppd:s.
   sub_cv <- apply(
     mapply(function(p_sub, e, chosen) {
       lapply(.get_sub_summaries(chosen, e$p_full, e$d_test, p_sub,
@@ -144,11 +162,14 @@ kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
     }, p_sub_cv, e_cv, chosen_cv),
     1, hf)
 
+  # Same for the full model.
   full_cv <- hf(lapply(e_cv, function(e) {
     data.frame(.get_full_summaries(e$p_full, e$d_test, e$coef_full,
                                    family_kl, intercept))
   }))
 
+  # Combine also the K separate test data sets into one list
+  # with n y's and weights's.
   d_cv <- hf(lapply(d_test, function(d) {
     data.frame(d[c('y', 'weights')])}))
 
