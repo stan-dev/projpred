@@ -145,8 +145,8 @@ kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
   hf <- function(x) as.list(do.call(rbind, x))
 
   # Apply some magic to manipulate the structure of the list so that instead of
-  # list with K sub_summaries we have only one sub_summary-list that contains
-  # all n mu:s and lppd:s
+  # list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
+  # one sub_summary-list that contains with all n mu:s and lppd:s.
   sub_cv <- apply(
     mapply(function(p_sub, e, chosen) {
       lapply(.get_sub_summaries(chosen, e$p_full, e$d_test, p_sub,
