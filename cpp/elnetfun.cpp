@@ -42,7 +42,7 @@ void coord_descent(	vec& beta, // regression coefficients
 					std::set<int>& active_set, // active set, may change if some variables enter or leave
 					bool until_convergence, // true = until convergence, false = one pass through varind
 					int& npasses, // counts total passes through the variables
-					double thresh_abs, // stop when change in the loss is smaller than this
+					double tol, // stop when change in the loss is smaller than this
 					int maxiter = 1000) // maximum number of iterations (passes) through varind
 {
 	
@@ -96,7 +96,8 @@ void coord_descent(	vec& beta, // regression coefficients
 		loss = loss_approx(beta,f,z,w,lambda,alpha);
 		
 		if (until_convergence) {
-			if (fabs(loss-loss_old) < thresh_abs) {
+		    
+		    if (fabs(loss_old-loss) < tol) {
 				break;
 			} else {
 				// continue iterating
@@ -176,23 +177,24 @@ List glm_elnet_c(mat x, // input matrix
     double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha); // initial loss
     double loss_old = loss_initial; // will be updated iteratively
     double loss; // will be updated iteratively
-    double thresh_descent = 0.01*thresh*loss_initial; // threshold for convergence in coord_descent
+    double tol = thresh*fabs(loss_initial); // convergence criterion for coordinate descent
     
     // loop over lambda values
     for (k=0; k<nlam; ++k) {
         
         lam = lambda(k);
     	
-        // for (qau=1; qau<=qa_updates_max; ++qau) {
         qau = 0;
         while (qau < qa_updates_max) {
             
-            // update the quadratic likelihood approximation (would be needed only
-            // for likelihoods other than gaussian) 
+            // update the quadratic likelihood approximation
             obs = pseudo_obs(f);
             z = as<vec>(obs["z"]);
             w = as<vec>(obs["w"]);
             ++qau;
+            
+            // current value of the (approximate) loss function
+            loss_old = loss_approx(beta, f, z, w, lam, alpha);
             
             // run the coordinate descent until convergence for the current
             //  quadratic approximation
@@ -201,11 +203,11 @@ List glm_elnet_c(mat x, // input matrix
 
                 // iterate within the current active set until convergence (this might update 
                 // active_set_old, if some variable goes to zero)
-                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, thresh_descent);
+                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, tol);
                 
                 // perfom one pass over all the variables and check if the active set changes 
                 // (this might update active_set)
-                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, thresh_descent);
+                coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, tol);
                 
                 ++asu;
 
@@ -217,15 +219,13 @@ List glm_elnet_c(mat x, // input matrix
             }
             as_updates(k) = as_updates(k) + asu;
             
+            // the loss after updating the coefficients
             loss = loss_approx(beta, f, z, w, lam, alpha);
             
             // check if converged
-            if (fabs(loss-loss_old) < thresh * fabs(loss_initial)) {
+            if (fabs(loss_old-loss) < tol) {
                 // convergence reached; proceed to the next lambda value
                 break;
-            } else {
-                // continue iterating
-                loss_old = loss;
             }
         }
         // store the current solution
@@ -234,10 +234,11 @@ List glm_elnet_c(mat x, // input matrix
         qa_updates(k) = qau;
         
         if (qau == qa_updates_max && qa_updates_max > 1)
-        	std::cout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate!\n";
+        	std::cout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
         
-        if (active_set.size() >= pmax || active_set.size() == D) {
-			// obtained solution with more than pmax variables (or the number of columns in x), so terminate
+        if ((alpha > 0.0) && (active_set.size() >= pmax || active_set.size() == D)) {
+			// obtained solution with more than pmax variables (or the number of columns in x)
+			// when no ridge regression considered, so terminate
 			if (pmax_strict) {
 			    // return solutions only up to the previous lambda value
 			    beta0_path = beta0_path.head(k);
@@ -258,6 +259,93 @@ List glm_elnet_c(mat x, // input matrix
 
 
 
+
+// [[Rcpp::export]]
+List glm_ridge_c(mat x,
+                 Function pseudo_obs,
+                 double lambda,
+                 bool intercept,
+                 double thresh,
+                 int qa_updates_max)
+{
+    
+    if (intercept)
+        // add a vector of ones to x
+        x = join_horiz(ones<vec>(x.n_rows), x);
+    
+    int n = x.n_rows;
+    int D = x.n_cols;
+    double alpha = 0;
+    int qau; // counts quadratic approximation updates
+    int j;
+    
+    // initialization
+    vec beta(D); beta.zeros();
+    vec beta_new(D); beta_new.zeros();
+    vec dbeta(D); dbeta.zeros();
+    vec f = x*beta;
+    
+    mat xw(n,D); // this will be the weighted x
+    mat regmat = lambda*eye(D,D); // regularization matrix
+    
+    // initial quadratic approximation
+    List obs = pseudo_obs(f);
+    vec z = as<vec>(obs["z"]);
+    vec w = as<vec>(obs["w"]);
+    double loss_initial = obs["dev"];
+    double loss_old = loss_initial; // will be updated iteratively
+    double loss; // will be updated iteratively
+    double tol = thresh*fabs(loss_initial); // criterion for convergence
+    
+    
+    qau = 0;
+    while (qau < qa_updates_max) {
+        
+        
+        // weight the observations
+        for (j=0; j<D; ++j)
+            xw.col(j) = x.col(j) % sqrt(w);
+        
+        // weighted least squares solution
+        beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
+        
+        // line search: halve the step until decrement in deviance achieved
+        dbeta = 2*(beta_new - beta);
+        while (true) {
+            
+            dbeta = 0.5*dbeta;
+            beta = beta + dbeta;
+            f = x*beta;
+            obs = pseudo_obs(f);
+            z = as<vec>(obs["z"]);
+            w = as<vec>(obs["w"]);
+            loss = obs["dev"];
+            
+            if (loss < loss_old)
+                break;
+        }
+        
+        ++qau;
+        
+        // check if converged
+        if (loss_old - loss < tol) {
+            // convergence reached
+            break;
+        } else {
+            // continue iterating
+            loss_old = loss;
+        }
+    }
+    if (qau == qa_updates_max && qa_updates_max > 1)
+        std::cout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
+    
+    if (intercept) 
+        return List::create(vec(beta.tail(D)), beta(0), qau);
+    else 
+        return List::create(beta, 0.0, qau);
+    
+    
+}
 
 
 

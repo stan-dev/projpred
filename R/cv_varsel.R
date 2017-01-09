@@ -45,139 +45,162 @@
 #'
 
 #' @export
-cv_varsel <- function(fit, fits = NULL, ...) {
+cv_varsel <- function(fit, method = 'L1', cv_method = 'kfold', ns = 400L,
+                      nv_max = NULL, intercept = NULL, verbose = F,
+                      K = NULL, k_fold = NULL, ...) {
   UseMethod('cv_varsel')
 }
 
 #' @export
-cv_varsel.stanreg <- function(fit, k_fold = NULL, ...) {
+cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'kfold', ns = 400L,
+                              nv_max = NULL, intercept = NULL, verbose = F,
+                              K = NULL, k_fold = NULL, ...) {
 
   .validate_for_varsel(fit)
-  if(is.null(k_fold)) {
-    print(paste('k_fold not provided, performing 10-fold cross-validation',
-                'for the stan model.'))
-    k_fold <- glmproj::kfold(fit, save_fits = T)
+  vars <- .extract_vars(fit)
+  if(is.null(intercept)) intercept <- vars$intercept
+  if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
+
+  print(paste('Performing', method, 'search for the full model.'))
+  sel <- varsel(fit, NULL, method, ns, nv_max, intercept, verbose)$varsel
+
+  if(tolower(cv_method) == 'kfold') {
+    sel_cv <- kfold_varsel(fit, method, ns, nv_max, intercept, verbose, vars, K, k_fold)
+  } else {
+    stop(sprintf('Unknown cross-valdation method: %s.', method))
   }
+
+  # find out how many of cross-validated iterations select
+  # the same variables as the selection with all the data.
+  pctch <- sapply(seq_along(sel$chosen), function(ind, chosen_array) {
+    sum(chosen_array[, 1:ind] == sel$chosen[ind])/NROW(chosen_array)
+  }, do.call(rbind, sel_cv$chosen_cv))
+
+  fit$proj <- NULL
+  fit$varsel <- c(sel[c('chosen', 'kl', 'family_kl')],
+                  sel_cv[c('d_test', 'summaries')],
+                  list(pctch = pctch))
+  fit
+}
+
+kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
+                         K, k_fold) {
+  # returns:
+  #  - list of crossvalidated paths (chosen_cv),
+  #  - list (d_test) with test outputs y, test weights and data type (string)
+  #  - list with submodel and full model summaries
+
+  if(is.null(k_fold)) {
+    if(is.null(K)) K <- 10
+    print(paste0('k_fold not provided, performing ', K,
+                 '-fold cross-validation for the stan model.'))
+    k_fold <- glmproj::kfold_(fit, save_fits = T)
+  }
+  family_kl <- kl_helpers(family(fit))
 
   if(!all(apply(k_fold$fits, 1, function(fits, fit) {
     .validate_for_varsel(fits$fit)
     is.vector(fits$omitted) && max(fits$omitted) <= nobs(fit) && all(fits$omitted > 0)
   }, fit))) stop('k_fold does not have the correct form.')
+  K <- attr(k_fold, 'K')
 
-  k <- attr(k_fold, 'K')
-  vars <- .extract_vars(fit)
-  args <- .init_args(c(list(...), cv = T), vars, family(fit))
+  vars_cv <- lapply(k_fold$fits[,'fit'], .extract_vars)
 
   d_test <- lapply(k_fold$fits[,'omitted'], function(omitted, d_full) {
     list(x = d_full$x[omitted,], y = d_full$y[omitted],
          weights = d_full$weights[omitted], offset = d_full$offset[omitted])
   }, vars)
 
-  # max number of variables to be projected
-  args$nv <- min(c(sapply(k_fold$fits[,'fit'], function(fit)
-    rankMatrix(get_x(fit))), args$nv))
+  e_cv <- mapply(function(vars, d_test) {
+    .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
+  }, vars_cv, d_test, SIMPLIFY = F)
 
-  msgs <- paste('Forward selection for the',
-                c('full model.', paste0('fold number ', 1:k,'/',k,'.')))
-  # perform the forward selection
-  sel <- mapply(function(fit, d_test, msg, args) {
+  msgs <- paste0(method, ' search for the fold number ', 1:K, '/', K, '.')
+  chosen_cv <- mapply(function(e, msg) {
     print(msg)
-    do.call(varsel, c(list(fit = fit, d_test = d_test), args))
-  }, c(list(full = fit), k_fold$fits[,'fit']), c(list(full = NA), d_test),
-  msgs, MoreArgs = list(args))
+    select(method, e$p_full, e$d_train, family_kl, intercept, nv_max, verbose)
+  }, e_cv, msgs, SIMPLIFY = F)
 
-  # combine cross validated results
-  d_cv <- as.list(data.frame(apply(
-    simplify2array(d_test)[c('y', 'weights', 'offset'),],
-    1, function(x) do.call(c, x))))
+  p_sub_cv <- mapply(function(chosen, e) {
+    .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
+                   e$d_train, intercept)
+  }, chosen_cv, e_cv, SIMPLIFY = F)
 
-  # extract and combine mu and lppd from sel[stats_list,-1]
-  stop('Does not work at the moment.')
+  # extract and combine mu and lppd from the list
+  hf <- function(x) as.list(do.call(rbind, x))
 
-  # evaluate performance on test data and
-  # use bayesian bootstrap to get 95% credible intervals
-  b_weights <- .gen_bootstrap_ws(length(d_cv$y), args$n_boot)
-  nv_list <- 1:length(stats$sub$mu) - args$intercept
-  b_stats <- rbind(sel[['stats',1]],
-    .bootstrap_stats(sel[['stats_list',1]], nv_list, vars, args$family_kl,
-                     b_weights, 'train', args$intercept),
-    .bootstrap_stats(mu_cv, lppd_cv, nv_list, d_cv, args$family_kl, b_weights,
-                     'test', args$intercept), make.row.names = F)
+  sub_cv <- apply(
+    mapply(function(p_sub, e, chosen) {
+      lapply(.get_sub_summaries(chosen, e$p_full, e$d_test, p_sub,
+                                family_kl, intercept), data.frame)
+    }, p_sub_cv, e_cv, chosen_cv),
+    1, hf)
 
-  # find out how many of cross-validated forward selection iterations select
-  # the same variables as the forward selection with all the data.
-  chosen_full <- sel[['chosen',1]]
-  pctch <- mapply(function(var_ind, ind, arr, k) sum(arr[1:min(ind+0, nrow(arr)), ] == var_ind)/k,
-                  chosen_full, seq_along(chosen_full),
-                  MoreArgs = list(do.call(cbind, sel['chosen',-1]), k))
+  full_cv <- hf(lapply(e_cv, function(e) {
+    data.frame(.get_full_summaries(e$p_full, e$d_test, e$coef_full,
+                                   family_kl, intercept))
+  }))
 
-  res <- list(chosen = chosen_full, pctch = pctch, stats = b_stats)
-  if(args$clust) res$cl <- sel[['cl',1]]
+  d_cv <- hf(lapply(d_test, function(d) {
+    data.frame(d[c('y', 'weights')])}))
 
-  fit$varsel <- res
-  fit
+  list(chosen_cv = chosen_cv, d_test = c(d_cv, type = 'kfold'),
+       summaries = list(sub = sub_cv, full = full_cv))
 }
+
 
 
 loo_varsel <- function(fit, method='L1', ...) {
-    
-    # TODO, ADD COMMENTS
-    vars <- .extract_vars(fit)
-    args <- .init_args(list(...), vars)
-    fam <- kl_helpers(family(fit))
-    mu <- fam$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, args$intercept)
-    dis <- vars$dis
-    
-    # training data and the fit of the full model
-    d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
-    p_full <- list(mu = mu, dis = dis)
-    
-    # perform the clustering for the full model
-    # TODO DUMMY SOLUTION, USE ONE CLUSTER
-    cl <- rep(1,n)
-    
-    # compute the log-likelihood for the full model to obtain the LOO weights
-    loglik <- log_lik(fit)
-    lw <- psislw(-loglik)$lw_smooth
-    
-    n <- dim(lw)[2]
-    nv <- c(0:args$nv) # TODO IMPLEMENT THIS PROPERLY
-    pmax <- max(nv) ## TODO
-    
-    tic()
-    chosen_mat <- matrix(rep(0, n*pmax), nrow=n)
-    loo <- matrix(nrow=n, ncol=length(nv))
-    for (i in 1:n) {
-    	
-    	# reweight the clusters according to the is-loo weights
-    	p_sel <- .get_p_clust(mu, dis, cl=cl, wsample=exp(lw[,i]))$p
-    	
-    	# perform selection
-    	chosen <- select(method, p_sel, d_train, fam, args$intercept, pmax, args$regul, NA, args$verbose)
-    	chosen_mat[i,] <- chosen
-    	
-    	# project onto the selected models and compute the difference between
-    	# training and loo density for the left-out point
-    	d_test = list(x=matrix(x[i,],nrow=1), y=y[i], offset=d_train$offset[i], weights=1.0)
-    	summaries <- .get_sub_summaries(chosen, nv, d_train, d_test, p_sel, fam, args$intercept)
-    	
-    	for (k in 1:length(nv)) {
-    	    loo[i,k] <- summaries[[k]]$lppd
-    	}
-    	
-    	print(sprintf('i = %d', i))
-    }
-    toc()
-    
-    out = list(loo=loo, chosen=chosen_mat)
-    return(out)
-    
+	
+	# TODO, ADD COMMENTS
+	vars <- .extract_vars(fit)
+	args <- .init_args(list(...), vars)
+	fam <- kl_helpers(family(fit))
+	mu <- fam$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, args$intercept)
+	dis <- vars$dis
+	
+	# training data and the fit of the full model
+	d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
+	p_full <- list(mu = mu, dis = dis)
+	
+	# perform the clustering for the full model
+	# TODO DUMMY SOLUTION, USE ONE CLUSTER
+	cl <- rep(1,n)
+	
+	# compute the log-likelihood for the full model to obtain the LOO weights
+	loglik <- log_lik(fit)
+	lw <- psislw(-loglik)$lw_smooth
+	
+	n <- dim(lw)[2]
+	nv <- c(0:args$nv) # TODO IMPLEMENT THIS PROPERLY
+	pmax <- max(nv) ## TODO
+	
+	tic()
+	chosen_mat <- matrix(rep(0, n*pmax), nrow=n)
+	loo <- matrix(nrow=n, ncol=length(nv))
+	for (i in 1:n) {
+		
+		# reweight the clusters according to the is-loo weights
+		p_sel <- .get_p_clust(mu, dis, cl=cl, wsample=exp(lw[,i]))$p
+		
+		# perform selection
+		chosen <- select(method, p_sel, d_train, fam, args$intercept, pmax, args$regul, NA, args$verbose)
+		chosen_mat[i,] <- chosen
+		
+		# project onto the selected models and compute the difference between
+		# training and loo density for the left-out point
+		d_test = list(x=matrix(x[i,],nrow=1), y=y[i], offset=d_train$offset[i], weights=1.0)
+		summaries <- .get_sub_summaries(chosen, nv, d_train, d_test, p_sel, fam, args$intercept)
+		
+		for (k in 1:length(nv)) {
+			loo[i,k] <- summaries[[k]]$lppd
+		}
+		
+		print(sprintf('i = %d', i))
+	}
+	toc()
+	
+	out = list(loo=loo, chosen=chosen_mat)
+	return(out)
+	
 }
-
-
-    
-    
-    
-    
-    
-    
