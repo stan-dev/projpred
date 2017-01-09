@@ -67,8 +67,7 @@ cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'loo', ns = 400L,
   if(tolower(cv_method) == 'kfold') {
     sel_cv <- kfold_varsel(fit, method, ns, nv_max, intercept, verbose, vars, K, k_fold)
   } else if (tolower(cv_method) == 'loo')  {
-  	loo_varsel(fit, method, ns, nv_max, intercept, verbose, vars)
-  	stop('LOO not implemented yet.')
+  	sel_cv <- loo_varsel(fit, method, ns, nv_max, intercept, verbose, vars)
   } else {
     stop(sprintf('Unknown cross-valdation method: %s.', method))
   }
@@ -191,7 +190,7 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	
 	# training data and the fit of the full model
 	d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
-	p_full <- list(mu = mu, dis = dis)
+	p_full <- list(mu = mu, dis = dis) # does not have weights, need to add them if want to project with this
 	
 	# compute the log-likelihood for the full model to obtain the LOO weights
 	loglik <- log_lik(fit)
@@ -205,9 +204,12 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	# nv <- c(0:args$nv) # TODO IMPLEMENT THIS PROPERLY
 	# nv_max <- max(nv) ## TODO
 	
+	# compute loo for the full model
+	# summaries_full <- .get_full_summaries(p_full, d_test, coef_full, family_kl, intercept)
+	
 	tic()
 	chosen_mat <- matrix(rep(0, n*nv_max), nrow=n)
-	loo <- matrix(nrow=n, ncol=nv_max)
+	loo <- matrix(nrow=n, ncol=nv_max+1)
 	for (i in 1:n) {
 		
 		# reweight the clusters according to the is-loo weights
@@ -219,20 +221,27 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 		
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
-		p_sub <- get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept) # replace p_sel by p_full here?
-		d_test = list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=1.0)
-		# summaries <- .get_sub_summaries(chosen, 0:nv_max, d_train, d_test, p_sel, fam, intercept)
-		summaries <- .get_sub_summaries(chosen, p_sel, d_test, p_sub, fam, intercept) # replace p_sel by p_full here?
+		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept) # replace p_sel by p_full here?
+		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=1.0)
+		summaries_sub <- .get_sub_summaries(chosen, p_sel, d_test, p_sub, fam, intercept) # replace p_sel by p_full here?
+		# summaries <- get_sub_summaries_old(chosen, 0:nv_max, d_train, d_test, p_sel, fam, intercept)
 		
-		for (k in 1:nv_max) {
-			loo[i,k] <- summaries[[k]]$lppd
+		for (k in 0:nv_max) {
+			loo[i,k+1] <- summaries[[k+1]]$lppd
 		}
 		
 		print(sprintf('i = %d', i))
 	}
 	toc()
 	
-	out <- list(loo=loo, chosen=chosen_mat)
+	 
+	summ_sub <-	lapply(0:nv_max, function(k){
+	    list(lppd=loo[,k+1])
+	})
+	summaries <- list(sub=summ_sub)
+	
+    chosen_cv <- lapply(1:n, function(i){ chosen_mat[i,] })
+	out <- list(chosen_cv=chosen_cv, summaries=summaries)
 	# out <- list(chosen_cv = chosen_cv, d_test = c(d_cv, type = 'kfold'),
 		 	# summaries = list(sub = sub_cv, full = full_cv))
 	return(out)
