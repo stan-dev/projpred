@@ -43,13 +43,13 @@
 #'
 
 #' @export
-varsel <- function(fit, d_test = NA, method = 'L1', ns = 400L,
+varsel <- function(fit, d_test = NULL, method = 'L1', ns = 400L,
                    nv_max = NULL, intercept = NULL, verbose = F, ...) {
     UseMethod('varsel')
 }
 
 #' @export
-varsel.stanreg <- function(fit, d_test = NA, method = 'L1', ns = 400L,
+varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = 400L,
                            nv_max = NULL, intercept = NULL, verbose = F, ...) {
   .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
@@ -62,26 +62,25 @@ varsel.stanreg <- function(fit, d_test = NA, method = 'L1', ns = 400L,
   if(is.null(intercept)) intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
-  e <- get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
+  e <- .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
 
   chosen <- select(method, e$p_full, e$d_train, family_kl, intercept, nv_max,
                    verbose)
 
   p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
                           e$d_train, intercept)
-  sub_summaries <- .get_sub_summaries2(chosen, e$p_full, e$data, p_sub, family_kl,
-                                       intercept)
-  full_summaries <- .get_full_summaries(e$p_full, e$data, e$coef_full,
-                                        family_kl, intercept)
-
-  b_weights <- .get_bootstrap_ws(NROW(e$data$x))
-
-  metrics <- .bootstrap_metrics(sub_summaries, full_summaries, e$data,
-                                family_kl, intercept, e$is_test, b_weights)
-  kl <- .get_kl_array(p_sub)
+  sub <- .get_sub_summaries(chosen, e$p_full, e$d_test, p_sub, family_kl,
+                             intercept)
+  full <- .get_full_summaries(e$p_full, e$d_test, e$coef_full, family_kl,
+                              intercept)
+  d_type <- ifelse(is.null(d_test), 'train', 'test')
 
   fit$proj <- NULL
-  fit$varsel <- list(chosen = chosen, metrics = rbind(kl, metrics))
+  fit$varsel <- list(chosen = chosen,
+                     kl = sapply(p_sub, function(x) x$kl),
+                     d_test = c(e$d_test[c('y','weights')], type = d_type),
+                     summaries = list(sub = sub, full = full),
+                     family_kl = family_kl)
 
   fit
 }
@@ -103,40 +102,4 @@ select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
   }
   return(chosen)
 }
-
-get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
-  # - Returns d_train, data, p_full, coef_full, is_test.
-  # - If d_test is NA, data equals to d_train and is_test is FALSE.
-  #   Otherwise data is set to d_train and is_test is TRUE.
-
-  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
-
-  d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
-
-  # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
-  is_test <- is.list(d_test)
-  if(is_test) {
-    # check that d_test is of the correct form?
-    data <- d_test
-    if(is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
-    if(is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
-  } else {
-    data <- vars[c('x', 'weights', 'offset', 'y')]
-  }
-  # indices of samples that are used in the projection
-  s_ind <- round(seq(1, ncol(vars$beta), length.out  = ns))
-  p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
-                 weights = rep(1/ns, ns))
-  coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
-
-  # cluster the samples of the full model if clustering is wanted
-  # for the variable selection
-  do_clust <- F
-  clust <- if(do_clust) get_p_clust(mu, vars$dis, ns) else NULL
-  if(do_clust) p_full <- clust
-
-  list(d_train = d_train, data = data, p_full = p_full,
-       coef_full = coef_full, is_test = is_test)
-}
-
 
