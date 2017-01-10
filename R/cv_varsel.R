@@ -61,21 +61,17 @@ cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'loo', ns = 400L,
   if(is.null(intercept)) intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
-  print(paste('Performing', method, 'search for the full model.'))
+  if (verbose)
+    print(paste('Performing', method, 'search for the full model.'))
   sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, intercept=intercept, verbose=verbose)$varsel
 
   if(tolower(cv_method) == 'kfold') {
     sel_cv <- kfold_varsel(fit, method, ns, nv_max, intercept, verbose, vars, K, k_fold)
   } else if (tolower(cv_method) == 'loo')  {
-  	sel_cv <- loo_varsel(fit, method, ns, nv_max, intercept, verbose, vars)
+    sel_cv <- loo_varsel(fit, method, ns, nv_max, intercept, verbose, vars)
   } else {
-    stop(sprintf('Unknown cross-valdation method: %s.', method))
+    stop(sprintf('Unknown cross-validation method: %s.', method))
   }
-  
-  ############
-  out <- sel_cv
-  return(out)
-  ############
 
   # find out how many of cross-validated iterations select
   # the same variables as the selection with all the data.
@@ -182,14 +178,13 @@ kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
 loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	
 	# TODO, ADD COMMENTS
-	# vars <- .extract_vars(fit)
-	# args <- .init_args(list(...), vars)
+	vars <- .extract_vars(fit)
 	fam <- kl_helpers(family(fit))
 	mu <- fam$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
 	dis <- vars$dis
 	
 	# training data and the fit of the full model
-	d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
+	d_train <- list(x = vars$x, y = vars$y, weights = vars$weights, offset = vars$offset)
 	p_full <- list(mu = mu, dis = dis) # does not have weights, need to add them if want to project with this
 	
 	# compute the log-likelihood for the full model to obtain the LOO weights
@@ -202,17 +197,18 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	cl <- rep(1,n)
 	
 	# compute loo summaries for the full model
-	# summaries_full <- .get_full_summaries(p_full, d_test, coef_full, family_kl, intercept)
-	print(dim(lw))
-	print(dim(loglik))
-	# apply(loglik+lw, 1, 'log_sum_exp')
-	# loos=sumlogs(log_lik+lw);
-	# loo=sum(loos);
+	d_test <- d_train
+	loo_full <- apply(loglik+lw, 2, 'log_sum_exp')
+	mus <- fam$mu_fun(d_test$x, vars$alpha, vars$beta, d_test$offset, intercept)
+	mu_full <- rep(0,n)
+	for (i in 1:n)
+        mu_full[i] <- mus[i,] %*% exp(lw[,i])
 	
 	
 	tic()
 	chosen_mat <- matrix(rep(0, n*nv_max), nrow=n)
 	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
+	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
 	for (i in 1:n) {
 		
 		# reweight the clusters according to the is-loo weights
@@ -227,27 +223,28 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept) # replace p_sel by p_full here?
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=1.0)
 		summaries_sub <- .get_sub_summaries(chosen, p_sel, d_test, p_sub, fam, intercept) # replace p_sel by p_full here?
-		# summaries <- get_sub_summaries_old(chosen, 0:nv_max, d_train, d_test, p_sel, fam, intercept)
 		
 		for (k in 0:nv_max) {
 			loo_sub[i,k+1] <- summaries_sub[[k+1]]$lppd
 			mu_sub[i,k+1] <- summaries_sub[[k+1]]$mu
 		}
 		
-		print(sprintf('i = %d', i))
+		if (verbose)
+		    print(sprintf('i = %d', i))
 	}
 	toc()
 	
-	 
+	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
 	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1])
 	})
-	summaries <- list(sub=summ_sub)
+	summ_full <- list(lppd=loo_full, mu=mu_full)
+	summaries <- list(sub=summ_sub, full=summ_full)
 	
     chosen_cv <- lapply(1:n, function(i){ chosen_mat[i,] })
-	out <- list(chosen_cv=chosen_cv, summaries=summaries)
-	# out <- list(chosen_cv = chosen_cv, d_test = c(d_cv, type = 'kfold'),
-		 	# summaries = list(sub = sub_cv, full = full_cv))
-	return(out)
+    
+    d_test <- list(y=d_train$y, weights=d_train$weights, type='loo')
+    
+	return(list(chosen_cv=chosen_cv, summaries=summaries, d_test=d_test))
 	
 }
