@@ -185,7 +185,7 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	
 	# training data and the fit of the full model
 	d_train <- list(x = vars$x, y = vars$y, weights = vars$weights, offset = vars$offset)
-	p_full <- list(mu = mu, dis = dis) # does not have weights, need to add them if want to project with this
+	p_full <- list(mu = mu, dis = dis) # DOES NOT HAVE WEIGHTS, need to add them if we want to project with this (clustering etc.)
 	
 	# compute the log-likelihood for the full model to obtain the LOO weights
 	loglik <- log_lik(fit)
