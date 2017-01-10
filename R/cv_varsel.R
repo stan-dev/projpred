@@ -174,7 +174,7 @@ kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
 
 
 
-#loo_varsel <- function(fit, method='L1', ...) {
+
 loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	
 	# TODO, ADD COMMENTS
@@ -205,7 +205,7 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
         mu_full[i] <- mus[i,] %*% exp(lw[,i])
 	
 	
-	tic()
+	
 	chosen_mat <- matrix(rep(0, n*nv_max), nrow=n)
 	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
@@ -215,7 +215,7 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 		p_sel <- get_p_clust(mu, dis, cl=cl, wsample=exp(lw[,i]))$p
 		
 		# perform selection
-		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose)
+		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
 		chosen_mat[i,] <- chosen
 		
 		# project onto the selected models and compute the difference between
@@ -229,10 +229,11 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 			mu_sub[i,k+1] <- summaries_sub[[k+1]]$mu
 		}
 		
-		if (verbose)
-		    print(sprintf('i = %d', i))
+		if (verbose && i %% round(n/10) == 0)
+		    print(sprintf('%d%% of LOOs done.', 10*i / round(n/10)))
 	}
-	toc()
+	if (verbose)
+		print('100% of LOOs done.')
 	
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
