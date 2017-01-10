@@ -201,15 +201,18 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	# TODO DUMMY SOLUTION, USE ONE CLUSTER
 	cl <- rep(1,n)
 	
-	# nv <- c(0:args$nv) # TODO IMPLEMENT THIS PROPERLY
-	# nv_max <- max(nv) ## TODO
-	
-	# compute loo for the full model
+	# compute loo summaries for the full model
 	# summaries_full <- .get_full_summaries(p_full, d_test, coef_full, family_kl, intercept)
+	print(dim(lw))
+	print(dim(loglik))
+	# apply(loglik+lw, 1, 'log_sum_exp')
+	# loos=sumlogs(log_lik+lw);
+	# loo=sum(loos);
+	
 	
 	tic()
 	chosen_mat <- matrix(rep(0, n*nv_max), nrow=n)
-	loo <- matrix(nrow=n, ncol=nv_max+1)
+	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
 	for (i in 1:n) {
 		
 		# reweight the clusters according to the is-loo weights
@@ -227,7 +230,8 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 		# summaries <- get_sub_summaries_old(chosen, 0:nv_max, d_train, d_test, p_sel, fam, intercept)
 		
 		for (k in 0:nv_max) {
-			loo[i,k+1] <- summaries[[k+1]]$lppd
+			loo_sub[i,k+1] <- summaries_sub[[k+1]]$lppd
+			mu_sub[i,k+1] <- summaries_sub[[k+1]]$mu
 		}
 		
 		print(sprintf('i = %d', i))
@@ -236,7 +240,7 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	
 	 
 	summ_sub <-	lapply(0:nv_max, function(k){
-	    list(lppd=loo[,k+1])
+	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1])
 	})
 	summaries <- list(sub=summ_sub)
 	
