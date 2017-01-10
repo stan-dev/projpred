@@ -15,6 +15,12 @@ log_weighted_mean_exp <- function(x, w) {
   max_x <- max(x)
   max_x + log(sum(exp(x - max_x)))
 }
+
+log_sum_exp <- function(x) {
+	max_x <- max(x)
+	max_x + log(sum(exp(x - max_x)))
+}
+
 # Updated version of the kfold function in the rstanarm-package
 
 #' @export
@@ -139,6 +145,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
     list(alpha = rep(0, NCOL(b)), beta = b)
   }
 }
+
 
 .varsel_errors <- function(e) {
   if(grepl('computationally singular', e$message)) {

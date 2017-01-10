@@ -26,7 +26,7 @@ double loss_approx(vec beta,    // coefficients
 
 /** Updates the regression coefficients and the intercept (unless excluded) based on the
     current quadratic approximation to the loss function. This is done via the 'soft-thresholding'
-    described by Friedman et. al (2009). Performs either one pass through the specified set
+    as described by Friedman et. al (2009). Performs either one pass through the specified set
     of varibles or iterates until convergence.
 */
 void coord_descent(	vec& beta, // regression coefficients
@@ -39,7 +39,7 @@ void coord_descent(	vec& beta, // regression coefficients
 					double& alpha, // elastic net mixing parameter
 					bool intercept, // whether to use intercept
 					std::set<int>& varind, // which coefficients are updated
-					std::set<int>& active_set, // active set
+					std::set<int>& active_set, // active set, may change if some variables enter or leave
 					bool until_convergence, // true = until convergence, false = one pass through varind
 					int& npasses, // counts total passes through the variables
 					double tol, // stop when change in the loss is smaller than this

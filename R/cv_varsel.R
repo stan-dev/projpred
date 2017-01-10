@@ -45,14 +45,14 @@
 #'
 
 #' @export
-cv_varsel <- function(fit, method = 'L1', cv_method = 'kfold', ns = 400L,
+cv_varsel <- function(fit, method = 'L1', cv_method = 'loo', ns = 400L,
                       nv_max = NULL, intercept = NULL, verbose = F,
                       K = NULL, k_fold = NULL, ...) {
   UseMethod('cv_varsel')
 }
 
 #' @export
-cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'kfold', ns = 400L,
+cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'loo', ns = 400L,
                               nv_max = NULL, intercept = NULL, verbose = F,
                               K = NULL, k_fold = NULL, ...) {
 
@@ -61,13 +61,16 @@ cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'kfold', ns = 400
   if(is.null(intercept)) intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
-  print(paste('Performing', method, 'search for the full model.'))
-  sel <- varsel(fit, NULL, method, ns, nv_max, intercept, verbose)$varsel
+  if (verbose)
+    print(paste('Performing', method, 'search for the full model.'))
+  sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, intercept=intercept, verbose=verbose)$varsel
 
   if(tolower(cv_method) == 'kfold') {
     sel_cv <- kfold_varsel(fit, method, ns, nv_max, intercept, verbose, vars, K, k_fold)
+  } else if (tolower(cv_method) == 'loo')  {
+    sel_cv <- loo_varsel(fit, method, ns, nv_max, intercept, verbose, vars)
   } else {
-    stop(sprintf('Unknown cross-valdation method: %s.', method))
+    stop(sprintf('Unknown cross-validation method: %s.', method))
   }
 
   # find out how many of cross-validated iterations select
@@ -169,3 +172,80 @@ kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
        summaries = list(sub = sub_cv, full = full_cv))
 }
 
+
+
+
+loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
+	
+	# TODO, ADD COMMENTS
+	vars <- .extract_vars(fit)
+	fam <- kl_helpers(family(fit))
+	mu <- fam$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
+	dis <- vars$dis
+	
+	# training data and the fit of the full model
+	d_train <- list(x = vars$x, y = vars$y, weights = vars$weights, offset = vars$offset)
+	p_full <- list(mu = mu, dis = dis) # DOES NOT HAVE WEIGHTS, need to add them if we want to project with this (clustering etc.)
+	
+	# compute the log-likelihood for the full model to obtain the LOO weights
+	loglik <- log_lik(fit)
+	lw <- psislw(-loglik)$lw_smooth
+	n <- dim(lw)[2]
+	
+	# perform the clustering for the full model
+	# TODO DUMMY SOLUTION, USE ONE CLUSTER
+	cl <- rep(1,n)
+	
+	# compute loo summaries for the full model
+	d_test <- d_train
+	loo_full <- apply(loglik+lw, 2, 'log_sum_exp')
+	mus <- fam$mu_fun(d_test$x, vars$alpha, vars$beta, d_test$offset, intercept)
+	mu_full <- rep(0,n)
+	for (i in 1:n)
+        mu_full[i] <- mus[i,] %*% exp(lw[,i])
+	
+	
+	
+	chosen_mat <- matrix(rep(0, n*nv_max), nrow=n)
+	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
+	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
+	for (i in 1:n) {
+		
+		# reweight the clusters according to the is-loo weights
+		p_sel <- get_p_clust(mu, dis, cl=cl, wsample=exp(lw[,i]))$p
+		
+		# perform selection
+		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
+		chosen_mat[i,] <- chosen
+		
+		# project onto the selected models and compute the difference between
+		# training and loo density for the left-out point
+		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept) # replace p_sel by p_full here?
+		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=1.0)
+		summaries_sub <- .get_sub_summaries(chosen, p_sel, d_test, p_sub, fam, intercept) # replace p_sel by p_full here?
+		
+		for (k in 0:nv_max) {
+			loo_sub[i,k+1] <- summaries_sub[[k+1]]$lppd
+			mu_sub[i,k+1] <- summaries_sub[[k+1]]$mu
+		}
+		
+		if (verbose && i %% round(n/10) == 0)
+		    print(sprintf('%d%% of LOOs done.', 10*i / round(n/10)))
+	}
+	if (verbose)
+		print('100% of LOOs done.')
+	
+	# put all the results together in the form required by cv_varsel
+	summ_sub <-	lapply(0:nv_max, function(k){
+	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1])
+	})
+	summ_full <- list(lppd=loo_full, mu=mu_full)
+	summaries <- list(sub=summ_sub, full=summ_full)
+	
+    chosen_cv <- lapply(1:n, function(i){ chosen_mat[i,] })
+    
+    d_test <- list(y=d_train$y, weights=d_train$weights, type='loo')
+    
+	return(list(chosen_cv=chosen_cv, summaries=summaries, d_test=d_test))
+	
+}

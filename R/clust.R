@@ -1,7 +1,7 @@
 #' Function(s) to perform the clustering over the samples
 #'
 
-get_p_clust <- function(mu, dis, nc, wsample=rep(1,dim(mu)[2]), cl = NULL) {
+get_p_clust <- function(mu, dis, nc=10, wsample=rep(1,dim(mu)[2]), cl = NULL) {
 
   # TODO
   # THIS FUNCTION WORKS CURRENTLY ONLY FOR GAUSSIAN FAMILY.
