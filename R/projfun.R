@@ -49,10 +49,10 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 }
 
 
-project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept) {
+project_nongaussian_old <- function(chosen, p_full, d_train, family_kl, intercept) {
 
     # perform the projection over samples
-    res <- sapply(1:ncol(p_full$mu), function(s_ind) {
+    res <- sapply(1:NCOL(p_full$mu), function(s_ind) {
         IRLS(list(mu = p_full$mu[, s_ind, drop = F], dis = p_full$dis[s_ind]),
              list(x = d_train$x[, chosen, drop = F], weights = d_train$weights,
                   offset = d_train$offset), family_kl, intercept)
@@ -68,18 +68,33 @@ project_nongaussian <- function(chosen, p_full, d_train, family_kl, intercept) {
 
 
 
-project_nongaussian_new <- function(ind, p_full, d_train, family_kl, intercept=TRUE,
+project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
 									regul=1e-12, coef_init=NULL) {
 	
 	# find the projected regression coefficients for each sample
-	res <- sapply(1:ncol(p_full$mu),
-				  function(s) {
-				  	glm_ridge(x = d_train$x[, ind, drop = F], y = p_full$mu[, s, drop = F],
-				  			  family=family_kl, lambda=regul, weights=d_train$weights,
-				  			  offset=d_train$offset, intercept=intercept) 
-				  })
+	xsub <- d_train$x[, ind, drop = F]
+	d <- NCOL(xsub)
+	S <- NCOL(p_full$mu)
+	beta <- matrix(0, nrow=d, ncol=S)
+	alpha <- rep(0, S)
+	for (s in 1:S) {
+		out <- glm_ridge(x = xsub, y = p_full$mu[, s, drop = F],
+						 family=family_kl, lambda=regul, weights=d_train$weights,
+						 offset=d_train$offset, intercept=intercept) 
+		
+		beta[,s] <- out$beta
+		alpha[s] <- out$beta0
+	}
 	
-	
+	# compute the dispersion parameters and kl-divergences, and combine the results
+	p_sub <- list()
+	mu <- family_kl$mu_fun(xsub, alpha, beta, d_train$offset, intercept=intercept)
+	p_sub$dis <- family_kl$dis_fun(p_full, d_train, list(mu=mu))
+	p_sub$kl <- weighted.mean(family_kl$kl(p_full, d_train, list(mu=mu)), p_full$weights)
+	p_sub$weights <- p_full$weights
+	p_sub$alpha <- alpha
+	p_sub$beta <- beta
+	return(p_sub)
 }
 
 

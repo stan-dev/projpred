@@ -181,12 +181,20 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 	} else if (!is.null(ns)) {
 		# subsample from the full model
 		s_ind <- round(seq(1, S, length.out  = ns))
-		p_ref <- list(mu = vars$mu[, s_ind], dis = vars$dis[s_ind], weights = rep(1/ns, ns))
+		p_ref <- list(mu = vars$mu[, s_ind, drop=F], dis = vars$dis[s_ind], weights = rep(1/ns, ns))
 	} else {
 		# use all the samples from the full model
 		p_ref <- list(mu = vars$mu, dis = vars$dis, weights = rep(1/S, S))
 	}
 	return(p_ref)
+}
+
+.get_traindata <- function(fit) {
+	#
+	# Returns the training data fetched from the fit object.
+	#
+	vars <- .extract_vars(fit)
+	return(list(x = vars$x, y = vars$y, weights = vars$weights, offset = vars$offset))
 }
 
 

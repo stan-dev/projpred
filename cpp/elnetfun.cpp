@@ -309,21 +309,22 @@ List glm_ridge_c(mat x,
         // weighted least squares solution
         beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
         
-        // line search: halve the step until decrement in deviance achieved
+        // line search: halve the step until a decrement in deviance achieved
         dbeta = 2*(beta_new - beta);
         while (true) {
             
             dbeta = 0.5*dbeta;
-            beta = beta + dbeta;
-            f = x*beta;
+            f = x*(beta+dbeta);
             obs = pseudo_obs(f);
             z = as<vec>(obs["z"]);
             w = as<vec>(obs["w"]);
             loss = obs["dev"];
+            // std::cout << "loss = " << loss << '\n';
             
             if (loss < loss_old)
                 break;
         }
+        beta = beta + dbeta;
         
         ++qau;
         
@@ -340,7 +341,7 @@ List glm_ridge_c(mat x,
         std::cout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
     
     if (intercept) 
-        return List::create(vec(beta.tail(D)), beta(0), qau);
+        return List::create(vec(beta.tail(D-1)), beta(0), qau);
     else 
         return List::create(beta, 0.0, qau);
     
