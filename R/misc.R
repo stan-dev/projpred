@@ -156,7 +156,10 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 
 .get_refdist <- function(fit, ns=NULL, nc=NULL) {
 	#
-	# if nc is specified, ns is ignored.
+	# Creates the reference distribution based on the fit-object, and the
+	# desired number of clusters (nc) or number of subsamples (ns). Returns
+	# a list with fields mu, dis and weights. If nc is specified, then
+	# clustering is used and ns is ignored.
 	#
 	
 	vars <- .extract_vars(fit)
