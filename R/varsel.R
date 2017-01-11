@@ -49,29 +49,32 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = 400L,
 }
 
 #' @export
-varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = 400L,
+varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = 400L, nc=10,
                            nv_max = NULL, intercept = NULL, verbose = F, ...) {
   .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
   family_kl <- kl_helpers(family(fit))
-  if(ns > ncol(vars$beta)) {
-    warning(paste0('Setting the number of samples to ', ncol(vars$beta),'.'))
-    ns <- ncol(vars$beta)
+  
+  if(ns > NCOL(vars$mu)) {
+    warning(paste0('Setting the number of samples to ', NCOL(vars$mu),'.'))
+    ns <- NCOL(vars$mu)
   }
 
   if(is.null(intercept)) intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
   e <- .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
+  # p_full <- .get_refdist(fit, ns=ns, nc=nc) # FINISH THIS
+  p_full <- e$p_full
+  
 
-  chosen <- select(method, e$p_full, e$d_train, family_kl, intercept, nv_max,
-                   verbose)
+  chosen <- select(method, p_full, e$d_train, family_kl, intercept, nv_max, verbose)
 
-  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
+  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full,
                           e$d_train, intercept)
-  sub <- .get_sub_summaries(chosen, e$p_full, e$d_test, p_sub, family_kl,
+  sub <- .get_sub_summaries(chosen, p_full, e$d_test, p_sub, family_kl,
                              intercept)
-  full <- .get_full_summaries(e$p_full, e$d_test, e$coef_full, family_kl,
+  full <- .get_full_summaries(p_full, e$d_test, e$coef_full, family_kl,
                               intercept)
   d_type <- ifelse(is.null(d_test), 'train', 'test')
 
