@@ -76,34 +76,49 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 # from rstanarm
 `%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
 
-# extract all important 'information' from a stanreg object for variable selection
+# extract all important information from the fit object for variable selection
 .extract_vars <- function(fit) {
-  e <- extract(fit$stanfit)
-
-  # undo the random permutation to make results reproducible
-  perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
-                       fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
-  res <- list(
-    x = unname(get_x(fit)),
-    alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv],
-    beta = t(unname(drop(e$beta)))[, perm_inv],
-    dis = unname(e[['dispersion']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
-    offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
-    intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
-
-  res$x <- res$x[, as.logical(attr(res$x, 'assign'))]
-  attr(res$x, 'assign') <- NULL
-
-  y <- unname(get_y(fit))
-  if(NCOL(y) == 1) {
-    res$weights <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
-    res$y <- y
-  } else {
-    res$weights <- rowSums(y)
-    res$y <- y[, 1] / res$weights
-  }
-
-  res
+	
+	if (!is.null(fit$stanfit)) {
+		
+		# the fit is an rstanarm-object
+		e <- extract(fit$stanfit)
+		
+		# family and the predictor matrix x
+		fam <- kl_helpers(family(fit))
+		x <- unname(get_x(fit))
+		x <- x[, as.logical(attr(x, 'assign'))]
+		attr(x, 'assign') <- NULL
+		
+		# undo the random permutation to make results reproducible
+		perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
+							 fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
+		
+		res <- list(
+			x = x,
+			alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv], # EVENTUALLY NEED TO GET RID OFF THIS
+			beta = t(unname(drop(e$beta)))[, perm_inv],                              # EVENTUALLY NEED TO GET RID OFF THIS
+			dis = unname(e[['dispersion']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
+			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
+			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
+		
+		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset, res$intercept)
+		
+		y <- unname(get_y(fit))
+		if(NCOL(y) == 1) {
+			res$weights <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
+			res$y <- y
+		} else {
+			res$weights <- rowSums(y)
+			res$y <- y[, 1] / res$weights
+		}
+		return(res)
+		
+	} else {
+		
+		# not and rstanarm-object, so look for the relevant fields
+		stop('Other than rstanarm-fits are currently not supported, but will be in the near future.')
+	}
 }
 
 .get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
@@ -131,12 +146,46 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
   # cluster the samples of the full model if clustering is wanted
   # for the variable selection
   do_clust <- F
-  clust <- if(do_clust) get_p_clust(mu, vars$dis, ns) else NULL
+  clust <- if(do_clust) get_p_clust(family_kl, mu, vars$dis, ns) else NULL
   if(do_clust) p_full <- clust
 
   list(d_train = d_train, d_test = d_test,
        p_full = p_full, coef_full = coef_full)
 }
+
+
+.get_refdist <- function(fit, ns=NULL, nc=NULL) {
+	#
+	# if nc is specified, ns is ignored.
+	#
+	
+	vars <- .extract_vars(fit)
+	fam <- vars$fam
+	
+	n <- NROW(vars$x) # number of data points
+	S <- NCOL(vars$mu) # sample size in the full model
+	
+	if (!is.null(nc)) {
+		# use clustering (ignore ns argument)
+		if (nc == 1) {
+			# special case, only one cluster
+			cl <- rep(1, n)
+			p_ref <- get_p_clust(fam, vars$mu, vars$dis, cl=cl)$p
+		} else {
+			# several clusters
+			p_ref <- get_p_clust(fam, vars$mu, vars$dis, nc=nc)$p
+		}
+	} else if (!is.null(ns)) {
+		# subsample from the full model
+		s_ind <- round(seq(1, S, length.out  = ns))
+		p_ref <- list(mu = vars$mu[, s_ind], dis = vars$dis[s_ind], weights = rep(1/ns, ns))
+	} else {
+		# use all the samples from the full model
+		p_ref <- list(mu = vars$mu, dis = vars$dis, weights = rep(1/S, S))
+	}
+	return(p_ref)
+}
+
 
 .split_coef <- function(b, intercept) {
   if(intercept) {

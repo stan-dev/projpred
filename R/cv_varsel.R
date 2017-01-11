@@ -212,7 +212,7 @@ loo_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars) {
 	for (i in 1:n) {
 		
 		# reweight the clusters according to the is-loo weights
-		p_sel <- get_p_clust(mu, dis, cl=cl, wsample=exp(lw[,i]))$p
+		p_sel <- get_p_clust(fam, mu, dis, cl=cl, wsample=exp(lw[,i]))$p
 		
 		# perform selection
 		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)

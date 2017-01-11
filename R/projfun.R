@@ -79,6 +79,7 @@ project_nongaussian_new <- function(ind, p_full, d_train, family_kl, intercept=T
 				  			  offset=d_train$offset, intercept=intercept) 
 				  })
 	
+	
 }
 
 
@@ -117,6 +118,4 @@ project_nongaussian_new <- function(ind, p_full, d_train, family_kl, intercept=T
 }
 
 
-.get_subpred <- function(psub) {
 
-}
