@@ -6,12 +6,13 @@
 .get_sub_summaries <- function(chosen, p_full, d_test, p_sub, family_kl, intercept) {
 
   res <- lapply(p_sub, function(p_sub) {
+  	ind <- 1:NROW(p_sub$beta)
     if(NROW(p_sub$beta) == 0) {
       xt <- matrix(0, nrow = length(d_test$weights), ncol = 0)
     } else if(!is.matrix(d_test$x)) {
-      xt <- matrix(d_test$x[inds], nrow = 1)
+      xt <- matrix(d_test$x[ind], nrow = 1)
     } else {
-      xt <- d_test$x[, chosen[1:NROW(p_sub$beta)], drop = F]
+      xt <- d_test$x[, chosen[ind], drop = F]
     }
 
     mu <- family_kl$mu_fun(xt, p_sub$alpha, p_sub$beta, d_test$offset, intercept)
@@ -28,7 +29,7 @@
 # mu and dis, the full model and the data.
 .weighted_summary_means <- function(d_test, family_kl, p_full, mu, dis) {
 
-  loglik <- family_kl$ll_fun(mu, dis, d_test$y)
+  loglik <- family_kl$ll_fun(mu, dis, matrix(d_test$y,nrow=NROW(mu)))
   if (length(loglik) == 1) {
       # one observation, one sample
       list(mu = mu, lppd = loglik)

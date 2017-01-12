@@ -49,39 +49,55 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = 400L,
 }
 
 #' @export
-varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = 400L, nc=10,
+varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
                            nv_max = NULL, intercept = NULL, verbose = F, ...) {
+	
+  # TODO, IMPLEMENT SENSIBILITY CHECKS FOR NS AND NC (INTO MISC.R) AND CALL THEM
+  # TODO, FIGURE OUT HOW TO HANDLE THE TEST PREDICTIONS FOR FULL MODEL WHEN COEF_FULL ARE NOT AVAILABLE
+	
+  if (is.null(ns) && is.null(nc))
+  	# by default, use one cluster for selection
+  	nc <- 1
+  
   .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
   family_kl <- kl_helpers(family(fit))
   
-  if(ns > NCOL(vars$mu)) {
-    warning(paste0('Setting the number of samples to ', NCOL(vars$mu),'.'))
-    ns <- NCOL(vars$mu)
-  }
-
   if(is.null(intercept)) intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
-  e <- .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
-  # p_full <- .get_refdist(fit, ns=ns, nc=nc) # FINISH THIS
-  p_full <- e$p_full
+  # training and test data
+  # e <- .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
+  d_train <- .get_traindata(fit)
+  if (is.null(d_test)) {
+  	d_test <- d_train
+  	d_type <- 'train'
+  } else {
+  	d_test <- .fill_offset_and_weights(d_test)
+  	d_type <- 'test'
+  }
   
+  # the reference distribution (or fit) used for selection
+  p_full <- .get_refdist(fit, ns=ns, nc=nc)
 
-  chosen <- select(method, p_full, e$d_train, family_kl, intercept, nv_max, verbose)
+  # perform the selection
+  chosen <- select(method, p_full, d_train, family_kl, intercept, nv_max, verbose)
 
-  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full,
-                          e$d_train, intercept)
-  sub <- .get_sub_summaries(chosen, p_full, e$d_test, p_sub, family_kl,
-                             intercept)
-  full <- .get_full_summaries(p_full, e$d_test, e$coef_full, family_kl,
-                              intercept)
-  d_type <- ifelse(is.null(d_test), 'train', 'test')
+  # statistics for the selected submodels
+  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full, d_train, intercept)
+  sub <- .get_sub_summaries(chosen, p_full, d_test, p_sub, family_kl, intercept)
+  
+  # TODO, FIGURE OUT HOW TO HANDLE THE TEST PREDICTIONS FOR FULL MODEL WHEN COEF_FULL ARE NOT AVAILABLE
+  full <- NULL
+  # full <- .get_full_summaries(p_full, d_test, list(alpha=vars$alpha, beta=vars$beta), family_kl, intercept)
 
+  # ensure that after the new selection, there are no old projections in the fit structure
   fit$proj <- NULL
+  
+  # store the relevant fields into fit
   fit$varsel <- list(chosen = chosen,
                      kl = sapply(p_sub, function(x) x$kl),
-                     d_test = c(e$d_test[c('y','weights')], type = d_type),
+                     d_test = c(d_test[c('y','weights')], type = d_type),
                      summaries = list(sub = sub, full = full),
                      family_kl = family_kl)
 

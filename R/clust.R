@@ -3,27 +3,27 @@
 
 get_p_clust <- function(family_kl, mu, dis, nc=10, wsample=rep(1,dim(mu)[2]), cl = NULL) {
 
-  # TODO
+  # TODO, add comments
   # THIS FUNCTION WORKS CURRENTLY ONLY FOR GAUSSIAN FAMILY.
   # SHOULD TAKE FAMILY AS AN INPUT AND ACT ACCORDINGLY
 
   # cluster the mu-samples if no clustering provided
   cl <- cl %ORifNULL% kmeans(t(mu), nc, iter.max = 50)
 
-  if (typeof(cl)=='double') {
+  if (typeof(cl)=='double' || typeof(cl)=='integer') {
     # only cluster-indices provided, so create the list and put them there
     cl <- list(cluster=cl)
   }
 
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
-  nc <- max(cl$cluster) # number of clusters (assumes labeling 1,...,nc)
+  nc <- max(cl$cluster, na.rm=T) # number of clusters (assumes labeling 1,...,nc)
   centers <- matrix(0, nrow=nc, ncol=dim(mu)[1])
   wcluster <- rep(0,nc) # cluster weights
   for (j in 1:nc) {
     ind <- which(cl$cluster==j)
     ws <- wsample[ind]/sum(wsample[ind]) # normalized weights within the cluster
-    centers[j,] <- mu[,ind] %*% ws
+    centers[j,] <- mu[,ind,drop=F] %*% ws
     wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
   }
   cl$centers <- centers
@@ -35,8 +35,8 @@ get_p_clust <- function(family_kl, mu, dis, nc=10, wsample=rep(1,dim(mu)[2]), cl
                     ind <- which(cl$cluster== cl_ind)
                     ws <- wsample[ind]/sum(wsample[ind]) # normalized weights within the cluster
                     if (length(ind) > 1) {
-                      mu_mean <- mu[,ind] %*% ws
-                      mu_var <- mu[,ind]^2 %*% ws - mu_mean^2
+                      mu_mean <- mu[,ind,drop=F] %*% ws
+                      mu_var <- mu[,ind,drop=F]^2 %*% ws - mu_mean^2
                       sqrt( sum(ws*dis[ind]^2) + mean(mu_var) )
                     } else
                       sqrt(sum(ws*dis[ind]^2))
@@ -45,6 +45,7 @@ get_p_clust <- function(family_kl, mu, dis, nc=10, wsample=rep(1,dim(mu)[2]), cl
   # combine the results
   p <- list(mu = unname(t(cl$centers)),
             dis = disps,
-            weights = wcluster)
-  list(cl = cl, p = p)
+            weights = wcluster,
+  		  	cl = cl$cluster)
+  return(p)
 }

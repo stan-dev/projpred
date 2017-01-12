@@ -150,7 +150,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
   if(do_clust) p_full <- clust
 
   list(d_train = d_train, d_test = d_test,
-       p_full = p_full, coef_full = coef_full)
+       coef_full = coef_full)
 }
 
 
@@ -173,18 +173,21 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 		if (nc == 1) {
 			# special case, only one cluster
 			cl <- rep(1, n)
-			p_ref <- get_p_clust(fam, vars$mu, vars$dis, cl=cl)$p
+			p_ref <- get_p_clust(fam, vars$mu, vars$dis, cl=cl)
 		} else {
 			# several clusters
-			p_ref <- get_p_clust(fam, vars$mu, vars$dis, nc=nc)$p
+			p_ref <- get_p_clust(fam, vars$mu, vars$dis, nc=nc)
 		}
 	} else if (!is.null(ns)) {
 		# subsample from the full model
+		# would it be safer to actually randomly draw the subsample?
 		s_ind <- round(seq(1, S, length.out  = ns))
-		p_ref <- list(mu = vars$mu[, s_ind, drop=F], dis = vars$dis[s_ind], weights = rep(1/ns, ns))
+		cl <- rep(NA, S)
+		cl[s_ind] <- c(1:ns)
+		p_ref <- list(mu = vars$mu[, s_ind, drop=F], dis = vars$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
 	} else {
 		# use all the samples from the full model
-		p_ref <- list(mu = vars$mu, dis = vars$dis, weights = rep(1/S, S))
+		p_ref <- list(mu = vars$mu, dis = vars$dis, weights = rep(1/S, S), cl=c(1:S))
 	}
 	return(p_ref)
 }
@@ -196,6 +199,33 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 	vars <- .extract_vars(fit)
 	return(list(x = vars$x, y = vars$y, weights = vars$weights, offset = vars$offset))
 }
+
+.fill_offset_and_weights <- function(data) {
+	#
+	# Simply checks whether the offset and weight fields exist in data structure,
+	# fills them in if needed.
+	#
+	if(is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
+	if(is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
+	return(data)
+}
+
+# .validate_ns_nc <- function(nc, ns, nc_max, ns_max) {
+# 	if (is.null(nc) && is.null(ns))
+# 		stop('Either nc or ns must be non-null.')
+# 	if (!is.null(nc)) {
+# 		if (nc < 0)
+# 			stop('nc must be > 0.')
+# 		if (nc > 100) {
+# 			
+# 		}
+# 	} else {
+# 		if(ns > NCOL(vars$mu)) {
+# warning(paste0('Setting the number of samples to ', NCOL(vars$mu),'.'))
+# ns <- NCOL(vars$mu)
+# }
+# 	}
+# }
 
 
 .split_coef <- function(b, intercept) {
