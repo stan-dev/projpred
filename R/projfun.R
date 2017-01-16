@@ -6,7 +6,7 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
     x <- d_train$x
     mu <- p_full$mu
     dis <- p_full$dis
-    if ("wobs" %in% names(d_train))
+    if ("weights" %in% names(d_train))
         wobs <- d_train$weights
     else
         wobs <- rep(1.0, NROW(mu))

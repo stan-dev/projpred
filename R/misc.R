@@ -149,7 +149,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
   clust <- if(do_clust) get_p_clust(family_kl, mu, vars$dis, ns) else NULL
   if(do_clust) p_full <- clust
 
-  list(d_train = d_train, d_test = d_test,
+  list(d_train = d_train, d_test = d_test, p_full=p_full,
        coef_full = coef_full)
 }
 

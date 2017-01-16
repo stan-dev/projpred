@@ -67,7 +67,6 @@ varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NU
   if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
 
   # training and test data
-  # e <- .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
   d_train <- .get_traindata(fit)
   if (is.null(d_test)) {
   	d_test <- d_train
