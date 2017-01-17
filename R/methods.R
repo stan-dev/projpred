@@ -2,7 +2,7 @@
 # plot variable selection statistics etc.
 
 #' @export
-proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, nv = NULL, ...) {
+proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, nv = NULL, integrated = FALSE, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
     stop(paste('The stanreg object doesn\'t contain information about the',
@@ -27,13 +27,20 @@ proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NUL
 
   projs <- Filter(function(x) NROW(x$beta) %in% nv, object$proj$p_sub)
   names(projs) <- nv
-
+  
   mapply(function(proj, nv) {
     ch <- object$varsel$chosen[min(nv,1):nv]
     mu <- t(family_kl$mu_fun(data$x[, ch, drop = F],
                              proj$alpha,
                              proj$beta, data$offset, object$proj$intercept))
-    if(transform) mu else family_kl$linkfun(mu)
+    if(transform)
+    	qty <- mu
+    else
+    	qty <- family_kl$linkfun(mu)
+    if (integrated)
+    	return(as.vector( proj$weights %*% qty ))
+    else
+    	return( qty )
   }, projs, nv, SIMPLIFY = F)
 
 }
