@@ -58,6 +58,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 
 # check if the fit object is suitable for variable selection
 .validate_for_varsel <- function(fit) {
+  
   if(!is.stanreg(fit))
     stop('Object is not a stanreg object')
 
@@ -70,7 +71,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
                 paste(families, collapse = ', '), '.'))
 
   if(NCOL(get_x(fit)) < 4)
-    stop('Not enought explanatory variables for variable selection')
+    stop('Not enough explanatory variables for variable selection')
 }
 
 # from rstanarm
@@ -95,6 +96,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 							 fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
 		
 		res <- list(
+			fam = fam,
 			x = x,
 			alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv], # EVENTUALLY NEED TO GET RID OFF THIS
 			beta = t(unname(drop(e$beta)))[, perm_inv],                              # EVENTUALLY NEED TO GET RID OFF THIS
