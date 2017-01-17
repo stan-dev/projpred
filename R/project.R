@@ -4,13 +4,9 @@ project <- function(object, nv, ...) {
 }
 
 #' @export
-project.stanreg <- function(object, nv, nc = NULL, ns = NULL, intercept = NULL, ...) {
+project.stanreg <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept = NULL, ...) {
 	
 	# TODO, IMPLEMENT THE PROJECTION WITH AN ARBITRARY VARIABLE COMBINATION
-	
-	if (is.null(ns) && is.null(nc))
-		# by default project with clusters
-		nc <- 50
 	
 	if(is.null(nv)) stop('nv not provided')
 	.validate_for_varsel(object)
@@ -18,6 +14,14 @@ project.stanreg <- function(object, nv, nc = NULL, ns = NULL, intercept = NULL, 
 		stop(paste('The stanreg object doesn\'t contain information about the ',
 					'variable selection. Run the variable selection first.'))
 
+	if (is.null(ns) && is.null(nc))
+		# by default project with clusters
+		nc <- 50
+	if (is.null(nv))
+		# by default, run the projection up to the maximum number of variables
+		# specified in the variable selection
+		nv <- c(1:length(object$varsel$chosen))
+	
 	vars <- .extract_vars(object)
 	# if(ns > ncol(vars$beta)) {
 	# 	warning(paste0('Setting the number of samples to ', ncol(vars$beta),'.'))
