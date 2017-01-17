@@ -8,7 +8,6 @@ project.stanreg <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept =
 	
 	# TODO, IMPLEMENT THE PROJECTION WITH AN ARBITRARY VARIABLE COMBINATION
 	
-	if(is.null(nv)) stop('nv not provided')
 	.validate_for_varsel(object)
 	if(!('varsel' %in% names(object)))
 		stop(paste('The stanreg object doesn\'t contain information about the ',
@@ -20,7 +19,7 @@ project.stanreg <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept =
 	if (is.null(nv))
 		# by default, run the projection up to the maximum number of variables
 		# specified in the variable selection
-		nv <- c(1:length(object$varsel$chosen))
+		nv <- c(0:length(object$varsel$chosen))
 	
 	vars <- .extract_vars(object)
 	# if(ns > ncol(vars$beta)) {
