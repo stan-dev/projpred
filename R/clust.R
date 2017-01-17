@@ -32,7 +32,7 @@ get_p_clust <- function(family_kl, mu, dis, nc=10, wsample=rep(1,dim(mu)[2]), cl
   # compute the dispersion parameters for each cluster
   disps <- sapply(1:nc,
                   function(cl_ind) {
-                    ind <- which(cl$cluster== cl_ind)
+                    ind <- which(cl$cluster == cl_ind)
                     ws <- wsample[ind]/sum(wsample[ind]) # normalized weights within the cluster
                     if (length(ind) > 1) {
                       mu_mean <- mu[,ind,drop=F] %*% ws

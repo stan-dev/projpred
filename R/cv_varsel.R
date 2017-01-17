@@ -59,6 +59,7 @@ cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL,
 	if (is.null(ns) && is.null(nc))
 		# by default, use one cluster for selection
 		nc <- 1
+	
 	.validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
 	if(is.null(intercept)) intercept <- vars$intercept
@@ -69,7 +70,7 @@ cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL,
 	sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, intercept=intercept, verbose=verbose)$varsel
 
 	if(tolower(cv_method) == 'kfold') {
-		sel_cv <- kfold_varsel(fit, method, ns, nv_max, intercept, verbose, vars, K, k_fold)
+		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, intercept, verbose, vars, K, k_fold)
 	} else if (tolower(cv_method) == 'loo')  {
 		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, intercept, verbose)
 	} else {
@@ -89,7 +90,7 @@ cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL,
 	fit
 }
 
-kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
+kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
                          K, k_fold) {
   # returns:
   #  - list of crossvalidated paths (chosen_cv),
@@ -129,7 +130,12 @@ kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
   # List of K elements, each containing d_train, p_full, etc. corresponding
   # to the corresponding fold.
   e_cv <- mapply(function(vars, d_test) {
-    .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
+    # .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
+  	d_train <- .get_traindata(vars)
+  	d_test <- d_test
+  	p_full <- .get_refdist(vars, ns, nc)
+  	coef_full <- list(alpha = vars$alpha, beta = vars$beta)
+  	list(d_train=d_train, d_test=d_test, p_full=p_full, coef_full=coef_full)
   }, vars_cv, d_test, SIMPLIFY = F)
 
   # List of K elements, each a list of the variables selected for the
@@ -179,8 +185,10 @@ kfold_varsel <- function(fit, method, ns, nv_max, intercept, verbose, vars,
 
 
 loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
-	
-	# TODO, ADD COMMENTS
+	#
+	# Performs the validation of the searching process using LOO.
+	#
+	#
 	vars <- .extract_vars(fit)
 	fam <- kl_helpers(family(fit))
 	mu <- vars$mu #fam$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)

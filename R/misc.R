@@ -98,7 +98,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 			x = x,
 			alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv], # EVENTUALLY NEED TO GET RID OFF THIS
 			beta = t(unname(drop(e$beta)))[, perm_inv],                              # EVENTUALLY NEED TO GET RID OFF THIS
-			dis = unname(e[['dispersion']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
+			dis = unname(e[['aux']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
 		
@@ -161,10 +161,18 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 	# a list with fields mu, dis and weights. If nc is specified, then
 	# clustering is used and ns is ignored.
 	#
+	# It is possible to use this function by passing .extract_vars(fit) as
+	# an argument in place of fit.
+	#
 	
-	vars <- .extract_vars(fit)
+	if ( all(c('fam', 'x', 'mu', 'dis') %in% names(fit)) )
+		# all the relevant fields contained in the given structure
+		vars <- fit
+	else
+		# fetch the relevant info from the fit object
+		vars <- .extract_vars(fit)
+	
 	fam <- vars$fam
-	
 	n <- NROW(vars$x) # number of data points
 	S <- NCOL(vars$mu) # sample size in the full model
 	
@@ -195,8 +203,16 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 .get_traindata <- function(fit) {
 	#
 	# Returns the training data fetched from the fit object.
+	# It is possible to use this function by passing .extract_vars(fit) as
+	# an argument in place of fit.
 	#
-	vars <- .extract_vars(fit)
+	if ( all(c('x', 'y', 'weights', 'offset') %in% names(fit)) )
+		# all the relevant fields contained in the given structure
+		vars <- fit
+	else
+		# fetch the relevant info from the fit object
+		vars <- .extract_vars(fit)
+	
 	return(list(x = vars$x, y = vars$y, weights = vars$weights, offset = vars$offset))
 }
 
