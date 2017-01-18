@@ -5,7 +5,7 @@
 proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, nv = NULL, integrated = FALSE, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
-    stop(paste('The stanreg object doesn\'t contain information about the',
+    stop(paste('The provided object doesn\'t contain information about the',
                'projection. Run the projection first.'))
 
   family_kl <- kl_helpers(family(object))
@@ -49,7 +49,7 @@ proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NUL
 proj_coef <- function(object, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
-    stop(paste('The stanreg object doesn\'t contain information about the projection.',
+    stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
 
   fun <- function(b, w) drop(b%*%w)
@@ -60,7 +60,7 @@ proj_coef <- function(object, ...) {
 proj_se <- function(object, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
-    stop(paste('The stanreg object doesn\'t contain information about the projection.',
+    stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
   # weighted standard deviation (using cluster weights)
   fun <- function(b, w) {
@@ -92,7 +92,7 @@ proj_sigma <- function(object, ...) {
   # only gaussian family supported
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
-    stop(paste('The stanreg object doesn\'t contain information about the projection.',
+    stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
   if(!(family(object)$family %in% 'gaussian'))
     stop('Sigma available only for the gaussian family.')
@@ -108,7 +108,7 @@ proj_sigma <- function(object, ...) {
 varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
                         n_boot = 1000, alpha = 0.05) {
   if(!('varsel' %in% names(x)))
-    stop(paste('The stanreg object doesn\'t contain information about the',
+    stop(paste('The provided object doesn\'t contain information about the',
                'variable selection. Run the variable selection first!'))
 
   stats <- subset(.bootstrap_stats(x$varsel, n_boot, alpha),
@@ -137,7 +137,7 @@ varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
 #' @export
 varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
   if(!('varsel' %in% names(object)))
-    stop(paste('The stanreg object doesn\'t contain information about the',
+    stop(paste('The provided object doesn\'t contain information about the',
                'variable selection. Run the variable selection first!'))
 
   stats <- subset(.bootstrap_stats(object$varsel, NULL, 0.5),
