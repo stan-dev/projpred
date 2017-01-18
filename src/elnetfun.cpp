@@ -121,9 +121,9 @@ void coord_descent(	vec& beta, // regression coefficients
     loss function for a given vector of latent values (see elnetfun.R).
  */
 // [[Rcpp::export]]
-List glm_elnet_c(mat x, // input matrix
+List glm_elnet_c(arma::mat x, // input matrix
                Function pseudo_obs, // R-function returning the pseudo-data based on the quadratic approximation
-               vec lambda, // grid for the regularization parameter
+               arma::vec lambda, // grid for the regularization parameter
                double alpha, // elastic net mixing parameter
                bool intercept, // whether to use intercept
                double thresh, // threshold for determining the convergence
@@ -261,7 +261,7 @@ List glm_elnet_c(mat x, // input matrix
 
 
 // [[Rcpp::export]]
-List glm_ridge_c(mat x,
+List glm_ridge_c(arma::mat x,
                  Function pseudo_obs,
                  double lambda,
                  bool intercept,
@@ -347,8 +347,6 @@ List glm_ridge_c(mat x,
     
     
 }
-
-
 
 
 
