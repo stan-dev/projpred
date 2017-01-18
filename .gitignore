@@ -1,4 +1,6 @@
 *~
+*.o
+*.so
 *.Rproj
 .Rhistory
 .DS_Store
