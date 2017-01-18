@@ -363,5 +363,3 @@ List glm_ridge_c(arma::mat x,
 
 
 
-
-
