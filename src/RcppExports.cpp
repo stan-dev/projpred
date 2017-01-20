@@ -27,8 +27,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // glm_ridge_c
-List glm_ridge_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, double thresh, int qa_updates_max);
-RcppExport SEXP glmproj_glm_ridge_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP) {
+List glm_ridge_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, double thresh, int qa_updates_max, int ls_iter_max);
+RcppExport SEXP glmproj_glm_ridge_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP ls_iter_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -38,7 +38,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type intercept(interceptSEXP);
     Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
     Rcpp::traits::input_parameter< int >::type qa_updates_max(qa_updates_maxSEXP);
-    rcpp_result_gen = Rcpp::wrap(glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max));
+    Rcpp::traits::input_parameter< int >::type ls_iter_max(ls_iter_maxSEXP);
+    rcpp_result_gen = Rcpp::wrap(glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max));
     return rcpp_result_gen;
 END_RCPP
 }

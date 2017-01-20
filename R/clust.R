@@ -20,9 +20,13 @@ get_p_clust <- function(family_kl, mu, dis, nc=10, wsample=rep(1,dim(mu)[2]), cl
   nc <- max(cl$cluster, na.rm=T) # number of clusters (assumes labeling 1,...,nc)
   centers <- matrix(0, nrow=nc, ncol=dim(mu)[1])
   wcluster <- rep(0,nc) # cluster weights
+  eps <- 1e-10
   for (j in 1:nc) {
+  	# compute normalized weights within the cluster, 1-eps is for numerical stability
     ind <- which(cl$cluster==j)
-    ws <- wsample[ind]/sum(wsample[ind]) # normalized weights within the cluster
+    ws <- wsample[ind]/sum(wsample[ind])*(1-eps)
+    
+    # cluster centers and their weights
     centers[j,] <- mu[,ind,drop=F] %*% ws
     wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
   }
@@ -31,9 +35,12 @@ get_p_clust <- function(family_kl, mu, dis, nc=10, wsample=rep(1,dim(mu)[2]), cl
 
   # compute the dispersion parameters for each cluster
   disps <- sapply(1:nc,
-                  function(cl_ind) {
-                    ind <- which(cl$cluster == cl_ind)
-                    ws <- wsample[ind]/sum(wsample[ind]) # normalized weights within the cluster
+                  function(j) {
+                  	
+                  	# compute normalized weights within the cluster, 1-eps is for numerical stability
+                    ind <- which(cl$cluster == j)
+                    ws <- wsample[ind]/sum(wsample[ind])*(1-eps)
+                    
                     if (length(ind) > 1) {
                       mu_mean <- mu[,ind,drop=F] %*% ws
                       mu_var <- mu[,ind,drop=F]^2 %*% ws - mu_mean^2

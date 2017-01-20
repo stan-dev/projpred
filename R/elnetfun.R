@@ -16,7 +16,7 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
     dmu_df <- family$mu.eta(f)
     z <- (f - offset) + (y - mu)/dmu_df
     w <- (weights * dmu_df^2)/family$variance(mu)
-    dev <- sum(family$dev.resids(y, mu, weights))
+    dev <- sum( family$dev.resids(y, mu, weights) )
     return(list(z=z, w=w, dev=dev))
 }
 
@@ -52,6 +52,10 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 	# Computes the whole regularization path.
 	# Does not handle any dispersion parameters.
 	#
+	np <- dim(x)
+	if (is.null(np) || (np[2] <= 1)) 
+		stop("x should be a matrix with 2 or more columns")
+	
 	if (is.null(lambda))
 		lambda <- lambda_grid(x,y,family,alpha,nlam=nlambda,eps=lambda_min_ratio)
 	
@@ -74,13 +78,19 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
     # Fits GLM with ridge penalty on the regression coefficients.
     # Does not handle any dispersion parameters.
     #
-    x <- as.matrix(x)
-    if (is.null(weights))
-        weights <- 1.0
-    if (is.null(offset))
-        offset <- 0.0
-    pseudo_obs <- function(f) {return(pseudo_data(f,y,family,offset=offset,weights=weights))}
-    out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max)
+	if (length(x) == 0 && !intercept)
+		# null model with no predictors and no intercept
+		out <- list( beta=matrix(integer(length=0)), beta0=0, qa_updates=0 )
+	else {
+		# normal case
+		x <- as.matrix(x)
+		if (is.null(weights))
+			weights <- 1.0
+		if (is.null(offset))
+			offset <- 0.0
+		pseudo_obs <- function(f) {return(pseudo_data(f,y,family,offset=offset,weights=weights))}
+		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max)
+	}
     return(list( beta=out[[1]], beta0=out[[2]], qa_updates=out[[3]] ))
 }
 

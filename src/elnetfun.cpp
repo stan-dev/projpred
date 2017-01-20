@@ -266,7 +266,8 @@ List glm_ridge_c(arma::mat x,
                  double lambda,
                  bool intercept,
                  double thresh,
-                 int qa_updates_max)
+                 int qa_updates_max,
+                 int ls_iter_max=100)
 {
     
     if (intercept)
@@ -277,6 +278,7 @@ List glm_ridge_c(arma::mat x,
     int D = x.n_cols;
     double alpha = 0;
     int qau; // counts quadratic approximation updates
+    int ls_iter; // counts linesearch iterations
     int j;
     
     // initialization
@@ -311,7 +313,8 @@ List glm_ridge_c(arma::mat x,
         
         // line search: halve the step until a decrement in deviance achieved
         dbeta = 2*(beta_new - beta);
-        while (true) {
+        ls_iter = 0;
+        while (ls_iter < ls_iter_max) {
             
             dbeta = 0.5*dbeta;
             f = x*(beta+dbeta);
@@ -319,13 +322,20 @@ List glm_ridge_c(arma::mat x,
             z = as<vec>(obs["z"]);
             w = as<vec>(obs["w"]);
             loss = obs["dev"];
-            // std::cout << "loss = " << loss << '\n';
+            loss = loss + lambda*sum(square(beta+dbeta));
+            ++ls_iter;
             
+            if (isnan(loss)) 
+            	throw std::runtime_error( "glm_ridge error: Deviance became NaN. The problem is probably ill-behaved." );
+            	
             if (loss < loss_old)
                 break;
         }
         beta = beta + dbeta;
-        
+
+        if (ls_iter == ls_iter_max) {
+        	std::cout << "glm_ridge warning: maximum number of line search iterations reached. The optimization is likely to be ill-behaved.\n";
+        }
         ++qau;
         
         // check if converged
@@ -337,6 +347,7 @@ List glm_ridge_c(arma::mat x,
             loss_old = loss;
         }
     }
+    
     if (qau == qa_updates_max && qa_updates_max > 1)
         std::cout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
     
@@ -344,7 +355,6 @@ List glm_ridge_c(arma::mat x,
         return List::create(vec(beta.tail(D-1)), beta(0), qau);
     else 
         return List::create(beta, 0.0, qau);
-    
     
 }
 
