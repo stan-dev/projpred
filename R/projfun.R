@@ -52,6 +52,8 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 
 project_nongaussian_old <- function(chosen, p_full, d_train, family_kl, intercept) {
 
+	# This function is deprecated and not used anymore...
+	
     # perform the projection over samples
     res <- sapply(1:NCOL(p_full$mu), function(s_ind) {
         IRLS(list(mu = p_full$mu[, s_ind, drop = F], dis = p_full$dis[s_ind]),
@@ -70,7 +72,7 @@ project_nongaussian_old <- function(chosen, p_full, d_train, family_kl, intercep
 
 
 project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
-									regul=1e-12, coef_init=NULL) {
+									regul=1e-9, coef_init=NULL) {
 	
 	# find the projected regression coefficients for each sample
 	xsub <- d_train$x[, ind, drop = F]
