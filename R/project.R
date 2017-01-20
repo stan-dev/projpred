@@ -4,7 +4,7 @@ project <- function(object, nv, ...) {
 }
 
 #' @export
-project.stanreg <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept = NULL, ...) {
+project.stanreg <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept = NULL, seed=NULL, ...) {
 	
 	# TODO, IMPLEMENT THE PROJECTION WITH AN ARBITRARY VARIABLE COMBINATION
 	
@@ -22,10 +22,7 @@ project.stanreg <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept =
 		nv <- c(0:length(object$varsel$chosen))
 	
 	vars <- .extract_vars(object)
-	# if(ns > ncol(vars$beta)) {
-	# 	warning(paste0('Setting the number of samples to ', ncol(vars$beta),'.'))
-	# 	ns <- ncol(vars$beta)
-	# }
+
 	if(is.null(intercept)) intercept <- vars$intercept
 
 	family_kl <- kl_helpers(family(object))
@@ -39,7 +36,7 @@ project.stanreg <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept =
 	d_train <- .get_traindata(object)
 	
 	# get the clustering or subsample
-	p_full <- .get_refdist(object, ns=ns, nc=nc)
+	p_full <- .get_refdist(object, ns=ns, nc=nc, seed=seed)
 	
 	object$proj <- list(
 		p_sub = .get_submodels(object$varsel$chosen, nv, family_kl,
