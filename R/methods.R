@@ -127,8 +127,9 @@ varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
   ggplot(data = subset(arr, size <= nv_max), mapping = aes(x = size)) +
     geom_ribbon(aes(ymin = lq, ymax = uq), alpha = 0.3) +
     geom_line(aes(y = value)) +
+  	geom_point(aes(y = value)) +
     geom_hline(aes(yintercept = value), subset(arr, size == max(size)),
-               color = 'darkred') +
+               color = 'darkred', linetype=2) +
     coord_cartesian(xlim = c(0, nv_max)) +
     labs(x = 'Number of variables in the submodel', y = ylab) +
     facet_grid(statistic ~ ., scales = 'free_y')
