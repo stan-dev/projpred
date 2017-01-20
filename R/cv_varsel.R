@@ -46,18 +46,18 @@
 
 #' @export
 cv_varsel <- function(fit, method = 'L1', cv_method = 'loo', ns = 400L,
-                      nv_max = NULL, intercept = NULL, verbose = F,
+                      nv_max = NULL, intercept = NULL, verbose = T,
                       K = NULL, k_fold = NULL, ...) {
   UseMethod('cv_varsel')
 }
 
 #' @export
 cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL, nc = NULL,
-                              nv_max = NULL, intercept = NULL, verbose = F,
+                              nv_max = NULL, intercept = NULL, verbose = T,
                               K = NULL, k_fold = NULL, ...) {
 
-	if (is.null(ns) && is.null(nc))
-		# by default, use one cluster for selection
+	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
+		# use one cluster for selection by default, and always with L1-search
 		nc <- 1
 	
 	.validate_for_varsel(fit)
@@ -191,11 +191,11 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	#
 	vars <- .extract_vars(fit)
 	fam <- kl_helpers(family(fit))
-	mu <- vars$mu #fam$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
+	mu <- vars$mu 
 	dis <- vars$dis
 	
 	# training data
-	d_train <- .get_traindata(fit) #list(x = vars$x, y = vars$y, weights = vars$weights, offset = vars$offset)
+	d_train <- .get_traindata(fit) 
 	
 	# the reference distribution used for selection
 	p_full <- .get_refdist(fit, ns=ns, nc=nc)
@@ -213,9 +213,14 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	for (i in 1:n)
         mu_full[i] <- mu[i,] %*% exp(lw[,i])
 	
+	# initialize matrices where to store the results
 	chosen_mat <- matrix(rep(0, n*nv_max), nrow=n)
 	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
+	
+	if (verbose)
+		print('Start computing LOOs...')
+	
 	for (i in 1:n) {
 		
 		# reweight the clusters/samples according to the is-loo weights
@@ -231,6 +236,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=1.0)
 		summaries_sub <- .get_sub_summaries(chosen, p_sel, d_test, p_sub, fam, intercept) # replace p_sel by p_full here?
 		
+		
 		for (k in 0:nv_max) {
 			loo_sub[i,k+1] <- summaries_sub[[k+1]]$lppd
 			mu_sub[i,k+1] <- summaries_sub[[k+1]]$mu
@@ -239,8 +245,22 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 		if (verbose && i %% round(n/10) == 0)
 		    print(sprintf('%d%% of LOOs done.', 10*i / round(n/10)))
 	}
-	if (verbose)
+	if (verbose && i %% round(n/10) != 0)
 		print('100% of LOOs done.')
+	
+	#############
+	# p_sel <- .get_refdist(fit, nc=1)
+	# p_final <- .get_refdist(fit, nc=50)
+	# chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
+	# submod1 <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept)
+	# submod2 <- .get_submodels(chosen, 0:nv_max, fam, p_final, d_train, intercept)
+	# summ1 <- .get_sub_summaries(chosen, p_sel, d_train, submod1, fam, intercept)
+	# summ2 <- .get_sub_summaries(chosen, p_final, d_train, submod2, fam, intercept)
+	# for (k in 1:length(summ1)) {
+	# 	# peff[,k] <- summ1$lppd - loo_sub[,k]
+	# 	print(sum(summ2$lppd - summ1$lppd))
+	# }
+	#############
 	
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
