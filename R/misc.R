@@ -156,7 +156,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 }
 
 
-.get_refdist <- function(fit, ns=NULL, nc=NULL) {
+.get_refdist <- function(fit, ns=NULL, nc=NULL, seed=NULL) {
 	#
 	# Creates the reference distribution based on the fit-object, and the
 	# desired number of clusters (nc) or number of subsamples (ns). Returns
@@ -166,6 +166,11 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 	# It is possible to use this function by passing .extract_vars(fit) as
 	# an argument in place of fit.
 	#
+	
+	
+	# save the old seed and initialize with the new one
+	seed_old <- .Random.seed
+	set.seed(seed)
 	
 	if ( all(c('fam', 'x', 'mu', 'dis') %in% names(fit)) )
 		# all the relevant fields contained in the given structure
@@ -199,6 +204,10 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 		# use all the samples from the full model
 		p_ref <- list(mu = vars$mu, dis = vars$dis, weights = rep(1/S, S), cl=c(1:S))
 	}
+	
+	# restore the old seed
+	.Random.seed <- seed_old
+	
 	return(p_ref)
 }
 
