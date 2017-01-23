@@ -1,31 +1,26 @@
 #' @export
-project <- function(object, nv, ...) {
-  UseMethod('project')
-}
-
-#' @export
-project.stanreg <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept = NULL, seed=NULL, ...) {
+project <- function(object, nv = NULL, nc = NULL, ns = NULL, intercept = NULL, seed=NULL, ...) {
 	
 	# TODO, IMPLEMENT THE PROJECTION WITH AN ARBITRARY VARIABLE COMBINATION
 	
-	.validate_for_varsel(object)
+	# .validate_for_varsel(object)
 	if(!('varsel' %in% names(object)))
 		stop(paste('The stanreg object doesn\'t contain information about the ',
 					'variable selection. Run the variable selection first.'))
 
+    vars <- .extract_vars(object)
+    
 	if (is.null(ns) && is.null(nc))
 		# by default project with clusters
-		nc <- 50
+		nc <- min(50, NCOL(vars$mu))
 	if (is.null(nv))
 		# by default, run the projection up to the maximum number of variables
 		# specified in the variable selection
 		nv <- c(0:length(object$varsel$chosen))
-	
-	vars <- .extract_vars(object)
 
 	if(is.null(intercept)) intercept <- vars$intercept
 
-	family_kl <- kl_helpers(family(object))
+	family_kl <- vars$fam
 
 	if(max(nv) > length(object$varsel$chosen))
 		stop(paste('Cannot perform the projection with', max(nv), 'variables,',
