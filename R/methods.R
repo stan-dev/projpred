@@ -7,6 +7,7 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
     # fill in the missing values with their defaults
     if (is.null(mu))
         mu <- y
+    mu <- as.matrix(mu)
     S <- NCOL(mu) # number of samples in the reference model
     n <- length(y)
     if (is.null(dis))

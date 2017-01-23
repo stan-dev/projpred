@@ -124,7 +124,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   # the full model, not from the cross-validated models).
   d_test <- lapply(k_fold$fits[,'omitted'], function(omitted) {
     list(x = vars$x[omitted,], y = vars$y[omitted],
-         weights = vars$weights[omitted], offset = vars$offset[omitted])
+         weights = vars$wobs[omitted], offset = vars$offset[omitted])
   })
 
   # List of K elements, each containing d_train, p_full, etc. corresponding

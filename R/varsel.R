@@ -43,14 +43,8 @@
 #'
 
 #' @export
-varsel <- function(fit, d_test = NULL, method = 'L1', ns = 400L,
+varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
                    nv_max = NULL, intercept = NULL, verbose = F, ...) {
-    UseMethod('varsel')
-}
-
-#' @export
-varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
-                           nv_max = NULL, intercept = NULL, verbose = F, ...) {
 	
   # TODO, IMPLEMENT SENSIBILITY CHECKS FOR NS AND NC (INTO MISC.R) AND CALL THEM
   # TODO, FIGURE OUT HOW TO HANDLE THE TEST PREDICTIONS FOR FULL MODEL WHEN COEF_FULL ARE NOT AVAILABLE
@@ -59,12 +53,12 @@ varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NU
   	# use one cluster for selection by default, and always with L1-search
   	nc <- 1
   
-  .validate_for_varsel(fit)
+  # .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
-  family_kl <- kl_helpers(family(fit))
+  family_kl <- vars$fam
   
   if(is.null(intercept)) intercept <- vars$intercept
-  if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
+  if(is.null(nv_max) || nv_max > NCOL(vars$x)) nv_max <- NCOL(vars$x)
 
   # training and test data
   d_train <- .get_traindata(fit)
@@ -109,6 +103,8 @@ varsel.stanreg <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NU
 
   fit
 }
+
+
 
 select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
                    verbose) {
