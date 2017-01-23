@@ -113,7 +113,7 @@ varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
 
   stats <- subset(.bootstrap_stats(x$varsel, n_boot, alpha),
                   delta == deltas | statistic == 'kl')
-  if(is.null(statistics)) statistics <- as.character(unique(stats$statistic))
+  if(is.null(statistics)) statistics <- 'mlpd' #as.character(unique(stats$statistic))
   arr <- subset(stats, statistic %in% statistics)
 
   if(NROW(arr) == 0) {
