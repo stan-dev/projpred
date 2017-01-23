@@ -2,6 +2,30 @@
 # plot variable selection statistics etc.
 
 #' @export
+init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL, intercept=TRUE) {
+    
+    # fill in the missing values with their defaults
+    if (is.null(mu))
+        mu <- y
+    S <- NCOL(mu) # number of samples in the reference model
+    n <- length(y)
+    if (is.null(dis))
+        dis <- rep(NA, S)
+    if (is.null(offset))
+        offset <- rep(0, n)
+    if (is.null(wobs))
+        wobs <- rep(1, n)
+    if (is.null(wsample))
+        wsample <- rep(1/S, S)
+    if (is.null(intercept))
+        intercept <- TRUE
+    
+    fit <- list(x=x, y=y, fam=kl_helpers(family), mu=mu, dis=dis, offset=offset,
+                wobs=wobs, wsample=wsample, intercept=intercept)
+    return(fit)
+}
+
+#' @export
 proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, nv = NULL, integrated = FALSE, ...) {
   .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
