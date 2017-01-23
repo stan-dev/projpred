@@ -2,7 +2,8 @@
 # plot variable selection statistics etc.
 
 #' @export
-init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL, intercept=TRUE) {
+init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
+                          intercept=TRUE, loglik=NULL) {
     
     # fill in the missing values with their defaults
     if (is.null(mu))
@@ -11,7 +12,7 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
     S <- NCOL(mu) # number of samples in the reference model
     n <- length(y)
     if (is.null(dis))
-        dis <- rep(NA, S)
+        dis <- rep(1, S)
     if (is.null(offset))
         offset <- rep(0, n)
     if (is.null(wobs))
@@ -22,7 +23,7 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
         intercept <- TRUE
     
     fit <- list(x=x, y=y, fam=kl_helpers(family), mu=mu, dis=dis, offset=offset,
-                wobs=wobs, wsample=wsample, intercept=intercept)
+                wobs=wobs, wsample=wsample, intercept=intercept, loglik=loglik)
     return(fit)
 }
 

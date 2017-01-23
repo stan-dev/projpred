@@ -45,25 +45,18 @@
 #'
 
 #' @export
-cv_varsel <- function(fit, method = 'L1', cv_method = 'loo', ns = 400L,
+cv_varsel <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL, nc = NULL,
                       nv_max = NULL, intercept = NULL, verbose = T,
                       K = NULL, k_fold = NULL, ...) {
-  UseMethod('cv_varsel')
-}
-
-#' @export
-cv_varsel.stanreg <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL, nc = NULL,
-                              nv_max = NULL, intercept = NULL, verbose = T,
-                              K = NULL, k_fold = NULL, ...) {
 
 	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
 		# use one cluster for selection by default, and always with L1-search
 		nc <- 1
 	
-	.validate_for_varsel(fit)
+	# .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
 	if(is.null(intercept)) intercept <- vars$intercept
-	if(is.null(nv_max) || nv_max > NROW(vars$beta)) nv_max <- NROW(vars$beta)
+	if(is.null(nv_max) || nv_max > NCOL(vars$x)) nv_max <- NCOL(vars$x)
 
 	if (verbose)
 		print(paste('Performing', method, 'search for the full model.'))
@@ -190,7 +183,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	#
 	#
 	vars <- .extract_vars(fit)
-	fam <- kl_helpers(family(fit))
+	fam <- vars$fam
 	mu <- vars$mu 
 	dis <- vars$dis
 	
@@ -201,8 +194,15 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	p_full <- .get_refdist(fit, ns=ns, nc=nc)
 	cl <- p_full$cl # clustering information
 	
-	# compute the log-likelihood for the full model to obtain the LOO weights
-	loglik <- log_lik(fit)
+	# fetch the log-likelihood for the full model to obtain the LOO weights
+	if ('stanfit' %in% names(fit))
+	    # stanreg-objects have a function log_lik
+	    loglik <- log_lik(fit)
+	else if (!is.null(fit$loglik))
+	    # loglik given in the fit object (generic reference model)
+	    loglik <- fit$loglik
+	else
+	    stop('To perform LOO for generic reference models, you must provide log-likelihood matrix to init_refmodel.')
 	lw <- psislw(-loglik)$lw_smooth
 	n <- dim(lw)[2]
 	
