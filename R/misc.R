@@ -105,7 +105,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
 		
 		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset, res$intercept)
-		res$wsample <- rep(1, NCOL(res$mu)) # equal sample weights by default
+		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 		
 		y <- unname(get_y(fit))
 		if(NCOL(y) == 1) {
