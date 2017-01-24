@@ -55,8 +55,12 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL, nc = NU
 	
 	# .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
-	if(is.null(intercept)) intercept <- vars$intercept
-	if(is.null(nv_max) || nv_max > NCOL(vars$x)) nv_max <- NCOL(vars$x)
+	if(is.null(intercept))
+		intercept <- vars$intercept
+	if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
+		nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
+		nv_max <- min(NCOL(vars$x)-1*intercept, nv_max_default)
+	}
 
 	if (verbose)
 		print(paste('Performing', method, 'search for the full model.'))

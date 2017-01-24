@@ -57,8 +57,12 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   vars <- .extract_vars(fit)
   family_kl <- vars$fam
   
-  if(is.null(intercept)) intercept <- vars$intercept
-  if(is.null(nv_max) || nv_max > NCOL(vars$x)) nv_max <- NCOL(vars$x)
+  if(is.null(intercept)) 
+    intercept <- vars$intercept
+  if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
+  	nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
+  	nv_max <- min(NCOL(vars$x)-1*intercept, nv_max_default)
+  }
 
   # training and test data
   d_train <- .get_traindata(fit)
