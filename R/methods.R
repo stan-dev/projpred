@@ -28,21 +28,27 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 }
 
 #' @export
-proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NULL, nv = NULL, integrated = FALSE, ...) {
-  .validate_for_varsel(object)
+proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offset = NULL, 
+						 newdata = NULL, nv = NULL, integrated = FALSE, ...) {
+  # .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the',
                'projection. Run the projection first.'))
 
-  family_kl <- kl_helpers(family(object))
+  vars <- .extract_vars(object)
+  family_kl <- vars$fam
 
-  data <- rstanarm:::pp_data(object, newdata, offset = offset)
-  obj_intercept <- attr(object$terms,'intercept') %ORifNULL% 0
-  if(obj_intercept) data$x <- data$x[,-1]
-
+  # data <- rstanarm:::pp_data(object, newdata, offset = offset)
+  # obj_intercept <- attr(object$terms,'intercept') %ORifNULL% 0
+  # if(obj_intercept) data$x <- data$x[,-1]
+  if (is.null(xnew))
+  	xnew <- vars$x
+  nt <- nrow(xnew)
+  
+  # CONTINUE FROM HERE
 
   # project only model the sizes of which are specified in nv
-  projected_sizes <- sapply(object$proj$p_sub, function(x) NROW(x$beta))
+  projected_sizes <- sapply(object$proj$p_sub, function(psub) NROW(psub$beta))
   if(is.null(nv)) nv <- projected_sizes
 
   if(!all(nv %in% projected_sizes))
@@ -51,7 +57,7 @@ proj_linpred <- function(object, transform = FALSE, newdata = NULL, offset = NUL
                 ', but projection performed only for nv = ',
                 paste(projected_sizes, collapse = ', '), '.'))
 
-  projs <- Filter(function(x) NROW(x$beta) %in% nv, object$proj$p_sub)
+  projs <- Filter(function(psub) NROW(psub$beta) %in% nv, object$proj$p_sub)
   names(projs) <- nv
   
   mapply(function(proj, nv) {
