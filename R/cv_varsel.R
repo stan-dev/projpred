@@ -59,7 +59,7 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL, nc = NU
 		intercept <- vars$intercept
 	if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
 		nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
-		nv_max <- min(NCOL(vars$x)-1*intercept, nv_max_default)
+		nv_max <- min(NCOL(vars$x), nv_max_default)
 	}
 
 	if (verbose)
