@@ -82,7 +82,7 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
 
   # statistics for the selected submodels
   p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full, d_train, intercept)
-  sub <- .get_sub_summaries(chosen, p_full, d_test, p_sub, family_kl, intercept)
+  sub <- .get_sub_summaries(chosen, d_test, p_sub, family_kl, intercept)
   
   #
   if (d_type == 'train') {
