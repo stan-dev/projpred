@@ -28,8 +28,8 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 }
 
 #' @export
-proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offset = NULL, 
-						 newdata = NULL, nv = NULL, integrated = FALSE, ...) {
+proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offsetnew = NULL, 
+						 newdata = NULL, nv = NULL, ind = NULL, integrated = FALSE, ...) {
   # .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the',
@@ -41,12 +41,16 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
   # data <- rstanarm:::pp_data(object, newdata, offset = offset)
   # obj_intercept <- attr(object$terms,'intercept') %ORifNULL% 0
   # if(obj_intercept) data$x <- data$x[,-1]
-  if (is.null(xnew))
+  if (is.null(xnew)) {
   	xnew <- vars$x
+  	if (is.null(ynew))
+  	  ynew <- vars$y
+  }
   nt <- nrow(xnew)
+  if (is.null(offsetnew))
+  	offsetnew <- rep(0,nt)
   
-  # CONTINUE FROM HERE
-
+  
   # project only model the sizes of which are specified in nv
   projected_sizes <- sapply(object$proj$p_sub, function(psub) NROW(psub$beta))
   if(is.null(nv)) nv <- projected_sizes
@@ -60,21 +64,34 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
   projs <- Filter(function(psub) NROW(psub$beta) %in% nv, object$proj$p_sub)
   names(projs) <- nv
   
-  mapply(function(proj, nv) {
+  preds <- mapply(function(proj, nv) {
     ch <- object$varsel$chosen[min(nv,1):nv]
-    mu <- t(family_kl$mu_fun(data$x[, ch, drop = F],
+    mu <- family_kl$mu_fun(xnew[, ch, drop = F],
                              proj$alpha,
-                             proj$beta, data$offset, object$proj$intercept))
+                             proj$beta, offsetnew)
     if(transform)
-    	qty <- mu
+    	pred <- t(mu)
     else
-    	qty <- family_kl$linkfun(mu)
+    	pred <- t(family_kl$linkfun(mu))
     if (integrated)
-    	return(as.vector( proj$weights %*% qty ))
-    else
-    	return( qty )
+    	# average over the parameters
+    	pred <- as.vector( proj$weights %*% pred )
+    if (!is.null(ynew)) {
+    	# compute also the log-density
+    	lpd <- family_kl$ll_fun(mu, proj$dis, ynew)
+    	if (integrated)
+    		lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
+    	else
+    		lpd <- t(lpd)
+    	return(list(pred=pred, lpd=lpd))
+    } else
+    	return(list(pred=pred))
   }, projs, nv, SIMPLIFY = F)
 
+  if (length(preds)==1)
+  	return(preds[[1]])
+  else
+  	return(preds)
 }
 
 #' @export
