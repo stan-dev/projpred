@@ -91,7 +91,7 @@ project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
 	
 	# compute the dispersion parameters and kl-divergences, and combine the results
 	p_sub <- list()
-	mu <- family_kl$mu_fun(xsub, alpha, beta, d_train$offset, intercept=intercept)
+	mu <- family_kl$mu_fun(xsub, alpha, beta, d_train$offset)
 	p_sub$dis <- family_kl$dis_fun(p_full, d_train, list(mu=mu))
 	p_sub$kl <- weighted.mean(family_kl$kl(p_full, d_train, list(mu=mu)), p_full$weights)
 	p_sub$weights <- p_full$weights

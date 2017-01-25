@@ -106,7 +106,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
 		
-		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset, res$intercept)
+		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 		
 		y <- unname(get_y(fit))
@@ -135,7 +135,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
   # - Returns d_train, d_test, p_full, coef_full.
   # - If d_test is NA, it is set to d_train.
 
-  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
+  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset)
 
   d_train <- list(x = vars$x, weights = vars$wobs, offset = vars$offset)
 

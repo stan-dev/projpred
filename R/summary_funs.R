@@ -3,7 +3,7 @@
 #' Functions for calculating mse, mlpd, etc. with (and without) bootstrapping
 #' - .bootstrap/calc_stats,
 
-.get_sub_summaries <- function(chosen, d_test, p_sub, family_kl, intercept) {
+.get_sub_summaries <- function(chosen, d_test, p_sub, family_kl) {
 
   res <- lapply(p_sub, function(p_sub) {
   	ind <- 1:NROW(p_sub$beta)
@@ -15,13 +15,13 @@
       xt <- d_test$x[, chosen[ind], drop = F]
     }
 
-    mu <- family_kl$mu_fun(xt, p_sub$alpha, p_sub$beta, d_test$offset, intercept)
+    mu <- family_kl$mu_fun(xt, p_sub$alpha, p_sub$beta, d_test$offset)
     .weighted_summary_means(d_test, family_kl, p_sub$weights, mu, p_sub$dis)
   })
 }
 
 .get_full_summaries <- function(p_full, d_test, coef_full, family_kl, intercept) {
-  mu <- family_kl$mu_fun(d_test$x, coef_full$alpha, coef_full$beta, d_test$offset, intercept)
+  mu <- family_kl$mu_fun(d_test$x, coef_full$alpha, coef_full$beta, d_test$offset)
   .weighted_summary_means(d_test, family_kl, p_full$weights, mu, p_full$dis)
 }
 

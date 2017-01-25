@@ -158,8 +158,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   # one sub_summary-list that contains with all n mu:s and lppd:s.
   sub_cv <- apply(
     mapply(function(p_sub, e, chosen) {
-      lapply(.get_sub_summaries(chosen, e$d_test, p_sub,
-                                family_kl, intercept), data.frame)
+      lapply(.get_sub_summaries(chosen, e$d_test, p_sub, family_kl), data.frame)
     }, p_sub_cv, e_cv, chosen_cv),
     1, hf)
 
@@ -238,7 +237,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 		# training and loo density for the left-out point
 		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept) # replace p_sel by p_full here?
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=1.0)
-		summaries_sub <- .get_sub_summaries(chosen, d_test, p_sub, fam, intercept) # replace p_sel by p_full here?
+		summaries_sub <- .get_sub_summaries(chosen, d_test, p_sub, fam)
 		
 		
 		for (k in 0:nv_max) {
@@ -258,8 +257,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	# chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
 	# submod1 <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept)
 	# submod2 <- .get_submodels(chosen, 0:nv_max, fam, p_final, d_train, intercept)
-	# summ1 <- .get_sub_summaries(chosen, d_train, submod1, fam, intercept)
-	# summ2 <- .get_sub_summaries(chosen, d_train, submod2, fam, intercept)
+	# summ1 <- .get_sub_summaries(chosen, d_train, submod1, fam)
+	# summ2 <- .get_sub_summaries(chosen, d_train, submod2, fam)
 	# for (k in 1:length(summ1)) {
 	# 	# peff[,k] <- summ1$lppd - loo_sub[,k]
 	# 	print(sum(summ2$lppd - summ1$lppd))

@@ -55,10 +55,10 @@ kl_helpers <- function(fam) {
   }
 
   # function for computing mu = E(y)
-  mu_fun <- function(x, alpha, beta, offset, intercept=TRUE) {
+  mu_fun <- function(x, alpha, beta, offset) {
     if (!is.matrix(x)) stop('x must be a matrix.')
     if (!is.matrix(beta)) stop('beta must be a matrix')
-    fam$linkinv(cbind(1*intercept, x) %*% rbind(alpha, beta) + offset)
+    fam$linkinv(cbind(1, x) %*% rbind(alpha, beta) + offset)
   }
 
   # return the family object with the correct function handles
