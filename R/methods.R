@@ -29,7 +29,7 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 
 #' @export
 proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offsetnew = NULL, 
-						 newdata = NULL, nv = NULL, vind = NULL, integrated = FALSE, ...) {
+						 newdata = NULL, nv = NULL, integrated = FALSE, ...) {
   # .validate_for_varsel(object)
   if(!('proj' %in% names(object)))
   	object <- project(object, nv=nv, ...)

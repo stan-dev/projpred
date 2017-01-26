@@ -46,7 +46,9 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
     p_sub <- list(kl = kl, weights = wsample, dis = dis_sub)
 
     # split b to alpha and beta, add it to p_sub and return the result
-    c(p_sub, .split_coef(beta_sub, intercept))
+    p_sub <- c(p_sub, .split_coef(beta_sub, intercept))
+    p_sub$ind <- ind[(1+intercept*1):length(ind)] - intercept*1
+    return(p_sub)
 }
 
 
@@ -97,6 +99,7 @@ project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
 	p_sub$weights <- p_full$weights
 	p_sub$alpha <- alpha
 	p_sub$beta <- beta
+	p_sub$ind <- ind
 	return(p_sub)
 }
 
