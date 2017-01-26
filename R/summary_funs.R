@@ -1,7 +1,7 @@
-#' Functions for calculating mu and lppd (ge)
-#' - .get_sub/full_summaries + .weighted_summary_means
-#' Functions for calculating mse, mlpd, etc. with (and without) bootstrapping
-#' - .bootstrap/calc_stats,
+# Functions for calculating mu and lppd (ge)
+# - .get_sub/full_summaries + .weighted_summary_means
+# Functions for calculating mse, mlpd, etc. with (and without) bootstrapping
+# - .bootstrap/calc_stats,
 
 .get_sub_summaries <- function(chosen, d_test, p_sub, family_kl) {
 

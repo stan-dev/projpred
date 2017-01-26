@@ -5,8 +5,8 @@
 #'
 #' @import stats
 #' @import rstanarm
+#' @import ggplot2
 #' @importFrom rstan extract
 #' @importFrom Matrix rankMatrix
-#' @importFrom ggplot2 ggplot aes geom_ribbon geom_line geom_hline facet_grid labs coord_cartesian
-#'
+#' @importFrom loo psislw
 NULL
