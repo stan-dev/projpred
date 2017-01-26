@@ -93,6 +93,9 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   #  - list of crossvalidated paths (chosen_cv),
   #  - list (d_test) with test outputs y, test weights and data type (string)
   #  - list with submodel and full model summaries
+	
+  if (!('stanfit' %in% names(fit)))
+  	stop('k-fold cross validation not yet implemented for other than rstanarm reference models.')
 
   # Construct the kfold-objects. The resulting list contains an element 'fits',
   # which is a K x 2 dimensional array. Each row corresponds to one of the K
@@ -251,7 +254,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	if (verbose && i %% round(n/10) != 0)
 		print('100% of LOOs done.')
 	
-	#############
+	###############
+	## DEBUGGING ##
 	# p_sel <- .get_refdist(fit, nc=1)
 	# p_final <- .get_refdist(fit, nc=50)
 	# chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
@@ -263,7 +267,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	# 	# peff[,k] <- summ1$lppd - loo_sub[,k]
 	# 	print(sum(summ2$lppd - summ1$lppd))
 	# }
-	#############
+	###############
 	
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){

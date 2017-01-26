@@ -30,7 +30,9 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 #' @export
 proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offsetnew = NULL, 
 						 newdata = NULL, nv = NULL, integrated = FALSE, ...) {
-  # .validate_for_varsel(object)
+  
+  # TODO, IMPLEMENT THE PROJECTION/PREDICTION WITH AN ARBITRARY VARIABLE COMBINATION 
+	
   if(!('proj' %in% names(object)))
   	object <- project(object, nv=nv, ...)
 
@@ -93,7 +95,7 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
 
 #' @export
 proj_coef <- function(object, ...) {
-  .validate_for_varsel(object)
+  
   if(!('proj' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
@@ -104,7 +106,7 @@ proj_coef <- function(object, ...) {
 
 #' @export
 proj_se <- function(object, ...) {
-  .validate_for_varsel(object)
+  
   if(!('proj' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
@@ -135,12 +137,13 @@ proj_coef_helper <- function(object, fun) {
 
 #' @export
 proj_sigma <- function(object, ...) {
-  # only gaussian family supported
-  .validate_for_varsel(object)
+  # only gaussian family supported currently
+  
   if(!('proj' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
-  if(!(family(object)$family %in% 'gaussian'))
+  vars <- .extract_vars(object)
+  if(!(vars$fam$family %in% c('gaussian')))
     stop('Sigma available only for the gaussian family.')
 
   lapply(object$proj$p_sub, function(proj) {
@@ -155,7 +158,7 @@ varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
                         n_boot = 1000, alpha = 0.05) {
   if(!('varsel' %in% names(x)))
     stop(paste('The provided object doesn\'t contain information about the',
-               'variable selection. Run the variable selection first!'))
+               'variable selection. Run the variable selection first.'))
 
   stats <- subset(.bootstrap_stats(x$varsel, n_boot, alpha),
                   delta == deltas | statistic == 'kl')
@@ -186,7 +189,7 @@ varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
 varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
   if(!('varsel' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the',
-               'variable selection. Run the variable selection first!'))
+               'variable selection. Run the variable selection first.'))
 
   stats <- subset(.bootstrap_stats(object$varsel, NULL, 0.5),
                   delta == deltas | statistic == 'kl')
