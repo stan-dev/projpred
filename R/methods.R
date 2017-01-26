@@ -39,9 +39,6 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
   vars <- .extract_vars(object)
   family_kl <- vars$fam
 
-  # data <- rstanarm:::pp_data(object, newdata, offset = offset)
-  # obj_intercept <- attr(object$terms,'intercept') %ORifNULL% 0
-  # if(obj_intercept) data$x <- data$x[,-1]
   if (is.null(xnew)) {
   	xnew <- vars$x
   	if (is.null(ynew))
@@ -50,7 +47,6 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
   nt <- nrow(xnew)
   if (is.null(offsetnew))
   	offsetnew <- rep(0,nt)
-  
   
   # project only model the sizes of which are specified in nv
   projected_sizes <- sapply(object$proj$p_sub, function(psub) NROW(psub$beta))
@@ -75,12 +71,15 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
     if (integrated)
     	# average over the parameters
     	pred <- as.vector( proj$weights %*% pred )
+    else if (!is.null(dim(pred)) && dim(pred)[1]==1)
+    	# return a vector if pred contains only one row
+    	pred <- as.vector(pred)
     if (!is.null(ynew)) {
     	# compute also the log-density
     	lpd <- family_kl$ll_fun(mu, proj$dis, ynew)
-    	if (integrated)
+    	if (integrated && !is.null(dim(lpd)))
     		lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
-    	else
+    	else if (!is.null(dim(lpd)))
     		lpd <- t(lpd)
     	return(list(pred=pred, lpd=lpd))
     } else
