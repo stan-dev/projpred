@@ -74,8 +74,10 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
     stop('Not enough explanatory variables for variable selection')
 }
 
+
 # from rstanarm
 `%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
+
 
 # extract all important information from the fit object for variable selection
 .extract_vars <- function(fit) {
@@ -104,23 +106,28 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
 		
-		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset, res$intercept)
+		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 		
 		y <- unname(get_y(fit))
 		if(NCOL(y) == 1) {
-			res$weights <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
+			res$wobs <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
 			res$y <- y
 		} else {
-			res$weights <- rowSums(y)
-			res$y <- y[, 1] / res$weights
+			res$wobs <- rowSums(y)
+			res$y <- y[, 1] / res$wobs
 		}
 		return(res)
 		
 	} else {
 		
 		# not and rstanarm-object, so look for the relevant fields
-		stop('Other than rstanarm-fits are currently not supported, but will be in the near future.')
+	    
+	    # DUMMY, simply return the object itself and assume it has all the relevant fiels
+	    # (i.e. it was created by init_refmodel)
+	    return(fit)
+	    # if (!is.null(fit$x)) stop('')
+		# stop('Other than rstanarm-fits are currently not supported, but will be in the near future.')
 	}
 }
 
@@ -128,9 +135,9 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
   # - Returns d_train, d_test, p_full, coef_full.
   # - If d_test is NA, it is set to d_train.
 
-  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset, intercept)
+  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset)
 
-  d_train <- list(x = vars$x, weights = vars$weights, offset = vars$offset)
+  d_train <- list(x = vars$x, weights = vars$wobs, offset = vars$offset)
 
   # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
   if(is.null(d_test)) {
@@ -168,7 +175,6 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 	# an argument in place of fit.
 	#
 	
-	
 	# save the old seed and initialize with the new one
 	seed_old <- .Random.seed
 	set.seed(seed)
@@ -188,15 +194,19 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 		# use clustering (ignore ns argument)
 		if (nc == 1) {
 			# special case, only one cluster
-			cl <- rep(1, n)
+			cl <- rep(1, S)
 			p_ref <- get_p_clust(fam, vars$mu, vars$dis, cl=cl)
 		} else {
 			# several clusters
+		    if (nc > NCOL(vars$mu))
+		        stop('The number of clusters nc cannot exceed the number of columns in mu.')
 			p_ref <- get_p_clust(fam, vars$mu, vars$dis, nc=nc)
 		}
 	} else if (!is.null(ns)) {
 		# subsample from the full model
 		# would it be safer to actually randomly draw the subsample?
+	    if (ns > NCOL(vars$mu))
+	        stop('The number of subsamples ns cannot exceed the number of columns in mu.')
 		s_ind <- round(seq(1, S, length.out  = ns))
 		cl <- rep(NA, S)
 		cl[s_ind] <- c(1:ns)
@@ -225,7 +235,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 		# fetch the relevant info from the fit object
 		vars <- .extract_vars(fit)
 	
-	return(list(x = vars$x, y = vars$y, weights = vars$weights, offset = vars$offset))
+	return(list(x = vars$x, y = vars$y, weights = vars$wobs, offset = vars$offset))
 }
 
 .fill_offset_and_weights <- function(data) {

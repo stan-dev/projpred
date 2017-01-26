@@ -4,8 +4,8 @@
 \alias{cv_varsel}
 \title{Variable selection for generalized linear models with cross-validation}
 \usage{
-cv_varsel(fit, method = "L1", cv_method = "kfold", ns = 400L,
-  nv_max = NULL, intercept = NULL, verbose = F, K = NULL,
+cv_varsel(fit, method = "L1", cv_method = "loo", ns = NULL, nc = NULL,
+  nv_max = NULL, intercept = NULL, verbose = T, K = NULL,
   k_fold = NULL, ...)
 }
 \arguments{

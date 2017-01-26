@@ -4,7 +4,8 @@
 \alias{get_p_clust}
 \title{Function(s) to perform the clustering over the samples}
 \usage{
-get_p_clust(mu, dis, nc, wsample = rep(1, dim(mu)[2]), cl = NULL)
+get_p_clust(family_kl, mu, dis, nc = 10, wsample = rep(1, dim(mu)[2]),
+  cl = NULL)
 }
 \description{
 Function(s) to perform the clustering over the samples
