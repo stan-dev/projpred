@@ -44,13 +44,23 @@
   
 }
 
+
+
+.bbweights <- function(N,B) {
+    # generate Bayesian bootstrap weights, N = original sample size,
+    # B = number of bootstrap samples
+    bbw <- matrix(rgamma(N*B, 1), ncol = N)
+    bbw <- bbw/rowSums(bbw)
+    return(bbw)
+}
+
+
 .bootstrap_stats <- function(varsel, n_boot = 1000, alpha = 0.05) {
 
   n <- length(varsel$d_test$y)
   equal_weights <- matrix(1/n, 1, n)
 
-  b_weights <- matrix(rexp(n * n_boot, 1), ncol = n)
-  b_weights <- b_weights/rowSums(b_weights)
+  b_weights <- .bbweights(n,n_boot)
 
   hf <- function(x, w) {
     .calc_stats(x$mu, x$lppd, varsel$d_test, varsel$family_kl, w)
