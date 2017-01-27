@@ -33,7 +33,7 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
   
   # TODO, IMPLEMENT THE PROJECTION/PREDICTION WITH AN ARBITRARY VARIABLE COMBINATION 
 	
-  if(!('proj' %in% names(object)))
+  if( !('proj' %in% names(object)) )
   	object <- project(object, nv=nv, ...)
 
   vars <- .extract_vars(object)
@@ -48,7 +48,7 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
   if (is.null(offsetnew))
   	offsetnew <- rep(0,nt)
   
-  # project only model the sizes of which are specified in nv
+  # project only onto the model sizes specified in nv
   projected_sizes <- sapply(object$proj$p_sub, function(psub) NROW(psub$beta))
   if(is.null(nv)) nv <- projected_sizes
 
