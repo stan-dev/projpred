@@ -29,12 +29,12 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 
 #' @export
 proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offsetnew = NULL, 
-						 newdata = NULL, nv = NULL, integrated = FALSE, ...) {
+						 newdata = NULL, nv = NULL, integrated = FALSE, ns=NULL, nc=NULL, ...) {
   
   # TODO, IMPLEMENT THE PROJECTION/PREDICTION WITH AN ARBITRARY VARIABLE COMBINATION 
 	
-  if( !('proj' %in% names(object)) )
-  	object <- project(object, nv=nv, ...)
+  if( !('proj' %in% names(object)) || !is.null(ns) || !is.null(nc) )
+  	object <- project(object, nv=nv, ns=ns, nc=nc, ...)
 
   vars <- .extract_vars(object)
   family_kl <- vars$fam
