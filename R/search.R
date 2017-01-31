@@ -34,13 +34,13 @@ search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
 
 
 
-search_L1 <- function(p_full, d_train, family, intercept, nv_max, lambda_min_ratio=1e-6, nlam=150) {
+search_L1 <- function(p_full, d_train, family, intercept, nv_max, lambda_min_ratio=1e-5, nlam=200) {
 
     # prediction of full model (integrate over the uncertainty about the model parameters)
     mu <- p_full$mu %*% p_full$weights
 
     # create a grid of lambda values
-    lambda <- lambda_grid(d_train$x, mu, family, alpha=1.0, eps=lambda_min_ratio, nlam=nlam)
+    # lambda <- lambda_grid(d_train$x, mu, family, alpha=1.0, eps=lambda_min_ratio, nlam=nlam)
 
     # add a sparser grid of very small lambda values to proceed the variable selection almost up to the full model
     # lambda_min <- 1e-7*max(lambda) # ultimate minimum for lambda
@@ -48,7 +48,8 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, lambda_min_rat
     # lambda <- c(lambda, lambda_tail)
 
     # L1-penalized projection (projection path)
-    search <- glm_elnet(d_train$x, mu, family, lambda=lambda, pmax=nv_max, pmax_strict=FALSE,
+    search <- glm_elnet(d_train$x, mu, family, lambda_min_ratio=lambda_min_ratio, nlambda=nlam,
+    					pmax=nv_max, pmax_strict=FALSE,
                         offset=d_train$offset, weights=d_train$weights, intercept=intercept)
 
     # sort the variables according to the order in which they enter the model in the L1-path
@@ -58,8 +59,9 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, lambda_min_rat
     order_of_entered <- sort(entering_indices, index.return=TRUE)$ix
 	order <- c(order_of_entered, notentered_variables)
     
-	if (length(order_of_entered) < nv_max)
-		warning('Less than nv_max variables entered L1-path. Try reducing lambda_min_ratio. ')
+	# if (length(order_of_entered) < nv_max)
+	#	warning('Less than nv_max variables entered L1-path. Try reducing lambda_min_ratio. ')
+	
 	return(order[1:nv_max])
 }
 
