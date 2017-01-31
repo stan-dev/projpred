@@ -5,7 +5,7 @@ output: html_notebook
 
 This notebook shows briefly how to use the main functionalities of the ```glmproj```-package.
 
-### Installation
+## Installation
 
 The package is not yet in CRAN but the development version can be installed as follows:
 ```{r}
@@ -19,7 +19,7 @@ devtools::install_github('paasim/glmproj', ref='development')
 
 
 
-### Gaussian example
+## Gaussian example
 First load the packages that are needed. 
 ```{r}
 library(rstanarm)
@@ -28,7 +28,7 @@ library(ggplot2)
 options(mc.cores = parallel::detectCores())
 ```
 
-The package contains a simple Gaussian example data in the ```data```-directory. This command loads the predictor matrix ```x``` and the corresponding targets ```y``` into the workspace.
+The package contains a simple Gaussian example dataset in the ```data```-directory. This dataset is one of the example cases from the ```glmnet```-package. The following command loads the predictor matrix ```x``` and the corresponding targets ```y``` into the workspace.
 ```{r}
 load('../data/GaussianExample.RData')
 ```
@@ -80,14 +80,14 @@ pp <- pp + geom_abline(slope = 1, color='red')
 pp
 ```
 
-### Binomial example (logistic regression)
+## Binomial example (logistic regression)
 
-This section shows an example of the variable selection for a logistic regression model (binary classification). Everything is very similar to the Gaussian case. First load the data:
+This section shows an example of the variable selection for a logistic regression model (binary classification). Everything is very similar to the Gaussian case. First load the data (this dataset is also from the ```glmnet```-package):
 ```{r}
 load('../data/binomialExample.RData')
 ```
 
-We then fit the full model:
+Then fit the full model:
 ```{r}
 # fit the full model
 n <- dim(x)[1]
@@ -122,5 +122,6 @@ varsel_plot(fit_cv, statistics=c('mlpd','pctcorr'), deltas=F)
 
 
 
+### References
 
-
+Piironen, Juho and Vehtari, Aki (2017). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In _Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS 2017)_, accepted for publication. [Preprint](https://arxiv.org/abs/1610.05559)
