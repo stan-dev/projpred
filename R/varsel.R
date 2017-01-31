@@ -2,35 +2,34 @@
 #'
 #' Perform the projection predictive variable selection for a generalized
 #' linear model fitted with rstanarm.
-#' @param fit A \link[=stanreg-objects]{stanreg} object.
+#' @param fit Either a \link[=stanreg-objects]{stanreg}-object or an object returned 
+#' by \link[init_refmodel]{init_refmodel}.
 #' @param d_test A test dataset, which is used to evaluate model performance.
 #' If not provided, training data is used.
 #' @param method The method used in the variable selection. Possible options are
 #' \code{'L1'} for L1-search and \code{'forward'} for forward selection.
 #' Defaults to \code{'L1'}.
-#' @param ... Optional arguments. Possible arguments and their defaults are:
-#' \describe{
-#'  \item{\code{ns = min(400, [number of draws])}}{
-#'    Number of draws used in the variable selection.
-#'    Cannot be larger than the number of draws in the full model.}
-#'  \item{\code{nc = 0}}{
-#'    If nonzero, a clustering with \code{nc} clusters is performed for
-#'    the draws and the cluster centers are used in the variable selection
-#'    instead of the actual draws.}
-#'  \item{\code{nv = min(ncol(x) - 1, rankMatrix(x))}}{
-#'    Maximum number of variables to be used in the projection (incl. intercept).
-#'    Cannot be larger than \code{min(ncol(x) - 1, rankMatrix(x))}.}
-#'  \item{\code{verbose = FALSE}}{
-#'    If \code{verbose = TRUE}, prints information about the progress of the
-#'    variable selection.}
-#' }
+#' @param ns Number of posterior draws used in the variable selection.
+#'    Cannot be larger than the number of draws in the full model.
+#'    Ignored if nc is set.
+#' @param nc Number of clusters to use in the clustered projection.
+#'    Overrides the \code{ns} argument. Defaults to 1.
+#' @param nv_max Maximum number of varibles until which the selection is continued.
+#'    Defaults to min(D, floor(0.4*n)) where n is the number of observations and
+#'    D the number of variables.
+#' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
+#' @param verbose If TRUE, may print out some information during the selection.
+#'    Defaults to FALSE.
+#' 
 #'
-#' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
+#' @return The original fit-object object augmented with a field 'varsel',
 #' which is a list containing the following elements:
 #' \describe{
 #'  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
-#'  \item{\code{stats}}{An array with statistics of the submodel performance.}
-#'  \item{\code{family}}{A \code{\link{family}}-object.}
+#'  \item{\code{kl}}{KL-divergence for each submodel size.}
+#'  \item{\code{summaries}}{Summary statistics computed during the selection.}
+#'  \item{\code{d_test}}{The data used to evaluate the summaries.}
+#'  \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
 #' }
 #'
 #' @examples

@@ -1,28 +1,19 @@
-#' Variable selection for generalized linear models with cross-validation
+#' Cross-validate the variable selection (varsel)
 #'
-#' Perform the projection predictive variable selection for a generalized
-#' linear model fitted with rstanarm.
-#' @param fit A \link[=stanreg-objects]{stanreg} object.
-#' @param fits An array with cross-validated stanfits and the respective
+#' Perform cross-validation for the projective variable selection for a generalized
+#' linear model.
+#' @param fit Same as in \link[=varsel]{varsel}.
+#' @param method Same as in \link[=varsel]{varsel}.
+#' @param ns Same as in \link[=varsel]{varsel}.
+#' @param nc Same as in \link[=varsel]{varsel}.
+#' @param nv_max Same as in \link[=varsel]{varsel}.
+#' @param intercept Same as in \link[=varsel]{varsel}.
+#' @param verbose Whether to print out some information during the validation, Default is TRUE.
+#' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
+#' @param k_fold An array with cross-validated stanfits and the respective
 #' test datasets returned by \link[=stanreg-objects]{cv_fit}(fit).
 #' If not provided, \link[=stanreg-objects]{cv_fit}(fit) is called to
 #' get the array.
-#' @param ... Optional arguments. Possible arguments and their defaults are:
-#' \describe{
-#'  \item{\code{ns = min(400, [number of draws])}}{
-#'    Number of draws used in the variable selection.
-#'    Cannot be larger than the number of draws in the full model.}
-#'  \item{\code{nc = 0}}{
-#'    If nonzero, a clustering with \code{nc} clusters is performed for
-#'    the draws and the cluster centers are used in the variable selection
-#'    instead of the actual draws.}
-#'  \item{\code{nv = min(ncol(x) - 1, rankMatrix(x))}}{
-#'    Maximum number of variables to be used in the projection (incl. intercept).
-#'    Cannot be larger than \code{min(ncol(x) - 1, rankMatrix(x))}.}
-#'  \item{\code{verbose = FALSE}}{
-#'    If \code{verbose = TRUE}, prints information about the progress of the
-#'    variable selection.}
-#' }
 #'
 #' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
 #' which is a list containing the following elements:
@@ -30,22 +21,23 @@
 #'  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
 #'  \item{\code{pctch}}{Percentage of cross-validation runs that included the given
 #'    variable to a model of given size.}
-#'  \item{\code{stats}}{An array with statistics of the submodel performance.}
-#'  \item{\code{family}}{A \code{\link{family}}-object.}
+#'  \item{\code{kl}}{KL-divergence for each submodel size.}
+#'  \item{\code{summaries}}{CV-summary statistics computed during the selection.}
+#'  \item{\code{d_test}}{The data used to evaluate the summaries.}
+#'  \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
 #' }
 #'
 #' @examples
 #' \dontrun{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
-#' fits <- kfold(fit)
-#' fit_v <- cv_varsel(fit, fits)
-#' plot_varsel(fit_v)
+#' fit_cv <- cv_varsel(fit)
+#' plot_varsel(fit_cv)
 #' }
 #'
 
 #' @export
-cv_varsel <- function(fit,  method = 'L1', cv_method = 'loo', ns = NULL, nc = NULL,
+cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NULL,
                       nv_max = NULL, intercept = NULL, verbose = T,
                       K = NULL, k_fold = NULL, ...) {
 
