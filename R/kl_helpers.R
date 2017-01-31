@@ -4,6 +4,9 @@
 #' KL divergence, log predictive density and dispersion.
 #'
 #' Naming convention described in fsel.R.
+#'
+#' Missing: Quasi-families not implemented. If dis_gamma is the correct shape
+#' parameter for projected Gamma regression, everything should be OK for gamma.
 
 kl_helpers <- function(fam) {
 
@@ -30,7 +33,7 @@ kl_helpers <- function(fam) {
   dis_gauss <- function(p_full, d_train, p_sub) {
     sqrt(mean(d_train$weights*(p_full$mu - p_sub$mu)^2) + p_full$dis^2)
   }
-  # the following should probably be replaced by a more reliable method such as MASS::gamma.shape
+
   dis_gamma <- function(p_full, d_train, p_sub) {
     mean(d_train$weights*((p_full$mu - p_sub$mu)/fam$mu.eta(fam$linkfun(p_sub$mu))^2))
   }
