@@ -9,7 +9,12 @@ Currently, the supported models (family objects in R) include Gaussian, Binomial
 Installation
 ------------
 
-    devtools::install_github('paasim/glmproj')
+	if (!require(devtools)) {
+  		install.packages("devtools")
+  		library(devtools)
+	}
+	devtools::install_github('paasim/glmproj', ref='development')
+
     
 Example
 -------
@@ -23,32 +28,27 @@ Example
     # Gaussian and Binomial examples from the glmnet-package
     data('QuickStartExample', package = 'glmnet')
     #data('BinomialExample', package = 'glmnet') 
-    df1 <- data.frame(x = I(x), y = y)
 
     # fit the full model with a sparsifying prior
-    fit <- stan_glm(y ~ x, gaussian(), df1, prior = hs(df = 3), iter = 500, seed = 1)
-    #fit <- stan_glm(y ~ x, binomial(), df1, prior = hs(df = 4), iter = 500, seed = 1)
+    fit <- stan_glm(y ~ x, gaussian(), prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
+    #fit <- stan_glm(y ~ x, binomial(), prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
 
 
     # perform the variable selection
-    # note that this may take some time for other GLMs than 
-    # Gaussian with identity link
-    fit_v <- varsel(fit, verbose = T)
-    # print the results
-    varsel_summary(fit_v)
-
-    # project the parameters for a model of size 5 and 8
-    fit_p <- project(fit_v, nv = c(5,8))
-    proj_coef(fit_p)
+    fit <- varsel(fit)
     
+	# print the results
+    varsel_summary(fit)
 
+    # project the parameters for model sizes nv = 0,...,10 variables 
+    fit <- project(fit_v, nv = c(0:10))
+    proj_coef(fit)
+    
     # perform cross-validation for the variable selection
-    # this takes some time to complete, especially for the non-Gaussian case.
-    k_fold <- glmproj::kfold(fit, save_fits = T)
-    fit_v <- cv_varsel(fit, k_fold)
+    fit_cv <- cv_varsel(fit, cv_method='LOO')
 
     # plot the results
-    varsel_plot(fit_v)
+    varsel_plot(fit_cv)
 
 References
 ------------
