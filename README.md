@@ -2,9 +2,9 @@
 
 An R package to perform projection predictive variable selection for generalized linear models fitted with [rstanarm][]. 
 
-The package uses forward search starting from the empty submodel model, adds variables one at a time, each time choosing the variable that decreases the KL-divergence from the projection to the full model the most. 
+The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2016). 
 
-Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families.
+Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the examples in the vignettes directory.
 
 Installation
 ------------
