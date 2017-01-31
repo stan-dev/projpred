@@ -47,16 +47,15 @@ fit <- stan_glm(y ~ x, gaussian(), prior = prior_coeff, seed = 1, adapt_delta = 
 
 The variable selection can then be excecuted with the command ```varsel```. This will add a field ```varsel``` to the ```fit```-object containing information about the variable selection, such as the ordering of the variables.
 ```{r}
-# variable selection, this add field varsel to fit
 fit <- varsel(fit, method='L1')
 fit$varsel$chosen
 ```
 
 
-We can then plot some statistics computed on the training data, such as the mean log predictive density (MLPD) and mean squared error (MSE) as the function of number of variables added.
+We can then plot some statistics computed on the training data, such as the mean log predictive density (MLPD) and mean squared error (MSE) as the function of number of variables added. Setting ```deltas=F``` shows the results on absolute scale, whereas ```deltas=T``` shows the results relative to the full model.
 ```{r}
 # plot predictive performance relative to the full model on training data 
-varsel_plot(fit, statistics = c('mlpd','mse'), deltas=F)
+varsel_plot(fit, statistics = c('mlpd','mse'), deltas=T)
 ```
 
 
@@ -80,4 +79,48 @@ pp <- pp + geom_point(data=data.frame(pred), aes(x=pred,y=y))
 pp <- pp + geom_abline(slope = 1, color='red')
 pp
 ```
+
+### Binomial example (logistic regression)
+
+This section shows an example of the variable selection for a logistic regression model (binary classification). Everything is very similar to the Gaussian case. First load the data:
+```{r}
+load('../data/binomialExample.RData')
+```
+
+We then fit the full model:
+```{r}
+# fit the full model
+n <- dim(x)[1]
+D <- dim(x)[2]
+p0 <- 5 # prior guess for the number of relevant variables
+sigma <- 2 # approximate plug-in value for observation information (Piironen and Vehtari, 2017)
+tau0 <- p0/(D-p0) * sigma/sqrt(n)
+prior_coeff <- hs(df=1, global_df=1, global_scale=tau0)
+fit <- stan_glm(y ~ x, binomial(), prior = prior_coeff, seed = 1, adapt_delta=0.999)
+```
+
+Run the variable selection
+```{r}
+fit <- varsel(fit, method='L1')
+fit$varsel$chosen
+```
+
+Plot the MLPD and classification accuracy on the training data:
+```{r}
+varsel_plot(fit, statistics=c('mlpd','pctcorr'), deltas=F)
+```
+Cross-validate the full model and the variable selection:
+```{r}
+fit_cv <- cv_varsel(fit, method='L1',cv_method='LOO')
+```
+
+Plot the cross-validated performance estimates on the absolute scale. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 6 varibles. About 11 variables gives predictive accurary similar to the full model.
+```{r}
+varsel_plot(fit_cv, statistics=c('mlpd','pctcorr'), deltas=F)
+```
+
+
+
+
+
 
