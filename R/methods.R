@@ -232,7 +232,7 @@ varsel_plot <- function(object, ..., nv_max = NULL, statistics = NULL, deltas = 
 
   ggplot(data = subset(arr, size <= nv_max), mapping = aes(x = size)) +
     # geom_ribbon(aes(ymin = lq, ymax = uq), alpha = 0.3) +
-  	geom_errorbar(aes(ymin = lq, ymax = uq, width=0.2, alpha=alpha)) +
+  	geom_errorbar(aes(ymin = lq, ymax = uq, width=0.2, alpha=0.1)) +
     geom_line(aes(y = value)) +
   	geom_point(aes(y = value)) +
     geom_hline(aes(yintercept = value), subset(arr, size == max(size)),
