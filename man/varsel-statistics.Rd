@@ -19,7 +19,8 @@ varsel_statistics(object, ..., nv_max = NULL, deltas = F)
 
 \item{statistics}{A list of strings of statistics to calculate. Available
 options are: kl, mse, mlpd, kl, (gaussian only), pctcorr (binomial only).
-If \code{NULL}, all statistics are calculated.}
+If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_statistics
+return all the statistics.}
 
 \item{deltas}{If \code{TRUE}, the difference between the full model and the
 submodel is returned instead of the actual value of the statistic.

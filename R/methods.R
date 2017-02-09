@@ -197,7 +197,8 @@ proj_sigma <- function(object, ...) {
 #' @param nv_max Maximum submodel size for which the statistics are calculated.
 #' @param statistics A list of strings of statistics to calculate. Available
 #' options are: kl, mse, mlpd, kl, (gaussian only), pctcorr (binomial only).
-#' If \code{NULL}, all statistics are calculated.
+#' If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_statistics
+#' return all the statistics.
 #' @param deltas If \code{TRUE}, the difference between the full model and the
 #' submodel is returned instead of the actual value of the statistic.
 #' Defaults to \code{FALSE}.
@@ -231,13 +232,14 @@ varsel_plot <- function(object, ..., nv_max = NULL, statistics = NULL, deltas = 
 
   ggplot(data = subset(arr, size <= nv_max), mapping = aes(x = size)) +
     # geom_ribbon(aes(ymin = lq, ymax = uq), alpha = 0.3) +
-  	geom_errorbar(aes(ymin = lq, ymax = uq, width=0.2, alpha=0.1)) +
+  	geom_errorbar(aes(ymin = lq, ymax = uq, width=0.2, alpha=alpha)) +
     geom_line(aes(y = value)) +
   	geom_point(aes(y = value)) +
     geom_hline(aes(yintercept = value), subset(arr, size == max(size)),
                color = 'darkred', linetype=2) +
     coord_cartesian(xlim = c(0, nv_max)) +
     labs(x = 'Number of variables in the submodel', y = ylab) +
+    theme(legend.position = 'none') +
     facet_grid(statistic ~ ., scales = 'free_y')
 }
 
