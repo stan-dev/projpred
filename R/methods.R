@@ -1,7 +1,7 @@
 # All functions that users will use to extract model parameters,
 # plot variable selection statistics etc.
 
-#' Methods for objects with varsel-information.
+#' Methods for objects with varsel-information
 #'
 #' The methods can be used to extract all the information related to variable
 #' selection obtained running either \link[=varsel]{varsel} or
@@ -26,21 +26,8 @@
 #' @param nc Same as in \link[=varsel]{varsel}.
 #' @param nv Number of variables in the submodel. Can also be a list, in
 #'  which case a list is returned for each submodel size.
-#' @param nv_max Maximum submodel size for which the statistics are calculated.
-#' @param statistics A list of strings of statistics to calculate. Available
-#' options are: kl, mse, mlpd, kl, (gaussian only), pctcorr (binomial only).
-#' If \code{NULL}, all statistics are calculated.
-#' @param deltas If \code{TRUE}, the difference between the full model and the
-#' submodel is returned instead of the actual value of the statistic.
-#' Defaults to \code{FALSE}.
-#' @param n_boot Number of bootstrap samples for calculating the credible
-#' intervals of the statistics.
-#' @param alpha A number indicating the desired coverage of the credible
-#' intervals. Eg. \code{alpha=0.1} corresponds to 90% probability mass
-#' within the intervals. Defaults to \code{0.1}.
 #' @param ... Currently ignored.
 NULL
-
 
 #' @export
 init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
@@ -197,7 +184,31 @@ proj_sigma <- function(object, ...) {
   })
 }
 
-#' @rdname varsel-methods
+#' Plotting or printing summary statistics related to variable selection
+#'
+#' \code{varsel_statistics} can be used to obtain summary statistics related to
+#' variable selection. The same statistics can be plotted with
+#' \code{varsel_plot}.
+#'
+#' @name varsel-statistics
+#'
+#' @param object The object returned by \link[=varsel]{varsel} or
+#' \link[=cv_varsel]{cv_varsel}.
+#' @param nv_max Maximum submodel size for which the statistics are calculated.
+#' @param statistics A list of strings of statistics to calculate. Available
+#' options are: kl, mse, mlpd, kl, (gaussian only), pctcorr (binomial only).
+#' If \code{NULL}, all statistics are calculated.
+#' @param deltas If \code{TRUE}, the difference between the full model and the
+#' submodel is returned instead of the actual value of the statistic.
+#' Defaults to \code{FALSE}.
+#' @param n_boot Number of bootstrap samples for calculating the credible
+#' intervals of the statistics.
+#' @param alpha A number indicating the desired coverage of the credible
+#' intervals. Eg. \code{alpha=0.1} corresponds to 90% probability mass
+#' within the intervals. Defaults to \code{0.1}.
+NULL
+
+#' @rdname varsel-statistics
 #' @export
 varsel_plot <- function(object, ..., nv_max = NULL, statistics = NULL, deltas = T,
                         n_boot = 1000, alpha = 0.1) {
@@ -230,7 +241,7 @@ varsel_plot <- function(object, ..., nv_max = NULL, statistics = NULL, deltas = 
     facet_grid(statistic ~ ., scales = 'free_y')
 }
 
-#' @rdname varsel-methods
+#' @rdname varsel-statistics
 #' @export
 varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
   if(!('varsel' %in% names(object)))

@@ -1,4 +1,4 @@
-#' Projection to a submodels of selected size.
+#' Projection to submodels of selected sizes
 #'
 #' Perform the projection predictive variable selection for a generalized
 #' linear model fitted with rstanarm.

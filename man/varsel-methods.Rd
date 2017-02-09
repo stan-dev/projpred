@@ -6,9 +6,7 @@
 \alias{proj_coef}
 \alias{proj_se}
 \alias{proj_sigma}
-\alias{varsel_plot}
-\alias{varsel_statistics}
-\title{Methods for objects with varsel-information.}
+\title{Methods for objects with varsel-information}
 \usage{
 proj_linpred(object, transform = FALSE, xnew = NULL, ynew = NULL,
   offsetnew = NULL, newdata = NULL, nv = NULL, integrated = FALSE,
@@ -19,11 +17,6 @@ proj_coef(object, ...)
 proj_se(object, ...)
 
 proj_sigma(object, ...)
-
-varsel_plot(object, ..., nv_max = NULL, statistics = NULL, deltas = T,
-  n_boot = 1000, alpha = 0.1)
-
-varsel_statistics(object, ..., nv_max = NULL, deltas = F)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -49,23 +42,6 @@ parameters. Defaults to \code{FALSE}.}
 \item{nc}{Same as in \link[=varsel]{varsel}.}
 
 \item{...}{Currently ignored.}
-
-\item{nv_max}{Maximum submodel size for which the statistics are calculated.}
-
-\item{statistics}{A list of strings of statistics to calculate. Available
-options are: kl, mse, mlpd, kl, (gaussian only), pctcorr (binomial only).
-If \code{NULL}, all statistics are calculated.}
-
-\item{deltas}{If \code{TRUE}, the difference between the full model and the
-submodel is returned instead of the actual value of the statistic.
-Defaults to \code{FALSE}.}
-
-\item{n_boot}{Number of bootstrap samples for calculating the credible
-intervals of the statistics.}
-
-\item{alpha}{A number indicating the desired coverage of the credible
-intervals. Eg. \code{alpha=0.1} corresponds to 90% probability mass
-within the intervals. Defaults to \code{0.1}.}
 }
 \description{
 The methods can be used to extract all the information related to variable

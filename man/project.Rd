@@ -2,7 +2,7 @@
 % Please edit documentation in R/project.R
 \name{project}
 \alias{project}
-\title{Projection to a submodels of selected size.}
+\title{Projection to submodels of selected sizes}
 \usage{
 project(object, nv = NULL, ns = NULL, nc = NULL, intercept = NULL,
   seed = NULL, ...)
