@@ -1,10 +1,51 @@
 # All functions that users will use to extract model parameters,
 # plot variable selection statistics etc.
 
+#' Methods for objects with varsel-information.
+#'
+#' The methods can be used to extract all the information related to variable
+#' selection obtained running either \link[=varsel]{varsel} or
+#' \link[=cv_varsel]{cv_varsel}. Most of the functions work similar to the
+#' generic methods defined for objects of the class 'lm', 'glm', 'stanreg',
+#' eg. proj_coef corresponds to \link[=coef]{coef}, proj_linpred corresponds to
+#' \link[=se]{se} etc. Note that these are under development and subject might
+#' change in the future.
+#'
+#' @name varsel-methods
+#'
+#' @param object The object returned by \link[=varsel]{varsel} or
+#' \link[=cv_varsel]{cv_varsel}.
+#' @param transform Same as in \link[=posterior_linpred]{posterior_linpred}.
+#' @param xnew New data to be used with the prediction. If \code{NULL}, the
+#' data used when fitting the model is used.
+#' @param ynew Same as \code{xnew}, but for the ouput.
+#' @param offsetnew Same as \code{xnew}, but for the offset.
+#' @param integrated If \code{TRUE}, the output is averaged over the
+#' parameters. Defaults to \code{FALSE}.
+#' @param ns Same as in \link[=varsel]{varsel}.
+#' @param nc Same as in \link[=varsel]{varsel}.
+#' @param nv Number of variables in the submodel. Can also be a list, in
+#'  which case a list is returned for each submodel size.
+#' @param nv_max Maximum submodel size for which the statistics are calculated.
+#' @param statistics A list of strings of statistics to calculate. Available
+#' options are: kl, mse, mlpd, kl, (gaussian only), pctcorr (binomial only).
+#' If \code{NULL}, all statistics are calculated.
+#' @param deltas If \code{TRUE}, the difference between the full model and the
+#' submodel is returned instead of the actual value of the statistic.
+#' Defaults to \code{FALSE}.
+#' @param n_boot Number of bootstrap samples for calculating the credible
+#' intervals of the statistics.
+#' @param alpha A number indicating the desired coverage of the credible
+#' intervals. Eg. \code{alpha=0.1} corresponds to 90% probability mass
+#' within the intervals. Defaults to \code{0.1}.
+#' @param ... Currently ignored.
+NULL
+
+
 #' @export
 init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
                           intercept=TRUE, loglik=NULL) {
-    
+
     # fill in the missing values with their defaults
     if (is.null(mu))
         mu <- y
@@ -21,18 +62,19 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
         wsample <- rep(1/S, S)
     if (is.null(intercept))
         intercept <- TRUE
-    
+
     fit <- list(x=x, y=y, fam=kl_helpers(family), mu=mu, dis=dis, offset=offset,
                 wobs=wobs, wsample=wsample, intercept=intercept, loglik=loglik)
     return(fit)
 }
 
+#' @rdname varsel-methods
 #' @export
-proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offsetnew = NULL, 
+proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offsetnew = NULL,
 						 newdata = NULL, nv = NULL, integrated = FALSE, ns=NULL, nc=NULL, ...) {
-  
-  # TODO, IMPLEMENT THE PROJECTION/PREDICTION WITH AN ARBITRARY VARIABLE COMBINATION 
-	
+
+  # TODO, IMPLEMENT THE PROJECTION/PREDICTION WITH AN ARBITRARY VARIABLE COMBINATION
+
   if( !('proj' %in% names(object)) || !is.null(ns) || !is.null(nc) )
   	object <- project(object, nv=nv, ns=ns, nc=nc, ...)
 
@@ -47,7 +89,7 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
   nt <- nrow(xnew)
   if (is.null(offsetnew))
   	offsetnew <- rep(0,nt)
-  
+
   # project only onto the model sizes specified in nv
   projected_sizes <- sapply(object$proj$p_sub, function(psub) NROW(psub$beta))
   if(is.null(nv)) nv <- projected_sizes
@@ -60,7 +102,7 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
 
   projs <- Filter(function(psub) NROW(psub$beta) %in% nv, object$proj$p_sub)
   names(projs) <- nv
-  
+
   preds <- mapply(function(proj, nv) {
     ch <- object$varsel$chosen[min(nv,1):nv]
     mu <- family_kl$mu_fun(xnew[,ch,drop=F], proj$alpha, proj$beta, offsetnew)
@@ -92,9 +134,10 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
   	return(preds)
 }
 
+#' @rdname varsel-methods
 #' @export
 proj_coef <- function(object, ...) {
-  
+
   if(!('proj' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
@@ -103,9 +146,10 @@ proj_coef <- function(object, ...) {
   proj_coef_helper(object, fun)
 }
 
+#' @rdname varsel-methods
 #' @export
 proj_se <- function(object, ...) {
-  
+
   if(!('proj' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
@@ -134,10 +178,11 @@ proj_coef_helper <- function(object, fun) {
   })
 }
 
+#' @rdname varsel-methods
 #' @export
 proj_sigma <- function(object, ...) {
   # only gaussian family supported currently
-  
+
   if(!('proj' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the projection.',
                'Run the projection first.'))
@@ -152,14 +197,15 @@ proj_sigma <- function(object, ...) {
   })
 }
 
+#' @rdname varsel-methods
 #' @export
-varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
-                        n_boot = 1000, alpha = 0.05) {
-  if(!('varsel' %in% names(x)))
+varsel_plot <- function(object, ..., nv_max = NULL, statistics = NULL, deltas = T,
+                        n_boot = 1000, alpha = 0.1) {
+  if(!('varsel' %in% names(object)))
     stop(paste('The provided object doesn\'t contain information about the',
                'variable selection. Run the variable selection first.'))
 
-  stats <- subset(.bootstrap_stats(x$varsel, n_boot, alpha),
+  stats <- subset(.bootstrap_stats(object$varsel, n_boot, alpha),
                   delta == deltas | statistic == 'kl')
   if(is.null(statistics)) statistics <- 'mlpd' #as.character(unique(stats$statistic))
   arr <- subset(stats, statistic %in% statistics)
@@ -184,6 +230,7 @@ varsel_plot <- function(x, ..., nv_max = NULL, statistics = NULL, deltas = T,
     facet_grid(statistic ~ ., scales = 'free_y')
 }
 
+#' @rdname varsel-methods
 #' @export
 varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
   if(!('varsel' %in% names(object)))

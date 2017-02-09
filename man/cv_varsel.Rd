@@ -25,10 +25,12 @@ cv_varsel(fit, method = "L1", cv_method = "LOO", ns = NULL, nc = NULL,
 
 \item{verbose}{Whether to print out some information during the validation, Default is TRUE.}
 
+\item{K}{Number of folds in the k-fold cross validation. Only applicable
+if \code{cv_method = TRUE} and \code{k_fold = NULL}.}
+
 \item{k_fold}{An array with cross-validated stanfits and the respective
-test datasets returned by \link[=stanreg-objects]{cv_fit}(fit).
-If not provided, \link[=stanreg-objects]{cv_fit}(fit) is called to
-get the array.}
+test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
+If not provided, \link[=kfold]{kfold} is called inside the function.}
 }
 \value{
 The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
@@ -52,8 +54,6 @@ linear model.
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
 fit_cv <- cv_varsel(fit)
-plot_varsel(fit_cv)
 }
 
 }
-

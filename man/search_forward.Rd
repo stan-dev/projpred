@@ -9,4 +9,3 @@ search_forward(p_full, d_train, family_kl, intercept, nv_max, verbose)
 \description{
 Search heuristics
 }
-

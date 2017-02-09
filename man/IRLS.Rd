@@ -15,4 +15,3 @@ Written by hand because glm.fit in R is too slow.
 - Initialization of b currenly quite ad hoc
 - rewrite in C?
 }
-

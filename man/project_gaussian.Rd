@@ -9,4 +9,3 @@ project_gaussian(ind, p_full, d_train, intercept, regul = 1e-12)
 \description{
 Function handles for the projection
 }
-

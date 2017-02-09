@@ -58,4 +58,3 @@ plot_varsel(fit_v)
 }
 
 }
-

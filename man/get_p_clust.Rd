@@ -10,4 +10,3 @@ get_p_clust(family_kl, mu, dis, nc = 10, wsample = rep(1, dim(mu)[2]),
 \description{
 Function(s) to perform the clustering over the samples
 }
-
