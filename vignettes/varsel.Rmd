@@ -332,7 +332,6 @@ fit3 <- stan_glm(y ~ x, family = binomial("logit"), data = d_train,
                  iter = ITER, chains = CHAINS, cores = CORES, seed = 12345)
 ```
 
-
 ```{r, spam-varsel, results = "hide"}
 fit3_v <- cv_varsel(fit = fit3, method = 'L1', cv_method = 'LOO', ns = 200)
 ```
