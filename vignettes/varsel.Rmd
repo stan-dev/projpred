@@ -3,7 +3,7 @@ title: "Projection Predictive Variable Selection for GLMs"
 author: "Markus Paasiniemi, Juho Piironen and Aki Vehtari"
 date: "`r Sys.Date()`"
 output:
-  html_vignette:
+  html_notebook:
   toc: yes
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
@@ -21,8 +21,9 @@ params:
 
 # Introduction
 
+__Note: The contents of this vignette are outdated. Check the notebook quickstart.Rmd for information about the package!__
 This vignette explains how to perform projection predictive variable selection
-for generalized linear models (GLMs) fit using the `stan_glm` function in the
+for generalized linear models (GLMs) fitted using the `stan_glm` function in the
 __rstanarm__ package. The vignette is based on Piironen and Vehtari (2015),
 which also discusses some of the details more thoroughly.
 
@@ -43,7 +44,7 @@ is, a model using all available variables) onto a subset of the variables.
 The steps of projection predictive variable selection are:
 
   1. Fit the full model with all the variables and the best possible prior information.
-  1. Perform the variable selection using the projection predictive method.
+  1. Perform the variable selection (model reduction) using the projection predictive method.
   
 Especially in high-dimensional settings, the best possible prior information
 often includes some sort of idea about sparsity. The next section reviews the
@@ -92,7 +93,6 @@ effect of $\nu$ on the local shrinkage by sampling $\kappa_j$ for different
 choices of $\nu$.
 
 ```{r, kappa-fig, fig.height=2, fig.width=5}
-library(ggplot2)
 drawkappa <- function(n, df) 1 / (1 + rt(n, df)^2)
 n <- 50000
 df <- rep(c(1,3), each = n)
@@ -142,20 +142,12 @@ coefficient vector
 
 which can be approximated using the posterior draws of the full model.
 
-Now that we are able to compare different submodels using the discrepancy 
-measure above, the missing piece is a search heuristic, as carrying out the 
-projection for all possible parameter combinations is not feasible. For this 
-purpose, forward selection seems to work well in practice while being 
-computationally efficient. Forward selection entails adding in the variables one
-at a time and each time selecting the candidate variable that decreases the
-discrepancy the most.
+Now that we are able to compare different submodels using the discrepancy above, the missing piece is a search heuristic as doing the projection for all the possible parameter combinations is not usually computational feasible. For this, forward selection seems to work well in practice while being computationally efficient. In forward selection, the variables are added one at a time selecting the candidate variable that decreases the discrepancy the most.
 
 To assess the performance of the submodels as a function of the submodel size we
-can use cross-validation (Piironen and Vehtari, 2016). The full model is fit $K$
-times with all but $n/K$ observations withheld for testing, forward selection is
-carried out, and performance is evaluated on the test set. In addition to more
+can use cross-validation (Piironen and Vehtari, 2016). In addition to more
 traditional performance metrics such as mean squared error, the procedure also
-produces $K$ possibly different search paths, the similarity of which can also
+produces possibly different search paths, the similarity of which can also
 be used to decide the correct size for the submodel.
 
 
@@ -216,15 +208,13 @@ situation for the hierarchical shrinkage prior. In this example we use a
 Gaussian linear model with a `hs(df = 3)` prior. The hierarchical shrinkage
 prior is not applied to the intercept term and for that we use a weakly
 informative `normal(0, 5)` prior (here 5 is the standard deviation not the
-variance). In order to find a sufficient submodel size, we also save the
-cross-validated fits in a separate object.
+variance).
 
 ```{r, crime-full, results="hide"}
 library(rstanarm)
 fit3 <- stan_glm(y ~ x, data = d_train, family = gaussian(),
                  prior = hs(df = 3), prior_intercept = normal(0, 5),
-                 iter = 300, chains = CHAINS, cores = CORES, seed = 12345)
-kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = TRUE)
+                 iter = ITER, chains = CHAINS, cores = CORES, seed = 12345)
 ```
 
 ## Variable selection
@@ -232,18 +222,20 @@ kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = TRUE)
 After we have fit the full model, we can proceed to variable selection.
 We use 200 posterior draws to approximate the expectation of the KL divergence,
 although in some situations a large sample size might be needed. We also run the
-variable selection only up to 50 variables.
+variable selection only up to 50 variables. In order to find a sufficient 
+submodel size, we also save the cross-validated fits in a separate object.
 
 ```{r, crime-varsel, results = "hide"}
 library(glmproj)
-fit3_v <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 200, nv = 50)
+fit3_v <- cv_varsel(fit = fit3, method = 'L1', cv_method = 'LOO', 
+                    ns = 200, nv_max = 50)
 ```
 
 To assess how much the full model can be simplified, we can plot some
 performance metrics calculated with cross-validation.
 
 ```{r, crime-varsel-plot, fig.height=5, fig.width=5}
-varsel_plot(fit3_v, summaries = c('kl','mse','mlpd'), nv = 50)
+varsel_plot(fit3_v, statistics = c('kl','mse','mlpd'), nv_max = 20)
 ```
 
 The plot above shows the difference in KL-divergence (kl), the mean log 
@@ -255,34 +247,17 @@ enough. On the other hand, it seems that using as few as 10 variables might
 already produce relatively good results compared to the full model.
 
 The same statistics can also be obtained in numerical form using the 
-`varsel_summary` function
+`summary_statistics` function
 ```{r, varsel-summary}
-vsum <- varsel_summary(fit3_v)
+vsum <- varsel_statistics(fit3_v)
 head(vsum)
 ```
-and we can therefore also calculate additional quantities that may be of
-interest. For example, to compute the average difference in RMSE for models of
-size 10 and 30 compared to the full model we can do the following:
 
-```{r, crime-varsel-print, results = "asis"}
-library(knitr)
-submodel_sizes <- c(10, 30)
-rmse_diff <- with(vsum, sqrt(mse[size %in% submodel_sizes]) - 
-                    sqrt(mse[size == 100]))
-kable(cbind(submodel_sizes, rmse_diff), align = 'c',
-             col.names = c('Submodel size', 'Difference in RMSE'),
-             caption = 'Difference in RMSE to the full model averaged over 10 cross-validated searches.')
-```
-
-We can also evaluate the uncertainty related to variable selection by checking,
-how much the cross-validated projections agree on the selected variables. In
-this case we notice that there is great uncertainty related to the variable
-selection and therefore no clear choice which variables to add to the model
-after the first few.
+We can also evaluate the uncertainty related to the variable selection by checking, how much the cross-validated projections agree on the selected variables. In this case we notice that there is great uncertainty related to the variable selection and therefore no clear choice which variables to add to the model after the first few. This is likely due to correlations between variables, so that any variable from a correlating group variables is a good choice for addition.
 
 ```{r, crime-varsel-print2}
 kable(
-  varsel_summary(fit3_v, nv = 6)[, c('size', 'chosen', 'pctch')],
+  varsel_statistics(fit3_v, nv_max = 10)[, c('size', 'chosen', 'pctch')],
   align = 'c',
   col.names = c('Submodel size', 'Index of the variable selected last',
                 'Proportion that include the variable'),
@@ -301,15 +276,15 @@ fit3_p5 <- project(fit3_v, nv = 5, ns = 100)
 proj_coef(fit3_p5)
 ```
 
-The projections can also be used to predict similarly to using the full model.
-For example, the table below shows that in this case the submodels perform
-essentially identically to the full model on the test data.
+The projected submodels can also be used to make predictions. For example, the table below shows that in this case the submodels perform essentially identically to the full model on the test data.
 
 ```{r, crime-varsel-predict}
+submodel_sizes <- c(10, 30)
 fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
 
 # means of the predictions for RMSE
-pred_sub_mean <- lapply(proj_linpred(fit3_p, newdata = d_test), colMeans)
+proj3 <- proj_linpred(fit3_p, xnew =  d_test$x, ynew = d_test$y)
+pred_sub_mean <- lapply(proj3, function(proj) colMeans(proj$pred))
 pred_full_mean <- colMeans(posterior_linpred(fit3, newdata = d_test))
 
 # RMSE of the submodels
@@ -354,49 +329,40 @@ to shrink the parameters. We continue the analysis with the `hs(df = 5)` prior.
 ```{r, spam-full, results="hide"}
 fit3 <- stan_glm(y ~ x, family = binomial("logit"), data = d_train,
                  prior = hs(df = 5), prior_intercept = normal(0, 5),
-                 iter = 300, chains = CHAINS, cores = CORES, seed = 12345)
-kfold3 <- glmproj::kfold(fit3, K = 10, save_fits = TRUE)
+                 iter = ITER, chains = CHAINS, cores = CORES, seed = 12345)
 ```
 
-As noted, for non-Gaussian GLMs there is no closed form solution for the
-projected parameters and therefore the projection takes longer. To do the
-variable selection faster, we compare the candidate variables by projecting the
-information in the posterior to only one sample instead of `ns `samples. This is
-done by setting `nc = 1`. After the variables have been selected, the projection
-is done onto the submodel using the `ns` samples.
-
-In practice, the described approach seems to yield similar results to using `ns`
-samples in the selection, but currently it is not recommended for final
-statistical inference.
 
 ```{r, spam-varsel, results = "hide"}
-fit3_v <- cv_varsel(fit = fit3, k_fold = kfold3, ns = 100, nc = 1)
+fit3_v <- cv_varsel(fit = fit3, method = 'L1', cv_method = 'LOO', ns = 200)
 ```
 
 For a classification task, we can also plot the cross-validated classification 
 accuracy. In general, the functionality is the same as for the Gaussian case.
 
 ```{r, spam-varsel-plot, fig.height=5, fig.width=5}
-varsel_plot(fit3_v, summaries = c('kl','pctcorr'), deltas = FALSE)
+varsel_plot(fit3_v, statistics = c('kl','pctcorr'), deltas = FALSE)
 ```
 
-As for the Gaussian case, the actual percentage of correctly classified objects 
-in the test set is close to the percentage calculated with cross-validation.
+As with the Gaussian case, the actual percentage of correctly classified objects in the test set resembles closely the percentage calculated with cross-validation.
 
 ```{r, spam-varsel-coefs}
 submodel_sizes <- c(2, 6)
 fit3_p <- project(fit3_v, nv = submodel_sizes, ns = 100)
 
-pred_sub <- proj_linpred(fit3_p, transform = T, newdata = d_test)
+proj_sub <- proj_linpred(fit3_p, transform = T,
+                         xnew = d_test$x, ynew = d_test$y)
 pred_full <- posterior_linpred(fit3, transform = T, newdata = d_test)
 
-acc_sub <- sapply(pred_sub, function(x) sum(round(colMeans(x),0)==d_test$y))
+acc_sub <- sapply(proj_sub, 
+                  function(proj) sum(round(colMeans(proj$pred),0)==d_test$y))
 acc_full <- sum(round(colMeans(pred_full),0)==d_test$y)
 accuracies <- cbind(c(paste('Submodel, nv =',c(submodel_sizes)),'Full model'),
                     round(c(acc_sub, acc_full)/length(d_test$y)*100,2))
 
 knitr::kable(accuracies, align = 'c',
              col.names = c('Model', 'Correctly classified (%)'),
+             row.names = FALSE,
              caption = 'Percentage of correctly classified instances on the test set.')
 ```
 

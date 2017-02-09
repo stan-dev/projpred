@@ -10,10 +10,11 @@
 #' @param intercept Same as in \link[=varsel]{varsel}.
 #' @param verbose Whether to print out some information during the validation, Default is TRUE.
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
+#' @param K Number of folds in the k-fold cross validation. Only applicable
+#' if \code{cv_method = TRUE} and \code{k_fold = NULL}.
 #' @param k_fold An array with cross-validated stanfits and the respective
-#' test datasets returned by \link[=stanreg-objects]{cv_fit}(fit).
-#' If not provided, \link[=stanreg-objects]{cv_fit}(fit) is called to
-#' get the array.
+#' test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
+#' If not provided, \link[=kfold]{kfold} is called inside the function.
 #'
 #' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
 #' which is a list containing the following elements:
@@ -44,7 +45,7 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
 		# use one cluster for selection by default, and always with L1-search
 		nc <- 1
-	
+
 	# .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
 	if(is.null(intercept))
@@ -85,7 +86,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   #  - list of crossvalidated paths (chosen_cv),
   #  - list (d_test) with test outputs y, test weights and data type (string)
   #  - list with submodel and full model summaries
-	
+
   if (!('stanfit' %in% names(fit)))
   	stop('k-fold cross validation not yet implemented for other than rstanarm reference models.')
 
@@ -182,21 +183,21 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	#
 	vars <- .extract_vars(fit)
 	fam <- vars$fam
-	mu <- vars$mu 
+	mu <- vars$mu
 	dis <- vars$dis
-	
+
 	# training data
-	d_train <- .get_traindata(fit) 
-	
+	d_train <- .get_traindata(fit)
+
 	# the reference distribution used for selection
 	p_full <- .get_refdist(fit, ns=ns, nc=nc)
 	cl <- p_full$cl # clustering information
-	
+
 	#### DEBUGGING ##
 	# p_middle <- .get_refdist(fit, nc=3)
 	# cl_middle <- p_middle$cl
 	#################
-	
+
 	# fetch the log-likelihood for the full model to obtain the LOO weights
 	if ('stanfit' %in% names(fit))
 	    # stanreg-objects have a function log_lik
@@ -208,51 +209,51 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	    stop('To perform LOO for generic reference models, you must provide log-likelihood matrix to init_refmodel.')
 	lw <- psislw(-loglik)$lw_smooth
 	n <- dim(lw)[2]
-	
+
 	# compute loo summaries for the full model
 	d_test <- d_train
 	loo_full <- apply(loglik+lw, 2, 'log_sum_exp')
 	mu_full <- rep(0,n)
 	for (i in 1:n)
         mu_full[i] <- mu[i,] %*% exp(lw[,i])
-	
+
 	# initialize matrices where to store the results
 	chosen_mat <- matrix(rep(0, n*nv_max), nrow=n)
 	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
-	
+
 	if (verbose)
 		print('Start computing LOOs...')
-	
+
 	for (i in 1:n) {
-		
+
 		# reweight the clusters/samples according to the is-loo weights
 		p_sel <- get_p_clust(fam, mu, dis, cl=cl, wsample=exp(lw[,i]))
 		# p_middle <- get_p_clust(fam, mu, dis, cl=cl_middle, wsample=exp(lw[,i]))
-		
+
 		# perform selection
 		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
 		chosen_mat[i,] <- chosen
-		
+
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
 		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept) # replace p_sel by p_full here?
 		# p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_middle, d_train, intercept) # replace p_sel by p_full here?
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(chosen, d_test, p_sub, fam)
-		
-		
+
+
 		for (k in 0:nv_max) {
 			loo_sub[i,k+1] <- summaries_sub[[k+1]]$lppd
 			mu_sub[i,k+1] <- summaries_sub[[k+1]]$mu
 		}
-		
+
 		if (verbose && i %% round(n/10) == 0)
 		    print(sprintf('%d%% of LOOs done.', 10*i / round(n/10)))
 	}
 	if (verbose && i %% round(n/10) != 0)
 		print('100% of LOOs done.')
-	
+
 	###############
 	## DEBUGGING ##
 	# p_sel <- .get_refdist(fit, nc=1)
@@ -269,8 +270,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	# }
 	# print(apply(peff,2,sum))
 	###############
-	
-	
+
+
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
 	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1])
@@ -278,11 +279,11 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	})
 	summ_full <- list(lppd=loo_full, mu=mu_full)
 	summaries <- list(sub=summ_sub, full=summ_full)
-	
+
     chosen_cv <- lapply(1:n, function(i){ chosen_mat[i,] })
-    
+
     d_test <- list(y=d_train$y, weights=d_train$weights, type='loo')
-    
+
 	return(list(chosen_cv=chosen_cv, summaries=summaries, d_test=d_test))
-	
+
 }
