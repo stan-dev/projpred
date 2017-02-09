@@ -29,7 +29,7 @@ Defaults to \code{FALSE}.}
 intervals of the statistics.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
-intervals. Eg. \code{alpha=0.1} corresponds to 90% probability mass
+intervals. Eg. \code{alpha=0.1} corresponds to 90\% probability mass
 within the intervals. Defaults to \code{0.1}.}
 }
 \description{

@@ -204,7 +204,7 @@ proj_sigma <- function(object, ...) {
 #' @param n_boot Number of bootstrap samples for calculating the credible
 #' intervals of the statistics.
 #' @param alpha A number indicating the desired coverage of the credible
-#' intervals. Eg. \code{alpha=0.1} corresponds to 90% probability mass
+#' intervals. Eg. \code{alpha=0.1} corresponds to 90\% probability mass
 #' within the intervals. Defaults to \code{0.1}.
 NULL
 
