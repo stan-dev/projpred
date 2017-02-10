@@ -35,14 +35,14 @@ Example
 
 
     # perform the variable selection
-    fit <- varsel(fit)
+    fit_v <- varsel(fit)
     
-	# print the results
-    varsel_summary(fit)
+    # print the results
+    varsel_statistics(fit_v)
 
-    # project the parameters for model sizes nv = 0,...,10 variables 
-    fit <- project(fit_v, nv = c(0:10))
-    proj_coef(fit)
+    # project the parameters for model sizes nv = 3,5 variables 
+    fit_p <- project(fit_v, nv = c(3, 5))
+    proj_coef(fit_p)
     
     # perform cross-validation for the variable selection
     fit_cv <- cv_varsel(fit, cv_method='LOO')
