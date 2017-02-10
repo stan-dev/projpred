@@ -13,7 +13,7 @@ Installation
   		install.packages("devtools")
   		library(devtools)
 	}
-	devtools::install_github('paasim/glmproj', ref='development')
+	devtools::install_github('paasim/glmproj')
 
     
 Example
