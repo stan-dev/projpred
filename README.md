@@ -47,6 +47,7 @@ Example
     proj_coef(fit_p)
     
     # perform cross-validation for the variable selection
+    # cv_method='kfold' currently only works with the dev-version of rstanarm.
     fit_cv <- cv_varsel(fit, cv_method='LOO')
 
     # plot the results

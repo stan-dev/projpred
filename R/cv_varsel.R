@@ -97,7 +97,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
     if(is.null(K)) K <- 10
     print(paste0('k_fold not provided, performing ', K,
                  '-fold cross-validation for the stan model.'))
-    k_fold <- kfold_(fit, K = K, save_fits = T)
+    k_fold <- kfold(fit, K = K, save_fits = T)
   }
   family_kl <- kl_helpers(family(fit))
 
