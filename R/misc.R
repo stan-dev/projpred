@@ -3,13 +3,6 @@
   packageStartupMessage("This is glmproj version ", ver)
 }
 
-# from rstanarm
-log_mean_exp <- function(x) {
-  max_x <- max(x)
-  max_x + log(sum(exp(x - max_x))) - log(length(x))
-}
-is.stanreg <- function(x) inherits(x, "stanreg")
-
 log_weighted_mean_exp <- function(x, w) {
   x <- x + log(w)
   max_x <- max(x)
@@ -21,45 +14,10 @@ log_sum_exp <- function(x) {
 	max_x + log(sum(exp(x - max_x)))
 }
 
-# Updated version of the kfold function in the rstanarm-package
-
-#' @export
-kfold_ <- function (x, K = 10, save_fits = FALSE)
-{
-  #validate_stanreg_object(x)
-  #stopifnot(K > 1, K <= nobs(x))
-  #if (!used.sampling(x))
-  #  STOP_sampling_only("kfold")
-  #if (model_has_weights(x))
-  #  stop("kfold is not currently available for models fit using weights.")
-  d <- rstanarm:::kfold_and_reloo_data(x)
-  N <- nrow(d)
-  perm <- sample.int(N)
-  idx <- ceiling(seq(from = 1, to = N, length.out = K + 1))
-  bin <- .bincode(perm, breaks = idx, right = FALSE, include.lowest = TRUE)
-  lppds <- list()
-  fits <- array(list(), c(K, 2), list(NULL, c('fit','omitted')))
-  for (k in 1:K) {
-    message("Fitting model ", k, " out of ", K)
-    omitted <- which(bin == k)
-    fit_k <- rstanarm:::update.stanreg(object = x, data = d[-omitted,
-                                                 , drop = FALSE], weights = NULL, refresh = 0)
-    lppds[[k]] <- log_lik(fit_k, newdata = d[omitted, , drop = FALSE])
-    if(save_fits) fits[k,] <- list(fit = fit_k, omitted = omitted)
-  }
-  elpds <- unlist(lapply(lppds, function(x) {
-    apply(x, 2, log_mean_exp)
-  }))
-  out <- list(elpd_kfold = sum(elpds), se_elpd_kfold = sqrt(N *
-                                                              var(elpds)), pointwise = cbind(elpd_kfold = elpds))
-  if(save_fits) out$fits <- fits
-  structure(out, class = c("kfold", "loo"), K = K)
-}
-
 # check if the fit object is suitable for variable selection
 .validate_for_varsel <- function(fit) {
-  
-  if(!is.stanreg(fit))
+
+  if(!('stanreg' %in% class(fit)))
     stop('Object is not a stanreg object')
 
   if(!(gsub('rstanarm::', '', fit$call[1]) %in% c("stan_glm", "stan_lm")))
@@ -81,22 +39,22 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 
 # extract all important information from the fit object for variable selection
 .extract_vars <- function(fit) {
-	
+
 	if (!is.null(fit$stanfit)) {
-		
+
 		# the fit is an rstanarm-object
 		e <- extract(fit$stanfit)
-		
+
 		# family and the predictor matrix x
 		fam <- kl_helpers(family(fit))
 		x <- unname(get_x(fit))
 		x <- x[, as.logical(attr(x, 'assign'))]
 		attr(x, 'assign') <- NULL
-		
+
 		# undo the random permutation to make results reproducible
 		perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
 							 fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
-		
+
 		res <- list(
 			fam = fam,
 			x = x,
@@ -105,10 +63,10 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 			dis = unname(e[['aux']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
-		
+
 		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
-		
+
 		y <- unname(get_y(fit))
 		if(NCOL(y) == 1) {
 			res$wobs <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
@@ -118,11 +76,11 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 			res$y <- y[, 1] / res$wobs
 		}
 		return(res)
-		
+
 	} else {
-		
+
 		# not and rstanarm-object, so look for the relevant fields
-	    
+
 	    # DUMMY, simply return the object itself and assume it has all the relevant fiels
 	    # (i.e. it was created by init_refmodel)
 	    return(fit)
@@ -174,22 +132,22 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 	# It is possible to use this function by passing .extract_vars(fit) as
 	# an argument in place of fit.
 	#
-	
+
 	# save the old seed and initialize with the new one
 	seed_old <- .Random.seed
 	set.seed(seed)
-	
+
 	if ( all(c('fam', 'x', 'mu', 'dis') %in% names(fit)) )
 		# all the relevant fields contained in the given structure
 		vars <- fit
 	else
 		# fetch the relevant info from the fit object
 		vars <- .extract_vars(fit)
-	
+
 	fam <- vars$fam
 	n <- NROW(vars$x) # number of data points
 	S <- NCOL(vars$mu) # sample size in the full model
-	
+
 	if (!is.null(nc)) {
 		# use clustering (ignore ns argument)
 		if (nc == 1) {
@@ -215,10 +173,10 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 		# use all the samples from the full model
 		p_ref <- list(mu = vars$mu, dis = vars$dis, weights = rep(1/S, S), cl=c(1:S))
 	}
-	
+
 	# restore the old seed
 	.Random.seed <- seed_old
-	
+
 	return(p_ref)
 }
 
@@ -234,7 +192,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 	else
 		# fetch the relevant info from the fit object
 		vars <- .extract_vars(fit)
-	
+
 	return(list(x = vars$x, y = vars$y, weights = vars$wobs, offset = vars$offset))
 }
 
@@ -255,7 +213,7 @@ kfold_ <- function (x, K = 10, save_fits = FALSE)
 # 		if (nc < 0)
 # 			stop('nc must be > 0.')
 # 		if (nc > 100) {
-# 			
+#
 # 		}
 # 	} else {
 # 		if(ns > NCOL(vars$mu)) {

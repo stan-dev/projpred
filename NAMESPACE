@@ -2,7 +2,6 @@
 
 export(cv_varsel)
 export(init_refmodel)
-export(kfold_)
 export(proj_coef)
 export(proj_linpred)
 export(proj_se)

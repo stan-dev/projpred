@@ -26,12 +26,14 @@ Example
     set.seed(1)
 
     # Gaussian and Binomial examples from the glmnet-package
-    data('QuickStartExample', package = 'glmnet')
-    #data('BinomialExample', package = 'glmnet') 
+    data('df_gaussian', package = 'glmproj')
+    #data('df_binom', package = 'glmproj')
 
     # fit the full model with a sparsifying prior
-    fit <- stan_glm(y ~ x, gaussian(), prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
-    #fit <- stan_glm(y ~ x, binomial(), prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
+    fit <- stan_glm(y ~ x, gaussian(), df_gaussian,
+                    prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
+    #fit <- stan_glm(y ~ x, binomial(), df_binom
+    #                prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
 
 
     # perform the variable selection
