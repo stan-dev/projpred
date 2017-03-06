@@ -81,10 +81,6 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 
 kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
                          K, k_fold) {
-  # returns:
-  #  - list of crossvalidated paths (chosen_cv),
-  #  - list (d_test) with test outputs y, test weights and data type (string)
-  #  - list with submodel and full model summaries
 
   if (!('stanfit' %in% names(fit)))
   	stop('k-fold cross validation not yet implemented for other than rstanarm reference models.')
@@ -120,29 +116,31 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   })
 
   # List of K elements, each containing d_train, p_full, etc. corresponding
-  # to the corresponding fold.
-  e_cv <- mapply(function(vars, d_test) {
+  # to each fold.
+  msgs <- paste0(method, ' search for the fold number ', 1:K, '/', K, '.')
+  list_cv <- mapply(function(vars, d_test, msg) {
     # .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
   	d_train <- .get_traindata(vars)
   	d_test <- d_test
   	p_full <- .get_refdist(vars, ns, nc)
-  	coef_full <- list(alpha = vars$alpha, beta = vars$beta)
-  	list(d_train=d_train, d_test=d_test, p_full=p_full, coef_full=coef_full)
-  }, vars_cv, d_test, SIMPLIFY = F)
+  	mu <- family_kl$mu_fun(d_test$x, vars$alpha, vars$beta, d_test$offset)
+  	dis <- vars$dis
+  	list(d_train = d_train, d_test = d_test, p_full = p_full,
+  	     mu_test = mu, dis_test = dis, w_test = vars$wsample, msg = msg)
+  }, vars_cv, d_test, msgs, SIMPLIFY = F)
 
   # List of K elements, each a list of the variables selected for the
-  # corresponding fold.
-  msgs <- paste0(method, ' search for the fold number ', 1:K, '/', K, '.')
-  chosen_cv <- mapply(function(e, msg) {
-    print(msg)
-    select(method, e$p_full, e$d_train, family_kl, intercept, nv_max, verbose)
-  }, e_cv, msgs, SIMPLIFY = F)
+  # corresponding fold
+  chosen_cv <- lapply(list_cv, function(x) {
+    print(x$msg)
+    select(method, x$p_full, x$d_train, family_kl, intercept, nv_max, verbose)
+  })
 
   # Construct p_sub for each fold using .get_submodels.
-  p_sub_cv <- mapply(function(chosen, e) {
-    .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, e$p_full,
-                   e$d_train, intercept)
-  }, chosen_cv, e_cv, SIMPLIFY = F)
+  p_sub_cv <- mapply(function(chosen, x) {
+    .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, x$p_full,
+                   x$d_train, intercept)
+  }, chosen_cv, list_cv, SIMPLIFY = F)
 
   # Helper function extract and combine mu and lppd from K lists with each
   # n/K of the elements to one list with n elements
@@ -151,16 +149,15 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   # Apply some magic to manipulate the structure of the list so that instead of
   # list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   # one sub_summary-list that contains with all n mu:s and lppd:s.
-  sub_cv <- apply(
-    mapply(function(p_sub, e, chosen) {
-      lapply(.get_sub_summaries(chosen, e$d_test, p_sub, family_kl), data.frame)
-    }, p_sub_cv, e_cv, chosen_cv),
+  sub <- apply(
+    mapply(function(p_sub, x, chosen) {
+      lapply(.get_sub_summaries(chosen, x$d_test, p_sub, family_kl), data.frame)
+    }, p_sub_cv, list_cv, chosen_cv),
     1, hf)
 
-  # Same for the full model.
-  full_cv <- hf(lapply(e_cv, function(e) {
-    data.frame(.get_full_summaries(e$p_full, e$d_test, e$coef_full,
-                                   family_kl, intercept))
+  full <- hf(lapply(list_cv, function(x) {
+    data.frame(.weighted_summary_means(x$d_test, family_kl, x$w_test,
+                                       x$mu_test, x$dis_test))
   }))
 
   # Combine also the K separate test data sets into one list
@@ -169,7 +166,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
     data.frame(d[c('y', 'weights')])}))
 
   list(chosen_cv = chosen_cv, d_test = c(d_cv, type = 'kfold'),
-       summaries = list(sub = sub_cv, full = full_cv))
+       summaries = list(sub = sub, full = full))
 }
 
 

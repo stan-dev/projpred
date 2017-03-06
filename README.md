@@ -30,9 +30,9 @@ Example
     #data('df_binom', package = 'glmproj')
 
     # fit the full model with a sparsifying prior
-    fit <- stan_glm(y ~ x, gaussian(), df_gaussian,
+    fit <- stan_glm(y ~ x, family = gaussian(), data = df_gaussian,
                     prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
-    #fit <- stan_glm(y ~ x, binomial(), df_binom
+    #fit <- stan_glm(y ~ x, family = binomial(), data = df_binom
     #                prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
 
 
