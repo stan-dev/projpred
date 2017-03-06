@@ -3,6 +3,9 @@
 #' @docType package
 #' @name glmproj
 #'
+#' @useDynLib glmproj
+#' @importFrom Rcpp sourceCpp
+#'
 #' @import stats
 #' @import rstanarm
 #' @import ggplot2
