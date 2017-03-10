@@ -54,10 +54,10 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, lambda_min_rat
 
     # sort the variables according to the order in which they enter the model in the L1-path
     entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1]) # na for those that did not enter
-    # entered_variables <- c(1:NCOL(d_train$x))[!is.na(entering_indices)] # variables that entered at some point
+    entered_variables <- c(1:NCOL(d_train$x))[!is.na(entering_indices)] # variables that entered at some point
     notentered_variables <- c(1:NCOL(d_train$x))[is.na(entering_indices)] # variables that did not enter at any point
     order_of_entered <- sort(entering_indices, index.return=TRUE)$ix
-	order <- c(order_of_entered, notentered_variables)
+	order <- c(entered_variables[order_of_entered], notentered_variables)
     
 	# if (length(order_of_entered) < nv_max)
 	#	warning('Less than nv_max variables entered L1-path. Try reducing lambda_min_ratio. ')
