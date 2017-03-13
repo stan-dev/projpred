@@ -133,7 +133,11 @@ proj_coef <- function(object, ...) {
         w <- w/sum(w)
         drop(b %*%w )
     }
-    proj_coef_helper(object, fun)
+    out <- proj_coef_helper(object, fun)
+    if (length(out)==1)
+        return(out[[1]])
+    else
+        return(out)
 }
 
 #' @rdname varsel-methods
@@ -146,12 +150,15 @@ proj_se <- function(object, ...) {
     # weighted standard deviation (using cluster weights)
     fun <- function(b, w) {
         w <- w/sum(w)
-        bmean <- b %*% w
+        bmean <- drop(b %*% w)
         bsd <- drop(sqrt( ((b - bmean)^2)%*%w ))
         #drop(sqrt( ((b - bmean)^2)%*%w / ((sum(w>0)-1)/sum(w>0)*sum(w)) ))
     }
-    proj_coef_helper(object, fun)
-    
+    out <- proj_coef_helper(object, fun)
+    if (length(out)==1)
+        return(out[[1]])
+    else
+        return(out)
 }
 
 proj_coef_helper <- function(object, fun) {
