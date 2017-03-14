@@ -65,25 +65,3 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, lambda_min_rat
 	return(order[1:nv_max])
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

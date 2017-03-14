@@ -138,5 +138,3 @@ project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
     return(p_sub)
 }
 
-
-

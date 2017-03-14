@@ -45,7 +45,6 @@
 }
 
 
-
 .bbweights <- function(N,B) {
     # generate Bayesian bootstrap weights, N = original sample size,
     # B = number of bootstrap samples

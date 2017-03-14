@@ -245,3 +245,19 @@ log_sum_exp <- function(x) {
   }
 }
 
+.suggest_size <- function(varsel, alpha = 0.1, cutoff_pct = 0.1) {
+  # suggest a model size. Currently finds the smallest model for which
+  # the lower alpha/2-quantile of mlpd is at least cutoff_pct from the full model
+  stats <- subset(.bootstrap_stats(varsel, alpha = alpha), statistic == 'mlpd'
+                  & delta == TRUE & data %in% c('loo', 'kfold'))
+  mlpd_null <- subset(stats, size == 0, 'value')
+  mlpd_cutoff <- cutoff_pct*mlpd_null
+  res <- subset(stats, lq >= mlpd_cutoff$value, 'size')
+  
+  if(nrow(res) == 0) {
+    warning("Can't suggest a size for the submodel.")
+    NA
+  } else {
+    min(subset(stats, lq >= mlpd_cutoff$value, 'size'))
+  }
+}

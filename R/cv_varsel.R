@@ -76,6 +76,10 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 	fit$varsel <- c(sel[c('chosen', 'kl', 'family_kl')],
                   sel_cv[c('d_test', 'summaries')],
                   list(pctch = pctch))
+	
+	ssize <- .suggest_size(fit$varsel)
+	fit$varsel$ssize <- ssize
+	
 	fit
 }
 
