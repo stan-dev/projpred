@@ -1,23 +1,19 @@
 ---
 title: "glmproj Quick Start"
-output: html_notebook
+date: "`r Sys.Date()`"
+output: html_vignette
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
-
-This notebook shows briefly how to use the main functionalities of the ```glmproj```-package.
-
-## Installation
-
-The package is not yet in CRAN but the development version can be installed as follows:
-```{r}
-if (!require(devtools)) {
-  install.packages("devtools")
-  library(devtools)
-}
-devtools::install_github('paasim/glmproj', ref='development')
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{glmproj quickstart guide}
+\usepackage[utf8](inputenc)
+-->
+```{r, child="children/SETTINGS-knitr.txt"}
 ```
 
-
-
+This notebook shows briefly how to use the main functionalities of the ```glmproj```-package.
 
 ## Gaussian example
 First load the packages that are needed. 
@@ -25,27 +21,31 @@ First load the packages that are needed.
 library(rstanarm)
 library(glmproj)
 library(ggplot2)
-options(mc.cores = parallel::detectCores())
 ```
 
-The package contains a simple Gaussian example dataset in the ```data```-directory. This dataset is one of the example cases from the ```glmnet```-package. The following command loads the predictor matrix ```x``` and the corresponding targets ```y``` into the workspace.
+The package contains a simple Gaussian example dataset accessible with the `data`-command. This dataset is one of the example cases from the `glmnet`-package. The following command loads a dataframe `df_gaussian` with the predictor matrix `x` and the corresponding targets `y` into the workspace.
 ```{r}
-load('../data/GaussianExample.RData')
+data('df_gaussian', package = 'glmproj')
 ```
 
 
 We then fit the model with all the variables and sparsifying horseshoe prior on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017). 
 ```{r}
-n <- dim(x)[1] # 100
-D <- dim(x)[2] # 20
+n <- nrow(df_gaussian$x) # 100
+D <- ncol(df_gaussian$x) # 20
 p0 <- 5 # prior guess for the number of relevant variables
 tau0 <- p0/(D-p0) * 1/sqrt(n) # scale for tau 
 prior_coeff <- hs(df=1, global_df=1, global_scale=tau0) # horseshoe prior
-fit <- stan_glm(y ~ x, gaussian(), prior = prior_coeff, seed = 1, adapt_delta = 0.999)
+fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
+                # to make this vignette build fast, we use only 2 chains and
+                # 600 draws. In practice, more conservative values, eg. 4 chains
+                # and 2000 draws might be required for reliable inference.
+                seed=1, adapt_delta=0.999, chains=2, iter=600) 
+
 ```
 
 
-The variable selection can then be excecuted with the command ```varsel```. This will add a field ```varsel``` to the ```fit```-object containing information about the variable selection, such as the ordering of the variables.
+The variable selection can then be excecuted with the command `varsel`. This will add a field `varsel` to the `fit`-object containing information about the variable selection, such as the ordering of the variables.
 ```{r}
 fit <- varsel(fit, method='L1')
 fit$varsel$chosen
@@ -55,48 +55,49 @@ fit$varsel$chosen
 We can then plot some statistics computed on the training data, such as the mean log predictive density (MLPD) and mean squared error (MSE) as the function of number of variables added. Setting ```deltas=F``` shows the results on absolute scale, whereas ```deltas=T``` shows the results relative to the full model.
 ```{r}
 # plot predictive performance relative to the full model on training data 
-varsel_plot(fit, statistics = c('mlpd','mse'), deltas=T)
+varsel_plot(fit, statistics=c('mlpd', 'mse'), deltas=T)
 ```
 
 
 The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process.
 ```{r}
-fit_cv <- cv_varsel(fit, method='L1',cv_method='LOO')
+fit_cv <- cv_varsel(fit, method='L1', cv_method='LOO')
 ```
 In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 variables the predictions do not change markedly:
 ```{r}
-varsel_plot(fit_cv, statistics = c('mlpd','mse'), deltas=T)
+varsel_plot(fit_cv, statistics = c('mlpd', 'mse'), deltas=T)
 ```
 
-We can make predictions with the submodels using method ```proj_linpred```. Test inputs can be provided using the keyword ```xnew```. If also the test targets ```ynew``` are provided, then the function evaluates the log predictive density at these points . For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+We can make predictions with the submodels using method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points . For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r}
-pred <- proj_linpred(fit, xnew=x, ynew=y, nv=6, integrated = TRUE)
+pred <- proj_linpred(fit_cv, xnew=df_gaussian$x, ynew=df_gaussian$y, nv=6, integrated = TRUE)
 ```
 Visualize the predictions
 ```{r}
-pp <- ggplot()
-pp <- pp + geom_point(data=data.frame(pred), aes(x=pred,y=y))
-pp <- pp + geom_abline(slope = 1, color='red')
-pp
+ggplot() +
+  geom_point(aes(x=pred$pred,y=df_gaussian$y)) +
+  geom_abline(slope = 1, color='red') +
+  labs(x = 'prediction', y = 'y')
 ```
 
 ## Binomial example (logistic regression)
 
-This section shows an example of the variable selection for a logistic regression model (binary classification). Everything is very similar to the Gaussian case. First load the data (this dataset is also from the ```glmnet```-package):
+This section shows an example of the variable selection for a logistic regression model (binary classification). Everything is very similar to the Gaussian case. First load the data (this dataset is also from the `glmnet`-package):
 ```{r}
-load('../data/binomialExample.RData')
+data('df_binom', package = 'glmproj')
 ```
 
 Then fit the full model:
 ```{r}
 # fit the full model
-n <- dim(x)[1]
-D <- dim(x)[2]
+n <- nrow(df_binom$x)
+D <- ncol(df_binom$x)
 p0 <- 5 # prior guess for the number of relevant variables
 sigma <- 2 # approximate plug-in value for observation information (Piironen and Vehtari, 2017)
 tau0 <- p0/(D-p0) * sigma/sqrt(n)
 prior_coeff <- hs(df=1, global_df=1, global_scale=tau0)
-fit <- stan_glm(y ~ x, binomial(), prior = prior_coeff, seed = 1, adapt_delta=0.999)
+fit <- stan_glm(y ~ x, family=binomial(), data=df_binom, prior=prior_coeff,
+                seed=1, adapt_delta=0.999, chains=2, iter=600)
 ```
 
 Run the variable selection
@@ -107,19 +108,18 @@ fit$varsel$chosen
 
 Plot the MLPD and classification accuracy on the training data:
 ```{r}
-varsel_plot(fit, statistics=c('mlpd','pctcorr'), deltas=F)
+varsel_plot(fit, statistics=c('mlpd', 'pctcorr'), deltas=F)
 ```
+
 Cross-validate the full model and the variable selection:
 ```{r}
-fit_cv <- cv_varsel(fit, method='L1',cv_method='LOO')
+fit_cv <- cv_varsel(fit, method='L1', cv_method='LOO')
 ```
 
 Plot the cross-validated performance estimates on the absolute scale. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 6 varibles. About 11 variables gives predictive accurary similar to the full model.
 ```{r}
-varsel_plot(fit_cv, statistics=c('mlpd','pctcorr'), deltas=F)
+varsel_plot(fit_cv, statistics=c('mlpd', 'pctcorr'), deltas=F)
 ```
-
-
 
 
 ### References
