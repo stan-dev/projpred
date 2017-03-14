@@ -38,9 +38,9 @@ tau0 <- p0/(D-p0) * 1/sqrt(n) # scale for tau
 prior_coeff <- hs(df=1, global_df=1, global_scale=tau0) # horseshoe prior
 fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
                 # to make this vignette build fast, we use only 2 chains and
-                # 600 draws. In practice, more conservative values, eg. 4 chains
+                # 800 draws. In practice, more conservative values, eg. 4 chains
                 # and 2000 draws might be required for reliable inference.
-                seed=1, adapt_delta=0.999, chains=2, iter=600) 
+                seed=1, adapt_delta=0.999, chains=2, iter=800) 
 
 ```
 
@@ -97,7 +97,7 @@ sigma <- 2 # approximate plug-in value for observation information (Piironen and
 tau0 <- p0/(D-p0) * sigma/sqrt(n)
 prior_coeff <- hs(df=1, global_df=1, global_scale=tau0)
 fit <- stan_glm(y ~ x, family=binomial(), data=df_binom, prior=prior_coeff,
-                seed=1, adapt_delta=0.999, chains=2, iter=600)
+                seed=1, adapt_delta=0.999, chains=2, iter=800)
 ```
 
 Run the variable selection
