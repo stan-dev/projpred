@@ -87,8 +87,12 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
                          K, k_fold) {
 
   if (!('stanfit' %in% names(fit)))
-  	stop('k-fold cross validation not yet implemented for other than rstanarm reference models.')
+  	stop('k-fold cross-validation not yet implemented for other than rstanarm reference models.')
 
+  # KFOLD TEMPORARILY DISABLED
+  stop(paste0('k-fold cross-validation is currently unavailable due to upcoming changes',
+              ' in rstanarm. Please set cv_method to "LOO" to perform cross-validation.'))
+  
   # Construct the kfold-objects. The resulting list contains an element 'fits',
   # which is a K x 2 dimensional array. Each row corresponds to one of the K
   # folds. First column contains the rstanarm-objects and the second column
