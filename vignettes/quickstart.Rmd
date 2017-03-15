@@ -13,7 +13,8 @@ params:
 ```{r, child="children/SETTINGS-knitr.txt"}
 ```
 
-This notebook shows briefly how to use the main functionalities of the ```glmproj```-package.
+This vignette shows how to use the main functionalities of the ```glmproj```-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models fitted with ```rstanarm```. The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).
+
 
 ## Gaussian example
 First load the packages that are needed. 
@@ -29,12 +30,12 @@ data('df_gaussian', package = 'glmproj')
 ```
 
 
-We then fit the model with all the variables and sparsifying horseshoe prior on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017). 
+We then fit the model with all the variables and sparsifying horseshoe prior (Carvalho et al., 2010) on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017b), in which the prior for the global shrinkage parameter is defined based on our prior guess for the number of relevant variables.
 ```{r}
 n <- nrow(df_gaussian$x) # 100
 D <- ncol(df_gaussian$x) # 20
 p0 <- 5 # prior guess for the number of relevant variables
-tau0 <- p0/(D-p0) * 1/sqrt(n) # scale for tau 
+tau0 <- p0/(D-p0) * 1/sqrt(n) # scale for tau (notice that stan_glm will automatically scale this by sigma)
 prior_coeff <- hs(df=1, global_df=1, global_scale=tau0) # horseshoe prior
 fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
                 # to make this vignette build fast, we use only 2 chains and
@@ -45,7 +46,7 @@ fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
 ```
 
 
-The variable selection can then be excecuted with the command `varsel`. This will add a field `varsel` to the `fit`-object containing information about the variable selection, such as the ordering of the variables.
+The variable selection can then be excecuted with the command `varsel`. This will add a field `varsel` to the `fit`-object containing information about the variable selection, such as the ordering of the variables. The search heuristic is specified by the keyword `method`. By default, `varsel` uses the LASSO type L1-penalization to find the variable ordering (Tran et al., 2012).
 ```{r}
 fit <- varsel(fit, method='L1')
 fit$varsel$chosen
@@ -59,18 +60,21 @@ varsel_plot(fit, statistics=c('mlpd', 'mse'), deltas=T)
 ```
 
 
-The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process.
+The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process. 
 ```{r}
 fit_cv <- cv_varsel(fit, method='L1', cv_method='LOO')
 ```
-In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 variables the predictions do not change markedly:
+In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel``` (smallest model with expected loss in log predictive density less than 10 percent of the difference between the full and empty model with probability 0.9)
+```{r}
+fit_cv$varsel$ssize
+```
 ```{r}
 varsel_plot(fit_cv, statistics = c('mlpd', 'mse'), deltas=T)
 ```
 
 We can make predictions with the submodels using method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points . For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r}
-pred <- proj_linpred(fit_cv, xnew=df_gaussian$x, ynew=df_gaussian$y, nv=6, integrated = TRUE)
+pred <- proj_linpred(fit, xnew=df_gaussian$x, ynew=df_gaussian$y, nv=6, integrated = TRUE)
 ```
 Visualize the predictions
 ```{r}
@@ -116,7 +120,10 @@ Cross-validate the full model and the variable selection:
 fit_cv <- cv_varsel(fit, method='L1', cv_method='LOO')
 ```
 
-Plot the cross-validated performance estimates on the absolute scale. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 6 varibles. About 11 variables gives predictive accurary similar to the full model.
+Plot the cross-validated performance estimates on the absolute scale. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 6 varibles. About 11 variables gives predictive accurary similar to the full model (the program suggests 13 variables)
+```{r}
+fit_cv$varsel$ssize
+```
 ```{r}
 varsel_plot(fit_cv, statistics=c('mlpd', 'pctcorr'), deltas=F)
 ```
@@ -124,4 +131,14 @@ varsel_plot(fit_cv, statistics=c('mlpd', 'pctcorr'), deltas=F)
 
 ### References
 
-Piironen, Juho and Vehtari, Aki (2017). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In _Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS 2017)_, accepted for publication. [Preprint](https://arxiv.org/abs/1610.05559)
+Carvalho, C.M., Polson, N.G., Scott, J.G. (2010). The horseshoe estimator for sparse signals. _Biometrika_ 97(2):465–480. doi:10.1093/biomet/asq017
+
+Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. _Journal of Statistical Planning and Inference_, 111(1-2):77–94.
+
+Goutis, C. and Robert, C. P. (1998). _Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections_. Biometrika, 85(1):29–37.
+
+Piironen, Juho and Vehtari, Aki (2017a). Comparison of Bayesian predictive methods for model selection. _Statistics and Computing_ 27(3):711-735. DOI 10.1007/s11222-016-9649-y. [Online](http://link.springer.com/article/10.1007/s11222-016-9649-y)
+
+Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In _Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS 2017)_, accepted for publication. [Preprint](https://arxiv.org/abs/1610.05559)
+
+Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. _Statistics and Computing_ 22(5):1069-1084. doi:10.1007/s11222-011-9279-3
