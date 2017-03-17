@@ -226,8 +226,13 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
 
-	if (verbose)
-		print('Start computing LOOs...')
+	if (verbose) {
+	    print('Start computing LOOs...')
+	    nprints <- 10 # how many prints during the computation
+	    print_at <- round( c(1:nprints)*(n/nprints) )
+	    iprint <- 1
+	}
+		
 
 	for (i in 1:n) {
 
@@ -252,11 +257,12 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 			mu_sub[i,k+1] <- summaries_sub[[k+1]]$mu
 		}
 
-		if (verbose && i %% round(n/10) == 0)
-		    print(sprintf('%d%% of LOOs done.', 10*i / round(n/10)))
+		if (verbose && (i %in% print_at)) {
+		    print(sprintf('%d%% of LOOs done.', 10*iprint))
+		    iprint <- iprint+1
+		}
+		    
 	}
-	if (verbose && i %% round(n/10) != 0)
-		print('100% of LOOs done.')
 
 	###############
 	## DEBUGGING ##
