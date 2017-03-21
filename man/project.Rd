@@ -5,7 +5,7 @@
 \title{Projection to submodels of selected sizes}
 \usage{
 project(object, nv = NULL, ns = NULL, nc = NULL, intercept = NULL,
-  seed = NULL, ...)
+  seed = NULL, return_fit = TRUE, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or

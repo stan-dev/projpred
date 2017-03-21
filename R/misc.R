@@ -48,6 +48,7 @@ log_sum_exp <- function(x) {
 		# family and the predictor matrix x
 		fam <- kl_helpers(family(fit))
 		x <- unname(get_x(fit))
+		coefnames <- names(coef(fit))[as.logical(attr(x, 'assign'))]
 		x <- x[, as.logical(attr(x, 'assign'))]
 		attr(x, 'assign') <- NULL
 
@@ -62,6 +63,7 @@ log_sum_exp <- function(x) {
 			beta = t(unname(drop(e$beta)))[, perm_inv],                              # EVENTUALLY NEED TO GET RID OFF THIS
 			dis = unname(e[['aux']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
+			coefnames = coefnames,
 			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
 
 		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset)
@@ -261,3 +263,5 @@ log_sum_exp <- function(x) {
     min(subset(stats, lq >= mlpd_cutoff$value, 'size'))
   }
 }
+
+.is_proj_list <- function(proj) 'family_kl' %in% names(proj)

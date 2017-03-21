@@ -57,28 +57,29 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 
 #' @rdname varsel-methods
 #' @export
-proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, offsetnew = NULL,
-                         newdata = NULL, nv = NULL, integrated = FALSE, ns=NULL, nc=NULL, ...) {
+proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
+                         transform = FALSE, nv = NULL, integrated = FALSE,
+                         ns=NULL, nc=NULL, manual_inds = NULL, ...) {
     
+    if(is.null(xnew)) stop('Please provide xnew.')
+
     # TODO, IMPLEMENT THE PROJECTION/PREDICTION WITH AN ARBITRARY VARIABLE COMBINATION
-    
-    if( !('proj' %in% names(object)) || !is.null(ns) || !is.null(nc) )
-        object <- project(object, nv=nv, ns=ns, nc=nc, ...)
-    
-    vars <- .extract_vars(object)
-    family_kl <- vars$fam
-    
-    if (is.null(xnew)) {
-        xnew <- vars$x
-        if (is.null(ynew))
-            ynew <- vars$y
+    if('stanreg' %in% class(object)) {
+      if( !('proj' %in% names(object))) {
+        proj <- project(object, nv=nv, ns=ns, nc=nc, return_fit= FALSE) 
+      } else {
+        proj <- object$proj
+      }
     }
-    nt <- nrow(xnew)
+  
+    if(!.is_proj_list(proj))
+        proj <- list(proj)
+    
     if (is.null(offsetnew))
-        offsetnew <- rep(0,nt)
+        offsetnew <- rep(0, nrow(xnew))
     
     # project only onto the model sizes specified in nv
-    projected_sizes <- sapply(object$proj$p_sub, function(psub) NROW(psub$beta))
+    projected_sizes <- sapply(proj, function(x) NROW(x$beta))
     if(is.null(nv)) nv <- projected_sizes
     
     if(!all(nv %in% projected_sizes))
@@ -87,16 +88,16 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
                     ', but projection performed only for nv = ',
                     paste(projected_sizes, collapse = ', '), '.'))
     
-    projs <- Filter(function(psub) NROW(psub$beta) %in% nv, object$proj$p_sub)
+    projs <- Filter(function(x) NROW(x$beta) %in% nv, proj)
     names(projs) <- nv
     
-    preds <- mapply(function(proj, nv) {
-        ch <- object$varsel$chosen[min(nv,1):nv]
-        mu <- family_kl$mu_fun(xnew[,ch,drop=F], proj$alpha, proj$beta, offsetnew)
+    preds <- lapply(projs, function(proj) {
+        xtemp <- if(NCOL(xnew) == length(proj$ind)) xnew else xnew[, proj$ind, drop = F]
+        mu <- proj$family_kl$mu_fun(xtemp, proj$alpha, proj$beta, offsetnew)
         if(transform)
             pred <- t(mu)
         else
-            pred <- t(family_kl$linkfun(mu))
+            pred <- t(proj$family_kl$linkfun(mu))
         if (integrated)
             # average over the parameters
             pred <- as.vector( proj$weights %*% pred )
@@ -105,7 +106,7 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
             pred <- as.vector(pred)
         if (!is.null(ynew)) {
             # compute also the log-density
-            lpd <- family_kl$ll_fun(mu, proj$dis, ynew)
+            lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew)
             if (integrated && !is.null(dim(lpd)))
                 lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
             else if (!is.null(dim(lpd)))
@@ -113,7 +114,7 @@ proj_linpred <- function(object, transform = FALSE, xnew = NULL, ynew = NULL, of
             return(list(pred=pred, lpd=lpd))
         } else
             return(list(pred=pred))
-    }, projs, nv, SIMPLIFY = F)
+    })
     
     if (length(preds)==1)
         return(preds[[1]])
@@ -133,7 +134,7 @@ proj_coef <- function(object, ...) {
         w <- w/sum(w)
         drop(b %*%w )
     }
-    out <- proj_coef_helper(object, fun)
+    out <- proj_coef_helper(object$proj, fun)
     if (length(out)==1)
         return(out[[1]])
     else
@@ -152,31 +153,33 @@ proj_se <- function(object, ...) {
         w <- w/sum(w)
         bmean <- drop(b %*% w)
         bsd <- drop(sqrt( ((b - bmean)^2)%*%w ))
-        #drop(sqrt( ((b - bmean)^2)%*%w / ((sum(w>0)-1)/sum(w>0)*sum(w)) ))
     }
-    out <- proj_coef_helper(object, fun)
+    out <- proj_coef_helper(object$proj, fun)
     if (length(out)==1)
         return(out[[1]])
     else
         return(out)
 }
 
-proj_coef_helper <- function(object, fun) {
+proj_coef_helper <- function(proj, fun) {
     # calculates 'fun' for each projected weight vector b and sample weights w
-    coefnames <- names(coef(object))
-    if(object$proj$intercept) coefnames <- coefnames[-1]
+  
+    if(!.is_proj_list(proj))
+      proj <- list(proj)
     
-    lapply(object$proj$p_sub, function(proj) {
+    res <- lapply(proj, function(proj) {
         b <- proj$beta
         if(NROW(b) == 0) return(0)
-        rownames(b) <- coefnames[object$varsel$chosen[1:NROW(b)]]
+        rownames(b) <- proj$ind_names
         if(object$proj$intercept) {
             b <- rbind(proj$alpha, b)
-            rownames(b)[1] <- names(coef(object))[1]
+            rownames(b)[1] <- '(Intercept)'
         }
         
         fun(b, proj$weights)
     })
+    
+    if(length(res)==1) res[[1]] else res
 }
 
 #' @rdname varsel-methods

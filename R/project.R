@@ -33,7 +33,8 @@
 #'
 
 #' @export
-project <- function(object, nv = NULL, ns = NULL, nc = NULL, intercept = NULL, seed=NULL, ...) {
+project <- function(object, nv = NULL, ns = NULL, nc = NULL, intercept = NULL, 
+                    seed = NULL, return_fit = TRUE, ...) {
 
 	# TODO, IMPLEMENT THE PROJECTION WITH AN ARBITRARY VARIABLE COMBINATION
 
@@ -42,21 +43,22 @@ project <- function(object, nv = NULL, ns = NULL, nc = NULL, intercept = NULL, s
 		stop(paste('The stanreg object doesn\'t contain information about the ',
 					'variable selection. Run the variable selection first.'))
 
-    vars <- .extract_vars(object)
-
+  vars <- .extract_vars(object)
+  chosen <- object$varsel$chosen
+  
 	if (is.null(ns) && is.null(nc))
 		# by default project with clusters
 		nc <- min(50, NCOL(vars$mu))
 	if (is.null(nv))
 		# by default, run the projection up to the maximum number of variables
 		# specified in the variable selection
-		nv <- c(0:length(object$varsel$chosen))
+		nv <- c(0:length(chosen))
 
 	if(is.null(intercept)) intercept <- vars$intercept
 
 	family_kl <- vars$fam
 
-	if(max(nv) > length(object$varsel$chosen))
+	if(max(nv) > length(chosen))
 		stop(paste('Cannot perform the projection with', max(nv), 'variables,',
 				'because the variable selection has been run only up to',
 				length(object$varsel$chosen), 'variables.'))
@@ -66,11 +68,26 @@ project <- function(object, nv = NULL, ns = NULL, nc = NULL, intercept = NULL, s
 
 	# get the clustering or subsample
 	p_full <- .get_refdist(object, ns=ns, nc=nc, seed=seed)
-
-	object$proj <- list(
-		p_sub = .get_submodels(object$varsel$chosen, nv, family_kl,
-								p_full, d_train, intercept),
-		intercept = intercept)
-
-	object
+  
+	subm <- .get_submodels(chosen, nv, family_kl, p_full, d_train, intercept)
+	
+	# add family_kl, sort inds
+	proj <- lapply(subm, function(x) {
+	  if(length(x$ind) > 0) {
+	    ord <- order(x$ind)
+	    x$ind <- x$ind[ord]
+	    x$beta <- x$beta[ord, , drop = FALSE]
+	    x$ind_names <- object$varsel$chosen_names[x$ind]
+	  }
+	  c(x, list(family_kl = family_kl))
+	 })
+	
+	if(length(proj) == 1) proj <- proj[[1]]
+	
+	if(return_fit) {
+	  object$proj <- proj
+	  object
+	} else {
+	  proj
+	}
 }

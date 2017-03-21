@@ -73,7 +73,7 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 	}, do.call(rbind, sel_cv$chosen_cv))
 
 	fit$proj <- NULL
-	fit$varsel <- c(sel[c('chosen', 'kl', 'family_kl')],
+	fit$varsel <- c(sel[c('chosen', 'chosen_names', 'kl', 'family_kl')],
                   sel_cv[c('d_test', 'summaries')],
                   list(pctch = pctch))
 	

@@ -99,6 +99,7 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   
   # store the relevant fields into fit
   fit$varsel <- list(chosen = chosen,
+                     chosen_names = vars$coefnames[chosen],
                      kl = sapply(p_sub, function(x) x$kl),
                      d_test = c(d_test[c('y','weights')], type = d_type),
                      summaries = list(sub = sub, full = full),

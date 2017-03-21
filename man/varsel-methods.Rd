@@ -8,9 +8,9 @@
 \alias{proj_sigma}
 \title{Methods for objects with varsel-information}
 \usage{
-proj_linpred(object, transform = FALSE, xnew = NULL, ynew = NULL,
-  offsetnew = NULL, newdata = NULL, nv = NULL, integrated = FALSE,
-  ns = NULL, nc = NULL, ...)
+proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,
+  transform = FALSE, nv = NULL, integrated = FALSE, ns = NULL,
+  nc = NULL, manual_inds = NULL, ...)
 
 proj_coef(object, ...)
 
@@ -22,14 +22,14 @@ proj_sigma(object, ...)
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
-\item{transform}{Same as in \link[=posterior_linpred]{posterior_linpred}.}
-
 \item{xnew}{New data to be used with the prediction. If \code{NULL}, the
 data used when fitting the model is used.}
 
 \item{ynew}{Same as \code{xnew}, but for the ouput.}
 
 \item{offsetnew}{Same as \code{xnew}, but for the offset.}
+
+\item{transform}{Same as in \link[=posterior_linpred]{posterior_linpred}.}
 
 \item{nv}{Number of variables in the submodel. Can also be a list, in
 which case a list is returned for each submodel size.}

@@ -30,7 +30,7 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
         beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
         dis_sub <- sqrt( colSums(wobs*mu^2) + dis^2 )
         kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
-        p_sub <- list(kl = kl, weights = wsample, dis = dis_sub)
+        p_sub <- list(kl = kl, weights = wsample, dis = dis_sub, ind = ind)
         return(c(p_sub, .split_coef(beta_sub, intercept)))
     }
 
@@ -47,30 +47,14 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 
     # split b to alpha and beta, add it to p_sub and return the result
     p_sub <- c(p_sub, .split_coef(beta_sub, intercept))
-    p_sub$ind <- ind[(1+intercept*1):length(ind)] - intercept*1
+    if(length(ind) == 1 && intercept) {
+      p_sub$ind <- integer(length=0)
+    } else {
+      p_sub$ind <- ind[(1+intercept*1):length(ind)] - intercept*1
+    }
+    p_sub$intercept <- intercept
     return(p_sub)
 }
-
-
-project_nongaussian_old <- function(chosen, p_full, d_train, family_kl, intercept) {
-
-	# This function is deprecated and not used anymore...
-	
-    # perform the projection over samples
-    res <- sapply(1:NCOL(p_full$mu), function(s_ind) {
-        IRLS(list(mu = p_full$mu[, s_ind, drop = F], dis = p_full$dis[s_ind]),
-             list(x = d_train$x[, chosen, drop = F], weights = d_train$weights,
-                  offset = d_train$offset), family_kl, intercept)
-    })
-
-    # weight the results by sample/cluster weights
-    list(kl = weighted.mean(unlist(res['kl',]), p_full$weights),
-         weights = p_full$weights,
-         dis = unlist(res['dis',]),
-         alpha = unlist(res['alpha',]),
-         beta = do.call(cbind, res['beta',]))
-}
-
 
 
 project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
@@ -100,6 +84,7 @@ project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
 	p_sub$alpha <- alpha
 	p_sub$beta <- beta
 	p_sub$ind <- ind
+	p_sub$intercept <- intercept
 	return(p_sub)
 }
 
