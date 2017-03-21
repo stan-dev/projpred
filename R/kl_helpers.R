@@ -53,6 +53,13 @@ kl_helpers <- function(fam) {
     dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
     weights*dgamma(y, dis, dis/matrix(mu), log=T)
   }
+  
+  # functions to sample from posterior predictive distribution
+  ppd_gauss <- function(mu, dis, weights = 1) rnorm(length(mu), mu, sig)
+  ppd_binom <- function(mu, dis, weights = 1) rbinom(length(mu), weights, mu)
+  ppd_poiss <- function(mu, dis, weights = 1) rpois(length(mu), mu)
+  ppd_gamma <- function(mu, dis, weights = 1) rgamma(length(mu), dis, dis/mu)
+  
 
   # function for computing mu = E(y)
   mu_fun <- function(x, alpha, beta, offset) {
@@ -63,10 +70,14 @@ kl_helpers <- function(fam) {
 
   # return the family object with the correct function handles
   c(switch(fam$family,
-           'binomial' = list(kl = kl_dev, ll_fun = ll_binom, dis_fun = dis_na),
-           'poisson' = list(kl = kl_dev, ll_fun = ll_poiss, dis_fun = dis_na),
-           'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss),
-           'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma)),
+           'binomial' = list(kl = kl_dev, ll_fun = ll_binom, dis_fun = dis_na,
+                             ppd_fun = ppd_binom),
+           'poisson' = list(kl = kl_dev, ll_fun = ll_poiss, dis_fun = dis_na,
+                            ppd_fun = ppd_poisson),
+           'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss,
+                             ppd_fun = ppd_gauss),
+           'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma,
+                          ppd_fun = ppd_gamma)),
     list(mu_fun = mu_fun), fam)
 
 }
