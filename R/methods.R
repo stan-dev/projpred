@@ -65,7 +65,7 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 
     # TODO, IMPLEMENT THE PROJECTION/PREDICTION WITH AN ARBITRARY VARIABLE COMBINATION
     if('stanreg' %in% class(object)) {
-      if( !('proj' %in% names(object))) {
+      if( !('proj' %in% names(object)) || !is.null(nc) || !is.null(ns) ) {
         proj <- project(object, nv=nv, ns=ns, nc=nc, return_fit= FALSE) 
       } else {
         proj <- object$proj

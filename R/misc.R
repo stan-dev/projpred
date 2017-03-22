@@ -264,4 +264,5 @@ log_sum_exp <- function(x) {
   }
 }
 
-.is_proj_list <- function(proj) 'family_kl' %in% names(proj)
+.is_proj_list <- function(proj) { !( 'family_kl' %in% names(proj) ) }
+
