@@ -7,7 +7,7 @@
 #' selection obtained running either \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}. Most of the functions work similar to the
 #' generic methods defined for objects of the class 'lm', 'glm', 'stanreg',
-#' eg. proj_coef corresponds to \link[=coef]{coef}, proj_linpred corresponds to
+#' eg. proj_coef corresponds to \link[=coef]{coef}, proj_se corresponds to
 #' \link[=se]{se} etc. Note that these are under development and subject might
 #' change in the future.
 #'
@@ -15,17 +15,23 @@
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}.
-#' @param transform Same as in \link[=posterior_linpred]{posterior_linpred}.
-#' @param xnew New data to be used with the prediction. If \code{NULL}, the
-#' data used when fitting the model is used.
-#' @param ynew Same as \code{xnew}, but for the ouput.
+#' @param xnew The predictor values used in the prediction. The number and order of the columns
+#'  should be the same as in the original full data if argument \code{nv} is specified (see below).
+#'  However, if argument \code{vind} is specified, then the number and order of columns should
+#'  correspond to \code{vind}. 
+#' @param ynew Same as \code{xnew}, but for the target variable.
 #' @param offsetnew Same as \code{xnew}, but for the offset.
+#' @param transform Should the linear predictor be transformed using the inverse-link function? 
+#' Default is \code{FALSE}.
 #' @param integrated If \code{TRUE}, the output is averaged over the
-#' parameters. Defaults to \code{FALSE}.
-#' @param ns Same as in \link[=varsel]{varsel}.
-#' @param nc Same as in \link[=varsel]{varsel}.
-#' @param nv Number of variables in the submodel. Can also be a list, in
-#'  which case a list is returned for each submodel size.
+#' parameters. Default is \code{FALSE}.
+#' @param nv Number of variables in the submodel (the variable combination is taken from the
+#' \code{varsel} information). If a list, then results for all specified
+#' model sizes are returned. Ignored if \code{vind} is specified.
+#' @param vind Variable indices with which to predict. If specified, \code{nv} is ignored.
+#' @param ns Number of samples to be projected. Ignored if \code{nc} is specified.
+#' @param nc Number of clusters in the clustered projection. Default is 50.
+#' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param ... Currently ignored.
 NULL
 
@@ -61,8 +67,14 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
                          transform = FALSE, integrated = FALSE, nv = NULL, vind=NULL,
                          ns=NULL, nc=NULL, ...) {
     
-    if(is.null(xnew)) stop('Please provide xnew.')
-
+    if (is.null(xnew))
+        stop('Please provide xnew.')
+    if (!is.null(vind) && NCOL(xnew) != length(vind))
+        stop('The number of columns in xnew does not match with the given number of variable indices (vind).')
+    
+    if (!is.null(vind))
+        nv <- NULL # ensure nv is ignored if vind is set
+    
     if('stanreg' %in% class(object)) {
       if( !('proj' %in% names(object)) || !is.null(nc) || !is.null(ns) || !is.null(vind) ) {
         proj <- project(object, nv=nv, ns=ns, nc=nc, vind=vind, return_fit=FALSE, ...) 
@@ -91,7 +103,11 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
     names(projs) <- nv
     
     preds <- lapply(projs, function(proj) {
-        xtemp <- if(NCOL(xnew) == length(proj$ind)) xnew else xnew[, proj$ind, drop = F]
+        if (!is.null(vind))
+            # columns of xnew are assumed to match to the given variable indices
+            xtemp <- xnew
+        else
+            xtemp <- xnew[, proj$ind, drop = F]
         mu <- proj$family_kl$mu_fun(xtemp, proj$alpha, proj$beta, offsetnew)
         if(transform)
             pred <- t(mu)
