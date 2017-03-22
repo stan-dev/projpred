@@ -58,15 +58,14 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 #' @rdname varsel-methods
 #' @export
 proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
-                         transform = FALSE, nv = NULL, integrated = FALSE,
-                         ns=NULL, nc=NULL, manual_inds = NULL, ...) {
+                         transform = FALSE, integrated = FALSE, nv = NULL, vind=NULL,
+                         ns=NULL, nc=NULL, ...) {
     
     if(is.null(xnew)) stop('Please provide xnew.')
 
-    # TODO, IMPLEMENT THE PROJECTION/PREDICTION WITH AN ARBITRARY VARIABLE COMBINATION
     if('stanreg' %in% class(object)) {
-      if( !('proj' %in% names(object)) || !is.null(nc) || !is.null(ns) ) {
-        proj <- project(object, nv=nv, ns=ns, nc=nc, return_fit= FALSE) 
+      if( !('proj' %in% names(object)) || !is.null(nc) || !is.null(ns) || !is.null(vind) ) {
+        proj <- project(object, nv=nv, ns=ns, nc=nc, vind=vind, return_fit=FALSE, ...) 
       } else {
         proj <- object$proj
       }
