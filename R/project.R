@@ -33,18 +33,22 @@
 #'
 
 #' @export
-project <- function(object, nv = NULL, ns = NULL, nc = NULL, intercept = NULL, 
+project <- function(object, nv = NULL, ns = NULL, nc = NULL, vind=NULL, intercept = NULL, 
                     seed = NULL, return_fit = TRUE, ...) {
 
-	# TODO, IMPLEMENT THE PROJECTION WITH AN ARBITRARY VARIABLE COMBINATION
+	if(!('varsel' %in% names(object)) && is.null(vind))
+		stop(paste('The given object does not contain information about the ',
+					'variable selection. Run the variable selection first, ',
+                    'or provide the variable indices (vind).'))
 
-	# .validate_for_varsel(object)
-	if(!('varsel' %in% names(object)))
-		stop(paste('The stanreg object doesn\'t contain information about the ',
-					'variable selection. Run the variable selection first.'))
-
-  vars <- .extract_vars(object)
-  chosen <- object$varsel$chosen
+    vars <- .extract_vars(object)
+    
+    if (is.null(vind))
+        chosen <- object$varsel$chosen
+    else {
+        chosen <- vind
+        nv <- length(vind) # if vind is given, nv is ignored (project only onto the given submodel)
+    }
   
 	if (is.null(ns) && is.null(nc))
 		# by default project with clusters
