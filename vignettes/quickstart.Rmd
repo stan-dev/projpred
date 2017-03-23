@@ -17,11 +17,12 @@ This vignette shows how to use the main functionalities of the ```glmproj```-pac
 
 
 ## Gaussian example
-First load the packages that are needed. 
+First load the packages that are needed, and specify the number of available cores (this speeds up the sampling when multiple cores are available). Uncomment the last line in the following commands (this is commented out to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters). 
 ```{r, message=F, warning=F}
 library(rstanarm)
 library(glmproj)
 library(ggplot2)
+#options(mc.cores = parallel::detectCores())
 ```
 
 The package contains a simple Gaussian example dataset accessible with the `data`-command. This dataset is one of the example cases from the `glmnet`-package. The following command loads a dataframe `df_gaussian` with the predictor matrix `x` and the corresponding targets `y` into the workspace.
