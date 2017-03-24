@@ -4,22 +4,25 @@
 \alias{project}
 \title{Projection to submodels of selected sizes}
 \usage{
-project(object, nv = NULL, ns = NULL, nc = NULL, intercept = NULL,
-  seed = NULL, return_fit = TRUE, ...)
+project(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
+  intercept = NULL, seed = NULL, return_fit = TRUE, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
-\item{nv}{Number of variables in the submodel. Can also be a list, in
-which the projection is performed for each of the sizes in the list. If
-\code{NULL}, the projection is performed for all possible submodel sizes.}
+\item{nv}{Number of variables in the submodel (the variable combination is taken from the
+\code{varsel} information). If a list, then the projection is performed for each model size.
+Default is all model sizes up to the maximum number of variables in \code{varsel}.
+ Ignored if \code{vind} is specified.}
 
-\item{ns}{Same as in \link[=varsel]{varsel}.}
+\item{vind}{Variable indices onto which the projection is done. If specified, \code{nv} is ignored.}
 
-\item{nc}{Same as in \link[=varsel]{varsel}.}
+\item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified.}
 
-\item{intercept}{Same as in \link[=varsel]{varsel}.}
+\item{nc}{Number of clusters in the clustered projection. Default is 50.}
+
+\item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 
 \item{seed}{A seed used in the clustering (if \code{nc!=ns}). Can be used
 to ensure same results every time.}
@@ -28,13 +31,8 @@ to ensure same results every time.}
 }
 \value{
 The original fit-object object augmented with a field 'proj',
-which is a list containing the following elements:
-\describe{
- \item{\code{p_sub}}{A list of the projected parameters for each of the
- submodels.}
- \item{\code{intercept}}{A logical indicating whether the submodels contain
-  intercept or not.}
-}
+which is a list of submodels (or a single submodel if projection was performed onto
+a single variable combination).
 }
 \description{
 Perform the projection predictive variable selection for a generalized

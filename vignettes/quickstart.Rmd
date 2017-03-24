@@ -17,11 +17,12 @@ This vignette shows how to use the main functionalities of the ```glmproj```-pac
 
 
 ## Gaussian example
-First load the packages that are needed. 
-```{r}
+First load the packages that are needed, and specify the number of available cores (this speeds up the sampling when multiple cores are available). Uncomment the last line in the following commands (this is commented out to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters). 
+```{r, message=F, warning=F}
 library(rstanarm)
 library(glmproj)
 library(ggplot2)
+#options(mc.cores = parallel::detectCores())
 ```
 
 The package contains a simple Gaussian example dataset accessible with the `data`-command. This dataset is one of the example cases from the `glmnet`-package. The following command loads a dataframe `df_gaussian` with the predictor matrix `x` and the corresponding targets `y` into the workspace.
@@ -31,7 +32,7 @@ data('df_gaussian', package = 'glmproj')
 
 
 We then fit the model with all the variables and sparsifying horseshoe prior (Carvalho et al., 2010) on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017b), in which the prior for the global shrinkage parameter is defined based on our prior guess for the number of relevant variables.
-```{r}
+```{r, message=F, warning=F}
 n <- nrow(df_gaussian$x) # 100
 D <- ncol(df_gaussian$x) # 20
 p0 <- 5 # prior guess for the number of relevant variables
@@ -61,7 +62,7 @@ varsel_plot(fit, statistics=c('mlpd', 'mse'), deltas=T)
 
 
 The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process. 
-```{r}
+```{r, warning=F}
 fit_cv <- cv_varsel(fit, method='L1', cv_method='LOO')
 ```
 In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel``` (smallest model with expected loss in log predictive density less than 10 percent of the difference between the full and empty model with probability 0.9)
@@ -92,7 +93,7 @@ data('df_binom', package = 'glmproj')
 ```
 
 Then fit the full model:
-```{r}
+```{r, message=F, warning=F}
 # fit the full model
 n <- nrow(df_binom$x)
 D <- ncol(df_binom$x)
@@ -116,7 +117,7 @@ varsel_plot(fit, statistics=c('mlpd', 'pctcorr'), deltas=F)
 ```
 
 Cross-validate the full model and the variable selection:
-```{r}
+```{r, warning=F}
 fit_cv <- cv_varsel(fit, method='L1', cv_method='LOO')
 ```
 
@@ -127,6 +128,28 @@ fit_cv$varsel$ssize
 ```{r}
 varsel_plot(fit_cv, statistics=c('mlpd', 'pctcorr'), deltas=F)
 ```
+
+Finally, for illustration, we compute the here the predictive distribution using only the two most relevant variables, and visualize the results.
+```{r}
+# evaluate the predictive distribution in a 2d grid
+ng <- 20
+x1g <- seq(-4,4,len=ng)
+x2g <- seq(-4,4,len=ng)
+xnew <- cbind( rep(x1g,each=ng), rep(x2g,ng) )
+vind <- fit$varsel$chosen[1:2]
+pr <- proj_linpred(fit, xnew, vind=vind, transform=T, integrated=T)$pred
+
+# visualize the results
+pp <- ggplot()
+pp <- pp + geom_contour(aes(x=xnew[,1],y=xnew[,2], z=pr, colour=..level..))
+pp <- pp + scale_colour_gradient(low = "red", high = "green")
+pp <- pp + geom_point(aes(x=df_binom$x[,vind[1]],y=df_binom$x[,vind[2]]), color=df_binom$y+2)
+pp <- pp + xlab(sprintf('Feature %d',vind[1])) + ylab(sprintf('Feature %d',vind[2]))
+pp
+```
+
+
+
 
 
 ### References

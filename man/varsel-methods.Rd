@@ -9,8 +9,8 @@
 \title{Methods for objects with varsel-information}
 \usage{
 proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,
-  transform = FALSE, nv = NULL, integrated = FALSE, ns = NULL,
-  nc = NULL, manual_inds = NULL, ...)
+  transform = FALSE, integrated = FALSE, nv = NULL, vind = NULL,
+  ns = NULL, nc = NULL, ...)
 
 proj_coef(object, ...)
 
@@ -22,33 +22,41 @@ proj_sigma(object, ...)
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
-\item{xnew}{New data to be used with the prediction. If \code{NULL}, the
-data used when fitting the model is used.}
+\item{xnew}{The predictor values used in the prediction. The number and order of the columns
+should be the same as in the original full data if argument \code{nv} is specified (see below).
+However, if argument \code{vind} is specified, then the number and order of columns should
+correspond to \code{vind}.}
 
-\item{ynew}{Same as \code{xnew}, but for the ouput.}
+\item{ynew}{Same as \code{xnew}, but for the target variable.}
 
 \item{offsetnew}{Same as \code{xnew}, but for the offset.}
 
-\item{transform}{Same as in \link[=posterior_linpred]{posterior_linpred}.}
-
-\item{nv}{Number of variables in the submodel. Can also be a list, in
-which case a list is returned for each submodel size.}
+\item{transform}{Should the linear predictor be transformed using the inverse-link function? 
+Default is \code{FALSE}.}
 
 \item{integrated}{If \code{TRUE}, the output is averaged over the
-parameters. Defaults to \code{FALSE}.}
+parameters. Default is \code{FALSE}.}
 
-\item{ns}{Same as in \link[=varsel]{varsel}.}
+\item{nv}{Number of variables in the submodel (the variable combination is taken from the
+\code{varsel} information). If a list, then results for all specified
+model sizes are returned. Ignored if \code{vind} is specified.}
 
-\item{nc}{Same as in \link[=varsel]{varsel}.}
+\item{vind}{Variable indices with which to predict. If specified, \code{nv} is ignored.}
+
+\item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified.}
+
+\item{nc}{Number of clusters in the clustered projection. Default is 50.}
 
 \item{...}{Currently ignored.}
+
+\item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 }
 \description{
 The methods can be used to extract all the information related to variable
 selection obtained running either \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}. Most of the functions work similar to the
 generic methods defined for objects of the class 'lm', 'glm', 'stanreg',
-eg. proj_coef corresponds to \link[=coef]{coef}, proj_linpred corresponds to
+eg. proj_coef corresponds to \link[=coef]{coef}, proj_se corresponds to
 \link[=se]{se} etc. Note that these are under development and subject might
 change in the future.
 }
