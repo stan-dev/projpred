@@ -92,6 +92,9 @@ log_sum_exp <- function(x) {
 }
 
 .get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
+    
+    # THIS FUNCTION SEEMS TO BE DEPRECATED, AND COULD THUS BE REMOVED
+    
   # - Returns d_train, d_test, p_full, coef_full.
   # - If d_test is NA, it is set to d_train.
 
@@ -155,12 +158,12 @@ log_sum_exp <- function(x) {
 		if (nc == 1) {
 			# special case, only one cluster
 			cl <- rep(1, S)
-			p_ref <- get_p_clust(fam, vars$mu, vars$dis, cl=cl)
+			p_ref <- get_p_clust(fam, vars$mu, vars$dis, wobs=vars$wobs, cl=cl)
 		} else {
 			# several clusters
 		    if (nc > NCOL(vars$mu))
 		        stop('The number of clusters nc cannot exceed the number of columns in mu.')
-			p_ref <- get_p_clust(fam, vars$mu, vars$dis, nc=nc)
+			p_ref <- get_p_clust(fam, vars$mu, vars$dis, wobs=vars$wobs, nc=nc)
 		}
 	} else if (!is.null(ns)) {
 		# subsample from the full model
