@@ -53,13 +53,13 @@ kl_helpers <- function(fam) {
     dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
     weights*dgamma(y, dis, dis/matrix(mu), log=T)
   }
-  
+
   # functions to sample from posterior predictive distribution
-  ppd_gauss <- function(mu, dis, weights = 1) rnorm(length(mu), mu, sig)
+  ppd_gauss <- function(mu, dis, weights = 1) rnorm(length(mu), mu, dis)
   ppd_binom <- function(mu, dis, weights = 1) rbinom(length(mu), weights, mu)
   ppd_poiss <- function(mu, dis, weights = 1) rpois(length(mu), mu)
   ppd_gamma <- function(mu, dis, weights = 1) rgamma(length(mu), dis, dis/mu)
-  
+
 
   # function for computing mu = E(y)
   mu_fun <- function(x, alpha, beta, offset) {
