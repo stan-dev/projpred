@@ -18,10 +18,10 @@
 #' @param xnew The predictor values used in the prediction. The number and order of the columns
 #'  should be the same as in the original full data if argument \code{nv} is specified (see below).
 #'  However, if argument \code{vind} is specified, then the number and order of columns should
-#'  correspond to \code{vind}. 
+#'  correspond to \code{vind}.
 #' @param ynew Same as \code{xnew}, but for the target variable.
 #' @param offsetnew Same as \code{xnew}, but for the offset.
-#' @param transform Should the linear predictor be transformed using the inverse-link function? 
+#' @param transform Should the linear predictor be transformed using the inverse-link function?
 #' Default is \code{FALSE}.
 #' @param integrated If \code{TRUE}, the output is averaged over the
 #' parameters. Default is \code{FALSE}.
@@ -38,7 +38,7 @@ NULL
 #' @export
 init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
                           intercept=TRUE, loglik=NULL) {
-    
+
     # fill in the missing values with their defaults
     if (is.null(mu))
         mu <- y
@@ -55,7 +55,7 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
         wsample <- rep(1/S, S)
     if (is.null(intercept))
         intercept <- TRUE
-    
+
     fit <- list(x=x, y=y, fam=kl_helpers(family), mu=mu, dis=dis, offset=offset,
                 wobs=wobs, wsample=wsample, intercept=intercept, loglik=loglik)
     return(fit)
@@ -66,42 +66,42 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
                          transform = FALSE, integrated = FALSE, nv = NULL, vind=NULL,
                          ns=NULL, nc=NULL, ...) {
-    
+
     if (is.null(xnew))
         stop('Please provide xnew.')
     if (!is.null(vind) && NCOL(xnew) != length(vind))
         stop('The number of columns in xnew does not match with the given number of variable indices (vind).')
-    
+
     if (!is.null(vind))
         nv <- NULL # ensure nv is ignored if vind is set
-    
+
     if('stanreg' %in% class(object)) {
       if( !('proj' %in% names(object)) || !is.null(nc) || !is.null(ns) || !is.null(vind) ) {
-        proj <- project(object, nv=nv, ns=ns, nc=nc, vind=vind, return_fit=FALSE, ...) 
+        proj <- project(object, nv=nv, ns=ns, nc=nc, vind=vind, return_fit=FALSE, ...)
       } else {
         proj <- object$proj
       }
     }
-  
+
     if(!.is_proj_list(proj))
         proj <- list(proj)
-    
+
     if (is.null(offsetnew))
         offsetnew <- rep(0, nrow(xnew))
-    
+
     # project only onto the model sizes specified in nv
     projected_sizes <- sapply(proj, function(x) NROW(x$beta))
     if(is.null(nv)) nv <- projected_sizes
-    
+
     if(!all(nv %in% projected_sizes))
         stop(paste0('Linear prediction requested for nv = ',
                     paste(nv, collapse = ', '),
                     ', but projection performed only for nv = ',
                     paste(projected_sizes, collapse = ', '), '.'))
-    
+
     projs <- Filter(function(x) NROW(x$beta) %in% nv, proj)
     names(projs) <- nv
-    
+
     preds <- lapply(projs, function(proj) {
         if (!is.null(vind))
             # columns of xnew are assumed to match to the given variable indices
@@ -130,7 +130,7 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
         } else
             return(list(pred=pred))
     })
-    
+
     if (length(preds)==1)
         return(preds[[1]])
     else
@@ -140,11 +140,11 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 #' @rdname varsel-methods
 #' @export
 proj_coef <- function(object, ...) {
-    
+
     if(!('proj' %in% names(object)))
         stop(paste('The provided object doesn\'t contain information about the projection.',
                    'Run the projection first.'))
-    
+
     fun <- function(b, w) {
         w <- w/sum(w)
         drop(b %*%w )
@@ -159,7 +159,7 @@ proj_coef <- function(object, ...) {
 #' @rdname varsel-methods
 #' @export
 proj_se <- function(object, ...) {
-    
+
     if(!('proj' %in% names(object)))
         stop(paste('The provided object doesn\'t contain information about the projection.',
                    'Run the projection first.'))
@@ -178,10 +178,10 @@ proj_se <- function(object, ...) {
 
 proj_coef_helper <- function(proj, fun) {
     # calculates 'fun' for each projected weight vector b and sample weights w
-  
+
     if(!.is_proj_list(proj))
       proj <- list(proj)
-    
+
     res <- lapply(proj, function(proj) {
         b <- proj$beta
         if(NROW(b) == 0) return(0)
@@ -190,10 +190,10 @@ proj_coef_helper <- function(proj, fun) {
             b <- rbind(proj$alpha, b)
             rownames(b)[1] <- '(Intercept)'
         }
-        
+
         fun(b, proj$weights)
     })
-    
+
     if(length(res)==1) res[[1]] else res
 }
 
@@ -201,14 +201,14 @@ proj_coef_helper <- function(proj, fun) {
 #' @export
 proj_sigma <- function(object, ...) {
     # only gaussian family supported currently
-    
+
     if(!('proj' %in% names(object)))
         stop(paste('The provided object doesn\'t contain information about the projection.',
                    'Run the projection first.'))
     vars <- .extract_vars(object)
     if(!(vars$fam$family %in% c('gaussian')))
         stop('Sigma available only for the gaussian family.')
-    
+
     lapply(object$proj$p_sub, function(proj) {
         if(family(object)$family == 'gaussian') {
             drop(sqrt(proj$dis^2%*%proj$weights))
@@ -248,20 +248,20 @@ varsel_plot <- function(object, ..., nv_max = NULL, statistics = NULL, deltas = 
     if(!('varsel' %in% names(object)))
         stop(paste('The provided object doesn\'t contain information about the',
                    'variable selection. Run the variable selection first.'))
-    
+
     stats <- subset(.bootstrap_stats(object$varsel, n_boot, alpha),
                     delta == deltas | statistic == 'kl')
     if(is.null(statistics)) statistics <- 'mlpd' #as.character(unique(stats$statistic))
     arr <- subset(stats, statistic %in% statistics)
-    
+
     if(NROW(arr) == 0) {
         stop(paste0(ifelse(length(statistics)==1, 'Statistics ', 'Statistic '),
                     paste0(unique(statistics), collapse=', '), ' not available.'))
     }
-    
+
     if(is.null(nv_max)) nv_max <- max(arr$size)
     ylab <- if(deltas) 'Difference to the full model' else 'value'
-    
+
     ggplot(data = subset(arr, size <= nv_max), mapping = aes(x = size)) +
         # geom_ribbon(aes(ymin = lq, ymax = uq), alpha = 0.3) +
         geom_errorbar(aes(ymin = lq, ymax = uq, width=0.2, alpha=0.1)) +
@@ -281,21 +281,22 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
     if(!('varsel' %in% names(object)))
         stop(paste('The provided object doesn\'t contain information about the',
                    'variable selection. Run the variable selection first.'))
-    
+
     stats <- subset(.bootstrap_stats(object$varsel, NULL, 0.5),
                     delta == deltas | statistic == 'kl')
     statistics <- as.character(unique(stats$statistic))
-    
+
     arr <- data.frame(sapply(statistics, function(sname) {
         unname(subset(stats, statistic == sname, 'value'))
     }))
     arr <- cbind(size = unique(stats$size), arr)
-    
+
     if(is.null(nv_max)) nv_max <- max(stats$size)
-    
+
     arr$chosen <- c(NA, object$varsel$chosen)
-    if('pctch' %in% names(object$varsel)) arr$pctch <- c(NA, object$varsel$pctch)
-    
+    if('pctch' %in% names(object$varsel))
+      arr$pctch <- c(NA, diag(object$varsel$pctch[,-1]))
+
     subset(arr, size <= nv_max)
 }
 

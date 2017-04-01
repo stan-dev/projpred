@@ -66,20 +66,28 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 		stop(sprintf('Unknown cross-validation method: %s.', method))
 	}
 
+
 	# find out how many of cross-validated iterations select
 	# the same variables as the selection with all the data.
-	pctch <- sapply(seq_along(sel$chosen), function(ind, chosen_array) {
-		sum(chosen_array[, 1:ind] == sel$chosen[ind])/NROW(chosen_array)
-	}, do.call(rbind, sel_cv$chosen_cv))
+	# pctch <- sapply(seq_along(sel$chosen), function(ind, chosen_array) {
+	# 	sum(chosen_array[, 1:ind] == sel$chosen[ind])/NROW(chosen_array)
+	# }, do.call(rbind, sel_cv$chosen_cv))
+	ch <- as.matrix(unname(as.data.frame(sel_cv$chosen_cv)))
+	pctch <- t(sapply(seq_along(sel$chosen), function(size) {
+	  c(size = size, sapply(sel$chosen, function(var) {
+	    sum(ch[1:size, ] == var)/ncol(ch)
+	  }))
+	}))
+	colnames(pctch)[-1] <- sel$chosen
 
 	fit$proj <- NULL
 	fit$varsel <- c(sel[c('chosen', 'chosen_names', 'kl', 'family_kl')],
                   sel_cv[c('d_test', 'summaries')],
                   list(pctch = pctch))
-	
+
 	ssize <- .suggest_size(fit$varsel)
 	fit$varsel$ssize <- ssize
-	
+
 	fit
 }
 
@@ -92,7 +100,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   # KFOLD TEMPORARILY DISABLED
   stop(paste0('k-fold cross-validation is currently unavailable due to upcoming changes',
               ' in rstanarm. Please set cv_method to "LOO" to perform cross-validation.'))
-  
+
   # Construct the kfold-objects. The resulting list contains an element 'fits',
   # which is a K x 2 dimensional array. Each row corresponds to one of the K
   # folds. First column contains the rstanarm-objects and the second column
@@ -232,7 +240,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	    print_at <- round( c(1:nprints)*(n/nprints) )
 	    iprint <- 1
 	}
-		
+
 
 	for (i in 1:n) {
 
@@ -261,7 +269,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 		    print(sprintf('%d%% of LOOs done.', 10*iprint))
 		    iprint <- iprint+1
 		}
-		    
+
 	}
 
 	###############

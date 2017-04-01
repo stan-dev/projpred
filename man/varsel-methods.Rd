@@ -31,7 +31,7 @@ correspond to \code{vind}.}
 
 \item{offsetnew}{Same as \code{xnew}, but for the offset.}
 
-\item{transform}{Should the linear predictor be transformed using the inverse-link function? 
+\item{transform}{Should the linear predictor be transformed using the inverse-link function?
 Default is \code{FALSE}.}
 
 \item{integrated}{If \code{TRUE}, the output is averaged over the
