@@ -78,7 +78,7 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 	    sum(ch[1:size, ] == var)/ncol(ch)
 	  }))
 	}))
-	colnames(pctch)[-1] <- sel$chosen
+	colnames(pctch)[-1] <- sel$chosen_names
 
 	fit$proj <- NULL
 	fit$varsel <- c(sel[c('chosen', 'chosen_names', 'kl', 'family_kl')],
