@@ -29,7 +29,7 @@
 # mu and dis, the full model and the data.
 .weighted_summary_means <- function(d_test, family_kl, wsample, mu, dis) {
 
-  loglik <- family_kl$ll_fun(mu, dis, matrix(d_test$y,nrow=NROW(mu)))
+  loglik <- family_kl$ll_fun(mu, dis, matrix(d_test$y,nrow=NROW(mu)), d_test$weights)
   if (length(loglik) == 1) {
       # one observation, one sample
       list(mu = mu, lppd = loglik)
