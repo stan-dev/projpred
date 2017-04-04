@@ -21,7 +21,7 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
 }
 
 
-lambda_grid <- function(x, y, family, alpha=1.0, eps=1e-2, nlam=100) {
+lambda_grid <- function(x, y, family, offset, weights, alpha=1.0, eps=1e-2, nlam=100) {
 	#
     # Standard lambda sequence as described in Friedman et al. (2009), section 2.5.
     # The grid will have nlam values, evenly spaced in the log-space between lambda_max
@@ -29,7 +29,7 @@ lambda_grid <- function(x, y, family, alpha=1.0, eps=1e-2, nlam=100) {
     # coefficients will be zero.
     #
 	n <- dim(x)[1]
-	obs <- pseudo_data(rep(0,n), y, family)
+	obs <- pseudo_data(rep(0,n), y, family, offset, weights)
 	
 	if (alpha == 0)
 	    # initialize ridge as if alpha = 0.01
@@ -72,7 +72,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 	
 	# default lambda-sequence
 	if (is.null(lambda))
-		lambda <- lambda_grid(x,y,family,alpha,nlam=nlambda,eps=lambda_min_ratio)
+		lambda <- lambda_grid(x,y,family,offset,weights,alpha,nlam=nlambda,eps=lambda_min_ratio)
 	
 	# call the c++-function that serves as the workhorse
 	pseudo_obs <- function(f) {return(pseudo_data(f,y,family,offset=offset,weights=weights))}

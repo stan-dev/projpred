@@ -197,7 +197,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	p_full <- .get_refdist(fit, ns=ns, nc=nc)
 	cl <- p_full$cl # clustering information
 
-	#### DEBUGGING ##
+	#### EXPERIMENTATION ##
 	# p_middle <- .get_refdist(fit, nc=3)
 	# cl_middle <- p_middle$cl
 	#################
@@ -238,7 +238,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 
 		# reweight the clusters/samples according to the is-loo weights
 		p_sel <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl)
-		# p_middle <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_middle)
+		# p_middle <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_middle) # EXPERIMENTATION
 
 		# perform selection
 		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
@@ -246,8 +246,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
-		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept) # replace p_sel by p_full here?
-		# p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_middle, d_train, intercept) # replace p_sel by p_full here?
+		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept)
+		# p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_middle, d_train, intercept) # EXPERIMENTATION
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(chosen, d_test, p_sub, fam)
 
@@ -265,7 +265,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	}
 
 	###############
-	## DEBUGGING ##
+	## EXPERIMENTATION ##
 	# p_sel <- .get_refdist(fit, nc=1)
 	# p_final <- .get_refdist(fit, nc=10)
 	# chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
@@ -285,7 +285,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
 	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1])
-	    # list(lppd= summ2[[k+1]]$lppd - peff[,k+1], mu=mu_sub[,k+1])
+	    # list(lppd= summ2[[k+1]]$lppd - peff[,k+1], mu=mu_sub[,k+1]) # EXPERIMENTATION
 	})
 	summ_full <- list(lppd=loo_full, mu=mu_full)
 	summaries <- list(sub=summ_sub, full=summ_full)
