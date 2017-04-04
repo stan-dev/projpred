@@ -1,5 +1,5 @@
-#' Function(s) to perform the clustering over the samples
-#'
+# Function(s) to perform the clustering over the samples
+#
 
 get_p_clust <- function(family_kl, mu, dis, nc=10, wobs=rep(1,dim(mu)[1]), wsample=rep(1,dim(mu)[2]), cl = NULL) {
     

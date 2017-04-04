@@ -69,14 +69,23 @@ log_sum_exp <- function(x) {
 		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 
-		y <- unname(get_y(fit))
-		if(NCOL(y) == 1) {
-			res$wobs <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
-			res$y <- y
-		} else {
-			res$wobs <- rowSums(y)
-			res$y <- y[, 1] / res$wobs
-		}
+		# y and the observation weights in a standard form
+		temp <- .get_standard_y(unname(get_y(fit)), weights(fit))
+		res$wobs <- temp$weights
+		res$y <- temp$y
+		
+		# y <- unname(get_y(fit))
+		# if(NCOL(y) == 1) {
+		# 	res$wobs <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
+		# 	if (is.factor(y))
+		# 	    res$y <- as.vector(y, mode='integer') - 1 # zero-one vector
+		# 	else
+		# 	    res$y <- y
+		# } else {
+		# 	res$wobs <- rowSums(y)
+		# 	res$y <- y[, 1] / res$wobs
+		# }
+		
 		return(res)
 
 	} else {
@@ -90,6 +99,25 @@ log_sum_exp <- function(x) {
 		# stop('Other than rstanarm-fits are currently not supported, but will be in the near future.')
 	}
 }
+
+
+.get_standard_y <- function(y, weights) {
+    # return y and the corresponding observation weights into the 'standard' form:
+    # for binomial family, y is transformed into a vector with values between 0 and 1,
+    # and weights give the number of observations at each x.
+    # for all other families, y and weights are kept as they are (unless weights is
+    # a vector with length zero in which case it is replaced by a vector of ones).
+    if(NCOL(y) == 1) {
+        weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
+        if (is.factor(y))
+            y <- as.vector(y, mode='integer') - 1 # zero-one vector
+    } else {
+        weights <- rowSums(y)
+        y <- y[, 1] / weights
+    }
+    return(list(y=y,weights=weights))
+}
+
 
 .get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
     

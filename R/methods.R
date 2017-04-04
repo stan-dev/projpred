@@ -19,8 +19,9 @@
 #'  should be the same as in the original full data if argument \code{nv} is specified (see below).
 #'  However, if argument \code{vind} is specified, then the number and order of columns should
 #'  correspond to \code{vind}. 
-#' @param ynew Same as \code{xnew}, but for the target variable.
-#' @param offsetnew Same as \code{xnew}, but for the offset.
+#' @param ynew New (test) target variables.
+#' @param offsetnew Offsets for the new observations.
+#' @param weightsnew Weights for the new observations. This argument matters only if \code{ynew} is specified.
 #' @param transform Should the linear predictor be transformed using the inverse-link function? 
 #' Default is \code{FALSE}.
 #' @param integrated If \code{TRUE}, the output is averaged over the
@@ -63,8 +64,8 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 
 #' @rdname varsel-methods
 #' @export
-proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
-                         transform = FALSE, integrated = FALSE, nv = NULL, vind=NULL,
+proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL, weightsnew = NULL,
+                         transform = FALSE, integrated = FALSE, nv = NULL, vind = NULL,
                          ns=NULL, nc=NULL, ...) {
     
     if (is.null(xnew))
@@ -121,7 +122,12 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
             pred <- as.vector(pred)
         if (!is.null(ynew)) {
             # compute also the log-density
-            lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew)
+            if (is.null(weightsnew))
+                weightsnew <- rep(1, NROW(ynew))
+            temp <- .get_standard_y(ynew,weightsnew)
+            ynew <- temp$y
+            weightsnew <- temp$weights
+            lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew, weightsnew)
             if (integrated && !is.null(dim(lpd)))
                 lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
             else if (!is.null(dim(lpd)))
