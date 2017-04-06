@@ -10,3 +10,4 @@
 .RData
 
 inst/doc
+vignettes/*.html
