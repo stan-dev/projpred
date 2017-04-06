@@ -2,10 +2,7 @@
 
 export(cv_varsel)
 export(init_refmodel)
-export(proj_coef)
 export(proj_linpred)
-export(proj_se)
-export(proj_sigma)
 export(project)
 export(varsel)
 export(varsel_plot)

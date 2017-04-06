@@ -1,20 +1,11 @@
-# All functions that users will use to extract model parameters,
-# plot variable selection statistics etc.
-
-#' Methods for objects with varsel-information
+#' Linear predictor of a projected submodel
 #'
-#' The methods can be used to extract all the information related to variable
-#' selection obtained running either \link[=varsel]{varsel} or
-#' \link[=cv_varsel]{cv_varsel}. Most of the functions work similar to the
-#' generic methods defined for objects of the class 'lm', 'glm', 'stanreg',
-#' eg. proj_coef corresponds to \link[=coef]{coef}, proj_se corresponds to
-#' \link[=se]{se} etc. Note that these are under development and subject might
-#' change in the future.
+#' Extract draws of the linear predictor from the projected submodel or 
+#' submodels. If the projection has not been performed, the function
+#' also performs the projection. 
 #'
-#' @name varsel-methods
-#'
-#' @param object The object returned by \link[=varsel]{varsel} or
-#' \link[=cv_varsel]{cv_varsel}.
+#' @param object The object returned by \link[=varsel]{varsel}, 
+#' \link[=cv_varsel]{cv_varsel} or \link[=project]{project}.
 #' @param xnew The predictor values used in the prediction. The number and order of the columns
 #'  should be the same as in the original full data if argument \code{nv} is specified (see below).
 #'  However, if argument \code{vind} is specified, then the number and order of columns should
@@ -33,40 +24,12 @@
 #' @param ns Number of samples to be projected. Ignored if \code{nc} is specified.
 #' @param nc Number of clusters in the clustered projection. Default is 50.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
-#' @param ... Currently ignored.
-NULL
 
 #' @export
-init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
-                          intercept=TRUE, loglik=NULL) {
-
-    # fill in the missing values with their defaults
-    if (is.null(mu))
-        mu <- y
-    mu <- as.matrix(mu)
-    S <- NCOL(mu) # number of samples in the reference model
-    n <- length(y)
-    if (is.null(dis))
-        dis <- rep(1, S)
-    if (is.null(offset))
-        offset <- rep(0, n)
-    if (is.null(wobs))
-        wobs <- rep(1, n)
-    if (is.null(wsample))
-        wsample <- rep(1/S, S)
-    if (is.null(intercept))
-        intercept <- TRUE
-
-    fit <- list(x=x, y=y, fam=kl_helpers(family), mu=mu, dis=dis, offset=offset,
-                wobs=wobs, wsample=wsample, intercept=intercept, loglik=loglik)
-    return(fit)
-}
-
-#' @rdname varsel-methods
-#' @export
-proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL, weightsnew = NULL,
-                         transform = FALSE, integrated = FALSE, nv = NULL, vind = NULL,
-                         ns=NULL, nc=NULL, ...) {
+proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL, 
+                         weightsnew = NULL, transform = FALSE, 
+                         integrated = FALSE, nv = NULL, vind = NULL,
+                         ns = NULL, nc = NULL) {
 
     if (is.null(xnew))
         stop('Please provide xnew.')
@@ -141,85 +104,6 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL, weightsnew
         return(preds[[1]])
     else
         return(preds)
-}
-
-#' @rdname varsel-methods
-#' @export
-proj_coef <- function(object, ...) {
-
-    if(!('proj' %in% names(object)))
-        stop(paste('The provided object doesn\'t contain information about the projection.',
-                   'Run the projection first.'))
-
-    fun <- function(b, w) {
-        w <- w/sum(w)
-        drop(b %*%w )
-    }
-    out <- proj_coef_helper(object$proj, fun)
-    if (length(out)==1)
-        return(out[[1]])
-    else
-        return(out)
-}
-
-#' @rdname varsel-methods
-#' @export
-proj_se <- function(object, ...) {
-
-    if(!('proj' %in% names(object)))
-        stop(paste('The provided object doesn\'t contain information about the projection.',
-                   'Run the projection first.'))
-    # weighted standard deviation (using cluster weights)
-    fun <- function(b, w) {
-        w <- w/sum(w)
-        bmean <- drop(b %*% w)
-        bsd <- drop(sqrt( ((b - bmean)^2)%*%w ))
-    }
-    out <- proj_coef_helper(object$proj, fun)
-    if (length(out)==1)
-        return(out[[1]])
-    else
-        return(out)
-}
-
-proj_coef_helper <- function(proj, fun) {
-    # calculates 'fun' for each projected weight vector b and sample weights w
-
-    if(!.is_proj_list(proj))
-      proj <- list(proj)
-
-    res <- lapply(proj, function(proj) {
-        b <- proj$beta
-        if(NROW(b) == 0) return(0)
-        rownames(b) <- proj$ind_names
-        if(object$proj$intercept) {
-            b <- rbind(proj$alpha, b)
-            rownames(b)[1] <- '(Intercept)'
-        }
-
-        fun(b, proj$weights)
-    })
-
-    if(length(res)==1) res[[1]] else res
-}
-
-#' @rdname varsel-methods
-#' @export
-proj_sigma <- function(object, ...) {
-    # only gaussian family supported currently
-
-    if(!('proj' %in% names(object)))
-        stop(paste('The provided object doesn\'t contain information about the projection.',
-                   'Run the projection first.'))
-    vars <- .extract_vars(object)
-    if(!(vars$fam$family %in% c('gaussian')))
-        stop('Sigma available only for the gaussian family.')
-
-    lapply(object$proj$p_sub, function(proj) {
-        if(family(object)$family == 'gaussian') {
-            drop(sqrt(proj$dis^2%*%proj$weights))
-        }
-    })
 }
 
 #' Plotting or printing summary statistics related to variable selection
@@ -306,3 +190,29 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
     subset(arr, size <= nv_max)
 }
 
+#' Initialize the reference model
+#' @export
+init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
+                          intercept=TRUE, loglik=NULL) {
+
+    # fill in the missing values with their defaults
+    if (is.null(mu))
+        mu <- y
+    mu <- as.matrix(mu)
+    S <- NCOL(mu) # number of samples in the reference model
+    n <- length(y)
+    if (is.null(dis))
+        dis <- rep(1, S)
+    if (is.null(offset))
+        offset <- rep(0, n)
+    if (is.null(wobs))
+        wobs <- rep(1, n)
+    if (is.null(wsample))
+        wsample <- rep(1/S, S)
+    if (is.null(intercept))
+        intercept <- TRUE
+
+    fit <- list(x=x, y=y, fam=kl_helpers(family), mu=mu, dis=dis, offset=offset,
+                wobs=wobs, wsample=wsample, intercept=intercept, loglik=loglik)
+    return(fit)
+}
