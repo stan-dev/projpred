@@ -16,22 +16,33 @@
 #' to ensure same results every time.
 #' @param ... Currently ignored.
 #'
-#' @return The original fit-object object augmented with a field 'proj',
-#' which is a list of submodels (or a single submodel if projection was performed onto
-#' a single variable combination).
+#' @return A list of submodels (or a single submodel if projection was performed onto
+#' a single variable combination), each of which contain the following elements:
+#' \describe{
+#'  \item{\code{kl}}{The kl divergence from the full model to the submodel.}
+#'  \item{\code{weights}}{Weights for each draw of the projected model.}
+#'  \item{\code{dis}}{Draws from the projected dispersion parameter.}
+#'  \item{\code{alpha}}{Draws from the projected intercept.}
+#'  \item{\code{beta}}{Draws from the projected weight vector.}
+#'  \item{\code{ind}}{Indices of the selected variables.}
+#'  \item{\code{intercept}}{Whether or not the model contains an intercept.}
+#'  \item{\code{ind_names}}{Names of the selected variables.}
+#'  \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
+#' }
+#'
 #'
 #' @examples
 #' \dontrun{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
 #' fit_v <- varsel(fit)
-#' fit_p <- project(fit_v)
+#' proj4 <- project(fit_v, nv = 4)
 #' }
 #'
 
 #' @export
-project <- function(object, nv = NULL, vind=NULL, ns = NULL, nc = NULL, intercept = NULL, 
-                    seed = NULL, return_fit = TRUE, ...) {
+project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
+                    intercept = NULL, seed = NULL, ...) {
 
 	if(!('varsel' %in% names(object)) && is.null(vind))
 		stop(paste('The given object does not contain information about the ',
@@ -39,23 +50,24 @@ project <- function(object, nv = NULL, vind=NULL, ns = NULL, nc = NULL, intercep
                     'or provide the variable indices (vind).'))
 
     vars <- .extract_vars(object)
-    
-    if (is.null(vind))
+
+    if (is.null(vind)) {
         chosen <- object$varsel$chosen
-    else {
+    } else {
         chosen <- vind
         nv <- length(vind) # if vind is given, nv is ignored (project only onto the given submodel)
     }
-  
-	if (is.null(ns) && is.null(nc))
-		# by default project with clusters
-		nc <- min(50, NCOL(vars$mu))
-	if (is.null(nv))
-		# by default, run the projection up to the maximum number of variables
-		# specified in the variable selection
-		nv <- c(0:length(chosen))
 
-	if(is.null(intercept)) intercept <- vars$intercept
+  # by default project with clusters
+	if (is.null(ns) && is.null(nc))
+		nc <- min(50, NCOL(vars$mu))
+  # by default, run the projection up to the maximum number of variables
+  # specified in the variable selection
+  if (is.null(nv))
+    nv <- c(0:length(chosen))
+
+	if(is.null(intercept))
+	  intercept <- vars$intercept
 
 	family_kl <- vars$fam
 
@@ -68,26 +80,21 @@ project <- function(object, nv = NULL, vind=NULL, ns = NULL, nc = NULL, intercep
 	d_train <- .get_traindata(object)
 
 	# get the clustering or subsample
-	p_full <- .get_refdist(object, ns=ns, nc=nc, seed=seed)
-  
+	p_full <- .get_refdist(object, ns = ns, nc = nc, seed = seed)
+
 	subm <- .get_submodels(chosen, nv, family_kl, p_full, d_train, intercept)
-	
+
 	# add family_kl, sort inds
 	proj <- lapply(subm, function(x) {
-	  if(length(x$ind) > 0) {
-	    #ord <- order(x$ind)
-	    #x$ind <- x$ind[ord]
-	    #x$beta <- x$beta[ord, , drop = FALSE]
+	  if(length(x$ind) > 0)
 	    x$ind_names <- object$varsel$chosen_names[x$ind]
-	  }
+
 	  c(x, list(family_kl = family_kl))
 	 })
-	
-	if(length(proj) == 1) proj <- proj[[1]]
-	
-	if(return_fit) {
-	  object$proj <- proj
-	  object
+
+	# If only one model size, just return the proj instead of a list of projs
+	if(length(proj) == 1) {
+	  proj[[1]]
 	} else {
 	  proj
 	}

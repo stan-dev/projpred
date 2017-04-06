@@ -9,7 +9,7 @@ proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,
   vind = NULL, ns = NULL, nc = NULL)
 }
 \arguments{
-\item{object}{The object returned by \link[=varsel]{varsel}, 
+\item{object}{The object returned by \link[=varsel]{varsel},
 \link[=cv_varsel]{cv_varsel} or \link[=project]{project}.}
 
 \item{xnew}{The predictor values used in the prediction. The number and order of the columns
@@ -23,7 +23,7 @@ correspond to \code{vind}.}
 
 \item{weightsnew}{Weights for the new observations. This argument matters only if \code{ynew} is specified.}
 
-\item{transform}{Should the linear predictor be transformed using the inverse-link function? 
+\item{transform}{Should the linear predictor be transformed using the inverse-link function?
 Default is \code{FALSE}.}
 
 \item{integrated}{If \code{TRUE}, the output is averaged over the
@@ -42,7 +42,7 @@ model sizes are returned. Ignored if \code{vind} is specified.}
 \item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 }
 \description{
-Extract draws of the linear predictor from the projected submodel or 
+Extract draws of the linear predictor from the projected submodel or
 submodels. If the projection has not been performed, the function
 also performs the projection.
 }

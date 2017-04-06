@@ -1,19 +1,19 @@
 #' Linear predictor of a projected submodel
 #'
-#' Extract draws of the linear predictor from the projected submodel or 
+#' Extract draws of the linear predictor from the projected submodel or
 #' submodels. If the projection has not been performed, the function
-#' also performs the projection. 
+#' also performs the projection.
 #'
-#' @param object The object returned by \link[=varsel]{varsel}, 
+#' @param object The object returned by \link[=varsel]{varsel},
 #' \link[=cv_varsel]{cv_varsel} or \link[=project]{project}.
 #' @param xnew The predictor values used in the prediction. The number and order of the columns
 #'  should be the same as in the original full data if argument \code{nv} is specified (see below).
 #'  However, if argument \code{vind} is specified, then the number and order of columns should
-#'  correspond to \code{vind}. 
+#'  correspond to \code{vind}.
 #' @param ynew New (test) target variables.
 #' @param offsetnew Offsets for the new observations.
 #' @param weightsnew Weights for the new observations. This argument matters only if \code{ynew} is specified.
-#' @param transform Should the linear predictor be transformed using the inverse-link function? 
+#' @param transform Should the linear predictor be transformed using the inverse-link function?
 #' Default is \code{FALSE}.
 #' @param integrated If \code{TRUE}, the output is averaged over the
 #' parameters. Default is \code{FALSE}.
@@ -26,8 +26,8 @@
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 
 #' @export
-proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL, 
-                         weightsnew = NULL, transform = FALSE, 
+proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
+                         weightsnew = NULL, transform = FALSE,
                          integrated = FALSE, nv = NULL, vind = NULL,
                          ns = NULL, nc = NULL) {
 
@@ -40,11 +40,11 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
         nv <- NULL # ensure nv is ignored if vind is set
 
     if('stanreg' %in% class(object)) {
-      if( !('proj' %in% names(object)) || !is.null(nc) || !is.null(ns) || !is.null(vind) ) {
-        proj <- project(object, nv=nv, ns=ns, nc=nc, vind=vind, return_fit=FALSE, ...)
-      } else {
-        proj <- object$proj
-      }
+      proj <- project(object, nv = nv, ns = ns, nc = nc, vind = vind)
+    } else {
+      proj <- object
+      if(any(sapply(list(nv,vind,ns,nc), Negate(is.null))))
+        warning('nv, vind, ns and nc are ignored when object is a projection.')
     }
 
     if(!.is_proj_list(proj))
@@ -53,9 +53,9 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
     if (is.null(offsetnew))
         offsetnew <- rep(0, nrow(xnew))
 
-    # project only onto the model sizes specified in nv
     projected_sizes <- sapply(proj, function(x) NROW(x$beta))
-    if(is.null(nv)) nv <- projected_sizes
+    if(is.null(nv))
+      nv <- projected_sizes
 
     if(!all(nv %in% projected_sizes))
         stop(paste0('Linear prediction requested for nv = ',

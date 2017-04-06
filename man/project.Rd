@@ -5,7 +5,7 @@
 \title{Projection to submodels of selected sizes}
 \usage{
 project(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
-  intercept = NULL, seed = NULL, return_fit = TRUE, ...)
+  intercept = NULL, seed = NULL, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -30,9 +30,19 @@ to ensure same results every time.}
 \item{...}{Currently ignored.}
 }
 \value{
-The original fit-object object augmented with a field 'proj',
-which is a list of submodels (or a single submodel if projection was performed onto
-a single variable combination).
+A list of submodels (or a single submodel if projection was performed onto
+a single variable combination), each of which contain the following elements:
+\describe{
+ \item{\code{kl}}{The kl divergence from the full model to the submodel.}
+ \item{\code{weights}}{Weights for each draw of the projected model.}
+ \item{\code{dis}}{Draws from the projected dispersion parameter.}
+ \item{\code{alpha}}{Draws from the projected intercept.}
+ \item{\code{beta}}{Draws from the projected weight vector.}
+ \item{\code{ind}}{Indices of the selected variables.}
+ \item{\code{intercept}}{Whether or not the model contains an intercept.}
+ \item{\code{ind_names}}{Names of the selected variables.}
+ \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
+}
 }
 \description{
 Perform the projection predictive variable selection for a generalized
@@ -43,7 +53,7 @@ linear model fitted with rstanarm.
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
 fit_v <- varsel(fit)
-fit_p <- project(fit_v)
+proj4 <- project(fit_v, nv = 4)
 }
 
 }
