@@ -9,8 +9,8 @@
 \title{Methods for objects with varsel-information}
 \usage{
 proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,
-  transform = FALSE, integrated = FALSE, nv = NULL, vind = NULL,
-  ns = NULL, nc = NULL, ...)
+  weightsnew = NULL, transform = FALSE, integrated = FALSE, nv = NULL,
+  vind = NULL, ns = NULL, nc = NULL, ...)
 
 proj_coef(object, ...)
 
@@ -27,9 +27,11 @@ should be the same as in the original full data if argument \code{nv} is specifi
 However, if argument \code{vind} is specified, then the number and order of columns should
 correspond to \code{vind}.}
 
-\item{ynew}{Same as \code{xnew}, but for the target variable.}
+\item{ynew}{New (test) target variables.}
 
-\item{offsetnew}{Same as \code{xnew}, but for the offset.}
+\item{offsetnew}{Offsets for the new observations.}
+
+\item{weightsnew}{Weights for the new observations. This argument matters only if \code{ynew} is specified.}
 
 \item{transform}{Should the linear predictor be transformed using the inverse-link function?
 Default is \code{FALSE}.}
