@@ -12,5 +12,4 @@
 #' @importFrom rstan extract
 #' @importFrom Matrix rankMatrix
 #' @importFrom loo psislw
-#' @importFrom MASS mvrnorm
 NULL

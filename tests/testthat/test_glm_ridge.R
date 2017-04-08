@@ -9,7 +9,7 @@ set.seed(1235)
 n <- 40
 nv <- 10
 nv_fit <- nv - 5
-x <- mvrnorm(n, rep(0, nv), diag(rep(1, nv)))
+x <- matrix(rnorm(n*nv, 0, 1), n, nv)
 b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 x_tr <- x[,1:nv_fit]

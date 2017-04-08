@@ -10,7 +10,7 @@ set.seed(1235)
 n <- 40
 nv <- 10
 nv_fit <- nv - 5
-x <- mvrnorm(n, rep(0, nv), diag(rep(1, nv)))
+x <- matrix(rnorm(n*nv, 0, 1), n, nv)
 b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 x_tr <- x[,1:nv_fit]
@@ -65,9 +65,7 @@ test_that("glm_elnet: gaussian, id-link, intercept, lambda = 0.5", {
   #                             lambda = lambda/n,
   #                             intercept = TRUE, standardize = FALSE)
   # exp_beta <- unname(c(glmnetfit$a0, as.matrix(glmnetfit$beta)))
-  exp_beta <- c(
-    -0.3309525, -0.4230152, 0.2262128, -0.2064023, -0.2174287, -0.2842894
-  )
+  exp_beta <- c(0.02547437, -0.005815953, -0.02727875, 0.1743722, -0.1582208, -0.2507765)
 
   expect_equal(exp_beta, c(lassofit$beta0, lassofit$beta), tolerance = tol)
 })
@@ -86,9 +84,7 @@ test_that("glm_elnet: gaussian, id-link, no intercept, lambda = 0.5", {
   #                             lambda = lambda/n,
   #                             intercept = FALSE, standardize = FALSE)
   # exp_beta <- c(as.matrix(glmnetfit$beta))
-  exp_beta <- c(
-    -0.1515209, 0.1867172, 0.05876578, -0.4579532, -0.4606212
-  )
+  exp_beta <- c(0.01715529, -0.03150905, 0.5954335, -0.472687, -0.6820674)
 
   expect_equal(exp_beta, c(lassofit$beta), tolerance = tol)
 })
@@ -135,9 +131,7 @@ test_that("glm_elnet: binomial, logit-link, intercept, lambda = 0.5", {
   #                             offset = offset, lambda = lambda/n,
   #                             intercept = TRUE, standardize = FALSE)
   # exp_beta <- unname(c(glmnetfit$a0, as.matrix(glmnetfit$beta)))
-  exp_beta <- c(
-    -0.4117375, -0.2879587, 0.7805274, 0.1626663, -0.135424, 0
-  )
+  exp_beta <- c(-0.3189198, 0.396411, -0.1368026, 0.377641, 0, -0.2283437)
 
   expect_equal(exp_beta, c(lassofit$beta0, lassofit$beta), tolerance = tol)
 })
@@ -155,9 +149,7 @@ test_that("glm_elnet: binomial, logit-link, no intercept, lambda = 0.5", {
   #                             offset = offset, lambda = lambda/n,
   #                             intercept = FALSE, standardize = FALSE)
   # exp_beta <- c(as.matrix(glmnetfit$beta))
-  exp_beta <- c(
-    -0.3031029, 0.209245, 0, 0, -0.3442062
-  )
+  exp_beta <- c(0.1065949, 0, 0, -0.1024071, -0.301079)
 
   expect_equal(exp_beta, c(lassofit$beta), tolerance = tol)
 })
@@ -203,9 +195,7 @@ test_that("glm_elnet: poisson, log-link, intercept, lambda = 0.5", {
   #                             offset = offset,  weights = weights_norm, lambda = lambda/n,
   #                             intercept = TRUE, standardize = FALSE, thresh = extra_thresh)
   # exp_beta <- unname(c(glmnetfit$a0, as.matrix(glmnetfit$beta)))
-  exp_beta <- c(
-    -0.3980256, -0.8064176, 0.3061166, 0.4252627, 0.3223456, -0.2962351
-  )
+  exp_beta <- c(0.007600988, 0.3194901, 0, 0.2412289, -0.3393914, -0.3656913)
 
   expect_equal(exp_beta, c(lassofit$beta0, lassofit$beta), tolerance = tol)
 })
@@ -223,9 +213,7 @@ test_that("glm_elnet: poisson, log-link, no intercept, lambda = 0.5", {
   #                             offset = offset,  weights = weights_norm, lambda = lambda/n,
   #                             intercept = FALSE, standardize = FALSE)
   # exp_beta <- c(as.matrix(glmnetfit$beta))
-  exp_beta <- c(
-    -0.2162512, 0.09895655, 0.1547091, -0.2937255, -0.2399947
-  )
+  exp_beta <- c(0.2681732, 0.08606586, 0.05406078, -0.2778106, -0.4429331)
 
   expect_equal(exp_beta, c(lassofit$beta), tolerance = tol)
 })
