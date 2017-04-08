@@ -41,6 +41,8 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
                       nv_max = NULL, intercept = NULL, verbose = T,
                       K = NULL, k_fold = NULL, ...) {
 
+  .validate_for_varsel(fit)
+
 	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
 		# use one cluster for selection by default, and always with L1-search
 		nc <- 1

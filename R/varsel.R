@@ -2,7 +2,7 @@
 #'
 #' Perform the projection predictive variable selection for a generalized
 #' linear model fitted with rstanarm.
-#' @param fit Either a \link[=stanreg-objects]{stanreg}-object or an object returned 
+#' @param fit Either a \link[=stanreg-objects]{stanreg}-object or an object returned
 #' by \link[init_refmodel]{init_refmodel}.
 #' @param d_test A test dataset, which is used to evaluate model performance.
 #' If not provided, training data is used.
@@ -20,7 +20,7 @@
 #' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
 #' @param verbose If TRUE, may print out some information during the selection.
 #'    Defaults to FALSE.
-#' 
+#'
 #'
 #' @return The original fit-object object augmented with a field 'varsel',
 #' which is a list containing the following elements:
@@ -44,19 +44,21 @@
 #' @export
 varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
                    nv_max = NULL, intercept = NULL, verbose = F, ...) {
-	
+
   # TODO, IMPLEMENT SENSIBILITY CHECKS FOR NS AND NC (INTO MISC.R) AND CALL THEM
   # TODO, FIGURE OUT HOW TO HANDLE THE TEST PREDICTIONS FOR FULL MODEL WHEN COEF_FULL ARE NOT AVAILABLE
-	
+
+	.validate_for_varsel(fit)
+
   if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
   	# use one cluster for selection by default, and always with L1-search
   	nc <- 1
-  
+
   # .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
   family_kl <- vars$fam
-  
-  if(is.null(intercept)) 
+
+  if(is.null(intercept))
     intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
   	nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
@@ -72,7 +74,7 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   	d_test <- .fill_offset_and_weights(d_test)
   	d_type <- 'test'
   }
-  
+
   # the reference distribution (or fit) used for selection
   p_full <- .get_refdist(fit, ns=ns, nc=nc)
 
@@ -82,7 +84,7 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   # statistics for the selected submodels
   p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full, d_train, intercept)
   sub <- .get_sub_summaries(chosen, d_test, p_sub, family_kl)
-  
+
   #
   if (d_type == 'train') {
       # full <- .get_full_summaries(p_full, d_test, list(alpha=vars$alpha, beta=vars$beta), family_kl, intercept)
@@ -92,11 +94,11 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
       warning('Test predictions for the full model not yet implemented.')
       full <- NULL
   }
-  
+
 
   # ensure that after the new selection, there are no old projections in the fit structure
   fit$proj <- NULL
-  
+
   # store the relevant fields into fit
   fit$varsel <- list(chosen = chosen,
                      chosen_names = vars$coefnames[chosen],
