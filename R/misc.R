@@ -73,7 +73,7 @@ log_sum_exp <- function(x) {
 		temp <- .get_standard_y(unname(get_y(fit)), weights(fit))
 		res$wobs <- temp$weights
 		res$y <- temp$y
-		
+
 		# y <- unname(get_y(fit))
 		# if(NCOL(y) == 1) {
 		# 	res$wobs <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
@@ -85,7 +85,7 @@ log_sum_exp <- function(x) {
 		# 	res$wobs <- rowSums(y)
 		# 	res$y <- y[, 1] / res$wobs
 		# }
-		
+
 		return(res)
 
 	} else {
@@ -120,9 +120,9 @@ log_sum_exp <- function(x) {
 
 
 .get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
-    
+
     # THIS FUNCTION SEEMS TO BE DEPRECATED, AND COULD THUS BE REMOVED
-    
+
   # - Returns d_train, d_test, p_full, coef_full.
   # - If d_test is NA, it is set to d_train.
 
@@ -286,9 +286,8 @@ log_sum_exp <- function(x) {
   mlpd_null <- subset(stats, size == 0, 'value')
   mlpd_cutoff <- cutoff_pct*mlpd_null
   res <- subset(stats, lq >= mlpd_cutoff$value, 'size')
-  
+
   if(nrow(res) == 0) {
-    warning("Can't suggest a size for the submodel.")
     NA
   } else {
     min(subset(stats, lq >= mlpd_cutoff$value, 'size'))

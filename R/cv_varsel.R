@@ -88,6 +88,12 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
                   list(pctch = pctch))
 
 	ssize <- .suggest_size(fit$varsel)
+	if(is.na(ssize)) {
+	  # try a more relaxed value, if this does not work either, issue a warning
+	  ssize <- .suggest_size(fit$varsel, cutoff_pct = 0.2)
+	  if(is.na(ssize))
+	    warning('Submodels too close to each other, cant suggest a submodel.')
+	}
 	fit$varsel$ssize <- ssize
 
 	fit

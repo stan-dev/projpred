@@ -84,11 +84,10 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 
 	subm <- .get_submodels(chosen, nv, family_kl, p_full, d_train, intercept)
 
-	# add family_kl, sort inds
+	# add family_kl
 	proj <- lapply(subm, function(x) {
-	  if(length(x$ind) > 0)
-	    x$ind_names <- object$varsel$chosen_names[x$ind]
-
+	  x$ind_names <- sapply(x$ind, function(i, ch, chn) chn[which(ch == i)],
+	                        object$varsel$chosen, object$varsel$chosen_names)
 	  c(x, list(family_kl = family_kl))
 	 })
 
