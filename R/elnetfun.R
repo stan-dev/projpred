@@ -12,6 +12,7 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
     # based on the quadratic approximation to the loss function (negative log likelihood) at 
     # when the given fit f = eta = x*beta + beta0. Returns also the deviance at f.
     #
+    f <- f + offset
     mu <- family$linkinv(f)
     dmu_df <- family$mu.eta(f)
     z <- (f - offset) + (y - mu)/dmu_df
