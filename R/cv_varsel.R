@@ -41,6 +41,8 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
                       nv_max = NULL, intercept = NULL, verbose = T,
                       K = NULL, k_fold = NULL, ...) {
 
+  .validate_for_varsel(fit)
+
 	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
 		# use one cluster for selection by default, and always with L1-search
 		nc <- 1
@@ -86,6 +88,12 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
                   list(pctch = pctch))
 
 	ssize <- .suggest_size(fit$varsel)
+	if(is.na(ssize)) {
+	  # try a more relaxed value, if this does not work either, issue a warning
+	  ssize <- .suggest_size(fit$varsel, cutoff_pct = 0.2)
+	  if(is.na(ssize))
+	    warning('Submodels too close to each other, cant suggest a submodel.')
+	}
 	fit$varsel$ssize <- ssize
 
 	fit

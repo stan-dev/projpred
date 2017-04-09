@@ -8,7 +8,7 @@ varsel(fit, d_test = NULL, method = "L1", ns = NULL, nc = NULL,
   nv_max = NULL, intercept = NULL, verbose = F, ...)
 }
 \arguments{
-\item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned 
+\item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned
 by \link[init_refmodel]{init_refmodel}.}
 
 \item{d_test}{A test dataset, which is used to evaluate model performance.
