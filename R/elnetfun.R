@@ -2,15 +2,14 @@
 # The functions in this file are used to compute the elastic net coefficient paths
 # for a GLM. The main function is glm_elnet, other functions are auxiliaries.
 # The L1-regularized projection path is computed by replacing the actual data y
-# by the fit of the full model when calling glm_elnet. glm_elnet uses function glm_elnet_c
-# from elnetfun.cpp.
+# by the fit of the full model when calling glm_elnet. Uses functions in elnetfun.cpp.
 #
 
 pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,length(f)) ) {
     #
     # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
-    # based on the quadratic approximation to the loss function (negative log likelihood) at 
-    # when the given fit f = eta = x*beta + beta0. Returns also the deviance at f.
+    # based on the linear approximation to the link function at f = eta = x*beta + beta0,
+    # as explained in McGullagh and Nelder (1989). Returns also the deviance at f.
     #
     f <- f + offset
     mu <- family$linkinv(f)
