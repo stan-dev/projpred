@@ -49,7 +49,7 @@ void coord_descent(	vec& beta, // regression coefficients
 	
 	int iter = 0;
 	double loss,loss_old;
-	int k,j;
+	int j;
 	double h;
 	
 	// initial loss
@@ -139,7 +139,6 @@ List glm_elnet_c(arma::mat x, // input matrix
     vec z; // observations
     vec w; // weights (inverse variances)
     
-    int n = x.n_rows;
     int D = x.n_cols;
     int nlam = lambda.size();
     double lam; // temporary varible for fixed lambda
@@ -277,7 +276,6 @@ List glm_ridge_c(arma::mat x,
     
     int n = x.n_rows;
     int D = x.n_cols;
-    double alpha = 0;
     int qau; // counts quadratic approximation updates
     int ls_iter; // counts linesearch iterations
     int j;
