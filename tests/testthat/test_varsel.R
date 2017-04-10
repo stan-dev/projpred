@@ -2,7 +2,7 @@
 
 set.seed(1235)
 n <- 40
-nv <- 5
+nv <- 4
 x <- matrix(rnorm(n*nv, 0, 1), n, nv)
 b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)

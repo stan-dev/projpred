@@ -3,6 +3,7 @@
 export(cv_varsel)
 export(init_refmodel)
 export(proj_linpred)
+export(proj_predict)
 export(project)
 export(varsel)
 export(varsel_plot)

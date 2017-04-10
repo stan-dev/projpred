@@ -7,12 +7,13 @@ x <- matrix(rnorm(n*nv, 0, 1), n, nv)
 b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 weights <- sample(1:4, n, replace = T)
+# change this to something else once offsets work
+offset <- rep(0, n)
 chains <- 1
 cores <- 1
 seed <- 1235
 iter <- 300
-# change this to something else once offsets work
-offset <- rep(0, n)
+
 
 f_gauss <- gaussian()
 df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = x)

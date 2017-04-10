@@ -92,9 +92,5 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 	 })
 
 	# If only one model size, just return the proj instead of a list of projs
-	if(length(proj) == 1) {
-	  proj[[1]]
-	} else {
-	  proj
-	}
+	.unlist_proj(proj)
 }

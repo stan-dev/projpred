@@ -296,3 +296,4 @@ log_sum_exp <- function(x) {
 
 .is_proj_list <- function(proj) { !( 'family_kl' %in% names(proj) ) }
 
+.unlist_proj <- function(p) if(length(p) == 1) p[[1]] else p
