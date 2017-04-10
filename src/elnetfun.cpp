@@ -1,6 +1,6 @@
 #include <iostream>
 #include <RcppArmadillo.h>
-#include <math.h>
+#include <cmath>
 //[[Rcpp::depends(RcppArmadillo)]]
 
 
@@ -324,7 +324,7 @@ List glm_ridge_c(arma::mat x,
             loss = loss + lambda*sum(square(beta+dbeta));
             ++ls_iter;
             
-            if (isnan(loss))
+            if (std::isnan(loss))
             	throw std::runtime_error( "glm_ridge error: Deviance became NaN. The problem is probably ill-behaved." );
             	
             if (loss < loss_old)
