@@ -187,6 +187,9 @@ log_sum_exp <- function(x) {
 			# special case, only one cluster
 			cl <- rep(1, S)
 			p_ref <- get_p_clust(fam, vars$mu, vars$dis, wobs=vars$wobs, cl=cl)
+		} else if (nc == NCOL(vars$mu)) {
+		    # number of clusters equal to the number of samples, so return the samples
+		    return(.get_refdist(fit, ns=nc))
 		} else {
 			# several clusters
 		    if (nc > NCOL(vars$mu))
