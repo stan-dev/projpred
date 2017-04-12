@@ -129,7 +129,7 @@ List glm_elnet_c(arma::mat x, // input matrix
                bool intercept, // whether to use intercept
                double thresh, // threshold for determining the convergence
                int qa_updates_max, // maximum for the total number of quadratic approximation updates
-               int pmax, // stop computation when the active set size is equal or greater than this
+               size_t pmax, // stop computation when the active set size is equal or greater than this
                bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
                int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
 {
@@ -139,7 +139,7 @@ List glm_elnet_c(arma::mat x, // input matrix
     vec z; // observations
     vec w; // weights (inverse variances)
     
-    int D = x.n_cols;
+    size_t D = x.n_cols;
     int nlam = lambda.size();
     double lam; // temporary varible for fixed lambda
     int k; // lambda index
@@ -295,7 +295,7 @@ List glm_ridge_c(arma::mat x,
     vec w = as<vec>(obs["w"]);
     double loss_initial = obs["dev"];
     double loss_old = loss_initial; // will be updated iteratively
-    double loss; // will be updated iteratively
+    double loss = loss_initial; // will be updated iteratively
     double tol = thresh*fabs(loss_initial); // criterion for convergence
     
     
