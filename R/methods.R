@@ -296,6 +296,9 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
 #' for the reference model for each pair of \code{S} posterior draws and \code{n} observations.
 #' Can be omitted but is mandatory for performing the LOO validation.
 #' 
+#' @return An object that can be passed to all the functions that
+#' take the reference fit as the first argument, such as \code{varsel}, \code{cv_varsel},
+#' \code{proj_predict} and \code{proj_linpred}.
 NULL
 
 #' @rdname refmodel
