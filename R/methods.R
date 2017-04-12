@@ -1,4 +1,4 @@
-#' Extract draws of the lienar predictor and draw from the predictive
+#' Extract draws of the linear predictor and draw from the predictive
 #' distribution of the projected submodel
 #'
 #' \code{proj_linpred} extracts draws of the linear predictor and
