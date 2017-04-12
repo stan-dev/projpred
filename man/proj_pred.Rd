@@ -4,7 +4,7 @@
 \alias{proj_pred}
 \alias{proj_linpred}
 \alias{proj_predict}
-\title{Extract draws of the lienar predictor and draw from the predictive
+\title{Extract draws of the linear predictor and draw from the predictive
 distribution of the projected submodel}
 \usage{
 proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,

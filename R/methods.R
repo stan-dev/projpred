@@ -262,7 +262,43 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
     subset(arr, size <= nv_max)
 }
 
-#' Initialize the reference model
+#' Generic reference model initialization
+#' 
+#' Initializes a structure that can be used as a reference fit for the 
+#' projective variable selection.
+#' This function is provided to allow construction of the reference fit
+#' using also other tools than \code{rstanarm}, because only a limited amount
+#' of information is needed for the actual projection and the variable selection.
+#' 
+#' 
+#' @name refmodel
+#' 
+#' @param x Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
+#'  variables for selection
+#' (i.e. variables from which to select the submodel). Rows denote the observations
+#' and columns the different variables. Note that this matrix can be different from
+#' the one used to construct the reference model.
+#' @param y Vector of length \code{n} giving the target variable values.
+#' @param family \link[=family]{family} object giving the model family
+#' @param mu \code{n}-by-{S} matrix of expected values for \code{y}, each column corresponding
+#' to one posterior draw for the reference model.
+#' @param dis Vector of length \code{S} giving the posterior draws for the dispersion parameter
+#' in the reference model if there is such a parameter in the model family. For Gaussian
+#' observation model this is the noise std \code{sigma}.
+#' @param offset Offset to be added to the linear predictor in the projection. (Same as in 
+#' function \code{glm})
+#' @param wobs Observation weights. The weights should sum to \code{n}. 
+#' If omitted, equal weights are assumed. 
+#' @param wsample vector of length \code{S} giving the weights for the posterior draws.
+#' The weights should sum to one. If omitted, equal weights are assumed.
+#' @param intercept Whether to use intercept. Default is \code{TRUE}.
+#' @param loglik \code{S}-by-\code{n} matrix giving the log-likelihood values
+#' for the reference model for each pair of \code{S} posterior draws and \code{n} observations.
+#' Can be omitted but is mandatory for performing the LOO validation.
+#' 
+NULL
+
+#' @rdname refmodel
 #' @export
 init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
                           intercept=TRUE, loglik=NULL) {
