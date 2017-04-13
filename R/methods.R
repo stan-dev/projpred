@@ -192,7 +192,7 @@ proj_coef_helper <- function(proj, fun) {
         b <- proj$beta
         if(NROW(b) == 0) return(0)
         rownames(b) <- proj$ind_names
-        if(object$proj$intercept) {
+        if(proj$intercept) {
             b <- rbind(proj$alpha, b)
             rownames(b)[1] <- '(Intercept)'
         }
