@@ -55,13 +55,14 @@ log_sum_exp <- function(x) {
 		# undo the random permutation to make results reproducible
 		perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
 							 fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
+		dis_name <- ifelse(grepl(fit$call[1], 'stan_lm'), 'sigma', 'aux')
 
 		res <- list(
 			fam = fam,
 			x = x,
 			alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv], # EVENTUALLY NEED TO GET RID OFF THIS
 			beta = t(unname(drop(e$beta)))[, perm_inv],                              # EVENTUALLY NEED TO GET RID OFF THIS
-			dis = unname(e[['aux']]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
+			dis = unname(e[[dis_name]]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			coefnames = coefnames,
 			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)

@@ -30,11 +30,15 @@ fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
 fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
                       weights = weights, offset = offset,
                       chains = chains, cores = cores, seed = seed, iter = iter)
+fit_lm <- stan_lm(y ~x, data = df_gauss, weights = weights, offset = offset,
+                  prior = R2(0.2),
+                  chains = chains, cores = cores, seed = seed, iter = iter)
 suppressWarnings(
   fit_glmer <- stan_glmer(mpg ~ wt + (1|cyl), data = mtcars, chains = chains,
                           cores = cores, seed = seed, iter = iter)
 )
-fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
+fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss,
+                 lm = fit_lm)
 
 vsf <- function(x, m) varsel(x, method = m, nv_max = nv, verbose = FALSE)
 vs_list <- list(l1 = lapply(fit_list, vsf, 'L1'),
