@@ -1,5 +1,5 @@
 ---
-title: "glmproj Quick Start"
+title: "projpred Quick Start"
 date: "`r Sys.Date()`"
 output: html_vignette
 params:
@@ -7,27 +7,27 @@ params:
 ---
 <!--
 %\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{glmproj quickstart guide}
+%\VignetteIndexEntry{projpred quickstart guide}
 \usepackage[utf8](inputenc)
 -->
 ```{r, child="children/SETTINGS-knitr.txt"}
 ```
 
-This vignette shows how to use the main functionalities of the ```glmproj```-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models fitted with ```rstanarm```. The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).
+This vignette shows how to use the main functionalities of the ```projpred```-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models fitted with ```rstanarm```. The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).
 
 
 ## Gaussian example
 First load the packages that are needed, and specify the number of available cores (this speeds up the sampling when multiple cores are available). Uncomment the last line in the following commands (this is commented out to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters). 
 ```{r, message=F, warning=F}
 library(rstanarm)
-library(glmproj)
+library(projpred)
 library(ggplot2)
 #options(mc.cores = parallel::detectCores())
 ```
 
 The package contains a simple Gaussian example dataset accessible with the `data`-command. This dataset is one of the example cases from the `glmnet`-package. The following command loads a dataframe `df_gaussian` with the predictor matrix `x` and the corresponding targets `y` into the workspace.
 ```{r}
-data('df_gaussian', package = 'glmproj')
+data('df_gaussian', package = 'projpred')
 ```
 
 
@@ -89,7 +89,7 @@ ggplot() +
 
 This section shows an example of the variable selection for a logistic regression model (binary classification). Everything is very similar to the Gaussian case. First load the data (this dataset is also from the `glmnet`-package):
 ```{r}
-data('df_binom', package = 'glmproj')
+data('df_binom', package = 'projpred')
 ```
 
 Then fit the full model:

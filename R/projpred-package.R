@@ -1,9 +1,9 @@
-#' GLMPROJ
+#' PROJPRED
 #'
 #' @docType package
-#' @name glmproj
+#' @name projpred
 #'
-#' @useDynLib glmproj
+#' @useDynLib projpred
 #' @importFrom Rcpp sourceCpp
 #'
 #' @import stats

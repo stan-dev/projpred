@@ -1,6 +1,6 @@
 .onAttach <- function(...) {
-  ver <- utils::packageVersion("glmproj")
-  packageStartupMessage("This is glmproj version ", ver)
+  ver <- utils::packageVersion("projpred")
+  packageStartupMessage("This is projpred version ", ver)
 }
 
 log_weighted_mean_exp <- function(x, w) {

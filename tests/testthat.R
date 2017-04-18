@@ -1,4 +1,4 @@
 library(testthat)
-library(glmproj)
+library(projpred)
 
-test_check("glmproj")
+test_check("projpred")

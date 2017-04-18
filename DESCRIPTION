@@ -1,6 +1,6 @@
-Package: glmproj
-Title: glmproj
-Version: 0.4.1
+Package: projpred
+Title: projpred
+Version: 0.4.2
 Authors:
     Aki Vehtari, Juho Piironen, Markus Paasiniemi, Jonah Gabry
 Description:

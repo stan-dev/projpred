@@ -1,4 +1,4 @@
-# glmproj
+# projpred
 
 An R package to perform projection predictive variable selection for generalized linear models fitted with [rstanarm][]. 
 
@@ -13,21 +13,21 @@ Installation
   		install.packages("devtools")
   		library(devtools)
 	}
-	devtools::install_github('paasim/glmproj', build_vignettes = TRUE)
+	devtools::install_github('stan-dev/projpred', build_vignettes = TRUE)
 
     
 Example
 -------
 
     rm(list=ls())
-    library(glmproj)
+    library(projpred)
     library(rstanarm)
     options(mc.cores = parallel::detectCores())
     set.seed(1)
 
     # Gaussian and Binomial examples from the glmnet-package
-    data('df_gaussian', package = 'glmproj')
-    #data('df_binom', package = 'glmproj')
+    data('df_gaussian', package = 'projpred')
+    #data('df_binom', package = 'projpred')
 
     # fit the full model with a sparsifying prior
     fit <- stan_glm(y ~ x, family = gaussian(), data = df_gaussian,
