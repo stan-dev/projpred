@@ -1,13 +1,18 @@
 Package: projpred
 Title: projpred
 Version: 0.4.2
-Authors:
-    Aki Vehtari, Juho Piironen, Markus Paasiniemi, Jonah Gabry
+Author:
+    Markus Paasiniemi [aut],
+    Juho Piironen [aut],
+    Jonah Gabry [aut],
+    Aki Vehtari [aut]
+Maintainer:
+    Juho Piironen <juho.piironen@aalto.fi>
 Description:
     An R package to perform projection predictive variable
     selection for generalized linear models fitted with rstanarm.
 Depends:
-    R (>= 3.1.2)
+    R (>= 3.1.2), rstan, ggplot2, loo
 Imports:
     rstanarm, Rcpp
 LinkingTo: Rcpp, RcppArmadillo
