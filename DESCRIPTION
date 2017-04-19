@@ -12,9 +12,9 @@ Description:
     An R package to perform projection predictive variable
     selection for generalized linear models fitted with rstanarm.
 Depends:
-    R (>= 3.1.2)
+    R (>= 3.1.2), rstan, ggplot2, loo
 Imports:
-    rstanarm, parallel, Rcpp
+    rstanarm, Rcpp
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
