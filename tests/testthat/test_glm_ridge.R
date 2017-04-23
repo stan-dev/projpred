@@ -1,6 +1,6 @@
 # tests for ridge regression, currently untested combinations
 # - gaussian with inverse-link
-# - binomial with log-link
+# - binomial with log or cloglog-link
 # - poisson with sqrt or id-link
 # - Gamma with inverse or id-link
 # - everything except gaussian with id-link for ridge penalty
@@ -14,8 +14,7 @@ b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 x_tr <- x[,1:nv_fit]
 weights <- sample(1:4, n, replace = T)
-# change this to something else once offsets work
-offset <- rep(0, n)
+offset <- rnorm(n, 0, 1)
 
 tol <- 1e-04
 # some link-functions seem to need higher thresh-argument for glm_ridge
@@ -132,20 +131,6 @@ test_that("glm_ridge: binomial, cauchit-link, intercept, lambda = 0", {
                tolerance = tol)
 })
 
-test_that("glm_ridge: binomial, cloglog-link, intercept, lambda = 0", {
-  fam <- binomial(link = 'cloglog')
-  y <- rbinom(n, weights, fam$linkinv(x%*%b))
-  lambda <- 0
-
-  glmfit <- glm(cbind(y, weights-y) ~ x_tr, family = fam, offset = offset)
-  ridgefit <- glm_ridge(x_tr, y/weights, family = fam, lambda = lambda,
-                        weights = weights, offset = offset, intercept = TRUE,
-                        thresh = extra_thresh)
-
-  expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
-               tolerance = tol)
-})
-
 test_that("glm_ridge: poisson, log-link, intercept, lambda = 0", {
   fam <- poisson(link = 'log')
   y <- rpois(n, fam$linkinv(x%*%b))
@@ -185,15 +170,3 @@ test_that("glm_ridge: Gamma, log-link, intercept, lambda = 0", {
                tolerance = tol)
 })
 
-test_that("glm_ridge: Gamma, log-link, no intercept, lambda = 0", {
-  fam <- Gamma(link = 'log')
-  y <- rgamma(n, fam$linkinv(x%*%b))
-  lambda <- 0
-
-  glmfit <- glm(y ~ x_tr - 1, family = fam, weights = weights, offset = offset)
-  ridgefit <- glm_ridge(x_tr, y, family = fam, lambda = lambda,
-                        weights = weights, offset = offset, intercept = FALSE,
-                        thresh = extra_thresh)
-
-  expect_equal(unname(coef(glmfit)), c(ridgefit$beta), tolerance = tol)
-})
