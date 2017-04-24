@@ -8,7 +8,7 @@
 #' @param nc Number of clusters used for selection. Default is 1 and ignored if method='L1' 
 #' (L1-search uses always one cluster).
 #' @param nspred Number of samples used for prediction (after selection). Ignored if ncpred is given.
-#' @param ncpred Number of clusters used for prediction (after selection). Default is 10.
+#' @param ncpred Number of clusters used for prediction (after selection). Default is 1.
 #' @param nv_max Same as in \link[=varsel]{varsel}.
 #' @param intercept Same as in \link[=varsel]{varsel}.
 #' @param verbose Whether to print out some information during the validation, Default is TRUE.
@@ -51,8 +51,8 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO',
 		# use one cluster for selection by default, and always with L1-search
 		nc <- 1
 	if (is.null(nspred) && is.null(ncpred))
-	    # use 10 clusters for prediction by default
-	    ncpred <- 10
+	    # use 1 clusters for prediction by default
+	    ncpred <- 1
 
 	# .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
