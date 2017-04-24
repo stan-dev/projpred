@@ -175,7 +175,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   # one sub_summary-list that contains with all n mu:s and lppd:s.
   sub <- apply(
     mapply(function(p_sub, x, chosen) {
-      lapply(.get_sub_summaries(chosen, x$d_test, p_sub, family_kl), data.frame)
+      lapply(.get_sub_summaries(p_sub, x$d_test, family_kl), data.frame)
     }, p_sub_cv, list_cv, chosen_cv),
     1, hf)
 
@@ -258,7 +258,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 		# training and loo density for the left-out point
 		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept)
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
-		summaries_sub <- .get_sub_summaries(chosen, d_test, p_sub, fam)
+		summaries_sub <- .get_sub_summaries(p_sub, d_test, fam)
 
 
 		for (k in 0:nv_max) {
