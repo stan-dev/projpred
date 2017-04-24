@@ -58,16 +58,16 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
         nv <- length(vind) # if vind is given, nv is ignored (project only onto the given submodel)
     }
 
-  # by default project with clusters
+    # by default project with clusters
 	if (is.null(ns) && is.null(nc))
 		nc <- min(50, NCOL(vars$mu))
-  # by default, run the projection up to the maximum number of variables
-  # specified in the variable selection
-  if (is.null(nv))
-    nv <- c(0:length(chosen))
+    # by default, run the projection up to the maximum number of variables
+    # specified in the variable selection
+    if (is.null(nv))
+        nv <- c(0:length(chosen))
 
 	if(is.null(intercept))
-	  intercept <- vars$intercept
+        intercept <- vars$intercept
 
 	family_kl <- vars$fam
 

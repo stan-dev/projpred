@@ -184,7 +184,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
   # one sub_summary-list that contains with all n mu:s and lppd:s.
   sub <- apply(
     mapply(function(p_sub, x, chosen) {
-      lapply(.get_sub_summaries(chosen, x$d_test, p_sub, family_kl), data.frame)
+      lapply(.get_sub_summaries(p_sub, x$d_test, family_kl), data.frame)
     }, p_sub_cv, list_cv, chosen_cv),
     1, hf)
 
@@ -272,8 +272,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 		# training and loo density for the left-out point
 		submodels <- .get_submodels(chosen, 0:nv_max, fam, p_pred, d_train, intercept) 
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
-		summaries_sub <- .get_sub_summaries(chosen, d_test, submodels, fam)
-
+		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
 		for (k in 0:nv_max) {
 			loo_sub[i,k+1] <- summaries_sub[[k+1]]$lppd
@@ -287,28 +286,9 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 
 	}
 
-	###############
-	## EXPERIMENTATION ##
-	# p_sel <- .get_refdist(fit, nc=1)
-	# p_final <- .get_refdist(fit, nc=10)
-	# chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
-	# submod1 <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept)
-	# submod2 <- .get_submodels(chosen, 0:nv_max, fam, p_final, d_train, intercept)
-	# summ1 <- .get_sub_summaries(chosen, d_train, submod1, fam)
-	# summ2 <- .get_sub_summaries(chosen, d_train, submod2, fam)
-	# peff <- matrix(0, nrow=n, ncol=length(summ1))
-	# for (k in 1:length(summ1)) {
-	# 	peff[,k] <- summ1[[k]]$lppd - loo_sub[,k]
-	# 	print(mean(abs(summ2[[k]]$lppd - summ1[[k]]$lppd)))
-	# }
-	# print(apply(peff,2,sum))
-	###############
-
-
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
 	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1])
-	    # list(lppd= summ2[[k+1]]$lppd - peff[,k+1], mu=mu_sub[,k+1]) # EXPERIMENTATION
 	})
 	summ_full <- list(lppd=loo_full, mu=mu_full)
 	summaries <- list(sub=summ_sub, full=summ_full)

@@ -3,20 +3,20 @@
 # Functions for calculating mse, mlpd, etc. with (and without) bootstrapping
 # - .bootstrap/calc_stats,
 
-.get_sub_summaries <- function(chosen, d_test, p_sub, family_kl) {
+.get_sub_summaries <- function(submodels, d_test, family_kl) {
 
-  res <- lapply(p_sub, function(p_sub) {
-  	ind <- 1:NROW(p_sub$beta)
-    if(NROW(p_sub$beta) == 0) {
+  res <- lapply(submodels, function(submodels) {
+  	ind <- submodels$ind
+    if(NROW(submodels$beta) == 0) {
       xt <- matrix(0, nrow = length(d_test$weights), ncol = 0)
     } else if(!is.matrix(d_test$x)) {
       xt <- matrix(d_test$x[ind], nrow = 1)
     } else {
-      xt <- d_test$x[, chosen[ind], drop = F]
+      xt <- d_test$x[, ind, drop = F]
     }
 
-    mu <- family_kl$mu_fun(xt, p_sub$alpha, p_sub$beta, d_test$offset)
-    .weighted_summary_means(d_test, family_kl, p_sub$weights, mu, p_sub$dis)
+    mu <- family_kl$mu_fun(xt, submodels$alpha, submodels$beta, d_test$offset)
+    .weighted_summary_means(d_test, family_kl, submodels$weights, mu, submodels$dis)
   })
 }
 
