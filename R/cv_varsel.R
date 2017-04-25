@@ -4,8 +4,11 @@
 #' linear model.
 #' @param fit Same as in \link[=varsel]{varsel}.
 #' @param method Same as in \link[=varsel]{varsel}.
-#' @param ns Same as in \link[=varsel]{varsel}.
-#' @param nc Same as in \link[=varsel]{varsel}.
+#' @param ns Number of samples used for selection. Ignored if nc is provided or if method='L1'.
+#' @param nc Number of clusters used for selection. Default is 1 and ignored if method='L1' 
+#' (L1-search uses always one cluster).
+#' @param nspred Number of samples used for prediction (after selection). Ignored if ncpred is given.
+#' @param ncpred Number of clusters used for prediction (after selection). Default is 1.
 #' @param nv_max Same as in \link[=varsel]{varsel}.
 #' @param intercept Same as in \link[=varsel]{varsel}.
 #' @param verbose Whether to print out some information during the validation, Default is TRUE.
@@ -37,7 +40,8 @@
 #'
 
 #' @export
-cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NULL,
+cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', 
+                      ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, verbose = T,
                       K = NULL, k_fold = NULL, ...) {
 
@@ -46,6 +50,9 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
 		# use one cluster for selection by default, and always with L1-search
 		nc <- 1
+	if (is.null(nspred) && is.null(ncpred))
+	    # use 1 clusters for prediction by default
+	    ncpred <- 1
 
 	# .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
@@ -61,9 +68,9 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 	sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, intercept=intercept, verbose=verbose)$varsel
 
 	if(tolower(cv_method) == 'kfold') {
-		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, intercept, verbose, vars, K, k_fold)
+		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, vars, K, k_fold)
 	} else if (tolower(cv_method) == 'loo')  {
-		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, intercept, verbose)
+		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
 	}
@@ -99,9 +106,11 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', ns = NULL, nc = NU
 	fit
 }
 
-kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
+kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, vars,
                          K, k_fold) {
 
+    # TODO: does not handle nspred or ncpred in any way!
+    
   if (!('stanfit' %in% names(fit)))
   	stop('k-fold cross-validation not yet implemented for other than rstanarm reference models.')
 
@@ -175,7 +184,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
   # one sub_summary-list that contains with all n mu:s and lppd:s.
   sub <- apply(
     mapply(function(p_sub, x, chosen) {
-      lapply(.get_sub_summaries(chosen, x$d_test, p_sub, family_kl), data.frame)
+      lapply(.get_sub_summaries(p_sub, x$d_test, family_kl), data.frame)
     }, p_sub_cv, list_cv, chosen_cv),
     1, hf)
 
@@ -196,7 +205,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose, vars,
 
 
 
-loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
+loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose) {
 	#
 	# Performs the validation of the searching process using LOO.
 	#
@@ -209,14 +218,13 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	# training data
 	d_train <- .get_traindata(fit)
 
-	# the reference distribution used for selection
-	p_full <- .get_refdist(fit, ns=ns, nc=nc)
-	cl <- p_full$cl # clustering information
+	# the clustering/subsampling used for selection
+	p_sel <- .get_refdist(fit, ns=ns, nc=nc)
+	cl_sel <- p_sel$cl # clustering information
 
-	#### EXPERIMENTATION ##
-	# p_middle <- .get_refdist(fit, nc=3)
-	# cl_middle <- p_middle$cl
-	#################
+	# the clustering/subsampling used for prediction
+	p_pred <- .get_refdist(fit, ns=nspred, nc=ncpred)
+	cl_pred <- p_pred$cl
 
 	# fetch the log-likelihood for the full model to obtain the LOO weights
 	if ('stanfit' %in% names(fit))
@@ -253,8 +261,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 	for (i in 1:n) {
 
 		# reweight the clusters/samples according to the is-loo weights
-		p_sel <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl)
-		# p_middle <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_middle) # EXPERIMENTATION
+		p_sel <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
+		p_pred <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
 
 		# perform selection
 		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
@@ -262,11 +270,9 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
-		p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept)
-		# p_sub <- .get_submodels(chosen, 0:nv_max, fam, p_middle, d_train, intercept) # EXPERIMENTATION
+		submodels <- .get_submodels(chosen, 0:nv_max, fam, p_pred, d_train, intercept) 
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
-		summaries_sub <- .get_sub_summaries(chosen, d_test, p_sub, fam)
-
+		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
 		for (k in 0:nv_max) {
 			loo_sub[i,k+1] <- summaries_sub[[k+1]]$lppd
@@ -280,28 +286,9 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, intercept, verbose) {
 
 	}
 
-	###############
-	## EXPERIMENTATION ##
-	# p_sel <- .get_refdist(fit, nc=1)
-	# p_final <- .get_refdist(fit, nc=10)
-	# chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
-	# submod1 <- .get_submodels(chosen, 0:nv_max, fam, p_sel, d_train, intercept)
-	# submod2 <- .get_submodels(chosen, 0:nv_max, fam, p_final, d_train, intercept)
-	# summ1 <- .get_sub_summaries(chosen, d_train, submod1, fam)
-	# summ2 <- .get_sub_summaries(chosen, d_train, submod2, fam)
-	# peff <- matrix(0, nrow=n, ncol=length(summ1))
-	# for (k in 1:length(summ1)) {
-	# 	peff[,k] <- summ1[[k]]$lppd - loo_sub[,k]
-	# 	print(mean(abs(summ2[[k]]$lppd - summ1[[k]]$lppd)))
-	# }
-	# print(apply(peff,2,sum))
-	###############
-
-
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
 	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1])
-	    # list(lppd= summ2[[k+1]]$lppd - peff[,k+1], mu=mu_sub[,k+1]) # EXPERIMENTATION
 	})
 	summ_full <- list(lppd=loo_full, mu=mu_full)
 	summaries <- list(sub=summ_sub, full=summ_full)

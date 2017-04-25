@@ -1,18 +1,17 @@
 # tests for varsel and cv_varsel:
 
 set.seed(1235)
-n <- 40
-nv <- 4
+n <- 50
+nv <- 5
 x <- matrix(rnorm(n*nv, 0, 1), n, nv)
 b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 weights <- sample(1:4, n, replace = T)
-chains <- 1
-cores <- 1
+chains <- 2
 seed <- 1235
 iter <- 500
-# change this to something else once offsets work
-offset <- rep(0, n)
+offset <- rnorm(n)
+source(file.path('helpers', 'SW.R'))
 
 f_gauss <- gaussian()
 df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = x)
@@ -21,21 +20,29 @@ df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x)
 f_poiss <- poisson()
 df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
 
-fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
-                      weights = weights, offset = offset,
-                      chains = chains, cores = cores, seed = seed, iter = iter)
-fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
-                      data = df_binom, weights = weights, offset = offset,
-                      chains = chains, cores = cores, seed = seed, iter = iter)
-fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
-                      weights = weights, offset = offset,
-                      chains = chains, cores = cores, seed = seed, iter = iter)
-fit_lm <- stan_lm(y ~x, data = df_gauss, weights = weights, offset = offset,
-                  prior = R2(0.2),
-                  chains = chains, cores = cores, seed = seed, iter = iter)
-suppressWarnings(
-  fit_glmer <- stan_glmer(mpg ~ wt + (1|cyl), data = mtcars, chains = chains,
-                          cores = cores, seed = seed, iter = iter)
+SW(
+  fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
+                        weights = weights, offset = offset,
+                        chains = chains, seed = seed, iter = iter)
+)
+SW(
+  fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
+                        data = df_binom, weights = weights, offset = offset,
+                        chains = chains, seed = seed, iter = iter)
+)
+SW(
+  fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
+                        weights = weights, offset = offset,
+                        chains = chains, seed = seed, iter = iter)
+)
+SW(
+  fit_lm <- stan_lm(y ~ x, data = df_gauss, weights = weights, offset = offset,
+                    prior = R2(0.3),
+                    chains = chains, seed = seed, iter = iter)
+)
+SW(
+  fit_glmer <- stan_glmer(mpg ~ wt + (1|cyl), data = mtcars,
+                          chains = chains, seed = seed, iter = iter)
 )
 fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss,
                  lm = fit_lm)
@@ -45,15 +52,17 @@ vs_list <- list(l1 = lapply(fit_list, vsf, 'L1'),
                 fs = lapply(fit_list, vsf, 'forward'))
 
 # kfold not tested currently
-cvsf <- function(x, m) cv_varsel(x, method = m, nv_max = nv, verbose = FALSE)
-suppressWarnings(
+cvsf <- function(x, m)
+  cv_varsel(x, method = m, cv_method = 'LOO', nv_max = nv, verbose = FALSE)
+
+SW(
   cvs_list <- list(l1 = lapply(fit_list, cvsf, 'L1'),
                    fs = lapply(fit_list, cvsf, 'forward'))
 )
 
 
-context("varsel")
-test_that("varsel returns an object with a field named 'varsel'", {
+context('varsel')
+test_that('varsel returns an object with a field named "varsel"', {
   for(i in length(vs_list)) {
     i_inf <- names(vs_list)[i]
     for(j in length(vs_list[[i]])) {
@@ -63,8 +72,7 @@ test_that("varsel returns an object with a field named 'varsel'", {
   }
 })
 
-test_that("object retruned by varsel contains the relevant fields", {
-
+test_that('object retruned by varsel contains the relevant fields', {
   for(i in length(vs_list)) {
     i_inf <- names(vs_list)[i]
     for(j in length(vs_list[[i]])) {
@@ -111,30 +119,30 @@ test_that("object retruned by varsel contains the relevant fields", {
                    vs_list[[i]][[j]]$varsel$family_kl$link,
                    info = paste(i_inf, j_inf))
       expect_true(length(vs_list[[i]][[j]]$varsel$family_kl) >=
-                  length(vs_list[[i]][[j]]$family$family),
+                    length(vs_list[[i]][[j]]$family$family),
                   info = paste(i_inf, j_inf))
     }
   }
 })
 
-test_that("nv_max has an effect on varsel for gaussian models", {
+test_that('nv_max has an effect on varsel for gaussian models', {
   vs1 <- varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
   expect_equal(length(vs1$varsel$chosen), 3)
 })
 
-test_that("nv_max has an effect on varsel for non-gaussian models", {
+test_that('nv_max has an effect on varsel for non-gaussian models', {
   vs1 <- varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
   expect_equal(length(vs1$varsel$chosen), 3)
 })
 
-test_that("Having something else than stan_glm as the fit throws an error", {
+test_that('Having something else than stan_glm as the fit throws an error', {
   expect_error(varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
   expect_error(varsel(1, verbose = FALSE), regexp = 'not a stanreg')
 })
 
 
 context('cv_varsel')
-test_that("cv_varsel returns an object with a field named 'varsel'", {
+test_that('cv_varsel returns an object with a field named "varsel"', {
   for(i in length(cvs_list)){
     i_inf <- names(cvs_list)[i]
     for(j in length(cvs_list[[i]])) {
@@ -146,7 +154,7 @@ test_that("cv_varsel returns an object with a field named 'varsel'", {
 
 })
 
-test_that("object retruned by cv_varsel contains the relevant fields", {
+test_that('object retruned by cv_varsel contains the relevant fields', {
   for(i in length(cvs_list)) {
     i_inf <- names(cvs_list)[i]
     for(j in length(cvs_list[[i]])) {
@@ -214,25 +222,25 @@ test_that("object retruned by cv_varsel contains the relevant fields", {
 })
 
 
-test_that("nv_max has an effect on cv_varsel for gaussian models", {
+test_that('nv_max has an effect on cv_varsel for gaussian models', {
   suppressWarnings(
     vs1 <- cv_varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
   )
   expect_equal(length(vs1$varsel$chosen), 3)
 })
 
-test_that("nv_max has an effect on cv_varsel for non-gaussian models", {
+test_that('nv_max has an effect on cv_varsel for non-gaussian models', {
   suppressWarnings(
     vs1 <- varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
   )
   expect_equal(length(vs1$varsel$chosen), 3)
 })
 
-test_that("Having something else than stan_glm as the fit throws an error", {
+test_that('Having something else than stan_glm as the fit throws an error', {
   expect_error(cv_varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
   expect_error(varsel(1, verbose = FALSE), regexp = 'not a stanreg')
 })
 
-test_that("kfold cv throws an error", {
+test_that('kfold cv throws an error', {
   expect_error(cv_varsel(fit_gauss, cv_method = 'kfold', verbose = FALSE), regexp = 'unavailable')
 })

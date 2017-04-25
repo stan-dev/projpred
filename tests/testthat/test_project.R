@@ -7,12 +7,11 @@ x <- matrix(rnorm(n*nv, 0, 1), n, nv)
 b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 weights <- sample(1:4, n, replace = T)
-# change this to something else once offsets work
-offset <- rep(0, n)
-chains <- 1
-cores <- 1
+offset <- rnorm(n)
+chains <- 2
 seed <- 1235
-iter <- 300
+iter <- 500
+source(file.path('helpers', 'SW.R'))
 
 
 f_gauss <- gaussian()
@@ -22,16 +21,21 @@ df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x)
 f_poiss <- poisson()
 df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
 
+SW(
 fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
                       weights = weights, offset = offset,
-                      chains = chains, cores = cores, seed = seed, iter = iter)
+                      chains = chains, seed = seed, iter = iter)
+)
+SW(
 fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
                       data = df_binom, weights = weights, offset = offset,
-                      chains = chains, cores = cores, seed = seed, iter = iter)
+                      chains = chains, seed = seed, iter = iter)
+)
+SW(
 fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
                       weights = weights, offset = offset,
-                      chains = chains, cores = cores, seed = seed, iter = iter)
-
+                      chains = chains, seed = seed, iter = iter)
+)
 fit_list <- list(fit_gauss, fit_binom, fit_poiss)
 vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
 

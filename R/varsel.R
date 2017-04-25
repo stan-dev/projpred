@@ -83,11 +83,10 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
 
   # statistics for the selected submodels
   p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full, d_train, intercept)
-  sub <- .get_sub_summaries(chosen, d_test, p_sub, family_kl)
+  sub <- .get_sub_summaries(p_sub, d_test, family_kl)
 
   #
   if (d_type == 'train') {
-      # full <- .get_full_summaries(p_full, d_test, list(alpha=vars$alpha, beta=vars$beta), family_kl, intercept)
       full <- .weighted_summary_means(d_test, family_kl, vars$wsample, vars$mu, vars$dis)
   } else {
       # TODO, FIGURE OUT HOW TO HANDLE THE TEST PREDICTIONS FOR FULL MODEL WHEN COEF_FULL ARE NOT AVAILABLE

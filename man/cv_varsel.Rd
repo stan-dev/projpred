@@ -5,8 +5,8 @@
 \title{Cross-validate the variable selection (varsel)}
 \usage{
 cv_varsel(fit, method = "L1", cv_method = "LOO", ns = NULL, nc = NULL,
-  nv_max = NULL, intercept = NULL, verbose = T, K = NULL,
-  k_fold = NULL, ...)
+  nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
+  verbose = T, K = NULL, k_fold = NULL, ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -15,9 +15,14 @@ cv_varsel(fit, method = "L1", cv_method = "LOO", ns = NULL, nc = NULL,
 
 \item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.}
 
-\item{ns}{Same as in \link[=varsel]{varsel}.}
+\item{ns}{Number of samples used for selection. Ignored if nc is provided or if method='L1'.}
 
-\item{nc}{Same as in \link[=varsel]{varsel}.}
+\item{nc}{Number of clusters used for selection. Default is 1 and ignored if method='L1' 
+(L1-search uses always one cluster).}
+
+\item{nspred}{Number of samples used for prediction (after selection). Ignored if ncpred is given.}
+
+\item{ncpred}{Number of clusters used for prediction (after selection). Default is 1.}
 
 \item{nv_max}{Same as in \link[=varsel]{varsel}.}
 
