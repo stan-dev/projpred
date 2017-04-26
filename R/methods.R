@@ -199,10 +199,30 @@ varsel_plot <- function(object, ..., nv_max = NULL, statistics = NULL, deltas = 
         stop(paste('The provided object doesn\'t contain information about the',
                    'variable selection. Run the variable selection first.'))
 
-    stats <- subset(.bootstrap_stats(object$varsel, n_boot, alpha),
-                    delta == deltas | statistic == 'kl')
+    boot_stats <- .bootstrap_stats(object$varsel, n_boot, alpha)
+    
+    #
     if(is.null(statistics)) statistics <- 'mlpd' #as.character(unique(stats$statistic))
+    if(deltas) {
+      full_stats <- data.frame(statistic = statistics, value = 0)
+    } else {
+      boot_vals <- subset(boot_stats, size == 0 & delta == F &
+                            statistic %in% statistics, 'value', drop = T)
+      boot_deltas <- subset(boot_stats, size == 0 & delta == T &
+                            statistic %in% statistics, 'value', drop = T)
+      if('kl' %in% statistics) {
+        boot_deltas <- c(0, boot_deltas)
+        boot_vals[1] <- 0
+      }
+      full_stats <- data.frame(
+        statistic = subset(boot_stats, size == 0 & delta == F &
+                             statistic %in% statistics, 'statistic'),
+        value = boot_vals - boot_deltas)
+    }
+     
+    stats <- subset(boot_stats, delta == deltas | statistic == 'kl')
     arr <- subset(stats, statistic %in% statistics)
+    
 
     if(NROW(arr) == 0) {
         stop(paste0(ifelse(length(statistics)==1, 'Statistics ', 'Statistic '),
@@ -228,7 +248,7 @@ varsel_plot <- function(object, ..., nv_max = NULL, statistics = NULL, deltas = 
         geom_errorbar(aes(ymin = lq, ymax = uq, width=0.2, alpha=0.1)) +
         geom_line(aes(y = value)) +
         geom_point(aes(y = value)) +
-        geom_hline(aes(yintercept = value), subset(arr, size == max(size)),
+        geom_hline(aes(yintercept = value), data = full_stats,
                    color = 'darkred', linetype=2) +
         scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
                            limits = c(min(breaks), max(breaks))) +
