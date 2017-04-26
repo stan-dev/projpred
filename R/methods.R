@@ -325,5 +325,8 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 
     fit <- list(x=x, y=y, fam=kl_helpers(family), mu=mu, dis=dis, offset=offset,
                 wobs=wobs, wsample=wsample, intercept=intercept, loglik=loglik)
+    
+    # define the class of the retuned object to be 'refmodel'
+    class(fit) <- 'refmodel'
     return(fit)
 }

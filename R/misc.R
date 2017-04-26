@@ -17,19 +17,28 @@ log_sum_exp <- function(x) {
 # check if the fit object is suitable for variable selection
 .validate_for_varsel <- function(fit) {
 
-  if(!('stanreg' %in% class(fit)))
-    stop('Object is not a stanreg object')
-
-  if(!(gsub('rstanarm::', '', fit$call[1]) %in% c("stan_glm", "stan_lm")))
-    stop('Only \'stan_lm\' and \'stan_glm\' are supported.')
-
-  families <- c('gaussian','binomial','poisson')
-  if(!(family(fit)$family %in% families))
-    stop(paste0('Only the following families are supported:\n',
-                paste(families, collapse = ', '), '.'))
-
-  if(NCOL(get_x(fit)) < 4)
-    stop('Not enough explanatory variables for variable selection')
+    if ('stanreg' %in% class(fit)) {
+        
+        # a stanreg object
+        
+        if(!(gsub('rstanarm::', '', fit$call[1]) %in% c("stan_glm", "stan_lm")))
+            stop('Only \'stan_lm\' and \'stan_glm\' are supported.')
+        
+        families <- c('gaussian','binomial','poisson')
+        if(!(family(fit)$family %in% families))
+            stop(paste0('Only the following families are supported:\n',
+                        paste(families, collapse = ', '), '.'))
+        
+        if(NCOL(get_x(fit)) < 4)
+            stop('Not enough explanatory variables for variable selection')
+    
+    } else if ('refmodel' %in% class(fit)) {
+        # a fit object constructed by init_refmodel, so everything should be fine
+        return()
+    } else {
+        stop('The class for the provided object is not recognized.')
+    }
+    
 }
 
 
@@ -75,29 +84,13 @@ log_sum_exp <- function(x) {
 		res$wobs <- temp$weights
 		res$y <- temp$y
 
-		# y <- unname(get_y(fit))
-		# if(NCOL(y) == 1) {
-		# 	res$wobs <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
-		# 	if (is.factor(y))
-		# 	    res$y <- as.vector(y, mode='integer') - 1 # zero-one vector
-		# 	else
-		# 	    res$y <- y
-		# } else {
-		# 	res$wobs <- rowSums(y)
-		# 	res$y <- y[, 1] / res$wobs
-		# }
-
 		return(res)
 
-	} else {
-
-		# not and rstanarm-object, so look for the relevant fields
-
-	    # DUMMY, simply return the object itself and assume it has all the relevant fiels
-	    # (i.e. it was created by init_refmodel)
+	} else if (class(fit)=='refmodel') {
+		# an object constructed by init_refmodel so all the relavant fields should be there
 	    return(fit)
-	    # if (!is.null(fit$x)) stop('')
-		# stop('Other than rstanarm-fits are currently not supported, but will be in the near future.')
+	} else {
+	    stop('The class for the provided object is not recognized.')
 	}
 }
 
