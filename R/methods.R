@@ -48,13 +48,6 @@ proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL) {
   if (!is.null(vind))
     nv <- NULL # ensure nv is ignored if vind is set
 
-  # if('stanreg' %in% class(object)) {
-  #   proj <- project(object, nv = nv, ns = ns, nc = nc, vind = vind)
-  # } else {
-  #   proj <- object
-  #   if(any(sapply(list(nv, vind, ns, nc), Negate(is.null))))
-  #     warning('nv, vind, ns and nc are ignored when object is a projection.')
-  # }
   if( 'projection' %in% class(object) || (length(object)>0 && 'projection' %in% class(object[[1]])) ) {
       proj <- object
       if(any(sapply(list(nv, vind, ns, nc), Negate(is.null))))
