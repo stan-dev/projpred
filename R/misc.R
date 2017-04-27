@@ -17,19 +17,28 @@ log_sum_exp <- function(x) {
 # check if the fit object is suitable for variable selection
 .validate_for_varsel <- function(fit) {
 
-  if(!('stanreg' %in% class(fit)))
-    stop('Object is not a stanreg object')
-
-  if(!(gsub('rstanarm::', '', fit$call[1]) %in% c("stan_glm", "stan_lm")))
-    stop('Only \'stan_lm\' and \'stan_glm\' are supported.')
-
-  families <- c('gaussian','binomial','poisson')
-  if(!(family(fit)$family %in% families))
-    stop(paste0('Only the following families are supported:\n',
-                paste(families, collapse = ', '), '.'))
-
-  if(NCOL(get_x(fit)) < 4)
-    stop('Not enough explanatory variables for variable selection')
+    if ('stanreg' %in% class(fit)) {
+        
+        # a stanreg object
+        
+        if(!(gsub('rstanarm::', '', fit$call[1]) %in% c("stan_glm", "stan_lm")))
+            stop('Only \'stan_lm\' and \'stan_glm\' are supported.')
+        
+        families <- c('gaussian','binomial','poisson')
+        if(!(family(fit)$family %in% families))
+            stop(paste0('Only the following families are supported:\n',
+                        paste(families, collapse = ', '), '.'))
+        
+        if(NCOL(get_x(fit)) < 4)
+            stop('Not enough explanatory variables for variable selection')
+    
+    } else if ('refmodel' %in% class(fit)) {
+        # a fit object constructed by init_refmodel, so everything should be fine
+        return()
+    } else {
+        stop('The class for the provided object is not recognized.')
+    }
+    
 }
 
 
@@ -71,89 +80,50 @@ log_sum_exp <- function(x) {
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 
 		# y and the observation weights in a standard form
-		temp <- .get_standard_y(unname(get_y(fit)), weights(fit))
+		temp <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
 		res$wobs <- temp$weights
 		res$y <- temp$y
 
-		# y <- unname(get_y(fit))
-		# if(NCOL(y) == 1) {
-		# 	res$wobs <- if(length(weights(fit))) unname(weights(fit)) else rep(1, nobs(fit))
-		# 	if (is.factor(y))
-		# 	    res$y <- as.vector(y, mode='integer') - 1 # zero-one vector
-		# 	else
-		# 	    res$y <- y
-		# } else {
-		# 	res$wobs <- rowSums(y)
-		# 	res$y <- y[, 1] / res$wobs
-		# }
-
 		return(res)
 
-	} else {
-
-		# not and rstanarm-object, so look for the relevant fields
-
-	    # DUMMY, simply return the object itself and assume it has all the relevant fiels
-	    # (i.e. it was created by init_refmodel)
+	} else if (class(fit)=='refmodel') {
+		# an object constructed by init_refmodel so all the relavant fields should be there
 	    return(fit)
-	    # if (!is.null(fit$x)) stop('')
-		# stop('Other than rstanarm-fits are currently not supported, but will be in the near future.')
+	} else {
+	    stop('The class for the provided object is not recognized.')
 	}
 }
 
 
-.get_standard_y <- function(y, weights) {
+.get_standard_y <- function(y, weights, fam) {
     # return y and the corresponding observation weights into the 'standard' form:
     # for binomial family, y is transformed into a vector with values between 0 and 1,
     # and weights give the number of observations at each x.
     # for all other families, y and weights are kept as they are (unless weights is
     # a vector with length zero in which case it is replaced by a vector of ones).
     if(NCOL(y) == 1) {
-        weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
-        if (is.factor(y))
-            y <- as.vector(y, mode='integer') - 1 # zero-one vector
-    } else {
+        # weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
+        if(length(weights) > 0) 
+            weights <- unname(weights)
+        else 
+            weights <- rep(1, length(y))
+        if (fam$family == 'binomial') {
+            if (is.factor(y))
+                y <- as.vector(y, mode='integer') - 1 # zero-one vector
+            else {
+                if (any(y < 0 | y > 1))
+                    stop("y values must be 0 <= y <= 1 for the binomial model.")
+            }
+        }
+    } else if (NCOL(y) == 2) {
         weights <- rowSums(y)
         y <- y[, 1] / weights
+    } else {
+        stop('y cannot have more than two columns.')
     }
     return(list(y=y,weights=weights))
 }
 
-
-.get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
-
-    # THIS FUNCTION SEEMS TO BE DEPRECATED, AND COULD THUS BE REMOVED
-
-  # - Returns d_train, d_test, p_full, coef_full.
-  # - If d_test is NA, it is set to d_train.
-
-  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset)
-
-  d_train <- list(x = vars$x, weights = vars$wobs, offset = vars$offset)
-
-  # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
-  if(is.null(d_test)) {
-    # check that d_test is of the correct form?
-    d_test <- vars[c('x', 'weights', 'offset', 'y')]
-  } else {
-    if(is.null(d_test$weights)) d_test$weights <- rep(1, nrow(d_test$x))
-    if(is.null(d_test$offset)) d_test$offset <- rep(0, nrow(d_test$x))
-  }
-  # indices of samples that are used in the projection
-  s_ind <- round(seq(1, ncol(vars$beta), length.out  = ns))
-  p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
-                 weights = rep(1/ns, ns))
-  coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
-
-  # cluster the samples of the full model if clustering is wanted
-  # for the variable selection
-  do_clust <- F
-  clust <- if(do_clust) get_p_clust(family_kl, mu, vars$dis, ns) else NULL
-  if(do_clust) p_full <- clust
-
-  list(d_train = d_train, d_test = d_test, p_full=p_full,
-       coef_full = coef_full)
-}
 
 
 .get_refdist <- function(fit, ns=NULL, nc=NULL, seed=NULL) {

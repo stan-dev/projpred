@@ -43,13 +43,15 @@ Example
     varsel_statistics(fit_v)
 
     # project the parameters for model sizes nv = 3,5 variables 
-    fit_p <- project(fit_v, nv = c(3, 5))
-    proj_coef(fit_p)
+    projs <- project(fit_v, nv = c(3, 5))
+    
+    # predict using only the 5 most relevant variables
+    pred <- proj_linpred(fit_v, xnew=df_gaussian$x, nv=5, integrated=T)
     
     # perform cross-validation for the variable selection
     fit_cv <- cv_varsel(fit, cv_method='LOO')
 
-    # plot the results
+    # plot the validation results 
     varsel_plot(fit_cv)
 
 References

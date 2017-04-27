@@ -30,11 +30,11 @@ lambda_grid <- function(x, y, family, offset, weights, alpha=1.0, eps=1e-2, nlam
     #
 	n <- dim(x)[1]
 	obs <- pseudo_data(rep(0,n), y, family, offset, weights)
-	
+
 	if (alpha == 0)
 	    # initialize ridge as if alpha = 0.01
 	    alpha <- 0.01
-	
+
 	lambda_max <- max(abs( t(x) %*% (obs$z*obs$w) )) / alpha
 	lambda_min <- eps*lambda_max
 	loglambda <- seq(log(lambda_min), log(lambda_max), len=nlam)
@@ -43,8 +43,9 @@ lambda_grid <- function(x, y, family, offset, weights, alpha=1.0, eps=1e-2, nlam
 
 
 glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-3,
-                      lambda=NULL, alpha=1.0, thresh=1e-6, 
-					  qa_updates_max=ifelse(family$family=='gaussian', 1, 100), 
+                      lambda=NULL, alpha=1.0, thresh=1e-6,
+                      qa_updates_max=ifelse(family$family=='gaussian' &&
+                                              family$link=='identity', 1, 100),
 					  pmax=dim(as.matrix(x))[2], pmax_strict=FALSE,
 					  weights=NULL, offset=NULL, intercept=TRUE, normalize=TRUE) {
 	#
@@ -53,46 +54,47 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 	# Does not handle any dispersion parameters.
 	#
 	np <- dim(x)
-	if (is.null(np) || (np[2] <= 1)) 
+	if (is.null(np) || (np[2] <= 1))
 		stop("x should be a matrix with 2 or more columns")
-	
+
 	# ensure x is in matrix form and fill in missing weights and offsets
 	x <- as.matrix(x)
 	if (is.null(weights))
 		weights <- 1.0
 	if (is.null(offset))
 		offset <- 0.0
-	
+
 	if (normalize) {
 		# normalize the predictor matrix
 		mx <- colMeans(x)
 		sx <- apply(x,2,'sd')
 		x <- scale(x, center=T, scale=T)
 	}
-	
+
 	# default lambda-sequence
 	if (is.null(lambda))
 		lambda <- lambda_grid(x,y,family,offset,weights,alpha,nlam=nlambda,eps=lambda_min_ratio)
-	
+
 	# call the c++-function that serves as the workhorse
 	pseudo_obs <- function(f) {return(pseudo_data(f,y,family,offset=offset,weights=weights))}
 	out <- glm_elnet_c(x,pseudo_obs,lambda,alpha,intercept,thresh,qa_updates_max,pmax,pmax_strict)
 	beta <- out[[1]]
 	beta0 <- as.vector(out[[2]])
-	
+
 	if (normalize) {
 		# return the intecept and the coefficients on the original scale
 		beta <- sweep(beta, 1, sx, '/')
 		beta0 <- beta0 - colSums(sweep(beta, 1, mx, '*'))
 	}
-	
-	return(list( beta=beta, beta0=beta0, npasses=out[[3]], 
+
+	return(list( beta=beta, beta0=beta0, npasses=out[[3]],
 				 updates_qa=as.vector(out[[4]]), updates_as=as.vector(out[[5]]) ))
 }
 
 
-glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6, 
-                      qa_updates_max=ifelse(family$family=='gaussian', 1, 100),
+glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
+                      qa_updates_max=ifelse(family$family=='gaussian' &&
+                                              family$link=='identity', 1, 100),
                       weights=NULL, offset=NULL, intercept=TRUE) {
     #
     # Fits GLM with ridge penalty on the regression coefficients.

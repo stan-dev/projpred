@@ -48,13 +48,12 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   # TODO, IMPLEMENT SENSIBILITY CHECKS FOR NS AND NC (INTO MISC.R) AND CALL THEM
   # TODO, FIGURE OUT HOW TO HANDLE THE TEST PREDICTIONS FOR FULL MODEL WHEN COEF_FULL ARE NOT AVAILABLE
 
-	.validate_for_varsel(fit)
+  .validate_for_varsel(fit)
 
   if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
   	# use one cluster for selection by default, and always with L1-search
   	nc <- 1
 
-  # .validate_for_varsel(fit)
   vars <- .extract_vars(fit)
   family_kl <- vars$fam
 
@@ -93,10 +92,6 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
       warning('Test predictions for the full model not yet implemented.')
       full <- NULL
   }
-
-
-  # ensure that after the new selection, there are no old projections in the fit structure
-  fit$proj <- NULL
 
   # store the relevant fields into fit
   fit$varsel <- list(chosen = chosen,
