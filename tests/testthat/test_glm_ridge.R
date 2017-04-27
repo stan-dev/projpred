@@ -71,7 +71,7 @@ test_that("glm_ridge: gaussian, log-link, intercept, lambda = 0", {
 
   glmfit <- glm(y ~ x_tr, family = fam, weights = weights, offset = offset)
   ridgefit <- glm_ridge(x_tr, y, family = fam, lambda = lambda, weights = weights,
-                        offset = offset, intercept = TRUE, qa_updates_max = 300,
+                        offset = offset, intercept = TRUE,
                         thresh = extra_thresh)
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
