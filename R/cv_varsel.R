@@ -235,7 +235,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 	    loglik <- fit$loglik
 	else
 	    stop('To perform LOO for generic reference models, you must provide log-likelihood matrix to init_refmodel.')
-	lw <- psislw(-loglik)$lw_smooth
+	lw <- psislw(-loglik, cores = 1)$lw_smooth
 	n <- dim(lw)[2]
 
 	# compute loo summaries for the full model
