@@ -125,41 +125,6 @@ log_sum_exp <- function(x) {
 }
 
 
-.get_data_and_parameters <- function(vars, d_test, intercept, ns, family_kl) {
-
-    # THIS FUNCTION SEEMS TO BE DEPRECATED, AND COULD THUS BE REMOVED
-
-  # - Returns d_train, d_test, p_full, coef_full.
-  # - If d_test is NA, it is set to d_train.
-
-  mu <- family_kl$mu_fun(vars$x, vars$alpha, vars$beta, vars$offset)
-
-  d_train <- list(x = vars$x, weights = vars$wobs, offset = vars$offset)
-
-  # if test data doesn't exist, use training data to evaluate mse, r2, mlpd
-  if(is.null(d_test)) {
-    # check that d_test is of the correct form?
-    d_test <- vars[c('x', 'weights', 'offset', 'y')]
-  } else {
-    if(is.null(d_test$weights)) d_test$weights <- rep(1, nrow(d_test$x))
-    if(is.null(d_test$offset)) d_test$offset <- rep(0, nrow(d_test$x))
-  }
-  # indices of samples that are used in the projection
-  s_ind <- round(seq(1, ncol(vars$beta), length.out  = ns))
-  p_full <- list(mu = mu[, s_ind], dis = vars$dis[s_ind],
-                 weights = rep(1/ns, ns))
-  coef_full <- list(alpha = vars$alpha[s_ind], beta = vars$beta[, s_ind])
-
-  # cluster the samples of the full model if clustering is wanted
-  # for the variable selection
-  do_clust <- F
-  clust <- if(do_clust) get_p_clust(family_kl, mu, vars$dis, ns) else NULL
-  if(do_clust) p_full <- clust
-
-  list(d_train = d_train, d_test = d_test, p_full=p_full,
-       coef_full = coef_full)
-}
-
 
 .get_refdist <- function(fit, ns=NULL, nc=NULL, seed=NULL) {
 	#

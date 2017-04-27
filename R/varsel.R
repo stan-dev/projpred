@@ -93,10 +93,6 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
       full <- NULL
   }
 
-
-  # ensure that after the new selection, there are no old projections in the fit structure
-  fit$proj <- NULL
-
   # store the relevant fields into fit
   fit$varsel <- list(chosen = chosen,
                      chosen_names = vars$coefnames[chosen],
