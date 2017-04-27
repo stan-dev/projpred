@@ -48,12 +48,20 @@ proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL) {
   if (!is.null(vind))
     nv <- NULL # ensure nv is ignored if vind is set
 
-  if('stanreg' %in% class(object)) {
-    proj <- project(object, nv = nv, ns = ns, nc = nc, vind = vind)
+  # if('stanreg' %in% class(object)) {
+  #   proj <- project(object, nv = nv, ns = ns, nc = nc, vind = vind)
+  # } else {
+  #   proj <- object
+  #   if(any(sapply(list(nv, vind, ns, nc), Negate(is.null))))
+  #     warning('nv, vind, ns and nc are ignored when object is a projection.')
+  # }
+  if( 'projection' %in% class(object) || (length(object)>0 && 'projection' %in% class(object[[1]])) ) {
+      proj <- object
+      if(any(sapply(list(nv, vind, ns, nc), Negate(is.null))))
+          warning('nv, vind, ns and nc are ignored when object is a projection.')
   } else {
-    proj <- object
-    if(any(sapply(list(nv, vind, ns, nc), Negate(is.null))))
-      warning('nv, vind, ns and nc are ignored when object is a projection.')
+      # reference model obtained, so run the projection
+      proj <- project(object, nv = nv, ns = ns, nc = nc, vind = vind)
   }
 
   if(!.is_proj_list(proj)) {
@@ -113,8 +121,7 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
             pred <- as.vector(pred)
         if (!is.null(ynew)) {
             # compute also the log-density
-
-            temp <- .get_standard_y(ynew,weightsnew)
+            temp <- .get_standard_y(ynew,weightsnew,proj$family_kl)
             ynew <- temp$y
             weightsnew <- temp$weights
             lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew, weightsnew)
@@ -305,11 +312,12 @@ NULL
 #' @export
 init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
                           intercept=TRUE, loglik=NULL) {
-
+    
     # fill in the missing values with their defaults
     if (is.null(mu))
         mu <- y
-    mu <- as.matrix(mu)
+    mu <- unname(as.matrix(mu))
+    
     S <- NCOL(mu) # number of samples in the reference model
     n <- length(y)
     if (is.null(dis))
@@ -322,8 +330,26 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
         wsample <- rep(1/S, S)
     if (is.null(intercept))
         intercept <- TRUE
+    
+    # figure out column names for the variables
+    if (!is.null(colnames(x)))
+        coefnames <- colnames(x)
+    else
+        coefnames <- paste0('x',1:ncol(x))
 
-    fit <- list(x=x, y=y, fam=kl_helpers(family), mu=mu, dis=dis, offset=offset,
-                wobs=wobs, wsample=wsample, intercept=intercept, loglik=loglik)
+    # y and the observation weights in a standard form
+    temp <- .get_standard_y(y, wobs, family)
+    
+    fit <- list(x=x, y=temp$y, fam=kl_helpers(family), mu=mu, dis=dis, coefnames=coefnames,
+                offset=offset, wobs=temp$weights, wsample=wsample, intercept=intercept, loglik=loglik)
+    
+    # define the class of the retuned object to be 'refmodel'
+    class(fit) <- 'refmodel'
     return(fit)
 }
+
+
+
+
+
+

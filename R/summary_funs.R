@@ -35,7 +35,7 @@
       list(mu = mu, lppd = loglik)
   } else if (is.null(dim(loglik))){
       # loglik is a vector, but not sure if it means one observation with many samples, or vice versa?
-      stop('loglik is a vector, but should be a scalar or matrix')
+      stop('Internal error encountered: loglik is a vector, but should be a scalar or matrix')
   } else {
       # mu is a matrix, so apply weighted sum over the samples
       list(mu = c(mu %*% wsample),
