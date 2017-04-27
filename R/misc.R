@@ -80,7 +80,7 @@ log_sum_exp <- function(x) {
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 
 		# y and the observation weights in a standard form
-		temp <- .get_standard_y(unname(get_y(fit)), weights(fit))
+		temp <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
 		res$wobs <- temp$weights
 		res$y <- temp$y
 
@@ -95,19 +95,31 @@ log_sum_exp <- function(x) {
 }
 
 
-.get_standard_y <- function(y, weights) {
+.get_standard_y <- function(y, weights, fam) {
     # return y and the corresponding observation weights into the 'standard' form:
     # for binomial family, y is transformed into a vector with values between 0 and 1,
     # and weights give the number of observations at each x.
     # for all other families, y and weights are kept as they are (unless weights is
     # a vector with length zero in which case it is replaced by a vector of ones).
     if(NCOL(y) == 1) {
-        weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
-        if (is.factor(y))
-            y <- as.vector(y, mode='integer') - 1 # zero-one vector
-    } else {
+        # weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
+        if(length(weights) > 0) 
+            weights <- unname(weights)
+        else 
+            weights <- rep(1, length(y))
+        if (fam$family == 'binomial') {
+            if (is.factor(y))
+                y <- as.vector(y, mode='integer') - 1 # zero-one vector
+            else {
+                if (any(y < 0 | y > 1))
+                    stop("y values must be 0 <= y <= 1 for the binomial model.")
+            }
+        }
+    } else if (NCOL(y) == 2) {
         weights <- rowSums(y)
         y <- y[, 1] / weights
+    } else {
+        stop('y cannot have more than two columns.')
     }
     return(list(y=y,weights=weights))
 }

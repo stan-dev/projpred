@@ -88,9 +88,11 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 	proj <- lapply(subm, function(x) {
 	  x$ind_names <- sapply(x$ind, function(i, ch, chn) chn[which(ch == i)],
 	                        object$varsel$chosen, object$varsel$chosen_names)
-	  c(x, list(family_kl = family_kl))
+	  x <- c(x, list(family_kl = family_kl))
+	  class(x) <- 'projection'
+	  return(x)
 	 })
-
+	
 	# If only one model size, just return the proj instead of a list of projs
 	.unlist_proj(proj)
 }

@@ -137,7 +137,7 @@ test_that('nv_max has an effect on varsel for non-gaussian models', {
 
 test_that('Having something else than stan_glm as the fit throws an error', {
   expect_error(varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
-  expect_error(varsel(1, verbose = FALSE), regexp = 'not a stanreg')
+  expect_error(varsel(1, verbose = FALSE), regexp = 'not recognized')
 })
 
 
@@ -238,7 +238,7 @@ test_that('nv_max has an effect on cv_varsel for non-gaussian models', {
 
 test_that('Having something else than stan_glm as the fit throws an error', {
   expect_error(cv_varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
-  expect_error(varsel(1, verbose = FALSE), regexp = 'not a stanreg')
+  expect_error(varsel(1, verbose = FALSE), regexp = 'not recognized')
 })
 
 test_that('kfold cv throws an error', {
