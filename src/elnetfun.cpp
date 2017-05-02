@@ -129,7 +129,7 @@ List glm_elnet_c(arma::mat x, // input matrix
                  bool intercept, // whether to use intercept
                  double thresh, // threshold for determining the convergence
                  int qa_updates_max, // maximum for the total number of quadratic approximation updates
-                 size_t pmax, // stop computation when the active set size is equal or greater than this
+                 int pmax, // stop computation when the active set size is equal or greater than this
                  bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
                  int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
 {
@@ -139,7 +139,8 @@ List glm_elnet_c(arma::mat x, // input matrix
     vec z; // observations
     vec w; // weights (inverse variances)
     
-    size_t D = x.n_cols;
+    size_t D = x.n_cols; // number of inputs
+    size_t pmaxu = (size_t) pmax; // converting pmax to unsigned int (avoids some compiler warnings)
     int nlam = lambda.size();
     double lam; // temporary varible for fixed lambda
     int k; // lambda index
@@ -236,7 +237,7 @@ List glm_elnet_c(arma::mat x, // input matrix
         if (qau == qa_updates_max && qa_updates_max > 1)
             Rcpp::Rcout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
         
-        if ((alpha > 0.0) && (active_set.size() >= pmax || active_set.size() == D)) {
+        if ((alpha > 0.0) && (active_set.size() >= pmaxu || active_set.size() == D)) {
             // obtained solution with more than pmax variables (or the number of columns in x)
             // when no ridge regression considered, so terminate
             if (pmax_strict) {
