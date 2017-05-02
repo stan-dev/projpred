@@ -9,9 +9,9 @@ using namespace arma;
 
 
 /** Returns the value of the regularized quadratic approximation to the loss function
-    that is to be minimized iteratively:
-        L = 0.5*sum_i{ w_i (z_i - f_i)^2 } + lambda*{ 0.5*(1-alpha)*||beta||_2^2 + alpha*||beta||_1 }
- */
+that is to be minimized iteratively:
+L = 0.5*sum_i{ w_i (z_i - f_i)^2 } + lambda*{ 0.5*(1-alpha)*||beta||_2^2 + alpha*||beta||_1 }
+*/
 double loss_approx(vec beta,    // coefficients
                    vec f,       // latent values
                    vec z,       // locations for pseudo obsevations
@@ -19,121 +19,121 @@ double loss_approx(vec beta,    // coefficients
                    double lambda, // regularization parameter
                    double alpha)  // elastic net mixing parameter
 {
-	double loss;
-	loss = 0.5*sum(w % square(z-f)) + lambda*( 0.5*(1-alpha)*sum(square(beta)) + alpha*(sum(abs(beta))) );
-	return loss;
+    double loss;
+    loss = 0.5*sum(w % square(z-f)) + lambda*( 0.5*(1-alpha)*sum(square(beta)) + alpha*(sum(abs(beta))) );
+    return loss;
 }
 
 
 /** Updates the regression coefficients and the intercept (unless excluded) based on the
-    current quadratic approximation to the loss function. This is done via the 'soft-thresholding'
-    as described by Friedman et. al (2009). Performs either one pass through the specified set
-    of varibles or iterates until convergence.
+current quadratic approximation to the loss function. This is done via the 'soft-thresholding'
+as described by Friedman et. al (2009). Performs either one pass through the specified set
+of varibles or iterates until convergence.
 */
 void coord_descent(	vec& beta, // regression coefficients
-					double& beta0, // intercept
-					vec& f, // latent values
-					mat& x, // input matrix
-					vec& z, // locations for pseudo obsevations
-					vec& w, // weights of the pseudo observations (inverse-variances)
-					double& lambda, // regularization parameter
-					double& alpha, // elastic net mixing parameter
-					bool intercept, // whether to use intercept
-					std::set<int>& varind, // which coefficients are updated
-					std::set<int>& active_set, // active set, may change if some variables enter or leave
-					bool until_convergence, // true = until convergence, false = one pass through varind
-					int& npasses, // counts total passes through the variables
-					double tol, // stop when change in the loss is smaller than this
-					int maxiter = 1000) // maximum number of iterations (passes) through varind
+                    double& beta0, // intercept
+                    vec& f, // latent values
+                    mat& x, // input matrix
+                    vec& z, // locations for pseudo obsevations
+                    vec& w, // weights of the pseudo observations (inverse-variances)
+                    double& lambda, // regularization parameter
+                    double& alpha, // elastic net mixing parameter
+                    bool intercept, // whether to use intercept
+                    std::set<size_t>& varind, // which coefficients are updated
+                    std::set<size_t>& active_set, // active set, may change if some variables enter or leave
+                    bool until_convergence, // true = until convergence, false = one pass through varind
+                    int& npasses, // counts total passes through the variables
+                    double tol, // stop when change in the loss is smaller than this
+                    int maxiter = 1000) // maximum number of iterations (passes) through varind
 {
-	
-	int iter = 0;
-	double loss,loss_old;
-	int j;
-	double h;
-	
-	// initial loss
-	loss_old = loss_approx(beta,f,z,w,lambda,alpha);
-	
-	// auxiliary that will be used later on
-	double lam_alpha = lambda*alpha;
-	double lam_oneminus_alpha = lambda*(1-alpha);
-	
-	while (iter < maxiter) {
-		
-		// update the intercept
-		if (intercept) {
-		    f = f - beta0;
-		    beta0 = sum(w % (z - f)) / sum(w);
-		    f = f + beta0;
-		}
-		
-		active_set.clear();
-		
-		for (std::set<int>::iterator it=varind.begin(); it!=varind.end(); ++it) {
-			
-			// update the regression coefficients via 'soft-thresholding'
-			
-			// varible index
-			j = *it;
-			
-			f = f - beta(j)*x.col(j);
-			h = sum( w % x.col(j) % (z - f) ); // auxiliary variable
-			
-			if (fabs(h) <= lam_alpha) {
-				beta(j) = 0.0;
-			} else if (h > 0) {
-				beta(j) = (h - lam_alpha) / ( sum(w % square(x.col(j))) + lam_oneminus_alpha );
-		        active_set.insert(j);
-			} else {
-				beta(j) = (h + lam_alpha) / ( sum(w % square(x.col(j))) + lam_oneminus_alpha );
-		        active_set.insert(j);
-			}
-			f = f + beta(j)*x.col(j);
-		}
-		
-		++iter;
-		++npasses;
-		loss = loss_approx(beta,f,z,w,lambda,alpha);
-		
-		if (until_convergence) {
-		    
-		    if (fabs(loss_old-loss) < tol) {
-				break;
-			} else {
-				// continue iterating
-				loss_old = loss;
-			}
-		} else {
-			break;
-		}
-	}
-	
-	if (iter == maxiter)
-		std::cout << "Warning: maximum number of iterations reached in coordinate descent. Results can be inaccurate!\n";
-	
+    
+    int iter = 0;
+    double loss,loss_old;
+    size_t j;
+    double h;
+    
+    // initial loss
+    loss_old = loss_approx(beta,f,z,w,lambda,alpha);
+    
+    // auxiliary that will be used later on
+    double lam_alpha = lambda*alpha;
+    double lam_oneminus_alpha = lambda*(1-alpha);
+    
+    while (iter < maxiter) {
+        
+        // update the intercept
+        if (intercept) {
+            f = f - beta0;
+            beta0 = sum(w % (z - f)) / sum(w);
+            f = f + beta0;
+        }
+        
+        active_set.clear();
+        
+        for (std::set<size_t>::iterator it=varind.begin(); it!=varind.end(); ++it) {
+            
+            // update the regression coefficients via 'soft-thresholding'
+            
+            // varible index
+            j = *it;
+            
+            f = f - beta(j)*x.col(j);
+            h = sum( w % x.col(j) % (z - f) ); // auxiliary variable
+            
+            if (fabs(h) <= lam_alpha) {
+                beta(j) = 0.0;
+            } else if (h > 0) {
+                beta(j) = (h - lam_alpha) / ( sum(w % square(x.col(j))) + lam_oneminus_alpha );
+                active_set.insert(j);
+            } else {
+                beta(j) = (h + lam_alpha) / ( sum(w % square(x.col(j))) + lam_oneminus_alpha );
+                active_set.insert(j);
+            }
+            f = f + beta(j)*x.col(j);
+        }
+        
+        ++iter;
+        ++npasses;
+        loss = loss_approx(beta,f,z,w,lambda,alpha);
+        
+        if (until_convergence) {
+            
+            if (fabs(loss_old-loss) < tol) {
+                break;
+            } else {
+                // continue iterating
+                loss_old = loss;
+            }
+        } else {
+            break;
+        }
+    }
+    
+    if (iter == maxiter)
+        Rcpp::Rcout << "Warning: maximum number of iterations reached in coordinate descent. Results can be inaccurate!\n";
+    
 }
 
 
 
 /** Computes the whole elastic-net regularization path given the grid of values to the lambda.
-    Assumes that the lambda grid is selected carefully and utilizes the function pseudo_obs
-    that returns the pseudo-observations corresponding to the quadratic approximation to the
-    loss function for a given vector of latent values (see elnetfun.R).
- */
+Assumes that the lambda grid is selected carefully and utilizes the function pseudo_obs
+that returns the pseudo-observations corresponding to the quadratic approximation to the
+loss function for a given vector of latent values (see elnetfun.R).
+*/
 // [[Rcpp::export]]
 List glm_elnet_c(arma::mat x, // input matrix
-               Function pseudo_obs, // R-function returning the pseudo-data based on the quadratic approximation
-               arma::vec lambda, // grid for the regularization parameter
-               double alpha, // elastic net mixing parameter
-               bool intercept, // whether to use intercept
-               double thresh, // threshold for determining the convergence
-               int qa_updates_max, // maximum for the total number of quadratic approximation updates
-               size_t pmax, // stop computation when the active set size is equal or greater than this
-               bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
-               int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
+                 Function pseudo_obs, // R-function returning the pseudo-data based on the quadratic approximation
+                 arma::vec lambda, // grid for the regularization parameter
+                 double alpha, // elastic net mixing parameter
+                 bool intercept, // whether to use intercept
+                 double thresh, // threshold for determining the convergence
+                 int qa_updates_max, // maximum for the total number of quadratic approximation updates
+                 size_t pmax, // stop computation when the active set size is equal or greater than this
+                 bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
+                 int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
 {
-	
+    
     // for gaussian pseudo data
     List obs; 
     vec z; // observations
@@ -164,10 +164,10 @@ List glm_elnet_c(arma::mat x, // input matrix
     beta.zeros(D);
     double beta0 = 0.0;
     vec f = x*beta + beta0;
-    std::set<int> active_set; 
-    std::set<int> active_set_old;
-    std::set<int> varind_all; // a constant set containing indices of all the variables
-    for (int j=0; j<D; j++)
+    std::set<size_t> active_set; 
+    std::set<size_t> active_set_old;
+    std::set<size_t> varind_all; // a constant set containing indices of all the variables
+    for (size_t j=0; j<D; j++)
         varind_all.insert(j);
     
     
@@ -183,7 +183,7 @@ List glm_elnet_c(arma::mat x, // input matrix
     for (k=0; k<nlam; ++k) {
         
         lam = lambda(k);
-    	
+        
         qau = 0;
         while (qau < qa_updates_max) {
             
@@ -200,7 +200,7 @@ List glm_elnet_c(arma::mat x, // input matrix
             //  quadratic approximation
             asu = 0;
             while (asu < as_updates_max) {
-
+                
                 // iterate within the current active set until convergence (this might update 
                 // active_set_old, if some variable goes to zero)
                 coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, tol);
@@ -210,8 +210,8 @@ List glm_elnet_c(arma::mat x, // input matrix
                 coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, tol);
                 
                 ++asu;
-
-				if (active_set==active_set_old) {
+                
+                if (active_set==active_set_old) {
                     // active set did not change so convergence reached
                     // (for the current quadratic approximation to the loss function)
                     break;
@@ -234,21 +234,21 @@ List glm_elnet_c(arma::mat x, // input matrix
         qa_updates(k) = qau;
         
         if (qau == qa_updates_max && qa_updates_max > 1)
-        	std::cout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
+            Rcpp::Rcout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
         
         if ((alpha > 0.0) && (active_set.size() >= pmax || active_set.size() == D)) {
-			// obtained solution with more than pmax variables (or the number of columns in x)
-			// when no ridge regression considered, so terminate
-			if (pmax_strict) {
-			    // return solutions only up to the previous lambda value
-			    beta0_path = beta0_path.head(k);
-			    beta_path = beta_path.head_cols(k);
-			} else {
-			    // return solutions up to the current lambda value
-			    beta0_path = beta0_path.head(k+1);
-			    beta_path = beta_path.head_cols(k+1);
-			}
-			break;
+            // obtained solution with more than pmax variables (or the number of columns in x)
+            // when no ridge regression considered, so terminate
+            if (pmax_strict) {
+                // return solutions only up to the previous lambda value
+                beta0_path = beta0_path.head(k);
+                beta_path = beta_path.head_cols(k);
+            } else {
+                // return solutions up to the current lambda value
+                beta0_path = beta0_path.head(k+1);
+                beta_path = beta_path.head_cols(k+1);
+            }
+            break;
         }
     }
     
@@ -325,15 +325,15 @@ List glm_ridge_c(arma::mat x,
             ++ls_iter;
             
             if (std::isnan(loss))
-            	throw std::runtime_error( "glm_ridge error: Deviance became NaN. The problem is probably ill-behaved." );
-            	
+                throw std::runtime_error( "glm_ridge error: Deviance became NaN. The problem is probably ill-behaved." );
+            
             if (loss < loss_old)
                 break;
         }
         beta = beta + dbeta;
-
+        
         if (ls_iter == ls_iter_max) {
-        	std::cout << "glm_ridge warning: maximum number of line search iterations reached. The optimization is likely to be ill-behaved.\n";
+            Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization is likely to be ill-behaved.\n";
         }
         ++qau;
         
@@ -348,7 +348,7 @@ List glm_ridge_c(arma::mat x,
     }
     
     if (qau == qa_updates_max && qa_updates_max > 1)
-        std::cout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
+        Rcpp::Rcout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
     
     if (intercept) 
         return List::create(vec(beta.tail(D-1)), beta(0), qau);
@@ -356,8 +356,6 @@ List glm_ridge_c(arma::mat x,
         return List::create(beta, 0.0, qau);
     
 }
-
-
 
 
 
