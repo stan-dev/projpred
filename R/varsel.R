@@ -33,7 +33,7 @@
 #' }
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
 #' fit_v <- varsel(fit)
@@ -45,8 +45,6 @@
 varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
                    nv_max = NULL, intercept = NULL, verbose = F, ...) {
 
-  # TODO, IMPLEMENT SENSIBILITY CHECKS FOR NS AND NC (INTO MISC.R) AND CALL THEM
-  # TODO, FIGURE OUT HOW TO HANDLE THE TEST PREDICTIONS FOR FULL MODEL WHEN COEF_FULL ARE NOT AVAILABLE
 
   .validate_for_varsel(fit)
 
