@@ -49,7 +49,7 @@ Perform the projection predictive variable selection for a generalized
 linear model fitted with rstanarm.
 }
 \examples{
-\dontrun{
+\donttest{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
 fit_v <- varsel(fit)
