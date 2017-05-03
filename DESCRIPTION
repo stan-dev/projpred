@@ -14,7 +14,7 @@ Description:
 Depends:
     R (>= 3.1.2)
 Imports:
-    rstan, rstanarm, loo, ggplot2, Rcpp
+    rstan, rstanarm (>= 2.15.3), loo, ggplot2, Rcpp
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8

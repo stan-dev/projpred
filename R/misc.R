@@ -193,7 +193,7 @@ log_sum_exp <- function(x) {
 	# It is possible to use this function by passing .extract_vars(fit) as
 	# an argument in place of fit.
 	#
-	if ( all(c('x', 'y', 'weights', 'offset') %in% names(fit)) )
+	if ( all(c('x', 'y', 'wobs', 'offset') %in% names(fit)) )
 		# all the relevant fields contained in the given structure
 		vars <- fit
 	else
