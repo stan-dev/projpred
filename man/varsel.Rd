@@ -5,7 +5,7 @@
 \title{Variable selection for generalized linear models}
 \usage{
 varsel(fit, d_test = NULL, method = "L1", ns = NULL, nc = NULL,
-  nv_max = NULL, intercept = NULL, verbose = F, ...)
+  nv_max = NULL, intercept = NULL, verbose = F, regul = 1e-09, ...)
 }
 \arguments{
 \item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned
@@ -33,6 +33,10 @@ D the number of variables.}
 
 \item{verbose}{If TRUE, may print out some information during the selection.
 Defaults to FALSE.}
+
+\item{regul}{Amount of regularization in the projection. Usually there is no need for 
+regularization, but sometimes for some models the projection can be ill-behaved and we
+need to add some regularization to avoid numerical problems. Default is 1e-9.}
 }
 \value{
 The original fit-object object augmented with a field 'varsel',

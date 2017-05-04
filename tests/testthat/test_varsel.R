@@ -14,36 +14,28 @@ offset <- rnorm(n)
 source(file.path('helpers', 'SW.R'))
 
 f_gauss <- gaussian()
-df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = x)
+df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = I(x))
 f_binom <- binomial()
-df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x)
+df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = I(x))
 f_poiss <- poisson()
-df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
+df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = I(x))
 
-SW(
+SW({
   fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
                         weights = weights, offset = offset,
                         chains = chains, seed = seed, iter = iter)
-)
-SW(
   fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
                         data = df_binom, weights = weights, offset = offset,
                         chains = chains, seed = seed, iter = iter)
-)
-SW(
   fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
                         weights = weights, offset = offset,
                         chains = chains, seed = seed, iter = iter)
-)
-SW(
   fit_lm <- stan_lm(y ~ x, data = df_gauss, weights = weights, offset = offset,
                     prior = R2(0.3),
                     chains = chains, seed = seed, iter = iter)
-)
-SW(
   fit_glmer <- stan_glmer(mpg ~ wt + (1|cyl), data = mtcars,
                           chains = chains, seed = seed, iter = iter)
-)
+})
 fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss,
                  lm = fit_lm)
 
@@ -51,14 +43,26 @@ vsf <- function(x, m) varsel(x, method = m, nv_max = nv, verbose = FALSE)
 vs_list <- list(l1 = lapply(fit_list, vsf, 'L1'),
                 fs = lapply(fit_list, vsf, 'forward'))
 
-# kfold not tested currently
-cvsf <- function(x, m)
-  cv_varsel(x, method = m, cv_method = 'LOO', nv_max = nv, verbose = FALSE)
+cvsf <- function(x, m, cvm, K = NULL)
+  cv_varsel(x, method = m, cv_method = cvm, nv_max = nv, K = K)
 
 SW(
-  cvs_list <- list(l1 = lapply(fit_list, cvsf, 'L1'),
-                   fs = lapply(fit_list, cvsf, 'forward'))
+  cvs_list <- list(l1 = lapply(fit_list, cvsf, 'L1', 'LOO'),
+                   fs = lapply(fit_list, cvsf, 'forward', 'LOO'))
 )
+SW({
+  # without weights/offset because kfold does not support them currently
+  # test only with one family to make the tests faster
+  glm_simp <- stan_glm(y ~ x, family = poisson(), data = df_poiss, QR = T,
+                       chains = 2, seed = 1235, iter = 400)
+  lm_simp <- stan_lm(y ~ x, data = df_gauss, prior = R2(0.6),
+                     chains = 2, seed = 1235, iter = 400)
+  simp_list = list(glm = glm_simp, lm = lm_simp)
+  
+  cv_kf_list <- list(l1 = lapply(simp_list, cvsf, 'L1', 'kfold', K = 2),
+                     fs = lapply(simp_list, cvsf, 'forward', 'kfold', K = 2))
+})
+
 
 
 context('varsel')
@@ -139,6 +143,22 @@ test_that('Having something else than stan_glm as the fit throws an error', {
   expect_error(varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
   expect_error(varsel(1, verbose = FALSE), regexp = 'not recognized')
 })
+
+
+test_that("varsel: adding more regularization has an expected effect", {
+    regul <- c(1e-6, 1e-3, 1e-1, 1e1, 1e4)
+    for(i in 1:length(fit_list)) {
+        norms <- rep(0, length(regul))
+        msize <- 3
+        for (j in 1:length(regul)) {
+            vsel <- varsel(fit_list[[i]], regul=regul[j])$varsel
+            norms[j] <- sum( fit_list[[i]]$family$linkfun(vsel$summaries$sub[[msize]]$mu)^2 )
+        }
+        for (j in 1:(length(regul)-1))
+            expect_gt(norms[j],norms[j+1])
+    }
+})
+
 
 
 context('cv_varsel')
@@ -231,7 +251,7 @@ test_that('nv_max has an effect on cv_varsel for gaussian models', {
 
 test_that('nv_max has an effect on cv_varsel for non-gaussian models', {
   suppressWarnings(
-    vs1 <- varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
+    vs1 <- cv_varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
   )
   expect_equal(length(vs1$varsel$chosen), 3)
 })
@@ -241,6 +261,135 @@ test_that('Having something else than stan_glm as the fit throws an error', {
   expect_error(varsel(1, verbose = FALSE), regexp = 'not recognized')
 })
 
-test_that('kfold cv throws an error', {
-  expect_error(cv_varsel(fit_gauss, cv_method = 'kfold', verbose = FALSE), regexp = 'unavailable')
+test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
+  for(i in length(cv_kf_list)) {
+    i_inf <- names(cv_kf_list)[i]
+    for(j in length(cv_kf_list[[i]])) {
+      j_inf <- names(cv_kf_list[[i]])[j]
+      # chosen seems legit
+      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$chosen), nv,
+                   info = paste(i_inf, j_inf))
+      # chosen_names seems legit
+      expect_equal(names(coef(fit_gauss)[-1])[cv_kf_list[[i]][[j]]$varsel$chosen],
+                   cv_kf_list[[i]][[j]]$varsel$chosen_names,
+                   info = paste(i_inf, j_inf))
+      # kl seems legit
+      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$kl), nv + 1,
+                   info = paste(i_inf, j_inf))
+      # decreasing
+      expect_equal(cv_kf_list[[i]][[j]]$varsel$kl,
+                   cummin(cv_kf_list[[i]][[j]]$varsel$kl),
+                   info = paste(i_inf, j_inf))
+      # d_test seems legit
+      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$d_test$y), n,
+                   info = paste(i_inf, j_inf))
+      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$d_test$weights), n,
+                   info = paste(i_inf, j_inf))
+      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$d_test$weights), n,
+                   info = paste(i_inf, j_inf))
+      expect_equal(typeof(cv_kf_list[[i]][[j]]$varsel$d_test$type), 'character',
+                   info = paste(i_inf, j_inf))
+      expect_equal(cv_kf_list[[i]][[j]]$varsel$d_test$type, 'kfold',
+                   info = paste(i_inf, j_inf))
+      # summaries seems legit
+      expect_named(cv_kf_list[[i]][[j]]$varsel$summaries, c('sub', 'full'),
+                   info = paste(i_inf, j_inf))
+      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$summaries$sub), nv + 1,
+                   info = paste(i_inf, j_inf))
+      expect_named(cv_kf_list[[i]][[j]]$varsel$summaries$sub[[1]], c('mu', 'lppd'),
+                   ignore.order = TRUE, info = paste(i_inf, j_inf))
+      expect_named(cv_kf_list[[i]][[j]]$varsel$summaries$full, c('mu', 'lppd'),
+                   ignore.order = TRUE, info = paste(i_inf, j_inf))
+      # family_kl seems legit
+      expect_equal(cv_kf_list[[i]][[j]]$family$family,
+                   cv_kf_list[[i]][[j]]$varsel$family_kl$family,
+                   info = paste(i_inf, j_inf))
+      expect_equal(cv_kf_list[[i]][[j]]$family$link,
+                   cv_kf_list[[i]][[j]]$varsel$family_kl$link,
+                   info = paste(i_inf, j_inf))
+      expect_true(length(cv_kf_list[[i]][[j]]$varsel$family_kl) >=
+                    length(cv_kf_list[[i]][[j]]$family$family),
+                  info = paste(i_inf, j_inf))
+      # pctch seems legit
+      expect_equal(dim(cv_kf_list[[i]][[j]]$varsel$pctch), c(nv, nv + 1),
+                   info = paste(i_inf, j_inf))
+      expect_true(all(cv_kf_list[[i]][[j]]$varsel$pctch[,-1] <= 1 &&
+                        cv_kf_list[[i]][[j]]$varsel$pctch[,-1] >= 0),
+                  info = paste(i_inf, j_inf))
+      expect_equal(cv_kf_list[[i]][[j]]$varsel$pctch[,1], 1:nv,
+                   info = paste(i_inf, j_inf))
+      expect_equal(colnames(cv_kf_list[[i]][[j]]$varsel$pctch),
+                   c('size', cv_kf_list[[i]][[j]]$varsel$chosen_names),
+                   info = paste(i_inf, j_inf))
+      # dont test ssize
+      # expect_true(cv_kf_list[[i]][[j]]$varsel$ssize>=0,
+      #             info = paste(i_inf, j_inf))
+    }
+  }
+})
+
+test_that('K has an effect on cv_varsel with kfold for gaussian models', {
+  out <- SW(cv_varsel(glm_simp, cv_method = 'kfold', K = 3))
+  expect_true(any(grepl('1/3', out)))
+  expect_error(capture.output(cv_varsel(glm_simp, cv_method = 'kfold', K = 1)))
+  expect_error(capture.output(
+    cv_varsel(glm_simp, cv_method = 'kfold', K = 1000)))
+})
+
+test_that('omitting the \'data\' argument causes a warning', {
+  out <- SW(fit_nodata <- stan_glm(df_gauss$y~df_gauss$x, QR = T,
+                                   chains = chains, seed = seed, iter = iter))
+  expect_error(capture.output(cv_varsel(fit_nodata, cv_method = 'kfold')))
+})
+
+test_that('kfold gives an error for a refmodel-object', {
+  ref <- init_refmodel(x, df_gauss$y, f_gauss)
+  expect_error(capture.output(cv_varsel(ref, cv_method = 'kfold')), 'implem')
+})
+
+test_that('providing k_fold works', {
+  out <- SW({
+    k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
+    fit_cv <- cv_varsel(glm_simp, cv_method = 'kfold', k_fold = k_fold)
+  })
+  expect_false(any(grepl('k_fold not provided', out)))
+  expect_equal(length(fit_cv$varsel$chosen), nv)
+               
+  # kl seems legit
+  expect_equal(length(fit_cv$varsel$kl), nv + 1)
+               
+  # decreasing
+  expect_equal(fit_cv$varsel$kl, cummin(fit_cv$varsel$kl))
+               
+  # d_test seems legit
+  expect_equal(length(fit_cv$varsel$d_test$y), n)
+  expect_equal(length(fit_cv$varsel$d_test$weights), n)
+  expect_equal(length(fit_cv$varsel$d_test$weights), n)
+  expect_equal(typeof(fit_cv$varsel$d_test$type), 'character')
+  expect_equal(fit_cv$varsel$d_test$type, 'kfold')
+               
+  # summaries seems legit
+  expect_named(fit_cv$varsel$summaries, c('sub', 'full'))
+  expect_equal(length(fit_cv$varsel$summaries$sub), nv + 1)
+  expect_named(fit_cv$varsel$summaries$sub[[1]], c('mu', 'lppd'),
+               ignore.order = TRUE)
+  expect_named(fit_cv$varsel$summaries$full, c('mu', 'lppd'),
+               ignore.order = TRUE)
+  # family_kl seems legit
+  expect_equal(fit_cv$family$family,
+               fit_cv$varsel$family_kl$family)
+  expect_equal(fit_cv$family$link, fit_cv$varsel$family_kl$link)
+  expect_true(length(fit_cv$varsel$family_kl) >= length(fit_cv$family$family))
+  # pctch seems legit
+  expect_equal(dim(fit_cv$varsel$pctch), c(nv, nv + 1))
+  expect_true(all(fit_cv$varsel$pctch[,-1] <= 1 &&
+                    fit_cv$varsel$pctch[,-1] >= 0))
+              
+  expect_equal(fit_cv$varsel$pctch[,1], 1:nv)
+  expect_equal(colnames(fit_cv$varsel$pctch),
+               c('size', fit_cv$varsel$chosen_names))
+               
+  # dont test ssize
+  # expect_true(fit_cv$varsel$ssize>=0)
+              
 })

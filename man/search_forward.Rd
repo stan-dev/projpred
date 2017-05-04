@@ -4,7 +4,7 @@
 \alias{search_forward}
 \title{Search heuristics}
 \usage{
-search_forward(p_full, d_train, family_kl, intercept, nv_max, verbose)
+search_forward(p_full, d_train, family_kl, intercept, nv_max, verbose, regul)
 }
 \description{
 Search heuristics

@@ -20,6 +20,9 @@
 #' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
 #' @param verbose If TRUE, may print out some information during the selection.
 #'    Defaults to FALSE.
+#' @param regul Amount of regularization in the projection. Usually there is no need for 
+#' regularization, but sometimes for some models the projection can be ill-behaved and we
+#' need to add some regularization to avoid numerical problems. Default is 1e-9.
 #'
 #'
 #' @return The original fit-object object augmented with a field 'varsel',
@@ -43,7 +46,7 @@
 
 #' @export
 varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
-                   nv_max = NULL, intercept = NULL, verbose = F, ...) {
+                   nv_max = NULL, intercept = NULL, verbose = F, regul=1e-9, ...) {
 
 
   .validate_for_varsel(fit)
@@ -76,10 +79,10 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   p_full <- .get_refdist(fit, ns=ns, nc=nc)
 
   # perform the selection
-  chosen <- select(method, p_full, d_train, family_kl, intercept, nv_max, verbose)
+  chosen <- select(method, p_full, d_train, family_kl, intercept, nv_max, verbose, regul)
 
   # statistics for the selected submodels
-  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full, d_train, intercept)
+  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full, d_train, intercept, regul)
   sub <- .get_sub_summaries(p_sub, d_test, family_kl)
 
   #
@@ -105,7 +108,7 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
 
 
 select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
-                   verbose) {
+                   verbose, regul) {
   #
   # Auxiliary function, performs variable selection with the given method,
   # and returns the variable ordering.
@@ -114,7 +117,7 @@ select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
     chosen <- search_L1(p_full, d_train, family_kl, intercept, nv_max)
   } else if (tolower(method) == 'forward') {
     tryCatch(chosen <- search_forward(p_full, d_train, family_kl, intercept,
-                                      nv_max, verbose),
+                                      nv_max, verbose, regul),
              'error' = .varsel_errors)
   } else {
     stop(sprintf('Unknown search method: %s.', method))

@@ -36,9 +36,12 @@
 #' @param ns Number of draws to be projected. Ignored if \code{nc} is specified.
 #' @param nc Number of clusters in the clustered projection. Default is 50.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
+#' @param regul Amount of regularization in the projection. Usually there is no need for 
+#' regularization, but sometimes for some models the projection can be ill-behaved and we
+#' need to add some regularization to avoid numerical problems. Default is 1e-9.
 NULL
 
-proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL) {
+proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL, regul = NULL) {
   if (is.null(xnew))
     stop('Please provide xnew.')
   if (!is.null(vind) && NCOL(xnew) != length(vind))
@@ -54,7 +57,7 @@ proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL) {
           warning('nv, vind, ns and nc are ignored when object is a projection.')
   } else {
       # reference model obtained, so run the projection
-      proj <- project(object, nv = nv, ns = ns, nc = nc, vind = vind)
+      proj <- project(object, nv = nv, ns = ns, nc = nc, vind = vind, regul = regul)
   }
 
   if(!.is_proj_list(proj)) {
@@ -87,13 +90,13 @@ proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL) {
 proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
                          weightsnew = NULL, transform = FALSE,
                          integrated = FALSE, nv = NULL, vind = NULL,
-                         ns = NULL, nc = NULL) {
+                         ns = NULL, nc = NULL, regul=1e-9) {
     if (is.null(offsetnew))
         offsetnew <- rep(0, nrow(xnew))
     if (is.null(weightsnew))
         weightsnew <- rep(1, nrow(xnew))
     projs <- proj_helper(object = object, xnew = xnew, nv = nv, vind = vind,
-                         ns = ns, nc = nc)
+                         ns = ns, nc = nc, regul = regul)
 
     preds <- lapply(projs, function(proj) {
         if (!is.null(vind))
@@ -134,7 +137,7 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 #' @export
 proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL, 
                          nv = NULL, vind = NULL, ns = NULL, nc = NULL, 
-                         draws = NULL, seed = NULL) {
+                         draws = NULL, seed = NULL, regul = 1e-9) {
   if (!is.null(seed))
     set.seed(seed)
   if (is.null(offsetnew))
@@ -143,7 +146,7 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
     weightsnew <- rep(1, nrow(xnew))
 
   projs <- proj_helper(object = object, xnew = xnew, nv = nv, vind = vind,
-                       ns = ns, nc = nc)
+                       ns = ns, nc = nc, regul = regul)
   if(is.null(draws))
     draws <- length(projs[[1]]$weights)
   

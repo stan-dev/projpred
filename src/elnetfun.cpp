@@ -326,7 +326,7 @@ List glm_ridge_c(arma::mat x,
             ++ls_iter;
             
             if (std::isnan(loss))
-                throw std::runtime_error( "glm_ridge error: Deviance became NaN. The problem is probably ill-behaved." );
+                throw std::runtime_error( "glm_ridge error: Deviance became NaN, the problem is probably ill-behaved. Try adding more regularization." );
             
             if (loss < loss_old)
                 break;
