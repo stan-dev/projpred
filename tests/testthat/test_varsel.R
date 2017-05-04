@@ -320,10 +320,15 @@ test_that('K has an effect on cv_varsel with kfold for gaussian models', {
     cv_varsel(glm_simp, cv_method = 'kfold', K = 1000)))
 })
 
-test_that('not the \'data\' argument causes a warning', {
+test_that('omitting the \'data\' argument causes a warning', {
   out <- SW(fit_nodata <- stan_glm(df_gauss$y~df_gauss$x, QR = T,
                                    chains = chains, seed = seed, iter = iter))
   expect_error(capture.output(cv_varsel(fit_nodata, cv_method = 'kfold')))
+})
+
+test_that('kfold gives an error for a refmodel-object', {
+  ref <- init_refmodel(x, df_gauss$y, f_gauss)
+  expect_error(capture.output(cv_varsel(ref, cv_method = 'kfold')), 'implem')
 })
 
 test_that('providing k_fold works', {
@@ -372,3 +377,5 @@ test_that('providing k_fold works', {
   # expect_true(fit_cv$varsel$ssize>=0)
               
 })
+
+
