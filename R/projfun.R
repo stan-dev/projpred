@@ -91,26 +91,30 @@ project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
 
 # function handle for the projection over samples. Gaussian case
 # uses analytical solution to do the projection over samples.
-.get_proj_handle <- function(family_kl) {
+.get_proj_handle <- function(family_kl, regul=1e-9) {
 
     # Use analytical solution for gaussian as it is a lot faster
     if(family_kl$family == 'gaussian' && family_kl$link == 'identity') {
-        return(project_gaussian)
+        #return(project_gaussian)
+        return(
+            function(ind, p_full, d_train, intercept) {
+                project_gaussian(ind, p_full, d_train, intercept, regul=regul)
+        })
     } else {
       # return handle to project_nongaussian with family_kl set accordingly
-      return(
-        function(chosen, p_full, d_train, intercept) {
-          project_nongaussian(chosen, p_full, d_train, family_kl, intercept)
+        return(
+            function(ind, p_full, d_train, intercept) {
+                project_nongaussian(ind, p_full, d_train, family_kl, intercept, regul=regul)
         })
     }
 }
 
 
-.get_submodels <- function(chosen, nv, family_kl, p_full, d_train, intercept) {
+.get_submodels <- function(chosen, nv, family_kl, p_full, d_train, intercept, regul) {
     #
     # Project onto given model sizes nv. Returns a list of submodels.
     #
-    projfun <- .get_proj_handle(family_kl)
+    projfun <- .get_proj_handle(family_kl, regul)
 
     p_sub <- lapply(nv,
         function(nv) {

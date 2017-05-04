@@ -145,6 +145,22 @@ test_that('Having something else than stan_glm as the fit throws an error', {
 })
 
 
+test_that("varsel: adding more regularization has an expected effect", {
+    regul <- c(1e-6, 1e-3, 1e-1, 1e1, 1e4)
+    for(i in 1:length(fit_list)) {
+        norms <- rep(0, length(regul))
+        msize <- 3
+        for (j in 1:length(regul)) {
+            vsel <- varsel(fit_list[[i]], regul=regul[j])$varsel
+            norms[j] <- sum( fit_list[[i]]$family$linkfun(vsel$summaries$sub[[msize]]$mu)^2 )
+        }
+        for (j in 1:(length(regul)-1))
+            expect_gt(norms[j],norms[j+1])
+    }
+})
+
+
+
 context('cv_varsel')
 test_that('cv_varsel returns an object with a field named "varsel"', {
   for(i in length(cvs_list)){
@@ -377,5 +393,3 @@ test_that('providing k_fold works', {
   # expect_true(fit_cv$varsel$ssize>=0)
               
 })
-
-

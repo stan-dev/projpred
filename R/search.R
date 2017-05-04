@@ -2,11 +2,11 @@
 #'
 
 search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
-                           verbose) {
+                           verbose, regul) {
 
   # initialize the forward selection
   # proj performs the projection over samples
-  proj <- .get_proj_handle(family_kl)
+  proj <- .get_proj_handle(family_kl, regul)
   i <- 1
   iq <- ceiling(quantile(1:nv_max, 1:10/10))
   cols <- 1:ncol(d_train$x)

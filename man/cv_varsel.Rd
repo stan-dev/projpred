@@ -6,7 +6,7 @@
 \usage{
 cv_varsel(fit, method = "L1", cv_method = "LOO", ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  verbose = T, K = NULL, k_fold = NULL, ...)
+  verbose = T, K = NULL, k_fold = NULL, regul = 1e-09, ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -36,6 +36,10 @@ if \code{cv_method = TRUE} and \code{k_fold = NULL}.}
 \item{k_fold}{An array with cross-validated stanfits and the respective
 test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
 If not provided, \link[=kfold]{kfold} is called inside the function.}
+
+\item{regul}{Amount of regularization in the projection. Usually there is no need for 
+regularization, but sometimes for some models the projection can be ill-behaved and we
+need to add some regularization to avoid numerical problems. Default is 1e-9.}
 }
 \value{
 The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',

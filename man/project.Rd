@@ -5,7 +5,7 @@
 \title{Projection to submodels of selected sizes}
 \usage{
 project(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
-  intercept = NULL, seed = NULL, ...)
+  intercept = NULL, seed = NULL, regul = 1e-09, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -26,6 +26,10 @@ Default is all model sizes up to the maximum number of variables in \code{varsel
 
 \item{seed}{A seed used in the clustering (if \code{nc!=ns}). Can be used
 to ensure same results every time.}
+
+\item{regul}{Amount of regularization in the projection. Usually there is no need for 
+regularization, but sometimes for some models the projection can be ill-behaved and we
+need to add some regularization to avoid numerical problems. Default is 1e-9.}
 
 \item{...}{Currently ignored.}
 }

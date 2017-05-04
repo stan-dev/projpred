@@ -135,6 +135,19 @@ test_that("proj_linpred: specifying integrated has an expected effect", {
   }
 })
 
+test_that("project: adding more regularization has an expected effect", {
+    regul <- c(1e-6, 1e-1, 1e2)
+    for(i in 1:length(vs_list)) {
+        # i_inf <- names(vs_list)[i]
+        norms <- rep(0, length(regul))
+        for (j in 1:length(regul)) {
+            pred <- proj_linpred(vs_list[[i]], xnew = x, nv = 2, transform = F, integrated = T, regul=regul[j])$pred
+            norms[j] <- sum(pred^2)
+        }
+        for (j in 1:(length(regul)-1))
+            expect_gt(norms[j],norms[j+1])
+    }
+})
 
 context('proj_predict')
 test_that("output of proj_predict is sensible with fit-object as input", {
@@ -201,3 +214,6 @@ test_that("proj_predict: specifying seed has an expected effect", {
     expect_equal(pl1, pl2, info = i_inf)
   }
 })
+
+
+
