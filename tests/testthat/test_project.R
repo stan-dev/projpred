@@ -233,3 +233,15 @@ test_that("project: specifying the seed does not cause errors", {
                  ignore.order = T, info = i_inf)
   }
 })
+
+test_that("project: adding more regularization has an expected effect", {
+    regul <- c(1e-6, 1e-3, 1e-1, 1e1, 1e4)
+    for(i in 1:length(vs_list)) {
+        #i_inf <- names(vs_list)[i]
+        norms <- rep(0, length(regul))
+        for (j in 1:length(regul))
+            norms[j] <- sum(project(vs_list[[i]], nv = 3, seed = seed, nc=1, regul=regul[j])$beta^2)
+        for (j in 1:(length(regul)-1))
+            expect_gt(norms[j],norms[j+1])
+    }
+})

@@ -9,10 +9,11 @@ distribution of the projected submodel}
 \usage{
 proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,
   weightsnew = NULL, transform = FALSE, integrated = FALSE, nv = NULL,
-  vind = NULL, ns = NULL, nc = NULL)
+  vind = NULL, ns = NULL, nc = NULL, regul = 1e-09)
 
 proj_predict(object, xnew, offsetnew = NULL, weightsnew = NULL, nv = NULL,
-  vind = NULL, ns = NULL, nc = NULL, draws = NULL, seed = NULL)
+  vind = NULL, ns = NULL, nc = NULL, draws = NULL, seed = NULL,
+  regul = 1e-09)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel},
@@ -50,6 +51,10 @@ is ignored.}
 \item{ns}{Number of draws to be projected. Ignored if \code{nc} is specified.}
 
 \item{nc}{Number of clusters in the clustered projection. Default is 50.}
+
+\item{regul}{Amount of regularization in the projection. Usually there is no need for 
+regularization, but sometimes for some models the projection can be ill-behaved and we
+need to add some regularization to avoid numerical problems. Default is 1e-9.}
 
 \item{draws}{Number of draws to return for \code{proj_predict}. Default is
 \code{nc}.}

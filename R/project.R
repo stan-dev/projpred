@@ -14,6 +14,9 @@
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param seed A seed used in the clustering (if \code{nc!=ns}). Can be used
 #' to ensure same results every time.
+#' @param regul Amount of regularization in the projection. Usually there is no need for 
+#' regularization, but sometimes for some models the projection can be ill-behaved and we
+#' need to add some regularization to avoid numerical problems. Default is 1e-9.
 #' @param ... Currently ignored.
 #'
 #' @return A list of submodels (or a single submodel if projection was performed onto
@@ -42,7 +45,7 @@
 
 #' @export
 project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
-                    intercept = NULL, seed = NULL, ...) {
+                    intercept = NULL, seed = NULL, regul=1e-9, ...) {
 
 	if(!('varsel' %in% names(object)) && is.null(vind))
 		stop(paste('The given object does not contain information about the ',
@@ -82,7 +85,7 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 	# get the clustering or subsample
 	p_full <- .get_refdist(object, ns = ns, nc = nc, seed = seed)
 
-	subm <- .get_submodels(chosen, nv, family_kl, p_full, d_train, intercept)
+	subm <- .get_submodels(chosen, nv, family_kl, p_full, d_train, intercept, regul)
 
 	# add family_kl
 	proj <- lapply(subm, function(x) {

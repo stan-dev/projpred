@@ -18,6 +18,9 @@
 #' @param k_fold An array with cross-validated stanfits and the respective
 #' test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
 #' If not provided, \link[=kfold]{kfold} is called inside the function.
+#' @param regul Amount of regularization in the projection. Usually there is no need for 
+#' regularization, but sometimes for some models the projection can be ill-behaved and we
+#' need to add some regularization to avoid numerical problems. Default is 1e-9.
 #'
 #' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
 #' which is a list containing the following elements:
@@ -43,7 +46,7 @@
 cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, verbose = T,
-                      K = NULL, k_fold = NULL, ...) {
+                      K = NULL, k_fold = NULL, regul=1e-9, ...) {
 
   .validate_for_varsel(fit)
 
@@ -64,12 +67,13 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO',
 
 	if (verbose)
 		print(paste('Performing', method, 'search for the full model.'))
-	sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, intercept=intercept, verbose=verbose)$varsel
+	sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, 
+	              intercept=intercept, verbose=verbose, regul=regul)$varsel
 
 	if(tolower(cv_method) == 'kfold') {
-		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, vars, K, k_fold)
+		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, vars, K, k_fold, regul)
 	} else if (tolower(cv_method) == 'loo')  {
-		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose)
+		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, regul)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
 	}
@@ -106,7 +110,7 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO',
 }
 
 kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
-                         intercept, verbose, vars, K, k_fold) {
+                         intercept, verbose, vars, K, k_fold, regul) {
 
   if (!('stanfit' %in% names(fit)))
   	stop(paste('k-fold cross-validation not yet implemented for other than',
@@ -166,13 +170,13 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   # corresponding fold
   chosen_cv <- lapply(list_cv, function(x) {
     print(x$msg)
-    select(method, x$p_sel, x$d_train, family_kl, intercept, nv_max, verbose)
+    select(method, x$p_sel, x$d_train, family_kl, intercept, nv_max, verbose, regul)
   })
 
   # Construct p_sub for each fold using .get_submodels.
   p_sub_cv <- mapply(function(chosen, x) {
     .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, x$p_pred,
-                   x$d_train, intercept)
+                   x$d_train, intercept, regul)
   }, chosen_cv, list_cv, SIMPLIFY = F)
 
   # Helper function extract and combine mu and lppd from K lists with each
@@ -207,7 +211,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 
 
 
-loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose) {
+loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, regul) {
 	#
 	# Performs the validation of the searching process using LOO.
 	#
@@ -267,12 +271,12 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 		p_pred <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
 
 		# perform selection
-		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F)
+		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F, regul)
 		chosen_mat[i,] <- chosen
 
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
-		submodels <- .get_submodels(chosen, 0:nv_max, fam, p_pred, d_train, intercept) 
+		submodels <- .get_submodels(chosen, 0:nv_max, fam, p_pred, d_train, intercept, regul) 
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
