@@ -54,7 +54,6 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO',
 	    # use 1 clusters for prediction by default
 	    ncpred <- 1
 
-	# .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
 	if(is.null(intercept))
 		intercept <- vars$intercept
@@ -106,27 +105,27 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO',
 	fit
 }
 
-kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, vars,
-                         K, k_fold) {
+kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
+                         intercept, verbose, vars, K, k_fold) {
 
-    # TODO: does not handle nspred or ncpred in any way!
-    
   if (!('stanfit' %in% names(fit)))
-  	stop('k-fold cross-validation not yet implemented for other than rstanarm reference models.')
-
-  # KFOLD TEMPORARILY DISABLED
-  stop(paste0('k-fold cross-validation is currently unavailable due to upcoming changes',
-              ' in rstanarm. Please set cv_method to "LOO" to perform cross-validation.'))
+  	stop(paste('k-fold cross-validation not yet implemented for other than',
+  	           'rstanarm reference models.'))
+  if(is.environment(fit$data))
+    stop(paste('Omitting the \'data\' from rstanarm does not work with k-fold',
+               'cross validation.'))
 
   # Construct the kfold-objects. The resulting list contains an element 'fits',
   # which is a K x 2 dimensional array. Each row corresponds to one of the K
   # folds. First column contains the rstanarm-objects and the second column
   # the indices of the omitted observations (aka test data).
   if(is.null(k_fold)) {
-    if(is.null(K)) K <- 10
+    if(is.null(K)) K <- 4
     print(paste0('k_fold not provided, performing ', K,
                  '-fold cross-validation for the stan model.'))
-    k_fold <- kfold(fit, K = K, save_fits = T)
+    capture.output(
+      k_fold <- kfold(fit, K = K, save_fits = T)
+    )
   }
   family_kl <- kl_helpers(family(fit))
 
@@ -148,17 +147,18 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
          weights = vars$wobs[omitted], offset = vars$offset[omitted])
   })
 
-  # List of K elements, each containing d_train, p_full, etc. corresponding
+  # List of K elements, each containing d_train, p_pred, etc. corresponding
   # to each fold.
   msgs <- paste0(method, ' search for the fold number ', 1:K, '/', K, '.')
   list_cv <- mapply(function(vars, d_test, msg) {
     # .get_data_and_parameters(vars, d_test, intercept, ns, family_kl)
   	d_train <- .get_traindata(vars)
   	d_test <- d_test
-  	p_full <- .get_refdist(vars, ns, nc)
+  	p_sel <- .get_refdist(vars, ns, nc)
+  	p_pred <- .get_refdist(vars, nspred, ncpred)
   	mu <- family_kl$mu_fun(d_test$x, vars$alpha, vars$beta, d_test$offset)
   	dis <- vars$dis
-  	list(d_train = d_train, d_test = d_test, p_full = p_full,
+  	list(d_train = d_train, d_test = d_test, p_sel = p_sel, p_pred = p_pred,
   	     mu_test = mu, dis_test = dis, w_test = vars$wsample, msg = msg)
   }, vars_cv, d_test, msgs, SIMPLIFY = F)
 
@@ -166,12 +166,12 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
   # corresponding fold
   chosen_cv <- lapply(list_cv, function(x) {
     print(x$msg)
-    select(method, x$p_full, x$d_train, family_kl, intercept, nv_max, verbose)
+    select(method, x$p_sel, x$d_train, family_kl, intercept, nv_max, verbose)
   })
 
   # Construct p_sub for each fold using .get_submodels.
   p_sub_cv <- mapply(function(chosen, x) {
-    .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, x$p_full,
+    .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, x$p_pred,
                    x$d_train, intercept)
   }, chosen_cv, list_cv, SIMPLIFY = F)
 
@@ -196,10 +196,12 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
   # Combine also the K separate test data sets into one list
   # with n y's and weights's.
   d_cv <- hf(lapply(d_test, function(d) {
-    data.frame(d[c('y', 'weights')])}))
+    data.frame(d[c('y', 'weights')])
+  }))
 
-  list(chosen_cv = chosen_cv, d_test = c(d_cv, type = 'kfold'),
-       summaries = list(sub = sub, full = full))
+  list(chosen_cv = chosen_cv,
+       summaries = list(sub = sub, full = full),
+       d_test = c(d_cv, type = 'kfold'))
 }
 
 
