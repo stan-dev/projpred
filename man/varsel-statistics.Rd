@@ -15,6 +15,8 @@ varsel_statistics(object, ..., nv_max = NULL, deltas = F)
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
+\item{...}{Currently ignored.}
+
 \item{nv_max}{Maximum submodel size for which the statistics are calculated.}
 
 \item{statistics}{A list of strings of statistics to calculate. Available

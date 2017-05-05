@@ -5,11 +5,12 @@
 \title{Variable selection for generalized linear models}
 \usage{
 varsel(fit, d_test = NULL, method = "L1", ns = NULL, nc = NULL,
-  nv_max = NULL, intercept = NULL, verbose = F, regul = 1e-09, ...)
+  nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
+  verbose = F, regul = 1e-09, ...)
 }
 \arguments{
 \item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned
-by \link[init_refmodel]{init_refmodel}.}
+by \link[=init_refmodel]{init_refmodel}.}
 
 \item{d_test}{A test dataset, which is used to evaluate model performance.
 If not provided, training data is used.}
@@ -25,6 +26,10 @@ Ignored if nc is set.}
 \item{nc}{Number of clusters to use in the clustered projection.
 Overrides the \code{ns} argument. Defaults to 1.}
 
+\item{nspred}{Number of samples used for prediction (after selection). Ignored if ncpred is given.}
+
+\item{ncpred}{Number of clusters used for prediction (after selection). Default is 1.}
+
 \item{nv_max}{Maximum number of varibles until which the selection is continued.
 Defaults to min(D, floor(0.4*n)) where n is the number of observations and
 D the number of variables.}
@@ -37,6 +42,8 @@ Defaults to FALSE.}
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we
 need to add some regularization to avoid numerical problems. Default is 1e-9.}
+
+\item{...}{Currently ignored.}
 }
 \value{
 The original fit-object object augmented with a field 'varsel',
@@ -46,7 +53,7 @@ which is a list containing the following elements:
  \item{\code{kl}}{KL-divergence for each submodel size.}
  \item{\code{summaries}}{Summary statistics computed during the selection.}
  \item{\code{d_test}}{The data used to evaluate the summaries.}
- \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
+ \item{\code{family_kl}}{A modified \link{family}-object.}
 }
 }
 \description{

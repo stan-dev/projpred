@@ -28,7 +28,9 @@ SW(
 )
 e <- extract(fit_gauss$stanfit)
 mu <- t(posterior_linpred(fit_gauss, newdata = df_gauss, transform = T, offset=offset))
-dis <- e$aux
+perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
+                     fit_gauss$stanfit@sim$permutation,1:fit_gauss$stanfit@sim$chains-1))
+dis <- e$aux[perm_inv]
 ref_gauss <- init_refmodel(x,df_gauss$y,gaussian(),mu=mu,dis=dis,offset=offset,wobs=weights,loglik=log_lik(fit_gauss))
 
 SW(

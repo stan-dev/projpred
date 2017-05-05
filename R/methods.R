@@ -6,7 +6,7 @@
 #' submodel or submodels. If the projection has not been performed, the
 #' functions also perform the projection.
 #'
-#' @name proj_pred
+#' @name proj-pred
 #'
 #' @param object The object returned by \link[=varsel]{varsel},
 #' \link[=cv_varsel]{cv_varsel} or \link[=project]{project}.
@@ -35,10 +35,11 @@
 #' is ignored.
 #' @param ns Number of draws to be projected. Ignored if \code{nc} is specified.
 #' @param nc Number of clusters in the clustered projection. Default is 50.
-#' @param intercept Whether to use intercept. Default is \code{TRUE}.
+#' @param seed An optional seed to use.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
+#' 
 NULL
 
 proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL, regul = NULL) {
@@ -85,7 +86,7 @@ proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL, regul = NULL) {
   projs
 }
 
-#' @rdname proj_pred
+#' @rdname proj-pred
 #' @export
 proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
                          weightsnew = NULL, transform = FALSE,
@@ -133,7 +134,7 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
     .unlist_proj(preds)
 }
 
-#' @rdname proj_pred
+#' @rdname proj-pred
 #' @export
 proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL, 
                          nv = NULL, vind = NULL, ns = NULL, nc = NULL, 
@@ -179,6 +180,7 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}.
+#' @param ... Currently ignored.
 #' @param nv_max Maximum submodel size for which the statistics are calculated.
 #' @param statistics A list of strings of statistics to calculate. Available
 #' options are: kl, mse, mlpd, kl, (gaussian only), pctcorr (binomial only).
@@ -293,16 +295,13 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
 #' using also other tools than \code{rstanarm}, because only a limited amount
 #' of information is needed for the actual projection and the variable selection.
 #' 
-#' 
-#' @name refmodel
-#' 
 #' @param x Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
 #'  variables for selection
 #' (i.e. variables from which to select the submodel). Rows denote the observations
 #' and columns the different variables. Note that this matrix can be different from
 #' the one used to construct the reference model.
 #' @param y Vector of length \code{n} giving the target variable values.
-#' @param family \link[=family]{family} object giving the model family
+#' @param family \link{family} object giving the model family
 #' @param mu \code{n}-by-{S} matrix of expected values for \code{y}, each column corresponding
 #' to one posterior draw for the reference model.
 #' @param dis Vector of length \code{S} giving the posterior draws for the dispersion parameter
@@ -320,11 +319,9 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
 #' Can be omitted but is mandatory for performing the LOO validation.
 #' 
 #' @return An object that can be passed to all the functions that
-#' take the reference fit as the first argument, such as \code{varsel}, \code{cv_varsel},
-#' \code{proj_predict} and \code{proj_linpred}.
-NULL
+#' take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel},
+#' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 
-#' @rdname refmodel
 #' @export
 init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
                           intercept=TRUE, loglik=NULL) {

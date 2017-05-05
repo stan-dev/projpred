@@ -1,5 +1,5 @@
-#' Search heuristics
-#'
+# Search heuristics
+#
 
 search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
                            verbose, regul) {

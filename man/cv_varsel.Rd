@@ -40,6 +40,8 @@ If not provided, \link[=kfold]{kfold} is called inside the function.}
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we
 need to add some regularization to avoid numerical problems. Default is 1e-9.}
+
+\item{...}{Currently ignored.}
 }
 \value{
 The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
