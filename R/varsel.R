@@ -3,7 +3,7 @@
 #' Perform the projection predictive variable selection for a generalized
 #' linear model fitted with rstanarm.
 #' @param fit Either a \link[=stanreg-objects]{stanreg}-object or an object returned
-#' by \link[init_refmodel]{init_refmodel}.
+#' by \link[=init_refmodel]{init_refmodel}.
 #' @param d_test A test dataset, which is used to evaluate model performance.
 #' If not provided, training data is used.
 #' @param method The method used in the variable selection. Possible options are
@@ -14,6 +14,8 @@
 #'    Ignored if nc is set.
 #' @param nc Number of clusters to use in the clustered projection.
 #'    Overrides the \code{ns} argument. Defaults to 1.
+#' @param nspred Number of samples used for prediction (after selection). Ignored if ncpred is given.
+#' @param ncpred Number of clusters used for prediction (after selection). Default is 1.
 #' @param nv_max Maximum number of varibles until which the selection is continued.
 #'    Defaults to min(D, floor(0.4*n)) where n is the number of observations and
 #'    D the number of variables.
@@ -23,6 +25,7 @@
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
+#' @param ... Currently ignored.
 #'
 #'
 #' @return The original fit-object object augmented with a field 'varsel',
@@ -32,7 +35,7 @@
 #'  \item{\code{kl}}{KL-divergence for each submodel size.}
 #'  \item{\code{summaries}}{Summary statistics computed during the selection.}
 #'  \item{\code{d_test}}{The data used to evaluate the summaries.}
-#'  \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
+#'  \item{\code{family_kl}}{A modified \link{family}-object.}
 #' }
 #'
 #' @examples
@@ -45,8 +48,9 @@
 #'
 
 #' @export
-varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
-                   nv_max = NULL, intercept = NULL, verbose = F, regul=1e-9, ...) {
+varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL, 
+                   nspred = NULL, ncpred = NULL, nv_max = NULL, 
+                   intercept = NULL, verbose = F, regul=1e-9, ...) {
 
 
   .validate_for_varsel(fit)
@@ -54,6 +58,9 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
   	# use one cluster for selection by default, and always with L1-search
   	nc <- 1
+  if (is.null(nspred) && is.null(ncpred))
+    # use 1 clusters for prediction by default
+    ncpred <- 1
 
   vars <- .extract_vars(fit)
   family_kl <- vars$fam
@@ -75,14 +82,16 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   	d_type <- 'test'
   }
 
-  # the reference distribution (or fit) used for selection
-  p_full <- .get_refdist(fit, ns=ns, nc=nc)
+  p_sel <- .get_refdist(fit, ns, nc)
+  p_pred <- .get_refdist(fit, nspred, ncpred)
 
   # perform the selection
-  chosen <- select(method, p_full, d_train, family_kl, intercept, nv_max, verbose, regul)
+  chosen <- select(method, p_sel, d_train, family_kl, intercept, nv_max,
+                   verbose, regul)
 
   # statistics for the selected submodels
-  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_full, d_train, intercept, regul)
+  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_pred,
+                          d_train, intercept, regul)
   sub <- .get_sub_summaries(p_sub, d_test, family_kl)
 
   #
@@ -106,17 +115,16 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
 }
 
 
-
-select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
+select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
                    verbose, regul) {
   #
   # Auxiliary function, performs variable selection with the given method,
   # and returns the variable ordering.
   #
   if (tolower(method) == 'l1') {
-    chosen <- search_L1(p_full, d_train, family_kl, intercept, nv_max)
+    chosen <- search_L1(p_sel, d_train, family_kl, intercept, nv_max)
   } else if (tolower(method) == 'forward') {
-    tryCatch(chosen <- search_forward(p_full, d_train, family_kl, intercept,
+    tryCatch(chosen <- search_forward(p_sel, d_train, family_kl, intercept,
                                       nv_max, verbose, regul),
              'error' = .varsel_errors)
   } else {
@@ -124,7 +132,4 @@ select <- function(method, p_full, d_train, family_kl, intercept, nv_max,
   }
   return(chosen)
 }
-
-
-
 

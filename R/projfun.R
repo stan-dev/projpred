@@ -1,5 +1,5 @@
-#' Function handles for the projection
-#'
+# Function handles for the projection
+#
 
 project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 

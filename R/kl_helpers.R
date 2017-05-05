@@ -1,12 +1,12 @@
-#' Model-specific helper functions.
-#'
-#' \code{kl_helpers(fam)} returns a family object augmented with functions for
-#' KL divergence, log predictive density and dispersion.
-#'
-#' Naming convention described in fsel.R.
-#'
-#' Missing: Quasi-families not implemented. If dis_gamma is the correct shape
-#' parameter for projected Gamma regression, everything should be OK for gamma.
+# Model-specific helper functions.
+#
+# \code{kl_helpers(fam)} returns a family object augmented with functions for
+# KL divergence, log predictive density and dispersion.
+#
+# Naming convention described in fsel.R.
+#
+# Missing: Quasi-families not implemented. If dis_gamma is the correct shape
+# parameter for projected Gamma regression, everything should be OK for gamma.
 
 kl_helpers <- function(fam) {
 
@@ -97,6 +97,4 @@ kl_helpers <- function(fam) {
     list(mu_fun = mu_fun), fam)
 
 }
-
-
 

@@ -71,7 +71,7 @@ log_sum_exp <- function(x) {
 			x = x,
 			alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv], # EVENTUALLY NEED TO GET RID OFF THIS
 			beta = t(unname(drop(e$beta)))[, perm_inv],                              # EVENTUALLY NEED TO GET RID OFF THIS
-			dis = unname(e[[dis_name]]) %ORifNULL% rep(NA, nrow(e$beta))[perm_inv],
+			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta))[perm_inv],
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			coefnames = coefnames,
 			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
