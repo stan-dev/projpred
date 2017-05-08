@@ -137,7 +137,7 @@ x1g <- seq(-4,4,len=ng)
 x2g <- seq(-4,4,len=ng)
 xnew <- cbind( rep(x1g,each=ng), rep(x2g,ng) )
 vind <- fit$varsel$chosen[1:2]
-pr <- proj_linpred(fit, xnew, vind=vind, transform=T, integrated=T)$pred
+pr <- proj_linpred(fit, xnew, vind=vind, transform=T, integrated=T)
 
 # visualize the results
 pp <- ggplot()

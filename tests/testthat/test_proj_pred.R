@@ -53,7 +53,7 @@ test_that("output of proj_linpred is sensible with fit-object as input", {
     pl <- proj_linpred(vs_list[[i]], xnew = x)
     expect_equal(length(pl), nv + 1, info = i_inf)
     for(j in 1:length(pl))
-      expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
+      expect_equal(ncol(pl[[j]]), n, info = i_inf)
   }
 })
 
@@ -61,14 +61,14 @@ test_that("output of proj_linpred is sensible with project-object as input", {
   for(i in 1:length(proj_vind_list)) {
     i_inf <- names(proj_vind_list)[i]
     pl <- proj_linpred(proj_vind_list[[i]], xnew = x)
-    expect_equal(ncol(pl$pred), n, info = i_inf)
+    expect_equal(ncol(pl), n, info = i_inf)
   }
   for(i in 1:length(proj_all_list)) {
     i_inf <- names(proj_all_list)[i]
     pl <- proj_linpred(proj_all_list[[i]], xnew = x)
     expect_equal(length(pl), nv + 1, info = i_inf)
     for(j in 1:length(pl))
-      expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
+      expect_equal(ncol(pl[[j]]), n, info = i_inf)
   }
 })
 
@@ -89,18 +89,21 @@ test_that("proj_linpred: specifying ynew has an expected effect", {
   }
 })
 
-# test_that("proj_linpred: specifying weights has an expected effect", {
-#   for(i in 1:length(proj_vind_list)) {
-#     i_inf <- names(proj_vind_list)[i]
-#     plw <- proj_linpred(proj_vind_list[[i]], xnew = x, ynew = ys[[i]],
-#                         weightsnew = weights)
-#     pl <- proj_linpred(proj_vind_list[[i]], xnew = x, ynew = ys[[i]])
-#     expect_equal(names(plw), c('pred', 'lpd'), info = i_inf)
-#     expect_equal(ncol(plw$pred), n, info = i_inf)
-#     expect_equal(ncol(plw$lpd), n, info = i_inf)
-#     expect_true(sum(plw$lpd != pl$lpd) > 0, info = i_inf)
-#   }
-# })
+test_that("proj_linpred: specifying weights has an expected effect", {
+  for(i in 1:length(proj_vind_list)) {
+    # for binomial models weights have to be specified
+    if (proj_vind_list[[i]]$family_kl$family != 'binomial') {
+      i_inf <- names(proj_vind_list)[i]
+      plw <- proj_linpred(proj_vind_list[[i]], xnew = x, ynew = ys[[i]],
+                          weightsnew = weights)
+      pl <- proj_linpred(proj_vind_list[[i]], xnew = x, ynew = ys[[i]])
+      expect_equal(names(plw), c('pred', 'lpd'), info = i_inf)
+      expect_equal(ncol(plw$pred), n, info = i_inf)
+      expect_equal(ncol(plw$lpd), n, info = i_inf)
+      expect_true(sum(plw$lpd != pl$lpd) > 0, info = i_inf) 
+    }
+  }
+})
 
 test_that("proj_linpred: specifying offset has an expected effect", {
   for(i in 1:length(proj_vind_list)) {
@@ -120,8 +123,7 @@ test_that("proj_linpred: specifying transform has an expected effect", {
     i_inf <- names(proj_vind_list)[i]
     plt <- proj_linpred(proj_vind_list[[i]], xnew = x, transform = TRUE)
     plf <- proj_linpred(proj_vind_list[[i]], xnew = x, transform = FALSE)
-    expect_equal(proj_vind_list[[i]]$family_kl$linkinv(plf$pred), plt$pred,
-                 info = i_inf)
+    expect_equal(proj_vind_list[[i]]$family_kl$linkinv(plf), plt, info = i_inf)
   }
 })
 
@@ -130,8 +132,7 @@ test_that("proj_linpred: specifying integrated has an expected effect", {
     i_inf <- names(proj_vind_list)[i]
     plt <- proj_linpred(proj_vind_list[[i]], xnew = x, integrated = TRUE)
     plf <- proj_linpred(proj_vind_list[[i]], xnew = x, integrated = FALSE)
-    expect_equal(drop(proj_vind_list[[i]]$weights%*%plf$pred), plt$pred,
-                 info = i_inf)
+    expect_equal(drop(proj_vind_list[[i]]$weights%*%plf), plt, info = i_inf)
   }
 })
 
@@ -141,7 +142,8 @@ test_that("project: adding more regularization has an expected effect", {
         # i_inf <- names(vs_list)[i]
         norms <- rep(0, length(regul))
         for (j in 1:length(regul)) {
-            pred <- proj_linpred(vs_list[[i]], xnew = x, nv = 2, transform = F, integrated = T, regul=regul[j])$pred
+            pred <- proj_linpred(vs_list[[i]], xnew = x, nv = 2, transform = F,
+                                 integrated = T, regul=regul[j])
             norms[j] <- sum(pred^2)
         }
         for (j in 1:(length(regul)-1))
@@ -214,6 +216,4 @@ test_that("proj_predict: specifying seed has an expected effect", {
     expect_equal(pl1, pl2, info = i_inf)
   }
 })
-
-
 

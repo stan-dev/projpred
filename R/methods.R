@@ -8,16 +8,14 @@
 #'
 #' @name proj-pred
 #'
-#' @param object The object returned by \link[=varsel]{varsel},
-#' \link[=cv_varsel]{cv_varsel} or \link[=project]{project}.
+#' @param object The object returned by \link{varsel},
+#' \link{cv_varsel} or \link{project}.
 #' @param xnew The predictor values used in the prediction. The number and 
 #' order of the columns should be the same as in the original full data if
 #' argument \code{nv} is specified (see below). However, if argument 
 #' \code{vind} is specified, then the number and order of columns should
 #' correspond to \code{vind}.
 #' @param ynew New (test) target variables.
-#' @param draws Number of draws to return for \code{proj_predict}. Default is
-#' \code{nc}.
 #' @param offsetnew Offsets for the new observations. Defaults to a vector of
 #' 0s.
 #' @param weightsnew Weights for the new observations. For binomial model,
@@ -25,43 +23,43 @@
 #' this argument matters only if \code{ynew} is specified. Defaults to a vector
 #' of 1s.
 #' @param transform Should the linear predictor be transformed using the
-#' inverse-link function? Default is \code{FALSE}.
+#' inverse-link function? Default is \code{FALSE}. \code{proj_linpred} only.
 #' @param integrated If \code{TRUE}, the output is averaged over the
-#' parameters. Default is \code{FALSE}.
+#' parameters. Default is \code{FALSE}. \code{proj_linpred} only.
 #' @param nv Number of variables in the submodel (the variable combination is
 #' taken from the \code{varsel} information). If a list, then results for all
 #' specified model sizes are returned. Ignored if \code{vind} is specified.
-#' @param vind Variable indices with which to predict. If specified, \code{nv}
-#' is ignored.
-#' @param ns Number of draws to be projected. Ignored if \code{nc} is specified.
-#' @param nc Number of clusters in the clustered projection. Default is 50.
-#' @param seed An optional seed to use.
-#' @param regul Amount of regularization in the projection. Usually there is no need for 
-#' regularization, but sometimes for some models the projection can be ill-behaved and we
-#' need to add some regularization to avoid numerical problems. Default is 1e-9.
+#' @param draws Number of draws to return from the predictive distribution of
+#' the projection. The default is the number of draws in the projection. 
+#' \code{proj_predict} only.
+#' @param seed_samp An optional seed to use for drawing from the projection.
+#' \code{proj_predict} only.
+#' @param ... Additional argument passed to \link{project} if object
+#' was returned by \link{varsel} or\link{cv_varsel}.
+#' 
+#' @return If nv has length one and ynew is unspecified, a matrix of
+#' predictions. Otherwise, a list of length nv with the corresponding 
+#' predictions. If ynew is specified (proj_linpred only), a list with
+#' elements pred (predictions) and lpd (corresponding log-densities)
+#' for each submodel size.
 #' 
 NULL
 
-proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL, regul = NULL) {
-  if (is.null(xnew))
-    stop('Please provide xnew.')
-  if (!is.null(vind) && NCOL(xnew) != length(vind))
-    stop(paste('The number of columns in xnew does not match with the given',
-               'number of variable indices (vind).'))
+# document this
+proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, fun, ...) {
+  
+  if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
+  if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
 
-  if (!is.null(vind))
-    nv <- NULL # ensure nv is ignored if vind is set
-
-  if( 'projection' %in% class(object) || (length(object)>0 && 'projection' %in% class(object[[1]])) ) {
+  if ('projection' %in% class(object) || 
+     (length(object)>0 && 'projection' %in% class(object[[1]]))) {
       proj <- object
-      if(any(sapply(list(nv, vind, ns, nc), Negate(is.null))))
-          warning('nv, vind, ns and nc are ignored when object is a projection.')
   } else {
       # reference model obtained, so run the projection
-      proj <- project(object, nv = nv, ns = ns, nc = nc, vind = vind, regul = regul)
+      proj <- project(object, nv = nv, ...)
   }
 
-  if(!.is_proj_list(proj)) {
+  if (!.is_proj_list(proj)) {
     proj <- list(proj)
   } else {
     # proj is not a projection object
@@ -71,10 +69,9 @@ proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL, regul = NULL) {
   }
 
   projected_sizes <- sapply(proj, function(x) NROW(x$beta))
-  if(is.null(nv))
-    nv <- projected_sizes
+  if (is.null(nv)) nv <- projected_sizes
 
-  if(!all(nv %in% projected_sizes))
+  if (!all(nv %in% projected_sizes))
     stop(paste0('Linear prediction requested for nv = ',
                 paste(nv, collapse = ', '),
                 ', but projection performed only for nv = ',
@@ -82,92 +79,92 @@ proj_helper <- function(object, xnew, nv, vind, ns, nc = NULL, regul = NULL) {
 
   projs <- Filter(function(x) NROW(x$beta) %in% nv, proj)
   names(projs) <- nv
-
-  projs
-}
-
-#' @rdname proj-pred
-#' @export
-proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
-                         weightsnew = NULL, transform = FALSE,
-                         integrated = FALSE, nv = NULL, vind = NULL,
-                         ns = NULL, nc = NULL, regul=1e-9) {
-    if (is.null(offsetnew))
-        offsetnew <- rep(0, nrow(xnew))
-    if (is.null(weightsnew))
-        weightsnew <- rep(1, nrow(xnew))
-    projs <- proj_helper(object = object, xnew = xnew, nv = nv, vind = vind,
-                         ns = ns, nc = nc, regul = regul)
-
-    preds <- lapply(projs, function(proj) {
-        if (!is.null(vind))
-            # columns of xnew are assumed to match to the given variable indices
-            xtemp <- xnew
-        else
-            xtemp <- xnew[, proj$ind, drop = F]
-        mu <- proj$family_kl$mu_fun(xtemp, proj$alpha, proj$beta, offsetnew)
-        if(transform)
-            pred <- t(mu)
-        else
-            pred <- t(proj$family_kl$linkfun(mu))
-        if (integrated)
-            # average over the parameters
-            pred <- as.vector( proj$weights %*% pred )
-        else if (!is.null(dim(pred)) && dim(pred)[1]==1)
-            # return a vector if pred contains only one row
-            pred <- as.vector(pred)
-        if (!is.null(ynew)) {
-            # compute also the log-density
-            temp <- .get_standard_y(ynew,weightsnew,proj$family_kl)
-            ynew <- temp$y
-            weightsnew <- temp$weights
-            lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew, weightsnew)
-            if (integrated && !is.null(dim(lpd)))
-                lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
-            else if (!is.null(dim(lpd)))
-                lpd <- t(lpd)
-            return(list(pred=pred, lpd=lpd))
-        } else
-            return(list(pred=pred))
-    })
-
-    .unlist_proj(preds)
-}
-
-#' @rdname proj-pred
-#' @export
-proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL, 
-                         nv = NULL, vind = NULL, ns = NULL, nc = NULL, 
-                         draws = NULL, seed = NULL, regul = 1e-9) {
-  if (!is.null(seed))
-    set.seed(seed)
-  if (is.null(offsetnew))
-    offsetnew <- rep(0, nrow(xnew))
-  if (is.null(weightsnew))
-    weightsnew <- rep(1, nrow(xnew))
-
-  projs <- proj_helper(object = object, xnew = xnew, nv = nv, vind = vind,
-                       ns = ns, nc = nc, regul = regul)
-  if(is.null(draws))
-    draws <- length(projs[[1]]$weights)
+    
+  xnew_df <- is.data.frame(xnew)
+  if (xnew_df) {
+    terms <- unique(unlist(lapply(projs, function(x) x$ind_names)))
+    xnew <- .df_to_model_mat(xnew, terms)
+  }
   
+  if (!is.matrix(xnew))
+    stop('xnew not provided in the correct format. See ?proj-pred.')
+  
+  vind <- list(...)$vind
+  if (!is.null(vind) && NCOL(xnew) != length(vind))
+    stop(paste('The number of columns in xnew does not match with the given',
+               'number of variable indices (vind).'))
+
   preds <- lapply(projs, function(proj) {
-    if (!is.null(vind)) {
+    if (xnew_df) {
+      xtemp <- xnew[, min(1, length(proj$ind)):length(proj$ind), drop = F]
+    } else if (!is.null(vind)) {
       # columns of xnew are assumed to match to the given variable indices
       xtemp <- xnew
     } else {
       xtemp <- xnew[, proj$ind, drop = F]
     }
     mu <- proj$family_kl$mu_fun(xtemp, proj$alpha, proj$beta, offsetnew)
-    dis <- proj$dis
-    draw_inds <- sample(x = seq_along(proj$weights), size = draws, 
-                        replace = TRUE, prob = proj$weights)
-    t(sapply(draw_inds, function(i) {
-      proj$family_kl$ppd_fun(mu[,i], dis[i], weightsnew)
-    }))
+    
+    fun(proj, mu, offsetnew, weightsnew)
   })
   
   .unlist_proj(preds)
+}
+
+#' @rdname proj-pred
+#' @export
+proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
+                         weightsnew = NULL, nv = NULL, transform = FALSE,
+                         integrated = FALSE, ...) {
+  
+  fun <- function(proj, mu, offset, weights) {
+    pred <- t(mu)
+    if (!transform) pred <- proj$family_kl$linkfun(pred)
+    if (integrated) {
+      # average over the parameters
+      pred <- as.vector( proj$weights %*% pred )
+    } else if (!is.null(dim(pred)) && dim(pred)[1]==1) {
+      # return a vector if pred contains only one row
+      pred <- as.vector(pred)
+    }
+    
+    if (!is.null(ynew)) {
+      # compute also the log-density
+      temp <- .get_standard_y(ynew, weights, proj$family_kl)
+      ynew <- temp$y
+      weights <- temp$weights
+      lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew, weights)
+      if (integrated && !is.null(dim(lpd))) {
+        lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
+      } else if (!is.null(dim(lpd))) {
+        lpd <- t(lpd)
+      }
+      list(pred = pred, lpd = lpd)
+    } else {
+      pred
+    }
+  }
+  
+  proj_helper(object, xnew, offsetnew, weightsnew, nv, fun, ...)
+}
+
+#' @rdname proj-pred
+#' @export
+proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL, 
+                         nv = NULL, draws = NULL, seed_samp = NULL, ...) {
+  if (!is.null(seed_samp)) set.seed(seed_samp)
+  
+  fun <- function(proj, mu, offset, weights) {
+    if(is.null(draws)) draws <- length(proj$weights)
+    draw_inds <- sample(x = seq_along(proj$weights), size = draws,
+                        replace = TRUE, prob = proj$weights)
+    
+    t(sapply(draw_inds, function(i) {
+      proj$family_kl$ppd_fun(mu[,i], proj$dis[i], weights)
+    }))
+  }
+  
+  proj_helper(object, xnew, offsetnew, weightsnew, nv, fun, ...)
 }
 
 #' Plotting or printing summary statistics related to variable selection

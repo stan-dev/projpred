@@ -74,7 +74,7 @@ log_sum_exp <- function(x) {
 			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta))[perm_inv],
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			coefnames = coefnames,
-			intercept = attr(fit$terms,'intercept') %ORifNULL% 0)
+			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0))
 
 		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
@@ -266,6 +266,11 @@ log_sum_exp <- function(x) {
   } else {
     min(subset(stats, lq >= mlpd_cutoff$value, 'size'))
   }
+}
+
+.df_to_model_mat <- function(dfnew, var_names) {
+  f <- formula(paste('~', paste(c('0', var_names), collapse = ' + ')))
+  model.matrix(terms(f, keep.order = T), data = dfnew)
 }
 
 .is_proj_list <- function(proj) { !( 'family_kl' %in% names(proj) ) }
