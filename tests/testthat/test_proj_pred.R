@@ -166,6 +166,23 @@ test_that("proj_linpred: arguments passed to project work accordingly", {
   }
 })
 
+test_that("proj_linpred: providing xnew as a data frame works as expected", {
+  for(i in 1:length(proj_vind_list)) {
+    i_inf <- names(proj_vind_list)[i]
+    pl <- proj_predict(proj_vind_list[[i]], 
+                       xnew = setNames(data.frame(x), paste0('x',1:NCOL(x))))
+    expect_equal(ncol(pl), n, info = i_inf)
+  }
+  SW(
+    fit_form <- stan_glm(mpg~(drat + wt)^2, data = mtcars, QR = T,
+                         chains = chains, seed = seed, iter = iter)
+  )
+  vs_form <- varsel(fit_form)
+  p1 <- proj_linpred(vs_form, xnew = mtcars, nv = 3, seed = 2)
+  p2 <- proj_linpred(vs_form, xnew = get_x(fit_form)[,-1], nv = 3, seed = 2)
+  expect_equal(p1, p2)
+})
+
 
 context('proj_predict')
 test_that("output of proj_predict is sensible with fit-object as input", {
