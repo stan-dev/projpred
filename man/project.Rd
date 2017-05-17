@@ -27,7 +27,7 @@ Default is all model sizes up to the maximum number of variables in \code{varsel
 \item{seed}{A seed used in the clustering (if \code{nc!=ns}). Can be used
 to ensure same results every time.}
 
-\item{regul}{Amount of regularization in the projection. Usually there is no need for 
+\item{regul}{Amount of regularization in the projection. Usually there is no need for
 regularization, but sometimes for some models the projection can be ill-behaved and we
 need to add some regularization to avoid numerical problems. Default is 1e-9.}
 

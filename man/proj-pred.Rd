@@ -8,22 +8,23 @@
 distribution of the projected submodel}
 \usage{
 proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,
-  weightsnew = NULL, transform = FALSE, integrated = FALSE, nv = NULL,
-  vind = NULL, ns = NULL, nc = NULL, regul = 1e-09)
+  weightsnew = NULL, nv = NULL, transform = FALSE, integrated = FALSE,
+  ...)
 
 proj_predict(object, xnew, offsetnew = NULL, weightsnew = NULL, nv = NULL,
-  vind = NULL, ns = NULL, nc = NULL, draws = NULL, seed = NULL,
-  regul = 1e-09)
+  draws = NULL, seed_samp = NULL, ...)
 }
 \arguments{
-\item{object}{The object returned by \link[=varsel]{varsel},
-\link[=cv_varsel]{cv_varsel} or \link[=project]{project}.}
+\item{object}{The object returned by \link{varsel},
+\link{cv_varsel} or \link{project}.}
 
-\item{xnew}{The predictor values used in the prediction. The number and 
-order of the columns should be the same as in the original full data if
-argument \code{nv} is specified (see below). However, if argument 
-\code{vind} is specified, then the number and order of columns should
-correspond to \code{vind}.}
+\item{xnew}{The predictor values used in the prediction. If \code{vind} is
+specified, then the number and order of columns should correspond to
+contain the variables at same positons (columns) as in the original data. If
+\code{vind} is \code{NULL} and \code{xnew} is a matrix, it must contain the
+same columns at same positions as in the original data. If \code{vind} is
+\code{NULL} and \code{xnew} is a data frame, it must contain columns with
+same names as in the original data.}
 
 \item{ynew}{New (test) target variables.}
 
@@ -35,31 +36,32 @@ corresponds to the number trials per observation. For \code{proj_linpred},
 this argument matters only if \code{ynew} is specified. Defaults to a vector
 of 1s.}
 
-\item{transform}{Should the linear predictor be transformed using the
-inverse-link function? Default is \code{FALSE}.}
-
-\item{integrated}{If \code{TRUE}, the output is averaged over the
-parameters. Default is \code{FALSE}.}
-
 \item{nv}{Number of variables in the submodel (the variable combination is
 taken from the \code{varsel} information). If a list, then results for all
 specified model sizes are returned. Ignored if \code{vind} is specified.}
 
-\item{vind}{Variable indices with which to predict. If specified, \code{nv}
-is ignored.}
+\item{transform}{Should the linear predictor be transformed using the
+inverse-link function? Default is \code{FALSE}. \code{proj_linpred} only.}
 
-\item{ns}{Number of draws to be projected. Ignored if \code{nc} is specified.}
+\item{integrated}{If \code{TRUE}, the output is averaged over the
+parameters. Default is \code{FALSE}. \code{proj_linpred} only.}
 
-\item{nc}{Number of clusters in the clustered projection. Default is 50.}
+\item{...}{Additional argument passed to \link{project} if \code{object}
+is an object returned by \link{varsel} or\link{cv_varsel}.}
 
-\item{regul}{Amount of regularization in the projection. Usually there is no need for 
-regularization, but sometimes for some models the projection can be ill-behaved and we
-need to add some regularization to avoid numerical problems. Default is 1e-9.}
+\item{draws}{Number of draws to return from the predictive distribution of
+the projection. The default is the number of draws in the projection.
+\code{proj_predict} only.}
 
-\item{draws}{Number of draws to return for \code{proj_predict}. Default is
-\code{nc}.}
-
-\item{seed}{An optional seed to use.}
+\item{seed_samp}{An optional seed to use for drawing from the projection.
+\code{proj_predict} only.}
+}
+\value{
+If nv has length one and ynew is unspecified, a matrix of
+predictions. Otherwise, a list of length nv with the corresponding
+predictions. If ynew is specified (proj_linpred only), a list with
+elements pred (predictions) and lpd (corresponding log-densities)
+for each submodel size.
 }
 \description{
 \code{proj_linpred} extracts draws of the linear predictor and

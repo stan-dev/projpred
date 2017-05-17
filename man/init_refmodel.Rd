@@ -25,10 +25,10 @@ to one posterior draw for the reference model.}
 in the reference model if there is such a parameter in the model family. For Gaussian
 observation model this is the noise std \code{sigma}.}
 
-\item{offset}{Offset to be added to the linear predictor in the projection. (Same as in 
+\item{offset}{Offset to be added to the linear predictor in the projection. (Same as in
 function \code{glm})}
 
-\item{wobs}{Observation weights. The weights should sum to \code{n}. 
+\item{wobs}{Observation weights. The weights should sum to \code{n}.
 If omitted, equal weights are assumed.}
 
 \item{wsample}{vector of length \code{S} giving the weights for the posterior draws.
@@ -46,7 +46,7 @@ take the reference fit as the first argument, such as \link{varsel}, \link{cv_va
 \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 }
 \description{
-Initializes a structure that can be used as a reference fit for the 
+Initializes a structure that can be used as a reference fit for the
 projective variable selection.
 This function is provided to allow construction of the reference fit
 using also other tools than \code{rstanarm}, because only a limited amount

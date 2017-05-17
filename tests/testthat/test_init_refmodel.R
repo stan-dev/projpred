@@ -59,10 +59,12 @@ SW({
 cvvs_list <- lapply(fit_list, cv_varsel, nv_max = nv, verbose = FALSE)
 cvvs2_list <- lapply(ref_list, cv_varsel, nv_max = nv, verbose = FALSE)
 })
-proj_vind_list <- lapply(vs_list, project, vind = c(2,3))
-proj2_vind_list <- lapply(vs2_list, project, vind = c(2,3))
-pred_list <- lapply(vs_list, proj_linpred, xnew=x, offsetnew=offset, weightsnew=weights, nv=3)
-pred2_list <- lapply(vs2_list, proj_linpred, xnew=x, offsetnew=offset, weightsnew=weights, nv=3)
+proj_vind_list <- lapply(vs_list, project, vind = c(2,3), seed = seed)
+proj2_vind_list <- lapply(vs2_list, project, vind = c(2,3), seed = seed)
+pred_list <- lapply(vs_list, proj_linpred, xnew=x, seed = seed,
+                    offsetnew=offset, weightsnew=weights, nv=3)
+pred2_list <- lapply(vs2_list, proj_linpred, xnew=x, seed = seed,
+                     offsetnew=offset, weightsnew=weights, nv=3)
 
 
 context('init_refmodel')
@@ -80,13 +82,11 @@ test_that("output of cv_varsel is the same when using stanfit and init_refmodel"
 
 test_that("output of project is the same when using stanfit and init_refmodel", {
     for(i in 1:length(vs_list)) {
-        expect_equal(proj_vind_list[[i]]$varsel, proj2_vind_list[[i]]$varsel)
+        expect_equal(proj_vind_list[[i]], proj2_vind_list[[i]])
     }
 })
 
 test_that("output of proj_linpred is the same when using stanfit and init_refmodel", {
-    for(i in 1:length(vs_list)) {
-        expect_equal(pred_list[[i]]$varsel, pred2_list[[i]]$varsel)
-    }
+    for(i in 1:length(vs_list)) expect_equal(pred_list[[i]], pred2_list[[i]])
 })
 

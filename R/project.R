@@ -14,7 +14,7 @@
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param seed A seed used in the clustering (if \code{nc!=ns}). Can be used
 #' to ensure same results every time.
-#' @param regul Amount of regularization in the projection. Usually there is no need for 
+#' @param regul Amount of regularization in the projection. Usually there is no need for
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
 #' @param ... Currently ignored.
@@ -95,7 +95,7 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 	  class(x) <- 'projection'
 	  return(x)
 	 })
-	
+
 	# If only one model size, just return the proj instead of a list of projs
 	.unlist_proj(proj)
 }
