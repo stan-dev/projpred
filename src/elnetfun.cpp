@@ -280,6 +280,7 @@ List glm_ridge_c(arma::mat x,
     int qau; // counts quadratic approximation updates
     int ls_iter; // counts linesearch iterations
     int j;
+    double t; // step size in line sarch
     
     // initialization
     vec beta(D); beta.zeros();
@@ -312,17 +313,23 @@ List glm_ridge_c(arma::mat x,
         beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
         
         // line search: halve the step until a decrement in deviance achieved
-        dbeta = 2*(beta_new - beta);
+        // dbeta = 2*(beta_new - beta);
+        t = 2; //a=0.25; b=0.5;
+        dbeta = beta_new - beta;
         ls_iter = 0;
         while (ls_iter < ls_iter_max) {
             
-            dbeta = 0.5*dbeta;
-            f = x*(beta+dbeta);
+            t = 0.5*t;
+            // f = x*(beta+t*dbeta)
+            // if (loss <= loss_old + a*t*)
+            
+            // dbeta = 0.5*dbeta;
+            f = x*(beta+t*dbeta);
             obs = pseudo_obs(f);
             z = as<vec>(obs["z"]);
             w = as<vec>(obs["w"]);
             loss = obs["dev"];
-            loss = loss + lambda*sum(square(beta+dbeta));
+            loss = loss + lambda*sum(square(beta+t*dbeta));
             ++ls_iter;
             
             if (std::isnan(loss))
@@ -331,11 +338,18 @@ List glm_ridge_c(arma::mat x,
             if (loss < loss_old)
                 break;
         }
-        beta = beta + dbeta;
         
         if (ls_iter == ls_iter_max) {
             Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization is likely to be ill-behaved.\n";
+        	Rcpp::Rcout << "step length t = " << t << '\n';
+        	Rcpp::Rcout << "loss = " << loss << '\n';
+        	Rcpp::Rcout << "|beta| = " << norm(beta) << '\n';
+        	Rcpp::Rcout << "|beta_new| = " << norm(beta_new) << '\n';
+        	// beta.t().print("beta = ");
+        	// beta_new.t().print("beta_new = ");
+        	// dbeta.t().print("diff = ");
         }
+        beta = beta + t*dbeta;
         ++qau;
         
         // check if converged
