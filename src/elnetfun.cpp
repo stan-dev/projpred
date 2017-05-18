@@ -262,99 +262,115 @@ List glm_elnet_c(arma::mat x, // input matrix
 
 
 // [[Rcpp::export]]
-List glm_ridge_c(arma::mat x,
-                 Function pseudo_obs,
-                 double lambda,
-                 bool intercept,
-                 double thresh,
-                 int qa_updates_max,
-                 int ls_iter_max=100)
+List glm_ridge_c( arma::mat x,
+                  Function pseudo_obs,
+                  double lambda,
+                  bool intercept,
+                  double thresh,
+                  int qa_updates_max,
+                  int ls_iter_max=100,
+                  bool debug=false)
 {
     
-    if (intercept)
-        // add a vector of ones to x
-        x = join_horiz(ones<vec>(x.n_rows), x);
+  if (intercept)
+    // add a vector of ones to x
+    x = join_horiz(ones<vec>(x.n_rows), x);
     
-    int n = x.n_rows;
-    int D = x.n_cols;
-    int qau; // counts quadratic approximation updates
-    int ls_iter; // counts linesearch iterations
-    int j;
+  int n = x.n_rows;
+  int D = x.n_cols;
+  int qau; // counts quadratic approximation updates
+  int ls_iter; // counts linesearch iterations
+  int j;
+  double t; // step size in line search 
+  double a = 0.25; // backtracking line search parameters a and b (see Boyd 2004)
+  double b = 0.7; 
+  
+  // initialization
+  vec beta(D); beta.zeros();
+  vec beta_new(D); beta_new.zeros();
+  vec dbeta(D); dbeta.zeros();
+  vec grad(D); grad.zeros(); // gradient of the deviance 
+  vec f = x*beta;
     
-    // initialization
-    vec beta(D); beta.zeros();
-    vec beta_new(D); beta_new.zeros();
-    vec dbeta(D); dbeta.zeros();
-    vec f = x*beta;
+  mat xw(n,D); // this will be the weighted x
+  mat regmat = lambda*eye(D,D); // regularization matrix
+  
+  // initial quadratic approximation
+  List obs = pseudo_obs(f);
+  vec z = as<vec>(obs["z"]);
+  vec w = as<vec>(obs["w"]);
+  double loss_initial = obs["dev"];
+  double loss_old = loss_initial; // will be updated iteratively
+  double loss = loss_initial; // will be updated iteratively
+  double tol = thresh*fabs(loss_initial); // criterion for convergence
+  
+  
+  qau = 0;
+  while (qau < qa_updates_max) {
     
-    mat xw(n,D); // this will be the weighted x
-    mat regmat = lambda*eye(D,D); // regularization matrix
-    
-    // initial quadratic approximation
-    List obs = pseudo_obs(f);
-    vec z = as<vec>(obs["z"]);
-    vec w = as<vec>(obs["w"]);
-    double loss_initial = obs["dev"];
-    double loss_old = loss_initial; // will be updated iteratively
-    double loss = loss_initial; // will be updated iteratively
-    double tol = thresh*fabs(loss_initial); // criterion for convergence
-    
-    
-    qau = 0;
-    while (qau < qa_updates_max) {
+    // weight the observations
+    for (j=0; j<D; ++j)
+      xw.col(j) = x.col(j) % sqrt(w);
         
+    // weighted least squares solution
+    beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
         
-        // weight the observations
-        for (j=0; j<D; ++j)
-            xw.col(j) = x.col(j) % sqrt(w);
-        
-        // weighted least squares solution
-        beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
-        
-        // line search: halve the step until a decrement in deviance achieved
-        dbeta = 2*(beta_new - beta);
-        ls_iter = 0;
-        while (ls_iter < ls_iter_max) {
+    // backtracking line search
+    grad = -2*x.t()*(w % (z-f)) + 2*lambda*beta; // -2* grad of log-likelihood + penalty
+    t = 1.0/b;
+    dbeta = beta_new - beta;
+    ls_iter = 0;
+    while (ls_iter < ls_iter_max) {
             
-            dbeta = 0.5*dbeta;
-            f = x*(beta+dbeta);
-            obs = pseudo_obs(f);
-            z = as<vec>(obs["z"]);
-            w = as<vec>(obs["w"]);
-            loss = obs["dev"];
-            loss = loss + lambda*sum(square(beta+dbeta));
-            ++ls_iter;
+      t = b*t;
+      f = x*(beta+t*dbeta);
+      obs = pseudo_obs(f);
+      z = as<vec>(obs["z"]);
+      w = as<vec>(obs["w"]);
+      loss = obs["dev"];
+      loss = loss + lambda*sum(square(beta+t*dbeta));
+      ++ls_iter;
             
-            if (std::isnan(loss))
-                throw std::runtime_error( "glm_ridge error: Deviance became NaN, the problem is probably ill-behaved. Try adding more regularization." );
-            
-            if (loss < loss_old)
-                break;
-        }
-        beta = beta + dbeta;
-        
-        if (ls_iter == ls_iter_max) {
-            Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization is likely to be ill-behaved.\n";
-        }
-        ++qau;
-        
-        // check if converged
-        if (loss_old - loss < tol) {
-            // convergence reached
-            break;
-        } else {
-            // continue iterating
-            loss_old = loss;
-        }
+      if (std::isnan(loss))
+        continue;
+      
+      if (loss < loss_old + a*t*sum(grad%dbeta) )
+        break;
     }
+        
+    if (ls_iter == ls_iter_max) {
+      Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
+      if (debug) {
+        Rcpp::Rcout << "step length t = " << t << '\n';
+        Rcpp::Rcout << "loss = " << loss_old << '\n';
+        Rcpp::Rcout << "loss_new = " << loss << '\n';
+        Rcpp::Rcout << "loss_diff = " << loss-loss_old << '\n';
+        Rcpp::Rcout << "|beta| = " << norm(beta) << '\n';
+        Rcpp::Rcout << "|beta_new| = " << norm(beta_new) << '\n';
+        Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
+        Rcpp::Rcout << "|grad| = " << norm(grad) << '\n';
+      }
+    }
+    beta = beta + t*dbeta;
+    ++qau;
+        
+    // check if converged
+    if (loss_old - loss < tol) {
+      // convergence reached
+      break;
+    } else {
+      // continue iterating
+      loss_old = loss;
+    }
+  }
     
-    if (qau == qa_updates_max && qa_updates_max > 1)
-        Rcpp::Rcout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
+  if (qau == qa_updates_max && qa_updates_max > 1)
+    Rcpp::Rcout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
     
-    if (intercept) 
-        return List::create(vec(beta.tail(D-1)), beta(0), qau);
-    else 
-        return List::create(beta, 0.0, qau);
+  if (intercept) 
+    return List::create(vec(beta.tail(D-1)), beta(0), qau);
+  else 
+    return List::create(beta, 0.0, qau);
     
 }
 

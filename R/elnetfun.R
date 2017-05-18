@@ -6,28 +6,28 @@
 #
 
 pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,length(f)) ) {
-    #
-    # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
-    # based on the linear approximation to the link function at f = eta = x*beta + beta0,
-    # as explained in McGullagh and Nelder (1989). Returns also the deviance at f.
-    #
-    f <- f + offset
-    mu <- family$linkinv(f)
-    dmu_df <- family$mu.eta(f)
-    z <- (f - offset) + (y - mu)/dmu_df
-    w <- (weights * dmu_df^2)/family$variance(mu)
-    dev <- sum( family$dev.resids(y, mu, weights) )
-    return(list(z=z, w=w, dev=dev))
+  #
+  # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
+  # based on the linear approximation to the link function at f = eta = x*beta + beta0,
+  # as explained in McGullagh and Nelder (1989). Returns also the deviance at f.
+  #
+  f <- f + offset
+  mu <- family$linkinv(f)
+  dmu_df <- family$mu.eta(f)
+  z <- (f - offset) + (y - mu)/dmu_df
+  w <- (weights * dmu_df^2)/family$variance(mu)
+  dev <- sum( family$dev.resids(y, mu, weights) )
+  return(list(z=z, w=w, dev=dev))
 }
 
 
 lambda_grid <- function(x, y, family, offset, weights, alpha=1.0, eps=1e-2, nlam=100) {
 	#
-    # Standard lambda sequence as described in Friedman et al. (2009), section 2.5.
-    # The grid will have nlam values, evenly spaced in the log-space between lambda_max
-    # and lambda_min. lambda_max is the smallest value for which all the regression
-    # coefficients will be zero.
-    #
+  # Standard lambda sequence as described in Friedman et al. (2009), section 2.5.
+  # The grid will have nlam values, evenly spaced in the log-space between lambda_max
+  # and lambda_min. lambda_max is the smallest value for which all the regression
+  # coefficients will be zero.
+  #
 	n <- dim(x)[1]
 	obs <- pseudo_data(rep(0,n), y, family, offset, weights)
 
@@ -46,8 +46,8 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
                       lambda=NULL, alpha=1.0, thresh=1e-6,
                       qa_updates_max=ifelse(family$family=='gaussian' &&
                                               family$link=='identity', 1, 100),
-					  pmax=dim(as.matrix(x))[2], pmax_strict=FALSE,
-					  weights=NULL, offset=NULL, intercept=TRUE, normalize=TRUE) {
+                      pmax=dim(as.matrix(x))[2], pmax_strict=FALSE,
+                      weights=NULL, offset=NULL, intercept=TRUE, normalize=TRUE) {
 	#
 	# Fits GLM with elastic net penalty on the regression coefficients.
 	# Computes the whole regularization path.
@@ -96,10 +96,10 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
                       qa_updates_max=ifelse(family$family=='gaussian' &&
                                               family$link=='identity', 1, 100),
                       weights=NULL, offset=NULL, intercept=TRUE) {
-    #
-    # Fits GLM with ridge penalty on the regression coefficients.
-    # Does not handle any dispersion parameters.
-    #
+  #
+  # Fits GLM with ridge penalty on the regression coefficients.
+  # Does not handle any dispersion parameters.
+  #
 	if (length(x) == 0 && !intercept)
 		# null model with no predictors and no intercept
 		out <- list( beta=matrix(integer(length=0)), beta0=0, qa_updates=0 )
