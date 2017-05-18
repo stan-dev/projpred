@@ -11,39 +11,40 @@
 #' @param object The object returned by \link{varsel},
 #' \link{cv_varsel} or \link{project}.
 #' @param xnew The predictor values used in the prediction. If \code{vind} is
-#' specified, then the number and order of columns should correspond to
-#' contain the variables at same positons (columns) as in the original data. If
-#' \code{vind} is \code{NULL} and \code{xnew} is a matrix, it must contain the
-#' same columns at same positions as in the original data. If \code{vind} is
-#' \code{NULL} and \code{xnew} is a data frame, it must contain columns with
-#' same names as in the original data.
-#' @param ynew New (test) target variables.
-#' @param offsetnew Offsets for the new observations. Defaults to a vector of
-#' 0s.
+#' specified, then \code{xnew} should either be a dataframe containing column names
+#' that correspond to \code{vind} or a matrix with the number and order of columns
+#' corresponding to \code{vind}. If \code{vind} is unspecified, then \code{xnew} must
+#' either be a dataframe containing all the column names as in the original data or a matrix
+#' with the same columns at the same positions as in the original data.
+#' @param ynew New (test) target variables. If given, then the log predictive density
+#' for the new observations is computed.
+#' @param offsetnew Offsets for the new observations. By default a vector of
+#' zeros.
 #' @param weightsnew Weights for the new observations. For binomial model,
 #' corresponds to the number trials per observation. For \code{proj_linpred},
-#' this argument matters only if \code{ynew} is specified. Defaults to a vector
-#' of 1s.
+#' this argument matters only if \code{ynew} is specified. By default a vector
+#' of ones.
 #' @param transform Should the linear predictor be transformed using the
-#' inverse-link function? Default is \code{FALSE}. \code{proj_linpred} only.
+#' inverse-link function? Default is \code{FALSE}. For \code{proj_linpred} only.
 #' @param integrated If \code{TRUE}, the output is averaged over the
-#' parameters. Default is \code{FALSE}. \code{proj_linpred} only.
+#' parameters. Default is \code{FALSE}. For \code{proj_linpred} only.
 #' @param nv Number of variables in the submodel (the variable combination is
 #' taken from the \code{varsel} information). If a list, then results for all
 #' specified model sizes are returned. Ignored if \code{vind} is specified.
 #' @param draws Number of draws to return from the predictive distribution of
-#' the projection. The default is the number of draws in the projection.
-#' \code{proj_predict} only.
+#' the projection. The default is 1000.
+#' For \code{proj_predict} only.
 #' @param seed_samp An optional seed to use for drawing from the projection.
-#' \code{proj_predict} only.
+#' For \code{proj_predict} only.
 #' @param ... Additional argument passed to \link{project} if \code{object}
 #' is an object returned by \link{varsel} or \link{cv_varsel}.
 #'
-#' @return If nv has length one and ynew is unspecified, a matrix of
-#' predictions. Otherwise, a list of length nv with the corresponding
-#' predictions. If ynew is specified (proj_linpred only), a list with
-#' elements pred (predictions) and lpd (corresponding log-densities)
-#' for each submodel size.
+#' @return If the prediction is done for one submodel only (\code{nv} has length one
+#' or \code{vind} is specified) and ynew is unspecified, a matrix or vector of
+#' predictions (depending on the value of \code{integrated}). If \code{ynew} is specified,
+#' returns a list with elements pred (predictions) and lpd (log predictive densities).
+#' If the predictions are done for several submodel sizes, returns a list with one element
+#' for each submodel.
 #'
 NULL
 
@@ -174,7 +175,7 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 
   # function to perform to each projected submodel
   fun <- function(proj, mu, offset, weights) {
-    if(is.null(draws)) draws <- length(proj$weights)
+    if(is.null(draws)) draws <- 1000
     draw_inds <- sample(x = seq_along(proj$weights), size = draws,
                         replace = TRUE, prob = proj$weights)
 
