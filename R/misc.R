@@ -29,8 +29,10 @@ log_sum_exp <- function(x) {
             stop(paste0('Only the following families are supported:\n',
                         paste(families, collapse = ', '), '.'))
         
-        if(NCOL(get_x(fit)) < 4)
-            stop('Not enough explanatory variables for variable selection')
+        # if(NCOL(get_x(fit)) < 4)
+            # stop('Not enough explanatory variables for variable selection')
+        
+        
     
     } else if ('refmodel' %in% class(fit)) {
         # a fit object constructed by init_refmodel, so everything should be fine
@@ -58,7 +60,7 @@ log_sum_exp <- function(x) {
 		fam <- kl_helpers(family(fit))
 		x <- unname(get_x(fit))
 		coefnames <- names(coef(fit))[as.logical(attr(x, 'assign'))]
-		x <- x[, as.logical(attr(x, 'assign'))]
+		x <- x[, as.logical(attr(x, 'assign')), drop=F]
 		attr(x, 'assign') <- NULL
 
 		# undo the random permutation to make results reproducible
@@ -70,8 +72,8 @@ log_sum_exp <- function(x) {
 			fam = fam,
 			x = x,
 			alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv], # EVENTUALLY NEED TO GET RID OFF THIS
-			beta = t(unname(drop(e$beta)))[, perm_inv],                              # EVENTUALLY NEED TO GET RID OFF THIS
-			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta))[perm_inv],
+			beta = t(unname(e$beta))[, perm_inv, drop=F],                      # EVENTUALLY NEED TO GET RID OFF THIS
+			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta)),
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			coefnames = coefnames,
 			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0))

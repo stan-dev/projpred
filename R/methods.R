@@ -37,7 +37,7 @@
 #' @param seed_samp An optional seed to use for drawing from the projection.
 #' \code{proj_predict} only.
 #' @param ... Additional argument passed to \link{project} if \code{object}
-#' is an object returned by \link{varsel} or\link{cv_varsel}.
+#' is an object returned by \link{varsel} or \link{cv_varsel}.
 #'
 #' @return If nv has length one and ynew is unspecified, a matrix of
 #' predictions. Otherwise, a list of length nv with the corresponding

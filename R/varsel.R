@@ -121,6 +121,9 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
   # Auxiliary function, performs variable selection with the given method,
   # and returns the variable ordering.
   #
+  if (NCOL(d_train$x) == 1)
+    # special case, only one variable, so no need for selection
+    return(1)
   if (tolower(method) == 'l1') {
     chosen <- search_L1(p_sel, d_train, family_kl, intercept, nv_max)
   } else if (tolower(method) == 'forward') {
