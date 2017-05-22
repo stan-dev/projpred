@@ -5,7 +5,7 @@
 
 An R package to perform projection predictive variable selection for generalized linear models fitted with [rstanarm][]. 
 
-The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2016). 
+The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
 
 Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples.
 
@@ -59,11 +59,11 @@ Example
 
 References
 ------------
-Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. Journal of Statistical Planning and Inference, 111(1-2):77–94.
+Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, 111(1-2):77–94.
 
-Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. Biometrika, 85(1):29–37.
+Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. *Biometrika*, 85(1):29–37.
 
-Juho Piironen and Aki Vehtari (2016). Comparison of Bayesian predictive methods for model selection. Statistics and Computing, ([online][piironenvehtari]).
+Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online][piironenvehtari]).
 
 
   [rstanarm]: https://github.com/stan-dev/rstanarm
