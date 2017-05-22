@@ -91,7 +91,7 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
 
   xnew_df <- is.data.frame(xnew)
   if (xnew_df) {
-    terms <- unique(unlist(lapply(projs, function(x) x$ind_names)))
+    terms <- unique(unlist(lapply(projs, function(x) names(x$vind))))
     xnew <- .df_to_model_mat(xnew, terms)
   }
 
@@ -109,12 +109,12 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
 
   preds <- lapply(projs, function(proj) {
     if (xnew_df) {
-      xtemp <- xnew[, min(1, length(proj$ind)):length(proj$ind), drop = F]
+      xtemp <- xnew[, min(1, length(proj$vind)):length(proj$vind), drop = F]
     } else if (!is.null(vind)) {
       # columns of xnew are assumed to match to the given variable indices
       xtemp <- xnew
     } else {
-      xtemp <- xnew[, proj$ind, drop = F]
+      xtemp <- xnew[, proj$vind, drop = F]
     }
     mu <- proj$family_kl$mu_fun(xtemp, proj$alpha, proj$beta, offsetnew)
 
@@ -300,7 +300,7 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
 
     if(is.null(nv_max)) nv_max <- max(stats$size)
 
-    arr$chosen <- c(NA, object$varsel$chosen)
+    arr$vind <- c(NA, object$varsel$vind)
     if('pctch' %in% names(object$varsel))
       arr$pctch <- c(NA, diag(object$varsel$pctch[,-1]))
 
@@ -382,7 +382,17 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 }
 
 
-
-
-
+#' @method as.matrix projection
+#' @export
+as.matrix.projection <- function(x, ...) {
+  if (x$p_type) {
+    warning(paste0('Note, that projection was performed using',
+                   'clustering and the clusters might have different weights.'))
+  }
+  res <- t(x$beta)
+  if (ncol(res) > 0) colnames(res) <- names(x$vind)
+  if (x$intercept) res <- cbind('(Intercept)' = x$alpha, res)
+  if (x$family_kl$family == 'gaussian') res <- cbind(res, sigma = x$dis)
+  res
+}
 

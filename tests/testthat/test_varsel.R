@@ -81,12 +81,11 @@ test_that('object retruned by varsel contains the relevant fields', {
     i_inf <- names(vs_list)[i]
     for(j in length(vs_list[[i]])) {
       j_inf <- names(vs_list[[i]])[j]
-      # chosen seems legit
-      expect_equal(length(vs_list[[i]][[j]]$varsel$chosen), nv,
+      # vind seems legit
+      expect_equal(length(vs_list[[i]][[j]]$varsel$vind), nv,
                    info = paste(i_inf, j_inf))
-      # chosen_names seems legit
-      expect_equal(names(coef(fit_gauss)[-1])[vs_list[[i]][[j]]$varsel$chosen],
-                   vs_list[[i]][[j]]$varsel$chosen_names,
+      expect_equal(names(coef(fit_gauss)[-1])[vs_list[[i]][[j]]$varsel$vind],
+                   names(vs_list[[i]][[j]]$varsel$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
       expect_equal(length(vs_list[[i]][[j]]$varsel$kl), nv + 1,
@@ -131,12 +130,12 @@ test_that('object retruned by varsel contains the relevant fields', {
 
 test_that('nv_max has an effect on varsel for gaussian models', {
   vs1 <- varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
-  expect_equal(length(vs1$varsel$chosen), 3)
+  expect_equal(length(vs1$varsel$vind), 3)
 })
 
 test_that('nv_max has an effect on varsel for non-gaussian models', {
   vs1 <- varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
-  expect_equal(length(vs1$varsel$chosen), 3)
+  expect_equal(length(vs1$varsel$vind), 3)
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
@@ -179,12 +178,11 @@ test_that('object retruned by cv_varsel contains the relevant fields', {
     i_inf <- names(cvs_list)[i]
     for(j in length(cvs_list[[i]])) {
       j_inf <- names(cvs_list[[i]])[j]
-      # chosen seems legit
-      expect_equal(length(cvs_list[[i]][[j]]$varsel$chosen), nv,
+      # vind seems legit
+      expect_equal(length(cvs_list[[i]][[j]]$varsel$vind), nv,
                    info = paste(i_inf, j_inf))
-      # chosen_names seems legit
-      expect_equal(names(coef(fit_gauss)[-1])[cvs_list[[i]][[j]]$varsel$chosen],
-                   cvs_list[[i]][[j]]$varsel$chosen_names,
+      expect_equal(names(coef(fit_gauss)[-1])[cvs_list[[i]][[j]]$varsel$vind],
+                   names(cvs_list[[i]][[j]]$varsel$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
       expect_equal(length(cvs_list[[i]][[j]]$varsel$kl), nv + 1,
@@ -232,7 +230,7 @@ test_that('object retruned by cv_varsel contains the relevant fields', {
       expect_equal(cvs_list[[i]][[j]]$varsel$pctch[,1], 1:nv,
                    info = paste(i_inf, j_inf))
       expect_equal(colnames(cvs_list[[i]][[j]]$varsel$pctch),
-                   c('size', cvs_list[[i]][[j]]$varsel$chosen_names),
+                   c('size', names(cvs_list[[i]][[j]]$varsel$vind)),
                    info = paste(i_inf, j_inf))
       # ssize seems legit
       expect_true(cvs_list[[i]][[j]]$varsel$ssize>=0,
@@ -246,14 +244,14 @@ test_that('nv_max has an effect on cv_varsel for gaussian models', {
   suppressWarnings(
     vs1 <- cv_varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
   )
-  expect_equal(length(vs1$varsel$chosen), 3)
+  expect_equal(length(vs1$varsel$vind), 3)
 })
 
 test_that('nv_max has an effect on cv_varsel for non-gaussian models', {
   suppressWarnings(
     vs1 <- cv_varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
   )
-  expect_equal(length(vs1$varsel$chosen), 3)
+  expect_equal(length(vs1$varsel$vind), 3)
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
@@ -266,12 +264,11 @@ test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
     i_inf <- names(cv_kf_list)[i]
     for(j in length(cv_kf_list[[i]])) {
       j_inf <- names(cv_kf_list[[i]])[j]
-      # chosen seems legit
-      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$chosen), nv,
+      # vind seems legit
+      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$vind), nv,
                    info = paste(i_inf, j_inf))
-      # chosen_names seems legit
-      expect_equal(names(coef(fit_gauss)[-1])[cv_kf_list[[i]][[j]]$varsel$chosen],
-                   cv_kf_list[[i]][[j]]$varsel$chosen_names,
+      expect_equal(names(coef(fit_gauss)[-1])[cv_kf_list[[i]][[j]]$varsel$vind],
+                   names(cv_kf_list[[i]][[j]]$varsel$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
       expect_equal(length(cv_kf_list[[i]][[j]]$varsel$kl), nv + 1,
@@ -319,7 +316,7 @@ test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
       expect_equal(cv_kf_list[[i]][[j]]$varsel$pctch[,1], 1:nv,
                    info = paste(i_inf, j_inf))
       expect_equal(colnames(cv_kf_list[[i]][[j]]$varsel$pctch),
-                   c('size', cv_kf_list[[i]][[j]]$varsel$chosen_names),
+                   c('size', names(cv_kf_list[[i]][[j]]$varsel$vind)),
                    info = paste(i_inf, j_inf))
       # dont test ssize
       # expect_true(cv_kf_list[[i]][[j]]$varsel$ssize>=0,
@@ -353,7 +350,7 @@ test_that('providing k_fold works', {
     fit_cv <- cv_varsel(glm_simp, cv_method = 'kfold', k_fold = k_fold)
   })
   expect_false(any(grepl('k_fold not provided', out)))
-  expect_equal(length(fit_cv$varsel$chosen), nv)
+  expect_equal(length(fit_cv$varsel$vind), nv)
                
   # kl seems legit
   expect_equal(length(fit_cv$varsel$kl), nv + 1)
@@ -387,7 +384,7 @@ test_that('providing k_fold works', {
               
   expect_equal(fit_cv$varsel$pctch[,1], 1:nv)
   expect_equal(colnames(fit_cv$varsel$pctch),
-               c('size', fit_cv$varsel$chosen_names))
+               c('size', names(fit_cv$varsel$vind)))
                
   # dont test ssize
   # expect_true(fit_cv$varsel$ssize>=0)

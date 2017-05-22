@@ -48,8 +48,8 @@ test_that("object retruned by project contains the relevant fields", {
     expect_equal(length(p), nv + 1, info = i_inf)
 
     for(j in 1:length(p)) {
-      expect_named(p[[j]], c('kl', 'weights', 'dis', 'alpha', 'beta', 'ind',
-                             'intercept', 'ind_names', 'family_kl'),
+      expect_named(p[[j]], c('kl', 'weights', 'dis', 'alpha', 'beta', 'vind',
+                             'p_type', 'intercept', 'family_kl'),
                    ignore.order = T, info = i_inf)
       # number of draws should equal to the number of draw weights
       ns <- length(p[[j]]$weights)
@@ -58,8 +58,7 @@ test_that("object retruned by project contains the relevant fields", {
       expect_equal(ncol(p[[j]]$beta), ns, info = i_inf)
       # j:th element should have j-1 variables
       expect_equal(nrow(p[[j]]$beta), j - 1, info = i_inf)
-      expect_equal(length(p[[j]]$ind), j - 1, info = i_inf)
-      expect_equal(length(p[[j]]$ind_names), j - 1, info = i_inf)
+      expect_equal(length(p[[j]]$vind), j - 1, info = i_inf)
       # family kl
       expect_equal(p[[j]]$family_kl, vs_list[[i]]$varsel$family_kl,
                    info = i_inf)
@@ -87,8 +86,7 @@ test_that("project: setting nv = 3 has an expected effect", {
     expect_true(length(p) >= 1, info = i_inf)
     # beta has the correct number of rows
     expect_equal(nrow(p$beta), nv, info = i_inf)
-    expect_equal(length(p$ind), nv, info = i_inf)
-    expect_equal(length(p$ind_names), nv, info = i_inf)
+    expect_equal(length(p$vind), nv, info = i_inf)
   }
 })
 
@@ -101,8 +99,7 @@ test_that("project: setting nv = 3 has an expected effect", {
     expect_true(length(p) >= 1, info = i_inf)
     # beta has the correct number of rows
     expect_equal(nrow(p$beta), nv, info = i_inf)
-    expect_equal(length(p$ind), nv, info = i_inf)
-    expect_equal(length(p$ind_names), nv, info = i_inf)
+    expect_equal(length(p$vind), nv, info = i_inf)
   }
 })
 
@@ -117,11 +114,12 @@ test_that("project: setting vind to 4 has an expected effect", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     vind <- 4
+    names(vind) <- names(coef(vs_list[[i]]))[5]
     p <- project(vs_list[[i]], vind = vind)
-    expect_equal(p$ind, vind, info = i_inf)
+    expect_equal(p$vind, vind, info = i_inf)
     expect_equal(nrow(p$beta), 1, info = i_inf)
-    exp_ind <- which(vs_list[[i]]$varsel$chosen == vind)
-    expect_equal(p$ind_names, vs_list[[i]]$varsel$chosen_names[exp_ind],
+    exp_ind <- which(vs_list[[i]]$varsel$vind == vind)
+    expect_equal(names(p$vind), names(vs_list[[i]]$varsel$vind)[exp_ind],
                  info = i_inf)
   }
 })
@@ -130,11 +128,12 @@ test_that("project: setting vind to 1:2 has an expected effect", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     vind <- 1:2
+    names(vind) <- names(coef(vs_list[[i]]))[vind+1]
     p <- project(vs_list[[i]], vind = vind)
-    expect_equal(p$ind, vind, info = i_inf)
+    expect_equal(p$vind, vind, info = i_inf)
     expect_equal(nrow(p$beta), length(vind), info = i_inf)
-    exp_ind <- sapply(vind, function(x) which(vs_list[[i]]$varsel$chosen == x))
-    expect_equal(p$ind_names, vs_list[[i]]$varsel$chosen_names[exp_ind],
+    exp_ind <- sapply(vind, function(x) which(vs_list[[i]]$varsel$vind == x))
+    expect_equal(names(p$vind), names(vs_list[[i]]$varsel$vind)[exp_ind],
                  info = i_inf)
   }
 })
@@ -228,8 +227,8 @@ test_that("project: specifying the seed does not cause errors", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     p <- project(vs_list[[i]], nv = nv, seed = seed)
-    expect_named(p, c('kl', 'weights', 'dis', 'alpha', 'beta', 'ind',
-                      'intercept', 'ind_names', 'family_kl'),
+    expect_named(p, c('kl', 'weights', 'dis', 'alpha', 'beta', 'vind',
+                      'p_type', 'intercept', 'family_kl'),
                  ignore.order = T, info = i_inf)
   }
 })

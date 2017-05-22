@@ -44,3 +44,14 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+
+static const R_CallMethodDef CallEntries[] = {
+    {"projpred_glm_elnet_c", (DL_FUNC) &projpred_glm_elnet_c, 10},
+    {"projpred_glm_ridge_c", (DL_FUNC) &projpred_glm_ridge_c, 8},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_projpred(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
+}

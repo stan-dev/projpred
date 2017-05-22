@@ -31,7 +31,7 @@
 #' @return The original fit-object object augmented with a field 'varsel',
 #' which is a list containing the following elements:
 #' \describe{
-#'  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
+#'  \item{\code{vind}}{The order in which the variables were added to the submodel.}
 #'  \item{\code{kl}}{KL-divergence for each submodel size.}
 #'  \item{\code{summaries}}{Summary statistics computed during the selection.}
 #'  \item{\code{d_test}}{The data used to evaluate the summaries.}
@@ -86,11 +86,11 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   p_pred <- .get_refdist(fit, nspred, ncpred)
 
   # perform the selection
-  chosen <- select(method, p_sel, d_train, family_kl, intercept, nv_max,
-                   verbose, regul)
+  vind <- select(method, p_sel, d_train, family_kl, intercept, nv_max, verbose,
+                 regul)
 
   # statistics for the selected submodels
-  p_sub <- .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, p_pred,
+  p_sub <- .get_submodels(vind, c(0, seq_along(vind)), family_kl, p_pred,
                           d_train, intercept, regul)
   sub <- .get_sub_summaries(p_sub, d_test, family_kl)
 
@@ -104,8 +104,7 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   }
 
   # store the relevant fields into fit
-  fit$varsel <- list(chosen = chosen,
-                     chosen_names = vars$coefnames[chosen],
+  fit$varsel <- list(vind = setNames(vind, vars$coefnames[vind]),
                      kl = sapply(p_sub, function(x) x$kl),
                      d_test = c(d_test[c('y','weights')], type = d_type),
                      summaries = list(sub = sub, full = full),
@@ -125,14 +124,14 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
     # special case, only one variable, so no need for selection
     return(1)
   if (tolower(method) == 'l1') {
-    chosen <- search_L1(p_sel, d_train, family_kl, intercept, nv_max)
+    vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max)
   } else if (tolower(method) == 'forward') {
-    tryCatch(chosen <- search_forward(p_sel, d_train, family_kl, intercept,
+    tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept,
                                       nv_max, verbose, regul),
              'error' = .varsel_errors)
   } else {
     stop(sprintf('Unknown search method: %s.', method))
   }
-  return(chosen)
+  return(vind)
 }
 

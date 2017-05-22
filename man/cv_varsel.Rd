@@ -47,7 +47,7 @@ need to add some regularization to avoid numerical problems. Default is 1e-9.}
 The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
 which is a list containing the following elements:
 \describe{
- \item{\code{chosen}}{The order in which the variables were added to the submodel.}
+ \item{\code{vind}}{The order in which the variables were added to the submodel.}
  \item{\code{pctch}}{Percentage of cross-validation runs that included the given
    variable to a model of given size.}
  \item{\code{kl}}{KL-divergence for each submodel size.}

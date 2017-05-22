@@ -22,6 +22,7 @@ First load the packages that are needed, and specify the number of available cor
 library(rstanarm)
 library(projpred)
 library(ggplot2)
+library(bayesplot)
 #options(mc.cores = parallel::detectCores())
 ```
 
@@ -50,7 +51,7 @@ fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
 The variable selection can then be excecuted with the command `varsel`. This will add a field `varsel` to the `fit`-object containing information about the variable selection, such as the ordering of the variables. The search heuristic is specified by the keyword `method`. By default, `varsel` uses the LASSO type L1-penalization to find the variable ordering (Tran et al., 2012).
 ```{r}
 fit <- varsel(fit, method='L1')
-fit$varsel$chosen
+fit$varsel$vind
 ```
 
 
@@ -73,9 +74,21 @@ fit_cv$varsel$ssize
 varsel_plot(fit_cv, statistics = c('mlpd', 'mse'), deltas=T)
 ```
 
-We can make predictions with the submodels using method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points . For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+We can now perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with e.g. the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables. 
 ```{r}
-pred <- proj_linpred(fit, xnew=df_gaussian$x, ynew=df_gaussian$y, nv=6, integrated = TRUE)
+# Visualise the three most relevant variables in the full model
+mcmc_areas(as.matrix(fit), 
+           pars = c('(Intercept)', names(fit$varsel$vind[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
+```
+```{r}
+# Visualise the projected three most relevant variables
+proj <- project(fit, nv = 3, ns = 800)
+mcmc_areas(as.matrix(proj)) + coord_cartesian(xlim = c(-2, 2))
+```
+
+We can also make predictions with the submodels using method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points . For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+```{r}
+pred <- proj_linpred(fit, xnew=df_gaussian$x, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
 ```
 Visualize the predictions
 ```{r}
@@ -108,7 +121,7 @@ fit <- stan_glm(y ~ x, family=binomial(), data=df_binom, prior=prior_coeff,
 Run the variable selection
 ```{r}
 fit <- varsel(fit, method='L1')
-fit$varsel$chosen
+fit$varsel$vind
 ```
 
 Plot the MLPD and classification accuracy on the training data:
@@ -136,7 +149,7 @@ ng <- 20
 x1g <- seq(-4,4,len=ng)
 x2g <- seq(-4,4,len=ng)
 xnew <- cbind( rep(x1g,each=ng), rep(x2g,ng) )
-vind <- fit$varsel$chosen[1:2]
+vind <- fit$varsel$vind[1:2]
 pr <- proj_linpred(fit, xnew, vind=vind, transform=T, integrated=T)
 
 # visualize the results

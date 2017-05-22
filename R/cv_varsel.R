@@ -26,7 +26,7 @@
 #' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
 #' which is a list containing the following elements:
 #' \describe{
-#'  \item{\code{chosen}}{The order in which the variables were added to the submodel.}
+#'  \item{\code{vind}}{The order in which the variables were added to the submodel.}
 #'  \item{\code{pctch}}{Percentage of cross-validation runs that included the given
 #'    variable to a model of given size.}
 #'  \item{\code{kl}}{KL-divergence for each submodel size.}
@@ -71,9 +71,10 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO',
 	sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, 
 	              intercept=intercept, verbose=verbose, regul=regul)$varsel
 
-	if(tolower(cv_method) == 'kfold') {
+	if (tolower(cv_method) == 'kfold') {
 		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, vars, K, k_fold, regul)
 	} else if (tolower(cv_method) == 'loo')  {
+	  if (!(is.null(K))) warning('K provided, but cv_method is loo.')
 		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, regul)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
@@ -82,19 +83,16 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO',
 
 	# find out how many of cross-validated iterations select
 	# the same variables as the selection with all the data.
-	# pctch <- sapply(seq_along(sel$chosen), function(ind, chosen_array) {
-	# 	sum(chosen_array[, 1:ind] == sel$chosen[ind])/NROW(chosen_array)
-	# }, do.call(rbind, sel_cv$chosen_cv))
-	ch <- as.matrix(unname(as.data.frame(sel_cv$chosen_cv)))
-	pctch <- t(sapply(seq_along(sel$chosen), function(size) {
-	  c(size = size, sapply(sel$chosen, function(var) {
+	ch <- as.matrix(unname(as.data.frame(sel_cv$vind_cv)))
+	pctch <- t(sapply(seq_along(sel$vind), function(size) {
+	  c(size = size, sapply(sel$vind, function(var) {
 	    sum(ch[1:size, ] == var)/ncol(ch)
 	  }))
 	}))
-	colnames(pctch)[-1] <- sel$chosen_names
+	colnames(pctch)[-1] <- names(sel$vind)
 
 	fit$proj <- NULL
-	fit$varsel <- c(sel[c('chosen', 'chosen_names', 'kl', 'family_kl')],
+	fit$varsel <- c(sel[c('vind', 'kl', 'family_kl')],
                   sel_cv[c('d_test', 'summaries')],
                   list(pctch = pctch))
 
@@ -169,16 +167,16 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 
   # List of K elements, each a list of the variables selected for the
   # corresponding fold
-  chosen_cv <- lapply(list_cv, function(x) {
+  vind_cv <- lapply(list_cv, function(x) {
     print(x$msg)
     select(method, x$p_sel, x$d_train, family_kl, intercept, nv_max, verbose, regul)
   })
 
   # Construct p_sub for each fold using .get_submodels.
-  p_sub_cv <- mapply(function(chosen, x) {
-    .get_submodels(chosen, c(0, seq_along(chosen)), family_kl, x$p_pred,
+  p_sub_cv <- mapply(function(vind, x) {
+    .get_submodels(vind, c(0, seq_along(vind)), family_kl, x$p_pred,
                    x$d_train, intercept, regul)
-  }, chosen_cv, list_cv, SIMPLIFY = F)
+  }, vind_cv, list_cv, SIMPLIFY = F)
 
   # Helper function extract and combine mu and lppd from K lists with each
   # n/K of the elements to one list with n elements
@@ -188,9 +186,9 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   # list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   # one sub_summary-list that contains with all n mu:s and lppd:s.
   sub <- apply(
-    mapply(function(p_sub, x, chosen) {
+    mapply(function(p_sub, x, vind) {
       lapply(.get_sub_summaries(p_sub, x$d_test, family_kl), data.frame)
-    }, p_sub_cv, list_cv, chosen_cv),
+    }, p_sub_cv, list_cv, vind_cv),
     1, hf)
 
   full <- hf(lapply(list_cv, function(x) {
@@ -204,7 +202,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
     data.frame(d[c('y', 'weights')])
   }))
 
-  list(chosen_cv = chosen_cv,
+  list(vind_cv = vind_cv,
        summaries = list(sub = sub, full = full),
        d_test = c(d_cv, type = 'kfold'))
 }
@@ -253,7 +251,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
         mu_full[i] <- mu[i,] %*% exp(lw[,i])
 
 	# initialize matrices where to store the results
-	chosen_mat <- matrix(rep(0, n*nv_max), nrow=n)
+	vind_mat <- matrix(rep(0, n*nv_max), nrow=n)
 	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
 
@@ -272,12 +270,12 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 		p_pred <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
 
 		# perform selection
-		chosen <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F, regul)
-		chosen_mat[i,] <- chosen
+		vind <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F, regul)
+		vind_mat[i,] <- vind
 
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
-		submodels <- .get_submodels(chosen, 0:nv_max, fam, p_pred, d_train, intercept, regul) 
+		submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, regul) 
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
@@ -300,10 +298,10 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 	summ_full <- list(lppd=loo_full, mu=mu_full)
 	summaries <- list(sub=summ_sub, full=summ_full)
 
-    chosen_cv <- lapply(1:n, function(i){ chosen_mat[i,] })
+    vind_cv <- lapply(1:n, function(i){ vind_mat[i,] })
 
     d_test <- list(y=d_train$y, weights=d_train$weights, type='loo')
 
-	return(list(chosen_cv=chosen_cv, summaries=summaries, d_test=d_test))
+	return(list(vind_cv=vind_cv, summaries=summaries, d_test=d_test))
 
 }

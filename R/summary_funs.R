@@ -6,13 +6,13 @@
 .get_sub_summaries <- function(submodels, d_test, family_kl) {
 
   res <- lapply(submodels, function(submodels) {
-  	ind <- submodels$ind
+  	vind <- submodels$vind
     if(NROW(submodels$beta) == 0) {
       xt <- matrix(0, nrow = length(d_test$weights), ncol = 0)
     } else if(!is.matrix(d_test$x)) {
-      xt <- matrix(d_test$x[ind], nrow = 1)
+      xt <- matrix(d_test$x[vind], nrow = 1)
     } else {
-      xt <- d_test$x[, ind, drop = F]
+      xt <- d_test$x[, vind, drop = F]
     }
 
     mu <- family_kl$mu_fun(xt, submodels$alpha, submodels$beta, d_test$offset)

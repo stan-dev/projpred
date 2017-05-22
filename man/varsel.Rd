@@ -49,7 +49,7 @@ need to add some regularization to avoid numerical problems. Default is 1e-9.}
 The original fit-object object augmented with a field 'varsel',
 which is a list containing the following elements:
 \describe{
- \item{\code{chosen}}{The order in which the variables were added to the submodel.}
+ \item{\code{vind}}{The order in which the variables were added to the submodel.}
  \item{\code{kl}}{KL-divergence for each submodel size.}
  \item{\code{summaries}}{Summary statistics computed during the selection.}
  \item{\code{d_test}}{The data used to evaluate the summaries.}

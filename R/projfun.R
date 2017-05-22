@@ -1,7 +1,7 @@
 # Function handles for the projection
 #
 
-project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
+project_gaussian <- function(vind, p_full, d_train, intercept, regul = 1e-12) {
 
     x <- d_train$x
     mu <- p_full$mu
@@ -23,18 +23,19 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
     if(intercept) {
         # add vector of ones to x and transform the variable indices
         x <- cbind(1, x)
-        ind <- c(1, ind + 1)
-    } else if (length(ind) == 0) {
-        # no intercept used and ind is empty, so projecting to the completely
+        vind <- c(1, vind + 1)
+    } else if (length(vind) == 0) {
+        # no intercept used and vind is empty, so projecting to the completely
         # null model with eta=0 always
         beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
         dis_sub <- sqrt( colSums(wobs*mu^2) + dis^2 )
         kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
-        p_sub <- list(kl = kl, weights = wsample, dis = dis_sub, ind = ind)
+        p_sub <- list(kl = kl, weights = wsample, dis = dis_sub, vind = vind,
+                      intercept = intercept)
         return(c(p_sub, .split_coef(beta_sub, intercept)))
     }
 
-    xp <- x[, ind, drop = F]
+    xp <- x[, vind, drop = F]
     Dp <- dim(xp)[2]
     regulmat <- diag(regul*rep(1.0, Dp), Dp, Dp)
 
@@ -47,21 +48,21 @@ project_gaussian <- function(ind, p_full, d_train, intercept, regul = 1e-12) {
 
     # split b to alpha and beta, add it to p_sub and return the result
     p_sub <- c(p_sub, .split_coef(beta_sub, intercept))
-    if(length(ind) == 1 && intercept) {
-      p_sub$ind <- integer(length=0)
+    if(length(vind) == 1 && intercept) {
+      p_sub$vind <- integer(length=0)
     } else {
-      p_sub$ind <- ind[(1+intercept*1):length(ind)] - intercept*1
+      p_sub$vind <- vind[(1+intercept*1):length(vind)] - intercept*1
     }
     p_sub$intercept <- intercept
     return(p_sub)
 }
 
 
-project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
+project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 									regul=1e-9, coef_init=NULL) {
 	
 	# find the projected regression coefficients for each sample
-	xsub <- d_train$x[, ind, drop = F]
+	xsub <- d_train$x[, vind, drop = F]
 	d <- NCOL(xsub)
 	S <- NCOL(p_full$mu)
 	beta <- matrix(0, nrow=d, ncol=S)
@@ -83,7 +84,7 @@ project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
 	p_sub$weights <- p_full$weights
 	p_sub$alpha <- alpha
 	p_sub$beta <- beta
-	p_sub$ind <- ind
+	p_sub$vind <- vind
 	p_sub$intercept <- intercept
 	return(p_sub)
 }
@@ -97,20 +98,20 @@ project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
     if(family_kl$family == 'gaussian' && family_kl$link == 'identity') {
         #return(project_gaussian)
         return(
-            function(ind, p_full, d_train, intercept) {
-                project_gaussian(ind, p_full, d_train, intercept, regul=regul)
+            function(vind, p_full, d_train, intercept) {
+                project_gaussian(vind, p_full, d_train, intercept, regul=regul)
         })
     } else {
       # return handle to project_nongaussian with family_kl set accordingly
         return(
-            function(ind, p_full, d_train, intercept) {
-                project_nongaussian(ind, p_full, d_train, family_kl, intercept, regul=regul)
+            function(vind, p_full, d_train, intercept) {
+                project_nongaussian(vind, p_full, d_train, family_kl, intercept, regul=regul)
         })
     }
 }
 
 
-.get_submodels <- function(chosen, nv, family_kl, p_full, d_train, intercept, regul) {
+.get_submodels <- function(vind, nv, family_kl, p_full, d_train, intercept, regul) {
     #
     # Project onto given model sizes nv. Returns a list of submodels.
     #
@@ -119,10 +120,10 @@ project_nongaussian <- function(ind, p_full, d_train, family_kl, intercept,
     p_sub <- lapply(nv,
         function(nv) {
             if (nv == 0)
-                ind <- integer(length=0) # empty
+                vind <- integer(length=0) # empty
             else
-                ind <- chosen[1:nv]
-            return(projfun(ind, p_full, d_train, intercept))
+                vind <- vind[1:nv]
+            return(projfun(vind, p_full, d_train, intercept))
         })
     return(p_sub)
 }

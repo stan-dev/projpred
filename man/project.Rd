@@ -42,9 +42,8 @@ a single variable combination), each of which contain the following elements:
  \item{\code{dis}}{Draws from the projected dispersion parameter.}
  \item{\code{alpha}}{Draws from the projected intercept.}
  \item{\code{beta}}{Draws from the projected weight vector.}
- \item{\code{ind}}{Indices of the selected variables.}
+ \item{\code{vind}}{The order in which the variables were added to the submodel.}
  \item{\code{intercept}}{Whether or not the model contains an intercept.}
- \item{\code{ind_names}}{Names of the selected variables.}
  \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
 }
 }
