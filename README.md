@@ -1,10 +1,13 @@
 # projpred
 
+
+[![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
+
 An R package to perform projection predictive variable selection for generalized linear models fitted with [rstanarm][]. 
 
 The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2016). 
 
-Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the examples in the vignettes directory.
+Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples.
 
 Installation
 ------------
@@ -65,4 +68,5 @@ Juho Piironen and Aki Vehtari (2016). Comparison of Bayesian predictive methods 
 
   [rstanarm]: https://github.com/stan-dev/rstanarm
   [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
+  [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html
 
