@@ -8,7 +8,8 @@
 #' If not provided, training data is used.
 #' @param method The method used in the variable selection. Possible options are
 #' \code{'L1'} for L1-search and \code{'forward'} for forward selection.
-#' Defaults to \code{'L1'}.
+#' Default is 'forward' if the number of variables in the full data is at most 20, and
+#' \code{'L1'} otherwise.
 #' @param ns Number of posterior draws used in the variable selection.
 #'    Cannot be larger than the number of draws in the full model.
 #'    Ignored if nc is set.
@@ -48,7 +49,7 @@
 #'
 
 #' @export
-varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL, 
+varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
                    nspred = NULL, ncpred = NULL, nv_max = NULL, 
                    intercept = NULL, verbose = F, regul=1e-9, ...) {
 
@@ -64,6 +65,11 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
 
   vars <- .extract_vars(fit)
   family_kl <- vars$fam
+  
+  if (is.null(method) && dim(vars$x)[2] <= 20)
+    method <- 'forward'
+  else
+    method <- 'L1'
 
   if(is.null(intercept))
     intercept <- vars$intercept
@@ -86,8 +92,7 @@ varsel <- function(fit, d_test = NULL, method = 'L1', ns = NULL, nc = NULL,
   p_pred <- .get_refdist(fit, nspred, ncpred)
 
   # perform the selection
-  vind <- select(method, p_sel, d_train, family_kl, intercept, nv_max, verbose,
-                 regul)
+  vind <- select(method, p_sel, d_train, family_kl, intercept, nv_max, verbose, regul)
 
   # statistics for the selected submodels
   p_sub <- .get_submodels(vind, c(0, seq_along(vind)), family_kl, p_pred,
@@ -126,9 +131,13 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
   if (tolower(method) == 'l1') {
     vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max)
   } else if (tolower(method) == 'forward') {
-    tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept,
-                                      nv_max, verbose, regul),
-             'error' = .varsel_errors)
+    if ( NCOL(p_sel$mu) == 1)
+      # only one mu column (one cluster or one sample), so use the optimized version of the forward search
+      vind <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, regul)
+    else
+      # routine that can be used with several clusters
+      tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept, nv_max, verbose, regul),
+               'error' = .varsel_errors)
   } else {
     stop(sprintf('Unknown search method: %s.', method))
   }
