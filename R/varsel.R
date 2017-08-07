@@ -126,9 +126,13 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
   if (tolower(method) == 'l1') {
     vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max)
   } else if (tolower(method) == 'forward') {
-    tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept,
-                                      nv_max, verbose, regul),
-             'error' = .varsel_errors)
+    if ( NCOL(p_sel$mu) == 1)
+      # only one mu column (one cluster or one sample), so use the optimized version of the forward search
+      vind <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, regul)
+    else
+      # routine that can be used with several clusters
+      tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept, nv_max, verbose, regul),
+               'error' = .varsel_errors)
   } else {
     stop(sprintf('Unknown search method: %s.', method))
   }

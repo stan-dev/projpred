@@ -113,11 +113,34 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
 		pseudo_obs <- function(f) {return(pseudo_data(f,y,family,offset=offset,weights=weights))}
 		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max)
 	}
-    return(list( beta=out[[1]], beta0=out[[2]], qa_updates=out[[3]] ))
+  return(list( beta=out[[1]], beta0=out[[2]], qa_updates=out[[3]] ))
 }
 
 
-
+glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
+                        qa_updates_max=ifelse(family$family=='gaussian' &&
+                                                family$link=='identity', 1, 100),
+                        weights=NULL, offset=NULL, intercept=TRUE,
+                        pmax=dim(as.matrix(x))[2]) {
+  #
+  # Runs forward stepwise regression. Does not handle any dispersion parameters.
+  #
+  if (length(x) == 0 && !intercept)
+    # null model with no predictors and no intercept
+    stop('not implemented yet.')
+    # out <- list( beta=matrix(integer(length=0)), beta0=0, qa_updates=0 )
+  else {
+    # normal case
+    x <- as.matrix(x)
+    if (is.null(weights))
+      weights <- 1.0
+    if (is.null(offset))
+      offset <- 0.0
+    pseudo_obs <- function(f) pseudo_data(f,y,family,offset=offset,weights=weights) 
+    out <- glm_forward_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, pmax)
+  }
+  return(list( beta=out[[1]], beta0=as.vector(out[[2]]), varorder=as.vector(out[[3]])+1 ))
+}
 
 
 
