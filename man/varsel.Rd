@@ -4,7 +4,7 @@
 \alias{varsel}
 \title{Variable selection for generalized linear models}
 \usage{
-varsel(fit, d_test = NULL, method = "L1", ns = NULL, nc = NULL,
+varsel(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
   verbose = F, regul = 1e-09, ...)
 }
@@ -17,7 +17,8 @@ If not provided, training data is used.}
 
 \item{method}{The method used in the variable selection. Possible options are
 \code{'L1'} for L1-search and \code{'forward'} for forward selection.
-Defaults to \code{'L1'}.}
+Default is 'forward' if the number of variables in the full data is at most 20, and
+\code{'L1'} otherwise.}
 
 \item{ns}{Number of posterior draws used in the variable selection.
 Cannot be larger than the number of draws in the full model.

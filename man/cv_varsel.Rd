@@ -4,7 +4,7 @@
 \alias{cv_varsel}
 \title{Cross-validate the variable selection (varsel)}
 \usage{
-cv_varsel(fit, method = "L1", cv_method = "LOO", ns = NULL, nc = NULL,
+cv_varsel(fit, method = NULL, cv_method = "LOO", ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
   verbose = T, K = NULL, k_fold = NULL, regul = 1e-09, ...)
 }
