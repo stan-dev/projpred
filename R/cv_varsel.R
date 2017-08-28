@@ -165,7 +165,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   	d_test <- d_test
   	p_sel <- .get_refdist(vars, ns, nc)
   	p_pred <- .get_refdist(vars, nspred, ncpred)
-  	mu <- family_kl$mu_fun(d_test$x, vars$alpha, vars$beta, d_test$offset)
+  	mu <- vars$pred_mu(d_test$x, d_test$offset)
   	dis <- vars$dis
   	list(d_train = d_train, d_test = d_test, p_sel = p_sel, p_pred = p_pred,
   	     mu_test = mu, dis_test = dis, w_test = vars$wsample, msg = msg)

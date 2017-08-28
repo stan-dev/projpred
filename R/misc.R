@@ -68,17 +68,19 @@ log_sum_exp <- function(x) {
 							 fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
 		dis_name <- ifelse(grepl(fit$call[1], 'stan_lm'), 'sigma', 'aux')
 
+		alpha <- unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv]
+		beta <- t(unname(as.matrix(drop(e$beta))))[, perm_inv, drop=F]
+		
 		res <- list(
 			fam = fam,
 			x = x,
-			alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv], # EVENTUALLY NEED TO GET RID OFF THIS
-			beta = t(unname(as.matrix(drop(e$beta))))[, perm_inv, drop=F],           # EVENTUALLY NEED TO GET RID OFF THIS
 			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta)),
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			coefnames = coefnames,
 			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0))
 
-		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset)
+		res$mu <- fam$mu_fun(x, alpha, beta, res$offset) #
+		res$pred_mu <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 
 		# y and the observation weights in a standard form
