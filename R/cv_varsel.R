@@ -44,7 +44,7 @@
 #'
 
 #' @export
-cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO', 
+cv_varsel <- function(fit,  method = NULL, cv_method = 'LOO', 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, verbose = T,
                       K = NULL, k_fold = NULL, regul=1e-9, ...) {
@@ -55,10 +55,16 @@ cv_varsel <- function(fit,  method = 'L1', cv_method = 'LOO',
 		# use one cluster for selection by default, and always with L1-search
 		nc <- 1
 	if (is.null(nspred) && is.null(ncpred))
-	    # use 1 clusters for prediction by default
-	    ncpred <- 1
+    # use 1 clusters for prediction by default
+    ncpred <- 1
 
 	vars <- .extract_vars(fit)
+	
+	if (is.null(method) && dim(vars$x)[2] <= 20)
+	  method <- 'forward'
+	else
+	  method <- 'L1'
+	
 	if(is.null(intercept))
 		intercept <- vars$intercept
 	if(is.null(nv_max) || nv_max > NCOL(vars$x)) {

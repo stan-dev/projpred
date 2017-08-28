@@ -44,10 +44,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// glm_forward_c
+List glm_forward_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, double thresh, int qa_updates_max, int pmax, int ls_iter_max);
+RcppExport SEXP projpred_glm_forward_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP pmaxSEXP, SEXP ls_iter_maxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Function >::type pseudo_obs(pseudo_obsSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< bool >::type intercept(interceptSEXP);
+    Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
+    Rcpp::traits::input_parameter< int >::type qa_updates_max(qa_updates_maxSEXP);
+    Rcpp::traits::input_parameter< int >::type pmax(pmaxSEXP);
+    Rcpp::traits::input_parameter< int >::type ls_iter_max(ls_iter_maxSEXP);
+    rcpp_result_gen = Rcpp::wrap(glm_forward_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, pmax, ls_iter_max));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"projpred_glm_elnet_c", (DL_FUNC) &projpred_glm_elnet_c, 10},
     {"projpred_glm_ridge_c", (DL_FUNC) &projpred_glm_ridge_c, 8},
+    {"projpred_glm_forward_c", (DL_FUNC) &projpred_glm_forward_c, 8},
     {NULL, NULL, 0}
 };
 
