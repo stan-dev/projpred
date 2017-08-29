@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // glm_elnet_c
 List glm_elnet_c(arma::mat x, Function pseudo_obs, arma::vec lambda, double alpha, bool intercept, double thresh, int qa_updates_max, int pmax, bool pmax_strict, int as_updates_max);
-RcppExport SEXP projpred_glm_elnet_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP alphaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP pmaxSEXP, SEXP pmax_strictSEXP, SEXP as_updates_maxSEXP) {
+RcppExport SEXP _projpred_glm_elnet_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP alphaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP pmaxSEXP, SEXP pmax_strictSEXP, SEXP as_updates_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -28,7 +28,7 @@ END_RCPP
 }
 // glm_ridge_c
 List glm_ridge_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, double thresh, int qa_updates_max, int ls_iter_max, bool debug);
-RcppExport SEXP projpred_glm_ridge_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP ls_iter_maxSEXP, SEXP debugSEXP) {
+RcppExport SEXP _projpred_glm_ridge_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP ls_iter_maxSEXP, SEXP debugSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -46,7 +46,7 @@ END_RCPP
 }
 // glm_forward_c
 List glm_forward_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, double thresh, int qa_updates_max, int pmax, int ls_iter_max);
-RcppExport SEXP projpred_glm_forward_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP pmaxSEXP, SEXP ls_iter_maxSEXP) {
+RcppExport SEXP _projpred_glm_forward_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP pmaxSEXP, SEXP ls_iter_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -64,9 +64,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"projpred_glm_elnet_c", (DL_FUNC) &projpred_glm_elnet_c, 10},
-    {"projpred_glm_ridge_c", (DL_FUNC) &projpred_glm_ridge_c, 8},
-    {"projpred_glm_forward_c", (DL_FUNC) &projpred_glm_forward_c, 8},
+    {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 10},
+    {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 8},
+    {"_projpred_glm_forward_c", (DL_FUNC) &_projpred_glm_forward_c, 8},
     {NULL, NULL, 0}
 };
 
