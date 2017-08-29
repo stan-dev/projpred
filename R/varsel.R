@@ -66,10 +66,12 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   vars <- .extract_vars(fit)
   family_kl <- vars$fam
   
-  if (is.null(method) && dim(vars$x)[2] <= 20)
-    method <- 'forward'
-  else
-    method <- 'L1'
+  if (is.null(method)) {
+    if (dim(vars$x)[2] <= 20)
+      method <- 'forward'
+    else
+      method <- 'L1'
+  }
 
   if(is.null(intercept))
     intercept <- vars$intercept
