@@ -60,10 +60,12 @@ cv_varsel <- function(fit,  method = NULL, cv_method = 'LOO',
 
 	vars <- .extract_vars(fit)
 	
-	if (is.null(method) && dim(vars$x)[2] <= 20)
-	  method <- 'forward'
-	else
-	  method <- 'L1'
+	if (is.null(method)) {
+	  if (dim(vars$x)[2] <= 20)
+	    method <- 'forward'
+	  else
+	    method <- 'L1'
+	}
 	
 	if(is.null(intercept))
 		intercept <- vars$intercept
