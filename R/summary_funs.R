@@ -25,7 +25,7 @@
   .weighted_summary_means(d_test, family_kl, p_full$weights, mu, p_full$dis)
 }
 
-# Calculates weighted means of mu, dis, kl and lppd given samples of
+# Calculates weighted means of mu and lppd given samples of
 # mu and dis, the full model and the data.
 .weighted_summary_means <- function(d_test, family_kl, wsample, mu, dis) {
 

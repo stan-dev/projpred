@@ -217,23 +217,6 @@ log_sum_exp <- function(x) {
 	return(data)
 }
 
-# .validate_ns_nc <- function(nc, ns, nc_max, ns_max) {
-# 	if (is.null(nc) && is.null(ns))
-# 		stop('Either nc or ns must be non-null.')
-# 	if (!is.null(nc)) {
-# 		if (nc < 0)
-# 			stop('nc must be > 0.')
-# 		if (nc > 100) {
-#
-# 		}
-# 	} else {
-# 		if(ns > NCOL(vars$mu)) {
-# warning(paste0('Setting the number of samples to ', NCOL(vars$mu),'.'))
-# ns <- NCOL(vars$mu)
-# }
-# 	}
-# }
-
 
 .split_coef <- function(b, intercept) {
   if(intercept) {

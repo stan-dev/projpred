@@ -344,41 +344,59 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
 
 #' @export
 init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
-                          intercept=TRUE, loglik=NULL) {
+                          intercept=TRUE, loglik=NULL, cvfits=NULL) {
 
-    # fill in the missing values with their defaults
-    if (is.null(mu))
-        mu <- y
-    mu <- unname(as.matrix(mu))
+  # fill in the missing values with their defaults
+  if (is.null(mu))
+		mu <- y
+	mu <- unname(as.matrix(mu))
 
-    S <- NCOL(mu) # number of samples in the reference model
-    n <- length(y)
-    if (is.null(dis))
-        dis <- rep(1, S)
-    if (is.null(offset))
-        offset <- rep(0, n)
-    if (is.null(wobs))
-        wobs <- rep(1, n)
-    if (is.null(wsample))
-        wsample <- rep(1/S, S)
-    if (is.null(intercept))
-        intercept <- TRUE
+	S <- NCOL(mu) # number of samples in the reference model
+	n <- length(y)
+	
+	if (is.null(dis))
+		dis <- rep(1, S)
+	if (is.null(offset))
+		offset <- rep(0, n)
+	if (is.null(wobs))
+		wobs <- rep(1, n)
+	if (is.null(wsample))
+		wsample <- rep(1/S, S)
+	if (is.null(intercept))
+		intercept <- TRUE
 
-    # figure out column names for the variables
-    if (!is.null(colnames(x)))
-        coefnames <- colnames(x)
-    else
-        coefnames <- paste0('x',1:ncol(x))
+	# figure out column names for the variables
+	if (!is.null(colnames(x)))
+		coefnames <- colnames(x)
+	else
+		coefnames <- paste0('x',1:ncol(x))
 
-    # y and the observation weights in a standard form
-    temp <- .get_standard_y(y, wobs, family)
-
-    fit <- list(x=x, y=temp$y, fam=kl_helpers(family), mu=mu, dis=dis, coefnames=coefnames,
-                offset=offset, wobs=temp$weights, wsample=wsample, intercept=intercept, loglik=loglik)
-
-    # define the class of the retuned object to be 'refmodel'
-    class(fit) <- 'refmodel'
-    return(fit)
+	# y and the observation weights in a standard form
+	temp <- .get_standard_y(y, wobs, family)
+	
+	# fetch information fromt the cross-validated fits and create a data structure
+	# that will be understood by kfold_varsel
+	if (!is.null(cvfits)) {
+		cvfits <- lapply(cvfits, function(fold) {
+			# fold must contain: itr,its,mu,dis
+			# TODO: implement wsample
+			# TODO: include loglik here also?
+			itr <- fold$itr
+			its <- fold$its
+			fit <- init_refmodel(x[itr,], y[itr], family, mu=fold$mu, dis=fold$dis, offset=offset[itr], 
+													 wobs=wobs[itr], wsample=NULL, intercept=intercept, cvfits=NULL)
+			list(itr=itr, its=its, fit=fit) # TODO: form this so that it is OK for cv_varsel ..
+			# list(fit=fit, omitted=its) # .. something like this
+		})
+	}
+    
+	fit <- list(x=x, y=temp$y, fam=kl_helpers(family), mu=mu, dis=dis, coefnames=coefnames,
+							offset=offset, wobs=temp$weights, wsample=wsample, intercept=intercept, loglik=loglik,
+							cvfits=cvfits)
+	
+	# define the class of the retuned object to be 'refmodel'
+	class(fit) <- 'refmodel'
+	return(fit)
 }
 
 
@@ -395,4 +413,54 @@ as.matrix.projection <- function(x, ...) {
   if (x$family_kl$family == 'gaussian') res <- cbind(res, sigma = x$dis)
   res
 }
+
+
+#' Create cross-validation indices
+#'
+#' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross validation.
+#' This function is potentially useful for creating the cross-validation objects for 
+#' \link[=init_refmodel]{init_refmodel}.
+#'
+#' @param n Number of data points.
+#' @param k Number of folds. 
+#' @param seed Random seed so that the same division could be obtained again if needed.
+#'
+#' @return A list with \code{k} elements, each having fields \code{itr} and \code{its} 
+#' which give the training and test indices, respectively, for each fold.
+#' @examples
+#' \donttest{
+#' ### compute sample means within each fold
+#' n <- 100
+#' y <- rnorm(n)
+#' cv <- cvind(n, k=5)
+#' cvmeans <- lapply(cv, function(fold) mean(y[fold$itr]))
+#' }
+
+#' @export
+cvind <- function(n, k, seed=NULL) {
+	
+	ind <- c(1:n)
+	if (!is.null(seed)) {
+		# save the old seed and initialize with the new one
+		seed_old <- .Random.seed
+		set.seed(seed)
+	}
+	
+	# shuffle the indices
+	ind <- sample(ind, n, replace=FALSE)
+	
+	cv <- lapply(1:k, function(i) {
+		its <- ind[seq(i,n,k)]   # test set
+		itr <- setdiff(1:n, its) # training set
+		list(itr=itr,its=its)
+	})
+	
+	if (!is.null(seed))
+		# restore the old seed
+		.Random.seed <- seed_old
+	
+	return(cv)
+}
+
+
 

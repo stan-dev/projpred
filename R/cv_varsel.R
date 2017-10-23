@@ -175,15 +175,15 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 
   # List of K elements, each a list of the variables selected for the
   # corresponding fold
-  vind_cv <- lapply(list_cv, function(x) {
-    print(x$msg)
-    select(method, x$p_sel, x$d_train, family_kl, intercept, nv_max, verbose, regul)
+  vind_cv <- lapply(list_cv, function(fold) {
+    print(fold$msg)
+    select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, verbose, regul)
   })
 
   # Construct p_sub for each fold using .get_submodels.
-  p_sub_cv <- mapply(function(vind, x) {
-    .get_submodels(vind, c(0, seq_along(vind)), family_kl, x$p_pred,
-                   x$d_train, intercept, regul)
+  p_sub_cv <- mapply(function(vind, fold) {
+    .get_submodels(vind, c(0, seq_along(vind)), family_kl, fold$p_pred,
+                   fold$d_train, intercept, regul)
   }, vind_cv, list_cv, SIMPLIFY = F)
 
   # Helper function extract and combine mu and lppd from K lists with each

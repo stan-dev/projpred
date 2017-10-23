@@ -5,7 +5,8 @@
 \title{Generic reference model initialization}
 \usage{
 init_refmodel(x, y, family, mu = NULL, dis = NULL, offset = NULL,
-  wobs = NULL, wsample = NULL, intercept = TRUE, loglik = NULL)
+  wobs = NULL, wsample = NULL, intercept = TRUE, loglik = NULL,
+  cvfits = NULL)
 }
 \arguments{
 \item{x}{Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
