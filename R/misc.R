@@ -90,7 +90,7 @@ log_sum_exp <- function(x) {
 
 		return(res)
 
-	} else if (class(fit)=='refmodel') {
+	} else if (class(fit) == 'refmodel') {
 		# an object constructed by init_refmodel so all the relavant fields should be there
 	    return(fit)
 	} else {

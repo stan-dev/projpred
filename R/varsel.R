@@ -55,23 +55,22 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
 
   .validate_for_varsel(fit)
+	vars <- .extract_vars(fit)
+	family_kl <- vars$fam
+	
+	if (is.null(method)) {
+		if (dim(vars$x)[2] <= 20)
+			method <- 'forward'
+		else
+			method <- 'L1'
+	}
 
   if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
   	# use one cluster for selection by default, and always with L1-search
   	nc <- 1
   if (is.null(nspred) && is.null(ncpred))
     # use 1 clusters for prediction by default
-    ncpred <- 1
-
-  vars <- .extract_vars(fit)
-  family_kl <- vars$fam
-  
-  if (is.null(method)) {
-    if (dim(vars$x)[2] <= 20)
-      method <- 'forward'
-    else
-      method <- 'L1'
-  }
+    ncpred <- 5
 
   if(is.null(intercept))
     intercept <- vars$intercept

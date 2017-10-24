@@ -337,14 +337,15 @@ varsel_statistics <- function(object, ..., nv_max = NULL, deltas = F) {
 #' @param loglik \code{S}-by-\code{n} matrix giving the log-likelihood values
 #' for the reference model for each pair of \code{S} posterior draws and \code{n} observations.
 #' Can be omitted but is mandatory for performing the LOO validation.
+#' @param cvfits TODO
 #'
 #' @return An object that can be passed to all the functions that
 #' take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel},
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 
 #' @export
-init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NULL, wsample=NULL,
-                          intercept=TRUE, loglik=NULL, cvfits=NULL) {
+init_refmodel <- function(x, y, family, mu=NULL, predfun=NULL, dis=NULL, offset=NULL, 
+													wobs=NULL, wsample=NULL, intercept=TRUE, loglik=NULL, cvfits=NULL) {
 
   # fill in the missing values with their defaults
   if (is.null(mu))
@@ -364,6 +365,8 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 		wsample <- rep(1/S, S)
 	if (is.null(intercept))
 		intercept <- TRUE
+	if (is.null(predfun))
+		predfun <- function(x,offset=0) NA
 
 	# figure out column names for the variables
 	if (!is.null(colnames(x)))
@@ -377,22 +380,22 @@ init_refmodel <- function(x, y, family, mu=NULL, dis=NULL, offset=NULL, wobs=NUL
 	# fetch information fromt the cross-validated fits and create a data structure
 	# that will be understood by kfold_varsel
 	if (!is.null(cvfits)) {
-		cvfits <- lapply(cvfits, function(fold) {
-			# fold must contain: itr,its,mu,dis
+		cvfits <- sapply(cvfits, function(fold) {
+			# fold must contain: itr,its,mu,predfun,(dis)
 			# TODO: implement wsample
 			# TODO: include loglik here also?
 			itr <- fold$itr
 			its <- fold$its
-			fit <- init_refmodel(x[itr,], y[itr], family, mu=fold$mu, dis=fold$dis, offset=offset[itr], 
-													 wobs=wobs[itr], wsample=NULL, intercept=intercept, cvfits=NULL)
-			list(itr=itr, its=its, fit=fit) # TODO: form this so that it is OK for cv_varsel ..
-			# list(fit=fit, omitted=its) # .. something like this
+			fit <- init_refmodel(x[itr,], y[itr], family, mu=fold$mu, predfun=fold$predfun, dis=fold$dis,
+													 offset=offset[itr], wobs=wobs[itr], wsample=NULL, intercept=intercept, cvfits=NULL)
+			list(fit=fit, omitted=its) 
 		})
+		cvfits <- list(fits=t(cvfits))
 	}
     
 	fit <- list(x=x, y=temp$y, fam=kl_helpers(family), mu=mu, dis=dis, coefnames=coefnames,
-							offset=offset, wobs=temp$weights, wsample=wsample, intercept=intercept, loglik=loglik,
-							cvfits=cvfits)
+							offset=offset, wobs=temp$weights, wsample=wsample, intercept=intercept, 
+							pred_mu=predfun, loglik=loglik, cvfits=cvfits)
 	
 	# define the class of the retuned object to be 'refmodel'
 	class(fit) <- 'refmodel'

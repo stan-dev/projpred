@@ -50,22 +50,21 @@ cv_varsel <- function(fit,  method = NULL, cv_method = 'LOO',
                       K = NULL, k_fold = NULL, regul=1e-9, ...) {
 
   .validate_for_varsel(fit)
+	vars <- .extract_vars(fit)
+	
+	if (is.null(method)) {
+		if (dim(vars$x)[2] <= 20)
+			method <- 'forward'
+		else
+			method <- 'L1'
+	}
 
 	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
 		# use one cluster for selection by default, and always with L1-search
 		nc <- 1
 	if (is.null(nspred) && is.null(ncpred))
     # use 1 clusters for prediction by default
-    ncpred <- 1
-
-	vars <- .extract_vars(fit)
-	
-	if (is.null(method)) {
-	  if (dim(vars$x)[2] <= 20)
-	    method <- 'forward'
-	  else
-	    method <- 'L1'
-	}
+    ncpred <- 5
 	
 	if(is.null(intercept))
 		intercept <- vars$intercept
@@ -74,19 +73,20 @@ cv_varsel <- function(fit,  method = NULL, cv_method = 'LOO',
 		nv_max <- min(NCOL(vars$x), nv_max_default)
 	}
 
-	if (verbose)
-		print(paste('Performing', method, 'search for the full model.'))
-	sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, 
-	              intercept=intercept, verbose=verbose, regul=regul)$varsel
-
 	if (tolower(cv_method) == 'kfold') {
 		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, vars, K, k_fold, regul)
 	} else if (tolower(cv_method) == 'loo')  {
-	  if (!(is.null(K))) warning('K provided, but cv_method is loo.')
+	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
 		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, verbose, regul)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
 	}
+	
+	# run the selection using the full dataset
+	if (verbose)
+		print(paste('Performing the selection using all the data..'))
+	sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, 
+								intercept=intercept, verbose=verbose, regul=regul)$varsel
 
 
 	# find out how many of cross-validated iterations select
@@ -116,36 +116,57 @@ cv_varsel <- function(fit,  method = NULL, cv_method = 'LOO',
 	fit
 }
 
+
 kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
                          intercept, verbose, vars, K, k_fold, regul) {
 
-  if (!('stanfit' %in% names(fit)))
-  	stop(paste('k-fold cross-validation not yet implemented for other than',
-  	           'rstanarm reference models.'))
-  if(is.environment(fit$data))
-    stop(paste('Omitting the \'data\' from rstanarm does not work with k-fold',
-               'cross validation.'))
+	if (is.null(K)) 
+		K <- 4
+	
+	if (is.null(k_fold))
+		# k-fold not provided, so must perform now if possible (not possible for generic
+		# reference model, so this will raise error)
+		k_fold <- get_kfold(fit, K)
+	
+	# check that k_fold has the correct form
+	.validate_kfold(fit, k_fold, n)
+	
+	K <- nrow(k_fold$fits) # K <- attr(k_fold, 'K')
+	family_kl <- vars$fam
+		
+	
+  
+  # if (is.environment(fit$data))
+  #   stop(paste('Omitting the \'data\' from rstanarm does not work with k-fold',
+  #              'cross validation.'))
 
   # Construct the kfold-objects. The resulting list contains an element 'fits',
   # which is a K x 2 dimensional array. Each row corresponds to one of the K
   # folds. First column contains the rstanarm-objects and the second column
   # the indices of the omitted observations (aka test data).
-  if(is.null(k_fold)) {
-    if(is.null(K)) K <- 4
-    print(paste0('k_fold not provided, performing ', K,
-                 '-fold cross-validation for the stan model.'))
-    capture.output(
-      k_fold <- kfold(fit, K = K, save_fits = T)
-    )
-  }
-  family_kl <- kl_helpers(family(fit))
+  # if (is.null(k_fold)) {
+  # 	if (class(fit) == 'refmodel')
+  # 		stop('For a generic reference model, you must provide the fits for the cross-validation folds.
+  # 				 See function init_refmodel.')
+  #   # if (is.null(K)) K <- 4
+  #   print(paste0('k_fold not provided, performing ', K,
+  #                '-fold cross-validation for the stan model.'))
+  #   capture.output(
+  #     k_fold <- kfold(fit, K = K, save_fits = T)
+  #   )
+  # }
+  # family_kl <- kl_helpers(family(fit))
 
   # check that the fit-objects are valid for variable selection
-  if(!all(apply(k_fold$fits, 1, function(fits, fit) {
-    .validate_for_varsel(fits$fit)
-    is.vector(fits$omitted) && max(fits$omitted) <= nobs(fit) && all(fits$omitted > 0)
-  }, fit))) stop('k_fold does not have the correct form.')
-  K <- attr(k_fold, 'K')
+  # if (!all(apply(k_fold$fits, 1, function(fits, fit) {
+  #   .validate_for_varsel(fits$fit)
+  #   is.vector(fits$omitted) && max(fits$omitted) <= nobs(fit) && all(fits$omitted > 0)
+  # }, fit))) stop('k_fold does not have the correct form.')
+	
+  # K <- nrow(k_fold$fits) # K <- attr(k_fold, 'K')
+  
+  
+  ############ if we reach this point, then k_fold is assumed to be fine
 
   # extract variables from each fit-object (stan-samples, x, y, etc.)
   # to a list of size K
@@ -167,7 +188,9 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   	d_test <- d_test
   	p_sel <- .get_refdist(vars, ns, nc)
   	p_pred <- .get_refdist(vars, nspred, ncpred)
-  	mu <- vars$pred_mu(d_test$x, d_test$offset)
+  	# mu <- vars$pred_mu(d_test$x, d_test$offset)
+  	mu <- tryCatch(vars$pred_mu(d_test$x, d_test$offset), 
+  								 error=function(cond) vars$pred_mu(d_test$x))
   	dis <- vars$dis
   	list(d_train = d_train, d_test = d_test, p_sel = p_sel, p_pred = p_pred,
   	     mu_test = mu, dis_test = dis, w_test = vars$wsample, msg = msg)
@@ -215,6 +238,47 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
        d_test = c(d_cv, type = 'kfold'))
 }
 
+
+get_kfold <- function(fit, K) {
+	# Construct the kfold-objects. The resulting list contains an element 'fits',
+	# which is a K x 2 dimensional array. Each row corresponds to one of the K
+	# folds. First column contains the rstanarm-objects and the second column
+	# the indices of the omitted observations (aka test data).
+	if (class(fit) == 'refmodel') {
+		if (is.null(fit$cvfits))
+			stop('For a generic reference model, you must provide the fits for the cross-validation folds.
+				 See function init_refmodel.')
+		else
+			k_fold <- fit$cvfits
+	}
+		
+	else if (class(fit) == 'stanreg') {
+		print(paste0('k_fold not provided, performing ', K,
+								 '-fold cross-validation for the stan model.'))
+		capture.output(
+			k_fold <- kfold(fit, K = K, save_fits = T)
+		)
+	} else
+		stop('Got an unknown fit object, don\'t know how to perform k-fold cross-validation.')
+	
+	return(k_fold)
+}
+
+
+.validate_kfold <- function(fit, k_fold, n) {
+	# function for checking whether the provided fit and k_fold objects are OK for
+	# the k-fold cross validation for the selection
+
+	if (class(fit) == 'stanreg' && is.environment(fit$data))
+		stop(paste('Omitting the \'data\' from rstanarm does not work with k-fold',
+							 'cross-validation.'))
+
+	# check that the fit-objects are valid for variable selection
+	if (!all(apply(k_fold$fits, 1, function(fits, fit) {
+		.validate_for_varsel(fits$fit)
+		is.vector(fits$omitted) && max(fits$omitted) <= n && all(fits$omitted > 0)
+	}, fit))) stop('k_fold does not have the correct form.')
+}
 
 
 
