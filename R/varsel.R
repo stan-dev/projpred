@@ -5,7 +5,7 @@
 #' @param fit Either a \link[=stanreg-objects]{stanreg}-object or an object returned
 #' by \link[=init_refmodel]{init_refmodel}.
 #' @param d_test A test dataset, which is used to evaluate model performance.
-#' If not provided, training data is used.
+#' If not provided, training data is used. Currently this argument is for internal use only.
 #' @param method The method used in the variable selection. Possible options are
 #' \code{'L1'} for L1-search and \code{'forward'} for forward selection.
 #' Default is 'forward' if the number of variables in the full data is at most 20, and
@@ -16,7 +16,7 @@
 #' @param nc Number of clusters to use in the clustered projection.
 #'    Overrides the \code{ns} argument. Defaults to 1.
 #' @param nspred Number of samples used for prediction (after selection). Ignored if ncpred is given.
-#' @param ncpred Number of clusters used for prediction (after selection). Default is 1.
+#' @param ncpred Number of clusters used for prediction (after selection). Default is 5.
 #' @param nv_max Maximum number of varibles until which the selection is continued.
 #'    Defaults to min(D, floor(0.4*n)) where n is the number of observations and
 #'    D the number of variables.
@@ -69,8 +69,8 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   	# use one cluster for selection by default, and always with L1-search
   	nc <- 1
   if (is.null(nspred) && is.null(ncpred))
-    # use 1 clusters for prediction by default
-    ncpred <- 5
+    # use 5 clusters for prediction by default
+		ncpred <- min(ncol(vars$mu), 5)
 
   if(is.null(intercept))
     intercept <- vars$intercept
@@ -85,7 +85,7 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   	d_test <- d_train
   	d_type <- 'train'
   } else {
-  	d_test <- .fill_offset_and_weights(d_test)
+  	d_test <- .check_data(d_test)
   	d_type <- 'test'
   }
 
@@ -100,15 +100,20 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                           d_train, intercept, regul)
   sub <- .get_sub_summaries(p_sub, d_test, family_kl)
 
-  #
-  if (d_type == 'train') {
-      full <- .weighted_summary_means(d_test, family_kl, vars$wsample, vars$mu, vars$dis)
+  # predictive statistics of the reference model on test data. if no test data are provided, 
+  # simply fetch the statistics on the train data
+  if ('datafit' %in% class(fit)) {
+  	# no actual reference model, so we don't know how to predict test observations
+  	full <- list(mu=rep(NA,vars$nobs), lppd=rep(NA,vars$nobs))
   } else {
-      # TODO, FIGURE OUT HOW TO HANDLE THE TEST PREDICTIONS FOR FULL MODEL WHEN COEF_FULL ARE NOT AVAILABLE
-      warning('Test predictions for the full model not yet implemented.')
-      full <- NULL
+  	if (d_type == 'train') {
+  		full <- .weighted_summary_means(d_test, family_kl, vars$wsample, vars$mu, vars$dis)
+  	} else {
+  		mu_test <- vars$predfun(d_test$x, d_test$offset)
+  		full <- .weighted_summary_means(d_test, family_kl, vars$wsample, mu_test, vars$dis)
+  	}
   }
-
+  
   # store the relevant fields into fit
   fit$varsel <- list(vind = setNames(vind, vars$coefnames[vind]),
                      kl = sapply(p_sub, function(x) x$kl),

@@ -22,7 +22,7 @@ cv_varsel(fit, method = NULL, cv_method = "LOO", ns = NULL, nc = NULL,
 
 \item{nspred}{Number of samples used for prediction (after selection). Ignored if ncpred is given.}
 
-\item{ncpred}{Number of clusters used for prediction (after selection). Default is 1.}
+\item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
 
 \item{nv_max}{Same as in \link[=varsel]{varsel}.}
 

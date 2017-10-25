@@ -79,18 +79,20 @@ log_sum_exp <- function(x) {
 			coefnames = coefnames,
 			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0))
 
-		res$mu <- fam$mu_fun(x, alpha, beta, res$offset) #
-		res$pred_mu <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
+		# res$mu <- fam$mu_fun(x, alpha, beta, res$offset) #
+		res$predfun <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
+		res$mu <- res$predfun(x, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 
 		# y and the observation weights in a standard form
 		temp <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
 		res$wobs <- temp$weights
 		res$y <- temp$y
+		res$nobs <- length(res$y) # this assumes a single output model
 
 		return(res)
 
-	} else if (class(fit) == 'refmodel') {
+	} else if ('refmodel' %in% class(fit)) {
 		# an object constructed by init_refmodel so all the relavant fields should be there
 	    return(fit)
 	} else {
@@ -203,17 +205,21 @@ log_sum_exp <- function(x) {
 	else
 		# fetch the relevant info from the fit object
 		vars <- .extract_vars(fit)
-
+	
 	return(list(x = vars$x, y = vars$y, weights = vars$wobs, offset = vars$offset))
 }
 
-.fill_offset_and_weights <- function(data) {
+.check_data <- function(data) {
 	#
-	# Simply checks whether the offset and weight fields exist in data structure,
-	# fills them in if needed.
+	# Check that data object has the correct form for internal use. The object must
+	# be a list with with fields 'x', 'y', 'weights' and 'offset'.
+	# Raises error if x or y is missing, but fills weights and offset with default
+	# values if missing.
 	#
-	if(is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
-	if(is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
+	if (is.null(data$x)) stop('The data object must be a list with field x giving the predictor values.')
+	if (is.null(data$y)) stop('The data object must be a list with field x giving the target values.')
+	if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
+	if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
 	return(data)
 }
 

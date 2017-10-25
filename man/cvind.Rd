@@ -4,18 +4,22 @@
 \alias{cvind}
 \title{Create cross-validation indices}
 \usage{
-cvind(n, k, seed = NULL)
+cvind(n, k, out = "foldwise", seed = NULL)
 }
 \arguments{
 \item{n}{Number of data points.}
 
 \item{k}{Number of folds.}
 
+\item{out}{Format of the output, either 'foldwise' (default) or 'indices'. See below for details.}
+
 \item{seed}{Random seed so that the same division could be obtained again if needed.}
 }
 \value{
-A list with \code{k} elements, each having fields \code{itr} and \code{its} 
-which give the training and test indices, respectively, for each fold.
+If \code{out} is 'foldwise', the returned value is a list with \code{k} elements, 
+each having fields \code{tr} and \code{ts} which give the training and test indices, respectively,
+for each fold. If \code{out} is 'indices', the returned value is a list with fields \code{tr} and \code{ts}
+each of which is a list with \code{k} elements giving the training and test indices for each fold.
 }
 \description{
 Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross validation.

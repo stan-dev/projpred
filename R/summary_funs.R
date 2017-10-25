@@ -76,8 +76,8 @@
   quantiles <- mapply(function(sub, size) {
     # apply over different stats
     mapply(function(name, sub_boot, full_boot, sub_statistic, full_statistic) {
-      qs <- quantile(sub_boot, c(alpha/2, 1-alpha/2))
-      qs_delta <- quantile(sub_boot - full_boot, c(alpha/2, 1-alpha/2))
+      qs <- quantile(sub_boot, c(alpha/2, 1-alpha/2), na.rm=T)
+      qs_delta <- quantile(sub_boot - full_boot, c(alpha/2, 1-alpha/2), na.rm=T)
 
       data.frame(size = rep(size, 2), delta = c(F, T), statistic = rep(name, 2),
                  value = c(sub_statistic, sub_statistic - full_statistic),
