@@ -28,11 +28,6 @@ log_sum_exp <- function(x) {
         if(!(family(fit)$family %in% families))
             stop(paste0('Only the following families are supported:\n',
                         paste(families, collapse = ', '), '.'))
-        
-        # if(NCOL(get_x(fit)) < 4)
-            # stop('Not enough explanatory variables for variable selection')
-        
-        
     
     } else if ('refmodel' %in% class(fit)) {
         # a fit object constructed by init_refmodel, so everything should be fine
@@ -79,7 +74,6 @@ log_sum_exp <- function(x) {
 			coefnames = coefnames,
 			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0))
 
-		# res$mu <- fam$mu_fun(x, alpha, beta, res$offset) #
 		res$predfun <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
 		res$mu <- res$predfun(x, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
