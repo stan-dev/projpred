@@ -43,7 +43,7 @@ project_gaussian <- function(vind, p_full, d_train, intercept, regul = 1e-12) {
     pobs <- pseudo_data(0, mu, gaussian(link='identity'), offset=d_train$offset, weights=wobs) # this will remove the offset
     w <- sqrt(pobs$w)
     beta_sub <- solve( crossprod(w*xp)+regulmat, crossprod(w*xp, w*pobs$z) )
-    dis_sub <- sqrt( colSums(wobs*(mu - xp%*%beta_sub)^2) + dis^2 )
+    dis_sub <- sqrt( colSums(wobs*(pobs$z - xp%*%beta_sub)^2) + dis^2 )
     kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
     p_sub <- list(kl = kl, weights = wsample, dis = dis_sub)
 

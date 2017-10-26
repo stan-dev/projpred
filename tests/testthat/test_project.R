@@ -256,9 +256,17 @@ test_that("project: projecting full model onto itself does not change results", 
     proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=1e-9)
     
     tol <- 1e-6
+    
+    # test alpha and beta
     dalpha <- max(abs(proj$alpha - e$alpha[perm_inv]))
     dbeta <- max(abs(proj$beta - t(e$beta[perm_inv,])))
     expect_lt(dalpha, tol)
     expect_lt(dbeta, tol)
+    
+    if (!is.null(e$aux)) {
+      # test dispersion
+      ddis <- max(abs(proj$dis - e$aux[perm_inv]))
+      expect_lt(ddis, tol)
+    }
   }
 })
