@@ -72,11 +72,13 @@ log_sum_exp <- function(x) {
 			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta)),
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			coefnames = coefnames,
-			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0))
+			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0)
+			)
 
 		res$predfun <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
 		res$mu <- res$predfun(x, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
+		res$loglik <- unname(log_lik(fit))
 
 		# y and the observation weights in a standard form
 		temp <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
@@ -136,6 +138,8 @@ log_sum_exp <- function(x) {
 	# It is possible to use this function by passing .extract_vars(fit) as
 	# an argument in place of fit.
 	#
+  if (is.null(seed))
+    seed <- 1
 
 	# save the old seed and initialize with the new one
 	seed_old <- .Random.seed

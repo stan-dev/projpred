@@ -27,11 +27,11 @@ SW(
                           chains = chains, seed = seed, iter = iter)
 )
 e <- extract(fit_gauss$stanfit)
-mu <- t(posterior_linpred(fit_gauss, newdata = df_gauss, transform = T, offset=offset))
 perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
                      fit_gauss$stanfit@sim$permutation,1:fit_gauss$stanfit@sim$chains-1))
 dis <- e$aux[perm_inv]
-ref_gauss <- init_refmodel(x,df_gauss$y,gaussian(),mu=mu,dis=dis,offset=offset,wobs=weights,loglik=log_lik(fit_gauss))
+predfun <- function(xnew) t(posterior_linpred(fit_gauss, newdata = data.frame(x=xnew), transform = T, offset=rep(0,nrow(xnew)) ))
+ref_gauss <- init_refmodel(x,df_gauss$y,gaussian(),predfun=predfun,dis=dis,offset=offset,wobs=weights)
 
 SW(
     fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
@@ -39,8 +39,8 @@ SW(
                           chains = chains, seed = seed, iter = iter)
 )
 e <- extract(fit_binom$stanfit)
-mu <- t(posterior_linpred(fit_binom, newdata = df_binom, transform = T, offset=offset))
-ref_binom <- init_refmodel(x,df_binom$y/weights,binomial(),mu=mu,offset=offset,wobs=weights,loglik=log_lik(fit_binom))
+predfun <- function(xnew) t(posterior_linpred(fit_binom, newdata = data.frame(x=xnew), transform = T, offset=rep(0,nrow(xnew)) ))
+ref_binom <- init_refmodel(x,df_binom$y/weights,binomial(),predfun=predfun,offset=offset,wobs=weights)
 
 SW(
     fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
@@ -48,8 +48,8 @@ SW(
                           chains = chains, seed = seed, iter = iter)
 )
 e <- extract(fit_poiss$stanfit)
-mu <- t(posterior_linpred(fit_poiss, newdata = df_poiss, transform = T, offset=offset))
-ref_poiss <- init_refmodel(x,df_poiss$y,poisson(),mu=mu,offset=offset,wobs=weights,loglik=log_lik(fit_poiss))
+predfun <- function(xnew) t(posterior_linpred(fit_poiss, newdata = data.frame(x=xnew), transform = T, offset=rep(0,nrow(xnew)) ))
+ref_poiss <- init_refmodel(x,df_poiss$y,poisson(),predfun=predfun,offset=offset,wobs=weights)
 
 fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
 ref_list <- list(gauss = ref_gauss, binom = ref_binom, poiss = ref_poiss)

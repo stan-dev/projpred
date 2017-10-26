@@ -267,15 +267,15 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 	p_pred <- .get_refdist(fit, ns=nspred, nc=ncpred)
 	cl_pred <- p_pred$cl
 
-	# fetch the log-likelihood for the full model to obtain the LOO weights
-	if ('stanfit' %in% names(fit))
-	    # stanreg-objects have a function log_lik
-	    loglik <- log_lik(fit)
-	else if (!is.null(fit$loglik))
-	    # loglik given in the fit object (generic reference model)
-	    loglik <- fit$loglik
+	# fetch the log-likelihood for the reference model to obtain the LOO weights
+	if (!is.null(vars$loglik))
+    # log-likelihood available
+    loglik <- vars$loglik
 	else
-	    stop('To perform LOO for generic reference models, you must provide log-likelihood matrix to init_refmodel.')
+	  # case where log-likelihood not available, i.e., the reference model is not a genuine model
+	  # => cannot compute LOO
+    stop('LOO can be performed only if the reference model is a genuine probabilistic model for
+          which the log-likelihood can be evaluated.')
 	lw <- psislw(-loglik, cores = 1)$lw_smooth
 	n <- dim(lw)[2]
 
@@ -334,9 +334,9 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 	summ_full <- list(lppd=loo_full, mu=mu_full)
 	summaries <- list(sub=summ_sub, full=summ_full)
 
-    vind_cv <- lapply(1:n, function(i){ vind_mat[i,] })
+  vind_cv <- lapply(1:n, function(i){ vind_mat[i,] })
 
-    d_test <- list(y=d_train$y, weights=d_train$weights, type='loo')
+  d_test <- list(y=d_train$y, weights=d_train$weights, type='loo')
 
 	return(list(vind_cv=vind_cv, summaries=summaries, d_test=d_test))
 
