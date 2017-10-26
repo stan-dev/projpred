@@ -244,3 +244,21 @@ test_that("project: adding more regularization has an expected effect", {
             expect_gt(norms[j],norms[j+1])
     }
 })
+
+test_that("project: projecting full model onto itself does not change results", {
+  
+  for (i in 1:length(fit_list)) {
+    fit <- fit_list[[i]]
+    e <- extract(fit$stanfit)
+    perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
+                         fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
+    S <- length(e$alpha)
+    proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=1e-9)
+    
+    tol <- 1e-6
+    dalpha <- max(abs(proj$alpha - e$alpha[perm_inv]))
+    dbeta <- max(abs(proj$beta - t(e$beta[perm_inv,])))
+    expect_lt(dalpha, tol)
+    expect_lt(dbeta, tol)
+  }
+})
