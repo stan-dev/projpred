@@ -339,11 +339,6 @@ test_that('omitting the \'data\' argument causes a warning', {
   expect_error(capture.output(cv_varsel(fit_nodata, cv_method = 'kfold')))
 })
 
-test_that('kfold gives an error for a refmodel-object', {
-  ref <- init_refmodel(x, df_gauss$y, f_gauss)
-  expect_error(capture.output(cv_varsel(ref, cv_method = 'kfold')), 'implem')
-})
-
 test_that('providing k_fold works', {
   out <- SW({
     k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
