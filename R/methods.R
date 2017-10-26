@@ -361,9 +361,6 @@ varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
 #' @param wsample vector of length \code{S} giving the weights for the posterior draws.
 #' The weights should sum to one. If omitted, equal weights are assumed.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
-#' @param loglik \code{S}-by-\code{n} matrix giving the log-likelihood values
-#' for the reference model for each pair of \code{S} posterior draws and \code{n} observations.
-#' Can be omitted but is mandatory for performing the LOO validation.
 #' @param cvfits TODO
 #'
 #' @return An object that can be passed to all the functions that
@@ -372,9 +369,10 @@ varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
 
 #' @export
 init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL, 
-													wobs=NULL, wsample=NULL, intercept=TRUE, loglik=NULL, cvfits=NULL) {
+													wobs=NULL, wsample=NULL, intercept=TRUE, cvfits=NULL) {
 
   n <- length(y)
+	family <- kl_helpers(family)
 	
 	if (is.null(offset))
 		offset <- rep(0, n)	
@@ -404,6 +402,11 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 	if (is.null(intercept))
 		intercept <- TRUE
 	
+	# compute log-likelihood
+	if (proper_model)
+	  loglik <- t(family$ll_fun(mu,dis,y,wobs))
+	else
+	  loglik <- NULL
 
 	# figure out column names for the variables
 	if (!is.null(colnames(x)))
@@ -428,7 +431,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 		cvfits <- list(fits=t(cvfits))
 	}
     
-	fit <- list(x=x, y=temp$y, fam=kl_helpers(family), mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
+	fit <- list(x=x, y=temp$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
 							offset=offset, wobs=temp$weights, wsample=wsample, intercept=intercept, 
 							predfun=predmu, loglik=loglik, cvfits=cvfits)
 	
