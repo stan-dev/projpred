@@ -78,21 +78,21 @@ log_sum_exp <- function(x) {
 		res$predfun <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
 		res$mu <- res$predfun(x, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
-		res$loglik <- unname(log_lik(fit))
 
 		# y and the observation weights in a standard form
-		temp <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
-		res$wobs <- temp$weights
-		res$y <- temp$y
+		target <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
+		res$wobs <- target$weights
+		res$y <- target$y
 		res$nobs <- length(res$y) # this assumes a single output model
+		res$loglik <- t(fam$ll_fun(res$mu,res$dis,res$y,res$wobs))
 
 		return(res)
 
 	} else if ('refmodel' %in% class(fit)) {
 		# an object constructed by init_refmodel so all the relavant fields should be there
-	    return(fit)
+		return(fit)
 	} else {
-	    stop('The class for the provided object is not recognized.')
+		stop('The class for the provided object is not recognized.')
 	}
 }
 
