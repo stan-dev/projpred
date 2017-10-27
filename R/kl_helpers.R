@@ -1,9 +1,7 @@
 # Model-specific helper functions.
 #
-# \code{kl_helpers(fam)} returns a family object augmented with functions for
-# KL divergence, log predictive density and dispersion.
-#
-# Naming convention described in fsel.R.
+# \code{kl_helpers(fam)} returns a family object augmented with auxiliary functions that
+# are needed for computing KL divergence, log predictive density, projecting dispersion etc.
 #
 # Missing: Quasi-families not implemented. If dis_gamma is the correct shape
 # parameter for projected Gamma regression, everything should be OK for gamma.

@@ -25,7 +25,7 @@
   .weighted_summary_means(d_test, family_kl, p_full$weights, mu, p_full$dis)
 }
 
-# Calculates weighted means of mu, dis, kl and lppd given samples of
+# Calculates weighted means of mu and lppd given samples of
 # mu and dis, the full model and the data.
 .weighted_summary_means <- function(d_test, family_kl, wsample, mu, dis) {
 
@@ -76,8 +76,8 @@
   quantiles <- mapply(function(sub, size) {
     # apply over different stats
     mapply(function(name, sub_boot, full_boot, sub_statistic, full_statistic) {
-      qs <- quantile(sub_boot, c(alpha/2, 1-alpha/2))
-      qs_delta <- quantile(sub_boot - full_boot, c(alpha/2, 1-alpha/2))
+      qs <- quantile(sub_boot, c(alpha/2, 1-alpha/2), na.rm=T)
+      qs_delta <- quantile(sub_boot - full_boot, c(alpha/2, 1-alpha/2), na.rm=T)
 
       data.frame(size = rep(size, 2), delta = c(F, T), statistic = rep(name, 2),
                  value = c(sub_statistic, sub_statistic - full_statistic),

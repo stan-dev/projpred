@@ -41,7 +41,7 @@ vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
 
 
 context('project')
-test_that("object retruned by project contains the relevant fields", {
+test_that("object returned by project contains the relevant fields", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     p <- project(vs_list[[i]])
@@ -243,4 +243,30 @@ test_that("project: adding more regularization has an expected effect", {
         for (j in 1:(length(regul)-1))
             expect_gt(norms[j],norms[j+1])
     }
+})
+
+test_that("project: projecting full model onto itself does not change results", {
+  
+  for (i in 1:length(fit_list)) {
+    fit <- fit_list[[i]]
+    e <- extract(fit$stanfit)
+    perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
+                         fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
+    S <- length(e$alpha)
+    proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=1e-9)
+    
+    tol <- 1e-6
+    
+    # test alpha and beta
+    dalpha <- max(abs(proj$alpha - e$alpha[perm_inv]))
+    dbeta <- max(abs(proj$beta - t(e$beta[perm_inv,])))
+    expect_lt(dalpha, tol)
+    expect_lt(dbeta, tol)
+    
+    if (!is.null(e$aux)) {
+      # test dispersion
+      ddis <- max(abs(proj$dis - e$aux[perm_inv]))
+      expect_lt(ddis, tol)
+    }
+  }
 })

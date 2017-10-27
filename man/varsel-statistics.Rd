@@ -3,13 +3,13 @@
 \name{varsel-statistics}
 \alias{varsel-statistics}
 \alias{varsel_plot}
-\alias{varsel_statistics}
+\alias{varsel_stats}
 \title{Plotting or printing summary statistics related to variable selection}
 \usage{
-varsel_plot(object, ..., nv_max = NULL, statistics = NULL, deltas = T,
+varsel_plot(object, ..., nv_max = NULL, stats = NULL, deltas = F,
   n_boot = 1000, alpha = 0.1)
 
-varsel_statistics(object, ..., nv_max = NULL, deltas = F)
+varsel_stats(object, ..., nv_max = NULL, deltas = F)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -19,9 +19,9 @@ varsel_statistics(object, ..., nv_max = NULL, deltas = F)
 
 \item{nv_max}{Maximum submodel size for which the statistics are calculated.}
 
-\item{statistics}{A list of strings of statistics to calculate. Available
-options are: kl, mse, mlpd, kl, (gaussian only), pctcorr (binomial only).
-If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_statistics
+\item{stats}{A list of strings of statistics to calculate. Available
+options are: mlpd, kl, mse (gaussian only), pctcorr (binomial only).
+If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_stats
 return all the statistics.}
 
 \item{deltas}{If \code{TRUE}, the difference between the full model and the
@@ -36,7 +36,7 @@ intervals. Eg. \code{alpha=0.1} corresponds to 90\% probability mass
 within the intervals. Defaults to \code{0.1}.}
 }
 \description{
-\code{varsel_statistics} can be used to obtain summary statistics related to
+\code{varsel_stats} can be used to obtain summary statistics related to
 variable selection. The same statistics can be plotted with
 \code{varsel_plot}.
 }

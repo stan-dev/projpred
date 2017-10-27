@@ -4,8 +4,8 @@
 \alias{init_refmodel}
 \title{Generic reference model initialization}
 \usage{
-init_refmodel(x, y, family, mu = NULL, dis = NULL, offset = NULL,
-  wobs = NULL, wsample = NULL, intercept = TRUE, loglik = NULL)
+init_refmodel(x, y, family, predfun = NULL, dis = NULL, offset = NULL,
+  wobs = NULL, wsample = NULL, intercept = TRUE, cvfits = NULL)
 }
 \arguments{
 \item{x}{Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
@@ -18,15 +18,19 @@ the one used to construct the reference model.}
 
 \item{family}{\link{family} object giving the model family}
 
-\item{mu}{\code{n}-by-{S} matrix of expected values for \code{y}, each column corresponding
-to one posterior draw for the reference model.}
+\item{predfun}{Function that takes a \code{nt}-by-\code{d} test predictor matrix as an input
+(\code{nt} = # test points, \code{d} = # predictors in the reference model) and outputs
+a \code{n}-by-\code{S} matrix of expected values for the target variable y,
+each column corresponding to one posterior draw for the parameters in the reference model.
+The output should be computed without any offsets, these are automatically taken into account
+internally, e.g. in cross-validation.}
 
 \item{dis}{Vector of length \code{S} giving the posterior draws for the dispersion parameter
 in the reference model if there is such a parameter in the model family. For Gaussian
 observation model this is the noise std \code{sigma}.}
 
 \item{offset}{Offset to be added to the linear predictor in the projection. (Same as in
-function \code{glm})}
+function \code{glm}.)}
 
 \item{wobs}{Observation weights. The weights should sum to \code{n}.
 If omitted, equal weights are assumed.}
@@ -36,9 +40,11 @@ The weights should sum to one. If omitted, equal weights are assumed.}
 
 \item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 
-\item{loglik}{\code{S}-by-\code{n} matrix giving the log-likelihood values
-for the reference model for each pair of \code{S} posterior draws and \code{n} observations.
-Can be omitted but is mandatory for performing the LOO validation.}
+\item{cvfits}{A list with K elements, each of which is a list with fields including at least
+variables: tr, ts and predfun giving the training and test indices and prediction function
+for each fold. Additionally each element can have field dis (dispersion samples for each fold)
+if the model has a dispersion parameter. Can be omitted but needed for K-fold cross validation
+for genuine reference models.}
 }
 \value{
 An object that can be passed to all the functions that
@@ -49,6 +55,6 @@ take the reference fit as the first argument, such as \link{varsel}, \link{cv_va
 Initializes a structure that can be used as a reference fit for the
 projective variable selection.
 This function is provided to allow construction of the reference fit
-using also other tools than \code{rstanarm}, because only a limited amount
-of information is needed for the actual projection and the variable selection.
+using also other tools than \code{rstanarm}, because only certain specific
+information is needed for the actual projection and variable selection.
 }
