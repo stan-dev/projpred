@@ -9,8 +9,8 @@
 #' Default is all model sizes up to the maximum number of variables in \code{varsel}.
 #'  Ignored if \code{vind} is specified.
 #' @param vind Variable indices onto which the projection is done. If specified, \code{nv} is ignored.
-#' @param ns Number of samples to be projected. Ignored if \code{nc} is specified.
-#' @param nc Number of clusters in the clustered projection. Default is 50.
+#' @param ns Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.
+#' @param nc Number of clusters in the clustered projection. 
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param seed A seed used in the clustering (if \code{nc!=ns}). Can be used
 #' to ensure same results every time.
@@ -61,7 +61,7 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 
     # by default project with clusters
     if (is.null(ns) && is.null(nc))
-      nc <- min(50, NCOL(vars$mu))
+      ns <- min(400, NCOL(vars$mu))
     # by default, run the projection up to the maximum number of variables
     # specified in the variable selection
     if (is.null(nv))
