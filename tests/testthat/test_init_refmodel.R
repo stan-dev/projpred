@@ -69,24 +69,25 @@ pred2_list <- lapply(vs2_list, proj_linpred, xnew=x, seed = seed,
 
 context('init_refmodel')
 test_that("output of varsel is the same when using stanfit and init_refmodel", {
-    for(i in 1:length(vs_list)) {
+    for (i in seq_along(vs_list)) {
         expect_equal(vs_list[[i]]$varsel, vs2_list[[i]]$varsel)
     }
 })
 
 test_that("output of cv_varsel is the same when using stanfit and init_refmodel", {
-    for(i in 1:length(vs_list)) {
+    for (i in seq_along(vs_list)) {
         expect_equal(cvvs_list[[i]]$varsel, cvvs2_list[[i]]$varsel)
     }
 })
 
 test_that("output of project is the same when using stanfit and init_refmodel", {
-    for(i in 1:length(vs_list)) {
+    for (i in seq_along(vs_list)) {
         expect_equal(proj_vind_list[[i]], proj2_vind_list[[i]])
     }
 })
 
 test_that("output of proj_linpred is the same when using stanfit and init_refmodel", {
-    for(i in 1:length(vs_list)) expect_equal(pred_list[[i]], pred2_list[[i]])
+    for (i in seq_along(vs_list)) 
+    	expect_equal(pred_list[[i]], pred2_list[[i]])
 })
 

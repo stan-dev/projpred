@@ -147,9 +147,9 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 
     if (!is.null(ynew)) {
       # compute also the log-density
-      temp <- .get_standard_y(ynew, weights, proj$family_kl)
-      ynew <- temp$y
-      weights <- temp$weights
+      target <- .get_standard_y(ynew, weights, proj$family_kl)
+      ynew <- target$y
+      weights <- target$weights
       lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew, weights)
       if (integrated && !is.null(dim(lpd))) {
         lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
@@ -415,7 +415,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 		coefnames <- paste0('x',1:ncol(x))
 
 	# y and the observation weights in a standard form
-	temp <- .get_standard_y(y, wobs, family)
+	target <- .get_standard_y(y, wobs, family)
 	
 	# fetch information from the cross-validated fits and create a data structure
 	# that will be understood by cv_varsel (or actually kfold_varsel)
@@ -431,8 +431,8 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 		cvfits <- list(fits=t(cvfits))
 	}
     
-	fit <- list(x=x, y=temp$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
-							offset=offset, wobs=temp$weights, wsample=wsample, intercept=intercept, 
+	fit <- list(x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
+							offset=offset, wobs=target$weights, wsample=wsample, intercept=intercept, 
 							predfun=predmu, loglik=loglik, cvfits=cvfits)
 	
 	# define the class of the retuned object to be 'refmodel' and additionally 'datafit'
