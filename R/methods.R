@@ -380,7 +380,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 	if (is.null(predfun)) {
 		# no prediction function given, so the 'reference model' will simply contain the
 		# observed data as the fitted values
-		predmu <- function(x,offset=0) NULL
+		predmu <- function(x,offset=0) matrix(rep(NA, NROW(x)))
 		mu <- y
 		proper_model <- FALSE
 	}	else {
@@ -426,14 +426,15 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 			ts <- fold$ts
 			fit <- init_refmodel(x[tr,], y[tr], family, predfun=fold$predfun, dis=fold$dis,
 													 offset=offset[tr], wobs=wobs[tr], wsample=fold$wsample, intercept=intercept, cvfits=NULL)
-			list(fit=fit, omitted=ts) 
+			list(fit=fit, omitted=ts)
 		})
-		cvfits <- list(fits=t(cvfits))
-	}
+		k_fold <- list(fits=t(cvfits))
+	} else
+		k_fold <- cvfits
     
 	fit <- list(x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
 							offset=offset, wobs=target$weights, wsample=wsample, intercept=intercept, 
-							predfun=predmu, loglik=loglik, cvfits=cvfits)
+							predfun=predmu, loglik=loglik, k_fold=k_fold)
 	
 	# define the class of the retuned object to be 'refmodel' and additionally 'datafit'
 	# if only the observed data was provided and no actual function for predicting test data

@@ -44,7 +44,7 @@
 #'
 
 #' @export
-cv_varsel <- function(fit,  method = NULL, cv_method = 'LOO', 
+cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, verbose = T,
                       K = NULL, k_fold = NULL, regul=1e-6, ...) {
@@ -57,6 +57,16 @@ cv_varsel <- function(fit,  method = NULL, cv_method = 'LOO',
 			method <- 'forward'
 		else
 			method <- 'L1'
+	}
+	
+	if (is.null(cv_method)) {
+		if ('datafit' %in% class(fit)) {
+			# only data given, no actual reference model
+			cv_method <- 'kfold'
+			K <- 10
+		} else {
+			cv_method <- 'LOO'
+		}
 	}
 
 	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
@@ -126,12 +136,12 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 	if (is.null(k_fold))
 		# k-fold not provided, so must perform now if possible (not possible for generic
 		# reference model, so this will raise error)
-		k_fold <- .get_kfold(fit, K)
+		k_fold <- .get_kfold(fit, K, verbose)
 	
 	# check that k_fold has the correct form
 	.validate_kfold(fit, k_fold, vars$nobs)
 	
-	K <- nrow(k_fold$fits) # K <- attr(k_fold, 'K')
+	K <- nrow(k_fold$fits)
 	family_kl <- vars$fam
 	
   # extract variables from each fit-object (samples, x, y, etc.)
@@ -153,8 +163,6 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   	p_sel <- .get_refdist(vars, ns, nc)
   	p_pred <- .get_refdist(vars, nspred, ncpred)
   	mu_test <- vars$predfun(d_test$x, d_test$offset)
-  	# mu_test <- tryCatch(vars$pred_mu(d_test$x, d_test$offset), 
-  					# error=function(cond) vars$pred_mu(d_test$x))
   	list(d_train = d_train, d_test = d_test, p_sel = p_sel, p_pred = p_pred,
   	     mu_test = mu_test, dis = vars$dis, w_test = vars$wsample, msg = msg)
   }, vars_cv, d_test_cv, msgs, SIMPLIFY = F)
@@ -162,7 +170,8 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   # List of K elements, each a list of the variables selected for the
   # corresponding fold
   vind_cv <- lapply(list_cv, function(fold) {
-    print(fold$msg)
+  	if (verbose)
+    	print(fold$msg)
     select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, verbose, regul)
   })
 
@@ -202,22 +211,35 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 }
 
 
-.get_kfold <- function(fit, K) {
+.get_kfold <- function(fit, K, verbose) {
 	# Fetch the k_fold object from the fit (in case of generic reference model) or 
 	# construct/compute it (in case of rstanarm reference model). The resulting 
 	# list contains an element 'fits', which is a K x 2 dimensional array. Each row
 	# corresponds to one of the K folds. First column contains the rstanarm-objects
 	# and the second column the indices of the omitted observations (aka test data).
 	if ('refmodel' %in% class(fit)) {
-		if (is.null(fit$cvfits))
-			stop('For a generic reference model, you must provide the fits for the cross-validation folds.
+		if (is.null(fit$k_fold)) {
+			if ('datafit' %in% class(fit)) {
+				# no genuine reference model exists, but the provided reference fit is the observed
+				# data itself, so we can cross-validate the search for the submodels in a normal cv fashion
+				# by dividing the data into K subsets
+				cv <- cvind(fit$nobs, k=K, out='indices')
+				cvfits <- mapply(function(tr,ts) {
+					fit <- init_refmodel(fit$x[tr,], fit$y[tr], fit$fam, offset=fit$offset[tr], wobs=fit$wobs[tr],
+															 wsample=fit$wsample, intercept=fit$intercept)
+					list(fit=fit, omitted=ts)
+				}, cv$tr,cv$ts)
+				k_fold <- list(fits=t(cvfits))
+			} else
+				# genuine probabilistic model but k-fold fits not provided, so raise an error
+				stop('For a generic reference model, you must provide the fits for the cross-validation folds.
 				 See function init_refmodel.')
-		else
-			k_fold <- fit$cvfits
-	}
+		}	else
+			k_fold <- fit$k_fold
 		
-	else if ('stanreg' %in% class(fit)) {
-		print(paste0('k_fold not provided, performing ', K,
+	}	else if ('stanreg' %in% class(fit)) {
+		if (verbose) 
+			print(paste0('k_fold not provided, performing ', K,
 								 '-fold cross-validation for the stan model.'))
 		capture.output(
 			k_fold <- kfold(fit, K = K, save_fits = T)

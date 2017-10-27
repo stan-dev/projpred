@@ -248,15 +248,28 @@ log_sum_exp <- function(x) {
   # the lower alpha/2-quantile of mlpd is at least cutoff_pct from the full model
   stats <- subset(.bootstrap_stats(varsel, alpha = alpha), statistic == 'mlpd'
                   & delta == TRUE & data %in% c('loo', 'kfold'))
-  mlpd_null <- subset(stats, size == 0, 'value')
-  mlpd_cutoff <- cutoff_pct*mlpd_null
-  res <- subset(stats, lq >= mlpd_cutoff$value, 'size')
-
-  if(nrow(res) == 0) {
-    NA
+  
+  if (!all(is.na(stats[,'value']))) {
+  	
+  	mlpd_null <- subset(stats, size == 0, 'value')
+  	mlpd_cutoff <- cutoff_pct*mlpd_null
+  	res <- subset(stats, lq >= mlpd_cutoff$value, 'size')
+  	if(nrow(res) == 0) {
+  		ssize <- NA
+  	} else {
+  		ssize <- min(subset(stats, lq >= mlpd_cutoff$value, 'size'))
+  	}
   } else {
-    min(subset(stats, lq >= mlpd_cutoff$value, 'size'))
+  	# special case; all values compared to the reference model are NA indicating
+  	# that the reference model is missing, so simply suggest the model size
+  	# that maximizes the mlpd
+  	stats <- subset(.bootstrap_stats(varsel, alpha = 0.16), statistic == 'mlpd'
+  				 					& delta == F & data %in% c('loo', 'kfold'))
+  	imax <- which.max(unname(unlist(stats['value'])))
+  	thresh <- stats[imax, 'lq']
+  	ssize <- min(subset(stats, value >= thresh, 'size'))
   }
+  ssize
 }
 
 .df_to_model_mat <- function(dfnew, var_names) {
