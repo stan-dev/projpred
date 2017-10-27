@@ -41,7 +41,7 @@ vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
 
 
 context('project')
-test_that("object retruned by project contains the relevant fields", {
+test_that("object returned by project contains the relevant fields", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     p <- project(vs_list[[i]])
