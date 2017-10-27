@@ -51,7 +51,7 @@
 #' @export
 varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
                    nspred = NULL, ncpred = NULL, nv_max = NULL, 
-                   intercept = NULL, verbose = F, regul=1e-9, ...) {
+                   intercept = NULL, verbose = F, regul=1e-6, ...) {
 
 
   .validate_for_varsel(fit)

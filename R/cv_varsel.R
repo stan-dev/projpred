@@ -47,7 +47,7 @@
 cv_varsel <- function(fit,  method = NULL, cv_method = 'LOO', 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, verbose = T,
-                      K = NULL, k_fold = NULL, regul=1e-9, ...) {
+                      K = NULL, k_fold = NULL, regul=1e-6, ...) {
 
   .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)

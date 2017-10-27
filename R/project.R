@@ -44,7 +44,7 @@
 
 #' @export
 project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
-                    intercept = NULL, seed = NULL, regul=1e-9, ...) {
+                    intercept = NULL, seed = NULL, regul=1e-6, ...) {
 
 	if(!('varsel' %in% names(object)) && is.null(vind))
 		stop(paste('The given object does not contain information about the ',
