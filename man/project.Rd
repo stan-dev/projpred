@@ -5,7 +5,7 @@
 \title{Projection to submodels of selected sizes}
 \usage{
 project(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
-  intercept = NULL, seed = NULL, regul = 1e-09, ...)
+  intercept = NULL, seed = NULL, regul = 1e-06, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -18,9 +18,9 @@ Default is all model sizes up to the maximum number of variables in \code{varsel
 
 \item{vind}{Variable indices onto which the projection is done. If specified, \code{nv} is ignored.}
 
-\item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified.}
+\item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.}
 
-\item{nc}{Number of clusters in the clustered projection. Default is 50.}
+\item{nc}{Number of clusters in the clustered projection.}
 
 \item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 

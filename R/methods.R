@@ -355,13 +355,17 @@ varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
 #' in the reference model if there is such a parameter in the model family. For Gaussian
 #' observation model this is the noise std \code{sigma}.
 #' @param offset Offset to be added to the linear predictor in the projection. (Same as in
-#' function \code{glm})
+#' function \code{glm}.)
 #' @param wobs Observation weights. The weights should sum to \code{n}.
 #' If omitted, equal weights are assumed.
 #' @param wsample vector of length \code{S} giving the weights for the posterior draws.
 #' The weights should sum to one. If omitted, equal weights are assumed.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
-#' @param cvfits TODO
+#' @param cvfits A list with K elements, each of which is a list with fields including at least
+#' variables: tr, ts and predfun giving the training and test indices and prediction function
+#' for each fold. Additionally each element can have field dis (dispersion samples for each fold)
+#' if the model has a dispersion parameter. Can be omitted but needed for K-fold cross validation
+#' for genuine reference models.
 #'
 #' @return An object that can be passed to all the functions that
 #' take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel},

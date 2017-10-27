@@ -6,7 +6,7 @@
 \usage{
 varsel(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  verbose = F, regul = 1e-09, ...)
+  verbose = F, regul = 1e-06, ...)
 }
 \arguments{
 \item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned

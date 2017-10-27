@@ -4,9 +4,9 @@
 \alias{cv_varsel}
 \title{Cross-validate the variable selection (varsel)}
 \usage{
-cv_varsel(fit, method = NULL, cv_method = "LOO", ns = NULL, nc = NULL,
+cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  verbose = T, K = NULL, k_fold = NULL, regul = 1e-09, ...)
+  verbose = T, K = NULL, k_fold = NULL, regul = 1e-06, ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
