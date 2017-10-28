@@ -34,16 +34,16 @@ Example
 
     # fit the full model with a sparsifying prior
     fit <- stan_glm(y ~ x, family = gaussian(), data = df_gaussian,
-                    prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
+                    prior = hs(df = 1, global_scale=0.01), iter = 500, seed = 1)
     #fit <- stan_glm(y ~ x, family = binomial(), data = df_binom
-    #                prior = hs(df = 1, global_scale=0.03), iter = 500, seed = 1)
+    #                prior = hs(df = 1, global_scale=0.01), iter = 500, seed = 1)
 
 
     # perform the variable selection
     fit_v <- varsel(fit)
     
     # print the results
-    varsel_statistics(fit_v)
+    varsel_stats(fit_v)
 
     # project the parameters for model sizes nv = 3,5 variables 
     projs <- project(fit_v, nv = c(3, 5))
