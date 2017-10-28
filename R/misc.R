@@ -28,11 +28,6 @@ log_sum_exp <- function(x) {
         if(!(family(fit)$family %in% families))
             stop(paste0('Only the following families are supported:\n',
                         paste(families, collapse = ', '), '.'))
-        
-        # if(NCOL(get_x(fit)) < 4)
-            # stop('Not enough explanatory variables for variable selection')
-        
-        
     
     } else if ('refmodel' %in% class(fit)) {
         # a fit object constructed by init_refmodel, so everything should be fine
@@ -68,31 +63,36 @@ log_sum_exp <- function(x) {
 							 fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
 		dis_name <- ifelse(grepl(fit$call[1], 'stan_lm'), 'sigma', 'aux')
 
+		alpha <- unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv]
+		beta <- t(unname(as.matrix(drop(e$beta))))[, perm_inv, drop=F]
+		
 		res <- list(
 			fam = fam,
 			x = x,
-			alpha = unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv], # EVENTUALLY NEED TO GET RID OFF THIS
-			beta = t(unname(as.matrix(drop(e$beta))))[, perm_inv, drop=F],           # EVENTUALLY NEED TO GET RID OFF THIS
 			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta)),
 			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
 			coefnames = coefnames,
-			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0))
+			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0)
+			)
 
-		res$mu <- fam$mu_fun(x, res$alpha, res$beta, res$offset)
+		res$predfun <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
+		res$mu <- res$predfun(x, res$offset)
 		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
 
 		# y and the observation weights in a standard form
-		temp <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
-		res$wobs <- temp$weights
-		res$y <- temp$y
+		target <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
+		res$wobs <- target$weights
+		res$y <- target$y
+		res$nobs <- length(res$y) # this assumes a single output model
+		res$loglik <- t(fam$ll_fun(res$mu,res$dis,res$y,res$wobs))
 
 		return(res)
 
-	} else if (class(fit)=='refmodel') {
+	} else if ('refmodel' %in% class(fit)) {
 		# an object constructed by init_refmodel so all the relavant fields should be there
-	    return(fit)
+		return(fit)
 	} else {
-	    stop('The class for the provided object is not recognized.')
+		stop('The class for the provided object is not recognized.')
 	}
 }
 
@@ -138,6 +138,8 @@ log_sum_exp <- function(x) {
 	# It is possible to use this function by passing .extract_vars(fit) as
 	# an argument in place of fit.
 	#
+  if (is.null(seed))
+    seed <- 1
 
 	# save the old seed and initialize with the new one
 	seed_old <- .Random.seed
@@ -201,36 +203,23 @@ log_sum_exp <- function(x) {
 	else
 		# fetch the relevant info from the fit object
 		vars <- .extract_vars(fit)
-
+	
 	return(list(x = vars$x, y = vars$y, weights = vars$wobs, offset = vars$offset))
 }
 
-.fill_offset_and_weights <- function(data) {
+.check_data <- function(data) {
 	#
-	# Simply checks whether the offset and weight fields exist in data structure,
-	# fills them in if needed.
+	# Check that data object has the correct form for internal use. The object must
+	# be a list with with fields 'x', 'y', 'weights' and 'offset'.
+	# Raises error if x or y is missing, but fills weights and offset with default
+	# values if missing.
 	#
-	if(is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
-	if(is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
+	if (is.null(data$x)) stop('The data object must be a list with field x giving the predictor values.')
+	if (is.null(data$y)) stop('The data object must be a list with field x giving the target values.')
+	if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
+	if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
 	return(data)
 }
-
-# .validate_ns_nc <- function(nc, ns, nc_max, ns_max) {
-# 	if (is.null(nc) && is.null(ns))
-# 		stop('Either nc or ns must be non-null.')
-# 	if (!is.null(nc)) {
-# 		if (nc < 0)
-# 			stop('nc must be > 0.')
-# 		if (nc > 100) {
-#
-# 		}
-# 	} else {
-# 		if(ns > NCOL(vars$mu)) {
-# warning(paste0('Setting the number of samples to ', NCOL(vars$mu),'.'))
-# ns <- NCOL(vars$mu)
-# }
-# 	}
-# }
 
 
 .split_coef <- function(b, intercept) {
@@ -259,15 +248,28 @@ log_sum_exp <- function(x) {
   # the lower alpha/2-quantile of mlpd is at least cutoff_pct from the full model
   stats <- subset(.bootstrap_stats(varsel, alpha = alpha), statistic == 'mlpd'
                   & delta == TRUE & data %in% c('loo', 'kfold'))
-  mlpd_null <- subset(stats, size == 0, 'value')
-  mlpd_cutoff <- cutoff_pct*mlpd_null
-  res <- subset(stats, lq >= mlpd_cutoff$value, 'size')
-
-  if(nrow(res) == 0) {
-    NA
+  
+  if (!all(is.na(stats[,'value']))) {
+  	
+  	mlpd_null <- subset(stats, size == 0, 'value')
+  	mlpd_cutoff <- cutoff_pct*mlpd_null
+  	res <- subset(stats, lq >= mlpd_cutoff$value, 'size')
+  	if(nrow(res) == 0) {
+  		ssize <- NA
+  	} else {
+  		ssize <- min(subset(stats, lq >= mlpd_cutoff$value, 'size'))
+  	}
   } else {
-    min(subset(stats, lq >= mlpd_cutoff$value, 'size'))
+  	# special case; all values compared to the reference model are NA indicating
+  	# that the reference model is missing, so simply suggest the model size
+  	# that maximizes the mlpd
+  	stats <- subset(.bootstrap_stats(varsel, alpha = 0.16), statistic == 'mlpd'
+  				 					& delta == F & data %in% c('loo', 'kfold'))
+  	imax <- which.max(unname(unlist(stats['value'])))
+  	thresh <- stats[imax, 'lq']
+  	ssize <- min(subset(stats, value >= thresh, 'size'))
   }
+  ssize
 }
 
 .df_to_model_mat <- function(dfnew, var_names) {

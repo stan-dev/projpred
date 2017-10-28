@@ -67,9 +67,9 @@ SW({
 
 context('varsel')
 test_that('varsel returns an object with a field named "varsel"', {
-  for(i in length(vs_list)) {
+  for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
-    for(j in length(vs_list[[i]])) {
+    for(j in 1:length(vs_list[[i]])) {
       j_inf <- names(vs_list[[i]])[j]
       expect_true('varsel' %in% names(vs_list[[i]][[j]]))
     }
@@ -77,9 +77,9 @@ test_that('varsel returns an object with a field named "varsel"', {
 })
 
 test_that('object retruned by varsel contains the relevant fields', {
-  for(i in length(vs_list)) {
+  for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
-    for(j in length(vs_list[[i]])) {
+    for(j in 1:length(vs_list[[i]])) {
       j_inf <- names(vs_list[[i]])[j]
       # vind seems legit
       expect_equal(length(vs_list[[i]][[j]]$varsel$vind), nv,
@@ -162,9 +162,9 @@ test_that("varsel: adding more regularization has an expected effect", {
 
 context('cv_varsel')
 test_that('cv_varsel returns an object with a field named "varsel"', {
-  for(i in length(cvs_list)){
+  for(i in 1:length(cvs_list)){
     i_inf <- names(cvs_list)[i]
-    for(j in length(cvs_list[[i]])) {
+    for(j in 1:length(cvs_list[[i]])) {
       j_inf <- names(cvs_list[[i]])[j]
       expect_true('varsel' %in% names(cvs_list[[i]][[j]]),
                   info = paste(i_inf, j_inf))
@@ -174,9 +174,9 @@ test_that('cv_varsel returns an object with a field named "varsel"', {
 })
 
 test_that('object retruned by cv_varsel contains the relevant fields', {
-  for(i in length(cvs_list)) {
+  for(i in 1:length(cvs_list)) {
     i_inf <- names(cvs_list)[i]
-    for(j in length(cvs_list[[i]])) {
+    for(j in 1:length(cvs_list[[i]])) {
       j_inf <- names(cvs_list[[i]])[j]
       # vind seems legit
       expect_equal(length(cvs_list[[i]][[j]]$varsel$vind), nv,
@@ -233,7 +233,8 @@ test_that('object retruned by cv_varsel contains the relevant fields', {
                    c('size', names(cvs_list[[i]][[j]]$varsel$vind)),
                    info = paste(i_inf, j_inf))
       # ssize seems legit
-      expect_true(cvs_list[[i]][[j]]$varsel$ssize>=0,
+      expect_true(cvs_list[[i]][[j]]$varsel$ssize>=0 || 
+                  is.na(cvs_list[[i]][[j]]$varsel$ssize),
                   info = paste(i_inf, j_inf))
     }
   }
@@ -260,9 +261,9 @@ test_that('Having something else than stan_glm as the fit throws an error', {
 })
 
 test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
-  for(i in length(cv_kf_list)) {
+  for(i in 1:length(cv_kf_list)) {
     i_inf <- names(cv_kf_list)[i]
-    for(j in length(cv_kf_list[[i]])) {
+    for(j in 1:length(cv_kf_list[[i]])) {
       j_inf <- names(cv_kf_list[[i]])[j]
       # vind seems legit
       expect_equal(length(cv_kf_list[[i]][[j]]$varsel$vind), nv,
@@ -337,11 +338,6 @@ test_that('omitting the \'data\' argument causes a warning', {
   out <- SW(fit_nodata <- stan_glm(df_gauss$y~df_gauss$x, QR = T,
                                    chains = chains, seed = seed, iter = iter))
   expect_error(capture.output(cv_varsel(fit_nodata, cv_method = 'kfold')))
-})
-
-test_that('kfold gives an error for a refmodel-object', {
-  ref <- init_refmodel(x, df_gauss$y, f_gauss)
-  expect_error(capture.output(cv_varsel(ref, cv_method = 'kfold')), 'implem')
 })
 
 test_that('providing k_fold works', {

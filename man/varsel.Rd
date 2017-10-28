@@ -6,14 +6,14 @@
 \usage{
 varsel(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  verbose = F, regul = 1e-09, ...)
+  verbose = F, regul = 1e-06, ...)
 }
 \arguments{
 \item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned
 by \link[=init_refmodel]{init_refmodel}.}
 
 \item{d_test}{A test dataset, which is used to evaluate model performance.
-If not provided, training data is used.}
+If not provided, training data is used. Currently this argument is for internal use only.}
 
 \item{method}{The method used in the variable selection. Possible options are
 \code{'L1'} for L1-search and \code{'forward'} for forward selection.
@@ -29,7 +29,7 @@ Overrides the \code{ns} argument. Defaults to 1.}
 
 \item{nspred}{Number of samples used for prediction (after selection). Ignored if ncpred is given.}
 
-\item{ncpred}{Number of clusters used for prediction (after selection). Default is 1.}
+\item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
 
 \item{nv_max}{Maximum number of varibles until which the selection is continued.
 Defaults to min(D, floor(0.4*n)) where n is the number of observations and
