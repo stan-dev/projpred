@@ -33,7 +33,7 @@ data('df_gaussian', package = 'projpred')
 
 
 We then fit the model with all the variables and sparsifying horseshoe prior (Carvalho et al., 2010) on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017b), in which the prior for the global shrinkage parameter is defined based on our prior guess for the number of relevant variables.
-```{r, message=F, warning=F}
+```{r, results='hide', message=F, warning=F, cache=T}
 n <- nrow(df_gaussian$x) # 100
 D <- ncol(df_gaussian$x) # 20
 p0 <- 5 # prior guess for the number of relevant variables
@@ -63,7 +63,7 @@ varsel_plot(fit, stats=c('mlpd', 'mse'))
 
 
 The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process. 
-```{r, warning=F}
+```{r, results='hide', warning=F, cache=T}
 fit_cv <- cv_varsel(fit, method='forward', cv_method='LOO')
 ```
 In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel``` (smallest model with expected loss in log predictive density less than 10 percent of the difference between the full and empty model with probability 0.9)
@@ -108,7 +108,7 @@ data('df_binom', package = 'projpred')
 ```
 
 Then fit the full model:
-```{r, message=F, warning=F}
+```{r, results='hide', message=F, warning=F, cache=T}
 # fit the full model
 n <- nrow(df_binom$x)
 D <- ncol(df_binom$x)
@@ -132,11 +132,11 @@ varsel_plot(fit, stats=c('mlpd', 'pctcorr'), deltas=F)
 ```
 
 Cross-validate the full model and the variable selection:
-```{r, warning=F}
+```{r, results='hide', warning=F, cache=T}
 fit_cv <- cv_varsel(fit, method='forward', cv_method='LOO')
 ```
 
-Plot the cross-validated performance estimates on the absolute scale. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 7 varibles. About 7 variables gives predictive accurary similar to the full model.
+Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 7 varibles. About 7 variables gives predictive accurary similar to the full model.
 ```{r}
 # model size suggested by the program
 fit_cv$varsel$ssize
