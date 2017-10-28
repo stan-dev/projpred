@@ -179,6 +179,6 @@ Goutis, C. and Robert, C. P. (1998). _Model choice in generalised linear models:
 
 Piironen, Juho and Vehtari, Aki (2017a). Comparison of Bayesian predictive methods for model selection. _Statistics and Computing_ 27(3):711-735. DOI 10.1007/s11222-016-9649-y. [Online](http://link.springer.com/article/10.1007/s11222-016-9649-y)
 
-Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In _Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS 2017)_, accepted for publication. [Preprint](https://arxiv.org/abs/1610.05559)
+Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In _Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)_, PMLR 54:905-913, 2017. [Online](http://proceedings.mlr.press/v54/piironen17a.html)
 
 Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. _Statistics and Computing_ 22(5):1069-1084. doi:10.1007/s11222-011-9279-3
