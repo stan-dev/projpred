@@ -261,9 +261,10 @@ log_sum_exp <- function(x) {
   	}
   } else {
   	# special case; all values compared to the reference model are NA indicating
-  	# that the reference model is missing, so simply suggest the model size
-  	# that maximizes the mlpd
-  	stats <- subset(.bootstrap_stats(varsel, alpha = 0.16), statistic == 'mlpd'
+  	# that the reference model is missing, so suggest the smallest model which
+    # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
+    # i.e. is contained in the 68% central region
+  	stats <- subset(.bootstrap_stats(varsel, alpha = 0.32), statistic == 'mlpd'
   				 					& delta == F & data %in% c('loo', 'kfold'))
   	imax <- which.max(unname(unlist(stats['value'])))
   	thresh <- stats[imax, 'lq']
