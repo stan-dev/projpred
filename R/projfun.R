@@ -20,7 +20,7 @@ project_gaussian <- function(vind, p_full, d_train, intercept, regul = 1e-12) {
     wobs <- wobs/sum(wobs)
     wsample <- wsample/sum(wsample)
 
-    if(intercept) {
+    if (intercept) {
         # add vector of ones to x and transform the variable indices
         x <- cbind(1, x)
         vind <- c(1, vind + 1)
@@ -57,6 +57,73 @@ project_gaussian <- function(vind, p_full, d_train, intercept, regul = 1e-12) {
     p_sub$intercept <- intercept
     return(p_sub)
 }
+
+
+
+
+project_student_t <- function(vind, p_full, d_train, intercept, regul = 1e-12) {
+  
+  x <- d_train$x
+  mu <- p_full$mu
+  dis <- p_full$dis
+  
+  if ("weights" %in% names(d_train))
+    wobs <- d_train$weights
+  else
+    wobs <- rep(1.0, NROW(mu))
+  if ("weights" %in% names(p_full))
+    wsample <- p_full$weights
+  else
+    wsample <- rep(1.0, NCOL(mu))
+  
+  # ensure the weights are normalized
+  wobs <- wobs/sum(wobs)
+  wsample <- wsample/sum(wsample)
+  
+  if (intercept) {
+    # add vector of ones to x and transform the variable indices
+    x <- cbind(1, x)
+    vind <- c(1, vind + 1)
+  } else if (length(vind) == 0) {
+    # no intercept used and vind is empty, so projecting to the completely
+    # null model with eta=0 always
+    stop('not implemented yet.')
+    # beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
+    # dis_sub <- sqrt( colSums(wobs*mu^2) + dis^2 )
+    # kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
+    # p_sub <- list(kl = kl, weights = wsample, dis = dis_sub, vind = vind,
+                  # intercept = intercept)
+    # return(c(p_sub, .split_coef(beta_sub, intercept)))
+  }
+  
+  xp <- x[, vind, drop = F]
+  Dp <- dim(xp)[2]
+  regulmat <- diag(regul*rep(1.0, Dp), Dp, Dp)
+  
+  # Solve the projection equations (with l2-regularization)
+  pobs <- pseudo_data(0, mu, gaussian(link='identity'), offset=d_train$offset, weights=wobs) # this will remove the offset
+  w <- sqrt(pobs$w)
+  beta_sub <- solve( crossprod(w*xp)+regulmat, crossprod(w*xp, w*pobs$z) )
+  dis_sub <- sqrt( colSums(wobs*(pobs$z - xp%*%beta_sub)^2) + dis^2 )
+  kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
+  p_sub <- list(kl = kl, weights = wsample, dis = dis_sub)
+  
+  # split b to alpha and beta, add it to p_sub and return the result
+  p_sub <- c(p_sub, .split_coef(beta_sub, intercept))
+  if(length(vind) == 1 && intercept) {
+    p_sub$vind <- integer(length=0)
+  } else {
+    p_sub$vind <- vind[(1+intercept*1):length(vind)] - intercept*1
+  }
+  p_sub$intercept <- intercept
+  return(p_sub)
+}
+
+
+
+
+
+
 
 
 project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
