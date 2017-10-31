@@ -398,7 +398,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 	S <- NCOL(mu) # number of samples in the reference model
 	
 	if (is.null(dis))
-		dis <- rep(1, S)
+		dis <- rep(0, S)
 	if (is.null(wobs))
 		wobs <- rep(1, n)
 	if (is.null(wsample))

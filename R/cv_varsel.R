@@ -60,13 +60,17 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	}
 	
 	if (is.null(cv_method)) {
-		if ('datafit' %in% class(fit)) {
+		if ('datafit' %in% class(fit))
 			# only data given, no actual reference model
 			cv_method <- 'kfold'
-			K <- 10
-		} else {
+		else
 			cv_method <- 'LOO'
-		}
+	}
+	if (cv_method == 'kfold' && is.null(K)) {
+	  if ('datafit' %in% class(fit))
+	    K <- 10
+	  else 
+	    K <- 4
 	}
 
 	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
