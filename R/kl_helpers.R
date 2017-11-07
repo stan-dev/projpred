@@ -96,3 +96,61 @@ kl_helpers <- function(fam) {
 
 }
 
+
+
+
+
+
+# define a student-t family object. Dispersion is defined to be the scale parameter
+# of the distribution
+Student_t <- function(link='identity', nu=1) {
+	
+	if (link != 'identity')
+		stop('Only identity link supported currently.')
+	if (!is.character(link))
+		stop('Link must be a string.')
+	
+	# fetch the link statistics
+	stats <- make.link(link)
+	
+	# variance function
+	varfun <- function(mu) {
+		if (nu > 2)
+			rep(nu/(nu-2), length(mu))
+		else
+			rep(Inf, length(mu))
+	}
+	
+	# create the object and append the relevant fields
+	fam <- list(
+		family = 'Student_t',
+		link = link,
+		linkfun = stats$linkfun,
+		linkinv = stats$linkinv,
+		variance = varfun, # CHECK THIS!!!! 
+		dev.resids = function(y, mu, wt) (nu+1) * log(1 + 1/nu*(y-mu)^2), 
+		aic = function(y, n, mu, wt, dev) stop('aic not implemented yet.'),
+		mu.eta = stats$mu.eta,
+		initialize = expression({ stop('initialize not implemented yet.')	}),
+		validmu = function(mu) TRUE,
+		valideta = stats$valideta
+	)
+	
+	structure(fam, class = 'family')
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
