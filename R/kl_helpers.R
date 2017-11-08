@@ -31,30 +31,46 @@ kl_helpers <- function(fam) {
 
   # dispersion parameters in one-to-one projection.
   # for gaussian dispersion is sigma and for gamma it is the shape parameter
-  dis_na <- function(p_full, data, p_sub) rep(1, length(p_full$dis))
-  dis_gauss <- function(p_full, data, p_sub) {
-      stop('Something went wrong, this function should not be called, so it\'s a bug. 
-           Please report this message to the developers.')
-      #sqrt(mean(data$weights*(p_full$mu - p_sub$mu)^2) + p_full$dis^2)
+  dis_na <- function(mu,v,musub,wobs) rep(0, ncol(mu)) 
+  dis_gauss <- function(mu,v,musub,wobs) {
+  	wobs <- wobs / sum(wobs)
+  	sqrt(colSums(wobs*(v + (mu-musub)^2)))
   }
-  dis_gamma <- function(p_full, data, p_sub) {
+  dis_student_t <- function(mu,v,musub,wobs) { stop('Projection of dispersion not yet implemented for student-t') }
+  dis_gamma <- function(mu,v,musub,wobs) {
       # TODO, IMPLEMENT THIS
       stop('Projection of dispersion parameter not yet implemented for family Gamma.')
       #mean(data$weights*((p_full$mu - p_sub$mu)/
       #                      fam$mu.eta(fam$linkfun(p_sub$mu))^2))
   }
   
-  # dispersion parameters for a given cluster in the sample clustering
-  discl_na <- function(mu, dis, wobs, wsample) { 1 }
-  discl_gauss <- function(mu, dis, wobs, wsample) {
-      mu_mean <- mu %*% wsample
-      mu_var <- mu^2 %*% wsample - mu_mean^2
-      sqrt( sum(wsample*dis^2) + mean(wobs*mu_var) )
-  }
-  discl_gamma <- function(mu, dis, wobs, wsample) {
-      stop('Projection of dispersion parameter not yet implemented for family Gamma.')
-  }
+  # # dispersion parameters for a given cluster in the sample clustering
+  # discl_na <- function(mu, dis, wobs, wsample) { 1 }
+  # discl_gauss <- function(mu, dis, wobs, wsample) {
+  #     mu_mean <- mu %*% wsample
+  #     mu_var <- mu^2 %*% wsample - mu_mean^2
+  #     sqrt( sum(wsample*dis^2) + mean(wobs*mu_var) )
+  # }
+  # discl_gamma <- function(mu, dis, wobs, wsample) {
+  #     stop('Projection of dispersion parameter not yet implemented for family Gamma.')
+  # }
   
+  # functions for computing the predictive variance (taking into account 
+  # the uncertainty in mu)
+  predvar_na <- function(mu, dis, wsample=1) { 0 }
+  predvar_gauss <- function(mu, dis, wsample=1) { 
+  	wsample <- wsample/sum(wsample)
+  	mu_mean <- mu %*% wsample
+  	mu_var <- mu^2 %*% wsample - mu_mean^2
+  	as.vector( sum(wsample*dis^2) + mu_var )
+  }
+  predvar_student_t <- function(mu, dis, wsample=1) { 
+  	stop('not implemented for student_t yet.')
+  	# mu_mean <- mu %*% wsample
+  	# mu_var <- mu^2 %*% wsample - mu_mean^2
+  	# sum(wsample*dis^2) + mu_var
+  }
+  predvar_gamma <- function(mu, dis, wsample) { stop('Family Gamma not implemented yet.')}
 
   # log likelihoods
   ll_binom <- function(mu, dis, y, weights=1) dbinom(weights*y, weights, mu, log=T)
@@ -85,13 +101,16 @@ kl_helpers <- function(fam) {
   # return the family object with the correct function handles
   c(switch(fam$family,
            'binomial' = list(kl = kl_dev, ll_fun = ll_binom, dis_fun = dis_na, discl_fun = discl_na,
-                             ppd_fun = ppd_binom),
+                             predvar = predvar_na, ppd_fun = ppd_binom),
            'poisson' = list(kl = kl_dev, ll_fun = ll_poiss, dis_fun = dis_na, discl_fun = discl_na,
-                            ppd_fun = ppd_poiss),
+                            predvar = predvar_na, ppd_fun = ppd_poiss),
            'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss, discl_fun = discl_gauss,
-                             ppd_fun = ppd_gauss),
+                             predvar = predvar_gauss, ppd_fun = ppd_gauss),
            'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma, discl_fun = discl_gamma,
-                          ppd_fun = ppd_gamma)),
+                          predvar_gamma, ppd_fun = ppd_gamma)#,
+  				 #'Student_t' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss, discl_fun = discl_gauss,
+  				 #									predvar = predvar_gauss, ppd_fun = ppd_gauss)
+  				 ),
     list(mu_fun = mu_fun), fam)
 
 }

@@ -1,7 +1,7 @@
 # Function handles for the projection
 #
 
-project_gaussian <- function(vind, p_full, d_train, intercept, regul = 1e-12) {
+project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul = 1e-12) {
 
     x <- d_train$x
     mu <- p_full$mu
@@ -27,12 +27,15 @@ project_gaussian <- function(vind, p_full, d_train, intercept, regul = 1e-12) {
     } else if (length(vind) == 0) {
         # no intercept used and vind is empty, so projecting to the completely
         # null model with eta=0 always
+    		pobs <- pseudo_data(0, mu, gaussian(link='identity'), offset=d_train$offset, weights=wobs)
         beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
-        dis_sub <- sqrt( colSums(wobs*mu^2) + dis^2 )
-        kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
-        p_sub <- list(kl = kl, weights = wsample, dis = dis_sub, vind = vind,
+        dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, 0, pobs$w)
+        # dis_sub0 <- sqrt( colSums(wobs*mu^2) + dis^2 )
+        # kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
+        kl <- weighted.mean(log(dis_sub), wsample) # THIS IS WRONG, FIX
+        submodel <- list(kl = kl, weights = wsample, dis = dis_sub, vind = vind,
                       intercept = intercept)
-        return(c(p_sub, .split_coef(beta_sub, intercept)))
+        return(c(submodel, .split_coef(beta_sub, intercept)))
     }
 
     xp <- x[, vind, drop = F]
@@ -41,21 +44,22 @@ project_gaussian <- function(vind, p_full, d_train, intercept, regul = 1e-12) {
 
     # Solve the projection equations (with l2-regularization)
     pobs <- pseudo_data(0, mu, gaussian(link='identity'), offset=d_train$offset, weights=wobs) # this will remove the offset
-    w <- sqrt(pobs$w)
-    beta_sub <- solve( crossprod(w*xp)+regulmat, crossprod(w*xp, w*pobs$z) )
-    dis_sub <- sqrt( colSums(wobs*(pobs$z - xp%*%beta_sub)^2) + dis^2 )
-    kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
-    p_sub <- list(kl = kl, weights = wsample, dis = dis_sub)
+    wsqrt <- sqrt(pobs$w)
+    beta_sub <- solve( crossprod(wsqrt*xp)+regulmat, crossprod(wsqrt*xp, wsqrt*pobs$z) )
+    musub <- xp%*%beta_sub
+    dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, musub, pobs$w)
+    kl <- weighted.mean(colSums(wobs*((pobs$z-musub)^2)), wsample) # not the actual kl-divergence, but a reasonable surrogate..
+    submodel <- list(kl = kl, weights = wsample, dis = dis_sub)
 
-    # split b to alpha and beta, add it to p_sub and return the result
-    p_sub <- c(p_sub, .split_coef(beta_sub, intercept))
+    # split b to alpha and beta, add it to submodel and return the result
+    submodel <- c(submodel, .split_coef(beta_sub, intercept))
     if(length(vind) == 1 && intercept) {
-      p_sub$vind <- integer(length=0)
+      submodel$vind <- integer(length=0)
     } else {
-      p_sub$vind <- vind[(1+intercept*1):length(vind)] - intercept*1
+      submodel$vind <- vind[(1+intercept*1):length(vind)] - intercept*1
     }
-    p_sub$intercept <- intercept
-    return(p_sub)
+    submodel$intercept <- intercept
+    return(submodel)
 }
 
 
@@ -80,16 +84,17 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 	}
 	
 	# compute the dispersion parameters and kl-divergences, and combine the results
-	p_sub <- list()
+	submodel <- list()
 	mu <- family_kl$mu_fun(xsub, alpha, beta, d_train$offset)
-	p_sub$dis <- family_kl$dis_fun(p_full, d_train, list(mu=mu))
-	p_sub$kl <- weighted.mean(family_kl$kl(p_full, d_train, list(mu=mu)), p_full$weights)
-	p_sub$weights <- p_full$weights
-	p_sub$alpha <- alpha
-	p_sub$beta <- beta
-	p_sub$vind <- vind
-	p_sub$intercept <- intercept
-	return(p_sub)
+	# submodel$dis <- family_kl$dis_fun(p_full, d_train, list(mu=mu))
+	submodel$dis <- family_kl$dis_fun(p_full$mu, p_full$var, mu, d_train$weights)
+	submodel$kl <- weighted.mean(family_kl$kl(p_full, d_train, list(mu=mu)), p_full$weights)
+	submodel$weights <- p_full$weights
+	submodel$alpha <- alpha
+	submodel$beta <- beta
+	submodel$vind <- vind
+	submodel$intercept <- intercept
+	return(submodel)
 }
 
 
@@ -101,7 +106,7 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
     if(family_kl$family == 'gaussian' && family_kl$link == 'identity') {
         return(
             function(vind, p_full, d_train, intercept) {
-                project_gaussian(vind, p_full, d_train, intercept, regul=regul)
+                project_gaussian(vind, p_full, d_train, family_kl, intercept, regul=regul)
         })
     } else {
       # return handle to project_nongaussian with family_kl set accordingly
@@ -119,7 +124,7 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
     #
     projfun <- .get_proj_handle(family_kl, regul)
 
-    p_sub <- lapply(nv,
+    submodels <- lapply(nv,
         function(nv) {
             if (nv == 0)
                 vind <- integer(length=0) # empty
@@ -127,6 +132,6 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
                 vind <- vind[1:nv]
             return(projfun(vind, p_full, d_train, intercept))
         })
-    return(p_sub)
+    return(submodels)
 }
 

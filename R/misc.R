@@ -132,9 +132,11 @@ log_sum_exp <- function(x) {
 	#
 	# Creates the reference distribution based on the fit-object, and the
 	# desired number of clusters (nc) or number of subsamples (ns). Returns
-	# a list with fields mu, dis and weights. If nc is specified, then
-	# clustering is used and ns is ignored.
+	# a list with fields 
+	#       mu, var, weights, cl
+	# TODO EXPLAIN THESE
 	#
+	# If nc is specified, then clustering is used and ns is ignored.
 	# It is possible to use this function by passing .extract_vars(fit) as
 	# an argument in place of fit.
 	#
@@ -174,15 +176,17 @@ log_sum_exp <- function(x) {
 	} else if (!is.null(ns)) {
 		# subsample from the full model
 		# would it be safer to actually randomly draw the subsample?
-	    if (ns > NCOL(vars$mu))
-	        stop('The number of subsamples ns cannot exceed the number of columns in mu.')
+		if (ns > NCOL(vars$mu))
+			stop('The number of subsamples ns cannot exceed the number of columns in mu.')
 		s_ind <- round(seq(1, S, length.out  = ns))
 		cl <- rep(NA, S)
 		cl[s_ind] <- c(1:ns)
-		p_ref <- list(mu = vars$mu[, s_ind, drop=F], dis = vars$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
+		predvar <- sapply(s_ind, function(j) { fam$predvar(vars$mu[,j,drop=F], vars$dis[j]) })
+		p_ref <- list(mu = vars$mu[, s_ind, drop=F], var = predvar, dis = vars$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
 	} else {
 		# use all the samples from the full model
-		p_ref <- list(mu = vars$mu, dis = vars$dis, weights = rep(1/S, S), cl=c(1:S))
+		predvar <- sapply(1:S, function(j) { fam$predvar(vars$mu[,j,drop=F], vars$dis[j])	})
+		p_ref <- list(mu = vars$mu, var = predvar, dis = vars$dis, weights = vars$wsample, cl=c(1:S))
 	}
 
 	# restore the old seed
@@ -225,18 +229,17 @@ log_sum_exp <- function(x) {
 	}
 	wcluster <- wcluster/sum(wcluster)
 	
-	# compute the dispersion parameters for each cluster
-	disps <- sapply(1:nc, function(j) {
+	# predictive variances
+	predvar <- sapply(1:nc, function(j) {
 		# compute normalized weights within the cluster, 1-eps is for numerical stability
 		ind <- which(cl == j)
 		ws <- wsample[ind]/sum(wsample[ind])*(1-eps)
-		# dispersion
-		family_kl$discl_fun( mu[,ind,drop=F], dis[ind], wobs, ws )
+		family_kl$predvar( mu[,ind,drop=F], dis[ind], ws )
 	})
 	
 	# combine the results
 	p <- list(mu = unname(t(centers)),
-						dis = disps,
+						var = predvar,
 						weights = wcluster,
 						cl = cl)
 	return(p)
@@ -268,7 +271,7 @@ log_sum_exp <- function(x) {
 	# values if missing.
 	#
 	if (is.null(data$x)) stop('The data object must be a list with field x giving the predictor values.')
-	if (is.null(data$y)) stop('The data object must be a list with field x giving the target values.')
+	if (is.null(data$y)) stop('The data object must be a list with field y giving the target values.')
 	if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
 	if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
 	return(data)
