@@ -13,7 +13,7 @@ using namespace arma;
 
 /** Returns the value of the regularized quadratic approximation to the loss function
 that is to be minimized iteratively:
-L = 0.5*sum_i{ w_i (z_i - f_i)^2 } + lambda*{ 0.5*(1-alpha)*||beta||_2^2 + alpha*||beta||_1 }
+L = 0.5*sum_i{ w_i*(z_i - f_i)^2 } + lambda*{ 0.5*(1-alpha)*||beta||_2^2 + alpha*||beta||_1 }
 */
 double loss_approx(vec beta,    // coefficients
                    vec f,       // latent values
@@ -134,6 +134,7 @@ List glm_elnet_c(arma::mat x, // input matrix
                  int qa_updates_max, // maximum for the total number of quadratic approximation updates
                  int pmax, // stop computation when the active set size is equal or greater than this
                  bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
+                 arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                  int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
 {
   
@@ -175,7 +176,7 @@ List glm_elnet_c(arma::mat x, // input matrix
     varind_all.insert(j);
   
   
-  obs = pseudo_obs(f);
+  obs = pseudo_obs(f,w0);
   z = as<vec>(obs["z"]);
   w = as<vec>(obs["w"]);
   double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha); // initial loss
@@ -192,7 +193,7 @@ List glm_elnet_c(arma::mat x, // input matrix
     while (qau < qa_updates_max) {
       
       // update the quadratic likelihood approximation
-      obs = pseudo_obs(f);
+      obs = pseudo_obs(f,w);
       z = as<vec>(obs["z"]);
       w = as<vec>(obs["w"]);
       ++qau;
@@ -275,6 +276,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
                 bool intercept,
                 double thresh,
                 int qa_updates_max,
+                arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                 int ls_iter_max=100,
                 bool debug=false)
 {
@@ -285,7 +287,6 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   
   int n = x.n_rows;
   int D = x.n_cols;
-  // int qau; // counts quadratic approximation updates
   int ls_iter; // counts linesearch iterations
   int j;
   double t; // step size in line search 
@@ -293,7 +294,6 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   double b = 0.7; 
   
   // initialization
-  // vec beta(D); beta.zeros();
   beta.zeros();
   vec beta_new(D); beta_new.zeros();
   vec dbeta(D); dbeta.zeros();
@@ -304,7 +304,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   mat regmat = lambda*eye(D,D); // regularization matrix
   
   // initial quadratic approximation
-  List obs = pseudo_obs(f);
+  List obs = pseudo_obs(f,w0);
   vec z = as<vec>(obs["z"]);
   vec w = as<vec>(obs["w"]);
   double loss_initial = obs["dev"];
@@ -332,7 +332,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       
       t = b*t;
       f = x*(beta+t*dbeta);
-      obs = pseudo_obs(f);
+      obs = pseudo_obs(f,w);
       z = as<vec>(obs["z"]);
       w = as<vec>(obs["w"]);
       loss = obs["dev"];
@@ -378,7 +378,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
 
 
 
-
+/**
+ * Wrapper for glm_ridge that can be called from R.
+ */
 // [[Rcpp::export]]
 List glm_ridge_c( arma::mat x,
                   Function pseudo_obs,
@@ -386,6 +388,7 @@ List glm_ridge_c( arma::mat x,
                   bool intercept,
                   double thresh,
                   int qa_updates_max,
+                  arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                   int ls_iter_max=100,
                   bool debug=false)
 {
@@ -396,7 +399,7 @@ List glm_ridge_c( arma::mat x,
   vec beta(D);
   int qau;
   double loss;
-  glm_ridge(beta, loss, qau, x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max, debug);
+  glm_ridge(beta, loss, qau, x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0, ls_iter_max, debug);
     
   if (intercept) 
     return List::create(vec(beta.tail(D-1)), beta(0), qau);
@@ -409,17 +412,18 @@ List glm_ridge_c( arma::mat x,
 
 
 
-/** Forward search.
+/** Forward search for glm.
  */
 // [[Rcpp::export]]
-List glm_forward_c( arma::mat x,
-                    Function pseudo_obs,
-                    double lambda,
-                    bool intercept,
-                    double thresh,
-                    int qa_updates_max,
-                    int pmax,
-                    int ls_iter_max=100 )
+List glm_forward_c( arma::mat x, // inputs (features)
+                    Function pseudo_obs, // R-function returning the pseudo-data based on the quadratic approximation
+                    double lambda, // regularization parameter (multiplier for L2-penalty)
+                    bool intercept, // whether to use intercept
+                    double thresh, // threshold for stopping the iterative reweighted least squares
+                    int qa_updates_max, // max number or quadratic approximation updates
+                    int pmax, // maximum number of variables up to which the search is continued
+                    arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
+                    int ls_iter_max=100 ) // max number of line search iterations
 {
   
   mat xp; // x for the current active set
@@ -452,7 +456,7 @@ List glm_forward_c( arma::mat x,
         continue;
       
       chosen(j) = 1; //notchosen(j) = 0;
-      glm_ridge(beta, loss, qau, x.cols(find(chosen)), pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max);
+      glm_ridge(beta, loss, qau, x.cols(find(chosen)), pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0, ls_iter_max);
       chosen(j) = 0;
       
       if (loss < loss_min) {

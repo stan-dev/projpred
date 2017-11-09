@@ -143,6 +143,7 @@ Student_t <- function(link='identity', nu=1) {
 	# create the object and append the relevant fields
 	fam <- list(
 		family = 'Student_t',
+		nu = nu,
 		link = link,
 		linkfun = stats$linkfun,
 		linkinv = stats$linkinv,
