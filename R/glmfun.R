@@ -41,29 +41,18 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
 
 
 lambda_grid <- function(x, y, family, offset, weights, obsvar=0, alpha=1.0, 
-												eps=1e-2, nlam=100, ret.init.weights=F) {
 												eps=1e-2, nlam=100, ret.all=F) {
 	#
-  # Standard lambda sequence as described in Friedman et al. (2009), section 2.5.
-  # The grid will have nlam values, evenly spaced in the log-space between lambda_max
-  # and lambda_min. lambda_max is the smallest value for which all the regression
-  # coefficients will be zero (assuming alpha > 0, alpha = 0 will be initialized 
 	# Standard lambda sequence as described in Friedman et al. (2009), section 2.5.
 	# The grid will have nlam values, evenly spaced in the log-space between lambda_max
 	# and lambda_min. lambda_max is the smallest value for which all the regression
 	# coefficients will be zero (assuming alpha > 0, alpha = 0 will be initialized 
 	# as if alpha = 0.01).
-  #
 	#
 	n <- dim(x)[1]
 	obs <- pseudo_data(rep(0,n), y, family, offset, weights, obsvar=obsvar)
-
 	
 	if (alpha == 0)
-	    # initialize ridge as if alpha = 0.01
-	    alpha <- 0.01
-
-	lambda_max <- max(abs( t(x) %*% (obs$z*obs$w) )) / alpha
 		# initialize ridge as if alpha = 0.01
 		alpha <- 0.01
 	
@@ -81,8 +70,6 @@ lambda_grid <- function(x, y, family, offset, weights, obsvar=0, alpha=1.0,
 	lambda_max <- max(abs( t(x) %*% (resid*obs$w) )) / alpha
 	lambda_min <- eps*lambda_max
 	loglambda <- seq(log(lambda_min), log(lambda_max), len=nlam)
-	if (ret.init.weights)
-		return( list(lambda = rev(exp(loglambda)), w0=obs$w) )
 	if (ret.all)
 		return( list(lambda = rev(exp(loglambda)), beta0=beta0, w0=obs$w) )
 	else
@@ -95,6 +82,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
                       lambda=NULL, alpha=1.0, thresh=1e-6,
                       qa_updates_max=ifelse(family$family=='gaussian' &&
                                               family$link=='identity', 1, 100),
+                      pmax=dim(as.matrix(x))[2]+1, pmax_strict=FALSE,
                       weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, normalize=TRUE) {
 	#
 	# Fits GLM with elastic net penalty on the regression coefficients.

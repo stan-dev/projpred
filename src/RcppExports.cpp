@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 // glm_elnet_c
-List glm_elnet_c(arma::mat x, Function pseudo_obs, arma::vec lambda, double alpha, bool intercept, double thresh, int qa_updates_max, int pmax, bool pmax_strict, arma::vec w0, int as_updates_max);
-RcppExport SEXP _projpred_glm_elnet_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP alphaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP pmaxSEXP, SEXP pmax_strictSEXP, SEXP w0SEXP, SEXP as_updates_maxSEXP) {
+List glm_elnet_c(arma::mat x, Function pseudo_obs, arma::vec lambda, double alpha, bool intercept, double thresh, int qa_updates_max, int pmax, bool pmax_strict, double beta0, arma::vec w0, int as_updates_max);
+RcppExport SEXP _projpred_glm_elnet_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP alphaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP pmaxSEXP, SEXP pmax_strictSEXP, SEXP beta0SEXP, SEXP w0SEXP, SEXP as_updates_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,9 +21,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type qa_updates_max(qa_updates_maxSEXP);
     Rcpp::traits::input_parameter< int >::type pmax(pmaxSEXP);
     Rcpp::traits::input_parameter< bool >::type pmax_strict(pmax_strictSEXP);
+    Rcpp::traits::input_parameter< double >::type beta0(beta0SEXP);
     Rcpp::traits::input_parameter< arma::vec >::type w0(w0SEXP);
     Rcpp::traits::input_parameter< int >::type as_updates_max(as_updates_maxSEXP);
-    rcpp_result_gen = Rcpp::wrap(glm_elnet_c(x, pseudo_obs, lambda, alpha, intercept, thresh, qa_updates_max, pmax, pmax_strict, w0, as_updates_max));
+    rcpp_result_gen = Rcpp::wrap(glm_elnet_c(x, pseudo_obs, lambda, alpha, intercept, thresh, qa_updates_max, pmax, pmax_strict, beta0, w0, as_updates_max));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -67,7 +68,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 11},
+    {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 12},
     {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 9},
     {"_projpred_glm_forward_c", (DL_FUNC) &_projpred_glm_forward_c, 9},
     {NULL, NULL, 0}

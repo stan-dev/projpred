@@ -134,6 +134,7 @@ List glm_elnet_c(arma::mat x, // input matrix
                  int qa_updates_max, // maximum for the total number of quadratic approximation updates
                  int pmax, // stop computation when the active set size is equal or greater than this
                  bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
+                 double beta0, // initial value for the intercept
                  arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                  int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
 {
@@ -165,9 +166,9 @@ List glm_elnet_c(arma::mat x, // input matrix
   
   
   // initialization
+  if (!intercept)	beta0 = 0; // ensure intercept is zero when it is not used
   vec beta(D);
   beta.zeros(D);
-  double beta0 = 0.0;
   vec f = x*beta + beta0;
   std::set<size_t> active_set; 
   std::set<size_t> active_set_old;
@@ -202,14 +203,14 @@ List glm_elnet_c(arma::mat x, // input matrix
       loss_old = loss_approx(beta, f, z, w, lam, alpha);
       
       // run the coordinate descent until convergence for the current
-      //  quadratic approximation
+      // quadratic approximation
       asu = 0;
       while (asu < as_updates_max) {
-        
+      	
         // iterate within the current active set until convergence (this might update 
         // active_set_old, if some variable goes to zero)
         coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, tol);
-        
+      	
         // perfom one pass over all the variables and check if the active set changes 
         // (this might update active_set)
         coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, tol);
@@ -241,9 +242,8 @@ List glm_elnet_c(arma::mat x, // input matrix
     if (qau == qa_updates_max && qa_updates_max > 1)
       Rcpp::Rcout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
     
-    if ((alpha > 0.0) && (active_set.size() >= pmaxu || active_set.size() == D)) {
-      // obtained solution with more than pmax variables (or the number of columns in x)
-      // when no ridge regression considered, so terminate
+    if ((alpha > 0.0) && (active_set.size() >= pmaxu)) {
+      // obtained solution with at least pmax variables and penalty is not ridge, so terminate
       if (pmax_strict) {
         // return solutions only up to the previous lambda value
         beta0_path = beta0_path.head(k);
