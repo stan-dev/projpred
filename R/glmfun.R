@@ -22,7 +22,7 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
   		# initialization of the em-iteration; loop recursively until stable initial weights are found
   		wprev <- weights
   		while(T) {
-  			wtemp <- projpred:::pseudo_data(f,y,family, offset=offset, wprev=wprev)$w
+  			wtemp <- pseudo_data(f,y,family, offset=offset, weights=weights, wprev=wprev, obsvar=obsvar)$w
   			if (max(abs(wtemp-wprev)) < 1e-6)
   				break
   			wprev <- wtemp
@@ -42,35 +42,59 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
 
 lambda_grid <- function(x, y, family, offset, weights, obsvar=0, alpha=1.0, 
 												eps=1e-2, nlam=100, ret.init.weights=F) {
+												eps=1e-2, nlam=100, ret.all=F) {
 	#
   # Standard lambda sequence as described in Friedman et al. (2009), section 2.5.
   # The grid will have nlam values, evenly spaced in the log-space between lambda_max
   # and lambda_min. lambda_max is the smallest value for which all the regression
   # coefficients will be zero (assuming alpha > 0, alpha = 0 will be initialized 
+	# Standard lambda sequence as described in Friedman et al. (2009), section 2.5.
+	# The grid will have nlam values, evenly spaced in the log-space between lambda_max
+	# and lambda_min. lambda_max is the smallest value for which all the regression
+	# coefficients will be zero (assuming alpha > 0, alpha = 0 will be initialized 
 	# as if alpha = 0.01).
   #
+	#
 	n <- dim(x)[1]
 	obs <- pseudo_data(rep(0,n), y, family, offset, weights, obsvar=obsvar)
 
+	
 	if (alpha == 0)
 	    # initialize ridge as if alpha = 0.01
 	    alpha <- 0.01
 
 	lambda_max <- max(abs( t(x) %*% (obs$z*obs$w) )) / alpha
+		# initialize ridge as if alpha = 0.01
+		alpha <- 0.01
+	
+	# find the initial intercept (that is, assuming all coefficients = 0)
+	beta0_old <- 0
+	while(T) {
+		beta0 <- sum(obs$w*obs$z) / sum(obs$w) # intercept
+		if (abs(beta0-beta0_old) < 1e-6)
+			break
+		obs <- pseudo_data(beta0*rep(1,n), y, family, offset, weights, obsvar=obsvar)
+		beta0_old <- beta0
+	}
+	
+	resid <- obs$z - beta0 # residual after taking into account the intercept
+	lambda_max <- max(abs( t(x) %*% (resid*obs$w) )) / alpha
 	lambda_min <- eps*lambda_max
 	loglambda <- seq(log(lambda_min), log(lambda_max), len=nlam)
 	if (ret.init.weights)
 		return( list(lambda = rev(exp(loglambda)), w0=obs$w) )
+	if (ret.all)
+		return( list(lambda = rev(exp(loglambda)), beta0=beta0, w0=obs$w) )
 	else
 		return(rev(exp(loglambda)))
 }
+
 
 
 glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-3,
                       lambda=NULL, alpha=1.0, thresh=1e-6,
                       qa_updates_max=ifelse(family$family=='gaussian' &&
                                               family$link=='identity', 1, 100),
-                      pmax=dim(as.matrix(x))[2], pmax_strict=FALSE,
                       weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, normalize=TRUE) {
 	#
 	# Fits GLM with elastic net penalty on the regression coefficients.
@@ -95,19 +119,21 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 		x <- scale(x, center=T, scale=T)
 	}
 
-	# default lambda-sequence
+	# default lambda-sequence, including optimal start point
 	if (is.null(lambda)) {
 		temp <- lambda_grid(x, y, family, offset, weights, alpha, obsvar=obsvar, nlam=nlambda,
-												eps=lambda_min_ratio, ret.init.weights = T)
+												eps=lambda_min_ratio, ret.all = T)
 		lambda <- temp$lambda
 		w0 <- temp$w0
-	} else
+		beta0 <- temp$beta0
+	} else {
+		beta0 <- 0
 		w0 <- weights
+	}
 		
-
 	# call the c++-function that serves as the workhorse
 	pseudo_obs <- function(f,wprev) {return(pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev))}
-	out <- glm_elnet_c(x,pseudo_obs,lambda,alpha,intercept,thresh,qa_updates_max,pmax,pmax_strict,w0)
+	out <- glm_elnet_c(x,pseudo_obs,lambda,alpha,intercept,thresh,qa_updates_max,pmax,pmax_strict,beta0,w0)
 	beta <- out[[1]]
 	beta0 <- as.vector(out[[2]])
 
