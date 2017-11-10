@@ -133,7 +133,7 @@ Student_t <- function(link='identity', nu=1) {
 	# fetch the link statistics
 	stats <- make.link(link)
 	
-	# variance function
+	# variance function # CHECK THIS!!!! 
 	varfun <- function(mu) {
 		if (nu > 2)
 			rep(nu/(nu-2), length(mu))
@@ -148,11 +148,11 @@ Student_t <- function(link='identity', nu=1) {
 		link = link,
 		linkfun = stats$linkfun,
 		linkinv = stats$linkinv,
-		variance = varfun, # CHECK THIS!!!! 
+		variance = varfun, 
 		dev.resids = function(y, mu, wt) (nu+1) * log(1 + 1/nu*(y-mu)^2), 
 		aic = function(y, n, mu, wt, dev) stop('aic not implemented yet.'),
 		mu.eta = stats$mu.eta,
-		initialize = expression({ stop('initialize not implemented yet.')	}),
+		initialize = expression({ stop('initialization not implemented yet.')	}),
 		validmu = function(mu) TRUE,
 		valideta = stats$valideta
 	)
