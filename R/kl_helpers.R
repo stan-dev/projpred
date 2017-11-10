@@ -30,7 +30,8 @@ kl_helpers <- function(fam) {
   }
 
   # dispersion parameters in one-to-one projection.
-  # for gaussian dispersion is sigma and for gamma it is the shape parameter
+  # for gaussian dispersion is sigma and for gamma it is the shape parameter.
+  # NOTE: these could be functions of p_full = list(mu, var), p_sub = list(mu), wobs
   dis_na <- function(mu,v,musub,wobs) rep(0, ncol(mu)) 
   dis_gauss <- function(mu,v,musub,wobs) {
   	wobs <- wobs / sum(wobs)
@@ -100,15 +101,15 @@ kl_helpers <- function(fam) {
 
   # return the family object with the correct function handles
   c(switch(fam$family,
-           'binomial' = list(kl = kl_dev, ll_fun = ll_binom, dis_fun = dis_na, discl_fun = discl_na,
+           'binomial' = list(kl = kl_dev, ll_fun = ll_binom, dis_fun = dis_na, #discl_fun = discl_na,
                              predvar = predvar_na, ppd_fun = ppd_binom),
-           'poisson' = list(kl = kl_dev, ll_fun = ll_poiss, dis_fun = dis_na, discl_fun = discl_na,
+           'poisson' = list(kl = kl_dev, ll_fun = ll_poiss, dis_fun = dis_na, #discl_fun = discl_na,
                             predvar = predvar_na, ppd_fun = ppd_poiss),
-           'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss, discl_fun = discl_gauss,
+           'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss, #discl_fun = discl_gauss,
                              predvar = predvar_gauss, ppd_fun = ppd_gauss),
-           'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma, discl_fun = discl_gamma,
+           'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma, #discl_fun = discl_gamma,
                           predvar_gamma, ppd_fun = ppd_gamma)#,
-  				 #'Student_t' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss, discl_fun = discl_gauss,
+  				 #'Student_t' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss, #discl_fun = discl_gauss,
   				 #									predvar = predvar_gauss, ppd_fun = ppd_gauss)
   				 ),
     list(mu_fun = mu_fun), fam)
