@@ -154,7 +154,7 @@ Student_t <- function(link='identity', nu=1) {
 		linkfun = stats$linkfun,
 		linkinv = stats$linkinv,
 		variance = varfun, 
-		dev.resids = function(y, mu, wt) (nu+1) * log(1 + 1/nu*(y-mu)^2), 
+		dev.resids = function(y, mu, wt, dis=1) (nu+1) * log(1 + 1/nu*((y-mu)/dis)^2), 
 		aic = function(y, n, mu, wt, dev) stop('aic not implemented yet.'),
 		mu.eta = stats$mu.eta,
 		initialize = expression({ stop('initialization not implemented yet.')	}),

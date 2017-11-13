@@ -24,7 +24,7 @@ extra_thresh <- 1e-10
 
 context("ridge")
 test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0", {
-  fam <- gaussian(link = 'identity')
+  fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0
 
@@ -37,7 +37,7 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: gaussian, id-link, no intercept, lambda = 0", {
-  fam <- gaussian(link = 'identity')
+	fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0
 
@@ -49,7 +49,7 @@ test_that("glm_ridge: gaussian, id-link, no intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
-  fam <- gaussian(link = 'identity')
+	fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0.5
 
@@ -64,7 +64,7 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
 })
 
 test_that("glm_ridge: gaussian, log-link, intercept, lambda = 0", {
-  fam <- gaussian(link = 'log')
+  fam <- kl_helpers(gaussian(link = 'log'))
   # intercept of 4 to ensure that y are positive
   y <- rnorm(n, fam$linkinv(x%*%b+4), dis)
   lambda <- 0
@@ -79,7 +79,7 @@ test_that("glm_ridge: gaussian, log-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: binomial, logit-link, intercept, lambda = 0", {
-  fam <- binomial(link = 'logit')
+  fam <- kl_helpers(binomial(link = 'logit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -92,7 +92,7 @@ test_that("glm_ridge: binomial, logit-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: binomial, logit-link, no intercept, lambda = 0", {
-  fam <- binomial(link = 'logit')
+	fam <- kl_helpers(binomial(link = 'logit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -104,7 +104,7 @@ test_that("glm_ridge: binomial, logit-link, no intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: binomial, probit-link, intercept, lambda = 0", {
-  fam <- binomial(link = 'probit')
+	fam <- kl_helpers(binomial(link = 'probit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -118,7 +118,7 @@ test_that("glm_ridge: binomial, probit-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: binomial, cauchit-link, intercept, lambda = 0", {
-  fam <- binomial(link = 'cauchit')
+  fam <- kl_helpers(binomial(link = 'cauchit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -132,7 +132,7 @@ test_that("glm_ridge: binomial, cauchit-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: poisson, log-link, intercept, lambda = 0", {
-  fam <- poisson(link = 'log')
+  fam <- kl_helpers(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -145,7 +145,7 @@ test_that("glm_ridge: poisson, log-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
-  fam <- poisson(link = 'log')
+  fam <- kl_helpers(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -157,7 +157,7 @@ test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: Gamma, log-link, intercept, lambda = 0", {
-  fam <- Gamma(link = 'log')
+  fam <- kl_helpers(Gamma(link = 'log'))
   y <- rgamma(n, fam$linkinv(x%*%b + 1))
   lambda <- 0
 

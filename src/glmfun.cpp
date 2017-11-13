@@ -180,6 +180,7 @@ List glm_elnet_c(arma::mat x, // input matrix
   obs = pseudo_obs(f,w0);
   z = as<vec>(obs["z"]);
   w = as<vec>(obs["w"]);
+  // double loss_initial = obs["dev"];
   double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha); // initial loss
   double loss_old = loss_initial; // will be updated iteratively
   double loss; // will be updated iteratively
@@ -312,7 +313,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   double loss_initial = obs["dev"];
   double loss_old = loss_initial; // will be updated iteratively
   loss = loss_initial; // will be updated iteratively
-  double tol = thresh*fabs(loss_initial); // criterion for convergence
+  double tol = thresh*fabs(loss_initial); // threshold for convergence
   
   
   qau = 0;
@@ -338,7 +339,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       obs = pseudo_obs(f,w);
       // z = as<vec>(obs["z"]);
       // w = as<vec>(obs["w"]);
-      grad_f = as<vec>(obs["grad"]);
+      // grad_f = as<vec>(obs["grad"]);
       loss = obs["dev"];
       loss = loss + lambda*sum(square(beta+t*dbeta));
       ++ls_iter;
@@ -346,9 +347,14 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       if (std::isnan(loss))
         continue;
       
-      if (loss < loss_old + a*t*sum(grad%dbeta) )
-      // if (loss < loss_old)
-        break;
+      // Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
+      if (sum(grad%dbeta) < 0) {
+      	if (loss < loss_old + a*t*sum(grad%dbeta) )
+      		break;
+      } else {
+      	Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
+      	Rcpp::Rcout << "The search direction is not a descent direction, taking full Newton step." << '\n';
+      }
     }
     
     if (debug) {
@@ -365,20 +371,26 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       Rcpp::Rcout << "------------------------------------" << '\n';
     }
     
-    if (ls_iter == ls_iter_max) {
+    if (ls_iter == ls_iter_max && ls_iter_max > 1) {
       Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
     }
-    beta = beta + t*dbeta;
+    
     ++qau;
     
     // check if converged
+    
+    // Rcpp::Rcout << "loss change = " << loss - loss_old << '\n';
+    // Rcpp::Rcout << "loss = " << loss << '\n';
+    // if (fabs(loss_old - loss) < tol) {
     if (loss_old - loss < tol) {
       // convergence reached
       break;
     } else {
       // continue iterating, update the pseudo data
+      beta = beta + t*dbeta;
       z = as<vec>(obs["z"]);
       w = as<vec>(obs["w"]);
+      grad_f = as<vec>(obs["grad"]);
       loss_old = loss;
     }
   }

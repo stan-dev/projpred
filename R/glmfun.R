@@ -32,15 +32,17 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
   	# given the weights from the previous em-iteration, update s2 based on the previous weights and mu,
   	# and then compute new weights w
   	nu <- family$nu
-  	s2 <- sum(wprev/sum(weights)*(obsvar+(z-mu)^2))
-  	w <- weights*(nu+1)/(nu + 1/s2*(obsvar+(z-mu)^2)) # SHOULD THIS BE MULTIPLIED BY weights???
-  	grad <- weights*2*(mu-y)/nu* (nu+1)/(1+1/nu*(y-mu)^2) * dmu_df
+  	s2 <- sum(wprev*(obsvar+(y-mu)^2)) / sum(weights)  # SHOULD WE HAVE HERE (y-mu)^2 or (z-f)^2 ???
+  	w <- weights*(nu+1)/(nu + 1/s2*(obsvar+(y-mu)^2))
+  	dev <- sum( -2*family$ll_fun(mu, sqrt(s2), y, weights) )
+  	grad <- weights*2*(mu-y)/sqrt(s2)/nu* (nu+1)/(1+1/nu*(y-mu)^2/s2) * dmu_df
   } else {
     w <- (weights * dmu_df^2)/family$variance(mu)
+    dev <- sum( -2*family$ll_fun(mu, 1, y, weights) )
     grad <- -2*w*(z-f)
   }
   
-  dev <- sum( family$dev.resids(y, mu, weights) ) # THIS COULD BE REPLACED BY THE PACKAGE'S OWN LOG-LIK COMPUTATION
+  # dev <- sum( family$dev.resids(y, mu, weights) ) # THIS COULD BE REPLACED BY THE PACKAGE'S OWN LOG-LIK COMPUTATION
   return(list(z=z, w=w, dev=dev, grad=grad))
 }
 
@@ -159,8 +161,10 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
 			weights <- rep(1.0, nrow(x))
 		if (is.null(offset))
 			offset <- rep(0.0, nrow(x))
+		
+		w0 <- lambda_grid(x, y, family, offset, weights, alpha=0, obsvar=obsvar, nlam=1, eps=1, ret.all = T)$w0
 		pseudo_obs <- function(f,wprev) {return(pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev))}
-		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, weights,100,T)
+		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0,1,F)
 	}
   return(list( beta=out[[1]], beta0=out[[2]], qa_updates=out[[3]] ))
 }
@@ -181,7 +185,7 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
     # normal case
     x <- as.matrix(x)
     if (is.null(weights))
-      weights <- rep(1, nrow(x))
+      weights <- rep(1.0, nrow(x))
     if (is.null(offset))
       offset <- rep(0.0, nrow(x))
     pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
