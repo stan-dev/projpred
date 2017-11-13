@@ -80,6 +80,11 @@ kl_helpers <- function(fam) {
     dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
     weights*dnorm(y, mu, dis, log=T)
   }
+  ll_student_t <- function(mu, dis, y, weights=1) {
+    dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
+    weights*(dt((y-mu)/dis, fam$nu, log=T) - log(dis))
+    # weights*dnorm(y, mu, dis, log=T)
+  }
   ll_gamma <- function(mu, dis, y, weights=1) {
     dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
     weights*dgamma(y, dis, dis/matrix(mu), log=T)
@@ -108,9 +113,9 @@ kl_helpers <- function(fam) {
            'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss, #discl_fun = discl_gauss,
                              predvar = predvar_gauss, ppd_fun = ppd_gauss),
            'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, dis_fun = dis_gamma, #discl_fun = discl_gamma,
-                          predvar_gamma, ppd_fun = ppd_gamma)#,
-  				 #'Student_t' = list(kl = kl_gauss, ll_fun = ll_gauss, dis_fun = dis_gauss, #discl_fun = discl_gauss,
-  				 #									predvar = predvar_gauss, ppd_fun = ppd_gauss)
+                          predvar_gamma, ppd_fun = ppd_gamma),
+  				 'Student_t' = list(kl = NULL, ll_fun = ll_student_t, dis_fun = dis_student_t, #discl_fun = discl_gauss,
+  				 									predvar = predvar_student_t, ppd_fun = NULL)
   				 ),
     list(mu_fun = mu_fun), fam)
 

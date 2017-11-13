@@ -297,7 +297,8 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   beta.zeros();
   vec beta_new(D); beta_new.zeros();
   vec dbeta(D); dbeta.zeros();
-  vec grad(D); grad.zeros(); // gradient of the deviance 
+  vec grad(D); grad.zeros(); // gradient of the deviance w.r.t. the regression coefficients
+  vec grad_f(n); grad_f.zeros(); // pointwise gradient of the deviance w.r.t. f
   vec f = x*beta;
   
   mat xw(n,D); // this will be the weighted x
@@ -307,6 +308,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   List obs = pseudo_obs(f,w0);
   vec z = as<vec>(obs["z"]);
   vec w = as<vec>(obs["w"]);
+  grad_f = as<vec>(obs["grad"]);
   double loss_initial = obs["dev"];
   double loss_old = loss_initial; // will be updated iteratively
   loss = loss_initial; // will be updated iteratively
@@ -324,7 +326,8 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
     
     // backtracking line search
-    grad = -2*x.t()*(w % (z-f)) + 2*lambda*beta; // -2* grad of log-likelihood + penalty
+    // grad = -2*x.t()*(w % (z-f)) + 2*lambda*beta; // -2* grad of log-likelihood + penalty
+    grad = x.t()*grad_f + 2*lambda*beta; // grad of deviance + grad of penalty
     t = 1.0/b;
     dbeta = beta_new - beta;
     ls_iter = 0;
@@ -333,8 +336,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       t = b*t;
       f = x*(beta+t*dbeta);
       obs = pseudo_obs(f,w);
-      z = as<vec>(obs["z"]);
-      w = as<vec>(obs["w"]);
+      // z = as<vec>(obs["z"]);
+      // w = as<vec>(obs["w"]);
+      grad_f = as<vec>(obs["grad"]);
       loss = obs["dev"];
       loss = loss + lambda*sum(square(beta+t*dbeta));
       ++ls_iter;
@@ -343,21 +347,26 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
         continue;
       
       if (loss < loss_old + a*t*sum(grad%dbeta) )
+      // if (loss < loss_old)
         break;
+    }
+    
+    if (debug) {
+      Rcpp::Rcout << "step length t = " << t << '\n';
+      Rcpp::Rcout << "loss = " << loss_old << '\n';
+      Rcpp::Rcout << "loss_new = " << loss << '\n';
+      Rcpp::Rcout << "loss_diff = " << loss-loss_old << '\n';
+      beta.t().print("beta = "); Rcpp::Rcout << '\n';
+      beta_new.t().print("beta_new = "); Rcpp::Rcout << '\n';
+      Rcpp::Rcout << "|beta| = " << norm(beta) << '\n';
+      Rcpp::Rcout << "|beta_new| = " << norm(beta_new) << '\n';
+      Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
+      Rcpp::Rcout << "|grad| = " << norm(grad) << '\n';
+      Rcpp::Rcout << "------------------------------------" << '\n';
     }
     
     if (ls_iter == ls_iter_max) {
       Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
-      if (debug) {
-        Rcpp::Rcout << "step length t = " << t << '\n';
-        Rcpp::Rcout << "loss = " << loss_old << '\n';
-        Rcpp::Rcout << "loss_new = " << loss << '\n';
-        Rcpp::Rcout << "loss_diff = " << loss-loss_old << '\n';
-        Rcpp::Rcout << "|beta| = " << norm(beta) << '\n';
-        Rcpp::Rcout << "|beta_new| = " << norm(beta_new) << '\n';
-        Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
-        Rcpp::Rcout << "|grad| = " << norm(grad) << '\n';
-      }
     }
     beta = beta + t*dbeta;
     ++qau;
@@ -367,7 +376,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       // convergence reached
       break;
     } else {
-      // continue iterating
+      // continue iterating, update the pseudo data
+      z = as<vec>(obs["z"]);
+      w = as<vec>(obs["w"]);
       loss_old = loss;
     }
   }

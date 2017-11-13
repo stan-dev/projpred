@@ -9,7 +9,8 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
   #
   # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
   # based on the linear approximation to the link function at f = eta = x*beta + beta0,
-  # as explained in McGullagh and Nelder (1989). Returns also the deviance at f.
+  # as explained in McGullagh and Nelder (1989). Returns also the deviance and its pointwise
+  # derivative w.r.t f at the current f.
   #
   f <- f + offset
   mu <- family$linkinv(f)
@@ -32,11 +33,15 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
   	# and then compute new weights w
   	nu <- family$nu
   	s2 <- sum(wprev/sum(weights)*(obsvar+(z-mu)^2))
-  	w <- (nu+1)/(nu + 1/s2*(obsvar+(z-mu)^2))
-  } else
-  	w <- (weights * dmu_df^2)/family$variance(mu)
-  dev <- sum( family$dev.resids(y, mu, weights) )
-  return(list(z=z, w=w, dev=dev))
+  	w <- weights*(nu+1)/(nu + 1/s2*(obsvar+(z-mu)^2)) # SHOULD THIS BE MULTIPLIED BY weights???
+  	grad <- weights*2*(mu-y)/nu* (nu+1)/(1+1/nu*(y-mu)^2) * dmu_df
+  } else {
+    w <- (weights * dmu_df^2)/family$variance(mu)
+    grad <- -2*w*(z-f)
+  }
+  
+  dev <- sum( family$dev.resids(y, mu, weights) ) # THIS COULD BE REPLACED BY THE PACKAGE'S OWN LOG-LIK COMPUTATION
+  return(list(z=z, w=w, dev=dev, grad=grad))
 }
 
 
@@ -155,7 +160,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
 		if (is.null(offset))
 			offset <- rep(0.0, nrow(x))
 		pseudo_obs <- function(f,wprev) {return(pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev))}
-		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, weights)
+		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, weights,100,T)
 	}
   return(list( beta=out[[1]], beta0=out[[2]], qa_updates=out[[3]] ))
 }
