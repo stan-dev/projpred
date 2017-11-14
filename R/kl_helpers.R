@@ -74,7 +74,11 @@ kl_helpers <- function(fam) {
   predvar_gamma <- function(mu, dis, wsample) { stop('Family Gamma not implemented yet.')}
 
   # log likelihoods
-  ll_binom <- function(mu, dis, y, weights=1) dbinom(weights*y, weights, mu, log=T)
+  ll_binom <- function(mu, dis, y, weights=1) { 
+    # if (!is.integer(y) || !is.integer(weights))
+      # stop('Internal error: obtained non-integer weights or success counts in binomial model.')
+    dbinom(y*weights, weights, mu, log=T)
+  }
   ll_poiss <- function(mu, dis, y, weights=1) weights*dpois(y, mu, log=T)
   ll_gauss <- function(mu, dis, y, weights=1) {
     dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))

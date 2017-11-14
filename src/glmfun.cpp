@@ -100,8 +100,9 @@ void coord_descent(	vec& beta, // regression coefficients
     loss = loss_approx(beta,f,z,w,lambda,alpha);
     
     if (until_convergence) {
-      
-      if (fabs(loss_old-loss) < tol) {
+      // Rcpp::Rcout << "loss - loss_old = " << loss - loss_old << '\n';
+      // if (fabs(loss_old-loss) < tol) {
+      if (loss_old-loss < tol) {
         break;
       } else {
         // continue iterating
@@ -292,7 +293,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   int j;
   double t; // step size in line search 
   double a = 0.0; // backtracking line search parameters a and b (see Boyd 2004)
-  double b = 0.7; 
+  double b = 0.5; 
   
   // initialization
   beta.zeros();
@@ -352,16 +353,22 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
         continue;
       
       // Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
-      Rcpp::Rcout << "loss_old - loss = " << loss_old - loss << '\n';
+      // Rcpp::Rcout << "loss_old - loss = " << loss_old - loss << '\n';
       if (sum(grad%dbeta) < 0) {
       	if (loss < loss_old + a*t*sum(grad%dbeta) )
       		break;
       } else {
-      	Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
-      	Rcpp::Rcout << "The search direction is not a descent direction, taking full Newton step." << '\n';
+      	// Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
+      	Rcpp::Rcout << "The search direction is not a descent direction ";
+      	Rcpp::Rcout << "(grad*dbeta = " << sum(grad%dbeta) << "), ";
+      	Rcpp::Rcout << "taking full Newton step." << '\n';
       }
     }
-    Rcpp::Rcout << "-------------------------------" << '\n';
+    // Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
+    // beta.t().print("beta = "); Rcpp::Rcout << '\n';
+    // beta_new.t().print("beta_new = "); Rcpp::Rcout << '\n';
+    // Rcpp::Rcout << "-------------------------------" << '\n';
+    
     
     if (debug) {
       Rcpp::Rcout << "step length t = " << t << '\n';

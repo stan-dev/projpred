@@ -47,7 +47,7 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
 }
 
 
-lambda_grid <- function(x, y, family, offset, weights, obsvar=0, alpha=1.0, 
+lambda_grid <- function(x, y, family, offset, weights, intercept, obsvar=0, alpha=1.0, 
 												eps=1e-2, nlam=100, ret.all=F) {
 	#
 	# Standard lambda sequence as described in Friedman et al. (2009), section 2.5.
@@ -64,14 +64,17 @@ lambda_grid <- function(x, y, family, offset, weights, obsvar=0, alpha=1.0,
 		alpha <- 0.01
 	
 	# find the initial intercept (that is, assuming all coefficients = 0)
-	beta0_old <- 0
-	while(T) {
-		beta0 <- sum(obs$w*obs$z) / sum(obs$w) # intercept
-		if (abs(beta0-beta0_old) < 1e-6)
-			break
-		obs <- pseudo_data(beta0*rep(1,n), y, family, offset, weights, obsvar=obsvar)
-		beta0_old <- beta0
-	}
+	if (intercept) {
+	  beta0_old <- 0
+	  while(T) {
+	    beta0 <- sum(obs$w*obs$z) / sum(obs$w) # intercept
+	    if (abs(beta0-beta0_old) < 1e-6)
+	      break
+	    obs <- pseudo_data(beta0*rep(1,n), y, family, offset, weights, obsvar=obsvar)
+	    beta0_old <- beta0
+	  } 
+	} else
+	  beta0 <- 0
 	
 	resid <- obs$z - beta0 # residual after taking into account the intercept
 	lambda_max <- max(abs( t(x) %*% (resid*obs$w) )) / alpha
@@ -108,16 +111,17 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 		offset <- rep(0.0, nrow(x))
 
 	if (normalize) {
-		# normalize the predictor matrix
-		mx <- colMeans(x)
+		# normalize the predictor matrix. notice that the variables are centered only if
+	  # intercept is used.
+		mx <- ifelse(intercept, colMeans(x), rep(0,ncol(x)))
 		sx <- apply(x,2,'sd')
-		x <- scale(x, center=T, scale=T)
+		x <- scale(x, center=intercept, scale=T)
 	}
 
 	# default lambda-sequence, including optimal start point
 	if (is.null(lambda)) {
-		temp <- lambda_grid(x, y, family, offset, weights, alpha, obsvar=obsvar, nlam=nlambda,
-												eps=lambda_min_ratio, ret.all = T)
+		temp <- lambda_grid(x, y, family, offset, weights, intercept, alpha, 
+		                    obsvar=obsvar, nlam=nlambda, eps=lambda_min_ratio, ret.all = T)
 		lambda <- temp$lambda
 		w0 <- temp$w0
 		beta0 <- temp$beta0
@@ -127,7 +131,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 	}
 		
 	# call the c++-function that serves as the workhorse
-	pseudo_obs <- function(f,wprev) {return(pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev))}
+	pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
 	out <- glm_elnet_c(x,pseudo_obs,lambda,alpha,intercept,thresh,qa_updates_max,pmax,pmax_strict,beta0,w0)
 	beta <- out[[1]]
 	beta0 <- as.vector(out[[2]])
@@ -146,7 +150,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
                       qa_updates_max=ifelse(family$family=='gaussian' &&
                                               family$link=='identity', 1, 100),
-                      weights=NULL, offset=NULL, obsvar=0, intercept=TRUE) {
+                      weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, ls_iter_max=100) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
@@ -163,8 +167,8 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
 			offset <- rep(0.0, nrow(x))
 		
 		w0 <- weights #lambda_grid(x, y, family, offset, weights, alpha=0, obsvar=obsvar, nlam=1, eps=1, ret.all = T)$w0
-		pseudo_obs <- function(f,wprev) {return(pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev))}
-		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0)
+		pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
+		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0,ls_iter_max)
 	}
   return(list( beta=out[[1]], beta0=out[[2]], qa_updates=out[[3]] ))
 }
