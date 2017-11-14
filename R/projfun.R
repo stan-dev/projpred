@@ -27,7 +27,7 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
     } else if (length(vind) == 0) {
         # no intercept used and vind is empty, so projecting to the completely
         # null model with eta=0 always
-    		pobs <- pseudo_data(0, mu, gaussian(link='identity'), offset=d_train$offset, weights=wobs)
+    		pobs <- pseudo_data(0, mu, family_kl, offset=d_train$offset, weights=wobs)
         beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
         dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, 0, pobs$w)
         # dis_sub0 <- sqrt( colSums(wobs*mu^2) + dis^2 )
@@ -43,7 +43,7 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
     regulmat <- diag(regul*rep(1.0, Dp), Dp, Dp)
 
     # Solve the projection equations (with l2-regularization)
-    pobs <- pseudo_data(0, mu, gaussian(link='identity'), offset=d_train$offset, weights=wobs) # this will remove the offset
+    pobs <- pseudo_data(0, mu, family_kl, offset=d_train$offset, weights=wobs) # this will remove the offset
     wsqrt <- sqrt(pobs$w)
     beta_sub <- solve( crossprod(wsqrt*xp)+regulmat, crossprod(wsqrt*xp, wsqrt*pobs$z) )
     musub <- xp%*%beta_sub

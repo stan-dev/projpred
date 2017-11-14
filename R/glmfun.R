@@ -162,9 +162,9 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
 		if (is.null(offset))
 			offset <- rep(0.0, nrow(x))
 		
-		w0 <- lambda_grid(x, y, family, offset, weights, alpha=0, obsvar=obsvar, nlam=1, eps=1, ret.all = T)$w0
+		w0 <- weights #lambda_grid(x, y, family, offset, weights, alpha=0, obsvar=obsvar, nlam=1, eps=1, ret.all = T)$w0
 		pseudo_obs <- function(f,wprev) {return(pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev))}
-		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0,1,F)
+		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0)
 	}
   return(list( beta=out[[1]], beta0=out[[2]], qa_updates=out[[3]] ))
 }
@@ -188,8 +188,10 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6,
       weights <- rep(1.0, nrow(x))
     if (is.null(offset))
       offset <- rep(0.0, nrow(x))
+    
+    w0 <- weights
     pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
-    out <- glm_forward_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, pmax, weights)
+    out <- glm_forward_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, pmax, w0)
   }
   return(list( beta=out[[1]], beta0=as.vector(out[[2]]), varorder=as.vector(out[[3]])+1 ))
 }

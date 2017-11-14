@@ -278,7 +278,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
                 double thresh,
                 int qa_updates_max,
                 arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
-                int ls_iter_max=100,
+                int ls_iter_max=20,
                 bool debug=false)
 {
   
@@ -291,7 +291,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   int ls_iter; // counts linesearch iterations
   int j;
   double t; // step size in line search 
-  double a = 0.25; // backtracking line search parameters a and b (see Boyd 2004)
+  double a = 0.0; // backtracking line search parameters a and b (see Boyd 2004)
   double b = 0.7; 
   
   // initialization
@@ -332,6 +332,10 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     t = 1.0/b;
     dbeta = beta_new - beta;
     ls_iter = 0;
+    
+		////////////
+		// f.t().print();
+		///////////
     while (ls_iter < ls_iter_max) {
       
       t = b*t;
@@ -348,6 +352,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
         continue;
       
       // Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
+      Rcpp::Rcout << "loss_old - loss = " << loss_old - loss << '\n';
       if (sum(grad%dbeta) < 0) {
       	if (loss < loss_old + a*t*sum(grad%dbeta) )
       		break;
@@ -356,6 +361,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       	Rcpp::Rcout << "The search direction is not a descent direction, taking full Newton step." << '\n';
       }
     }
+    Rcpp::Rcout << "-------------------------------" << '\n';
     
     if (debug) {
       Rcpp::Rcout << "step length t = " << t << '\n';
@@ -379,7 +385,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     
     // check if converged
     
-    // Rcpp::Rcout << "loss change = " << loss - loss_old << '\n';
+    // Rcpp::Rcout << "ls_iter = " << ls_iter << '\n';
     // Rcpp::Rcout << "loss = " << loss << '\n';
     // if (fabs(loss_old - loss) < tol) {
     if (loss_old - loss < tol) {
