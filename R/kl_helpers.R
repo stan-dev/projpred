@@ -77,7 +77,10 @@ kl_helpers <- function(fam) {
   ll_binom <- function(mu, dis, y, weights=1) { 
     # if (!is.integer(y) || !is.integer(weights))
       # stop('Internal error: obtained non-integer weights or success counts in binomial model.')
-    dbinom(y*weights, weights, mu, log=T)
+    # dbinom(y*weights, weights, mu, log=T)
+    if (NCOL(y) < NCOL(mu))
+      y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
+    weights*(y*log(mu) + (1-y)*log(1-mu))
   }
   ll_poiss <- function(mu, dis, y, weights=1) weights*dpois(y, mu, log=T)
   ll_gauss <- function(mu, dis, y, weights=1) {
@@ -134,8 +137,8 @@ kl_helpers <- function(fam) {
 # of the distribution
 Student_t <- function(link='identity', nu=1) {
 	
-	if (link != 'identity')
-		stop('Only identity link supported currently.')
+	if (!(link %in% c('identity','log','inverse')))
+		stop(paste0('Non-supported link: ', link))
 	if (!is.character(link))
 		stop('Link must be a string.')
 	
@@ -158,7 +161,7 @@ Student_t <- function(link='identity', nu=1) {
 		linkfun = stats$linkfun,
 		linkinv = stats$linkinv,
 		variance = varfun, 
-		dev.resids = function(y, mu, wt, dis=1) (nu+1) * log(1 + 1/nu*((y-mu)/dis)^2), 
+		dev.resids = function(y, mu, wt, dis=1) wt*(nu+1) * log(1 + 1/nu*((y-mu)/dis)^2), 
 		aic = function(y, n, mu, wt, dev) stop('aic not implemented yet.'),
 		mu.eta = stats$mu.eta,
 		initialize = expression({ stop('initialization not implemented yet.')	}),

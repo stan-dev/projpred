@@ -335,7 +335,13 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     ls_iter = 0;
     
 		////////////
-		// f.t().print();
+		// f.t().print("f = ");
+		// w.t().print("w = ");
+		// z.t().print("z = ");
+		// Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
+		// grad.t().print("grad = ");
+		// dbeta.t().print("dbeta = ");
+		// beta.t().print("beta =");
 		///////////
     while (ls_iter < ls_iter_max) {
       
@@ -358,10 +364,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       	if (loss < loss_old + a*t*sum(grad%dbeta) )
       		break;
       } else {
-      	// Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
       	Rcpp::Rcout << "The search direction is not a descent direction ";
       	Rcpp::Rcout << "(grad*dbeta = " << sum(grad%dbeta) << "), ";
-      	Rcpp::Rcout << "taking full Newton step." << '\n';
+      	Rcpp::Rcout << ", this is likely a bug. Please report to the developers." << '\n';
       }
     }
     // Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
@@ -390,6 +395,13 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     
     ++qau;
     
+    // update the solution
+    beta = beta + t*dbeta;
+    z = as<vec>(obs["z"]);
+    w = as<vec>(obs["w"]);
+    grad_f = as<vec>(obs["grad"]);
+    
+    
     // check if converged
     
     // Rcpp::Rcout << "ls_iter = " << ls_iter << '\n';
@@ -397,16 +409,16 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     // if (fabs(loss_old - loss) < tol) {
     if (loss_old - loss < tol) {
       // convergence reached
+      // Rcpp::Rcout << "loss_old - loss = " << loss_old - loss << '\n';
+      // Rcpp::Rcout << "tol = " << tol << '\n';
       break;
-    } else {
-      // continue iterating, update the pseudo data
-      beta = beta + t*dbeta;
-      z = as<vec>(obs["z"]);
-      w = as<vec>(obs["w"]);
-      grad_f = as<vec>(obs["grad"]);
+    } else
+      // continue iterating
       loss_old = loss;
-    }
   }
+  
+  // beta.t().print("beta = "); Rcpp::Rcout << '\n';
+  // beta_new.t().print("beta_new = "); Rcpp::Rcout << '\n';
   
   if (qau == qa_updates_max && qa_updates_max > 1)
     Rcpp::Rcout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
