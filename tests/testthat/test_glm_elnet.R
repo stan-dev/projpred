@@ -212,3 +212,20 @@ test_that("glm_elnet: poisson, log-link, no intercept, lambda = 0.5", {
 
   expect_equal(exp_beta, c(lassofit$beta), tolerance = tol)
 })
+
+
+test_that("glm_elnet: poisson, log-link, normalization should not affect the maximum likelihood solution", {
+  fam <- kl_helpers(poisson(link = 'log'))
+  y <- rpois(n, fam$linkinv(x%*%b))
+  
+  nlam <- 100
+  elnetfit1 <- glm_elnet(x_tr, y, family = fam, nlambda=nlam, lambda_min_ratio=1e-7,
+                        offset = offset, weights = weights_norm,
+                        intercept = TRUE, normalize = FALSE)
+  elnetfit2 <- glm_elnet(x_tr, y, family = fam, nlambda=nlam, lambda_min_ratio=1e-7,
+                         offset = offset, weights = weights_norm,
+                         intercept = TRUE, normalize = TRUE)
+  
+  expect_equal(c(elnetfit1$beta0[nlam], elnetfit1$beta[,nlam]), 
+               c(elnetfit2$beta0[nlam], elnetfit2$beta[,nlam]), tolerance = tol)
+})
