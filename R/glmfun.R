@@ -5,46 +5,6 @@
 # by the fit of the full model when calling glm_elnet. Uses functions in glmfun.cpp.
 #
 
-# pseudo_data_old <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,length(f)), obsvar=0, wprev=NULL) {
-#   #
-#   # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
-#   # based on the linear approximation to the link function at f = eta = x*beta + beta0,
-#   # as explained in McGullagh and Nelder (1989). Returns also the deviance and its pointwise
-#   # derivative w.r.t f at the current f.
-#   #
-#   f <- f + offset
-#   mu <- family$linkinv(f)
-#   dmu_df <- family$mu.eta(f)
-#   z <- (f - offset) + (y - mu)/dmu_df
-#   if (family$family == 'Student_t') {
-#   	# Student-t does not belong to the exponential family and thus it has its own
-#   	# way of computing the observation weights
-#   	if (is.null(wprev)) {
-#   		# initialization of the em-iteration; loop recursively until stable initial weights are found
-#   		wprev <- weights
-#   		while(T) {
-#   			wtemp <- pseudo_data(f,y,family, offset=offset, weights=weights, wprev=wprev, obsvar=obsvar)$w
-#   			if (max(abs(wtemp-wprev)) < 1e-6)
-#   				break
-#   			wprev <- wtemp
-#   		}
-#   	}
-#   	# given the weights from the previous em-iteration, update s2 based on the previous weights and mu,
-#   	# and then compute new weights w
-#   	nu <- family$nu
-#   	s2 <- sum(wprev*(obsvar+(y-mu)^2)) / sum(weights)  # SHOULD WE HAVE HERE (y-mu)^2 or (z-f)^2 ???
-#   	w <- weights*(nu+1)/(nu + 1/s2*(obsvar+(y-mu)^2))
-#   	dev <- sum( -2*family$ll_fun(mu, sqrt(s2), y, weights) )
-#   	grad <- weights*2*(mu-y)/sqrt(s2)/nu* (nu+1)/(1+1/nu*(y-mu)^2/s2) * dmu_df
-#   } else {
-#     w <- (weights * dmu_df^2)/family$variance(mu)
-#     dev <- sum( -2*family$ll_fun(mu, 1, y, weights) )
-#     grad <- -2*w*(z-f)
-#   }
-#   
-#   # dev <- sum( family$dev.resids(y, mu, weights) ) # THIS COULD BE REPLACED BY THE PACKAGE'S OWN LOG-LIK COMPUTATION
-#   return(list(z=z, w=w, dev=dev, grad=grad))
-# }
 
 
 pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,length(f)), obsvar=0, wprev=NULL) {
@@ -52,7 +12,8 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
   # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
   # based on the linear approximation to the link function at f = eta = x*beta + beta0,
   # as explained in McGullagh and Nelder (1989). Returns also the deviance and its pointwise
-  # derivative w.r.t f at the current f.
+  # derivative w.r.t f at the current f (notice though, that this 'deviance' does not contain additional
+	# constants, so even when the model fits perfectly to the data, the deviance is not zero).
   #
   mu <- family$linkinv(f+offset)
   dmu_df <- family$mu.eta(f+offset)
@@ -74,16 +35,15 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
     # given the weights from the previous em-iteration, update s2 based on the previous weights and mu,
     # and then compute new weights w
     nu <- family$nu
-    s2 <- sum(wprev*(obsvar+(y-mu)^2)) / sum(weights)  # SHOULD WE HAVE HERE (y-mu)^2 or (z-f)^2 ???
+    s2 <- sum(wprev*(obsvar+(y-mu)^2)) / sum(weights)  
     w <- weights*(nu+1)/(nu + 1/s2*(obsvar+(y-mu)^2))
-    dev <- sum( -2*family$ll_fun(mu, sqrt(s2), y, weights) )
-    # dev <- sum( weights*(nu+1) * log(1 + (y-mu)^2/(nu*s2)) )
+    dev <- sum(family$loss_fun(mu, y, weights, sqrt(s2))) # sum( -2*family$ll_fun(mu, sqrt(s2), y, weights) )
     grad <- weights*2*(mu-y)/(nu*s2) * (nu+1)/(1+(y-mu)^2/(nu*s2)) * dmu_df
     
   } else if (family$family %in% c('gaussian','poisson','binomial')) {
     # exponential family distributions
     w <- (weights * dmu_df^2)/family$variance(mu)
-    dev <- sum( -2*family$ll_fun(mu, 1, y, weights) )
+    dev <- sum(family$loss_fun(mu, y, weights)) #sum( -2*family$ll_fun(mu, 1, y, weights) )
     grad <- -2*w*(z-f)
     
   } else {
@@ -200,7 +160,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 }
 
 
-glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6, qa_updates_max=NULL,
+glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,
                       weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, ls_iter_max=30) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
@@ -215,7 +175,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6, qa_updates
   
 	if (length(x) == 0 && !intercept)
 		# null model with no predictors and no intercept
-		out <- list( beta=matrix(integer(length=0)), beta0=0, qa_updates=0 )
+		out <- list( beta=matrix(integer(length=0)), beta0=0, w=rep(1,length(y)), qa_updates=0 )
 	else {
 		# normal case
 		x <- as.matrix(x)
@@ -228,11 +188,11 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6, qa_updates
 		pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
 		out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0,ls_iter_max)
 	}
-  return(list( beta=out[[1]], beta0=out[[2]], qa_updates=out[[3]] ))
+  return(list( beta=out[[1]], beta0=out[[2]], w=out[[3]], qa_updates=out[[4]] ))
 }
 
 
-glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-6, qa_updates_max=NULL,
+glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,
                         weights=NULL, offset=NULL, obsvar=0, intercept=TRUE,
                         pmax=dim(as.matrix(x))[2]) {
   #
