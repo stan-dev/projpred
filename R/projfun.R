@@ -29,8 +29,8 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
         # null model with eta=0 always
     		pobs <- pseudo_data(0, mu, family_kl, offset=d_train$offset, weights=wobs)
         beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
-        dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, 0, pobs$w)
-        # dis_sub0 <- sqrt( colSums(wobs*mu^2) + dis^2 )
+        # dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, 0, pobs$w)
+        dis_sub <- family_kl$dis_fun(list(mu=pobs$z, var=p_full$var), 0, pobs$w)
         # kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
         kl <- weighted.mean(log(dis_sub), wsample) # THIS IS WRONG, FIX
         submodel <- list(kl = kl, weights = wsample, dis = dis_sub, vind = vind,
@@ -47,7 +47,8 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
     wsqrt <- sqrt(pobs$w)
     beta_sub <- solve( crossprod(wsqrt*xp)+regulmat, crossprod(wsqrt*xp, wsqrt*pobs$z) )
     musub <- xp%*%beta_sub
-    dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, musub, pobs$w)
+    # dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, musub, pobs$w)
+    dis_sub <- family_kl$dis_fun(list(mu=pobs$z, var=p_full$var), list(mu=musub), pobs$w)
     kl <- weighted.mean(colSums(wobs*((pobs$z-musub)^2)), wsample) # not the actual kl-divergence, but a reasonable surrogate..
     submodel <- list(kl = kl, weights = wsample, dis = dis_sub)
 
@@ -71,24 +72,26 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 	# find the projected regression coefficients for each sample
 	xsub <- d_train$x[, vind, drop = F]
 	d <- NCOL(xsub)
+	n <- NROW(p_full$mu)
 	S <- NCOL(p_full$mu)
 	beta <- matrix(0, nrow=d, ncol=S)
 	alpha <- rep(0, S)
+	w <- matrix(nrow=n, ncol=S)
 	for (s in 1:S) {
 		out <- glm_ridge(x = xsub, y = p_full$mu[, s, drop = F],
 						 family=family_kl, lambda=regul, weights=d_train$weights,
-						 offset=d_train$offset, intercept=intercept, thresh=1e-6) 
-		
+						 offset=d_train$offset, intercept=intercept) 
 		beta[,s] <- out$beta
 		alpha[s] <- out$beta0
+		w[,s] <- out$w
 	}
 	
 	# compute the dispersion parameters and kl-divergences, and combine the results
 	submodel <- list()
 	mu <- family_kl$mu_fun(xsub, alpha, beta, d_train$offset)
-	# submodel$dis <- family_kl$dis_fun(p_full, d_train, list(mu=mu))
-	submodel$dis <- family_kl$dis_fun(p_full$mu, p_full$var, mu, d_train$weights)
-	submodel$kl <- weighted.mean(family_kl$kl(p_full, d_train, list(mu=mu)), p_full$weights)
+	# submodel$dis <- family_kl$dis_fun(p_full$mu, p_full$var, mu, d_train$weights)
+	submodel$dis <- family_kl$dis_fun(p_full, list(mu=mu,w=w), d_train$weights)
+	submodel$kl <- weighted.mean(family_kl$kl(p_full, d_train, list(mu=mu,dis=submodel$dis)), p_full$weights)
 	submodel$weights <- p_full$weights
 	submodel$alpha <- alpha
 	submodel$beta <- beta
