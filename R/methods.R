@@ -339,14 +339,12 @@ varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
 #' information is needed for the actual projection and variable selection.
 #'
 #' @param x Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
-#'  variables for selection
-#' (i.e. variables from which to select the submodel). Rows denote the observations
-#' and columns the different variables. Note that this matrix can be different from
-#' the one used to construct the reference model.
+#' variables for selection (i.e. variables from which to select the submodel). Rows denote
+#' the observations and columns the different variables. 
 #' @param y Vector of length \code{n} giving the target variable values.
 #' @param family \link{family} object giving the model family
-#' @param predfun Function that takes a \code{nt}-by-\code{d} test predictor matrix as an input
-#' (\code{nt} = # test points, \code{d} = # predictors in the reference model) and outputs
+#' @param predfun Function that takes a \code{nt}-by-\code{D} test predictor matrix as an input
+#' (\code{nt} = # test points, \code{D} = # predictors) and outputs
 #' a \code{n}-by-\code{S} matrix of expected values for the target variable y,
 #' each column corresponding to one posterior draw for the parameters in the reference model.
 #' The output should be computed without any offsets, these are automatically taken into account
@@ -356,10 +354,9 @@ varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
 #' observation model this is the noise std \code{sigma}.
 #' @param offset Offset to be added to the linear predictor in the projection. (Same as in
 #' function \code{glm}.)
-#' @param wobs Observation weights. The weights should sum to \code{n}.
+#' @param wobs Observation weights. If omitted, equal weights are assumed.
+#' @param wsample vector of length \code{S} giving the weights for the posterior draws. 
 #' If omitted, equal weights are assumed.
-#' @param wsample vector of length \code{S} giving the weights for the posterior draws.
-#' The weights should sum to one. If omitted, equal weights are assumed.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param cvfits A list with K elements, each of which is a list with fields including at least
 #' variables: tr, ts and predfun giving the training and test indices and prediction function
@@ -388,11 +385,15 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 		mu <- y
 		proper_model <- FALSE
 	}	else {
-		# add impact of offset
+		# genuine reference mdoel. add impact of offset to the prediction function
 		predmu <- function(x,offset=0) family$linkinv( family$linkfun(predfun(x)) + offset )
 		mu <- predmu(x,offset)
 		proper_model <- TRUE
 	}
+	
+	if (proper_model)
+		if (.has.dispersion(family) && is.null(dis))
+			stop(sprintf('Family %s needs a dispersion parameter so you must specify input argument \'dis\'.', family$family))
 	
 	mu <- unname(as.matrix(mu))
 	S <- NCOL(mu) # number of samples in the reference model
@@ -402,9 +403,10 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 	if (is.null(wobs))
 		wobs <- rep(1, n)
 	if (is.null(wsample))
-		wsample <- rep(1/S, S)
+		wsample <- rep(1, S)
 	if (is.null(intercept))
 		intercept <- TRUE
+	wsample <- wsample/sum(wsample)
 	
 	# compute log-likelihood
 	if (proper_model)

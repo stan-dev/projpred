@@ -294,14 +294,14 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 	cl_pred <- p_pred$cl
 
 	# fetch the log-likelihood for the reference model to obtain the LOO weights
-	if (!is.null(vars$loglik))
-    # log-likelihood available
-    loglik <- vars$loglik
-	else
-	  # case where log-likelihood not available, i.e., the reference model is not a genuine model
-	  # => cannot compute LOO
-    stop('LOO can be performed only if the reference model is a genuine probabilistic model for
+	if (is.null(vars$loglik))
+		# case where log-likelihood not available, i.e., the reference model is not a genuine model
+		# => cannot compute LOO
+		stop('LOO can be performed only if the reference model is a genuine probabilistic model for
           which the log-likelihood can be evaluated.')
+	else
+		# log-likelihood available
+		loglik <- vars$loglik
 	lw <- psislw(-loglik, cores = 1)$lw_smooth
 	n <- dim(lw)[2]
 

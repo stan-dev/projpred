@@ -69,6 +69,9 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
 project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 									regul=1e-9, coef_init=NULL) {
 	
+	# TODO: pass the predictive variance of the reference model to 
+	# glm_ridge as obsvar 
+	
 	# find the projected regression coefficients for each sample
 	xsub <- d_train$x[, vind, drop = F]
 	d <- NCOL(xsub)

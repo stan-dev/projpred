@@ -13,6 +13,7 @@ kl_helpers <- function(fam) {
 
   # kl-divergences
   # for binomial and poisson it is the mean of the dev.resids divided by 2
+	# NOTE: we should get rid off these, they are not much of a help..
   kl_dev <- function(pfull, data, psub) {
     if(NCOL(pfull$mu)>1) {
       w <- rep(data$weights, NCOL(pfull$mu))
@@ -79,10 +80,6 @@ kl_helpers <- function(fam) {
   	mu_mean <- mu %*% wsample
   	mu_var <- mu^2 %*% wsample - mu_mean^2
   	as.vector( fam$nu/(fam$nu-2)*sum(wsample*dis^2) + mu_var )
-  	# stop('not implemented for student_t yet.')
-  	# mu_mean <- mu %*% wsample
-  	# mu_var <- mu^2 %*% wsample - mu_mean^2
-  	# sum(wsample*dis^2) + mu_var
   }
   predvar_gamma <- function(mu, dis, wsample) { stop('Family Gamma not implemented yet.')}
 
@@ -94,10 +91,9 @@ kl_helpers <- function(fam) {
     weights*dnorm(y, mu, dis, log=T)
   }
   ll_student_t <- function(mu, dis, y, weights=1) {
-  	# print(dim(mu))
-  	# print(dim(dis))
-  	# print(dim(y))
     dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
+    if (NCOL(y) < NCOL(mu))
+    	y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
     weights*(dt((y-mu)/dis, fam$nu, log=T) - log(dis))
   }
   ll_gamma <- function(mu, dis, y, weights=1) {
@@ -178,7 +174,10 @@ kl_helpers <- function(fam) {
 
 
 
-
+.has.dispersion <- function(fam) {
+	# a function for checking whether the family has a dispersion parameter
+	fam$family %in% c('gaussian','Student_t','Gamma')
+}
 
 
 
