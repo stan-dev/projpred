@@ -35,10 +35,15 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
     # given the weights from the previous em-iteration, update s2 based on the previous weights and mu,
     # and then compute new weights w
     nu <- family$nu
-    s2 <- sum(wprev*(obsvar+(y-mu)^2)) / sum(weights)  
+    s2 <- sum(wprev*(obsvar+(y-mu)^2)) / sum(weights) 
     w <- weights*(nu+1)/(nu + 1/s2*(obsvar+(y-mu)^2))
     dev <- sum(family$loss_fun(mu, y, weights, sqrt(s2))) # sum( -2*family$ll_fun(mu, sqrt(s2), y, weights) )
     grad <- weights*2*(mu-y)/(nu*s2) * (nu+1)/(1+(y-mu)^2/(nu*s2)) * dmu_df
+    print(paste0('s2 = ', s2))
+    print(paste0('w = ', w))
+    print(paste0('r^2 = ', (y-mu)^2))
+    print('---------------')
+    
     
   } else if (family$family %in% c('gaussian','poisson','binomial')) {
     # exponential family distributions
@@ -107,9 +112,9 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 	# Computes the whole regularization path.
 	# Does not handle any dispersion parameters.
 	#
-	np <- dim(x)
-	if (is.null(np) || (np[2] <= 1))
-		stop("x should be a matrix with 2 or more columns")
+	# np <- dim(x)
+	# if (is.null(np) || (np[2] <= 1))
+		# stop("x should be a matrix with 2 or more columns")
 
 	# ensure x is in matrix form and fill in missing weights and offsets
 	x <- as.matrix(x)

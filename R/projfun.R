@@ -83,7 +83,7 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 	for (s in 1:S) {
 		out <- glm_ridge(x = xsub, y = p_full$mu[, s, drop = F],
 						 family=family_kl, lambda=regul, weights=d_train$weights,
-						 offset=d_train$offset, intercept=intercept) 
+						 offset=d_train$offset, obsvar=p_full$var[,s], intercept=intercept) 
 		beta[,s] <- out$beta
 		alpha[s] <- out$beta0
 		w[,s] <- out$w
