@@ -8,7 +8,7 @@ search_forward1 <- function(p_full, d_train, family, intercept, nv_max,
   mu <- p_full$mu 
   v <- p_full$var
   
-  if (ncol(mu) > 1 || ncol(v) > 1)
+  if (NCOL(mu) > 1 || NCOL(v) > 1)
     stop('Internal error: search_forward1 received multiple draws. Please report to the developers.')
   
   # forward search
@@ -57,7 +57,7 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, lambda_min_rat
   mu <- p_full$mu
   v <- p_full$var
   
-  if (ncol(mu) > 1 || ncol(v) > 1)
+  if (NCOL(mu) > 1 || NCOL(v) > 1)
     stop('Internal error: search_L1 received multiple draws. Please report to the developers.')
   
   # L1-penalized projection (projection path)
