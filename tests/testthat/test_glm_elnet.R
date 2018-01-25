@@ -28,7 +28,7 @@ extra_thresh <- 1e-10
 
 context("lasso")
 test_that("glm_elnet: gaussian, id-link, intercept, lambda = 0", {
-  fam <- gaussian(link = 'identity')
+  fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0
 
@@ -43,7 +43,7 @@ test_that("glm_elnet: gaussian, id-link, intercept, lambda = 0", {
 })
 
 test_that("glm_elnet: gaussian, id-link, no intercept, lambda = 0", {
-  fam <- gaussian(link = 'identity')
+  fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0
 
@@ -56,7 +56,7 @@ test_that("glm_elnet: gaussian, id-link, no intercept, lambda = 0", {
 })
 
 test_that("glm_elnet: gaussian, id-link, intercept, lambda = 0.5", {
-  fam <- gaussian(link = 'identity')
+	fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0.5
 
@@ -73,7 +73,7 @@ test_that("glm_elnet: gaussian, id-link, intercept, lambda = 0.5", {
 })
 
 test_that("glm_elnet: gaussian, id-link, no intercept, lambda = 0.5", {
-  fam <- gaussian(link = 'identity')
+	fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0.5
 
@@ -92,7 +92,7 @@ test_that("glm_elnet: gaussian, id-link, no intercept, lambda = 0.5", {
 
 
 test_that("glm_elnet: binomial, logit-link, intercept, lambda = 0", {
-  fam <- binomial(link = 'logit')
+  fam <- kl_helpers(binomial(link = 'logit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -106,7 +106,7 @@ test_that("glm_elnet: binomial, logit-link, intercept, lambda = 0", {
 })
 
 test_that("glm_elnet: binomial, logit-link, no intercept, lambda = 0", {
-  fam <- binomial(link = 'logit')
+	fam <- kl_helpers(binomial(link = 'logit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -120,7 +120,7 @@ test_that("glm_elnet: binomial, logit-link, no intercept, lambda = 0", {
 
 
 test_that("glm_elnet: binomial, logit-link, intercept, lambda = 0.5", {
-  fam <- binomial(link = 'logit')
+	fam <- kl_helpers(binomial(link = 'logit'))
   y <- rbinom(n, 1, fam$linkinv(x%*%b))
   lambda <- 0.5
 
@@ -137,7 +137,7 @@ test_that("glm_elnet: binomial, logit-link, intercept, lambda = 0.5", {
 })
 
 test_that("glm_elnet: binomial, logit-link, no intercept, lambda = 0.5", {
-  fam <- binomial(link = 'logit')
+	fam <- kl_helpers(binomial(link = 'logit'))
   y <- rbinom(n, 1, fam$linkinv(x%*%b))
   lambda <- 0.5
 
@@ -154,7 +154,7 @@ test_that("glm_elnet: binomial, logit-link, no intercept, lambda = 0.5", {
 
 
 test_that("glm_elnet: poisson, log-link, intercept, lambda = 0", {
-  fam <- poisson(link = 'log')
+  fam <- kl_helpers(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -168,7 +168,7 @@ test_that("glm_elnet: poisson, log-link, intercept, lambda = 0", {
 })
 
 test_that("glm_elnet: poisson, log-link, no intercept, lambda = 0", {
-  fam <- poisson(link = 'log')
+	fam <- kl_helpers(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -181,7 +181,7 @@ test_that("glm_elnet: poisson, log-link, no intercept, lambda = 0", {
 })
 
 test_that("glm_elnet: poisson, log-link, intercept, lambda = 0.5", {
-  fam <- poisson(link = 'log')
+	fam <- kl_helpers(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   lambda <- 0.5
 
@@ -198,7 +198,7 @@ test_that("glm_elnet: poisson, log-link, intercept, lambda = 0.5", {
 })
 
 test_that("glm_elnet: poisson, log-link, no intercept, lambda = 0.5", {
-  fam <- poisson(link = 'log')
+	fam <- kl_helpers(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   lambda <- 0.5
 
@@ -211,4 +211,21 @@ test_that("glm_elnet: poisson, log-link, no intercept, lambda = 0.5", {
   exp_beta <- c(as.matrix(glmnetfit$beta))
 
   expect_equal(exp_beta, c(lassofit$beta), tolerance = tol)
+})
+
+
+test_that("glm_elnet: poisson, log-link, normalization should not affect the maximum likelihood solution", {
+  fam <- kl_helpers(poisson(link = 'log'))
+  y <- rpois(n, fam$linkinv(x%*%b))
+  
+  nlam <- 100
+  elnetfit1 <- glm_elnet(x_tr, y, family = fam, nlambda=nlam, lambda_min_ratio=1e-7,
+                        offset = offset, weights = weights_norm,
+                        intercept = TRUE, normalize = FALSE)
+  elnetfit2 <- glm_elnet(x_tr, y, family = fam, nlambda=nlam, lambda_min_ratio=1e-7,
+                         offset = offset, weights = weights_norm,
+                         intercept = TRUE, normalize = TRUE)
+  
+  expect_equal(c(elnetfit1$beta0[nlam], elnetfit1$beta[,nlam]), 
+               c(elnetfit2$beta0[nlam], elnetfit2$beta[,nlam]), tolerance = tol)
 })

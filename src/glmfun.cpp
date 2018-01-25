@@ -13,7 +13,7 @@ using namespace arma;
 
 /** Returns the value of the regularized quadratic approximation to the loss function
 that is to be minimized iteratively:
-L = 0.5*sum_i{ w_i (z_i - f_i)^2 } + lambda*{ 0.5*(1-alpha)*||beta||_2^2 + alpha*||beta||_1 }
+L = 0.5*sum_i{ w_i*(z_i - f_i)^2 } + lambda*{ 0.5*(1-alpha)*||beta||_2^2 + alpha*||beta||_1 }
 */
 double loss_approx(vec beta,    // coefficients
                    vec f,       // latent values
@@ -100,8 +100,9 @@ void coord_descent(	vec& beta, // regression coefficients
     loss = loss_approx(beta,f,z,w,lambda,alpha);
     
     if (until_convergence) {
-      
-      if (fabs(loss_old-loss) < tol) {
+      // Rcpp::Rcout << "loss - loss_old = " << loss - loss_old << '\n';
+      // if (fabs(loss_old-loss) < tol) {
+      if (loss_old-loss < tol) {
         break;
       } else {
         // continue iterating
@@ -134,6 +135,8 @@ List glm_elnet_c(arma::mat x, // input matrix
                  int qa_updates_max, // maximum for the total number of quadratic approximation updates
                  int pmax, // stop computation when the active set size is equal or greater than this
                  bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
+                 double beta0, // initial value for the intercept
+                 arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                  int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
 {
   
@@ -164,9 +167,9 @@ List glm_elnet_c(arma::mat x, // input matrix
   
   
   // initialization
+  if (!intercept)	beta0 = 0; // ensure intercept is zero when it is not used
   vec beta(D);
   beta.zeros(D);
-  double beta0 = 0.0;
   vec f = x*beta + beta0;
   std::set<size_t> active_set; 
   std::set<size_t> active_set_old;
@@ -175,9 +178,10 @@ List glm_elnet_c(arma::mat x, // input matrix
     varind_all.insert(j);
   
   
-  obs = pseudo_obs(f);
+  obs = pseudo_obs(f,w0);
   z = as<vec>(obs["z"]);
   w = as<vec>(obs["w"]);
+  // double loss_initial = obs["dev"];
   double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha); // initial loss
   double loss_old = loss_initial; // will be updated iteratively
   double loss; // will be updated iteratively
@@ -192,7 +196,7 @@ List glm_elnet_c(arma::mat x, // input matrix
     while (qau < qa_updates_max) {
       
       // update the quadratic likelihood approximation
-      obs = pseudo_obs(f);
+      obs = pseudo_obs(f,w);
       z = as<vec>(obs["z"]);
       w = as<vec>(obs["w"]);
       ++qau;
@@ -201,14 +205,14 @@ List glm_elnet_c(arma::mat x, // input matrix
       loss_old = loss_approx(beta, f, z, w, lam, alpha);
       
       // run the coordinate descent until convergence for the current
-      //  quadratic approximation
+      // quadratic approximation
       asu = 0;
       while (asu < as_updates_max) {
-        
+      	
         // iterate within the current active set until convergence (this might update 
         // active_set_old, if some variable goes to zero)
         coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, tol);
-        
+      	
         // perfom one pass over all the variables and check if the active set changes 
         // (this might update active_set)
         coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, tol);
@@ -240,9 +244,8 @@ List glm_elnet_c(arma::mat x, // input matrix
     if (qau == qa_updates_max && qa_updates_max > 1)
       Rcpp::Rcout << "glm_elnet warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
     
-    if ((alpha > 0.0) && (active_set.size() >= pmaxu || active_set.size() == D)) {
-      // obtained solution with more than pmax variables (or the number of columns in x)
-      // when no ridge regression considered, so terminate
+    if ((alpha > 0.0) && (active_set.size() >= pmaxu)) {
+      // obtained solution with at least pmax variables and penalty is not ridge, so terminate
       if (pmax_strict) {
         // return solutions only up to the previous lambda value
         beta0_path = beta0_path.head(k);
@@ -268,14 +271,15 @@ List glm_elnet_c(arma::mat x, // input matrix
  */
 void glm_ridge( vec& beta,      // output: regression coefficients (contains intercept)
                 double& loss,   // output: value of the loss function
-                int& qau,       // output: quadratic approximation updates 
+                vec& w, 				// output: weights of the pseudo-gaussian observations at the optimum (needed for Student-t model)
+                int& qau,       // output: number of quadratic approximation updates 
                 arma::mat x,
                 Function pseudo_obs,
                 double lambda,
                 bool intercept,
                 double thresh,
                 int qa_updates_max,
-                int ls_iter_max=100,
+                int ls_iter_max=20,
                 bool debug=false)
 {
   
@@ -285,32 +289,33 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   
   int n = x.n_rows;
   int D = x.n_cols;
-  // int qau; // counts quadratic approximation updates
   int ls_iter; // counts linesearch iterations
   int j;
   double t; // step size in line search 
-  double a = 0.25; // backtracking line search parameters a and b (see Boyd 2004)
-  double b = 0.7; 
+  double a = 0.1; // backtracking line search parameters a and b (see Boyd and Vandenberghe, 2004)
+  double b = 0.5; 
   
   // initialization
-  // vec beta(D); beta.zeros();
   beta.zeros();
   vec beta_new(D); beta_new.zeros();
   vec dbeta(D); dbeta.zeros();
-  vec grad(D); grad.zeros(); // gradient of the deviance 
+  vec grad(D); grad.zeros(); // gradient of the deviance w.r.t. the regression coefficients
+  vec grad_f(n); grad_f.zeros(); // pointwise gradient of the deviance w.r.t. f
   vec f = x*beta;
   
   mat xw(n,D); // this will be the weighted x
   mat regmat = lambda*eye(D,D); // regularization matrix
   
   // initial quadratic approximation
-  List obs = pseudo_obs(f);
+  List obs = pseudo_obs(f,w);
   vec z = as<vec>(obs["z"]);
-  vec w = as<vec>(obs["w"]);
+  w = as<vec>(obs["w"]);
+  grad_f = as<vec>(obs["grad"]);
   double loss_initial = obs["dev"];
   double loss_old = loss_initial; // will be updated iteratively
   loss = loss_initial; // will be updated iteratively
-  double tol = thresh*fabs(loss_initial); // criterion for convergence
+  double tol = thresh*fabs(loss_initial); // threshold for convergence
+  double decrement; // newton decrement, used to monitor convergence
   
   
   qau = 0;
@@ -322,19 +327,24 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     
     // weighted least squares solution
     beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
+    dbeta = beta_new - beta;
+    grad = x.t()*grad_f + 2*lambda*beta; // grad of deviance + grad of penalty
+    decrement = -sum(grad%dbeta); // newton decrement
+    
+    // check for convergence
+    if (decrement < tol)
+    	break;
     
     // backtracking line search
-    grad = -2*x.t()*(w % (z-f)) + 2*lambda*beta; // -2* grad of log-likelihood + penalty
     t = 1.0/b;
-    dbeta = beta_new - beta;
+    
     ls_iter = 0;
+    
     while (ls_iter < ls_iter_max) {
       
       t = b*t;
       f = x*(beta+t*dbeta);
-      obs = pseudo_obs(f);
-      z = as<vec>(obs["z"]);
-      w = as<vec>(obs["w"]);
+      obs = pseudo_obs(f,w);
       loss = obs["dev"];
       loss = loss + lambda*sum(square(beta+t*dbeta));
       ++ls_iter;
@@ -342,43 +352,58 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       if (std::isnan(loss))
         continue;
       
-      if (loss < loss_old + a*t*sum(grad%dbeta) )
-        break;
-    }
-    
-    if (ls_iter == ls_iter_max) {
-      Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
-      if (debug) {
-        Rcpp::Rcout << "step length t = " << t << '\n';
-        Rcpp::Rcout << "loss = " << loss_old << '\n';
-        Rcpp::Rcout << "loss_new = " << loss << '\n';
-        Rcpp::Rcout << "loss_diff = " << loss-loss_old << '\n';
-        Rcpp::Rcout << "|beta| = " << norm(beta) << '\n';
-        Rcpp::Rcout << "|beta_new| = " << norm(beta_new) << '\n';
-        Rcpp::Rcout << "grad*dbeta = " << sum(grad%dbeta) << '\n';
-        Rcpp::Rcout << "|grad| = " << norm(grad) << '\n';
+      if (decrement > 0) {
+      	if (loss < loss_old - a*t*decrement )
+      		break;
+      } else {
+      	Rcpp::Rcout << "The search direction is not a descent direction ";
+      	Rcpp::Rcout << "(newton decrement = " << decrement << ", should be positive), ";
+      	Rcpp::Rcout << ", this is likely a bug. Please report to the developers." << '\n';
       }
     }
-    beta = beta + t*dbeta;
-    ++qau;
     
-    // check if converged
-    if (loss_old - loss < tol) {
-      // convergence reached
-      break;
-    } else {
-      // continue iterating
-      loss_old = loss;
+    if (ls_iter == ls_iter_max && ls_iter_max > 1) {
+      Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
+    	// Rcpp::Rcout << "step length t = " << t << '\n';
+    	// Rcpp::Rcout << "loss = " << loss_old << '\n';
+    	// Rcpp::Rcout << "loss_new = " << loss << '\n';
+    	// Rcpp::Rcout << "loss_diff = " << loss-loss_old << '\n';
+    	// beta.t().print("beta = "); Rcpp::Rcout << '\n';
+    	// beta_new.t().print("beta_new = "); Rcpp::Rcout << '\n';
+    	// Rcpp::Rcout << "|beta| = " << norm(beta) << '\n';
+    	// Rcpp::Rcout << "|beta_new| = " << norm(beta_new) << '\n';
+    	// Rcpp::Rcout << "newton decrement = " << decrement << '\n';
+    	// Rcpp::Rcout << "|grad| = " << norm(grad) << '\n';
+    	// Rcpp::Rcout << "------------------------------------" << '\n';
     }
+    
+    // Rcpp::Rcout << "loss = " << loss_old << ", newton decrement = " << decrement << '\n';
+    
+    // update the solution
+    beta = beta + t*dbeta;
+    z = as<vec>(obs["z"]);
+    w = as<vec>(obs["w"]);
+    grad_f = as<vec>(obs["grad"]);
+    loss_old = loss;
+    ++qau;
   }
+  // Rcpp::Rcout << "------------------------------------" << '\n';
   
-  if (qau == qa_updates_max && qa_updates_max > 1)
-    Rcpp::Rcout << "glm_ridge warning: maximum number of quadratic approximation updates reached. Results can be inaccurate.\n";
+  if (qau == qa_updates_max && qa_updates_max > 1) {
+  	if (decrement/fabs(loss_initial) > 100*tol) {
+			// warn the user if the max number of iterations is reached and we are relatively far
+			// (two orders of magnitude) from the given convergence threshold 
+  		Rcpp::Rcout << "glm_ridge warning: maximum number of quadratic approximation updates reached, within ";
+  		Rcpp::Rcout << decrement << " from optimum (tolerance = " << thresh << ").\n";
+  	}
+  }
 }
 
 
 
-
+/**
+ * Wrapper for glm_ridge that can be called from R.
+ */
 // [[Rcpp::export]]
 List glm_ridge_c( arma::mat x,
                   Function pseudo_obs,
@@ -386,6 +411,7 @@ List glm_ridge_c( arma::mat x,
                   bool intercept,
                   double thresh,
                   int qa_updates_max,
+                  arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                   int ls_iter_max=100,
                   bool debug=false)
 {
@@ -394,14 +420,15 @@ List glm_ridge_c( arma::mat x,
     D++;
   
   vec beta(D);
+  vec w = w0;
   int qau;
   double loss;
-  glm_ridge(beta, loss, qau, x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max, debug);
+  glm_ridge(beta, loss, w, qau, x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max, debug);
     
   if (intercept) 
-    return List::create(vec(beta.tail(D-1)), beta(0), qau);
+    return List::create(vec(beta.tail(D-1)), beta(0), w, qau);
   else 
-    return List::create(beta, 0.0, qau);
+    return List::create(beta, 0.0, w, qau);
 }
 
 
@@ -409,17 +436,18 @@ List glm_ridge_c( arma::mat x,
 
 
 
-/** Forward search.
+/** Forward search for glm.
  */
 // [[Rcpp::export]]
-List glm_forward_c( arma::mat x,
-                    Function pseudo_obs,
-                    double lambda,
-                    bool intercept,
-                    double thresh,
-                    int qa_updates_max,
-                    int pmax,
-                    int ls_iter_max=100 )
+List glm_forward_c( arma::mat x, // inputs (features)
+                    Function pseudo_obs, // R-function returning the pseudo-data based on the quadratic approximation
+                    double lambda, // regularization parameter (multiplier for L2-penalty)
+                    bool intercept, // whether to use intercept
+                    double thresh, // threshold for stopping the iterative reweighted least squares
+                    int qa_updates_max, // max number or quadratic approximation updates
+                    int pmax, // maximum number of variables up to which the search is continued
+                    arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
+                    int ls_iter_max=100 ) // max number of line search iterations
 {
   
   mat xp; // x for the current active set
@@ -432,6 +460,7 @@ List glm_forward_c( arma::mat x,
   rowvec beta0_all(pmaxu); beta0_all.zeros(); // collects beta0 from all steps
   
   // declare a few variables that are needed during the iteration
+  vec w = w0;
   int qau;
   size_t j,k,jopt;
   uvec varind;
@@ -451,8 +480,8 @@ List glm_forward_c( arma::mat x,
       if (chosen(j))
         continue;
       
-      chosen(j) = 1; //notchosen(j) = 0;
-      glm_ridge(beta, loss, qau, x.cols(find(chosen)), pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max);
+      chosen(j) = 1;
+      glm_ridge(beta, loss, w, qau, x.cols(find(chosen)), pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max);
       chosen(j) = 0;
       
       if (loss < loss_min) {

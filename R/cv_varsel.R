@@ -294,14 +294,14 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 	cl_pred <- p_pred$cl
 
 	# fetch the log-likelihood for the reference model to obtain the LOO weights
-	if (!is.null(vars$loglik))
-    # log-likelihood available
-    loglik <- vars$loglik
-	else
-	  # case where log-likelihood not available, i.e., the reference model is not a genuine model
-	  # => cannot compute LOO
-    stop('LOO can be performed only if the reference model is a genuine probabilistic model for
+	if (is.null(vars$loglik))
+		# case where log-likelihood not available, i.e., the reference model is not a genuine model
+		# => cannot compute LOO
+		stop('LOO can be performed only if the reference model is a genuine probabilistic model for
           which the log-likelihood can be evaluated.')
+	else
+		# log-likelihood available
+		loglik <- vars$loglik
 	lw <- psislw(-loglik, cores = 1)$lw_smooth
 	n <- dim(lw)[2]
 
@@ -328,8 +328,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, v
 	for (i in 1:n) {
 
 		# reweight the clusters/samples according to the is-loo weights
-		p_sel <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
-		p_pred <- get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
+		p_sel <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
+		p_pred <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
 
 		# perform selection
 		vind <- select(method, p_sel, d_train, fam, intercept, nv_max, verbose=F, regul)
