@@ -17,7 +17,7 @@ NULL
 # of the distribution
 
 #' @rdname extra-families
-#' @export
+# #' @export # TODO: enable this when Student-t projection ready
 Student_t <- function(link='identity', nu=3) {
 	
 	if (!(link %in% c('identity','log','inverse')))
