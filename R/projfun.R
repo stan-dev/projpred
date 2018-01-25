@@ -30,9 +30,10 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
     		pobs <- pseudo_data(0, mu, family_kl, offset=d_train$offset, weights=wobs)
         beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
         # dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, 0, pobs$w)
-        dis_sub <- family_kl$dis_fun(list(mu=pobs$z, var=p_full$var), 0, pobs$w)
+        dis_sub <- family_kl$dis_fun(list(mu=pobs$z, var=p_full$var), list(mu=0), pobs$w)
         # kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
-        kl <- weighted.mean(log(dis_sub), wsample) # THIS IS WRONG, FIX
+        # kl <- weighted.mean(log(dis_sub), wsample)
+        kl <- weighted.mean(colSums(wobs*pobs$z^2), wsample)
         submodel <- list(kl = kl, weights = wsample, dis = dis_sub, vind = vind,
                       intercept = intercept)
         return(c(submodel, .split_coef(beta_sub, intercept)))
@@ -47,7 +48,6 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
     wsqrt <- sqrt(pobs$w)
     beta_sub <- solve( crossprod(wsqrt*xp)+regulmat, crossprod(wsqrt*xp, wsqrt*pobs$z) )
     musub <- xp%*%beta_sub
-    # dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, musub, pobs$w)
     dis_sub <- family_kl$dis_fun(list(mu=pobs$z, var=p_full$var), list(mu=musub), pobs$w)
     kl <- weighted.mean(colSums(wobs*((pobs$z-musub)^2)), wsample) # not the actual kl-divergence, but a reasonable surrogate..
     submodel <- list(kl = kl, weights = wsample, dis = dis_sub)
@@ -68,9 +68,6 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
 
 project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 									regul=1e-9, coef_init=NULL) {
-	
-	# TODO: pass the predictive variance of the reference model to 
-	# glm_ridge as obsvar 
 	
 	# find the projected regression coefficients for each sample
 	xsub <- d_train$x[, vind, drop = F]

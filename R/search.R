@@ -4,12 +4,16 @@
 search_forward1 <- function(p_full, d_train, family, intercept, nv_max,
                            verbose, regul) {
   
-  # prediction of full model (integrate over the uncertainty about the model parameters)
-  mu <- p_full$mu %*% p_full$weights
+  # predictive mean and variance of the reference model (with parameters integrated out)
+  mu <- p_full$mu 
+  v <- p_full$var
+  
+  if (ncol(mu) > 1 || ncol(v) > 1)
+    stop('Internal error: search_forward1 received multiple draws. Please report to the developers.')
   
   # forward search
   search <- glm_forward(d_train$x, mu, family, lambda=regul, offset=d_train$offset, weights=d_train$weights,
-                        intercept=intercept, pmax=nv_max)
+                        obsvar=v, intercept=intercept, pmax=nv_max)
 
   return(search$varorder)
 }
@@ -19,7 +23,7 @@ search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
 
   # initialize the forward selection
   # proj performs the projection over samples
-  proj <- .get_proj_handle(family_kl, regul)
+  projfun <- .get_proj_handle(family_kl, regul)
   i <- 1
   iq <- ceiling(quantile(1:nv_max, 1:10/10))
   cols <- 1:ncol(d_train$x)
@@ -31,7 +35,7 @@ search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
     notchosen <- setdiff(cols, chosen)
     cands <- lapply(notchosen, function(x) c(chosen, x))
 
-    p_sub <- sapply(cands, proj, p_full, d_train, intercept)
+    p_sub <- sapply(cands, projfun, p_full, d_train, intercept)
 
     imin <- which.min(p_sub['kl',])
     chosen <- c(chosen, notchosen[imin])
@@ -48,14 +52,18 @@ search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
 
 
 search_L1 <- function(p_full, d_train, family, intercept, nv_max, lambda_min_ratio=1e-5, nlam=200) {
-
-  # prediction of full model (integrate over the uncertainty about the model parameters)
-  mu <- p_full$mu %*% p_full$weights
+  
+  # predictive mean and variance of the reference model (with parameters integrated out)
+  mu <- p_full$mu
+  v <- p_full$var
+  
+  if (ncol(mu) > 1 || ncol(v) > 1)
+    stop('Internal error: search_L1 received multiple draws. Please report to the developers.')
   
   # L1-penalized projection (projection path)
   search <- glm_elnet(d_train$x, mu, family, lambda_min_ratio=lambda_min_ratio, nlambda=nlam,
                       pmax=nv_max, pmax_strict=FALSE, offset=d_train$offset, weights=d_train$weights,
-                      intercept=intercept)
+                      intercept=intercept, obsvar=v)
   
   # sort the variables according to the order in which they enter the model in the L1-path
   entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1]) # na for those that did not enter

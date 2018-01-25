@@ -89,6 +89,7 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   	d_type <- 'test'
   }
 
+  # reference distributions for selection and prediction after selection
   p_sel <- .get_refdist(fit, ns, nc)
   p_pred <- .get_refdist(fit, nspred, ncpred)
 
