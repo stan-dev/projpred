@@ -345,8 +345,9 @@ varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
 #' @param family \link{family} object giving the model family
 #' @param predfun Function that takes a \code{nt}-by-\code{D} test predictor matrix as an input
 #' (\code{nt} = # test points, \code{D} = # predictors) and outputs
-#' a \code{n}-by-\code{S} matrix of expected values for the target variable y,
-#' each column corresponding to one posterior draw for the parameters in the reference model.
+#' a \code{nt}-by-\code{S} matrix of expected values for the target variable y,
+#' each column corresponding to one posterior draw for the parameters in the reference model
+#' (the number of draws \code{S} can also be 1).
 #' The output should be computed without any offsets, these are automatically taken into account
 #' internally, e.g. in cross-validation.
 #' @param dis Vector of length \code{S} giving the posterior draws for the dispersion parameter
