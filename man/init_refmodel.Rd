@@ -9,19 +9,18 @@ init_refmodel(x, y, family, predfun = NULL, dis = NULL, offset = NULL,
 }
 \arguments{
 \item{x}{Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
- variables for selection
-(i.e. variables from which to select the submodel). Rows denote the observations
-and columns the different variables. Note that this matrix can be different from
-the one used to construct the reference model.}
+variables for selection (i.e. variables from which to select the submodel). Rows denote
+the observations and columns the different variables.}
 
 \item{y}{Vector of length \code{n} giving the target variable values.}
 
 \item{family}{\link{family} object giving the model family}
 
-\item{predfun}{Function that takes a \code{nt}-by-\code{d} test predictor matrix as an input
-(\code{nt} = # test points, \code{d} = # predictors in the reference model) and outputs
-a \code{n}-by-\code{S} matrix of expected values for the target variable y,
-each column corresponding to one posterior draw for the parameters in the reference model.
+\item{predfun}{Function that takes a \code{nt}-by-\code{D} test predictor matrix as an input
+(\code{nt} = # test points, \code{D} = # predictors) and outputs
+a \code{nt}-by-\code{S} matrix of expected values for the target variable y,
+each column corresponding to one posterior draw for the parameters in the reference model
+(the number of draws \code{S} can also be 1).
 The output should be computed without any offsets, these are automatically taken into account
 internally, e.g. in cross-validation.}
 
@@ -32,11 +31,10 @@ observation model this is the noise std \code{sigma}.}
 \item{offset}{Offset to be added to the linear predictor in the projection. (Same as in
 function \code{glm}.)}
 
-\item{wobs}{Observation weights. The weights should sum to \code{n}.
-If omitted, equal weights are assumed.}
+\item{wobs}{Observation weights. If omitted, equal weights are assumed.}
 
-\item{wsample}{vector of length \code{S} giving the weights for the posterior draws.
-The weights should sum to one. If omitted, equal weights are assumed.}
+\item{wsample}{vector of length \code{S} giving the weights for the posterior draws. 
+If omitted, equal weights are assumed.}
 
 \item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 
