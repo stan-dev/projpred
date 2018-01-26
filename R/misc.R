@@ -303,7 +303,7 @@ log_sum_exp <- function(x) {
   # suggest a model size. Currently finds the smallest model for which
   # the lower alpha/2-quantile of mlpd is at least cutoff_pct from the full model
   stats <- subset(.bootstrap_stats(varsel, alpha = alpha), statistic == 'mlpd'
-                  & delta == TRUE & data %in% c('loo', 'kfold'))
+                  & delta == TRUE & data %in% c('train', 'loo', 'kfold'))
   
   if (!all(is.na(stats[,'value']))) {
   	
