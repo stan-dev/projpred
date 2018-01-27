@@ -321,7 +321,7 @@ log_sum_exp <- function(x) {
     # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
     # i.e. is contained in the 68% central region
   	stats <- subset(.bootstrap_stats(varsel, alpha = 0.32), statistic == 'mlpd'
-  				 					& delta == F & data %in% c('loo', 'kfold'))
+  				 					& delta == F & data %in% c('train', 'loo', 'kfold'))
   	imax <- which.max(unname(unlist(stats['value'])))
   	thresh <- stats[imax, 'lq']
   	ssize <- min(subset(stats, value >= thresh, 'size'))

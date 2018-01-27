@@ -123,14 +123,14 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                      family_kl = family_kl)
 
   # suggest model size
-  # ssize <- .suggest_size(fit$varsel)
+  ssize <- .suggest_size(fit$varsel)
   # if(is.na(ssize)) {
     # try a more relaxed value, if this does not work either, issue a warning
     # ssize <- .suggest_size(fit$varsel, cutoff_pct = 0.2)
     # if(is.na(ssize))
       # warning('Submodels too close to each other, cant suggest a submodel.')
   # }
-  # fit$varsel$ssize <- ssize
+  fit$varsel$ssize <- ssize
   
   fit
 }
