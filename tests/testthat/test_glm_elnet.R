@@ -23,7 +23,7 @@ weights <- sample(1:4, n, replace = T)
 weights_norm <- weights / sum(weights) * n
 offset <- rnorm(n)
 penalty <- runif(ncol(x_tr))+0.5
-penalty <- penalty/sum(penalty)*d # must scale the penalties to be comparable to glmnet
+penalty <- penalty/sum(penalty)*ncol(x_tr) # must scale the penalties to be comparable to glmnet
 
 tol <- 1e-04
 extra_thresh <- 1e-10
