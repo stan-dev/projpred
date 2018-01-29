@@ -161,9 +161,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   
   if (normalize) {
     # return the intecept and the coefficients on the original scale
-    # beta <- sweep(beta, 1, sx, '/')
     beta <- beta/sx
-    # beta0 <- beta0 - colSums(sweep(beta, 1, mx, '*'))
     beta0 <- beta0 - colSums(mx*beta)
   }
   
