@@ -124,7 +124,7 @@ void coord_descent(	vec& beta, // regression coefficients
 
 
 
-/** Computes the whole elastic-net regularization path given the grid of values to the lambda.
+/** Computes the whole elastic-net regularization path given the grid of values to lambda.
 Assumes that the lambda grid is selected carefully and utilizes the function pseudo_obs
 that returns the pseudo-observations corresponding to the quadratic approximation to the
 loss function for a given vector of latent values (see elnetfun.R).
@@ -140,6 +140,7 @@ List glm_elnet_c(arma::mat x, // input matrix
                  int qa_updates_max, // maximum for the total number of quadratic approximation updates
                  int pmax, // stop computation when the active set size is equal or greater than this
                  bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
+                 arma::vec beta, // initial value for the regression coefficients
                  double beta0, // initial value for the intercept
                  arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                  int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
@@ -173,8 +174,8 @@ List glm_elnet_c(arma::mat x, // input matrix
   
   // initialization
   if (!intercept)	beta0 = 0; // ensure intercept is zero when it is not used
-  vec beta(D);
-  beta.zeros(D);
+  // vec beta(D);
+  // beta.zeros(D);
   vec f = x*beta + beta0;
   std::set<size_t> active_set; 
   std::set<size_t> active_set_old;

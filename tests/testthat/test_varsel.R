@@ -158,6 +158,18 @@ test_that("varsel: adding more regularization has an expected effect", {
     }
 })
 
+test_that("varsel: specifying penalties for variables has an expected effect", {
+  penalty <- rep(1,nv)
+  ind <- c(2,4) # a few variables without cost
+  penalty[ind] <- 0
+  vsf <- function(x) varsel(x, method = 'L1', nv_max = nv, verbose = FALSE, penalty=penalty)
+  vs_list_pen <- lapply(fit_list, vsf)
+  for (i in seq_along(vs_list_pen)) {
+    # check that the variables with no cost are selected first
+    sdiff <- setdiff(vs_list_pen[[i]]$varsel$vind[1:length(ind)], ind)
+    expect_true(length(sdiff)==0)
+  }
+})
 
 
 context('cv_varsel')
