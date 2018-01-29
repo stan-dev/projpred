@@ -6,7 +6,7 @@
 \usage{
 varsel(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  verbose = F, regul = 1e-06, ...)
+  penalty = NULL, verbose = F, regul = 1e-06, ...)
 }
 \arguments{
 \item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned
@@ -36,6 +36,11 @@ Defaults to min(D, floor(0.4*n)) where n is the number of observations and
 D the number of variables.}
 
 \item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}
+
+\item{penalty}{Vector determining the relative penalties or costs for the variables.
+Zero means that those variables have no cost and will therefore be selected first,
+whereas Inf means that those variables will never be selected. Currently works only 
+if method == 'L1'. By default 1 for each variable.}
 
 \item{verbose}{If TRUE, may print out some information during the selection.
 Defaults to FALSE.}

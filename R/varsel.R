@@ -21,6 +21,10 @@
 #'    Defaults to min(D, floor(0.4*n)) where n is the number of observations and
 #'    D the number of variables.
 #' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
+#' @param penalty Vector determining the relative penalties or costs for the variables.
+#' Zero means that those variables have no cost and will therefore be selected first,
+#' whereas Inf means that those variables will never be selected. Currently works only 
+#' if method == 'L1'. By default 1 for each variable.
 #' @param verbose If TRUE, may print out some information during the selection.
 #'    Defaults to FALSE.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 

@@ -11,6 +11,7 @@
 #' @param ncpred Number of clusters used for prediction (after selection). Default is 5.
 #' @param nv_max Same as in \link[=varsel]{varsel}.
 #' @param intercept Same as in \link[=varsel]{varsel}.
+#' @param penalty Same as in \link[=varsel]{varsel}.
 #' @param verbose Whether to print out some information during the validation, Default is TRUE.
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
 #' @param K Number of folds in the k-fold cross validation. Only applicable

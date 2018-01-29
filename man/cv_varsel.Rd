@@ -6,7 +6,8 @@
 \usage{
 cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  verbose = T, K = NULL, k_fold = NULL, regul = 1e-06, ...)
+  penalty = NULL, verbose = T, K = NULL, k_fold = NULL, regul = 1e-06,
+  ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -27,6 +28,8 @@ cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
 \item{nv_max}{Same as in \link[=varsel]{varsel}.}
 
 \item{intercept}{Same as in \link[=varsel]{varsel}.}
+
+\item{penalty}{Same as in \link[=varsel]{varsel}.}
 
 \item{verbose}{Whether to print out some information during the validation, Default is TRUE.}
 
