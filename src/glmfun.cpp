@@ -20,10 +20,13 @@ double loss_approx(vec beta,    // coefficients
                    vec z,       // locations for pseudo obsevations
                    vec w,       // weights of the pseudo observations (inverse-variances)
                    double lambda, // regularization parameter
-                   double alpha)  // elastic net mixing parameter
+                   double alpha, // elastic net mixing parameter
+                   vec penalty) // relative penalties for the variables  
 {
   double loss;
-  loss = 0.5*sum(w % square(z-f)) + lambda*( 0.5*(1-alpha)*sum(square(beta)) + alpha*(sum(abs(beta))) );
+  uvec fin = find_finite(penalty);
+  loss = 0.5*sum(w % square(z-f)) + 
+    lambda*sum(penalty.elem(fin) % (0.5*(1-alpha)*square(beta.elem(fin)) + alpha*(abs(beta.elem(fin)))));
   return loss;
 }
 
@@ -41,6 +44,7 @@ void coord_descent(	vec& beta, // regression coefficients
                     vec& w, // weights of the pseudo observations (inverse-variances)
                     double& lambda, // regularization parameter
                     double& alpha, // elastic net mixing parameter
+                    vec& penalty, // relative penalties for the variables
                     bool intercept, // whether to use intercept
                     std::set<size_t>& varind, // which coefficients are updated
                     std::set<size_t>& active_set, // active set, may change if some variables enter or leave
@@ -56,11 +60,11 @@ void coord_descent(	vec& beta, // regression coefficients
   double h;
   
   // initial loss
-  loss_old = loss_approx(beta,f,z,w,lambda,alpha);
+  loss_old = loss_approx(beta,f,z,w,lambda,alpha,penalty);
   
   // auxiliary that will be used later on
-  double lam_alpha = lambda*alpha;
-  double lam_oneminus_alpha = lambda*(1-alpha);
+  // double lam_alpha = lambda*alpha;
+  // double lam_oneminus_alpha = lambda*(1-alpha);
   
   while (iter < maxiter) {
     
@@ -83,13 +87,13 @@ void coord_descent(	vec& beta, // regression coefficients
       f = f - beta(j)*x.col(j);
       h = sum( w % x.col(j) % (z - f) ); // auxiliary variable
       
-      if (fabs(h) <= lam_alpha) {
+      if (fabs(h) <= penalty(j)*lambda*alpha) {
         beta(j) = 0.0;
       } else if (h > 0) {
-        beta(j) = (h - lam_alpha) / ( sum(w % square(x.col(j))) + lam_oneminus_alpha );
+        beta(j) = (h - penalty(j)*lambda*alpha) / ( sum(w % square(x.col(j))) + penalty(j)*lambda*(1-alpha) );
         active_set.insert(j);
       } else {
-        beta(j) = (h + lam_alpha) / ( sum(w % square(x.col(j))) + lam_oneminus_alpha );
+        beta(j) = (h + penalty(j)*lambda*alpha) / ( sum(w % square(x.col(j))) + penalty(j)*lambda*(1-alpha) );
         active_set.insert(j);
       }
       f = f + beta(j)*x.col(j);
@@ -97,7 +101,7 @@ void coord_descent(	vec& beta, // regression coefficients
     
     ++iter;
     ++npasses;
-    loss = loss_approx(beta,f,z,w,lambda,alpha);
+    loss = loss_approx(beta,f,z,w,lambda,alpha,penalty);
     
     if (until_convergence) {
       // Rcpp::Rcout << "loss - loss_old = " << loss - loss_old << '\n';
@@ -120,7 +124,7 @@ void coord_descent(	vec& beta, // regression coefficients
 
 
 
-/** Computes the whole elastic-net regularization path given the grid of values to the lambda.
+/** Computes the whole elastic-net regularization path given the grid of values to lambda.
 Assumes that the lambda grid is selected carefully and utilizes the function pseudo_obs
 that returns the pseudo-observations corresponding to the quadratic approximation to the
 loss function for a given vector of latent values (see elnetfun.R).
@@ -131,10 +135,12 @@ List glm_elnet_c(arma::mat x, // input matrix
                  arma::vec lambda, // grid for the regularization parameter
                  double alpha, // elastic net mixing parameter
                  bool intercept, // whether to use intercept
+                 arma::vec penalty, // relative penalties for the variables
                  double thresh, // threshold for determining the convergence
                  int qa_updates_max, // maximum for the total number of quadratic approximation updates
                  int pmax, // stop computation when the active set size is equal or greater than this
                  bool pmax_strict, // if true, then the active set size of the last beta is always at most pmax
+                 arma::vec beta, // initial value for the regression coefficients
                  double beta0, // initial value for the intercept
                  arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                  int as_updates_max = 50) // maximum number of active set updates for one quadratic approximation
@@ -168,8 +174,8 @@ List glm_elnet_c(arma::mat x, // input matrix
   
   // initialization
   if (!intercept)	beta0 = 0; // ensure intercept is zero when it is not used
-  vec beta(D);
-  beta.zeros(D);
+  // vec beta(D);
+  // beta.zeros(D);
   vec f = x*beta + beta0;
   std::set<size_t> active_set; 
   std::set<size_t> active_set_old;
@@ -182,7 +188,7 @@ List glm_elnet_c(arma::mat x, // input matrix
   z = as<vec>(obs["z"]);
   w = as<vec>(obs["w"]);
   // double loss_initial = obs["dev"];
-  double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha); // initial loss
+  double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha, penalty); // initial loss
   double loss_old = loss_initial; // will be updated iteratively
   double loss; // will be updated iteratively
   double tol = thresh*fabs(loss_initial); // convergence criterion for coordinate descent
@@ -202,7 +208,7 @@ List glm_elnet_c(arma::mat x, // input matrix
       ++qau;
       
       // current value of the (approximate) loss function
-      loss_old = loss_approx(beta, f, z, w, lam, alpha);
+      loss_old = loss_approx(beta, f, z, w, lam, alpha, penalty);
       
       // run the coordinate descent until convergence for the current
       // quadratic approximation
@@ -211,11 +217,11 @@ List glm_elnet_c(arma::mat x, // input matrix
       	
         // iterate within the current active set until convergence (this might update 
         // active_set_old, if some variable goes to zero)
-        coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, active_set, active_set_old, true, npasses, tol);
+        coord_descent(beta, beta0, f, x, z, w, lam, alpha, penalty, intercept, active_set, active_set_old, true, npasses, tol);
       	
         // perfom one pass over all the variables and check if the active set changes 
         // (this might update active_set)
-        coord_descent(beta, beta0, f, x, z, w, lam, alpha, intercept, varind_all, active_set, false, npasses, tol);
+        coord_descent(beta, beta0, f, x, z, w, lam, alpha, penalty, intercept, varind_all, active_set, false, npasses, tol);
         
         ++asu;
         
@@ -228,7 +234,7 @@ List glm_elnet_c(arma::mat x, // input matrix
       as_updates(k) = as_updates(k) + asu;
       
       // the loss after updating the coefficients
-      loss = loss_approx(beta, f, z, w, lam, alpha);
+      loss = loss_approx(beta, f, z, w, lam, alpha, penalty);
       
       // check if converged
       if (fabs(loss_old-loss) < tol) {

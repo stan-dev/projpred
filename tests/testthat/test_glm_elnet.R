@@ -22,6 +22,8 @@ x_tr <- x[,1:nv_fit]
 weights <- sample(1:4, n, replace = T)
 weights_norm <- weights / sum(weights) * n
 offset <- rnorm(n)
+penalty <- runif(ncol(x_tr))+0.5
+penalty <- penalty/sum(penalty)*d # must scale the penalties to be comparable to glmnet
 
 tol <- 1e-04
 extra_thresh <- 1e-10
@@ -55,38 +57,40 @@ test_that("glm_elnet: gaussian, id-link, no intercept, lambda = 0", {
   expect_equal(unname(coef(glmfit)), c(lassofit$beta), tolerance = tol)
 })
 
-test_that("glm_elnet: gaussian, id-link, intercept, lambda = 0.5", {
+test_that("glm_elnet: gaussian, id-link, intercept, lambda = 7", {
 	fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
-  lambda <- 0.5
+  lambda <- 7.0
 
   lassofit <- glm_elnet(x_tr, y, family = fam, lambda = lambda, alpha = 1,
                         weights = weights_norm, offset = offset,
-                        intercept = TRUE, normalize = FALSE)
+                        intercept = TRUE, normalize = FALSE, penalty = penalty)
   glmnetfit <- glmnet::glmnet(x_tr, y, family = fam$family, alpha = 1,
                               weights = weights_norm, offset = offset,
                               lambda = lambda/n,
-                              intercept = TRUE, standardize = FALSE)
+                              intercept = TRUE, standardize = FALSE,
+                              penalty.factor = penalty)
   exp_beta <- unname(c(glmnetfit$a0, as.matrix(glmnetfit$beta)))
 
   expect_equal(exp_beta, c(lassofit$beta0, lassofit$beta), tolerance = tol)
 })
 
-test_that("glm_elnet: gaussian, id-link, no intercept, lambda = 0.5", {
+test_that("glm_elnet: gaussian, id-link, no intercept, lambda = 5", {
 	fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
-  lambda <- 0.5
+  lambda <- 5
 
   lassofit <- glm_elnet(x_tr, y, family = fam, lambda = lambda, alpha = 1,
                         weights = weights_norm, offset = offset,
-                        intercept = FALSE, normalize = FALSE)
+                        intercept = FALSE, normalize = FALSE, penalty = penalty)
   glmnetfit <- glmnet::glmnet(x_tr, y, family = fam$family, alpha = 1,
                               weights = weights_norm, offset = offset,
                               lambda = lambda/n,
-                              intercept = FALSE, standardize = FALSE)
+                              intercept = FALSE, standardize = FALSE,
+                              penalty.factor = penalty)
   exp_beta <- c(as.matrix(glmnetfit$beta))
 
-
+  
   expect_equal(exp_beta, c(lassofit$beta), tolerance = tol)
 })
 
@@ -119,36 +123,38 @@ test_that("glm_elnet: binomial, logit-link, no intercept, lambda = 0", {
 })
 
 
-test_that("glm_elnet: binomial, logit-link, intercept, lambda = 0.5", {
+test_that("glm_elnet: binomial, logit-link, intercept, lambda = 3", {
 	fam <- kl_helpers(binomial(link = 'logit'))
   y <- rbinom(n, 1, fam$linkinv(x%*%b))
-  lambda <- 0.5
+  lambda <- 3
 
   lassofit <- glm_elnet(x_tr, y, family = fam, lambda = lambda, alpha = 1,
                         offset = offset, thresh = extra_thresh,
-                        intercept = TRUE, normalize = FALSE)
+                        intercept = TRUE, normalize = FALSE, penalty = penalty)
 
   glmnetfit <- glmnet::glmnet(x_tr, y, family = fam$family, alpha = 1,
                               offset = offset, lambda = lambda/n,
-                              intercept = TRUE, standardize = FALSE)
+                              intercept = TRUE, standardize = FALSE,
+                              penalty.factor = penalty)
   exp_beta <- unname(c(glmnetfit$a0, as.matrix(glmnetfit$beta)))
-
+  
   expect_equal(exp_beta, c(lassofit$beta0, lassofit$beta), tolerance = tol)
 })
 
-test_that("glm_elnet: binomial, logit-link, no intercept, lambda = 0.5", {
+test_that("glm_elnet: binomial, logit-link, no intercept, lambda = 2", {
 	fam <- kl_helpers(binomial(link = 'logit'))
   y <- rbinom(n, 1, fam$linkinv(x%*%b))
-  lambda <- 0.5
+  lambda <- 2
 
   lassofit <- glm_elnet(x_tr, y, family = fam, lambda = lambda, alpha = 1,
                         offset = offset,
-                        intercept = FALSE, normalize = FALSE)
+                        intercept = FALSE, normalize = FALSE, penalty = penalty)
   glmnetfit <- glmnet::glmnet(x_tr, y, family = fam$family, alpha = 1,
                               offset = offset, lambda = lambda/n,
-                              intercept = FALSE, standardize = FALSE)
+                              intercept = FALSE, standardize = FALSE,
+                              penalty.factor = penalty)
   exp_beta <- c(as.matrix(glmnetfit$beta))
-
+  
   expect_equal(exp_beta, c(lassofit$beta), tolerance = tol)
 })
 
@@ -187,29 +193,31 @@ test_that("glm_elnet: poisson, log-link, intercept, lambda = 0.5", {
 
   lassofit <- glm_elnet(x_tr, y, family = fam, lambda = lambda, alpha = 1,
                         offset = offset, weights = weights_norm,
-                        intercept = TRUE, normalize = FALSE, thresh = extra_thresh)
+                        intercept = TRUE, normalize = FALSE, thresh = extra_thresh,
+                        penalty = penalty)
 
   glmnetfit <- glmnet::glmnet(x_tr, y, family = fam$family, alpha = 1,
                               offset = offset,  weights = weights_norm, lambda = lambda/n,
-                              intercept = TRUE, standardize = FALSE, thresh = extra_thresh)
+                              intercept = TRUE, standardize = FALSE, thresh = extra_thresh,
+                              penalty.factor = penalty)
   exp_beta <- unname(c(glmnetfit$a0, as.matrix(glmnetfit$beta)))
 
   expect_equal(exp_beta, c(lassofit$beta0, lassofit$beta), tolerance = tol)
 })
 
-test_that("glm_elnet: poisson, log-link, no intercept, lambda = 0.5", {
+test_that("glm_elnet: poisson, log-link, no intercept, lambda = 3", {
 	fam <- kl_helpers(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
-  lambda <- 0.5
+  lambda <- 3
 
   lassofit <- glm_elnet(x_tr, y, family = fam, lambda = lambda, alpha = 1,
                         offset = offset, weights = weights_norm,
-                        intercept = FALSE, normalize = FALSE)
+                        intercept = FALSE, normalize = FALSE, penalty = penalty)
   glmnetfit <- glmnet::glmnet(x_tr, y, family = fam$family, alpha = 1,
                               offset = offset,  weights = weights_norm, lambda = lambda/n,
-                              intercept = FALSE, standardize = FALSE)
+                              intercept = FALSE, standardize = FALSE, penalty.factor = penalty)
   exp_beta <- c(as.matrix(glmnetfit$beta))
-
+  
   expect_equal(exp_beta, c(lassofit$beta), tolerance = tol)
 })
 
