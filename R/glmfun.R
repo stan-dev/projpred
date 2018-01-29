@@ -204,7 +204,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
       return( list(beta=matrix(integer(length=0)), beta0=as.vector(out[[1]]), w=out[[3]], qa_updates=out[[4]]) )
     } else {
       # null model with no predictors and no intercept
-      return( list( beta=matrix(integer(length=0)), beta0=0, varorder=integer(length=0) ) )
+      return( list( beta=matrix(integer(length=0)), beta0=0, w=weights, qa_updates=0 ) )
     }
   } else {
     # normal case
