@@ -55,7 +55,8 @@
 #' @export
 varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
                    nspred = NULL, ncpred = NULL, nv_max = NULL, 
-                   intercept = NULL, penalty=NULL, verbose = F, regul=1e-6, ...) {
+                   intercept = NULL, penalty=NULL, verbose = F, 
+                   lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, ...) {
 
 
   .validate_for_varsel(fit)
@@ -98,7 +99,8 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   p_pred <- .get_refdist(fit, nspred, ncpred)
 
   # perform the selection
-  vind <- select(method, p_sel, d_train, family_kl, intercept, nv_max, penalty, verbose, regul)
+  opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
+  vind <- select(method, p_sel, d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
 
   # statistics for the selected submodels
   p_sub <- .get_submodels(vind, c(0, seq_along(vind)), family_kl, p_pred,
@@ -141,7 +143,7 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
 
 select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
-                   penalty, verbose, regul) {
+                   penalty, verbose, opt) {
   #
   # Auxiliary function, performs variable selection with the given method,
   # and returns the variable ordering.
@@ -150,14 +152,14 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
     # special case, only one variable, so no need for selection
     return(1)
   if (tolower(method) == 'l1') {
-    vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max, penalty)
+    vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max, penalty, opt)
   } else if (tolower(method) == 'forward') {
     if ( NCOL(p_sel$mu) == 1)
       # only one mu column (one cluster or one sample), so use the optimized version of the forward search
-      vind <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, regul)
+      vind <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, opt)
     else
       # routine that can be used with several clusters
-      tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept, nv_max, verbose, regul),
+      tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept, nv_max, verbose, opt),
                'error' = .varsel_errors)
   } else {
     stop(sprintf('Unknown search method: %s.', method))

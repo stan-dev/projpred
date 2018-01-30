@@ -48,7 +48,7 @@
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
-                      K = NULL, k_fold = NULL, regul=1e-6, ...) {
+                      K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, ...) {
 
   .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
@@ -88,13 +88,16 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 		nv_max <- min(NCOL(vars$x), nv_max_default)
 	}
 
+	# search options
+	opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
+	
 	if (tolower(cv_method) == 'kfold') {
 		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, penalty,
-		                       verbose, vars, K, k_fold, regul)
+		                       verbose, vars, K, k_fold, opt)
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
 		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, penalty, 
-		                     verbose, regul)
+		                     verbose, opt)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
 	}
@@ -138,7 +141,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 
 
 kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
-                         intercept, penalty, verbose, vars, K, k_fold, regul) {
+                         intercept, penalty, verbose, vars, K, k_fold, opt) {
 
 	if (is.null(K)) 
 		K <- 4
@@ -182,13 +185,13 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   vind_cv <- lapply(list_cv, function(fold) {
   	if (verbose)
     	print(fold$msg)
-    select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, penalty, verbose, regul)
+    select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
   })
 
   # Construct submodel projections for each fold
   p_sub_cv <- mapply(function(vind, fold) {
     .get_submodels(vind, c(0, seq_along(vind)), family_kl, fold$p_pred,
-                   fold$d_train, intercept, regul)
+                   fold$d_train, intercept, opt$regul)
   }, vind_cv, list_cv, SIMPLIFY = F)
 
   # Helper function extract and combine mu and lppd from K lists with each
@@ -278,7 +281,8 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 
 
 
-loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, penalty, verbose, regul) {
+loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, 
+                       penalty, verbose, opt) {
 	#
 	# Performs the validation of the searching process using LOO.
 	#
@@ -338,12 +342,12 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, p
 		p_pred <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
 
 		# perform selection
-		vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, regul)
+		vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
 		vind_mat[i,] <- vind
 
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
-		submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, regul) 
+		submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul) 
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
