@@ -21,8 +21,17 @@
 #'    Defaults to min(D, floor(0.4*n)) where n is the number of observations and
 #'    D the number of variables.
 #' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
+#' @param penalty Vector determining the relative penalties or costs for the variables.
+#' Zero means that those variables have no cost and will therefore be selected first,
+#' whereas Inf means that those variables will never be selected. Currently works only 
+#' if method == 'L1'. By default 1 for each variable.
 #' @param verbose If TRUE, may print out some information during the selection.
 #'    Defaults to FALSE.
+#' @param lambda_min_ratio Ratio between the smallest and largest lambda in the L1-penalized search.
+#' This parameter essentially determines how long the search is carried out, i.e., how large submodels
+#' are explored. No need to change the default value unless the program gives a warning about this.
+#' @param nlambda Number of values in the lambda grid for L1-penalized search. No need to change unless
+#' the program gives a warning about this.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
@@ -51,7 +60,8 @@
 #' @export
 varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
                    nspred = NULL, ncpred = NULL, nv_max = NULL, 
-                   intercept = NULL, verbose = F, regul=1e-6, ...) {
+                   intercept = NULL, penalty=NULL, verbose = F, 
+                   lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, ...) {
 
 
   .validate_for_varsel(fit)
@@ -94,7 +104,8 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   p_pred <- .get_refdist(fit, nspred, ncpred)
 
   # perform the selection
-  vind <- select(method, p_sel, d_train, family_kl, intercept, nv_max, verbose, regul)
+  opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
+  vind <- select(method, p_sel, d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
 
   # statistics for the selected submodels
   p_sub <- .get_submodels(vind, c(0, seq_along(vind)), family_kl, p_pred,
@@ -137,7 +148,7 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
 
 select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
-                   verbose, regul) {
+                   penalty, verbose, opt) {
   #
   # Auxiliary function, performs variable selection with the given method,
   # and returns the variable ordering.
@@ -146,14 +157,14 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
     # special case, only one variable, so no need for selection
     return(1)
   if (tolower(method) == 'l1') {
-    vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max)
+    vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max, penalty, opt)
   } else if (tolower(method) == 'forward') {
     if ( NCOL(p_sel$mu) == 1)
       # only one mu column (one cluster or one sample), so use the optimized version of the forward search
-      vind <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, regul)
+      vind <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, opt)
     else
       # routine that can be used with several clusters
-      tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept, nv_max, verbose, regul),
+      tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept, nv_max, verbose, opt),
                'error' = .varsel_errors)
   } else {
     stop(sprintf('Unknown search method: %s.', method))

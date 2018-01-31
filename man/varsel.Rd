@@ -6,7 +6,8 @@
 \usage{
 varsel(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  verbose = F, regul = 1e-06, ...)
+  penalty = NULL, verbose = F, lambda_min_ratio = 1e-05, nlambda = 500,
+  regul = 1e-06, ...)
 }
 \arguments{
 \item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned
@@ -37,8 +38,20 @@ D the number of variables.}
 
 \item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}
 
+\item{penalty}{Vector determining the relative penalties or costs for the variables.
+Zero means that those variables have no cost and will therefore be selected first,
+whereas Inf means that those variables will never be selected. Currently works only 
+if method == 'L1'. By default 1 for each variable.}
+
 \item{verbose}{If TRUE, may print out some information during the selection.
 Defaults to FALSE.}
+
+\item{lambda_min_ratio}{Ratio between the smallest and largest lambda in the L1-penalized search.
+This parameter essentially determines how long the search is carried out, i.e., how large submodels
+are explored. No need to change the default value unless the program gives a warning about this.}
+
+\item{nlambda}{Number of values in the lambda grid for L1-penalized search. No need to change unless
+the program gives a warning about this.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we

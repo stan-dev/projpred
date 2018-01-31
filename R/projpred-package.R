@@ -1,4 +1,4 @@
-#' PROJPRED
+#' Projection predictive feature selection
 #'
 #' @docType package
 #' @name projpred
@@ -11,4 +11,26 @@
 #' @import ggplot2
 #' @importFrom rstan extract
 #' @importFrom loo psislw
+#' 
+#' 
+#' @description Description
+#' 
+#' \pkg{projpred} is an R package to perform projection predictive variable selection for generalized
+#' linear models. The package is aimed to be compatible with \pkg{rstanarm} but also other
+#' reference models can be used (see function \code{\link{init_refmodel}}). 
+#'
+#' Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families,
+#' but more will be implemented later. See the \href{https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html}{quickstart-vignette} for examples.
+#'
+#' 
+#' @section References:
+#' 
+#' Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via 
+#' an entropic explanatory power. \emph{Journal of Statistical Planning and Inference}, 111(1-2):77–94.
+#'
+#' Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian 
+#' approach via Kullback–Leibler projections. \emph{Biometrika}, 85(1):29–37.
+#' 
+#' Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods for model selection.
+#'  \emph{Statistics and Computing}, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online][piironenvehtari]). 
 NULL

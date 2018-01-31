@@ -1,6 +1,6 @@
 Package: projpred
 Title: projpred
-Version: 0.6.1
+Version: 0.6.4
 Author:
     Markus Paasiniemi [aut],
     Juho Piironen [aut],
@@ -10,7 +10,7 @@ Maintainer:
     Juho Piironen <juho.piironen@aalto.fi>
 Description:
     An R package to perform projection predictive variable
-    selection for generalized linear models fitted with rstanarm.
+    selection for generalized linear models. Compatible with rstanarm.
 Depends:
     R (>= 3.1.2)
 Imports:
