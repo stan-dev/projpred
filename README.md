@@ -3,7 +3,7 @@
 
 [![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
 
-An R package to perform projection predictive variable selection for generalized linear models fitted with [rstanarm][]. 
+An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] but also other reference models can be used. 
 
 The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
 
