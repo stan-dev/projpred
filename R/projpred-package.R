@@ -32,5 +32,5 @@
 #' approach via Kullback–Leibler projections. \emph{Biometrika}, 85(1):29–37.
 #' 
 #' Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods for model selection.
-#'  \emph{Statistics and Computing}, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online][piironenvehtari]). 
+#'  \emph{Statistics and Computing}, 27(3):711-735. doi:10.1007/s11222-016-9649-y. (\href{https://link.springer.com/article/10.1007/s11222-016-9649-y}{Online}). 
 NULL
