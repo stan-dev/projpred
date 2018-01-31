@@ -19,6 +19,8 @@
 #' @param k_fold An array with cross-validated stanfits and the respective
 #' test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
 #' If not provided, \link[=kfold]{kfold} is called inside the function.
+#' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
+#' @param nlambda Same as in \link[=varsel]{varsel}.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.

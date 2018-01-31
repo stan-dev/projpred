@@ -27,6 +27,11 @@
 #' if method == 'L1'. By default 1 for each variable.
 #' @param verbose If TRUE, may print out some information during the selection.
 #'    Defaults to FALSE.
+#' @param lambda_min_ratio Ratio between the smallest and largest lambda in the L1-penalized search.
+#' This parameter essentially determines how long the search is carried out, i.e., how large submodels
+#' are explored. No need to change the default value unless the program gives a warning about this.
+#' @param nlambda Number of values in the lambda grid for L1-penalized search. No need to change unless
+#' the program gives a warning about this.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.

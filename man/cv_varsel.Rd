@@ -6,8 +6,8 @@
 \usage{
 cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  penalty = NULL, verbose = T, K = NULL, k_fold = NULL, regul = 1e-06,
-  ...)
+  penalty = NULL, verbose = T, K = NULL, k_fold = NULL,
+  lambda_min_ratio = 1e-05, nlambda = 500, regul = 1e-06, ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -39,6 +39,10 @@ if \code{cv_method = TRUE} and \code{k_fold = NULL}.}
 \item{k_fold}{An array with cross-validated stanfits and the respective
 test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
 If not provided, \link[=kfold]{kfold} is called inside the function.}
+
+\item{lambda_min_ratio}{Same as in \link[=varsel]{varsel}.}
+
+\item{nlambda}{Same as in \link[=varsel]{varsel}.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we
