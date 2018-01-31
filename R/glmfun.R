@@ -81,18 +81,6 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty, obsva
   if (length(init$beta) > 0)
     f0 <- f0 + as.vector( x[,penalty==0,drop=F] %*% init$beta )
   
-  # if (intercept) {
-  #   beta0_old <- 0
-  #   while(T) {
-  #     beta0 <- sum(obs$w*obs$z) / sum(obs$w) # intercept
-  #     if (abs(beta0-beta0_old) < 1e-6)
-  #       break
-  #     obs <- pseudo_data(beta0*rep(1,n), y, family, offset, weights, obsvar=obsvar)
-  #     beta0_old <- beta0
-  #   } 
-  # } else
-  #   beta0 <- 0
-  
   obs <- pseudo_data(f0, y, family, offset, weights, obsvar=obsvar)
   resid <- obs$z - f0 # residual from the initial solution
   lambda_max_cand <- abs( t(x) %*% (resid*obs$w) ) / (penalty*alpha)
@@ -141,7 +129,9 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
     else
       mx <- rep(0,ncol(x))
     sx <- apply(x,2,'sd')
-    x <- scale(x, center=intercept, scale=T)
+    penalty[sx==0] <- Inf # ignore variables with zero variance
+    sx[sx==0] <- 1
+    x <- t((t(x)-mx)/sx)
   }
   
   # default lambda-sequence, including optimal start point

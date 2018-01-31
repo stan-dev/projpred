@@ -74,7 +74,8 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, penalty, opt) 
   
   
   if (length(entered_variables) < nv_max)
-	  warning('Less than nv_max variables entered L1-path. Try reducing lambda_min_ratio. ')
+    if (length(setdiff(notentered_variables, which(penalty == Inf))) > 0)
+	    warning('Less than nv_max variables entered L1-path. Try reducing lambda_min_ratio. ')
 	
 	return(order[1:nv_max])
 }

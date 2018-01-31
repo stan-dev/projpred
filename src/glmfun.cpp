@@ -174,8 +174,6 @@ List glm_elnet_c(arma::mat x, // input matrix
   
   // initialization
   if (!intercept)	beta0 = 0; // ensure intercept is zero when it is not used
-  // vec beta(D);
-  // beta.zeros(D);
   vec f = x*beta + beta0;
   std::set<size_t> active_set; 
   std::set<size_t> active_set_old;
