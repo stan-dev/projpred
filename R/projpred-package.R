@@ -20,8 +20,26 @@
 #' reference models can be used (see function \code{\link{init_refmodel}}). 
 #'
 #' Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families,
-#' but more will be implemented later. See the \href{https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html}{quickstart-vignette} for examples.
-#'
+#' but more will be implemented later. See the \href{https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html}{quickstart-vignette}
+#' for examples.
+#' 
+#' 
+#' @section Functions:
+#' 
+#' \describe{
+#'  \item{\link{varsel}, \link{cv_varsel}, \link{init_refmodel}}{
+#'  Perform and cross-validate the variable selection. \link{init_refmodel} can be used to initialize
+#'  a reference model other than \pkg{rstanarm}-fit.}
+#'  \item{\link{project}}{
+#'  Get the projected posteriors of the reduced models.}
+#'  \item{\link{proj_predict}, \link{proj_linpred}}{
+#'  Make predictions with reduced number of features.}
+#'  \item{\link{varsel_plot}, \link{varsel_stats}}{
+#'  Visualize and get some key statistics about the variable selection.}
+#' }
+#' 
+#' 
+#' 
 #' 
 #' @section References:
 #' 
