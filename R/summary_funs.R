@@ -31,26 +31,26 @@
 
   loglik <- family_kl$ll_fun(mu, dis, matrix(d_test$y,nrow=NROW(mu)), d_test$weights)
   if (length(loglik) == 1) {
-      # one observation, one sample
-      list(mu = mu, lppd = loglik)
+    # one observation, one sample
+    list(mu = mu, lppd = loglik)
   } else if (is.null(dim(loglik))){
-      # loglik is a vector, but not sure if it means one observation with many samples, or vice versa?
-      stop('Internal error encountered: loglik is a vector, but should be a scalar or matrix')
+    # loglik is a vector, but not sure if it means one observation with many samples, or vice versa?
+    stop('Internal error encountered: loglik is a vector, but should be a scalar or matrix')
   } else {
-      # mu is a matrix, so apply weighted sum over the samples
-      list(mu = c(mu %*% wsample),
-           lppd = apply(loglik, 1, log_weighted_mean_exp, wsample))
+    # mu is a matrix, so apply weighted sum over the samples
+    list(mu = c(mu %*% wsample),
+         lppd = apply(loglik, 1, log_weighted_mean_exp, wsample))
   }
   
 }
 
 
 .bbweights <- function(N,B) {
-    # generate Bayesian bootstrap weights, N = original sample size,
-    # B = number of bootstrap samples
-    bbw <- matrix(rgamma(N*B, 1), ncol = N)
-    bbw <- bbw/rowSums(bbw)
-    return(bbw)
+  # generate Bayesian bootstrap weights, N = original sample size,
+  # B = number of bootstrap samples
+  bbw <- matrix(rgamma(N*B, 1), ncol = N)
+  bbw <- bbw/rowSums(bbw)
+  return(bbw)
 }
 
 
