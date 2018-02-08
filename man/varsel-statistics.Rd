@@ -9,7 +9,8 @@
 varsel_plot(object, ..., nv_max = NULL, stats = NULL, deltas = F,
   n_boot = 1000, alpha = 0.1)
 
-varsel_stats(object, ..., nv_max = NULL, deltas = F)
+varsel_stats(object, ..., nv_max = NULL, type = "mean", deltas = F,
+  alpha = 0.1)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -34,6 +35,9 @@ intervals of the statistics.}
 \item{alpha}{A number indicating the desired coverage of the credible
 intervals. Eg. \code{alpha=0.1} corresponds to 90\% probability mass
 within the intervals. Defaults to \code{0.1}.}
+
+\item{type}{One of 'mean', 'lower', 'upper' indicating whether to compute mean,
+or either the lower or upper credible bound.}
 }
 \description{
 \code{varsel_stats} can be used to obtain summary statistics related to

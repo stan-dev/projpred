@@ -206,6 +206,8 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' options are: mlpd, kl, mse (gaussian only), pctcorr (binomial only).
 #' If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_stats
 #' return all the statistics.
+#' @param type One of 'mean', 'lower', 'upper' indicating whether to compute mean,
+#' or either the lower or upper credible bound. 
 #' @param deltas If \code{TRUE}, the difference between the full model and the
 #' submodel is returned instead of the actual value of the statistic.
 #' Defaults to \code{FALSE}.
