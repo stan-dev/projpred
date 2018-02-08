@@ -54,19 +54,87 @@
 }
 
 
-.bootstrap_stats <- function(varsel, n_boot = 1000, alpha = 0.05) {
+.tabulate_stats <- function(varsel, alpha = 0.05) {
+  #
+  # return a table of summary statistics with columns:
+  #
+  #  data: type of data ('sel','train','loo','kfold')
+  #  size: number of features in the submodel
+  #  delta: whether the value indicates the difference to the full model (=TRUE) or the actual value (=FALSE)
+  #  statistic: name of statistic ('kl', 'mlpd', 'mse', 'r2', ...)
+  #  value: (mean) value of the statistic
+  #  lq: lower credible bound for the statistic
+  #  uq: upper credible bound for the statistic
+  
+  n <- length(varsel$d_test$y)
+  
+  
+  # compute statistics for the full model
+  summ_ref <- varsel$summaries$full
+  stats_ref_pw <- .pointwise_stats(summ_ref$mu, summ_ref$lppd, varsel$d_test, varsel$family_kl)
+  stats_names <- names(stats_ref_pw)
+  
+  # compute statistics for the submodels
+  
+  # loop over model sizes
+  rows_stat <- data.frame()
+  for (k in seq_along(varsel$summaries$sub)) {
+    
+    summ_k <- varsel$summaries$sub[[k]]
+    stats_pw <- .pointwise_stats(summ_k$mu, summ_k$lppd, varsel$d_test, varsel$family_kl)
+    stat_names <- names(stats_pw)
+    
+    # actual value
+    m <- colMeans(stats_pw) # means
+    se <- sqrt(apply(stats_pw,2,'var') / n) # standard errors DIVIDE BY NUMBER OF NON-NAS!!
+    row1 <- data.frame(data = varsel$d_test$type, size=k-1, delta=F, statistic=stat_names, value=m, 
+                       lq=qnorm(alpha/2, mean=m, sd=se), uq=qnorm(1-alpha/2, mean=m, sd=se), 
+                       row.names=1:length(m))
+    
+    # relative to the reference model
+    m <- colMeans(stats_pw-stats_ref_pw) # means
+    se <- sqrt(apply(stats_pw-stats_ref_pw,2,'var') / n) # standard errors DIVIDE BY NUMBER OF NON-NAS!!
+    row2 <- data.frame(data = varsel$d_test$type, size=k-1, delta=T, statistic=stat_names, value=m, 
+                       lq=qnorm(alpha/2, mean=m, sd=se), uq=qnorm(1-alpha/2, mean=m, sd=se),
+                       row.names=1:length(m))
+    
+    rows_stat <- rbind(rows_stat, row1, row2)
+  }
+  
+  # kl-value
+  rows_kl <- data.frame(data = 'sel', size = seq_along(varsel$kl)-1, delta = F,
+                      statistic = 'kl',  value = varsel$kl, lq = NA, uq = NA)
+  
+  return(rbind(rows_kl, rows_stat))
+}
 
+
+.bootstrap_stats <- function(varsel, n_boot = 1000, alpha = 0.05) {
+  #
+  # return a table of summary statistics with columns:
+  #
+  #  data: type of data ('sel','train','loo','kfold')
+  #  size: number of features in the submodel
+  #  delta: whether the value indicates the difference to the full model (=TRUE) or the actual value (=FALSE)
+  #  statistic: name of statistic ('kl', 'mlpd', 'mse', 'r2', ...)
+  #  value: (mean) value of the statistic
+  #  lq: lower credible bound for the statistic
+  #  uq: upper credible bound for the statistic
+  
   n <- length(varsel$d_test$y)
   equal_weights <- matrix(1/n, 1, n)
 
   b_weights <- .bbweights(n,n_boot)
 
-  hf <- function(x, w) {
-    .calc_stats(x$mu, x$lppd, varsel$d_test, varsel$family_kl, w)
+  # this function computes the average statistics given the 
+  # (bootstrap) weights w for the observations
+  hf <- function(stat, w) {
+    .calc_stats(stat$mu, stat$lppd, varsel$d_test, varsel$family_kl, w)
   }
 
-  sub <- lapply(varsel$summaries$sub, function(x) {
-    list(stats = hf(x, equal_weights),  boot = hf(x, b_weights))
+  # compute for each number of features k the bootstrapped statistics
+  sub <- lapply(varsel$summaries$sub, function(stat_k) {
+    list(stats = hf(stat_k, equal_weights),  boot = hf(stat_k, b_weights))
   })
 
   full <- list(stats = hf(varsel$summaries$full, equal_weights),
@@ -96,7 +164,14 @@
 }
 
 
+
+
+
+
 .calc_stats <- function(mu, lppd, d_test, family, sample_weights) {
+  # calculate the average of the statistics based on pointwise mu and lppd,
+  # assuming the observations are given weights sample_weights (which can be used
+  # for bootstrapping the statistics)
   arr <- list(mlpd = lppd, mse = (d_test$y-mu)^2)
 
   if(family$family == 'binomial' && all(d_test$weights %in% c(0,1))) {
@@ -111,5 +186,29 @@
   }
 
   stats
+}
+
+
+.pointwise_stats <- function(mu, lppd, d_test, family, sample_weights=NULL) {
+  # calculate the pointwise statistics based on pointwise mu and lppd
+  stats <- list()
+  stats$mlpd <- lppd
+  stats$mse <- (d_test$y-mu)^2
+  
+  if(family$family == 'gaussian') {
+    stats$r2 <- 1 - stats$mse/mean((d_test$y-mean(d_test$y))^2)
+  }
+  if(family$family == 'binomial' && all(d_test$weights %in% c(0,1))) {
+    stats$pctcorr <- round(mu) == d_test$y
+  }
+  
+  # avg_ <- function(x) c(sample_weights%*%x)
+  # stats <- lapply(arr, avg_)
+  
+  # if(family$family == 'gaussian') {
+  #   stats$r2 <- 1 - stats$mse/avg_((d_test$y-mean(d_test$y))^2)
+  # }
+  as.data.frame(stats)
+  # stats
 }
 

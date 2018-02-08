@@ -235,7 +235,8 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F,
 	} else
 		refstat_found <- T
 	
-	boot_stats <- .bootstrap_stats(object$varsel, n_boot, alpha)
+	# boot_stats <- .bootstrap_stats(object$varsel, n_boot, alpha)
+	boot_stats <- .tabulate_stats(object$varsel, alpha)
 
 	#
 	if(is.null(stats)) stats <- 'mlpd' 
@@ -301,7 +302,7 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F,
 
 #' @rdname varsel-statistics
 #' @export
-varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
+varsel_stats <- function(object, ..., nv_max = NULL, type = 'mean', deltas = F, alpha=0.1) {
 	if(!('varsel' %in% names(object)))
       stop(paste('The provided object doesn\'t contain information about the',
                    'variable selection. Run the variable selection first.'))
@@ -312,16 +313,21 @@ varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
 		warning('Cannot compute statistics for deltas = TRUE when there is no reference model.')
 	}
 	
-  stats_table <- subset(.bootstrap_stats(object$varsel, NULL, 0.5),
-                  delta == deltas | statistic == 'kl')
+  #.bootstrap_stats(object$varsel, NULL, 0.5)
+  stats_table <- subset(.tabulate_stats(object$varsel, alpha=alpha),
+                        delta == deltas | statistic == 'kl')
   stats <- as.character(unique(stats_table$statistic))
 
+  # transform type to the names that appear in the statistic table, and pick the
+  # required values
+  type <- switch(type, mean='value', upper='uq', lower='lq')
   arr <- data.frame(sapply(stats, function(sname) {
-      unname(subset(stats_table, statistic == sname, 'value'))
+      unname(subset(stats_table, statistic == sname, type))
   }))
   arr <- cbind(size = unique(stats_table$size), arr)
 
-  if(is.null(nv_max)) nv_max <- max(stats_table$size)
+  if(is.null(nv_max)) 
+    nv_max <- max(stats_table$size)
 
   arr$vind <- c(NA, object$varsel$vind)
   if('pctch' %in% names(object$varsel))
