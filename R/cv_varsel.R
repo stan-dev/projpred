@@ -50,7 +50,7 @@
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
-                      K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, ...) {
+                      K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, validate_search=T,...) {
 
   .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
@@ -99,7 +99,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
 		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, penalty, 
-		                     verbose, opt)
+		                     verbose, opt, validate_search = validate_search)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
 	}
@@ -113,6 +113,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 
 	# find out how many of cross-validated iterations select
 	# the same variables as the selection with all the data.
+	# TODO: THIS PROBABLY DOES NOT WORK PROPERLY WHEN NOT ALL LOOS ARE COMPUTED
 	ch <- as.matrix(unname(as.data.frame(sel_cv$vind_cv)))
 	pctch <- t(sapply(seq_along(sel$vind), function(size) {
 	  c(size = size, sapply(sel$vind, function(var) {
@@ -127,12 +128,12 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                   list(pctch = pctch))
 
 	ssize <- .suggest_size(fit$varsel)
-	if(is.na(ssize)) {
-	  # try a more relaxed value, if this does not work either, issue a warning
-	  ssize <- .suggest_size(fit$varsel, cutoff_pct = 0.2)
-	  if(is.na(ssize))
-	    warning('Submodels too close to each other, cant suggest a submodel.')
-	}
+	# if(is.na(ssize)) {
+	#   # try a more relaxed value, if this does not work either, issue a warning
+	#   ssize <- .suggest_size(fit$varsel, cutoff_pct = 0.2)
+	#   if(is.na(ssize))
+	#     warning('Submodels too close to each other, cant suggest a submodel.')
+	# }
 	fit$varsel$ssize <- ssize
 	
 	if (verbose)
@@ -284,10 +285,11 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 
 
 loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, 
-                       penalty, verbose, opt) {
+                       penalty, verbose, opt, validate_search = T) {
 	#
 	# Performs the validation of the searching process using LOO.
-	#
+	# validate_search indicates whether the selection is performed separately for each
+  # fold (for each data point)
 	#
 	vars <- .extract_vars(fit)
 	fam <- vars$fam
@@ -322,47 +324,62 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	loo_full <- apply(loglik+lw, 2, 'log_sum_exp')
 	mu_full <- rep(0,n)
 	for (i in 1:n)
-        mu_full[i] <- mu[i,] %*% exp(lw[,i])
+    mu_full[i] <- mu[i,] %*% exp(lw[,i])
 
 	# initialize matrices where to store the results
-	vind_mat <- matrix(rep(0, n*nv_max), nrow=n)
+	# vind_mat <- matrix(rep(0, n*nv_max), nrow=n)
+	vind_mat <- matrix(nrow=n, ncol=nv_max)
 	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
 
 	if (verbose) {
-	    print('Start computing LOOs...')
-	    nprints <- 10 # how many prints during the computation
-	    print_at <- round( c(1:nprints)*(n/nprints) )
-	    iprint <- 1
+    print('Start computing LOOs...')
+    pb <- txtProgressBar(min = 1, max = total, style = 3)
+    nprints <- 10 # how many prints during the computation
+    print_at <- round( c(1:nprints)*(n/nprints) )
+    iprint <- 1
 	}
 
+	if (!validate_search) {
+	  # perform selection only once using all the data (not separately for each fold),
+	  # and perform the projection then for each submodel size
+	  vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
+	  submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul, approx=T) 
+	}
+	  
 
 	for (i in 1:n) {
 
-		# reweight the clusters/samples according to the is-loo weights
-		p_sel <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
-		p_pred <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
-
-		# perform selection
-		vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
-		vind_mat[i,] <- vind
-
+	  # reweight the clusters/samples according to the is-loo weights
+	  p_sel <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
+	  p_pred <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
+	  
+		if (validate_search) {
+		  # perform selection and projection onto each model size with the reweighted clusters/samples
+		  vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
+		  submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul) 
+		} else {
+		  # the search path does not change (the feature ordering), so the submodel projections
+		  # need not be calculated again, only the cluster/sample weights need to be reset
+		  for (k in seq_along(submodels))
+		    submodels[[k]]$weights <- p_pred$weights
+		}
+		
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
-		submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul) 
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
-		for (k in 0:nv_max) {
-			loo_sub[i,k+1] <- summaries_sub[[k+1]]$lppd
-			mu_sub[i,k+1] <- summaries_sub[[k+1]]$mu
+		for (k in seq_along(summaries_sub)) {
+			loo_sub[i,k] <- summaries_sub[[k]]$lppd
+			mu_sub[i,k] <- summaries_sub[[k]]$mu
 		}
+		vind_mat[i,] <- vind
 
 		if (verbose && (i %in% print_at)) {
-		    print(sprintf('%d%% of LOOs done.', 10*iprint))
-		    iprint <- iprint+1
+      print(sprintf('%d%% of LOOs done.', 10*iprint))
+      iprint <- iprint+1
 		}
-
 	}
 
 	# put all the results together in the form required by cv_varsel
