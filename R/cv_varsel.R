@@ -327,17 +327,13 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
     mu_full[i] <- mu[i,] %*% exp(lw[,i])
 
 	# initialize matrices where to store the results
-	# vind_mat <- matrix(rep(0, n*nv_max), nrow=n)
 	vind_mat <- matrix(nrow=n, ncol=nv_max)
 	loo_sub <- matrix(nrow=n, ncol=nv_max+1)
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
 
 	if (verbose) {
     print('Start computing LOOs...')
-    pb <- txtProgressBar(min = 1, max = total, style = 3)
-    nprints <- 10 # how many prints during the computation
-    print_at <- round( c(1:nprints)*(n/nprints) )
-    iprint <- 1
+    pb <- txtProgressBar(min = 0, max = n, style = 3, initial=-1)
 	}
 
 	if (!validate_search) {
@@ -348,7 +344,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	}
 	  
 
-	for (i in 1:n) {
+	# TODO: DUMMY HERE!!
+	for (i in 1:n/2) {
 
 	  # reweight the clusters/samples according to the is-loo weights
 	  p_sel <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
@@ -376,11 +373,14 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 		}
 		vind_mat[i,] <- vind
 
-		if (verbose && (i %in% print_at)) {
-      print(sprintf('%d%% of LOOs done.', 10*iprint))
-      iprint <- iprint+1
+		if (verbose) {
+		  setTxtProgressBar(pb, i)
 		}
 	}
+	
+	if (verbose)
+	  # close the progress bar object
+	  close(pb)
 
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
