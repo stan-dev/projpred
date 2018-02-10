@@ -50,7 +50,8 @@
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
-                      K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, validate_search=T,...) {
+                      K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, 
+                      nloo=100, validate_search=T,...) {
 
   .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
@@ -99,7 +100,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
 		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, penalty, 
-		                     verbose, opt, validate_search = validate_search)
+		                     verbose, opt, nloo = nloo, validate_search = validate_search)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
 	}
@@ -285,7 +286,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 
 
 loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, 
-                       penalty, verbose, opt, validate_search = T) {
+                       penalty, verbose, opt, nloo = 100, validate_search = T) {
 	#
 	# Performs the validation of the searching process using LOO.
 	# validate_search indicates whether the selection is performed separately for each
@@ -316,8 +317,11 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	else
 		# log-likelihood available
 		loglik <- vars$loglik
-	lw <- psislw(-loglik, cores = 1)$lw_smooth
-	n <- dim(lw)[2]
+	psisloo <- psislw(-loglik, cores = 1)
+	lw <- psisloo$lw_smooth
+	pareto_k <- psisloo$pareto_k
+	n <- length(pareto_k)
+	nloo <- min(nloo,n)
 
 	# compute loo summaries for the full model
 	d_test <- d_train
@@ -325,6 +329,10 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	mu_full <- rep(0,n)
 	for (i in 1:n)
     mu_full[i] <- mu[i,] %*% exp(lw[,i])
+	
+	# decide which points form the validation set based on the k-values
+	validset <- .loo_subsample(n, nloo, pareto_k)
+	inds <- validset$inds
 
 	# initialize matrices where to store the results
 	vind_mat <- matrix(nrow=n, ncol=nv_max)
@@ -333,7 +341,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 
 	if (verbose) {
     print('Start computing LOOs...')
-    pb <- txtProgressBar(min = 0, max = n, style = 3, initial=-1)
+    pb <- txtProgressBar(min = 0, max = nloo, style = 3, initial=-1)
 	}
 
 	if (!validate_search) {
@@ -343,9 +351,10 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	  submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul, approx=T) 
 	}
 	  
-
-	# TODO: DUMMY HERE!!
-	for (i in 1:n/2) {
+	for (run_index in seq_along(inds)) {
+	  
+	  # observation index
+	  i <- inds[run_index]
 
 	  # reweight the clusters/samples according to the is-loo weights
 	  p_sel <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
@@ -374,7 +383,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 		vind_mat[i,] <- vind
 
 		if (verbose) {
-		  setTxtProgressBar(pb, i)
+		  setTxtProgressBar(pb, run_index)
 		}
 	}
 	
@@ -384,7 +393,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 
 	# put all the results together in the form required by cv_varsel
 	summ_sub <-	lapply(0:nv_max, function(k){
-	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1])
+	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1], w=validset$w)
 	})
 	summ_full <- list(lppd=loo_full, mu=mu_full)
 	summaries <- list(sub=summ_sub, full=summ_full)
@@ -396,3 +405,47 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	return(list(vind_cv=vind_cv, summaries=summaries, d_test=d_test))
 
 }
+
+
+
+
+
+.loo_subsample <- function(n, nloo, pareto_k) {
+  
+  # decide which points to go through in the validation (i.e., which points
+  # belong to the semi random subsample of validation points)
+  
+  if (nloo < n) {
+    
+    bad <- which(pareto_k > 0.7)
+    ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
+    good <- which(pareto_k <= 0.5)
+    inds <- sample(bad, min(length(bad), floor(nloo/3)) )
+    inds <- c(inds, sample(ok, min(length(ok), floor(nloo/3))))
+    inds <- c(inds, sample(good, min(length(good), floor(nloo/3))))
+    if (length(inds) < nloo) {
+      # not enough points selected, so choose randomly among the rest
+      inds <- c(inds, sample(setdiff(1:n, inds), nloo-length(inds)))
+    } 
+    
+    # assign the weights corresponding to this stratification (for example, the
+    # 'bad' values are likely to be overpresented in the sample)
+    w <- rep(0,n)
+    w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
+    w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
+    w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
+    
+  } else {
+    
+    # all points used
+    inds <- c(1:n)
+    w <- rep(1,n)
+  }
+  
+  return(list(inds=inds, w=w))
+  
+}
+
+
+
+

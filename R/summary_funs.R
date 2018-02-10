@@ -82,18 +82,30 @@
     
     summ_k <- varsel$summaries$sub[[k]]
     stats_pw <- .pointwise_stats(summ_k$mu, summ_k$lppd, varsel$d_test, varsel$family_kl)
+    n_notna <- colSums(!is.na(stats_pw)) # how many of the pointwise stats non-NA
     stat_names <- names(stats_pw)
     
+    # pointwise weights
+    if (!is.null(summ_k$w))
+      w <- summ_k$w/sum(summ_k$w) # pointwise weights
+    else
+      w <- rep(1/n_notna, n)
+    
     # actual value
-    m <- colMeans(stats_pw) # means
-    se <- sqrt(apply(stats_pw,2,'var') / n) # standard errors DIVIDE BY NUMBER OF NON-NAS!!
+    # m <- colMeans(stats_pw) # means
+    # se <- sqrt(apply(stats_pw,2,'var') / n) # standard errors DIVIDE BY NUMBER OF NON-NAS!!
+    m <- colSums(w * stats_pw, na.rm = T) # means
+    se <- sqrt(colSums(w * stats_pw^2, na.rm = T) - m^2) / sqrt(n_notna) # standard errors
     row1 <- data.frame(data = varsel$d_test$type, size=k-1, delta=F, statistic=stat_names, value=m, 
                        lq=qnorm(alpha/2, mean=m, sd=se), uq=qnorm(1-alpha/2, mean=m, sd=se), 
                        row.names=1:length(m))
     
     # relative to the reference model
-    m <- colMeans(stats_pw-stats_ref_pw) # means
-    se <- sqrt(apply(stats_pw-stats_ref_pw,2,'var') / n) # standard errors DIVIDE BY NUMBER OF NON-NAS!!
+    # m <- colMeans(stats_pw-stats_ref_pw) # means
+    # se <- sqrt(apply(pw_diff,2,'var') / n) # standard errors DIVIDE BY NUMBER OF NON-NAS!!
+    pw_diff <- stats_pw - stats_ref_pw
+    m <- colSums(w * pw_diff, na.rm = T) # means
+    se <- sqrt(colSums(w * pw_diff^2, na.rm = T) - m^2) / sqrt(n_notna) # standard errors
     row2 <- data.frame(data = varsel$d_test$type, size=k-1, delta=T, statistic=stat_names, value=m, 
                        lq=qnorm(alpha/2, mean=m, sd=se), uq=qnorm(1-alpha/2, mean=m, sd=se),
                        row.names=1:length(m))
