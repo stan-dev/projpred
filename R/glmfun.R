@@ -186,7 +186,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
   
   if (length(x) == 0) {
     if (intercept) {
-      # model with intercept only
+      # model with intercept only (fit like model with no intercept but with one constant predictor)
       x <- matrix(rep(1,length(y)), ncol=1)
       w0 <- weights 
       pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)

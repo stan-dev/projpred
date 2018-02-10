@@ -368,20 +368,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     
     if (ls_iter == ls_iter_max && ls_iter_max > 1) {
       Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
-    	// Rcpp::Rcout << "step length t = " << t << '\n';
-    	// Rcpp::Rcout << "loss = " << loss_old << '\n';
-    	// Rcpp::Rcout << "loss_new = " << loss << '\n';
-    	// Rcpp::Rcout << "loss_diff = " << loss-loss_old << '\n';
-    	// beta.t().print("beta = "); Rcpp::Rcout << '\n';
-    	// beta_new.t().print("beta_new = "); Rcpp::Rcout << '\n';
-    	// Rcpp::Rcout << "|beta| = " << norm(beta) << '\n';
-    	// Rcpp::Rcout << "|beta_new| = " << norm(beta_new) << '\n';
-    	// Rcpp::Rcout << "newton decrement = " << decrement << '\n';
-    	// Rcpp::Rcout << "|grad| = " << norm(grad) << '\n';
-    	// Rcpp::Rcout << "------------------------------------" << '\n';
     }
-    
-    // Rcpp::Rcout << "loss = " << loss_old << ", newton decrement = " << decrement << '\n';
     
     // update the solution
     beta = beta + t*dbeta;
@@ -391,7 +378,6 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     loss_old = loss;
     ++qau;
   }
-  // Rcpp::Rcout << "------------------------------------" << '\n';
   
   if (qau == qa_updates_max && qa_updates_max > 1) {
   	if (decrement/fabs(loss_initial) > 100*tol) {
