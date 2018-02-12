@@ -59,7 +59,7 @@
   # return a table of summary statistics with columns:
   #
   #  data: type of data ('sel','train','loo','kfold')
-  #  size: number of features in the submodel
+  #  size: number of features in the submodel (Inf indicates the full/reference model)
   #  delta: whether the value indicates the difference to the full model (=TRUE) or the actual value (=FALSE)
   #  statistic: name of statistic ('kl', 'mlpd', 'mse', 'r2', ...)
   #  value: (mean) value of the statistic
@@ -68,21 +68,30 @@
   
   n <- length(varsel$d_test$y)
   
-  
   # compute statistics for the full model
   summ_ref <- varsel$summaries$full
   stats_ref_pw <- .pointwise_stats(summ_ref$mu, summ_ref$lppd, varsel$d_test, varsel$family_kl)
-  stats_names <- names(stats_ref_pw)
+  stat_names <- names(stats_ref_pw)
+  nstats <- length(stat_names)
+  m_ref <- colMeans(stats_ref_pw, na.rm = T) # means
+  se_ref <- sqrt( apply(stats_ref_pw, 2, 'var') / n ) # standard errors
+  row1 <- data.frame(data = varsel$d_test$type, size=Inf, delta=F, statistic=stat_names, value=m_ref, 
+                     lq=qnorm(alpha/2, mean=m_ref, sd=se_ref), uq=qnorm(1-alpha/2, mean=m_ref, sd=se_ref),
+                     row.names=1:nstats)
+  row2 <- data.frame(data = varsel$d_test$type, size=Inf, delta=T, statistic=stat_names, value=rep(0,nstats), 
+                     lq=rep(0,nstats), uq=rep(0,nstats), row.names=1:nstats)
+  rows_stat <- rbind(row1,row2)
   
-  # compute statistics for the submodels
   
-  # loop over model sizes
-  rows_stat <- data.frame()
+  # compute statistics for the submodels by looping over the model sizes
+  
+  # rows_stat <- data.frame()
   for (k in seq_along(varsel$summaries$sub)) {
     
+    # summaries for the submodel
     summ_k <- varsel$summaries$sub[[k]]
     stats_pw <- .pointwise_stats(summ_k$mu, summ_k$lppd, varsel$d_test, varsel$family_kl)
-    n_notna <- colSums(!is.na(stats_pw)) # how many of the pointwise stats non-NA
+    n_notna <- colSums(!is.na(stats_pw)) # how many of the pointwise stats are non-NA
     stat_names <- names(stats_pw)
     
     # pointwise weights
@@ -91,37 +100,49 @@
     else
       w <- rep(1/n_notna, n)
     
-    # actual value
-    # m <- colMeans(stats_pw) # means
-    # se <- sqrt(apply(stats_pw,2,'var') / n) # standard errors DIVIDE BY NUMBER OF NON-NAS!!
-    m <- colSums(w * stats_pw, na.rm = T) # means
-    se <- sqrt(colSums(w * stats_pw^2, na.rm = T) - m^2) / sqrt(n_notna) # standard errors
-    row1 <- data.frame(data = varsel$d_test$type, size=k-1, delta=F, statistic=stat_names, value=m, 
-                       lq=qnorm(alpha/2, mean=m, sd=se), uq=qnorm(1-alpha/2, mean=m, sd=se), 
-                       row.names=1:length(m))
-    
     # relative to the reference model
-    # m <- colMeans(stats_pw-stats_ref_pw) # means
-    # se <- sqrt(apply(pw_diff,2,'var') / n) # standard errors DIVIDE BY NUMBER OF NON-NAS!!
-    pw_diff <- stats_pw - stats_ref_pw
-    m <- colSums(w * pw_diff, na.rm = T) # means
-    se <- sqrt(colSums(w * pw_diff^2, na.rm = T) - m^2) / sqrt(n_notna) # standard errors
-    row2 <- data.frame(data = varsel$d_test$type, size=k-1, delta=T, statistic=stat_names, value=m, 
-                       lq=qnorm(alpha/2, mean=m, sd=se), uq=qnorm(1-alpha/2, mean=m, sd=se),
-                       row.names=1:length(m))
+    if (all(is.na(stats_ref_pw))) {
+      # if the reference model stats are all NA, set the differences to NA as well
+      m_diff <- rep(NA, ncol(stats_pw))
+      se_diff <- rep(NA, ncol(stats_pw))
+    } else {
+      pw_diff <- stats_pw - stats_ref_pw
+      m_diff <- colSums(w * pw_diff, na.rm = T) # means
+      se_diff <- sqrt(colSums(w * pw_diff^2, na.rm = T) - m_diff^2) / sqrt(n_notna) # standard errors
+    }
+    row1 <- data.frame(data = varsel$d_test$type, size=k-1, delta=T, statistic=stat_names, value=m_diff, 
+                       lq=qnorm(alpha/2, mean=m_diff, sd=se_diff), uq=qnorm(1-alpha/2, mean=m_diff, sd=se_diff),
+                       row.names=1:nstats)
+    
+    # actual value
+    if (all(!is.na(stats_ref_pw)) && n_notna < n) {
+      # case where the statistics for the reference model have been computed for all the data points,
+      # but for the submodels using part of the data only, so compute the results for the submodels
+      # as the 'difference to the reference model + the result for the reference model'
+      m <- m_diff + m_ref
+      se <- sqrt(se_diff^2 + se_ref^2)
+    } else {
+      m <- colSums(w * stats_pw, na.rm = T) # means
+      se <- sqrt(colSums(w * stats_pw^2, na.rm = T) - m^2) / sqrt(n_notna) # standard errors
+    }
+    row2 <- data.frame(data = varsel$d_test$type, size=k-1, delta=F, statistic=stat_names, value=m, 
+                       lq=qnorm(alpha/2, mean=m, sd=se), uq=qnorm(1-alpha/2, mean=m, sd=se), 
+                       row.names=1:nstats)
     
     rows_stat <- rbind(rows_stat, row1, row2)
   }
   
-  # kl-value
-  rows_kl <- data.frame(data = 'sel', size = seq_along(varsel$kl)-1, delta = F,
-                      statistic = 'kl',  value = varsel$kl, lq = NA, uq = NA)
+  # kl-values for the submodels and the reference model (for which kl=0 and indicated by size=Inf)
+  rows_kl <- data.frame(data = 'sel', size = c(seq_along(varsel$kl)-1, Inf), delta = F,
+                      statistic = 'kl',  value = c(varsel$kl, 0), lq = NA, uq = NA)
   
   return(rbind(rows_kl, rows_stat))
 }
 
 
 .bootstrap_stats <- function(varsel, n_boot = 1000, alpha = 0.05) {
+  #
+  # Note: this function is deprecated and not used, see tabulate stats instead.
   #
   # return a table of summary statistics with columns:
   #
