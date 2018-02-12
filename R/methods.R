@@ -207,7 +207,8 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_stats
 #' return all the statistics.
 #' @param type One of 'mean', 'lower', 'upper' indicating whether to compute mean,
-#' or either the lower or upper credible bound. 
+#' or either the lower or upper credible bound. Upper and lower bounds are determined so
+#' that \code{1-alpha} percent of the mass falls between them.
 #' @param deltas If \code{TRUE}, the difference between the full model and the
 #' submodel is returned instead of the actual value of the statistic.
 #' Defaults to \code{FALSE}.
@@ -300,7 +301,7 @@ varsel_stats <- function(object, ..., nv_max = NULL, type = 'mean', deltas = F, 
 	}
 	
   stats_table <- subset(.tabulate_stats(object$varsel, alpha=alpha),
-                        delta == deltas | statistic == 'kl')
+                        (delta == deltas | statistic == 'kl') & size != Inf)
   stats <- as.character(unique(stats_table$statistic))
 
   # transform type to the names that appear in the statistic table, and pick the

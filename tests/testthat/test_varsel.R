@@ -398,3 +398,20 @@ test_that('providing k_fold works', {
   # expect_true(fit_cv$varsel$ssize>=0)
               
 })
+
+
+context('varsel_stats')
+test_that('varsel_stats output seems legit', {
+  for(i in seq_along(cvs_list)) {
+    for(j in seq_along(cvs_list[[i]])) {
+      cvs <- cvs_list[[i]][[j]]
+      stats <- varsel_stats(cvs)
+      stats_ub <- varsel_stats(cvs, type='upper')
+      stats_lb <- varsel_stats(cvs, type='lower')
+      expect_true(nrow(stats) == nv+1)
+      expect_true(all(c('size', 'kl', 'mlpd', 'vind') %in% names(stats)))
+      expect_true(all(stats$mlpd > stats_lb$mlpd))
+      expect_true(all(stats$mlpd < stats_ub$mlpd))
+    }
+  }
+})
