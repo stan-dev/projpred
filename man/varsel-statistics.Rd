@@ -34,7 +34,8 @@ intervals. Eg. \code{alpha=0.1} corresponds to 90\% probability mass
 within the intervals. Defaults to \code{0.1}.}
 
 \item{type}{One of 'mean', 'lower', 'upper' indicating whether to compute mean,
-or either the lower or upper credible bound.}
+or either the lower or upper credible bound. Upper and lower bounds are determined so
+that \code{1-alpha} percent of the mass falls between them.}
 }
 \description{
 \code{varsel_stats} can be used to obtain summary statistics related to
