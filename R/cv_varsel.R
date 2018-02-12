@@ -14,6 +14,10 @@
 #' @param penalty Same as in \link[=varsel]{varsel}.
 #' @param verbose Whether to print out some information during the validation, Default is TRUE.
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
+#' @param nloo Number of observations used to compute the LOO validation (anything between 1 and the 
+#' total number of observations). Smaller values lead to
+#' faster computation but higher uncertainty (larger errorbars) in the accuracy estimation.
+#' Default value is 100. Only applicable if \code{cv_method = LOO}. 
 #' @param K Number of folds in the k-fold cross validation. Only applicable
 #' if \code{cv_method = TRUE} and \code{k_fold = NULL}.
 #' @param k_fold An array with cross-validated stanfits and the respective
@@ -24,6 +28,13 @@
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
+#' @param validate_search Whether to cross-validate also the selection process, that is, whether to perform
+#' selection separately for each fold. Default is TRUE and we strongly recommend not setting this
+#' to FALSE, because this is known to bias the accuracy estimates for the selected submodels.
+#' However, setting this to FALSE can sometimes be useful because comparing the results to the case
+#' where this parameter is TRUE gives idea how strongly the feature selection is (over)fitted to the
+#' data (the difference corresponds to the search degrees of freedom or the effective number 
+#' of parameters introduced by the selectin process).
 #' @param ... Currently ignored.
 #'
 #' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
@@ -50,8 +61,8 @@
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
-                      K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, 
-                      nloo=100, validate_search=T,...) {
+                      nloo=100, K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, 
+                      validate_search=T,...) {
 
   .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
@@ -348,7 +359,6 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	  # perform selection only once using all the data (not separately for each fold),
 	  # and perform the projection then for each submodel size
 	  vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
-	  submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul, approx=T) 
 	}
 	  
 	for (run_index in seq_along(inds)) {
@@ -361,18 +371,13 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	  p_pred <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
 	  
 		if (validate_search) {
-		  # perform selection and projection onto each model size with the reweighted clusters/samples
+		  # perform selection with the reweighted clusters/samples
 		  vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
-		  submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul) 
-		} else {
-		  # the search path does not change (the feature ordering), so the submodel projections
-		  # need not be calculated again, only the cluster/sample weights need to be reset
-		  for (k in seq_along(submodels))
-		    submodels[[k]]$weights <- p_pred$weights
-		}
-		
+		} 
+	  
 		# project onto the selected models and compute the difference between
 		# training and loo density for the left-out point
+	  submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul) 
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
