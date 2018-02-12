@@ -323,8 +323,7 @@ log_sum_exp <- function(x) {
   # suggest a model size. Currently finds the smallest model for which
   # the lower alpha/2-quantile of mlpd is at least cutoff_pct from the full model
   stat_table <- .tabulate_stats(varsel, alpha = alpha)
-  # stat_table <- .bootstrap_stats(varsel, alpha = alpha)
-  stats <- subset(stat_table, statistic == 'mlpd' & delta == TRUE &
+  stats <- subset(stat_table, statistic == 'mlpd' & delta == TRUE & size != Inf &
                     data %in% c('train', 'test', 'loo', 'kfold'))
   
   if (!all(is.na(stats[,'value']))) {
@@ -342,7 +341,6 @@ log_sum_exp <- function(x) {
   	# that the reference model is missing, so suggest the smallest model which
     # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
     # i.e. is contained in the 68% central region
-    # stat_table <- .bootstrap_stats(varsel, alpha = 0.32)
     stat_table <- .tabulate_stats(varsel, alpha = 0.32)
   	stats <- subset(stat_table, statistic == 'mlpd'	& delta == F &
   	                  data %in% c('train', 'test', 'loo', 'kfold'))
