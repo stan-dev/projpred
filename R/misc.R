@@ -251,7 +251,8 @@ log_sum_exp <- function(x) {
 	#
 	# Returns the training data fetched from the fit object.
 	# It is possible to use this function by passing .extract_vars(fit) as
-	# an argument in place of fit.
+	# an argument in place of fit which will save time if .extract_vars has
+  # already been called.
 	#
 	if ( all(c('x', 'y', 'wobs', 'offset') %in% names(fit)) )
 		# all the relevant fields contained in the given structure
