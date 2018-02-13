@@ -90,7 +90,7 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   }
 
   # training and test data
-  d_train <- .get_traindata(fit)
+  d_train <- .get_traindata(vars)
   if (is.null(d_test)) {
   	d_test <- d_train
   	d_type <- 'train'
@@ -100,8 +100,8 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   }
 
   # reference distributions for selection and prediction after selection
-  p_sel <- .get_refdist(fit, ns, nc)
-  p_pred <- .get_refdist(fit, nspred, ncpred)
+  p_sel <- .get_refdist(vars, ns, nc)
+  p_pred <- .get_refdist(vars, nspred, ncpred)
 
   # perform the selection
   opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)

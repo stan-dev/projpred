@@ -309,14 +309,14 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	dis <- vars$dis
 
 	# training data
-	d_train <- .get_traindata(fit)
+	d_train <- .get_traindata(vars)
 
 	# the clustering/subsampling used for selection
-	p_sel <- .get_refdist(fit, ns=ns, nc=nc)
+	p_sel <- .get_refdist(vars, ns=ns, nc=nc)
 	cl_sel <- p_sel$cl # clustering information
 
 	# the clustering/subsampling used for prediction
-	p_pred <- .get_refdist(fit, ns=nspred, nc=ncpred)
+	p_pred <- .get_refdist(vars, ns=nspred, nc=ncpred)
 	cl_pred <- p_pred$cl
 
 	# fetch the log-likelihood for the reference model to obtain the LOO weights
