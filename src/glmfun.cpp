@@ -300,7 +300,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   double b = 0.5; 
   
   // initialization
-  beta.zeros();
+  // beta.zeros();
   vec beta_new(D); beta_new.zeros();
   vec dbeta(D); dbeta.zeros();
   vec grad(D); grad.zeros(); // gradient of the deviance w.r.t. the regression coefficients
@@ -399,9 +399,10 @@ List glm_ridge_c( arma::mat x,
                   Function pseudo_obs,
                   double lambda,
                   bool intercept,
+                  arma::vec beta_init, // initial value for the latent values (containing the intercept as the first element)
+                  arma::vec w_init, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                   double thresh,
                   int qa_updates_max,
-                  arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                   int ls_iter_max=100,
                   bool debug=false)
 {
@@ -409,8 +410,8 @@ List glm_ridge_c( arma::mat x,
   if (intercept)
     D++;
   
-  vec beta(D);
-  vec w = w0;
+  vec beta = beta_init;
+  vec w = w_init;
   int qau;
   double loss;
   glm_ridge(beta, loss, w, qau, x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max, debug);
@@ -471,6 +472,7 @@ List glm_forward_c( arma::mat x, // inputs (features)
         continue;
       
       chosen(j) = 1;
+      beta.zeros();
       glm_ridge(beta, loss, w, qau, x.cols(find(chosen)), pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max);
       chosen(j) = 0;
       
