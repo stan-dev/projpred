@@ -125,11 +125,12 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 
 	# find out how many of cross-validated iterations select
 	# the same variables as the selection with all the data.
-	# TODO: THIS PROBABLY DOES NOT WORK PROPERLY WHEN NOT ALL LOOS ARE COMPUTED
 	ch <- as.matrix(unname(as.data.frame(sel_cv$vind_cv)))
+	w <- sel_cv$summaries$sub[[1]]$w # these weights might be non-constant in case of subsampling LOO
+	if (is.null(w)) w <- rep(1/ncol(ch), ncol(ch)) # if weights are not set, then all validation folds have equal weight
 	pctch <- t(sapply(seq_along(sel$vind), function(size) {
 	  c(size = size, sapply(sel$vind, function(var) {
-	    sum(ch[1:size, ] == var)/ncol(ch)
+	    sum(t(ch[1:size, ] == var) * w, na.rm = T)
 	  }))
 	}))
 	colnames(pctch)[-1] <- names(sel$vind)
@@ -446,6 +447,9 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
     inds <- c(1:n)
     w <- rep(1,n)
   }
+  
+  # ensure weights are normalized
+  w <- w/sum(w)
   
   return(list(inds=inds, w=w))
   
