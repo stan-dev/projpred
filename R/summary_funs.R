@@ -115,12 +115,14 @@
                        row.names=1:nstats)
     
     # actual value
-    if (all(!is.na(stats_ref_pw)) && n_notna < n) {
+    if (all(!is.na(stats_ref_pw)) && all(n_notna < n)) {
       # case where the statistics for the reference model have been computed for all the data points,
       # but for the submodels using part of the data only, so compute the results for the submodels
-      # as the 'difference to the reference model + the result for the reference model'
+      # as the "difference to the reference model + the result for the reference model" 
       m <- m_diff + m_ref
-      se <- sqrt(se_diff^2 + se_ref^2)
+      m_ref0 <- colSums(w * stats_ref_pw, na.rm=T) # mean for reference model within those points non-NA for submodel
+      covterm <- (colSums(w * stats_pw*stats_ref_pw, na.rm = T) - m*m_ref0) / n_notna # covariance uncertainty between submodel and reference model uncertainties
+      se <- sqrt(se_diff^2 - se_ref^2 + 2*covterm) # Var(A) = Var(A-B) - Var(B) + 2*Cov(A,B)
     } else {
       m <- colSums(w * stats_pw, na.rm = T) # means
       se <- sqrt(colSums(w * stats_pw^2, na.rm = T) - m^2) / sqrt(n_notna) # standard errors
