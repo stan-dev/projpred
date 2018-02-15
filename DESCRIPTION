@@ -4,17 +4,18 @@ Version: 0.6.4
 Author:
     Markus Paasiniemi [aut],
     Juho Piironen [aut],
-    Jonah Gabry [aut],
-    Aki Vehtari [aut]
+    Jonah Gabry [ctb],
+    Aki Vehtari [ctb]
 Maintainer:
     Juho Piironen <juho.piironen@aalto.fi>
 Description:
-    An R package to perform projection predictive variable
-    selection for generalized linear models. Compatible with rstanarm.
+    An R package to perform projection predictive feature
+    selection for generalized linear models. The package is compatible with
+    rstanarm, but also other reference models can be used.
 Depends:
-    R (>= 3.1.2)
+    R (>= 3.4.3)
 Imports:
-    rstan, rstanarm (>= 2.15.3), loo, ggplot2, Rcpp
+    rstan, rstanarm (>= 2.17.2), loo, ggplot2, Rcpp
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
@@ -26,3 +27,5 @@ Suggests: testthat,
     glmnet,
     bayesplot
 VignetteBuilder: knitr
+URL: https://github.com/stan-dev/projpred
+BugReports: https://github.com/stan-dev/projpred/issues
