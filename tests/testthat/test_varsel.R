@@ -339,8 +339,6 @@ test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
 })
 
 test_that('K has an effect on cv_varsel with kfold for gaussian models', {
-  out <- SW(cv_varsel(glm_simp, cv_method = 'kfold', K = 3))
-  expect_true(any(grepl('1/3', out)))
   expect_error(capture.output(cv_varsel(glm_simp, cv_method = 'kfold', K = 1)))
   expect_error(capture.output(
     cv_varsel(glm_simp, cv_method = 'kfold', K = 1000)))
