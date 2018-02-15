@@ -195,21 +195,36 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   	list(d_train = d_train, d_test = d_test, p_sel = p_sel, p_pred = p_pred,
   	     mu_test = mu_test, dis = vars$dis, w_test = vars$wsample, msg = msg)
   }, vars_cv, d_test_cv, msgs, SIMPLIFY = F)
-
-  # List of K elements, each a list of the variables selected for the
-  # corresponding fold
-  vind_cv <- lapply(list_cv, function(fold) {
-  	if (verbose)
-    	print(fold$msg)
+  
+  if (verbose) {
+    print('Performing selection for each fold..')
+    pb <- txtProgressBar(min = 0, max = K, style = 3, initial=-1)
+  }
+  vind_cv <- lapply(seq_along(list_cv), function(fold_index) {
+    fold <- list_cv[[fold_index]]
+    if (verbose)
+      setTxtProgressBar(pb, fold_index)
+    # print(fold$msg)
     select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
   })
+  if (verbose)
+    close(pb)
 
   # Construct submodel projections for each fold
-  p_sub_cv <- mapply(function(vind, fold) {
+  if (verbose) {
+    print('Computing projections..')
+    pb <- txtProgressBar(min = 0, max = K, style = 3, initial=-1)
+  }
+  p_sub_cv <- mapply(function(vind, fold_index) {
+    fold <- list_cv[[fold_index]]
+    if (verbose)
+      setTxtProgressBar(pb, fold_index)
     .get_submodels(vind, c(0, seq_along(vind)), family_kl, fold$p_pred,
                    fold$d_train, intercept, opt$regul)
-  }, vind_cv, list_cv, SIMPLIFY = F)
-
+  }, vind_cv, seq_along(list_cv), SIMPLIFY = F)
+  if (verbose)
+    close(pb)
+  
   # Helper function extract and combine mu and lppd from K lists with each
   # n/K of the elements to one list with n elements
   hf <- function(x) as.list(do.call(rbind, x))
