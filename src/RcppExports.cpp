@@ -31,8 +31,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // glm_ridge_c
-List glm_ridge_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, double thresh, int qa_updates_max, arma::vec w0, int ls_iter_max, bool debug);
-RcppExport SEXP _projpred_glm_ridge_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP w0SEXP, SEXP ls_iter_maxSEXP, SEXP debugSEXP) {
+List glm_ridge_c(arma::mat x, Function pseudo_obs, double lambda, bool intercept, arma::vec beta_init, arma::vec w_init, double thresh, int qa_updates_max, int ls_iter_max, bool debug);
+RcppExport SEXP _projpred_glm_ridge_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP beta_initSEXP, SEXP w_initSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP ls_iter_maxSEXP, SEXP debugSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -40,12 +40,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Function >::type pseudo_obs(pseudo_obsSEXP);
     Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< bool >::type intercept(interceptSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type beta_init(beta_initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type w_init(w_initSEXP);
     Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
     Rcpp::traits::input_parameter< int >::type qa_updates_max(qa_updates_maxSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type w0(w0SEXP);
     Rcpp::traits::input_parameter< int >::type ls_iter_max(ls_iter_maxSEXP);
     Rcpp::traits::input_parameter< bool >::type debug(debugSEXP);
-    rcpp_result_gen = Rcpp::wrap(glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0, ls_iter_max, debug));
+    rcpp_result_gen = Rcpp::wrap(glm_ridge_c(x, pseudo_obs, lambda, intercept, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -71,7 +72,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 14},
-    {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 9},
+    {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 10},
     {"_projpred_glm_forward_c", (DL_FUNC) &_projpred_glm_forward_c, 9},
     {NULL, NULL, 0}
 };

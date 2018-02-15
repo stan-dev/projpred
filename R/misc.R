@@ -251,7 +251,8 @@ log_sum_exp <- function(x) {
 	#
 	# Returns the training data fetched from the fit object.
 	# It is possible to use this function by passing .extract_vars(fit) as
-	# an argument in place of fit.
+	# an argument in place of fit which will save time if .extract_vars has
+  # already been called.
 	#
 	if ( all(c('x', 'y', 'wobs', 'offset') %in% names(fit)) )
 		# all the relevant fields contained in the given structure
@@ -286,6 +287,26 @@ log_sum_exp <- function(x) {
   }
 }
 
+.augmented_x <- function(x, intercept) {
+  if (intercept)
+    return(cbind(1, x))
+  else
+    return(x)
+}
+
+.nonaugmented_x <- function(x, intercept) {
+  if (intercept) {
+    if (ncol(x) == 1)
+      # there is only the column of ones in x, so return empty matrix
+      return(matrix(nrow=nrow(x), ncol=0))
+    else
+      return(x[,2:ncol(x),drop=F])
+  } else
+    return(x)
+}
+
+    
+
 
 .varsel_errors <- function(e) {
   if(grepl('computationally singular', e$message)) {
@@ -302,8 +323,9 @@ log_sum_exp <- function(x) {
 .suggest_size <- function(varsel, alpha = 0.1, cutoff_pct = 0.1) {
   # suggest a model size. Currently finds the smallest model for which
   # the lower alpha/2-quantile of mlpd is at least cutoff_pct from the full model
-  stats <- subset(.bootstrap_stats(varsel, alpha = alpha), statistic == 'mlpd'
-                  & delta == TRUE & data %in% c('train', 'loo', 'kfold'))
+  stat_table <- .tabulate_stats(varsel, alpha = alpha)
+  stats <- subset(stat_table, statistic == 'mlpd' & delta == TRUE & size != Inf &
+                    data %in% c('train', 'test', 'loo', 'kfold'))
   
   if (!all(is.na(stats[,'value']))) {
   	
@@ -320,8 +342,9 @@ log_sum_exp <- function(x) {
   	# that the reference model is missing, so suggest the smallest model which
     # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
     # i.e. is contained in the 68% central region
-  	stats <- subset(.bootstrap_stats(varsel, alpha = 0.32), statistic == 'mlpd'
-  				 					& delta == F & data %in% c('train', 'loo', 'kfold'))
+    stat_table <- .tabulate_stats(varsel, alpha = 0.32)
+  	stats <- subset(stat_table, statistic == 'mlpd'	& delta == F &
+  	                  data %in% c('train', 'test', 'loo', 'kfold'))
   	imax <- which.max(unname(unlist(stats['value'])))
   	thresh <- stats[imax, 'lq']
   	ssize <- min(subset(stats, value >= thresh, 'size'))

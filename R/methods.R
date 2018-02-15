@@ -206,11 +206,12 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' options are: mlpd, kl, mse (gaussian only), pctcorr (binomial only).
 #' If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_stats
 #' return all the statistics.
+#' @param type One of 'mean', 'lower', 'upper' indicating whether to compute mean,
+#' or either the lower or upper credible bound. Upper and lower bounds are determined so
+#' that \code{1-alpha} percent of the mass falls between them.
 #' @param deltas If \code{TRUE}, the difference between the full model and the
 #' submodel is returned instead of the actual value of the statistic.
 #' Defaults to \code{FALSE}.
-#' @param n_boot Number of bootstrap samples for calculating the credible
-#' intervals of the statistics.
 #' @param alpha A number indicating the desired coverage of the credible
 #' intervals. Eg. \code{alpha=0.1} corresponds to 90\% probability mass
 #' within the intervals. Defaults to \code{0.1}.
@@ -218,8 +219,8 @@ NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F,
-                        n_boot = 1000, alpha = 0.1) {
+varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F, alpha = 0.1) {
+  
 	if(!('varsel' %in% names(object)))
 	  stop(paste('The provided object doesn\'t contain information about the',
 	             'variable selection. Run the variable selection first.'))
@@ -235,37 +236,23 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F,
 	} else
 		refstat_found <- T
 	
-	boot_stats <- .bootstrap_stats(object$varsel, n_boot, alpha)
-
-	#
-	if(is.null(stats)) stats <- 'mlpd' 
-	if(deltas) {
-	  full_stats <- data.frame(statistic = stats, value = 0)
-	} else {
-	  boot_vals <- subset(boot_stats, size == 0 & delta == F &
-	                        statistic %in% stats, 'value', drop = T)
-	  boot_deltas <- subset(boot_stats, size == 0 & delta == T &
-	                        statistic %in% stats, 'value', drop = T)
-	  if('kl' %in% stats) {
-	    boot_deltas <- c(0, boot_deltas)
-	    boot_vals[1] <- 0
-	  }
-	  full_stats <- data.frame(
-	    statistic = subset(boot_stats, size == 0 & delta == F &
-	                         statistic %in% stats, 'statistic'),
-	    value = boot_vals - boot_deltas)
-	}
-
-	stats_table <- subset(boot_stats, delta == deltas | statistic == 'kl')
-	arr <- subset(stats_table, statistic %in% stats)
+	if(is.null(stats)) 
+	  stats <- 'mlpd' 
+	
+	# compute all the statistics and fetch only those that were asked
+	stats_all <- .tabulate_stats(object$varsel, alpha)
+	stats_table <- subset(stats_all, (delta==deltas | statistic=='kl') & statistic %in% stats)
+	stats_ref <- subset(stats_table, size==Inf)
+	stats_sub <- subset(stats_table, size!=Inf)
 	
 	
-	if(NROW(arr) == 0) {
+	if(NROW(stats_sub) == 0) {
 	    stop(paste0(ifelse(length(stats)==1, 'Statistics ', 'Statistic '),
 	                paste0(unique(stats), collapse=', '), ' not available.'))
 	}
 	
-	if(is.null(nv_max)) nv_max <- max(arr$size)
+	if(is.null(nv_max)) 
+	  nv_max <- max(stats_sub$size)
 	ylab <- if(deltas) 'Difference to the full model' else 'value'
 	
 	# make sure that breaks on the x-axis are integers
@@ -281,14 +268,14 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F,
 	  NULL
 
 	# plot submodel results
-	pp <- ggplot(data = subset(arr, size <= nv_max), mapping = aes(x = size)) +
+	pp <- ggplot(data = subset(stats_sub, size <= nv_max), mapping = aes(x = size)) +
 		geom_linerange(aes(ymin = lq, ymax = uq, alpha=0.1)) +
     geom_line(aes(y = value)) +
     geom_point(aes(y = value))
 	
 	if (refstat_found)
 		# add reference model results if they exist
-		pp <- pp + geom_hline(aes(yintercept = value), data = full_stats,
+		pp <- pp + geom_hline(aes(yintercept = value), data = stats_ref,
 													color = 'darkred', linetype=2)
 	pp <- pp + 
 		scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
@@ -301,7 +288,8 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F,
 
 #' @rdname varsel-statistics
 #' @export
-varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
+varsel_stats <- function(object, ..., nv_max = NULL, type = 'mean', deltas = F, alpha=0.1) {
+  
 	if(!('varsel' %in% names(object)))
       stop(paste('The provided object doesn\'t contain information about the',
                    'variable selection. Run the variable selection first.'))
@@ -312,16 +300,20 @@ varsel_stats <- function(object, ..., nv_max = NULL, deltas = F) {
 		warning('Cannot compute statistics for deltas = TRUE when there is no reference model.')
 	}
 	
-  stats_table <- subset(.bootstrap_stats(object$varsel, NULL, 0.5),
-                  delta == deltas | statistic == 'kl')
+  stats_table <- subset(.tabulate_stats(object$varsel, alpha=alpha),
+                        (delta == deltas | statistic == 'kl') & size != Inf)
   stats <- as.character(unique(stats_table$statistic))
 
+  # transform type to the names that appear in the statistic table, and pick the
+  # required values
+  type <- switch(type, mean='value', upper='uq', lower='lq')
   arr <- data.frame(sapply(stats, function(sname) {
-      unname(subset(stats_table, statistic == sname, 'value'))
+      unname(subset(stats_table, statistic == sname, type))
   }))
   arr <- cbind(size = unique(stats_table$size), arr)
 
-  if(is.null(nv_max)) nv_max <- max(stats_table$size)
+  if(is.null(nv_max)) 
+    nv_max <- max(stats_table$size)
 
   arr$vind <- c(NA, object$varsel$vind)
   if('pctch' %in% names(object$varsel))

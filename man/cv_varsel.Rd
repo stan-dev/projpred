@@ -6,8 +6,9 @@
 \usage{
 cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  penalty = NULL, verbose = T, K = NULL, k_fold = NULL,
-  lambda_min_ratio = 1e-05, nlambda = 500, regul = 1e-06, ...)
+  penalty = NULL, verbose = T, nloo = 100, K = NULL, k_fold = NULL,
+  lambda_min_ratio = 1e-05, nlambda = 500, regul = 1e-06,
+  validate_search = T, ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -33,6 +34,11 @@ cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
 
 \item{verbose}{Whether to print out some information during the validation, Default is TRUE.}
 
+\item{nloo}{Number of observations used to compute the LOO validation (anything between 1 and the 
+total number of observations). Smaller values lead to
+faster computation but higher uncertainty (larger errorbars) in the accuracy estimation.
+Default value is 100. Only applicable if \code{cv_method = LOO}.}
+
 \item{K}{Number of folds in the k-fold cross validation. Only applicable
 if \code{cv_method = TRUE} and \code{k_fold = NULL}.}
 
@@ -47,6 +53,14 @@ If not provided, \link[=kfold]{kfold} is called inside the function.}
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we
 need to add some regularization to avoid numerical problems. Default is 1e-9.}
+
+\item{validate_search}{Whether to cross-validate also the selection process, that is, whether to perform
+selection separately for each fold. Default is TRUE and we strongly recommend not setting this
+to FALSE, because this is known to bias the accuracy estimates for the selected submodels.
+However, setting this to FALSE can sometimes be useful because comparing the results to the case
+where this parameter is TRUE gives idea how strongly the feature selection is (over)fitted to the
+data (the difference corresponds to the search degrees of freedom or the effective number 
+of parameters introduced by the selectin process).}
 
 \item{...}{Currently ignored.}
 }

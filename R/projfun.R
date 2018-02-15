@@ -29,10 +29,7 @@ project_gaussian <- function(vind, p_full, d_train, family_kl, intercept, regul 
         # null model with eta=0 always
     		pobs <- pseudo_data(0, mu, family_kl, offset=d_train$offset, weights=wobs)
         beta_sub <- matrix(integer(length=0), ncol=NCOL(mu))
-        # dis_sub <- family_kl$dis_fun(pobs$z, p_full$var, 0, pobs$w)
         dis_sub <- family_kl$dis_fun(list(mu=pobs$z, var=p_full$var), list(mu=0), pobs$w)
-        # kl <- weighted.mean(log(dis_sub) - log(dis), wsample)
-        # kl <- weighted.mean(log(dis_sub), wsample)
         kl <- weighted.mean(colSums(wobs*pobs$z^2), wsample)
         submodel <- list(kl = kl, weights = wsample, dis = dis_sub, vind = vind,
                       intercept = intercept)
@@ -74,22 +71,27 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 	d <- NCOL(xsub)
 	n <- NROW(p_full$mu)
 	S <- NCOL(p_full$mu)
-	beta <- matrix(0, nrow=d, ncol=S)
-	alpha <- rep(0, S)
-	w <- matrix(nrow=n, ncol=S)
-	for (s in 1:S) {
-		out <- glm_ridge(x = xsub, y = p_full$mu[, s, drop = F],
-						 family=family_kl, lambda=regul, weights=d_train$weights,
-						 offset=d_train$offset, obsvar=p_full$var[,s], intercept=intercept) 
-		beta[,s] <- out$beta
-		alpha[s] <- out$beta0
-		w[,s] <- out$w
-	}
+	
+  # loop through each draw and compute the projection for it individually
+  beta <- matrix(0, nrow=d, ncol=S)
+  alpha <- rep(0, S)
+  w <- matrix(nrow=n, ncol=S)
+  # beta_init <- beta[,1]
+  # beta0_init <- alpha[1]
+  for (s in 1:S) {
+    out <- glm_ridge(x = xsub, y = p_full$mu[, s, drop = F],
+                     family=family_kl, lambda=regul, weights=d_train$weights,
+                     offset=d_train$offset, obsvar=p_full$var[,s], intercept=intercept) 
+    beta[,s] <- out$beta
+    alpha[s] <- out$beta0
+    w[,s] <- out$w
+    # beta_init <- beta[,s]
+    # beta0_init <- alpha[s]
+  }
 	
 	# compute the dispersion parameters and kl-divergences, and combine the results
 	submodel <- list()
 	mu <- family_kl$mu_fun(xsub, alpha, beta, d_train$offset)
-	# submodel$dis <- family_kl$dis_fun(p_full$mu, p_full$var, mu, d_train$weights)
 	submodel$dis <- family_kl$dis_fun(p_full, list(mu=mu,w=w), d_train$weights)
 	submodel$kl <- weighted.mean(family_kl$kl(p_full, d_train, list(mu=mu,dis=submodel$dis)), p_full$weights)
 	submodel$weights <- p_full$weights
@@ -99,6 +101,7 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 	submodel$intercept <- intercept
 	return(submodel)
 }
+
 
 
 # function handle for the projection over samples. Gaussian case

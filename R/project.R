@@ -78,10 +78,10 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 	             length(object$varsel$vind), 'variables.'))
 
 	# training data
-	d_train <- .get_traindata(object)
+	d_train <- .get_traindata(vars)
 
 	# get the clustering or subsample
-	p_full <- .get_refdist(object, ns = ns, nc = nc, seed = seed)
+	p_full <- .get_refdist(vars, ns = ns, nc = nc, seed = seed)
 
 	subm <- .get_submodels(vind, nv, family_kl, p_full, d_train, intercept, regul)
 
