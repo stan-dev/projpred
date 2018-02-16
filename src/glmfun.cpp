@@ -319,7 +319,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   double loss_old = loss_initial; // will be updated iteratively
   loss = loss_initial; // will be updated iteratively
   double tol = thresh*fabs(loss_initial); // threshold for convergence
-  double decrement; // newton decrement, used to monitor convergence
+  double decrement = 0; // newton decrement, used to monitor convergence
   
   
   qau = 0;
@@ -453,7 +453,7 @@ List glm_forward_c( arma::mat x, // inputs (features)
   // declare a few variables that are needed during the iteration
   vec w = w0;
   int qau;
-  size_t j,k,jopt;
+  size_t j,k,jopt=0;
   uvec varind;
   uvec step(1);
   
