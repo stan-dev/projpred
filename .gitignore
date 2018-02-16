@@ -9,3 +9,4 @@
 .RData
 
 inst/doc
+vignettes/quickstart_cache
