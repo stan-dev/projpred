@@ -86,11 +86,11 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
     intercept <- vars$intercept
   if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
   	nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
-  	nv_max <- min(NCOL(vars$x), nv_max_default)
+  	nv_max <- min(NCOL(vars$x), nv_max_default, 20)
   }
 
   # training and test data
-  d_train <- .get_traindata(fit)
+  d_train <- .get_traindata(vars)
   if (is.null(d_test)) {
   	d_test <- d_train
   	d_type <- 'train'
@@ -100,8 +100,8 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   }
 
   # reference distributions for selection and prediction after selection
-  p_sel <- .get_refdist(fit, ns, nc)
-  p_pred <- .get_refdist(fit, nspred, ncpred)
+  p_sel <- .get_refdist(vars, ns, nc)
+  p_pred <- .get_refdist(vars, nspred, ncpred)
 
   # perform the selection
   opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)

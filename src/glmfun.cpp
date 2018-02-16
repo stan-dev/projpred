@@ -300,7 +300,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   double b = 0.5; 
   
   // initialization
-  beta.zeros();
+  // beta.zeros();
   vec beta_new(D); beta_new.zeros();
   vec dbeta(D); dbeta.zeros();
   vec grad(D); grad.zeros(); // gradient of the deviance w.r.t. the regression coefficients
@@ -319,7 +319,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   double loss_old = loss_initial; // will be updated iteratively
   loss = loss_initial; // will be updated iteratively
   double tol = thresh*fabs(loss_initial); // threshold for convergence
-  double decrement; // newton decrement, used to monitor convergence
+  double decrement = 0; // newton decrement, used to monitor convergence
   
   
   qau = 0;
@@ -368,20 +368,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     
     if (ls_iter == ls_iter_max && ls_iter_max > 1) {
       Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
-    	// Rcpp::Rcout << "step length t = " << t << '\n';
-    	// Rcpp::Rcout << "loss = " << loss_old << '\n';
-    	// Rcpp::Rcout << "loss_new = " << loss << '\n';
-    	// Rcpp::Rcout << "loss_diff = " << loss-loss_old << '\n';
-    	// beta.t().print("beta = "); Rcpp::Rcout << '\n';
-    	// beta_new.t().print("beta_new = "); Rcpp::Rcout << '\n';
-    	// Rcpp::Rcout << "|beta| = " << norm(beta) << '\n';
-    	// Rcpp::Rcout << "|beta_new| = " << norm(beta_new) << '\n';
-    	// Rcpp::Rcout << "newton decrement = " << decrement << '\n';
-    	// Rcpp::Rcout << "|grad| = " << norm(grad) << '\n';
-    	// Rcpp::Rcout << "------------------------------------" << '\n';
     }
-    
-    // Rcpp::Rcout << "loss = " << loss_old << ", newton decrement = " << decrement << '\n';
     
     // update the solution
     beta = beta + t*dbeta;
@@ -391,7 +378,6 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     loss_old = loss;
     ++qau;
   }
-  // Rcpp::Rcout << "------------------------------------" << '\n';
   
   if (qau == qa_updates_max && qa_updates_max > 1) {
   	if (decrement/fabs(loss_initial) > 100*tol) {
@@ -413,9 +399,10 @@ List glm_ridge_c( arma::mat x,
                   Function pseudo_obs,
                   double lambda,
                   bool intercept,
+                  arma::vec beta_init, // initial value for the latent values (containing the intercept as the first element)
+                  arma::vec w_init, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                   double thresh,
                   int qa_updates_max,
-                  arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                   int ls_iter_max=100,
                   bool debug=false)
 {
@@ -423,8 +410,8 @@ List glm_ridge_c( arma::mat x,
   if (intercept)
     D++;
   
-  vec beta(D);
-  vec w = w0;
+  vec beta = beta_init;
+  vec w = w_init;
   int qau;
   double loss;
   glm_ridge(beta, loss, w, qau, x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max, debug);
@@ -466,7 +453,7 @@ List glm_forward_c( arma::mat x, // inputs (features)
   // declare a few variables that are needed during the iteration
   vec w = w0;
   int qau;
-  size_t j,k,jopt;
+  size_t j,k,jopt=0;
   uvec varind;
   uvec step(1);
   
@@ -485,6 +472,7 @@ List glm_forward_c( arma::mat x, // inputs (features)
         continue;
       
       chosen(j) = 1;
+      beta.zeros();
       glm_ridge(beta, loss, w, qau, x.cols(find(chosen)), pseudo_obs, lambda, intercept, thresh, qa_updates_max, ls_iter_max);
       chosen(j) = 0;
       

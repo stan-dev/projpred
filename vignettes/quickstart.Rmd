@@ -32,18 +32,18 @@ data('df_gaussian', package = 'projpred')
 ```
 
 
-We then fit the model with all the variables and sparsifying horseshoe prior (Carvalho et al., 2010) on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017b), in which the prior for the global shrinkage parameter is defined based on our prior guess for the number of relevant variables.
+We then fit the model with all the variables and sparsifying horseshoe prior (Carvalho et al., 2010) on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017b,c), in which the prior for the global shrinkage parameter is defined based on our prior guess for the number of relevant variables.
 ```{r, results='hide', message=F, warning=F, cache=T}
 n <- nrow(df_gaussian$x) # 100
 D <- ncol(df_gaussian$x) # 20
 p0 <- 5 # prior guess for the number of relevant variables
 tau0 <- p0/(D-p0) * 1/sqrt(n) # scale for tau (notice that stan_glm will automatically scale this by sigma)
-prior_coeff <- hs(df=1, global_df=1, global_scale=tau0) # horseshoe prior
+prior_coeff <- hs(global_scale = tau0, slab_scale = 1) # regularized horseshoe prior
 fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
                 # to make this vignette build fast, we use only 2 chains and
-                # 800 draws. In practice, more conservative values, eg. 4 chains
+                # 500 draws. In practice, more conservative values, eg. 4 chains
                 # and 2000 draws might be required for reliable inference.
-                seed=1, adapt_delta=0.999, chains=2, iter=800) 
+                seed=1, chains=2, iter=500) 
 
 ```
 
@@ -64,9 +64,9 @@ varsel_plot(fit, stats=c('mlpd', 'mse'))
 
 The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process. 
 ```{r, results='hide', warning=F, cache=T}
-fit_cv <- cv_varsel(fit, method='forward', cv_method='LOO')
+fit_cv <- cv_varsel(fit, method='forward')
 ```
-In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel``` (smallest model with expected loss in log predictive density less than 10 percent of the difference between the full and empty model with probability 0.9)
+In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel``` 
 ```{r}
 # model size suggested by the program
 fit_cv$varsel$ssize
@@ -84,7 +84,7 @@ mcmc_areas(as.matrix(fit),
 ```
 ```{r}
 # Visualise the projected three most relevant variables
-proj <- project(fit, nv = 3, ns = 800)
+proj <- project(fit, nv = 3, ns = 500)
 mcmc_areas(as.matrix(proj)) + coord_cartesian(xlim = c(-2, 2))
 ```
 
@@ -115,9 +115,9 @@ D <- ncol(df_binom$x)
 p0 <- 5 # prior guess for the number of relevant variables
 sigma <- 2 # approximate plug-in value for observation information (Piironen and Vehtari, 2017b)
 tau0 <- p0/(D-p0) * sigma/sqrt(n)
-prior_coeff <- hs(df=1, global_df=1, global_scale=tau0)
+prior_coeff <- hs(global_scale = tau0, slab_scale = 1)
 fit <- stan_glm(y ~ x, family=binomial(), data=df_binom, prior=prior_coeff,
-                seed=1, adapt_delta=0.999, chains=2, iter=800)
+                seed=1, chains=2, iter=500)
 ```
 
 Run the variable selection
@@ -133,7 +133,7 @@ varsel_plot(fit, stats=c('mlpd', 'pctcorr'), deltas=F)
 
 Cross-validate the full model and the variable selection:
 ```{r, results='hide', warning=F, cache=T}
-fit_cv <- cv_varsel(fit, method='forward', cv_method='LOO')
+fit_cv <- cv_varsel(fit, method='forward')
 ```
 
 Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 7 varibles. About 7 variables gives predictive accurary similar to the full model.
@@ -171,7 +171,7 @@ pp
 
 ### References
 
-Carvalho, C.M., Polson, N.G., Scott, J.G. (2010). The horseshoe estimator for sparse signals. _Biometrika_ 97(2):465–480. doi:10.1093/biomet/asq017
+Carvalho, C.M., Polson, N.G., Scott, J.G. (2010). The horseshoe estimator for sparse signals. _Biometrika_ 97(2):465–480. 
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. _Journal of Statistical Planning and Inference_, 111(1-2):77–94.
 
@@ -181,4 +181,6 @@ Piironen, Juho and Vehtari, Aki (2017a). Comparison of Bayesian predictive metho
 
 Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In _Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)_, PMLR 54:905-913, 2017. [Online](http://proceedings.mlr.press/v54/piironen17a.html)
 
-Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. _Statistics and Computing_ 22(5):1069-1084. doi:10.1007/s11222-011-9279-3
+Piironen, Juho and Vehtari, Aki (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. _Electronic Journal of Statistics_, 11(2): 5018--5051. [Online](https://projecteuclid.org/euclid.ejs/1513306866#info)
+
+Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. _Statistics and Computing_ 22(5):1069-1084. 

@@ -219,7 +219,7 @@ test_that('object retruned by cv_varsel contains the relevant fields', {
                    info = paste(i_inf, j_inf))
       expect_equal(length(cvs_list[[i]][[j]]$varsel$summaries$sub), nv + 1,
                    info = paste(i_inf, j_inf))
-      expect_named(cvs_list[[i]][[j]]$varsel$summaries$sub[[1]], c('mu', 'lppd'),
+      expect_named(cvs_list[[i]][[j]]$varsel$summaries$sub[[1]], c('mu', 'lppd', 'w'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
       expect_named(cvs_list[[i]][[j]]$varsel$summaries$full, c('mu', 'lppd'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
@@ -339,8 +339,6 @@ test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
 })
 
 test_that('K has an effect on cv_varsel with kfold for gaussian models', {
-  out <- SW(cv_varsel(glm_simp, cv_method = 'kfold', K = 3))
-  expect_true(any(grepl('1/3', out)))
   expect_error(capture.output(cv_varsel(glm_simp, cv_method = 'kfold', K = 1)))
   expect_error(capture.output(
     cv_varsel(glm_simp, cv_method = 'kfold', K = 1000)))
@@ -397,4 +395,21 @@ test_that('providing k_fold works', {
   # dont test ssize
   # expect_true(fit_cv$varsel$ssize>=0)
               
+})
+
+
+context('varsel_stats')
+test_that('varsel_stats output seems legit', {
+  for(i in seq_along(cvs_list)) {
+    for(j in seq_along(cvs_list[[i]])) {
+      cvs <- cvs_list[[i]][[j]]
+      stats <- varsel_stats(cvs)
+      stats_ub <- varsel_stats(cvs, type='upper')
+      stats_lb <- varsel_stats(cvs, type='lower')
+      expect_true(nrow(stats) == nv+1)
+      expect_true(all(c('size', 'kl', 'mlpd', 'vind') %in% names(stats)))
+      expect_true(all(stats$mlpd > stats_lb$mlpd))
+      expect_true(all(stats$mlpd < stats_ub$mlpd))
+    }
+  }
 })

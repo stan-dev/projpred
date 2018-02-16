@@ -168,7 +168,8 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 
 
 glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,
-                      weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, ls_iter_max=30) {
+                      weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, beta_init=NULL,
+                      beta0_init=NULL, ls_iter_max=30) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
@@ -183,14 +184,22 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
     weights <- rep(1.0, length(y))
   if (is.null(offset))
     offset <- rep(0.0, length(y))
+  if (is.null(beta0_init))
+    beta0_init <- 0
+  if (is.null(beta_init))
+    beta_init <- rep(0, NCOL(x))
+  if (intercept)
+    beta_start <- c(beta0_init, beta_init)
+  else
+    beta_start <- beta_init
   
   if (length(x) == 0) {
     if (intercept) {
-      # model with intercept only
+      # model with intercept only (fit like model with no intercept but with one constant predictor)
       x <- matrix(rep(1,length(y)), ncol=1)
       w0 <- weights 
       pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
-      out <- glm_ridge_c(x, pseudo_obs, lambda, FALSE, thresh, qa_updates_max, w0,ls_iter_max)
+      out <- glm_ridge_c(x, pseudo_obs, lambda, FALSE, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
       return( list(beta=matrix(integer(length=0)), beta0=as.vector(out[[1]]), w=out[[3]], qa_updates=out[[4]]) )
     } else {
       # null model with no predictors and no intercept
@@ -201,7 +210,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
     x <- as.matrix(x)
     w0 <- weights 
     pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
-    out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, w0,ls_iter_max)
+    out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
     return(list( beta=out[[1]], beta0=as.vector(out[[2]]), w=out[[3]], qa_updates=out[[4]] ))
   }
 }
