@@ -268,14 +268,14 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F, al
 	  NULL
 
 	# plot submodel results
-	pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max), mapping = aes(x = size)) +
-		geom_linerange(aes(ymin = lq, ymax = uq, alpha=0.1)) +
-    geom_line(aes(y = value)) +
-    geom_point(aes(y = value))
+	pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max), mapping = aes_string(x = 'size')) +
+		geom_linerange(aes_string(ymin = 'lq', ymax = 'uq', alpha=0.1)) +
+    geom_line(aes_string(y = 'value')) +
+    geom_point(aes_string(y = 'value'))
 	
 	if (refstat_found)
 		# add reference model results if they exist
-		pp <- pp + geom_hline(aes(yintercept = value), data = stats_ref,
+		pp <- pp + geom_hline(aes_string(yintercept = 'value'), data = stats_ref,
 													color = 'darkred', linetype=2)
 	pp <- pp + 
 		scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
