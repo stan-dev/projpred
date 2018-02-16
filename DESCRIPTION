@@ -13,9 +13,9 @@ Description:
     selection for generalized linear models. The package is compatible with
     rstanarm, but also other reference models can be used.
 Depends:
-    R (>= 3.4.3)
+    R (>= 3.1.2)
 Imports:
-    rstan, rstanarm (>= 2.17.2), loo, ggplot2, Rcpp
+    rstan, rstanarm (>= 2.17.2), loo, ggplot2, Rcpp, utils
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
