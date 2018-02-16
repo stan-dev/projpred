@@ -198,12 +198,12 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   
   if (verbose) {
     print('Performing selection for each fold..')
-    pb <- txtProgressBar(min = 0, max = K, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=-1)
   }
   vind_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
     if (verbose)
-      setTxtProgressBar(pb, fold_index)
+      utils::setTxtProgressBar(pb, fold_index)
     # print(fold$msg)
     select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
   })
@@ -213,12 +213,12 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   # Construct submodel projections for each fold
   if (verbose) {
     print('Computing projections..')
-    pb <- txtProgressBar(min = 0, max = K, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=-1)
   }
   p_sub_cv <- mapply(function(vind, fold_index) {
     fold <- list_cv[[fold_index]]
     if (verbose)
-      setTxtProgressBar(pb, fold_index)
+      utils::setTxtProgressBar(pb, fold_index)
     .get_submodels(vind, c(0, seq_along(vind)), family_kl, fold$p_pred,
                    fold$d_train, intercept, opt$regul)
   }, vind_cv, seq_along(list_cv), SIMPLIFY = F)
@@ -285,7 +285,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 		if (verbose) 
 			print(paste0('k_fold not provided, performing ', K,
 								 '-fold cross-validation for the stan model.'))
-		capture.output(
+		utils::capture.output(
 			k_fold <- kfold(fit, K = K, save_fits = T)
 		)
 	} else
@@ -368,7 +368,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 
 	if (verbose) {
     print('Start computing LOOs...')
-    pb <- txtProgressBar(min = 0, max = nloo, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial=-1)
 	}
 
 	if (!validate_search) {
@@ -404,7 +404,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 		vind_mat[i,] <- vind
 
 		if (verbose) {
-		  setTxtProgressBar(pb, run_index)
+		  utils::setTxtProgressBar(pb, run_index)
 		}
 	}
 	

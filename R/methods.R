@@ -240,10 +240,10 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F, al
 	  stats <- 'mlpd' 
 	
 	# compute all the statistics and fetch only those that were asked
-	stats_all <- .tabulate_stats(object$varsel, alpha)
-	stats_table <- subset(stats_all, (delta==deltas | statistic=='kl') & statistic %in% stats)
-	stats_ref <- subset(stats_table, size==Inf)
-	stats_sub <- subset(stats_table, size!=Inf)
+	tab <- .tabulate_stats(object$varsel, alpha)
+	stats_table <- subset(tab, (tab$delta==deltas | tab$statistic=='kl') & tab$statistic %in% stats)
+	stats_ref <- subset(stats_table, stats_table$size==Inf)
+	stats_sub <- subset(stats_table, stats_table$size!=Inf)
 	
 	
 	if(NROW(stats_sub) == 0) {
@@ -268,7 +268,7 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F, al
 	  NULL
 
 	# plot submodel results
-	pp <- ggplot(data = subset(stats_sub, size <= nv_max), mapping = aes(x = size)) +
+	pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max), mapping = aes(x = size)) +
 		geom_linerange(aes(ymin = lq, ymax = uq, alpha=0.1)) +
     geom_line(aes(y = value)) +
     geom_point(aes(y = value))
@@ -300,15 +300,15 @@ varsel_stats <- function(object, ..., nv_max = NULL, type = 'mean', deltas = F, 
 		warning('Cannot compute statistics for deltas = TRUE when there is no reference model.')
 	}
 	
-  stats_table <- subset(.tabulate_stats(object$varsel, alpha=alpha),
-                        (delta == deltas | statistic == 'kl') & size != Inf)
+  tab <- .tabulate_stats(object$varsel, alpha=alpha)
+  stats_table <- subset(tab, (tab$delta == deltas | tab$statistic == 'kl') & tab$size != Inf)
   stats <- as.character(unique(stats_table$statistic))
 
   # transform type to the names that appear in the statistic table, and pick the
   # required values
   type <- switch(type, mean='value', upper='uq', lower='lq')
   arr <- data.frame(sapply(stats, function(sname) {
-      unname(subset(stats_table, statistic == sname, type))
+      unname(subset(stats_table, stats_table$statistic == sname, type))
   }))
   arr <- cbind(size = unique(stats_table$size), arr)
 
@@ -319,7 +319,7 @@ varsel_stats <- function(object, ..., nv_max = NULL, type = 'mean', deltas = F, 
   if('pctch' %in% names(object$varsel))
     arr$pctch <- c(NA, diag(object$varsel$pctch[,-1]))
 
-  subset(arr, size <= nv_max)
+  subset(arr, arr$size <= nv_max)
 }
 
 #' Generic reference model initialization

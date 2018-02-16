@@ -323,31 +323,31 @@ log_sum_exp <- function(x) {
 .suggest_size <- function(varsel, alpha = 0.1, cutoff_pct = 0.1) {
   # suggest a model size. Currently finds the smallest model for which
   # the lower alpha/2-quantile of mlpd is at least cutoff_pct from the full model
-  stat_table <- .tabulate_stats(varsel, alpha = alpha)
-  stats <- subset(stat_table, statistic == 'mlpd' & delta == TRUE & size != Inf &
-                    data %in% c('train', 'test', 'loo', 'kfold'))
+  tab <- .tabulate_stats(varsel, alpha = alpha)
+  stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == TRUE & tab$size != Inf &
+                    tab$data %in% c('train', 'test', 'loo', 'kfold'))
   
   if (!all(is.na(stats[,'value']))) {
   	
-  	mlpd_null <- subset(stats, size == 0, 'value')
+  	mlpd_null <- subset(stats, stats$size == 0, 'value')
   	mlpd_cutoff <- cutoff_pct*mlpd_null
-  	res <- subset(stats, lq >= mlpd_cutoff$value, 'size')
+  	res <- subset(stats, stats$lq >= mlpd_cutoff$value, 'size')
   	if(nrow(res) == 0) {
   		ssize <- NA
   	} else {
-  		ssize <- min(subset(stats, lq >= mlpd_cutoff$value, 'size'))
+  		ssize <- min(subset(stats, stats$lq >= mlpd_cutoff$value, 'size'))
   	}
   } else {
   	# special case; all values compared to the reference model are NA indicating
   	# that the reference model is missing, so suggest the smallest model which
     # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
     # i.e. is contained in the 68% central region
-    stat_table <- .tabulate_stats(varsel, alpha = 0.32)
-  	stats <- subset(stat_table, statistic == 'mlpd'	& delta == F &
-  	                  data %in% c('train', 'test', 'loo', 'kfold'))
+    tab <- .tabulate_stats(varsel, alpha = 0.32)
+  	stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == F &
+  	                  tab$data %in% c('train', 'test', 'loo', 'kfold'))
   	imax <- which.max(unname(unlist(stats['value'])))
   	thresh <- stats[imax, 'lq']
-  	ssize <- min(subset(stats, value >= thresh, 'size'))
+  	ssize <- min(subset(stats, tab$value >= thresh, 'size'))
   }
   ssize
 }
