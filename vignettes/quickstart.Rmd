@@ -171,7 +171,7 @@ pp
 
 ### References
 
-Carvalho, C.M., Polson, N.G., Scott, J.G. (2010). The horseshoe estimator for sparse signals. _Biometrika_ 97(2):465–480. doi:10.1093/biomet/asq017
+Carvalho, C.M., Polson, N.G., Scott, J.G. (2010). The horseshoe estimator for sparse signals. _Biometrika_ 97(2):465–480. 
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. _Journal of Statistical Planning and Inference_, 111(1-2):77–94.
 
@@ -183,4 +183,4 @@ Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global
 
 Piironen, Juho and Vehtari, Aki (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. _Electronic Journal of Statistics_, 11(2): 5018--5051. [Online](https://projecteuclid.org/euclid.ejs/1513306866#info)
 
-Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. _Statistics and Computing_ 22(5):1069-1084. doi:10.1007/s11222-011-9279-3
+Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. _Statistics and Computing_ 22(5):1069-1084. 
