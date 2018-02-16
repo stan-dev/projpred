@@ -320,9 +320,16 @@ log_sum_exp <- function(x) {
   }
 }
 
-.suggest_size <- function(varsel, alpha = 0.1, cutoff_pct = 0.1) {
-  # suggest a model size. Currently finds the smallest model for which
-  # the lower alpha/2-quantile of mlpd is at least cutoff_pct from the full model
+.suggest_size <- function(varsel, alpha = 0.66, cutoff_pct = 0.0, type='upper') {
+  # Suggest a model size. Currently finds the smallest model for which
+  # either the lower or upper (depending on argument type) credible bound 
+  # of the submodel utility u_k with significance level alpha is above:
+  #   u_ref - cutoff_pct*(u_ref - u0) 
+  # Here u_ref denotes the reference model utility and u0 the null model utility.
+  # The lower and upper bounds are defined to contain the submodel utility with 
+  # probability 1-alpha (each tail has mass alpha/2). By default, chooses the
+  # smallest model with 0.33 chance of being better than the reference model.
+  btype <- ifelse(type=='upper', 'uq', 'lq')
   tab <- .tabulate_stats(varsel, alpha = alpha)
   stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == TRUE & tab$size != Inf &
                     tab$data %in% c('train', 'test', 'loo', 'kfold'))
@@ -331,11 +338,11 @@ log_sum_exp <- function(x) {
   	
   	mlpd_null <- subset(stats, stats$size == 0, 'value')
   	mlpd_cutoff <- cutoff_pct*mlpd_null
-  	res <- subset(stats, stats$lq >= mlpd_cutoff$value, 'size')
+  	res <- subset(stats, stats[,btype] >= mlpd_cutoff$value, 'size')
   	if(nrow(res) == 0) {
   		ssize <- NA
   	} else {
-  		ssize <- min(subset(stats, stats$lq >= mlpd_cutoff$value, 'size'))
+  		ssize <- min(res)
   	}
   } else {
   	# special case; all values compared to the reference model are NA indicating
