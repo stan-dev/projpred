@@ -1,23 +1,25 @@
-#' Extra family objects.
-#'
-#' Family objects not in the set of default \link[=family]{family}-objects.
-#'
-#' @name extra-families
-#'
-#' @param link Specification of the link function, as for the default \link[=family]{family}-objects.
-#' @param nu Degrees of freedom for the Student-t distribution.
-#' @param ... Further arguments, currently ignored.
-#'
-#' @return A family object analogous to those described in \link[=family]{family}
-#'
-NULL
+# #' Extra family objects.
+# #' 
+# #' Family objects not in the set of default \link[=family]{family}-objects.
+# #' 
+# #' @name extra-families
+# #' 
+# #' @param link Specification of the link function, as for the default \link[=family]{family}-objects.
+# #' @param nu Degrees of freedom for the Student-t distribution.
+# #' @param ... Further arguments, currently ignored.
+# #' 
+# #' @return A family object analogous to those described in \link[=family]{family}
+# #'
+# NULL
 
+# TODO: uncomment all these documentation lines when Student-t projection ready.
+# Currently disabled because we do not want these to appear before this functionality is ready.
 
 # define a student-t family object. Dispersion is defined to be the scale parameter
 # of the distribution
 
-#' @rdname extra-families
-# #' @export # TODO: enable this when Student-t projection ready
+# #' @rdname extra-families
+# #' @export 
 Student_t <- function(link='identity', nu=3) {
 	
 	if (!(link %in% c('identity','log','inverse')))
