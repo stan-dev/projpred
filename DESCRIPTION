@@ -1,5 +1,5 @@
 Package: projpred
-Title: projpred
+Title: Projection Predictive Feature Selection
 Version: 0.7.0
 Author:
     Markus Paasiniemi [aut],
@@ -9,9 +9,10 @@ Author:
 Maintainer:
     Juho Piironen <juho.piironen@aalto.fi>
 Description:
-    An R package to perform projection predictive feature
-    selection for generalized linear models. The package is compatible with
-    rstanarm, but also other reference models can be used.
+    Performs projection predictive feature selection for generalized linear models
+    (see, e.g., Piironen and Vehtari, 2017, <doi:10.1007/s11222-016-9649-y>).
+    The package is compatible with 'rstanarm' package, but other reference models
+    can also be used. See the package vignette for more information and examples.
 Depends:
     R (>= 3.1.2)
 Imports:
