@@ -41,7 +41,7 @@ fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
 
 
 context('miscellaneous')
-test_that("providing seed does not change the RNG state in the global environment", {
+test_that("check that the main function calls do not return the same RNG state every time", {
   
   s <- 5 
   
@@ -81,7 +81,12 @@ test_that("providing seed does not change the RNG state in the global environmen
       expect_true(all(r1!=r2))
       
       # proj_predict
-      
+      vind <- c(1,3)
+      foo <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
+      r1 <- rnorm(s)
+      foo <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
+      r2 <- rnorm(s)
+      expect_true(all(r1!=r2))
     }
   }
   
