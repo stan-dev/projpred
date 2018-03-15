@@ -517,7 +517,7 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 	} else
 		stop(paste0('Unknown output format requested: ', out))
 	
-	if (!is.null(rng_state_old))
+	if (!is.null(seed) && !is.null(rng_state_old))
 	  # restore the old rng state
 	  assign('.Random.seed', rng_state_old, .GlobalEnv)
 	
