@@ -33,7 +33,7 @@ Overrides the \code{ns} argument. Defaults to 1.}
 \item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
 
 \item{nv_max}{Maximum number of varibles until which the selection is continued.
-Defaults to min(D, floor(0.4*n)) where n is the number of observations and
+Defaults to min(20, D, floor(0.4*n)) where n is the number of observations and
 D the number of variables.}
 
 \item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}

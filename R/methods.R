@@ -103,8 +103,8 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
     stop(paste('The number of columns in xnew does not match with the given',
                'number of variable indices (vind).'))
 
-  # save the old seed and initialize with the new one
-  seed_old <- .Random.seed
+  # save the old rng state and initialize with the new seed
+  rng_state_old <- ifelse (exists('.Random.seed', envir=.GlobalEnv), get(".Random.seed", .GlobalEnv), NULL)
   set.seed(seed_samp)
 
   preds <- lapply(projs, function(proj) {
@@ -121,9 +121,10 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
     fun(proj, mu, offsetnew, weightsnew)
   })
 
-  # restore the old seed
-  .Random.seed <- seed_old
-
+  if (!is.null(rng_state_old))
+    # restore the old rng state
+    assign('.Random.seed', rng_state_old, .GlobalEnv)
+  
   .unlist_proj(preds)
 }
 
@@ -489,8 +490,8 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 
 	ind <- c(1:n)
 	if (!is.null(seed)) {
-		# save the old seed and initialize with the new one
-		seed_old <- .Random.seed
+	  # save the old rng state and initialize with the new seed
+	  rng_state_old <- ifelse (exists('.Random.seed', envir=.GlobalEnv), get(".Random.seed", .GlobalEnv), NULL)
 		set.seed(seed)
 	}
 	
@@ -516,9 +517,9 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 	} else
 		stop(paste0('Unknown output format requested: ', out))
 	
-	if (!is.null(seed))
-		# restore the old seed
-		.Random.seed <- seed_old
+	if (!is.null(seed) && !is.null(rng_state_old))
+	  # restore the old rng state
+	  assign('.Random.seed', rng_state_old, .GlobalEnv)
 	
 	return(cv)
 }
