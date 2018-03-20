@@ -191,7 +191,7 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
               fun = fun, ...)
 }
 
-#' Plotting or printing summary statistics related to variable selection
+#' Plot or fetch summary statistics related to variable selection
 #'
 #' \code{varsel_stats} can be used to obtain summary statistics related to
 #' variable selection. The same statistics can be plotted with
@@ -204,23 +204,23 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' @param ... Currently ignored.
 #' @param nv_max Maximum submodel size for which the statistics are calculated.
 #' @param stats A list of strings of statistics to calculate. Available
-#' options are: mlpd, kl, mse (gaussian only), pctcorr (binomial only).
-#' If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_stats
-#' return all the statistics.
-#' @param type One of 'mean', 'lower', 'upper' indicating whether to compute mean,
-#' or either the lower or upper credible bound. Upper and lower bounds are determined so
+#' options are: elpd, mlpd, kl, mse (gaussian only), rmse (gaussian only), acc/pctcorr (binomial only).
+#' If \code{NULL}, varsel_plot plots only elpd, but varsel_stats
+#' returns all the statistics.
+#' @param type One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
+#' compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
 #' that \code{1-alpha} percent of the mass falls between them.
 #' @param deltas If \code{TRUE}, the difference between the full model and the
 #' submodel is returned instead of the actual value of the statistic.
 #' Defaults to \code{FALSE}.
 #' @param alpha A number indicating the desired coverage of the credible
-#' intervals. Eg. \code{alpha=0.1} corresponds to 90\% probability mass
-#' within the intervals. Defaults to \code{0.1}.
+#' intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
+#' within the intervals.
 NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F, alpha = 0.1) {
+varsel_plot <- function(object, ..., nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.1) {
   
 	if(!('varsel' %in% names(object)))
 	  stop(paste('The provided object doesn\'t contain information about the',
@@ -236,9 +236,6 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F, al
 		}
 	} else
 		refstat_found <- T
-	
-	if(is.null(stats)) 
-	  stats <- 'mlpd' 
 	
 	# compute all the statistics and fetch only those that were asked
 	tab <- .tabulate_stats(object$varsel, alpha)
@@ -289,7 +286,8 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = NULL, deltas = F, al
 
 #' @rdname varsel-statistics
 #' @export
-varsel_stats <- function(object, ..., nv_max = NULL, type = 'mean', deltas = F, alpha=0.1) {
+varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
+                         deltas = F, alpha=0.1) {
   
 	if(!('varsel' %in% names(object)))
       stop(paste('The provided object doesn\'t contain information about the',
@@ -303,20 +301,29 @@ varsel_stats <- function(object, ..., nv_max = NULL, type = 'mean', deltas = F, 
 	
   tab <- .tabulate_stats(object$varsel, alpha=alpha)
   stats_table <- subset(tab, (tab$delta == deltas | tab$statistic == 'kl') & tab$size != Inf)
-  stats <- as.character(unique(stats_table$statistic))
+  
+  # these are the corresponding names for mean, se, upper and lower in the stats_table, and their suffices
+  # in the table to be returned 
+  qty <- unname(sapply(type, function(t) switch(t, mean='value', upper='uq', lower='lq', se='se')))
+  suffix <- unname(sapply(type, function(t) switch(t, mean='', upper='.upper', lower='.lower', se='.se')))
+  
 
-  # transform type to the names that appear in the statistic table, and pick the
-  # required values
-  type <- switch(type, mean='value', upper='uq', lower='lq')
-  arr <- data.frame(sapply(stats, function(sname) {
-      unname(subset(stats_table, stats_table$statistic == sname, type))
-  }))
-  arr <- cbind(size = unique(stats_table$size), arr)
+  # loop through all the required statistics 
+  arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$varsel$vind))
+  for (i in seq_along(stats)) {
+    
+    temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
+    newnames <- sapply(suffix, function(s) paste0(stats[i],s))
+    colnames(temp) <- newnames
+    # if (is.null(arr))
+      # arr <- temp
+    # else
+      arr <- cbind(arr, temp)
+  }
 
   if(is.null(nv_max)) 
     nv_max <- max(stats_table$size)
 
-  arr$vind <- c(NA, object$varsel$vind)
   if('pctch' %in% names(object$varsel))
     arr$pctch <- c(NA, diag(object$varsel$pctch[,-1]))
 
