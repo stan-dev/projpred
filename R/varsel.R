@@ -134,10 +134,7 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                      family_kl = family_kl)
 
   # suggest model size
-  ssize <- .suggest_size(fit$varsel)
-  # if (!is.na(ssize)) {
-    # warning('The suggested model size equal to nv_max. You might want to try increasing nv_max.')
-  # }
+  ssize <- suggest_size(fit)
   fit$varsel$ssize <- ssize
   
   fit

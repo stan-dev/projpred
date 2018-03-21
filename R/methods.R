@@ -330,6 +330,90 @@ varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('m
   subset(arr, arr$size <= nv_max)
 }
 
+
+
+
+
+#' Suggest model size 
+#'
+#' This function can be used for suggesting an appropriate model size
+#' based on certain rule. Notice that the decision rules are heuristic
+#' and should be interpreted as guidelines. It is recommended that the user
+#' studies the results via \code{varsel_plot} and or \code{varsel_stats}
+#' and makes the final decision based on what is most appropriate for the given
+#' problem.
+#'
+#' @param object The object returned by \link[=varsel]{varsel} or
+#' \link[=cv_varsel]{cv_varsel}.
+#' @param alpha A number indicating the desired coverage of the credible
+#' intervals based on which the decision is made. E.g. \code{alpha=0.1} corresponds to
+#' 90\% probability mass within the intervals. See details for more information.
+#' @param pct Number indicating the relative proportion between full model and null model
+#' utilities one is willing to sacrifice. See details for more information.
+#' @param type Either 'upper' (default) or 'lower' determining whether the decisions are
+#' based on the upper or lower credible bounds. See details for more information.
+#' @param ... Currently ignored.
+#' 
+#' @details The suggested model size is the smallest model for which
+#' either the lower or upper (depending on argument \code{type}) credible bound 
+#' of the submodel utility \eqn{u_k} with significance level \code{alpha} falls above
+#'   \deqn{u_ref - pct*(u_ref - u_0)} 
+#' Here \eqn{u_ref} denotes the reference model utility and \eqn{u_0} the null model utility
+#' (currently the utility is taken to be the mean log predictive density, MLPD).
+#' The lower and upper bounds are defined to contain the submodel utility with 
+#' probability 1-alpha (each tail has mass alpha/2).
+#' 
+#' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which means that we select the smallest
+#' model for which the upper tail exceeds the reference model level, that is, which is better than the reference 
+#' model with probability 0.16 (and consequently, worse with probability 0.84). In other words,
+#' the estimated difference between the reference model and submodel utitlities is at most one standard error
+#' away from zero, so the two utilities are considered to be close.
+#' 
+
+#' @export
+suggest_size <- function(object, alpha = 0.32, pct = 0.0, type='upper', ...) {
+  
+  if ('varsel' %in% names(object))
+    varsel <- object$varsel
+  else
+    stop(paste0('The provided object does not contain information about variable selection.',
+         'Run variable selection first.'))
+  
+  btype <- ifelse(type=='upper', 'uq', 'lq')
+  tab <- .tabulate_stats(varsel, alpha = alpha)
+  stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == TRUE & tab$size != Inf &
+                    tab$data %in% c('train', 'test', 'loo', 'kfold'))
+  
+  if (!all(is.na(stats[,'value']))) {
+    
+    mlpd_null <- subset(stats, stats$size == 0, 'value')
+    mlpd_cutoff <- pct*mlpd_null
+    res <- subset(stats, stats[,btype] >= mlpd_cutoff$value, 'size')
+    if(nrow(res) == 0) {
+      ssize <- NA
+    } else {
+      ssize <- min(res)
+    }
+  } else {
+    # special case; all values compared to the reference model are NA indicating
+    # that the reference model is missing, so suggest the smallest model which
+    # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
+    # i.e. is contained in the 68% central region
+    tab <- .tabulate_stats(varsel, alpha = 0.32)
+    stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == F &
+                      tab$data %in% c('train', 'test', 'loo', 'kfold'))
+    imax <- which.max(unname(unlist(stats['value'])))
+    thresh <- stats[imax, 'lq']
+    ssize <- min(subset(stats, tab$value >= thresh, 'size'))
+  }
+  ssize
+}
+
+
+
+
+
+
 #' Generic reference model initialization
 #'
 #' Initializes a structure that can be used as a reference fit for the
