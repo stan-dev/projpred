@@ -23,6 +23,7 @@ library(rstanarm)
 library(projpred)
 library(ggplot2)
 library(bayesplot)
+theme_set(theme_bw())
 #options(mc.cores = parallel::detectCores())
 ```
 
@@ -146,7 +147,7 @@ fit_cv$varsel$ssize
 varsel_plot(fit_cv, stats=c('mlpd', 'pctcorr'), deltas=T)
 ```
 
-Finally, for illustration, we compute the here the predictive distribution using only the two most relevant variables, and visualize the results.
+Finally, for illustration, we compute here the predictive class probabilities using only the two most relevant variables, and visualize the results.
 ```{r}
 # evaluate the predictive distribution in a 2d grid
 ng <- 20

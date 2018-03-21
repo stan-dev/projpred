@@ -4,13 +4,13 @@
 \alias{varsel-statistics}
 \alias{varsel_plot}
 \alias{varsel_stats}
-\title{Plotting or printing summary statistics related to variable selection}
+\title{Plot or fetch summary statistics related to variable selection}
 \usage{
-varsel_plot(object, ..., nv_max = NULL, stats = NULL, deltas = F,
+varsel_plot(object, ..., nv_max = NULL, stats = "elpd", deltas = F,
   alpha = 0.1)
 
-varsel_stats(object, ..., nv_max = NULL, type = "mean", deltas = F,
-  alpha = 0.1)
+varsel_stats(object, ..., nv_max = NULL, stats = "elpd", type = c("mean",
+  "se"), deltas = F, alpha = 0.1)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -21,20 +21,20 @@ varsel_stats(object, ..., nv_max = NULL, type = "mean", deltas = F,
 \item{nv_max}{Maximum submodel size for which the statistics are calculated.}
 
 \item{stats}{A list of strings of statistics to calculate. Available
-options are: mlpd, kl, mse (gaussian only), pctcorr (binomial only).
-If \code{NULL}, set to varsel_plot plots only mlpd, but varsel_stats
-return all the statistics.}
+options are: elpd, mlpd, kl, mse (gaussian only), rmse (gaussian only), acc/pctcorr (binomial only).
+If \code{NULL}, varsel_plot plots only elpd, but varsel_stats
+returns all the statistics.}
 
 \item{deltas}{If \code{TRUE}, the difference between the full model and the
 submodel is returned instead of the actual value of the statistic.
 Defaults to \code{FALSE}.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
-intervals. Eg. \code{alpha=0.1} corresponds to 90\% probability mass
-within the intervals. Defaults to \code{0.1}.}
+intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
+within the intervals.}
 
-\item{type}{One of 'mean', 'lower', 'upper' indicating whether to compute mean,
-or either the lower or upper credible bound. Upper and lower bounds are determined so
+\item{type}{One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
+compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
 that \code{1-alpha} percent of the mass falls between them.}
 }
 \description{

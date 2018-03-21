@@ -140,13 +140,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                   sel_cv[c('d_test', 'summaries')],
                   list(pctch = pctch))
 
-	ssize <- .suggest_size(fit$varsel)
-	# if(is.na(ssize)) {
-	#   # try a more relaxed value, if this does not work either, issue a warning
-	#   ssize <- .suggest_size(fit$varsel, cutoff_pct = 0.2)
-	#   if(is.na(ssize))
-	#     warning('Submodels too close to each other, cant suggest a submodel.')
-	# }
+	ssize <- suggest_size(fit)
 	fit$varsel$ssize <- ssize
 	
 	if (verbose)
