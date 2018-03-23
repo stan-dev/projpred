@@ -13,7 +13,7 @@ project(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 
 \item{nv}{Number of variables in the submodel (the variable combination is taken from the
 \code{varsel} information). If a list, then the projection is performed for each model size.
-Default is all model sizes up to the maximum number of variables in \code{varsel}.
+Default is the model size suggested by the variable selection (see function \code{suggest_size}).
  Ignored if \code{vind} is specified.}
 
 \item{vind}{Variable indices onto which the projection is done. If specified, \code{nv} is ignored.}

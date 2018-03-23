@@ -44,7 +44,7 @@ context('project')
 test_that("object returned by project contains the relevant fields", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
-    p <- project(vs_list[[i]])
+    p <- project(vs_list[[i]], nv=0:nv)
     expect_equal(length(p), nv + 1, info = i_inf)
 
     for(j in 1:length(p)) {

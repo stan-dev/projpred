@@ -404,7 +404,7 @@ suggest_size <- function(object, alpha = 0.32, pct = 0.0, type='upper', ...) {
                       tab$data %in% c('train', 'test', 'loo', 'kfold'))
     imax <- which.max(unname(unlist(stats['value'])))
     thresh <- stats[imax, 'lq']
-    ssize <- min(subset(stats, tab$value >= thresh, 'size'))
+    ssize <- min(subset(stats, stats$value >= thresh, 'size'))
   }
   ssize
 }
