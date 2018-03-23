@@ -6,7 +6,7 @@
 #' \link[=cv_varsel]{cv_varsel}.
 #' @param nv Number of variables in the submodel (the variable combination is taken from the
 #' \code{varsel} information). If a list, then the projection is performed for each model size.
-#' Default is all model sizes up to the maximum number of variables in \code{varsel}.
+#' Default is the model size suggested by the variable selection (see function \code{suggest_size}).
 #'  Ignored if \code{vind} is specified.
 #' @param vind Variable indices onto which the projection is done. If specified, \code{nv} is ignored.
 #' @param ns Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.
@@ -51,21 +51,25 @@ project <- function(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
 					'variable selection. Run the variable selection first, ',
                     'or provide the variable indices (vind).'))
 
-    vars <- .extract_vars(object)
+  vars <- .extract_vars(object)
 
-    if (is.null(vind)) {
-        vind <- object$varsel$vind
-    } else {
-        nv <- length(vind) # if vind is given, nv is ignored (project only onto the given submodel)
-    }
+  if (!is.null(vind)) {
+    nv <- length(vind) # if vind is given, nv is ignored (project only onto the given submodel)
+  } else {
+    vind <- object$varsel$vind # by default take the variable ordering from the selection
+  }
 
-    # by default project with clusters
-    if (is.null(ns) && is.null(nc))
-      ns <- min(400, NCOL(vars$mu))
-    # by default, run the projection up to the maximum number of variables
-    # specified in the variable selection
-    if (is.null(nv))
-      nv <- c(0:length(vind))
+  
+  if (is.null(ns) && is.null(nc))
+    ns <- min(400, NCOL(vars$mu)) # by default project at most 400 draws
+  
+  if (is.null(nv)) {
+    if (!is.null(object$varsel$ssize) && !is.na(object$varsel$ssize))
+      nv <- object$varsel$ssize # by default, project onto the suggested model size
+    else
+      stop('No suggested model size found, please specify nv or vind')
+  }
+    
 
 	if (is.null(intercept))
 	  intercept <- vars$intercept

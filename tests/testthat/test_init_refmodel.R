@@ -151,7 +151,7 @@ test_that("output of project is sensible with only data provided as reference mo
 	for(i in 1:length(vsd_list)) {
 		
 		# length of output of project is legit
-		p <- project(vsd_list[[i]])
+		p <- project(vsd_list[[i]], nv=0:nv)
 		expect_equal(length(p), nv + 1)
 		
 		for(j in 1:length(p)) {
