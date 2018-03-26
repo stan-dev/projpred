@@ -26,31 +26,31 @@ ys[[2]] <- df_binom$y/weights
 ys[[3]] <- df_poiss$y
 
 SW(
-fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
-                      weights = weights, offset = offset,
-                      chains = chains, seed = seed, iter = iter)
+  fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
+                        weights = weights, offset = offset,
+                        chains = chains, seed = seed, iter = iter)
 )
 SW(
-fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
-                      data = df_binom, weights = weights, offset = offset,
-                      chains = chains, seed = seed, iter = iter)
+  fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
+                        data = df_binom, weights = weights, offset = offset,
+                        chains = chains, seed = seed, iter = iter)
 )
 SW(
-fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
-                      weights = weights, offset = offset,
-                      chains = chains, seed = seed, iter = iter)
+  fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
+                        weights = weights, offset = offset,
+                        chains = chains, seed = seed, iter = iter)
 )
 
 fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
 vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
 proj_vind_list <- lapply(vs_list, project, vind = c(2,3), seed = seed)
-proj_all_list <- lapply(vs_list, project, intercept = FALSE, seed = seed)
+proj_all_list <- lapply(vs_list, project, intercept = FALSE, seed = seed, nv=0:nv)
 
 context('proj_linpred')
 test_that("output of proj_linpred is sensible with fit-object as input", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
-    pl <- proj_linpred(vs_list[[i]], xnew = x)
+    pl <- proj_linpred(vs_list[[i]], xnew = x, nv = 0:nv)
     expect_equal(length(pl), nv + 1, info = i_inf)
     for(j in 1:length(pl))
       expect_equal(ncol(pl[[j]]), n, info = i_inf)
@@ -80,8 +80,8 @@ test_that("proj_linpred: error when varsel has not been performed for the object
 test_that("proj_linpred: specifying ynew has an expected effect", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
-    pl <- proj_linpred(vs_list[[i]], xnew = x, ynew = ys[[i]], weightsnew=weights)
-    pl2 <- proj_linpred(vs_list[[i]], xnew = x, weightsnew=weights)
+    pl <- proj_linpred(vs_list[[i]], xnew = x, ynew = ys[[i]], weightsnew=weights, nv = 0:nv)
+    pl2 <- proj_linpred(vs_list[[i]], xnew = x, weightsnew=weights, nv = 0:nv)
     for(j in 1:length(pl)) {
       expect_equal(names(pl[[j]]), c('pred', 'lpd'))
       expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
@@ -188,7 +188,7 @@ context('proj_predict')
 test_that("output of proj_predict is sensible with fit-object as input", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
-    pl <- proj_predict(vs_list[[i]], xnew = x)
+    pl <- proj_predict(vs_list[[i]], xnew = x, nv = 0:nv)
     expect_equal(length(pl), nv + 1, info = i_inf)
     for(j in 1:length(pl))
       expect_equal(ncol(pl[[j]]), n, info = i_inf)
@@ -254,7 +254,7 @@ test_that("proj_predict: arguments passed to project work accordingly", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     pr1 <- project(vs_list[[i]], nv = c(2, 4), nc = 2, ns = 20,
-                  intercept = FALSE, regul = 1e-8, seed = 12)
+                   intercept = FALSE, regul = 1e-8, seed = 12)
     prp1 <- proj_predict(pr1, xnew = x, draws = 100, seed_samp = 11)
     prp2 <- proj_predict(vs_list[[i]], xnew = x, draws = 100, seed_samp = 11,
                          nv = c(2, 4), nc = 2, ns = 20, intercept = FALSE,

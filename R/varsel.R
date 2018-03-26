@@ -126,7 +126,7 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   	}
   }
   
-  # store the relevant fields into fit
+  # store the relevant fields into fit  
   fit$varsel <- list(vind = setNames(vind, vars$coefnames[vind]),
                      kl = sapply(p_sub, function(x) x$kl),
                      d_test = c(d_test[c('y','weights')], type = d_type),
@@ -136,6 +136,10 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   # suggest model size
   ssize <- suggest_size(fit)
   fit$varsel$ssize <- ssize
+  # if (is.na(ssize))
+  #   warning(paste0('Couldn\'t suggest model size; please study the varsel_plot to detect possible reasons for this',
+  #                 '(for instance if nv_max was set to too small value).'))
+  
   
   fit
 }
