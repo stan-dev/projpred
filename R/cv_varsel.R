@@ -338,9 +338,9 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	else
 		# log-likelihood available
 		loglik <- vars$loglik
-	psisloo <- psislw(-loglik, cores = 1)
-	lw <- psisloo$lw_smooth
-	pareto_k <- psisloo$pareto_k
+	psisloo <- loo::psis(-loglik, cores = 1)
+	lw <- weights(psisloo)
+	pareto_k <- loo::pareto_k_values(psisloo)
 	n <- length(pareto_k)
 	nloo <- min(nloo,n)
 

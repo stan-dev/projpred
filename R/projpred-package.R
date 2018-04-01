@@ -10,7 +10,7 @@
 #' @import rstanarm
 #' @import ggplot2
 #' @importFrom rstan extract
-#' @importFrom loo psislw
+#' @importFrom loo psis
 #' 
 #' 
 #' @description Description
