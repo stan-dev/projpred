@@ -35,6 +35,7 @@
 #' where this parameter is TRUE gives idea how strongly the feature selection is (over)fitted to the
 #' data (the difference corresponds to the search degrees of freedom or the effective number 
 #' of parameters introduced by the selectin process).
+#' @param seed Random seed used in the subsampling LOO. By default uses a fixed seed.
 #' @param ... Currently ignored.
 #'
 #' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
@@ -62,10 +63,13 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
                       nloo=100, K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, 
-                      validate_search=T,...) {
+                      validate_search=T, seed=NULL, ...) {
 
   .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
+	
+	if (is.null(seed))
+	  seed <- 134654
 	
 	if (is.null(method)) {
 		if (dim(vars$x)[2] <= 20)
@@ -111,7 +115,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
 		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, penalty, 
-		                     verbose, opt, nloo = nloo, validate_search = validate_search)
+		                     verbose, opt, nloo = nloo, validate_search = validate_search, seed = seed)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
 	}
@@ -307,7 +311,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 
 
 loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, 
-                       penalty, verbose, opt, nloo = 100, validate_search = T) {
+                       penalty, verbose, opt, nloo = 100, validate_search = T, seed = NULL) {
 	#
 	# Performs the validation of the searching process using LOO.
 	# validate_search indicates whether the selection is performed separately for each
@@ -338,7 +342,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	else
 		# log-likelihood available
 		loglik <- vars$loglik
-	psisloo <- loo::psis(-loglik, cores = 1)
+	psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1,ncol(loglik))) # TODO: should take r_eff:s into account
 	lw <- weights(psisloo)
 	pareto_k <- loo::pareto_k_values(psisloo)
 	n <- length(pareto_k)
@@ -352,7 +356,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
     mu_full[i] <- mu[i,] %*% exp(lw[,i])
 	
 	# decide which points form the validation set based on the k-values
-	validset <- .loo_subsample(n, nloo, pareto_k)
+	validset <- .loo_subsample(n, nloo, pareto_k, seed)
 	inds <- validset$inds
 
 	# initialize matrices where to store the results
@@ -425,10 +429,14 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 
 
 
-.loo_subsample <- function(n, nloo, pareto_k) {
+.loo_subsample <- function(n, nloo, pareto_k, seed) {
   
   # decide which points to go through in the validation (i.e., which points
   # belong to the semi random subsample of validation points)
+  
+  # save the old rng state and initialize with the new seed
+  rng_state_old <- ifelse (exists('.Random.seed', envir=.GlobalEnv), get(".Random.seed", .GlobalEnv), NULL)
+  set.seed(seed)
   
   if (nloo < n) {
     
@@ -459,6 +467,10 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
   
   # ensure weights are normalized
   w <- w/sum(w)
+  
+  if (!is.null(rng_state_old))
+    # restore the old rng state
+    assign('.Random.seed', rng_state_old, .GlobalEnv)
   
   return(list(inds=inds, w=w))
   

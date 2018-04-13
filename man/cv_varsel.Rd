@@ -8,7 +8,7 @@ cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
   penalty = NULL, verbose = T, nloo = 100, K = NULL, k_fold = NULL,
   lambda_min_ratio = 1e-05, nlambda = 500, regul = 1e-06,
-  validate_search = T, ...)
+  validate_search = T, seed = NULL, ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -61,6 +61,8 @@ However, setting this to FALSE can sometimes be useful because comparing the res
 where this parameter is TRUE gives idea how strongly the feature selection is (over)fitted to the
 data (the difference corresponds to the search degrees of freedom or the effective number 
 of parameters introduced by the selectin process).}
+
+\item{seed}{Random seed used in the subsampling LOO. By default uses a fixed seed.}
 
 \item{...}{Currently ignored.}
 }
