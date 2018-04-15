@@ -144,8 +144,9 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                   sel_cv[c('d_test', 'summaries')],
                   list(pctch = pctch))
 
-	ssize <- suggest_size(fit)
-	fit$varsel$ssize <- ssize
+	fit$varsel$nv_max <- nv_max
+	fit$varsel$nv_all <- ncol(vars$x)
+	fit$varsel$ssize <- suggest_size(fit, warnings = F)
 	
 	if (verbose)
 	  print('Done.')
@@ -365,7 +366,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
 
 	if (verbose) {
-    print('Start computing LOOs...')
+    print('Computing LOOs...')
     pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial=-1)
 	}
 
