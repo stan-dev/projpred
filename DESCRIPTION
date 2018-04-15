@@ -2,10 +2,10 @@ Package: projpred
 Title: Projection Predictive Feature Selection
 Version: 0.7.3
 Author:
-    Markus Paasiniemi [aut],
+    Markus Paasiniemi [cre,aut],
     Juho Piironen [aut],
-    Jonah Gabry [ctb],
-    Aki Vehtari [ctb]
+    Aki Vehtari [aut],
+    Jonah Gabry [ctb]
 Maintainer:
     Juho Piironen <juho.piironen@aalto.fi>
 Description:
@@ -16,17 +16,23 @@ Description:
 Depends:
     R (>= 3.1.2)
 Imports:
-    rstan, rstanarm (>= 2.17.2), loo, ggplot2, Rcpp, utils
+    rstan, 
+    rstanarm (>= 2.17.4), 
+    loo (>= 2.0.0), 
+    ggplot2, 
+    Rcpp, 
+    utils
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
 LazyData: TRUE
 RoxygenNote: 6.0.1
-Suggests: testthat,
+Suggests: 
+    testthat,
     knitr,
     rmarkdown,
     glmnet,
-    bayesplot
+    bayesplot (>= 1.5.0)
 VignetteBuilder: knitr
-URL: https://github.com/stan-dev/projpred
+URL: https://github.com/stan-dev/projpred, http://discourse.mc-stan.org/
 BugReports: https://github.com/stan-dev/projpred/issues

@@ -201,12 +201,17 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}.
-#' @param ... Currently ignored.
 #' @param nv_max Maximum submodel size for which the statistics are calculated.
-#' @param stats A list of strings of statistics to calculate. Available
-#' options are: elpd, mlpd, kl, mse (gaussian only), rmse (gaussian only), acc/pctcorr (binomial only).
-#' If \code{NULL}, varsel_plot plots only elpd, but varsel_stats
-#' returns all the statistics.
+#' @param stats One or several strings determining which statistics to calculate. Available
+#' statistics are: 
+#' \itemize{
+#'  \item{elpd:} {(Expected) sum of log predictive densities}
+#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the number of datapoints.}
+#'  \item{mse:} {Mean squared error (gaussian family only)}
+#'  \item{rmse:} {Root mean squared error (gaussian family only)}
+#'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
+#' }
+#' Default is elpd.
 #' @param type One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
 #' compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
 #' that \code{1-alpha} percent of the mass falls between them.
@@ -216,11 +221,12 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' @param alpha A number indicating the desired coverage of the credible
 #' intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
 #' within the intervals.
+#' @param ... Currently ignored.
 NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, ..., nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.1) {
+varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.1, ...) {
   
 	if(!('varsel' %in% names(object)))
 	  stop(paste('The provided object doesn\'t contain information about the',
@@ -286,8 +292,8 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = 'elpd', deltas = F, 
 
 #' @rdname varsel-statistics
 #' @export
-varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
-                         deltas = F, alpha=0.1) {
+varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
+                         deltas = F, alpha=0.1, ...) {
   
 	if(!('varsel' %in% names(object)))
       stop(paste('The provided object doesn\'t contain information about the',
@@ -345,6 +351,8 @@ varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('m
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}.
+#' @param stat Statistic used for the decision. Default is elpd. See \code{varsel_stats} for
+#' other possible choices. 
 #' @param alpha A number indicating the desired coverage of the credible
 #' intervals based on which the decision is made. E.g. \code{alpha=0.1} corresponds to
 #' 90\% probability mass within the intervals. See details for more information.
@@ -352,6 +360,8 @@ varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('m
 #' utilities one is willing to sacrifice. See details for more information.
 #' @param type Either 'upper' (default) or 'lower' determining whether the decisions are
 #' based on the upper or lower credible bounds. See details for more information.
+#' @param warnings Whether to give warnings if automatic suggestion fails, mainly for internal use.
+#' Default is TRUE, and usually no reason to set to FALSE.
 #' @param ... Currently ignored.
 #' 
 #' @details The suggested model size is the smallest model for which
@@ -371,7 +381,7 @@ varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('m
 #' 
 
 #' @export
-suggest_size <- function(object, alpha = 0.32, pct = 0.0, type='upper', ...) {
+suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper', warnings=TRUE, ...) {
   
   if ('varsel' %in% names(object))
     varsel <- object$varsel
@@ -381,16 +391,26 @@ suggest_size <- function(object, alpha = 0.32, pct = 0.0, type='upper', ...) {
   
   btype <- ifelse(type=='upper', 'uq', 'lq')
   tab <- .tabulate_stats(varsel, alpha = alpha)
-  stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == TRUE & tab$size != Inf &
+  stats <- subset(tab, tab$statistic == stat & tab$delta == TRUE & tab$size != Inf &
                     tab$data %in% c('train', 'test', 'loo', 'kfold'))
   
   if (!all(is.na(stats[,'value']))) {
     
-    mlpd_null <- subset(stats, stats$size == 0, 'value')
-    mlpd_cutoff <- pct*mlpd_null
-    res <- subset(stats, stats[,btype] >= mlpd_cutoff$value, 'size')
+    util_null <- subset(stats, stats$size == 0, 'value')
+    util_cutoff <- pct*util_null
+    res <- subset(stats, stats[,btype] >= util_cutoff$value, 'size')
     if(nrow(res) == 0) {
-      ssize <- NA
+      # no submodel satisfying the criterion found
+      if (varsel$nv_max == varsel$nv_all)
+        ssize <- varsel$nv_max
+      else {
+        ssize <- NA
+        if (warnings)
+          warning(paste('Could not suggest model size. Investigate varsel_plot to identify',
+                        'if the search was terminated too early. If this is the case,',
+                        'run variable selection with larger value for nv_max.'))
+      }
+      
     } else {
       ssize <- min(res)
     }
@@ -400,7 +420,7 @@ suggest_size <- function(object, alpha = 0.32, pct = 0.0, type='upper', ...) {
     # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
     # i.e. is contained in the 68% central region
     tab <- .tabulate_stats(varsel, alpha = 0.32)
-    stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == F &
+    stats <- subset(tab, tab$statistic == stat & tab$delta == F &
                       tab$data %in% c('train', 'test', 'loo', 'kfold'))
     imax <- which.max(unname(unlist(stats['value'])))
     thresh <- stats[imax, 'lq']
