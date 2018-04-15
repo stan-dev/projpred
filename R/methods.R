@@ -201,12 +201,17 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}.
-#' @param ... Currently ignored.
 #' @param nv_max Maximum submodel size for which the statistics are calculated.
-#' @param stats A list of strings of statistics to calculate. Available
-#' options are: elpd, mlpd, kl, mse (gaussian only), rmse (gaussian only), acc/pctcorr (binomial only).
-#' If \code{NULL}, varsel_plot plots only elpd, but varsel_stats
-#' returns all the statistics.
+#' @param stats One or several strings determining which statistics to calculate. Available
+#' statistics are: 
+#' \itemize{
+#'  \item{elpd:} {(Expected) sum of log predictive densities}
+#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the number of datapoints.}
+#'  \item{mse:} {Mean squared error (gaussian family only)}
+#'  \item{rmse:} {Root mean squared error (gaussian family only)}
+#'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
+#' }
+#' Default is elpd.
 #' @param type One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
 #' compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
 #' that \code{1-alpha} percent of the mass falls between them.
@@ -216,11 +221,12 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' @param alpha A number indicating the desired coverage of the credible
 #' intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
 #' within the intervals.
+#' @param ... Currently ignored.
 NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, ..., nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.1) {
+varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.1, ...) {
   
 	if(!('varsel' %in% names(object)))
 	  stop(paste('The provided object doesn\'t contain information about the',
@@ -286,8 +292,8 @@ varsel_plot <- function(object, ..., nv_max = NULL, stats = 'elpd', deltas = F, 
 
 #' @rdname varsel-statistics
 #' @export
-varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
-                         deltas = F, alpha=0.1) {
+varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
+                         deltas = F, alpha=0.1, ...) {
   
 	if(!('varsel' %in% names(object)))
       stop(paste('The provided object doesn\'t contain information about the',
@@ -345,6 +351,8 @@ varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('m
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}.
+#' @param stat Statistic used for the decision. Default is elpd. See \code{varsel_stats} for
+#' other possible choices. 
 #' @param alpha A number indicating the desired coverage of the credible
 #' intervals based on which the decision is made. E.g. \code{alpha=0.1} corresponds to
 #' 90\% probability mass within the intervals. See details for more information.
@@ -352,6 +360,8 @@ varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('m
 #' utilities one is willing to sacrifice. See details for more information.
 #' @param type Either 'upper' (default) or 'lower' determining whether the decisions are
 #' based on the upper or lower credible bounds. See details for more information.
+#' @param warnings Whether to give warnings if automatic suggestion fails, mainly for internal use.
+#' Default is TRUE, and usually no reason to set to FALSE.
 #' @param ... Currently ignored.
 #' 
 #' @details The suggested model size is the smallest model for which

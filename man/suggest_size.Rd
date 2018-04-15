@@ -4,11 +4,15 @@
 \alias{suggest_size}
 \title{Suggest model size}
 \usage{
-suggest_size(object, alpha = 0.32, pct = 0, type = "upper", ...)
+suggest_size(object, stat = "elpd", alpha = 0.32, pct = 0,
+  type = "upper", warnings = TRUE, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
+
+\item{stat}{Statistic used for the decision. Default is elpd. See \code{varsel_stats} for
+other possible choices.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
 intervals based on which the decision is made. E.g. \code{alpha=0.1} corresponds to
@@ -19,6 +23,9 @@ utilities one is willing to sacrifice. See details for more information.}
 
 \item{type}{Either 'upper' (default) or 'lower' determining whether the decisions are
 based on the upper or lower credible bounds. See details for more information.}
+
+\item{warnings}{Whether to give warnings if automatic suggestion fails, mainly for internal use.
+Default is TRUE, and usually no reason to set to FALSE.}
 
 \item{...}{Currently ignored.}
 }

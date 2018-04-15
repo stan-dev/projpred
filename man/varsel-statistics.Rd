@@ -6,24 +6,28 @@
 \alias{varsel_stats}
 \title{Plot or fetch summary statistics related to variable selection}
 \usage{
-varsel_plot(object, ..., nv_max = NULL, stats = "elpd", deltas = F,
-  alpha = 0.1)
+varsel_plot(object, nv_max = NULL, stats = "elpd", deltas = F,
+  alpha = 0.1, ...)
 
-varsel_stats(object, ..., nv_max = NULL, stats = "elpd", type = c("mean",
-  "se"), deltas = F, alpha = 0.1)
+varsel_stats(object, nv_max = NULL, stats = "elpd", type = c("mean",
+  "se"), deltas = F, alpha = 0.1, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
-\item{...}{Currently ignored.}
-
 \item{nv_max}{Maximum submodel size for which the statistics are calculated.}
 
-\item{stats}{A list of strings of statistics to calculate. Available
-options are: elpd, mlpd, kl, mse (gaussian only), rmse (gaussian only), acc/pctcorr (binomial only).
-If \code{NULL}, varsel_plot plots only elpd, but varsel_stats
-returns all the statistics.}
+\item{stats}{One or several strings determining which statistics to calculate. Available
+statistics are: 
+\itemize{
+ \item{elpd:} {(Expected) sum of log predictive densities}
+ \item{mlpd:} {Mean log predictive density, that is, elpd divided by the number of datapoints.}
+ \item{mse:} {Mean squared error (gaussian family only)}
+ \item{rmse:} {Root mean squared error (gaussian family only)}
+ \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
+}
+Default is elpd.}
 
 \item{deltas}{If \code{TRUE}, the difference between the full model and the
 submodel is returned instead of the actual value of the statistic.
@@ -32,6 +36,8 @@ Defaults to \code{FALSE}.}
 \item{alpha}{A number indicating the desired coverage of the credible
 intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
 within the intervals.}
+
+\item{...}{Currently ignored.}
 
 \item{type}{One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
 compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
