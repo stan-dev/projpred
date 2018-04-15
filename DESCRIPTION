@@ -2,10 +2,10 @@ Package: projpred
 Title: Projection Predictive Feature Selection
 Version: 0.7.3
 Author:
-    Markus Paasiniemi [aut],
+    Markus Paasiniemi [cre,aut],
     Juho Piironen [aut],
-    Jonah Gabry [ctb],
-    Aki Vehtari [ctb]
+    Aki Vehtari [aut],
+    Jonah Gabry [ctb]
 Maintainer:
     Juho Piironen <juho.piironen@aalto.fi>
 Description:
