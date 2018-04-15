@@ -18,7 +18,7 @@ This vignette shows how to use the main functionalities of the ```projpred```-pa
 
 ## Gaussian example
 First load the packages that are needed, and specify the number of available cores (this speeds up the sampling when multiple cores are available). Uncomment the last line in the following commands (this is commented out to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters). 
-```{r, message=F, warning=F}
+```{r, results='hide', message=F, warning=F}
 library(rstanarm)
 library(projpred)
 library(ggplot2)
@@ -52,14 +52,14 @@ fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
 The variable selection can then be excecuted with the command `varsel`. This will add a field `varsel` to the `fit`-object containing information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`. Currently the package implements forward search and Lasso type L1-penalization to find the variable ordering (Tran et al., 2012). The latter is much faster for large problems but the forward search can sometimes be more accurate.
 ```{r}
 fit <- varsel(fit, method='forward')
-fit$varsel$vind
+fit$varsel$vind # variables ordered as they enter during the search
 ```
 
 
-We can then plot some statistics computed on the training data, such as the mean log predictive density (MLPD) and mean squared error (MSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
+We can then plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
 ```{r}
 # plot predictive performance on training data 
-varsel_plot(fit, stats=c('mlpd', 'mse'))
+varsel_plot(fit, stats=c('elpd', 'rmse'))
 ```
 
 
@@ -67,14 +67,14 @@ The statistics computed on the training data typically give us a rough idea of h
 ```{r, results='hide', warning=F, cache=T}
 fit_cv <- cv_varsel(fit, method='forward')
 ```
-In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel``` 
+In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel```, and it can be obtained also by calling function ```suggest_size```
 ```{r}
 # model size suggested by the program
-fit_cv$varsel$ssize
+suggest_size(fit_cv)
 ```
 ```{r}
-# plot the validation results
-varsel_plot(fit_cv, stats = c('mlpd', 'mse'), deltas=T)
+# plot the validation results, this time relative to the full model
+varsel_plot(fit_cv, stats = c('elpd', 'rmse'), deltas=T)
 ```
 
 We can now perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with e.g. the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables. 
@@ -89,7 +89,7 @@ proj <- project(fit, nv = 3, ns = 500)
 mcmc_areas(as.matrix(proj)) + coord_cartesian(xlim = c(-2, 2))
 ```
 
-We can also make predictions with the submodels using method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points . For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+We can also make predictions with the submodels using method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r}
 pred <- proj_linpred(fit, xnew=df_gaussian$x, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
 ```
@@ -121,15 +121,15 @@ fit <- stan_glm(y ~ x, family=binomial(), data=df_binom, prior=prior_coeff,
                 seed=1, chains=2, iter=500)
 ```
 
-Run the variable selection
+Run the variable selection and print out the variable ordering
 ```{r}
 fit <- varsel(fit, method='forward')
 fit$varsel$vind
 ```
 
-Plot the MLPD and classification accuracy on the training data:
+Plot the ELPD and classification accuracy on the training data:
 ```{r}
-varsel_plot(fit, stats=c('mlpd', 'pctcorr'), deltas=F)
+varsel_plot(fit, stats=c('elpd', 'acc'), deltas=F)
 ```
 
 Cross-validate the full model and the variable selection:
@@ -137,14 +137,14 @@ Cross-validate the full model and the variable selection:
 fit_cv <- cv_varsel(fit, method='forward')
 ```
 
-Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 7 varibles. About 7 variables gives predictive accurary similar to the full model.
+Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 7 varibles.
 ```{r}
 # model size suggested by the program
-fit_cv$varsel$ssize
+suggest_size(fit_cv)
 ```
 ```{r}
 # plot the validation results
-varsel_plot(fit_cv, stats=c('mlpd', 'pctcorr'), deltas=T)
+varsel_plot(fit_cv, stats=c('elpd', 'acc'), deltas=T)
 ```
 
 Finally, for illustration, we compute here the predictive class probabilities using only the two most relevant variables, and visualize the results.
