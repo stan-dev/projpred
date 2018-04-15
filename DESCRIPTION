@@ -1,6 +1,6 @@
 Package: projpred
 Title: Projection Predictive Feature Selection
-Version: 0.7.3
+Version: 0.8.0
 Author:
     Markus Paasiniemi [cre,aut],
     Juho Piironen [aut],
