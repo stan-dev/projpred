@@ -371,7 +371,7 @@ varsel_stats <- function(object, ..., nv_max = NULL, stats = 'elpd', type = c('m
 #' 
 
 #' @export
-suggest_size <- function(object, alpha = 0.32, pct = 0.0, type='upper', ...) {
+suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper', warnings=TRUE, ...) {
   
   if ('varsel' %in% names(object))
     varsel <- object$varsel
@@ -381,16 +381,26 @@ suggest_size <- function(object, alpha = 0.32, pct = 0.0, type='upper', ...) {
   
   btype <- ifelse(type=='upper', 'uq', 'lq')
   tab <- .tabulate_stats(varsel, alpha = alpha)
-  stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == TRUE & tab$size != Inf &
+  stats <- subset(tab, tab$statistic == stat & tab$delta == TRUE & tab$size != Inf &
                     tab$data %in% c('train', 'test', 'loo', 'kfold'))
   
   if (!all(is.na(stats[,'value']))) {
     
-    mlpd_null <- subset(stats, stats$size == 0, 'value')
-    mlpd_cutoff <- pct*mlpd_null
-    res <- subset(stats, stats[,btype] >= mlpd_cutoff$value, 'size')
+    util_null <- subset(stats, stats$size == 0, 'value')
+    util_cutoff <- pct*util_null
+    res <- subset(stats, stats[,btype] >= util_cutoff$value, 'size')
     if(nrow(res) == 0) {
-      ssize <- NA
+      # no submodel satisfying the criterion found
+      if (varsel$nv_max == varsel$nv_all)
+        ssize <- varsel$nv_max
+      else {
+        ssize <- NA
+        if (warnings)
+          warning(paste('Could not suggest model size. Investigate varsel_plot to identify',
+                        'if the search was terminated too early. If this is the case,',
+                        'run variable selection with larger value for nv_max.'))
+      }
+      
     } else {
       ssize <- min(res)
     }
@@ -400,7 +410,7 @@ suggest_size <- function(object, alpha = 0.32, pct = 0.0, type='upper', ...) {
     # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
     # i.e. is contained in the 68% central region
     tab <- .tabulate_stats(varsel, alpha = 0.32)
-    stats <- subset(tab, tab$statistic == 'mlpd' & tab$delta == F &
+    stats <- subset(tab, tab$statistic == stat & tab$delta == F &
                       tab$data %in% c('train', 'test', 'loo', 'kfold'))
     imax <- which.max(unname(unlist(stats['value'])))
     thresh <- stats[imax, 'lq']
