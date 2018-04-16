@@ -21,7 +21,8 @@ Imports:
     loo (>= 2.0.0), 
     ggplot2, 
     Rcpp, 
-    utils
+    utils,
+    rngtools (>= 1.2.4)
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
