@@ -103,8 +103,9 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
     stop(paste('The number of columns in xnew does not match with the given',
                'number of variable indices (vind).'))
 
-  # save the old rng state and initialize with the new seed
-  rng_state_old <- ifelse (exists('.Random.seed', envir=.GlobalEnv), get(".Random.seed", .GlobalEnv), NULL)
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
   set.seed(seed_samp)
 
   preds <- lapply(projs, function(proj) {
@@ -121,10 +122,6 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
     fun(proj, mu, offsetnew, weightsnew)
   })
 
-  if (!is.null(rng_state_old))
-    # restore the old rng state
-    assign('.Random.seed', rng_state_old, .GlobalEnv)
-  
   .unlist_proj(preds)
 }
 
@@ -600,11 +597,11 @@ as.matrix.projection <- function(x, ...) {
 cvind <- function(n, k, out='foldwise', seed=NULL) {
 
 	ind <- c(1:n)
-	if (!is.null(seed)) {
-	  # save the old rng state and initialize with the new seed
-	  rng_state_old <- ifelse (exists('.Random.seed', envir=.GlobalEnv), get(".Random.seed", .GlobalEnv), NULL)
-		set.seed(seed)
-	}
+	
+	# set random seed but ensure the old RNG state is restored on exit
+	rng_state_old <- rngtools::RNGseed()
+	on.exit(rngtools::RNGseed(rng_state_old))
+	set.seed(seed)
 	
 	# shuffle the indices
 	ind <- sample(ind, n, replace=FALSE)
@@ -627,10 +624,6 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 		}
 	} else
 		stop(paste0('Unknown output format requested: ', out))
-	
-	if (!is.null(seed) && !is.null(rng_state_old))
-	  # restore the old rng state
-	  assign('.Random.seed', rng_state_old, .GlobalEnv)
 	
 	return(cv)
 }

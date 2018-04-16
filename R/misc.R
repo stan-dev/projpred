@@ -141,12 +141,13 @@ log_sum_exp <- function(x) {
 	# an argument in place of fit.
 	#
   if (is.null(seed))
-    seed <- 1
+    seed <- 17249420
 
-  # save the old rng state and initialize with the new seed
-  rng_state_old <- ifelse (exists('.Random.seed', envir=.GlobalEnv), get(".Random.seed", .GlobalEnv), NULL)
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
   set.seed(seed)
-
+  
 	if ( all(c('fam', 'x', 'mu', 'dis') %in% names(fit)) )
 		# all the relevant fields contained in the given structure
 		vars <- fit
@@ -189,10 +190,6 @@ log_sum_exp <- function(x) {
 		p_ref <- list(mu = vars$mu, var = predvar, dis = vars$dis, weights = vars$wsample, cl=c(1:S))
 	}
 
-  if (!is.null(rng_state_old))
-    # restore the old rng state
-    assign('.Random.seed', rng_state_old, .GlobalEnv)
-	
 	return(p_ref)
 }
 

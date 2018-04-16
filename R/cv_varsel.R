@@ -435,8 +435,9 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
   # decide which points to go through in the validation (i.e., which points
   # belong to the semi random subsample of validation points)
   
-  # save the old rng state and initialize with the new seed
-  rng_state_old <- ifelse (exists('.Random.seed', envir=.GlobalEnv), get(".Random.seed", .GlobalEnv), NULL)
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
   set.seed(seed)
   
   if (nloo < n) {
@@ -468,10 +469,6 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
   
   # ensure weights are normalized
   w <- w/sum(w)
-  
-  if (!is.null(rng_state_old))
-    # restore the old rng state
-    assign('.Random.seed', rng_state_old, .GlobalEnv)
   
   return(list(inds=inds, w=w))
   
