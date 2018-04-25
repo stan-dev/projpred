@@ -34,5 +34,5 @@ Suggests:
     glmnet,
     bayesplot (>= 1.5.0)
 VignetteBuilder: knitr
-URL: https://github.com/stan-dev/projpred, http://discourse.mc-stan.org/
+URL: http://mc-stan.org/projpred, http://discourse.mc-stan.org/
 BugReports: https://github.com/stan-dev/projpred/issues
