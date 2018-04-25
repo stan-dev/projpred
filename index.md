@@ -27,12 +27,7 @@ and Poisson families. See the **projpred**
 
 ## Getting Started
 
-To get started building a package see the two __projpred__ vignettes for
-developers:
-
-* [Guidelines for Developers of R Packages Interfacing with Stan](http://mc-stan.org/projpred/articles/developer-guidelines.html)
-
-* [Step by step guide for creating a package that depends on RStan](http://mc-stan.org/projpred/articles/minimal-rstan-package.html)
+To get started see the __projpred__ [vignettes](http://mc-stan.org/projpred/articles).
 
 
 ## Installation

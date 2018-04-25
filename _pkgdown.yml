@@ -38,3 +38,10 @@ home:
   links:
   - text: Ask a question
     href: http://discourse.mc-stan.org/
+    
+articles:
+  - title: "Getting Started"
+    desc: >
+      This vignette provides a quick-start guide to using the projpred package for projection predictive feature selection.
+    contents:
+      - quickstart
