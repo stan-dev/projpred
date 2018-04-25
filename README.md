@@ -12,22 +12,24 @@ The method is described and evaluated in comparison to many other methods in Pii
 Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples.
 
 
+### Resources
 
-## Installation
+* [mc-stan.org/projpred](http://mc-stan.org/projpred) (online documentation, vignettes)
+* [Ask a question](http://discourse.mc-stan.org) (Stan Forums on Discourse)
+* [Open an issue](https://github.com/stan-dev/projpred/issues) (GitHub issues for bug reports, feature requests)
 
-### Latest release
 
-The latest release can be installed from CRAN via
+### Installation
 
-```R
-install.packages('projpred')
+* Install the latest release from CRAN:
+
+```r
+install.packages("rstantools")
 ```
 
-### Development version
+* Install latest development version from GitHub (requires [devtools](https://github.com/r-lib/devtools) package):
 
-To install the  development version from Github, execute the following in R:
-
-```R
+```r
 if (!require(devtools)) {
   install.packages("devtools")
   library(devtools)
@@ -35,7 +37,7 @@ if (!require(devtools)) {
 devtools::install_github('stan-dev/projpred', build_vignettes = TRUE)
 ```
     
-## Example
+### Example
 
 ```R
 rm(list=ls())
@@ -75,7 +77,7 @@ varsel_plot(fit_cv)
 ```
 
 
-## References
+### References
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, 111(1-2):77–94.
 
