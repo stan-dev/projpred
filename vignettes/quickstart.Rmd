@@ -3,7 +3,7 @@ title: "projpred Quick Start"
 date: "`r Sys.Date()`"
 output: html_vignette
 params:
-  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  EVAL: !r TRUE
 ---
 <!--
 %\VignetteEngine{knitr::rmarkdown}
