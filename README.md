@@ -24,7 +24,7 @@ Currently, the supported models (family objects in R) include Gaussian, Binomial
 * Install the latest release from CRAN:
 
 ```r
-install.packages("rstantools")
+install.packages('projpred')
 ```
 
 * Install latest development version from GitHub (requires [devtools](https://github.com/r-lib/devtools) package):
