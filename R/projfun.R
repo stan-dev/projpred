@@ -76,8 +76,6 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
   beta <- matrix(0, nrow=d, ncol=S)
   alpha <- rep(0, S)
   w <- matrix(nrow=n, ncol=S)
-  # beta_init <- beta[,1]
-  # beta0_init <- alpha[1]
   for (s in 1:S) {
     out <- glm_ridge(x = xsub, y = p_full$mu[, s, drop = F],
                      family=family_kl, lambda=regul, weights=d_train$weights,
@@ -85,8 +83,6 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
     beta[,s] <- out$beta
     alpha[s] <- out$beta0
     w[,s] <- out$w
-    # beta_init <- beta[,s]
-    # beta0_init <- alpha[s]
   }
 	
 	# compute the dispersion parameters and kl-divergences, and combine the results
@@ -124,20 +120,52 @@ project_nongaussian <- function(vind, p_full, d_train, family_kl, intercept,
 }
 
 
-.get_submodels <- function(vind, nv, family_kl, p_full, d_train, intercept, regul) {
-    #
-    # Project onto given model sizes nv. Returns a list of submodels.
-    #
+.get_submodels <- function(searchpath, nv, family_kl, p_full, d_train, intercept, regul, as.search=F) {
+  #
+  #
+  # Project onto given model sizes nv. Returns a list of submodels. If as.search=TRUE,
+  # submodels parameters will be as they were computed during the search, so there is 
+  # no need to project anything anymore, and this function simply fetches the information
+  # from the searchpath list, which contains the parameter values.
+  #
+  
+  varorder <- searchpath$vind
+  
+  if (as.search) {
+    # simply fetch the already computed quantities for each submodel size
+    fetch_submodel <- function(nv) {
+      submodel <- list()
+      vind <- head(varorder, nv)
+      w <- searchpath$w[,nv+1,drop=F]
+      alpha <- searchpath$alpha[nv+1]
+      if (nv==0)
+        beta <- matrix(0,nrow=0, ncol=1)
+      else
+        beta <- searchpath$beta[1:nv,nv+1,drop=F]
+      xsub <- d_train$x[, vind, drop = F]
+      mu <- family_kl$mu_fun(xsub, alpha, beta, d_train$offset)
+      submodel$dis <- family_kl$dis_fun(p_full, list(mu=mu,w=w), d_train$weights)
+      submodel$kl <- weighted.mean(family_kl$kl(p_full, d_train, list(mu=mu,dis=submodel$dis)), p_full$weights)
+      submodel$weights <- p_full$weights
+      submodel$alpha <- alpha
+      submodel$beta <- beta
+      submodel$vind <- vind
+      submodel$intercept <- intercept
+      return(submodel)
+    }
+  } else {
+    # need to project again for each submodel size
     projfun <- .get_proj_handle(family_kl, regul)
-
-    submodels <- lapply(nv,
-        function(nv) {
-            if (nv == 0)
-                vind <- integer(length=0) # empty
-            else
-                vind <- vind[1:nv]
-            return(projfun(vind, p_full, d_train, intercept))
-        })
-    return(submodels)
+    fetch_submodel <- function(nv) {
+      if (nv == 0)
+        vind <- integer(length=0) # empty
+      else
+        vind <- varorder[1:nv]
+      return(projfun(vind, p_full, d_train, intercept))
+    }
+  }
+  
+  submodels <- lapply(nv, fetch_submodel)
+  return(submodels)
+  
 }
-

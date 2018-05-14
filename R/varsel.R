@@ -10,6 +10,10 @@
 #' \code{'L1'} for L1-search and \code{'forward'} for forward selection.
 #' Default is 'forward' if the number of variables in the full data is at most 20, and
 #' \code{'L1'} otherwise.
+#' @param relax If TRUE, then the projected coefficients after L1-selection are computed
+#' without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
+#' the coefficients are the solution from the L1-penalized projection. This option is relevant only
+#' if \code{method}='L1'. Default is TRUE. 
 #' @param ns Number of posterior draws used in the variable selection.
 #'    Cannot be larger than the number of draws in the full model.
 #'    Ignored if nc is set.
@@ -59,7 +63,7 @@
 
 #' @export
 varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
-                   nspred = NULL, ncpred = NULL, nv_max = NULL, 
+                   nspred = NULL, ncpred = NULL, relax=NULL, nv_max = NULL, 
                    intercept = NULL, penalty=NULL, verbose = F, 
                    lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, ...) {
 
@@ -75,6 +79,13 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 			method <- 'L1'
 	}
 
+	if (is.null(relax)) {
+	  if ('datafit' %in% class(fit))
+	    relax <- F
+	  else
+	    relax <- T 
+	}
+	
   if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
   	# use one cluster for selection by default, and always with L1-search
   	nc <- 1
@@ -105,11 +116,13 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
   # perform the selection
   opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
-  vind <- select(method, p_sel, d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
-
+  searchpath <- select(method, p_sel, d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
+  vind <- searchpath$vind
+  
   # statistics for the selected submodels
-  p_sub <- .get_submodels(vind, c(0, seq_along(vind)), family_kl, p_pred,
-                          d_train, intercept, regul)
+  as.search <- !relax && !is.null(searchpath$beta) && !is.null(searchpath$alpha)
+  p_sub <- .get_submodels(searchpath, c(0, seq_along(vind)), family_kl, p_pred,
+                          d_train, intercept, regul, as.search=as.search)
   sub <- .get_sub_summaries(p_sub, d_test, family_kl)
 
   # predictive statistics of the reference model on test data. if no test data are provided, 
@@ -146,24 +159,30 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
                    penalty, verbose, opt) {
   #
   # Auxiliary function, performs variable selection with the given method,
-  # and returns the variable ordering.
+  # and returns a list with the followint entries:
+  #   vind: the variable ordering
+  #   beta: coefficients along the search path (only for L1-search)
+  #   alpha: intercepts along the search path (only for L1-search)
   #
   if (NCOL(d_train$x) == 1)
     # special case, only one variable, so no need for selection
-    return(1)
+    return(list(vind=1))
   if (tolower(method) == 'l1') {
-    vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max, penalty, opt)
+    # vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max, penalty, opt)
+    return(search_L1(p_sel, d_train, family_kl, intercept, nv_max, penalty, opt))
   } else if (tolower(method) == 'forward') {
-    if ( NCOL(p_sel$mu) == 1)
+    if ( NCOL(p_sel$mu) == 1) {
       # only one mu column (one cluster or one sample), so use the optimized version of the forward search
       vind <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, opt)
-    else
+      return(list(vind=vind))
+    } else {
       # routine that can be used with several clusters
       tryCatch(vind <- search_forward(p_sel, d_train, family_kl, intercept, nv_max, verbose, opt),
                'error' = .varsel_errors)
+      return(list(vind=vind))
+    }
   } else {
     stop(sprintf('Unknown search method: %s.', method))
   }
-  return(vind)
 }
 

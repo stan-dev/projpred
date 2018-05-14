@@ -5,9 +5,9 @@
 \title{Cross-validate the variable selection (varsel)}
 \usage{
 cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
-  nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  penalty = NULL, verbose = T, nloo = 100, K = NULL, k_fold = NULL,
-  lambda_min_ratio = 1e-05, nlambda = 500, regul = 1e-06,
+  nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
+  intercept = NULL, penalty = NULL, verbose = T, nloo = 100, K = NULL,
+  k_fold = NULL, lambda_min_ratio = 1e-05, nlambda = 500, regul = 1e-06,
   validate_search = T, seed = NULL, ...)
 }
 \arguments{
@@ -25,6 +25,8 @@ cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
 \item{nspred}{Number of samples used for prediction (after selection). Ignored if ncpred is given.}
 
 \item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
+
+\item{relax}{Same as in \link[=varsel]{varsel}.}
 
 \item{nv_max}{Same as in \link[=varsel]{varsel}.}
 
