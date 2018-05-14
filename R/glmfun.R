@@ -162,8 +162,8 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
     beta0 <- beta0 - colSums(mx*beta)
   }
   
-  return(list( beta=beta, beta0=beta0, lambda=lambda[1:ncol(beta)], npasses=out[[3]],
-               updates_qa=as.vector(out[[4]]), updates_as=as.vector(out[[5]]) ))
+  return(list( beta=beta, beta0=beta0, w=out[[3]], lambda=lambda[1:ncol(beta)], npasses=out[[4]],
+               updates_qa=as.vector(out[[5]]), updates_as=as.vector(out[[6]]) ))
 }
 
 

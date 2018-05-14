@@ -163,6 +163,7 @@ List glm_elnet_c(arma::mat x, // input matrix
   // for storing the whole solution path
   rowvec beta0_path(nlam);
   mat beta_path(D,nlam);
+  mat w_path(x.n_rows,nlam);
   beta0_path.zeros();
   beta_path.zeros();
   int npasses = 0; // counts how many times the coefficient vector is looped through
@@ -243,6 +244,7 @@ List glm_elnet_c(arma::mat x, // input matrix
     // store the current solution
     beta0_path(k) = beta0;
     beta_path.col(k) = beta;
+    w_path.col(k) = w;
     qa_updates(k) = qau;
     
     if (qau == qa_updates_max && qa_updates_max > 1)
@@ -263,7 +265,7 @@ List glm_elnet_c(arma::mat x, // input matrix
     }
   }
   
-  return List::create(beta_path, beta0_path, npasses, qa_updates, as_updates);
+  return List::create(beta_path, beta0_path, w_path, npasses, qa_updates, as_updates);
 }
 
 
