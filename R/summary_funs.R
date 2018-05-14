@@ -5,18 +5,17 @@
 
 .get_sub_summaries <- function(submodels, d_test, family_kl) {
 
-  res <- lapply(submodels, function(submodels) {
-  	vind <- submodels$vind
-    if(NROW(submodels$beta) == 0) {
+  res <- lapply(submodels, function(model) {
+  	vind <- model$vind
+    if(NROW(model$beta) == 0) {
       xt <- matrix(0, nrow = length(d_test$weights), ncol = 0)
     } else if(!is.matrix(d_test$x)) {
       xt <- matrix(d_test$x[vind], nrow = 1)
     } else {
       xt <- d_test$x[, vind, drop = F]
     }
-
-    mu <- family_kl$mu_fun(xt, submodels$alpha, submodels$beta, d_test$offset)
-    .weighted_summary_means(d_test, family_kl, submodels$weights, mu, submodels$dis)
+    mu <- family_kl$mu_fun(xt, model$alpha, model$beta, d_test$offset)
+    .weighted_summary_means(d_test, family_kl, model$weights, mu, model$dis)
   })
 }
 
