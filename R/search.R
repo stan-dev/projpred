@@ -95,7 +95,7 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, penalty, opt) 
         j <- 1
       out$alpha[k+1] <- search$beta0[j]
       out$beta[1:k,k+1] <- search$beta[order[1:k],j]
-      out$w[,k+1] <- search$w[,1]
+      out$w[,k+1] <- search$w[,j]
     }
   }
   

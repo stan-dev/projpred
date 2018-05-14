@@ -140,7 +140,8 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   }
   
   # store the relevant fields into fit  
-  fit$varsel <- list(vind = setNames(vind, vars$coefnames[vind]),
+  fit$varsel <- list(spath=searchpath,
+                     vind = setNames(vind, vars$coefnames[vind]),
                      kl = sapply(p_sub, function(x) x$kl),
                      d_test = c(d_test[c('y','weights')], type = d_type),
                      summaries = list(sub = sub, full = full),
@@ -159,7 +160,7 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
                    penalty, verbose, opt) {
   #
   # Auxiliary function, performs variable selection with the given method,
-  # and returns a list with the followint entries:
+  # and returns the searchpath, i.e., a list with the followint entries:
   #   vind: the variable ordering
   #   beta: coefficients along the search path (only for L1-search)
   #   alpha: intercepts along the search path (only for L1-search)

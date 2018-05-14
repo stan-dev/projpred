@@ -71,21 +71,21 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	
 	if (is.null(seed))
 	  seed <- 134654
-	
+
 	if (is.null(method)) {
 		if (dim(vars$x)[2] <= 20)
 			method <- 'forward'
 		else
 			method <- 'L1'
 	}
-	
+
 	if (is.null(relax)) {
 	  if ('datafit' %in% class(fit))
 	    relax <- F
 	  else
-	    relax <- T 
+	    relax <- T
 	}
-	
+
 	if (is.null(cv_method)) {
 		if ('datafit' %in% class(fit))
 			# only data given, no actual reference model
@@ -96,7 +96,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	if (cv_method == 'kfold' && is.null(K)) {
 	  if ('datafit' %in% class(fit))
 	    K <- 10
-	  else 
+	  else
 	    K <- 4
 	}
 
@@ -106,7 +106,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	if (is.null(nspred) && is.null(ncpred))
     # use 5 clusters for prediction by default
 		ncpred <- min(ncol(vars$mu), 5)
-	
+
 	if(is.null(intercept))
 		intercept <- vars$intercept
 	if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
@@ -132,7 +132,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	if (verbose)
 		print(paste('Performing the selection using all the data..'))
 	sel <- varsel(fit, method=method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
-	              relax=relax, nv_max=nvmax, intercept=intercept, penalty=penalty, verbose=verbose, 
+	              relax=relax, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose, 
 	              lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)$varsel
 
 
@@ -152,7 +152,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	fit$varsel <- c(sel[c('vind', 'kl', 'family_kl')],
                   sel_cv[c('d_test', 'summaries')],
                   list(pctch = pctch))
-
+  fit$varsel$spath <- sel$spath
 	fit$varsel$nv_max <- nv_max
 	fit$varsel$nv_all <- ncol(vars$x)
 	fit$varsel$ssize <- suggest_size(fit, warnings = F)
