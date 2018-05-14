@@ -237,3 +237,23 @@ test_that("glm_elnet: poisson, log-link, normalization should not affect the max
   expect_equal(c(elnetfit1$beta0[nlam], elnetfit1$beta[,nlam]), 
                c(elnetfit2$beta0[nlam], elnetfit2$beta[,nlam]), tolerance = tol)
 })
+
+
+
+test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
+  
+  fam <- kl_helpers(binomial(link = 'logit'))
+  y <- rbinom(n, weights, fam$linkinv(x%*%b))
+  lambda <- 4
+  
+  elnetfit <- projpred:::glm_elnet(x_tr, y/weights, family = fam, lambda = lambda, alpha = 0,
+                        offset = offset, weights = weights, penalty = penalty,
+                        intercept = TRUE, normalize = FALSE, 1e-12)
+  ridgefit <- projpred:::glm_ridge(x_tr, y/weights, family = fam, lambda = lambda, 
+                        offset = offset, weights = weights, penalty = penalty,
+                        intercept = TRUE, thresh = 1e-12)
+  
+  expect_equal( c(ridgefit$beta0, ridgefit$beta), c(elnetfit$beta0, elnetfit$beta),
+               tolerance = 1e-5)
+  
+})

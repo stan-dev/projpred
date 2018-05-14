@@ -164,8 +164,8 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 
 
 glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,
-                      weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, beta_init=NULL,
-                      beta0_init=NULL, ls_iter_max=30) {
+                      weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, penalty=NULL,
+                      beta_init=NULL, beta0_init=NULL, ls_iter_max=30) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
@@ -188,6 +188,8 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
     beta_start <- c(beta0_init, beta_init)
   else
     beta_start <- beta_init
+  if (is.null(penalty))
+    penalty <- rep(1.0, ncol(x))
   
   if (length(x) == 0) {
     if (intercept) {
@@ -195,7 +197,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
       x <- matrix(rep(1,length(y)), ncol=1)
       w0 <- weights 
       pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
-      out <- glm_ridge_c(x, pseudo_obs, lambda, FALSE, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
+      out <- glm_ridge_c(x, pseudo_obs, lambda, FALSE, 1, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
       return( list(beta=matrix(integer(length=0)), beta0=as.vector(out[[1]]), w=out[[3]], qa_updates=out[[4]]) )
     } else {
       # null model with no predictors and no intercept
@@ -206,14 +208,14 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
     x <- as.matrix(x)
     w0 <- weights 
     pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
-    out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
+    out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
     return(list( beta=out[[1]], beta0=as.vector(out[[2]]), w=out[[3]], qa_updates=out[[4]] ))
   }
 }
 
 
 glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,
-                        weights=NULL, offset=NULL, obsvar=0, intercept=TRUE,
+                        weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, penalty=NULL,
                         pmax=dim(as.matrix(x))[2]) {
   #
   # Runs forward stepwise regression. Does not handle any dispersion parameters.
@@ -222,12 +224,14 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updat
     qa_updates_max <- 1
   else if (is.null(qa_updates_max))
     qa_updates_max <- 100
+  if (is.null(penalty))
+    penalty <- rep(1.0, ncol(x))
   
   if (length(x) == 0) {
     if (intercept) {
       # model with intercept only
       out <- glm_ridge(NULL, y, family=family, lambda=lambda, thresh=thresh, qa_updates_max=qa_updates_max,
-                        weights=weights, offset=offset, obsvar=obsvar, intercept=T) 
+                        weights=weights, offset=offset, obsvar=obsvar, intercept=T, penalty=penalty) 
       return( list(beta=out$beta, beta0=out$beta0, varorder=integer(length=0)) )
     } else {
       # null model with no predictors and no intercept
@@ -243,7 +247,7 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updat
     
     w0 <- weights
     pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
-    out <- glm_forward_c(x, pseudo_obs, lambda, intercept, thresh, qa_updates_max, pmax, w0)
+    out <- glm_forward_c(x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, pmax, w0)
   }
   return(list( beta=out[[1]], beta0=as.vector(out[[2]]), varorder=as.vector(out[[3]])+1 ))
 }
