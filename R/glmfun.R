@@ -165,7 +165,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 
 glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,
                       weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, penalty=NULL,
-                      beta_init=NULL, beta0_init=NULL, ls_iter_max=30) {
+                      normalize=TRUE, beta_init=NULL, beta0_init=NULL, ls_iter_max=30) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
@@ -191,6 +191,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
   if (is.null(penalty))
     penalty <- rep(1.0, ncol(x))
   
+  
   if (length(x) == 0) {
     if (intercept) {
       # model with intercept only (fit like model with no intercept but with one constant predictor)
@@ -203,15 +204,46 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
       # null model with no predictors and no intercept
       return( list( beta=matrix(integer(length=0)), beta0=0, w=weights, qa_updates=0 ) )
     }
-  } else {
-    # normal case
-    x <- as.matrix(x)
-    w0 <- weights 
-    pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
-    out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
-    return(list( beta=out[[1]], beta0=as.vector(out[[2]]), w=out[[3]], qa_updates=out[[4]] ))
+  } 
+  
+  # normal case, at least one predictor
+  
+  x <- as.matrix(x) # ensure x is a matrix
+  
+  if (normalize) {
+    # normalize the predictor matrix. notice that the variables are centered only if
+    # intercept is used (because otherwise the intercept would become nonzero unintentionally)
+    if (intercept)
+      mx <- colMeans(x)
+    else
+      mx <- rep(0,ncol(x))
+    sx <- apply(x,2,'sd')
+    penalty[sx==0] <- Inf # ignore variables with zero variance
+    sx[sx==0] <- 1
+    x <- t((t(x)-mx)/sx)
   }
+  
+  # compute the solution
+  w0 <- weights 
+  pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
+  out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
+  beta <- out[[1]]
+  beta0 <- as.vector(out[[2]])
+  
+  if (normalize) {
+    # return the intecept and the coefficients on the original scale
+    beta <- beta/sx
+    beta0 <- beta0 - sum(mx*beta)
+  }
+  
+  return(list( beta=beta, beta0=beta0, w=out[[3]], qa_updates=out[[4]] ))
 }
+
+
+
+
+
+
 
 
 glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,

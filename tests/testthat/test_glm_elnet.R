@@ -28,7 +28,7 @@ penalty <- penalty/sum(penalty)*ncol(x_tr) # must scale the penalties to be comp
 tol <- 1e-04
 extra_thresh <- 1e-10
 
-context("lasso")
+context("elnet")
 test_that("glm_elnet: gaussian, id-link, intercept, lambda = 0", {
   fam <- kl_helpers(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
@@ -242,18 +242,33 @@ test_that("glm_elnet: poisson, log-link, normalization should not affect the max
 
 test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
   
-  fam <- kl_helpers(binomial(link = 'logit'))
-  y <- rbinom(n, weights, fam$linkinv(x%*%b))
-  lambda <- 4
-  
-  elnetfit <- projpred:::glm_elnet(x_tr, y/weights, family = fam, lambda = lambda, alpha = 0,
-                        offset = offset, weights = weights, penalty = penalty,
-                        intercept = TRUE, normalize = FALSE, 1e-12)
-  ridgefit <- projpred:::glm_ridge(x_tr, y/weights, family = fam, lambda = lambda, 
-                        offset = offset, weights = weights, penalty = penalty,
-                        intercept = TRUE, thresh = 1e-12)
-  
-  expect_equal( c(ridgefit$beta0, ridgefit$beta), c(elnetfit$beta0, elnetfit$beta),
-               tolerance = 1e-5)
-  
+  for (famstr in c('gaussian', 'binomial', 'poisson')) {
+    
+    if (famstr == 'gaussian') {
+      fam <- kl_helpers(gaussian(link = 'identity'))
+      y <- rnorm(n, x%*%b, 0.5)
+    } else if (famstr == 'binomial') {
+      fam <- kl_helpers(binomial(link = 'logit'))
+      y <- rbinom(n, weights, fam$linkinv(x%*%b))
+    } else if (famstr == 'poisson') {
+      fam <- kl_helpers(poisson(link = 'log'))
+      y <- rpois(n, fam$linkinv(x%*%b))
+    }
+    
+    for (lambda in c(0.1, 1, 10)) {
+      for (intercept in c(T,F)) {
+        for (normalize in c(T,F)) {
+          elnetfit <- projpred:::glm_elnet(x_tr, y/weights, family = fam, lambda = lambda, alpha = 0,
+                                           offset = offset, weights = weights, penalty = penalty,
+                                           intercept = intercept, normalize = normalize, 1e-12)
+          ridgefit <- projpred:::glm_ridge(x_tr, y/weights, family = fam, lambda = lambda, 
+                                           offset = offset, weights = weights, penalty = penalty,
+                                           intercept = intercept, normalize = normalize, thresh = 1e-12)
+          
+          expect_equal( c(ridgefit$beta0, ridgefit$beta), c(elnetfit$beta0, elnetfit$beta),
+                        tolerance = 1e-3)
+        }
+      }
+    }  
+  }
 })
