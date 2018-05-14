@@ -67,14 +67,13 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty, obsva
   # lambda (intercept and the unpenalized variables will be nonzero).
   #
   n <- dim(x)[1]
-  # obs <- pseudo_data(rep(0,n), y, family, offset, weights, obsvar=obsvar)
   
   if (alpha == 0)
     # initialize ridge as if alpha = 0.01
     alpha <- 0.01
   
-  # find the initial solution, that is, values for the intercept (if if included)
-  # and those covariates that have penalty=0 (those which are always included, is such exist)
+  # find the initial solution, that is, values for the intercept (if included)
+  # and those covariates that have penalty=0 (those which are always included, if such exist)
   init <- glm_ridge(x[,penalty==0,drop=F],y, family=family, lambda=0, weights=weights, 
                     offset=offset, obsvar=obsvar, intercept=intercept)
   f0 <- init$beta0*rep(1,n)
@@ -85,7 +84,7 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty, obsva
   resid <- obs$z - f0 # residual from the initial solution
   lambda_max_cand <- abs( t(x) %*% (resid*obs$w) ) / (penalty*alpha)
   lambda_max <- max(lambda_max_cand[is.finite(lambda_max_cand)])
-  lambda_max <- 1.001*lambda_max # to avoid some variable to enter at the first step due to numerical inaccuracy
+  lambda_max <- 1.001*lambda_max # to prevent some variable from entering at the first step due to numerical inaccuracy
   lambda_min <- lambda_min_ratio*lambda_max
   loglambda <- seq(log(lambda_min), log(lambda_max), len=nlam)
   
@@ -108,9 +107,6 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   # Computes the whole regularization path.
   # Does not handle any dispersion parameters.
   #
-  # np <- dim(x)
-  # if (is.null(np) || (np[2] <= 1))
-  # stop("x should be a matrix with 2 or more columns")
   
   # ensure x is in matrix form and fill in missing weights and offsets
   x <- as.matrix(x)
@@ -123,7 +119,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   
   if (normalize) {
     # normalize the predictor matrix. notice that the variables are centered only if
-    # intercept is used.
+    # intercept is used (because otherwise the intercept would become nonzero unintentionally)
     if (intercept)
       mx <- colMeans(x)
     else
