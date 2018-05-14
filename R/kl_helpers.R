@@ -22,7 +22,7 @@ kl_helpers <- function(fam) {
       mean(fam$dev.resids(pfull$mu, psub$mu, data$weights))/2
     }
   }
-  kl_gauss <- function(pfull, data, psub) log(psub$dis) - 0.5*log(pfull$var)
+  kl_gauss <- function(pfull, data, psub) colSums(data$weights*(psub$mu-pfull$mu)^2) # not the actual kl but reasonable surrogate..
   kl_student_t <- function(pfull, data, psub) log(psub$dis) #- 0.5*log(pfull$var) # FIX THIS, NOT CORRECT
   kl_gamma <- function(pfull, data, psub) {
   	stop('KL-divergence for gamma not implemented yet.')
