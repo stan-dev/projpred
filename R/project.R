@@ -15,7 +15,8 @@
 #' if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
 #' datafit (see \code{init_refmodel}). 
 #' @param ns Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.
-#' @param nc Number of clusters in the clustered projection. 
+#' Has effect only if \code{relax=TRUE}.
+#' @param nc Number of clusters in the clustered projection. Has effect only if \code{relax=TRUE}.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param seed A seed used in the clustering (if \code{nc!=ns}). Can be used
 #' to ensure same results every time.
