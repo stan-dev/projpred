@@ -260,13 +260,13 @@ test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
         for (normalize in c(T,F)) {
           elnetfit <- projpred:::glm_elnet(x_tr, y/weights, family = fam, lambda = lambda, alpha = 0,
                                            offset = offset, weights = weights, penalty = penalty,
-                                           intercept = intercept, normalize = normalize, 1e-12)
+                                           intercept = intercept, normalize = normalize, thresh = 1e-12)
           ridgefit <- projpred:::glm_ridge(x_tr, y/weights, family = fam, lambda = lambda, 
                                            offset = offset, weights = weights, penalty = penalty,
                                            intercept = intercept, normalize = normalize, thresh = 1e-12)
           
           expect_equal( c(ridgefit$beta0, ridgefit$beta), c(elnetfit$beta0, elnetfit$beta),
-                        tolerance = 1e-3)
+                        tolerance = 1e-5)
         }
       }
     }  

@@ -203,7 +203,6 @@ List glm_elnet_c(arma::mat x, // input matrix
   z = as<vec>(obs["z"]);
   w = as<vec>(obs["w"]);
   double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha, penalty); // initial loss
-  // double loss_initial = ((double) obs["dev"]) + elnet_penalty(beta, lambda(0), alpha, penalty);
   double loss_old = loss_initial; // will be updated iteratively
   double loss; // will be updated iteratively
   double tol = thresh*fabs(loss_initial); // convergence criterion for coordinate descent
@@ -224,7 +223,6 @@ List glm_elnet_c(arma::mat x, // input matrix
       
       // current value of the (approximate) loss function
       loss_old = loss_approx(beta, f, z, w, lam, alpha, penalty);
-      // loss_old = ((double) obs["dev"]) + elnet_penalty(beta, lam, alpha, penalty);
       
       // run the coordinate descent until convergence for the current
       // quadratic approximation
@@ -251,7 +249,6 @@ List glm_elnet_c(arma::mat x, // input matrix
       
       // the loss after updating the coefficients
       loss = loss_approx(beta, f, z, w, lam, alpha, penalty);
-      // loss = ((double) obs["dev"]) + elnet_penalty(beta, lam, alpha, penalty);
       
       // check if converged
       if (fabs(loss_old-loss) < tol) {
@@ -309,9 +306,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
 {
   
   if (intercept) {
-    // add a vector of ones to x
+    // add a vector of ones to x and set zero penalty for the intercept
     x = join_horiz(ones<vec>(x.n_rows), x);
-    penalty = join_vert(zeros<vec>(1), penalty);
+    penalty = join_vert(zeros<vec>(1), penalty); 
   }
   
   int n = x.n_rows;
@@ -342,7 +339,6 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   loss = loss_initial; // will be updated iteratively
   double tol = thresh*fabs(loss_initial); // threshold for convergence
   double decrement = 0; // newton decrement, used to monitor convergence
-  
   
   qau = 0;
   while (qau < qa_updates_max) {
@@ -421,7 +417,7 @@ List glm_ridge_c( arma::mat x,
                   double lambda,
                   bool intercept,
                   arma::vec penalty, // relative penalties for the variables
-                  arma::vec beta_init, // initial value for the latent values (containing the intercept as the first element)
+                  arma::vec beta_init, // initial value for the coefficients (containing the intercept as the first element)
                   arma::vec w_init, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
                   double thresh,
                   int qa_updates_max,
@@ -496,8 +492,8 @@ List glm_forward_c( arma::mat x, // inputs (features)
       
       chosen(j) = 1;
       beta.zeros();
-      glm_ridge(beta, loss, w, qau, x.cols(find(chosen)), pseudo_obs, lambda, intercept, penalty,
-                thresh, qa_updates_max, ls_iter_max);
+      glm_ridge(beta, loss, w, qau, x.cols(find(chosen)), pseudo_obs, lambda, intercept, 
+                penalty.elem(find(chosen)), thresh, qa_updates_max, ls_iter_max);
       chosen(j) = 0;
       
       if (loss < loss_min) {
