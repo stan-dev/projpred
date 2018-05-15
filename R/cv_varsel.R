@@ -207,13 +207,14 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax,
   # Perform the selection for each of the K folds
   if (verbose) {
     print('Performing selection for each fold..')
-    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
   spath_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
+    out <- select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
     if (verbose)
       utils::setTxtProgressBar(pb, fold_index)
-    select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
+    out
   })
   vind_cv <- lapply(spath_cv, function(e) e$vind)
   if (verbose)
@@ -224,15 +225,16 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax,
   as.search <- !relax && !is.null(spath_cv[[1]]$beta) && !is.null(spath_cv[[1]]$alpha)
   if (verbose && !as.search) {
     print('Computing projections..')
-    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
   p_sub_cv <- mapply(function(spath, fold_index) {
     fold <- list_cv[[fold_index]]
-    if (verbose && !as.search)
-      utils::setTxtProgressBar(pb, fold_index)
     vind <- spath$vind
     p_sub <- .get_submodels(spath, c(0, seq_along(vind)), family_kl, fold$p_pred,
                             fold$d_train, intercept, opt$regul, as.search=as.search)
+    if (verbose && !as.search)
+      utils::setTxtProgressBar(pb, fold_index)
+    return(p_sub)
   }, spath_cv, seq_along(list_cv), SIMPLIFY = F)
   if (verbose && !as.search)
     close(pb)
