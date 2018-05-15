@@ -383,7 +383,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, inter
 
 	if (verbose) {
     print('Computing LOOs...')
-    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial=0)
 	}
 
 	if (!validate_search) {
