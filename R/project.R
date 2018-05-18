@@ -106,12 +106,12 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
 	}
 
 	# add family_kl
-	proj <- lapply(subm, function(x) {
-	  names(x$vind) <- sapply(x$vind, function(i, ch) names(ch)[which(ch == i)],
+	proj <- lapply(subm, function(model) {
+	  names(model$vind) <- sapply(model$vind, function(i, ch) names(ch)[which(ch == i)],
 	                          object$varsel$vind)
-	  x <- c(x, list(family_kl = family_kl), list(p_type = is.null(ns)))
-	  class(x) <- 'projection'
-	  return(x)
+	  model <- c(model, list(family_kl = family_kl), list(p_type = is.null(ns)))
+	  class(model) <- 'projection'
+	  return(model)
 	 })
 
 	# If only one model size, just return the proj instead of a list of projs
