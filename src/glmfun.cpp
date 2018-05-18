@@ -223,6 +223,7 @@ List glm_elnet_c(arma::mat x, // input matrix
       
       // current value of the (approximate) loss function
       loss_old = loss_approx(beta, f, z, w, lam, alpha, penalty);
+      // loss_old = ((double) obs["dev"]) + elnet_penalty(beta, lam, alpha, penalty);
       
       // run the coordinate descent until convergence for the current
       // quadratic approximation
@@ -249,9 +250,12 @@ List glm_elnet_c(arma::mat x, // input matrix
       
       // the loss after updating the coefficients
       loss = loss_approx(beta, f, z, w, lam, alpha, penalty);
-      
+      // obs = pseudo_obs(f,w);
+      // loss = ((double) obs["dev"]) + elnet_penalty(beta, lam, alpha, penalty);
+
       // check if converged
       if (fabs(loss_old-loss) < tol) {
+      // if (loss_old-loss < tol) {
         // convergence reached; proceed to the next lambda value
         break;
       }
