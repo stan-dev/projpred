@@ -7,8 +7,8 @@
 cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
   intercept = NULL, penalty = NULL, verbose = T, nloo = 100, K = NULL,
-  k_fold = NULL, lambda_min_ratio = 1e-05, nlambda = 500, regul = 1e-06,
-  validate_search = T, seed = NULL, ...)
+  k_fold = NULL, lambda_min_ratio = 1e-05, nlambda = 150,
+  thresh = 1e-06, regul = 1e-06, validate_search = T, seed = NULL, ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -51,6 +51,8 @@ If not provided, \link[=kfold]{kfold} is called inside the function.}
 \item{lambda_min_ratio}{Same as in \link[=varsel]{varsel}.}
 
 \item{nlambda}{Same as in \link[=varsel]{varsel}.}
+
+\item{thresh}{Same as in \link[=varsel]{varsel}.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we

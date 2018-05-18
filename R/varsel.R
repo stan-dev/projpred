@@ -36,6 +36,7 @@
 #' are explored. No need to change the default value unless the program gives a warning about this.
 #' @param nlambda Number of values in the lambda grid for L1-penalized search. No need to change unless
 #' the program gives a warning about this.
+#' @param thresh Convergence threshold when computing L1-path. Usually no need to change this.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
@@ -65,7 +66,7 @@
 varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
                    nspred = NULL, ncpred = NULL, relax=NULL, nv_max = NULL, 
                    intercept = NULL, penalty=NULL, verbose = F, 
-                   lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, ...) {
+                   lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-6, ...) {
 
 
   .validate_for_varsel(fit)
@@ -115,7 +116,7 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   p_pred <- .get_refdist(vars, nspred, ncpred)
 
   # perform the selection
-  opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
+  opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
   searchpath <- select(method, p_sel, d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
   vind <- searchpath$vind
   

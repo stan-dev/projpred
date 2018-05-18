@@ -26,6 +26,7 @@
 #' If not provided, \link[=kfold]{kfold} is called inside the function.
 #' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
 #' @param nlambda Same as in \link[=varsel]{varsel}.
+#' @param thresh Same as in \link[=varsel]{varsel}.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
@@ -63,8 +64,8 @@
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
-                      nloo=100, K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, 
-                      validate_search=T, seed=NULL, ...) {
+                      nloo=100, K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=150,
+                      thresh=1e-6, regul=1e-6, validate_search=T, seed=NULL, ...) {
 
   .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
@@ -115,7 +116,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	}
 
 	# search options
-	opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
+	opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
 	
 	if (tolower(cv_method) == 'kfold') {
 		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty,

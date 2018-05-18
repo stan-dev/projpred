@@ -7,7 +7,8 @@
 varsel(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
   intercept = NULL, penalty = NULL, verbose = F,
-  lambda_min_ratio = 1e-05, nlambda = 500, regul = 1e-06, ...)
+  lambda_min_ratio = 1e-05, nlambda = 150, thresh = 1e-06,
+  regul = 1e-06, ...)
 }
 \arguments{
 \item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned
@@ -57,6 +58,8 @@ are explored. No need to change the default value unless the program gives a war
 
 \item{nlambda}{Number of values in the lambda grid for L1-penalized search. No need to change unless
 the program gives a warning about this.}
+
+\item{thresh}{Convergence threshold when computing L1-path. Usually no need to change this.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we

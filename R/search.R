@@ -60,10 +60,12 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, penalty, opt) 
   if (NCOL(mu) > 1 || NCOL(v) > 1)
     stop('Internal error: search_L1 received multiple draws. Please report to the developers.')
   
-  # L1-penalized projection (projection path)
+  # L1-penalized projection (projection path).
+  # (Notice: here we use pmax = nv_max+1 so that the computation gets carried until all the way 
+  # down to the least regularization also for model size nv_max)
   search <- glm_elnet(d_train$x, mu, family, lambda_min_ratio=opt$lambda_min_ratio, nlambda=opt$nlambda,
-                      pmax=nv_max, pmax_strict=FALSE, offset=d_train$offset, weights=d_train$weights,
-                      intercept=intercept, obsvar=v, penalty=penalty)
+                      pmax=nv_max+1, pmax_strict=FALSE, offset=d_train$offset, weights=d_train$weights,
+                      intercept=intercept, obsvar=v, penalty=penalty, thresh=opt$thresh)
   
   # sort the variables according to the order in which they enter the model in the L1-path
   entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1]) # na for those that did not enter
