@@ -6,6 +6,22 @@
 #
 
 
+standardization <- function(x, center=T, scale=T, weights=NULL) {
+  #
+  # return the shift and scaling for each variable based on data matrix x.
+  #
+  w <- weights/sum(weights)
+  if (center)
+    mx <- colSums(x*w)
+  else
+    mx <- rep(0,ncol(x))
+  if (scale)
+    sx <- apply(x,2,weighted.sd,w)
+  else
+    sx <- rep(1,ncol(x))
+  return(list(shift=mx, scale=sx))
+}
+
 
 pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,length(f)), obsvar=0, wprev=NULL) {
   #
@@ -37,15 +53,15 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
     nu <- family$nu
     s2 <- sum(wprev*(obsvar+(y-mu)^2)) / sum(weights) 
     w <- weights*(nu+1)/(nu + 1/s2*(obsvar+(y-mu)^2))
-    dev <- sum(family$loss_fun(mu, y, weights, sqrt(s2))) # sum( -2*family$ll_fun(mu, sqrt(s2), y, weights) )
+    dev <- sum(family$deviance(mu, y, weights, sqrt(s2))) # sum( -2*family$ll_fun(mu, sqrt(s2), y, weights) )
     grad <- weights*2*(mu-y)/(nu*s2) * (nu+1)/(1+(y-mu)^2/(nu*s2)) * dmu_df
     
     
   } else if (family$family %in% c('gaussian','poisson','binomial')) {
     # exponential family distributions
-    w <- (weights * dmu_df^2)/family$variance(mu)
-    dev <- sum(family$loss_fun(mu, y, weights)) #sum( -2*family$ll_fun(mu, 1, y, weights) )
-    grad <- -2*w*(z-f)
+    w <- 2*(weights * dmu_df^2)/family$variance(mu)
+    dev <- sum(family$deviance(mu, y, weights)) #sum( -2*family$ll_fun(mu, 1, y, weights) )
+    grad <- -w*(z-f)
     
   } else {
     stop(sprintf('Don\'t know how to compute quadratic approximation and gradients for family \'%s\'.',
@@ -112,6 +128,8 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   # Computes the whole regularization path.
   # Does not handle any dispersion parameters.
   #
+  if (!.has.fam.extras(family))
+    family <- kl_helpers(family)
   
   # ensure x is in matrix form and fill in missing weights and offsets
   x <- as.matrix(x)
@@ -122,18 +140,12 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   if (is.null(penalty))
     penalty <- rep(1.0, ncol(x))
   
-  if (normalize) {
-    # normalize the predictor matrix. notice that the variables are centered only if
-    # intercept is used (because otherwise the intercept would become nonzero unintentionally)
-    if (intercept)
-      mx <- colMeans(x)
-    else
-      mx <- rep(0,ncol(x))
-    sx <- apply(x,2,'sd')
-    penalty[sx==0] <- Inf # ignore variables with zero variance
-    sx[sx==0] <- 1
-    x <- t((t(x)-mx)/sx)
-  }
+  # standardize the features (notice that the variables are centered only if intercept is used
+  # because otherwise the intercept would become nonzero unintentionally)
+  transf <- standardization(x, center=intercept, scale=normalize, weights=weights)
+  penalty[transf$scale==0] <- Inf # ignore variables with zero variance
+  transf$scale[transf$scale==0] <- 1
+  x <- t((t(x)-transf$shift)/transf$scale)
   
   # default lambda-sequence, including optimal start point
   if (is.null(lambda)) {
@@ -157,11 +169,9 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   beta <- out[[1]]
   beta0 <- as.vector(out[[2]])
   
-  if (normalize) {
-    # return the intecept and the coefficients on the original scale
-    beta <- beta/sx
-    beta0 <- beta0 - colSums(mx*beta)
-  }
+  # # return the intecept and the coefficients on the original scale 
+  beta <- beta/transf$scale
+  beta0 <- beta0 - colSums(transf$shift*beta)
   
   return(list( beta=beta, beta0=beta0, w=out[[3]], lambda=lambda[1:ncol(beta)], npasses=out[[4]],
                updates_qa=as.vector(out[[5]]), updates_as=as.vector(out[[6]]) ))
@@ -180,6 +190,8 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
   #
+  if (!.has.fam.extras(family))
+    family <- kl_helpers(family)
   if (family$family == 'gaussian' && family$link == 'identity') {
     qa_updates_max <- 1
     ls_iter_max <- 1
@@ -220,18 +232,12 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
   
   x <- as.matrix(x) # ensure x is a matrix
   
-  if (normalize) {
-    # normalize the predictor matrix. notice that the variables are centered only if
-    # intercept is used (because otherwise the intercept would become nonzero unintentionally)
-    if (intercept)
-      mx <- colMeans(x)
-    else
-      mx <- rep(0,ncol(x))
-    sx <- apply(x,2,'sd')
-    penalty[sx==0] <- Inf # ignore variables with zero variance
-    sx[sx==0] <- 1
-    x <- t((t(x)-mx)/sx)
-  }
+  # standardize the features (notice that the variables are centered only if intercept is used
+  # because otherwise the intercept would become nonzero unintentionally)
+  transf <- standardization(x, center=intercept, scale=normalize, weights=weights)
+  penalty[transf$scale==0] <- Inf # ignore variables with zero variance
+  transf$scale[transf$scale==0] <- 1
+  x <- t((t(x)-transf$shift)/transf$scale)
   
   # compute the solution
   w0 <- weights 
@@ -240,11 +246,9 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
   beta <- out[[1]]
   beta0 <- as.vector(out[[2]])
   
-  if (normalize) {
-    # return the intecept and the coefficients on the original scale
-    beta <- beta/sx
-    beta0 <- beta0 - sum(mx*beta)
-  }
+  # return the intecept and the coefficients on the original scale 
+  beta <- beta/transf$scale
+  beta0 <- beta0 - sum(transf$shift*beta)
   
   return(list( beta=beta, beta0=beta0, w=out[[3]], qa_updates=out[[4]] ))
 }
@@ -262,6 +266,8 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updat
   #
   # Runs forward stepwise regression. Does not handle any dispersion parameters.
   #
+  if (!.has.fam.extras(family))
+    family <- kl_helpers(family)
   if (family$family == 'gaussian' && family$link == 'identity')
     qa_updates_max <- 1
   else if (is.null(qa_updates_max))
@@ -289,18 +295,12 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updat
   if (is.null(offset))
     offset <- rep(0.0, nrow(x))
   
-  if (normalize) {
-    # normalize the predictor matrix. notice that the variables are centered only if
-    # intercept is used (because otherwise the intercept would become nonzero unintentionally)
-    if (intercept)
-      mx <- colMeans(x)
-    else
-      mx <- rep(0,ncol(x))
-    sx <- apply(x,2,'sd')
-    penalty[sx==0] <- Inf # ignore variables with zero variance
-    sx[sx==0] <- 1
-    x <- t((t(x)-mx)/sx)
-  }
+  # standardize the features (notice that the variables are centered only if intercept is used
+  # because otherwise the intercept would become nonzero unintentionally)
+  transf <- standardization(x, center=intercept, scale=normalize, weights=weights)
+  penalty[transf$scale==0] <- Inf # ignore variables with zero variance
+  transf$scale[transf$scale==0] <- 1
+  x <- t((t(x)-transf$shift)/transf$scale)
   
   w0 <- weights
   pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
@@ -308,11 +308,9 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updat
   beta <- out[[1]]
   beta0 <- as.vector(out[[2]])
   
-  if (normalize) {
-    # return the intecept and the coefficients on the original scale
-    beta <- beta/sx
-    beta0 <- beta0 - colSums(mx*beta)
-  }
+  # return the intecept and the coefficients on the original scale 
+  beta <- beta/transf$scale
+  beta0 <- beta0 - colSums(transf$shift*beta)
   
   return(list( beta=beta, beta0=beta0, varorder=as.vector(out[[3]])+1 ))
 }

@@ -105,17 +105,17 @@ kl_helpers <- function(fam) {
   # we need to define these separately from the log-likelihoods because some of the  log-likelihoods
   # or deviance functions do not work when given the fit of the full model (float) in place of y (integer),
   # for instance binomial and poisson models.
-  loss_binom <- function(mu, y, weights=1, dis=NULL) {
+  dev_binom <- function(mu, y, weights=1, dis=NULL) {
   	if (NCOL(y) < NCOL(mu))
   		y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
   	-2*weights*(y*log(mu) + (1-y)*log(1-mu))
   }
-  loss_poiss <- function(mu, y, weights=1, dis=NULL) {
+  dev_poiss <- function(mu, y, weights=1, dis=NULL) {
   	if (NCOL(y) < NCOL(mu))
   		y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
   	-2*weights*(y*log(mu) - mu)
   } 
-  loss_gauss <- function(mu, y, weights=1, dis=NULL) {
+  dev_gauss <- function(mu, y, weights=1, dis=NULL) {
   	if (is.null(dis))
   		dis <- 1
   	else
@@ -124,7 +124,7 @@ kl_helpers <- function(fam) {
   		y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
   	-2*weights*(-0.5/dis*(y-mu)^2 - log(dis))
   }
-  loss_student_t <- function(mu, y, weights=1, dis=NULL) {
+  dev_student_t <- function(mu, y, weights=1, dis=NULL) {
   	if (is.null(dis))
   		dis <- 1
   	else
@@ -133,7 +133,7 @@ kl_helpers <- function(fam) {
   		y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
   	-2*weights*(-0.5*(fam$nu+1)*log(1 + 1/fam$nu*((y-mu)/dis)^2) - log(dis))
   }
-  loss_gamma <- function(mu, dis, y, weights=1) {
+  dev_gamma <- function(mu, dis, y, weights=1) {
   	# dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
   	# weights*dgamma(y, dis, dis/matrix(mu), log=T)
   	stop('Loss function not implemented for Gamma-family yet.')
@@ -156,15 +156,15 @@ kl_helpers <- function(fam) {
 
   # return the family object with the correct function handles
   c(switch(fam$family,
-           'binomial' = list(kl = kl_dev, ll_fun = ll_binom, loss_fun = loss_binom, dis_fun = dis_na,
+           'binomial' = list(kl = kl_dev, ll_fun = ll_binom, deviance = dev_binom, dis_fun = dis_na,
                              predvar = predvar_na, ppd_fun = ppd_binom),
-           'poisson' = list(kl = kl_dev, ll_fun = ll_poiss, loss_fun = loss_poiss, dis_fun = dis_na, 
+           'poisson' = list(kl = kl_dev, ll_fun = ll_poiss, deviance = dev_poiss, dis_fun = dis_na, 
                             predvar = predvar_na, ppd_fun = ppd_poiss),
-           'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, loss_fun = loss_gauss, dis_fun = dis_gauss,
+           'gaussian' = list(kl = kl_gauss, ll_fun = ll_gauss, deviance = dev_gauss, dis_fun = dis_gauss,
                              predvar = predvar_gauss, ppd_fun = ppd_gauss),
-           'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, loss_fun = loss_gamma, dis_fun = dis_gamma, 
+           'Gamma' = list(kl = kl_gamma, ll_fun = ll_gamma, deviance = dev_gamma, dis_fun = dis_gamma, 
                           predvar_gamma, ppd_fun = ppd_gamma),
-  				 'Student_t' = list(kl = kl_student_t, ll_fun = ll_student_t, loss_fun = loss_student_t, dis_fun = dis_student_t,
+  				 'Student_t' = list(kl = kl_student_t, ll_fun = ll_student_t, deviance = dev_student_t, dis_fun = dis_student_t,
   				 									predvar = predvar_student_t, ppd_fun = ppd_student_t)
   				 ),
     list(mu_fun = mu_fun), fam)
@@ -179,6 +179,11 @@ kl_helpers <- function(fam) {
 	fam$family %in% c('gaussian','Student_t','Gamma')
 }
 
+.has.fam.extras <- function(fam) {
+  # check whether the family object has the extra functions, that is, whether it was
+  # created by kl_helpers
+  !is.null(fam$deviance)
+}
 
 
 
