@@ -24,10 +24,9 @@ the coefficients are the solution from the L1-penalized projection. This option 
 if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
 datafit (see \code{init_refmodel}).}
 
-\item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.
-Has effect only if \code{relax=TRUE}.}
+\item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.}
 
-\item{nc}{Number of clusters in the clustered projection. Has effect only if \code{relax=TRUE}.}
+\item{nc}{Number of clusters in the clustered projection.}
 
 \item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 
