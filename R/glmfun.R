@@ -190,6 +190,8 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
   #
+  if (is.null(x))
+    x <- matrix(ncol=0, nrow=length(y))
   if (!.has.fam.extras(family))
     family <- kl_helpers(family)
   if (family$family == 'gaussian' && family$link == 'identity') {
@@ -224,7 +226,9 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
       return( list(beta=matrix(integer(length=0)), beta0=as.vector(out[[1]]), w=out[[3]], qa_updates=out[[4]]) )
     } else {
       # null model with no predictors and no intercept
-      return( list( beta=matrix(integer(length=0)), beta0=0, w=weights, qa_updates=0 ) )
+      pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
+      pobs <- pseudo_obs(rep(0,length(y)), weights)
+      return( list( beta=matrix(integer(length=0)), beta0=0, w=pobs$w, qa_updates=0 ) )
     }
   } 
   
@@ -266,6 +270,8 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updat
   #
   # Runs forward stepwise regression. Does not handle any dispersion parameters.
   #
+  if (is.null(x))
+    x <- matrix(ncol=0, nrow=length(y))
   if (!.has.fam.extras(family))
     family <- kl_helpers(family)
   if (family$family == 'gaussian' && family$link == 'identity')
@@ -275,17 +281,18 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updat
   if (is.null(penalty))
     penalty <- rep(1.0, ncol(x))
   
+  
+  # compute the null model
+  out <- glm_ridge(NULL, y, family=family, lambda=lambda, thresh=thresh, qa_updates_max=qa_updates_max,
+                   weights=weights, offset=offset, obsvar=obsvar, intercept=intercept, penalty=penalty) 
+  nullmodel <- list(beta=out$beta, beta0=out$beta0, varorder=integer(length=0), w=out$w)
+  
   if (length(x) == 0) {
-    if (intercept) {
-      # model with intercept only
-      out <- glm_ridge(NULL, y, family=family, lambda=lambda, thresh=thresh, qa_updates_max=qa_updates_max,
-                        weights=weights, offset=offset, obsvar=obsvar, intercept=T, penalty=penalty) 
-      return( list(beta=out$beta, beta0=out$beta0, varorder=integer(length=0)) )
-    } else {
-      # null model with no predictors and no intercept
-      return( list( beta=matrix(integer(length=0)), beta0=0, varorder=integer(length=0) ) )
-    }
+    # return only the null model
+    nullmodel$varorder <- integer(length=0)
+    return(nullmodel)
   }
+  
   
   # normal case, at least one predictor
   
@@ -302,17 +309,18 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updat
   transf$scale[transf$scale==0] <- 1
   x <- t((t(x)-transf$shift)/transf$scale)
   
+  # forward search (use the c++ function)
   w0 <- weights
   pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
-  out <- glm_forward_c(x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, pmax, w0)
-  beta <- out[[1]]
-  beta0 <- as.vector(out[[2]])
+  path <- glm_forward_c(x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, pmax, w0)
+  beta <- cbind(rep(0,ncol(x)), path[[1]])
+  beta0 <- c(nullmodel$beta0, as.vector(path[[2]]))
   
   # return the intecept and the coefficients on the original scale 
   beta <- beta/transf$scale
   beta0 <- beta0 - colSums(transf$shift*beta)
   
-  return(list( beta=beta, beta0=beta0, varorder=as.vector(out[[3]])+1 ))
+  return(list( beta=beta, beta0=beta0, varorder=as.vector(path[[3]])+1, w=cbind(nullmodel$w, path[[4]]) ))
 }
 
 

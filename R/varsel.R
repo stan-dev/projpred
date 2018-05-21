@@ -161,22 +161,22 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
                    penalty, verbose, opt) {
   #
   # Auxiliary function, performs variable selection with the given method,
-  # and returns the searchpath, i.e., a list with the followint entries:
+  # and returns the searchpath, i.e., a list with the followint entries (the last three
+  # are returned only if one cluster projection is used for selection):
   #   vind: the variable ordering
-  #   beta: coefficients along the search path (only for L1-search)
-  #   alpha: intercepts along the search path (only for L1-search)
-  #   p_sel: the reference distribution used in the selection (the input argument p_sel) (only for L1-search)
+  #   beta: coefficients along the search path 
+  #   alpha: intercepts along the search path 
+  #   p_sel: the reference distribution used in the selection (the input argument p_sel)
   #
   if (tolower(method) == 'l1') {
-    # vind <- search_L1(p_sel, d_train, family_kl, intercept, nv_max, penalty, opt)
     searchpath <- search_L1(p_sel, d_train, family_kl, intercept, nv_max, penalty, opt)
     searchpath$p_sel <- p_sel
     return(searchpath)
   } else if (tolower(method) == 'forward') {
     if ( NCOL(p_sel$mu) == 1) {
       # only one mu column (one cluster or one sample), so use the optimized version of the forward search
-      vind <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, opt)
-      searchpath <- list(vind=vind, p_sel=p_sel)
+      searchpath <- search_forward1(p_sel, d_train, family_kl, intercept, nv_max, verbose, opt)
+      searchpath$p_sel <- p_sel
       return(searchpath)
     } else {
       # routine that can be used with several clusters

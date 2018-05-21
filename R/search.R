@@ -14,8 +14,11 @@ search_forward1 <- function(p_full, d_train, family, intercept, nv_max,
   # forward search
   search <- glm_forward(d_train$x, mu, family, lambda=opt$regul, offset=d_train$offset, weights=d_train$weights,
                         obsvar=v, intercept=intercept, pmax=nv_max)
+  
+  out <- list(alpha=search$beta0, beta=search$beta[search$varorder,],
+              w=search$w, vind=search$varorder)
 
-  return(search$varorder)
+  return(out)
 }
 
 search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
@@ -78,10 +81,11 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, penalty, opt) 
   nvar <- length(order)
   n <- nrow(p_full$mu)
   out <- list(alpha=rep(NA, nv_max+1), beta=matrix(0, nrow=nv_max, ncol=nv_max+1), 
-              w=matrix(NA, nrow=n, ncol=nv_max+1))
+              lambda=rep(NA, nv_max+1), w=matrix(NA, nrow=n, ncol=nv_max+1))
   for (k in 0:nv_max) {
     if (k == 0) {
       out$alpha[1] <- search$beta0[1]
+      out$lambda[1] <- search$lambda[1]
       out$w[,1] <- search$w[,1]
     } else {
       # find those points in the L1-path where only the k most relevant features can have nonzero
@@ -97,6 +101,7 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, penalty, opt) 
         j <- 1
       out$alpha[k+1] <- search$beta0[j]
       out$beta[1:k,k+1] <- search$beta[order[1:k],j]
+      out$lambda[k+1] <- search$lambda[j]
       out$w[,k+1] <- search$w[,j]
     }
   }

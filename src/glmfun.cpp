@@ -472,6 +472,7 @@ List glm_forward_c( arma::mat x, // inputs (features)
   uvec varorder(pmaxu); varorder.zeros(); // stores the order in which the variables are added to the model
   mat beta_all(D,pmaxu); beta_all.zeros(); // collects beta from all steps
   rowvec beta0_all(pmaxu); beta0_all.zeros(); // collects beta0 from all steps
+  mat w_all(x.n_rows,pmaxu); // collects weights of the gaussian pseudo-observations from all steps
   
   // declare a few variables that are needed during the iteration
   vec w = w0;
@@ -518,9 +519,10 @@ List glm_forward_c( arma::mat x, // inputs (features)
       beta0_all(k) = 0;
       beta_all.submat(find(chosen), step) = betaopt;
     }
+    w_all.col(k) = w;
   }
   
-  return List::create(beta_all, beta0_all, varorder);
+  return List::create(beta_all, beta0_all, varorder, w_all);
 }
 
 
