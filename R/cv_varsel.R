@@ -9,6 +9,7 @@
 #' (L1-search uses always one cluster).
 #' @param nspred Number of samples used for prediction (after selection). Ignored if ncpred is given.
 #' @param ncpred Number of clusters used for prediction (after selection). Default is 5.
+#' @param relax Same as in \link[=varsel]{varsel}.
 #' @param nv_max Same as in \link[=varsel]{varsel}.
 #' @param intercept Same as in \link[=varsel]{varsel}.
 #' @param penalty Same as in \link[=varsel]{varsel}.
@@ -25,6 +26,7 @@
 #' If not provided, \link[=kfold]{kfold} is called inside the function.
 #' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
 #' @param nlambda Same as in \link[=varsel]{varsel}.
+#' @param thresh Same as in \link[=varsel]{varsel}.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
@@ -60,24 +62,31 @@
 
 #' @export
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
-                      ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL,
+                      ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
-                      nloo=100, K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=500, regul=1e-6, 
-                      validate_search=T, seed=NULL, ...) {
+                      nloo=100, K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=150,
+                      thresh=1e-6, regul=1e-6, validate_search=T, seed=NULL, ...) {
 
   .validate_for_varsel(fit)
 	vars <- .extract_vars(fit)
 	
 	if (is.null(seed))
 	  seed <- 134654
-	
+
 	if (is.null(method)) {
 		if (dim(vars$x)[2] <= 20)
 			method <- 'forward'
 		else
 			method <- 'L1'
 	}
-	
+
+	if (is.null(relax)) {
+	  if ('datafit' %in% class(fit))
+	    relax <- F
+	  else
+	    relax <- T
+	}
+
 	if (is.null(cv_method)) {
 		if ('datafit' %in% class(fit))
 			# only data given, no actual reference model
@@ -88,7 +97,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	if (cv_method == 'kfold' && is.null(K)) {
 	  if ('datafit' %in% class(fit))
 	    K <- 10
-	  else 
+	  else
 	    K <- 4
 	}
 
@@ -98,7 +107,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	if (is.null(nspred) && is.null(ncpred))
     # use 5 clusters for prediction by default
 		ncpred <- min(ncol(vars$mu), 5)
-	
+
 	if(is.null(intercept))
 		intercept <- vars$intercept
 	if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
@@ -107,14 +116,14 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	}
 
 	# search options
-	opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
+	opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
 	
 	if (tolower(cv_method) == 'kfold') {
-		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, penalty,
+		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty,
 		                       verbose, vars, K, k_fold, opt)
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
-		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, penalty, 
+		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty, 
 		                     verbose, opt, nloo = nloo, validate_search = validate_search, seed = seed)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
@@ -123,8 +132,9 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	# run the selection using the full dataset
 	if (verbose)
 		print(paste('Performing the selection using all the data..'))
-	sel <- varsel(fit, d_test=NULL, method=method, ns=ns, nv_max=nv_max, 
-								intercept=intercept, verbose=verbose, regul=regul)$varsel
+	sel <- varsel(fit, method=method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
+	              relax=relax, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose, 
+	              lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)$varsel
 
 
 	# find out how many of cross-validated iterations select
@@ -143,7 +153,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	fit$varsel <- c(sel[c('vind', 'kl', 'family_kl')],
                   sel_cv[c('d_test', 'summaries')],
                   list(pctch = pctch))
-
+  fit$varsel$spath <- sel$spath
 	fit$varsel$nv_max <- nv_max
 	fit$varsel$nv_all <- ncol(vars$x)
 	fit$varsel$ssize <- suggest_size(fit, warnings = F)
@@ -155,7 +165,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 }
 
 
-kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
+kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax,
                          intercept, penalty, verbose, vars, K, k_fold, opt) {
 
 	if (is.null(K)) 
@@ -179,7 +189,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   # List of size K with test data for each fold (note that vars is from
   # the full model, not from the cross-validated models).
   d_test_cv <- lapply(k_fold$fits[,'omitted'], function(omitted) {
-    list(x = vars$x[omitted,], y = vars$y[omitted],
+    list(x = vars$x[omitted,,drop=F], y = vars$y[omitted],
          weights = vars$wobs[omitted], offset = vars$offset[omitted])
   })
 
@@ -195,34 +205,41 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   	     mu_test = mu_test, dis = vars$dis, w_test = vars$wsample, msg = msg)
   }, vars_cv, d_test_cv, msgs, SIMPLIFY = F)
   
+  # Perform the selection for each of the K folds
   if (verbose) {
     print('Performing selection for each fold..')
-    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
-  vind_cv <- lapply(seq_along(list_cv), function(fold_index) {
+  spath_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
+    out <- select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
     if (verbose)
       utils::setTxtProgressBar(pb, fold_index)
-    # print(fold$msg)
-    select(method, fold$p_sel, fold$d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
+    out
   })
+  vind_cv <- lapply(spath_cv, function(e) e$vind)
   if (verbose)
     close(pb)
+  
 
   # Construct submodel projections for each fold
-  if (verbose) {
+  as.search <- !relax && !is.null(spath_cv[[1]]$beta) && !is.null(spath_cv[[1]]$alpha)
+  if (verbose && !as.search) {
     print('Computing projections..')
-    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
-  p_sub_cv <- mapply(function(vind, fold_index) {
+  p_sub_cv <- mapply(function(spath, fold_index) {
     fold <- list_cv[[fold_index]]
-    if (verbose)
+    vind <- spath$vind
+    p_sub <- .get_submodels(spath, c(0, seq_along(vind)), family_kl, fold$p_pred,
+                            fold$d_train, intercept, opt$regul, as.search=as.search)
+    if (verbose && !as.search)
       utils::setTxtProgressBar(pb, fold_index)
-    .get_submodels(vind, c(0, seq_along(vind)), family_kl, fold$p_pred,
-                   fold$d_train, intercept, opt$regul)
-  }, vind_cv, seq_along(list_cv), SIMPLIFY = F)
-  if (verbose)
+    return(p_sub)
+  }, spath_cv, seq_along(list_cv), SIMPLIFY = F)
+  if (verbose && !as.search)
     close(pb)
+  
   
   # Helper function extract and combine mu and lppd from K lists with each
   # n/K of the elements to one list with n elements
@@ -232,9 +249,9 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
   # list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   # one sub_summary-list that contains with all n mu:s and lppd:s.
   sub <- apply(
-    mapply(function(p_sub, x, vind) {
-      lapply(.get_sub_summaries(p_sub, x$d_test, family_kl), data.frame)
-    }, p_sub_cv, list_cv, vind_cv),
+    mapply(function(p_sub, fold) {
+      lapply(.get_sub_summaries(p_sub, fold$d_test, family_kl), data.frame)
+    }, p_sub_cv, list_cv),
     1, hf)
 
   full <- hf(lapply(list_cv, function(fold) {
@@ -268,7 +285,7 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 				# by dividing the data into K subsets
 				cv <- cvind(fit$nobs, k=K, out='indices')
 				cvfits <- mapply(function(tr,ts) {
-					fit <- init_refmodel(fit$x[tr,], fit$y[tr], fit$fam, offset=fit$offset[tr], wobs=fit$wobs[tr],
+					fit <- init_refmodel(fit$x[tr,,drop=F], fit$y[tr], fit$fam, offset=fit$offset[tr], wobs=fit$wobs[tr],
 															 wsample=fit$wsample, intercept=fit$intercept)
 					list(fit=fit, omitted=ts)
 				}, cv$tr,cv$ts)
@@ -311,13 +328,13 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred,
 
 
 
-loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept, 
+loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, 
                        penalty, verbose, opt, nloo = 100, validate_search = T, seed = NULL) {
 	#
 	# Performs the validation of the searching process using LOO.
 	# validate_search indicates whether the selection is performed separately for each
   # fold (for each data point)
-	#
+  #
 	vars <- .extract_vars(fit)
 	fam <- vars$fam
 	mu <- vars$mu
@@ -367,13 +384,15 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 
 	if (verbose) {
     print('Computing LOOs...')
-    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial=-1)
+    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial=0)
 	}
 
 	if (!validate_search) {
 	  # perform selection only once using all the data (not separately for each fold),
 	  # and perform the projection then for each submodel size
-	  vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
+	  # vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
+	  spath <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
+	  vind <- spath$vind
 	}
 	  
 	for (run_index in seq_along(inds)) {
@@ -387,12 +406,15 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, intercept,
 	  
 		if (validate_search) {
 		  # perform selection with the reweighted clusters/samples
-		  vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
+		  # vind <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
+		  spath <- select(method, p_sel, d_train, fam, intercept, nv_max, penalty, verbose=F, opt)
+		  vind <- spath$vind
 		} 
 	  
-		# project onto the selected models and compute the difference between
-		# training and loo density for the left-out point
-	  submodels <- .get_submodels(vind, 0:nv_max, fam, p_pred, d_train, intercept, opt$regul) 
+		# project onto the selected models and compute the prediction accuracy for the left-out point
+	  as.search <- !relax && !is.null(spath$beta) && !is.null(spath$alpha)
+	  submodels <- .get_submodels(spath, 0:nv_max, fam, p_pred,
+	                              d_train, intercept, opt$regul, as.search=as.search)
 		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 

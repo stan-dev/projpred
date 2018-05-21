@@ -40,7 +40,26 @@ fit_list <- list(fit_gauss, fit_binom, fit_poiss)
 vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
 
 
+
+
+
 context('project')
+
+test_that("project: relaxing has the expected effect", {
+  
+  vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE, method='l1')
+  for (i in seq_along(vs_list)) {
+    
+    p0 <- project(vs_list[[i]], relax=F, nv=1:nv)
+    p1 <- project(vs_list[[i]], relax=T, nv=1:nv, nc=1)
+    
+    for (j in seq_along(p1)) {
+      # L1-penalised coefficients should have smaller L1-norm
+      expect_true( sum(abs(p0[[j]]$beta)) < sum(abs(p1[[j]]$beta)) )
+    }
+  }
+})
+
 test_that("object returned by project contains the relevant fields", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
@@ -270,3 +289,5 @@ test_that("project: projecting full model onto itself does not change results", 
     }
   }
 })
+
+

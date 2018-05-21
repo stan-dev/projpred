@@ -160,13 +160,19 @@ test_that("varsel: adding more regularization has an expected effect", {
 
 test_that("varsel: specifying penalties for variables has an expected effect", {
   penalty <- rep(1,nv)
-  ind <- c(2,4) # a few variables without cost
-  penalty[ind] <- 0
-  vsf <- function(x) varsel(x, method = 'L1', nv_max = nv, verbose = FALSE, penalty=penalty)
+  ind_zeropen <- c(2,4) # a few variables without cost
+  ind_infpen <- c(1) # one variable with infinite penalty, should be selected last
+  penalty[ind_zeropen] <- 0
+  penalty[ind_infpen] <- Inf 
+  vsf <- function(obj) varsel(obj, method = 'L1', nv_max = nv, verbose = FALSE, penalty=penalty)
   vs_list_pen <- lapply(fit_list, vsf)
   for (i in seq_along(vs_list_pen)) {
-    # check that the variables with no cost are selected first
-    sdiff <- setdiff(vs_list_pen[[i]]$varsel$vind[1:length(ind)], ind)
+    # check that the variables with no cost are selected first and the ones with 
+    # inf penalty last
+    sdiff <- setdiff(head(vs_list_pen[[i]]$varsel$vind, length(ind_zeropen)), ind_zeropen)
+    expect_true(length(sdiff)==0)
+    
+    sdiff <- setdiff(tail(vs_list_pen[[i]]$varsel$vind, length(ind_infpen)), ind_infpen)
     expect_true(length(sdiff)==0)
   }
 })

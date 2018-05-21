@@ -3,6 +3,12 @@
   packageStartupMessage("This is projpred version ", ver)
 }
 
+weighted.sd <- function(x, w) {
+  n <- length(x)
+  m <- weighted.mean(x,w)
+  n/(n-1)*sum(w*(x - m)^2)
+}
+
 log_weighted_mean_exp <- function(x, w) {
   x <- x + log(w)
   max_x <- max(x)
