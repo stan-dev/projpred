@@ -86,10 +86,10 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, penalty, opt) 
     } else {
       # find those points in the L1-path where only the k most relevant features can have nonzero
       # coefficient, and then fetch their coefficients with least regularization
-      ivar <- tail(order, nvar-k)
+      ivar <- utils::tail(order, nvar-k)
       steps_k_var <- which(colSums(search$beta[ivar,,drop=F] != 0) == 0)
       if (length(steps_k_var) > 0) 
-        j <- tail(steps_k_var, 1)
+        j <- utils::tail(steps_k_var, 1)
       else 
         # no steps where all the variables in set ivar would have zero coefficient (could be due
         # to one or more of these variables having penalty = 0 so they are always in the model)

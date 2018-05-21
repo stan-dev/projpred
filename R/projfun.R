@@ -136,7 +136,7 @@ project_nongaussian <- function(vind, p_ref, d_train, family_kl, intercept,
     # simply fetch the already computed quantities for each submodel size
     fetch_submodel <- function(nv) {
       submodel <- list()
-      vind <- head(varorder, nv)
+      vind <- utils::head(varorder, nv)
       w <- searchpath$w[,nv+1,drop=F]
       alpha <- searchpath$alpha[nv+1]
       if (nv==0)
