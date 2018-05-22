@@ -462,17 +462,19 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, inter
   on.exit(rngtools::RNGseed(rng_state_old))
   set.seed(seed)
   
+  resample <- function(x, ...) x[sample.int(length(x), ...)]
+  
   if (nloo < n) {
     
     bad <- which(pareto_k > 0.7)
     ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
     good <- which(pareto_k <= 0.5)
-    inds <- sample(bad, min(length(bad), floor(nloo/3)) )
-    inds <- c(inds, sample(ok, min(length(ok), floor(nloo/3))))
-    inds <- c(inds, sample(good, min(length(good), floor(nloo/3))))
+    inds <- resample(bad, min(length(bad), floor(nloo/3)) )
+    inds <- c(inds, resample(ok, min(length(ok), floor(nloo/3))))
+    inds <- c(inds, resample(good, min(length(good), floor(nloo/3))))
     if (length(inds) < nloo) {
       # not enough points selected, so choose randomly among the rest
-      inds <- c(inds, sample(setdiff(1:n, inds), nloo-length(inds)))
+      inds <- c(inds, resample(setdiff(1:n, inds), nloo-length(inds)))
     } 
     
     # assign the weights corresponding to this stratification (for example, the
