@@ -3,10 +3,17 @@
   packageStartupMessage("This is projpred version ", ver)
 }
 
-weighted.sd <- function(x, w) {
-  n <- length(x)
-  m <- weighted.mean(x,w)
-  n/(n-1)*sum(w*(x - m)^2)
+weighted.sd <- function(x, w, na.rm=F) {
+	if (na.rm) {
+		ind <- !is.na(w) & !is.na(x)
+		n <- sum(ind)
+	} else {
+		n <- length(x)
+		ind <- rep(T,n)
+	}
+	w <- w/sum(w[ind])
+  m <- sum(x[ind]*w[ind])
+  sqrt(n/(n-1)*sum(w[ind]*(x[ind] - m)^2))
 }
 
 log_weighted_mean_exp <- function(x, w) {
