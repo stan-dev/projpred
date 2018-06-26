@@ -4,8 +4,8 @@
 \alias{project}
 \title{Projection to submodels of selected sizes}
 \usage{
-project(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
-  intercept = NULL, seed = NULL, regul = 1e-06, ...)
+project(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL,
+  nc = NULL, intercept = NULL, seed = NULL, regul = 1e-06, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -17,6 +17,12 @@ Default is the model size suggested by the variable selection (see function \cod
  Ignored if \code{vind} is specified.}
 
 \item{vind}{Variable indices onto which the projection is done. If specified, \code{nv} is ignored.}
+
+\item{relax}{If TRUE, then the projected coefficients after L1-selection are computed
+without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
+the coefficients are the solution from the L1-penalized projection. This option is relevant only
+if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
+datafit (see \code{init_refmodel}).}
 
 \item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.}
 

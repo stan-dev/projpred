@@ -116,8 +116,8 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
 
   ridgefit <- glm_ridge(x_tr, y, family = fam, lambda = lambda,
                         weights = weights, offset = offset, intercept = TRUE)
-  # analytic solution, penalty on the intercept term?
-  penalty <- diag(c(lambda, rep(lambda, nv_fit)))
+  # analytic solution, no penalty on the intercept term
+  penalty <- 0.5*diag(c(0, rep(lambda, nv_fit)))
   exp_beta <- c(solve(crossprod(cbind(1, x_tr) * sqrt(weights)) + penalty,
                       crossprod(cbind(1, x_tr) * weights, y - offset)))
 

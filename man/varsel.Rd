@@ -5,8 +5,9 @@
 \title{Variable selection for generalized linear models}
 \usage{
 varsel(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
-  nspred = NULL, ncpred = NULL, nv_max = NULL, intercept = NULL,
-  penalty = NULL, verbose = F, lambda_min_ratio = 1e-05, nlambda = 500,
+  nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
+  intercept = NULL, penalty = NULL, verbose = F,
+  lambda_min_ratio = 1e-05, nlambda = 150, thresh = 1e-06,
   regul = 1e-06, ...)
 }
 \arguments{
@@ -32,6 +33,11 @@ Overrides the \code{ns} argument. Defaults to 1.}
 
 \item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
 
+\item{relax}{If TRUE, then the projected coefficients after L1-selection are computed
+without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
+the coefficients are the solution from the L1-penalized projection. This option is relevant only
+if \code{method}='L1'. Default is TRUE.}
+
 \item{nv_max}{Maximum number of varibles until which the selection is continued.
 Defaults to min(20, D, floor(0.4*n)) where n is the number of observations and
 D the number of variables.}
@@ -52,6 +58,8 @@ are explored. No need to change the default value unless the program gives a war
 
 \item{nlambda}{Number of values in the lambda grid for L1-penalized search. No need to change unless
 the program gives a warning about this.}
+
+\item{thresh}{Convergence threshold when computing L1-path. Usually no need to change this.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we

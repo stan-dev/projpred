@@ -115,6 +115,7 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
       # columns of xnew are assumed to match to the given variable indices
       xtemp <- xnew
     } else {
+      # fetch the right columns from the feature matrix
       xtemp <- xnew[, proj$vind, drop = F]
     }
     mu <- proj$family_kl$mu_fun(xtemp, proj$alpha, proj$beta, offsetnew)
@@ -490,6 +491,9 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 		# genuine reference mdoel. add impact of offset to the prediction function
 		predmu <- function(x,offset=0) family$linkinv( family$linkfun(predfun(x)) + offset )
 		mu <- predmu(x,offset)
+		if (NROW(y)!=NROW(mu)) 
+		  stop(paste0('The number of rows in the output of predfun(x) does not match with the given y;',
+                  'predfun seems to be misspecified.'))
 		proper_model <- TRUE
 	}
 	

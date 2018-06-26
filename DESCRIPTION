@@ -1,6 +1,6 @@
 Package: projpred
 Title: Projection Predictive Feature Selection
-Version: 0.8.0
+Version: 0.9.0
 Authors@R: c(person("Markus", "Paasiniemi", role = "aut"),
              person("Juho", "Piironen", role = c("cre", "aut"), email = "juho.piironen@aalto.fi"),
              person("Aki", "Vehtari", role = "aut"),

@@ -5,18 +5,17 @@
 
 .get_sub_summaries <- function(submodels, d_test, family_kl) {
 
-  res <- lapply(submodels, function(submodels) {
-  	vind <- submodels$vind
-    if(NROW(submodels$beta) == 0) {
+  res <- lapply(submodels, function(model) {
+  	vind <- model$vind
+    if(NROW(model$beta) == 0) {
       xt <- matrix(0, nrow = length(d_test$weights), ncol = 0)
     } else if(!is.matrix(d_test$x)) {
       xt <- matrix(d_test$x[vind], nrow = 1)
     } else {
       xt <- d_test$x[, vind, drop = F]
     }
-
-    mu <- family_kl$mu_fun(xt, submodels$alpha, submodels$beta, d_test$offset)
-    .weighted_summary_means(d_test, family_kl, submodels$weights, mu, submodels$dis)
+    mu <- family_kl$mu_fun(xt, model$alpha, model$beta, d_test$offset)
+    .weighted_summary_means(d_test, family_kl, model$weights, mu, model$dis)
   })
 }
 
@@ -99,7 +98,10 @@
     if (!is.null(summ_k$w))
       w <- summ_k$w/sum(summ_k$w) # pointwise weights
     else
-      w <- rep(1/n_notna, n)
+    	w <- sapply(n_notna, function(nna) rep(1/nna, n))
+    if (NCOL(w)==1)
+    	# repeat w for convenience of the upcoming calculations
+    	w <- matrix(rep(w, nstats), ncol=nstats)
     
     # relative to the reference model
     if (all(is.na(stats_ref_pw))) {
@@ -109,7 +111,8 @@
     } else {
       pw_diff <- stats_pw - stats_ref_pw
       m_diff <- colSums(w * pw_diff, na.rm = T) # means
-      se_diff <- sqrt(colSums(w * pw_diff^2, na.rm = T) - m_diff^2) / sqrt(n_notna) # standard errors
+      se_diff <- sapply(1:nstats, function(i) weighted.sd(pw_diff[,i], w[,i], na.rm=T)) / sqrt(n_notna) # standard errors
+      # se_diff <- sqrt(colSums(w * pw_diff^2, na.rm = T) - m_diff^2) / sqrt(n_notna) # alternative way, but numerically unstable
     }
     row1 <- data.frame(data = varsel$d_test$type, size=k-1, delta=T, statistic=stat_names, value=m_diff, 
                        lq=qnorm(alpha/2, mean=m_diff, sd=se_diff), uq=qnorm(1-alpha/2, mean=m_diff, sd=se_diff),
@@ -122,11 +125,13 @@
       # as the "difference to the reference model + the result for the reference model" 
       m <- m_diff + m_ref
       m_ref0 <- colSums(w * stats_ref_pw, na.rm=T) # mean for reference model within those points non-NA for submodel
-      covterm <- (colSums(w * stats_pw*stats_ref_pw, na.rm = T) - m*m_ref0) / n_notna # covariance uncertainty between submodel and reference model uncertainties
-      se <- sqrt(se_diff^2 - se_ref^2 + 2*covterm) # Var(A) = Var(A-B) - Var(B) + 2*Cov(A,B)
+      m0 <- m_diff + m_ref0
+      covterm <- (colSums(w * stats_pw*stats_ref_pw, na.rm = T) - m0*m_ref0) / n_notna # covariance uncertainty between submodel and reference model uncertainties
+      se <- sqrt(se_diff^2 - se_ref^2 + 2*covterm) # Var(A) = Var(A-B) - Var(B) + 2*Cov(A,B), A = submodel statistic, B = refmodel statistic
     } else {
       m <- colSums(w * stats_pw, na.rm = T) # means
-      se <- sqrt(colSums(w * stats_pw^2, na.rm = T) - m^2) / sqrt(n_notna) # standard errors
+      se <- sapply(1:nstats, function(i) weighted.sd(stats_pw[,i], w[,i], na.rm=T)) / sqrt(n_notna) # standard errors
+      # se <- sqrt(colSums(w * stats_pw^2, na.rm = T) - m^2) / sqrt(n_notna) # alternative way, but numerically unstable..
     }
     row2 <- data.frame(data = varsel$d_test$type, size=k-1, delta=F, statistic=stat_names, value=m, 
                        lq=qnorm(alpha/2, mean=m, sd=se), uq=qnorm(1-alpha/2, mean=m, sd=se), 
