@@ -69,7 +69,6 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 
   # .validate_for_varsel(fit)
 	refmodel <- get_refmodel(fit)
-	# vars <- .extract_vars(fit)
 	
 	if (is.null(seed))
 	  seed <- 134654
@@ -340,7 +339,6 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, inter
   # fold (for each data point)
   #
 	refmodel <- get_refmodel(fit)
-	# vars <- .extract_vars(fit)
 	fam <- refmodel$fam
 	mu <- refmodel$mu
 	dis <- refmodel$dis
