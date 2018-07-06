@@ -1,4 +1,56 @@
 
+# TODO: should we make these available for the user
+# #' @export
+get_refmodel <- function (object, ...) {
+	UseMethod("get_refmodel", object)
+}
+
+
+get_refmodel.refmodel <- function(object, ...) {
+	# if the object is reference model already, then simply return it as is
+	object
+}
+
+
+# #' @export
+get_refmodel.stanreg <- function(object, ...) {
+	
+	# the fit is an rstanarm-object
+	
+	# fetch the draws
+	samp <- as.data.frame(object)
+	ndraws <- nrow(samp)
+	
+	# family and the predictor matrix x
+	fam <- kl_helpers(family(object))
+	x <- get_x(object)
+	rownames(x) <- NULL # ignore the rownames
+	x <- x[, as.logical(attr(x, 'assign')), drop=F] # drop the column of ones
+	attr(x, 'assign') <- NULL
+	
+	dis <- samp$sigma %ORifNULL% rep(0, ndraws) # TODO: handle other than gaussian likelihoods..
+	offset <- object$offset %ORifNULL% rep(0, nobs(object))
+	intercept <- as.logical(attr(object$terms,'intercept') %ORifNULL% 0)
+	predfun <- function(xt) t(posterior_linpred(object, newdata=data.frame(xt), transform=T, offset=rep(0,nrow(xt))))
+	wsample <- rep(1/ndraws, ndraws) # equal sample weights by default
+	
+	# y and the observation weights in a standard form
+	target <- .get_standard_y(unname(get_y(object)), weights(object), fam)
+	wobs <- target$weights
+	y <- target$y
+
+	# TODO: how to handle cvfits?
+	# one idea: add new argument cvfun for init_refmodel, so that user has to specify one of these
+	# and then we could also specify that here instead of cvfits...
+	init_refmodel(x=x, y=y, family=fam, predfun=predfun, dis=dis, offset=offset, 
+								wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL) 
+}
+
+
+
+
+
+
 
 
 
@@ -37,6 +89,7 @@
 #' for each fold. Additionally each element can have field dis (dispersion samples for each fold)
 #' if the model has a dispersion parameter. Can be omitted but needed for K-fold cross validation
 #' for genuine reference models.
+#' @param ... Currently ignored.
 #'
 #' @return An object that can be passed to all the functions that
 #' take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel},
@@ -44,7 +97,7 @@
 
 #' @export
 init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL, 
-													wobs=NULL, wsample=NULL, intercept=TRUE, cvfits=NULL) {
+													wobs=NULL, wsample=NULL, intercept=TRUE, cvfits=NULL, ...) {
 	
 	n <- length(y)
 	family <- kl_helpers(family)
@@ -59,7 +112,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 		mu <- y
 		proper_model <- FALSE
 	}	else {
-		# genuine reference mdoel. add impact of offset to the prediction function
+		# genuine reference model. add impact of offset to the prediction function
 		predmu <- function(x,offset=0) family$linkinv( family$linkfun(predfun(x)) + offset )
 		mu <- predmu(x,offset)
 		if (NROW(y)!=NROW(mu)) 
@@ -189,10 +242,6 @@ predict.refmodel <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 		lpd <- apply(loglik, 1, log_sum_exp) - log(S)
 		return(lpd)
 	}
-	
-	
-	
-	
 	
 }
 
