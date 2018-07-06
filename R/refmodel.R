@@ -140,7 +140,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 #' density at a given point.
 #'
 #' @param object The object of class \code{refmodel}.
-#' @param xnew The predictor values used in the prediction. 
+#' @param xnew Matrix of predictor values used in the prediction. 
 #' @param ynew New (test) target variables. If given, then the log predictive density
 #' for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
@@ -153,11 +153,15 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 #' obtained by taking the inverse-link from the latent value).
 #' @param ... Currently ignored.
 #'
-#' @return TODO.
+#' @return Returns either a vector of predictions, or vector of log predictive densities evaluated
+#' at \code{ynew} if \code{ynew} is not \code{NULL}.
 
 #' @export
 predict.refmodel <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 														 weightsnew = NULL, type = 'response', ...) {
+	
+	if ('datafit' %in% class(object))
+		stop('Cannot make predictions with data reference only.')
 	
 	if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
 	if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
