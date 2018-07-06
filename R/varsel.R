@@ -141,11 +141,11 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   # store the relevant fields into the object to be returned
   vs <- list(refmodel=refmodel,
   					 spath=searchpath,
-             vind = setNames(vind, refmodel$coefnames[vind]),
-             kl = sapply(p_sub, function(x) x$kl),
              d_test = c(d_test[c('y','weights')], type = d_type),
              summaries = list(sub = sub, full = full),
-             family_kl = family_kl)
+             family_kl = family_kl,
+  					 vind = setNames(vind, refmodel$coefnames[vind]),
+  					 kl = sapply(p_sub, function(x) x$kl) )
   class(vs) <- 'vsel'
 
   # suggest model size

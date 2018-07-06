@@ -48,9 +48,7 @@ get_refmodel.stanreg <- function(object, ...) {
 	wobs <- target$weights
 	y <- target$y
 
-	# TODO: how to handle cvfits?
-	# one idea: add new argument cvfun for init_refmodel, so that user has to specify one of these
-	# and then we could also specify that here instead of cvfits...
+	# TODO: Implement the cvfun for stanreg-objects
 	init_refmodel(x=x, y=y, family=fam, predfun=predfun, dis=dis, offset=offset, 
 								wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL) 
 }
@@ -106,7 +104,7 @@ get_refmodel.stanreg <- function(object, ...) {
 
 #' @export
 init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL, 
-													wobs=NULL, wsample=NULL, intercept=TRUE, cvfits=NULL, ...) {
+													wobs=NULL, wsample=NULL, intercept=TRUE, cvfits=NULL, cvfun=NULL, ...) {
 	
 	n <- length(y)
 	family <- kl_helpers(family)
@@ -165,29 +163,36 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 	# fetch information from the cross-validated fits and create a data structure
 	# that will be understood by cv_varsel (or actually kfold_varsel)
 	if (!is.null(cvfits)) {
-		cvfits <- sapply(cvfits, function(fold) {
+		k_fold <- lapply(cvfits, function(fold) { # TODO: we could change this to lapply (somewhat clearer)
 			# fold must contain: tr,ts,predfun,(dis),(wsample)
 			tr <- fold$tr
 			ts <- fold$ts
-			fit <- init_refmodel(x[tr,], y[tr], family, predfun=fold$predfun, dis=fold$dis,
-													 offset=offset[tr], wobs=wobs[tr], wsample=fold$wsample, intercept=intercept, cvfits=NULL)
-			list(fit=fit, omitted=ts)
+			refmod <- init_refmodel(x[tr,], y[tr], family=family, predfun=fold$predfun, dis=fold$dis,
+													    offset=offset[tr], wobs=wobs[tr], wsample=fold$wsample, intercept=intercept, 
+													    cvfits=NULL, cvfun=NULL)
+			list(refmodel=refmod, omitted=ts) #TODO: change fit -> refmod
 		})
-		k_fold <- list(fits=t(cvfits))
+		# k_fold <- list(fits=t(cvfits))
 	} else
-		k_fold <- cvfits
+		k_fold <- NULL
 	
-	fit <- list(x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
+	if (!proper_model) {
+	  # this is a dummy definition to cvfun, but it will lead to standard cross-validation
+	  # for datafit reference; see cv_varsel and get_kfold
+	  cvfun <- function(x,y) list()
+	}
+	
+	refmodel <- list(x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
 							offset=offset, wobs=target$weights, wsample=wsample, intercept=intercept, 
-							predfun=predmu, loglik=loglik, k_fold=k_fold)
+							predfun=predmu, loglik=loglik, k_fold=k_fold, cvfun=cvfun)
 	
 	# define the class of the retuned object to be 'refmodel' and additionally 'datafit'
 	# if only the observed data was provided and no actual function for predicting test data
-	class(fit) <- 'refmodel'
+	class(refmodel) <- 'refmodel'
 	if (!proper_model) 
-		class(fit) <- c(class(fit),'datafit')
+		class(refmodel) <- c(class(refmodel),'datafit')
 	
-	return(fit)
+	return(refmodel)
 }
 
 
