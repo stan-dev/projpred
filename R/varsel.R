@@ -2,8 +2,8 @@
 #'
 #' Perform the projection predictive variable selection for a generalized
 #' linear model fitted with rstanarm.
-#' @param fit Either a \link[=stanreg-objects]{stanreg}-object or an object returned
-#' by \link[=init_refmodel]{init_refmodel}.
+#' @param object Either a \code{refmodel}-type object created by \link[=init_refmodel]{init_refmodel}
+#' or an object which can be converted to a reference model.
 #' @param d_test A test dataset, which is used to evaluate model performance.
 #' If not provided, training data is used. Currently this argument is for internal use only.
 #' @param method The method used in the variable selection. Possible options are
@@ -35,7 +35,7 @@
 #' This parameter essentially determines how long the search is carried out, i.e., how large submodels
 #' are explored. No need to change the default value unless the program gives a warning about this.
 #' @param nlambda Number of values in the lambda grid for L1-penalized search. No need to change unless
-#' the program gives a warning about this.
+#' the program gives a warning about thvars_cv <- lapply(k_fold$fits[,'fit'], .extract_vars)is.
 #' @param thresh Convergence threshold when computing L1-path. Usually no need to change this.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
@@ -63,25 +63,23 @@
 #'
 
 #' @export
-varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
+varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
                    nspred = NULL, ncpred = NULL, relax=NULL, nv_max = NULL, 
                    intercept = NULL, penalty=NULL, verbose = F, 
                    lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-6, ...) {
 
-
-  .validate_for_varsel(fit)
-	vars <- .extract_vars(fit)
-	family_kl <- vars$fam
+	refmodel <- get_refmodel(object)
+	family_kl <- refmodel$fam
 	
 	if (is.null(method)) {
-		if (dim(vars$x)[2] <= 20)
+		if (dim(refmodel$x)[2] <= 20)
 			method <- 'forward'
 		else
 			method <- 'L1'
 	}
 
 	if (is.null(relax)) {
-	  if ('datafit' %in% class(fit))
+	  if ('datafit' %in% class(refmodel))
 	    relax <- F
 	  else
 	    relax <- T 
@@ -92,17 +90,17 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   	nc <- 1
   if (is.null(nspred) && is.null(ncpred))
     # use 5 clusters for prediction by default
-		ncpred <- min(ncol(vars$mu), 5)
+		ncpred <- min(ncol(refmodel$mu), 5)
 
   if(is.null(intercept))
-    intercept <- vars$intercept
-  if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
-  	nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
-  	nv_max <- min(NCOL(vars$x), nv_max_default, 20)
+    intercept <- refmodel$intercept
+  if(is.null(nv_max) || nv_max > NCOL(refmodel$x)) {
+  	nv_max_default <- floor(0.4*length(refmodel$y)) # a somewhat sensible default limit for nv_max
+  	nv_max <- min(NCOL(refmodel$x), nv_max_default, 20)
   }
 
   # training and test data
-  d_train <- .get_traindata(vars)
+  d_train <- .get_traindata(refmodel)
   if (is.null(d_test)) {
   	d_test <- d_train
   	d_type <- 'train'
@@ -112,8 +110,8 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   }
 
   # reference distributions for selection and prediction after selection
-  p_sel <- .get_refdist(vars, ns, nc)
-  p_pred <- .get_refdist(vars, nspred, ncpred)
+  p_sel <- .get_refdist(refmodel, ns, nc)
+  p_pred <- .get_refdist(refmodel, nspred, ncpred)
 
   # perform the selection
   opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
@@ -128,32 +126,34 @@ varsel <- function(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
   # predictive statistics of the reference model on test data. if no test data are provided, 
   # simply fetch the statistics on the train data
-  if ('datafit' %in% class(fit)) {
+  if ('datafit' %in% class(refmodel)) {
   	# no actual reference model, so we don't know how to predict test observations
-  	full <- list(mu=rep(NA,vars$nobs), lppd=rep(NA,vars$nobs))
+  	full <- list(mu=rep(NA,refmodel$nobs), lppd=rep(NA,refmodel$nobs))
   } else {
   	if (d_type == 'train') {
-  		full <- .weighted_summary_means(d_test, family_kl, vars$wsample, vars$mu, vars$dis)
+  		full <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, refmodel$mu, refmodel$dis)
   	} else {
-  		mu_test <- vars$predfun(d_test$x, d_test$offset)
-  		full <- .weighted_summary_means(d_test, family_kl, vars$wsample, mu_test, vars$dis)
+  		mu_test <- refmodel$predfun(d_test$x, d_test$offset)
+  		full <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, mu_test, refmodel$dis)
   	}
   }
   
-  # store the relevant fields into fit  
-  fit$varsel <- list(spath=searchpath,
-                     vind = setNames(vind, vars$coefnames[vind]),
-                     kl = sapply(p_sub, function(x) x$kl),
-                     d_test = c(d_test[c('y','weights')], type = d_type),
-                     summaries = list(sub = sub, full = full),
-                     family_kl = family_kl)
+  # store the relevant fields into the object to be returned
+  vs <- list(refmodel=refmodel,
+  					 spath=searchpath,
+             vind = setNames(vind, refmodel$coefnames[vind]),
+             kl = sapply(p_sub, function(x) x$kl),
+             d_test = c(d_test[c('y','weights')], type = d_type),
+             summaries = list(sub = sub, full = full),
+             family_kl = family_kl)
+  class(vs) <- 'vsel'
 
   # suggest model size
-  fit$varsel$nv_max <- nv_max
-  fit$varsel$nv_all <- ncol(vars$x)
-  fit$varsel$ssize <- suggest_size(fit, warnings = F)
+  vs$nv_max <- nv_max
+  vs$nv_all <- ncol(refmodel$x)
+  vs$ssize <- suggest_size(vs, warnings = F)
   
-  fit
+  vs
 }
 
 

@@ -8,8 +8,8 @@
 #'
 #' @name proj-pred
 #'
-#' @param object The object returned by \link{varsel},
-#' \link{cv_varsel} or \link{project}.
+#' @param object Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
+#' or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.
 #' @param xnew The predictor values used in the prediction. If \code{vind} is
 #' specified, then \code{xnew} should either be a dataframe containing column names
 #' that correspond to \code{vind} or a matrix with the number and order of columns
@@ -29,8 +29,9 @@
 #' @param integrated If \code{TRUE}, the output is averaged over the
 #' parameters. Default is \code{FALSE}. For \code{proj_linpred} only.
 #' @param nv Number of variables in the submodel (the variable combination is
-#' taken from the \code{varsel} information). If a list, then results for all
-#' specified model sizes are returned. Ignored if \code{vind} is specified.
+#' taken from the variable selection information). If a vector with several values,
+#' then results for all specified model sizes are returned. Ignored if \code{vind} is specified.
+#' By default use the automatically suggested model size.
 #' @param draws Number of draws to return from the predictive distribution of
 #' the projection. The default is 1000.
 #' For \code{proj_predict} only.
@@ -45,6 +46,18 @@
 #' returns a list with elements pred (predictions) and lpd (log predictive densities).
 #' If the predictions are done for several submodel sizes, returns a list with one element
 #' for each submodel.
+#' 
+#' @examples
+#' \donttest{
+#' ### Usage with stanreg objects
+#' fit <- stan_glm(y~x, binomial())
+#' vs <- varsel(fit)
+#' 
+#' # compute predictions with 4 variables at the training points
+#' pred <- proj_linpred(vs, xnew=x, nv = 4)
+#' pred <- proj_predict(vs, xnew=x, nv = 4)
+#' 
+#' }
 #'
 NULL
 
@@ -226,11 +239,10 @@ NULL
 #' @export
 varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.1, ...) {
   
-	if(!('varsel' %in% names(object)))
-	  stop(paste('The provided object doesn\'t contain information about the',
-	             'variable selection. Run the variable selection first.'))
+	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
+		stop('The object does not look like a variable selection -object. Run variable selection first')
 
-	if (all(is.na(object$varsel$summaries$full$mu))) {
+	if (all(is.na(object$summaries$full$mu))) {
 		# no reference model (or the results missing for some other reason),
 		# so cannot compute differences between the reference model and submodels
 		refstat_found <- F
@@ -242,7 +254,7 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
 		refstat_found <- T
 	
 	# compute all the statistics and fetch only those that were asked
-	tab <- .tabulate_stats(object$varsel, alpha)
+	tab <- .tabulate_stats(object, alpha)
 	stats_table <- subset(tab, (tab$delta==deltas | tab$statistic=='kl') & tab$statistic %in% stats)
 	stats_ref <- subset(stats_table, stats_table$size==Inf)
 	stats_sub <- subset(stats_table, stats_table$size!=Inf)
@@ -293,17 +305,16 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
 varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
                          deltas = F, alpha=0.1, ...) {
   
-	if(!('varsel' %in% names(object)))
-      stop(paste('The provided object doesn\'t contain information about the',
-                   'variable selection. Run the variable selection first.'))
+	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
+		stop('The object does not look like a variable selection -object. Run variable selection first')
 
-	if (all(is.na(object$varsel$summaries$full$mu)) && deltas==T) {
+	if (all(is.na(object$summaries$full$mu)) && deltas==T) {
 		# no reference model (or the results missing for some other reason),
 		# so cannot compute differences between the reference model and submodels
 		warning('Cannot compute statistics for deltas = TRUE when there is no reference model.')
 	}
 	
-  tab <- .tabulate_stats(object$varsel, alpha=alpha)
+  tab <- .tabulate_stats(object, alpha=alpha)
   stats_table <- subset(tab, (tab$delta == deltas | tab$statistic == 'kl') & tab$size != Inf)
   
   # these are the corresponding names for mean, se, upper and lower in the stats_table, and their suffices
@@ -313,7 +324,7 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
   
 
   # loop through all the required statistics 
-  arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$varsel$vind))
+  arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$vind))
   for (i in seq_along(stats)) {
     
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
@@ -328,8 +339,8 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
   if(is.null(nv_max)) 
     nv_max <- max(stats_table$size)
 
-  if('pctch' %in% names(object$varsel))
-    arr$pctch <- c(NA, diag(object$varsel$pctch[,-1]))
+  if('pctch' %in% names(object))
+    arr$pctch <- c(NA, diag(object$pctch[,-1]))
 
   subset(arr, arr$size <= nv_max)
 }
@@ -381,14 +392,12 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' @export
 suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper', warnings=TRUE, ...) {
   
-  if ('varsel' %in% names(object))
-    varsel <- object$varsel
-  else
-    stop(paste0('The provided object does not contain information about variable selection.',
-         'Run variable selection first.'))
+	
+	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
+		stop('The object does not look like a variable selection -object. Run variable selection first')
   
   btype <- ifelse(type=='upper', 'uq', 'lq')
-  tab <- .tabulate_stats(varsel, alpha = alpha)
+  tab <- .tabulate_stats(object, alpha = alpha)
   stats <- subset(tab, tab$statistic == stat & tab$delta == TRUE & tab$size != Inf &
                     tab$data %in% c('train', 'test', 'loo', 'kfold'))
   
@@ -399,8 +408,8 @@ suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='u
     res <- subset(stats, stats[,btype] >= util_cutoff$value, 'size')
     if(nrow(res) == 0) {
       # no submodel satisfying the criterion found
-      if (varsel$nv_max == varsel$nv_all)
-        ssize <- varsel$nv_max
+      if (object$nv_max == object$nv_all)
+        ssize <- object$nv_max
       else {
         ssize <- NA
         if (warnings)
@@ -417,7 +426,7 @@ suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='u
     # that the reference model is missing, so suggest the smallest model which
     # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
     # i.e. is contained in the 68% central region
-    tab <- .tabulate_stats(varsel, alpha = 0.32)
+    tab <- .tabulate_stats(object, alpha = 0.32)
     stats <- subset(tab, tab$statistic == stat & tab$delta == F &
                       tab$data %in% c('train', 'test', 'loo', 'kfold'))
     imax <- which.max(unname(unlist(stats['value'])))

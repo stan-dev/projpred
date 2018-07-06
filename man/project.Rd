@@ -8,8 +8,8 @@ project(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL,
   nc = NULL, intercept = NULL, seed = NULL, regul = 1e-06, ...)
 }
 \arguments{
-\item{object}{The object returned by \link[=varsel]{varsel} or
-\link[=cv_varsel]{cv_varsel}.}
+\item{object}{Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
+or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.}
 
 \item{nv}{Number of variables in the submodel (the variable combination is taken from the
 \code{varsel} information). If a list, then the projection is performed for each model size.
@@ -61,8 +61,13 @@ linear model fitted with rstanarm.
 \donttest{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
-fit_v <- varsel(fit)
-proj4 <- project(fit_v, nv = 4)
+vs <- varsel(fit)
+
+# project onto the best model with 4 variables
+proj4 <- project(vs, nv = 4)
+
+# project onto an arbitrary variable combination (variable indices 3,4 and 8)
+proj <- project(fit, vind=c(3,4,8))
 }
 
 }

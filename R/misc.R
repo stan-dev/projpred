@@ -141,17 +141,15 @@ log_sum_exp <- function(x) {
 
 
 
-.get_refdist <- function(fit, ns=NULL, nc=NULL, seed=NULL) {
+.get_refdist <- function(refmodel, ns=NULL, nc=NULL, seed=NULL) {
 	#
-	# Creates the reference distribution based on the fit-object, and the
+	# Creates the reference distribution based on the refmodel-object, and the
 	# desired number of clusters (nc) or number of subsamples (ns). Returns
 	# a list with fields 
 	#       mu, var, weights, cl
 	# TODO EXPLAIN THESE
 	#
 	# If nc is specified, then clustering is used and ns is ignored.
-	# It is possible to use this function by passing .extract_vars(fit) as
-	# an argument in place of fit.
 	#
   if (is.null(seed))
     seed <- 17249420
@@ -161,46 +159,38 @@ log_sum_exp <- function(x) {
   on.exit(rngtools::RNGseed(rng_state_old))
   set.seed(seed)
   
-	if ( all(c('fam', 'x', 'mu', 'dis') %in% names(fit)) )
-		# all the relevant fields contained in the given structure
-		vars <- fit
-	else
-		# fetch the relevant info from the fit object
-		vars <- .extract_vars(fit)
-
-	fam <- vars$fam
-	n <- NROW(vars$x) # number of data points
-	S <- NCOL(vars$mu) # sample size in the full model
+	fam <- refmodel$fam
+	S <- NCOL(refmodel$mu) # number of draws in the full model
 
 	if (!is.null(nc)) {
 		# use clustering (ignore ns argument)
 		if (nc == 1) {
 			# special case, only one cluster
 			cl <- rep(1, S)
-			p_ref <- .get_p_clust(fam, vars$mu, vars$dis, wobs=vars$wobs, cl=cl)
-		} else if (nc == NCOL(vars$mu)) {
+			p_ref <- .get_p_clust(fam, refmodel$mu, refmodel$dis, wobs=refmodel$wobs, cl=cl)
+		} else if (nc == NCOL(refmodel$mu)) {
 		    # number of clusters equal to the number of samples, so return the samples
-		    return(.get_refdist(fit, ns=nc))
+		    return(.get_refdist(refmodel, ns=nc))
 		} else {
 			# several clusters
-		    if (nc > NCOL(vars$mu))
+		    if (nc > NCOL(refmodel$mu))
 		        stop('The number of clusters nc cannot exceed the number of columns in mu.')
-			p_ref <- .get_p_clust(fam, vars$mu, vars$dis, wobs=vars$wobs, nc=nc)
+			p_ref <- .get_p_clust(fam, refmodel$mu, refmodel$dis, wobs=refmodel$wobs, nc=nc)
 		}
 	} else if (!is.null(ns)) {
 		# subsample from the full model
 		# would it be safer to actually randomly draw the subsample?
-		if (ns > NCOL(vars$mu))
+		if (ns > NCOL(refmodel$mu))
 			stop('The number of subsamples ns cannot exceed the number of columns in mu.')
 		s_ind <- round(seq(1, S, length.out  = ns))
 		cl <- rep(NA, S)
 		cl[s_ind] <- c(1:ns)
-		predvar <- sapply(s_ind, function(j) { fam$predvar(vars$mu[,j,drop=F], vars$dis[j]) })
-		p_ref <- list(mu = vars$mu[, s_ind, drop=F], var = predvar, dis = vars$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
+		predvar <- sapply(s_ind, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j]) })
+		p_ref <- list(mu = refmodel$mu[, s_ind, drop=F], var = predvar, dis = refmodel$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
 	} else {
 		# use all the samples from the full model
-		predvar <- sapply(1:S, function(j) { fam$predvar(vars$mu[,j,drop=F], vars$dis[j])	})
-		p_ref <- list(mu = vars$mu, var = predvar, dis = vars$dis, weights = vars$wsample, cl=c(1:S))
+		predvar <- sapply(1:S, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j])	})
+		p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis, weights = refmodel$wsample, cl=c(1:S))
 	}
 
 	return(p_ref)
@@ -258,21 +248,10 @@ log_sum_exp <- function(x) {
 
 
 
-.get_traindata <- function(fit) {
+.get_traindata <- function(refmodel) {
 	#
-	# Returns the training data fetched from the fit object.
-	# It is possible to use this function by passing .extract_vars(fit) as
-	# an argument in place of fit which will save time if .extract_vars has
-  # already been called.
-	#
-	if ( all(c('x', 'y', 'wobs', 'offset') %in% names(fit)) )
-		# all the relevant fields contained in the given structure
-		vars <- fit
-	else
-		# fetch the relevant info from the fit object
-		vars <- .extract_vars(fit)
-	
-	return(list(x = vars$x, y = vars$y, weights = vars$wobs, offset = vars$offset))
+	# Returns the training data fetched from the reference model object.
+	return(list(x = refmodel$x, y = refmodel$y, weights = refmodel$wobs, offset = refmodel$offset))
 }
 
 .check_data <- function(data) {

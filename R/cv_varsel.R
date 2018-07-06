@@ -67,14 +67,15 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                       nloo=100, K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=150,
                       thresh=1e-6, regul=1e-6, validate_search=T, seed=NULL, ...) {
 
-  .validate_for_varsel(fit)
-	vars <- .extract_vars(fit)
+  # .validate_for_varsel(fit)
+	refmodel <- get_refmodel(fit)
+	# vars <- .extract_vars(fit)
 	
 	if (is.null(seed))
 	  seed <- 134654
 
 	if (is.null(method)) {
-		if (dim(vars$x)[2] <= 20)
+		if (dim(refmodel$x)[2] <= 20)
 			method <- 'forward'
 		else
 			method <- 'L1'
@@ -106,13 +107,13 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 		nc <- 1
 	if (is.null(nspred) && is.null(ncpred))
     # use 5 clusters for prediction by default
-		ncpred <- min(ncol(vars$mu), 5)
+		ncpred <- min(ncol(refmodel$mu), 5)
 
 	if(is.null(intercept))
-		intercept <- vars$intercept
-	if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
-		nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
-		nv_max <- min(NCOL(vars$x), nv_max_default, 20)
+		intercept <- refmodel$intercept
+	if(is.null(nv_max) || nv_max > NCOL(refmodel$x)) {
+		nv_max_default <- floor(0.4*length(refmodel$y)) # a somewhat sensible default limit for nv_max
+		nv_max <- min(NCOL(refmodel$x), nv_max_default, 20)
 	}
 
 	# search options
@@ -120,7 +121,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	
 	if (tolower(cv_method) == 'kfold') {
 		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty,
-		                       verbose, vars, K, k_fold, opt)
+		                       verbose, refmodel, K, k_fold, opt)
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
 		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty, 
@@ -155,7 +156,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                   list(pctch = pctch))
   fit$varsel$spath <- sel$spath
 	fit$varsel$nv_max <- nv_max
-	fit$varsel$nv_all <- ncol(vars$x)
+	fit$varsel$nv_all <- ncol(refmodel$x)
 	fit$varsel$ssize <- suggest_size(fit, warnings = F)
 	
 	if (verbose)
@@ -165,6 +166,8 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 }
 
 
+# TODO: this function could probably be simplified. now it takes both fit and vars (=reference model)
+# as input argument
 kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax,
                          intercept, penalty, verbose, vars, K, k_fold, opt) {
 
@@ -184,7 +187,8 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax,
 	
   # extract variables from each fit-object (samples, x, y, etc.)
   # to a list of size K
-  vars_cv <- lapply(k_fold$fits[,'fit'], .extract_vars)
+  vars_cv <- lapply(k_fold$fits[,'fit'], get_refmodel)
+  # vars_cv <- lapply(k_fold$fits[,'fit'], .extract_vars)
 
   # List of size K with test data for each fold (note that vars is from
   # the full model, not from the cross-validated models).
@@ -335,31 +339,32 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, inter
 	# validate_search indicates whether the selection is performed separately for each
   # fold (for each data point)
   #
-	vars <- .extract_vars(fit)
-	fam <- vars$fam
-	mu <- vars$mu
-	dis <- vars$dis
+	refmodel <- get_refmodel(fit)
+	# vars <- .extract_vars(fit)
+	fam <- refmodel$fam
+	mu <- refmodel$mu
+	dis <- refmodel$dis
 
 	# training data
-	d_train <- .get_traindata(vars)
+	d_train <- .get_traindata(refmodel)
 
 	# the clustering/subsampling used for selection
-	p_sel <- .get_refdist(vars, ns=ns, nc=nc)
+	p_sel <- .get_refdist(refmodel, ns=ns, nc=nc)
 	cl_sel <- p_sel$cl # clustering information
 
 	# the clustering/subsampling used for prediction
-	p_pred <- .get_refdist(vars, ns=nspred, nc=ncpred)
+	p_pred <- .get_refdist(refmodel, ns=nspred, nc=ncpred)
 	cl_pred <- p_pred$cl
 
 	# fetch the log-likelihood for the reference model to obtain the LOO weights
-	if (is.null(vars$loglik))
+	if (is.null(refmodel$loglik))
 		# case where log-likelihood not available, i.e., the reference model is not a genuine model
 		# => cannot compute LOO
 		stop('LOO can be performed only if the reference model is a genuine probabilistic model for
           which the log-likelihood can be evaluated.')
 	else
 		# log-likelihood available
-		loglik <- vars$loglik
+		loglik <- refmodel$loglik
 	psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1,ncol(loglik))) # TODO: should take r_eff:s into account
 	lw <- weights(psisloo)
 	pareto_k <- loo::pareto_k_values(psisloo)
@@ -401,8 +406,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, inter
 	  i <- inds[run_index]
 
 	  # reweight the clusters/samples according to the is-loo weights
-	  p_sel <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
-	  p_pred <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
+	  p_sel <- .get_p_clust(fam, mu, dis, wobs=refmodel$wobs, wsample=exp(lw[,i]), cl=cl_sel)
+	  p_pred <- .get_p_clust(fam, mu, dis, wobs=refmodel$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
 	  
 		if (validate_search) {
 		  # perform selection with the reweighted clusters/samples
@@ -415,7 +420,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, inter
 	  as.search <- !relax && !is.null(spath$beta) && !is.null(spath$alpha)
 	  submodels <- .get_submodels(spath, 0:nv_max, fam, p_pred,
 	                              d_train, intercept, opt$regul, as.search=as.search)
-		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
+		d_test <- list(x=matrix(refmodel$x[i,],nrow=1), y=refmodel$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
 		for (k in seq_along(summaries_sub)) {

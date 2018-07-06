@@ -11,6 +11,15 @@ get_refmodel.refmodel <- function(object, ...) {
 	object
 }
 
+get_refmodel.vsel <- function(object, ...) {
+	# the reference model is stored in vsel-object
+	object$refmodel
+}
+
+get_refmodel.cvsel <- function(object, ...) {
+	# the reference model is stored in cvsel object
+	object$refmodel
+}
 
 # #' @export
 get_refmodel.stanreg <- function(object, ...) {
