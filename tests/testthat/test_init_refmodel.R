@@ -22,7 +22,7 @@ f_poiss <- poisson()
 df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
 
 SW(
-    fit_gauss <- stan_glm(y ~ ., family = f_gauss, data = df_gauss, QR = T,
+    fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
                           weights = weights, offset = offset,
                           chains = chains, seed = seed, iter = iter)
 )
