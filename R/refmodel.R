@@ -47,10 +47,20 @@ get_refmodel.stanreg <- function(object, ...) {
 	target <- .get_standard_y(unname(get_y(object)), weights(object), fam)
 	wobs <- target$weights
 	y <- target$y
-
-	# TODO: Implement the cvfun for stanreg-objects
+	
+	# cvfun for k-fold cross-validation
+	cvfun <- function(folds) {
+	  cvres <- rstanarm::kfold(fit, K = max(folds), save_fits = T, folds = folds)
+	  fits <- cvres$fits[,'fit']
+	  lapply(fits, function (fit) {
+	    dis <- as.data.frame(fit)$sigma
+	    predfun <- function(xt) t(posterior_linpred(fit, newdata=data.frame(xt), offset=rep(0,nrow(xt))))
+	    list(predfun=predfun, dis=dis)
+	  })
+	}
+  
 	init_refmodel(x=x, y=y, family=fam, predfun=predfun, dis=dis, offset=offset, 
-								wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL) 
+								wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun) 
 }
 
 
@@ -160,31 +170,15 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 	# y and the observation weights in a standard form
 	target <- .get_standard_y(y, wobs, family)
 	
-	# fetch information from the cross-validated fits and create a data structure
-	# that will be understood by cv_varsel (or actually kfold_varsel)
-	if (!is.null(cvfits)) {
-		k_fold <- lapply(cvfits, function(fold) { # TODO: we could change this to lapply (somewhat clearer)
-			# fold must contain: tr,ts,predfun,(dis),(wsample)
-			tr <- fold$tr
-			ts <- fold$ts
-			refmod <- init_refmodel(x[tr,], y[tr], family=family, predfun=fold$predfun, dis=fold$dis,
-													    offset=offset[tr], wobs=wobs[tr], wsample=fold$wsample, intercept=intercept, 
-													    cvfits=NULL, cvfun=NULL)
-			list(refmodel=refmod, omitted=ts) #TODO: change fit -> refmod
-		})
-		# k_fold <- list(fits=t(cvfits))
-	} else
-		k_fold <- NULL
-	
 	if (!proper_model) {
-	  # this is a dummy definition to cvfun, but it will lead to standard cross-validation
+	  # this is a dummy definition for cvfun, but it will lead to standard cross-validation
 	  # for datafit reference; see cv_varsel and get_kfold
-	  cvfun <- function(x,y) list()
+	  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
 	}
 	
 	refmodel <- list(x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
 							offset=offset, wobs=target$weights, wsample=wsample, intercept=intercept, 
-							predfun=predmu, loglik=loglik, k_fold=k_fold, cvfun=cvfun)
+							predfun=predmu, loglik=loglik, cvfits=cvfits, cvfun=cvfun)
 	
 	# define the class of the retuned object to be 'refmodel' and additionally 'datafit'
 	# if only the observed data was provided and no actual function for predicting test data
