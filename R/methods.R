@@ -454,20 +454,30 @@ as.matrix.projection <- function(x, ...) {
 }
 
 
+
+
+
 #' Create cross-validation indices
 #'
 #' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross validation.
-#' This function is potentially useful for creating the cross-validation objects for 
-#' \link[=init_refmodel]{init_refmodel}.
+#' These functions are potentially useful when creating the \code{cvfits} and \code{cvfun}
+#' arguments for \link[=init_refmodel]{init_refmodel}. The returned value is different for
+#' these two methods, see below for details.
+#' 
+#' @name cv-indices
 #'
 #' @param n Number of data points.
 #' @param k Number of folds. 
 #' @param out Format of the output, either 'foldwise' (default) or 'indices'. See below for details.
 #' @param seed Random seed so that the same division could be obtained again if needed.
 #'
-#' @return If \code{out} is 'foldwise', the returned value is a list with \code{k} elements, 
+#' @return \code{cvfolds} returns a vector of length \code{n} such that each element is an integer
+#' between 1 and \code{k} denoting which fold the corresponding data point belongs to.
+#' The returned value of \code{cvind} depends on the \code{out}-argument. If \code{out}='foldwise',
+#' the returned value is a list with \code{k} elements, 
 #' each having fields \code{tr} and \code{ts} which give the training and test indices, respectively,
-#' for each fold. If \code{out} is 'indices', the returned value is a list with fields \code{tr} and \code{ts}
+#' for the corresponding fold. If \code{out}='indices', the returned value is a list with fields \code{tr}
+#' and \code{ts}
 #' each of which is a list with \code{k} elements giving the training and test indices for each fold.
 #' @examples
 #' \donttest{
@@ -475,9 +485,29 @@ as.matrix.projection <- function(x, ...) {
 #' n <- 100
 #' y <- rnorm(n)
 #' cv <- cvind(n, k=5)
-#' cvmeans <- lapply(cv, function(fold) mean(y[fold$itr]))
+#' cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
 #' }
+#' 
+NULL
 
+#' @rdname cv-indices
+#' @export
+cvfolds <- function(n, k, seed=NULL) {
+  
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
+  set.seed(seed)
+  
+  # create and shuffle the indices
+  folds <- rep_len(1:k, length.out = n)
+  folds <- sample(folds, n, replace=FALSE)
+  
+  return(folds)
+  
+}
+
+#' @rdname cv-indices
 #' @export
 cvind <- function(n, k, out='foldwise', seed=NULL) {
 
@@ -514,20 +544,6 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 }
 
 
-#' @export
-cvid <- function(n, k, seed=NULL) {
 
-  # set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- rngtools::RNGseed()
-  on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(seed)
-
-  # create and shuffle the indices
-  folds <- rep_len(1:k, length.out = n)
-  folds <- sample(folds, n, replace=FALSE)
-
-  return(folds)
-
-}
 
 

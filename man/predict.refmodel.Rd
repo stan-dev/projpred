@@ -2,7 +2,7 @@
 % Please edit documentation in R/refmodel.R
 \name{predict.refmodel}
 \alias{predict.refmodel}
-\title{Predictions using the reference model}
+\title{Predict method for reference model objects}
 \usage{
 \method{predict}{refmodel}(object, xnew, ynew = NULL, offsetnew = NULL,
   weightsnew = NULL, type = "response", ...)

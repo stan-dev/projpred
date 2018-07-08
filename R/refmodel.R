@@ -50,7 +50,7 @@ get_refmodel.stanreg <- function(object, ...) {
 	
 	# cvfun for k-fold cross-validation
 	cvfun <- function(folds) {
-	  cvres <- rstanarm::kfold(fit, K = max(folds), save_fits = T, folds = folds)
+	  cvres <- rstanarm::kfold(object, K = max(folds), save_fits = T, folds = folds)
 	  fits <- cvres$fits[,'fit']
 	  lapply(fits, function (fit) {
 	    dis <- as.data.frame(fit)$sigma
@@ -194,7 +194,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 
 
 
-#' Predictions using the reference model
+#' Predict method for reference model objects
 #'
 #' Compute the predictions using the reference model, that is, compute the
 #' expected value for the next observation, or evaluate the log-predictive

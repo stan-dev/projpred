@@ -3,7 +3,7 @@
 S3method(as.matrix,projection)
 S3method(predict,refmodel)
 export(cv_varsel)
-export(cvid)
+export(cvfolds)
 export(cvind)
 export(init_refmodel)
 export(proj_linpred)
