@@ -514,20 +514,20 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 }
 
 
-#' #' @export
-#' cvid <- function(n, k, seed=NULL) {
-#'   
-#'   # set random seed but ensure the old RNG state is restored on exit
-#'   rng_state_old <- rngtools::RNGseed()
-#'   on.exit(rngtools::RNGseed(rng_state_old))
-#'   set.seed(seed)
-#'   
-#'   # create and shuffle the indices
-#'   folds <- rep_len(1:k, length.out = n)
-#'   folds <- sample(folds, n, replace=FALSE)
-#'   
-#'   return(folds)
-#'   
-#' }
+#' @export
+cvid <- function(n, k, seed=NULL) {
+
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
+  set.seed(seed)
+
+  # create and shuffle the indices
+  folds <- rep_len(1:k, length.out = n)
+  folds <- sample(folds, n, replace=FALSE)
+
+  return(folds)
+
+}
 
 
