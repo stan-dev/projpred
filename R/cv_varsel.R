@@ -284,7 +284,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
       # for the submodels although we don't have an actual reference model
       if (verbose && !('datafit' %in% class(refmodel)))
         print('Performing cross-validation for the reference model..')
-      folds <- cvid(refmodel$nobs, k=K, seed=seed)
+      folds <- cvfolds(refmodel$nobs, k=K, seed=seed)
       cvfits <- refmodel$cvfun(folds)
       cvfits <- lapply(seq_along(cvfits), function(k) {
         # add the 'omitted' indices for the cvfits
@@ -302,11 +302,11 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 	
 	# transform the cvfits-list to k_fold list, that is, initialize the reference models for each
 	# fold given the prediction function and dispersion draws from the cvfits-list
-	k_fold <- lapply(seq_along(cvfits), function(k) {
-	  ref <- init_refmodel(refmodel$x[folds!=k,,drop=F], refmodel$y[folds!=k], family=refmodel$fam,
-	                       predfun=cvfits[[k]]$predfun, dis=cvfits[[k]]$dis, offset=refmodel$offset[folds!=k],
-	                       wobs=refmodel$wobs[folds!=k], intercept=refmodel$intercept)
-	  list(refmodel=ref, omitted=cvfits[[k]]$omitted)
+	k_fold <- lapply(cvfits, function(cvfit) {
+	  ref <- init_refmodel(x=refmodel$x[-cvfit$omitted,,drop=F], y=refmodel$y[-cvfit$omitted], family=refmodel$fam,
+	                       predfun=cvfit$predfun, dis=cvfit$dis, offset=refmodel$offset[-cvfit$omitted],
+	                       wobs=refmodel$wobs[-cvfit$omitted], intercept=refmodel$intercept)
+	  list(refmodel=ref, omitted=cvfit$omitted)
 	})
 	
 	return(k_fold)
