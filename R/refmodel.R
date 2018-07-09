@@ -54,7 +54,7 @@ get_refmodel.stanreg <- function(object, ...) {
 	  fits <- cvres$fits[,'fit']
 	  lapply(fits, function (fit) {
 	    dis <- as.data.frame(fit)$sigma
-	    predfun <- function(xt) t(posterior_linpred(fit, newdata=data.frame(xt), offset=rep(0,nrow(xt))))
+	    predfun <- function(xt) t(posterior_linpred(fit, newdata=data.frame(xt), transform=T, offset=rep(0,nrow(xt))))
 	    list(predfun=predfun, dis=dis)
 	  })
 	}
