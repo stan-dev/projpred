@@ -64,17 +64,17 @@ SW({
 })
 
 
-# 
-# context('varsel')
-# test_that('varsel returns an object with a field named "varsel"', {
-#   for(i in 1:length(vs_list)) {
-#     i_inf <- names(vs_list)[i]
-#     for(j in 1:length(vs_list[[i]])) {
-#       j_inf <- names(vs_list[[i]])[j]
-#       expect_true('varsel' %in% names(vs_list[[i]][[j]]))
-#     }
-#   }
-# })
+
+context('varsel')
+test_that('varsel returns an object of type "vsel"', {
+  for(i in 1:length(vs_list)) {
+    i_inf <- names(vs_list)[i]
+    for(j in 1:length(vs_list[[i]])) {
+      j_inf <- names(vs_list[[i]])[j]
+      expect_true('vsel' %in% class(vs_list[[i]][[j]]))
+    }
+  }
+})
 
 test_that('object retruned by varsel contains the relevant fields', {
   for(i in 1:length(vs_list)) {
@@ -82,7 +82,7 @@ test_that('object retruned by varsel contains the relevant fields', {
     for(j in 1:length(vs_list[[i]])) {
       j_inf <- names(vs_list[[i]])[j]
       # refmodel seems legit
-      expect_true('refmodel' %in% class(vs_list[[i]]$refmodel))
+      expect_true('refmodel' %in% class(vs_list[[i]][[j]]$refmodel))
       # vind seems legit
       expect_equal(length(vs_list[[i]][[j]]$vind), nv,
                    info = paste(i_inf, j_inf))
@@ -141,8 +141,8 @@ test_that('nv_max has an effect on varsel for non-gaussian models', {
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
-  expect_error(varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
-  expect_error(varsel(1, verbose = FALSE), regexp = 'not recognized')
+  expect_error(varsel(fit_glmer, verbose = FALSE), regexp = 'not yet supported')
+  expect_error(varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
 })
 
 
@@ -181,16 +181,15 @@ test_that("varsel: specifying penalties for variables has an expected effect", {
 
 
 context('cv_varsel')
-test_that('cv_varsel returns an object with a field named "varsel"', {
+test_that('cv_varsel returns an object of type "cvsel"', {
   for(i in 1:length(cvs_list)){
     i_inf <- names(cvs_list)[i]
     for(j in 1:length(cvs_list[[i]])) {
       j_inf <- names(cvs_list[[i]])[j]
-      expect_true('varsel' %in% names(cvs_list[[i]][[j]]),
+      expect_true('cvsel' %in% class(cvs_list[[i]][[j]]),
                   info = paste(i_inf, j_inf))
     }
   }
-
 })
 
 test_that('object retruned by cv_varsel contains the relevant fields', {
@@ -276,8 +275,8 @@ test_that('nv_max has an effect on cv_varsel for non-gaussian models', {
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
-  expect_error(cv_varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
-  expect_error(varsel(1, verbose = FALSE), regexp = 'not recognized')
+	expect_error(cv_varsel(fit_glmer, verbose = FALSE), regexp = 'not yet supported')
+	expect_error(cv_varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
 })
 
 test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
