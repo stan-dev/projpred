@@ -53,7 +53,8 @@
 #' \donttest{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
-#' fit_cv <- cv_varsel(fit)
+#' cvs <- cv_varsel(fit)
+#' varsel_plot(cvs)
 #' }
 #'
 

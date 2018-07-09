@@ -87,8 +87,8 @@ generic reference models.
 \donttest{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
-fit_v <- varsel(fit)
-plot_varsel(fit_v)
+vs <- varsel(fit)
+varsel_plot(vs)
 }
 
 }

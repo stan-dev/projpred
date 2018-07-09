@@ -233,6 +233,19 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
 #' within the intervals.
 #' @param ... Currently ignored.
+#' 
+#' 
+#' @examples
+#' \donttest{
+#' ### Usage with stanreg objects
+#' fit <- stan_glm(y~x, binomial())
+#' vs <- cv_varsel(fit)
+#' varsel_plot(vs)
+#' 
+#' # print out some stats
+#' varsel_stats(vs, stats=c('acc'), type = c('mean','se'))
+#' }
+#' 
 NULL
 
 #' @rdname varsel-statistics
@@ -387,6 +400,15 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' model with probability 0.16 (and consequently, worse with probability 0.84). In other words,
 #' the estimated difference between the reference model and submodel utitlities is at most one standard error
 #' away from zero, so the two utilities are considered to be close.
+#' 
+#' @examples
+#' \donttest{
+#' ### Usage with stanreg objects
+#' fit <- stan_glm(y~x, binomial())
+#' vs <- cv_varsel(fit)
+#' suggest_size(vs)
+#' 
+#' }
 #' 
 
 #' @export
