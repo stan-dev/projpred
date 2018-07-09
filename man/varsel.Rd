@@ -11,9 +11,9 @@ varsel(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   regul = 1e-06, ...)
 }
 \arguments{
-\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel})
+\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
 or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
-using \code{get_refmodel}.}
+using \link[=get_refmodel]{get_refmodel}.}
 
 \item{d_test}{A test dataset, which is used to evaluate model performance.
 If not provided, training data is used. Currently this argument is for internal use only.}
@@ -37,7 +37,8 @@ Overrides the \code{ns} argument. Defaults to 1.}
 \item{relax}{If TRUE, then the projected coefficients after L1-selection are computed
 without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 the coefficients are the solution from the L1-penalized projection. This option is relevant only
-if \code{method}='L1'. Default is TRUE.}
+if \code{method}='L1'. Default is TRUE for genuine reference models and FALSE if \code{object} is
+datafit (see \link[=init_refmodel]{init_refmodel}).}
 
 \item{nv_max}{Maximum number of varibles until which the selection is continued.
 Defaults to min(20, D, floor(0.4*n)) where n is the number of observations and

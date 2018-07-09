@@ -3,9 +3,9 @@
 #' Perform the projection predictive variable selection for generalized linear models using
 #' generic reference models.
 #' 
-#' @param object Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel})
+#' @param object Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
 #' or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
-#' using \code{get_refmodel}.
+#' using \link[=get_refmodel]{get_refmodel}.
 #' @param d_test A test dataset, which is used to evaluate model performance.
 #' If not provided, training data is used. Currently this argument is for internal use only.
 #' @param method The method used in the variable selection. Possible options are
@@ -15,7 +15,8 @@
 #' @param relax If TRUE, then the projected coefficients after L1-selection are computed
 #' without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 #' the coefficients are the solution from the L1-penalized projection. This option is relevant only
-#' if \code{method}='L1'. Default is TRUE. 
+#' if \code{method}='L1'. Default is TRUE for genuine reference models and FALSE if \code{object} is
+#' datafit (see \link[=init_refmodel]{init_refmodel}).  
 #' @param ns Number of posterior draws used in the variable selection.
 #'    Cannot be larger than the number of draws in the full model.
 #'    Ignored if nc is set.

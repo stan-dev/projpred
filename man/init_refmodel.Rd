@@ -6,24 +6,27 @@
 \usage{
 init_refmodel(z, y, family, x = NULL, predfun = NULL, dis = NULL,
   offset = NULL, wobs = NULL, wsample = NULL, intercept = TRUE,
-  cvfits = NULL, cvfun = NULL, ...)
+  cvfun = NULL, cvfits = NULL, ...)
 }
 \arguments{
+\item{z}{Predictor matrix of dimension \code{n}-by-\code{dz} containing the training
+inputs for the reference model. Rows denote the observations and columns the different inputs.}
+
 \item{y}{Vector of length \code{n} giving the target variable values.}
 
 \item{family}{\link{family} object giving the model family}
 
-\item{x}{Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
-variables for selection (i.e. variables from which to select the submodel). Rows denote
-the observations and columns the different variables.}
+\item{x}{Predictor matrix of dimension \code{n}-by-\code{dx} containing the candidate
+features for selection (i.e. variables from which to select the submodel).  Rows denote
+the observations and columns the different variables. Notice that this can
+different from \code{z}. If missing, same as \code{z} by default.}
 
-\item{predfun}{Function that takes a \code{nt}-by-\code{D} test predictor matrix as an input
-(\code{nt} = # test points, \code{D} = # predictors) and outputs
-a \code{nt}-by-\code{S} matrix of expected values for the target variable y,
+\item{predfun}{Function that takes a \code{nt}-by-\code{d1} test predictor matrix \code{zt} as an input
+(\code{nt} = # test points, \code{d1} = # predictors in the reference model) and outputs
+a \code{nt}-by-\code{S} matrix of expected values for the target variable \code{y},
 each column corresponding to one posterior draw for the parameters in the reference model
-(the number of draws \code{S} can also be 1).
-The output should be computed without any offsets, these are automatically taken into account
-internally, e.g. in cross-validation.}
+(the number of draws \code{S} can also be 1). Notice that the output should be computed without
+any offsets, these are automatically taken into account internally, e.g. in cross-validation.}
 
 \item{dis}{Vector of length \code{S} giving the posterior draws for the dispersion parameter
 in the reference model if there is such a parameter in the model family. For Gaussian
@@ -39,10 +42,22 @@ If omitted, equal weights are assumed.}
 
 \item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 
-\item{cvfits}{A list with K elements, each of which is a list with fields including at least
-variables: tr, ts and predfun giving the training and test indices and prediction function
-for each fold. Additionally each element can have field dis (dispersion samples for each fold)
-if the model has a dispersion parameter. Can be omitted but needed for K-fold cross validation
+\item{cvfun}{Function for performing K-fold cross-validation. The input is an \code{n}-element
+vector where each value is an integer between 1 and K denoting the fold for each observation.
+Should return a list with K elements, each of which is a list with fields \code{predfun} and
+\code{dis} (if the model has a dispersion parameter) which are defined the same way as the arguments 
+\code{predfun} and \code{dis} above but are computed using only the corresponding subset of the data. 
+More precisely, if \code{cvres} denotes
+the list returned by \code{cvfun}, then \code{cvres[[k]]$predfun} and \code{cvres[[k]]$dis} must be computed
+using only data from indices \code{folds != k}, where \code{folds} is the \code{n}-element input for
+\code{cvfun}. Can be omitted but either \code{cvfun} or \code{cvfits} is needed for K-fold cross-validation
+for genuine reference models. See example below.}
+
+\item{cvfits}{A list with K elements, that has the same format as the value returned by \code{cvind} but 
+each element of \code{cvfits} must also contain a field \code{omitted} which indicates the indices that
+were left out for the corresponding fold. Usually it is easier to specify \code{cvfun} but this can be useful
+if you have already computed the cross-validation for the reference model and would like to avoid 
+recomputing it. Can be omitted but either \code{cvfun} or \code{cvfits} is needed for K-fold cross-validation
 for genuine reference models.}
 
 \item{...}{Currently ignored.}
@@ -54,8 +69,7 @@ take the reference fit as the first argument, such as \link{varsel}, \link{cv_va
 }
 \description{
 Initializes a structure that can be used as a reference fit for the
-projective variable selection.
-This function is provided to allow construction of the reference fit
-using also other tools than \code{rstanarm}, because only certain specific
+projective variable selection. This function is provided to allow construction 
+of the reference fit from arbitrary fitted models, because only limited
 information is needed for the actual projection and variable selection.
 }

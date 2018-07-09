@@ -8,9 +8,9 @@ project(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL,
   nc = NULL, intercept = NULL, seed = NULL, regul = 1e-06, ...)
 }
 \arguments{
-\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel})
+\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
 or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
-using \code{get_refmodel}.}
+using \link[=get_refmodel]{get_refmodel}.}
 
 \item{nv}{Number of variables in the submodel (the variable combination is taken from the
 \code{varsel} information). If a list, then the projection is performed for each model size.
@@ -23,7 +23,7 @@ Default is the model size suggested by the variable selection (see function \cod
 without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 the coefficients are the solution from the L1-penalized projection. This option is relevant only
 if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
-datafit (see \code{init_refmodel}).}
+datafit (see \link[=init_refmodel]{init_refmodel}).}
 
 \item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.}
 

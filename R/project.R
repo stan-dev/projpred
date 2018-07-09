@@ -3,9 +3,9 @@
 #' Perform projection onto submodels of selected sizes or a specified feature
 #' combination.
 #' 
-#' @param object Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel})
+#' @param object Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
 #' or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
-#' using \code{get_refmodel}.
+#' using \link[=get_refmodel]{get_refmodel}.
 #' @param nv Number of variables in the submodel (the variable combination is taken from the
 #' \code{varsel} information). If a list, then the projection is performed for each model size.
 #' Default is the model size suggested by the variable selection (see function \code{suggest_size}).
@@ -15,7 +15,7 @@
 #' without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 #' the coefficients are the solution from the L1-penalized projection. This option is relevant only
 #' if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
-#' datafit (see \code{init_refmodel}). 
+#' datafit (see \link[=init_refmodel]{init_refmodel}). 
 #' @param ns Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.
 #' @param nc Number of clusters in the clustered projection.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
