@@ -237,7 +237,7 @@ NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.1, ...) {
+varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.32, ...) {
   
 	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
 		stop('The object does not look like a variable selection -object. Run variable selection first')
