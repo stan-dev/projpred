@@ -65,7 +65,7 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
 	refmodel <- get_refmodel(object)
   
   if (is.null(relax)) 
-    relax <- ifelse('datafit' %in% class(object), FALSE, TRUE)
+    relax <- ifelse('datafit' %in% class(get_refmodel(object)), FALSE, TRUE)
   if (!is.null(vind) || is.null(object$spath$beta))
     relax <- TRUE
 

@@ -28,6 +28,9 @@ get_refmodel.stanreg <- function(object, ...) {
 	
 	# the fit is an rstanarm-object
 	
+	if ('lmerMod' %in% class(object))
+		stop('stan_lmer and stan_glmer are not yet supported.')
+	
 	# fetch the draws
 	samp <- as.data.frame(object)
 	ndraws <- nrow(samp)

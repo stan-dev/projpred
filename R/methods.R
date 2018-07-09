@@ -493,6 +493,9 @@ NULL
 #' @rdname cv-indices
 #' @export
 cvfolds <- function(n, k, seed=NULL) {
+	
+	if (k > n)
+		stop('k cannot exceed n.')
   
   # set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
