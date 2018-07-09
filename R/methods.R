@@ -77,7 +77,7 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
       (length(object)>0 && 'projection' %in% class(object[[1]]))) {
     proj <- object
   } else {
-    # reference model obtained, so run the projection
+    # reference model or varsel object obtained, so run the projection
     proj <- project(object = object, nv = nv, ...)
   }
 

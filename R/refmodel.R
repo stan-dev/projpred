@@ -31,6 +31,11 @@ get_refmodel.stanreg <- function(object, ...) {
 	if ('lmerMod' %in% class(object))
 		stop('stan_lmer and stan_glmer are not yet supported.')
 	
+	families <- c('gaussian','binomial','poisson')
+	if (!(family(object)$family %in% families))
+		stop(paste0('Only the following families are currently supported:\n',
+								paste(families, collapse = ', '), '.'))
+	
 	# fetch the draws
 	samp <- as.data.frame(object)
 	ndraws <- nrow(samp)
