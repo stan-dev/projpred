@@ -49,57 +49,67 @@ fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
 ```
 
 
-The variable selection can then be excecuted with the command `varsel`. This will add a field `varsel` to the `fit`-object containing information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`. Currently the package implements forward search and Lasso type L1-penalization to find the variable ordering (Tran et al., 2012). The latter is much faster for large problems but the forward search can sometimes be more accurate.
+The variable selection can then be excecuted with the command `varsel`. This return an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`. Currently the package implements forward search and Lasso type L1-penalization to find the variable ordering (Tran et al., 2012). The latter is much faster for large problems but the forward search can sometimes be more accurate.
 ```{r}
-fit <- varsel(fit, method='forward')
-fit$varsel$vind # variables ordered as they enter during the search
+vs <- varsel(fit, method='forward')
+vs$vind # variables ordered as they enter during the search
 ```
 
 
 We can then plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
-```{r}
+```{r, fig.width=6, fig.height=4}
 # plot predictive performance on training data 
-varsel_plot(fit, stats=c('elpd', 'rmse'))
+varsel_plot(vs, stats=c('elpd', 'rmse'))
 ```
 
 
 The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process. 
 ```{r, results='hide', warning=F, cache=T}
-fit_cv <- cv_varsel(fit, method='forward')
+cvs <- cv_varsel(fit, method='forward')
 ```
-In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel```, and it can be obtained also by calling function ```suggest_size```
+In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the returned object, and it can be obtained also by calling function ```suggest_size```
 ```{r}
 # model size suggested by the program
-suggest_size(fit_cv)
+suggest_size(cvs)
 ```
-```{r}
+```{r, fig.width=6, fig.height=4}
 # plot the validation results, this time relative to the full model
-varsel_plot(fit_cv, stats = c('elpd', 'rmse'), deltas=T)
+varsel_plot(cvs, stats = c('elpd', 'rmse'), deltas=T)
 ```
 
 We can now perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with e.g. the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables. 
-```{r}
+```{r, fig.width=6, fig.height=2}
 # Visualise the three most relevant variables in the full model
 mcmc_areas(as.matrix(fit), 
-           pars = c('(Intercept)', names(fit$varsel$vind[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
+           pars = c('(Intercept)', names(vs$vind[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
 ```
-```{r}
+```{r, fig.width=6, fig.height=2}
 # Visualise the projected three most relevant variables
-proj <- project(fit, nv = 3, ns = 500)
+proj <- project(vs, nv = 3, ns = 500)
 mcmc_areas(as.matrix(proj)) + coord_cartesian(xlim = c(-2, 2))
 ```
 
-We can also make predictions with the submodels using method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+We can make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r}
-pred <- proj_linpred(fit, xnew=df_gaussian$x, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
+pred <- proj_linpred(vs, xnew=df_gaussian$x, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
 ```
 Visualize the predictions
-```{r}
+```{r, fig.width=5, fig.height=3}
 ggplot() +
   geom_point(aes(x=pred$pred,y=df_gaussian$y)) +
   geom_abline(slope = 1, color='red') +
   labs(x = 'prediction', y = 'y')
 ```
+We can also draw  samples from the projected predictive distribution. Here's an example prediction for the first data point using 6 variables (the observed value is marked by the red line)
+```{r, fig.height=3, fig.width=5}
+y1_rep <- proj_predict(vs, xnew=df_gaussian$x[1,,drop=F], nv=6, seed=7560)
+qplot(as.vector(y1_rep), bins=25) +
+  geom_vline(xintercept = df_gaussian$y[1], color='red') +
+  xlab('y1_rep')
+```
+
+
+
 
 ## Binomial example (logistic regression)
 
@@ -123,39 +133,39 @@ fit <- stan_glm(y ~ x, family=binomial(), data=df_binom, prior=prior_coeff,
 
 Run the variable selection and print out the variable ordering
 ```{r}
-fit <- varsel(fit, method='forward')
-fit$varsel$vind
+vs <- varsel(fit, method='forward')
+vs$vind
 ```
 
 Plot the ELPD and classification accuracy on the training data:
-```{r}
-varsel_plot(fit, stats=c('elpd', 'acc'), deltas=F)
+```{r, fig.width=6, fig.height=4}
+varsel_plot(vs, stats=c('elpd', 'acc'), deltas=F)
 ```
 
-Cross-validate the full model and the variable selection:
+Cross-validate the full model and the variable selection. Let's use K-fold cross validation this time for illustration (here we use only K=3 folds to make this vignette build faster, but in practice it is customary to use more folds, e.g. K=5 or K=10):
 ```{r, results='hide', warning=F, cache=T}
-fit_cv <- cv_varsel(fit, method='forward')
+cvs <- cv_varsel(fit, method='forward', cv_method='kfold', K=3, seed=823217)
 ```
 
-Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 7 varibles.
+Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics substantially.
 ```{r}
 # model size suggested by the program
-suggest_size(fit_cv)
+suggest_size(cvs)
 ```
-```{r}
+```{r, fig.width=6, fig.height=4}
 # plot the validation results
-varsel_plot(fit_cv, stats=c('elpd', 'acc'), deltas=T)
+varsel_plot(cvs, stats=c('elpd', 'acc'))
 ```
 
 Finally, for illustration, we compute here the predictive class probabilities using only the two most relevant variables, and visualize the results.
-```{r}
+```{r, fig.height=3.5, fig.width=5}
 # evaluate the predictive distribution in a 2d grid
 ng <- 20
 x1g <- seq(-4,4,len=ng)
 x2g <- seq(-4,4,len=ng)
 xnew <- cbind( rep(x1g,each=ng), rep(x2g,ng) )
-vind <- fit$varsel$vind[1:2]
-pr <- proj_linpred(fit, xnew, vind=vind, transform=T, integrated=T)
+vind <- vs$vind[1:2]
+pr <- proj_linpred(vs, xnew, vind=vind, transform=T, integrated=T)
 
 # visualize the contours showing the predicted class probabilities
 pp <- ggplot()
