@@ -56,58 +56,6 @@ log_sum_exp <- function(x) {
 `%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
 
 
-# extract all important information from the fit object for variable selection
-.extract_vars <- function(fit) {
-
-	if (!is.null(fit$stanfit)) {
-
-		# the fit is an rstanarm-object
-		e <- extract(fit$stanfit)
-
-		# family and the predictor matrix x
-		fam <- kl_helpers(family(fit))
-		x <- unname(get_x(fit))
-		coefnames <- names(coef(fit))[as.logical(attr(x, 'assign'))]
-		x <- x[, as.logical(attr(x, 'assign')), drop=F]
-		attr(x, 'assign') <- NULL
-
-		# undo the random permutation to make results reproducible
-		perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
-							 fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
-		dis_name <- ifelse(grepl(fit$call[1], 'stan_lm'), 'sigma', 'aux')
-
-		alpha <- unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv]
-		beta <- t(unname(as.matrix(drop(e$beta))))[, perm_inv, drop=F]
-		
-		res <- list(
-			fam = fam,
-			x = x,
-			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta)),
-			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
-			coefnames = coefnames,
-			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0)
-			)
-
-		res$predfun <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
-		res$mu <- res$predfun(x, res$offset)
-		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
-
-		# y and the observation weights in a standard form
-		target <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
-		res$wobs <- target$weights
-		res$y <- target$y
-		res$nobs <- length(res$y) # this assumes a single output model
-		res$loglik <- t(fam$ll_fun(res$mu,res$dis,res$y,res$wobs))
-
-		return(res)
-
-	} else if ('refmodel' %in% class(fit)) {
-		# an object constructed by init_refmodel so all the relavant fields should be there
-		return(fit)
-	} else {
-		stop('The class for the provided object is not recognized.')
-	}
-}
 
 
 .get_standard_y <- function(y, weights, fam) {
@@ -251,7 +199,7 @@ log_sum_exp <- function(x) {
 .get_traindata <- function(refmodel) {
 	#
 	# Returns the training data fetched from the reference model object.
-	return(list(x = refmodel$x, y = refmodel$y, weights = refmodel$wobs, offset = refmodel$offset))
+	return(list(z = refmodel$z, x = refmodel$x, y = refmodel$y, weights = refmodel$wobs, offset = refmodel$offset))
 }
 
 .check_data <- function(data) {
@@ -261,7 +209,8 @@ log_sum_exp <- function(x) {
 	# Raises error if x or y is missing, but fills weights and offset with default
 	# values if missing.
 	#
-	if (is.null(data$x)) stop('The data object must be a list with field x giving the predictor values.')
+	if (is.null(data$z)) stop('The data object must be a list with field z giving the reference model inputs.')
+	if (is.null(data$x)) stop('The data object must be a list with field x giving the feature values.')
 	if (is.null(data$y)) stop('The data object must be a list with field y giving the target values.')
 	if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
 	if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))

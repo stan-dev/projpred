@@ -1,27 +1,29 @@
 
 # TODO: should we make these available for the user
-# #' @export
+#' @export
 get_refmodel <- function (object, ...) {
 	UseMethod("get_refmodel", object)
 }
 
-
+#' @export
 get_refmodel.refmodel <- function(object, ...) {
 	# if the object is reference model already, then simply return it as is
 	object
 }
 
+#' @export
 get_refmodel.vsel <- function(object, ...) {
 	# the reference model is stored in vsel-object
 	object$refmodel
 }
 
+#' @export
 get_refmodel.cvsel <- function(object, ...) {
 	# the reference model is stored in cvsel object
 	object$refmodel
 }
 
-# #' @export
+#' @export
 get_refmodel.stanreg <- function(object, ...) {
 	
 	# the fit is an rstanarm-object
@@ -30,7 +32,10 @@ get_refmodel.stanreg <- function(object, ...) {
 	samp <- as.data.frame(object)
 	ndraws <- nrow(samp)
 	
-	# family and the predictor matrix x
+	# data, family and the predictor matrix x
+	data <- object$data
+	y_ind <- which(apply(data, 2, function(col) all(col==get_y(object))))
+	z <- data[,-y_ind,drop=F]
 	fam <- kl_helpers(family(object))
 	x <- get_x(object)
 	rownames(x) <- NULL # ignore the rownames
@@ -40,7 +45,7 @@ get_refmodel.stanreg <- function(object, ...) {
 	dis <- samp$sigma %ORifNULL% rep(0, ndraws) # TODO: handle other than gaussian likelihoods..
 	offset <- object$offset %ORifNULL% rep(0, nobs(object))
 	intercept <- as.logical(attr(object$terms,'intercept') %ORifNULL% 0)
-	predfun <- function(xt) t(posterior_linpred(object, newdata=data.frame(xt), transform=T, offset=rep(0,nrow(xt))))
+	predfun <- function(zt) t(posterior_linpred(object, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
 	wsample <- rep(1/ndraws, ndraws) # equal sample weights by default
 	
 	# y and the observation weights in a standard form
@@ -54,12 +59,12 @@ get_refmodel.stanreg <- function(object, ...) {
 	  fits <- cvres$fits[,'fit']
 	  lapply(fits, function (fit) {
 	    dis <- as.data.frame(fit)$sigma
-	    predfun <- function(xt) t(posterior_linpred(fit, newdata=data.frame(xt), transform=T, offset=rep(0,nrow(xt))))
+	    predfun <- function(zt) t(posterior_linpred(fit, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
 	    list(predfun=predfun, dis=dis)
 	  })
 	}
   
-	init_refmodel(x=x, y=y, family=fam, predfun=predfun, dis=dis, offset=offset, 
+	init_refmodel(z=z, y=y, family=fam, x=x, predfun=predfun, dis=dis, offset=offset, 
 								wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun) 
 }
 
@@ -113,27 +118,29 @@ get_refmodel.stanreg <- function(object, ...) {
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 
 #' @export
-init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL, 
+init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=NULL, 
 													wobs=NULL, wsample=NULL, intercept=TRUE, cvfits=NULL, cvfun=NULL, ...) {
 	
 	n <- length(y)
 	family <- kl_helpers(family)
 	
+	if (is.null(x))
+		x <- z
 	if (is.null(offset))
 		offset <- rep(0, n)	
 	
 	if (is.null(predfun)) {
 		# no prediction function given, so the 'reference model' will simply contain the
 		# observed data as the fitted values
-		predmu <- function(x,offset=0) matrix(rep(NA, NROW(x)))
+		predmu <- function(z,offset=0) matrix(rep(NA, NROW(z)))
 		mu <- y
 		proper_model <- FALSE
 	}	else {
 		# genuine reference model. add impact of offset to the prediction function
-		predmu <- function(x,offset=0) family$linkinv( family$linkfun(predfun(x)) + offset )
-		mu <- predmu(x,offset)
+		predmu <- function(z,offset=0) family$linkinv( family$linkfun(predfun(z)) + offset )
+		mu <- predmu(z,offset)
 		if (NROW(y)!=NROW(mu)) 
-			stop(paste0('The number of rows in the output of predfun(x) does not match with the given y;',
+			stop(paste0('The number of rows in the output of predfun(z) does not match with the given y;',
 									'predfun seems to be misspecified.'))
 		proper_model <- TRUE
 	}
@@ -176,7 +183,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 	  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
 	}
 	
-	refmodel <- list(x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
+	refmodel <- list(z=z, x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
 							offset=offset, wobs=target$weights, wsample=wsample, intercept=intercept, 
 							predfun=predmu, loglik=loglik, cvfits=cvfits, cvfun=cvfun)
 	
@@ -201,7 +208,7 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 #' density at a given point.
 #'
 #' @param object The object of class \code{refmodel}.
-#' @param xnew Matrix of predictor values used in the prediction. 
+#' @param znew Matrix of predictor values used in the prediction. 
 #' @param ynew New (test) target variables. If given, then the log predictive density
 #' for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
@@ -218,16 +225,16 @@ init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL,
 #' at \code{ynew} if \code{ynew} is not \code{NULL}.
 
 #' @export
-predict.refmodel <- function(object, xnew, ynew = NULL, offsetnew = NULL,
+predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
 														 weightsnew = NULL, type = 'response', ...) {
 	
 	if ('datafit' %in% class(object))
 		stop('Cannot make predictions with data reference only.')
 	
-	if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
-	if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
+	if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
+	if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
 	
-	mu <- object$predfun(xnew, offsetnew)
+	mu <- object$predfun(znew, offsetnew)
 	
 	if (is.null(ynew)) {
 		

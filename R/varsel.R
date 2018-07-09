@@ -135,7 +135,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   	if (d_type == 'train') {
   		full <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, refmodel$mu, refmodel$dis)
   	} else {
-  		mu_test <- refmodel$predfun(d_test$x, d_test$offset)
+  		mu_test <- refmodel$predfun(d_test$z, d_test$offset)
   		full <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, mu_test, refmodel$dis)
   	}
   }

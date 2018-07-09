@@ -187,7 +187,8 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
   # List of size K with test data for each fold (note that vars is from
   # the full model, not from the cross-validated models).
 	d_test_cv <- lapply(k_fold, function(fold) {
-	  list(x = refmodel$x[fold$omitted,,drop=F], y = refmodel$y[fold$omitted],
+	  list(z = refmodel$z[fold$omitted,,drop=F], 
+	  		 x = refmodel$x[fold$omitted,,drop=F], y = refmodel$y[fold$omitted],
 	       weights = refmodel$wobs[fold$omitted], offset = refmodel$offset[fold$omitted])
 	})
 
@@ -198,7 +199,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
   	d_train <- .get_traindata(refmod)
   	p_sel <- .get_refdist(refmod, ns, nc)
   	p_pred <- .get_refdist(refmod, nspred, ncpred)
-  	mu_test <- refmod$predfun(d_test$x, d_test$offset)
+  	mu_test <- refmod$predfun(d_test$z, d_test$offset)
   	list(d_train = d_train, d_test = d_test, p_sel = p_sel, p_pred = p_pred,
   	     mu_test = mu_test, dis = refmod$dis, w_test = refmod$wsample, msg = msg)
   }, refmodels_cv, d_test_cv, msgs, SIMPLIFY = F)
@@ -303,9 +304,9 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 	# transform the cvfits-list to k_fold list, that is, initialize the reference models for each
 	# fold given the prediction function and dispersion draws from the cvfits-list
 	k_fold <- lapply(cvfits, function(cvfit) {
-	  ref <- init_refmodel(x=refmodel$x[-cvfit$omitted,,drop=F], y=refmodel$y[-cvfit$omitted], family=refmodel$fam,
-	                       predfun=cvfit$predfun, dis=cvfit$dis, offset=refmodel$offset[-cvfit$omitted],
-	                       wobs=refmodel$wobs[-cvfit$omitted], intercept=refmodel$intercept)
+	  ref <- init_refmodel(z=refmodel$z[-cvfit$omitted,,drop=F], y=refmodel$y[-cvfit$omitted], x=refmodel$x[-cvfit$omitted,,drop=F],
+												 family=refmodel$fam, predfun=cvfit$predfun, dis=cvfit$dis, offset=refmodel$offset[-cvfit$omitted],
+												 wobs=refmodel$wobs[-cvfit$omitted], intercept=refmodel$intercept)
 	  list(refmodel=ref, omitted=cvfit$omitted)
 	})
 	
