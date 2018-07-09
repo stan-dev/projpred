@@ -11,8 +11,9 @@ varsel(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   regul = 1e-06, ...)
 }
 \arguments{
-\item{object}{Either a \code{refmodel}-type object created by \link[=init_refmodel]{init_refmodel}
-or an object which can be converted to a reference model.}
+\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel})
+or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
+using \code{get_refmodel}.}
 
 \item{d_test}{A test dataset, which is used to evaluate model performance.
 If not provided, training data is used. Currently this argument is for internal use only.}
@@ -79,8 +80,8 @@ which is a list containing the following elements:
 }
 }
 \description{
-Perform the projection predictive variable selection for a generalized
-linear model fitted with rstanarm.
+Perform the projection predictive variable selection for generalized linear models using
+generic reference models.
 }
 \examples{
 \donttest{

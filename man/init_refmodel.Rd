@@ -4,18 +4,18 @@
 \alias{init_refmodel}
 \title{Generic reference model initialization}
 \usage{
-init_refmodel(x, y, family, predfun = NULL, dis = NULL, offset = NULL,
-  wobs = NULL, wsample = NULL, intercept = TRUE, cvfits = NULL,
-  cvfun = NULL, ...)
+init_refmodel(z, y, family, x = NULL, predfun = NULL, dis = NULL,
+  offset = NULL, wobs = NULL, wsample = NULL, intercept = TRUE,
+  cvfits = NULL, cvfun = NULL, ...)
 }
 \arguments{
-\item{x}{Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
-variables for selection (i.e. variables from which to select the submodel). Rows denote
-the observations and columns the different variables.}
-
 \item{y}{Vector of length \code{n} giving the target variable values.}
 
 \item{family}{\link{family} object giving the model family}
+
+\item{x}{Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
+variables for selection (i.e. variables from which to select the submodel). Rows denote
+the observations and columns the different variables.}
 
 \item{predfun}{Function that takes a \code{nt}-by-\code{D} test predictor matrix as an input
 (\code{nt} = # test points, \code{D} = # predictors) and outputs

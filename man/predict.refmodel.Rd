@@ -4,13 +4,13 @@
 \alias{predict.refmodel}
 \title{Predict method for reference model objects}
 \usage{
-\method{predict}{refmodel}(object, xnew, ynew = NULL, offsetnew = NULL,
+\method{predict}{refmodel}(object, znew, ynew = NULL, offsetnew = NULL,
   weightsnew = NULL, type = "response", ...)
 }
 \arguments{
 \item{object}{The object of class \code{refmodel}.}
 
-\item{xnew}{Matrix of predictor values used in the prediction.}
+\item{znew}{Matrix of predictor values used in the prediction.}
 
 \item{ynew}{New (test) target variables. If given, then the log predictive density
 for the new observations is computed.}

@@ -1,9 +1,11 @@
-#' Projection to submodels of selected sizes
+#' Projection to submodels 
 #'
-#' Perform the projection predictive variable selection for a generalized
-#' linear model fitted with rstanarm.
-#' @param object Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
-#' or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.
+#' Perform projection onto submodels of selected sizes or a specified feature
+#' combination.
+#' 
+#' @param object Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel})
+#' or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
+#' using \code{get_refmodel}.
 #' @param nv Number of variables in the submodel (the variable combination is taken from the
 #' \code{varsel} information). If a list, then the projection is performed for each model size.
 #' Default is the model size suggested by the variable selection (see function \code{suggest_size}).
@@ -25,7 +27,7 @@
 #' @param ... Currently ignored.
 #'
 #' @return A list of submodels (or a single submodel if projection was performed onto
-#' a single variable combination), each of which contain the following elements:
+#' a single variable combination), each of which contains the following elements:
 #' \describe{
 #'  \item{\code{kl}}{The kl divergence from the full model to the submodel.}
 #'  \item{\code{weights}}{Weights for each draw of the projected model.}

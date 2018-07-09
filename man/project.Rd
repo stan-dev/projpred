@@ -2,14 +2,15 @@
 % Please edit documentation in R/project.R
 \name{project}
 \alias{project}
-\title{Projection to submodels of selected sizes}
+\title{Projection to submodels}
 \usage{
 project(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL,
   nc = NULL, intercept = NULL, seed = NULL, regul = 1e-06, ...)
 }
 \arguments{
-\item{object}{Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
-or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.}
+\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel})
+or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
+using \code{get_refmodel}.}
 
 \item{nv}{Number of variables in the submodel (the variable combination is taken from the
 \code{varsel} information). If a list, then the projection is performed for each model size.
@@ -41,7 +42,7 @@ need to add some regularization to avoid numerical problems. Default is 1e-9.}
 }
 \value{
 A list of submodels (or a single submodel if projection was performed onto
-a single variable combination), each of which contain the following elements:
+a single variable combination), each of which contains the following elements:
 \describe{
  \item{\code{kl}}{The kl divergence from the full model to the submodel.}
  \item{\code{weights}}{Weights for each draw of the projected model.}
@@ -54,8 +55,8 @@ a single variable combination), each of which contain the following elements:
 }
 }
 \description{
-Perform the projection predictive variable selection for a generalized
-linear model fitted with rstanarm.
+Perform projection onto submodels of selected sizes or a specified feature
+combination.
 }
 \examples{
 \donttest{
