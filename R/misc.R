@@ -27,29 +27,6 @@ log_sum_exp <- function(x) {
 	max_x + log(sum(exp(x - max_x)))
 }
 
-# check if the fit object is suitable for variable selection
-.validate_for_varsel <- function(fit) {
-
-    if ('stanreg' %in% class(fit)) {
-        
-        # a stanreg object
-        
-        if(!(gsub('rstanarm::', '', fit$call[1]) %in% c("stan_glm", "stan_lm")))
-            stop('Only \'stan_lm\' and \'stan_glm\' are supported.')
-        
-        families <- c('gaussian','binomial','poisson')
-        if(!(family(fit)$family %in% families))
-            stop(paste0('Only the following families are supported:\n',
-                        paste(families, collapse = ', '), '.'))
-    
-    } else if ('refmodel' %in% class(fit)) {
-        # a fit object constructed by init_refmodel, so everything should be fine
-        return()
-    } else {
-        stop('The class for the provided object is not recognized.')
-    }
-    
-}
 
 
 # from rstanarm
@@ -92,13 +69,18 @@ log_sum_exp <- function(x) {
 .get_refdist <- function(refmodel, ns=NULL, nc=NULL, seed=NULL) {
 	#
 	# Creates the reference distribution based on the refmodel-object, and the
-	# desired number of clusters (nc) or number of subsamples (ns). Returns
-	# a list with fields 
-	#       mu, var, weights, cl
-	# TODO EXPLAIN THESE
-	#
-	# If nc is specified, then clustering is used and ns is ignored.
-	#
+	# desired number of clusters (nc) or number of subsamples (ns). If nc is specified,
+  # then clustering is used and ns is ignored. Returns a list with fields:
+  #
+	#   mu: n-by-s matrix, vector of expected values for y for each draw/cluster. here s
+  #       means either the number of draws ns or clusters nc used, depending on which one is used.
+  #   var: n-by-s matrix, vector of predictive variances for y for each draw/cluster which
+  #         which are needed for projecting the dispersion parameter (note that this can be
+  #         unintuitively zero for those families that do not have dispersion)
+  #   weights: s-element vector of weights for the draws/clusters
+  #   cl: cluster assignment for each posterior draw, that is, a vector that has length equal to the
+  #       number of posterior draws and each value is an integer between 1 and s
+	# 
   if (is.null(seed))
     seed <- 17249420
 

@@ -65,7 +65,6 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                       nloo=100, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
                       thresh=1e-6, regul=1e-6, validate_search=T, seed=NULL, ...) {
 
-  # .validate_for_varsel(fit)
 	refmodel <- get_refmodel(fit)
 	
 	if (is.null(seed))
@@ -313,22 +312,6 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 	
 	return(k_fold)
 }
-
-
-# .validate_kfold <- function(fit, k_fold, n) {
-# 	# function for checking whether the provided fit and k_fold objects are OK for
-# 	# the k-fold cross validation for the selection
-# 
-# 	if ('stanreg' %in% class(fit) && is.environment(fit$data))
-# 		stop(paste('Omitting the \'data\' from rstanarm does not work with k-fold',
-# 							 'cross-validation.'))
-# 
-# 	# check that the fit-objects are valid for variable selection
-# 	if (!all(apply(k_fold$fits, 1, function(fits, fit) {
-# 		.validate_for_varsel(fits$fit)
-# 		is.vector(fits$omitted) && max(fits$omitted) <= n && all(fits$omitted > 0)
-# 	}, fit))) stop('k_fold does not have the correct form.')
-# }
 
 
 
