@@ -86,16 +86,14 @@ get_refmodel.stanreg <- function(object, ...) {
 	x <- x[, as.logical(attr(x, 'assign')), drop=F] # drop the column of ones
 	attr(x, 'assign') <- NULL
 	
+	y <- unname(get_y(object))
 	dis <- samp$sigma %ORifNULL% rep(0, ndraws) # TODO: handle other than gaussian likelihoods..
 	offset <- object$offset %ORifNULL% rep(0, nobs(object))
 	intercept <- as.logical(attr(object$terms,'intercept') %ORifNULL% 0)
 	predfun <- function(zt) t(posterior_linpred(object, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
 	wsample <- rep(1/ndraws, ndraws) # equal sample weights by default
-	
-	# y and the observation weights in a standard form
-	target <- .get_standard_y(unname(get_y(object)), weights(object), fam)
-	wobs <- target$weights
-	y <- target$y
+	wobs <- unname(weights(object)) # observation weights
+	if (length(wobs)==0) wobs <- rep(1,nrow(z))
 	
 	# cvfun for k-fold cross-validation
 	cvfun <- function(folds) {
@@ -108,8 +106,8 @@ get_refmodel.stanreg <- function(object, ...) {
 	  })
 	}
   
-	init_refmodel(z=z, y=y, family=fam, x=x, predfun=predfun, dis=dis, offset=offset, 
-								wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun) 
+	init_refmodel(z=z, y=y, family=fam, x=x, predfun=predfun, dis=dis, offset=offset,
+	              wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun) 
 }
 
 
@@ -174,16 +172,21 @@ get_refmodel.stanreg <- function(object, ...) {
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 
 #' @export
-init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=NULL, 
-													wobs=NULL, wsample=NULL, intercept=TRUE, cvfun=NULL, cvfits=NULL,  ...) {
+init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=NULL,
+                          wobs=NULL, wsample=NULL, intercept=TRUE, cvfun=NULL, cvfits=NULL,  ...) {
 	
-	n <- length(y)
+	n <- NROW(z)
 	family <- kl_helpers(family)
 	
 	if (is.null(x))
 		x <- z
 	if (is.null(offset))
 		offset <- rep(0, n)	
+	
+	# y and the observation weights in a standard form
+	target <- .get_standard_y(y, wobs, family)
+	y <- target$y
+	wobs <- target$weights
 	
 	if (is.null(predfun)) {
 		# no prediction function given, so the 'reference model' will simply contain the
@@ -230,18 +233,15 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
 	else
 		coefnames <- paste0('x',1:ncol(x))
 	
-	# y and the observation weights in a standard form
-	target <- .get_standard_y(y, wobs, family)
-	
 	if (!proper_model) {
 	  # this is a dummy definition for cvfun, but it will lead to standard cross-validation
 	  # for datafit reference; see cv_varsel and get_kfold
 	  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
 	}
 	
-	refmodel <- list(z=z, x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
-							offset=offset, wobs=target$weights, wsample=wsample, intercept=intercept, 
-							predfun=predmu, loglik=loglik, cvfits=cvfits, cvfun=cvfun)
+	refmodel <- list(z=z, x=x, y=y, fam=family, mu=mu, dis=dis, nobs=n, coefnames=coefnames,
+	                 offset=offset, wobs=wobs, wsample=wsample, intercept=intercept,
+	                 predfun=predmu, loglik=loglik, cvfits=cvfits, cvfun=cvfun)
 	
 	# define the class of the retuned object to be 'refmodel' and additionally 'datafit'
 	# if only the observed data was provided and no actual function for predicting test data
@@ -282,7 +282,7 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
 
 #' @export
 predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
-														 weightsnew = NULL, type = 'response', ...) {
+                             weightsnew = NULL, type = 'response', ...) {
 	
 	if ('datafit' %in% class(object))
 		stop('Cannot make predictions with data reference only.')
