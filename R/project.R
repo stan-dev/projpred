@@ -65,8 +65,10 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
 	refmodel <- get_refmodel(object)
   
   if (is.null(relax)) 
+  	# use non-relaxed solution for datafits by default
     relax <- ifelse('datafit' %in% class(get_refmodel(object)), FALSE, TRUE)
-  if (!is.null(vind) || is.null(object$spath$beta))
+  if (is.null(object$spath$beta) || (!is.null(vind) && any(object$spath$vind[1:length(vind)] != vind)))
+  	# search path not found, or the given variable combination not in the search path
     relax <- TRUE
 
   if (!is.null(vind)) {
