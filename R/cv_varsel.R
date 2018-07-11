@@ -67,8 +67,8 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 
 	refmodel <- get_refmodel(fit)
 	
-	if (is.null(seed))
-	  seed <- 134654
+	# if (is.null(seed))
+	#   seed <- 134654
 
 	if (is.null(method)) {
 		if (dim(refmodel$x)[2] <= 20)
