@@ -1,6 +1,10 @@
 .onAttach <- function(...) {
   ver <- utils::packageVersion("projpred")
-  packageStartupMessage("This is projpred version ", ver)
+  msg <- paste0('This is projpred version ', ver, '\n\n',
+                 'Note: The type of the returned objects of varsel/cv_varsel have changed\n',
+                 'since the latest release, although this does not affect how the functions\n',
+                 'are used.')
+  packageStartupMessage(msg)
 }
 
 weighted.sd <- function(x, w, na.rm=F) {
