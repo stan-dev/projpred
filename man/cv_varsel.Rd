@@ -7,8 +7,8 @@
 cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
   intercept = NULL, penalty = NULL, verbose = T, nloo = 100, K = NULL,
-  k_fold = NULL, lambda_min_ratio = 1e-05, nlambda = 150,
-  thresh = 1e-06, regul = 1e-06, validate_search = T, seed = NULL, ...)
+  lambda_min_ratio = 1e-05, nlambda = 150, thresh = 1e-06,
+  regul = 1e-06, validate_search = T, seed = NULL, ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -43,10 +43,6 @@ Default value is 100. Only applicable if \code{cv_method = LOO}.}
 
 \item{K}{Number of folds in the k-fold cross validation. Only applicable
 if \code{cv_method = TRUE} and \code{k_fold = NULL}.}
-
-\item{k_fold}{An array with cross-validated stanfits and the respective
-test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
-If not provided, \link[=kfold]{kfold} is called inside the function.}
 
 \item{lambda_min_ratio}{Same as in \link[=varsel]{varsel}.}
 
@@ -91,7 +87,8 @@ linear model.
 \donttest{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
-fit_cv <- cv_varsel(fit)
+cvs <- cv_varsel(fit)
+varsel_plot(cvs)
 }
 
 }

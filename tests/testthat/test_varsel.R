@@ -66,12 +66,12 @@ SW({
 
 
 context('varsel')
-test_that('varsel returns an object with a field named "varsel"', {
+test_that('varsel returns an object of type "vsel"', {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     for(j in 1:length(vs_list[[i]])) {
       j_inf <- names(vs_list[[i]])[j]
-      expect_true('varsel' %in% names(vs_list[[i]][[j]]))
+      expect_true('vsel' %in% class(vs_list[[i]][[j]]))
     }
   }
 })
@@ -81,47 +81,49 @@ test_that('object retruned by varsel contains the relevant fields', {
     i_inf <- names(vs_list)[i]
     for(j in 1:length(vs_list[[i]])) {
       j_inf <- names(vs_list[[i]])[j]
+      # refmodel seems legit
+      expect_true('refmodel' %in% class(vs_list[[i]][[j]]$refmodel))
       # vind seems legit
-      expect_equal(length(vs_list[[i]][[j]]$varsel$vind), nv,
+      expect_equal(length(vs_list[[i]][[j]]$vind), nv,
                    info = paste(i_inf, j_inf))
-      expect_equal(names(coef(fit_gauss)[-1])[vs_list[[i]][[j]]$varsel$vind],
-                   names(vs_list[[i]][[j]]$varsel$vind),
+      expect_equal(names(coef(fit_gauss)[-1])[vs_list[[i]][[j]]$vind],
+                   names(vs_list[[i]][[j]]$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
-      expect_equal(length(vs_list[[i]][[j]]$varsel$kl), nv + 1,
+      expect_equal(length(vs_list[[i]][[j]]$kl), nv + 1,
                    info = paste(i_inf, j_inf))
       # decreasing
-      expect_equal(vs_list[[i]][[j]]$varsel$kl,
-                   cummin(vs_list[[i]][[j]]$varsel$kl),
+      expect_equal(vs_list[[i]][[j]]$kl,
+                   cummin(vs_list[[i]][[j]]$kl),
                    info = paste(i_inf, j_inf))
       # d_test seems legit
-      expect_equal(length(vs_list[[i]][[j]]$varsel$d_test$y), n,
+      expect_equal(length(vs_list[[i]][[j]]$d_test$y), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(length(vs_list[[i]][[j]]$varsel$d_test$weights), n,
+      expect_equal(length(vs_list[[i]][[j]]$d_test$weights), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(length(vs_list[[i]][[j]]$varsel$d_test$weights), n,
+      expect_equal(length(vs_list[[i]][[j]]$d_test$weights), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(typeof(vs_list[[i]][[j]]$varsel$d_test$type), 'character',
+      expect_equal(typeof(vs_list[[i]][[j]]$d_test$type), 'character',
                    info = paste(i_inf, j_inf))
-      expect_equal(cvs_list[[i]][[j]]$varsel$d_test$type, 'loo',
+      expect_equal(cvs_list[[i]][[j]]$d_test$type, 'loo',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
-      expect_named(vs_list[[i]][[j]]$varsel$summaries, c('sub', 'full'),
+      expect_named(vs_list[[i]][[j]]$summaries, c('sub', 'full'),
                    info = paste(i_inf, j_inf))
-      expect_equal(length(vs_list[[i]][[j]]$varsel$summaries$sub), nv + 1,
+      expect_equal(length(vs_list[[i]][[j]]$summaries$sub), nv + 1,
                    info = paste(i_inf, j_inf))
-      expect_named(vs_list[[i]][[j]]$varsel$summaries$sub[[1]], c('mu', 'lppd'),
+      expect_named(vs_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd'),
                    info = paste(i_inf, j_inf))
-      expect_named(vs_list[[i]][[j]]$varsel$summaries$full, c('mu', 'lppd'),
+      expect_named(vs_list[[i]][[j]]$summaries$full, c('mu', 'lppd'),
                    info = paste(i_inf, j_inf))
       # family_kl seems legit
       expect_equal(vs_list[[i]][[j]]$family$family,
-                   vs_list[[i]][[j]]$varsel$family_kl$family,
+                   vs_list[[i]][[j]]$family_kl$family,
                    info = paste(i_inf, j_inf))
       expect_equal(vs_list[[i]][[j]]$family$link,
-                   vs_list[[i]][[j]]$varsel$family_kl$link,
+                   vs_list[[i]][[j]]$family_kl$link,
                    info = paste(i_inf, j_inf))
-      expect_true(length(vs_list[[i]][[j]]$varsel$family_kl) >=
+      expect_true(length(vs_list[[i]][[j]]$family_kl) >=
                     length(vs_list[[i]][[j]]$family$family),
                   info = paste(i_inf, j_inf))
     }
@@ -130,17 +132,17 @@ test_that('object retruned by varsel contains the relevant fields', {
 
 test_that('nv_max has an effect on varsel for gaussian models', {
   vs1 <- varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
-  expect_equal(length(vs1$varsel$vind), 3)
+  expect_equal(length(vs1$vind), 3)
 })
 
 test_that('nv_max has an effect on varsel for non-gaussian models', {
   vs1 <- varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
-  expect_equal(length(vs1$varsel$vind), 3)
+  expect_equal(length(vs1$vind), 3)
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
-  expect_error(varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
-  expect_error(varsel(1, verbose = FALSE), regexp = 'not recognized')
+  expect_error(varsel(fit_glmer, verbose = FALSE), regexp = 'not yet supported')
+  expect_error(varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
 })
 
 
@@ -150,7 +152,7 @@ test_that("varsel: adding more regularization has an expected effect", {
         norms <- rep(0, length(regul))
         msize <- 3
         for (j in 1:length(regul)) {
-            vsel <- varsel(fit_list[[i]], regul=regul[j])$varsel
+            vsel <- varsel(fit_list[[i]], regul=regul[j])
             norms[j] <- sum( fit_list[[i]]$family$linkfun(vsel$summaries$sub[[msize]]$mu)^2 )
         }
         for (j in 1:(length(regul)-1))
@@ -169,26 +171,25 @@ test_that("varsel: specifying penalties for variables has an expected effect", {
   for (i in seq_along(vs_list_pen)) {
     # check that the variables with no cost are selected first and the ones with 
     # inf penalty last
-    sdiff <- setdiff(head(vs_list_pen[[i]]$varsel$vind, length(ind_zeropen)), ind_zeropen)
+    sdiff <- setdiff(head(vs_list_pen[[i]]$vind, length(ind_zeropen)), ind_zeropen)
     expect_true(length(sdiff)==0)
     
-    sdiff <- setdiff(tail(vs_list_pen[[i]]$varsel$vind, length(ind_infpen)), ind_infpen)
+    sdiff <- setdiff(tail(vs_list_pen[[i]]$vind, length(ind_infpen)), ind_infpen)
     expect_true(length(sdiff)==0)
   }
 })
 
 
 context('cv_varsel')
-test_that('cv_varsel returns an object with a field named "varsel"', {
+test_that('cv_varsel returns an object of type "cvsel"', {
   for(i in 1:length(cvs_list)){
     i_inf <- names(cvs_list)[i]
     for(j in 1:length(cvs_list[[i]])) {
       j_inf <- names(cvs_list[[i]])[j]
-      expect_true('varsel' %in% names(cvs_list[[i]][[j]]),
+      expect_true('cvsel' %in% class(cvs_list[[i]][[j]]),
                   info = paste(i_inf, j_inf))
     }
   }
-
 })
 
 test_that('object retruned by cv_varsel contains the relevant fields', {
@@ -197,62 +198,62 @@ test_that('object retruned by cv_varsel contains the relevant fields', {
     for(j in 1:length(cvs_list[[i]])) {
       j_inf <- names(cvs_list[[i]])[j]
       # vind seems legit
-      expect_equal(length(cvs_list[[i]][[j]]$varsel$vind), nv,
+      expect_equal(length(cvs_list[[i]][[j]]$vind), nv,
                    info = paste(i_inf, j_inf))
-      expect_equal(names(coef(fit_gauss)[-1])[cvs_list[[i]][[j]]$varsel$vind],
-                   names(cvs_list[[i]][[j]]$varsel$vind),
+      expect_equal(names(coef(fit_gauss)[-1])[cvs_list[[i]][[j]]$vind],
+                   names(cvs_list[[i]][[j]]$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
-      expect_equal(length(cvs_list[[i]][[j]]$varsel$kl), nv + 1,
+      expect_equal(length(cvs_list[[i]][[j]]$kl), nv + 1,
                    info = paste(i_inf, j_inf))
       # decreasing
-      expect_equal(cvs_list[[i]][[j]]$varsel$kl,
-                   cummin(cvs_list[[i]][[j]]$varsel$kl),
+      expect_equal(cvs_list[[i]][[j]]$kl,
+                   cummin(cvs_list[[i]][[j]]$kl),
                    info = paste(i_inf, j_inf))
       # d_test seems legit
-      expect_equal(length(cvs_list[[i]][[j]]$varsel$d_test$y), n,
+      expect_equal(length(cvs_list[[i]][[j]]$d_test$y), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(length(cvs_list[[i]][[j]]$varsel$d_test$weights), n,
+      expect_equal(length(cvs_list[[i]][[j]]$d_test$weights), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(length(cvs_list[[i]][[j]]$varsel$d_test$weights), n,
+      expect_equal(length(cvs_list[[i]][[j]]$d_test$weights), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(typeof(cvs_list[[i]][[j]]$varsel$d_test$type), 'character',
+      expect_equal(typeof(cvs_list[[i]][[j]]$d_test$type), 'character',
                    info = paste(i_inf, j_inf))
-      expect_equal(cvs_list[[i]][[j]]$varsel$d_test$type, 'loo',
+      expect_equal(cvs_list[[i]][[j]]$d_test$type, 'loo',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
-      expect_named(cvs_list[[i]][[j]]$varsel$summaries, c('sub', 'full'),
+      expect_named(cvs_list[[i]][[j]]$summaries, c('sub', 'full'),
                    info = paste(i_inf, j_inf))
-      expect_equal(length(cvs_list[[i]][[j]]$varsel$summaries$sub), nv + 1,
+      expect_equal(length(cvs_list[[i]][[j]]$summaries$sub), nv + 1,
                    info = paste(i_inf, j_inf))
-      expect_named(cvs_list[[i]][[j]]$varsel$summaries$sub[[1]], c('mu', 'lppd', 'w'),
+      expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd', 'w'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
-      expect_named(cvs_list[[i]][[j]]$varsel$summaries$full, c('mu', 'lppd'),
+      expect_named(cvs_list[[i]][[j]]$summaries$full, c('mu', 'lppd'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
       # family_kl seems legit
       expect_equal(cvs_list[[i]][[j]]$family$family,
-                   cvs_list[[i]][[j]]$varsel$family_kl$family,
+                   cvs_list[[i]][[j]]$family_kl$family,
                    info = paste(i_inf, j_inf))
       expect_equal(cvs_list[[i]][[j]]$family$link,
-                   cvs_list[[i]][[j]]$varsel$family_kl$link,
+                   cvs_list[[i]][[j]]$family_kl$link,
                    info = paste(i_inf, j_inf))
-      expect_true(length(cvs_list[[i]][[j]]$varsel$family_kl) >=
+      expect_true(length(cvs_list[[i]][[j]]$family_kl) >=
                     length(cvs_list[[i]][[j]]$family$family),
                   info = paste(i_inf, j_inf))
       # pctch seems legit
-      expect_equal(dim(cvs_list[[i]][[j]]$varsel$pctch), c(nv, nv + 1),
+      expect_equal(dim(cvs_list[[i]][[j]]$pctch), c(nv, nv + 1),
                    info = paste(i_inf, j_inf))
-      expect_true(all(cvs_list[[i]][[j]]$varsel$pctch[,-1] <= 1 &&
-                        cvs_list[[i]][[j]]$varsel$pctch[,-1] >= 0),
+      expect_true(all(cvs_list[[i]][[j]]$pctch[,-1] <= 1 &&
+                        cvs_list[[i]][[j]]$pctch[,-1] >= 0),
                   info = paste(i_inf, j_inf))
-      expect_equal(cvs_list[[i]][[j]]$varsel$pctch[,1], 1:nv,
+      expect_equal(cvs_list[[i]][[j]]$pctch[,1], 1:nv,
                    info = paste(i_inf, j_inf))
-      expect_equal(colnames(cvs_list[[i]][[j]]$varsel$pctch),
-                   c('size', names(cvs_list[[i]][[j]]$varsel$vind)),
+      expect_equal(colnames(cvs_list[[i]][[j]]$pctch),
+                   c('size', names(cvs_list[[i]][[j]]$vind)),
                    info = paste(i_inf, j_inf))
       # ssize seems legit
-      expect_true(cvs_list[[i]][[j]]$varsel$ssize>=0 || 
-                  is.na(cvs_list[[i]][[j]]$varsel$ssize),
+      expect_true(cvs_list[[i]][[j]]$ssize>=0 || 
+                  is.na(cvs_list[[i]][[j]]$ssize),
                   info = paste(i_inf, j_inf))
     }
   }
@@ -263,19 +264,19 @@ test_that('nv_max has an effect on cv_varsel for gaussian models', {
   suppressWarnings(
     vs1 <- cv_varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
   )
-  expect_equal(length(vs1$varsel$vind), 3)
+  expect_equal(length(vs1$vind), 3)
 })
 
 test_that('nv_max has an effect on cv_varsel for non-gaussian models', {
   suppressWarnings(
     vs1 <- cv_varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
   )
-  expect_equal(length(vs1$varsel$vind), 3)
+  expect_equal(length(vs1$vind), 3)
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
-  expect_error(cv_varsel(fit_glmer, verbose = FALSE), regexp = 'supported')
-  expect_error(varsel(1, verbose = FALSE), regexp = 'not recognized')
+	expect_error(cv_varsel(fit_glmer, verbose = FALSE), regexp = 'not yet supported')
+	expect_error(cv_varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
 })
 
 test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
@@ -284,62 +285,59 @@ test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
     for(j in 1:length(cv_kf_list[[i]])) {
       j_inf <- names(cv_kf_list[[i]])[j]
       # vind seems legit
-      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$vind), nv,
+      expect_equal(length(cv_kf_list[[i]][[j]]$vind), nv,
                    info = paste(i_inf, j_inf))
-      expect_equal(names(coef(fit_gauss)[-1])[cv_kf_list[[i]][[j]]$varsel$vind],
-                   names(cv_kf_list[[i]][[j]]$varsel$vind),
+      expect_equal(names(coef(fit_gauss)[-1])[cv_kf_list[[i]][[j]]$vind],
+                   names(cv_kf_list[[i]][[j]]$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
-      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$kl), nv + 1,
+      expect_equal(length(cv_kf_list[[i]][[j]]$kl), nv + 1,
                    info = paste(i_inf, j_inf))
       # decreasing
-      expect_equal(cv_kf_list[[i]][[j]]$varsel$kl,
-                   cummin(cv_kf_list[[i]][[j]]$varsel$kl),
+      expect_equal(cv_kf_list[[i]][[j]]$kl,
+                   cummin(cv_kf_list[[i]][[j]]$kl),
                    info = paste(i_inf, j_inf))
       # d_test seems legit
-      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$d_test$y), n,
+      expect_equal(length(cv_kf_list[[i]][[j]]$d_test$y), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$d_test$weights), n,
+      expect_equal(length(cv_kf_list[[i]][[j]]$d_test$weights), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$d_test$weights), n,
+      expect_equal(length(cv_kf_list[[i]][[j]]$d_test$weights), n,
                    info = paste(i_inf, j_inf))
-      expect_equal(typeof(cv_kf_list[[i]][[j]]$varsel$d_test$type), 'character',
+      expect_equal(typeof(cv_kf_list[[i]][[j]]$d_test$type), 'character',
                    info = paste(i_inf, j_inf))
-      expect_equal(cv_kf_list[[i]][[j]]$varsel$d_test$type, 'kfold',
+      expect_equal(cv_kf_list[[i]][[j]]$d_test$type, 'kfold',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
-      expect_named(cv_kf_list[[i]][[j]]$varsel$summaries, c('sub', 'full'),
+      expect_named(cv_kf_list[[i]][[j]]$summaries, c('sub', 'full'),
                    info = paste(i_inf, j_inf))
-      expect_equal(length(cv_kf_list[[i]][[j]]$varsel$summaries$sub), nv + 1,
+      expect_equal(length(cv_kf_list[[i]][[j]]$summaries$sub), nv + 1,
                    info = paste(i_inf, j_inf))
-      expect_named(cv_kf_list[[i]][[j]]$varsel$summaries$sub[[1]], c('mu', 'lppd'),
+      expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
-      expect_named(cv_kf_list[[i]][[j]]$varsel$summaries$full, c('mu', 'lppd'),
+      expect_named(cv_kf_list[[i]][[j]]$summaries$full, c('mu', 'lppd'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
       # family_kl seems legit
       expect_equal(cv_kf_list[[i]][[j]]$family$family,
-                   cv_kf_list[[i]][[j]]$varsel$family_kl$family,
+                   cv_kf_list[[i]][[j]]$family_kl$family,
                    info = paste(i_inf, j_inf))
       expect_equal(cv_kf_list[[i]][[j]]$family$link,
-                   cv_kf_list[[i]][[j]]$varsel$family_kl$link,
+                   cv_kf_list[[i]][[j]]$family_kl$link,
                    info = paste(i_inf, j_inf))
-      expect_true(length(cv_kf_list[[i]][[j]]$varsel$family_kl) >=
+      expect_true(length(cv_kf_list[[i]][[j]]$family_kl) >=
                     length(cv_kf_list[[i]][[j]]$family$family),
                   info = paste(i_inf, j_inf))
       # pctch seems legit
-      expect_equal(dim(cv_kf_list[[i]][[j]]$varsel$pctch), c(nv, nv + 1),
+      expect_equal(dim(cv_kf_list[[i]][[j]]$pctch), c(nv, nv + 1),
                    info = paste(i_inf, j_inf))
-      expect_true(all(cv_kf_list[[i]][[j]]$varsel$pctch[,-1] <= 1 &&
-                        cv_kf_list[[i]][[j]]$varsel$pctch[,-1] >= 0),
+      expect_true(all(cv_kf_list[[i]][[j]]$pctch[,-1] <= 1 &&
+                        cv_kf_list[[i]][[j]]$pctch[,-1] >= 0),
                   info = paste(i_inf, j_inf))
-      expect_equal(cv_kf_list[[i]][[j]]$varsel$pctch[,1], 1:nv,
+      expect_equal(cv_kf_list[[i]][[j]]$pctch[,1], 1:nv,
                    info = paste(i_inf, j_inf))
-      expect_equal(colnames(cv_kf_list[[i]][[j]]$varsel$pctch),
-                   c('size', names(cv_kf_list[[i]][[j]]$varsel$vind)),
+      expect_equal(colnames(cv_kf_list[[i]][[j]]$pctch),
+                   c('size', names(cv_kf_list[[i]][[j]]$vind)),
                    info = paste(i_inf, j_inf))
-      # dont test ssize
-      # expect_true(cv_kf_list[[i]][[j]]$varsel$ssize>=0,
-      #             info = paste(i_inf, j_inf))
     }
   }
 })
@@ -362,44 +360,41 @@ test_that('providing k_fold works', {
     fit_cv <- cv_varsel(glm_simp, cv_method = 'kfold', k_fold = k_fold)
   })
   expect_false(any(grepl('k_fold not provided', out)))
-  expect_equal(length(fit_cv$varsel$vind), nv)
+  expect_equal(length(fit_cv$vind), nv)
                
   # kl seems legit
-  expect_equal(length(fit_cv$varsel$kl), nv + 1)
+  expect_equal(length(fit_cv$kl), nv + 1)
                
   # decreasing
-  expect_equal(fit_cv$varsel$kl, cummin(fit_cv$varsel$kl))
+  expect_equal(fit_cv$kl, cummin(fit_cv$kl))
                
   # d_test seems legit
-  expect_equal(length(fit_cv$varsel$d_test$y), n)
-  expect_equal(length(fit_cv$varsel$d_test$weights), n)
-  expect_equal(length(fit_cv$varsel$d_test$weights), n)
-  expect_equal(typeof(fit_cv$varsel$d_test$type), 'character')
-  expect_equal(fit_cv$varsel$d_test$type, 'kfold')
+  expect_equal(length(fit_cv$d_test$y), n)
+  expect_equal(length(fit_cv$d_test$weights), n)
+  expect_equal(length(fit_cv$d_test$weights), n)
+  expect_equal(typeof(fit_cv$d_test$type), 'character')
+  expect_equal(fit_cv$d_test$type, 'kfold')
                
   # summaries seems legit
-  expect_named(fit_cv$varsel$summaries, c('sub', 'full'))
-  expect_equal(length(fit_cv$varsel$summaries$sub), nv + 1)
-  expect_named(fit_cv$varsel$summaries$sub[[1]], c('mu', 'lppd'),
+  expect_named(fit_cv$summaries, c('sub', 'full'))
+  expect_equal(length(fit_cv$summaries$sub), nv + 1)
+  expect_named(fit_cv$summaries$sub[[1]], c('mu', 'lppd'),
                ignore.order = TRUE)
-  expect_named(fit_cv$varsel$summaries$full, c('mu', 'lppd'),
+  expect_named(fit_cv$summaries$full, c('mu', 'lppd'),
                ignore.order = TRUE)
   # family_kl seems legit
   expect_equal(fit_cv$family$family,
-               fit_cv$varsel$family_kl$family)
-  expect_equal(fit_cv$family$link, fit_cv$varsel$family_kl$link)
-  expect_true(length(fit_cv$varsel$family_kl) >= length(fit_cv$family$family))
+               fit_cv$family_kl$family)
+  expect_equal(fit_cv$family$link, fit_cv$family_kl$link)
+  expect_true(length(fit_cv$family_kl) >= length(fit_cv$family$family))
   # pctch seems legit
-  expect_equal(dim(fit_cv$varsel$pctch), c(nv, nv + 1))
-  expect_true(all(fit_cv$varsel$pctch[,-1] <= 1 &&
-                    fit_cv$varsel$pctch[,-1] >= 0))
+  expect_equal(dim(fit_cv$pctch), c(nv, nv + 1))
+  expect_true(all(fit_cv$pctch[,-1] <= 1 &&
+                    fit_cv$pctch[,-1] >= 0))
               
-  expect_equal(fit_cv$varsel$pctch[,1], 1:nv)
-  expect_equal(colnames(fit_cv$varsel$pctch),
-               c('size', names(fit_cv$varsel$vind)))
-               
-  # dont test ssize
-  # expect_true(fit_cv$varsel$ssize>=0)
+  expect_equal(fit_cv$pctch[,1], 1:nv)
+  expect_equal(colnames(fit_cv$pctch),
+               c('size', names(fit_cv$vind)))
               
 })
 

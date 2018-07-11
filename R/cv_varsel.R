@@ -21,9 +21,6 @@
 #' Default value is 100. Only applicable if \code{cv_method = LOO}. 
 #' @param K Number of folds in the k-fold cross validation. Only applicable
 #' if \code{cv_method = TRUE} and \code{k_fold = NULL}.
-#' @param k_fold An array with cross-validated stanfits and the respective
-#' test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
-#' If not provided, \link[=kfold]{kfold} is called inside the function.
 #' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
 #' @param nlambda Same as in \link[=varsel]{varsel}.
 #' @param thresh Same as in \link[=varsel]{varsel}.
@@ -56,7 +53,8 @@
 #' \donttest{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
-#' fit_cv <- cv_varsel(fit)
+#' cvs <- cv_varsel(fit)
+#' varsel_plot(cvs)
 #' }
 #'
 
@@ -64,38 +62,37 @@
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
-                      nloo=100, K = NULL, k_fold = NULL, lambda_min_ratio=1e-5, nlambda=150,
+                      nloo=100, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
                       thresh=1e-6, regul=1e-6, validate_search=T, seed=NULL, ...) {
 
-  .validate_for_varsel(fit)
-	vars <- .extract_vars(fit)
+	refmodel <- get_refmodel(fit)
 	
-	if (is.null(seed))
-	  seed <- 134654
+	# if (is.null(seed))
+	#   seed <- 134654
 
 	if (is.null(method)) {
-		if (dim(vars$x)[2] <= 20)
+		if (dim(refmodel$x)[2] <= 20)
 			method <- 'forward'
 		else
 			method <- 'L1'
 	}
 
 	if (is.null(relax)) {
-	  if ('datafit' %in% class(fit))
+	  if ('datafit' %in% class(refmodel))
 	    relax <- F
 	  else
 	    relax <- T
 	}
 
 	if (is.null(cv_method)) {
-		if ('datafit' %in% class(fit))
+		if ('datafit' %in% class(refmodel))
 			# only data given, no actual reference model
 			cv_method <- 'kfold'
 		else
 			cv_method <- 'LOO'
 	}
 	if (cv_method == 'kfold' && is.null(K)) {
-	  if ('datafit' %in% class(fit))
+	  if ('datafit' %in% class(refmodel))
 	    K <- 10
 	  else
 	    K <- 4
@@ -106,24 +103,26 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 		nc <- 1
 	if (is.null(nspred) && is.null(ncpred))
     # use 5 clusters for prediction by default
-		ncpred <- min(ncol(vars$mu), 5)
+		ncpred <- min(ncol(refmodel$mu), 5)
 
 	if(is.null(intercept))
-		intercept <- vars$intercept
-	if(is.null(nv_max) || nv_max > NCOL(vars$x)) {
-		nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
-		nv_max <- min(NCOL(vars$x), nv_max_default, 20)
+		intercept <- refmodel$intercept
+	if(is.null(nv_max) || nv_max > NCOL(refmodel$x)) {
+		nv_max_default <- floor(0.4*length(refmodel$y)) # a somewhat sensible default limit for nv_max
+		nv_max <- min(NCOL(refmodel$x), nv_max_default, 20)
 	}
 
 	# search options
 	opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
 	
 	if (tolower(cv_method) == 'kfold') {
-		sel_cv <- kfold_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty,
-		                       verbose, vars, K, k_fold, opt)
+	  # TODO: should we save the cvfits object to the reference model so that it need not be computed again
+	  # if the user wants to compute the search again?
+		sel_cv <- kfold_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty,
+		                       verbose, opt, K, seed=seed)
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
-		sel_cv <- loo_varsel(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty, 
+		sel_cv <- loo_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty, 
 		                     verbose, opt, nloo = nloo, validate_search = validate_search, seed = seed)
 	} else {
 		stop(sprintf('Unknown cross-validation method: %s.', method))
@@ -132,9 +131,9 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	# run the selection using the full dataset
 	if (verbose)
 		print(paste('Performing the selection using all the data..'))
-	sel <- varsel(fit, method=method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
+	sel <- varsel(refmodel, method=method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
 	              relax=relax, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose, 
-	              lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)$varsel
+	              lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
 
 
 	# find out how many of cross-validated iterations select
@@ -149,61 +148,61 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	}))
 	colnames(pctch)[-1] <- names(sel$vind)
 
-	fit$proj <- NULL
-	fit$varsel <- c(sel[c('vind', 'kl', 'family_kl')],
-                  sel_cv[c('d_test', 'summaries')],
-                  list(pctch = pctch))
-  fit$varsel$spath <- sel$spath
-	fit$varsel$nv_max <- nv_max
-	fit$varsel$nv_all <- ncol(vars$x)
-	fit$varsel$ssize <- suggest_size(fit, warnings = F)
+	
+	# create the object to be returned
+	vs <- list()
+	vs$refmodel <- refmodel
+	vs$spath <- sel$spath
+	vs <- c(vs, c(sel_cv[c('d_test', 'summaries')],
+	              sel[c('family_kl', 'vind', 'kl')],
+	              list(pctch = pctch)))
+	class(vs) <- 'cvsel'
+	vs$nv_max <- nv_max
+	vs$nv_all <- ncol(refmodel$x)
+	vs$ssize <- suggest_size(vs, warnings = F)
 	
 	if (verbose)
 	  print('Done.')
 
-	fit
+	vs
 }
 
 
-kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax,
-                         intercept, penalty, verbose, vars, K, k_fold, opt) {
-
-	if (is.null(K)) 
-		K <- 4
+kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax,
+                         intercept, penalty, verbose, opt, K, seed=NULL) {
 	
-	if (is.null(k_fold))
-		# k-fold not provided, so must perform now if possible (not possible for generic
-		# reference model, so this will raise error)
-		k_fold <- .get_kfold(fit, K, verbose)
+	# fetch the k_fold list (or compute it now if not already computed)
+	k_fold <- .get_kfold(refmodel, K, verbose, seed)
 	
 	# check that k_fold has the correct form
-	.validate_kfold(fit, k_fold, vars$nobs)
+	# .validate_kfold(refmodel, k_fold, refmodel$nobs)
 	
-	K <- nrow(k_fold$fits)
-	family_kl <- vars$fam
+	K <- length(k_fold) 
+	family_kl <- refmodel$fam
 	
   # extract variables from each fit-object (samples, x, y, etc.)
   # to a list of size K
-  vars_cv <- lapply(k_fold$fits[,'fit'], .extract_vars)
+	refmodels_cv <- lapply(k_fold, function(fold) fold$refmodel)
 
   # List of size K with test data for each fold (note that vars is from
   # the full model, not from the cross-validated models).
-  d_test_cv <- lapply(k_fold$fits[,'omitted'], function(omitted) {
-    list(x = vars$x[omitted,,drop=F], y = vars$y[omitted],
-         weights = vars$wobs[omitted], offset = vars$offset[omitted])
-  })
+	d_test_cv <- lapply(k_fold, function(fold) {
+	  list(z = refmodel$z[fold$omitted,,drop=F], 
+	  		 x = refmodel$x[fold$omitted,,drop=F], y = refmodel$y[fold$omitted],
+	       weights = refmodel$wobs[fold$omitted], offset = refmodel$offset[fold$omitted])
+	})
 
   # List of K elements, each containing d_train, p_pred, etc. corresponding
   # to each fold.
   msgs <- paste0(method, ' search for fold ', 1:K, '/', K, '.')
-  list_cv <- mapply(function(vars, d_test, msg) {
-  	d_train <- .get_traindata(vars)
-  	p_sel <- .get_refdist(vars, ns, nc)
-  	p_pred <- .get_refdist(vars, nspred, ncpred)
-  	mu_test <- vars$predfun(d_test$x, d_test$offset)
+  list_cv <- mapply(function(refmod, d_test, msg) {
+  	d_train <- .get_traindata(refmod)
+  	p_sel <- .get_refdist(refmod, ns, nc)
+  	p_pred <- .get_refdist(refmod, nspred, ncpred)
+  	mu_test <- refmod$predfun(d_test$z, d_test$offset)
   	list(d_train = d_train, d_test = d_test, p_sel = p_sel, p_pred = p_pred,
-  	     mu_test = mu_test, dis = vars$dis, w_test = vars$wsample, msg = msg)
-  }, vars_cv, d_test_cv, msgs, SIMPLIFY = F)
+  	     mu_test = mu_test, dis = refmod$dis, w_test = refmod$wsample, msg = msg)
+  }, refmodels_cv, d_test_cv, msgs, SIMPLIFY = F)
   
   # Perform the selection for each of the K folds
   if (verbose) {
@@ -271,95 +270,83 @@ kfold_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax,
 }
 
 
-.get_kfold <- function(fit, K, verbose) {
-	# Fetch the k_fold object from the fit (in case of generic reference model) or 
-	# construct/compute it (in case of rstanarm reference model). The resulting 
-	# list contains an element 'fits', which is a K x 2 dimensional array. Each row
-	# corresponds to one of the K folds. First column contains the rstanarm-objects
-	# and the second column the indices of the omitted observations (aka test data).
-	if ('refmodel' %in% class(fit)) {
-		if (is.null(fit$k_fold)) {
-			if ('datafit' %in% class(fit)) {
-				# no genuine reference model exists, but the provided reference fit is the observed
-				# data itself, so we can cross-validate the search for the submodels in a normal cv fashion
-				# by dividing the data into K subsets
-				cv <- cvind(fit$nobs, k=K, out='indices')
-				cvfits <- mapply(function(tr,ts) {
-					fit <- init_refmodel(fit$x[tr,,drop=F], fit$y[tr], fit$fam, offset=fit$offset[tr], wobs=fit$wobs[tr],
-															 wsample=fit$wsample, intercept=fit$intercept)
-					list(fit=fit, omitted=ts)
-				}, cv$tr,cv$ts)
-				k_fold <- list(fits=t(cvfits))
-			} else
-				# genuine probabilistic model but k-fold fits not provided, so raise an error
-				stop('For a generic reference model, you must provide the fits for the cross-validation folds.
-				 See function init_refmodel.')
-		}	else
-			k_fold <- fit$k_fold
-		
-	}	else if ('stanreg' %in% class(fit)) {
-		if (verbose) 
-			print(paste0('k_fold not provided, performing ', K,
-								 '-fold cross-validation for the stan model.'))
-		utils::capture.output(
-			k_fold <- kfold(fit, K = K, save_fits = T)
-		)
-	} else
-		stop('Got an unknown fit object, don\'t know how to perform k-fold cross-validation.')
+.get_kfold <- function(refmodel, K, verbose, seed) {
+  # Fetch the k_fold list or compute it now if not already computed. This function will
+  # return a list of length K, where each element is a list with fields 'refmodel' (object
+  # of type refmodel computed by init_refmodel) and index list 'omitted' that denotes which
+  # of the data points were left out for the corresponding fold.
+	
+  if (is.null(refmodel$cvfits)) {
+    
+    if (!is.null(refmodel$cvfun)) {
+      
+      # cv-function provided so perform the cross-validation now. In case refmodel
+      # is datafit, cvfun will return an empty list and this will lead to normal cross-validation
+      # for the submodels although we don't have an actual reference model
+      if (verbose && !('datafit' %in% class(refmodel)))
+        print('Performing cross-validation for the reference model..')
+      folds <- cvfolds(refmodel$nobs, k=K, seed=seed)
+      cvfits <- refmodel$cvfun(folds)
+      cvfits <- lapply(seq_along(cvfits), function(k) {
+        # add the 'omitted' indices for the cvfits
+        cvfit <- cvfits[[k]]
+        cvfit$omitted <- which(folds==k)
+        cvfit
+      })
+      
+    } else
+			# genuine probabilistic model but no k-fold fits nor cvfun provided, so raise an error
+			stop('For a generic reference model, you must provide either cvfits or cvfun for k-fold cross-validation.
+			      See function init_refmodel.')
+	}	else
+	  cvfits <- refmodel$cvfits
+	
+	# transform the cvfits-list to k_fold list, that is, initialize the reference models for each
+	# fold given the prediction function and dispersion draws from the cvfits-list
+	k_fold <- lapply(cvfits, function(cvfit) {
+	  ref <- init_refmodel(z=refmodel$z[-cvfit$omitted,,drop=F], y=refmodel$y[-cvfit$omitted], x=refmodel$x[-cvfit$omitted,,drop=F],
+												 family=refmodel$fam, predfun=cvfit$predfun, dis=cvfit$dis, offset=refmodel$offset[-cvfit$omitted],
+												 wobs=refmodel$wobs[-cvfit$omitted], intercept=refmodel$intercept)
+	  list(refmodel=ref, omitted=cvfit$omitted)
+	})
 	
 	return(k_fold)
 }
 
 
-.validate_kfold <- function(fit, k_fold, n) {
-	# function for checking whether the provided fit and k_fold objects are OK for
-	# the k-fold cross validation for the selection
 
-	if ('stanreg' %in% class(fit) && is.environment(fit$data))
-		stop(paste('Omitting the \'data\' from rstanarm does not work with k-fold',
-							 'cross-validation.'))
-
-	# check that the fit-objects are valid for variable selection
-	if (!all(apply(k_fold$fits, 1, function(fits, fit) {
-		.validate_for_varsel(fits$fit)
-		is.vector(fits$omitted) && max(fits$omitted) <= n && all(fits$omitted > 0)
-	}, fit))) stop('k_fold does not have the correct form.')
-}
-
-
-
-loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, 
+loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, 
                        penalty, verbose, opt, nloo = 100, validate_search = T, seed = NULL) {
 	#
 	# Performs the validation of the searching process using LOO.
 	# validate_search indicates whether the selection is performed separately for each
   # fold (for each data point)
   #
-	vars <- .extract_vars(fit)
-	fam <- vars$fam
-	mu <- vars$mu
-	dis <- vars$dis
+  
+	fam <- refmodel$fam
+	mu <- refmodel$mu
+	dis <- refmodel$dis
 
 	# training data
-	d_train <- .get_traindata(vars)
+	d_train <- .get_traindata(refmodel)
 
 	# the clustering/subsampling used for selection
-	p_sel <- .get_refdist(vars, ns=ns, nc=nc)
+	p_sel <- .get_refdist(refmodel, ns=ns, nc=nc)
 	cl_sel <- p_sel$cl # clustering information
 
 	# the clustering/subsampling used for prediction
-	p_pred <- .get_refdist(vars, ns=nspred, nc=ncpred)
+	p_pred <- .get_refdist(refmodel, ns=nspred, nc=ncpred)
 	cl_pred <- p_pred$cl
 
 	# fetch the log-likelihood for the reference model to obtain the LOO weights
-	if (is.null(vars$loglik))
+	if (is.null(refmodel$loglik))
 		# case where log-likelihood not available, i.e., the reference model is not a genuine model
 		# => cannot compute LOO
 		stop('LOO can be performed only if the reference model is a genuine probabilistic model for
           which the log-likelihood can be evaluated.')
 	else
 		# log-likelihood available
-		loglik <- vars$loglik
+		loglik <- refmodel$loglik
 	psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1,ncol(loglik))) # TODO: should take r_eff:s into account
 	lw <- weights(psisloo)
 	pareto_k <- loo::pareto_k_values(psisloo)
@@ -401,8 +388,8 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, inter
 	  i <- inds[run_index]
 
 	  # reweight the clusters/samples according to the is-loo weights
-	  p_sel <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_sel)
-	  p_pred <- .get_p_clust(fam, mu, dis, wobs=vars$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
+	  p_sel <- .get_p_clust(fam, mu, dis, wobs=refmodel$wobs, wsample=exp(lw[,i]), cl=cl_sel)
+	  p_pred <- .get_p_clust(fam, mu, dis, wobs=refmodel$wobs, wsample=exp(lw[,i]), cl=cl_pred) 
 	  
 		if (validate_search) {
 		  # perform selection with the reweighted clusters/samples
@@ -415,7 +402,7 @@ loo_varsel <- function(fit, method, nv_max, ns, nc, nspred, ncpred, relax, inter
 	  as.search <- !relax && !is.null(spath$beta) && !is.null(spath$alpha)
 	  submodels <- .get_submodels(spath, 0:nv_max, fam, p_pred,
 	                              d_train, intercept, opt$regul, as.search=as.search)
-		d_test <- list(x=matrix(vars$x[i,],nrow=1), y=vars$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
+		d_test <- list(x=matrix(refmodel$x[i,],nrow=1), y=refmodel$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 
 		for (k in seq_along(summaries_sub)) {

@@ -10,6 +10,10 @@ kl_helpers <- function(fam) {
 
   # define the functions for all families but
   # return only the ones that are needed.
+	
+	if (.has.fam.extras(fam))
+		# if the object already was created using this function, then return
+		return(fam)
 
   # kl-divergences
   # for binomial and poisson it is the mean of the dev.resids divided by 2

@@ -53,3 +53,13 @@ model with probability 0.16 (and consequently, worse with probability 0.84). In 
 the estimated difference between the reference model and submodel utitlities is at most one standard error
 away from zero, so the two utilities are considered to be close.
 }
+\examples{
+\donttest{
+### Usage with stanreg objects
+fit <- stan_glm(y~x, binomial())
+vs <- cv_varsel(fit)
+suggest_size(vs)
+
+}
+
+}
