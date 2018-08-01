@@ -344,6 +344,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   double tol = thresh*fabs(loss_initial); // threshold for convergence
   double decrement = 0; // newton decrement, used to monitor convergence
   
+  
   qau = 0;
   while (qau < qa_updates_max) {
     
@@ -385,6 +386,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       	Rcpp::Rcout << "(newton decrement = " << decrement << ", should be positive), ";
       	Rcpp::Rcout << ", this is likely a bug. Please report to the developers." << '\n';
       }
+      
     }
     
     if (ls_iter == ls_iter_max && ls_iter_max > 1) {
@@ -439,9 +441,9 @@ List glm_ridge_c( arma::mat x,
   glm_ridge(beta, loss, w, qau, x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, ls_iter_max, debug);
     
   if (intercept) 
-    return List::create(vec(beta.tail(D-1)), beta(0), w, qau);
+    return List::create(vec(beta.tail(D-1)), beta(0), w, loss, qau);
   else 
-    return List::create(beta, 0.0, w, qau);
+    return List::create(beta, 0.0, w, loss, qau);
 }
 
 
