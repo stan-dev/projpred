@@ -5,7 +5,7 @@
 \title{Suggest model size}
 \usage{
 suggest_size(object, stat = "elpd", alpha = 0.32, pct = 0,
-  type = "upper", warnings = TRUE, ...)
+  type = "upper", baseline = NULL, warnings = TRUE, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -15,14 +15,18 @@ suggest_size(object, stat = "elpd", alpha = 0.32, pct = 0,
 other possible choices.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
-intervals based on which the decision is made. E.g. \code{alpha=0.1} corresponds to
-90\% probability mass within the intervals. See details for more information.}
+intervals based on which the decision is made. E.g. \code{alpha=0.32} corresponds to
+68\% probability mass within the intervals (one standard error intervals). 
+See details for more information.}
 
-\item{pct}{Number indicating the relative proportion between full model and null model
+\item{pct}{Number indicating the relative proportion between baseline model and null model
 utilities one is willing to sacrifice. See details for more information.}
 
 \item{type}{Either 'upper' (default) or 'lower' determining whether the decisions are
 based on the upper or lower credible bounds. See details for more information.}
+
+\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the reference model or
+the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.}
 
 \item{warnings}{Whether to give warnings if automatic suggestion fails, mainly for internal use.
 Default is TRUE, and usually no reason to set to FALSE.}
@@ -41,16 +45,16 @@ problem.
 The suggested model size is the smallest model for which
 either the lower or upper (depending on argument \code{type}) credible bound 
 of the submodel utility \eqn{u_k} with significance level \code{alpha} falls above
-  \deqn{u_ref - pct*(u_ref - u_0)} 
-Here \eqn{u_ref} denotes the reference model utility and \eqn{u_0} the null model utility
-(currently the utility is taken to be the mean log predictive density, MLPD).
+  \deqn{u_base - pct*(u_base - u_0)} 
+Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0} the null model utility.
+The baseline is either the reference model or the best submodel found (see argument \code{baseline}).
 The lower and upper bounds are defined to contain the submodel utility with 
 probability 1-alpha (each tail has mass alpha/2).
 
 By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which means that we select the smallest
-model for which the upper tail exceeds the reference model level, that is, which is better than the reference 
+model for which the upper tail exceeds the baseline model level, that is, which is better than the baseline 
 model with probability 0.16 (and consequently, worse with probability 0.84). In other words,
-the estimated difference between the reference model and submodel utitlities is at most one standard error
+the estimated difference between the baseline model and submodel utilities is at most one standard error
 away from zero, so the two utilities are considered to be close.
 }
 \examples{

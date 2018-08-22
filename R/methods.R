@@ -226,12 +226,14 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' @param type One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
 #' compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
 #' that \code{1-alpha} percent of the mass falls between them.
-#' @param deltas If \code{TRUE}, the difference between the full model and the
-#' submodel is returned instead of the actual value of the statistic.
+#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative to the baseline model 
+#' (see argument \code{baseline}) instead of estimating the actual values of the statistics.
 #' Defaults to \code{FALSE}.
 #' @param alpha A number indicating the desired coverage of the credible
-#' intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
-#' within the intervals.
+#' intervals. For example \code{alpha=0.32} corresponds to 68\% probability mass
+#' within the intervals, that is, one standard error intervals.
+#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the reference model or
+#' the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.
 #' @param ... Currently ignored.
 #' 
 #' 
@@ -250,27 +252,34 @@ NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.32, ...) {
+varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.32, baseline=NULL, ...) {
   
 	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
 		stop('The object does not look like a variable selection -object. Run variable selection first')
-
-	if (all(is.na(object$summaries$full$mu))) {
-		# no reference model (or the results missing for some other reason),
-		# so cannot compute differences between the reference model and submodels
-		refstat_found <- F
-		if (deltas==T) {
-			deltas <- F
-			warning('Cannot use deltas = TRUE when there is no reference model, setting deltas = FALSE.')
-		}
-	} else
-		refstat_found <- T
+  
+  if (is.null(baseline)) {
+    if ('datafit' %in% class(object$refmodel))
+      baseline <- 'best'
+    else
+      baseline <- 'ref'
+  } else {
+    if (!(baseline %in% c('ref','best')))
+      stop('Argument \'baseline\' must be either \'ref\' or \'best\'.')
+    if (baseline == 'ref' && deltas==T && 'datafit' %in% class(object$refmodel)) {
+      # no reference model (or the results missing for some other reason),
+      # so cannot compute differences between the reference model and submodels
+      deltas <- F
+      warning('Cannot use deltas = TRUE and baseline = \'ref\' when there is no reference model; setting deltas = FALSE.')
+    }
+  }
 	
 	# compute all the statistics and fetch only those that were asked
-	tab <- .tabulate_stats(object, alpha)
+	nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+	tab <- .tabulate_stats(object, alpha, nfeat_baseline = nfeat_baseline)
 	stats_table <- subset(tab, (tab$delta==deltas | tab$statistic=='kl') & tab$statistic %in% stats)
 	stats_ref <- subset(stats_table, stats_table$size==Inf)
 	stats_sub <- subset(stats_table, stats_table$size!=Inf)
+	stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
 	
 	
 	if(NROW(stats_sub) == 0) {
@@ -278,9 +287,9 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
 	                paste0(unique(stats), collapse=', '), ' not available.'))
 	}
 	
-	if(is.null(nv_max)) 
+	if(is.null(nv_max))
 	  nv_max <- max(stats_sub$size)
-	ylab <- if(deltas) 'Difference to the full model' else 'value'
+	ylab <- if(deltas) 'Difference to the baseline' else 'Value'
 	
 	# make sure that breaks on the x-axis are integers
 	n_opts <- c(4,5,6)
@@ -300,10 +309,14 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
     geom_line(aes_string(y = 'value')) +
     geom_point(aes_string(y = 'value'))
 	
-	if (refstat_found)
+	if (!is.na(stats_ref$se))
 		# add reference model results if they exist
 		pp <- pp + geom_hline(aes_string(yintercept = 'value'), data = stats_ref,
 													color = 'darkred', linetype=2)
+	if (baseline != 'ref')
+	  # add the baseline result (if different from the reference model)
+	  pp <- pp + geom_hline(aes_string(yintercept = 'value'), data = stats_bs,
+	                        color = 'black', linetype=3)
 	pp <- pp + 
 		scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
 	                       limits = c(min(breaks), max(breaks))) +
@@ -316,37 +329,43 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
 #' @rdname varsel-statistics
 #' @export
 varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
-                         deltas = F, alpha=0.1, ...) {
+                         deltas = F, alpha=0.32, baseline=NULL, ...) {
   
 	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
 		stop('The object does not look like a variable selection -object. Run variable selection first')
-
-	if (all(is.na(object$summaries$full$mu)) && deltas==T) {
-		# no reference model (or the results missing for some other reason),
-		# so cannot compute differences between the reference model and submodels
-		warning('Cannot compute statistics for deltas = TRUE when there is no reference model.')
-	}
-	
-  tab <- .tabulate_stats(object, alpha=alpha)
+  
+  if (is.null(baseline)) {
+    if ('datafit' %in% class(object$refmodel))
+      baseline <- 'best'
+    else
+      baseline <- 'ref'
+  } else {
+    if (!(baseline %in% c('ref','best')))
+      stop('Argument \'baseline\' must be either \'ref\' or \'best\'.')
+    if (baseline == 'ref' && deltas==T && 'datafit' %in% class(object$refmodel)) {
+      # no reference model (or the results missing for some other reason),
+      # so cannot compute differences between the reference model and submodels
+      warning('Cannot compute statistics for deltas = TRUE and baseline = \'ref\' when there is no reference model.')
+    }
+  }
+  
+  # fetch statistics
+  nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+  tab <- .tabulate_stats(object, alpha=alpha, nfeat_baseline=nfeat_baseline)
   stats_table <- subset(tab, (tab$delta == deltas | tab$statistic == 'kl') & tab$size != Inf)
   
   # these are the corresponding names for mean, se, upper and lower in the stats_table, and their suffices
   # in the table to be returned 
   qty <- unname(sapply(type, function(t) switch(t, mean='value', upper='uq', lower='lq', se='se')))
   suffix <- unname(sapply(type, function(t) switch(t, mean='', upper='.upper', lower='.lower', se='.se')))
-  
 
   # loop through all the required statistics 
   arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$vind))
   for (i in seq_along(stats)) {
-    
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- sapply(suffix, function(s) paste0(stats[i],s))
     colnames(temp) <- newnames
-    # if (is.null(arr))
-      # arr <- temp
-    # else
-      arr <- cbind(arr, temp)
+    arr <- cbind(arr, temp)
   }
 
   if(is.null(nv_max)) 
@@ -376,12 +395,15 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' @param stat Statistic used for the decision. Default is elpd. See \code{varsel_stats} for
 #' other possible choices. 
 #' @param alpha A number indicating the desired coverage of the credible
-#' intervals based on which the decision is made. E.g. \code{alpha=0.1} corresponds to
-#' 90\% probability mass within the intervals. See details for more information.
-#' @param pct Number indicating the relative proportion between full model and null model
+#' intervals based on which the decision is made. E.g. \code{alpha=0.32} corresponds to
+#' 68\% probability mass within the intervals (one standard error intervals). 
+#' See details for more information.
+#' @param pct Number indicating the relative proportion between baseline model and null model
 #' utilities one is willing to sacrifice. See details for more information.
 #' @param type Either 'upper' (default) or 'lower' determining whether the decisions are
 #' based on the upper or lower credible bounds. See details for more information.
+#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the reference model or
+#' the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.
 #' @param warnings Whether to give warnings if automatic suggestion fails, mainly for internal use.
 #' Default is TRUE, and usually no reason to set to FALSE.
 #' @param ... Currently ignored.
@@ -389,16 +411,16 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' @details The suggested model size is the smallest model for which
 #' either the lower or upper (depending on argument \code{type}) credible bound 
 #' of the submodel utility \eqn{u_k} with significance level \code{alpha} falls above
-#'   \deqn{u_ref - pct*(u_ref - u_0)} 
-#' Here \eqn{u_ref} denotes the reference model utility and \eqn{u_0} the null model utility
-#' (currently the utility is taken to be the mean log predictive density, MLPD).
+#'   \deqn{u_base - pct*(u_base - u_0)} 
+#' Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0} the null model utility.
+#' The baseline is either the reference model or the best submodel found (see argument \code{baseline}).
 #' The lower and upper bounds are defined to contain the submodel utility with 
 #' probability 1-alpha (each tail has mass alpha/2).
 #' 
 #' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which means that we select the smallest
-#' model for which the upper tail exceeds the reference model level, that is, which is better than the reference 
+#' model for which the upper tail exceeds the baseline model level, that is, which is better than the baseline 
 #' model with probability 0.16 (and consequently, worse with probability 0.84). In other words,
-#' the estimated difference between the reference model and submodel utitlities is at most one standard error
+#' the estimated difference between the baseline model and submodel utilities is at most one standard error
 #' away from zero, so the two utilities are considered to be close.
 #' 
 #' @examples
@@ -412,22 +434,23 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' 
 
 #' @export
-suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper', warnings=TRUE, ...) {
+suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper', 
+                         baseline=NULL, warnings=TRUE, ...) {
   
 	
 	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
 		stop('The object does not look like a variable selection -object. Run variable selection first')
   
-  btype <- ifelse(type=='upper', 'uq', 'lq')
-  tab <- .tabulate_stats(object, alpha = alpha)
-  stats <- subset(tab, tab$statistic == stat & tab$delta == TRUE & tab$size != Inf &
-                    tab$data %in% c('train', 'test', 'loo', 'kfold'))
+  bound <- paste0(stat,'.',type)
+  stats <- varsel_stats(object, stats=stat, alpha=alpha, type=c('mean','upper','lower'),
+                        baseline=baseline, deltas = T)
   
-  if (!all(is.na(stats[,'value']))) {
+  if (!all(is.na(stats[,stat]))) {
     
-    util_null <- subset(stats, stats$size == 0, 'value')
+    util_null <- unlist(unname(subset(stats, stats$size==0, stat)))
     util_cutoff <- pct*util_null
-    res <- subset(stats, stats[,btype] >= util_cutoff$value, 'size')
+    res <- subset(stats, stats[,bound] >= util_cutoff, 'size')
+
     if(nrow(res) == 0) {
       # no submodel satisfying the criterion found
       if (object$nv_max == object$nv_all)

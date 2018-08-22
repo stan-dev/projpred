@@ -131,7 +131,8 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   # simply fetch the statistics on the train data
   if ('datafit' %in% class(refmodel)) {
   	# no actual reference model, so we don't know how to predict test observations
-  	full <- list(mu=rep(NA,refmodel$nobs), lppd=rep(NA,refmodel$nobs))
+    ntest <- nrow(d_test$z)
+  	full <- list(mu=rep(NA,ntest), lppd=rep(NA,ntest))
   } else {
   	if (d_type == 'train') {
   		full <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, refmodel$mu, refmodel$dis)
