@@ -20,6 +20,21 @@ weighted.sd <- function(x, w, na.rm=F) {
   sqrt(n/(n-1)*sum(w[ind]*(x[ind] - m)^2))
 }
 
+weighted.cov <- function(x,y, w, na.rm=F) {
+	if (na.rm) {
+		ind <- !is.na(w) & !is.na(x) & !is.na(y)
+		n <- sum(ind)
+	} else {
+		n <- length(x)
+		ind <- rep(T,n)
+	}
+	w <- w/sum(w[ind])
+	mx <- sum(x[ind]*w[ind])
+	my <- sum(y[ind]*w[ind])
+	n/(n-1)*sum(w[ind]*(x[ind] - mx)*(x[ind] - my))
+}
+
+
 log_weighted_mean_exp <- function(x, w) {
   x <- x + log(w)
   max_x <- max(x)

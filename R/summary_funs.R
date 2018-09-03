@@ -116,7 +116,7 @@
   # compute statistics for the submodels by looping over the model sizes
   
   for (k in seq_along(varsel$summaries$sub)) {
-    
+  	
     # summaries for the submodel
     summ_k <- varsel$summaries$sub[[k]]
     stats_pw <- .pointwise_stats(summ_k$mu, summ_k$lppd, varsel$d_test, varsel$family_kl)
@@ -152,12 +152,12 @@
       # case where the statistics for the reference model have been computed for all the data points,
       # but for the submodels using part of the data only, so compute the results for the submodels
       # as the "difference to the reference model + the result for the reference model" 
-      m <- m_diff + m_bs # m_ref # NOTE: THESE SHOULD USE THE BASELINE M_BS, NOT M_REF
-      # m_ref0 <- colSums(w * stats_bs_pw, na.rm=T) # mean for reference model within those points non-NA for submodel
+      m <- m_diff + m_bs
       m_bs0 <- colSums(w * stats_bs_pw, na.rm=T)
-      m0 <- m_diff + m_bs0 #m_ref0
-      covterm <- (colSums(w * stats_pw*stats_bs_pw, na.rm = T) - m0*m_bs0) / n_notna # covariance uncertainty between submodel and reference model uncertainties
-      se <- sqrt(se_diff^2 - se_bs^2 + 2*covterm) # Var(A) = Var(A-B) - Var(B) + 2*Cov(A,B), A = submodel statistic, B = refmodel statistic
+      # m0 <- m_diff + m_bs0 
+      se <- sqrt(se_diff^2 + se_bs^2)
+      # covterm <- (colSums(w * stats_pw*stats_bs_pw, na.rm = T) - m0*m_bs0) / n_notna # covariance uncertainty between submodel and reference model uncertainties
+      # se <- sqrt(se_diff^2 - se_bs^2 + 2*covterm) # Var(A) = Var(A-B) - Var(B) + 2*Cov(A,B), A = submodel statistic, B = refmodel statistic
     } else {
       m <- colSums(w * stats_pw, na.rm = T) # means
       se <- sapply(1:nstats, function(i) weighted.sd(stats_pw[,i], w[,i], na.rm=T)) / sqrt(n_notna) # standard errors
