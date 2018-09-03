@@ -18,7 +18,8 @@
 #' @param nloo Number of observations used to compute the LOO validation (anything between 1 and the 
 #' total number of observations). Smaller values lead to
 #' faster computation but higher uncertainty (larger errorbars) in the accuracy estimation.
-#' Default value is 100. Only applicable if \code{cv_method = LOO}. 
+#' Default is to use all observations, but for faster experimentation, one can set this to a small value such as 100.
+#' Only applicable if \code{cv_method = LOO}. 
 #' @param K Number of folds in the k-fold cross validation. Only applicable
 #' if \code{cv_method = TRUE} and \code{k_fold = NULL}.
 #' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
@@ -54,7 +55,7 @@
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
-                      nloo=100, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
+                      nloo=NULL, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
                       thresh=1e-6, regul=1e-6, validate_search=T, seed=NULL, ...) {
 
 	refmodel <- get_refmodel(fit, ...)
@@ -308,7 +309,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 
 
 loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, 
-                       penalty, verbose, opt, nloo = 100, validate_search = T, seed = NULL) {
+                       penalty, verbose, opt, nloo = NULL, validate_search = T, seed = NULL) {
 	#
 	# Performs the validation of the searching process using LOO.
 	# validate_search indicates whether the selection is performed separately for each
@@ -343,6 +344,7 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 	lw <- weights(psisloo)
 	pareto_k <- loo::pareto_k_values(psisloo)
 	n <- length(pareto_k)
+	nloo <- ifelse(is.null(nloo), n, nloo) # by default use all observations
 	nloo <- min(nloo,n)
 
 	# compute loo summaries for the full model
