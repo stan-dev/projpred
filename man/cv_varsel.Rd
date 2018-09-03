@@ -64,20 +64,12 @@ of parameters introduced by the selectin process).}
 
 \item{seed}{Random seed used in the subsampling LOO. By default uses a fixed seed.}
 
-\item{...}{Currently ignored.}
+\item{...}{Additional arguments to be passed to the \code{get_refmodel}-function.}
 }
 \value{
-The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
-which is a list containing the following elements:
-\describe{
- \item{\code{vind}}{The order in which the variables were added to the submodel.}
- \item{\code{pctch}}{Percentage of cross-validation runs that included the given
-   variable to a model of given size.}
- \item{\code{kl}}{KL-divergence for each submodel size.}
- \item{\code{summaries}}{CV-summary statistics computed during the selection.}
- \item{\code{d_test}}{The data used to evaluate the summaries.}
- \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
-}
+An object of type \code{cvsel} that contains information about the feature selection. The fields are not 
+meant to be accessed directly by the user but instead via the helper functions (see the vignettes or type ?projpred
+to see the main functions in the package.)
 }
 \description{
 Perform cross-validation for the projective variable selection for a generalized

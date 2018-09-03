@@ -67,18 +67,12 @@ the program gives a warning about thvars_cv <- lapply(k_fold$fits[,'fit'], .extr
 regularization, but sometimes for some models the projection can be ill-behaved and we
 need to add some regularization to avoid numerical problems. Default is 1e-9.}
 
-\item{...}{Currently ignored.}
+\item{...}{Additional arguments to be passed to the \code{get_refmodel}-function.}
 }
 \value{
-The original fit-object object augmented with a field 'varsel',
-which is a list containing the following elements:
-\describe{
- \item{\code{vind}}{The order in which the variables were added to the submodel.}
- \item{\code{kl}}{KL-divergence for each submodel size.}
- \item{\code{summaries}}{Summary statistics computed during the selection.}
- \item{\code{d_test}}{The data used to evaluate the summaries.}
- \item{\code{family_kl}}{A modified \link{family}-object.}
-}
+An object of type \code{vsel} that contains information about the feature selection. The fields are not 
+meant to be accessed directly by the user but instead via the helper functions (see the vignettes or type ?projpred
+to see the main functions in the package.)
 }
 \description{
 Perform the projection predictive variable selection for generalized linear models using

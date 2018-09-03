@@ -35,19 +35,11 @@
 #' data (the difference corresponds to the search degrees of freedom or the effective number 
 #' of parameters introduced by the selectin process).
 #' @param seed Random seed used in the subsampling LOO. By default uses a fixed seed.
-#' @param ... Currently ignored.
+#' @param ... Additional arguments to be passed to the \code{get_refmodel}-function.
 #'
-#' @return The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
-#' which is a list containing the following elements:
-#' \describe{
-#'  \item{\code{vind}}{The order in which the variables were added to the submodel.}
-#'  \item{\code{pctch}}{Percentage of cross-validation runs that included the given
-#'    variable to a model of given size.}
-#'  \item{\code{kl}}{KL-divergence for each submodel size.}
-#'  \item{\code{summaries}}{CV-summary statistics computed during the selection.}
-#'  \item{\code{d_test}}{The data used to evaluate the summaries.}
-#'  \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
-#' }
+#' @return An object of type \code{cvsel} that contains information about the feature selection. The fields are not 
+#' meant to be accessed directly by the user but instead via the helper functions (see the vignettes or type ?projpred
+#' to see the main functions in the package.)
 #'
 #' @examples
 #' \donttest{
@@ -65,7 +57,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                       nloo=100, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
                       thresh=1e-6, regul=1e-6, validate_search=T, seed=NULL, ...) {
 
-	refmodel <- get_refmodel(fit)
+	refmodel <- get_refmodel(fit, ...)
 	
 	# if (is.null(seed))
 	#   seed <- 134654

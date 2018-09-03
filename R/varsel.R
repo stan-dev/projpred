@@ -43,18 +43,12 @@
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
 #' need to add some regularization to avoid numerical problems. Default is 1e-9.
-#' @param ... Currently ignored.
+#' @param ... Additional arguments to be passed to the \code{get_refmodel}-function.
 #'
 #'
-#' @return The original fit-object object augmented with a field 'varsel',
-#' which is a list containing the following elements:
-#' \describe{
-#'  \item{\code{vind}}{The order in which the variables were added to the submodel.}
-#'  \item{\code{kl}}{KL-divergence for each submodel size.}
-#'  \item{\code{summaries}}{Summary statistics computed during the selection.}
-#'  \item{\code{d_test}}{The data used to evaluate the summaries.}
-#'  \item{\code{family_kl}}{A modified \link{family}-object.}
-#' }
+#' @return An object of type \code{vsel} that contains information about the feature selection. The fields are not 
+#' meant to be accessed directly by the user but instead via the helper functions (see the vignettes or type ?projpred
+#' to see the main functions in the package.)
 #'
 #' @examples
 #' \donttest{
@@ -71,7 +65,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                    intercept = NULL, penalty=NULL, verbose = F, 
                    lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-6, ...) {
 
-	refmodel <- get_refmodel(object)
+	refmodel <- get_refmodel(object, ...)
 	family_kl <- refmodel$fam
 	
 	if (is.null(method)) {
