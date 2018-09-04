@@ -21,7 +21,7 @@ for examples.
 
 
 \describe{
- \item{\link{varsel}, \link{cv_varsel}, \link{init_refmodel}}{
+ \item{\link{varsel}, \link{cv_varsel}, \link{init_refmodel}, \link{suggest_size}}{
  Perform and cross-validate the variable selection. \link{init_refmodel} can be used to initialize
  a reference model other than \pkg{rstanarm}-fit.}
  \item{\link{project}}{
