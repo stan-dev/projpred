@@ -262,7 +262,7 @@ test_that("project: adding more regularization has an expected effect", {
 
 test_that("project: projecting full model onto itself does not change results", {
 	
-	tol <- 1e-4
+	tol <- 1e-3
   
   for (i in 1:length(fit_list)) {
     fit <- fit_list[[i]]
@@ -270,7 +270,8 @@ test_that("project: projecting full model onto itself does not change results", 
     perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
                          fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
     S <- length(e$alpha)
-    proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=1e-9)
+    # proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=1e-9)
+    proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=0)
     
     # test alpha and beta
     dalpha <- max(abs(proj$alpha - e$alpha[perm_inv]))

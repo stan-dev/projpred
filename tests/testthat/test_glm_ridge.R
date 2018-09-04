@@ -69,7 +69,7 @@ test_that("glmfun: gradients should give the same results as finite differences"
     else if (fam$family == 'poisson')
       y <- rpois(n, 1)
     
-    devfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$dev # -2*sum(fam$ll_fun(fam$linkinv(f+offset),1,y,weights))
+    devfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$loss
     zfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$z
     wfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$w
     gradan <- function(f) sum(projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$grad) # analytic

@@ -223,7 +223,7 @@ List glm_elnet_c(arma::mat x, // input matrix
       
       // current value of the (approximate) loss function
       loss_old = loss_approx(beta, f, z, w, lam, alpha, penalty);
-      // loss_old = ((double) obs["dev"]) + elnet_penalty(beta, lam, alpha, penalty);
+      // loss_old = ((double) obs["loss"]) + elnet_penalty(beta, lam, alpha, penalty);
       
       // run the coordinate descent until convergence for the current
       // quadratic approximation
@@ -251,7 +251,7 @@ List glm_elnet_c(arma::mat x, // input matrix
       // the loss after updating the coefficients
       loss = loss_approx(beta, f, z, w, lam, alpha, penalty);
       // obs = pseudo_obs(f,w);
-      // loss = ((double) obs["dev"]) + elnet_penalty(beta, lam, alpha, penalty);
+      // loss = ((double) obs["loss"]) + elnet_penalty(beta, lam, alpha, penalty);
 
       // check if converged
       if (fabs(loss_old-loss) < tol) {
@@ -305,7 +305,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
                 arma::vec penalty, // relative penalties for the variables
                 double thresh,
                 int qa_updates_max,
-                int ls_iter_max=20,
+                int ls_iter_max=50,
                 bool debug=false)
 {
   
@@ -326,8 +326,8 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   // initialization
   vec beta_new(D); beta_new.zeros();
   vec dbeta(D); dbeta.zeros();
-  vec grad(D); grad.zeros(); // gradient of the deviance w.r.t. the regression coefficients
-  vec grad_f(n); grad_f.zeros(); // pointwise gradient of the deviance w.r.t. the latent values f
+  vec grad(D); grad.zeros(); // gradient of the negative log likelihood w.r.t. the regression coefficients
+  vec grad_f(n); grad_f.zeros(); // pointwise gradient of the negative log likelihood w.r.t. the latent values f
   vec f = x*beta;
   
   mat xw(n,D); // this will be the weighted x
@@ -338,7 +338,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   vec z = as<vec>(obs["z"]);
   w = as<vec>(obs["w"]);
   grad_f = as<vec>(obs["grad"]);
-  double loss_initial = ((double) obs["dev"]) + elnet_penalty(beta, lambda, 0, penalty);
+  double loss_initial = ((double) obs["loss"]) + elnet_penalty(beta, lambda, 0, penalty);
   double loss_old = loss_initial; // will be updated iteratively
   loss = loss_initial; // will be updated iteratively
   double tol = thresh*fabs(loss_initial); // threshold for convergence
@@ -352,9 +352,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       xw.col(j) = x.col(j) % sqrt(w);
     
     // weighted least squares solution
-    beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
+    beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) ); 
     dbeta = beta_new - beta;
-    grad = x.t()*grad_f + lambda*penalty%beta; // grad of deviance + grad of penalty
+    grad = x.t()*grad_f + lambda*penalty%beta; // gradient of negative log likelihood + gradient of penalty
     decrement = -sum(grad%dbeta); // newton decrement
     
     // check for convergence
@@ -371,7 +371,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       t = b*t;
       f = x*(beta+t*dbeta);
       obs = pseudo_obs(f,w);
-      loss = ((double) obs["dev"]) + elnet_penalty(beta+t*dbeta, lambda, 0, penalty);
+      loss = ((double) obs["loss"]) + elnet_penalty(beta+t*dbeta, lambda, 0, penalty);
       ++ls_iter;
       
       if (std::isnan(loss))
@@ -388,7 +388,16 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     }
     
     if (ls_iter == ls_iter_max && ls_iter_max > 1) {
+      // beta.print("beta = ");
+      // dbeta.print("dbeta = ");
+      // grad.print("grad = ");
+      // Rcpp::Rcout << "loss = " << loss << "\n";
+      // Rcpp::Rcout << "loss_initial = " << loss_initial << "\n";
+      // Rcpp::Rcout << "tol = " << tol << "\n";
+      // Rcpp::Rcout << "decrement = " << decrement << "\n";
+      // Rcpp::Rcout << "\n\n";
       Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
+      break;
     }
     
     // update the solution
@@ -439,9 +448,11 @@ List glm_ridge_c( arma::mat x,
   glm_ridge(beta, loss, w, qau, x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, ls_iter_max, debug);
     
   if (intercept) 
-    return List::create(vec(beta.tail(D-1)), beta(0), w, qau);
+    return List::create(vec(beta.tail(D-1)), beta(0), w, loss, qau);
+    // return List::create(vec(beta.tail(D-1)), beta(0), w, qau);
   else 
-    return List::create(beta, 0.0, w, qau);
+    return List::create(beta, 0.0, w, loss, qau);
+    // return List::create(beta, 0.0, w, qau);
 }
 
 
@@ -461,7 +472,7 @@ List glm_forward_c( arma::mat x, // inputs (features)
                     int qa_updates_max, // max number or quadratic approximation updates
                     int pmax, // maximum number of variables up to which the search is continued
                     arma::vec w0, // initial guess for the weights of the pseudo-gaussian observations (needed for Student-t model)
-                    int ls_iter_max=100 ) // max number of line search iterations
+                    int ls_iter_max=50 ) // max number of line search iterations
 {
   
   mat xp; // x for the current active set

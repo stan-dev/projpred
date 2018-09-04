@@ -27,9 +27,8 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
   #
   # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
   # based on the linear approximation to the link function at f = eta = x*beta + beta0,
-  # as explained in McGullagh and Nelder (1989). Returns also the deviance and its pointwise
-  # derivative w.r.t f at the current f (notice though, that this 'deviance' does not contain additional
-  # constants, so even when the model fits perfectly to the data, the deviance is not zero).
+  # as explained in McGullagh and Nelder (1989). Returns also the loss (= negative log likelihood)
+  # and its pointwise derivative w.r.t f at the current f.
   #
   mu <- family$linkinv(f+offset)
   dmu_df <- family$mu.eta(f+offset)
@@ -53,14 +52,13 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
     nu <- family$nu
     s2 <- sum(wprev*(obsvar+(y-mu)^2)) / sum(weights) 
     w <- weights*(nu+1)/(nu + 1/s2*(obsvar+(y-mu)^2))
-    dev <- sum(family$deviance(mu, y, weights, sqrt(s2))) # sum( -2*family$ll_fun(mu, sqrt(s2), y, weights) )
-    grad <- weights*2*(mu-y)/(nu*s2) * (nu+1)/(1+(y-mu)^2/(nu*s2)) * dmu_df
-    
+    loss <- 0.5*sum(family$deviance(mu, y, weights, sqrt(s2))) # ADD 0.5* HERE!!!
+    grad <- weights*(mu-y)/(nu*s2) * (nu+1)/(1+(y-mu)^2/(nu*s2)) * dmu_df
     
   } else if (family$family %in% c('gaussian','poisson','binomial')) {
     # exponential family distributions
-    w <- 2*(weights * dmu_df^2)/family$variance(mu)
-    dev <- sum(family$deviance(mu, y, weights)) #sum( -2*family$ll_fun(mu, 1, y, weights) )
+    w <- (weights * dmu_df^2)/family$variance(mu) # 2* because of deviance
+    loss <- 0.5*sum(family$deviance(mu, y, weights)) 
     grad <- -w*(z-f)
     
   } else {
@@ -68,7 +66,7 @@ pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,l
                  family$family))
   }
   
-  return(list(z=z, w=w, dev=dev, grad=grad))
+  return(list(z=z, w=w, loss=loss, grad=grad))
 }
 
 
@@ -183,9 +181,9 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
 
 
 
-glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,
+glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updates_max=NULL,
                       weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, penalty=NULL,
-                      normalize=TRUE, beta_init=NULL, beta0_init=NULL, ls_iter_max=30) {
+                      normalize=TRUE, la_approx=FALSE, beta_init=NULL, beta0_init=NULL, ls_iter_max=30) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
@@ -213,7 +211,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
   else
     beta_start <- beta_init
   if (is.null(penalty))
-    penalty <- rep(1.0, ncol(x))
+    penalty <- rep(1.0, NCOL(x))
   
   
   if (length(x) == 0) {
@@ -223,7 +221,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
       w0 <- weights 
       pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
       out <- glm_ridge_c(x, pseudo_obs, lambda, FALSE, 1, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
-      return( list(beta=matrix(integer(length=0)), beta0=as.vector(out[[1]]), w=out[[3]], qa_updates=out[[4]]) )
+      return( list(beta=matrix(integer(length=0)), beta0=as.vector(out[[1]]), w=out[[3]], loss=out[[4]], qa_updates=out[[5]]) )
     } else {
       # null model with no predictors and no intercept
       pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
@@ -249,13 +247,42 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
   out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_start, w0, thresh, qa_updates_max, ls_iter_max)
   beta <- out[[1]]
   beta0 <- as.vector(out[[2]])
+  w <- out[[3]]
+  loss <- out[[4]]
   
-  # return the intecept and the coefficients on the original scale 
-  beta <- beta/transf$scale
-  beta0 <- beta0 - sum(transf$shift*beta)
   
-  return(list( beta=beta, beta0=beta0, w=out[[3]], qa_updates=out[[4]] ))
+  # return the intecept and the coefficients on the original scale
+  beta_orig <- beta/transf$scale
+  beta0_orig <- beta0 - sum(transf$shift*beta_orig)
+  
+  out <- list( beta=beta_orig, beta0=beta0_orig, w=w, qa_updates=out[[5]] )
+  
+  # if (la_approx) {
+  #   # laplace approximation for the covariance and log marginal likelihood
+  #   d <- ncol(x)
+  #   w <- as.vector(0.5*w) # 0.5* because of deviance
+  #   xaug <- cbind(rep(1,nrow(x)), x)
+  #   prior_prec <- 0.5*lambda*diag(d+1) # prior precision
+  #   prior_prec[1,1] <- 0 # intercept is unpenalized
+  #   P <- t(xaug*sqrt(w)) %*% (xaug*sqrt(w)) + prior_prec # precision (on the normalized scale)
+  #   A <- cbind( c(1,rep(0,d)), rbind(-transf$shift/transf$scale, diag(1/transf$scale, nrow=d)) )
+  #   S <- A %*% solve(P, t(A)) # covariance on the original beta scale
+  #   L <- t(chol(S))
+  #   # logmlik <- - loss - 0.5*d*log(lambda) - 0.5*lambda*sum(beta^2) + sum(diag(L)) # this is wrong, fix it..
+  #   out$chol.cov <- L
+  #   out$energy <- -logmlik
+  # }
+  
+  return(out)
 }
+# exp(Psi(t) int(  exp(-0.5*(t-t0)*S^-1*(t-t0)) )
+# = exp(Psi(t)) * (2pi)^D/2 * detS^0.5
+# => logmlik = Psi(t) + d/2*log(2pi) + 0.5*log(det(S))
+#
+# Psi(t) =  -loss - d/2*log(2pi) - 0.5*log(det(1/lambda*I)^-1) - 0.5*lambda*w^2
+#        =  -loss - d/2*log(2pi) - 0.5*d*log(lambda) - 0.5*lambda*w^2
+#
+# => logmlik = -loss -0.5*d*log(lambda) -0.5*lambda*w^2 + 0.5*log(det(S))
 
 
 
@@ -263,8 +290,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates
 
 
 
-
-glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-9, qa_updates_max=NULL,
+glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updates_max=NULL,
                         weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, penalty=NULL,
                         normalize=TRUE, pmax=dim(as.matrix(x))[2]) {
   #
