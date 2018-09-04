@@ -6,8 +6,8 @@
 \usage{
 cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
-  intercept = NULL, penalty = NULL, verbose = T, nloo = 100, K = NULL,
-  lambda_min_ratio = 1e-05, nlambda = 150, thresh = 1e-06,
+  intercept = NULL, penalty = NULL, verbose = T, nloo = NULL,
+  K = NULL, lambda_min_ratio = 1e-05, nlambda = 150, thresh = 1e-06,
   regul = 1e-06, validate_search = T, seed = NULL, ...)
 }
 \arguments{
@@ -39,7 +39,8 @@ cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
 \item{nloo}{Number of observations used to compute the LOO validation (anything between 1 and the 
 total number of observations). Smaller values lead to
 faster computation but higher uncertainty (larger errorbars) in the accuracy estimation.
-Default value is 100. Only applicable if \code{cv_method = LOO}.}
+Default is to use all observations, but for faster experimentation, one can set this to a small value such as 100.
+Only applicable if \code{cv_method = LOO}.}
 
 \item{K}{Number of folds in the k-fold cross validation. Only applicable
 if \code{cv_method = TRUE} and \code{k_fold = NULL}.}
