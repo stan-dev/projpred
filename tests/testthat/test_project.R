@@ -1,3 +1,6 @@
+context('project')
+library(rstanarm)
+
 # tests for project
 
 set.seed(1235)
@@ -43,7 +46,7 @@ vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
 
 
 
-context('project')
+
 
 test_that("project: relaxing has the expected effect", {
   
@@ -51,7 +54,7 @@ test_that("project: relaxing has the expected effect", {
   for (i in seq_along(vs_list)) {
     
     p0 <- project(vs_list[[i]], relax=F, nv=1:nv)
-    p1 <- project(vs_list[[i]], relax=T, nv=1:nv, nc=1)
+    p1 <- project(vs_list[[i]], relax=T, nv=1:nv, nc=1, regul=1e-9)
     
     for (j in seq_along(p1)) {
       # L1-penalised coefficients should have smaller L1-norm

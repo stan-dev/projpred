@@ -1,6 +1,6 @@
-# tests for data based estimates (no actual reference model)
 context('datafit')
 
+# tests for data based estimates (no actual reference model)
 
 
 

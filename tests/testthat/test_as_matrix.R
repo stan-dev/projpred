@@ -1,4 +1,6 @@
 context('as.matrix.projection')
+library(rstanarm)
+
 # tests for as_matrix
 
 

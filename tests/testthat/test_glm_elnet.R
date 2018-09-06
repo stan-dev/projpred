@@ -1,3 +1,5 @@
+context("elnet")
+
 # tests for glm_elnet
 
 if (!requireNamespace('glmnet', quietly = TRUE)) {
@@ -27,7 +29,7 @@ extra_thresh <- 1e-10
 
 
 
-context("elnet")
+
 
 test_that("glm_elnet: various families and setups, glm_elnet and glmnet should give same result", {
   

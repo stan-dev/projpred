@@ -1,4 +1,6 @@
 context('miscellaneous')
+library(rstanarm)
+
 # miscellaneous tests 
 
 set.seed(1235)

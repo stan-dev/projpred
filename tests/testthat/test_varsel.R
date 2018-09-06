@@ -1,4 +1,7 @@
-# tests for varsel and cv_varsel:
+context('varsel')
+library(rstanarm)
+
+# tests for varsel and cv_varsel
 
 set.seed(1235)
 n <- 50
@@ -65,7 +68,7 @@ SW({
 
 
 
-context('varsel')
+
 test_that('varsel returns an object of type "vsel"', {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
@@ -180,7 +183,7 @@ test_that("varsel: specifying penalties for variables has an expected effect", {
 })
 
 
-context('cv_varsel')
+
 test_that('cv_varsel returns an object of type "cvsel"', {
   for(i in 1:length(cvs_list)){
     i_inf <- names(cvs_list)[i]
@@ -399,7 +402,7 @@ test_that('providing k_fold works', {
 })
 
 
-context('varsel_stats')
+
 test_that('varsel_stats output seems legit', {
   for(i in seq_along(cvs_list)) {
     for(j in seq_along(cvs_list[[i]])) {

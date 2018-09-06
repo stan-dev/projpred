@@ -1,3 +1,5 @@
+context("ridge")
+
 # tests for ridge regression, currently untested combinations
 # - gaussian with inverse-link
 # - binomial with log or cloglog-link
@@ -25,7 +27,7 @@ extra_thresh <- 1e-10
 
 
 
-context("ridge")
+
 
 test_that("glmfun: gradients should give the same results as finite differences", {
   
