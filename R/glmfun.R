@@ -257,22 +257,6 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updates
   
   out <- list( beta=beta_orig, beta0=beta0_orig, w=w, qa_updates=out[[5]] )
   
-  # if (la_approx) {
-  #   # laplace approximation for the covariance and log marginal likelihood
-  #   d <- ncol(x)
-  #   w <- as.vector(0.5*w) # 0.5* because of deviance
-  #   xaug <- cbind(rep(1,nrow(x)), x)
-  #   prior_prec <- 0.5*lambda*diag(d+1) # prior precision
-  #   prior_prec[1,1] <- 0 # intercept is unpenalized
-  #   P <- t(xaug*sqrt(w)) %*% (xaug*sqrt(w)) + prior_prec # precision (on the normalized scale)
-  #   A <- cbind( c(1,rep(0,d)), rbind(-transf$shift/transf$scale, diag(1/transf$scale, nrow=d)) )
-  #   S <- A %*% solve(P, t(A)) # covariance on the original beta scale
-  #   L <- t(chol(S))
-  #   # logmlik <- - loss - 0.5*d*log(lambda) - 0.5*lambda*sum(beta^2) + sum(diag(L)) # this is wrong, fix it..
-  #   out$chol.cov <- L
-  #   out$energy <- -logmlik
-  # }
-  
   return(out)
 }
 
