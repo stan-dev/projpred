@@ -275,14 +275,6 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updates
   
   return(out)
 }
-# exp(Psi(t) int(  exp(-0.5*(t-t0)*S^-1*(t-t0)) )
-# = exp(Psi(t)) * (2pi)^D/2 * detS^0.5
-# => logmlik = Psi(t) + d/2*log(2pi) + 0.5*log(det(S))
-#
-# Psi(t) =  -loss - d/2*log(2pi) - 0.5*log(det(1/lambda*I)^-1) - 0.5*lambda*w^2
-#        =  -loss - d/2*log(2pi) - 0.5*d*log(lambda) - 0.5*lambda*w^2
-#
-# => logmlik = -loss -0.5*d*log(lambda) -0.5*lambda*w^2 + 0.5*log(det(S))
 
 
 

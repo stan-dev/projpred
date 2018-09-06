@@ -266,22 +266,22 @@ test_that("project: projecting full model onto itself does not change results", 
   
   for (i in 1:length(fit_list)) {
     fit <- fit_list[[i]]
-    e <- extract(fit$stanfit)
-    perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
-                         fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
-    S <- length(e$alpha)
-    # proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=1e-9)
+    draws <- as.data.frame(fit)
+    alpha_ref <- draws$`(Intercept)`
+    beta_ref <- draws[,1+(1:nv),drop=F]
+    S <- nrow(draws)
     proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=0)
     
     # test alpha and beta
-    dalpha <- max(abs(proj$alpha - e$alpha[perm_inv]))
-    dbeta <- max(abs(proj$beta - t(e$beta[perm_inv,])))
+    dalpha <- max(abs(proj$alpha - alpha_ref))
+    dbeta <- max(abs(proj$beta - t(beta_ref)))
     expect_lt(dalpha, tol)
     expect_lt(dbeta, tol)
     
-    if (!is.null(e$aux)) {
+    if (ncol(draws) > nv+1) {
       # test dispersion
-      ddis <- max(abs(proj$dis - e$aux[perm_inv]))
+      dis_ref <- draws[,ncol(draws)]
+      ddis <- max(abs(proj$dis - draws$sigma))
       expect_lt(ddis, tol)
     }
   }

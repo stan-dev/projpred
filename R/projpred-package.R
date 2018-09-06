@@ -7,9 +7,7 @@
 #' @importFrom Rcpp sourceCpp
 #'
 #' @import stats
-#' @import rstanarm
 #' @import ggplot2
-#' @importFrom rstan extract
 #' @importFrom loo psis
 #' 
 #' 

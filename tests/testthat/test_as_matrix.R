@@ -1,4 +1,5 @@
-# tests for proj_linpred and proj_predict
+# tests for as_matrix
+
 
 set.seed(1235)
 n <- 40

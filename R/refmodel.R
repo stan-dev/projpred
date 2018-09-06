@@ -63,6 +63,11 @@ get_refmodel.cvsel <- function(object, ...) {
 get_refmodel.stanreg <- function(object, ...) {
 	
 	# the fit is an rstanarm-object
+  
+  if (!requireNamespace("rstanarm", quietly = TRUE)) {
+    stop("You need package \"rstanarm\". Please install it.",
+         call. = FALSE)
+  }
 	
 	if ('lmerMod' %in% class(object))
 		stop('stan_lmer and stan_glmer are not yet supported.')
@@ -78,19 +83,19 @@ get_refmodel.stanreg <- function(object, ...) {
 	
 	# data, family and the predictor matrix x
 	data <- object$data
-	y_ind <- which(apply(data, 2, function(col) all(col==get_y(object))))
+	y_ind <- which(apply(data, 2, function(col) all(col==rstanarm::get_y(object))))
 	z <- data[,-y_ind,drop=F]
 	fam <- kl_helpers(family(object))
-	x <- get_x(object)
+	x <- rstanarm::get_x(object)
 	rownames(x) <- NULL # ignore the rownames
 	x <- x[, as.logical(attr(x, 'assign')), drop=F] # drop the column of ones
 	attr(x, 'assign') <- NULL
 	
-	y <- unname(get_y(object))
+	y <- unname(rstanarm::get_y(object))
 	dis <- samp$sigma %ORifNULL% rep(0, ndraws) # TODO: handle other than gaussian likelihoods..
 	offset <- object$offset %ORifNULL% rep(0, nobs(object))
 	intercept <- as.logical(attr(object$terms,'intercept') %ORifNULL% 0)
-	predfun <- function(zt) t(posterior_linpred(object, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
+	predfun <- function(zt) t(rstanarm::posterior_linpred(object, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
 	wsample <- rep(1/ndraws, ndraws) # equal sample weights by default
 	wobs <- unname(weights(object)) # observation weights
 	if (length(wobs)==0) wobs <- rep(1,nrow(z))
@@ -100,8 +105,8 @@ get_refmodel.stanreg <- function(object, ...) {
 	  cvres <- rstanarm::kfold(object, K = max(folds), save_fits = T, folds = folds)
 	  fits <- cvres$fits[,'fit']
 	  lapply(fits, function (fit) {
-	    dis <- as.data.frame(fit)$sigma
-	    predfun <- function(zt) t(posterior_linpred(fit, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
+	    dis <- as.data.frame(fit)$sigma # NOTE: this works only for Gaussian family
+	    predfun <- function(zt) t(rstanarm::posterior_linpred(fit, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
 	    list(predfun=predfun, dis=dis)
 	  })
 	}

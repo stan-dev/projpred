@@ -59,7 +59,7 @@ This parameter essentially determines how long the search is carried out, i.e., 
 are explored. No need to change the default value unless the program gives a warning about this.}
 
 \item{nlambda}{Number of values in the lambda grid for L1-penalized search. No need to change unless
-the program gives a warning about thvars_cv <- lapply(k_fold$fits[,'fit'], .extract_vars)is.}
+the program gives a warning about this.}
 
 \item{thresh}{Convergence threshold when computing L1-path. Usually no need to change this.}
 
