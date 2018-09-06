@@ -63,7 +63,7 @@
 varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
                    nspred = NULL, ncpred = NULL, relax=NULL, nv_max = NULL, 
                    intercept = NULL, penalty=NULL, verbose = F, 
-                   lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-1, ...) {
+                   lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-2, ...) {
 
 	refmodel <- get_refmodel(object, ...)
 	family_kl <- refmodel$fam
