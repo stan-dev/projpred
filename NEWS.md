@@ -2,6 +2,14 @@
 
 # News
 
+## projpred 1.0.0
+
+### New features and improvements ###
+
+* Changed the internals so that now all fit objects (such as rstanarm fits) are converted to ```refmodel```-objects using the generict ```get_refmodel```-function, and all the functions use only this object. This makes it much easier to use projpred with other reference models by writing them a new ```get_refmodel```-function. The syntax is now changed so that  ```varsel``` and ```cv_varsel``` both return an object that has similar structure always, and the reference model is stored into this object.
+
+* Added possibility to change the baseline in ```varsel_plot/varsel_stats```. Now it is possible to compare also to the best submodel found, not only to the reference model.
+
 ## projpred 0.9.0
 
 ### New features and improvements
