@@ -309,7 +309,7 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
     geom_line(aes_string(y = 'value')) +
     geom_point(aes_string(y = 'value'))
 	
-	if (!is.na(stats_ref$se))
+	if (!all(is.na(stats_ref$se)))
 		# add reference model results if they exist
 		pp <- pp + geom_hline(aes_string(yintercept = 'value'), data = stats_ref,
 													color = 'darkred', linetype=2)
