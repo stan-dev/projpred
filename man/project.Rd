@@ -5,7 +5,7 @@
 \title{Projection to submodels}
 \usage{
 project(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL,
-  nc = NULL, intercept = NULL, seed = NULL, regul = 1e-06, ...)
+  nc = NULL, intercept = NULL, seed = NULL, regul = 0.1, ...)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
@@ -36,7 +36,7 @@ to ensure same results every time.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for
 regularization, but sometimes for some models the projection can be ill-behaved and we
-need to add some regularization to avoid numerical problems. Default is 1e-9.}
+need to add some regularization to avoid numerical problems.}
 
 \item{...}{Currently ignored.}
 }

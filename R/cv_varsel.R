@@ -27,7 +27,7 @@
 #' @param thresh Same as in \link[=varsel]{varsel}.
 #' @param regul Amount of regularization in the projection. Usually there is no need for 
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
-#' need to add some regularization to avoid numerical problems. Default is 1e-9.
+#' need to add some regularization to avoid numerical problems. 
 #' @param validate_search Whether to cross-validate also the selection process, that is, whether to perform
 #' selection separately for each fold. Default is TRUE and we strongly recommend not setting this
 #' to FALSE, because this is known to bias the accuracy estimates for the selected submodels.
@@ -56,7 +56,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
                       nloo=NULL, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
-                      thresh=1e-6, regul=1e-6, validate_search=T, seed=NULL, ...) {
+                      thresh=1e-6, regul=1e-1, validate_search=T, seed=NULL, ...) {
 
 	refmodel <- get_refmodel(fit, ...)
 	

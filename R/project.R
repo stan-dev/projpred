@@ -23,7 +23,7 @@
 #' to ensure same results every time.
 #' @param regul Amount of regularization in the projection. Usually there is no need for
 #' regularization, but sometimes for some models the projection can be ill-behaved and we
-#' need to add some regularization to avoid numerical problems. Default is 1e-9.
+#' need to add some regularization to avoid numerical problems. 
 #' @param ... Currently ignored.
 #'
 #' @return A list of submodels (or a single submodel if projection was performed onto
@@ -56,7 +56,7 @@
 
 #' @export
 project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc = NULL, 
-                    intercept = NULL, seed = NULL, regul=1e-6, ...) {
+                    intercept = NULL, seed = NULL, regul=1e-1, ...) {
 
 	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) && is.null(vind) )
 		stop(paste('The given object is not a variable selection -object.',
