@@ -1,3 +1,4 @@
+context('as.matrix.projection')
 # tests for as_matrix
 
 
@@ -38,7 +39,8 @@ ns <- 100
 p_gauss <- project(vs_gauss, vind = vind, ns = ns)
 p_binom <- project(vs_binom, vind = vind, ns = ns)
 
-context('as.matrix.projection')
+
+
 test_that("as.matrix.projection returns the relevant variables for gaussian", {
   m <- as.matrix(p_gauss)
   expect_equal(colnames(m), c(names(coef(fit_gauss))[c(1, vind + 1)], 'sigma'))

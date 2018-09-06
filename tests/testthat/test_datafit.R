@@ -1,5 +1,5 @@
 # tests for data based estimates (no actual reference model)
-
+context('datafit')
 
 
 
@@ -43,7 +43,7 @@ predd_list <- lapply(vsd_list, proj_linpred, xnew=x, seed = seed,
 										 offsetnew=offset, weightsnew=weights, nv=3)
 
 
-context('datafit')
+
 
 test_that('output of varsel is sensible with only data provided as reference model', {
 	for(i in seq_along(vsd_list)) {
