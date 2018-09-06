@@ -124,7 +124,7 @@ get_refmodel.stanreg <- function(object, ...) {
 
 
 
-#' Generic reference model initialization
+#' Custom reference model initialization
 #'
 #' Initializes a structure that can be used as a reference fit for the
 #' projective variable selection. This function is provided to allow construction 
@@ -132,19 +132,21 @@ get_refmodel.stanreg <- function(object, ...) {
 #' information is needed for the actual projection and variable selection.
 #'
 #' @param z Predictor matrix of dimension \code{n}-by-\code{dz} containing the training
-#' inputs for the reference model. Rows denote the observations and columns the different inputs. 
+#' features for the reference model. Rows denote the observations and columns the different features. 
 #' @param y Vector of length \code{n} giving the target variable values.
 #' @param family \link{family} object giving the model family
 #' @param x Predictor matrix of dimension \code{n}-by-\code{dx} containing the candidate
 #' features for selection (i.e. variables from which to select the submodel).  Rows denote
-#' the observations and columns the different variables. Notice that this can
+#' the observations and columns the different features. Notice that this can
 #' different from \code{z}. If missing, same as \code{z} by default.
-#' @param predfun Function that takes a \code{nt}-by-\code{d1} test predictor matrix \code{zt} as an input
-#' (\code{nt} = # test points, \code{d1} = # predictors in the reference model) and outputs
+#' @param predfun Function that takes a \code{nt}-by-\code{dz} test predictor matrix \code{zt} as an input
+#' (\code{nt} = # test points, \code{dz} = number of features in the reference model) and outputs
 #' a \code{nt}-by-\code{S} matrix of expected values for the target variable \code{y},
 #' each column corresponding to one posterior draw for the parameters in the reference model
 #' (the number of draws \code{S} can also be 1). Notice that the output should be computed without
 #' any offsets, these are automatically taken into account internally, e.g. in cross-validation.
+#' If omitted, then the returned object will be 'data reference', that is, it can be used to compute
+#' penalized maximum likelihood solutions such as Lasso (see examples below and in the quickstart vignette.)
 #' @param dis Vector of length \code{S} giving the posterior draws for the dispersion parameter
 #' in the reference model if there is such a parameter in the model family. For Gaussian
 #' observation model this is the noise std \code{sigma}.
