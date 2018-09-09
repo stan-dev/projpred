@@ -19,10 +19,6 @@
   })
 }
 
-.get_full_summaries <- function(p_full, d_test, coef_full, family_kl, intercept) {
-  mu <- family_kl$mu_fun(d_test$x, coef_full$alpha, coef_full$beta, d_test$offset)
-  .weighted_summary_means(d_test, family_kl, p_full$weights, mu, p_full$dis)
-}
 
 # Calculates weighted means of mu and lppd given samples of
 # mu and dis, the full model and the data.
@@ -178,89 +174,10 @@
 }
 
 
-.bootstrap_stats <- function(varsel, n_boot = 1000, alpha = 0.05) {
-  #
-  # Note: this function is deprecated and not used, see tabulate_stats instead.
-  #
-  # return a table of summary statistics with columns:
-  #
-  #  data: type of data ('sel','train','loo','kfold')
-  #  size: number of features in the submodel
-  #  delta: whether the value indicates the difference to the full model (=TRUE) or the actual value (=FALSE)
-  #  statistic: name of statistic ('kl', 'mlpd', 'mse', 'r2', ...)
-  #  value: (mean) value of the statistic
-  #  lq: lower credible bound for the statistic
-  #  uq: upper credible bound for the statistic
-  
-  n <- length(varsel$d_test$y)
-  equal_weights <- matrix(1/n, 1, n)
-
-  b_weights <- .bbweights(n,n_boot)
-
-  # this function computes the average statistics given the 
-  # (bootstrap) weights w for the observations
-  hf <- function(stat, w) {
-    .calc_stats(stat$mu, stat$lppd, varsel$d_test, varsel$family_kl, w)
-  }
-
-  # compute for each number of features k the bootstrapped statistics
-  sub <- lapply(varsel$summaries$sub, function(stat_k) {
-    list(stats = hf(stat_k, equal_weights),  boot = hf(stat_k, b_weights))
-  })
-
-  full <- list(stats = hf(varsel$summaries$full, equal_weights),
-               boot = hf(varsel$summaries$full, b_weights))
-
-  # apply over submodel sizes
-  quantiles <- mapply(function(sub, size) {
-    # apply over different stats
-    mapply(function(name, sub_boot, full_boot, sub_statistic, full_statistic) {
-      qs <- quantile(sub_boot, c(alpha/2, 1-alpha/2), na.rm=T)
-      qs_delta <- quantile(sub_boot - full_boot, c(alpha/2, 1-alpha/2), na.rm=T)
-
-      data.frame(size = rep(size, 2), delta = c(F, T), statistic = rep(name, 2),
-                 value = c(sub_statistic, sub_statistic - full_statistic),
-                 lq = c(qs[1], qs_delta[1]), uq = c(qs[2], qs_delta[2]))
-    }, names(sub$boot), sub$boot, full$boot, sub$stats, full$stats, SIMPLIFY = F)
-  }, sub, seq_along(varsel$summaries$sub) - 1, SIMPLIFY = F)
-
-  quantiles_arr <- do.call(rbind, c(unlist(quantiles, recursive = F),
-                                    make.row.names = F))
-
-  stat_arr <- cbind(data = varsel$d_test$type, quantiles_arr)
-  kl_arr <- data.frame(data = 'sel', size = seq_along(varsel$kl)-1, delta = F,
-                       statistic = 'kl',  value = varsel$kl, lq = NA, uq = NA)
-
-  rbind(kl_arr, stat_arr)
-}
 
 
 
 
-
-
-.calc_stats <- function(mu, lppd, d_test, family, sample_weights) {
-  #
-  # Note: this function is not used.
-  #
-  # calculate the average of the statistics based on pointwise mu and lppd,
-  # assuming the observations are given weights sample_weights (which can be used
-  # for bootstrapping the statistics)
-  arr <- list(mlpd = lppd, elpd = lppd*length(mu), mse = (d_test$y-mu)^2)
-
-  if(family$family == 'binomial' && all(d_test$weights %in% c(0,1))) {
-    arr$pctcorr <- round(mu) == d_test$y
-  }
-
-  avg_ <- function(x) c(sample_weights%*%x)
-  stats <- lapply(arr, avg_)
-
-  if(family$family == 'gaussian') {
-    stats$r2 <- 1 - stats$mse/avg_((d_test$y-mean(d_test$y))^2)
-  }
-
-  stats
-}
 
 
 .pointwise_stats <- function(mu, lppd, d_test, family, sample_weights=NULL) {
