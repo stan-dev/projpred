@@ -56,7 +56,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
                       nloo=NULL, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
-                      thresh=1e-6, regul=1e-2, validate_search=T, seed=NULL, ...) {
+                      thresh=1e-6, regul=1e-4, validate_search=T, seed=NULL, ...) {
 
 	refmodel <- get_refmodel(fit, ...)
 	

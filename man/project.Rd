@@ -5,7 +5,7 @@
 \title{Projection to submodels}
 \usage{
 project(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL,
-  nc = NULL, intercept = NULL, seed = NULL, regul = 0.01, ...)
+  nc = NULL, intercept = NULL, seed = NULL, regul = 1e-04, ...)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}

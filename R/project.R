@@ -56,7 +56,7 @@
 
 #' @export
 project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc = NULL, 
-                    intercept = NULL, seed = NULL, regul=1e-2, ...) {
+                    intercept = NULL, seed = NULL, regul=1e-4, ...) {
 
 	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) && is.null(vind) )
 		stop(paste('The given object is not a variable selection -object.',
