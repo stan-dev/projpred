@@ -29,7 +29,7 @@
 #' @return A list of submodels (or a single submodel if projection was performed onto
 #' a single variable combination), each of which contains the following elements:
 #' \describe{
-#'  \item{\code{kl}}{The kl divergence from the full model to the submodel.}
+#'  \item{\code{kl}}{The kl divergence from the reference model to the submodel.}
 #'  \item{\code{weights}}{Weights for each draw of the projected model.}
 #'  \item{\code{dis}}{Draws from the projected dispersion parameter.}
 #'  \item{\code{alpha}}{Draws from the projected intercept.}
@@ -101,14 +101,14 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
 	d_train <- .get_traindata(refmodel)
 
 	# get the clustering or subsample
-	p_full <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
+	p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
 
 	# project onto the submodels
 	if (relax) {
-	  subm <- .get_submodels(list(vind=vind), nv, family_kl, p_full,
+	  subm <- .get_submodels(list(vind=vind), nv, family_kl, p_ref,
 	                         d_train, intercept, regul, as.search=F)
 	} else {
-	  subm <- .get_submodels(object$spath, nv, family_kl, p_full,
+	  subm <- .get_submodels(object$spath, nv, family_kl, p_ref,
 	                         d_train, intercept, regul, as.search=T)
 	}
 

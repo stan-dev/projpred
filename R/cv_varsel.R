@@ -177,8 +177,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
   # to a list of size K
 	refmodels_cv <- lapply(k_fold, function(fold) fold$refmodel)
 
-  # List of size K with test data for each fold (note that vars is from
-  # the full model, not from the cross-validated models).
+  # List of size K with test data for each fold
 	d_test_cv <- lapply(k_fold, function(fold) {
 	  list(z = refmodel$z[fold$omitted,,drop=F], 
 	  		 x = refmodel$x[fold$omitted,,drop=F], y = refmodel$y[fold$omitted],
@@ -246,7 +245,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
     }, p_sub_cv, list_cv),
     1, hf)
 
-  full <- hf(lapply(list_cv, function(fold) {
+  ref <- hf(lapply(list_cv, function(fold) {
     data.frame(.weighted_summary_means(fold$d_test, family_kl, fold$w_test,
                                        fold$mu_test, fold$dis))
   }))
@@ -258,7 +257,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
   }))
 
   list(vind_cv = vind_cv,
-       summaries = list(sub = sub, full = full),
+       summaries = list(sub = sub, ref = ref),
        d_test = c(d_cv, type = 'kfold'))
 }
 
@@ -347,12 +346,12 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 	nloo <- ifelse(is.null(nloo), n, nloo) # by default use all observations
 	nloo <- min(nloo,n)
 
-	# compute loo summaries for the full model
+	# compute loo summaries for the reference model
 	d_test <- d_train
-	loo_full <- apply(loglik+lw, 2, 'log_sum_exp')
-	mu_full <- rep(0,n)
+	loo_ref <- apply(loglik+lw, 2, 'log_sum_exp')
+	mu_ref <- rep(0,n)
 	for (i in 1:n)
-    mu_full[i] <- mu[i,] %*% exp(lw[,i])
+    mu_ref[i] <- mu[i,] %*% exp(lw[,i])
 	
 	# decide which points form the validation set based on the k-values
 	validset <- .loo_subsample(n, nloo, pareto_k, seed)
@@ -418,8 +417,8 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 	summ_sub <-	lapply(0:nv_max, function(k){
 	    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1], w=validset$w)
 	})
-	summ_full <- list(lppd=loo_full, mu=mu_full)
-	summaries <- list(sub=summ_sub, full=summ_full)
+	summ_ref <- list(lppd=loo_ref, mu=mu_ref)
+	summaries <- list(sub=summ_sub, ref=summ_ref)
 
   vind_cv <- lapply(1:n, function(i){ vind_mat[i,] })
 

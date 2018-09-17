@@ -146,7 +146,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   set.seed(seed)
   
 	fam <- refmodel$fam
-	S <- NCOL(refmodel$mu) # number of draws in the full model
+	S <- NCOL(refmodel$mu) # number of draws in the reference model
 
 	if (!is.null(nc)) {
 		# use clustering (ignore ns argument)
@@ -164,7 +164,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 			p_ref <- .get_p_clust(fam, refmodel$mu, refmodel$dis, wobs=refmodel$wobs, nc=nc)
 		}
 	} else if (!is.null(ns)) {
-		# subsample from the full model
+		# subsample from the reference model
 		# would it be safer to actually randomly draw the subsample?
 		if (ns > NCOL(refmodel$mu))
 			stop('The number of subsamples ns cannot exceed the number of columns in mu.')
@@ -174,7 +174,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 		predvar <- sapply(s_ind, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j]) })
 		p_ref <- list(mu = refmodel$mu[, s_ind, drop=F], var = predvar, dis = refmodel$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
 	} else {
-		# use all the samples from the full model
+		# use all the draws from the reference model
 		predvar <- sapply(1:S, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j])	})
 		p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis, weights = refmodel$wsample, cl=c(1:S))
 	}

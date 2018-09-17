@@ -18,7 +18,7 @@
 #' if \code{method}='L1'. Default is TRUE for genuine reference models and FALSE if \code{object} is
 #' datafit (see \link[=init_refmodel]{init_refmodel}).  
 #' @param ns Number of posterior draws used in the variable selection.
-#'    Cannot be larger than the number of draws in the full model.
+#'    Cannot be larger than the number of draws in the reference model.
 #'    Ignored if nc is set.
 #' @param nc Number of clusters to use in the clustered projection.
 #'    Overrides the \code{ns} argument. Defaults to 1.
@@ -126,13 +126,13 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   if ('datafit' %in% class(refmodel)) {
   	# no actual reference model, so we don't know how to predict test observations
     ntest <- nrow(d_test$z)
-  	full <- list(mu=rep(NA,ntest), lppd=rep(NA,ntest))
+  	ref <- list(mu=rep(NA,ntest), lppd=rep(NA,ntest))
   } else {
   	if (d_type == 'train') {
-  		full <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, refmodel$mu, refmodel$dis)
+  		ref <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, refmodel$mu, refmodel$dis)
   	} else {
   		mu_test <- refmodel$predfun(d_test$z, d_test$offset)
-  		full <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, mu_test, refmodel$dis)
+  		ref <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, mu_test, refmodel$dis)
   	}
   }
   
@@ -140,7 +140,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   vs <- list(refmodel=refmodel,
   					 spath=searchpath,
              d_test = c(d_test[c('y','weights')], type = d_type),
-             summaries = list(sub = sub, full = full),
+             summaries = list(sub = sub, ref = ref),
              family_kl = family_kl,
   					 vind = setNames(vind, refmodel$coefnames[vind]),
   					 kl = sapply(p_sub, function(x) x$kl) )

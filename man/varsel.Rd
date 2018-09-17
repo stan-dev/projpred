@@ -24,7 +24,7 @@ Default is 'forward' if the number of variables in the full data is at most 20, 
 \code{'L1'} otherwise.}
 
 \item{ns}{Number of posterior draws used in the variable selection.
-Cannot be larger than the number of draws in the full model.
+Cannot be larger than the number of draws in the reference model.
 Ignored if nc is set.}
 
 \item{nc}{Number of clusters to use in the clustered projection.

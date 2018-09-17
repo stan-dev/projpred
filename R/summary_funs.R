@@ -1,7 +1,4 @@
-# Functions for calculating mu and lppd (ge)
-# - .get_sub/full_summaries + .weighted_summary_means
-# Functions for calculating mse, mlpd, etc. with (and without) bootstrapping
-# - .bootstrap/calc_stats,
+
 
 .get_sub_summaries <- function(submodels, d_test, family_kl) {
 
@@ -21,7 +18,7 @@
 
 
 # Calculates weighted means of mu and lppd given samples of
-# mu and dis, the full model and the data.
+# mu and dis, and the test data.
 .weighted_summary_means <- function(d_test, family_kl, wsample, mu, dis) {
 
   loglik <- family_kl$ll_fun(mu, dis, matrix(d_test$y,nrow=NROW(mu)), d_test$weights)
@@ -45,9 +42,15 @@
 
 .tabulate_stats <- function(varsel, stats, alpha = 0.05, nfeat_baseline=NULL) {
   
+  #
+  # Calculates the desired statistics, their standard errors and credible bounds with given
+  # credible level alpha based on the variable selection information. If nfeat_baseline
+  # is given, then compute the statistics relative to the baseline model with that size
+  # (nfeat_baseline = Inf means reference model).
+  
   stat_tab <- data.frame()
   
-  summ_ref <- varsel$summaries$full
+  summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
   
   # fetch the mu and lppd for the baseline model

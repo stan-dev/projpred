@@ -57,10 +57,10 @@ test_that('output of varsel is sensible with only data provided as reference mod
 		expect_equal(vsd_list[[i]]$kl, cummin(vsd_list[[i]]$kl))
 		
 		# summaries seems legit
-		expect_named(vsd_list[[i]]$summaries, c('sub', 'full'))
+		expect_named(vsd_list[[i]]$summaries, c('sub', 'ref'))
 		expect_equal(length(vsd_list[[i]]$summaries$sub), nv + 1)
 		expect_named(vsd_list[[i]]$summaries$sub[[1]], c('mu', 'lppd'))
-		expect_named(vsd_list[[i]]$summaries$full, c('mu', 'lppd'))
+		expect_named(vsd_list[[i]]$summaries$ref, c('mu', 'lppd'))
 	}
 })
 
@@ -76,10 +76,10 @@ test_that("output of cv_varsel is sensible with only data provided as reference 
 		expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl))
 		
 		# summaries seems legit
-		expect_named(cvvsd_list[[i]]$summaries, c('sub', 'full'))
+		expect_named(cvvsd_list[[i]]$summaries, c('sub', 'ref'))
 		expect_equal(length(cvvsd_list[[i]]$summaries$sub), nv + 1)
 		expect_named(cvvsd_list[[i]]$summaries$sub[[1]], c('mu', 'lppd'))
-		expect_named(cvvsd_list[[i]]$summaries$full, c('mu', 'lppd'))
+		expect_named(cvvsd_list[[i]]$summaries$ref, c('mu', 'lppd'))
 	}
 })
 
