@@ -4,15 +4,16 @@
 \alias{varsel}
 \title{Variable selection for generalized linear models}
 \usage{
-varsel(fit, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
+varsel(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
   intercept = NULL, penalty = NULL, verbose = F,
   lambda_min_ratio = 1e-05, nlambda = 150, thresh = 1e-06,
-  regul = 1e-06, ...)
+  regul = 1e-04, ...)
 }
 \arguments{
-\item{fit}{Either a \link[=stanreg-objects]{stanreg}-object or an object returned
-by \link[=init_refmodel]{init_refmodel}.}
+\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
+or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
+using \link[=get_refmodel]{get_refmodel}.}
 
 \item{d_test}{A test dataset, which is used to evaluate model performance.
 If not provided, training data is used. Currently this argument is for internal use only.}
@@ -23,7 +24,7 @@ Default is 'forward' if the number of variables in the full data is at most 20, 
 \code{'L1'} otherwise.}
 
 \item{ns}{Number of posterior draws used in the variable selection.
-Cannot be larger than the number of draws in the full model.
+Cannot be larger than the number of draws in the reference model.
 Ignored if nc is set.}
 
 \item{nc}{Number of clusters to use in the clustered projection.
@@ -36,7 +37,8 @@ Overrides the \code{ns} argument. Defaults to 1.}
 \item{relax}{If TRUE, then the projected coefficients after L1-selection are computed
 without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 the coefficients are the solution from the L1-penalized projection. This option is relevant only
-if \code{method}='L1'. Default is TRUE.}
+if \code{method}='L1'. Default is TRUE for genuine reference models and FALSE if \code{object} is
+datafit (see \link[=init_refmodel]{init_refmodel}).}
 
 \item{nv_max}{Maximum number of varibles until which the selection is continued.
 Defaults to min(20, D, floor(0.4*n)) where n is the number of observations and
@@ -63,31 +65,25 @@ the program gives a warning about this.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we
-need to add some regularization to avoid numerical problems. Default is 1e-9.}
+need to add some regularization to avoid numerical problems.}
 
-\item{...}{Currently ignored.}
+\item{...}{Additional arguments to be passed to the \code{get_refmodel}-function.}
 }
 \value{
-The original fit-object object augmented with a field 'varsel',
-which is a list containing the following elements:
-\describe{
- \item{\code{vind}}{The order in which the variables were added to the submodel.}
- \item{\code{kl}}{KL-divergence for each submodel size.}
- \item{\code{summaries}}{Summary statistics computed during the selection.}
- \item{\code{d_test}}{The data used to evaluate the summaries.}
- \item{\code{family_kl}}{A modified \link{family}-object.}
-}
+An object of type \code{vsel} that contains information about the feature selection. The fields are not 
+meant to be accessed directly by the user but instead via the helper functions (see the vignettes or type ?projpred
+to see the main functions in the package.)
 }
 \description{
-Perform the projection predictive variable selection for a generalized
-linear model fitted with rstanarm.
+Perform the projection predictive variable selection for generalized linear models using
+generic reference models.
 }
 \examples{
 \donttest{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
-fit_v <- varsel(fit)
-plot_varsel(fit_v)
+vs <- varsel(fit)
+varsel_plot(vs)
 }
 
 }

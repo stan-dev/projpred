@@ -7,10 +7,10 @@
 \title{Plot or fetch summary statistics related to variable selection}
 \usage{
 varsel_plot(object, nv_max = NULL, stats = "elpd", deltas = F,
-  alpha = 0.1, ...)
+  alpha = 0.32, baseline = NULL, ...)
 
 varsel_stats(object, nv_max = NULL, stats = "elpd", type = c("mean",
-  "se"), deltas = F, alpha = 0.1, ...)
+  "se"), deltas = F, alpha = 0.32, baseline = NULL, ...)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or
@@ -29,13 +29,16 @@ statistics are:
 }
 Default is elpd.}
 
-\item{deltas}{If \code{TRUE}, the difference between the full model and the
-submodel is returned instead of the actual value of the statistic.
+\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative to the baseline model 
+(see argument \code{baseline}) instead of estimating the actual values of the statistics.
 Defaults to \code{FALSE}.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
-intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
-within the intervals.}
+intervals. For example \code{alpha=0.32} corresponds to 68\% probability mass
+within the intervals, that is, one standard error intervals.}
+
+\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the reference model or
+the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.}
 
 \item{...}{Currently ignored.}
 
@@ -47,4 +50,16 @@ that \code{1-alpha} percent of the mass falls between them.}
 \code{varsel_stats} can be used to obtain summary statistics related to
 variable selection. The same statistics can be plotted with
 \code{varsel_plot}.
+}
+\examples{
+\donttest{
+### Usage with stanreg objects
+fit <- stan_glm(y~x, binomial())
+vs <- cv_varsel(fit)
+varsel_plot(vs)
+
+# print out some stats
+varsel_stats(vs, stats=c('acc'), type = c('mean','se'))
+}
+
 }

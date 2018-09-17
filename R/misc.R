@@ -1,6 +1,10 @@
 .onAttach <- function(...) {
   ver <- utils::packageVersion("projpred")
-  packageStartupMessage("This is projpred version ", ver)
+  msg <- paste0('This is projpred version ', ver, '\n\n',
+                 'Note: The type of the returned objects of varsel/cv_varsel have changed\n',
+                 'since the latest release, although this does not affect how the functions\n',
+                 'are used.')
+  packageStartupMessage(msg)
 }
 
 weighted.sd <- function(x, w, na.rm=F) {
@@ -16,6 +20,21 @@ weighted.sd <- function(x, w, na.rm=F) {
   sqrt(n/(n-1)*sum(w[ind]*(x[ind] - m)^2))
 }
 
+weighted.cov <- function(x,y, w, na.rm=F) {
+	if (na.rm) {
+		ind <- !is.na(w) & !is.na(x) & !is.na(y)
+		n <- sum(ind)
+	} else {
+		n <- length(x)
+		ind <- rep(T,n)
+	}
+	w <- w/sum(w[ind])
+	mx <- sum(x[ind]*w[ind])
+	my <- sum(y[ind]*w[ind])
+	n/(n-1)*sum(w[ind]*(x[ind] - mx)*(x[ind] - my))
+}
+
+
 log_weighted_mean_exp <- function(x, w) {
   x <- x + log(w)
   max_x <- max(x)
@@ -27,87 +46,49 @@ log_sum_exp <- function(x) {
 	max_x + log(sum(exp(x - max_x)))
 }
 
-# check if the fit object is suitable for variable selection
-.validate_for_varsel <- function(fit) {
-
-    if ('stanreg' %in% class(fit)) {
-        
-        # a stanreg object
-        
-        if(!(gsub('rstanarm::', '', fit$call[1]) %in% c("stan_glm", "stan_lm")))
-            stop('Only \'stan_lm\' and \'stan_glm\' are supported.')
-        
-        families <- c('gaussian','binomial','poisson')
-        if(!(family(fit)$family %in% families))
-            stop(paste0('Only the following families are supported:\n',
-                        paste(families, collapse = ', '), '.'))
-    
-    } else if ('refmodel' %in% class(fit)) {
-        # a fit object constructed by init_refmodel, so everything should be fine
-        return()
-    } else {
-        stop('The class for the provided object is not recognized.')
+bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
+  #
+  # bootstrap an arbitrary quantity fun that takes the sample x
+  # as the first input. other parameters to fun can be passed in as ...
+  # example: boostrap(x,mean)
+  #
+  
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
+  set.seed(seed)
+  
+  bsstat <- rep(NA, b)
+  oobstat <- rep(NA, b)
+  for (i in 1:b) {
+    bsind <- sample(seq_along(x), replace=T)
+    bsstat[i] <- fun(x[bsind], ...)
+    if (!is.null(oobfun)) {
+      oobind <- setdiff(seq_along(x), unique(bsind))
+      oobstat[i] <- oobfun(x[oobind], ...)
     }
-    
+  }
+  if (!is.null(oobfun)) {
+    return(list(bs=bsstat, oob=oobstat))
+  } else
+    return(bsstat)
 }
+
+
+.bbweights <- function(N,B) {
+  # generate Bayesian bootstrap weights, N = original sample size,
+  # B = number of bootstrap samples
+  bbw <- matrix(rgamma(N*B, 1), ncol = N)
+  bbw <- bbw/rowSums(bbw)
+  return(bbw)
+}
+
 
 
 # from rstanarm
 `%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
 
 
-# extract all important information from the fit object for variable selection
-.extract_vars <- function(fit) {
-
-	if (!is.null(fit$stanfit)) {
-
-		# the fit is an rstanarm-object
-		e <- extract(fit$stanfit)
-
-		# family and the predictor matrix x
-		fam <- kl_helpers(family(fit))
-		x <- unname(get_x(fit))
-		coefnames <- names(coef(fit))[as.logical(attr(x, 'assign'))]
-		x <- x[, as.logical(attr(x, 'assign')), drop=F]
-		attr(x, 'assign') <- NULL
-
-		# undo the random permutation to make results reproducible
-		perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
-							 fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
-		dis_name <- ifelse(grepl(fit$call[1], 'stan_lm'), 'sigma', 'aux')
-
-		alpha <- unname(drop(e$alpha %ORifNULL% rep(0, NROW(e$beta))))[perm_inv]
-		beta <- t(unname(as.matrix(drop(e$beta))))[, perm_inv, drop=F]
-		
-		res <- list(
-			fam = fam,
-			x = x,
-			dis = unname(e[[dis_name]])[perm_inv] %ORifNULL% rep(NA, NROW(e$beta)),
-			offset = fit$offset %ORifNULL% rep(0, nobs(fit)),
-			coefnames = coefnames,
-			intercept = as.logical(attr(fit$terms,'intercept') %ORifNULL% 0)
-			)
-
-		res$predfun <- function(x, offset) fam$mu_fun(x, alpha, beta, offset) #
-		res$mu <- res$predfun(x, res$offset)
-		res$wsample <- rep(1/NCOL(res$mu), NCOL(res$mu)) # equal sample weights by default
-
-		# y and the observation weights in a standard form
-		target <- .get_standard_y(unname(get_y(fit)), weights(fit), fam)
-		res$wobs <- target$weights
-		res$y <- target$y
-		res$nobs <- length(res$y) # this assumes a single output model
-		res$loglik <- t(fam$ll_fun(res$mu,res$dis,res$y,res$wobs))
-
-		return(res)
-
-	} else if ('refmodel' %in% class(fit)) {
-		# an object constructed by init_refmodel so all the relavant fields should be there
-		return(fit)
-	} else {
-		stop('The class for the provided object is not recognized.')
-	}
-}
 
 
 .get_standard_y <- function(y, weights, fam) {
@@ -141,18 +122,21 @@ log_sum_exp <- function(x) {
 
 
 
-.get_refdist <- function(fit, ns=NULL, nc=NULL, seed=NULL) {
+.get_refdist <- function(refmodel, ns=NULL, nc=NULL, seed=NULL) {
 	#
-	# Creates the reference distribution based on the fit-object, and the
-	# desired number of clusters (nc) or number of subsamples (ns). Returns
-	# a list with fields 
-	#       mu, var, weights, cl
-	# TODO EXPLAIN THESE
-	#
-	# If nc is specified, then clustering is used and ns is ignored.
-	# It is possible to use this function by passing .extract_vars(fit) as
-	# an argument in place of fit.
-	#
+	# Creates the reference distribution based on the refmodel-object, and the
+	# desired number of clusters (nc) or number of subsamples (ns). If nc is specified,
+  # then clustering is used and ns is ignored. Returns a list with fields:
+  #
+	#   mu: n-by-s matrix, vector of expected values for y for each draw/cluster. here s
+  #       means either the number of draws ns or clusters nc used, depending on which one is used.
+  #   var: n-by-s matrix, vector of predictive variances for y for each draw/cluster which
+  #         which are needed for projecting the dispersion parameter (note that this can be
+  #         unintuitively zero for those families that do not have dispersion)
+  #   weights: s-element vector of weights for the draws/clusters
+  #   cl: cluster assignment for each posterior draw, that is, a vector that has length equal to the
+  #       number of posterior draws and each value is an integer between 1 and s
+	# 
   if (is.null(seed))
     seed <- 17249420
 
@@ -161,46 +145,38 @@ log_sum_exp <- function(x) {
   on.exit(rngtools::RNGseed(rng_state_old))
   set.seed(seed)
   
-	if ( all(c('fam', 'x', 'mu', 'dis') %in% names(fit)) )
-		# all the relevant fields contained in the given structure
-		vars <- fit
-	else
-		# fetch the relevant info from the fit object
-		vars <- .extract_vars(fit)
-
-	fam <- vars$fam
-	n <- NROW(vars$x) # number of data points
-	S <- NCOL(vars$mu) # sample size in the full model
+	fam <- refmodel$fam
+	S <- NCOL(refmodel$mu) # number of draws in the reference model
 
 	if (!is.null(nc)) {
 		# use clustering (ignore ns argument)
 		if (nc == 1) {
 			# special case, only one cluster
 			cl <- rep(1, S)
-			p_ref <- .get_p_clust(fam, vars$mu, vars$dis, wobs=vars$wobs, cl=cl)
-		} else if (nc == NCOL(vars$mu)) {
+			p_ref <- .get_p_clust(fam, refmodel$mu, refmodel$dis, wobs=refmodel$wobs, cl=cl)
+		} else if (nc == NCOL(refmodel$mu)) {
 		    # number of clusters equal to the number of samples, so return the samples
-		    return(.get_refdist(fit, ns=nc))
+		    return(.get_refdist(refmodel, ns=nc))
 		} else {
 			# several clusters
-		    if (nc > NCOL(vars$mu))
+		    if (nc > NCOL(refmodel$mu))
 		        stop('The number of clusters nc cannot exceed the number of columns in mu.')
-			p_ref <- .get_p_clust(fam, vars$mu, vars$dis, wobs=vars$wobs, nc=nc)
+			p_ref <- .get_p_clust(fam, refmodel$mu, refmodel$dis, wobs=refmodel$wobs, nc=nc)
 		}
 	} else if (!is.null(ns)) {
-		# subsample from the full model
+		# subsample from the reference model
 		# would it be safer to actually randomly draw the subsample?
-		if (ns > NCOL(vars$mu))
+		if (ns > NCOL(refmodel$mu))
 			stop('The number of subsamples ns cannot exceed the number of columns in mu.')
 		s_ind <- round(seq(1, S, length.out  = ns))
 		cl <- rep(NA, S)
 		cl[s_ind] <- c(1:ns)
-		predvar <- sapply(s_ind, function(j) { fam$predvar(vars$mu[,j,drop=F], vars$dis[j]) })
-		p_ref <- list(mu = vars$mu[, s_ind, drop=F], var = predvar, dis = vars$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
+		predvar <- sapply(s_ind, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j]) })
+		p_ref <- list(mu = refmodel$mu[, s_ind, drop=F], var = predvar, dis = refmodel$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
 	} else {
-		# use all the samples from the full model
-		predvar <- sapply(1:S, function(j) { fam$predvar(vars$mu[,j,drop=F], vars$dis[j])	})
-		p_ref <- list(mu = vars$mu, var = predvar, dis = vars$dis, weights = vars$wsample, cl=c(1:S))
+		# use all the draws from the reference model
+		predvar <- sapply(1:S, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j])	})
+		p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis, weights = refmodel$wsample, cl=c(1:S))
 	}
 
 	return(p_ref)
@@ -258,21 +234,10 @@ log_sum_exp <- function(x) {
 
 
 
-.get_traindata <- function(fit) {
+.get_traindata <- function(refmodel) {
 	#
-	# Returns the training data fetched from the fit object.
-	# It is possible to use this function by passing .extract_vars(fit) as
-	# an argument in place of fit which will save time if .extract_vars has
-  # already been called.
-	#
-	if ( all(c('x', 'y', 'wobs', 'offset') %in% names(fit)) )
-		# all the relevant fields contained in the given structure
-		vars <- fit
-	else
-		# fetch the relevant info from the fit object
-		vars <- .extract_vars(fit)
-	
-	return(list(x = vars$x, y = vars$y, weights = vars$wobs, offset = vars$offset))
+	# Returns the training data fetched from the reference model object.
+	return(list(z = refmodel$z, x = refmodel$x, y = refmodel$y, weights = refmodel$wobs, offset = refmodel$offset))
 }
 
 .check_data <- function(data) {
@@ -282,7 +247,8 @@ log_sum_exp <- function(x) {
 	# Raises error if x or y is missing, but fills weights and offset with default
 	# values if missing.
 	#
-	if (is.null(data$x)) stop('The data object must be a list with field x giving the predictor values.')
+	if (is.null(data$z)) stop('The data object must be a list with field z giving the reference model inputs.')
+	if (is.null(data$x)) stop('The data object must be a list with field x giving the feature values.')
 	if (is.null(data$y)) stop('The data object must be a list with field y giving the target values.')
 	if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
 	if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))

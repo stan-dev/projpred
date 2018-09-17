@@ -1,3 +1,6 @@
+context('miscellaneous')
+library(rstanarm)
+
 # miscellaneous tests 
 
 set.seed(1235)
@@ -40,7 +43,7 @@ fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
 
 
 
-context('miscellaneous')
+
 test_that("check that the main function calls do not return the same RNG state every time", {
   
   s <- 5 

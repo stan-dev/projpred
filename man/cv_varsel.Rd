@@ -4,11 +4,12 @@
 \alias{cv_varsel}
 \title{Cross-validate the variable selection (varsel)}
 \usage{
-cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
-  nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
-  intercept = NULL, penalty = NULL, verbose = T, nloo = 100, K = NULL,
-  k_fold = NULL, lambda_min_ratio = 1e-05, nlambda = 150,
-  thresh = 1e-06, regul = 1e-06, validate_search = T, seed = NULL, ...)
+cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL,
+  nc = NULL, nspred = NULL, ncpred = NULL, relax = NULL,
+  nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
+  nloo = NULL, K = NULL, lambda_min_ratio = 1e-05, nlambda = 150,
+  thresh = 1e-06, regul = 1e-04, validate_search = T, seed = NULL,
+  ...)
 }
 \arguments{
 \item{fit}{Same as in \link[=varsel]{varsel}.}
@@ -39,14 +40,11 @@ cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL, nc = NULL,
 \item{nloo}{Number of observations used to compute the LOO validation (anything between 1 and the 
 total number of observations). Smaller values lead to
 faster computation but higher uncertainty (larger errorbars) in the accuracy estimation.
-Default value is 100. Only applicable if \code{cv_method = LOO}.}
+Default is to use all observations, but for faster experimentation, one can set this to a small value such as 100.
+Only applicable if \code{cv_method = LOO}.}
 
 \item{K}{Number of folds in the k-fold cross validation. Only applicable
 if \code{cv_method = TRUE} and \code{k_fold = NULL}.}
-
-\item{k_fold}{An array with cross-validated stanfits and the respective
-test datasets returned by \link[=kfold]{kfold} with \code{save_fits=TRUE}.
-If not provided, \link[=kfold]{kfold} is called inside the function.}
 
 \item{lambda_min_ratio}{Same as in \link[=varsel]{varsel}.}
 
@@ -56,7 +54,7 @@ If not provided, \link[=kfold]{kfold} is called inside the function.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for 
 regularization, but sometimes for some models the projection can be ill-behaved and we
-need to add some regularization to avoid numerical problems. Default is 1e-9.}
+need to add some regularization to avoid numerical problems.}
 
 \item{validate_search}{Whether to cross-validate also the selection process, that is, whether to perform
 selection separately for each fold. Default is TRUE and we strongly recommend not setting this
@@ -68,20 +66,12 @@ of parameters introduced by the selectin process).}
 
 \item{seed}{Random seed used in the subsampling LOO. By default uses a fixed seed.}
 
-\item{...}{Currently ignored.}
+\item{...}{Additional arguments to be passed to the \code{get_refmodel}-function.}
 }
 \value{
-The original \link[=stanreg-objects]{stanreg} object augmented with an element 'varsel',
-which is a list containing the following elements:
-\describe{
- \item{\code{vind}}{The order in which the variables were added to the submodel.}
- \item{\code{pctch}}{Percentage of cross-validation runs that included the given
-   variable to a model of given size.}
- \item{\code{kl}}{KL-divergence for each submodel size.}
- \item{\code{summaries}}{CV-summary statistics computed during the selection.}
- \item{\code{d_test}}{The data used to evaluate the summaries.}
- \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
-}
+An object of type \code{cvsel} that contains information about the feature selection. The fields are not 
+meant to be accessed directly by the user but instead via the helper functions (see the vignettes or type ?projpred
+to see the main functions in the package.)
 }
 \description{
 Perform cross-validation for the projective variable selection for a generalized
@@ -91,7 +81,8 @@ linear model.
 \donttest{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
-fit_cv <- cv_varsel(fit)
+cvs <- cv_varsel(fit)
+varsel_plot(cvs)
 }
 
 }

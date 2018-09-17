@@ -1,7 +1,9 @@
 ---
 title: "projpred Quick Start"
 date: "`r Sys.Date()`"
-output: html_vignette
+output:
+  html_document:
+    self_contained: no
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
@@ -23,7 +25,7 @@ library(rstanarm)
 library(projpred)
 library(ggplot2)
 library(bayesplot)
-theme_set(theme_bw())
+theme_set(theme_classic())
 #options(mc.cores = parallel::detectCores())
 ```
 
@@ -49,57 +51,67 @@ fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
 ```
 
 
-The variable selection can then be excecuted with the command `varsel`. This will add a field `varsel` to the `fit`-object containing information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`. Currently the package implements forward search and Lasso type L1-penalization to find the variable ordering (Tran et al., 2012). The latter is much faster for large problems but the forward search can sometimes be more accurate.
+The variable selection can then be excecuted with the command `varsel`. This return an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`. Currently the package implements forward search and Lasso type L1-penalization to find the variable ordering (Tran et al., 2012). The latter is much faster for large problems but the forward search can sometimes be more accurate.
 ```{r}
-fit <- varsel(fit, method='forward')
-fit$varsel$vind # variables ordered as they enter during the search
+vs <- varsel(fit, method='forward')
+vs$vind # variables ordered as they enter during the search
 ```
 
 
 We can then plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
-```{r}
+```{r, fig.width=5, fig.height=4}
 # plot predictive performance on training data 
-varsel_plot(fit, stats=c('elpd', 'rmse'))
+varsel_plot(vs, stats=c('elpd', 'rmse'))
 ```
 
 
 The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process. 
 ```{r, results='hide', warning=F, cache=T}
-fit_cv <- cv_varsel(fit, method='forward')
+cvs <- cv_varsel(fit, method='forward')
 ```
-In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the field ```varsel```, and it can be obtained also by calling function ```suggest_size```
+In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the returned object, and it can be obtained also by calling function ```suggest_size```
 ```{r}
 # model size suggested by the program
-suggest_size(fit_cv)
+suggest_size(cvs)
 ```
-```{r}
+```{r, fig.width=5, fig.height=4}
 # plot the validation results, this time relative to the full model
-varsel_plot(fit_cv, stats = c('elpd', 'rmse'), deltas=T)
+varsel_plot(cvs, stats = c('elpd', 'rmse'), deltas=T)
 ```
 
 We can now perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with e.g. the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables. 
-```{r}
+```{r, fig.width=6, fig.height=2}
 # Visualise the three most relevant variables in the full model
 mcmc_areas(as.matrix(fit), 
-           pars = c('(Intercept)', names(fit$varsel$vind[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
+           pars = c('(Intercept)', names(vs$vind[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
 ```
-```{r}
+```{r, fig.width=6, fig.height=2}
 # Visualise the projected three most relevant variables
-proj <- project(fit, nv = 3, ns = 500)
+proj <- project(vs, nv = 3, ns = 500)
 mcmc_areas(as.matrix(proj)) + coord_cartesian(xlim = c(-2, 2))
 ```
 
-We can also make predictions with the submodels using method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+We can make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r}
-pred <- proj_linpred(fit, xnew=df_gaussian$x, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
+pred <- proj_linpred(vs, xnew=df_gaussian$x, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
 ```
 Visualize the predictions
-```{r}
+```{r, fig.width=5, fig.height=3}
 ggplot() +
   geom_point(aes(x=pred$pred,y=df_gaussian$y)) +
   geom_abline(slope = 1, color='red') +
   labs(x = 'prediction', y = 'y')
 ```
+We can also draw  samples from the projected predictive distribution. Here's an example prediction for the first data point using 6 variables (the observed value is marked by the red line)
+```{r, fig.height=3, fig.width=5}
+y1_rep <- proj_predict(vs, xnew=df_gaussian$x[1,,drop=F], nv=6, seed=7560)
+qplot(as.vector(y1_rep), bins=25) +
+  geom_vline(xintercept = df_gaussian$y[1], color='red') +
+  xlab('y1_rep')
+```
+
+
+
 
 ## Binomial example (logistic regression)
 
@@ -123,39 +135,39 @@ fit <- stan_glm(y ~ x, family=binomial(), data=df_binom, prior=prior_coeff,
 
 Run the variable selection and print out the variable ordering
 ```{r}
-fit <- varsel(fit, method='forward')
-fit$varsel$vind
+vs <- varsel(fit, method='forward')
+vs$vind
 ```
 
 Plot the ELPD and classification accuracy on the training data:
-```{r}
-varsel_plot(fit, stats=c('elpd', 'acc'), deltas=F)
+```{r, fig.width=5, fig.height=4}
+varsel_plot(vs, stats=c('elpd', 'acc'), deltas=F)
 ```
 
-Cross-validate the full model and the variable selection:
+Cross-validate the full model and the variable selection. Let's use K-fold cross validation this time for illustration (here we use only K=3 folds to make this vignette build faster, but in practice it is customary to use more folds, e.g. K=5 or K=10):
 ```{r, results='hide', warning=F, cache=T}
-fit_cv <- cv_varsel(fit, method='forward')
+cvs <- cv_varsel(fit, method='forward', cv_method='kfold', K=3, seed=823217)
 ```
 
-Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics especially for model sizes 3 to 7 varibles.
+Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics substantially.
 ```{r}
 # model size suggested by the program
-suggest_size(fit_cv)
+suggest_size(cvs)
 ```
-```{r}
+```{r, fig.width=5, fig.height=4}
 # plot the validation results
-varsel_plot(fit_cv, stats=c('elpd', 'acc'), deltas=T)
+varsel_plot(cvs, stats=c('elpd', 'acc'))
 ```
 
 Finally, for illustration, we compute here the predictive class probabilities using only the two most relevant variables, and visualize the results.
-```{r}
+```{r, fig.height=3.5, fig.width=5}
 # evaluate the predictive distribution in a 2d grid
 ng <- 20
 x1g <- seq(-4,4,len=ng)
 x2g <- seq(-4,4,len=ng)
 xnew <- cbind( rep(x1g,each=ng), rep(x2g,ng) )
-vind <- fit$varsel$vind[1:2]
-pr <- proj_linpred(fit, xnew, vind=vind, transform=T, integrated=T)
+vind <- vs$vind[1:2]
+pr <- proj_linpred(vs, xnew, vind=vind, transform=T, integrated=T)
 
 # visualize the contours showing the predicted class probabilities
 pp <- ggplot()
@@ -170,18 +182,98 @@ pp
 
 
 
+## Custom reference models
+
+
+The package supports using virtually any reference model, the only requirement is that one can make predictions using the reference model. Custom reference models can be initialized using the function ```init_refmodel```. 
+
+Let's first generate some data where there are lots of correlating features, all of which are about equally predictive about the target variable, but carry similar information.
+```{r}
+set.seed(324092)
+n <- 100 # number of observations
+d <- 200 # number of features
+rho <- 0.5 # correlation between the features
+f <- rnorm(n) # the true underlying function
+x <- sqrt(1-rho)*matrix(rnorm(n*d), ncol=d) + sqrt(rho)*f # features are noisy observations from f
+y <- f + rnorm(n) # target variable
+```
+We now fit a model to these data, but instead of using the original features, we use only a few first principal components. The following example utilizes ```rstanarm``` for fitting the model, but notice that any other tool could be used (this choice simply makes the example more concise).
+```{r, results='hide', message=F, warning=F, cache=T}
+# dimension reduction
+nc <- 3 # number of principal components to use
+dr <- prcomp(x, rank. = nc) 
+z <- dr$x
+
+# fit the model
+fit <- stan_glm(y~., data=data.frame(z,y), prior=normal(scale=2))
+draws <- as.matrix(fit) # posterior draws
+sigma <- draws[,'sigma'] # noise std
+beta <- draws[,1+c(1:nc)] # regression coefficients
+alpha <- draws[,'(Intercept)'] # intercept
+```
+
+Now we can construct the reference model. In the following, ```predfun``` is a function that computes the expected value for the target variable separately for each posterior draw given the new predictor values (see documentation of ```init_refmodel``` for more information). Notice also that the reference model uses different features (the principal components) than those from which we are selecting the submodel (the original features).
+```{r}
+# prediction with the reference model
+predfun <- function(zt) t( beta %*% t(zt) + alpha ) 
+
+# initialize the reference model object. notice here that the first argument z 
+# denotes the features of the reference model, and x the features from which 
+# we want to select from
+ref <- init_refmodel(z, y, gaussian(), x=x, predfun=predfun, dis=sigma)
+```
+Now we can perform everything similarly as in the previous examples. The following computes the LOO validation for the projective selection with L1-search.
+```{r, fig.width=5, fig.height=4, results='hide', message=F, warning=F, cache=T}
+# LOO validation for the feature selection
+cvs <- cv_varsel(ref)
+varsel_plot(cvs, stats=c('elpd','rmse'))
+```
+
+
+
+
+
+
+
+## Penalized maximum likelihood
+
+It is also possible to use ```projpred``` for computing traditional point estimates, such as Lasso (Tibshirani, 1996) or forward stepwise regression. These are fast to compute (require no reference model) and are therefore useful especially as baseline methods.
+
+These can be computed by passing in the original data as "reference", and then using all the same functions as earlier. We illustrate by computing the Lasso solution for simulated data we used in the previous section
+```{r, fig.width=5, fig.height=2.5, results='hide', message=F, warning=F, cache=T}
+# initialize the data reference
+dref <- init_refmodel(x,y,family=gaussian())
+lasso <- cv_varsel(dref, K=10, method='l1', nv_max=30) # tenfold CV for Lasso
+varsel_plot(lasso, stats='rmse')
+```
+
+Also Lasso gives a good fit, comparable to that of the Bayesian model in terms of RMSE, but the projection finds a submodel with similar performance with fewer features. Furthermore, estimation of the noise variance is less straightforward for Lasso, so if we were interested in computing well calibrated predictive distributions for future data, projection would be the preferred choice also in this respect.
+
+Here's the greedy forward search with small L2-penalty for the coefficients. 
+```{r, fig.width=5, fig.height=2.5, results='hide', message=F, warning=F, cache=T}
+fsel <- cv_varsel(dref, K=10, method='forward', regul=1)
+varsel_plot(fsel, stats='rmse')
+```
+
+Forward search finds a sparser model with comparable performance to Lasso but starts overfitting when more features are added.
+
+
+
+
 ### References
 
 Carvalho, C.M., Polson, N.G., Scott, J.G. (2010). The horseshoe estimator for sparse signals. _Biometrika_ 97(2):465–480. 
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. _Journal of Statistical Planning and Inference_, 111(1-2):77–94.
 
-Goutis, C. and Robert, C. P. (1998). _Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections_. Biometrika, 85(1):29–37.
+Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. _Biometrika_, 85(1):29–37.
 
 Piironen, Juho and Vehtari, Aki (2017a). Comparison of Bayesian predictive methods for model selection. _Statistics and Computing_ 27(3):711-735. DOI 10.1007/s11222-016-9649-y. [Online](http://link.springer.com/article/10.1007/s11222-016-9649-y)
 
 Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In _Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)_, PMLR 54:905-913, 2017. [Online](http://proceedings.mlr.press/v54/piironen17a.html)
 
 Piironen, Juho and Vehtari, Aki (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. _Electronic Journal of Statistics_, 11(2): 5018--5051. [Online](https://projecteuclid.org/euclid.ejs/1513306866#info)
+
+Tibshirani, Robert (1996). Regression shrinkage and selection via the Lasso. _Journal of the Royal Statistical Society. Series B (Methodological)_, 58(1):267--288, 1996.
 
 Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. _Statistics and Computing_ 22(5):1069-1084. 

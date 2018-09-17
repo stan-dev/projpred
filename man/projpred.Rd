@@ -12,15 +12,16 @@ Description
 linear models. The package is aimed to be compatible with \pkg{rstanarm} but also other
 reference models can be used (see function \code{\link{init_refmodel}}). 
 
-Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families,
-but more will be implemented later. See the \href{https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html}{quickstart-vignette}
+Currently, the supported models (family objects in R) include Gaussian,
+Binomial and Poisson families, but more will be implemented later. See the
+\href{http://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
 for examples.
 }
 \section{Functions}{
 
 
 \describe{
- \item{\link{varsel}, \link{cv_varsel}, \link{init_refmodel}}{
+ \item{\link{varsel}, \link{cv_varsel}, \link{init_refmodel}, \link{suggest_size}}{
  Perform and cross-validate the variable selection. \link{init_refmodel} can be used to initialize
  a reference model other than \pkg{rstanarm}-fit.}
  \item{\link{project}}{

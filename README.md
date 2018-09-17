@@ -58,22 +58,22 @@ fit <- stan_glm(y ~ x, family = gaussian(), data = df_gaussian,
 
 
 # perform the variable selection
-fit_v <- varsel(fit)
+vs <- varsel(fit)
 
 # print the results
-varsel_stats(fit_v)
+varsel_stats(vs)
 
 # project the parameters for model sizes nv = 3,5 variables 
-projs <- project(fit_v, nv = c(3, 5))
+projs <- project(vs, nv = c(3, 5))
 
 # predict using only the 5 most relevant variables
-pred <- proj_linpred(fit_v, xnew=df_gaussian$x, nv=5, integrated=T)
+pred <- proj_linpred(vs, xnew=df_gaussian$x, nv=5, integrated=T)
 
 # perform cross-validation for the variable selection
-fit_cv <- cv_varsel(fit, cv_method='LOO')
+cvs <- cv_varsel(fit, cv_method='LOO')
 
 # plot the validation results 
-varsel_plot(fit_cv)
+varsel_plot(cvs)
 ```
 
 
@@ -88,5 +88,5 @@ Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods 
 
   [rstanarm]: https://github.com/stan-dev/rstanarm
   [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
-  [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html
+  [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/inst/doc/quickstart.html
 

@@ -1,8 +1,8 @@
 Package: projpred
 Title: Projection Predictive Feature Selection
-Version: 0.9.0
-Authors@R: c(person("Markus", "Paasiniemi", role = "aut"),
-             person("Juho", "Piironen", role = c("cre", "aut"), email = "juho.piironen@aalto.fi"),
+Version: 1.0.0
+Authors@R: c(person("Juho", "Piironen", role = c("cre", "aut"), email = "juho.piironen@aalto.fi"),
+             person("Markus", "Paasiniemi", role = "aut"),
              person("Aki", "Vehtari", role = "aut"),
              person("Jonah", "Gabry", role = "ctb"))
 Maintainer:
@@ -15,8 +15,6 @@ Description:
 Depends:
     R (>= 3.1.2)
 Imports:
-    rstan, 
-    rstanarm (>= 2.17.4), 
     loo (>= 2.0.0), 
     ggplot2, 
     Rcpp, 
@@ -26,8 +24,9 @@ LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
 LazyData: TRUE
-RoxygenNote: 6.0.1
-Suggests: 
+RoxygenNote: 6.1.0
+Suggests:
+    rstanarm, 
     testthat,
     knitr,
     rmarkdown,

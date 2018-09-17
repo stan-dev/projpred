@@ -1,12 +1,12 @@
 # Search heuristics
 #
 
-search_forward1 <- function(p_full, d_train, family, intercept, nv_max,
+search_forward1 <- function(p_ref, d_train, family, intercept, nv_max,
                            verbose, opt) {
   
   # predictive mean and variance of the reference model (with parameters integrated out)
-  mu <- p_full$mu 
-  v <- p_full$var
+  mu <- p_ref$mu 
+  v <- p_ref$var
   
   if (NCOL(mu) > 1 || NCOL(v) > 1)
     stop('Internal error: search_forward1 received multiple draws. Please report to the developers.')
@@ -21,7 +21,7 @@ search_forward1 <- function(p_full, d_train, family, intercept, nv_max,
   return(out)
 }
 
-search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
+search_forward <- function(p_ref, d_train, family_kl, intercept, nv_max,
                            verbose, opt) {
 
   # initialize the forward selection
@@ -38,7 +38,7 @@ search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
     notchosen <- setdiff(cols, chosen)
     cands <- lapply(notchosen, function(x) c(chosen, x))
 
-    p_sub <- sapply(cands, projfun, p_full, d_train, intercept)
+    p_sub <- sapply(cands, projfun, p_ref, d_train, intercept)
 
     imin <- which.min(p_sub['kl',])
     chosen <- c(chosen, notchosen[imin])
@@ -54,11 +54,11 @@ search_forward <- function(p_full, d_train, family_kl, intercept, nv_max,
 
 
 
-search_L1 <- function(p_full, d_train, family, intercept, nv_max, penalty, opt) {
+search_L1 <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
   
   # predictive mean and variance of the reference model (with parameters integrated out)
-  mu <- p_full$mu
-  v <- p_full$var
+  mu <- p_ref$mu
+  v <- p_ref$var
   
   if (NCOL(mu) > 1 || NCOL(v) > 1)
     stop('Internal error: search_L1 received multiple draws. Please report to the developers.')
@@ -79,7 +79,7 @@ search_L1 <- function(p_full, d_train, family, intercept, nv_max, penalty, opt) 
   
   # fetch the coefficients corresponding to those points at the searchpath where new variable enters
   nvar <- length(order)
-  n <- nrow(p_full$mu)
+  n <- nrow(p_ref$mu)
   out <- list(alpha=rep(NA, nv_max+1), beta=matrix(0, nrow=nv_max, ncol=nv_max+1), 
               lambda=rep(NA, nv_max+1), w=matrix(NA, nrow=n, ncol=nv_max+1))
   for (k in 0:nv_max) {

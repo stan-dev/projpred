@@ -8,8 +8,8 @@
 #'
 #' @name proj-pred
 #'
-#' @param object The object returned by \link{varsel},
-#' \link{cv_varsel} or \link{project}.
+#' @param object Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
+#' or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.
 #' @param xnew The predictor values used in the prediction. If \code{vind} is
 #' specified, then \code{xnew} should either be a dataframe containing column names
 #' that correspond to \code{vind} or a matrix with the number and order of columns
@@ -29,8 +29,9 @@
 #' @param integrated If \code{TRUE}, the output is averaged over the
 #' parameters. Default is \code{FALSE}. For \code{proj_linpred} only.
 #' @param nv Number of variables in the submodel (the variable combination is
-#' taken from the \code{varsel} information). If a list, then results for all
-#' specified model sizes are returned. Ignored if \code{vind} is specified.
+#' taken from the variable selection information). If a vector with several values,
+#' then results for all specified model sizes are returned. Ignored if \code{vind} is specified.
+#' By default use the automatically suggested model size.
 #' @param draws Number of draws to return from the predictive distribution of
 #' the projection. The default is 1000.
 #' For \code{proj_predict} only.
@@ -45,6 +46,18 @@
 #' returns a list with elements pred (predictions) and lpd (log predictive densities).
 #' If the predictions are done for several submodel sizes, returns a list with one element
 #' for each submodel.
+#' 
+#' @examples
+#' \donttest{
+#' ### Usage with stanreg objects
+#' fit <- stan_glm(y~x, binomial())
+#' vs <- varsel(fit)
+#' 
+#' # compute predictions with 4 variables at the training points
+#' pred <- proj_linpred(vs, xnew=x, nv = 4)
+#' pred <- proj_predict(vs, xnew=x, nv = 4)
+#' 
+#' }
 #'
 NULL
 
@@ -64,7 +77,7 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
       (length(object)>0 && 'projection' %in% class(object[[1]]))) {
     proj <- object
   } else {
-    # reference model obtained, so run the projection
+    # reference model or varsel object obtained, so run the projection
     proj <- project(object = object, nv = nv, ...)
   }
 
@@ -213,39 +226,61 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' @param type One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
 #' compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
 #' that \code{1-alpha} percent of the mass falls between them.
-#' @param deltas If \code{TRUE}, the difference between the full model and the
-#' submodel is returned instead of the actual value of the statistic.
+#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative to the baseline model 
+#' (see argument \code{baseline}) instead of estimating the actual values of the statistics.
 #' Defaults to \code{FALSE}.
 #' @param alpha A number indicating the desired coverage of the credible
-#' intervals. E.g. \code{alpha=0.1} corresponds to 90\% probability mass
-#' within the intervals.
+#' intervals. For example \code{alpha=0.32} corresponds to 68\% probability mass
+#' within the intervals, that is, one standard error intervals.
+#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the reference model or
+#' the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.
 #' @param ... Currently ignored.
+#' 
+#' 
+#' @examples
+#' \donttest{
+#' ### Usage with stanreg objects
+#' fit <- stan_glm(y~x, binomial())
+#' vs <- cv_varsel(fit)
+#' varsel_plot(vs)
+#' 
+#' # print out some stats
+#' varsel_stats(vs, stats=c('acc'), type = c('mean','se'))
+#' }
+#' 
 NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.1, ...) {
+varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.32, baseline=NULL, ...) {
   
-	if(!('varsel' %in% names(object)))
-	  stop(paste('The provided object doesn\'t contain information about the',
-	             'variable selection. Run the variable selection first.'))
-
-	if (all(is.na(object$varsel$summaries$full$mu))) {
-		# no reference model (or the results missing for some other reason),
-		# so cannot compute differences between the reference model and submodels
-		refstat_found <- F
-		if (deltas==T) {
-			deltas <- F
-			warning('Cannot use deltas = TRUE when there is no reference model, setting deltas = FALSE.')
-		}
-	} else
-		refstat_found <- T
+	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
+		stop('The object does not look like a variable selection -object. Run variable selection first')
+  
+  if (is.null(baseline)) {
+    if ('datafit' %in% class(object$refmodel))
+      baseline <- 'best'
+    else
+      baseline <- 'ref'
+  } else {
+    if (!(baseline %in% c('ref','best')))
+      stop('Argument \'baseline\' must be either \'ref\' or \'best\'.')
+    if (baseline == 'ref' && deltas==T && 'datafit' %in% class(object$refmodel)) {
+      # no reference model (or the results missing for some other reason),
+      # so cannot compute differences between the reference model and submodels
+      deltas <- F
+      warning('Cannot use deltas = TRUE and baseline = \'ref\' when there is no reference model; setting deltas = FALSE.')
+    }
+  }
 	
 	# compute all the statistics and fetch only those that were asked
-	tab <- .tabulate_stats(object$varsel, alpha)
-	stats_table <- subset(tab, (tab$delta==deltas | tab$statistic=='kl') & tab$statistic %in% stats)
-	stats_ref <- subset(stats_table, stats_table$size==Inf)
-	stats_sub <- subset(stats_table, stats_table$size!=Inf)
+  nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+  tab <- rbind(.tabulate_stats(object, stats, alpha = alpha, nfeat_baseline=nfeat_baseline),
+               .tabulate_stats(object, stats, alpha = alpha))
+  stats_table <- subset(tab, tab$delta==deltas)
+  stats_ref <- subset(stats_table, stats_table$size==Inf)
+  stats_sub <- subset(stats_table, stats_table$size!=Inf)
+  stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
 	
 	
 	if(NROW(stats_sub) == 0) {
@@ -253,9 +288,9 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
 	                paste0(unique(stats), collapse=', '), ' not available.'))
 	}
 	
-	if(is.null(nv_max)) 
+	if(is.null(nv_max))
 	  nv_max <- max(stats_sub$size)
-	ylab <- if(deltas) 'Difference to the full model' else 'value'
+	ylab <- if(deltas) 'Difference to the baseline' else 'Value'
 	
 	# make sure that breaks on the x-axis are integers
 	n_opts <- c(4,5,6)
@@ -275,10 +310,14 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
     geom_line(aes_string(y = 'value')) +
     geom_point(aes_string(y = 'value'))
 	
-	if (refstat_found)
+	if (!all(is.na(stats_ref$se)))
 		# add reference model results if they exist
 		pp <- pp + geom_hline(aes_string(yintercept = 'value'), data = stats_ref,
 													color = 'darkred', linetype=2)
+	if (baseline != 'ref')
+	  # add the baseline result (if different from the reference model)
+	  pp <- pp + geom_hline(aes_string(yintercept = 'value'), data = stats_bs,
+	                        color = 'black', linetype=3)
 	pp <- pp + 
 		scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
 	                       limits = c(min(breaks), max(breaks))) +
@@ -291,45 +330,55 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
 #' @rdname varsel-statistics
 #' @export
 varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
-                         deltas = F, alpha=0.1, ...) {
+                         deltas = F, alpha=0.32, baseline=NULL, ...) {
   
-	if(!('varsel' %in% names(object)))
-      stop(paste('The provided object doesn\'t contain information about the',
-                   'variable selection. Run the variable selection first.'))
-
-	if (all(is.na(object$varsel$summaries$full$mu)) && deltas==T) {
-		# no reference model (or the results missing for some other reason),
-		# so cannot compute differences between the reference model and submodels
-		warning('Cannot compute statistics for deltas = TRUE when there is no reference model.')
-	}
-	
-  tab <- .tabulate_stats(object$varsel, alpha=alpha)
-  stats_table <- subset(tab, (tab$delta == deltas | tab$statistic == 'kl') & tab$size != Inf)
+	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
+		stop('The object does not look like a variable selection -object. Run variable selection first')
+  
+  if (is.null(baseline)) {
+    if ('datafit' %in% class(object$refmodel))
+      baseline <- 'best'
+    else
+      baseline <- 'ref'
+  } else {
+    if (!(baseline %in% c('ref','best')))
+      stop('Argument \'baseline\' must be either \'ref\' or \'best\'.')
+    if (baseline == 'ref' && deltas==T && 'datafit' %in% class(object$refmodel)) {
+      # no reference model (or the results missing for some other reason),
+      # so cannot compute differences between the reference model and submodels
+      warning('Cannot compute statistics for deltas = TRUE and baseline = \'ref\' when there is no reference model.')
+    }
+  }
+  
+  # fetch statistics
+  if (deltas) {
+    nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+    tab <- .tabulate_stats(object, stats, alpha=alpha, nfeat_baseline=nfeat_baseline)
+  } else {
+    tab <- .tabulate_stats(object, stats, alpha=alpha)
+  }
+  stats_table <- subset(tab, tab$size != Inf)  
+  
   
   # these are the corresponding names for mean, se, upper and lower in the stats_table, and their suffices
   # in the table to be returned 
   qty <- unname(sapply(type, function(t) switch(t, mean='value', upper='uq', lower='lq', se='se')))
   suffix <- unname(sapply(type, function(t) switch(t, mean='', upper='.upper', lower='.lower', se='.se')))
-  
 
   # loop through all the required statistics 
-  arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$varsel$vind))
+  arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$vind))
   for (i in seq_along(stats)) {
-    
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- sapply(suffix, function(s) paste0(stats[i],s))
     colnames(temp) <- newnames
-    # if (is.null(arr))
-      # arr <- temp
-    # else
-      arr <- cbind(arr, temp)
+    arr <- cbind(arr, temp)
   }
 
   if(is.null(nv_max)) 
     nv_max <- max(stats_table$size)
 
-  if('pctch' %in% names(object$varsel))
-    arr$pctch <- c(NA, diag(object$varsel$pctch[,-1]))
+  if('pctch' %in% names(object))
+    arr$pctch <- c(NA, diag(object$pctch[,-1]))
 
   subset(arr, arr$size <= nv_max)
 }
@@ -341,23 +390,26 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' Suggest model size 
 #'
 #' This function can be used for suggesting an appropriate model size
-#' based on certain rule. Notice that the decision rules are heuristic
+#' based on a certain default rule. Notice that the decision rules are heuristic
 #' and should be interpreted as guidelines. It is recommended that the user
-#' studies the results via \code{varsel_plot} and or \code{varsel_stats}
+#' studies the results via \code{varsel_plot} and/or \code{varsel_stats}
 #' and makes the final decision based on what is most appropriate for the given
 #' problem.
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}.
-#' @param stat Statistic used for the decision. Default is elpd. See \code{varsel_stats} for
+#' @param stat Statistic used for the decision. Default is 'elpd'. See \code{varsel_stats} for
 #' other possible choices. 
 #' @param alpha A number indicating the desired coverage of the credible
-#' intervals based on which the decision is made. E.g. \code{alpha=0.1} corresponds to
-#' 90\% probability mass within the intervals. See details for more information.
-#' @param pct Number indicating the relative proportion between full model and null model
+#' intervals based on which the decision is made. E.g. \code{alpha=0.32} corresponds to
+#' 68\% probability mass within the intervals (one standard error intervals). 
+#' See details for more information.
+#' @param pct Number indicating the relative proportion between baseline model and null model
 #' utilities one is willing to sacrifice. See details for more information.
 #' @param type Either 'upper' (default) or 'lower' determining whether the decisions are
 #' based on the upper or lower credible bounds. See details for more information.
+#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the reference model or
+#' the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.
 #' @param warnings Whether to give warnings if automatic suggestion fails, mainly for internal use.
 #' Default is TRUE, and usually no reason to set to FALSE.
 #' @param ... Currently ignored.
@@ -365,197 +417,78 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' @details The suggested model size is the smallest model for which
 #' either the lower or upper (depending on argument \code{type}) credible bound 
 #' of the submodel utility \eqn{u_k} with significance level \code{alpha} falls above
-#'   \deqn{u_ref - pct*(u_ref - u_0)} 
-#' Here \eqn{u_ref} denotes the reference model utility and \eqn{u_0} the null model utility
-#' (currently the utility is taken to be the mean log predictive density, MLPD).
+#'   \deqn{u_base - pct*(u_base - u_0)} 
+#' Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0} the null model utility.
+#' The baseline is either the reference model or the best submodel found (see argument \code{baseline}).
 #' The lower and upper bounds are defined to contain the submodel utility with 
 #' probability 1-alpha (each tail has mass alpha/2).
 #' 
 #' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which means that we select the smallest
-#' model for which the upper tail exceeds the reference model level, that is, which is better than the reference 
+#' model for which the upper tail exceeds the baseline model level, that is, which is better than the baseline 
 #' model with probability 0.16 (and consequently, worse with probability 0.84). In other words,
-#' the estimated difference between the reference model and submodel utitlities is at most one standard error
+#' the estimated difference between the baseline model and submodel utilities is at most one standard error
 #' away from zero, so the two utilities are considered to be close.
+#' 
+#' NOTE: Loss statistics like RMSE and MSE are converted to utilities by multiplying them by -1, so call
+#' such as \code{suggest_size(object, stat='rmse', type='upper')} should be interpreted as finding
+#' the smallest model whose upper credible bound of the \emph{negative} RMSE exceeds the cutoff level
+#' (or equivalently has the lower credible bound of RMSE below the cutoff level). This is done to make
+#' the interpretation of the argument \code{type} the same regardless of argument \code{stat}.
+#' 
+#' @examples
+#' \donttest{
+#' ### Usage with stanreg objects
+#' fit <- stan_glm(y~x, binomial())
+#' vs <- cv_varsel(fit)
+#' suggest_size(vs)
+#' 
+#' }
 #' 
 
 #' @export
-suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper', warnings=TRUE, ...) {
+suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper', 
+                         baseline=NULL, warnings=TRUE, ...) {
   
-  if ('varsel' %in% names(object))
-    varsel <- object$varsel
-  else
-    stop(paste0('The provided object does not contain information about variable selection.',
-         'Run variable selection first.'))
+	
+	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
+		stop('The object does not look like a variable selection -object. Run variable selection first')
   
-  btype <- ifelse(type=='upper', 'uq', 'lq')
-  tab <- .tabulate_stats(varsel, alpha = alpha)
-  stats <- subset(tab, tab$statistic == stat & tab$delta == TRUE & tab$size != Inf &
-                    tab$data %in% c('train', 'test', 'loo', 'kfold'))
-  
-  if (!all(is.na(stats[,'value']))) {
-    
-    util_null <- subset(stats, stats$size == 0, 'value')
-    util_cutoff <- pct*util_null
-    res <- subset(stats, stats[,btype] >= util_cutoff$value, 'size')
-    if(nrow(res) == 0) {
-      # no submodel satisfying the criterion found
-      if (varsel$nv_max == varsel$nv_all)
-        ssize <- varsel$nv_max
-      else {
-        ssize <- NA
-        if (warnings)
-          warning(paste('Could not suggest model size. Investigate varsel_plot to identify',
-                        'if the search was terminated too early. If this is the case,',
-                        'run variable selection with larger value for nv_max.'))
-      }
-      
-    } else {
-      ssize <- min(res)
-    }
+  if (.is_util(stat)) {
+    sgn <- 1
   } else {
-    # special case; all values compared to the reference model are NA indicating
-    # that the reference model is missing, so suggest the smallest model which
-    # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
-    # i.e. is contained in the 68% central region
-    tab <- .tabulate_stats(varsel, alpha = 0.32)
-    stats <- subset(tab, tab$statistic == stat & tab$delta == F &
-                      tab$data %in% c('train', 'test', 'loo', 'kfold'))
-    imax <- which.max(unname(unlist(stats['value'])))
-    thresh <- stats[imax, 'lq']
-    ssize <- min(subset(stats, stats$value >= thresh, 'size'))
+    sgn <- -1
+    if (type == 'upper')
+      type <- 'lower'
+    else
+      type <- 'upper'
   }
+  bound <- paste0(stat,'.',type)
+  stats <- varsel_stats(object, stats=stat, alpha=alpha, type=c('mean','upper','lower'),
+                        baseline=baseline, deltas = T)
+  util_null <- sgn*unlist(unname(subset(stats, stats$size==0, stat)))
+  util_cutoff <- pct*util_null
+  res <- subset(stats, sgn*stats[,bound] >= util_cutoff, 'size')
+
+  if(nrow(res) == 0) {
+    # no submodel satisfying the criterion found
+    if (object$nv_max == object$nv_all)
+      ssize <- object$nv_max
+    else {
+      ssize <- NA
+      if (warnings)
+        warning(paste('Could not suggest model size. Investigate varsel_plot to identify',
+                      'if the search was terminated too early. If this is the case,',
+                      'run variable selection with larger value for nv_max.'))
+    }
+    
+  } else {
+    ssize <- min(res)
+  }
+   
   ssize
 }
 
 
-
-
-
-
-#' Generic reference model initialization
-#'
-#' Initializes a structure that can be used as a reference fit for the
-#' projective variable selection.
-#' This function is provided to allow construction of the reference fit
-#' using also other tools than \code{rstanarm}, because only certain specific
-#' information is needed for the actual projection and variable selection.
-#'
-#' @param x Predictor matrix of dimension \code{n}-by-\code{D} containing the candidate
-#' variables for selection (i.e. variables from which to select the submodel). Rows denote
-#' the observations and columns the different variables. 
-#' @param y Vector of length \code{n} giving the target variable values.
-#' @param family \link{family} object giving the model family
-#' @param predfun Function that takes a \code{nt}-by-\code{D} test predictor matrix as an input
-#' (\code{nt} = # test points, \code{D} = # predictors) and outputs
-#' a \code{nt}-by-\code{S} matrix of expected values for the target variable y,
-#' each column corresponding to one posterior draw for the parameters in the reference model
-#' (the number of draws \code{S} can also be 1).
-#' The output should be computed without any offsets, these are automatically taken into account
-#' internally, e.g. in cross-validation.
-#' @param dis Vector of length \code{S} giving the posterior draws for the dispersion parameter
-#' in the reference model if there is such a parameter in the model family. For Gaussian
-#' observation model this is the noise std \code{sigma}.
-#' @param offset Offset to be added to the linear predictor in the projection. (Same as in
-#' function \code{glm}.)
-#' @param wobs Observation weights. If omitted, equal weights are assumed.
-#' @param wsample vector of length \code{S} giving the weights for the posterior draws. 
-#' If omitted, equal weights are assumed.
-#' @param intercept Whether to use intercept. Default is \code{TRUE}.
-#' @param cvfits A list with K elements, each of which is a list with fields including at least
-#' variables: tr, ts and predfun giving the training and test indices and prediction function
-#' for each fold. Additionally each element can have field dis (dispersion samples for each fold)
-#' if the model has a dispersion parameter. Can be omitted but needed for K-fold cross validation
-#' for genuine reference models.
-#'
-#' @return An object that can be passed to all the functions that
-#' take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel},
-#' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
-
-#' @export
-init_refmodel <- function(x, y, family, predfun=NULL, dis=NULL, offset=NULL, 
-													wobs=NULL, wsample=NULL, intercept=TRUE, cvfits=NULL) {
-
-  n <- length(y)
-	family <- kl_helpers(family)
-	
-	if (is.null(offset))
-		offset <- rep(0, n)	
-	
-	if (is.null(predfun)) {
-		# no prediction function given, so the 'reference model' will simply contain the
-		# observed data as the fitted values
-		predmu <- function(x,offset=0) matrix(rep(NA, NROW(x)))
-		mu <- y
-		proper_model <- FALSE
-	}	else {
-		# genuine reference mdoel. add impact of offset to the prediction function
-		predmu <- function(x,offset=0) family$linkinv( family$linkfun(predfun(x)) + offset )
-		mu <- predmu(x,offset)
-		if (NROW(y)!=NROW(mu)) 
-		  stop(paste0('The number of rows in the output of predfun(x) does not match with the given y;',
-                  'predfun seems to be misspecified.'))
-		proper_model <- TRUE
-	}
-	
-	if (proper_model)
-		if (.has.dispersion(family) && is.null(dis))
-			stop(sprintf('Family %s needs a dispersion parameter so you must specify input argument \'dis\'.', family$family))
-	
-	mu <- unname(as.matrix(mu))
-	S <- NCOL(mu) # number of samples in the reference model
-	
-	if (is.null(dis))
-		dis <- rep(0, S)
-	if (is.null(wobs))
-		wobs <- rep(1, n)
-	if (is.null(wsample))
-		wsample <- rep(1, S)
-	if (is.null(intercept))
-		intercept <- TRUE
-	wsample <- wsample/sum(wsample)
-	
-	# compute log-likelihood
-	if (proper_model)
-	  loglik <- t(family$ll_fun(mu,dis,y,wobs))
-	else
-	  loglik <- NULL
-
-	# figure out column names for the variables
-	if (!is.null(colnames(x)))
-		coefnames <- colnames(x)
-	else
-		coefnames <- paste0('x',1:ncol(x))
-
-	# y and the observation weights in a standard form
-	target <- .get_standard_y(y, wobs, family)
-	
-	# fetch information from the cross-validated fits and create a data structure
-	# that will be understood by cv_varsel (or actually kfold_varsel)
-	if (!is.null(cvfits)) {
-		cvfits <- sapply(cvfits, function(fold) {
-			# fold must contain: tr,ts,predfun,(dis),(wsample)
-			tr <- fold$tr
-			ts <- fold$ts
-			fit <- init_refmodel(x[tr,], y[tr], family, predfun=fold$predfun, dis=fold$dis,
-													 offset=offset[tr], wobs=wobs[tr], wsample=fold$wsample, intercept=intercept, cvfits=NULL)
-			list(fit=fit, omitted=ts)
-		})
-		k_fold <- list(fits=t(cvfits))
-	} else
-		k_fold <- cvfits
-    
-	fit <- list(x=x, y=target$y, fam=family, mu=mu, dis=dis, nobs=length(y), coefnames=coefnames,
-							offset=offset, wobs=target$weights, wsample=wsample, intercept=intercept, 
-							predfun=predmu, loglik=loglik, k_fold=k_fold)
-	
-	# define the class of the retuned object to be 'refmodel' and additionally 'datafit'
-	# if only the observed data was provided and no actual function for predicting test data
-	class(fit) <- 'refmodel'
-	if (!proper_model) 
-		class(fit) <- c(class(fit),'datafit')
-	
-	return(fit)
-}
 
 
 #' @method as.matrix projection
@@ -573,20 +506,30 @@ as.matrix.projection <- function(x, ...) {
 }
 
 
+
+
+
 #' Create cross-validation indices
 #'
 #' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross validation.
-#' This function is potentially useful for creating the cross-validation objects for 
-#' \link[=init_refmodel]{init_refmodel}.
+#' These functions are potentially useful when creating the \code{cvfits} and \code{cvfun}
+#' arguments for \link[=init_refmodel]{init_refmodel}. The returned value is different for
+#' these two methods, see below for details.
+#' 
+#' @name cv-indices
 #'
 #' @param n Number of data points.
 #' @param k Number of folds. 
 #' @param out Format of the output, either 'foldwise' (default) or 'indices'. See below for details.
 #' @param seed Random seed so that the same division could be obtained again if needed.
 #'
-#' @return If \code{out} is 'foldwise', the returned value is a list with \code{k} elements, 
+#' @return \code{cvfolds} returns a vector of length \code{n} such that each element is an integer
+#' between 1 and \code{k} denoting which fold the corresponding data point belongs to.
+#' The returned value of \code{cvind} depends on the \code{out}-argument. If \code{out}='foldwise',
+#' the returned value is a list with \code{k} elements, 
 #' each having fields \code{tr} and \code{ts} which give the training and test indices, respectively,
-#' for each fold. If \code{out} is 'indices', the returned value is a list with fields \code{tr} and \code{ts}
+#' for the corresponding fold. If \code{out}='indices', the returned value is a list with fields \code{tr}
+#' and \code{ts}
 #' each of which is a list with \code{k} elements giving the training and test indices for each fold.
 #' @examples
 #' \donttest{
@@ -594,9 +537,32 @@ as.matrix.projection <- function(x, ...) {
 #' n <- 100
 #' y <- rnorm(n)
 #' cv <- cvind(n, k=5)
-#' cvmeans <- lapply(cv, function(fold) mean(y[fold$itr]))
+#' cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
 #' }
+#' 
+NULL
 
+#' @rdname cv-indices
+#' @export
+cvfolds <- function(n, k, seed=NULL) {
+	
+	if (k > n)
+		stop('k cannot exceed n.')
+  
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
+  set.seed(seed)
+  
+  # create and shuffle the indices
+  folds <- rep_len(1:k, length.out = n)
+  folds <- sample(folds, n, replace=FALSE)
+  
+  return(folds)
+  
+}
+
+#' @rdname cv-indices
 #' @export
 cvind <- function(n, k, out='foldwise', seed=NULL) {
 
@@ -631,6 +597,8 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 	
 	return(cv)
 }
+
+
 
 
 
