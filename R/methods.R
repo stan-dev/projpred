@@ -274,12 +274,13 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
   }
 	
 	# compute all the statistics and fetch only those that were asked
-	nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-	tab <- .tabulate_stats(object, alpha, nfeat_baseline = nfeat_baseline)
-	stats_table <- subset(tab, (tab$delta==deltas | tab$statistic=='kl') & tab$statistic %in% stats)
-	stats_ref <- subset(stats_table, stats_table$size==Inf)
-	stats_sub <- subset(stats_table, stats_table$size!=Inf)
-	stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
+  nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+  tab <- rbind(.tabulate_stats(object, stats, alpha = alpha, nfeat_baseline=nfeat_baseline),
+               .tabulate_stats(object, stats, alpha = alpha))
+  stats_table <- subset(tab, tab$delta==deltas)
+  stats_ref <- subset(stats_table, stats_table$size==Inf)
+  stats_sub <- subset(stats_table, stats_table$size!=Inf)
+  stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
 	
 	
 	if(NROW(stats_sub) == 0) {
@@ -350,9 +351,14 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
   }
   
   # fetch statistics
-  nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-  tab <- .tabulate_stats(object, alpha=alpha, nfeat_baseline=nfeat_baseline)
-  stats_table <- subset(tab, (tab$delta == deltas | tab$statistic == 'kl') & tab$size != Inf)
+  if (deltas) {
+    nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+    tab <- .tabulate_stats(object, stats, alpha=alpha, nfeat_baseline=nfeat_baseline)
+  } else {
+    tab <- .tabulate_stats(object, stats, alpha=alpha)
+  }
+  stats_table <- subset(tab, tab$size != Inf)  
+  
   
   # these are the corresponding names for mean, se, upper and lower in the stats_table, and their suffices
   # in the table to be returned 
@@ -445,39 +451,26 @@ suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='u
   stats <- varsel_stats(object, stats=stat, alpha=alpha, type=c('mean','upper','lower'),
                         baseline=baseline, deltas = T)
   
-  if (!all(is.na(stats[,stat]))) {
-    
-    util_null <- unlist(unname(subset(stats, stats$size==0, stat)))
-    util_cutoff <- pct*util_null
-    res <- subset(stats, stats[,bound] >= util_cutoff, 'size')
+  util_null <- unlist(unname(subset(stats, stats$size==0, stat)))
+  util_cutoff <- pct*util_null
+  res <- subset(stats, stats[,bound] >= util_cutoff, 'size')
 
-    if(nrow(res) == 0) {
-      # no submodel satisfying the criterion found
-      if (object$nv_max == object$nv_all)
-        ssize <- object$nv_max
-      else {
-        ssize <- NA
-        if (warnings)
-          warning(paste('Could not suggest model size. Investigate varsel_plot to identify',
-                        'if the search was terminated too early. If this is the case,',
-                        'run variable selection with larger value for nv_max.'))
-      }
-      
-    } else {
-      ssize <- min(res)
+  if(nrow(res) == 0) {
+    # no submodel satisfying the criterion found
+    if (object$nv_max == object$nv_all)
+      ssize <- object$nv_max
+    else {
+      ssize <- NA
+      if (warnings)
+        warning(paste('Could not suggest model size. Investigate varsel_plot to identify',
+                      'if the search was terminated too early. If this is the case,',
+                      'run variable selection with larger value for nv_max.'))
     }
+    
   } else {
-    # special case; all values compared to the reference model are NA indicating
-    # that the reference model is missing, so suggest the smallest model which
-    # has its mlpd estimate within one standard deviation of the highest mlpd estimate,
-    # i.e. is contained in the 68% central region
-    tab <- .tabulate_stats(object, alpha = 0.32)
-    stats <- subset(tab, tab$statistic == stat & tab$delta == F &
-                      tab$data %in% c('train', 'test', 'loo', 'kfold'))
-    imax <- which.max(unname(unlist(stats['value'])))
-    thresh <- stats[imax, 'lq']
-    ssize <- min(subset(stats, stats$value >= thresh, 'size'))
+    ssize <- min(res)
   }
+   
   ssize
 }
 

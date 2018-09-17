@@ -407,9 +407,16 @@ test_that('varsel_stats output seems legit', {
   for(i in seq_along(cvs_list)) {
     for(j in seq_along(cvs_list[[i]])) {
       cvs <- cvs_list[[i]][[j]]
-      stats <- varsel_stats(cvs, stats=c('kl','mlpd','elpd'), type=c('mean','lower','upper'))
+      if (cvs$family_kl$family == 'gaussian')
+        stats_str <- c('mse','rmse','elpd','mlpd')
+      else if (cvs$family_kl$family == 'binomial')
+        stats_str <- c('acc','elpd','mlpd')
+      else
+        stats_str <- c('elpd','mlpd')
+      stats <- varsel_stats(cvs, stats=stats_str, type=c('mean','lower','upper','se'))
       expect_true(nrow(stats) == nv+1)
-      expect_true(all(c('size','vind', 'kl', 'mlpd', 'elpd') %in% names(stats)))
+      expect_true(all(c('size','vind', stats_str, paste0(stats_str,'.se'), 
+                        paste0(stats_str,'.upper'), paste0(stats_str,'.lower')) %in% names(stats)))
       expect_true(all(stats$mlpd > stats$mlpd.lower))
       expect_true(all(stats$mlpd < stats$mlpd.upper))
     }

@@ -46,6 +46,43 @@ log_sum_exp <- function(x) {
 	max_x + log(sum(exp(x - max_x)))
 }
 
+bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
+  #
+  # bootstrap an arbitrary quantity fun that takes the sample x
+  # as the first input. other parameters to fun can be passed in as ...
+  # example: boostrap(x,mean)
+  #
+  
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
+  set.seed(seed)
+  
+  bsstat <- rep(NA, b)
+  oobstat <- rep(NA, b)
+  for (i in 1:b) {
+    bsind <- sample(seq_along(x), replace=T)
+    bsstat[i] <- fun(x[bsind], ...)
+    if (!is.null(oobfun)) {
+      oobind <- setdiff(seq_along(x), unique(bsind))
+      oobstat[i] <- oobfun(x[oobind], ...)
+    }
+  }
+  if (!is.null(oobfun)) {
+    return(list(bs=bsstat, oob=oobstat))
+  } else
+    return(bsstat)
+}
+
+
+.bbweights <- function(N,B) {
+  # generate Bayesian bootstrap weights, N = original sample size,
+  # B = number of bootstrap samples
+  bbw <- matrix(rgamma(N*B, 1), ncol = N)
+  bbw <- bbw/rowSums(bbw)
+  return(bbw)
+}
+
 
 
 # from rstanarm
