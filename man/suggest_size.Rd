@@ -11,7 +11,7 @@ suggest_size(object, stat = "elpd", alpha = 0.32, pct = 0,
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
-\item{stat}{Statistic used for the decision. Default is elpd. See \code{varsel_stats} for
+\item{stat}{Statistic used for the decision. Default is 'elpd'. See \code{varsel_stats} for
 other possible choices.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
@@ -35,9 +35,9 @@ Default is TRUE, and usually no reason to set to FALSE.}
 }
 \description{
 This function can be used for suggesting an appropriate model size
-based on certain rule. Notice that the decision rules are heuristic
+based on a certain default rule. Notice that the decision rules are heuristic
 and should be interpreted as guidelines. It is recommended that the user
-studies the results via \code{varsel_plot} and or \code{varsel_stats}
+studies the results via \code{varsel_plot} and/or \code{varsel_stats}
 and makes the final decision based on what is most appropriate for the given
 problem.
 }
@@ -56,6 +56,12 @@ model for which the upper tail exceeds the baseline model level, that is, which 
 model with probability 0.16 (and consequently, worse with probability 0.84). In other words,
 the estimated difference between the baseline model and submodel utilities is at most one standard error
 away from zero, so the two utilities are considered to be close.
+
+NOTE: Loss statistics like RMSE and MSE are converted to utilities by multiplying them by -1, so call
+such as \code{suggest_size(object, stat='rmse', type='upper')} should be interpreted as finding
+the smallest model whose upper credible bound of the \emph{negative} RMSE exceeds the cutoff level
+(or equivalently has the lower credible bound of RMSE below the cutoff level). This is done to make
+the interpretation of the argument \code{type} the same regardless of argument \code{stat}.
 }
 \examples{
 \donttest{

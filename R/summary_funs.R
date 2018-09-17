@@ -171,7 +171,8 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs=NULL, lppd.bs=NULL,
     
     y <- d_test$y
     if (!is.null(mu.bs)) {
-      mu.bs[is.na(mu)] <- NA # make sure the relative rmse is computed using only those points for which mu is not NA
+      mu.bs[is.na(mu)] <- NA # make sure the relative rmse is computed using only those points for which 
+      mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
       value <- sqrt(mean(weights*(mu-y)^2, na.rm=T)) -  sqrt(mean(weights*(mu.bs-y)^2, na.rm=T))
       value.bootstrap1 <- bootstrap((mu-y)^2, function(resid2) sqrt(mean(weights*resid2, na.rm=T)), b=B, seed=seed)
       value.bootstrap2 <- bootstrap((mu.bs-y)^2, function(resid2) sqrt(mean(weights*resid2, na.rm=T)), b=B, seed=seed)
