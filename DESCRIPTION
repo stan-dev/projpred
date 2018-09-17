@@ -27,7 +27,6 @@ LazyData: TRUE
 RoxygenNote: 6.1.0
 Suggests:
     rstanarm, 
-    rstan,
     testthat,
     knitr,
     rmarkdown,

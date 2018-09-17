@@ -1,7 +1,7 @@
 ---
 title: "projpred Quick Start"
 date: "`r Sys.Date()`"
-output: html_vignette
+output: html_document
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
@@ -23,7 +23,7 @@ library(rstanarm)
 library(projpred)
 library(ggplot2)
 library(bayesplot)
-theme_set(theme_bw())
+theme_set(theme_classic())
 #options(mc.cores = parallel::detectCores())
 ```
 
@@ -180,7 +180,7 @@ pp
 
 
 
-### Custom reference models
+## Custom reference models
 
 
 The package supports using virtually any reference model, the only requirement is that one can make predictions using the reference model. Custom reference models can be initialized using the function ```init_refmodel```. 
@@ -233,9 +233,9 @@ varsel_plot(cvs, stats=c('elpd','rmse'))
 
 
 
-### Penalized maximum likelihood
+## Penalized maximum likelihood
 
-It is also possible to use ```projpred``` for computing traditional point estimates, such as Lasso (Tibshirani, 1996) or forward stepwise regression. These are fast to compute (require no reference model) and are therefore useful especially as prototype methods.
+It is also possible to use ```projpred``` for computing traditional point estimates, such as Lasso (Tibshirani, 1996) or forward stepwise regression. These are fast to compute (require no reference model) and are therefore useful especially as baseline methods.
 
 These can be computed by passing in the original data as "reference", and then using all the same functions as earlier. We illustrate by computing the Lasso solution for simulated data we used in the previous section
 ```{r, fig.width=5, fig.height=2.5, results='hide', message=F, warning=F, cache=T}
@@ -264,7 +264,7 @@ Carvalho, C.M., Polson, N.G., Scott, J.G. (2010). The horseshoe estimator for sp
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. _Journal of Statistical Planning and Inference_, 111(1-2):77–94.
 
-Goutis, C. and Robert, C. P. (1998). _Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections_. Biometrika, 85(1):29–37.
+Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. _Biometrika_, 85(1):29–37.
 
 Piironen, Juho and Vehtari, Aki (2017a). Comparison of Bayesian predictive methods for model selection. _Statistics and Computing_ 27(3):711-735. DOI 10.1007/s11222-016-9649-y. [Online](http://link.springer.com/article/10.1007/s11222-016-9649-y)
 
@@ -272,6 +272,6 @@ Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global
 
 Piironen, Juho and Vehtari, Aki (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. _Electronic Journal of Statistics_, 11(2): 5018--5051. [Online](https://projecteuclid.org/euclid.ejs/1513306866#info)
 
-Tibshirani, Robert (1996). Regression shrinkage and selection via the Lasso. Journal of the Royal Statistical Society. Series B (Methodological), 58(1):267--288, 1996.
+Tibshirani, Robert (1996). Regression shrinkage and selection via the Lasso. _Journal of the Royal Statistical Society. Series B (Methodological)_, 58(1):267--288, 1996.
 
 Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. _Statistics and Computing_ 22(5):1069-1084. 
