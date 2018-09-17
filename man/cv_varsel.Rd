@@ -8,7 +8,7 @@ cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL,
   nc = NULL, nspred = NULL, ncpred = NULL, relax = NULL,
   nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
   nloo = NULL, K = NULL, lambda_min_ratio = 1e-05, nlambda = 150,
-  thresh = 1e-06, regul = 0.01, validate_search = T, seed = NULL,
+  thresh = 1e-06, regul = 1e-04, validate_search = T, seed = NULL,
   ...)
 }
 \arguments{

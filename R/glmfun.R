@@ -2,7 +2,7 @@
 # The functions in this file are used to compute the elastic net coefficient paths
 # for a GLM. The main function is glm_elnet, other functions are auxiliaries.
 # The L1-regularized projection path is computed by replacing the actual data y
-# by the fit of the full model when calling glm_elnet. Uses functions in glmfun.cpp.
+# by the fit of the reference model when calling glm_elnet. Uses functions in glmfun.cpp.
 #
 
 

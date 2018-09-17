@@ -111,13 +111,13 @@ test_that('object retruned by varsel contains the relevant fields', {
       expect_equal(cvs_list[[i]][[j]]$d_test$type, 'loo',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
-      expect_named(vs_list[[i]][[j]]$summaries, c('sub', 'full'),
+      expect_named(vs_list[[i]][[j]]$summaries, c('sub', 'ref'),
                    info = paste(i_inf, j_inf))
       expect_equal(length(vs_list[[i]][[j]]$summaries$sub), nv + 1,
                    info = paste(i_inf, j_inf))
       expect_named(vs_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd'),
                    info = paste(i_inf, j_inf))
-      expect_named(vs_list[[i]][[j]]$summaries$full, c('mu', 'lppd'),
+      expect_named(vs_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
                    info = paste(i_inf, j_inf))
       # family_kl seems legit
       expect_equal(vs_list[[i]][[j]]$family$family,
@@ -225,13 +225,13 @@ test_that('object retruned by cv_varsel contains the relevant fields', {
       expect_equal(cvs_list[[i]][[j]]$d_test$type, 'loo',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
-      expect_named(cvs_list[[i]][[j]]$summaries, c('sub', 'full'),
+      expect_named(cvs_list[[i]][[j]]$summaries, c('sub', 'ref'),
                    info = paste(i_inf, j_inf))
       expect_equal(length(cvs_list[[i]][[j]]$summaries$sub), nv + 1,
                    info = paste(i_inf, j_inf))
       expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd', 'w'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
-      expect_named(cvs_list[[i]][[j]]$summaries$full, c('mu', 'lppd'),
+      expect_named(cvs_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
       # family_kl seems legit
       expect_equal(cvs_list[[i]][[j]]$family$family,
@@ -312,13 +312,13 @@ test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
       expect_equal(cv_kf_list[[i]][[j]]$d_test$type, 'kfold',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
-      expect_named(cv_kf_list[[i]][[j]]$summaries, c('sub', 'full'),
+      expect_named(cv_kf_list[[i]][[j]]$summaries, c('sub', 'ref'),
                    info = paste(i_inf, j_inf))
       expect_equal(length(cv_kf_list[[i]][[j]]$summaries$sub), nv + 1,
                    info = paste(i_inf, j_inf))
       expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
-      expect_named(cv_kf_list[[i]][[j]]$summaries$full, c('mu', 'lppd'),
+      expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
       # family_kl seems legit
       expect_equal(cv_kf_list[[i]][[j]]$family$family,
@@ -379,11 +379,11 @@ test_that('providing k_fold works', {
   expect_equal(fit_cv$d_test$type, 'kfold')
                
   # summaries seems legit
-  expect_named(fit_cv$summaries, c('sub', 'full'))
+  expect_named(fit_cv$summaries, c('sub', 'ref'))
   expect_equal(length(fit_cv$summaries$sub), nv + 1)
   expect_named(fit_cv$summaries$sub[[1]], c('mu', 'lppd'),
                ignore.order = TRUE)
-  expect_named(fit_cv$summaries$full, c('mu', 'lppd'),
+  expect_named(fit_cv$summaries$ref, c('mu', 'lppd'),
                ignore.order = TRUE)
   # family_kl seems legit
   expect_equal(fit_cv$family$family,
@@ -407,9 +407,16 @@ test_that('varsel_stats output seems legit', {
   for(i in seq_along(cvs_list)) {
     for(j in seq_along(cvs_list[[i]])) {
       cvs <- cvs_list[[i]][[j]]
-      stats <- varsel_stats(cvs, stats=c('kl','mlpd','elpd'), type=c('mean','lower','upper'))
+      if (cvs$family_kl$family == 'gaussian')
+        stats_str <- c('mse','rmse','elpd','mlpd')
+      else if (cvs$family_kl$family == 'binomial')
+        stats_str <- c('acc','elpd','mlpd')
+      else
+        stats_str <- c('elpd','mlpd')
+      stats <- varsel_stats(cvs, stats=stats_str, type=c('mean','lower','upper','se'))
       expect_true(nrow(stats) == nv+1)
-      expect_true(all(c('size','vind', 'kl', 'mlpd', 'elpd') %in% names(stats)))
+      expect_true(all(c('size','vind', stats_str, paste0(stats_str,'.se'), 
+                        paste0(stats_str,'.upper'), paste0(stats_str,'.lower')) %in% names(stats)))
       expect_true(all(stats$mlpd > stats$mlpd.lower))
       expect_true(all(stats$mlpd < stats$mlpd.upper))
     }

@@ -8,7 +8,7 @@ varsel(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
   intercept = NULL, penalty = NULL, verbose = F,
   lambda_min_ratio = 1e-05, nlambda = 150, thresh = 1e-06,
-  regul = 0.01, ...)
+  regul = 1e-04, ...)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
@@ -24,7 +24,7 @@ Default is 'forward' if the number of variables in the full data is at most 20, 
 \code{'L1'} otherwise.}
 
 \item{ns}{Number of posterior draws used in the variable selection.
-Cannot be larger than the number of draws in the full model.
+Cannot be larger than the number of draws in the reference model.
 Ignored if nc is set.}
 
 \item{nc}{Number of clusters to use in the clustered projection.

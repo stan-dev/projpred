@@ -46,6 +46,43 @@ log_sum_exp <- function(x) {
 	max_x + log(sum(exp(x - max_x)))
 }
 
+bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
+  #
+  # bootstrap an arbitrary quantity fun that takes the sample x
+  # as the first input. other parameters to fun can be passed in as ...
+  # example: boostrap(x,mean)
+  #
+  
+  # set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
+  set.seed(seed)
+  
+  bsstat <- rep(NA, b)
+  oobstat <- rep(NA, b)
+  for (i in 1:b) {
+    bsind <- sample(seq_along(x), replace=T)
+    bsstat[i] <- fun(x[bsind], ...)
+    if (!is.null(oobfun)) {
+      oobind <- setdiff(seq_along(x), unique(bsind))
+      oobstat[i] <- oobfun(x[oobind], ...)
+    }
+  }
+  if (!is.null(oobfun)) {
+    return(list(bs=bsstat, oob=oobstat))
+  } else
+    return(bsstat)
+}
+
+
+.bbweights <- function(N,B) {
+  # generate Bayesian bootstrap weights, N = original sample size,
+  # B = number of bootstrap samples
+  bbw <- matrix(rgamma(N*B, 1), ncol = N)
+  bbw <- bbw/rowSums(bbw)
+  return(bbw)
+}
+
 
 
 # from rstanarm
@@ -109,7 +146,7 @@ log_sum_exp <- function(x) {
   set.seed(seed)
   
 	fam <- refmodel$fam
-	S <- NCOL(refmodel$mu) # number of draws in the full model
+	S <- NCOL(refmodel$mu) # number of draws in the reference model
 
 	if (!is.null(nc)) {
 		# use clustering (ignore ns argument)
@@ -127,7 +164,7 @@ log_sum_exp <- function(x) {
 			p_ref <- .get_p_clust(fam, refmodel$mu, refmodel$dis, wobs=refmodel$wobs, nc=nc)
 		}
 	} else if (!is.null(ns)) {
-		# subsample from the full model
+		# subsample from the reference model
 		# would it be safer to actually randomly draw the subsample?
 		if (ns > NCOL(refmodel$mu))
 			stop('The number of subsamples ns cannot exceed the number of columns in mu.')
@@ -137,7 +174,7 @@ log_sum_exp <- function(x) {
 		predvar <- sapply(s_ind, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j]) })
 		p_ref <- list(mu = refmodel$mu[, s_ind, drop=F], var = predvar, dis = refmodel$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
 	} else {
-		# use all the samples from the full model
+		# use all the draws from the reference model
 		predvar <- sapply(1:S, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j])	})
 		p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis, weights = refmodel$wsample, cl=c(1:S))
 	}
