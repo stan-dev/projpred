@@ -14,7 +14,7 @@ params:
 ```{r, child="children/SETTINGS-knitr.txt"}
 ```
 
-This vignette shows how to use the main functionalities of the ```projpred```-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models fitted with ```rstanarm```. The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).
+This vignette shows how to use the main functionalities of the ```projpred```-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models. The package is compatible with ```rstanarm``` but also other reference models could be used (see section Custom reference models). The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).
 
 
 ## Gaussian example
