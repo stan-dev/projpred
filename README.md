@@ -88,5 +88,5 @@ Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods 
 
   [rstanarm]: https://github.com/stan-dev/rstanarm
   [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
-  [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.nb.html
+  [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html
 
