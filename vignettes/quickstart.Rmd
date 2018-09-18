@@ -2,8 +2,7 @@
 title: "projpred Quick Start"
 date: "`r Sys.Date()`"
 output:
-  html_document:
-    self_contained: no
+  html_vignette
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
