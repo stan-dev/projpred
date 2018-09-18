@@ -8,6 +8,5 @@
 .Rapp.history
 .RData
 
-inst/doc/*.R
-inst/doc/*.Rmd
+inst/
 vignettes/quickstart_cache
