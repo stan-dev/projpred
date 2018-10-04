@@ -2,6 +2,11 @@ context('datafit')
 
 # tests for data based estimates (no actual reference model)
 
+if (!requireNamespace('glmnet', quietly = TRUE)) {
+  stop('glmnet needed for this function to work. Please install it.',
+       call. = FALSE)
+}
+
 
 
 set.seed(1235)
@@ -139,8 +144,8 @@ test_that("output of proj_linpred is sensible with only data provided as referen
 
 
 
-# below some ideas how we could possibly test that the results of varsel etc. produce the same
-# results are glmnet. (notice that glm_ridge and glm_elnet are already tested separately, so
+# below are some tests that check Lasso solution computed with varsel is the same
+# as that of glmnet. (notice that glm_ridge and glm_elnet are already tested separately, so
 # these would only check that the results do not change due to varsel/cv_varsel etc.)
 
 

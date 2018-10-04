@@ -94,6 +94,7 @@ We can make predictions with the projected submodels. For point estimates we can
 ```{r}
 pred <- proj_linpred(vs, xnew=df_gaussian$x, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
 ```
+
 Visualize the predictions
 ```{r, fig.width=5, fig.height=3}
 ggplot() +
@@ -101,6 +102,7 @@ ggplot() +
   geom_abline(slope = 1, color='red') +
   labs(x = 'prediction', y = 'y')
 ```
+
 We can also draw  samples from the projected predictive distribution. Here's an example prediction for the first data point using 6 variables (the observed value is marked by the red line)
 ```{r, fig.height=3, fig.width=5}
 y1_rep <- proj_predict(vs, xnew=df_gaussian$x[1,,drop=F], nv=6, seed=7560)
@@ -196,6 +198,7 @@ f <- rnorm(n) # the true underlying function
 x <- sqrt(1-rho)*matrix(rnorm(n*d), ncol=d) + sqrt(rho)*f # features are noisy observations from f
 y <- f + rnorm(n) # target variable
 ```
+
 We now fit a model to these data, but instead of using the original features, we use only a few first principal components. The following example utilizes ```rstanarm``` for fitting the model, but notice that any other tool could be used (this choice simply makes the example more concise).
 ```{r, results='hide', message=F, warning=F, cache=T}
 # dimension reduction
@@ -221,6 +224,7 @@ predfun <- function(zt) t( beta %*% t(zt) + alpha )
 # we want to select from
 ref <- init_refmodel(z, y, gaussian(), x=x, predfun=predfun, dis=sigma)
 ```
+
 Now we can perform everything similarly as in the previous examples. The following computes the LOO validation for the projective selection with L1-search.
 ```{r, fig.width=5, fig.height=4, results='hide', message=F, warning=F, cache=T}
 # LOO validation for the feature selection
