@@ -2,6 +2,12 @@
 
 # News
 
+
+## Current development version
+
+* Bug fix: the program crashed with ```rstanarm``` models fitted with syntax like ```stan_glm(log(y) ~ log(x), ...)```, that is, it did not allow transformation for ```y```.
+
+
 ## projpred 1.0.0
 
 ### New features and improvements ###

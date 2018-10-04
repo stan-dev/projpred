@@ -82,9 +82,7 @@ get_refmodel.stanreg <- function(object, ...) {
 	ndraws <- nrow(samp)
 	
 	# data, family and the predictor matrix x
-	data <- object$data
-	y_ind <- which(apply(data, 2, function(col) all(col==rstanarm::get_y(object))))
-	z <- data[,-y_ind,drop=F]
+	z <- object$data # inputs of the reference model (this contains also the target or a transformation of it, but that shouldn't hurt)
 	fam <- kl_helpers(family(object))
 	x <- rstanarm::get_x(object)
 	rownames(x) <- NULL # ignore the rownames
