@@ -18,7 +18,8 @@
 #' @examples
 #' \donttest{
 #' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
+#' dat <- data.frame(y = rnorm(100), x = rnorm(100))
+#' fit <- stan_glm(y ~ x, family = gaussian(), data = dat)
 #' ref <- get_refmodel(fit)
 #' print(class(ref))
 #' 
@@ -113,14 +114,134 @@ get_refmodel.stanreg <- function(object, ...) {
 	              wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun) 
 }
 
-
-
-
-
-
-
-
-
+#' @rdname get-refmodel
+#' @export
+get_refmodel.brmsfit <- function(object, ...) {
+  # the fit is a brms-object
+  if (!requireNamespace("brms", quietly = TRUE)) {
+    stop("You need package 'brms'. Please install it.")
+  }
+  if (brms::is.mvbrmsformula(formula(object))) {
+    stop("Multivariate models are not yet supported.")
+  }
+  bterms <- brms::parse_bf(formula(object))
+  if (any(!names(bterms$dpars) %in% "mu")) {
+    stop("Distributional regression models are not yet supported.")
+  }
+  mu_btl <- bterms$dpars$mu
+  if (!inherits(mu_btl, "btl")) {
+    stop("Non-linear models are not yet supported.")
+  }
+  specials <- sapply(mu_btl[c("re", "sp", "sm", "gp")], NROW)
+  if (any(as.logical(specials))) {
+    stop("Multilevel or other special terms are not yet supported.")
+  }
+  family <- family(object)$family
+  families <- c("gaussian", "binomial", "poisson")
+  if (!(family %in% families)) {
+    stop('Only the following families are currently supported:\n',
+         paste0(families, collapse = ", ")) 
+  }
+  
+  # fetch the draws
+  samp <- as.data.frame(object)
+  ndraws <- nrow(samp)
+  
+  # data, family and the predictor matrix x
+  z <- model.frame(data) 
+  attr(z, "terms") <- NULL
+  fam <- get(family, mode = "function")()
+  fam <- kl_helpers(fam)
+  x <- model.matrix(mu_btl$fe, data = z)
+  rownames(x) <- NULL
+  # drop the intercept column
+  int_cols <- apply(x, 2, function(v) all(v == 1))
+  x <- x[, !int_cols, drop = FALSE]
+  
+  # extract response values
+  # TODO: use brms:::data_response as soon as exported
+  y <- model.frame(bterms$respform, data = z)
+  y <- unname(model.response(y))
+  if (family == "binomial") {
+    if (packageVersion("brms") < "2.5.3") {
+      stop("Binomial models require brms 2.5.3 or higher.")
+    }
+    if (is.null(bterms$adforms$trials)) {
+      stop("Couldn't find the number of trials.")
+    }
+    trials <- unname(eval(bterms$adforms$trials[[2]], z))
+    if (length(trials) == 1L) {
+      trials <- rep(trials, nrow(z))
+    }
+    # projpred expects y to be a success probability
+    y <- y / trials
+    # ensure probabilities will be predicted by 'predfun'
+    object$formula$formula <- brms::update_adterms(
+      object$formula$formula, ~ trials(1)
+    )
+  }
+  # does the model have an intercept?
+  intercept <- any(int_cols)
+  # extract draws of an overdispersion parameter
+  # this may be changed in the future for non-gaussian models
+  dis <- samp[["sigma"]] %ORifNULL% rep(0, ndraws) 
+  # extract offsets
+  if (!is.null(mu_btl$offset)) {
+    if (packageVersion("brms") < "2.5.3") {
+      stop("Models with offsets require brms 2.5.3 or higher.")
+    }
+    offset <- model.frame(mu_btl$offset, data = z)
+    offset <- unname(model.offset(offset))
+  } else {
+    offset <- rep(0, nrow(z))
+  }
+  # equal sample weights by default
+  wsample <- rep(1 / ndraws, ndraws) 
+  # observation weights
+  if (family == "binomial") {
+    # trials are used as weights in binomial models
+    wobs <- trials
+    if (!is.null(bterms$adforms$weights)) {
+      stop("Can't handle additional weights in binomial models.")
+    }
+  } else if (!is.null(bterms$adforms$weights)) {
+    wobs <- unname(eval(bterms$adforms$weights[[2]], z))
+  } else {
+    wobs <- rep(1, nrow(z))
+  }
+  # prediction function
+  predfun <- function(zt) {
+    t(brms::posterior_linpred(
+      object, newdata = data.frame(zt), 
+      transform = TRUE, offset = FALSE
+    ))
+  }
+  # cvfun for k-fold cross-validation
+  cvfun <- function(folds) {
+    cvres <- brms::kfold(
+      object, K = max(folds), 
+      save_fits = TRUE, folds = folds
+    )
+    fits <- cvres$fits[, 'fit']
+    lapply(fits, function(fit) {
+      dis <- as.data.frame(fit, pars = "^sigma$")
+      predfun <- function(zt) {
+        t(brms::posterior_linpred(
+          fit, newdata = data.frame(zt), 
+          transform = TRUE, offset = FALSE
+        ))
+      }
+      return(list(predfun = predfun, dis = dis))
+    })
+  }
+  
+  init_refmodel(
+    z = z, y = y, family = fam, x = x, 
+    predfun = predfun, dis = dis, offset = offset,
+    wobs = wobs, wsample = wsample, intercept = intercept, 
+    cvfits = NULL, cvfun = cvfun
+  ) 
+}
 
 #' Custom reference model initialization
 #'
