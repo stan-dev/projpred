@@ -2,14 +2,15 @@
 % Please edit documentation in R/project.R
 \name{project}
 \alias{project}
-\title{Projection to submodels of selected sizes}
+\title{Projection to submodels}
 \usage{
-project(object, nv = NULL, vind = NULL, ns = NULL, nc = NULL,
-  intercept = NULL, seed = NULL, regul = 1e-06, ...)
+project(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL,
+  nc = NULL, intercept = NULL, seed = NULL, regul = 1e-04, ...)
 }
 \arguments{
-\item{object}{The object returned by \link[=varsel]{varsel} or
-\link[=cv_varsel]{cv_varsel}.}
+\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
+or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
+using \link[=get_refmodel]{get_refmodel}.}
 
 \item{nv}{Number of variables in the submodel (the variable combination is taken from the
 \code{varsel} information). If a list, then the projection is performed for each model size.
@@ -17,6 +18,12 @@ Default is the model size suggested by the variable selection (see function \cod
  Ignored if \code{vind} is specified.}
 
 \item{vind}{Variable indices onto which the projection is done. If specified, \code{nv} is ignored.}
+
+\item{relax}{If TRUE, then the projected coefficients after L1-selection are computed
+without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
+the coefficients are the solution from the L1-penalized projection. This option is relevant only
+if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
+datafit (see \link[=init_refmodel]{init_refmodel}).}
 
 \item{ns}{Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.}
 
@@ -29,15 +36,15 @@ to ensure same results every time.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no need for
 regularization, but sometimes for some models the projection can be ill-behaved and we
-need to add some regularization to avoid numerical problems. Default is 1e-9.}
+need to add some regularization to avoid numerical problems.}
 
 \item{...}{Currently ignored.}
 }
 \value{
 A list of submodels (or a single submodel if projection was performed onto
-a single variable combination), each of which contain the following elements:
+a single variable combination), each of which contains the following elements:
 \describe{
- \item{\code{kl}}{The kl divergence from the full model to the submodel.}
+ \item{\code{kl}}{The kl divergence from the reference model to the submodel.}
  \item{\code{weights}}{Weights for each draw of the projected model.}
  \item{\code{dis}}{Draws from the projected dispersion parameter.}
  \item{\code{alpha}}{Draws from the projected intercept.}
@@ -48,15 +55,20 @@ a single variable combination), each of which contain the following elements:
 }
 }
 \description{
-Perform the projection predictive variable selection for a generalized
-linear model fitted with rstanarm.
+Perform projection onto submodels of selected sizes or a specified feature
+combination.
 }
 \examples{
 \donttest{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
-fit_v <- varsel(fit)
-proj4 <- project(fit_v, nv = 4)
+vs <- varsel(fit)
+
+# project onto the best model with 4 variables
+proj4 <- project(vs, nv = 4)
+
+# project onto an arbitrary variable combination (variable indices 3,4 and 8)
+proj <- project(fit, vind=c(3,4,8))
 }
 
 }

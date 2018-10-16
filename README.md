@@ -12,22 +12,24 @@ The method is described and evaluated in comparison to many other methods in Pii
 Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples.
 
 
+### Resources
 
-## Installation
+* [mc-stan.org/projpred](http://mc-stan.org/projpred) (online documentation, vignettes)
+* [Ask a question](http://discourse.mc-stan.org) (Stan Forums on Discourse)
+* [Open an issue](https://github.com/stan-dev/projpred/issues) (GitHub issues for bug reports, feature requests)
 
-### Latest release
 
-The latest release can be installed from CRAN via
+### Installation
 
-```R
+* Install the latest release from CRAN:
+
+```r
 install.packages('projpred')
 ```
 
-### Development version
+* Install latest development version from GitHub (requires [devtools](https://github.com/r-lib/devtools) package):
 
-To install the  development version from Github, execute the following in R:
-
-```R
+```r
 if (!require(devtools)) {
   install.packages("devtools")
   library(devtools)
@@ -35,7 +37,7 @@ if (!require(devtools)) {
 devtools::install_github('stan-dev/projpred', build_vignettes = TRUE)
 ```
     
-## Example
+### Example
 
 ```R
 rm(list=ls())
@@ -56,26 +58,26 @@ fit <- stan_glm(y ~ x, family = gaussian(), data = df_gaussian,
 
 
 # perform the variable selection
-fit_v <- varsel(fit)
+vs <- varsel(fit)
 
 # print the results
-varsel_stats(fit_v)
+varsel_stats(vs)
 
 # project the parameters for model sizes nv = 3,5 variables 
-projs <- project(fit_v, nv = c(3, 5))
+projs <- project(vs, nv = c(3, 5))
 
 # predict using only the 5 most relevant variables
-pred <- proj_linpred(fit_v, xnew=df_gaussian$x, nv=5, integrated=T)
+pred <- proj_linpred(vs, xnew=df_gaussian$x, nv=5, integrated=T)
 
 # perform cross-validation for the variable selection
-fit_cv <- cv_varsel(fit, cv_method='LOO')
+cvs <- cv_varsel(fit, cv_method='LOO')
 
 # plot the validation results 
-varsel_plot(fit_cv)
+varsel_plot(cvs)
 ```
 
 
-## References
+### References
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, 111(1-2):77–94.
 

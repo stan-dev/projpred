@@ -1,3 +1,5 @@
+context("ridge")
+
 # tests for ridge regression, currently untested combinations
 # - gaussian with inverse-link
 # - binomial with log or cloglog-link
@@ -25,7 +27,7 @@ extra_thresh <- 1e-10
 
 
 
-context("ridge")
+
 
 test_that("glmfun: gradients should give the same results as finite differences", {
   
@@ -69,7 +71,7 @@ test_that("glmfun: gradients should give the same results as finite differences"
     else if (fam$family == 'poisson')
       y <- rpois(n, 1)
     
-    devfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$dev # -2*sum(fam$ll_fun(fam$linkinv(f+offset),1,y,weights))
+    devfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$loss
     zfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$z
     wfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$w
     gradan <- function(f) sum(projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$grad) # analytic
@@ -116,8 +118,8 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
 
   ridgefit <- glm_ridge(x_tr, y, family = fam, lambda = lambda,
                         weights = weights, offset = offset, intercept = TRUE)
-  # analytic solution, penalty on the intercept term?
-  penalty <- diag(c(lambda, rep(lambda, nv_fit)))
+  # analytic solution, no penalty on the intercept term
+  penalty <- 0.5*diag(c(0, rep(lambda, nv_fit)))
   exp_beta <- c(solve(crossprod(cbind(1, x_tr) * sqrt(weights)) + penalty,
                       crossprod(cbind(1, x_tr) * weights, y - offset)))
 

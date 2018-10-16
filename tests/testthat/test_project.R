@@ -1,3 +1,6 @@
+context('project')
+library(rstanarm)
+
 # tests for project
 
 set.seed(1235)
@@ -40,7 +43,26 @@ fit_list <- list(fit_gauss, fit_binom, fit_poiss)
 vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
 
 
-context('project')
+
+
+
+
+
+test_that("project: relaxing has the expected effect", {
+  
+  vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE, method='l1')
+  for (i in seq_along(vs_list)) {
+    
+    p0 <- project(vs_list[[i]], relax=F, nv=1:nv)
+    p1 <- project(vs_list[[i]], relax=T, nv=1:nv, nc=1, regul=1e-9)
+    
+    for (j in seq_along(p1)) {
+      # L1-penalised coefficients should have smaller L1-norm
+      expect_true( sum(abs(p0[[j]]$beta)) < sum(abs(p1[[j]]$beta)) )
+    }
+  }
+})
+
 test_that("object returned by project contains the relevant fields", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
@@ -60,7 +82,7 @@ test_that("object returned by project contains the relevant fields", {
       expect_equal(nrow(p[[j]]$beta), j - 1, info = i_inf)
       expect_equal(length(p[[j]]$vind), j - 1, info = i_inf)
       # family kl
-      expect_equal(p[[j]]$family_kl, vs_list[[i]]$varsel$family_kl,
+      expect_equal(p[[j]]$family_kl, vs_list[[i]]$family_kl,
                    info = i_inf)
     }
     # kl should be non-increasing on training data
@@ -112,29 +134,25 @@ test_that("project: setting nv>nv_max returns an error", {
 
 test_that("project: setting vind to 4 has an expected effect", {
   for(i in 1:length(vs_list)) {
-    i_inf <- names(vs_list)[i]
     vind <- 4
-    names(vind) <- names(coef(vs_list[[i]]))[5]
     p <- project(vs_list[[i]], vind = vind)
-    expect_equal(p$vind, vind, info = i_inf)
-    expect_equal(nrow(p$beta), 1, info = i_inf)
-    exp_ind <- which(vs_list[[i]]$varsel$vind == vind)
-    expect_equal(names(p$vind), names(vs_list[[i]]$varsel$vind)[exp_ind],
-                 info = i_inf)
+    expect_equivalent(p$vind, vind)
+    expect_equal(nrow(p$beta), 1)
+    exp_ind <- which(vs_list[[i]]$vind == vind)
+    expect_equal(names(p$vind), names(vs_list[[i]]$vind)[exp_ind])
   }
 })
 
 test_that("project: setting vind to 1:2 has an expected effect", {
   for(i in 1:length(vs_list)) {
-    i_inf <- names(vs_list)[i]
+    # i_inf <- names(vs_list)[i]
     vind <- 1:2
-    names(vind) <- names(coef(vs_list[[i]]))[vind+1]
+    # names(vind) <- names(coef(vs_list[[i]]))[vind+1]
     p <- project(vs_list[[i]], vind = vind)
-    expect_equal(p$vind, vind, info = i_inf)
+    expect_equivalent(p$vind, vind)
     expect_equal(nrow(p$beta), length(vind), info = i_inf)
-    exp_ind <- sapply(vind, function(x) which(vs_list[[i]]$varsel$vind == x))
-    expect_equal(names(p$vind), names(vs_list[[i]]$varsel$vind)[exp_ind],
-                 info = i_inf)
+    exp_ind <- sapply(vind, function(x) which(vs_list[[i]]$vind == x))
+    expect_equal(names(p$vind), names(vs_list[[i]]$vind)[exp_ind])
   }
 })
 
@@ -247,26 +265,29 @@ test_that("project: adding more regularization has an expected effect", {
 
 test_that("project: projecting full model onto itself does not change results", {
 	
-	tol <- 1e-4
+	tol <- 1e-3
   
   for (i in 1:length(fit_list)) {
     fit <- fit_list[[i]]
-    e <- extract(fit$stanfit)
-    perm_inv <- c(mapply(function(p, i) order(p) + i*length(p),
-                         fit$stanfit@sim$permutation,1:fit$stanfit@sim$chains-1))
-    S <- length(e$alpha)
-    proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=1e-9)
+    draws <- as.data.frame(fit)
+    alpha_ref <- draws$`(Intercept)`
+    beta_ref <- draws[,1+(1:nv),drop=F]
+    S <- nrow(draws)
+    proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=0)
     
     # test alpha and beta
-    dalpha <- max(abs(proj$alpha - e$alpha[perm_inv]))
-    dbeta <- max(abs(proj$beta - t(e$beta[perm_inv,])))
+    dalpha <- max(abs(proj$alpha - alpha_ref))
+    dbeta <- max(abs(proj$beta - t(beta_ref)))
     expect_lt(dalpha, tol)
     expect_lt(dbeta, tol)
     
-    if (!is.null(e$aux)) {
+    if (ncol(draws) > nv+1) {
       # test dispersion
-      ddis <- max(abs(proj$dis - e$aux[perm_inv]))
+      dis_ref <- draws[,ncol(draws)]
+      ddis <- max(abs(proj$dis - draws$sigma))
       expect_lt(ddis, tol)
     }
   }
 })
+
+

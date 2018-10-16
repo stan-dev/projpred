@@ -8,15 +8,15 @@
 distribution of the projected submodel}
 \usage{
 proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,
-  weightsnew = NULL, nv = NULL, transform = FALSE, integrated = FALSE,
-  ...)
+  weightsnew = NULL, nv = NULL, transform = FALSE,
+  integrated = FALSE, ...)
 
-proj_predict(object, xnew, offsetnew = NULL, weightsnew = NULL, nv = NULL,
-  draws = NULL, seed_samp = NULL, ...)
+proj_predict(object, xnew, offsetnew = NULL, weightsnew = NULL,
+  nv = NULL, draws = NULL, seed_samp = NULL, ...)
 }
 \arguments{
-\item{object}{The object returned by \link{varsel},
-\link{cv_varsel} or \link{project}.}
+\item{object}{Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
+or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.}
 
 \item{xnew}{The predictor values used in the prediction. If \code{vind} is
 specified, then \code{xnew} should either be a dataframe containing column names
@@ -37,8 +37,9 @@ this argument matters only if \code{ynew} is specified. By default a vector
 of ones.}
 
 \item{nv}{Number of variables in the submodel (the variable combination is
-taken from the \code{varsel} information). If a list, then results for all
-specified model sizes are returned. Ignored if \code{vind} is specified.}
+taken from the variable selection information). If a vector with several values,
+then results for all specified model sizes are returned. Ignored if \code{vind} is specified.
+By default use the automatically suggested model size.}
 
 \item{transform}{Should the linear predictor be transformed using the
 inverse-link function? Default is \code{FALSE}. For \code{proj_linpred} only.}
@@ -69,4 +70,17 @@ for each submodel.
 \code{proj_predict} draws from the predictive distribution of the projected
 submodel or submodels. If the projection has not been performed, the
 functions also perform the projection.
+}
+\examples{
+\donttest{
+### Usage with stanreg objects
+fit <- stan_glm(y~x, binomial())
+vs <- varsel(fit)
+
+# compute predictions with 4 variables at the training points
+pred <- proj_linpred(vs, xnew=x, nv = 4)
+pred <- proj_predict(vs, xnew=x, nv = 4)
+
+}
+
 }

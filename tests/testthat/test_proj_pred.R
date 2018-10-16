@@ -1,3 +1,6 @@
+context('proj_linpred')
+library(rstanarm)
+
 # tests for proj_linpred and proj_predict
 
 set.seed(1235)
@@ -46,7 +49,7 @@ vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
 proj_vind_list <- lapply(vs_list, project, vind = c(2,3), seed = seed)
 proj_all_list <- lapply(vs_list, project, intercept = FALSE, seed = seed, nv=0:nv)
 
-context('proj_linpred')
+
 test_that("output of proj_linpred is sensible with fit-object as input", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
@@ -184,7 +187,6 @@ test_that("proj_linpred: providing xnew as a data frame works as expected", {
 })
 
 
-context('proj_predict')
 test_that("output of proj_predict is sensible with fit-object as input", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
