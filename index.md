@@ -15,7 +15,11 @@ generalized linear models. Currently **projpred** is most easily compatible with
 [**rstanarm**](http://mc-stan.org/rstanarm) but other reference models can also
 be used.
 
-The method is described and evaluated in comparison to many other methods in
+The methods implemented in the package are discussed in detail in
+
+* Juho Piironen, Markus Paasiniemi and Aki Vehtari (2018). Projective Inference in High-dimensional Problems: Prediction and Feature Selection. ([preprint](https://arxiv.org/abs/1810.02406)).
+
+The projective approach is evaluated in comparison to many other methods in
 
 * Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online](https://link.springer.com/article/10.1007/s11222-016-9649-y)).
 
