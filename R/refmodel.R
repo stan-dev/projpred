@@ -137,7 +137,7 @@ get_refmodel.brmsfit <- function(object, ...) {
     stop("Multilevel or other special terms are not yet supported.")
   }
   family <- family(object)$family
-  families <- c("gaussian", "binomial", "poisson")
+  families <- c("gaussian", "binomial", "bernoulli", "poisson")
   if (!(family %in% families)) {
     stop('Only the following families are currently supported:\n',
          paste0(families, collapse = ", ")) 
@@ -150,7 +150,9 @@ get_refmodel.brmsfit <- function(object, ...) {
   # data, family and the predictor matrix x
   z <- model.frame(object) 
   attributes(z)[c("terms", "brmsframe")] <- NULL
-  fam <- get(family, mode = "function")()
+  # bernoulli is just a special case of binomial
+  fam <- ifelse(family == "bernoulli", "binomial", family)
+  fam <- get(fam, mode = "function")()
   fam <- kl_helpers(fam)
   x <- model.matrix(mu_btl$fe, data = z)
   rownames(x) <- NULL
@@ -159,21 +161,13 @@ get_refmodel.brmsfit <- function(object, ...) {
   x <- x[, !int_cols, drop = FALSE]
   
   # extract response values
-  # TODO: use brms:::data_response as soon as exported
-  y <- model.frame(bterms$respform, data = z)
-  y <- unname(model.response(y))
+  resp <- brms::data_response(bterms, data = z)
+  y <- resp$Y
   if (family == "binomial") {
     if (packageVersion("brms") < "2.5.3") {
       stop("Binomial models require brms 2.5.3 or higher.")
     }
-    if (is.null(bterms$adforms$trials)) {
-      stop("Couldn't find the number of trials.")
-    }
-    trials <- unname(eval(bterms$adforms$trials[[2]], z))
-    if (length(trials) == 1L) {
-      trials <- rep(trials, nrow(z))
-    }
-    # projpred expects y to be a success probability
+    trials <- resp$trials
     y <- y / trials
     # ensure probabilities will be predicted by 'predfun'
     object$formula$formula <- brms::update_adterms(
@@ -201,11 +195,11 @@ get_refmodel.brmsfit <- function(object, ...) {
   if (family == "binomial") {
     # trials are used as weights in binomial models
     wobs <- trials
-    if (!is.null(bterms$adforms$weights)) {
+    if (!is.null(resp$weights)) {
       stop("Can't handle additional weights in binomial models.")
     }
-  } else if (!is.null(bterms$adforms$weights)) {
-    wobs <- unname(eval(bterms$adforms$weights[[2]], z))
+  } else if (!is.null(resp$weights)) {
+    wobs <- resp$weights
   } else {
     wobs <- rep(1, nrow(z))
   }
