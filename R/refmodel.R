@@ -148,8 +148,8 @@ get_refmodel.brmsfit <- function(object, ...) {
   ndraws <- nrow(samp)
   
   # data, family and the predictor matrix x
-  z <- model.frame(data) 
-  attr(z, "terms") <- NULL
+  z <- model.frame(object) 
+  attributes(z)[c("terms", "brmsframe")] <- NULL
   fam <- get(family, mode = "function")()
   fam <- kl_helpers(fam)
   x <- model.matrix(mu_btl$fe, data = z)
