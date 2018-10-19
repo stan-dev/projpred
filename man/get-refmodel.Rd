@@ -7,6 +7,7 @@
 \alias{get_refmodel.vsel}
 \alias{get_refmodel.cvsel}
 \alias{get_refmodel.stanreg}
+\alias{get_refmodel.brmsfit}
 \title{Get reference model structure}
 \usage{
 get_refmodel(object, ...)
@@ -18,6 +19,8 @@ get_refmodel(object, ...)
 \method{get_refmodel}{cvsel}(object, ...)
 
 \method{get_refmodel}{stanreg}(object, ...)
+
+\method{get_refmodel}{brmsfit}(object, ...)
 }
 \arguments{
 \item{object}{Object based on which the reference model is created. See possible types below.}
@@ -38,7 +41,8 @@ to the \code{\link{init_refmodel}}-function so the returned object has the same 
 \examples{
 \donttest{
 ### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
+dat <- data.frame(y = rnorm(100), x = rnorm(100))
+fit <- stan_glm(y ~ x, family = gaussian(), data = dat)
 ref <- get_refmodel(fit)
 print(class(ref))
 
