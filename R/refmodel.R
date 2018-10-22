@@ -164,7 +164,7 @@ get_refmodel.brmsfit <- function(object, ...) {
   resp <- brms::data_response(bterms, data = z)
   y <- resp$Y
   if (family == "binomial") {
-    if (packageVersion("brms") < "2.5.3") {
+    if (utils::packageVersion("brms") < "2.5.3") {
       stop("Binomial models require brms 2.5.3 or higher.")
     }
     trials <- resp$trials
@@ -181,7 +181,7 @@ get_refmodel.brmsfit <- function(object, ...) {
   dis <- samp[["sigma"]] %ORifNULL% rep(0, ndraws) 
   # extract offsets
   if (!is.null(mu_btl$offset)) {
-    if (packageVersion("brms") < "2.5.3") {
+    if (utils::packageVersion("brms") < "2.5.3") {
       stop("Models with offsets require brms 2.5.3 or higher.")
     }
     offset <- model.frame(mu_btl$offset, data = z)
