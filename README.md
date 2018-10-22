@@ -5,9 +5,9 @@
 [![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
 [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/projpred?color=blue)](http://cran.r-project.org/web/packages/projpred)
 
-An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] but also other reference models can be used. 
+An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] and [brms][] but other reference models can also be used. 
 
-The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
+The method is described in detail in Piironen et al. (2018) and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
 
 Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples.
 
@@ -83,10 +83,14 @@ Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models
 
 Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. *Biometrika*, 85(1):29–37.
 
-Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online][piironenvehtari]).
+Piironen, Juho and Vehtari, Aki (2017). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online][piironenvehtari]).
+
+Piironen, Juho, Paasiniemi, Markus and Vehtari, Aki (2018). Projective inference in high-dimensional problems: prediction and feature selection. ([preprint][projpred]).
 
 
   [rstanarm]: https://github.com/stan-dev/rstanarm
+  [brms]: https://github.com/paul-buerkner/brms
   [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
+  [projpred]: https://arxiv.org/abs/1810.02406
   [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html
 
