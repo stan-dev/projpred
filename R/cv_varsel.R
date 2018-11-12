@@ -19,9 +19,9 @@
 #' total number of observations). Smaller values lead to
 #' faster computation but higher uncertainty (larger errorbars) in the accuracy estimation.
 #' Default is to use all observations, but for faster experimentation, one can set this to a small value such as 100.
-#' Only applicable if \code{cv_method = LOO}. 
-#' @param K Number of folds in the k-fold cross validation. Only applicable
-#' if \code{cv_method = TRUE} and \code{k_fold = NULL}.
+#' Only applicable if \code{cv_method = 'LOO'}. 
+#' @param K Number of folds in the k-fold cross validation. Default is 5 for genuine
+#' reference models and 10 for datafits (that is, for penalized maximum likelihood estimation).
 #' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
 #' @param nlambda Same as in \link[=varsel]{varsel}.
 #' @param thresh Same as in \link[=varsel]{varsel}.
@@ -60,50 +60,22 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 
 	refmodel <- get_refmodel(fit, ...)
 	
-	# if (is.null(seed))
-	#   seed <- 134654
+	# resolve the arguments similar to varsel
+	args <- parseargs_varsel(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred)
+	method <- args$method
+	relax <- args$relax
+	intercept <- args$intercept
+	nv_max <- args$nv_max
+	nc <- args$nc
+	ns <- args$ns
+	ncpred <- args$ncpred
+	nspred <- args$nspred
+	
+	# arguments specific to this function
+	args <- parseargs_cv_varsel(refmodel, cv_method, K)
+	cv_method <- args$cv_method
+	K <- args$K
 
-	if (is.null(method)) {
-		if (dim(refmodel$x)[2] <= 20)
-			method <- 'forward'
-		else
-			method <- 'L1'
-	}
-
-	if (is.null(relax)) {
-	  if ('datafit' %in% class(refmodel))
-	    relax <- F
-	  else
-	    relax <- T
-	}
-
-	if (is.null(cv_method)) {
-		if ('datafit' %in% class(refmodel))
-			# only data given, no actual reference model
-			cv_method <- 'kfold'
-		else
-			cv_method <- 'LOO'
-	}
-	if (cv_method == 'kfold' && is.null(K)) {
-	  if ('datafit' %in% class(refmodel))
-	    K <- 10
-	  else
-	    K <- 4
-	}
-
-	if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
-		# use one cluster for selection by default, and always with L1-search
-		nc <- 1
-	if (is.null(nspred) && is.null(ncpred))
-    # use 5 clusters for prediction by default
-		ncpred <- min(ncol(refmodel$mu), 5)
-
-	if(is.null(intercept))
-		intercept <- refmodel$intercept
-	if(is.null(nv_max) || nv_max > NCOL(refmodel$x)) {
-		nv_max_default <- floor(0.4*length(refmodel$y)) # a somewhat sensible default limit for nv_max
-		nv_max <- min(NCOL(refmodel$x), nv_max_default, 20)
-	}
 
 	# search options
 	opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
@@ -158,6 +130,31 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	  print('Done.')
 
 	vs
+}
+
+parseargs_cv_varsel <- function(refmodel, cv_method, K) {
+  
+  #
+  # Auxiliary function for parsing the input arguments for specific cv_varsel.
+  # This is similar in spirit to parseargs_varsel, that is, to avoid the main function to become
+  # too long and complicated to maintain.
+  #
+  
+  if (is.null(cv_method)) {
+    if ('datafit' %in% class(refmodel))
+      # only data given, no actual reference model
+      cv_method <- 'kfold'
+    else
+      cv_method <- 'LOO'
+  }
+  if (cv_method == 'kfold' && is.null(K)) {
+    if ('datafit' %in% class(refmodel))
+      K <- 10
+    else
+      K <- 5
+  }
+  
+  list(cv_method=cv_method, K=K)
 }
 
 
@@ -477,6 +474,8 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
   return(list(inds=inds, w=w))
   
 }
+
+
 
 
 
