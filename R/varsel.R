@@ -68,34 +68,17 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 	refmodel <- get_refmodel(object, ...)
 	family_kl <- refmodel$fam
 	
-	if (is.null(method)) {
-		if (dim(refmodel$x)[2] <= 20)
-			method <- 'forward'
-		else
-			method <- 'L1'
-	}
-
-	if (is.null(relax)) {
-	  if ('datafit' %in% class(refmodel))
-	    relax <- F
-	  else
-	    relax <- T 
-	}
+	# fetch the default arguments or replace them by the user defined values
+	args <- parseargs_varsel(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred)
+	method <- args$method
+	relax <- args$relax
+	intercept <- args$intercept
+	nv_max <- args$nv_max
+	nc <- args$nc
+	ns <- args$ns
+	ncpred <- args$ncpred
+	nspred <- args$nspred
 	
-  if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
-  	# use one cluster for selection by default, and always with L1-search
-  	nc <- 1
-  if (is.null(nspred) && is.null(ncpred))
-    # use 5 clusters for prediction by default
-		ncpred <- min(ncol(refmodel$mu), 5)
-
-  if(is.null(intercept))
-    intercept <- refmodel$intercept
-  if(is.null(nv_max) || nv_max > NCOL(refmodel$x)) {
-  	nv_max_default <- floor(0.4*length(refmodel$y)) # a somewhat sensible default limit for nv_max
-  	nv_max <- min(NCOL(refmodel$x), nv_max_default, 20)
-  }
-
   # training and test data
   d_train <- .get_traindata(refmodel)
   if (is.null(d_test)) {
@@ -191,35 +174,77 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
 
 
 
-# parse_varsel_args <- function(n, d, method = NULL, cv_method = NULL, 
+parseargs_varsel <- function(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred) {
+  
+  #
+  # Auxiliary function for parsing the input arguments for varsel. The arguments
+  # specified by the user (or the function calling this function) are treated as they are, but if
+  # some are not given, then this function fills them in with the default values. The purpose of this
+  # function is to avoid repeating the same code both in varsel and cv_varsel.
+  #
+  
+  if (is.null(method)) {
+    if (dim(refmodel$x)[2] <= 20)
+      method <- 'forward'
+    else
+      method <- 'L1'
+  }
+  
+  if (is.null(relax)) {
+    if ('datafit' %in% class(refmodel))
+      relax <- F
+    else
+      relax <- T 
+  }
+  
+  if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
+    # use one cluster for selection by default, and always with L1-search
+    nc <- 1
+  if (is.null(nspred) && is.null(ncpred))
+    # use 5 clusters for prediction by default
+    ncpred <- min(ncol(refmodel$mu), 5)
+  
+  if(is.null(intercept))
+    intercept <- refmodel$intercept
+  if(is.null(nv_max) || nv_max > NCOL(refmodel$x)) {
+    nv_max_default <- floor(0.4*length(refmodel$y)) # a somewhat sensible default limit for nv_max
+    nv_max <- min(NCOL(refmodel$x), nv_max_default, 20)
+  }
+  
+  list(method=method, relax=relax, intercept=intercept, nv_max=nv_max,
+       nc=nc, ns=ns, ncpred=ncpred, nspred=nspred)
+}
+
+
+# parse_varsel_args <- function(n, d, method = NULL, cv_method = NULL,
 #                               ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax = NULL,
 #                               nv_max = NULL, intercept = NULL, penalty = NULL, verbose = NULL,
-#                               nloo = NULL, K = NULL, k_fold = NULL, lambda_min_ratio = NULL, 
+#                               nloo = NULL, K = NULL, k_fold = NULL, lambda_min_ratio = NULL,
 #                               nlambda = NULL, regul = NULL, validate_search = NULL, seed = NULL, ...) {
-#   #
-#   # Auxiliary function for figuring out the parameters for varsel and cv_varsel. The arguments
-#   # specified by the user (or the function calling this function) are treated as they are, but if 
-#   # some are not given, then this function fills them in with the default values (by default, use
-#   # same values for both varsel and cv_varsel). The purpose of this function is to avoid repeating
-#   # the same (longish) code both in varsel and cv_varsel.
-#   #
+# 
+#   Auxiliary function for figuring out the parameters for varsel and cv_varsel. The arguments
+#   specified by the user (or the function calling this function) are treated as they are, but if
+#   some are not given, then this function fills them in with the default values (by default, use
+#   same values for both varsel and cv_varsel). The purpose of this function is to avoid repeating
+#   the same (longish) code both in varsel and cv_varsel.
+#
 #   if (is.null(seed))
 #     seed <- 134654
-#   
+# 
 #   if (is.null(method)) {
 #     if (dim(vars$x)[2] <= 20)
 #       method <- 'forward'
 #     else
 #       method <- 'L1'
 #   }
-#   
+# 
 #   if (is.null(relax)) {
 #     if ('datafit' %in% class(refmodel))
 #       relax <- F
 #     else
-#       relax <- T 
+#       relax <- T
 #   }
-#   
+# 
 #   if (is.null(cv_method)) {
 #     if ('datafit' %in% class(refmodel))
 #       # only data given, no actual reference model
@@ -230,29 +255,29 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
 #   if (cv_method == 'kfold' && is.null(K)) {
 #     if ('datafit' %in% class(refmodel))
 #       K <- 10
-#     else 
-#       K <- 4
+#     else
+#       K <- 5
 #   }
-#   
+# 
 #   if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
 #     # use one cluster for selection by default, and always with L1-search
 #     nc <- 1
 #   if (is.null(nspred) && is.null(ncpred))
 #     # use 5 clusters for prediction by default
 #     ncpred <- min(ncol(vars$mu), 5)
-#   
+# 
 #   if (is.null(intercept))
 #     intercept <- vars$intercept
 #   if (is.null(nv_max) || nv_max > NCOL(vars$x)) {
 #     nv_max_default <- floor(0.4*length(vars$y)) # a somewhat sensible default limit for nv_max
 #     nv_max <- min(NCOL(vars$x), nv_max_default, 20)
 #   }
-#   
-#   args <- list(method=method, cv_method=cv_method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred, 
+# 
+#   args <- list(method=method, cv_method=cv_method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
 #                relax=relax, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose,
-#                nloo=nloo, K=K, k_fold=k_fold, lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, 
+#                nloo=nloo, K=K, k_fold=k_fold, lambda_min_ratio=lambda_min_ratio, nlambda=nlambda,
 #                regul=regul, validate_search=validate_search, seed=seed)
-#   
+# 
 # }
 
 

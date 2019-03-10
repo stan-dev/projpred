@@ -2,6 +2,9 @@
 
 # News
 
+## projpred 1.1.1
+
+This version contains only a few patches, no new features to the user.
 
 ## projpred 1.1.0
 

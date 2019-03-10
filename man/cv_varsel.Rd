@@ -41,10 +41,10 @@ cv_varsel(fit, method = NULL, cv_method = NULL, ns = NULL,
 total number of observations). Smaller values lead to
 faster computation but higher uncertainty (larger errorbars) in the accuracy estimation.
 Default is to use all observations, but for faster experimentation, one can set this to a small value such as 100.
-Only applicable if \code{cv_method = LOO}.}
+Only applicable if \code{cv_method = 'LOO'}.}
 
-\item{K}{Number of folds in the k-fold cross validation. Only applicable
-if \code{cv_method = TRUE} and \code{k_fold = NULL}.}
+\item{K}{Number of folds in the k-fold cross validation. Default is 5 for genuine
+reference models and 10 for datafits (that is, for penalized maximum likelihood estimation).}
 
 \item{lambda_min_ratio}{Same as in \link[=varsel]{varsel}.}
 
