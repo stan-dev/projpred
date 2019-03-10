@@ -1,4 +1,6 @@
 context('datafit')
+suppressWarnings(RNGversion("3.5.0"))
+
 
 # tests for data based estimates (no actual reference model)
 
