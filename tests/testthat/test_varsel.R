@@ -246,7 +246,7 @@ test_that('object retruned by cv_varsel contains the relevant fields', {
       # pctch seems legit
       expect_equal(dim(cvs_list[[i]][[j]]$pctch), c(nv, nv + 1),
                    info = paste(i_inf, j_inf))
-      expect_true(all(cvs_list[[i]][[j]]$pctch[,-1] <= 1 &&
+      expect_true(all(cvs_list[[i]][[j]]$pctch[,-1] <= 1 &
                         cvs_list[[i]][[j]]$pctch[,-1] >= 0),
                   info = paste(i_inf, j_inf))
       expect_equal(cvs_list[[i]][[j]]$pctch[,1], 1:nv,
@@ -333,7 +333,7 @@ test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
       # pctch seems legit
       expect_equal(dim(cv_kf_list[[i]][[j]]$pctch), c(nv, nv + 1),
                    info = paste(i_inf, j_inf))
-      expect_true(all(cv_kf_list[[i]][[j]]$pctch[,-1] <= 1 &&
+      expect_true(all(cv_kf_list[[i]][[j]]$pctch[,-1] <= 1 &
                         cv_kf_list[[i]][[j]]$pctch[,-1] >= 0),
                   info = paste(i_inf, j_inf))
       expect_equal(cv_kf_list[[i]][[j]]$pctch[,1], 1:nv,
@@ -392,7 +392,7 @@ test_that('providing k_fold works', {
   expect_true(length(fit_cv$family_kl) >= length(fit_cv$family$family))
   # pctch seems legit
   expect_equal(dim(fit_cv$pctch), c(nv, nv + 1))
-  expect_true(all(fit_cv$pctch[,-1] <= 1 &&
+  expect_true(all(fit_cv$pctch[,-1] <= 1 &
                     fit_cv$pctch[,-1] >= 0))
               
   expect_equal(fit_cv$pctch[,1], 1:nv)
