@@ -1,9 +1,9 @@
-[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" width=100 alt="Stan Logo"/>](http://mc-stan.org)
+[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" width=100 alt="Stan Logo"/>](https://mc-stan.org)
 
 # projpred
 
 [![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/projpred?color=blue)](http://cran.r-project.org/web/packages/projpred)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://cran.r-project.org/web/packages/projpred)
 
 An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] and [brms][] but other reference models can also be used. 
 
@@ -14,8 +14,8 @@ Currently, the supported models (family objects in R) include Gaussian, Binomial
 
 ### Resources
 
-* [mc-stan.org/projpred](http://mc-stan.org/projpred) (online documentation, vignettes)
-* [Ask a question](http://discourse.mc-stan.org) (Stan Forums on Discourse)
+* [mc-stan.org/projpred](https://mc-stan.org/projpred) (online documentation, vignettes)
+* [Ask a question](https://discourse.mc-stan.org) (Stan Forums on Discourse)
 * [Open an issue](https://github.com/stan-dev/projpred/issues) (GitHub issues for bug reports, feature requests)
 
 
