@@ -117,8 +117,8 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
                'number of variable indices (vind).'))
 
   # set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- rngtools::RNGseed()
-  on.exit(rngtools::RNGseed(rng_state_old))
+  rng_state_old <- .Random.seed
+  on.exit(set.seed(rng_state_old))
   set.seed(seed_samp)
 
   preds <- lapply(projs, function(proj) {
@@ -550,8 +550,8 @@ cvfolds <- function(n, k, seed=NULL) {
 		stop('k cannot exceed n.')
   
   # set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- rngtools::RNGseed()
-  on.exit(rngtools::RNGseed(rng_state_old))
+  rng_state_old <- .Random.seed
+  on.exit(set.seed(rng_state_old))
   set.seed(seed)
   
   # create and shuffle the indices
@@ -569,8 +569,8 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 	ind <- c(1:n)
 	
 	# set random seed but ensure the old RNG state is restored on exit
-	rng_state_old <- rngtools::RNGseed()
-	on.exit(rngtools::RNGseed(rng_state_old))
+	rng_state_old <- .Random.seed
+	on.exit(set.seed(rng_state_old))
 	set.seed(seed)
 	
 	# shuffle the indices
