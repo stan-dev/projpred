@@ -436,7 +436,7 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
   
   # set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- .Random.seed
-  on.exit(set.seed(rng_state_old))
+  on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   set.seed(seed)
   
   resample <- function(x, ...) x[sample.int(length(x), ...)]
