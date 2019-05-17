@@ -14,7 +14,7 @@ offset <- rnorm(n)
 chains <- 2
 seed <- 1235
 iter <- 500
-source(file.path('helpers', 'SW.R'))
+source(testthat::test_path('helpers', 'SW.R'))
 
 
 f_gauss <- gaussian()
@@ -27,17 +27,18 @@ df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
 SW(
   fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
                         weights = weights, offset = offset,
-                        chains = chains, seed = seed, iter = iter)
+                        chains = chains, seed = seed, iter = iter, 
+                        refresh=0)
 )
 SW(
   fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
                         data = df_binom, weights = weights, offset = offset,
-                        chains = chains, seed = seed, iter = iter)
+                        chains = chains, seed = seed, iter = iter, refresh=0)
 )
 SW(
   fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
                         weights = weights, offset = offset,
-                        chains = chains, seed = seed, iter = iter)
+                        chains = chains, seed = seed, iter = iter, refresh=0)
 )
 fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
 
