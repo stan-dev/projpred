@@ -2,6 +2,10 @@
 
 # News
 
+## projpred 1.1.2
+
+Removed the dependency on the ```rngtools``` package.
+
 ## projpred 1.1.1
 
 This version contains only a few patches, no new features to the user.
