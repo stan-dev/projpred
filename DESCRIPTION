@@ -20,8 +20,7 @@ Imports:
     loo (>= 2.0.0), 
     ggplot2, 
     Rcpp, 
-    utils,
-    rngtools (>= 1.2.4)
+    utils
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
@@ -36,5 +35,5 @@ Suggests:
     glmnet,
     bayesplot (>= 1.5.0)
 VignetteBuilder: knitr
-URL: http://mc-stan.org/projpred, http://discourse.mc-stan.org/
+URL: https://mc-stan.org/projpred, https://discourse.mc-stan.org/
 BugReports: https://github.com/stan-dev/projpred/issues
