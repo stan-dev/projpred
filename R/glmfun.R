@@ -137,6 +137,8 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
     offset <- rep(0.0, nrow(x))
   if (is.null(penalty))
     penalty <- rep(1.0, ncol(x))
+  else if (length(penalty) != ncol(x))
+    stop(paste0("Incorrect length of penalty vector (should be ", ncol(x), ")."))
   
   # standardize the features (notice that the variables are centered only if intercept is used
   # because otherwise the intercept would become nonzero unintentionally)
