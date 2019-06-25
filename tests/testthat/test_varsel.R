@@ -163,6 +163,12 @@ test_that("varsel: adding more regularization has an expected effect", {
     }
 })
 
+test_that("varsel: length of the penalty vector is checked", {
+  vsf <- function(obj, penalty) varsel(obj, method = 'L1', nv_max = nv, verbose = FALSE, penalty = penalty)
+  expect_error(vsf(fit_list$gauss, rep(1, nv + 1)))
+  expect_error(vsf(fit_list$gauss, 1))
+})
+
 test_that("varsel: specifying penalties for variables has an expected effect", {
   penalty <- rep(1,nv)
   ind_zeropen <- c(2,4) # a few variables without cost
