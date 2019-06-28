@@ -90,7 +90,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 		sel_cv <- loo_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty, 
 		                     verbose, opt, nloo = nloo, validate_search = validate_search, seed = seed)
 	} else {
-		stop(sprintf('Unknown cross-validation method: %s.', method))
+               stop(sprintf('Unknown cross-validation method: %s.', cv_method))
 	}
 	
 	# run the selection using the full dataset
