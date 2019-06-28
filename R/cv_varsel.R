@@ -119,6 +119,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	vs$refmodel <- refmodel
 	vs$spath <- sel$spath
 	vs$method <- method
+	vs$cv_method <- cv_method
 	vs <- c(vs, c(sel_cv[c('d_test', 'summaries')],
 	              sel[c('family_kl', 'vind', 'kl')],
 	              list(pctch = pctch)))
