@@ -125,6 +125,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
              d_test = c(d_test[c('y','weights')], type = d_type),
              summaries = list(sub = sub, ref = ref),
              family_kl = family_kl,
+             method = method,
   					 vind = setNames(vind, refmodel$coefnames[vind]),
   					 kl = sapply(p_sub, function(x) x$kl) )
   class(vs) <- 'vsel'
