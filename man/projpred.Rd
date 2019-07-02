@@ -14,7 +14,7 @@ reference models can be used (see function \code{\link{init_refmodel}}).
 
 Currently, the supported models (family objects in R) include Gaussian,
 Binomial and Poisson families, but more will be implemented later. See the
-\href{http://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
+\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
 for examples.
 }
 \section{Functions}{
