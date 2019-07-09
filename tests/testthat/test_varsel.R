@@ -416,7 +416,7 @@ test_that('varsel_stats output seems legit', {
       if (cvs$family_kl$family == 'gaussian')
         stats_str <- c('mse','rmse','elpd','mlpd')
       else if (cvs$family_kl$family == 'binomial')
-        stats_str <- c('acc','elpd','mlpd')
+        stats_str <- c('acc','auc','elpd','mlpd')
       else
         stats_str <- c('elpd','mlpd')
       stats <- varsel_stats(cvs, stats=stats_str, type=c('mean','lower','upper','se'))

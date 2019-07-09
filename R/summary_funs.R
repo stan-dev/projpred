@@ -199,6 +199,24 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs=NULL, lppd.bs=NULL,
       value.se <- weighted.sd(round(mu) == y, weights, na.rm=T) / sqrt(n_notna)
     }
     
+  } else if (stat == 'auc') {
+
+    if (family$family != 'binomial')
+      stop('Statistic ', stat, ' available only for binomial family.')
+    y <- d_test$y
+    auc.data <- cbind(y, mu, weights)[!is.na(mu), ]
+    if (!is.null(mu.bs)) {
+      auc.data.bs <- cbind(y, mu.bs, weights)[!is.na(mu), ]
+      value <- auc(auc.data) - auc(auc.data.bs)
+      value.bootstrap1 <- bootstrap(auc.data, auc, b=B, seed=seed)
+      value.bootstrap2 <- bootstrap(auc.data.bs, auc, b=B, seed=seed)
+      value.se <- sd(value.bootstrap1 - value.bootstrap2)
+    } else {
+      value <- auc(auc.data)
+      value.bootstrap <- bootstrap(auc.data, auc, b=B, seed=seed)
+      value.se <- sd(value.bootstrap)
+    }
+
   } else {
     stop('Unknown statistic: ', stat)
   }

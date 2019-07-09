@@ -43,6 +43,33 @@ log_sum_exp <- function(x) {
 	max_x + log(sum(exp(x - max_x)))
 }
 
+auc <- function(x) {
+  resp <- x[, 1]
+  pred <- x[, 2]
+  weights <- x[, 3]
+  n <- nrow(x)
+  ord <- order(pred, decreasing=TRUE)
+  resp <- resp[ord]
+  pred <- pred[ord]
+  weights <- weights[ord]
+  w0 <- w1 <- weights
+  w0[resp == 1] <- 0 # true negative weights
+  w1[resp == 0] <- 0 # true positive weights
+  cum_w0 <- cumsum(w0)
+  cum_w1 <- cumsum(w1)
+
+  ## ignore tied predicted probabilities, keeping only the rightmost one
+  rightmost.prob <- c(diff(pred) != 0, TRUE)
+  fpr <- c(0, cum_w0[rightmost.prob]) / cum_w0[n]
+  tpr <- c(0, cum_w1[rightmost.prob]) / cum_w1[n]
+  delta_fpr <- c(diff(fpr), 0)
+  delta_tpr <- c(diff(tpr), 0)
+
+  ## sum the area of the rectangles that fall completely below the ROC curve
+  ## plus half the area of the rectangles that are cut in two by the curve
+  return(sum(delta_fpr * tpr) + sum(delta_fpr * delta_tpr) / 2)
+}
+
 bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   #
   # bootstrap an arbitrary quantity fun that takes the sample x
