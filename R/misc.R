@@ -54,15 +54,17 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   rng_state_old <- .Random.seed
   on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   set.seed(seed)
-  
+
+  seq_x <- seq.int(NROW(x))
+  is_vector <- NCOL(x) == 1
   bsstat <- rep(NA, b)
   oobstat <- rep(NA, b)
   for (i in 1:b) {
-    bsind <- sample(seq_along(x), replace=T)
-    bsstat[i] <- fun(x[bsind], ...)
+    bsind <- sample(seq_x, replace=T)
+    bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
     if (!is.null(oobfun)) {
-      oobind <- setdiff(seq_along(x), unique(bsind))
-      oobstat[i] <- oobfun(x[oobind], ...)
+      oobind <- setdiff(seq_x, unique(bsind))
+      oobstat[i] <- oobfun(if (is_vector) x[oobind] else x[oobind, ], ...)
     }
   }
   if (!is.null(oobfun)) {
