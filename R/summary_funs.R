@@ -182,7 +182,7 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs=NULL, lppd.bs=NULL,
       value.se <- sd(value.bootstrap1-value.bootstrap2)
     } else {
       value <- sqrt(mean(weights*(mu-y)^2, na.rm=T))
-      value.bootstrap <- bootstrap((mu-y)^2, function(resid2) sqrt(mean(weights*resid2, na.rm=T)), b=B)
+      value.bootstrap <- bootstrap((mu-y)^2, function(resid2) sqrt(mean(weights*resid2, na.rm=T)), b=B, seed=seed)
       value.se <- sd(value.bootstrap)
     }
     
