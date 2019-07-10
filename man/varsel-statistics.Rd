@@ -26,6 +26,7 @@ statistics are:
  \item{mse:} {Mean squared error (gaussian family only)}
  \item{rmse:} {Root mean squared error (gaussian family only)}
  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
+ \item{auc:} {Area under the ROC curve (binomial family only)}
 }
 Default is elpd.}
 
