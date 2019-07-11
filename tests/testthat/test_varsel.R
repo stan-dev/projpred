@@ -46,6 +46,11 @@ vsf <- function(x, m) varsel(x, method = m, nv_max = nv, verbose = FALSE)
 vs_list <- list(l1 = lapply(fit_list, vsf, 'L1'),
                 fs = lapply(fit_list, vsf, 'forward'))
 
+ref_gauss <- init_refmodel(x, df_gauss$y, family = f_gauss)
+ref_binom <- init_refmodel(x, rbinom(n, 1, f_binom$linkinv(x%*%b)), family = f_binom)
+ref_list <- list(ref_gauss = ref_gauss, ref_binom = ref_binom)
+vsref_list <- list(l1 = lapply(ref_list, vsf, 'L1'),
+                   fs = lapply(ref_list, vsf, 'forward'))
 
 test_that('varsel returns an object of type "vsel"', {
   for(i in 1:length(vs_list)) {
@@ -187,6 +192,10 @@ SW({
 
   cv_kf_list <- list(l1 = lapply(simp_list, cvsf, 'L1', 'kfold', K = 2),
                      fs = lapply(simp_list, cvsf, 'forward', 'kfold', K = 2))
+
+  # LOO cannot be performed without a genuine probabilistic model
+  cvsref_list <- list(l1 = lapply(ref_list, cvsf, 'L1', 'kfold'),
+                      fs = lapply(ref_list, cvsf, 'forward', 'kfold'))
 })
 
 test_that('cv_varsel returns an object of type "cvsel"', {
@@ -452,6 +461,20 @@ test_that('varsel_stats output seems legit', {
     }
   }
 })
+
+test_that('varsel_stats works with reference models', {
+  for (i in seq_along(vsref_list)) {
+    for (j in seq_along(vsref_list[[i]])) {
+      vs <- vsref_list[[i]][[j]]
+      if (vs$family_kl$family == 'gaussian')
+        stats_str <- valid_stats_gauss
+      else
+        stats_str <- valid_stats_binom
+      stats <- varsel_stats(vs, stats=stats_str)
+    }
+  }
+})
+
 
 
 # -------------------------------------------------------------
