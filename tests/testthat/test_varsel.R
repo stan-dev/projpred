@@ -471,6 +471,7 @@ test_that('varsel_stats works with reference models', {
       else
         stats_str <- valid_stats_binom
       stats <- varsel_stats(vs, stats=stats_str)
+      expect_true(is.data.frame(stats))
     }
   }
 })
