@@ -214,9 +214,8 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs=NULL, lppd.bs=NULL,
 .is_util <- function(stat) {
   # a simple function to determine whether a given statistic (string) is
   # a utility (we want to maximize) or loss (we want to minimize)
-  recognized_stats <- c('elpd','mlpd','acc','pctcorr','r2','mse','rmse')
-  if (!(stat %in% recognized_stats))
-    stop(sprintf('Internal error: non-recognized statistic \'%s\'', stat))
+  # by the time we get here, stat should have already been validated
+
   if (stat %in% c('rmse','mse'))
     return(F)
   else

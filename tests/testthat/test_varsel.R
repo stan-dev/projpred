@@ -3,7 +3,8 @@ library(rstanarm)
 
 # tests for varsel and cv_varsel
 
-set.seed(1235)
+seed <- 1235
+set.seed(seed)
 n <- 50
 nv <- 5
 x <- matrix(rnorm(n*nv, 0, 1), n, nv)
@@ -11,7 +12,6 @@ b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 weights <- sample(1:4, n, replace = T)
 chains <- 2
-seed <- 1235
 iter <- 500
 offset <- rnorm(n)
 source(file.path('helpers', 'SW.R'))
@@ -46,28 +46,11 @@ vsf <- function(x, m) varsel(x, method = m, nv_max = nv, verbose = FALSE)
 vs_list <- list(l1 = lapply(fit_list, vsf, 'L1'),
                 fs = lapply(fit_list, vsf, 'forward'))
 
-cvsf <- function(x, m, cvm, K = NULL)
-  cv_varsel(x, method = m, cv_method = cvm, nv_max = nv, K = K)
-
-SW(
-  cvs_list <- list(l1 = lapply(fit_list, cvsf, 'L1', 'LOO'),
-                   fs = lapply(fit_list, cvsf, 'forward', 'LOO'))
-)
-SW({
-  # without weights/offset because kfold does not support them currently
-  # test only with one family to make the tests faster
-  glm_simp <- stan_glm(y ~ x, family = poisson(), data = df_poiss, QR = T,
-                       chains = 2, seed = 1235, iter = 400)
-  lm_simp <- stan_lm(y ~ x, data = df_gauss, prior = R2(0.6),
-                     chains = 2, seed = 1235, iter = 400)
-  simp_list = list(glm = glm_simp, lm = lm_simp)
-  
-  cv_kf_list <- list(l1 = lapply(simp_list, cvsf, 'L1', 'kfold', K = 2),
-                     fs = lapply(simp_list, cvsf, 'forward', 'kfold', K = 2))
-})
-
-
-
+ref_gauss <- init_refmodel(x, df_gauss$y, family = f_gauss)
+ref_binom <- init_refmodel(x, rbinom(n, 1, f_binom$linkinv(x%*%b)), family = f_binom)
+ref_list <- list(ref_gauss = ref_gauss, ref_binom = ref_binom)
+vsref_list <- list(l1 = lapply(ref_list, vsf, 'L1'),
+                   fs = lapply(ref_list, vsf, 'forward'))
 
 test_that('varsel returns an object of type "vsel"', {
   for(i in 1:length(vs_list)) {
@@ -79,7 +62,7 @@ test_that('varsel returns an object of type "vsel"', {
   }
 })
 
-test_that('object retruned by varsel contains the relevant fields', {
+test_that('object returned by varsel contains the relevant fields', {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     for(j in 1:length(vs_list[[i]])) {
@@ -108,7 +91,7 @@ test_that('object retruned by varsel contains the relevant fields', {
                    info = paste(i_inf, j_inf))
       expect_equal(typeof(vs_list[[i]][[j]]$d_test$type), 'character',
                    info = paste(i_inf, j_inf))
-      expect_equal(cvs_list[[i]][[j]]$d_test$type, 'loo',
+      expect_equal(vs_list[[i]][[j]]$d_test$type, 'train',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
       expect_named(vs_list[[i]][[j]]$summaries, c('sub', 'ref'),
@@ -189,6 +172,31 @@ test_that("varsel: specifying penalties for variables has an expected effect", {
 })
 
 
+# -------------------------------------------------------------
+context('cv_varsel')
+
+cvsf <- function(x, m, cvm, K = NULL)
+  cv_varsel(x, method = m, cv_method = cvm, nv_max = nv, K = K)
+
+SW({
+  cvs_list <- list(l1 = lapply(fit_list, cvsf, 'L1', 'LOO'),
+                   fs = lapply(fit_list, cvsf, 'forward', 'LOO'))
+
+  # without weights/offset because kfold does not support them currently
+  # test only with one family to make the tests faster
+  glm_simp <- stan_glm(y ~ x, family = poisson(), data = df_poiss, QR = T,
+                       chains = 2, seed = seed, iter = 400)
+  lm_simp <- stan_lm(y ~ x, data = df_gauss, prior = R2(0.6),
+                     chains = 2, seed = seed, iter = 400)
+  simp_list = list(glm = glm_simp, lm = lm_simp)
+
+  cv_kf_list <- list(l1 = lapply(simp_list, cvsf, 'L1', 'kfold', K = 2),
+                     fs = lapply(simp_list, cvsf, 'forward', 'kfold', K = 2))
+
+  # LOO cannot be performed without a genuine probabilistic model
+  cvsref_list <- list(l1 = lapply(ref_list, cvsf, 'L1', 'kfold'),
+                      fs = lapply(ref_list, cvsf, 'forward', 'kfold'))
+})
 
 test_that('cv_varsel returns an object of type "cvsel"', {
   for(i in 1:length(cvs_list)){
@@ -201,7 +209,7 @@ test_that('cv_varsel returns an object of type "cvsel"', {
   }
 })
 
-test_that('object retruned by cv_varsel contains the relevant fields', {
+test_that('object returned by cv_varsel contains the relevant fields', {
   for(i in 1:length(cvs_list)) {
     i_inf <- names(cvs_list)[i]
     for(j in 1:length(cvs_list[[i]])) {
@@ -288,7 +296,7 @@ test_that('Having something else than stan_glm as the fit throws an error', {
 	expect_error(cv_varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
 })
 
-test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
+test_that('object returned by cv_varsel, kfold contains the relevant fields', {
   for(i in 1:length(cv_kf_list)) {
     i_inf <- names(cv_kf_list)[i]
     for(j in 1:length(cv_kf_list[[i]])) {
@@ -408,17 +416,42 @@ test_that('providing k_fold works', {
 })
 
 
+# -------------------------------------------------------------
+context('varsel_stats')
+
+valid_stats_all <- c('elpd', 'mlpd')
+valid_stats_gauss_only <- c('mse', 'rmse')
+valid_stats_binom_only <- c('acc')
+valid_stats_gauss <- c(valid_stats_all, valid_stats_gauss_only)
+valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
+vs_funs <- c(varsel_stats, varsel_plot, suggest_size)
+
+test_that('invalid objects are rejected', {
+  for (fun in vs_funs) {
+    expect_error(fun(NULL), "is not a variable selection object")
+    expect_error(fun(fit_gauss), "is not a variable selection object")
+  }
+})
+
+test_that('invalid stats are rejected', {
+  for (fun in vs_funs) {
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = NULL), 'specified as NULL')
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = NA), 'not recognized')
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = 'zzz'), 'not recognized')
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = 'acc'), 'available only for the binomial family')
+  }
+})
 
 test_that('varsel_stats output seems legit', {
   for(i in seq_along(cvs_list)) {
     for(j in seq_along(cvs_list[[i]])) {
       cvs <- cvs_list[[i]][[j]]
       if (cvs$family_kl$family == 'gaussian')
-        stats_str <- c('mse','rmse','elpd','mlpd')
+        stats_str <- valid_stats_gauss
       else if (cvs$family_kl$family == 'binomial')
-        stats_str <- c('acc','elpd','mlpd')
+        stats_str <- valid_stats_binom
       else
-        stats_str <- c('elpd','mlpd')
+        stats_str <- valid_stats_all
       stats <- varsel_stats(cvs, stats=stats_str, type=c('mean','lower','upper','se'))
       expect_true(nrow(stats) == nv+1)
       expect_true(all(c('size','vind', stats_str, paste0(stats_str,'.se'), 
@@ -426,5 +459,41 @@ test_that('varsel_stats output seems legit', {
       expect_true(all(stats$mlpd > stats$mlpd.lower))
       expect_true(all(stats$mlpd < stats$mlpd.upper))
     }
+  }
+})
+
+test_that('varsel_stats works with reference models', {
+  for (i in seq_along(vsref_list)) {
+    for (j in seq_along(vsref_list[[i]])) {
+      vs <- vsref_list[[i]][[j]]
+      if (vs$family_kl$family == 'gaussian')
+        stats_str <- valid_stats_gauss
+      else
+        stats_str <- valid_stats_binom
+      stats <- varsel_stats(vs, stats=stats_str)
+      expect_true(is.data.frame(stats))
+    }
+  }
+})
+
+
+
+# -------------------------------------------------------------
+context('suggest_size')
+
+test_that('suggest_size checks the length of stat', {
+  expect_error(suggest_size(vs_list[[1]][["gauss"]], stat = valid_stats_all), 'Only one statistic')
+})
+
+test_that('suggest_size works on all stats', {
+  for (stat in valid_stats_gauss) {
+    ssize <- suggest_size(vs_list[[1]][["gauss"]], stat = stat)
+    expect_true(!is.na(ssize))
+    expect_true(ssize >= 0)
+  }
+  for (stat in valid_stats_binom) {
+    ssize <- suggest_size(vs_list[[1]][["binom"]], stat = stat)
+    expect_true(!is.na(ssize))
+    expect_true(ssize >= 0)
   }
 })
