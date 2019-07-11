@@ -415,6 +415,23 @@ valid_stats_gauss_only <- c('mse', 'rmse')
 valid_stats_binom_only <- c('acc')
 valid_stats_gauss <- c(valid_stats_all, valid_stats_gauss_only)
 valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
+vs_funs <- c(varsel_stats, varsel_plot, suggest_size)
+
+test_that('invalid objects are rejected', {
+  for (fun in vs_funs) {
+    expect_error(fun(NULL), "is not a variable selection object")
+    expect_error(fun(fit_gauss), "is not a variable selection object")
+  }
+})
+
+test_that('invalid stats are rejected', {
+  for (fun in vs_funs) {
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = NULL), 'specified as NULL')
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = NA), 'not recognized')
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = 'zzz'), 'not recognized')
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = 'acc'), 'available only for the binomial family')
+  }
+})
 
 test_that('varsel_stats output seems legit', {
   for(i in seq_along(cvs_list)) {

@@ -253,10 +253,8 @@ NULL
 #' @rdname varsel-statistics
 #' @export
 varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.32, baseline=NULL, ...) {
-  
-	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
-		stop('The object does not look like a variable selection -object. Run variable selection first')
-  
+
+  .validate_vsel_object_stats(object, stats)
   if (is.null(baseline)) {
     if ('datafit' %in% class(object$refmodel))
       baseline <- 'best'
@@ -331,10 +329,8 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
 #' @export
 varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean','se'), 
                          deltas = F, alpha=0.32, baseline=NULL, ...) {
-  
-	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
-		stop('The object does not look like a variable selection -object. Run variable selection first')
-  
+
+  .validate_vsel_object_stats(object, stats)
   if (is.null(baseline)) {
     if ('datafit' %in% class(object$refmodel))
       baseline <- 'best'
@@ -448,10 +444,8 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' @export
 suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper', 
                          baseline=NULL, warnings=TRUE, ...) {
-  
-	
-	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) )
-		stop('The object does not look like a variable selection -object. Run variable selection first')
+
+  .validate_vsel_object_stats(object, stat)
   
   if (.is_util(stat)) {
     sgn <- 1
