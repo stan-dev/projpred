@@ -46,28 +46,6 @@ vsf <- function(x, m) varsel(x, method = m, nv_max = nv, verbose = FALSE)
 vs_list <- list(l1 = lapply(fit_list, vsf, 'L1'),
                 fs = lapply(fit_list, vsf, 'forward'))
 
-cvsf <- function(x, m, cvm, K = NULL)
-  cv_varsel(x, method = m, cv_method = cvm, nv_max = nv, K = K)
-
-SW(
-  cvs_list <- list(l1 = lapply(fit_list, cvsf, 'L1', 'LOO'),
-                   fs = lapply(fit_list, cvsf, 'forward', 'LOO'))
-)
-SW({
-  # without weights/offset because kfold does not support them currently
-  # test only with one family to make the tests faster
-  glm_simp <- stan_glm(y ~ x, family = poisson(), data = df_poiss, QR = T,
-                       chains = 2, seed = 1235, iter = 400)
-  lm_simp <- stan_lm(y ~ x, data = df_gauss, prior = R2(0.6),
-                     chains = 2, seed = 1235, iter = 400)
-  simp_list = list(glm = glm_simp, lm = lm_simp)
-  
-  cv_kf_list <- list(l1 = lapply(simp_list, cvsf, 'L1', 'kfold', K = 2),
-                     fs = lapply(simp_list, cvsf, 'forward', 'kfold', K = 2))
-})
-
-
-
 
 test_that('varsel returns an object of type "vsel"', {
   for(i in 1:length(vs_list)) {
@@ -189,6 +167,27 @@ test_that("varsel: specifying penalties for variables has an expected effect", {
 })
 
 
+# -------------------------------------------------------------
+context('cv_varsel')
+
+cvsf <- function(x, m, cvm, K = NULL)
+  cv_varsel(x, method = m, cv_method = cvm, nv_max = nv, K = K)
+
+SW({
+  cvs_list <- list(l1 = lapply(fit_list, cvsf, 'L1', 'LOO'),
+                   fs = lapply(fit_list, cvsf, 'forward', 'LOO'))
+
+  # without weights/offset because kfold does not support them currently
+  # test only with one family to make the tests faster
+  glm_simp <- stan_glm(y ~ x, family = poisson(), data = df_poiss, QR = T,
+                       chains = 2, seed = 1235, iter = 400)
+  lm_simp <- stan_lm(y ~ x, data = df_gauss, prior = R2(0.6),
+                     chains = 2, seed = 1235, iter = 400)
+  simp_list = list(glm = glm_simp, lm = lm_simp)
+
+  cv_kf_list <- list(l1 = lapply(simp_list, cvsf, 'L1', 'kfold', K = 2),
+                     fs = lapply(simp_list, cvsf, 'forward', 'kfold', K = 2))
+})
 
 test_that('cv_varsel returns an object of type "cvsel"', {
   for(i in 1:length(cvs_list)){
@@ -408,17 +407,25 @@ test_that('providing k_fold works', {
 })
 
 
+# -------------------------------------------------------------
+context('varsel_stats')
+
+valid_stats_all <- c('elpd', 'mlpd')
+valid_stats_gauss_only <- c('mse', 'rmse')
+valid_stats_binom_only <- c('acc')
+valid_stats_gauss <- c(valid_stats_all, valid_stats_gauss_only)
+valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
 
 test_that('varsel_stats output seems legit', {
   for(i in seq_along(cvs_list)) {
     for(j in seq_along(cvs_list[[i]])) {
       cvs <- cvs_list[[i]][[j]]
       if (cvs$family_kl$family == 'gaussian')
-        stats_str <- c('mse','rmse','elpd','mlpd')
+        stats_str <- valid_stats_gauss
       else if (cvs$family_kl$family == 'binomial')
-        stats_str <- c('acc','elpd','mlpd')
+        stats_str <- valid_stats_binom
       else
-        stats_str <- c('elpd','mlpd')
+        stats_str <- valid_stats_all
       stats <- varsel_stats(cvs, stats=stats_str, type=c('mean','lower','upper','se'))
       expect_true(nrow(stats) == nv+1)
       expect_true(all(c('size','vind', stats_str, paste0(stats_str,'.se'), 
