@@ -446,6 +446,8 @@ suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='u
                          baseline=NULL, warnings=TRUE, ...) {
 
   .validate_vsel_object_stats(object, stat)
+  if (length(stat) > 1)
+    stop('Only one statistic can be specified to suggest_size')
   
   if (.is_util(stat)) {
     sgn <- 1

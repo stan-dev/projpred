@@ -452,3 +452,24 @@ test_that('varsel_stats output seems legit', {
     }
   }
 })
+
+
+# -------------------------------------------------------------
+context('suggest_size')
+
+test_that('suggest_size checks the length of stat', {
+  expect_error(suggest_size(vs_list[[1]][["gauss"]], stat = valid_stats_all), 'Only one statistic')
+})
+
+test_that('suggest_size works on all stats', {
+  for (stat in valid_stats_gauss) {
+    ssize <- suggest_size(vs_list[[1]][["gauss"]], stat = stat)
+    expect_true(!is.na(ssize))
+    expect_true(ssize >= 0)
+  }
+  for (stat in valid_stats_binom) {
+    ssize <- suggest_size(vs_list[[1]][["binom"]], stat = stat)
+    expect_true(!is.na(ssize))
+    expect_true(ssize >= 0)
+  }
+})
