@@ -57,7 +57,7 @@ test_that('varsel returns an object of type "vsel"', {
   }
 })
 
-test_that('object retruned by varsel contains the relevant fields', {
+test_that('object returned by varsel contains the relevant fields', {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     for(j in 1:length(vs_list[[i]])) {
@@ -200,7 +200,7 @@ test_that('cv_varsel returns an object of type "cvsel"', {
   }
 })
 
-test_that('object retruned by cv_varsel contains the relevant fields', {
+test_that('object returned by cv_varsel contains the relevant fields', {
   for(i in 1:length(cvs_list)) {
     i_inf <- names(cvs_list)[i]
     for(j in 1:length(cvs_list[[i]])) {
@@ -287,7 +287,7 @@ test_that('Having something else than stan_glm as the fit throws an error', {
 	expect_error(cv_varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
 })
 
-test_that('object retruned by cv_varsel, kfold contains the relevant fields', {
+test_that('object returned by cv_varsel, kfold contains the relevant fields', {
   for(i in 1:length(cv_kf_list)) {
     i_inf <- names(cv_kf_list)[i]
     for(j in 1:length(cv_kf_list[[i]])) {
