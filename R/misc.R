@@ -120,8 +120,8 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   if (!inherits(object, c('vsel', 'cvsel')))
     stop('The object is not a variable selection object. Run variable selection first')
 
-  recognized_stats <- c('elpd', 'mlpd','mse', 'rmse', 'acc', 'pctcorr')
-  binomial_only_stats <- c('acc', 'pctcorr')
+  recognized_stats <- c('elpd', 'mlpd','mse', 'rmse', 'acc', 'pctcorr', 'auc')
+  binomial_only_stats <- c('acc', 'pctcorr', 'auc')
   family <- object$family_kl$family
 
   if (is.null(stats))
