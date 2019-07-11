@@ -108,7 +108,7 @@ test_that('object retruned by varsel contains the relevant fields', {
                    info = paste(i_inf, j_inf))
       expect_equal(typeof(vs_list[[i]][[j]]$d_test$type), 'character',
                    info = paste(i_inf, j_inf))
-      expect_equal(cvs_list[[i]][[j]]$d_test$type, 'loo',
+      expect_equal(vs_list[[i]][[j]]$d_test$type, 'train',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
       expect_named(vs_list[[i]][[j]]$summaries, c('sub', 'ref'),
