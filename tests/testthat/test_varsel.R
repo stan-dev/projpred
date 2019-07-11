@@ -3,7 +3,8 @@ library(rstanarm)
 
 # tests for varsel and cv_varsel
 
-set.seed(1235)
+seed <- 1235
+set.seed(seed)
 n <- 50
 nv <- 5
 x <- matrix(rnorm(n*nv, 0, 1), n, nv)
@@ -11,7 +12,6 @@ b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 weights <- sample(1:4, n, replace = T)
 chains <- 2
-seed <- 1235
 iter <- 500
 offset <- rnorm(n)
 source(file.path('helpers', 'SW.R'))
@@ -180,9 +180,9 @@ SW({
   # without weights/offset because kfold does not support them currently
   # test only with one family to make the tests faster
   glm_simp <- stan_glm(y ~ x, family = poisson(), data = df_poiss, QR = T,
-                       chains = 2, seed = 1235, iter = 400)
+                       chains = 2, seed = seed, iter = 400)
   lm_simp <- stan_lm(y ~ x, data = df_gauss, prior = R2(0.6),
-                     chains = 2, seed = 1235, iter = 400)
+                     chains = 2, seed = seed, iter = 400)
   simp_list = list(glm = glm_simp, lm = lm_simp)
 
   cv_kf_list <- list(l1 = lapply(simp_list, cvsf, 'L1', 'kfold', K = 2),
