@@ -167,8 +167,6 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
       searchpath <- list(vind=vind, p_sel=p_sel)
       return(searchpath)
     }
-  } else {
-    stop(sprintf('Unknown search method: %s.', method))
   }
 }
 
@@ -189,6 +187,8 @@ parseargs_varsel <- function(refmodel, method, relax, intercept, nv_max, nc, ns,
       method <- 'forward'
     else
       method <- 'L1'
+  } else if (!tolower(method) %in% c('forward', 'l1')) {
+    stop(sprintf('Unknown search method: %s.', method))
   }
   
   if (is.null(relax)) {
