@@ -380,8 +380,35 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
   subset(arr, arr$size <= nv_max)
 }
 
+#' Print methods for vsel/cvsel objects
+#'
+#' The \code{print} methods for vsel/cvsel objects created by \code{\link{varsel}}
+#' or \code{\link{cv_varsel}}) rely on \code{\link{varsel_stats}} to display
+#' a summary of the results of the projection predictive variable selection.
+#'
+#' @name print-vsel
+#'
+#' @param x An object of class vsel/cvsel.
+#' @param ... Further arguments passed to \code{\link{varsel_stats}}.
+#'
+#' @return Returns invisibly the data frame produced by \code{\link{varsel_stats}}.
+#'
+#' @export
+#' @method print vsel
+print.vsel <- function(x, ...) {
+  stats <- varsel_stats(x, ...)
+  print(stats)
+  invisible(stats)
+}
 
-
+#' @rdname print-vsel
+#' @export
+#' @method print cvsel
+print.cvsel <- function(x, ...) {
+  stats <- varsel_stats(x, ...)
+  print(stats)
+  invisible(stats)
+}
 
 
 #' Suggest model size 
