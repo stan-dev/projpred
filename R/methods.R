@@ -221,6 +221,7 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #'  \item{mse:} {Mean squared error (gaussian family only)}
 #'  \item{rmse:} {Root mean squared error (gaussian family only)}
 #'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
+#'  \item{auc:} {Area under the ROC curve (binomial family only)}
 #' }
 #' Default is elpd.
 #' @param type One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to

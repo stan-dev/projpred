@@ -421,7 +421,7 @@ context('varsel_stats')
 
 valid_stats_all <- c('elpd', 'mlpd')
 valid_stats_gauss_only <- c('mse', 'rmse')
-valid_stats_binom_only <- c('acc')
+valid_stats_binom_only <- c('acc', 'auc')
 valid_stats_gauss <- c(valid_stats_all, valid_stats_gauss_only)
 valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
 vs_funs <- c(varsel_stats, varsel_plot, suggest_size)
