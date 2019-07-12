@@ -115,6 +115,24 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 `%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
 
 
+.validate_vsel_object_stats <- function(object, stats) {
+
+  if (!inherits(object, c('vsel', 'cvsel')))
+    stop('The object is not a variable selection object. Run variable selection first')
+
+  recognized_stats <- c('elpd', 'mlpd','mse', 'rmse', 'acc', 'pctcorr', 'auc')
+  binomial_only_stats <- c('acc', 'pctcorr', 'auc')
+  family <- object$family_kl$family
+
+  if (is.null(stats))
+     stop('Statistic specified as NULL.')
+  for (stat in stats) {
+    if (!(stat %in% recognized_stats))
+      stop(sprintf('Statistic \'%s\' not recognized.', stat))
+    if (stat %in% binomial_only_stats && family != 'binomial')
+      stop('Statistic \'', stat, '\' available only for the binomial family.')
+  }
+}
 
 
 .get_standard_y <- function(y, weights, fam) {
