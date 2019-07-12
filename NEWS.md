@@ -4,7 +4,7 @@
 
 ## projpred 1.1.3
 
-A few minor patches.
+Added print methods for vsel and cvsel objects. Added AUC statistics for binomial family. A few additional minor patches.
 
 ## projpred 1.1.2
 
