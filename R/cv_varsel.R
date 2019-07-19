@@ -95,7 +95,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	
 	# run the selection using the full dataset
 	if (verbose)
-		print(paste('Performing the selection using all the data..'))
+		cat('Performing variable selection using all data...\n')
 	sel <- varsel(refmodel, method=method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
 	              relax=relax, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose, 
 	              lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
@@ -127,9 +127,6 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	vs$nv_max <- nv_max
 	vs$nv_all <- ncol(refmodel$x)
 	vs$ssize <- suggest_size(vs, warnings = F)
-	
-	if (verbose)
-	  print('Done.')
 
 	vs
 }
@@ -197,7 +194,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
   
   # Perform the selection for each of the K folds
   if (verbose) {
-    print('Performing selection for each fold..')
+    cat('Performing selection for each fold...\n')
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
   spath_cv <- lapply(seq_along(list_cv), function(fold_index) {
@@ -215,7 +212,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
   # Construct submodel projections for each fold
   as.search <- !relax && !is.null(spath_cv[[1]]$beta) && !is.null(spath_cv[[1]]$alpha)
   if (verbose && !as.search) {
-    print('Computing projections..')
+    cat('Computing projections...\n')
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
   p_sub_cv <- mapply(function(spath, fold_index) {
@@ -275,7 +272,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
       # is datafit, cvfun will return an empty list and this will lead to normal cross-validation
       # for the submodels although we don't have an actual reference model
       if (verbose && !('datafit' %in% class(refmodel)))
-        print('Performing cross-validation for the reference model..')
+        cat('Performing cross-validation for the reference model...\n')
       folds <- cvfolds(refmodel$nobs, k=K, seed=seed)
       cvfits <- refmodel$cvfun(folds)
       cvfits <- lapply(seq_along(cvfits), function(k) {
@@ -362,8 +359,8 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 	mu_sub <- matrix(nrow=n, ncol=nv_max+1)
 
 	if (verbose) {
-    print('Computing LOOs...')
-    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial=0)
+		cat('Computing LOOs...\n')
+		pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial=0)
 	}
 
 	if (!validate_search) {
@@ -476,9 +473,3 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
   return(list(inds=inds, w=w))
   
 }
-
-
-
-
-
-
