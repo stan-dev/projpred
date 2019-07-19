@@ -397,7 +397,7 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' @method print vsel
 print.vsel <- function(x, ...) {
   stats <- varsel_stats(x, ...)
-  print(stats)
+  print(stats[, -match("vind", colnames(stats))])
   invisible(stats)
 }
 
@@ -406,7 +406,7 @@ print.vsel <- function(x, ...) {
 #' @method print cvsel
 print.cvsel <- function(x, ...) {
   stats <- varsel_stats(x, ...)
-  print(stats)
+  print(stats[, -match("vind", colnames(stats))])
   invisible(stats)
 }
 
