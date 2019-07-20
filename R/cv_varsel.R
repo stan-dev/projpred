@@ -149,11 +149,11 @@ parseargs_cv_varsel <- function(refmodel, cv_method, K) {
     else
       cv_method <- 'LOO'
   }
-  if (cv_method == 'kfold' && is.null(K)) {
-    if ('datafit' %in% class(refmodel))
-      K <- 10
+  if (cv_method == 'kfold') {
+    if (is.null(K))
+      K <- if ('datafit' %in% class(refmodel)) 10 else 5
     else
-      K <- 5
+      .validate_num_folds(K, refmodel$nobs)
   }
   
   list(cv_method=cv_method, K=K)

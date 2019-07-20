@@ -359,10 +359,17 @@ test_that('object returned by cv_varsel, kfold contains the relevant fields', {
   }
 })
 
-test_that('K has an effect on cv_varsel with kfold for gaussian models', {
-  expect_error(capture.output(cv_varsel(glm_simp, cv_method = 'kfold', K = 1)))
-  expect_error(capture.output(
-    cv_varsel(glm_simp, cv_method = 'kfold', K = 1000)))
+test_that('K is valid for cv_method=\'kfold\'', {
+  expect_error(cv_varsel(glm_simp, cv_method = 'kfold', K = 1),
+               'must be at least 2')
+  expect_error(cv_varsel(glm_simp, cv_method = 'kfold', K = 1000),
+               'cannot exceed n')
+  expect_error(cv_varsel(glm_simp, cv_method = 'kfold', K = c(4, 9)),
+               'a single integer value')
+  expect_error(cv_varsel(glm_simp, cv_method = 'kfold', K = 'a'),
+               'a single integer value')
+  expect_error(cv_varsel(glm_simp, cv_method = 'kfold', K = df_poiss),
+               'a single integer value')
 })
 
 test_that('omitting the \'data\' argument causes a warning', {

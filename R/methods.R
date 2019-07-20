@@ -543,7 +543,7 @@ as.matrix.projection <- function(x, ...) {
 #' @name cv-indices
 #'
 #' @param n Number of data points.
-#' @param k Number of folds. 
+#' @param k Number of folds. Must be at least 2 and not exceed \code{n}.
 #' @param out Format of the output, either 'foldwise' (default) or 'indices'. See below for details.
 #' @param seed Random seed so that the same division could be obtained again if needed.
 #'
@@ -569,9 +569,8 @@ NULL
 #' @rdname cv-indices
 #' @export
 cvfolds <- function(n, k, seed=NULL) {
-	
-	if (k > n)
-		stop('k cannot exceed n.')
+
+  .validate_num_folds(k, n)
   
   # set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- .Random.seed
@@ -590,6 +589,7 @@ cvfolds <- function(n, k, seed=NULL) {
 #' @export
 cvind <- function(n, k, out='foldwise', seed=NULL) {
 
+	.validate_num_folds(k, n)
 	ind <- c(1:n)
 	
 	# set random seed but ensure the old RNG state is restored on exit

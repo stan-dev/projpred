@@ -115,6 +115,17 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 `%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
 
 
+.is.wholenumber <- function(x) abs(x - round(x)) < .Machine$double.eps^0.5
+
+.validate_num_folds <- function(k, n) {
+  if (!is.numeric(k) || length(k) != 1 || !.is.wholenumber(k))
+    stop('Number of folds must be a single integer value.')
+  if (k < 2)
+    stop('Number of folds must be at least 2.')
+  if (k > n)
+    stop('Number of folds cannot exceed n.')
+}
+
 .validate_vsel_object_stats <- function(object, stats) {
 
   if (!inherits(object, c('vsel', 'cvsel')))

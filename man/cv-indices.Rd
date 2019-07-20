@@ -13,7 +13,7 @@ cvind(n, k, out = "foldwise", seed = NULL)
 \arguments{
 \item{n}{Number of data points.}
 
-\item{k}{Number of folds.}
+\item{k}{Number of folds. Must be at least 2 and not exceed \code{n}.}
 
 \item{seed}{Random seed so that the same division could be obtained again if needed.}
 
