@@ -8,7 +8,7 @@
 \usage{
 cvfolds(n, k, seed = NULL)
 
-cvind(n, k, out = "foldwise", seed = NULL)
+cvind(n, k, out = c("foldwise", "indices"), seed = NULL)
 }
 \arguments{
 \item{n}{Number of data points.}

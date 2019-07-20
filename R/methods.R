@@ -587,18 +587,18 @@ cvfolds <- function(n, k, seed=NULL) {
 
 #' @rdname cv-indices
 #' @export
-cvind <- function(n, k, out='foldwise', seed=NULL) {
+cvind <- function(n, k, out=c('foldwise', 'indices'), seed=NULL) {
 
 	.validate_num_folds(k, n)
-	ind <- c(1:n)
-	
+	out <- match.arg(out)
+
 	# set random seed but ensure the old RNG state is restored on exit
 	rng_state_old <- .Random.seed
 	on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
 	set.seed(seed)
 	
 	# shuffle the indices
-	ind <- sample(ind, n, replace=FALSE)
+	ind <- sample(1:n, n, replace=FALSE)
 	
 	if (out == 'foldwise') {
 		cv <- lapply(1:k, function(i) {
@@ -616,13 +616,7 @@ cvind <- function(n, k, out='foldwise', seed=NULL) {
 			cv$tr[[i]] <- tr
 			cv$ts[[i]] <- ts
 		}
-	} else
-		stop(paste0('Unknown output format requested: ', out))
+	}
 	
 	return(cv)
 }
-
-
-
-
-
