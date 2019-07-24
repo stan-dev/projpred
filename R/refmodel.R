@@ -452,7 +452,7 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
 	if (is.null(ynew)) {
 		
 		if (type == 'link')
-			pred <- object$family$linkfun(mu)
+			pred <- object$fam$linkfun(mu)
 		else
 			pred <- mu
 		

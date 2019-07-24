@@ -56,6 +56,9 @@ test_that('predict produces sensible results for gaussian models', {
   out.resp <- predict(ref_gauss, df_gauss, type = 'response')
   expect_vector(out.resp)
   expect_length(out.resp, nrow(df_gauss))
+
+  out.link <- predict(ref_gauss, df_gauss, type = 'link')
+  expect_equal(out.resp, out.link)
 })
 
 test_that('predict produces sensible results for binomial models', {
@@ -63,6 +66,9 @@ test_that('predict produces sensible results for binomial models', {
   expect_vector(out.resp)
   expect_length(out.resp, nrow(df_binom))
   expect_true(all(out.resp >= 0 & out.resp <= 1))
+
+  out.link <- predict(ref_binom, df_binom, type = 'link')
+  expect_length(out.resp, nrow(df_binom))
 })
 
 test_that('predict produces sensible results when specifying ynew', {
