@@ -54,10 +54,8 @@ vsref_list <- list(l1 = lapply(ref_list, vsf, 'L1'),
 
 test_that('varsel returns an object of type "vsel"', {
   for(i in 1:length(vs_list)) {
-    i_inf <- names(vs_list)[i]
     for(j in 1:length(vs_list[[i]])) {
-      j_inf <- names(vs_list[[i]])[j]
-      expect_true('vsel' %in% class(vs_list[[i]][[j]]))
+      expect_s3_class(vs_list[[i]][[j]], 'vsel')
     }
   }
 })
@@ -68,36 +66,28 @@ test_that('object returned by varsel contains the relevant fields', {
     for(j in 1:length(vs_list[[i]])) {
       j_inf <- names(vs_list[[i]])[j]
       # refmodel seems legit
-      expect_true('refmodel' %in% class(vs_list[[i]][[j]]$refmodel))
+      expect_s3_class(vs_list[[i]][[j]]$refmodel, 'refmodel')
       # vind seems legit
-      expect_equal(length(vs_list[[i]][[j]]$vind), nv,
-                   info = paste(i_inf, j_inf))
+      expect_length(vs_list[[i]][[j]]$vind, nv)
       expect_equal(names(coef(fit_gauss)[-1])[vs_list[[i]][[j]]$vind],
                    names(vs_list[[i]][[j]]$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
-      expect_equal(length(vs_list[[i]][[j]]$kl), nv + 1,
-                   info = paste(i_inf, j_inf))
+      expect_length(vs_list[[i]][[j]]$kl, nv + 1)
       # decreasing
       expect_equal(vs_list[[i]][[j]]$kl,
                    cummin(vs_list[[i]][[j]]$kl),
                    info = paste(i_inf, j_inf))
       # d_test seems legit
-      expect_equal(length(vs_list[[i]][[j]]$d_test$y), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(length(vs_list[[i]][[j]]$d_test$weights), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(length(vs_list[[i]][[j]]$d_test$weights), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(typeof(vs_list[[i]][[j]]$d_test$type), 'character',
-                   info = paste(i_inf, j_inf))
+      expect_length(vs_list[[i]][[j]]$d_test$y, n)
+      expect_length(vs_list[[i]][[j]]$d_test$weights, n)
+      expect_type(vs_list[[i]][[j]]$d_test$type, 'character')
       expect_equal(vs_list[[i]][[j]]$d_test$type, 'train',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
       expect_named(vs_list[[i]][[j]]$summaries, c('sub', 'ref'),
                    info = paste(i_inf, j_inf))
-      expect_equal(length(vs_list[[i]][[j]]$summaries$sub), nv + 1,
-                   info = paste(i_inf, j_inf))
+      expect_length(vs_list[[i]][[j]]$summaries$sub, nv + 1)
       expect_named(vs_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd'),
                    info = paste(i_inf, j_inf))
       expect_named(vs_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
@@ -123,12 +113,12 @@ test_that('search method is valid', {
 
 test_that('nv_max has an effect on varsel for gaussian models', {
   vs1 <- varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
-  expect_equal(length(vs1$vind), 3)
+  expect_length(vs1$vind, 3)
 })
 
 test_that('nv_max has an effect on varsel for non-gaussian models', {
   vs1 <- varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
-  expect_equal(length(vs1$vind), 3)
+  expect_length(vs1$vind, 3)
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
@@ -169,10 +159,10 @@ test_that("varsel: specifying penalties for variables has an expected effect", {
     # check that the variables with no cost are selected first and the ones with 
     # inf penalty last
     sdiff <- setdiff(head(vs_list_pen[[i]]$vind, length(ind_zeropen)), ind_zeropen)
-    expect_true(length(sdiff)==0)
+    expect_length(sdiff, 0)
     
     sdiff <- setdiff(tail(vs_list_pen[[i]]$vind, length(ind_infpen)), ind_infpen)
-    expect_true(length(sdiff)==0)
+    expect_length(sdiff, 0)
   }
 })
 
@@ -205,11 +195,8 @@ SW({
 
 test_that('cv_varsel returns an object of type "cvsel"', {
   for(i in 1:length(cvs_list)){
-    i_inf <- names(cvs_list)[i]
     for(j in 1:length(cvs_list[[i]])) {
-      j_inf <- names(cvs_list[[i]])[j]
-      expect_true('cvsel' %in% class(cvs_list[[i]][[j]]),
-                  info = paste(i_inf, j_inf))
+      expect_s3_class(cvs_list[[i]][[j]], 'cvsel')
     }
   }
 })
@@ -220,34 +207,26 @@ test_that('object returned by cv_varsel contains the relevant fields', {
     for(j in 1:length(cvs_list[[i]])) {
       j_inf <- names(cvs_list[[i]])[j]
       # vind seems legit
-      expect_equal(length(cvs_list[[i]][[j]]$vind), nv,
-                   info = paste(i_inf, j_inf))
+      expect_length(cvs_list[[i]][[j]]$vind, nv)
       expect_equal(names(coef(fit_gauss)[-1])[cvs_list[[i]][[j]]$vind],
                    names(cvs_list[[i]][[j]]$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
-      expect_equal(length(cvs_list[[i]][[j]]$kl), nv + 1,
-                   info = paste(i_inf, j_inf))
+      expect_length(cvs_list[[i]][[j]]$kl, nv + 1)
       # decreasing
       expect_equal(cvs_list[[i]][[j]]$kl,
                    cummin(cvs_list[[i]][[j]]$kl),
                    info = paste(i_inf, j_inf))
       # d_test seems legit
-      expect_equal(length(cvs_list[[i]][[j]]$d_test$y), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(length(cvs_list[[i]][[j]]$d_test$weights), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(length(cvs_list[[i]][[j]]$d_test$weights), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(typeof(cvs_list[[i]][[j]]$d_test$type), 'character',
-                   info = paste(i_inf, j_inf))
+      expect_length(cvs_list[[i]][[j]]$d_test$y, n)
+      expect_length(cvs_list[[i]][[j]]$d_test$weights, n)
+      expect_type(cvs_list[[i]][[j]]$d_test$type, 'character')
       expect_equal(cvs_list[[i]][[j]]$d_test$type, 'loo',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
       expect_named(cvs_list[[i]][[j]]$summaries, c('sub', 'ref'),
                    info = paste(i_inf, j_inf))
-      expect_equal(length(cvs_list[[i]][[j]]$summaries$sub), nv + 1,
-                   info = paste(i_inf, j_inf))
+      expect_length(cvs_list[[i]][[j]]$summaries$sub, nv + 1)
       expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd', 'w'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
       expect_named(cvs_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
@@ -286,14 +265,14 @@ test_that('nv_max has an effect on cv_varsel for gaussian models', {
   suppressWarnings(
     vs1 <- cv_varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
   )
-  expect_equal(length(vs1$vind), 3)
+  expect_length(vs1$vind, 3)
 })
 
 test_that('nv_max has an effect on cv_varsel for non-gaussian models', {
   suppressWarnings(
     vs1 <- cv_varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
   )
-  expect_equal(length(vs1$vind), 3)
+  expect_length(vs1$vind, 3)
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
@@ -307,34 +286,26 @@ test_that('object returned by cv_varsel, kfold contains the relevant fields', {
     for(j in 1:length(cv_kf_list[[i]])) {
       j_inf <- names(cv_kf_list[[i]])[j]
       # vind seems legit
-      expect_equal(length(cv_kf_list[[i]][[j]]$vind), nv,
-                   info = paste(i_inf, j_inf))
+      expect_length(cv_kf_list[[i]][[j]]$vind, nv)
       expect_equal(names(coef(fit_gauss)[-1])[cv_kf_list[[i]][[j]]$vind],
                    names(cv_kf_list[[i]][[j]]$vind),
                    info = paste(i_inf, j_inf))
       # kl seems legit
-      expect_equal(length(cv_kf_list[[i]][[j]]$kl), nv + 1,
-                   info = paste(i_inf, j_inf))
+      expect_length(cv_kf_list[[i]][[j]]$kl, nv + 1)
       # decreasing
       expect_equal(cv_kf_list[[i]][[j]]$kl,
                    cummin(cv_kf_list[[i]][[j]]$kl),
                    info = paste(i_inf, j_inf))
       # d_test seems legit
-      expect_equal(length(cv_kf_list[[i]][[j]]$d_test$y), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(length(cv_kf_list[[i]][[j]]$d_test$weights), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(length(cv_kf_list[[i]][[j]]$d_test$weights), n,
-                   info = paste(i_inf, j_inf))
-      expect_equal(typeof(cv_kf_list[[i]][[j]]$d_test$type), 'character',
-                   info = paste(i_inf, j_inf))
+      expect_length(cv_kf_list[[i]][[j]]$d_test$y, n)
+      expect_length(cv_kf_list[[i]][[j]]$d_test$weights, n)
+      expect_type(cv_kf_list[[i]][[j]]$d_test$type, 'character')
       expect_equal(cv_kf_list[[i]][[j]]$d_test$type, 'kfold',
                    info = paste(i_inf, j_inf))
       # summaries seems legit
       expect_named(cv_kf_list[[i]][[j]]$summaries, c('sub', 'ref'),
                    info = paste(i_inf, j_inf))
-      expect_equal(length(cv_kf_list[[i]][[j]]$summaries$sub), nv + 1,
-                   info = paste(i_inf, j_inf))
+      expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nv + 1)
       expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]], c('mu', 'lppd'),
                    ignore.order = TRUE, info = paste(i_inf, j_inf))
       expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
@@ -397,24 +368,23 @@ test_that('providing k_fold works', {
     fit_cv <- cv_varsel(glm_simp, cv_method = 'kfold', k_fold = k_fold)
   })
   expect_false(any(grepl('k_fold not provided', out)))
-  expect_equal(length(fit_cv$vind), nv)
+  expect_length(fit_cv$vind, nv)
                
   # kl seems legit
-  expect_equal(length(fit_cv$kl), nv + 1)
+  expect_length(fit_cv$kl, nv + 1)
                
   # decreasing
   expect_equal(fit_cv$kl, cummin(fit_cv$kl))
                
   # d_test seems legit
-  expect_equal(length(fit_cv$d_test$y), n)
-  expect_equal(length(fit_cv$d_test$weights), n)
-  expect_equal(length(fit_cv$d_test$weights), n)
-  expect_equal(typeof(fit_cv$d_test$type), 'character')
+  expect_length(fit_cv$d_test$y, n)
+  expect_length(fit_cv$d_test$weights, n)
+  expect_type(fit_cv$d_test$type, 'character')
   expect_equal(fit_cv$d_test$type, 'kfold')
                
   # summaries seems legit
   expect_named(fit_cv$summaries, c('sub', 'ref'))
-  expect_equal(length(fit_cv$summaries$sub), nv + 1)
+  expect_length(fit_cv$summaries$sub, nv + 1)
   expect_named(fit_cv$summaries$sub[[1]], c('mu', 'lppd'),
                ignore.order = TRUE)
   expect_named(fit_cv$summaries$ref, c('mu', 'lppd'),
@@ -432,7 +402,6 @@ test_that('providing k_fold works', {
   expect_equal(fit_cv$pctch[,1], 1:nv)
   expect_equal(colnames(fit_cv$pctch),
                c('size', names(fit_cv$vind)))
-              
 })
 
 
