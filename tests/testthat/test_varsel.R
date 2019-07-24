@@ -116,6 +116,11 @@ test_that('object returned by varsel contains the relevant fields', {
   }
 })
 
+test_that('search method is valid', {
+  expect_error(varsel(fit_gauss, method = 'k-fold'),
+               'Unknown search method')
+})
+
 test_that('nv_max has an effect on varsel for gaussian models', {
   vs1 <- varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
   expect_equal(length(vs1$vind), 3)
@@ -359,6 +364,11 @@ test_that('object returned by cv_varsel, kfold contains the relevant fields', {
   }
 })
 
+test_that('cross-validation method is valid', {
+  expect_error(cv_varsel(fit_gauss, cv_method = 'k-fold'),
+               'Unknown cross-validation method')
+})
+
 test_that('K is valid for cv_method=\'kfold\'', {
   expect_error(cv_varsel(glm_simp, cv_method = 'kfold', K = 1),
                'must be at least 2')
@@ -372,10 +382,13 @@ test_that('K is valid for cv_method=\'kfold\'', {
                'a single integer value')
 })
 
-test_that('omitting the \'data\' argument causes a warning', {
+test_that('omitting the \'data\' argument causes an error', {
   out <- SW(fit_nodata <- stan_glm(df_gauss$y~df_gauss$x, QR = T,
                                    chains = chains, seed = seed, iter = iter))
-  expect_error(capture.output(cv_varsel(fit_nodata, cv_method = 'kfold')))
+  expect_error(cv_varsel(fit_nodata, cv_method = 'loo'),
+               'Model was fitted without a \'data\' argument')
+  expect_error(cv_varsel(fit_nodata, cv_method = 'kfold'),
+               'Model was fitted without a \'data\' argument')
 })
 
 test_that('providing k_fold works', {
@@ -447,6 +460,11 @@ test_that('invalid stats are rejected', {
     expect_error(fun(vs_list[[1]][["gauss"]], stat = 'zzz'), 'not recognized')
     expect_error(fun(vs_list[[1]][["gauss"]], stat = 'acc'), 'available only for the binomial family')
   }
+})
+
+test_that('invalid \'baseline\' arguments are rejected', {
+  expect_error(varsel_stats(vs_list[[1]][["gauss"]], baseline = 'zzz'),
+               "Argument 'baseline' must be either 'ref' or 'best'")
 })
 
 test_that('varsel_stats output seems legit', {

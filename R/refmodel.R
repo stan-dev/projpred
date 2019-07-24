@@ -84,6 +84,8 @@ get_refmodel.stanreg <- function(object, ...) {
 	
 	# data, family and the predictor matrix x
 	z <- object$data # inputs of the reference model (this contains also the target or a transformation of it, but that shouldn't hurt)
+	if (is.null(dim(z)))
+		stop('Model was fitted without a \'data\' argument')
 	fam <- kl_helpers(family(object))
 	x <- rstanarm::get_x(object)
 	rownames(x) <- NULL # ignore the rownames
