@@ -95,8 +95,21 @@ test_that("object returned by project contains the relevant fields", {
 })
 
 test_that("project: error when varsel has not been performed for the object", {
-  expect_error(project(1))
-  expect_error(project(fit_gauss))
+  expect_error(project(1, xnew = x),
+               'is not a variable selection object')
+  expect_error(project(fit_gauss, xnew = x),
+               'is not a variable selection object')
+})
+
+test_that("project: nv is checked", {
+  expect_error(project(vs_list[[1]], nv = 1000),
+               'Cannot perform the projection with 1000 variables')
+  expect_error(project(vs_list[[1]], nv = -1),
+               'must contain non-negative values')
+  expect_error(project(vs_list[[1]], nv = 'a'),
+               'must contain non-negative values')
+  expect_error(project(vs_list[[1]], nv = df_gauss),
+               'must contain non-negative values')
 })
 
 test_that("project: setting nv = 3 has an expected effect", {
@@ -125,13 +138,6 @@ test_that("project: setting nv = 3 has an expected effect", {
   }
 })
 
-test_that("project: setting nv>nv_max returns an error", {
-  for(i in 1:length(vs_list)) {
-    i_inf <- names(vs_list)[i]
-    expect_error(project(vs_list[[i]], nv = nv + 1), info = i_inf)
-  }
-})
-
 test_that("project: setting vind to 4 has an expected effect", {
   for(i in 1:length(vs_list)) {
     vind <- 4
@@ -157,13 +163,17 @@ test_that("project: setting vind to 1:2 has an expected effect", {
 })
 
 test_that("project: setting vind to something nonsensical returns an error", {
-  for(i in 1:length(vs_list)) {
-    i_inf <- names(vs_list)[i]
-    vind <- 1:10
-    expect_error(project(vs_list[[i]], vind = vind), info = i_inf)
-    vind <- 17
-    expect_error(project(vs_list[[i]], vind = vind), info = i_inf)
-  }
+  # variable selection objects
+  expect_error(project(vs_list[[1]], vind = 1:10),
+               'vind contains an index larger than')
+  expect_error(project(vs_list[[1]], vind = 17),
+               'vind contains an index larger than')
+
+  # fit objects
+  expect_error(project(fit_list[[1]], vind = 1:10),
+               'vind contains an index larger than')
+  expect_error(project(fit_list[[1]], vind = 17),
+               'vind contains an index larger than')
 })
 
 test_that("project: setting ns to 1 has an expected effect", {
@@ -223,11 +233,14 @@ test_that("project: setting nc to 20 has an expected effect", {
 })
 
 test_that("project: setting ns or nc to too big throws an error", {
-  for(i in 1:length(vs_list)) {
-    i_inf <- names(vs_list)[i]
-    expect_error(project(vs_list[[i]], ns = 400000, nv = nv), info = i_inf)
-    expect_error(project(vs_list[[i]], nc = 400000, nv = nv), info = i_inf)
-  }
+  expect_error(project(vs_list[[1]], ns = 400000, nv = nv),
+               'exceed the number of columns')
+  expect_error(project(vs_list[[1]], nc = 400000, nv = nv),
+               'exceed the number of columns')
+  expect_error(project(fit_list[[1]], vind = 1:nv, ns = 400000),
+               'exceed the number of columns')
+  expect_error(project(fit_list[[1]], vind = 1:nv, nc = 400000),
+               'exceed the number of columns')
 })
 
 test_that("project: specifying intercept has an expected effect", {
@@ -289,5 +302,3 @@ test_that("project: projecting full model onto itself does not change results", 
     }
   }
 })
-
-

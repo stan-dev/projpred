@@ -3,7 +3,8 @@ library(rstanarm)
 
 # tests for proj_linpred and proj_predict
 
-set.seed(1235)
+seed <- 1235
+set.seed(seed)
 n <- 40
 nv <- 5
 x <- matrix(rnorm(n*nv, 0, 1), n, nv)
@@ -12,7 +13,6 @@ dis <- runif(1, 1, 2)
 weights <- sample(1:4, n, replace = T)
 offset <- rnorm(n)
 chains <- 2
-seed <- 1235
 iter <- 500
 source(file.path('helpers', 'SW.R'))
 
@@ -76,8 +76,10 @@ test_that("output of proj_linpred is sensible with project-object as input", {
 })
 
 test_that("proj_linpred: error when varsel has not been performed for the object", {
-  expect_error(proj_linpred(1))
-  expect_error(proj_linpred(fit_gauss))
+  expect_error(proj_linpred(1, xnew = x),
+               'is not a variable selection object')
+  expect_error(proj_linpred(fit_gauss, xnew = x),
+               'is not a variable selection object')
 })
 
 test_that("proj_linpred: specifying ynew has an expected effect", {
@@ -213,8 +215,10 @@ test_that("output of proj_predict is sensible with project-object as input", {
 })
 
 test_that("proj_predict: error when varsel has not been performed for the object", {
-  expect_error(proj_predict(1))
-  expect_error(proj_predict(fit_gauss))
+  expect_error(proj_predict(1, xnew = x),
+               'is not a variable selection object')
+  expect_error(proj_predict(fit_gauss, xnew = x),
+               'is not a variable selection object')
 })
 
 test_that("proj_predict: specifying weightsnew has an expected effect", {
