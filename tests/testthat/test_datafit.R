@@ -50,7 +50,10 @@ predd_list <- lapply(vsd_list, proj_linpred, xnew=x, seed = seed,
 										 offsetnew=offset, weightsnew=weights, nv=3)
 
 
-
+test_that('predict fails for \'datafit\' objects', {
+	expect_error(predict(dref_gauss, df_gauss),
+		     'Cannot make predictions with data reference only')
+})
 
 test_that('output of varsel is sensible with only data provided as reference model', {
 	for(i in seq_along(vsd_list)) {
@@ -88,6 +91,11 @@ test_that("output of cv_varsel is sensible with only data provided as reference 
 		expect_named(cvvsd_list[[i]]$summaries$sub[[1]], c('mu', 'lppd'))
 		expect_named(cvvsd_list[[i]]$summaries$ref, c('mu', 'lppd'))
 	}
+})
+
+test_that('varsel_stats warns if baseline == \'ref\' and deltas == TRUE', {
+  expect_warning(varsel_stats(vsd_list[[1]], baseline = 'ref', deltas = TRUE),
+                 'Cannot compute statistics')
 })
 
 test_that("output of project is sensible with only data provided as reference model", {
