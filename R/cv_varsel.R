@@ -76,7 +76,6 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	cv_method <- args$cv_method
 	K <- args$K
 
-
 	# search options
 	opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
 	
@@ -317,6 +316,12 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 	fam <- refmodel$fam
 	mu <- refmodel$mu
 	dis <- refmodel$dis
+	n <- nrow(mu)
+
+	# by default use all observations
+	nloo <- ifelse(is.null(nloo), n, min(nloo, n))
+	if (nloo < 1)
+		stop('Value of \'nloo\' must be at least 1')
 
 	# training data
 	d_train <- .get_traindata(refmodel)
@@ -341,9 +346,6 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 	psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1,ncol(loglik))) # TODO: should take r_eff:s into account
 	lw <- weights(psisloo)
 	pareto_k <- loo::pareto_k_values(psisloo)
-	n <- length(pareto_k)
-	nloo <- ifelse(is.null(nloo), n, nloo) # by default use all observations
-	nloo <- min(nloo,n)
 
 	# compute loo summaries for the reference model
 	d_test <- d_train

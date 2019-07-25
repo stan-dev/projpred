@@ -275,6 +275,19 @@ test_that('nv_max has an effect on cv_varsel for non-gaussian models', {
   expect_length(vs1$vind, 3)
 })
 
+test_that('nloo works as expected', {
+  expect_error(cv_varsel(fit_gauss,  cv_method = 'loo', nloo = -1),
+               "must be at least 1")
+  SW({
+  expect_equal(cv_varsel(fit_gauss, cv_method = 'loo', nv_max = nv, nloo = NULL),
+               cv_varsel(fit_gauss, cv_method = 'loo', nv_max = nv, nloo = 1000))
+
+  # nloo less than number of observations
+  out <- cv_varsel(fit_gauss,  cv_method = 'loo', nloo = 20, verbose = FALSE)
+  expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
+  })
+})
+
 test_that('Having something else than stan_glm as the fit throws an error', {
 	expect_error(cv_varsel(fit_glmer, verbose = FALSE), regexp = 'not yet supported')
 	expect_error(cv_varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
