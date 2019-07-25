@@ -3,7 +3,8 @@ library(rstanarm)
 
 # tests for project
 
-set.seed(1235)
+seed <- 1235
+set.seed(seed)
 n <- 40
 nv <- 5
 x <- matrix(rnorm(n*nv, 0, 1), n, nv)
@@ -12,10 +13,8 @@ dis <- runif(1, 1, 2)
 weights <- sample(1:4, n, replace = T)
 offset <- rnorm(n)
 chains <- 2
-seed <- 1235
 iter <- 500
 source(file.path('helpers', 'SW.R'))
-
 
 f_gauss <- gaussian()
 df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = x)
@@ -24,28 +23,19 @@ df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x)
 f_poiss <- poisson()
 df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
 
-SW(
+SW({
 fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
                       weights = weights, offset = offset,
                       chains = chains, seed = seed, iter = iter)
-)
-SW(
 fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
                       data = df_binom, weights = weights, offset = offset,
                       chains = chains, seed = seed, iter = iter)
-)
-SW(
 fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
                       weights = weights, offset = offset,
                       chains = chains, seed = seed, iter = iter)
-)
+})
 fit_list <- list(fit_gauss, fit_binom, fit_poiss)
 vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
-
-
-
-
-
 
 
 test_that("project: relaxing has the expected effect", {
@@ -67,20 +57,22 @@ test_that("object returned by project contains the relevant fields", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     p <- project(vs_list[[i]], nv=0:nv)
-    expect_equal(length(p), nv + 1, info = i_inf)
+    expect_type(p, "list")
+    expect_length(p, nv + 1)
 
     for(j in 1:length(p)) {
+      expect_s3_class(p[[j]], "projection")
       expect_named(p[[j]], c('kl', 'weights', 'dis', 'alpha', 'beta', 'vind',
                              'p_type', 'intercept', 'family_kl'),
                    ignore.order = T, info = i_inf)
       # number of draws should equal to the number of draw weights
       ns <- length(p[[j]]$weights)
-      expect_equal(length(p[[j]]$alpha), ns, info = i_inf)
-      expect_equal(length(p[[j]]$dis), ns, info = i_inf)
+      expect_length(p[[j]]$alpha, ns)
+      expect_length(p[[j]]$dis, ns)
       expect_equal(ncol(p[[j]]$beta), ns, info = i_inf)
       # j:th element should have j-1 variables
       expect_equal(nrow(p[[j]]$beta), j - 1, info = i_inf)
-      expect_equal(length(p[[j]]$vind), j - 1, info = i_inf)
+      expect_length(p[[j]]$vind, j - 1)
       # family kl
       expect_equal(p[[j]]$family_kl, vs_list[[i]]$family_kl,
                    info = i_inf)
@@ -112,7 +104,19 @@ test_that("project: nv is checked", {
                'must contain non-negative values')
 })
 
-test_that("project: setting nv = 3 has an expected effect", {
+test_that("project: setting nv = NULL has the expected effect", {
+  for(i in 1:length(vs_list)) {
+    i_inf <- names(vs_list)[i]
+    p <- project(vs_list[[i]], nv = NULL)
+    # if only one model size is projected, do not return a list of length one
+    expect_true(length(p) >= 1, info = i_inf)
+    # beta has the correct number of rows
+    expect_equal(nrow(p$beta), vs_list[[i]]$ssize, info = i_inf)
+    expect_length(p$vind, vs_list[[i]]$ssize)
+  }
+})
+
+test_that("project: setting nv = 0 has an expected effect", {
   for(i in 1:length(vs_list)) {
     i_inf <- names(vs_list)[i]
     nv <- 0
@@ -121,7 +125,7 @@ test_that("project: setting nv = 3 has an expected effect", {
     expect_true(length(p) >= 1, info = i_inf)
     # beta has the correct number of rows
     expect_equal(nrow(p$beta), nv, info = i_inf)
-    expect_equal(length(p$vind), nv, info = i_inf)
+    expect_length(p$vind, nv)
   }
 })
 
@@ -134,7 +138,7 @@ test_that("project: setting nv = 3 has an expected effect", {
     expect_true(length(p) >= 1, info = i_inf)
     # beta has the correct number of rows
     expect_equal(nrow(p$beta), nv, info = i_inf)
-    expect_equal(length(p$vind), nv, info = i_inf)
+    expect_length(p$vind, nv)
   }
 })
 
@@ -145,7 +149,7 @@ test_that("project: setting vind to 4 has an expected effect", {
     expect_equivalent(p$vind, vind)
     expect_equal(nrow(p$beta), 1)
     exp_ind <- which(vs_list[[i]]$vind == vind)
-    expect_equal(names(p$vind), names(vs_list[[i]]$vind)[exp_ind])
+    expect_named(p$vind, names(vs_list[[i]]$vind)[exp_ind])
   }
 })
 
@@ -158,7 +162,7 @@ test_that("project: setting vind to 1:2 has an expected effect", {
     expect_equivalent(p$vind, vind)
     expect_equal(nrow(p$beta), length(vind), info = i_inf)
     exp_ind <- sapply(vind, function(x) which(vs_list[[i]]$vind == x))
-    expect_equal(names(p$vind), names(vs_list[[i]]$vind)[exp_ind])
+    expect_named(p$vind, names(vs_list[[i]]$vind)[exp_ind])
   }
 })
 
@@ -182,9 +186,9 @@ test_that("project: setting ns to 1 has an expected effect", {
     ns <- 1
     p <- project(vs_list[[i]], ns = ns, nv = nv)
     # expected number of draws
-    expect_equal(length(p$weights), ns, info = i_inf)
-    expect_equal(length(p$alpha), ns, info = i_inf)
-    expect_equal(length(p$dis), ns, info = i_inf)
+    expect_length(p$weights, ns)
+    expect_length(p$alpha, ns)
+    expect_length(p$dis, ns)
     expect_equal(ncol(p$beta), ns, info = i_inf)
     expect_equal(p$weights, 1, info = i_inf)
   }
@@ -196,9 +200,9 @@ test_that("project: setting ns to 40 has an expected effect", {
     ns <- 40
     p <- project(vs_list[[i]], ns = ns, nv = nv)
     # expected number of draws
-    expect_equal(length(p$weights), ns, info = i_inf)
-    expect_equal(length(p$alpha), ns, info = i_inf)
-    expect_equal(length(p$dis), ns, info = i_inf)
+    expect_length(p$weights, ns)
+    expect_length(p$alpha, ns)
+    expect_length(p$dis, ns)
     expect_equal(ncol(p$beta), ns, info = i_inf)
 
     # no clustering, so draw weights should be identical
@@ -212,9 +216,9 @@ test_that("project: setting nc to 1 has an expected effect", {
     nc <- 1
     p <- project(vs_list[[i]], nc = nc, nv = nv)
     # expected number of draws
-    expect_equal(length(p$weights), nc, info = i_inf)
-    expect_equal(length(p$alpha), nc, info = i_inf)
-    expect_equal(length(p$dis), nc, info = i_inf)
+    expect_length(p$weights, nc)
+    expect_length(p$alpha, nc)
+    expect_length(p$dis, nc)
     expect_equal(ncol(p$beta), nc, info = i_inf)
   }
 })
@@ -225,9 +229,9 @@ test_that("project: setting nc to 20 has an expected effect", {
     nc <- 20
     p <- project(vs_list[[i]], nc = nc, nv = nv)
     # expected number of draws
-    expect_equal(length(p$weights), nc, info = i_inf)
-    expect_equal(length(p$alpha), nc, info = i_inf)
-    expect_equal(length(p$dis), nc, info = i_inf)
+    expect_length(p$weights, nc)
+    expect_length(p$alpha, nc)
+    expect_length(p$dis, nc)
     expect_equal(ncol(p$beta), nc, info = i_inf)
   }
 })
@@ -301,4 +305,13 @@ test_that("project: projecting full model onto itself does not change results", 
       expect_lt(ddis, tol)
     }
   }
+})
+
+test_that("project: works as expected from a cvsel object", {
+  SW({
+  cvs <- cv_varsel(fit_gauss, nv_max = 3, verbose = FALSE)
+  p <- project(cvs, nv=3)
+  })
+  expect_equal(nrow(p$beta), 3)
+  expect_length(p$vind, 3)
 })

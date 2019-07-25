@@ -121,6 +121,16 @@ test_that('nv_max has an effect on varsel for non-gaussian models', {
   expect_length(vs1$vind, 3)
 })
 
+test_that('specifying the number of clusters has an expected effect', {
+  vs <- varsel(fit_binom, method = 'forward', nv_max = 3, nc = 10)
+  expect_length(vs$vind, 3)
+})
+
+test_that('specifying d_test has the expected effect', {
+  vs <- varsel(fit_gauss, d_test = vs_list[[1]][[1]]$refmodel, nv_max = 3)
+  expect_length(vs$vind, 3)
+})
+
 test_that('Having something else than stan_glm as the fit throws an error', {
   expect_error(varsel(fit_glmer, verbose = FALSE), regexp = 'not yet supported')
   expect_error(varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
@@ -260,7 +270,6 @@ test_that('object returned by cv_varsel contains the relevant fields', {
   }
 })
 
-
 test_that('nv_max has an effect on cv_varsel for gaussian models', {
   suppressWarnings(
     vs1 <- cv_varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
@@ -286,6 +295,14 @@ test_that('nloo works as expected', {
   out <- cv_varsel(fit_gauss,  cv_method = 'loo', nloo = 20, verbose = FALSE)
   expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
   })
+})
+
+test_that('the validate_search option works as expected', {
+  SW({
+    vs1 <- cv_varsel(fit_gauss, validate_search = FALSE)
+    vs2 <- cv_varsel(fit_gauss, validate_search = TRUE)
+  })
+  expect_true(all(varsel_stats(vs1)$elpd >= varsel_stats(vs2)$elpd))
 })
 
 test_that('Having something else than stan_glm as the fit throws an error', {
