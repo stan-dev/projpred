@@ -188,8 +188,6 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs=NULL, lppd.bs=NULL,
     
   } else if (stat == 'acc' || stat == 'pctcorr') {
     
-    if (family$family != 'binomial')
-      stop('Statistic ', stat, ' available only for binomial family.')
     y <- d_test$y
     if (!is.null(mu.bs)) {
       value <- mean( weights*((round(mu)==y) - (round(mu.bs)==y)), na.rm=T )
@@ -201,8 +199,6 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs=NULL, lppd.bs=NULL,
     
   } else if (stat == 'auc') {
 
-    if (family$family != 'binomial')
-      stop('Statistic ', stat, ' available only for binomial family.')
     y <- d_test$y
     auc.data <- cbind(y, mu, weights)
     if (!is.null(mu.bs)) {
@@ -218,9 +214,6 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs=NULL, lppd.bs=NULL,
       value.bootstrap <- bootstrap(auc.data, auc, b=B, seed=seed)
       value.se <- sd(value.bootstrap, na.rm=TRUE)
     }
-
-  } else {
-    stop('Unknown statistic: ', stat)
   }
   
   lq <- qnorm(alpha/2, mean=value, sd=value.se)

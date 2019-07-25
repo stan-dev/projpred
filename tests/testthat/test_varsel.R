@@ -441,6 +441,8 @@ test_that('invalid stats are rejected', {
     expect_error(fun(vs_list[[1]][["gauss"]], stat = NA), 'not recognized')
     expect_error(fun(vs_list[[1]][["gauss"]], stat = 'zzz'), 'not recognized')
     expect_error(fun(vs_list[[1]][["gauss"]], stat = 'acc'), 'available only for the binomial family')
+    expect_error(fun(vs_list[[1]][["gauss"]], stat = 'auc'),
+                 'available only for the binomial family')
   }
 })
 
