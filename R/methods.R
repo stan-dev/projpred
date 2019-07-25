@@ -213,6 +213,7 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' @param object The object returned by \link[=varsel]{varsel} or
 #' \link[=cv_varsel]{cv_varsel}.
 #' @param nv_max Maximum submodel size for which the statistics are calculated.
+#' For \code{varsel_plot} it must be at least 1.
 #' @param stats One or several strings determining which statistics to calculate. Available
 #' statistics are: 
 #' \itemize{
@@ -256,23 +257,9 @@ NULL
 varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.32, baseline=NULL, ...) {
 
   .validate_vsel_object_stats(object, stats)
-  if (is.null(baseline)) {
-    if ('datafit' %in% class(object$refmodel))
-      baseline <- 'best'
-    else
-      baseline <- 'ref'
-  } else {
-    if (!(baseline %in% c('ref','best')))
-      stop('Argument \'baseline\' must be either \'ref\' or \'best\'.')
-    if (baseline == 'ref' && deltas==T && 'datafit' %in% class(object$refmodel)) {
-      # no reference model (or the results missing for some other reason),
-      # so cannot compute differences between the reference model and submodels
-      deltas <- F
-      warning('Cannot use deltas = TRUE and baseline = \'ref\' when there is no reference model; setting deltas = FALSE.')
-    }
-  }
-	
-	# compute all the statistics and fetch only those that were asked
+  baseline <- .validate_baseline(object$refmode, baseline, deltas)
+
+  # compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
   tab <- rbind(.tabulate_stats(object, stats, alpha = alpha, nfeat_baseline=nfeat_baseline),
                .tabulate_stats(object, stats, alpha = alpha))
@@ -289,6 +276,12 @@ varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha
 	
 	if(is.null(nv_max))
 	  nv_max <- max(stats_sub$size)
+        else {
+	  # don't exceed the maximum submodel size
+	  nv_max <- min(nv_max, max(stats_sub$size))
+	  if (nv_max < 1)
+	    stop('nv_max must be at least 1')
+	}
 	ylab <- if(deltas) 'Difference to the baseline' else 'Value'
 	
 	# make sure that breaks on the x-axis are integers
@@ -332,21 +325,8 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
                          deltas = F, alpha=0.32, baseline=NULL, ...) {
 
   .validate_vsel_object_stats(object, stats)
-  if (is.null(baseline)) {
-    if ('datafit' %in% class(object$refmodel))
-      baseline <- 'best'
-    else
-      baseline <- 'ref'
-  } else {
-    if (!(baseline %in% c('ref','best')))
-      stop('Argument \'baseline\' must be either \'ref\' or \'best\'.')
-    if (baseline == 'ref' && deltas==T && 'datafit' %in% class(object$refmodel)) {
-      # no reference model (or the results missing for some other reason),
-      # so cannot compute differences between the reference model and submodels
-      warning('Cannot compute statistics for deltas = TRUE and baseline = \'ref\' when there is no reference model.')
-    }
-  }
-  
+  baseline <- .validate_baseline(object$refmode, baseline, deltas)
+
   # fetch statistics
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])

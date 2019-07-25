@@ -93,9 +93,9 @@ test_that("output of cv_varsel is sensible with only data provided as reference 
 	}
 })
 
-test_that('varsel_stats warns if baseline == \'ref\' and deltas == TRUE', {
-  expect_warning(varsel_stats(vsd_list[[1]], baseline = 'ref', deltas = TRUE),
-                 'Cannot compute statistics')
+test_that('varsel_stats stops if baseline = \'ref\' and deltas = TRUE', {
+  expect_error(varsel_stats(vsd_list[[1]], baseline = 'ref', deltas = TRUE),
+               'Cannot use deltas = TRUE and baseline = \'ref\' when there is no reference model')
 })
 
 test_that("output of project is sensible with only data provided as reference model", {

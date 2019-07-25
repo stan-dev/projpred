@@ -488,6 +488,30 @@ test_that('varsel_stats works with reference models', {
 
 
 # -------------------------------------------------------------
+context('varsel_plots')
+
+test_that('plotting works', {
+  expect_s3_class(varsel_plot(vs_list[[1]][[1]]), 'ggplot')
+  expect_visible(varsel_plot(vs_list[[1]][[1]], nv_max = 3))
+})
+
+test_that('invalid \'baseline\' arguments are rejected', {
+  expect_error(varsel_plot(vs_list[[1]][[1]], baseline = 'zzz'),
+               "Argument 'baseline' must be either 'ref' or 'best'")
+})
+
+test_that('the value of nv_max is valid', {
+  expect_error(varsel_plot(vs_list[[1]][[1]], nv_max = 0),
+               'nv_max must be at least 1')
+})
+
+test_that('nv_max is capped to the largest model size', {
+  expect_equal(varsel_plot(vs_list[[1]][[1]]),
+               varsel_plot(vs_list[[1]][[1]], nv_max = 1000))
+})
+
+
+# -------------------------------------------------------------
 context('suggest_size')
 
 test_that('suggest_size checks the length of stat', {
