@@ -176,12 +176,17 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
     else 
       weights <- rep(1, length(y))
     if (fam$family == 'binomial') {
-      if (is.factor(y))
+      if (is.factor(y)) {
+        if (nlevels(y) > 2)
+          stop('y cannot contain more than two classes if specified as factor.')
         y <- as.vector(y, mode='integer') - 1 # zero-one vector
-      else {
+      } else {
         if (any(y < 0 | y > 1))
           stop("y values must be 0 <= y <= 1 for the binomial model.")
       }
+    } else {
+      if (is.factor(y))
+        stop('y cannot be a factor for models other than the binomial model.')
     }
   } else if (NCOL(y) == 2) {
     weights <- rowSums(y)

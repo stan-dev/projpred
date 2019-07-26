@@ -70,6 +70,9 @@ NULL
 proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
                         fun, ...) {
 
+  if (!inherits(xnew, c('data.frame', 'matrix')))
+    stop('xnew must be a data.frame or a matrix. See ?proj-pred.')
+
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
 
@@ -86,8 +89,7 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
   } else {
     # proj is not a projection object
     if(any(sapply(proj, function(x) !('family_kl' %in% names(x)))))
-      stop(paste('proj_linpred only works with objects returned by',
-                 ' varsel, cv_varsel or project'))
+      stop('list contains objects not created by varsel, cv_varsel or project')
   }
 
   projected_sizes <- sapply(proj, function(x) NROW(x$beta))
@@ -108,12 +110,9 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
     xnew <- .df_to_model_mat(xnew, terms)
   }
 
-  if (!is.matrix(xnew))
-    stop('xnew not provided in the correct format. See ?proj-pred.')
-
   vind <- list(...)$vind
   if (!is.null(vind) && NCOL(xnew) != length(vind))
-    stop(paste('The number of columns in xnew does not match with the given',
+    stop(paste('The number of columns in xnew does not match the',
                'number of variable indices (vind).'))
 
   # set random seed but ensure the old RNG state is restored on exit
@@ -129,6 +128,9 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
       xtemp <- xnew
     } else {
       # fetch the right columns from the feature matrix
+      if (length(proj$vind) > 0 && max(proj$vind) > ncol(xnew))
+        stop(paste('xnew has', ncol(xnew), 'columns, but vind expects',
+                   max(proj$vind), 'columns.'))
       xtemp <- xnew[, proj$vind, drop = F]
     }
     mu <- proj$family_kl$mu_fun(xtemp, proj$alpha, proj$beta, offsetnew)
