@@ -6,12 +6,14 @@
 \alias{print.cvsel}
 \title{Print methods for vsel/cvsel objects}
 \usage{
-\method{print}{vsel}(x, ...)
+\method{print}{vsel}(x, digits = 2, ...)
 
-\method{print}{cvsel}(x, ...)
+\method{print}{cvsel}(x, digits = 2, ...)
 }
 \arguments{
 \item{x}{An object of class vsel/cvsel.}
+
+\item{digits}{Number of decimal places to be reported (2 by default).}
 
 \item{...}{Further arguments passed to \code{\link{varsel_stats}}.}
 }
