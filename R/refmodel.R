@@ -1,4 +1,3 @@
-
 #' Get reference model structure
 #'
 #' Generic function that can be used to create and fetch the reference model structure
@@ -84,6 +83,8 @@ get_refmodel.stanreg <- function(object, ...) {
 	
 	# data, family and the predictor matrix x
 	z <- object$data # inputs of the reference model (this contains also the target or a transformation of it, but that shouldn't hurt)
+	if (is.null(dim(z)))
+		stop('Model was fitted without a \'data\' argument')
 	fam <- kl_helpers(family(object))
 	x <- rstanarm::get_x(object)
 	rownames(x) <- NULL # ignore the rownames
@@ -439,20 +440,19 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
 
 #' @export
 predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
-                             weightsnew = NULL, type = 'response', ...) {
+                             weightsnew = NULL, type = c('response', 'link'), ...) {
 	
 	if ('datafit' %in% class(object))
 		stop('Cannot make predictions with data reference only.')
-	
+	type <- match.arg(type)
+
 	if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
-	if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
-	
 	mu <- object$predfun(znew, offsetnew)
 	
 	if (is.null(ynew)) {
 		
 		if (type == 'link')
-			pred <- object$family$linkfun(mu)
+			pred <- object$fam$linkfun(mu)
 		else
 			pred <- mu
 		
@@ -463,33 +463,14 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
 		return(pred)
 		
 	} else {
-		
+		if (!is.numeric(ynew))
+			stop('ynew must be a numerical vector')
+
 		# evaluate the log predictive density at the given ynew values
+		if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
 		loglik <- object$fam$ll_fun(mu, object$dis, ynew, weightsnew)
 		S <- ncol(loglik)
 		lpd <- apply(loglik, 1, log_sum_exp) - log(S)
 		return(lpd)
 	}
-	
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
