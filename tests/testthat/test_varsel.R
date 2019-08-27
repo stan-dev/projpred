@@ -184,10 +184,16 @@ SW({
 
   # without weights/offset because kfold does not support them currently
   # test only with one family to make the tests faster
+
+  # the chains, seed and iter arguments to the rstanarm functions here must be
+  # specified directly rather than through a variable (eg, seed = 1235 instead
+  # of seed = seed), otherwise when the calls are evaluated in refmodel$cvfun()
+  # they may not be found in the evaluation frame of the calling function,
+  # causing the test to fail
   glm_simp <- stan_glm(y ~ x, family = poisson(), data = df_poiss, QR = T,
-                       chains = 2, seed = seed, iter = 400)
+                       chains = 2, seed = 1235, iter = 400)
   lm_simp <- stan_lm(y ~ x, data = df_gauss, prior = R2(0.6),
-                     chains = 2, seed = seed, iter = 400)
+                     chains = 2, seed = 1235, iter = 400)
   simp_list = list(glm = glm_simp, lm = lm_simp)
 
   cv_kf_list <- list(l1 = lapply(simp_list, cvsf, 'L1', 'kfold', K = 2),
