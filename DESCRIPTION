@@ -1,13 +1,14 @@
 Package: projpred
 Title: Projection Predictive Feature Selection
-Version: 1.1.3
-Authors@R: c(person("Juho", "Piironen", role = c("cre", "aut"), email = "juho@cai.fi"),
+Version: 1.1.4
+Authors@R: c(person("Juho", "Piironen", role = c("cre", "aut"), email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
              person("Aki", "Vehtari", role = "aut"),
              person("Jonah", "Gabry", role = "ctb"),
-             person("Paul-Christian", "Bürkner", role = "ctb"))
+             person("Paul-Christian", "Bürkner", role = "ctb"),
+			 person("Marco", "Colombo", role = "ctb"))
 Maintainer:
-    Juho Piironen <juho@cai.fi>
+    Juho Piironen <juho.t.piironen@gmail.com>
 Description:
     Performs projection predictive feature selection for generalized linear models
     (see, Piironen, Paasiniemi and Vehtari, 2018, <arXiv:1810.02406>).

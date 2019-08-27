@@ -2,6 +2,10 @@
 
 # News
 
+## projpred 1.1.4
+
+Better validation of function arguments.
+
 ## projpred 1.1.3
 
 Added print methods for vsel and cvsel objects. Added AUC statistics for binomial family. A few additional minor patches.
