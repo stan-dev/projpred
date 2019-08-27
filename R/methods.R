@@ -389,24 +389,25 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 #' @name print-vsel
 #'
 #' @param x An object of class vsel/cvsel.
+#' @param digits Number of decimal places to be reported (2 by default).
 #' @param ... Further arguments passed to \code{\link{varsel_stats}}.
 #'
 #' @return Returns invisibly the data frame produced by \code{\link{varsel_stats}}.
 #'
 #' @export
 #' @method print vsel
-print.vsel <- function(x, ...) {
-  stats <- varsel_stats(x, ...)
-  print(stats)
+print.vsel <- function(x, digits=2, ...) {
+  stats <- round(varsel_stats(x, ...), digits)
+  print(stats[, -match("vind", colnames(stats))])
   invisible(stats)
 }
 
 #' @rdname print-vsel
 #' @export
 #' @method print cvsel
-print.cvsel <- function(x, ...) {
-  stats <- varsel_stats(x, ...)
-  print(stats)
+print.cvsel <- function(x, digits=2, ...) {
+  stats <- round(varsel_stats(x, ...), digits)
+  print(stats[, -match("vind", colnames(stats))])
   invisible(stats)
 }
 

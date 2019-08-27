@@ -482,6 +482,29 @@ test_that('varsel_stats works with reference models', {
   }
 })
 
+test_that('print works as expected', {
+
+  # default rounding
+  expect_output(out <- print(vs_list[[1]][[1]]))
+  expect_equal(out$elpd, round(out$elpd, 2))
+  expect_output(out <- print(cvs_list[[1]][[1]]))
+  expect_equal(out$elpd, round(out$elpd, 2))
+
+  # rounding to 4 decimal places
+  expect_output(out <- print(vs_list[[1]][[1]], digits = 4))
+  expect_equal(out$elpd, round(out$elpd, 4))
+  expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
+  expect_equal(out$elpd, round(out$elpd, 4))
+
+  # options to varsel_stats
+  expect_output(out <- print(vs_list[[1]][[1]], nv_max = 3, stats = 'mse'))
+  expect_equal(nrow(out) - 1, 3)
+  expect_named(out, c('size', 'vind', 'mse', 'mse.se'))
+
+  expect_output(out <- print(cvs_list[[1]][[1]], nv_max = 3, stats = 'mse'))
+  expect_equal(nrow(out) - 1, 3)
+  expect_named(out, c('size', 'vind', 'mse', 'mse.se', 'pctch'))
+})
 
 
 # -------------------------------------------------------------
