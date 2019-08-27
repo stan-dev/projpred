@@ -115,6 +115,17 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 `%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
 
 
+.is.wholenumber <- function(x) abs(x - round(x)) < .Machine$double.eps^0.5
+
+.validate_num_folds <- function(k, n) {
+  if (!is.numeric(k) || length(k) != 1 || !.is.wholenumber(k))
+    stop('Number of folds must be a single integer value.')
+  if (k < 2)
+    stop('Number of folds must be at least 2.')
+  if (k > n)
+    stop('Number of folds cannot exceed n.')
+}
+
 .validate_vsel_object_stats <- function(object, stats) {
 
   if (!inherits(object, c('vsel', 'cvsel')))
@@ -134,6 +145,23 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   }
 }
 
+.validate_baseline <- function(refmodel, baseline, deltas) {
+  if (is.null(baseline)) {
+    if (inherits(refmodel, 'datafit'))
+      baseline <- 'best'
+    else
+      baseline <- 'ref'
+  } else {
+    if (!(baseline %in% c('ref', 'best')))
+      stop('Argument \'baseline\' must be either \'ref\' or \'best\'.')
+    if (baseline == 'ref' && deltas == TRUE && inherits(refmodel, 'datafit')) {
+      # no reference model (or the results missing for some other reason),
+      # so cannot compute differences between the reference model and submodels
+      stop('Cannot use deltas = TRUE and baseline = \'ref\' when there is no reference model.')
+    }
+  }
+  return(baseline)
+}
 
 .get_standard_y <- function(y, weights, fam) {
   # return y and the corresponding observation weights into the 'standard' form:
@@ -148,12 +176,17 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
     else 
       weights <- rep(1, length(y))
     if (fam$family == 'binomial') {
-      if (is.factor(y))
+      if (is.factor(y)) {
+        if (nlevels(y) > 2)
+          stop('y cannot contain more than two classes if specified as factor.')
         y <- as.vector(y, mode='integer') - 1 # zero-one vector
-      else {
+      } else {
         if (any(y < 0 | y > 1))
           stop("y values must be 0 <= y <= 1 for the binomial model.")
       }
+    } else {
+      if (is.factor(y))
+        stop('y cannot be a factor for models other than the binomial model.')
     }
   } else if (NCOL(y) == 2) {
     weights <- rowSums(y)

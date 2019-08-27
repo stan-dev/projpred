@@ -58,12 +58,12 @@
 project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc = NULL, 
                     intercept = NULL, seed = NULL, regul=1e-4, ...) {
 
-	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) && is.null(vind) )
-		stop(paste('The given object is not a variable selection -object.',
-							 'Run the variable selection first, or provide the variable indices (vind).'))
+  if (!inherits(object, c('vsel', 'cvsel')) && is.null(vind))
+    stop(paste('The object is not a variable selection object.',
+               'Run variable selection first, or provide the variable indices (vind).'))
 
-	refmodel <- get_refmodel(object)
-  
+  refmodel <- get_refmodel(object)
+
   if (is.null(relax)) 
   	# use non-relaxed solution for datafits by default
     relax <- ifelse('datafit' %in% class(get_refmodel(object)), FALSE, TRUE)
@@ -72,6 +72,8 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
     relax <- TRUE
 
   if (!is.null(vind)) {
+    if (max(vind) > ncol(refmodel$x))
+      stop('vind contains an index larger than ', ncol(refmodel$x), '.')
     nv <- length(vind) # if vind is given, nv is ignored (project only onto the given submodel)
   } else {
     vind <- object$vind # by default take the variable ordering from the selection
@@ -85,17 +87,20 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
       nv <- object$ssize # by default, project onto the suggested model size
     else
       stop('No suggested model size found, please specify nv or vind')
+  } else {
+    if (!is.numeric(nv) || any(nv < 0))
+      stop('nv must contain non-negative values.')
+    if (max(nv) > length(vind)) {
+      stop(paste('Cannot perform the projection with', max(nv), 'variables,',
+                 'because variable selection was run only up to', length(vind),
+                 'variables.'))
+    }
   }
 
 	if (is.null(intercept))
 	  intercept <- refmodel$intercept
 
 	family_kl <- refmodel$fam
-
-	if (max(nv) > length(vind))
-	  stop(paste('Cannot perform the projection with', max(nv), 'variables,',
-	             'because the variable selection has been run only up to',
-	             length(object$vind), 'variables.'))
 
 	# training data
 	d_train <- .get_traindata(refmodel)
