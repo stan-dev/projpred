@@ -16,7 +16,7 @@ Description:
     reference models can also be used. See the package vignette for more 
     information and examples.
 Depends:
-    R (>= 3.1.2)
+    R (>= 3.5.0)
 Imports:
     loo (>= 2.0.0), 
     ggplot2, 
