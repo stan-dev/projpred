@@ -219,7 +219,7 @@ get_refmodel.brmsfit <- function(object, ...) {
     )
     fits <- cvres$fits[, 'fit']
     lapply(fits, function(fit) {
-      dis <- as.data.frame(fit, pars = "^sigma$")
+      dis <- as.data.frame(fit, pars = "^sigma$")$sigma
       predfun <- function(zt) {
         t(brms::posterior_linpred(
           fit, newdata = data.frame(zt), 
