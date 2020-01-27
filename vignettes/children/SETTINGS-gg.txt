@@ -1,7 +1,0 @@
-```{r, SETTINGS-gg, include=FALSE}
-library(ggplot2)
-thm_els <- theme(legend.position = "none",
-                 legend.background = element_rect(fill = "gray"),
-                 legend.text = element_text(size = 7))
-                 theme_set(theme_classic() %+replace% thm_els)
-```
