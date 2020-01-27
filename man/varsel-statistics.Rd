@@ -6,11 +6,26 @@
 \alias{varsel_stats}
 \title{Plot or fetch summary statistics related to variable selection}
 \usage{
-varsel_plot(object, nv_max = NULL, stats = "elpd", deltas = F,
-  alpha = 0.32, baseline = NULL, ...)
+varsel_plot(
+  object,
+  nv_max = NULL,
+  stats = "elpd",
+  deltas = F,
+  alpha = 0.32,
+  baseline = NULL,
+  ...
+)
 
-varsel_stats(object, nv_max = NULL, stats = "elpd", type = c("mean",
-  "se"), deltas = F, alpha = 0.32, baseline = NULL, ...)
+varsel_stats(
+  object,
+  nv_max = NULL,
+  stats = "elpd",
+  type = c("mean", "se"),
+  deltas = F,
+  alpha = 0.32,
+  baseline = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or

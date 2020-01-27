@@ -7,12 +7,28 @@
 \title{Extract draws of the linear predictor and draw from the predictive
 distribution of the projected submodel}
 \usage{
-proj_linpred(object, xnew, ynew = NULL, offsetnew = NULL,
-  weightsnew = NULL, nv = NULL, transform = FALSE,
-  integrated = FALSE, ...)
+proj_linpred(
+  object,
+  xnew,
+  ynew = NULL,
+  offsetnew = NULL,
+  weightsnew = NULL,
+  nv = NULL,
+  transform = FALSE,
+  integrated = FALSE,
+  ...
+)
 
-proj_predict(object, xnew, offsetnew = NULL, weightsnew = NULL,
-  nv = NULL, draws = NULL, seed_samp = NULL, ...)
+proj_predict(
+  object,
+  xnew,
+  offsetnew = NULL,
+  weightsnew = NULL,
+  nv = NULL,
+  draws = NULL,
+  seed_samp = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}

@@ -4,8 +4,15 @@
 \alias{predict.refmodel}
 \title{Predict method for reference model objects}
 \usage{
-\method{predict}{refmodel}(object, znew, ynew = NULL, offsetnew = NULL,
-  weightsnew = NULL, type = c("response", "link"), ...)
+\method{predict}{refmodel}(
+  object,
+  znew,
+  ynew = NULL,
+  offsetnew = NULL,
+  weightsnew = NULL,
+  type = c("response", "link"),
+  ...
+)
 }
 \arguments{
 \item{object}{The object of class \code{refmodel}.}

@@ -4,8 +4,16 @@
 \alias{suggest_size}
 \title{Suggest model size}
 \usage{
-suggest_size(object, stat = "elpd", alpha = 0.32, pct = 0,
-  type = "upper", baseline = NULL, warnings = TRUE, ...)
+suggest_size(
+  object,
+  stat = "elpd",
+  alpha = 0.32,
+  pct = 0,
+  type = "upper",
+  baseline = NULL,
+  warnings = TRUE,
+  ...
+)
 }
 \arguments{
 \item{object}{The object returned by \link[=varsel]{varsel} or

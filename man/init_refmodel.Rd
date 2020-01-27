@@ -4,9 +4,21 @@
 \alias{init_refmodel}
 \title{Custom reference model initialization}
 \usage{
-init_refmodel(z, y, family, x = NULL, predfun = NULL, dis = NULL,
-  offset = NULL, wobs = NULL, wsample = NULL, intercept = TRUE,
-  cvfun = NULL, cvfits = NULL, ...)
+init_refmodel(
+  z,
+  y,
+  family,
+  x = NULL,
+  predfun = NULL,
+  dis = NULL,
+  offset = NULL,
+  wobs = NULL,
+  wsample = NULL,
+  intercept = TRUE,
+  cvfun = NULL,
+  cvfits = NULL,
+  ...
+)
 }
 \arguments{
 \item{z}{Predictor matrix of dimension \code{n}-by-\code{dz} containing the training

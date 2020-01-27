@@ -4,11 +4,25 @@
 \alias{varsel}
 \title{Variable selection for generalized linear models}
 \usage{
-varsel(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
-  nspred = NULL, ncpred = NULL, relax = NULL, nv_max = NULL,
-  intercept = NULL, penalty = NULL, verbose = F,
-  lambda_min_ratio = 1e-05, nlambda = 150, thresh = 1e-06,
-  regul = 1e-04, ...)
+varsel(
+  object,
+  d_test = NULL,
+  method = NULL,
+  ns = NULL,
+  nc = NULL,
+  nspred = NULL,
+  ncpred = NULL,
+  relax = NULL,
+  nv_max = NULL,
+  intercept = NULL,
+  penalty = NULL,
+  verbose = F,
+  lambda_min_ratio = 1e-05,
+  nlambda = 150,
+  thresh = 1e-06,
+  regul = 1e-04,
+  ...
+)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}

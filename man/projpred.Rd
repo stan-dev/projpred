@@ -3,7 +3,6 @@
 \docType{package}
 \name{projpred}
 \alias{projpred}
-\alias{projpred-package}
 \title{Projection predictive feature selection}
 \description{
 Description
