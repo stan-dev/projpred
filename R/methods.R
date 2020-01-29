@@ -116,8 +116,10 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
                'number of variable indices (vind).'))
 
   # set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- .Random.seed
-  on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (exists('.Random.seed')) {
+    rng_state_old <- .Random.seed
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
   set.seed(seed_samp)
 
   preds <- lapply(projs, function(proj) {
@@ -556,8 +558,10 @@ cvfolds <- function(n, k, seed=NULL) {
   .validate_num_folds(k, n)
   
   # set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- .Random.seed
-  on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (exists('.Random.seed')) {
+    rng_state_old <- .Random.seed
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
   set.seed(seed)
   
   # create and shuffle the indices
@@ -576,8 +580,10 @@ cvind <- function(n, k, out=c('foldwise', 'indices'), seed=NULL) {
 	out <- match.arg(out)
 
 	# set random seed but ensure the old RNG state is restored on exit
-	rng_state_old <- .Random.seed
-	on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+	if (exists('.Random.seed')) {
+	  rng_state_old <- .Random.seed
+	  on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+	}
 	set.seed(seed)
 	
 	# shuffle the indices
