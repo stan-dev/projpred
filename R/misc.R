@@ -387,3 +387,13 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 .is_proj_list <- function(proj) { !( 'family_kl' %in% names(proj) ) }
 
 .unlist_proj <- function(p) if(length(p) == 1) p[[1]] else p
+
+#' Generate dirichlet simulations, rewritten version
+#' taken from stan-dev/loo
+#' @importFrom stats rgamma
+#' @noRd
+dirichlet_rng <- function(n, alpha) {
+  K <- length(alpha)
+  gamma_sim <- matrix(rgamma(K * n, alpha), ncol = K, byrow = TRUE)
+  gamma_sim / rowSums(gamma_sim)
+}

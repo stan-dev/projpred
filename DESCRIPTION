@@ -20,7 +20,6 @@ Depends:
 Imports:
     loo (>= 2.0.0), 
     ggplot2, 
-    MCMCpack,
     Rcpp, 
     utils
 LinkingTo: Rcpp, RcppArmadillo

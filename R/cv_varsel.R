@@ -430,7 +430,7 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
   ## pseudo-BMA+ weights based on
   ## Y. Yao et al, "Using stacking to average Bayesian predictive distributions", 2017
   n <- length(inds)
-  alpha <- rdirichlet(B, rep(1, n))
+  alpha <- dirichlet_rng(B, rep(1, n))
   z <- loo_sub
   z_b <- alpha %*% z * n
   ref <- exp(sum(loo_ref) - max(z_b))
