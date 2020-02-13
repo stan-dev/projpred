@@ -1,19 +1,20 @@
+
 #' Get reference model structure
 #'
 #' Generic function that can be used to create and fetch the reference model structure
 #' for all those objects that have this method. All these implementations are wrappers
 #' to the \code{\link{init_refmodel}}-function so the returned object has the same type.
-#' 
+#'
 #' @name get-refmodel
 #'
-#' @param object Object based on which the reference model is created. See possible types below. 
+#' @param object Object based on which the reference model is created. See possible types below.
 #' @param ... Arguments passed to the methods.
 #'
-#' @return An object of type \code{refmodel} (the same type as returned by \link{init_refmodel}) 
+#' @return An object of type \code{refmodel} (the same type as returned by \link{init_refmodel})
 #' that can be passed to all the functions that
 #' take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel}, \link{project},
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
-#' 
+#'
 #' @examples
 #' \donttest{
 #' ### Usage with stanreg objects
@@ -21,12 +22,12 @@
 #' fit <- stan_glm(y ~ x, family = gaussian(), data = dat)
 #' ref <- get_refmodel(fit)
 #' print(class(ref))
-#' 
+#'
 #' # variable selection, use the already constructed reference model
-#' vs <- varsel(ref) 
-#' # this will first construct the reference model and then execute 
+#' vs <- varsel(ref)
+#' # this will first construct the reference model and then execute
 #' # exactly the same way as the previous command (the result is identical)
-#' vs <- varsel(fit) 
+#' vs <- varsel(fit)
 #' }
 #'
 NULL
@@ -61,36 +62,38 @@ get_refmodel.cvsel <- function(object, ...) {
 #' @rdname get-refmodel
 #' @export
 get_refmodel.stanreg <- function(object, ...) {
-	
+
 	# the fit is an rstanarm-object
-  
+
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("You need package \"rstanarm\". Please install it.",
          call. = FALSE)
   }
-	
-	if ('lmerMod' %in% class(object))
-		stop('stan_lmer and stan_glmer are not yet supported.')
-	
+
+	## if ('lmerMod' %in% class(object))
+	## 	stop('stan_lmer and stan_glmer are not yet supported.')
+
 	families <- c('gaussian','binomial','poisson')
 	if (!(family(object)$family %in% families))
 		stop(paste0('Only the following families are currently supported:\n',
 								paste(families, collapse = ', '), '.'))
-	
+
 	# fetch the draws
 	samp <- as.data.frame(object)
 	ndraws <- nrow(samp)
-	
+
 	# data, family and the predictor matrix x
 	z <- object$data # inputs of the reference model (this contains also the target or a transformation of it, but that shouldn't hurt)
-	if (is.null(dim(z)))
-		stop('Model was fitted without a \'data\' argument')
 	fam <- kl_helpers(family(object))
-	x <- rstanarm::get_x(object)
-	rownames(x) <- NULL # ignore the rownames
-	x <- x[, as.logical(attr(x, 'assign')), drop=F] # drop the column of ones
-	attr(x, 'assign') <- NULL
-	
+	if ('lmerMod' %in% class(object) || 'gamm4' %in% class(object))
+    x <- as.matrix(object$x)
+  else {
+    x <- rstanarm::get_x(object)
+    rownames(x) <- NULL # ignore the rownames
+    x <- x[, as.logical(attr(x, 'assign')), drop=F] # drop the column of ones
+    attr(x, 'assign') <- NULL
+  }
+
 	y <- unname(rstanarm::get_y(object))
 	dis <- samp$sigma %ORifNULL% rep(0, ndraws) # TODO: handle other than gaussian likelihoods..
 	offset <- object$offset %ORifNULL% rep(0, nobs(object))
@@ -99,7 +102,7 @@ get_refmodel.stanreg <- function(object, ...) {
 	wsample <- rep(1/ndraws, ndraws) # equal sample weights by default
 	wobs <- unname(weights(object)) # observation weights
 	if (length(wobs)==0) wobs <- rep(1,nrow(z))
-	
+
 	# cvfun for k-fold cross-validation
 	cvfun <- function(folds) {
 	  cvres <- rstanarm::kfold(object, K = max(folds), save_fits = T, folds = folds)
@@ -110,9 +113,9 @@ get_refmodel.stanreg <- function(object, ...) {
 	    list(predfun=predfun, dis=dis)
 	  })
 	}
-  
+
 	init_refmodel(z=z, y=y, family=fam, x=x, predfun=predfun, dis=dis, offset=offset,
-	              wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun) 
+	              wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun)
 }
 
 #' @rdname get-refmodel
@@ -141,15 +144,15 @@ get_refmodel.brmsfit <- function(object, ...) {
   families <- c("gaussian", "binomial", "bernoulli", "poisson")
   if (!(family %in% families)) {
     stop('Only the following families are currently supported:\n',
-         paste0(families, collapse = ", ")) 
+         paste0(families, collapse = ", "))
   }
-  
+
   # fetch the draws
   samp <- as.data.frame(object)
   ndraws <- nrow(samp)
-  
+
   # data, family and the predictor matrix x
-  z <- model.frame(object) 
+  z <- model.frame(object)
   attributes(z)[c("terms", "brmsframe")] <- NULL
   # bernoulli is just a special case of binomial
   fam <- ifelse(family == "bernoulli", "binomial", family)
@@ -160,7 +163,7 @@ get_refmodel.brmsfit <- function(object, ...) {
   # drop the intercept column
   int_cols <- apply(x, 2, function(v) all(v == 1))
   x <- x[, !int_cols, drop = FALSE]
-  
+
   # extract response values
   resp <- brms::data_response(bterms, data = z)
   y <- resp$Y
@@ -179,7 +182,7 @@ get_refmodel.brmsfit <- function(object, ...) {
   intercept <- any(int_cols)
   # extract draws of an overdispersion parameter
   # this may be changed in the future for non-gaussian models
-  dis <- samp[["sigma"]] %ORifNULL% rep(0, ndraws) 
+  dis <- samp[["sigma"]] %ORifNULL% rep(0, ndraws)
   # extract offsets
   if (!is.null(mu_btl$offset)) {
     if (utils::packageVersion("brms") < "2.5.3") {
@@ -191,7 +194,7 @@ get_refmodel.brmsfit <- function(object, ...) {
     offset <- rep(0, nrow(z))
   }
   # equal sample weights by default
-  wsample <- rep(1 / ndraws, ndraws) 
+  wsample <- rep(1 / ndraws, ndraws)
   # observation weights
   if (family == "binomial") {
     # trials are used as weights in binomial models
@@ -207,46 +210,46 @@ get_refmodel.brmsfit <- function(object, ...) {
   # prediction function
   predfun <- function(zt) {
     t(brms::posterior_linpred(
-      object, newdata = data.frame(zt), 
+      object, newdata = data.frame(zt),
       transform = TRUE, offset = FALSE
     ))
   }
   # cvfun for k-fold cross-validation
   cvfun <- function(folds) {
     cvres <- brms::kfold(
-      object, K = max(folds), 
+      object, K = max(folds),
       save_fits = TRUE, folds = folds
     )
     fits <- cvres$fits[, 'fit']
     lapply(fits, function(fit) {
-      dis <- as.data.frame(fit, pars = "^sigma$")$sigma
+      dis <- as.data.frame(fit, pars = "^sigma$")
       predfun <- function(zt) {
         t(brms::posterior_linpred(
-          fit, newdata = data.frame(zt), 
+          fit, newdata = data.frame(zt),
           transform = TRUE, offset = FALSE
         ))
       }
       return(list(predfun = predfun, dis = dis))
     })
   }
-  
+
   init_refmodel(
-    z = z, y = y, family = fam, x = x, 
+    z = z, y = y, family = fam, x = x,
     predfun = predfun, dis = dis, offset = offset,
-    wobs = wobs, wsample = wsample, intercept = intercept, 
+    wobs = wobs, wsample = wsample, intercept = intercept,
     cvfits = NULL, cvfun = cvfun
-  ) 
+  )
 }
 
 #' Custom reference model initialization
 #'
 #' Initializes a structure that can be used as a reference fit for the
-#' projective variable selection. This function is provided to allow construction 
+#' projective variable selection. This function is provided to allow construction
 #' of the reference fit from arbitrary fitted models, because only limited
 #' information is needed for the actual projection and variable selection.
 #'
 #' @param z Predictor matrix of dimension \code{n}-by-\code{dz} containing the training
-#' features for the reference model. Rows denote the observations and columns the different features. 
+#' features for the reference model. Rows denote the observations and columns the different features.
 #' @param y Vector of length \code{n} giving the target variable values.
 #' @param family \link{family} object giving the model family
 #' @param x Predictor matrix of dimension \code{n}-by-\code{dx} containing the candidate
@@ -267,23 +270,23 @@ get_refmodel.brmsfit <- function(object, ...) {
 #' @param offset Offset to be added to the linear predictor in the projection. (Same as in
 #' function \code{glm}.)
 #' @param wobs Observation weights. If omitted, equal weights are assumed.
-#' @param wsample vector of length \code{S} giving the weights for the posterior draws. 
+#' @param wsample vector of length \code{S} giving the weights for the posterior draws.
 #' If omitted, equal weights are assumed.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param cvfun Function for performing K-fold cross-validation. The input is an \code{n}-element
 #' vector where each value is an integer between 1 and K denoting the fold for each observation.
 #' Should return a list with K elements, each of which is a list with fields \code{predfun} and
-#' \code{dis} (if the model has a dispersion parameter) which are defined the same way as the arguments 
-#' \code{predfun} and \code{dis} above but are computed using only the corresponding subset of the data. 
+#' \code{dis} (if the model has a dispersion parameter) which are defined the same way as the arguments
+#' \code{predfun} and \code{dis} above but are computed using only the corresponding subset of the data.
 #' More precisely, if \code{cvres} denotes
 #' the list returned by \code{cvfun}, then \code{cvres[[k]]$predfun} and \code{cvres[[k]]$dis} must be computed
 #' using only data from indices \code{folds != k}, where \code{folds} is the \code{n}-element input for
 #' \code{cvfun}. Can be omitted but either \code{cvfun} or \code{cvfits} is needed for K-fold cross-validation
 #' for genuine reference models. See example below.
-#' @param cvfits A list with K elements, that has the same format as the value returned by \code{cvind} but 
+#' @param cvfits A list with K elements, that has the same format as the value returned by \code{cvind} but
 #' each element of \code{cvfits} must also contain a field \code{omitted} which indicates the indices that
 #' were left out for the corresponding fold. Usually it is easier to specify \code{cvfun} but this can be useful
-#' if you have already computed the cross-validation for the reference model and would like to avoid 
+#' if you have already computed the cross-validation for the reference model and would like to avoid
 #' recomputing it. Can be omitted but either \code{cvfun} or \code{cvfits} is needed for K-fold cross-validation
 #' for genuine reference models.
 #' @param ... Currently ignored.
@@ -291,10 +294,10 @@ get_refmodel.brmsfit <- function(object, ...) {
 #' @return An object that can be passed to all the functions that
 #' take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel},
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
-#' 
+#'
 #' @examples
 #' \donttest{
-#' 
+#'
 #' # generate some toy data
 #' set.seed(1)
 #' n <- 100
@@ -302,50 +305,57 @@ get_refmodel.brmsfit <- function(object, ...) {
 #' x <- matrix(rnorm(n*d), nrow=n, ncol=d)
 #' b <- c(c(1,1),rep(0,d-2)) # first two variables are relevant
 #' y <- x %*% b + rnorm(n)
-#' 
-#' # fit the model (this uses rstanarm for posterior inference, 
+#'
+#' # fit the model (this uses rstanarm for posterior inference,
 #' # but any other tool could also be used)
 #' fit <- stan_glm(y~x, family=gaussian(), data=data.frame(x=I(x),y=y))
 #' draws <- as.matrix(fit)
 #' a <- draws[,1] # intercept
 #' b <- draws[,2:(ncol(draws)-1)] # regression coefficients
 #' sigma <- draws[,ncol(draws)] # noise std
-#' 
+#'
 #' # initialize the reference model structure
 #' predfun <- function(xt) t( b %*% t(xt) + a )
 #' ref <- init_refmodel(x,y, gaussian(), predfun=predfun, dis=sigma)
-#' 
+#'
 #' # variable selection based on the reference model
 #' vs <- cv_varsel(ref)
 #' varsel_plot(vs)
-#' 
-#' 
-#' # pass in the original data as 'reference'; this allows us to compute 
+#'
+#'
+#' # pass in the original data as 'reference'; this allows us to compute
 #' # traditional estimates like Lasso
 #' dref <- init_refmodel(x,y,gaussian())
 #' lasso <- cv_varsel(dref, method='l1') # lasso
 #' varsel_plot(lasso, stat='rmse')
-#' 
+#'
 #' }
 #'
 
 #' @export
 init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=NULL,
                           wobs=NULL, wsample=NULL, intercept=TRUE, cvfun=NULL, cvfits=NULL,  ...) {
-	
+
 	n <- NROW(z)
 	family <- kl_helpers(family)
-	
+
+  mu_fun <- function(x, alpha, beta, offset) {
+    if (!is.matrix(x)) stop('x must be a matrix.')
+    if (!is.matrix(beta)) stop('beta must be a matrix')
+    family$linkinv(cbind(1, x) %*% rbind(alpha, beta) + offset)
+  }
+  family$mu_fun <- mu_fun
+
 	if (is.null(x))
 		x <- z
 	if (is.null(offset))
-		offset <- rep(0, n)	
-	
+		offset <- rep(0, n)
+
 	# y and the observation weights in a standard form
 	target <- .get_standard_y(y, wobs, family)
 	y <- target$y
 	wobs <- target$weights
-	
+
 	if (is.null(predfun)) {
 		# no prediction function given, so the 'reference model' will simply contain the
 		# observed data as the fitted values
@@ -356,19 +366,19 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
 		# genuine reference model. add impact of offset to the prediction function
 		predmu <- function(z,offset=0) family$linkinv( family$linkfun(predfun(z)) + offset )
 		mu <- predmu(z,offset)
-		if (NROW(y)!=NROW(mu)) 
+		if (NROW(y)!=NROW(mu))
 			stop(paste0('The number of rows in the output of predfun(z) does not match with the given y;',
 									'predfun seems to be misspecified.'))
 		proper_model <- TRUE
 	}
-	
+
 	if (proper_model)
 		if (.has.dispersion(family) && is.null(dis))
 			stop(sprintf('Family %s needs a dispersion parameter so you must specify input argument \'dis\'.', family$family))
-	
+
 	mu <- unname(as.matrix(mu))
 	S <- NCOL(mu) # number of samples in the reference model
-	
+
 	if (is.null(dis))
 		dis <- rep(0, S)
 	if (is.null(wobs))
@@ -378,35 +388,35 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
 	if (is.null(intercept))
 		intercept <- TRUE
 	wsample <- wsample/sum(wsample)
-	
+
 	# compute log-likelihood
 	if (proper_model)
 		loglik <- t(family$ll_fun(mu,dis,y,wobs))
 	else
 		loglik <- NULL
-	
+
 	# figure out column names for the variables
 	if (!is.null(colnames(x)))
 		coefnames <- colnames(x)
 	else
 		coefnames <- paste0('x',1:ncol(x))
-	
+
 	if (!proper_model) {
 	  # this is a dummy definition for cvfun, but it will lead to standard cross-validation
 	  # for datafit reference; see cv_varsel and get_kfold
 	  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
 	}
-	
+
 	refmodel <- list(z=z, x=x, y=y, fam=family, mu=mu, dis=dis, nobs=n, coefnames=coefnames,
 	                 offset=offset, wobs=wobs, wsample=wsample, intercept=intercept,
 	                 predfun=predmu, loglik=loglik, cvfits=cvfits, cvfun=cvfun)
-	
+
 	# define the class of the retuned object to be 'refmodel' and additionally 'datafit'
 	# if only the observed data was provided and no actual function for predicting test data
 	class(refmodel) <- 'refmodel'
-	if (!proper_model) 
+	if (!proper_model)
 		class(refmodel) <- c(class(refmodel),'datafit')
-	
+
 	return(refmodel)
 }
 
@@ -422,7 +432,7 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
 #' density at a given point.
 #'
 #' @param object The object of class \code{refmodel}.
-#' @param znew Matrix of predictor values used in the prediction. 
+#' @param znew Matrix of predictor values used in the prediction.
 #' @param ynew New (test) target variables. If given, then the log predictive density
 #' for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
@@ -431,7 +441,7 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
 #' corresponds to the number trials per observation. Has effect only if \code{ynew} is specified.
 #' By default a vector of ones.
 #' @param type Scale on which the predictions are returned. Either 'link' (the latent function
-#' value, from -inf to inf) or 'response' (the scale on which the target \code{y} is measured, 
+#' value, from -inf to inf) or 'response' (the scale on which the target \code{y} is measured,
 #' obtained by taking the inverse-link from the latent value).
 #' @param ... Currently ignored.
 #'
@@ -440,37 +450,210 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
 
 #' @export
 predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
-                             weightsnew = NULL, type = c('response', 'link'), ...) {
-	
+                             weightsnew = NULL, type = 'response', ...) {
+
 	if ('datafit' %in% class(object))
 		stop('Cannot make predictions with data reference only.')
-	type <- match.arg(type)
 
 	if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
-	mu <- object$predfun(znew, offsetnew)
-	
+	if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
+
+	mu <- object$predfun(object$fit, znew)
+
 	if (is.null(ynew)) {
-		
+
 		if (type == 'link')
-			pred <- object$fam$linkfun(mu)
+			pred <- object$family$linkfun(mu)
 		else
 			pred <- mu
-		
+
 		# integrate over the samples
 		if (NCOL(pred) > 1)
 			pred <- rowMeans(pred)
-		
+
 		return(pred)
-		
+
 	} else {
-		if (!is.numeric(ynew))
-			stop('ynew must be a numerical vector')
 
 		# evaluate the log predictive density at the given ynew values
-		if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
 		loglik <- object$fam$ll_fun(mu, object$dis, ynew, weightsnew)
 		S <- ncol(loglik)
 		lpd <- apply(loglik, 1, log_sum_exp) - log(S)
 		return(lpd)
 	}
+
+}
+
+#' @export
+get_refmodel_poc <- function(fit, ...) {
+  UseMethod("get_refmodel_poc", fit)
+}
+
+#' @export
+get_refmodel_poc.refmodel <- function(object, ...) {
+  ## if the object is reference model already, then simply return it as is
+  object
+}
+
+#' @export
+get_refmodel_poc.vsel <- function(object, ...) {
+  ## the reference model is stored in vsel-object
+  object$refmodel
+}
+
+#' @export
+get_refmodel_poc.cvsel <- function(object, ...) {
+  ## the reference model is stored in cvsel object
+  object$refmodel
+}
+
+#' @export
+get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfun,
+                                     mle, fetch_data, family=NULL, wobs=NULL,
+                                     folds=NULL, cvfits=NULL, penalized=FALSE) {
+  fetch_data_wrapper <- function(data_points=folds, newdata=NULL)
+    fetch_data(data, data_points, newdata)
+
+  if (is.null(family))
+    family <- kl_helpers(family(fit))
+  else
+    family <- kl_helpers(family)
+
+  family$mu_fun <- function(fit, data_points=folds, xnew=NULL) {
+    newdata <- fetch_data_wrapper(data_points=data_points, newdata=xnew)
+    family$linkinv(proj_predfun(fit, newdata=newdata))
+  }
+
+  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
+                                proj_predfun, fetch_data, fetch_data_wrapper,
+                                penalized=penalized)
+  refmodel$folds <- folds
+  return(refmodel)
+}
+
+#' export
+get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
+                                     predfun=NULL, proj_predfun=NULL, mle=NULL,
+                                     folds=NULL, ...) {
+  family <- family(fit)$family
+  fam <- ifelse(family == "bernoulli", "binomial", family)
+  fam <- get(fam, mode = "function")()
+  family <- kl_helpers(fam)
+
+  if (is.null(formula))
+    formula <- as.formula(formula(fit))
+
+  terms <- extract_terms_response(formula)
+  response_name <- terms$response
+
+  if (is.null(data))
+    data <- fit$data
+  if (is.null(y))
+    y <- fit$data[, colnames(fit$data) == response_name]
+
+  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
+                                proj_predfun, folds)
+  return(refmodel)
+}
+
+#' @export
+get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
+                                     predfun=NULL, proj_predfun=NULL, mle=NULL,
+                                     folds=NULL, penalized=FALSE, ...) {
+  family <- family(fit)
+  family <- kl_helpers(family)
+
+  if (is.null(formula))
+    formula <- formula(fit)
+  terms <- extract_terms_response(formula)
+  response_name <- terms$response
+
+  if (is.null(data))
+    data <- fit$data
+  if (is.null(y))
+    y <- fit$data[, colnames(fit$data) == response_name]
+
+  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
+                                proj_predfun, folds, penalized)
+  return(refmodel)
+}
+
+#' @export
+init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
+                              proj_predfun, folds, penalized=FALSE) {
+  terms <- extract_terms_response(formula)
+  if (is.null(predfun))
+    predfun <- function(fit, newdata=NULL)
+      t(posterior_linpred(fit, transform=TRUE, newdata=newdata))
+
+  if (is.null(mle) && is.null(proj_predfun))
+    if (length(terms$group_terms) != 0) {
+      mle <- multilevel_mle
+      proj_predfun <- multilevel_proj_predfun
+    } else {
+      if (!penalized) {
+        mle <- linear_mle
+        proj_predfun <- linear_proj_predfun
+      } else {
+        mle <- penalized_linear_mle
+        proj_predfun <- penalized_linear_proj_predfun
+      }
+    }
+  else if (is.null(mle) && !is.null(proj_predfun))
+    if (length(terms$group_terms) != 0)
+      mle <- multilevel_mle
+    else
+      if (!penalized)
+        mle <- linear_mle
+      else
+        mle <- penalized_linear_mle
+  else if (!is.null(mle) && is.null(proj_predfun))
+    if (length(terms$group_terms) != 0)
+      proj_predfun <- multilevel_proj_predfun
+    else
+      if (!penalized)
+        proj_predfun <- linear_proj_predfun
+      else
+        proj_predfun <- penalized_linear_proj_predfun
+
+  fetch_data_wrapper <- function(data_points=folds, newdata=NULL)
+    as.data.frame(fetch_data(data, data_points, newdata))
+
+  # TODO: ideally remove this, have to think about it
+  family$mu_fun <- function(fit, data_points=folds, xnew=NULL) {
+    newdata <- fetch_data_wrapper(data_points=data_points, newdata=xnew)
+    family$linkinv(proj_predfun(fit, newdata=newdata))
+  }
+
+  ## predfun should already take into account the family of the model
+  ## we leave this here just in case
+  mu <- predfun(fit)
+  mu <- unname(as.matrix(mu))
+
+  ndraws <- ncol(mu)
+
+  ## TODO: eventually this will be a function provided by the user
+  dis <- rep(0, ndraws)
+  tryCatch ({
+    dis <- as.data.frame(fit)[["sigma"]] %ORifNULL% rep(0, ndraws)
+  }, error = function(e) e)
+
+  loglik <- t(family$ll_fun(mu, dis, y))
+
+	target <- .get_standard_y(y, NULL, family)
+  y <- target$y
+
+  ## TODO: remove wobs, wsample, weights, offset
+	wsample <- rep(1/ndraws, ndraws) # equal sample weights by default
+	wobs <- rep(1,nrow(mu))
+	offset <- rep(0, length(y))
+
+	intercept <- as.logical(attr(terms(formula), 'intercept'))
+  refmodel <- list(fit=fit, formula=formula, predfun=predfun, mle=mle,
+                   family=family, mu=mu, dis=dis, y=y, loglik=loglik,
+                   intercept=intercept, proj_predfun=proj_predfun,
+                   fetch_data=fetch_data_wrapper, wobs=wobs,
+                   wsample=wsample, offset=offset, folds=folds)
+  class(refmodel) <- "refmodel"
+  return(refmodel)
 }
