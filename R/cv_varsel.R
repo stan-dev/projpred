@@ -35,6 +35,8 @@
 #' where this parameter is TRUE gives idea how strongly the feature selection is (over)fitted to the
 #' data (the difference corresponds to the search degrees of freedom or the effective number 
 #' of parameters introduced by the selectin process).
+#' @param B number of bootstrap samples to generate from the Dirichlet distribution to compute pseudo-BMA+.
+#' Only applies to loo.
 #' @param seed Random seed used in the subsampling LOO. By default uses a fixed seed.
 #' @param ... Additional arguments to be passed to the \code{get_refmodel}-function.
 #'
@@ -56,7 +58,8 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                       ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
                       nloo=NULL, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
-                      thresh=1e-6, regul=1e-4, validate_search=T, seed=NULL, ...) {
+                      thresh=1e-6, regul=1e-4, validate_search=T, seed=NULL,
+                      B = 20, ...) {
 
 	refmodel <- get_refmodel(fit, ...)
 	
@@ -87,7 +90,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
 		sel_cv <- loo_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty, 
-		                     verbose, opt, nloo = nloo, validate_search = validate_search, seed = seed)
+		                     verbose, opt, nloo = nloo, validate_search = validate_search, B = B, seed = seed)
 	} else {
                stop(sprintf('Unknown cross-validation method: %s.', cv_method))
 	}
@@ -119,7 +122,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	vs$spath <- sel$spath
 	vs$method <- method
 	vs$cv_method <- cv_method
-	vs <- c(vs, c(sel_cv[c('d_test', 'summaries')],
+	vs <- c(vs, c(sel_cv[c('d_test', 'summaries', 'pseudo_bma')],
 	              sel[c('family_kl', 'vind', 'kl')],
 	              list(pctch = pctch)))
 	class(vs) <- 'cvsel'
@@ -253,6 +256,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 
   list(vind_cv = vind_cv,
        summaries = list(sub = sub, ref = ref),
+       pseudo_bma = NULL,
        d_test = c(d_cv, type = 'kfold'))
 }
 
@@ -303,7 +307,8 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 
 
 loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, 
-                       penalty, verbose, opt, nloo = NULL, validate_search = T, seed = NULL) {
+                       penalty, verbose, opt, nloo = NULL, validate_search = T, seed = NULL,
+                       B = 20) {
 	#
 	# Performs the validation of the searching process using LOO.
 	# validate_search indicates whether the selection is performed separately for each
@@ -422,7 +427,18 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 
   d_test <- list(y=d_train$y, weights=d_train$weights, type='loo')
 
-	return(list(vind_cv=vind_cv, summaries=summaries, d_test=d_test))
+  ## pseudo-BMA+ weights based on
+  ## Y. Yao et al, "Using stacking to average Bayesian predictive distributions", 2017
+  n <- length(inds)
+  alpha <- rdirichlet(B, rep(1, n))
+  z <- loo_sub
+  z_b <- alpha %*% z * n
+  ref <- exp(sum(loo_ref) - max(z_b))
+  z_b <- exp(z_b - max(z_b))
+  w <- rowMeans(sapply(1:nrow(z_b), function(i)
+    z_b[i,] / (z_b[i,] + ref)))
+
+	return(list(vind_cv=vind_cv, summaries=summaries, d_test=d_test, pseudo_bma=w))
 
 }
 
