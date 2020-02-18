@@ -193,7 +193,7 @@ proj_predict_poc <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
                         replace = TRUE, prob = proj$weights)
 
     t(sapply(draw_inds, function(i) {
-      proj$family_kl$ppd_fun(mu[,i], proj$dis[i], weights)
+      proj$family_kl$ppd(mu[,i], proj$dis[i], weights)
     }))
   }
 
