@@ -232,10 +232,6 @@ split_group_term <- function(term) {
   else
     group_intercept <- TRUE
 
-  group_terms <- lapply(lin_v, function(v) paste0(v, " + ", "(0 + ", v, " | ", group, ")"))
-  group_terms <- c(group_terms, lapply(int_v, function(v)
-    paste0(split_interaction_term(v), " + ", "(0 + ", v, " | ", group, ")")))
-
   if (group_intercept) {
     group_terms <- c(group_terms, list(paste0("(1 | ", group, ")")))
     group_terms <- c(group_terms,
@@ -256,6 +252,10 @@ split_group_term <- function(term) {
                      lapply(int_v,
                             function(v)
                               paste0(split_interaction_term(v), " + ", "(1 | ", group, ")")))
+  } else {
+    group_terms <- lapply(lin_v, function(v) paste0(v, " + ", "(0 + ", v, " | ", group, ")"))
+    group_terms <- c(group_terms, lapply(int_v, function(v)
+      paste0(split_interaction_term(v), " + ", "(0 + ", v, " | ", group, ")")))
   }
 
   group_terms
@@ -275,140 +275,42 @@ formula_contains_group_terms <- function(formula) {
   return(length(group_terms) > 0)
 }
 
-#' Subsets a formula by the given terms. It also properly subsets the data.
+#' Utility to both subset the formula and update the data
 #' @param formula A formula for a valid model.
 #' @param terms A vector of terms to subset.
 #' @param data The original data frame for the full formula.
 #' @param y The response vector. Default NULL.
 #' @param split_formula If TRUE breaks the response down into single response formulas.
 #' Default FALSE. It only works if `y` represents a multi-output response.
-#' @return a list containing the subset formula and the data.
-subset_formula <- function(formula, terms, data, y=NULL, split_formula=FALSE) {
-  formula <- update(formula, paste0(". ~ ", paste(terms, collapse=" + ")))
-
+#' @return a list including the updated formula and data
+subset_formula_and_data <- function(formula, terms, data, y=NULL, split_formula=FALSE) {
+  formula <- subset_formula(formula, terms)
   tt <- extract_terms_response(formula)
   response_name <- tt$response
 
-  if (is.null(response_name))
-    stop("No response")
-
-  X <- data[, colnames(data) != response_name]
-  cols_X <- colnames(X)
-
-  group_terms <- formula_contains_group_terms(formula)
-
-  if (is.null(y)) {
-    y <- data[, response_name]
-  }
-
   if (!is.null(ncol(y)) && ncol(y) > 1) {
-    ## remove parens from response
-    response_name <- gsub("\\(", "\\.",
-                          gsub("\\)", "\\.",
-                               response_name))
-    cols_y <- unlist(lapply(1:ncol(y), function(n) paste0(response_name, ".", n)))
+    response_cols <- unlist(lapply(1:ncol(y), function(n)
+      paste0(".", response_name, ".", n)))
     if (!split_formula) {
-      vector_y <- paste0("cbind(", paste(cols_y, collapse=", "), ")")
-      formula <- update(formula, paste0(vector_y, " ~ ."))
+      response_vector <- paste0("cbind(", paste(response_cols, collapse=", "), ")")
+      formula <- update(formula, paste0(response_vector, " ~ ."))
     } else {
-      formula <- lapply(cols_y, function(response) update(formula, paste0(response, " ~ .")))
+      formula <- lapply(response_cols, function(response)
+        update(formula, paste0(response, " ~ .")))
     }
-  } else
-    cols_y <- response_name
-
-  data <- data.frame(y=y, X=X)
-  colnames(data) <- c(cols_y, cols_X)
-  list(formula=formula, data=data)
-}
-
-#' Sometimes there can be terms in a formula that refer to a matrix instead of
-#' a single predictor. Because we can handle groups of predictors, this function breaks
-#' the matrix term into individual predictors to handle separately, as that is probably
-#' the intention of the user.
-#' @param formula A formula for a valid model.
-#' @param data The original data frame with a matrix as predictor.
-#' @return a  list containing the expanded formula and the expanded data frame.
-break_up_matrix_term <- function(formula, data) {
-  tt <- terms(formula)
-  response <- attr(tt, "response")
-  variables.list <- as.list(attr(tt, "variables")[-1])
-
-  if (response)
-    variables.list <- variables.list[-1]
-
-  term.labels <- attr(tt, "term.labels")
-  intercept <- attr(tt, "intercept")
-
-  mm <- model.matrix(formula, data)
-  assign <- attr(mm, "assign")
-
-  new_data <- data
-  for (assignee in unique(assign)) {
-    if (assignee == 0) ## intercept
-      next
-    appearances <- assign[assign == assignee]
-    if (length(appearances) > 1) {
-      ## check if special term
-      current <- term.labels[assignee]
-      int <- grepl(":", current)
-      mulilevel <- grepl("\\|", current)
-      special <- grepl("[a-z]+\\(([a-z]+)\\)", current)
-      individual <- !mulilevel & !int
-
-      linear <- individual & !special
-      linear_int <- int & !special
-
-      if (linear) {
-        ## if linear we can split it
-        split_term <- split_linear_term(current, data)
-
-        formula <- update(formula, paste0(". ~ . - ", current, " + ",
-                                          paste(split_term, collapse=" + ")))
-        split_matrix <- mm[, assign == assignee]
-
-        new_data_tmp <- as.data.frame(new_data[, colnames(new_data) != current])
-        colnames(new_data_tmp) <- colnames(new_data)[colnames(new_data) != current]
-        new_data <- cbind(new_data_tmp, split_matrix)
-      }
-
-      if (linear_int) {
-        ## we can also flatten linear interactions
-        vars <- strsplit(current, ":")
-        split_terms <- lapply(unlist(vars), function(v)
-          split_linear_term(v, data))
-
-        combined_terms <- c()
-        for (v1 in split_terms[[1]])
-          for (v2 in split_terms[[2]])
-            combined_terms <- c(combined_terms, paste0(v1, ":", v2))
-
-        formula <- update(formula, paste0(". ~ . - ", current,
-                                          " + ",
-                                          paste(combined_terms, collapse=" + ")))
-        ## no need to update the data because the interaction terms
-        ## do not appear as features
-      }
-    }
+    data <- data.frame(y, data[, colnames(data) != response_name])
+    colnames(data)[1:ncol(y)] <- response_cols
   }
 
-  tryCatch(model.matrix(formula, data=new_data),
-           error = function (e) print(e))
-  list(formula=formula, data=new_data)
+  return(nlist(formula, data))
 }
 
-#' Splits a linear term into individual predictors.
-#' @param term A matrix term.
-#' @param data The original data frame.
-#' @return a list of the expanded linear matrix term.
-split_linear_term <- function(term, data) {
-  appearances <- ncol(data[, term])
-
-  if (appearances > 1)
-    split_term <- sapply(1:appearances,
-                         function(i) paste0(term, i))
-  else
-    split_term <- term
-  split_term
+#' Subsets a formula by the given terms.
+#' @param formula A formula for a valid model.
+#' @param terms A vector of terms to subset.
+#' @return the updated formula
+subset_formula <- function(formula, terms) {
+  update(formula, paste0(". ~ ", paste(terms, collapse=" + ")))
 }
 
 #' Utility to count the number of terms in a given formula.
@@ -469,17 +371,15 @@ sort_submodels_by_size <- function(submodels) {
   ord_list_nona[!is.na(ord_list_nona)]
 }
 
-#' Given a refmodel structure, count the number of terms included.
-#' @param refmodel A refmodel structure containing at least a formula and a
-#' function fetch_data.
-#' @param list_of_terms Subset of terms from refmodel.
-#' @return number of terms in list_of_terms.
-count_variables_chosen <- function(refmodel, list_of_terms) {
+#' Given a refmodel structure, count the number of variables included.
+#' @param formula The reference model's formula.
+#' @param list_of_terms Subset of terms from formula.
+#' @return number of variables in list_of_terms.
+count_variables_chosen <- function(formula, list_of_terms) {
   if (length(list_of_terms) == 0)
     return(0)
-  form <- subset_formula(refmodel$formula, unique(unlist(list_of_terms)),
-                         data=refmodel$fetch_data())$formula
-  count_terms_in_subformula(flatten_formula(form))
+  formula <- subset_formula(refmodel$formula, unique(unlist(list_of_terms)))
+  count_terms_in_subformula(flatten_formula(formula))
 }
 
 #' Utility that checks if the next submodel is redundant with the current one.
