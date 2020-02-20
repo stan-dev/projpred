@@ -35,7 +35,7 @@
 #' @param draws Number of draws to return from the predictive distribution of
 #' the projection. The default is 1000.
 #' For \code{proj_predict} only.
-#' @param seed_samp An optional seed to use for drawing from the projection.
+#' @param seed An optional seed to use for drawing from the projection.
 #' For \code{proj_predict} only.
 #' @param ... Additional argument passed to \link{project} if \code{object}
 #' is an object returned by \link{varsel} or \link{cv_varsel}.
@@ -46,29 +46,29 @@
 #' returns a list with elements pred (predictions) and lpd (log predictive densities).
 #' If the predictions are done for several submodel sizes, returns a list with one element
 #' for each submodel.
-#' 
+#'
 #' @examples
 #' \donttest{
-#' ### Usage with stanreg objects
+## Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
 #' vs <- varsel(fit)
-#' 
-#' # compute predictions with 4 variables at the training points
+#'
+## compute predictions with 4 variables at the training points
 #' pred <- proj_linpred(vs, xnew=x, nv = 4)
 #' pred <- proj_predict(vs, xnew=x, nv = 4)
-#' 
+#'
 #' }
 #'
 NULL
 
-# The 'helper' for proj_linpred and proj_predict, ie. does all the
-# functionality that is common to them. It essentially checks all the arguments
-# and sets them to their respective defaults and then loops over the
-# projections. For each projection, it evaluates the fun-function, which
-# calculates the linear predictor if called from proj_linpred and samples from
-# the predictive distribution if called from proj_predict.
-proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
-                            fun, ...) {
+## The 'helper' for proj_linpred and proj_predict, ie. does all the
+## functionality that is common to them. It essentially checks all the arguments
+## and sets them to their respective defaults and then loops over the
+## projections. For each projection, it evaluates the fun-function, which
+## calculates the linear predictor if called from proj_linpred and samples from
+## the predictive distribution if called from proj_predict.
+proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
+                            proj_predict, ...) {
 
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
@@ -77,14 +77,14 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
       (length(object)>0 && 'projection' %in% class(object[[1]]))) {
     proj <- object
   } else {
-    # reference model or varsel object obtained, so run the projection
+    ## reference model or varsel object obtained, so run the projection
     proj <- project_poc(object = object, nv = nv, ...)
   }
 
   if (!.is_proj_list(proj)) {
     proj <- list(proj)
   } else {
-    # proj is not a projection object
+    ## proj is not a projection object
     if(any(sapply(proj, function(x) !('family_kl' %in% names(x)))))
       stop(paste('proj_linpred only works with objects returned by',
                  ' varsel, cv_varsel or project'))
@@ -117,24 +117,24 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
     stop(paste('The number of columns in xnew does not match with the given',
                'number of variable indices (vind).'))
 
-  # set random seed but ensure the old RNG state is restored on exit
+  ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(seed_samp)
+  set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
     if (xnew_df) {
       xtemp <- xnew[, min(1, length(proj$vind)):length(proj$vind), drop = F]
     } else if (!is.null(vind)) {
-      # columns of xnew are assumed to match to the given variable indices
+      ## columns of xnew are assumed to match to the given variable indices
       xtemp <- xnew
     } else {
-      # fetch the right columns from the feature matrix
+      ## fetch the right columns from the feature matrix
       xtemp <- xnew[, unique(unname(unlist(proj$vind))), drop = F]
     }
     mu <- proj$family_kl$mu_fun(proj$sub_fit, xnew=xtemp)
 
-    fun(proj, mu, offsetnew, weightsnew)
+    proj_predict(proj, mu, offsetnew, weightsnew)
   })
 
   .unlist_proj(preds)
@@ -146,20 +146,20 @@ proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
                              weightsnew = NULL, nv = NULL, transform = FALSE,
                              integrated = FALSE, ...) {
 
-  # function to perform to each projected submodel
-  fun <- function(proj, mu, offset, weights) {
+  ## function to perform to each projected submodel
+  proj_predict <- function(proj, mu, offset, weights) {
     pred <- t(mu)
     if (!transform) pred <- proj$family_kl$linkfun(pred)
     if (integrated) {
-      # average over the parameters
+      ## average over the parameters
       pred <- as.vector( proj$weights %*% pred )
-    } else if (!is.null(dim(pred)) && dim(pred)[1]==1) {
-      # return a vector if pred contains only one row
+    } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
+      ## return a vector if pred contains only one row
       pred <- as.vector(pred)
     }
 
     if (!is.null(ynew)) {
-      # compute also the log-density
+      ## compute also the log-density
       target <- .get_standard_y(ynew, weights, proj$family_kl)
       ynew <- target$y
       weights <- target$weights
@@ -169,26 +169,25 @@ proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
       } else if (!is.null(dim(lpd))) {
         lpd <- t(lpd)
       }
-      list(pred = pred, lpd = lpd)
+      return(nlist(pred, lpd))
     } else {
-      pred
+      return(pred)
     }
   }
 
-  # proj_helper lapplies fun to each projection in object
+  ## proj_helper lapplies fun to each projection in object
   proj_helper_poc(object = object, xnew = xnew, offsetnew = offsetnew,
-                  weightsnew = weightsnew, nv = nv, seed_samp = NULL, fun = fun,
-                  ...)
+                  weightsnew = weightsnew, nv = nv, seed = NULL, proj_predict =
+                                                                   proj_predict, ...)
 }
 
 #' @rdname proj-pred
 #' @export
 proj_predict_poc <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
-                             nv = NULL, draws = NULL, seed_samp = NULL, ...) {
+                             nv = NULL, draws = 1000, seed = NULL, ...) {
 
-  # function to perform to each projected submodel
-  fun <- function(proj, mu, offset, weights) {
-    if(is.null(draws)) draws <- 1000
+  ## function to perform to each projected submodel
+  proj_predict <- function(proj, mu, offset, weights) {
     draw_inds <- sample(x = seq_along(proj$weights), size = draws,
                         replace = TRUE, prob = proj$weights)
 
@@ -197,8 +196,8 @@ proj_predict_poc <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
     }))
   }
 
-  # proj_helper lapplies fun to each projection in object
+  ## proj_helper lapplies fun to each projection in object
   proj_helper_poc(object = object, xnew = xnew, offsetnew = offsetnew,
-                  weightsnew = weightsnew, nv = nv, seed_samp = seed_samp,
-                  fun = fun, ...)
+                  weightsnew = weightsnew, nv = nv, seed = seed,
+                  proj_predict = proj_predict, ...)
 }

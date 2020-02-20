@@ -137,16 +137,16 @@ proj_predfun &lt;-<span class="st"> </span><span class="cf">function</span>(fit,
 mle &lt;-<span class="st"> </span><span class="cf">function</span>(form, dat)
   <span class="kw">lm</span>(form, <span class="dt">data =</span> dat)
 
-fetch_data &lt;-<span class="st"> </span><span class="cf">function</span>(<span class="dt">data_points=</span><span class="ot">NULL</span>, <span class="dt">xnew=</span><span class="ot">NULL</span>) {
-  <span class="cf">if</span> (<span class="kw">is.null</span>(data_points))
+fetch_data &lt;-<span class="st"> </span><span class="cf">function</span>(<span class="dt">obs=</span><span class="ot">NULL</span>, <span class="dt">xnew=</span><span class="ot">NULL</span>) {
+  <span class="cf">if</span> (<span class="kw">is.null</span>(obs))
     <span class="cf">if</span> (<span class="kw">is.null</span>(xnew))
       <span class="kw">return</span>(d)
     <span class="cf">else</span>
       <span class="kw">return</span>(xnew)
   <span class="cf">else</span> <span class="cf">if</span> (<span class="kw">is.null</span>(xnew))
-    <span class="kw">return</span>(d[data_points, ])
+    <span class="kw">return</span>(d[obs, ])
   <span class="cf">else</span>
-    <span class="kw">return</span>(xnew[data_points, ])
+    <span class="kw">return</span>(xnew[obs, ])
 }</code></pre></div>
 <p>The first function, <code>predfun</code>, is the prediction function for the reference model, so we use <code>posterior_linpred</code> from <code>rstanarm</code>. For each of the submodels we use <code>proj_predfun</code>, which uses <code>lme4</code> <code>predict</code> function for linear models. To fit the projections we use <code>lm</code> as usual. Note that in this function we are writing some boilerplate code to handle the different data options that we can get. We need to do this because this function is used in different contexts inside <code>projpred</code>. Finally, we write a <code>fetch_data</code> function that simply extracts a set of data points from the dataset, that will be used during the cross validation stage.</p>
 <p>We can now build our <code>refmodel</code> structure as follows</p>

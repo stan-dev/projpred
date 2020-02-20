@@ -68,7 +68,7 @@ The statistics computed on the training data typically give us a rough idea of h
 ```{r, results='hide', warning=F, cache=T}
 cvs <- cv_varsel(fit, method='forward')
 ```
-In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```ssize``` in the returned object, and it can be obtained also by calling function ```suggest_size```
+In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable ```suggested_size``` in the returned object, and it can be obtained also by calling function ```suggest_size```
 ```{r}
 # model size suggested by the program
 suggest_size(cvs)

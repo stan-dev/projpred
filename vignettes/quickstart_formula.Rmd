@@ -71,16 +71,16 @@ proj_predfun <- function(fit, newdata=NULL) {
 mle <- function(form, dat)
   lm(form, data = dat)
 
-fetch_data <- function(data_points=NULL, xnew=NULL) {
-  if (is.null(data_points))
+fetch_data <- function(obs=NULL, xnew=NULL) {
+  if (is.null(obs))
     if (is.null(xnew))
       return(d)
     else
       return(xnew)
   else if (is.null(xnew))
-    return(d[data_points, ])
+    return(d[obs, ])
   else
-    return(xnew[data_points, ])
+    return(xnew[obs, ])
 }
 ```
 

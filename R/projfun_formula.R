@@ -1,5 +1,5 @@
-# Function handles for the projection
-#
+## Function handles for the projection
+##
 
 project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, regul = 1e-12) {
 
@@ -19,7 +19,7 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   pobs <- pseudo_data(0, mu, family_kl, weights=wobs)
   form <- refmodel$formula
   subset <- subset_formula(form, unique(unlist(vind)), refmodel$fetch_data(), y=pobs$z)
-  capture.output(proj_refit <- refmodel$mle(flatten_formula(subset$formula), subset$dat, regul=regul),
+  capture.output(proj_refit <- refmodel$mle(flatten_formula(subset$formula), subset$data, regul=regul),
                  type = "message")
   musub <- family_kl$mu_fun(proj_refit)
 
@@ -34,7 +34,6 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   kl <- family_kl$kl(ref, list(weights=wobs), list(mu=musub, dis=dis_sub))
   submodel <- list(kl = kl, dis = dis_sub, weights = wsample)
 
-  ## split b to alpha and beta, add it to submodel and return the result
   if(length(vind) == 1 && intercept) {
     submodel$vind <- integer(length=0)
   } else {
@@ -53,20 +52,20 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
 }
 
 .get_submodels_poc <- function(searchpath, nv, family_kl, p_ref,
-                               refmodel, intercept, regul, as.search=F) {
-  #
-  #
-  # Project onto given model sizes nv. Returns a list of submodels. If as.search=TRUE,
-  # submodels parameters will be as they were computed during the search, so there is
-  # no need to project anything anymore, and this function simply fetches the information
-  # from the searchpath list, which contains the parameter values.
-  #
+                               refmodel, intercept, regul, as.search=FALSE) {
+  ##
+  ##
+  ## Project onto given model sizes nv. Returns a list of submodels. If as.search=TRUE,
+  ## submodels parameters will be as they were computed during the search, so there is
+  ## no need to project anything anymore, and this function simply fetches the information
+  ## from the searchpath list, which contains the parameter values.
+  ##
 
   varorder <- searchpath$vind
   p_sel <- searchpath$p_sel
 
   if (as.search) {
-    # simply fetch the already computed quantities for each submodel size
+    ## simply fetch the already computed quantities for each submodel size
     fetch_submodel <- function(nv) {
       submodel <- list()
       vind <- utils::head(varorder, nv)
@@ -84,12 +83,13 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
         vind <- c("1")
         form <- refmodel$formula
         subset <- subset_formula(form, unique(unlist(vind)), refmodel$fetch_data(), y=pobs$z)
-        sub_refit <- refmodel$mle(flatten_formula(subset$formula), subset$dat, regul=regul)
+        sub_refit <- refmodel$mle(flatten_formula(subset$formula), subset$data, regul=regul)
       } else {
         ## reuse sub_fit as projected during search
         sub_refit <- searchpath$sub_fits[[nv]]
       }
 
+      ## split b to alpha and beta, add it to submodel and return the result
       if (family_kl$family == "gaussian")
         ref <- list(mu=pobs$z, var=p_sel$var, w=pobs$w)
       else {
@@ -111,9 +111,9 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
     projfun <- .get_proj_handle_poc(family_kl, regul)
     fetch_submodel <- function(nv) {
       if (nv == 0)
-        vind <- integer(length=0) # empty
-      else
-        vind <- varorder[1:nv]
+        ## empty
+        else
+          vind <- varorder[1:nv]
       return(projfun(vind, p_ref, refmodel, intercept))
     }
   }

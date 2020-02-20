@@ -9,7 +9,7 @@
 ## TODO: rename this, kl_helper does not help anybody
 #' @export
 kl_helpers <- function(fam) {
-  if (.has.fam.extras(fam))
+  if (.has_fam_extras(fam))
     ## if the object already was created using this function, then return
     return(fam)
 
@@ -23,7 +23,7 @@ kl_helpers <- function(fam) {
 
 kl_helpers_binomial <- function(fam) {
   kl_dev <- function(pref, data, psub) {
-    if(NCOL(pref$mu)>1) {
+    if(NCOL(pref$mu) > 1) {
       w <- rep(data$weights, NCOL(pref$mu))
       colMeans(fam$dev.resids(pref$mu, psub$mu, w))/2
     } else {
@@ -52,7 +52,7 @@ kl_helpers_binomial <- function(fam) {
 
 kl_helpers_poisson <- function(fam) {
   kl_dev <- function(pref, data, psub) {
-    if(NCOL(pref$mu)>1) {
+    if(NCOL(pref$mu) > 1) {
       w <- rep(data$weights, NCOL(pref$mu))
       colMeans(fam$dev.resids(pref$mu, psub$mu, w))/2
     } else {
@@ -196,7 +196,7 @@ kl_helpers_student_t <- function(fam) {
 	fam$family %in% c('gaussian','Student_t','Gamma')
 }
 
-.has.fam.extras <- function(fam) {
+.has_fam_extras <- function(fam) {
   # check whether the family object has the extra functions, that is, whether it was
   # created by kl_helpers
   !is.null(fam$deviance)

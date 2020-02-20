@@ -1,12 +1,12 @@
 .get_sub_summaries_poc <- function(submodels, test_points, refmodel, family_kl, groups=NULL) {
 
-  group_features <- !is.null(groups)
+  has_group_features <- !is.null(groups)
   res <- lapply(submodels, function(model) {
   	vind <- model$vind
     if (length(vind) == 0)
       vind <- c("1")
     sub_fit <- model$sub_fit
-    mu <- family_kl$mu_fun(sub_fit, data_points=test_points)
+    mu <- family_kl$mu_fun(sub_fit, obs=test_points)
 
     weights <- refmodel$wobs[test_points]
     y <- refmodel$y[test_points]
