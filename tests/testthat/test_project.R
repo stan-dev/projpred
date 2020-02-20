@@ -114,8 +114,8 @@ if (require(rstanarm)) {
       # if only one model size is projected, do not return a list of length one
       expect_true(length(p) >= 1, info = i_inf)
       # beta has the correct number of rows
-      expect_equal(nrow(p$beta), vs_list[[i]]$ssize, info = i_inf)
-      expect_length(p$vind, vs_list[[i]]$ssize)
+      expect_equal(nrow(p$beta), vs_list[[i]]$suggested_size, info = i_inf)
+      expect_length(p$vind, vs_list[[i]]$suggested_size)
     }
   })
   

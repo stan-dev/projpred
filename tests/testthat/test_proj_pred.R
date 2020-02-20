@@ -320,8 +320,8 @@ if (require(rstanarm)) {
   test_that("proj_predict: specifying seed_sam has an expected effect", {
     for(i in 1:length(proj_vind_list)) {
       i_inf <- names(proj_vind_list)[i]
-      pl1 <- proj_predict(proj_vind_list[[i]], xnew = x, seed_samp = seed)
-      pl2 <- proj_predict(proj_vind_list[[i]], xnew = x, seed_samp = seed)
+      pl1 <- proj_predict(proj_vind_list[[i]], xnew = x, seed = seed)
+      pl2 <- proj_predict(proj_vind_list[[i]], xnew = x, seed = seed)
       expect_equal(pl1, pl2, info = i_inf)
     }
   })
@@ -331,8 +331,8 @@ if (require(rstanarm)) {
       i_inf <- names(vs_list)[i]
       pr1 <- project(vs_list[[i]], nv = c(2, 4), nc = 2, ns = 20,
                      intercept = FALSE, regul = 1e-8, seed = 12)
-      prp1 <- proj_predict(pr1, xnew = x, draws = 100, seed_samp = 11)
-      prp2 <- proj_predict(vs_list[[i]], xnew = x, draws = 100, seed_samp = 11,
+      prp1 <- proj_predict(pr1, xnew = x, draws = 100, seed = 11)
+      prp2 <- proj_predict(vs_list[[i]], xnew = x, draws = 100, seed = 11,
                            nv = c(2, 4), nc = 2, ns = 20, intercept = FALSE,
                            regul = 1e-8, seed = 12)
       expect_equal(prp1, prp2, info = i_inf)

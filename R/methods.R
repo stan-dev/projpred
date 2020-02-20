@@ -35,7 +35,7 @@
 #' @param draws Number of draws to return from the predictive distribution of
 #' the projection. The default is 1000.
 #' For \code{proj_predict} only.
-#' @param seed_samp An optional seed to use for drawing from the projection.
+#' @param seed An optional seed to use for drawing from the projection.
 #' For \code{proj_predict} only.
 #' @param ... Additional argument passed to \link{project} if \code{object}
 #' is an object returned by \link{varsel} or \link{cv_varsel}.
@@ -67,7 +67,7 @@ NULL
 # projections. For each projection, it evaluates the fun-function, which
 # calculates the linear predictor if called from proj_linpred and samples from
 # the predictive distribution if called from proj_predict.
-proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
+proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
                         fun, ...) {
 
   if (!inherits(xnew, c('data.frame', 'matrix')))
@@ -120,7 +120,7 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed_samp,
     rng_state_old <- .Random.seed
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed_samp)
+  set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
     if (xnew_df) {
@@ -180,14 +180,14 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 
   # proj_helper lapplies fun to each projection in object
   proj_helper(object = object, xnew = xnew, offsetnew = offsetnew,
-              weightsnew = weightsnew, nv = nv, seed_samp = NULL, fun = fun,
+              weightsnew = weightsnew, nv = nv, seed = NULL, fun = fun,
               ...)
 }
 
 #' @rdname proj-pred
 #' @export
 proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
-                         nv = NULL, draws = NULL, seed_samp = NULL, ...) {
+                         nv = NULL, draws = NULL, seed = NULL, ...) {
 
   # function to perform to each projected submodel
   fun <- function(proj, mu, offset, weights) {
@@ -202,7 +202,7 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 
   # proj_helper lapplies fun to each projection in object
   proj_helper(object = object, xnew = xnew, offsetnew = offsetnew,
-              weightsnew = weightsnew, nv = nv, seed_samp = seed_samp,
+              weightsnew = weightsnew, nv = nv, seed = seed,
               fun = fun, ...)
 }
 
@@ -481,9 +481,9 @@ suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='u
   if(nrow(res) == 0) {
     # no submodel satisfying the criterion found
     if (object$nv_max == object$nv_all)
-      ssize <- object$nv_max
+      suggested_size <- object$nv_max
     else {
-      ssize <- NA
+      suggested_size <- NA
       if (warnings)
         warning(paste('Could not suggest model size. Investigate varsel_plot to identify',
                       'if the search was terminated too early. If this is the case,',
@@ -491,10 +491,10 @@ suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='u
     }
     
   } else {
-    ssize <- min(res)
+    suggested_size <- min(res)
   }
    
-  ssize
+  suggested_size
 }
 
 

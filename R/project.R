@@ -83,8 +83,8 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
     ns <- min(400, NCOL(refmodel$mu)) # by default project at most 400 draws
   
   if (is.null(nv)) {
-    if (!is.null(object$ssize) && !is.na(object$ssize))
-      nv <- object$ssize # by default, project onto the suggested model size
+    if (!is.null(object$suggested_size) && !is.na(object$suggested_size))
+      nv <- object$suggested_size # by default, project onto the suggested model size
     else
       stop('No suggested model size found, please specify nv or vind')
   } else {
@@ -100,7 +100,7 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
 	if (is.null(intercept))
 	  intercept <- refmodel$intercept
 
-	family_kl <- refmodel$fam
+	family_kl <- refmodel$family
 
 	# training data
 	d_train <- .get_traindata(refmodel)

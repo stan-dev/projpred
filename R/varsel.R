@@ -66,7 +66,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                    lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-4, ...) {
 
 	refmodel <- get_refmodel(object, ...)
-	family_kl <- refmodel$fam
+	family_kl <- refmodel$family
 	
 	# fetch the default arguments or replace them by the user defined values
 	args <- parseargs_varsel(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred)
@@ -133,7 +133,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   # suggest model size
   vs$nv_max <- nv_max
   vs$nv_all <- ncol(refmodel$x)
-  vs$ssize <- suggest_size(vs, warnings = F)
+  vs$suggested_size <- suggest_size(vs, warnings = F)
   
   vs
 }

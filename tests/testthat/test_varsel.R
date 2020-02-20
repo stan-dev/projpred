@@ -269,9 +269,9 @@ if (require(rstanarm)) {
         #expect_equal(colnames(cvs_list[[i]][[j]]$pctch),
         #             c('size', names(cvs_list[[i]][[j]]$vind)),
         #             info = paste(i_inf, j_inf))
-        # ssize seems legit
-        expect_true(cvs_list[[i]][[j]]$ssize>=0 || 
-                      is.na(cvs_list[[i]][[j]]$ssize),
+        # suggested_size seems legit
+        expect_true(cvs_list[[i]][[j]]$suggested_size>=0 || 
+                      is.na(cvs_list[[i]][[j]]$suggested_size),
                     info = paste(i_inf, j_inf))
       }
     }
@@ -567,14 +567,14 @@ if (require(rstanarm)) {
   
   test_that('suggest_size works on all stats', {
     for (stat in valid_stats_gauss) {
-      ssize <- suggest_size(vs_list[[1]][["gauss"]], stat = stat)
-      expect_true(!is.na(ssize))
-      expect_true(ssize >= 0)
+      suggested_size <- suggest_size(vs_list[[1]][["gauss"]], stat = stat)
+      expect_true(!is.na(suggested_size))
+      expect_true(suggested_size >= 0)
     }
     for (stat in valid_stats_binom) {
-      ssize <- suggest_size(vs_list[[1]][["binom"]], stat = stat)
-      expect_true(!is.na(ssize))
-      expect_true(ssize >= 0)
+      suggested_size <- suggest_size(vs_list[[1]][["binom"]], stat = stat)
+      expect_true(!is.na(suggested_size))
+      expect_true(suggested_size >= 0)
     }
   })
   

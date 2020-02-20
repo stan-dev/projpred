@@ -125,7 +125,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	class(vs) <- 'cvsel'
 	vs$nv_max <- nv_max
 	vs$nv_all <- ncol(refmodel$x)
-	vs$ssize <- suggest_size(vs, warnings = F)
+	vs$suggested_size <- suggest_size(vs, warnings = F)
 
 	vs
 }
@@ -166,7 +166,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 	# .validate_kfold(refmodel, k_fold, refmodel$nobs)
 	
 	K <- length(k_fold) 
-	family_kl <- refmodel$fam
+	family_kl <- refmodel$family
 	
   # extract variables from each fit-object (samples, x, y, etc.)
   # to a list of size K
@@ -292,7 +292,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 	# fold given the prediction function and dispersion draws from the cvfits-list
 	k_fold <- lapply(cvfits, function(cvfit) {
 	  ref <- init_refmodel(z=refmodel$z[-cvfit$omitted,,drop=F], y=refmodel$y[-cvfit$omitted], x=refmodel$x[-cvfit$omitted,,drop=F],
-												 family=refmodel$fam, predfun=cvfit$predfun, dis=cvfit$dis, offset=refmodel$offset[-cvfit$omitted],
+												 family=refmodel$family, predfun=cvfit$predfun, dis=cvfit$dis, offset=refmodel$offset[-cvfit$omitted],
 												 wobs=refmodel$wobs[-cvfit$omitted], intercept=refmodel$intercept)
 	  list(refmodel=ref, omitted=cvfit$omitted)
 	})
@@ -310,7 +310,7 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
   # fold (for each data point)
   #
   
-	fam <- refmodel$fam
+	family <- refmodel$family
 	mu <- refmodel$mu
 	dis <- refmodel$dis
 	n <- nrow(mu)
