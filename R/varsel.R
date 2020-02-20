@@ -12,7 +12,7 @@
 #' \code{'L1'} for L1-search and \code{'forward'} for forward selection.
 #' Default is 'forward' if the number of variables in the full data is at most 20, and
 #' \code{'L1'} otherwise.
-#' @param relax If TRUE, then the projected coefficients after L1-selection are computed
+#' @param cv_search If TRUE, then the projected coefficients after L1-selection are computed
 #' without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 #' the coefficients are the solution from the L1-penalized projection. This option is relevant only
 #' if \code{method}='L1'. Default is TRUE for genuine reference models and FALSE if \code{object} is
@@ -61,7 +61,7 @@
 
 #' @export
 varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL, 
-                   nspred = NULL, ncpred = NULL, relax=NULL, nv_max = NULL, 
+                   nspred = NULL, ncpred = NULL, cv_search=NULL, nv_max = NULL, 
                    intercept = NULL, penalty=NULL, verbose = F, 
                    lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-4, ...) {
 
@@ -69,9 +69,9 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 	family_kl <- refmodel$family
 	
 	# fetch the default arguments or replace them by the user defined values
-	args <- parseargs_varsel(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred)
+	args <- parseargs_varsel(refmodel, method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred)
 	method <- args$method
-	relax <- args$relax
+	cv_search <- args$cv_search
 	intercept <- args$intercept
 	nv_max <- args$nv_max
 	nc <- args$nc
@@ -99,9 +99,9 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   vind <- searchpath$vind
   
   # statistics for the selected submodels
-  as.search <- !relax && !is.null(searchpath$beta) && !is.null(searchpath$alpha)
+  cv_search <- !cv_search && !is.null(searchpath$beta) && !is.null(searchpath$alpha)
   p_sub <- .get_submodels(searchpath, c(0, seq_along(vind)), family_kl, p_pred,
-                          d_train, intercept, regul, as.search=as.search)
+                          d_train, intercept, regul, cv_search=cv_search)
   sub <- .get_sub_summaries(p_sub, d_test, family_kl)
 
   # predictive statistics of the reference model on test data. if no test data are provided, 
@@ -173,7 +173,7 @@ select <- function(method, p_sel, d_train, family_kl, intercept, nv_max,
 
 
 
-parseargs_varsel <- function(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred) {
+parseargs_varsel <- function(refmodel, method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred) {
   
   #
   # Auxiliary function for parsing the input arguments for varsel. The arguments
@@ -191,11 +191,11 @@ parseargs_varsel <- function(refmodel, method, relax, intercept, nv_max, nc, ns,
     stop(sprintf('Unknown search method: %s.', method))
   }
   
-  if (is.null(relax)) {
+  if (is.null(cv_search)) {
     if ('datafit' %in% class(refmodel))
-      relax <- F
+      cv_search <- F
     else
-      relax <- T 
+      cv_search <- T 
   }
   
   if ((is.null(ns) && is.null(nc)) || tolower(method)=='l1')
@@ -212,13 +212,13 @@ parseargs_varsel <- function(refmodel, method, relax, intercept, nv_max, nc, ns,
     nv_max <- min(NCOL(refmodel$x), nv_max_default, 20)
   }
   
-  list(method=method, relax=relax, intercept=intercept, nv_max=nv_max,
+  list(method=method, cv_search=cv_search, intercept=intercept, nv_max=nv_max,
        nc=nc, ns=ns, ncpred=ncpred, nspred=nspred)
 }
 
 
 # parse_varsel_args <- function(n, d, method = NULL, cv_method = NULL,
-#                               ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax = NULL,
+#                               ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, cv_search = NULL,
 #                               nv_max = NULL, intercept = NULL, penalty = NULL, verbose = NULL,
 #                               nloo = NULL, K = NULL, k_fold = NULL, lambda_min_ratio = NULL,
 #                               nlambda = NULL, regul = NULL, validate_search = NULL, seed = NULL, ...) {
@@ -239,11 +239,11 @@ parseargs_varsel <- function(refmodel, method, relax, intercept, nv_max, nc, ns,
 #       method <- 'L1'
 #   }
 # 
-#   if (is.null(relax)) {
+#   if (is.null(cv_search)) {
 #     if ('datafit' %in% class(refmodel))
-#       relax <- F
+#       cv_search <- F
 #     else
-#       relax <- T
+#       cv_search <- T
 #   }
 # 
 #   if (is.null(cv_method)) {
@@ -275,7 +275,7 @@ parseargs_varsel <- function(refmodel, method, relax, intercept, nv_max, nc, ns,
 #   }
 # 
 #   args <- list(method=method, cv_method=cv_method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
-#                relax=relax, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose,
+#                cv_search=cv_search, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose,
 #                nloo=nloo, K=K, k_fold=k_fold, lambda_min_ratio=lambda_min_ratio, nlambda=nlambda,
 #                regul=regul, validate_search=validate_search, seed=seed)
 # 

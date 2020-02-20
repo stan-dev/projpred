@@ -11,7 +11,7 @@
 ##' Default is the model size suggested by the variable selection (see function \code{suggest_size}).
 ##'  Ignored if \code{vind} is specified.
 ##' @param vind Variable indices onto which the projection is done. If specified, \code{nv} is ignored.
-##' @param relax If TRUE, then the projected coefficients after L1-selection are computed
+##' @param cv_search If TRUE, then the projected coefficients after L1-selection are computed
 ##' without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 ##' the coefficients are the solution from the L1-penalized projection. This option is relevant only
 ##' if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
@@ -55,7 +55,7 @@
 ##'
 
 ##' @export
-project_poc <- function(object, nv = NULL, vind = NULL, relax = TRUE, ns = 400, nc = NULL,
+project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, nc = NULL,
                         intercept = NULL, seed = NULL, regul=1e-4, ...) {
 
   if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) && is.null(vind) )
@@ -64,17 +64,23 @@ project_poc <- function(object, nv = NULL, vind = NULL, relax = TRUE, ns = 400, 
 
   refmodel <- get_refmodel(object)
 
-  if (relax)
-    ## use non-relaxed solution for datafits by default
-    relax <- !('datafit' %in% class(get_refmodel(object)))
-  if (is.null(object$spath$beta) || (!is.null(vind) && any(object$spath$vind[1:length(vind)] != vind)))
+  if (cv_search) {
+    ## use non-cv_searched solution for datafits by default
+    cv_search <- ('datafit' %in% class(get_refmodel(object)))
+  }
+
+  if (is.null(object$spath$beta) || (!is.null(vind) && any(object$spath$vind[1:length(vind)] != vind))) {
     ## search path not found, or the given variable combination not in the search path
-    relax <- TRUE
+    cv_search <- TRUE
+  }
 
   if (!is.null(vind)) {
     ## if vind is given, nv is ignored (project only onto the given submodel)
+    if (length(vind) > count_variables_chosen(object$refmodel, vind))
+      nv <- count_variables_chosen(object$refmodel, vind)
   } else {
     ## by default take the variable ordering from the selection
+    vind <- object$vind
   }
 
   if (is.null(nc))
@@ -101,13 +107,8 @@ project_poc <- function(object, nv = NULL, vind = NULL, relax = TRUE, ns = 400, 
   p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
 
   ## project onto the submodels
-  if (relax) {
-    subm <- .get_submodels_poc(list(vind=vind), nv, family_kl, p_ref,
-                               refmodel, intercept, regul, as.search=FALSE)
-  } else {
-    subm <- .get_submodels_poc(object$spath, nv, family_kl, p_ref,
-                               refmodel, intercept, regul, as.search=TRUE)
-  }
+  subm <- .get_submodels_poc(list(vind=vind), nv, family_kl, p_ref,
+                             refmodel, intercept, regul, cv_search=cv_search)
 
   ## add family_kl
   proj <- lapply(subm, function(model) {

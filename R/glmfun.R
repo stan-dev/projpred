@@ -127,7 +127,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   # Does not handle any dispersion parameters.
   #
   if (!.has_fam_extras(family))
-    family <- kl_helpers(family)
+    family <- extend_family(family)
   
   # ensure x is in matrix form and fill in missing weights and offsets
   x <- as.matrix(x)
@@ -193,7 +193,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updates
   if (is.null(x))
     x <- matrix(ncol=0, nrow=length(y))
   if (!.has_fam_extras(family))
-    family <- kl_helpers(family)
+    family <- extend_family(family)
   if (family$family == 'gaussian' && family$link == 'identity') {
     qa_updates_max <- 1
     ls_iter_max <- 1
@@ -277,7 +277,7 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updat
   if (is.null(x))
     x <- matrix(ncol=0, nrow=length(y))
   if (!.has_fam_extras(family))
-    family <- kl_helpers(family)
+    family <- extend_family(family)
   if (family$family == 'gaussian' && family$link == 'identity')
     qa_updates_max <- 1
   else if (is.null(qa_updates_max))

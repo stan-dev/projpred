@@ -11,7 +11,7 @@
 #' Default is the model size suggested by the variable selection (see function \code{suggest_size}).
 #'  Ignored if \code{vind} is specified.
 #' @param vind Variable indices onto which the projection is done. If specified, \code{nv} is ignored.
-#' @param relax If TRUE, then the projected coefficients after L1-selection are computed
+#' @param cv_search If TRUE, then the projected coefficients after L1-selection are computed
 #' without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 #' the coefficients are the solution from the L1-penalized projection. This option is relevant only
 #' if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
@@ -55,7 +55,7 @@
 #'
 
 #' @export
-project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc = NULL, 
+project <- function(object, nv = NULL, vind = NULL, cv_search = NULL, ns = NULL, nc = NULL, 
                     intercept = NULL, seed = NULL, regul=1e-4, ...) {
 
   if (!inherits(object, c('vsel', 'cvsel')) && is.null(vind))
@@ -64,12 +64,12 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
 
   refmodel <- get_refmodel(object)
 
-  if (is.null(relax)) 
-  	# use non-relaxed solution for datafits by default
-    relax <- ifelse('datafit' %in% class(get_refmodel(object)), FALSE, TRUE)
+  if (is.null(cv_search)) 
+  	# use non-cv_searched solution for datafits by default
+    cv_search <- ifelse('datafit' %in% class(get_refmodel(object)), FALSE, TRUE)
   if (is.null(object$spath$beta) || (!is.null(vind) && any(object$spath$vind[1:length(vind)] != vind)))
   	# search path not found, or the given variable combination not in the search path
-    relax <- TRUE
+    cv_search <- TRUE
 
   if (!is.null(vind)) {
     if (max(vind) > ncol(refmodel$x))
@@ -109,12 +109,12 @@ project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc 
 	p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
 
 	# project onto the submodels
-	if (relax) {
+	if (cv_search) {
 	  subm <- .get_submodels(list(vind=vind), nv, family_kl, p_ref,
-	                         d_train, intercept, regul, as.search=F)
+	                         d_train, intercept, regul, cv_search=F)
 	} else {
 	  subm <- .get_submodels(object$spath, nv, family_kl, p_ref,
-	                         d_train, intercept, regul, as.search=T)
+	                         d_train, intercept, regul, cv_search=T)
 	}
 
 	# add family_kl

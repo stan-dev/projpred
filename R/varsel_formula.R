@@ -12,7 +12,7 @@
 #' \code{'L1'} for L1-search and \code{'forward'} for forward selection.
 #' Default is 'forward' if the number of variables in the full data is at most 20, and
 #' \code{'L1'} otherwise.
-#' @param relax If TRUE, then the projected coefficients after L1-selection are computed
+#' @param cv_search If TRUE, then the projected coefficients after L1-selection are computed
 #' without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 #' the coefficients are the solution from the L1-penalized projection. This option is relevant only
 #' if \code{method}='L1'. Default is TRUE for genuine reference models and FALSE if \code{object} is
@@ -61,7 +61,7 @@
 
 #' @export
 varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
-                       nspred = NULL, ncpred = NULL, relax=FALSE, nv_max = NULL,
+                       nspred = NULL, ncpred = NULL, cv_search=FALSE, nv_max = NULL,
                        intercept = FALSE,
                        lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-4,
                        groups=NULL, ...) {
@@ -70,9 +70,9 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
   family_kl <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
-  args <- parse_args_varsel_poc(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred, groups)
+  args <- parse_args_varsel_poc(refmodel, method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred, groups)
   method <- args$method
-  relax <- args$relax
+  cv_search <- args$cv_search
   intercept <- args$intercept
   nv_max <- args$nv_max
   nc <- args$nc
@@ -101,9 +101,8 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
   vind <- searchpath$vind
 
   ## statistics for the selected submodels
-  as.search <- relax
   p_sub <- .get_submodels_poc(searchpath, c(0, seq_along(vind)), family_kl, p_pred,
-                              refmodel, intercept, regul, as.search=as.search)
+                              refmodel, intercept, regul, cv_search=cv_search)
   sub <- .get_sub_summaries_poc(p_sub, seq_along(refmodel$y), refmodel, family_kl)
 
   ## predictive statistics of the reference model on test data. if no test data are provided,
@@ -169,7 +168,7 @@ select_poc <- function(method, p_sel, refmodel, family_kl, intercept, nv_max,
 }
 
 
-parse_args_varsel_poc <- function(refmodel, method, relax, intercept,
+parse_args_varsel_poc <- function(refmodel, method, cv_search, intercept,
                                   nv_max, nc, ns, ncpred, nspred, groups) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel. The arguments
@@ -195,11 +194,11 @@ parse_args_varsel_poc <- function(refmodel, method, relax, intercept,
     if (group_features)
       method <- 'forward'
 
-  if (is.null(relax)) {
+  if (is.null(cv_search)) {
     if ('datafit' %in% class(refmodel))
-      relax <- F
+      cv_search <- FALSE
     else
-      relax <- T
+      cv_search <- TRUE
   }
 
   method <- tolower(method)
@@ -220,5 +219,5 @@ parse_args_varsel_poc <- function(refmodel, method, relax, intercept,
     nv_max <- min(max_nv_possible, nv_max)
 
 
-  nlist(method, relax, intercept, nv_max, nc, ns, ncpred, nspred, groups)
+  nlist(method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred, groups)
 }

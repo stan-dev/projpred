@@ -120,10 +120,10 @@ project_nongaussian <- function(vind, p_ref, d_train, family_kl, intercept,
 }
 
 
-.get_submodels <- function(searchpath, nv, family_kl, p_ref, d_train, intercept, regul, as.search=F) {
+.get_submodels <- function(searchpath, nv, family_kl, p_ref, d_train, intercept, regul, cv_search=F) {
   #
   #
-  # Project onto given model sizes nv. Returns a list of submodels. If as.search=TRUE,
+  # Project onto given model sizes nv. Returns a list of submodels. If cv_search=FALSE,
   # submodels parameters will be as they were computed during the search, so there is 
   # no need to project anything anymore, and this function simply fetches the information
   # from the searchpath list, which contains the parameter values.
@@ -132,7 +132,7 @@ project_nongaussian <- function(vind, p_ref, d_train, family_kl, intercept,
   varorder <- searchpath$vind
   p_sel <- searchpath$p_sel
   
-  if (as.search) {
+  if (cv_search) {
     # simply fetch the already computed quantities for each submodel size
     fetch_submodel <- function(nv) {
       submodel <- list()

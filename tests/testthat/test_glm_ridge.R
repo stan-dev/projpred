@@ -46,15 +46,15 @@ test_that("glmfun: gradients should give the same results as finite differences"
     return(df)
   }
   
-  fams <- list(kl_helpers(gaussian(link='identity')),
-               kl_helpers(gaussian(link='log')),
-               kl_helpers(binomial(link='logit')),
-               kl_helpers(binomial(link='probit')),
-               kl_helpers(binomial(link='cauchit')),
-               kl_helpers(poisson(link='log')),
-               kl_helpers(Student_t(nu=3, link='identity')),
-               kl_helpers(Student_t(nu=4, link='log')),
-               kl_helpers(Student_t(nu=7, link='inverse'))
+  fams <- list(extend_family(gaussian(link='identity')),
+               extend_family(gaussian(link='log')),
+               extend_family(binomial(link='logit')),
+               extend_family(binomial(link='probit')),
+               extend_family(binomial(link='cauchit')),
+               extend_family(poisson(link='log')),
+               extend_family(Student_t(nu=3, link='identity')),
+               extend_family(Student_t(nu=4, link='log')),
+               extend_family(Student_t(nu=7, link='inverse'))
   )
   
   n <- 10
@@ -87,7 +87,7 @@ test_that("glmfun: gradients should give the same results as finite differences"
 
 
 test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0", {
-  fam <- kl_helpers(gaussian(link = 'identity'))
+  fam <- extend_family(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0
 
@@ -100,7 +100,7 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: gaussian, id-link, no intercept, lambda = 0", {
-	fam <- kl_helpers(gaussian(link = 'identity'))
+	fam <- extend_family(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0
 
@@ -112,7 +112,7 @@ test_that("glm_ridge: gaussian, id-link, no intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
-	fam <- kl_helpers(gaussian(link = 'identity'))
+	fam <- extend_family(gaussian(link = 'identity'))
   y <- rnorm(n, x%*%b, dis)
   lambda <- 0.5
 
@@ -127,7 +127,7 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
 })
 
 test_that("glm_ridge: gaussian, log-link, intercept, lambda = 0", {
-  fam <- kl_helpers(gaussian(link = 'log'))
+  fam <- extend_family(gaussian(link = 'log'))
   # intercept of 4 to ensure that y are positive
   y <- rnorm(n, fam$linkinv(x%*%b+4), dis)
   lambda <- 0
@@ -142,7 +142,7 @@ test_that("glm_ridge: gaussian, log-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: binomial, logit-link, intercept, lambda = 0", {
-  fam <- kl_helpers(binomial(link = 'logit'))
+  fam <- extend_family(binomial(link = 'logit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -155,7 +155,7 @@ test_that("glm_ridge: binomial, logit-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: binomial, logit-link, no intercept, lambda = 0", {
-	fam <- kl_helpers(binomial(link = 'logit'))
+	fam <- extend_family(binomial(link = 'logit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -167,7 +167,7 @@ test_that("glm_ridge: binomial, logit-link, no intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: binomial, probit-link, intercept, lambda = 0", {
-	fam <- kl_helpers(binomial(link = 'probit'))
+	fam <- extend_family(binomial(link = 'probit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -181,7 +181,7 @@ test_that("glm_ridge: binomial, probit-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: binomial, cauchit-link, intercept, lambda = 0", {
-  fam <- kl_helpers(binomial(link = 'cauchit'))
+  fam <- extend_family(binomial(link = 'cauchit'))
   y <- rbinom(n, weights, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -195,7 +195,7 @@ test_that("glm_ridge: binomial, cauchit-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: poisson, log-link, intercept, lambda = 0", {
-  fam <- kl_helpers(poisson(link = 'log'))
+  fam <- extend_family(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -208,7 +208,7 @@ test_that("glm_ridge: poisson, log-link, intercept, lambda = 0", {
 })
 
 test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
-  fam <- kl_helpers(poisson(link = 'log'))
+  fam <- extend_family(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   lambda <- 0
 
@@ -220,7 +220,7 @@ test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
 })
 
 # test_that("glm_ridge: Gamma, log-link, intercept, lambda = 0", {
-#   fam <- kl_helpers(Gamma(link = 'log'))
+#   fam <- extend_family(Gamma(link = 'log'))
 #   y <- rgamma(n, fam$linkinv(x%*%b + 1))
 #   lambda <- 0
 # 

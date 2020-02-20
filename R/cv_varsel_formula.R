@@ -9,7 +9,7 @@
 #' (L1-search uses always one cluster).
 #' @param nspred Number of samples used for prediction (after selection). Ignored if ncpred is given.
 #' @param ncpred Number of clusters used for prediction (after selection). Default is 5.
-#' @param relax Same as in \link[=varsel]{varsel}.
+#' @param cv_search Same as in \link[=varsel]{varsel}.
 #' @param nv_max Same as in \link[=varsel]{varsel}.
 #' @param intercept Same as in \link[=varsel]{varsel}.
 #' @param penalty Same as in \link[=varsel]{varsel}.
@@ -54,7 +54,7 @@
 
 #' @export
 cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
-                          ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=FALSE,
+                          ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, cv_search=FALSE,
                           nv_max = NULL, intercept = NULL, penalty = NULL, verbose = TRUE,
                           nloo=NULL, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
                           thresh=1e-6, regul=1e-4, validate_search=TRUE, seed=NULL,
@@ -63,11 +63,11 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   refmodel <- get_refmodel_poc(fit, ...)
 
   ## resolve the arguments similar to varsel
-  args <- parse_args_varsel_poc(refmodel=refmodel, method=method, relad=relax,
+  args <- parse_args_varsel_poc(refmodel=refmodel, method=method, relad=cv_search,
                                 intercept=intercept, nv_max=nv_max, nc=nc, ns=ns,
                                 ncpred=ncpred, nspred=nspred, groups=groups)
   method <- args$method
-  relax <- args$relax
+  cv_search <- args$cv_search
   intercept <- args$intercept
   nv_max <- args$nv_max
   nc <- args$nc
@@ -89,14 +89,14 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
     if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
     sel_cv <- loo_varsel_poc(refmodel=refmodel, method=method, nv_max=nv_max,
                              ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
-                             relax=relax, intercept=intercept, penalty=penalty,
+                             cv_search=cv_search, intercept=intercept, penalty=penalty,
                              verbose=verbose, opt=opt, nloo=nloo,
                              validate_search=validate_search, seed=seed,
                              groups=groups)
   } else if (cv_method == 'kfold')  {
     sel_cv <- kfold_varsel_poc(refmodel=refmodel, method=method, nv_max=nv_max,
                                ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
-                               relax=relax, intercept=intercept,
+                               cv_search=cv_search, intercept=intercept,
                                penalty=penalty, verbose=verbose, opt=opt, K=K,
                                seed=seed, groups=groups)
   } else {
@@ -107,7 +107,7 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   if (verbose)
     print(paste('Performing the selection using all the data..'))
   sel <- varsel_poc(refmodel, method=method, ns=ns, nc=nc, nspred=nspred,
-                    ncpred=ncpred, relax=relax, nv_max=nv_max, intercept=intercept,
+                    ncpred=ncpred, cv_search=cv_search, nv_max=nv_max, intercept=intercept,
                     penalty=penalty, verbose=verbose,
                     lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul,
                     groups=groups)
@@ -171,7 +171,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K) {
   nlist(cv_method, K)
 }
 
-loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept,
+loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept,
                            penalty, verbose, opt, nloo = NULL, validate_search = TRUE, seed = NULL,
                            groups=NULL) {
   ##
@@ -258,7 +258,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, rel
 
     ## project onto the selected models and compute the prediction accuracy for the left-out point
     submodels <- .get_submodels_poc(spath, c(0, seq_along(vind)), family, p_pred,
-                                    refmodel, intercept, opt$regul, as.search=relax)
+                                    refmodel, intercept, opt$regul, cv_search=cv_search)
     summaries_sub <- .get_sub_summaries_poc(submodels, c(i), refmodel, family)
 
     for (k in seq_along(summaries_sub)) {
@@ -296,7 +296,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, rel
 
 }
 
-kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax,
+kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search,
                              intercept, penalty, verbose, opt, K, seed=NULL, groups=NULL) {
 
   has_group_features <- !is.null(groups)
@@ -346,7 +346,7 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, r
     close(pb)
 
   ## Construct submodel projections for each fold
-  if (verbose && !relax) {
+  if (verbose && !cv_search) {
     print('Computing projections..')
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
@@ -356,12 +356,12 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, r
     vind <- spath$vind
     p_sub <- .get_submodels_poc(spath, c(0, seq_along(vind)), family_kl,
                                 fold$p_pred, fold$refmodel, intercept,
-                                opt$regul, as.search=relax)
-    if (verbose && !relax)
+                                opt$regul, cv_search=cv_search)
+    if (verbose && !cv_search)
       utils::setTxtProgressBar(pb, fold_index)
     return(p_sub)
   }, spath_cv, seq_along(list_cv), SIMPLIFY = FALSE)
-  if (verbose && !relax)
+  if (verbose && !cv_search)
     close(pb)
 
 

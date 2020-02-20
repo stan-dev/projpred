@@ -84,7 +84,7 @@ get_refmodel.stanreg <- function(object, ...) {
 
   ## data, family and the predictor matrix x
   ## inputs of the reference model (this contains also the target or a transformation of it, but that shouldn't hurt)
-  fam <- kl_helpers(family(object))
+  fam <- extend_family(family(object))
   if ('lmerMod' %in% class(object) || 'gamm4' %in% class(object))
     x <- as.matrix(object$x)
   else {
@@ -157,7 +157,7 @@ get_refmodel.brmsfit <- function(object, ...) {
   ## bernoulli is just a special case of binomial
   fam <- ifelse(family == "bernoulli", "binomial", family)
   fam <- get(fam, mode = "function")()
-  fam <- kl_helpers(fam)
+  fam <- extend_family(fam)
   x <- model.matrix(mu_btl$fe, data = z)
   rownames(x) <- NULL
   ## drop the intercept column
@@ -337,7 +337,7 @@ init_refmodel <- function(z, y, family, x=NULL, predfun=NULL, dis=NULL, offset=N
                           wobs=NULL, wsample=NULL, intercept=TRUE, cvfun=NULL, cvfits=NULL,  ...) {
 
   n <- NROW(z)
-  family <- kl_helpers(family)
+  family <- extend_family(family)
 
   mu_fun <- function(x, alpha, beta, offset) {
     if (!is.matrix(x)) stop('x must be a matrix.')
@@ -515,9 +515,9 @@ get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfu
     fetch_data(data, obs, newdata)
 
   if (is.null(family))
-    family <- kl_helpers(family(fit))
+    family <- extend_family(family(fit))
   else
-    family <- kl_helpers(family)
+    family <- extend_family(family)
 
   family$mu_fun <- function(fit, obs=folds, xnew=NULL) {
     newdata <- fetch_data_wrapper(obs=obs, newdata=xnew)
@@ -538,7 +538,7 @@ get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
   family <- family(fit)$family
   fam <- ifelse(family == "bernoulli", "binomial", family)
   fam <- get(fam, mode = "function")()
-  family <- kl_helpers(fam)
+  family <- extend_family(fam)
 
   if (is.null(formula))
     formula <- as.formula(formula(fit))
@@ -561,7 +561,7 @@ get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
                                      predfun=NULL, proj_predfun=NULL, mle=NULL,
                                      folds=NULL, penalized=FALSE, ...) {
   family <- family(fit)
-  family <- kl_helpers(family)
+  family <- extend_family(family)
 
   if (is.null(formula))
     formula <- formula(fit)

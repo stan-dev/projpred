@@ -12,7 +12,7 @@ cv_varsel(
   nc = NULL,
   nspred = NULL,
   ncpred = NULL,
-  relax = NULL,
+  cv_search = NULL,
   nv_max = NULL,
   intercept = NULL,
   penalty = NULL,
@@ -44,7 +44,7 @@ cv_varsel(
 
 \item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
 
-\item{relax}{Same as in \link[=varsel]{varsel}.}
+\item{cv_search}{Same as in \link[=varsel]{varsel}.}
 
 \item{nv_max}{Same as in \link[=varsel]{varsel}.}
 

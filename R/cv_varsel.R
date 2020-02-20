@@ -9,7 +9,7 @@
 #' (L1-search uses always one cluster).
 #' @param nspred Number of samples used for prediction (after selection). Ignored if ncpred is given.
 #' @param ncpred Number of clusters used for prediction (after selection). Default is 5.
-#' @param relax Same as in \link[=varsel]{varsel}.
+#' @param cv_search Same as in \link[=varsel]{varsel}.
 #' @param nv_max Same as in \link[=varsel]{varsel}.
 #' @param intercept Same as in \link[=varsel]{varsel}.
 #' @param penalty Same as in \link[=varsel]{varsel}.
@@ -53,7 +53,7 @@
 
 #' @export
 cv_varsel <- function(fit,  method = NULL, cv_method = NULL, 
-                      ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, relax=NULL,
+                      ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, cv_search=NULL,
                       nv_max = NULL, intercept = NULL, penalty = NULL, verbose = T,
                       nloo=NULL, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
                       thresh=1e-6, regul=1e-4, validate_search=T, seed=NULL, ...) {
@@ -61,9 +61,9 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	refmodel <- get_refmodel(fit, ...)
 	
 	# resolve the arguments similar to varsel
-	args <- parseargs_varsel(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred)
+	args <- parseargs_varsel(refmodel, method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred)
 	method <- args$method
-	relax <- args$relax
+	cv_search <- args$cv_search
 	intercept <- args$intercept
 	nv_max <- args$nv_max
 	nc <- args$nc
@@ -82,11 +82,11 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	if (tolower(cv_method) == 'kfold') {
 	  # TODO: should we save the cvfits object to the reference model so that it need not be computed again
 	  # if the user wants to compute the search again?
-		sel_cv <- kfold_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty,
+		sel_cv <- kfold_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept, penalty,
 		                       verbose, opt, K, seed=seed)
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
-		sel_cv <- loo_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty, 
+		sel_cv <- loo_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept, penalty, 
 		                     verbose, opt, nloo = nloo, validate_search = validate_search, seed = seed)
 	} else {
                stop(sprintf('Unknown cross-validation method: %s.', cv_method))
@@ -96,7 +96,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	if (verbose)
 		cat('Performing variable selection using all data...\n')
 	sel <- varsel(refmodel, method=method, ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
-	              relax=relax, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose, 
+	              cv_search=cv_search, nv_max=nv_max, intercept=intercept, penalty=penalty, verbose=verbose, 
 	              lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul)
 
 
@@ -156,7 +156,7 @@ parseargs_cv_varsel <- function(refmodel, cv_method, K) {
 }
 
 
-kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax,
+kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search,
                          intercept, penalty, verbose, opt, K, seed=NULL) {
 	
 	# fetch the k_fold list (or compute it now if not already computed)
@@ -209,8 +209,8 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
   
 
   # Construct submodel projections for each fold
-  as.search <- !relax && !is.null(spath_cv[[1]]$beta) && !is.null(spath_cv[[1]]$alpha)
-  if (verbose && !as.search) {
+  cv_search <- !cv_search && !is.null(spath_cv[[1]]$beta) && !is.null(spath_cv[[1]]$alpha)
+  if (verbose && !cv_search) {
     cat('Computing projections...\n')
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
@@ -218,12 +218,12 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
     fold <- list_cv[[fold_index]]
     vind <- spath$vind
     p_sub <- .get_submodels(spath, c(0, seq_along(vind)), family_kl, fold$p_pred,
-                            fold$d_train, intercept, opt$regul, as.search=as.search)
-    if (verbose && !as.search)
+                            fold$d_train, intercept, opt$regul, cv_search=cv_search)
+    if (verbose && !cv_search)
       utils::setTxtProgressBar(pb, fold_index)
     return(p_sub)
   }, spath_cv, seq_along(list_cv), SIMPLIFY = F)
-  if (verbose && !as.search)
+  if (verbose && !cv_search)
     close(pb)
   
   
@@ -302,7 +302,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
 
 
 
-loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, 
+loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept, 
                        penalty, verbose, opt, nloo = NULL, validate_search = T, seed = NULL) {
 	#
 	# Performs the validation of the searching process using LOO.
@@ -390,9 +390,9 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 		} 
 	  
 		# project onto the selected models and compute the prediction accuracy for the left-out point
-	  as.search <- !relax && !is.null(spath$beta) && !is.null(spath$alpha)
+	  cv_search <- !cv_search && !is.null(spath$beta) && !is.null(spath$alpha)
 	  submodels <- .get_submodels(spath, 0:nv_max, fam, p_pred,
-	                              d_train, intercept, opt$regul, as.search=as.search)
+	                              d_train, intercept, opt$regul, cv_search=cv_search)
 		d_test <- list(x=matrix(refmodel$x[i,],nrow=1), y=refmodel$y[i], offset=d_train$offset[i], weights=d_train$weights[i])
 		summaries_sub <- .get_sub_summaries(submodels, d_test, fam)
 

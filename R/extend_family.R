@@ -1,6 +1,6 @@
 # Model-specific helper functions.
 #
-# \code{kl_helpers(fam)} returns a family object augmented with auxiliary functions that
+# \code{extend_family(fam)} returns a family object augmented with auxiliary functions that
 # are needed for computing KL divergence, log predictive density, projecting dispersion etc.
 #
 # Missing: Quasi-families not implemented. If dis_gamma is the correct shape
@@ -8,20 +8,16 @@
 
 ## TODO: rename this, kl_helper does not help anybody
 #' @export
-kl_helpers <- function(fam) {
+extend_family <- function(fam) {
   if (.has_fam_extras(fam))
     ## if the object already was created using this function, then return
     return(fam)
 
-  switch(fam$family,
-         'binomial' = kl_helpers_binomial(fam),
-         'poisson' = kl_helpers_poisson(fam),
-         'gaussian' = kl_helpers_gaussian(fam),
-         'Gamma' = kl_helpers_gamma(fam),
-         'Student_t' = kl_helpers_student_t(fam))
+  extend_family_specific <- match.fun(paste0("extend_family", fam))
+  extend_family_specific(fam)
 }
 
-kl_helpers_binomial <- function(fam) {
+extend_family_binomial <- function(fam) {
   kl_dev <- function(pref, data, psub) {
     if(NCOL(pref$mu) > 1) {
       w <- rep(data$weights, NCOL(pref$mu))
@@ -50,7 +46,7 @@ kl_helpers_binomial <- function(fam) {
   return(fam)
 }
 
-kl_helpers_poisson <- function(fam) {
+extend_family_poisson <- function(fam) {
   kl_dev <- function(pref, data, psub) {
     if(NCOL(pref$mu) > 1) {
       w <- rep(data$weights, NCOL(pref$mu))
@@ -79,7 +75,7 @@ kl_helpers_poisson <- function(fam) {
   return(fam)
 }
 
-kl_helpers_gaussian <- function(fam) {
+extend_family_gaussian <- function(fam) {
   kl_gauss <- function(pref, data, psub) colSums(data$weights * (psub$mu-pref$mu)^2) # not the actual kl but reasonable surrogate..
   dis_gauss <- function(pref, psub, wobs=1) {
   	sqrt(colSums(wobs/sum(wobs)*(pref$var + (pref$mu-psub$mu)^2)))
@@ -115,7 +111,7 @@ kl_helpers_gaussian <- function(fam) {
   return(fam)
 }
 
-kl_helpers_gamma <- function(fam) {
+extend_family_gamma <- function(fam) {
   kl_gamma <- function(pref, data, psub) {
     stop('KL-divergence for gamma not implemented yet.')
     ## mean(data$weights*(
@@ -151,7 +147,7 @@ kl_helpers_gamma <- function(fam) {
   return(fam)
 }
 
-kl_helpers_student_t <- function(fam) {
+extend_family_student_t <- function(fam) {
   kl_student_t <- function(pref, data, psub) log(psub$dis) #- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
   dis_student_t <- function(pref, psub, wobs=1) {
   	s2 <- colSums( psub$w/sum(wobs)*(pref$var+(pref$mu-psub$mu)^2) ) # CHECK THIS
@@ -198,6 +194,6 @@ kl_helpers_student_t <- function(fam) {
 
 .has_fam_extras <- function(fam) {
   # check whether the family object has the extra functions, that is, whether it was
-  # created by kl_helpers
+  # created by extend_family
   !is.null(fam$deviance)
 }
