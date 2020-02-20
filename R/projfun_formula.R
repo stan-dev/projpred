@@ -52,10 +52,10 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
 }
 
 .get_submodels_poc <- function(searchpath, nv, family_kl, p_ref,
-                               refmodel, intercept, regul, as.search=FALSE) {
+                               refmodel, intercept, regul, cv_search=FALSE) {
   ##
   ##
-  ## Project onto given model sizes nv. Returns a list of submodels. If as.search=TRUE,
+  ## Project onto given model sizes nv. Returns a list of submodels. If cv_search=FALSE,
   ## submodels parameters will be as they were computed during the search, so there is
   ## no need to project anything anymore, and this function simply fetches the information
   ## from the searchpath list, which contains the parameter values.
@@ -64,7 +64,7 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   varorder <- searchpath$vind
   p_sel <- searchpath$p_sel
 
-  if (as.search) {
+  if (!cv_search) {
     ## simply fetch the already computed quantities for each submodel size
     fetch_submodel <- function(nv) {
       submodel <- list()
