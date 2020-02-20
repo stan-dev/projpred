@@ -158,27 +158,32 @@ proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
       pred <- as.vector(pred)
     }
 
-    if (!is.null(ynew)) {
-      ## compute also the log-density
-      target <- .get_standard_y(ynew, weights, proj$family_kl)
-      ynew <- target$y
-      weights <- target$weights
-      lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew, weights)
-      if (integrated && !is.null(dim(lpd))) {
-        lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
-      } else if (!is.null(dim(lpd))) {
-        lpd <- t(lpd)
-      }
-      return(nlist(pred, lpd))
-    } else {
-      return(pred)
-    }
+    return(nlist(pred, lpd=compute_lpd(ynew, proj, weights,
+                                       integrated=integrated)))
   }
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper_poc(object = object, xnew = xnew, offsetnew = offsetnew,
-                  weightsnew = weightsnew, nv = nv, seed = NULL, proj_predict =
-                                                                   proj_predict, ...)
+                  weightsnew = weightsnew, nv = nv, seed = NULL,
+                  proj_predict = proj_predict, ...)
+}
+
+compute_lpd <- function(ynew, proj, weights, integrated=FALSE) {
+  if (!is.null(ynew)) {
+    ## compute also the log-density
+    target <- .get_standard_y(ynew, weights, proj$family_kl)
+    ynew <- target$y
+    weights <- target$weights
+    lpd <- proj$family_kl$ll_fun(mu, proj$dis, ynew, weights)
+    if (integrated && !is.null(dim(lpd))) {
+      lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
+    } else if (!is.null(dim(lpd))) {
+      lpd <- t(lpd)
+    }
+    return(lpd)
+  } else {
+    return(NULL)
+  }
 }
 
 #' @rdname proj-pred
