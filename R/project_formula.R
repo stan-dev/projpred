@@ -69,7 +69,9 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
     cv_search <- inherits(refmodel, "datafit")
   }
 
-  if (is.null(object$spath$beta) || (!is.null(vind) && any(object$spath$vind[1:length(vind)] != vind))) {
+  if (is.null(object$spath$beta) ||
+      (!is.null(vind) &&
+       any(object$spath$vind[1:length(vind)] != vind))) {
     ## search path not found, or the given variable combination not in the search path
     cv_search <- TRUE
   }
@@ -87,10 +89,10 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
     ns <- min(ns, NCOL(refmodel$mu))
 
   if (is.null(nv)) {
-    if (!is.null(object$suggested_size) && !is.na(object$suggested_size))
+    if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
       ## by default, project onto the suggested model size
       nv <- object$suggested_size
-    else
+    } else
       stop('No suggested model size found, please specify nv or vind')
   } else {
     if (!is.numeric(nv) || any(nv < 0))
