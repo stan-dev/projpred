@@ -12,6 +12,8 @@ extend_family <- function(fam) {
     ## if the object already was created using this function, then return
     return(fam)
 
+  if (fam == "bernoulli")
+    fam <- "binomial"
   extend_family_specific <- match.fun(paste0("extend_family", fam))
   extend_family_specific(fam)
 }
@@ -75,7 +77,8 @@ extend_family_poisson <- function(fam) {
 }
 
 extend_family_gaussian <- function(fam) {
-  kl_gauss <- function(pref, data, psub) colSums(data$weights * (psub$mu-pref$mu)^2) # not the actual kl but reasonable surrogate..
+  kl_gauss <- function(pref, data, psub)
+    colSums(data$weights * (psub$mu-pref$mu)^2) # not the actual kl but reasonable surrogate..
   dis_gauss <- function(pref, psub, wobs=1) {
   	sqrt(colSums(wobs/sum(wobs)*(pref$var + (pref$mu-psub$mu)^2)))
   }
@@ -147,7 +150,8 @@ extend_family_gamma <- function(fam) {
 }
 
 extend_family_student_t <- function(fam) {
-  kl_student_t <- function(pref, data, psub) log(psub$dis) #- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
+  kl_student_t <- function(pref, data, psub)
+    log(psub$dis) #- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
   dis_student_t <- function(pref, psub, wobs=1) {
   	s2 <- colSums( psub$w/sum(wobs)*(pref$var+(pref$mu-psub$mu)^2) ) # CHECK THIS
   	sqrt(s2)
@@ -186,7 +190,7 @@ extend_family_student_t <- function(fam) {
   return(fam)
 }
 
-.has.dispersion <- function(fam) {
+.has_dispersion <- function(fam) {
 	# a function for checking whether the family has a dispersion parameter
 	fam$family %in% c('gaussian','Student_t','Gamma')
 }
