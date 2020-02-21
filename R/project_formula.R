@@ -84,24 +84,28 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
   }
 
   if (is.null(nc))
-    ## by default project at most 400 draws
+    ns <- min(ns, NCOL(refmodel$mu))
 
-    if (is.null(nv)) {
-      if (!is.null(object$suggested_size) && !is.na(object$suggested_size))
-        ## by default, project onto the suggested model size
-        else
-          stop('No suggested model size found, please specify nv or vind')
+  if (is.null(nv)) {
+    if (!is.null(object$suggested_size) && !is.na(object$suggested_size))
+      ## by default, project onto the suggested model size
+      nv <- object$suggested_size
+    else
+      stop('No suggested model size found, please specify nv or vind')
+  } else {
+    if (!is.numeric(nv) || any(nv < 0))
+      stop('nv must contain non-negative values.')
+    if (max(nv) > length(vind)) {
+      stop(paste('Cannot perform the projection with', max(nv), 'variables,',
+                 'because variable selection was run only up to', length(vind),
+                 'variables.'))
     }
+  }
 
   if (is.null(intercept))
     intercept <- refmodel$intercept
 
   family_kl <- refmodel$family
-
-  if (max(nv) > length(vind))
-    stop(paste('Cannot perform the projection with', max(nv), 'variables,',
-               'because the variable selection has been run only up to',
-               length(object$vind), 'variables.'))
 
   ## get the clustering or subsample
   p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
