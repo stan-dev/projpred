@@ -112,8 +112,9 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
     fetch_submodel <- function(nv) {
       if (nv == 0)
         ## empty
-        else
-          vind <- varorder[1:nv]
+        vind <- integer(length=0)
+      else
+        vind <- varorder[1:nv]
       return(projfun(vind, p_ref, refmodel, intercept))
     }
   }
