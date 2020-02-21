@@ -73,8 +73,8 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
 
-  if ('projection' %in% class(object) ||
-      (length(object)>0 && 'projection' %in% class(object[[1]]))) {
+  if (inherits(object, "projection") ||
+      (length(object) > 0 && inherits(object[[1]], "projection"))) {
     proj <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
@@ -90,8 +90,8 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
                  ' varsel, cv_varsel or project'))
   }
 
-  ## FIXME: proj$sub_fit always exists, but does $coefficients?
-  projected_sizes <- sapply(proj, function(x) NCOL(x$sub_fit$coefficients))
+  projected_sizes <- sapply(proj, function(x)
+    count_variables_chosen(object$formula, x$vind))
   nv <- list(...)$nv %ORifNULL% projected_sizes
 
   if (!all(nv %in% projected_sizes))
@@ -123,16 +123,7 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
-    if (xnew_df) {
-      xtemp <- xnew[, min(1, length(proj$vind)):length(proj$vind), drop = F]
-    } else if (!is.null(vind)) {
-      ## columns of xnew are assumed to match to the given variable indices
-      xtemp <- xnew
-    } else {
-      ## fetch the right columns from the feature matrix
-      xtemp <- xnew[, unique(unname(unlist(proj$vind))), drop = F]
-    }
-    mu <- proj$family_kl$mu_fun(proj$sub_fit, xnew=xtemp)
+    mu <- proj$family_kl$mu_fun(proj$sub_fit, xnew=xnew)
 
     proj_predict(proj, mu, offsetnew, weightsnew)
   })
