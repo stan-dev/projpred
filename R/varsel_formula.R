@@ -130,7 +130,6 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
              vind = searchpath$vind,
              kl = sapply(p_sub, function(x) x$kl) )
 
-  class(vs) <- 'vsel'
   ## suggest model size
   vs$nv_max <- nv_max
   vs$nv_all <- count_terms_in_subformula(refmodel$formula)
@@ -138,6 +137,7 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
                                     has_group_features = has_group_features,
                                     groups = groups)
 
+  class(vs) <- 'vsel'
   vs
 }
 
@@ -194,12 +194,8 @@ parse_args_varsel_poc <- function(refmodel, method, cv_search, intercept,
     if (group_features)
       method <- 'forward'
 
-  if (is.null(cv_search)) {
-    if ('datafit' %in% class(refmodel))
-      cv_search <- FALSE
-    else
-      cv_search <- TRUE
-  }
+  if (is.null(cv_search))
+    cv_search <- !inherits(refmodel, "datafit")
 
   method <- tolower(method)
   if ((is.null(ns) && is.null(nc)) || method=='l1') {

@@ -243,7 +243,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
     ## observation index
     i <- inds[run_index]
 
-    ## reweight the clusters/samples according to the is-loo weights
+    ## reweight the clusters/samples according to the psis-loo weights
     p_sel <- .get_p_clust(family, mu, dis, wsample=exp(lw[,i]), cl=cl_sel)
     p_pred <- .get_p_clust(family, mu, dis, wsample=exp(lw[,i]), cl=cl_pred)
 
@@ -281,13 +281,12 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
     close(pb)
 
   ## put all the results together in the form required by cv_varsel
-  summ_sub <-	lapply(0:nv_max, function(k){
-    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1], w=validset$w)
-  })
+  summ_sub <-	lapply(0:nv_max, function(k)
+    list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1], w=validset$w))
   summ_ref <- list(lppd=loo_ref, mu=mu_ref)
   summaries <- list(sub=summ_sub, ref=summ_ref)
 
-  vind_cv <- lapply(1:n, function(i){ vind_mat[i,] })
+  vind_cv <- lapply(1:n, function(i) vind_mat[i,])
 
   d_test <- list(y=refmodel$y, type='loo',
                  test_points=seq_along(refmodel$y))
@@ -315,8 +314,7 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
 
   ## List of K elements, each containing d_train, p_pred, etc. corresponding
   ## to each fold.
-  msgs <- paste0(method, ' search for fold ', 1:K, '/', K, '.')
-  list_cv <- mapply(function(refmodel, test_points, msg) {
+  make_list_cv <- function(refmodel, test_points, msg) {
     p_sel <- .get_refdist(refmodel, ns, nc)
     p_pred <- .get_refdist(refmodel, nspred, ncpred)
     newdata <- refmodel$fetch_data(obs=test_points)
@@ -324,7 +322,11 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
     nlist(refmodel, p_sel, p_pred, mu_test, dis = refmodel$dis,
           w_test = refmodel$wsample, msg, y_test = refmodel$y[test_points],
           test_points)
-  }, refmodels_cv, k_fold$test_points, msgs, SIMPLIFY = FALSE)
+  }
+
+  msgs <- paste0(method, ' search for fold ', 1:K, '/', K, '.')
+  list_cv <- mapply(make_list_cv, refmodels_cv, k_fold$test_points, msgs,
+                    SIMPLIFY = FALSE)
 
   ## Perform the selection for each of the K folds
   if (verbose) {
@@ -346,24 +348,27 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
     close(pb)
 
   ## Construct submodel projections for each fold
-  if (verbose && !cv_search) {
+  if (verbose && cv_search) {
     print('Computing projections..')
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial=0)
   }
-  p_sub_cv <- mapply(function(spath, fold_index) {
+
+  get_submodels_cv <- function(spath, fold_index) {
     fold <- list_cv[[fold_index]]
     family_kl <- fold$refmodel$family
     vind <- spath$vind
     p_sub <- .get_submodels_poc(spath, c(0, seq_along(vind)), family_kl,
                                 fold$p_pred, fold$refmodel, intercept,
                                 opt$regul, cv_search=cv_search)
-    if (verbose && !cv_search)
+    if (verbose && cv_search)
       utils::setTxtProgressBar(pb, fold_index)
     return(p_sub)
-  }, spath_cv, seq_along(list_cv), SIMPLIFY = FALSE)
-  if (verbose && !cv_search)
-    close(pb)
+  }
 
+  p_sub_cv <- mapply(get_submodels_cv, spath_cv, seq_along(list_cv),
+                     SIMPLIFY = FALSE)
+  if (verbose && cv_search)
+    close(pb)
 
   ## Helper function extract and combine mu and lppd from K lists with each
   ## n/K of the elements to one list with n elements
@@ -372,19 +377,21 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
   ## Apply some magic to manipulate the structure of the list so that instead of
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
-  sub <- apply(
-    mapply(function(p_sub, fold) {
-      family_kl <- fold$refmodel$family
-      lapply(.get_sub_summaries_poc(p_sub, fold$test_points, fold$refmodel, family_kl),
-             data.frame)
-    }, p_sub_cv, list_cv),
-    1, hf)
+  get_summaries_submodel_cv <- function(p_sub, fold) {
+    family_kl <- fold$refmodel$family
+    lapply(.get_sub_summaries_poc(p_sub, fold$test_points, fold$refmodel,
+                                  family_kl),
+           data.frame)
+  }
+  sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
+  sub <- apply(sub_cv_summaries, 1, hf)
 
   ref <- hf(lapply(list_cv, function(fold) {
     family_kl <- fold$refmodel$family
     test <- fold$test_points
     d <- list(y=fold$y_test)
-    data.frame(.weighted_summary_means_poc(d, family_kl, fold$mu_test, fold$dis))}))
+    data.frame(.weighted_summary_means_poc(d, family_kl, fold$mu_test,
+                                           fold$dis))}))
 
   ## Combine also the K separate test data sets into one list
   ## with n y's and weights's.
@@ -432,4 +439,50 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
 
   k_fold <- list(refmodel=refmodels, test_points=test_points, train_points=train_points)
   return(k_fold)
+}
+
+.loo_subsample <- function(n, nloo, pareto_k, seed) {
+  ## decide which points to go through in the validation (i.e., which points
+  ## belong to the semi random subsample of validation points)
+
+  ## set random seed but ensure the old RNG state is restored on exit
+  if (exists('.Random.seed')) {
+    rng_state_old <- .Random.seed
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(seed)
+
+  resample <- function(x, ...) x[sample.int(length(x), ...)]
+
+  if (nloo < n) {
+
+    bad <- which(pareto_k > 0.7)
+    ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
+    good <- which(pareto_k <= 0.5)
+    inds <- resample(bad, min(length(bad), floor(nloo/3)) )
+    inds <- c(inds, resample(ok, min(length(ok), floor(nloo/3))))
+    inds <- c(inds, resample(good, min(length(good), floor(nloo/3))))
+    if (length(inds) < nloo) {
+      ## not enough points selected, so choose randomly among the rest
+      inds <- c(inds, resample(setdiff(1:n, inds), nloo-length(inds)))
+    }
+
+    ## assign the weights corresponding to this stratification (for example, the
+    ## 'bad' values are likely to be overpresented in the sample)
+    w <- rep(0,n)
+    w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
+    w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
+    w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
+
+  } else {
+
+    ## all points used
+    inds <- c(1:n)
+    w <- rep(1,n)
+  }
+
+  ## ensure weights are normalized
+  w <- w/sum(w)
+
+  return(nlist(inds, w))
 }
