@@ -66,13 +66,14 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
 
   if (cv_search) {
     ## use non-cv_searched solution for datafits by default
-    cv_search <- inherits(refmodel, "datafit")
+    cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if (is.null(object$spath$beta) ||
-      (!is.null(vind) &&
-       any(object$spath$vind[1:length(vind)] != vind))) {
-    ## search path not found, or the given variable combination not in the search path
+  if (!is.null(vind) &&
+      any(object$vind[1:length(vind)] != vind)) {
+    ## search path not found, or the given variable combination
+    ## not in the search path, then we need to project the
+    ## required variables
     cv_search <- TRUE
   }
 
