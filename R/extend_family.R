@@ -6,7 +6,6 @@
 # Missing: Quasi-families not implemented. If dis_gamma is the correct shape
 # parameter for projected Gamma regression, everything should be OK for gamma.
 
-## TODO: rename this, kl_helper does not help anybody
 #' @export
 extend_family <- function(fam) {
   if (.has_fam_extras(fam))
