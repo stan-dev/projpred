@@ -6,6 +6,8 @@
 extract_terms_response <- function(formula) {
   tt <- terms(formula)
   terms <- attr(tt, "term.labels")
+  ## when converting the variables to a list the first element is
+  ## "list" itself, so we remove it
   variables <- as.list(attr(tt, "variables")[-1])
   response <- attr(tt, "response")
   global_intercept <- attr(tt, "intercept") == 1
@@ -98,7 +100,7 @@ flatten_individual_terms <- function(terms) {
 #' @param terms A vector of linear interaction terms as strings.
 #' @return a vector of unique linear interaction terms.
 flatten_interaction_terms <- function(terms) {
-  if (length(terms) < 1)
+  if (is.null(terms))
     return(terms)
   ## TODO: do this right; a:b == b:a.
   return(unique(terms))
@@ -158,12 +160,6 @@ break_formula <- function(formula, return_group_terms=TRUE) {
   if (length(group_terms) == 0 && length(interaction_terms) == 0)
     return(individual_terms)
 
-  ## if (length(group_terms) > 0 && return_group_terms)
-  ##   warning(paste0("The model involves group terms.",
-  ##                  " Make sure that the provided mle and proj_predfun",
-  ##                  " handle multi-response projections."),
-  ##           call. = FALSE)
-
   if (return_group_terms)
     ## if there are group levels we should split that into basic components
     allterms <- c(individual_terms,
@@ -205,10 +201,10 @@ split_group_term <- function(term) {
   term <- gsub("\\)$", "",
                gsub("^\\(", "",
                     flatten_group_terms(term)))
-  if ("\\-" %in% term)
-    stop("Use of `-` is not supported, omit variables or use the ",
-         "method update on the formula, or write `0 +` to remove ",
-         "the intercept.")
+  ## if ("\\-" %in% term)
+  ##   stop("Use of `-` is not supported, omit variables or use the ",
+  ##        "method update on the formula, or write `0 +` to remove ",
+  ##        "the intercept.")
 
   chunks <- strsplit(term, "[ ]*\\|([^\\|]*\\||)[ ]*")[[1]]
   lhs <- as.formula(paste0("~", chunks[1]))
@@ -367,7 +363,9 @@ sort_submodels_by_size <- function(submodels) {
     groups[[size]] <- as.character(ordered$submodels[ordered$size == size])
 
   ord_list <- groups
+  ## remove NA inside submodels
   ord_list_nona <- lapply(ord_list, function(l) l[!is.na(l)])
+  ## remove NA at the submodels level
   ord_list_nona[!is.na(ord_list_nona)]
 }
 

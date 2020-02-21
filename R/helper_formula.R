@@ -11,8 +11,12 @@ NULL
 break_up_matrix_term <- function(formula, data) {
   tt <- terms(formula)
   response <- attr(tt, "response")
+  ## when converting the variables to a list the first element is
+  ## "list" itself, so we remove it
   variables.list <- as.list(attr(tt, "variables")[-1])
 
+  ## if there is a response, take it out from the variables as
+  ## it is located at the first position after "list"
   if (response)
     variables.list <- variables.list[-1]
 
