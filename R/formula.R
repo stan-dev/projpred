@@ -307,7 +307,7 @@ subset_formula_and_data <- function(formula, terms, data, y=NULL, split_formula=
 
 #' Subsets a formula by the given terms.
 #' @param formula A formula for a valid model.
-#' @param terms A vector of terms to subset.
+#' @param terms A vector of terms to subset from the right hand side.
 #' @return the updated formula
 subset_formula <- function(formula, terms) {
   update(formula, paste0(". ~ ", paste(terms, collapse=" + ")))
@@ -378,32 +378,32 @@ sort_submodels_by_size <- function(submodels) {
 count_variables_chosen <- function(formula, list_of_terms) {
   if (length(list_of_terms) == 0)
     return(0)
-  formula <- subset_formula(refmodel$formula, unique(unlist(list_of_terms)))
+  formula <- subset_formula(formula, unique(unlist(list_of_terms)))
   count_terms_in_subformula(flatten_formula(formula))
 }
 
 #' Utility that checks if the next submodel is redundant with the current one.
-#' @param refmodel A refmodel struct.
+#' @param formula The reference models' formula.
 #' @param current A list of terms included in the current submodel.
 #' @param new The new term to add to the submodel.
 #' @return TRUE if the new term results in a redundant model, FALSE otherwise.
-is_next_submodel_redundant <- function(refmodel, current, new) {
+is_next_submodel_redundant <- function(formula, current, new) {
   old_submodel <- current
   new_submodel <- c(current, new)
-  if (count_variables_chosen(refmodel, new_submodel) >
-      count_variables_chosen(refmodel, old_submodel))
+  if (count_variables_chosen(formula, new_submodel) >
+      count_variables_chosen(formula, old_submodel))
     FALSE
   else
     TRUE
 }
 
 #' Utility to remove redundant models to consider
-#' @param refmodel A refmodel struct.
+#' @param refmodel The reference model's formula.
 #' @param chosen A list of included terms at a given point of the search.
 #' @return a vector of incremental non redundant submodels for all the possible terms
 #' included.
-reduce_models <- function(refmodel, chosen) {
+reduce_models <- function(formula, chosen) {
   Reduce(function(chosen, x)
-    if (is_next_submodel_redundant(refmodel, chosen, x)) chosen else c(chosen, x),
+    if (is_next_submodel_redundant(formula, chosen, x)) chosen else c(chosen, x),
     chosen)
 }

@@ -66,7 +66,7 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
 
   if (cv_search) {
     ## use non-cv_searched solution for datafits by default
-    cv_search <- ('datafit' %in% class(get_refmodel(object)))
+    cv_search <- inherits(refmodel, "datafit")
   }
 
   if (is.null(object$spath$beta) || (!is.null(vind) && any(object$spath$vind[1:length(vind)] != vind))) {
@@ -76,8 +76,8 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
 
   if (!is.null(vind)) {
     ## if vind is given, nv is ignored (project only onto the given submodel)
-    if (length(vind) > count_variables_chosen(object$refmodel, vind))
-      nv <- count_variables_chosen(object$refmodel, vind)
+    if (length(vind) > count_variables_chosen(refmodel$formula, vind))
+      nv <- count_variables_chosen(refmodel$formula, vind)
   } else {
     ## by default take the variable ordering from the selection
     vind <- object$vind

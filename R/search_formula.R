@@ -3,10 +3,12 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   ## initialize the forward selection
   ## proj performs the projection over samples
   projfun <- .get_proj_handle_poc(family_kl, opt$regul)
+
+  formula <- refmodel$formula
   i <- 1
   iq <- ceiling(quantile(1:nv_max, 1:10/10))
   if (is.null(groups))
-    terms_ <- break_formula(refmodel$formula)
+    terms_ <- break_formula(formula)
   else
     terms_ <- groups
   if (increasing_order) {
@@ -20,12 +22,12 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   }
 
   chosen <- NULL
-  total_variables <- count_terms_in_subformula(refmodel$formula)
+  total_variables <- count_terms_in_subformula(formula)
   submodels <- c()
 
   ## start adding terms one at a time
-  while(count_variables_chosen(refmodel, reduce_models(refmodel, chosen)) < nv_max
-        & count_variables_chosen(refmodel, chosen) < total_variables) {
+  while(count_variables_chosen(formula, reduce_models(formula, chosen)) < nv_max
+        & count_variables_chosen(formula, chosen) < total_variables) {
 
     notchosen <- setdiff(current_terms, chosen)
 
@@ -41,7 +43,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
         notchosen <- setdiff(current_terms, chosen)
 
         already_selected <- lapply(notchosen, function(x)
-          if (is_next_submodel_redundant(refmodel, chosen, x)) x else NA)
+          if (is_next_submodel_redundant(formula, chosen, x)) x else NA)
 
         ## if redundant models add the terms to the list so we don't iterate forever
         chosen <- c(chosen, unname(unlist(already_selected[!is.na(already_selected)])))
@@ -50,7 +52,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
 
     ## only add candidates that are not redundant with previous chosen submodels
     cands <- lapply(notchosen, function(x)
-      if (is_next_submodel_redundant(refmodel, chosen, x)) NA else c(chosen, x))
+      if (is_next_submodel_redundant(formula, chosen, x)) NA else c(chosen, x))
 
     ## remove already selected terms
     cands <- cands[!is.na(cands)]
@@ -70,7 +72,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
-  list(vind=reduce_models(refmodel, chosen), sub_fits=submodels)
+  list(vind=reduce_models(formula, chosen), sub_fits=submodels)
 }
 
 search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
