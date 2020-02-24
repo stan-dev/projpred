@@ -1,30 +1,33 @@
 # Model-specific helper functions.
 #
-# \code{extend_family(fam)} returns a family object augmented with auxiliary functions that
+# \code{extend_family(family)} returns a family object augmented with auxiliary functions that
 # are needed for computing KL divergence, log predictive density, projecting dispersion etc.
 #
-# Missing: Quasi-families not implemented. If dis_gamma is the correct shape
+# Missing: Quasi-familyilies not implemented. If dis_gamma is the correct shape
 # parameter for projected Gamma regression, everything should be OK for gamma.
 
+#' Add extra fields to the family object.
+#' @param family Family object.
+#' @return Extended family object.
 #' @export
-extend_family <- function(fam) {
-  if (.has_fam_extras(fam))
+extend_family <- function(family) {
+  if (.has_family_extras(family))
     ## if the object already was created using this function, then return
-    return(fam)
+    return(family)
 
-  if (fam == "bernoulli")
-    fam <- "binomial"
-  extend_family_specific <- match.fun(paste0("extend_family", fam))
-  extend_family_specific(fam)
+  if (family$family == "bernoulli")
+    family$family <- "binomial"
+  extend_family_specific <- match.fun(paste0("extend_family_", family$family))
+  extend_family_specific(family)
 }
 
-extend_family_binomial <- function(fam) {
+extend_family_binomial <- function(family) {
   kl_dev <- function(pref, data, psub) {
     if(NCOL(pref$mu) > 1) {
       w <- rep(data$weights, NCOL(pref$mu))
-      colMeans(fam$dev.resids(pref$mu, psub$mu, w))/2
+      colMeans(family$dev.resids(pref$mu, psub$mu, w))/2
     } else {
-      mean(fam$dev.resids(pref$mu, psub$mu, data$weights))/2
+      mean(family$dev.resids(pref$mu, psub$mu, data$weights))/2
     }
   }
   dis_na <- function(pref, psub, wobs=1) rep(0, ncol(pref$mu))
@@ -37,23 +40,23 @@ extend_family_binomial <- function(fam) {
   }
   ppd_binom <- function(mu, dis, weights = 1) rbinom(length(mu), weights, mu)
 
-  fam$kl <- kl_dev
-  fam$dis_fun <- dis_na
-  fam$predvar <- predvar_na
-  fam$ll_fun <- ll_binom
-  fam$deviance <- dev_binom
-  fam$ppd <- ppd_binom
+  family$kl <- kl_dev
+  family$dis_fun <- dis_na
+  family$predvar <- predvar_na
+  family$ll_fun <- ll_binom
+  family$deviance <- dev_binom
+  family$ppd <- ppd_binom
 
-  return(fam)
+  return(family)
 }
 
-extend_family_poisson <- function(fam) {
+extend_family_poisson <- function(family) {
   kl_dev <- function(pref, data, psub) {
     if(NCOL(pref$mu) > 1) {
       w <- rep(data$weights, NCOL(pref$mu))
-      colMeans(fam$dev.resids(pref$mu, psub$mu, w))/2
+      colMeans(family$dev.resids(pref$mu, psub$mu, w))/2
     } else {
-      mean(fam$dev.resids(pref$mu, psub$mu, data$weights))/2
+      mean(family$dev.resids(pref$mu, psub$mu, data$weights))/2
     }
   }
   dis_na <- function(pref, psub, wobs=1) rep(0, ncol(pref$mu))
@@ -66,17 +69,17 @@ extend_family_poisson <- function(fam) {
   }
   ppd_poiss <- function(mu, dis, weights = 1) rpois(length(mu), mu)
 
-  fam$kl <- kl_dev
-  fam$dis_fun <- dis_na
-  fam$predvar <- predvar_na
-  fam$ll_fun <- ll_poiss
-  fam$deviance <- dev_poiss
-  fam$ppd <- ppd_poiss
+  family$kl <- kl_dev
+  family$dis_fun <- dis_na
+  family$predvar <- predvar_na
+  family$ll_fun <- ll_poiss
+  family$deviance <- dev_poiss
+  family$ppd <- ppd_poiss
 
-  return(fam)
+  return(family)
 }
 
-extend_family_gaussian <- function(fam) {
+extend_family_gaussian <- function(family) {
   kl_gauss <- function(pref, data, psub)
     colSums(data$weights * (psub$mu-pref$mu)^2) # not the actual kl but reasonable surrogate..
   dis_gauss <- function(pref, psub, wobs=1) {
@@ -103,17 +106,17 @@ extend_family_gaussian <- function(fam) {
   }
   ppd_gauss <- function(mu, dis, weights = 1) rnorm(length(mu), mu, dis)
 
-  fam$kl <- kl_gauss
-  fam$dis_fun <- dis_gauss
-  fam$predvar <- predvar_gauss
-  fam$ll_fun <- ll_gauss
-  fam$deviance <- dev_gauss
-  fam$ppd <- ppd_gauss
+  family$kl <- kl_gauss
+  family$dis_fun <- dis_gauss
+  family$predvar <- predvar_gauss
+  family$ll_fun <- ll_gauss
+  family$deviance <- dev_gauss
+  family$ppd <- ppd_gauss
 
-  return(fam)
+  return(family)
 }
 
-extend_family_gamma <- function(fam) {
+extend_family_gamma <- function(family) {
   kl_gamma <- function(pref, data, psub) {
     stop('KL-divergence for gamma not implemented yet.')
     ## mean(data$weights*(
@@ -125,7 +128,7 @@ extend_family_gamma <- function(fam) {
     ## TODO, IMPLEMENT THIS
     stop('Projection of dispersion parameter not yet implemented for family Gamma.')
     ## mean(data$weights*((pref$mu - p_sub$mu)/
-    ##                      fam$mu.eta(fam$linkfun(p_sub$mu))^2))
+    ##                      family$mu.eta(family$linkfun(p_sub$mu))^2))
   }
   predvar_gamma <- function(mu, dis, wsample=1) { stop('Family Gamma not implemented yet.')}
   ll_gamma <- function(mu, dis, y, weights=1) {
@@ -139,17 +142,17 @@ extend_family_gamma <- function(fam) {
   }
   ppd_gamma <- function(mu, dis, weights = 1) rgamma(length(mu), dis, dis/mu)
 
-  fam$kl <- kl_gamma
-  fam$dis_fun <- dis_gamma
-  fam$predvar <- predvar_gamma
-  fam$ll_fun <- ll_gamma
-  fam$deviance <- dev_gamma
-  fam$ppd <- ppd_gamma
+  family$kl <- kl_gamma
+  family$dis_fun <- dis_gamma
+  family$predvar <- predvar_gamma
+  family$ll_fun <- ll_gamma
+  family$deviance <- dev_gamma
+  family$ppd <- ppd_gamma
 
-  return(fam)
+  return(family)
 }
 
-extend_family_student_t <- function(fam) {
+extend_family_student_t <- function(family) {
   kl_student_t <- function(pref, data, psub)
     log(psub$dis) #- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
   dis_student_t <- function(pref, psub, wobs=1) {
@@ -161,13 +164,13 @@ extend_family_student_t <- function(fam) {
   	wsample <- wsample/sum(wsample)
   	mu_mean <- mu %*% wsample
   	mu_var <- mu^2 %*% wsample - mu_mean^2
-  	as.vector( fam$nu/(fam$nu-2)*sum(wsample*dis^2) + mu_var )
+  	as.vector( family$nu/(family$nu-2)*sum(wsample*dis^2) + mu_var )
   }
   ll_student_t <- function(mu, dis, y, weights=1) {
     dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
     if (NCOL(y) < NCOL(mu))
     	y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
-    weights*(dt((y-mu)/dis, fam$nu, log=T) - log(dis))
+    weights*(dt((y-mu)/dis, family$nu, log=T) - log(dis))
   }
   dev_student_t <- function(mu, y, weights=1, dis=NULL) {
   	if (is.null(dis))
@@ -176,27 +179,27 @@ extend_family_student_t <- function(fam) {
   		dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
   	if (NCOL(y) < NCOL(mu))
   		y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
-  	-2*weights*(-0.5*(fam$nu+1)*log(1 + 1/fam$nu*((y-mu)/dis)^2) - log(dis))
+  	-2*weights*(-0.5*(family$nu+1)*log(1 + 1/family$nu*((y-mu)/dis)^2) - log(dis))
   }
-  ppd_student_t <- function(mu, dis, weights = 1) rt(length(mu), fam$nu)*dis + mu
+  ppd_student_t <- function(mu, dis, weights = 1) rt(length(mu), family$nu)*dis + mu
 
-  fam$kl <- kl_student_t
-  fam$dis_fun <- dis_student_t
-  fam$predvar <- predvar_student_t
-  fam$ll_fun <- ll_student_t
-  fam$deviance <- dev_student_t
-  fam$ppd <- ppd_student_t
+  family$kl <- kl_student_t
+  family$dis_fun <- dis_student_t
+  family$predvar <- predvar_student_t
+  family$ll_fun <- ll_student_t
+  family$deviance <- dev_student_t
+  family$ppd <- ppd_student_t
 
-  return(fam)
+  return(family)
 }
 
-.has_dispersion <- function(fam) {
+.has_dispersion <- function(family) {
 	# a function for checking whether the family has a dispersion parameter
-	fam$family %in% c('gaussian','Student_t','Gamma')
+	family$family %in% c('gaussian','Student_t','Gamma')
 }
 
-.has_fam_extras <- function(fam) {
+.has_family_extras <- function(family) {
   # check whether the family object has the extra functions, that is, whether it was
   # created by extend_family
-  !is.null(fam$deviance)
+  !is.null(family$deviance)
 }
