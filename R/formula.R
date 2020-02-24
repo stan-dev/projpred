@@ -275,8 +275,8 @@ formula_contains_group_terms <- function(formula) {
 #' @param split_formula If TRUE breaks the response down into single response formulas.
 #' Default FALSE. It only works if `y` represents a multi-output response.
 #' @return a list including the updated formula and data
-subset_formula_and_data <- function(formula, terms, data, y=NULL, split_formula=FALSE) {
-  formula <- subset_formula(formula, terms)
+subset_formula_and_data <- function(terms, data, y=NULL, split_formula=FALSE) {
+  formula <- make_formula(terms)
   tt <- extract_terms_response(formula)
   response_name <- tt$response
 
@@ -299,16 +299,15 @@ subset_formula_and_data <- function(formula, terms, data, y=NULL, split_formula=
 }
 
 #' Subsets a formula by the given terms.
-#' @param formula A formula for a valid model.
 #' @param terms A vector of terms to subset from the right hand side.
-#' @return the updated formula
-subset_formula <- function(formula, terms) {
-  update(formula, paste0(". ~ ", paste(terms, collapse=" + ")))
+#' @return A formula object with the collapsed terms.
+make_formula <- function(terms) {
+  return(as.formula(paste0(". ~ ", paste(terms, collapse=" + "))))
 }
 
 #' Utility to count the number of terms in a given formula.
-#' @param subformula A formula for a valid model either as a formula object or
-#' as a string.
+#' @param subformula The right hand side of a formula for a valid model
+#' either as a formula object or as a string.
 #' @return the number of terms in the subformula.
 count_terms_in_subformula <- function(subformula) {
   if (!inherits(subformula, "formula"))
@@ -373,7 +372,7 @@ sort_submodels_by_size <- function(submodels) {
 count_variables_chosen <- function(list_of_terms) {
   if (length(list_of_terms) == 0)
     return(0)
-  formula <- as.formula(paste0("~ ", paste(unique(unlist(list_of_terms)), collapse="+")))
+  formula <- make_formula(list_of_terms)
   count_terms_in_subformula(flatten_formula(formula))
 }
 

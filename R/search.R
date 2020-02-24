@@ -26,8 +26,8 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   submodels <- c()
 
   ## start adding terms one at a time
-  while(count_variables_chosen(formula, reduce_models(formula, chosen)) < nv_max
-        & count_variables_chosen(formula, chosen) < total_variables) {
+  while(count_variables_chosen(reduce_models(chosen)) < nv_max
+        & count_variables_chosen(chosen) < total_variables) {
 
     notchosen <- setdiff(current_terms, chosen)
 
@@ -43,7 +43,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
         notchosen <- setdiff(current_terms, chosen)
 
         already_selected <- lapply(notchosen, function(x)
-          if (is_next_submodel_redundant(formula, chosen, x)) x else NA)
+          if (is_next_submodel_redundant(chosen, x)) x else NA)
 
         ## if redundant models add the terms to the list so we don't iterate forever
         chosen <- c(chosen, unname(unlist(already_selected[!is.na(already_selected)])))
@@ -52,7 +52,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
 
     ## only add candidates that are not redundant with previous chosen submodels
     cands <- lapply(notchosen, function(x)
-      if (is_next_submodel_redundant(formula, chosen, x)) NA else c(chosen, x))
+      if (is_next_submodel_redundant(chosen, x)) NA else c(chosen, x))
 
     ## remove already selected terms
     cands <- cands[!is.na(cands)]
