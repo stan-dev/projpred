@@ -1,5 +1,5 @@
 search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
-                               verbose, opt, groups=NULL, increasing_order=TRUE) {
+                               verbose=TRUE, opt, groups=NULL, increasing_order=TRUE) {
   ## initialize the forward selection
   ## proj performs the projection over samples
   projfun <- .get_proj_handle_poc(family_kl, opt$regul)
@@ -8,7 +8,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   i <- 1
   iq <- ceiling(quantile(1:nv_max, 1:10/10))
   if (is.null(groups))
-    terms_ <- break_formula(formula)
+    terms_ <- split_formula(formula)
   else
     terms_ <- groups
   if (increasing_order) {
@@ -65,7 +65,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
     ## append submodels
     submodels <- c(submodels, p_sub['sub_fit', imin])
 
-    if(verbose && i %in% iq)
+    if (verbose && i %in% iq)
       print(paste0(names(iq)[max(which(i == iq))], " of variables selected."))
 
     i <- i + 1
@@ -137,7 +137,7 @@ search_L1 <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
 }
 
 search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
-  terms_ <- break_formula(refmodel$formula)
+  terms_ <- split_formula(refmodel$formula)
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
   spath <- search_L1(p_ref, list(refmodel, x=x), family, intercept, nv_max, penalty, opt)
   ## TODO: check this? can we reduce the above line and this one to a single thing?

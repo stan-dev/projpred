@@ -252,6 +252,7 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
 
   ## TODO: remove wobs, wsample, weights, offset
   ## equal sample weights by default
+	wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   wobs <- rep(1,nrow(mu))
   offset <- rep(0, length(y))
 

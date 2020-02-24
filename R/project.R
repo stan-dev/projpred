@@ -62,7 +62,7 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
     stop(paste('The given object is not a variable selection -object.',
                'Run the variable selection first, or provide the variable indices (vind).'))
 
-  refmodel <- get_refmodel(object)
+  refmodel <- get_refmodel_poc(object)
 
   if (cv_search) {
     ## use non-cv_searched solution for datafits by default
@@ -79,31 +79,33 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
 
   if (!is.null(vind)) {
     ## if vind is given, nv is ignored (project only onto the given submodel)
+    vind <- object$vind[vind]
     if (length(vind) > count_variables_chosen(refmodel$formula, vind))
       nv <- count_variables_chosen(refmodel$formula, vind)
+    else
+      nv <- length(vind)
   } else {
     ## by default take the variable ordering from the selection
     vind <- object$vind
+    if (is.null(nv)) {
+      if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
+        ## by default, project onto the suggested model size
+        nv <- object$suggested_size
+      } else
+        stop('No suggested model size found, please specify nv or vind')
+    } else {
+      if (!is.numeric(nv) || any(nv < 0))
+        stop('nv must contain non-negative values.')
+      if (max(nv) > length(vind)) {
+        stop(paste('Cannot perform the projection with', max(nv), 'variables,',
+                   'because variable selection was run only up to', length(vind),
+                   'variables.'))
+      }
+    }
   }
 
   if (is.null(nc))
     ns <- min(ns, NCOL(refmodel$mu))
-
-  if (is.null(nv)) {
-    if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
-      ## by default, project onto the suggested model size
-      nv <- object$suggested_size
-    } else
-      stop('No suggested model size found, please specify nv or vind')
-  } else {
-    if (!is.numeric(nv) || any(nv < 0))
-      stop('nv must contain non-negative values.')
-    if (max(nv) > length(vind)) {
-      stop(paste('Cannot perform the projection with', max(nv), 'variables,',
-                 'because variable selection was run only up to', length(vind),
-                 'variables.'))
-    }
-  }
 
   if (is.null(intercept))
     intercept <- refmodel$intercept
@@ -119,8 +121,6 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
 
   ## add family_kl
   proj <- lapply(subm, function(model) {
-    names(model$vind) <- sapply(model$vind, function(i, ch)
-      names(ch)[which(ch == i)][1], object$vind)
     model <- c(model, nlist(family_kl), list(p_type = is.null(ns)))
     class(model) <- 'projection'
     return(model)

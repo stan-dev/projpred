@@ -62,8 +62,8 @@
 #' @export
 varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                        nspred = NULL, ncpred = NULL, cv_search=FALSE, nv_max = NULL,
-                       intercept = FALSE,
-                       lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-4,
+                       intercept = FALSE, verbose=TRUE, lambda_min_ratio=1e-5,
+                       nlambda=150, thresh=1e-6, regul=1e-4,
                        groups=NULL, ...) {
 
   refmodel <- get_refmodel_poc(object, ...)
@@ -95,7 +95,7 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
   p_pred <- .get_refdist(refmodel, nspred, ncpred)
 
   ## perform the selection
-  opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
+  opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   searchpath <- select_poc(method, p_sel, refmodel, family_kl, intercept, nv_max,
                            penalty, verbose, opt, groups=groups)
   vind <- searchpath$vind
@@ -133,11 +133,11 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
   ## suggest model size
   vs$nv_max <- nv_max
   vs$nv_all <- count_terms_in_subformula(refmodel$formula)
+  class(vs) <- 'vsel'
   vs$suggested_size <- suggest_size(vs, warnings = FALSE,
                                     has_group_features = has_group_features,
                                     groups = groups)
 
-  class(vs) <- 'vsel'
   vs
 }
 
@@ -154,11 +154,11 @@ select_poc <- function(method, p_sel, refmodel, family_kl, intercept, nv_max,
   ##   p_sel: the reference distribution used in the selection (the input argument p_sel)
   ##
   ## routine that can be used with several clusters
-  if (tolower(method) == 'l1') {
+  if (method == 'l1') {
     searchpath <- search_L1_poc(p_sel, refmodel, family_kl, intercept, nv_max, penalty, opt)
     searchpath$p_sel <- p_sel
     return(searchpath)
-  } else if (tolower(method) == 'forward') {
+  } else if (method == 'forward') {
     tryCatch(searchpath <- search_forward_poc(p_sel, refmodel, family_kl, intercept, nv_max, verbose, opt, groups=groups),
              'error' = .varsel_errors)
 
@@ -177,27 +177,29 @@ parse_args_varsel_poc <- function(refmodel, method, cv_search, intercept,
   ## function is to avoid repeating the same code both in varsel and cv_varsel.
   ##
   if (is.null(groups))
-    groups <- lapply(break_formula(refmodel$formula), function(t) t)
+    groups <- lapply(split_formula(refmodel$formula), function(t) t)
   has_group_features <- formula_contains_group_terms(refmodel$formula)
-  group_features <- formula_contains_group_terms(refmodel$formula)
+
+  if (is.null(method))
+    if (has_group_features)
+      method <- "forward"
+    else
+      method <- "l1"
+  else
+    method <- tolower(method)
 
   if (has_group_features)
-    if (group_features)
-      if (length(groups) <= 20)
-        method <- 'forward'
-      else
-        method <- 'l1'
-    else
-      ## if we are doing a grouped search we don't usually have that many groups
+    ## if we are doing a grouped search we don't usually have that many groups
+    method <- 'forward'
+  else
+    if (length(groups) <= 20)
       method <- 'forward'
-  if (has_group_features)
-    if (group_features)
-      method <- 'forward'
+  else
+    method <- 'l1'
 
   if (is.null(cv_search))
     cv_search <- !inherits(refmodel, "datafit")
 
-  method <- tolower(method)
   if ((is.null(ns) && is.null(nc)) || method=='l1') {
     ## use one cluster for selection by default, and always with L1-search
     nc <- 1

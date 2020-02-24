@@ -502,9 +502,8 @@ as.matrix.projection <- function(x, ...) {
     warning(paste0('Note, that projection was performed using',
                    'clustering and the clusters might have different weights.'))
   }
-  res <- t(x$beta)
-  if (ncol(res) > 0) colnames(res) <- names(x$vind)
-  if (x$intercept) res <- cbind('(Intercept)' = x$alpha, res)
+  res <- t(x$sub_fit[[1]])
+  if (x$intercept) colnames(res) <- c('Intercept', x$vind)
   if (x$family_kl$family == 'gaussian') res <- cbind(res, sigma = x$dis)
   res
 }

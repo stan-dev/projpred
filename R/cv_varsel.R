@@ -63,7 +63,7 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   refmodel <- get_refmodel_poc(fit, ...)
 
   ## resolve the arguments similar to varsel
-  args <- parse_args_varsel_poc(refmodel=refmodel, method=method, relad=cv_search,
+  args <- parse_args_varsel_poc(refmodel=refmodel, method=method, cv_search=cv_search,
                                 intercept=intercept, nv_max=nv_max, nc=nc, ns=ns,
                                 ncpred=ncpred, nspred=nspred, groups=groups)
   method <- args$method
@@ -152,22 +152,21 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
 #' @param K Number of folds in the k-fold cross validation. Default is 5 for genuine
 #' reference models and 10 for datafits (that is, for penalized maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method, K) {
-  cv_method <- tolower(cv_method)
+parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
   if (is.null(cv_method)) {
-    if ('datafit' %in% class(refmodel))
+    if (inherits(refmodel, "datafit"))
       ## only data given, no actual reference model
       cv_method <- 'kfold'
     else
       cv_method <- 'loo'
-  }
-  if (cv_method == 'kfold' && is.null(K)) {
-    if ('datafit' %in% class(refmodel))
+  } else if (tolower(cv_method) == 'kfold' && is.null(K)) {
+    if (inherits(refmodel, "datafit"))
       K <- 10
     else
       K <- 5
   }
 
+  cv_method <- tolower(cv_method)
   nlist(cv_method, K)
 }
 
@@ -186,7 +185,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel, ns=ns, nc=nc)
-  ## clustering information
+	cl_sel <- p_sel$cl # clustering information
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel, ns=nspred, nc=ncpred)
