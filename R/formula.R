@@ -219,10 +219,7 @@ split_group_term <- function(term) {
   variables <- setdiff(variables, "1")
   group <- chunks[2]
 
-  if ("0" %in% variables)
-    group_intercept <- FALSE
-  else
-    group_intercept <- TRUE
+  group_intercept <- tt$global_intercept
 
   if (group_intercept) {
     group_terms <- list(paste0("(1 | ", group, ")"))
@@ -275,12 +272,13 @@ formula_contains_group_terms <- function(formula) {
 #' @param split_formula If TRUE breaks the response down into single response formulas.
 #' Default FALSE. It only works if `y` represents a multi-output response.
 #' @return a list including the updated formula and data
-subset_formula_and_data <- function(terms, data, y=NULL, split_formula=FALSE) {
-  formula <- make_formula(terms)
+subset_formula_and_data <- function(formula, terms, data, y=NULL, split_formula=FALSE) {
+  formula <- make_formula(terms, formula=formula)
   tt <- extract_terms_response(formula)
   response_name <- tt$response
 
   response_cols <- paste0(".", response_name)
+  response_ncol <- ncol(y) %||% 1
 
   if (!is.null(ncol(y)) && ncol(y) > 1) {
     response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
@@ -294,15 +292,17 @@ subset_formula_and_data <- function(terms, data, y=NULL, split_formula=FALSE) {
   }
 
   data <- data.frame(y, data[, colnames(data) != response_name])
-  colnames(data)[1:ncol(y)] <- response_cols
+  colnames(data)[1:response_ncol] <- response_cols
   return(nlist(formula, data))
 }
 
 #' Subsets a formula by the given terms.
 #' @param terms A vector of terms to subset from the right hand side.
 #' @return A formula object with the collapsed terms.
-make_formula <- function(terms) {
-  return(as.formula(paste0(". ~ ", paste(terms, collapse=" + "))))
+make_formula <- function(terms, formula=NULL) {
+  if (is.null(formula))
+    return(as.formula(paste0(". ~ ", paste(terms, collapse=" + "))))
+  return(update(formula, paste0(". ~ ", paste(terms, collapse=" + "))))
 }
 
 #' Utility to count the number of terms in a given formula.
