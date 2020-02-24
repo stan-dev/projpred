@@ -23,10 +23,11 @@ extract_terms_response <- function(formula) {
   else
     response <- NA
 
+  response <- extract_response(response)
   nlist(individual_terms,
         interaction_terms,
         group_terms,
-        response=extract_response(response),
+        response,
         global_intercept)
 }
 
@@ -36,6 +37,8 @@ extract_terms_response <- function(formula) {
 #' @param response The response as retrieved from the formula object.
 #' @return the response as a character vector.
 extract_response <- function(response) {
+  if (length(response) > 1)
+    stop("Response must have a single element.")
   response_name_ch <- as.character(response[[1]])
   if ("cbind" %in% response_name_ch)
     ## remove cbind
@@ -91,7 +94,7 @@ flatten_formula <- function(formula) {
 #' @param terms A vector of linear terms as strings.
 #' @return a vector of unique linear individual terms.
 flatten_individual_terms <- function(terms) {
-  if (is.null(terms))
+  if (length(terms) == 0)
     return(terms)
   return(unique(terms))
 }
@@ -100,29 +103,28 @@ flatten_individual_terms <- function(terms) {
 #' @param terms A vector of linear interaction terms as strings.
 #' @return a vector of unique linear interaction terms.
 flatten_interaction_terms <- function(terms) {
-  if (is.null(terms))
+  if (length(terms) == 0)
     return(terms)
   ## TODO: do this right; a:b == b:a.
   return(unique(terms))
 }
 
-#' Simplify and flatten group terms by breaking them down in as many terms
-#' as varying effects. It also explicitly adds or removes the varying intercept.
+#' Unifies group terms removing any duplicates.
 #' @param terms A vector of linear group terms as strings.
 #' @return a vector of unique group terms.
 flatten_group_terms <- function(terms) {
-  if (is.null(terms))
+  if (length(terms) == 0)
     return(terms)
   split_terms <- strsplit(terms, "[ ]*\\|([^\\|]*\\||)[ ]*")
   group_names <- unique(unlist(lapply(split_terms, function(t) t[2])))
 
-  groups <- setNames(lapply(group_names, function(g)
+  group_terms <- setNames(lapply(group_names, function(g)
     lapply(split_terms, function(t) if (t[2] == g) t[1] else NA)),
     group_names)
-  groups <- lapply(groups, function(g) unlist(g[!is.na(g)]))
+  group_terms <- lapply(group_terms, function(g) unlist(g[!is.na(g)]))
 
-  groups <- lapply(1:length(groups), function(i) {
-    g <- groups[[i]]
+  group_terms <- lapply(seq_along(group_terms), function(i) {
+    g <- group_terms[[i]]
     g_name <- group_names[i]
 
     partial_form <- as.formula(paste0(". ~ ", paste(g, collapse=" + ")))
@@ -136,29 +138,23 @@ flatten_group_terms <- function(terms) {
       t.labels <- c("1")
 
     if (!attr(t, "intercept"))
-      paste0("(0 + ", paste(t.labels, collapse=" + "), " | ", g_name, ")")
+      return(paste0("(0 + ", paste(t.labels, collapse=" + "), " | ", g_name, ")"))
     else
-      paste0("(", paste(t.labels, collapse=" + "), " | ", g_name, ")")
+      return(paste0("(", paste(t.labels, collapse=" + "), " | ", g_name, ")"))
   })
-  return(unlist(groups))
+  return(unlist(group_terms))
 }
 
-#' Simplify and flatten group terms by breaking them down in as many terms
-#' as varying effects. It also explicitly adds or removes the varying intercept.
+#' Simplify and split a formula by breaking it into all possible submodels.
 #' @param formula A formula for a valid model.
 #' @param return_group_terms If TRUE, return group terms as well. Default TRUE.
 #' @return a vector of all the minimal valid terms that make up for submodels.
-break_formula <- function(formula, return_group_terms=TRUE) {
+split_formula <- function(formula, return_group_terms=TRUE) {
   terms <- extract_terms_response(formula)
   group_terms <- terms$group_terms
   interaction_terms <- terms$interaction_terms
   individual_terms <- terms$individual_terms
   global_intercept <- terms$global_intercept
-
-  ## if there are no group level terms then `terms` is the most basic
-  ## decomposition already
-  if (length(group_terms) == 0 && length(interaction_terms) == 0)
-    return(individual_terms)
 
   if (return_group_terms)
     ## if there are group levels we should split that into basic components
@@ -172,9 +168,9 @@ break_formula <- function(formula, return_group_terms=TRUE) {
   ## exclude the intercept if there is no intercept in the reference model
   if (!global_intercept) {
     allterms_nobias <- unlist(lapply(allterms, function(term) paste0(term, " + 0")))
-    return(allterms_nobias)
+    return(unique(allterms_nobias))
   } else
-    return(allterms)
+    return(unique(allterms))
 }
 
 #' Plugs the main effects to the interaction terms to consider jointly for
@@ -208,7 +204,7 @@ split_group_term <- function(term) {
 
   chunks <- strsplit(term, "[ ]*\\|([^\\|]*\\||)[ ]*")[[1]]
   lhs <- as.formula(paste0("~", chunks[1]))
-  tt <- extact_terms_response(lhs)
+  tt <- extract_terms_response(lhs)
   variables <- c(tt$individual_terms, tt$interaction_terms)
 
   ## split possible interaction terms
@@ -229,7 +225,7 @@ split_group_term <- function(term) {
     group_intercept <- TRUE
 
   if (group_intercept) {
-    group_terms <- c(group_terms, list(paste0("(1 | ", group, ")")))
+    group_terms <- list(paste0("(1 | ", group, ")"))
     group_terms <- c(group_terms,
                      lapply(lin_v,
                             function(v)
@@ -284,9 +280,10 @@ subset_formula_and_data <- function(formula, terms, data, y=NULL, split_formula=
   tt <- extract_terms_response(formula)
   response_name <- tt$response
 
+  response_cols <- paste0(".", response_name)
+
   if (!is.null(ncol(y)) && ncol(y) > 1) {
-    response_cols <- unlist(lapply(1:ncol(y), function(n)
-      paste0(".", response_name, ".", n)))
+    response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
     if (!split_formula) {
       response_vector <- paste0("cbind(", paste(response_cols, collapse=", "), ")")
       formula <- update(formula, paste0(response_vector, " ~ ."))
@@ -294,10 +291,10 @@ subset_formula_and_data <- function(formula, terms, data, y=NULL, split_formula=
       formula <- lapply(response_cols, function(response)
         update(formula, paste0(response, " ~ .")))
     }
-    data <- data.frame(y, data[, colnames(data) != response_name])
-    colnames(data)[1:ncol(y)] <- response_cols
   }
 
+  data <- data.frame(y, data[, colnames(data) != response_name])
+  colnames(data)[1:ncol(y)] <- response_cols
   return(nlist(formula, data))
 }
 
@@ -310,7 +307,8 @@ subset_formula <- function(formula, terms) {
 }
 
 #' Utility to count the number of terms in a given formula.
-#' @param subformula A formula for a valid model.
+#' @param subformula A formula for a valid model either as a formula object or
+#' as a string.
 #' @return the number of terms in the subformula.
 count_terms_in_subformula <- function(subformula) {
   if (!inherits(subformula, "formula"))
@@ -354,8 +352,7 @@ count_terms_in_group_term <- function(term) {
 #' @return a sorted list of submodels by included terms.
 sort_submodels_by_size <- function(submodels) {
   size <- lapply(submodels, count_terms_in_subformula)
-  df <- as.data.frame(cbind(submodels=submodels, size=unlist(size)))
-  df$size <- as.numeric(df$size)
+  df <- data.frame(submodels=as.character(submodels), size=unlist(size))
   ordered <- df[order(df$size), ]
 
   groups <- list()
@@ -373,10 +370,10 @@ sort_submodels_by_size <- function(submodels) {
 #' @param formula The reference model's formula.
 #' @param list_of_terms Subset of terms from formula.
 #' @return number of variables in list_of_terms.
-count_variables_chosen <- function(formula, list_of_terms) {
+count_variables_chosen <- function(list_of_terms) {
   if (length(list_of_terms) == 0)
     return(0)
-  formula <- subset_formula(formula, unique(unlist(list_of_terms)))
+  formula <- as.formula(paste0("~ ", paste(unique(unlist(list_of_terms)), collapse="+")))
   count_terms_in_subformula(flatten_formula(formula))
 }
 
@@ -385,11 +382,11 @@ count_variables_chosen <- function(formula, list_of_terms) {
 #' @param current A list of terms included in the current submodel.
 #' @param new The new term to add to the submodel.
 #' @return TRUE if the new term results in a redundant model, FALSE otherwise.
-is_next_submodel_redundant <- function(formula, current, new) {
+is_next_submodel_redundant <- function(current, new) {
   old_submodel <- current
   new_submodel <- c(current, new)
-  if (count_variables_chosen(formula, new_submodel) >
-      count_variables_chosen(formula, old_submodel))
+  if (count_variables_chosen(new_submodel) >
+      count_variables_chosen(old_submodel))
     FALSE
   else
     TRUE
@@ -400,8 +397,9 @@ is_next_submodel_redundant <- function(formula, current, new) {
 #' @param chosen A list of included terms at a given point of the search.
 #' @return a vector of incremental non redundant submodels for all the possible terms
 #' included.
-reduce_models <- function(formula, chosen) {
+reduce_models <- function(chosen) {
   Reduce(function(chosen, x)
-    if (is_next_submodel_redundant(formula, chosen, x)) chosen else c(chosen, x),
+    if (is_next_submodel_redundant(chosen, x)) chosen
+    else c(chosen, x),
     chosen)
 }
