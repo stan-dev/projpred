@@ -289,6 +289,8 @@ subset_formula_and_data <- function(formula, terms, data, y=NULL, split_formula=
       formula <- lapply(response_cols, function(response)
         update(formula, paste0(response, " ~ .")))
     }
+  } else {
+    formula <- update(formula, paste(response_cols, "~ ."))
   }
 
   data <- data.frame(y, data[, colnames(data) != response_name])

@@ -1,5 +1,3 @@
-context('formula')
-
 test_that("check that we recover the correct terms for a simple linear model without interactions or group terms", {
   formula <- y ~ x + z
   tt <- extract_terms_response(formula)
@@ -122,7 +120,7 @@ test_that("check that we can subset a formula and update the data columns proper
 
   cols <- colnames(s$data)
   expect_equal(cols[1], ".y")
-  expect_equal(s$formula, y ~ x.1 + x.3)
+  expect_equal(s$formula, .y ~ x.1 + x.3)
 
   formula <- y ~ x.1 + x.2 + x.3 + x.4
   s <- subset_formula_and_data(formula, c("x.1", "x.3"), data, y = matrix(rnorm(40), 20, 2))

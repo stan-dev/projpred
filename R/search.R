@@ -72,7 +72,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
-  list(vind=reduce_models(formula, chosen), sub_fits=submodels)
+  list(vind=reduce_models(chosen), sub_fits=submodels)
 }
 
 #' copied over from search until we resolve the TODO below
