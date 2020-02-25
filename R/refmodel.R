@@ -65,14 +65,15 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
 
+  ## predfun returns link(mu)
   mu <- object$predfun(object$fit, znew)
 
   if (is.null(ynew)) {
 
     if (type == 'link')
-      pred <- object$family$linkfun(mu)
-    else
       pred <- mu
+    else
+      pred <- object$family$linkinv(mu)
 
     ## integrate over the samples
     if (NCOL(pred) > 1)
@@ -83,7 +84,8 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
   } else {
 
     ## evaluate the log predictive density at the given ynew values
-    loglik <- object$fam$ll_fun(mu, object$dis, ynew, weightsnew)
+    loglik <- object$fam$ll_fun(object$family$linkinv(mu), object$dis, ynew,
+                                weightsnew)
     S <- ncol(loglik)
     lpd <- apply(loglik, 1, log_sum_exp) - log(S)
     return(lpd)
@@ -142,10 +144,14 @@ get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfu
 get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
                                      predfun=NULL, proj_predfun=NULL, mle=NULL,
                                      folds=NULL, ...) {
-  family <- family(fit)$family
-  fam <- ifelse(family == "bernoulli", "binomial", family)
+  family_name <- family(fit)$family
+  fam <- ifelse(family_name == "bernoulli", "binomial", family_name)
   fam <- get(fam, mode = "function")()
-  family <- extend_family(fam)
+  brms_family <- family(fit)
+  brms_family$mu.eta <- fam$mu.eta
+  brms_family$variance <- fam$variance
+  brms_family$dev.resids <- fam$dev.resids
+  family <- extend_family(brms_family)
 
   brms_formula <- formula(fit)
   if (is.null(formula))
@@ -154,13 +160,27 @@ get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
   terms <- extract_terms_response(formula)
   response_name <- brms_formula$resp
 
+  formula <- update(formula, paste(response_name, " ~ ."))
+  p <- parse_bf(brms_formula)
+
   if (is.null(data))
     data <- fit$data
   if (is.null(y))
     y <- fit$data[, colnames(fit$data) == response_name]
 
+  if ("trials" %in% family$ad &&
+      inherits(p$adforms$trials, "formula")) {
+    trials_form <- p$adforms$trials
+    trials_var <- eval(trials_form[[2]], data,
+                       environment(trials_form))$vars$trials
+    weights <- data[, trials_var]
+    y <- y / weights
+  } else {
+    weights <- NULL
+  }
+
   refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
-                                proj_predfun, folds)
+                                proj_predfun, folds, weights=weights)
   return(refmodel)
 }
 
@@ -237,6 +257,7 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
   ## we leave this here just in case
   mu <- predfun(fit)
   mu <- unname(as.matrix(mu))
+  mu <- family$linkinv(mu)
 
   ndraws <- ncol(mu)
 
@@ -246,22 +267,24 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
     dis <- as.data.frame(fit)[["sigma"]] %ORifNULL% rep(0, ndraws)
   }, error = function(e) e)
 
-  loglik <- t(family$ll_fun(family$linkinv(mu), dis, y, weights=weights))
+  ## equal sample weights by default
+  if (is.null(weights)) {
+    weights <- rep(1, length(y))
+  }
+  loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
 
   target <- .get_standard_y(y, NULL, family)
   y <- target$y
 
   ## TODO: remove wobs, wsample, weights, offset
-  ## equal sample weights by default
 	wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
-  wobs <- rep(1,nrow(mu))
   offset <- rep(0, length(y))
 
   intercept <- as.logical(attr(terms(formula), 'intercept'))
   refmodel <- list(fit=fit, formula=formula, predfun=predfun, mle=mle,
                    family=family, mu=mu, dis=dis, y=y, loglik=loglik,
                    intercept=intercept, proj_predfun=proj_predfun,
-                   fetch_data=fetch_data_wrapper, wobs=wobs,
+                   fetch_data=fetch_data_wrapper, wobs=weights,
                    wsample=wsample, offset=offset, folds=folds)
   class(refmodel) <- "refmodel"
   return(refmodel)
