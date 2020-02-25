@@ -147,11 +147,12 @@ get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
   fam <- get(fam, mode = "function")()
   family <- extend_family(fam)
 
+  brms_formula <- formula(fit)
   if (is.null(formula))
-    formula <- as.formula(formula(fit))
+    formula <- brms_formula$formula
 
   terms <- extract_terms_response(formula)
-  response_name <- terms$response
+  response_name <- brms_formula$resp
 
   if (is.null(data))
     data <- fit$data
