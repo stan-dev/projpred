@@ -179,6 +179,7 @@ get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
     weights <- NULL
   }
 
+  ## TODO: return y, weights and offset as right hand side formulas
   refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
                                 proj_predfun, folds, weights=weights)
   return(refmodel)
@@ -208,7 +209,8 @@ get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
 
 #' @export
 init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
-                              proj_predfun, folds, penalized=FALSE, weights=NULL) {
+                              proj_predfun, folds, penalized=FALSE, weights=NULL,
+                              offset=NULL) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun))
     predfun <- function(fit, newdata=NULL)
@@ -265,7 +267,11 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
   dis <- rep(0, ndraws)
   tryCatch ({
     dis <- as.data.frame(fit)[["sigma"]] %ORifNULL% rep(0, ndraws)
-  }, error = function(e) e)
+  }, error = function(e) e
+  )
+
+  target <- .get_standard_y(y, weights, family)
+  y <- target$y
 
   ## equal sample weights by default
   if (is.null(weights)) {
@@ -273,12 +279,9 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
   }
   loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
 
-  target <- .get_standard_y(y, NULL, family)
-  y <- target$y
-
-  ## TODO: remove wobs, wsample, weights, offset
 	wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
-  offset <- rep(0, length(y))
+  if (is.null(offset))
+    offset <- rep(0, NROW(y))
 
   intercept <- as.logical(attr(terms(formula), 'intercept'))
   refmodel <- list(fit=fit, formula=formula, predfun=predfun, mle=mle,
