@@ -326,7 +326,7 @@ count_terms_in_group_term <- function(term) {
 
   chunks <- strsplit(term,  "[ ]*\\|([^\\|]*\\||)[ ]*")[[1]]
   lhs <- as.formula(paste0("~", chunks[1]))
-  tt <- extact_terms_response(lhs)
+  tt <- extract_terms_response(lhs)
   variables <- c(tt$individual_terms, tt$interaction_terms)
 
   ## split possible interaction terms
