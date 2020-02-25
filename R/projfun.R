@@ -6,8 +6,11 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   mu <- p_ref$mu
   dis <- p_ref$dis
 
-  wobs <- rep(1.0, NROW(mu))
-  wsample <- rep(1.0, NCOL(mu))
+  if (is.null(refmodel$wobs))
+    wobs <- rep(1.0, NROW(mu))
+
+  if (is.null(p_ref$weights))
+    wsample <- rep(1.0, NCOL(mu))
 
   wobs <- wobs / sum(wobs)
   wsample <- wsample / sum(wsample)
