@@ -188,11 +188,11 @@ get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
 
 #' @export
 init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
-                              proj_predfun, folds, penalized=FALSE) {
+                              proj_predfun, folds, penalized=FALSE, weights=NULL) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun))
     predfun <- function(fit, newdata=NULL)
-      t(posterior_linpred(fit, transform=TRUE, newdata=newdata))
+      t(posterior_linpred(fit, transform=FALSE, newdata=newdata))
 
   if (is.null(mle) && is.null(proj_predfun))
     if (length(terms$group_terms) != 0) {
@@ -246,7 +246,7 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
     dis <- as.data.frame(fit)[["sigma"]] %ORifNULL% rep(0, ndraws)
   }, error = function(e) e)
 
-  loglik <- t(family$ll_fun(mu, dis, y))
+  loglik <- t(family$ll_fun(family$linkinv(mu), dis, y, weights=weights))
 
   target <- .get_standard_y(y, NULL, family)
   y <- target$y
