@@ -376,8 +376,10 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 ##' @export
 ##' @method print vsel
 print.vsel <- function(x, digits=2, ...) {
-  stats <- round(varsel_stats(x, ...), digits)
-  print(stats[, -match("vind", colnames(stats))])
+  stats <- varsel_stats(x, ...)
+  v <- match("vind", colnames(stats))
+  stats[, -v] <- round(stats[,  -v], digits)
+  print(stats[, -v])
   invisible(stats)
 }
 
@@ -385,8 +387,10 @@ print.vsel <- function(x, digits=2, ...) {
 ##' @export
 ##' @method print cvsel
 print.cvsel <- function(x, digits=2, ...) {
-  stats <- round(varsel_stats(x, ...), digits)
-  print(stats[, -match("vind", colnames(stats))])
+  stats <- varsel_stats(x, ...)
+  v <- match("vind", colnames(stats))
+  stats[, -v] <- round(stats[, -v], digits)
+  print(stats[, -v])
   invisible(stats)
 }
 
