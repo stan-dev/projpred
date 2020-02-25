@@ -172,9 +172,9 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   # a vector with length zero in which case it is replaced by a vector of ones).
   if(NCOL(y) == 1) {
     # weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
-    if(length(weights) > 0) 
+    if(length(weights) > 0)
       weights <- unname(weights)
-    else 
+    else
       weights <- rep(1, length(y))
     if (fam$family == 'binomial') {
       if (is.factor(y)) {
@@ -195,7 +195,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   } else {
     stop('y cannot have more than two columns.')
   }
-  return(list(y=y,weights=weights))
+  return(nlist(y, weights))
 }
 
 
