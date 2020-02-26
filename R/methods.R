@@ -91,7 +91,7 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   }
 
   projected_sizes <- sapply(proj, function(x)
-    count_variables_chosen(object$formula, x$vind))
+    count_terms_chosen(object$formula, x$vind))
   nv <- list(...)$nv %ORifNULL% projected_sizes
 
   if (!all(nv %in% projected_sizes))

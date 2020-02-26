@@ -142,9 +142,9 @@ test_that("check that we count terms correctly", {
   formula <- y ~ x + z + x:z + (x | g)
   expect_equal(count_terms_in_subformula(formula), 5)
 
-  expect_equal(count_variables_chosen(c("x", "z")), 2)
-  expect_equal(count_variables_chosen(c("x", "z", "x:z")), 3)
-  expect_equal(count_variables_chosen(c("x", "z", "x:z", "x + (x | g)")), 5)
+  expect_equal(count_terms_chosen(c("x", "z")), 2)
+  expect_equal(count_terms_chosen(c("x", "z", "x:z")), 3)
+  expect_equal(count_terms_chosen(c("x", "z", "x:z", "x + (x | g)")), 5)
 })
 
 test_that("check that we correctly sort models by size", {

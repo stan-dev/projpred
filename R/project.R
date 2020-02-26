@@ -80,8 +80,8 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
   if (!is.null(vind)) {
     ## if vind is given, nv is ignored (project only onto the given submodel)
     vind <- object$vind[vind]
-    if (length(vind) > count_variables_chosen(vind))
-      nv <- count_variables_chosen(vind)
+    if (length(vind) > count_terms_chosen(vind))
+      nv <- count_terms_chosen(vind)
     else
       nv <- length(vind)
   } else {

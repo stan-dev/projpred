@@ -166,7 +166,7 @@ get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
   if (is.null(data))
     data <- fit$data
   if (is.null(y))
-    y <- fit$data[, colnames(fit$data) == response_name]
+    y <- fit$data[, response_name]
 
   if ("trials" %in% family$ad &&
       inherits(p$adforms$trials, "formula")) {

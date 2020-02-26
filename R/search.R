@@ -5,7 +5,6 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   projfun <- .get_proj_handle_poc(family_kl, opt$regul)
 
   formula <- refmodel$formula
-  i <- 1
   iq <- ceiling(quantile(1:nv_max, 1:10/10))
   if (is.null(groups))
     terms_ <- split_formula(formula)
@@ -22,20 +21,19 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   }
 
   chosen <- NULL
-  total_variables <- count_terms_in_subformula(formula)
+  total_terms <- count_terms_in_subformula(formula)
   submodels <- c()
 
   ## start adding terms one at a time
-  while(count_variables_chosen(reduce_models(chosen)) < nv_max
-        & count_variables_chosen(chosen) < total_variables) {
+  while(count_terms_chosen(reduce_models(chosen)) < nv_max
+        & count_terms_chosen(chosen) < total_terms) {
 
     notchosen <- setdiff(current_terms, chosen)
 
     ## if we have included all submodels in a class start with next class
     ## this only happens with multilevel or interaction models, where some terms may include
     ## more than one variable.
-    ## In GLMs every term represents a single variable and therefore all terms are within
-    ## size==1
+    ## In GLMs every term represents a single variable and therefore all terms are within size==1
     if (length(notchosen) == 0 & !is.null(order)) {
       if (current < order[length(order)]) {
         current <- current + 1
@@ -65,10 +63,8 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
     ## append submodels
     submodels <- c(submodels, p_sub['sub_fit', imin])
 
-    if (verbose && i %in% iq)
-      print(paste0(names(iq)[max(which(i == iq))], " of variables selected."))
-
-    i <- i + 1
+    if (verbose && length(chosen) %in% iq)
+      print(paste0(names(iq)[max(which(length(chosen) == iq))], " of terms selected."))
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
