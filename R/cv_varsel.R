@@ -117,6 +117,7 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   ## the same variables as the selection with all the data.
   ch <- as.matrix(unname(as.data.frame(sel_cv$vind_cv)))
   ## these weights might be non-constant in case of subsampling LOO
+  w <- sel_cv$summaries$sub[[1]]$w
   selvind <- sel$vind
   ## if weights are not set, then all validation folds have equal weight
   vars <- unlist(selvind)
