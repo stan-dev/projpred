@@ -63,7 +63,7 @@
 varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                        nspred = NULL, ncpred = NULL, cv_search=FALSE, nv_max = NULL,
                        intercept = FALSE, verbose=TRUE, lambda_min_ratio=1e-5,
-                       nlambda=150, thresh=1e-6, regul=1e-4,
+                       nlambda=150, thresh=1e-6, regul=1e-4, penalty = NULL,
                        groups=NULL, ...) {
 
   refmodel <- get_refmodel_poc(object, ...)
@@ -188,14 +188,14 @@ parse_args_varsel_poc <- function(refmodel, method, cv_search, intercept,
   else
     method <- tolower(method)
 
-  if (has_group_features)
-    ## if we are doing a grouped search we don't usually have that many groups
-    method <- 'forward'
-  else
-    if (length(groups) <= 20)
-      method <- 'forward'
-  else
-    method <- 'l1'
+  ## if (has_group_features)
+  ##   ## if we are doing a grouped search we don't usually have that many groups
+  ##   method <- 'forward'
+  ## else
+  ##   if (length(groups) <= 20)
+  ##     method <- 'forward'
+  ## else
+  ##   method <- 'l1'
 
   if (is.null(cv_search))
     cv_search <- !inherits(refmodel, "datafit")

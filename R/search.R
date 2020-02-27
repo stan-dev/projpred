@@ -68,7 +68,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
-  list(vind=reduce_models(chosen), sub_fits=submodels)
+  list(vind = reduce_models(chosen), sub_fits = submodels)
 }
 
 #' copied over from search until we resolve the TODO below
@@ -135,9 +135,32 @@ search_L1 <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
 search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
   terms_ <- split_formula(refmodel$formula)
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
-  spath <- search_L1(p_ref, list(refmodel, x=x), family, intercept, nv_max, penalty, opt)
+  spath <- search_L1(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)
   ## TODO: check this? can we reduce the above line and this one to a single thing?
   ## extract the path from glmnet
-  sub_fit <- glmnet::glmnet(x, p_ref$mu, family, intercept = intercept, dfmax = nv_max, lambda = penalty)
-  return(list(vind=terms_[spath$vind - 1], sub_fit=sub_fit))
+  ## sub_fit <- glmnet::glmnet(x, p_ref$mu, family, intercept = intercept, dfmax = nv_max, lambda = penalty)
+  sub_fits <- lapply(seq_len(nv_max), function(nv) {
+    sub <- list(alpha = spath$alpha[nv + 1],
+                beta = spath$beta[, nv  + 1, drop = FALSE],
+                w = spath$w[, nv + 1],
+                x = x)
+    class(sub) <- "subfit"
+    return(sub)
+  })
+  return(list(vind = terms_[spath$vind - 1], sub_fits = sub_fits))
+}
+
+## FIXME: find a way that allows us to remove this
+predict.subfit <- function(subfit, newdata=NULL) {
+  beta <- subfit$beta
+  alpha <- subfit$alpha
+  x <- subfit$x
+  w <- subfit$w
+  if (is.null(newdata))
+    return((x * w) %*% rbind(alpha, beta))
+  else {
+    ## FIXME: find better way of removing the response
+    x <- as.matrix(newdata[, -1])
+    return(alpha + x %*% beta)
+  }
 }

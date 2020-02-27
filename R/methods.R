@@ -100,7 +100,7 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
                 ', but projection performed only for nv = ',
                 paste(projected_sizes, collapse = ', '), '.'))
 
-  projs <- Filter(function(x) NCOL(x$sub_fit$coefficients) %in% nv, proj)
+  projs <- Filter(function(x) length(x$vind) %in% nv, proj)
   names(projs) <- nv
 
   xnew_df <- is.data.frame(xnew)

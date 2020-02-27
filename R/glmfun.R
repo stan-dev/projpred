@@ -117,7 +117,7 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty, obsva
 glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-3,
                       lambda=NULL, alpha=1.0, thresh=1e-6,
                       qa_updates_max=ifelse(family$family=='gaussian' &&
-                                              family$link=='identity', 1, 100),
+                                            family$link=='identity', 1, 100),
                       pmax=dim(as.matrix(x))[2]+1, pmax_strict=FALSE,
                       weights=NULL, offset=NULL, obsvar=0, intercept=TRUE, normalize=TRUE,
                       penalty=NULL) {
@@ -126,7 +126,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   # Computes the whole regularization path.
   # Does not handle any dispersion parameters.
   #
-  if (!.has_fam_extras(family))
+  if (!.has_family_extras(family))
     family <- extend_family(family)
 
   # ensure x is in matrix form and fill in missing weights and offsets
@@ -192,7 +192,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updates
   #
   if (is.null(x))
     x <- matrix(ncol=0, nrow=length(y))
-  if (!.has_fam_extras(family))
+  if (!.has_family_extras(family))
     family <- extend_family(family)
   if (family$family == 'gaussian' && family$link == 'identity') {
     qa_updates_max <- 1
@@ -276,7 +276,7 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updat
   #
   if (is.null(x))
     x <- matrix(ncol=0, nrow=length(y))
-  if (!.has_fam_extras(family))
+  if (!.has_family_extras(family))
     family <- extend_family(family)
   if (family$family == 'gaussian' && family$link == 'identity')
     qa_updates_max <- 1
