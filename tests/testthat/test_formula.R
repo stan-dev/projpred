@@ -7,6 +7,7 @@ test_that("check that we recover the correct terms for a simple linear model wit
   expect_length(tt$response, 1)
 
   formula <- y ~ 1
+  tt <- extract_terms_response(formula)
   expect_length(tt$individual_terms, 0)
   expect_length(tt$interaction_terms, 0)
   expect_length(tt$group_terms, 0)
@@ -34,10 +35,13 @@ test_that("check that we return a list of formulas for multiple responses", {
 })
 
 test_that("check that we properly flatten a formula with duplicated terms", {
-  formula <- (y ~ x + z + (1 | g) + (x | g) + (z | g) + (x + z | g) + x:z +
+  formula <- (y ~ x + z  + x:z + (1 | g) + (x | g) + (z | g) + (x + z | g) +
                 (x + z + x:z | g))
-  flat <- flatten_formula(formula)
-  expect_equal(y ~ x + z + x:z + (x + z + x:z | g), flat)
+  flat <- projpred:::flatten_formula(formula)
+  # don't check 'flat' directly as sorting of terms is OS specific
+  terms <- attr(terms(flat), "term.labels")
+  expect_length(terms, 4)
+  expect_true(all(terms %in% c("x", "z", "x + z + x:z | g", "x:z")))
 })
 
 test_that("check that we properly split a formula", {
