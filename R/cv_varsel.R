@@ -404,10 +404,9 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
     data.frame(y = fold$y, weights = fold$weights)
   }))
 
-  return(nlist(vind_cv
-    summaries = list(sub = sub, ref = ref),
-    d_test = c(d_cv, type = "kfold")
-  ))
+  return(nlist(vind_cv,
+               summaries = list(sub = sub, ref = ref),
+               d_test = c(d_cv, type = "kfold")))
 }
 
 
