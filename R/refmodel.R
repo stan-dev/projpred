@@ -208,13 +208,14 @@ get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
 }
 
 #' @export
-init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
-                              proj_predfun, folds, penalized=FALSE, weights=NULL,
-                              offset=NULL) {
+init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
+                              proj_predfun=NULL, folds=NULL, penalized=FALSE,
+                              weights=NULL, offset=NULL, cvfun=NULL,
+                              cvfits=NULL) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun))
     predfun <- function(fit, newdata=NULL)
-      t(posterior_linpred(fit, transform=FALSE, newdata=newdata))
+      t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
 
   if (is.null(mle) && is.null(proj_predfun))
     if (length(terms$group_terms) != 0) {
@@ -251,25 +252,32 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
 
   ## TODO: ideally remove this, have to think about it
   family$mu_fun <- function(fit, obs=folds, xnew=NULL) {
-    newdata <- fetch_data_wrapper(obs=obs, newdata=xnew)
-    family$linkinv(proj_predfun(fit, newdata=newdata))
+    newdata <- fetch_data_wrapper(obs = obs, newdata = xnew)
+    family$linkinv(proj_predfun(fit, newdata = newdata))
   }
+
+  proper_model <- !is.null(fit)
 
   ## predfun should already take into account the family of the model
   ## we leave this here just in case
-  mu <- predfun(fit)
-  mu <- unname(as.matrix(mu))
-  mu <- family$linkinv(mu)
+  if (proper_model) {
+    mu <- predfun(fit)
+    mu <- unname(as.matrix(mu))
+    mu <- family$linkinv(mu)
+  } else
+    mu <- y
 
   ndraws <- ncol(mu)
 
-  ## TODO: eventually this will be a function provided by the user
-  dis <- rep(0, ndraws)
-  tryCatch ({
-    dis <- as.data.frame(fit)[["sigma"]] %ORifNULL% rep(0, ndraws)
-  }, error = function(e) e
-  )
-
+  if (proper_model) {
+    ## TODO: eventually this will be a function provided by the user
+    dis <- rep(0, ndraws)
+    tryCatch({
+        dis <- as.data.frame(fit)$sigma %ORifNULL% rep(0, ndraws)
+      },
+      error = function(e) e
+    )
+  }
   target <- .get_standard_y(y, weights, family)
   y <- target$y
 
@@ -277,7 +285,17 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
   if (is.null(weights)) {
     weights <- rep(1, length(y))
   }
-  loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
+
+  if (proper_model)
+    loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
+  else
+    loglik <- NULL
+
+	if (!proper_model) {
+	  # this is a dummy definition for cvfun, but it will lead to standard cross-validation
+	  # for datafit reference; see cv_varsel and get_kfold
+	  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+	}
 
 	wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   if (is.null(offset))
@@ -288,7 +306,12 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
                    family=family, mu=mu, dis=dis, y=y, loglik=loglik,
                    intercept=intercept, proj_predfun=proj_predfun,
                    fetch_data=fetch_data_wrapper, wobs=weights,
-                   wsample=wsample, offset=offset, folds=folds)
-  class(refmodel) <- "refmodel"
+                   wsample=wsample, offset=offset, folds=folds,
+                   cvfun=cvfun, cvfits=cvfits)
+  if (proper_model)
+    class(refmodel) <- "refmodel"
+  else
+    class(refmodel) <- c("datafit", "refmodel")
+
   return(refmodel)
 }
