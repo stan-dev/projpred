@@ -267,8 +267,18 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=N
     mu <- predfun(fit)
     mu <- unname(as.matrix(mu))
     mu <- family$linkinv(mu)
-  } else
+  } else {
     mu <- matrix(y, NROW(y), 1)
+		predfun_datafit <- function(fit=NULL, newdata=NULL, offset = 0) {
+      if (is.null(fit))
+        if (is.null(newdata))
+          matrix(rep(NA, NROW(y)))
+        else
+          matrix(rep(NA, NROW(newdata)))
+      else
+        predfun(fit, newdata)
+    }
+  }
 
   ndraws <- ncol(mu)
 
@@ -305,16 +315,16 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=N
     offset <- rep(0, NROW(y))
 
   intercept <- as.logical(attr(terms(formula), 'intercept'))
-  refmodel <- list(fit=fit, formula=formula, predfun=predfun, mle=mle,
-                   family=family, mu=mu, dis=dis, y=y, loglik=loglik,
-                   intercept=intercept, proj_predfun=proj_predfun,
-                   fetch_data=fetch_data_wrapper, wobs=weights,
-                   wsample=wsample, offset=offset, folds=folds,
-                   cvfun=cvfun, cvfits=cvfits)
-  if (proper_model)
+  refmodel <- nlist(fit, formula, mle, family, mu, dis, y, loglik,
+                    intercept, proj_predfun, fetch_data=fetch_data_wrapper,
+                    wobs=weights, wsample, offset, folds, cvfun, cvfits)
+  if (proper_model) {
+    refmodel$predfun <- predfun
     class(refmodel) <- "refmodel"
-  else
+  } else {
+    refmodel$predfun <- predfun_datafit
     class(refmodel) <- c("datafit", "refmodel")
+  }
 
   return(refmodel)
 }

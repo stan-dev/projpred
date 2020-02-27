@@ -23,7 +23,7 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   subset <- subset_formula_and_data(form, unique(unlist(vind)),
                                     refmodel$fetch_data(), y = pobs$z)
   capture.output(proj_refit <- refmodel$mle(flatten_formula(subset$formula),
-                                            subset$data, regul = regul),
+                                            subset$data),
                  type = "message")
   musub <- family_kl$mu_fun(proj_refit)
 
@@ -79,12 +79,13 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
       pobs <- pseudo_data(0, mu_ref, family_kl, weights = wobs)
 
       if (nv == 0) {
-        vind <- c("1")
-        form <- refmodel$formula
-        subset <- subset_formula_and_data(form, unique(unlist(vind)),
-                                          refmodel$fetch_data(), y = pobs$z)
-        sub_refit <- refmodel$mle(flatten_formula(subset$formula),
-                                  subset$data, regul = regul)
+        sub_refit <- list(
+          alpha = 0,
+          beta = rep(0, length(varorder)),
+          w = wobs,
+          x = refmodel$fetch_data()
+        )
+        class(sub_refit) <- "subfit"
       } else {
         ## reuse sub_fit as projected during search
         sub_refit <- searchpath$sub_fits[[nv]]

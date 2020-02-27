@@ -160,7 +160,9 @@ parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
       cv_method <- 'kfold'
     else
       cv_method <- 'loo'
-  } else if (tolower(cv_method) == 'kfold' && is.null(K)) {
+  }
+
+  if (tolower(cv_method) == 'kfold' || is.null(K)) {
     if (inherits(refmodel, "datafit"))
       K <- 10
     else
@@ -316,7 +318,8 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
       newdata = refmodel$fetch_data(obs=fold$omitted),
       y = refmodel$y[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
-      offset = refmodel$offset[fold$omitted]
+      offset = refmodel$offset[fold$omitted],
+      omitted = fold$omitted
     )
   })
 
@@ -385,17 +388,17 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
   get_summaries_submodel_cv <- function(p_sub, fold) {
-    family_kl <- fold$refmodel$family
-    lapply(.get_sub_summaries_poc(p_sub, fold$omitted, fold$refmodel, family_kl),
+    ## family_kl <- fold$refmodel$family
+    lapply(.get_sub_summaries_poc(p_sub, fold$d_test$omitted, refmodel, family_kl),
            data.frame)
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, hf)
 
   ref <- hf(lapply(list_cv, function(fold) {
-    family_kl <- fold$refmodel$family
-    data.frame(.weighted_summary_means_poc(fold$d_test, family_kl, fold$mu_test,
-                                           fold$dis))
+    ## family_kl <- fold$refmodel$family
+    data.frame(.weighted_summary_means_poc(fold$d_test, family_kl, fold$d_test$w,
+                                           fold$mu_test, fold$refmodel$dis))
   }))
 
   ## Combine also the K separate test data sets into one list
@@ -425,7 +428,7 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
       if (verbose && !("datafit" %in% class(refmodel))) {
         print("Performing cross-validation for the reference model..")
       }
-      nobs <- NCOL(refmodel$y)
+      nobs <- NROW(refmodel$y)
       folds <- cvfolds(nobs, k = K, seed = seed)
       cvfits <- refmodel$cvfun(folds)
       cvfits <- lapply(seq_along(cvfits), function(k) {
@@ -448,21 +451,26 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
   train <- seq_along(refmodel$y)
 
   k_fold <- lapply(cvfits, function(cvfit) {
-    default_data <- refmodel$fetch_data(obs = setdiff(train,
-                                                      cvfit$omitted))
+    fold <- setdiff(
+      train,
+      cvfit$omitted
+    )
+    fetch_fold <- function(data=NULL, obs=NULL, newdata=NULL) {
+      refmodel$fetch_data(obs = fold, newdata = newdata)
+    }
     predfun <- function(fit, newdata = default_data) {
       refmodel$predfun(fit, newdata = newdata)
     }
     proj_predfun <- function(fit, newdata = default_data) {
       refmodel$proj_predfun(fit, newdata = newdata)
     }
-    refmod <- get_refmodel_poc(refmodel$cvfit,
-      fetch_data(data = refmodel$fetch_data()),
-      refmodel$y, refmodel$formula, predfun,
-      proj_predfun, refmodel$mle, fetch_data,
-      family = refmodel$family,
-      folds = train
-    )
+    refmod <- init_refmodel_poc(refmodel$cvfit, fetch_fold(),
+                                refmodel$y[fold], refmodel$formula, family =
+                                refmodel$family, predfun, mle = refmodel$mle,
+                                proj_predfun = proj_predfun, folds = seq_along(fold),
+                                offset = refmodel$offset[fold],
+                                weights = refmodel$wobs[fold])
+    refmod$fetch_data <- fetch_fold
     return(list(refmodel=refmod, omitted=cvfit$omitted))
   })
 

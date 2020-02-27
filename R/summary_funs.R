@@ -6,11 +6,11 @@
     if (length(vind) == 0)
       vind <- c("1")
     sub_fit <- model$sub_fit
-    mu <- family_kl$mu_fun(sub_fit, obs=test_points)
+    mu <- family_kl$mu_fun(sub_fit, obs = test_points)
 
     weights <- refmodel$wobs[test_points]
     y <- refmodel$y[test_points]
-    y_test <- list(y=y, weights=weights)
+    y_test <- nlist(y, weights)
 
     .weighted_summary_means_poc(y_test, family_kl, model$weights, matrix(mu, NROW(y), NCOL(mu)), model$dis)
   })
