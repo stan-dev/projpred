@@ -109,8 +109,8 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
   ## simply fetch the statistics on the train data
   if ('datafit' %in% class(refmodel)) {
     ## no actual reference model, so we don't know how to predict test observations
-    ntest <- nrow(refmodel$y)
-    ref <- list(mu=rep(NA,ntest), lppd=rep(NA,ntest))
+    ntest <- NROW(refmodel$y)
+    ref <- list(mu=rep(NA, ntest), lppd=rep(NA, ntest))
   } else {
     d_test$weights <- refmodel$wobs[d_test$test_points]
     if (d_type == 'train') {

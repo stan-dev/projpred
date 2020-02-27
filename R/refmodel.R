@@ -250,6 +250,9 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=N
   fetch_data_wrapper <- function(obs=folds, newdata=NULL)
     as.data.frame(fetch_data(data, obs, newdata))
 
+  if (!.has_family_extras (family))
+    family <- extend_family(family)
+
   ## TODO: ideally remove this, have to think about it
   family$mu_fun <- function(fit, obs=folds, xnew=NULL) {
     newdata <- fetch_data_wrapper(obs = obs, newdata = xnew)
@@ -265,7 +268,7 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=N
     mu <- unname(as.matrix(mu))
     mu <- family$linkinv(mu)
   } else
-    mu <- y
+    mu <- matrix(y, NROW(y), 1)
 
   ndraws <- ncol(mu)
 
@@ -291,13 +294,13 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=N
   else
     loglik <- NULL
 
-	if (!proper_model) {
-	  # this is a dummy definition for cvfun, but it will lead to standard cross-validation
-	  # for datafit reference; see cv_varsel and get_kfold
-	  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
-	}
+  if (!proper_model) {
+    # this is a dummy definition for cvfun, but it will lead to standard cross-validation
+    # for datafit reference; see cv_varsel and get_kfold
+    cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+  }
 
-	wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
+  wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   if (is.null(offset))
     offset <- rep(0, NROW(y))
 
