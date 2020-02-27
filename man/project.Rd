@@ -8,7 +8,7 @@ project(
   object,
   nv = NULL,
   vind = NULL,
-  relax = NULL,
+  cv_search = NULL,
   ns = NULL,
   nc = NULL,
   intercept = NULL,
@@ -29,7 +29,7 @@ Default is the model size suggested by the variable selection (see function \cod
 
 \item{vind}{Variable indices onto which the projection is done. If specified, \code{nv} is ignored.}
 
-\item{relax}{If TRUE, then the projected coefficients after L1-selection are computed
+\item{cv_search}{If TRUE, then the projected coefficients after L1-selection are computed
 without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 the coefficients are the solution from the L1-penalized projection. This option is relevant only
 if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is

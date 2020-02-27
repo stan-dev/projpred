@@ -12,7 +12,7 @@ varsel(
   nc = NULL,
   nspred = NULL,
   ncpred = NULL,
-  relax = NULL,
+  cv_search = NULL,
   nv_max = NULL,
   intercept = NULL,
   penalty = NULL,
@@ -48,7 +48,7 @@ Overrides the \code{ns} argument. Defaults to 1.}
 
 \item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
 
-\item{relax}{If TRUE, then the projected coefficients after L1-selection are computed
+\item{cv_search}{If TRUE, then the projected coefficients after L1-selection are computed
 without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
 the coefficients are the solution from the L1-penalized projection. This option is relevant only
 if \code{method}='L1'. Default is TRUE for genuine reference models and FALSE if \code{object} is

@@ -26,18 +26,18 @@ if (require(rstanarm)) {
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
   
   SW(
-    fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
+    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss, QR = T,
                           weights = weights, offset = offset,
                           chains = chains, seed = seed, iter = iter, 
                           refresh=0)
   )
   SW(
-    fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
+    fit_binom <- stan_glm(cbind(y, weights-y) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom, QR = T,
                           data = df_binom, weights = weights, offset = offset,
                           chains = chains, seed = seed, iter = iter, refresh=0)
   )
   SW(
-    fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
+    fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_poiss, data = df_poiss, QR = T,
                           weights = weights, offset = offset,
                           chains = chains, seed = seed, iter = iter, refresh=0)
   )
@@ -55,41 +55,41 @@ if (require(rstanarm)) {
         
         fit <- fit_list[[i]]
         
-        # varsel
-        foo <- varsel(fit, seed=seed)
+        # varsel_poc
+        foo <- varsel_poc(fit, seed=seed)
         r1 <- rnorm(s)
-        foo <- varsel(fit, seed=seed)
+        foo <- varsel_poc(fit, seed=seed)
         r2 <- rnorm(s)
         expect_true(any(r1!=r2))
         
-        # cv_varsel
-        SW(foo <- cv_varsel(fit, seed=seed))
+        # cv_varsel_poc
+        SW(foo <- cv_varsel_poc(fit, seed=seed))
         r1 <- rnorm(s)
-        SW(foo <- cv_varsel(fit, seed=seed))
+        SW(foo <- cv_varsel_poc(fit, seed=seed))
         r2 <- rnorm(s)
         expect_true(any(r1!=r2))
         
-        # project
+        # project_poc
         vind <- c(1,2)
-        foo <- project(fit, vind=vind, ns = 100, seed=seed)
+        foo <- project_poc(fit, vind=vind, ns = 100, seed=seed)
         r1 <- rnorm(s)
-        foo <- project(fit, vind=vind, ns = 100, seed=seed)
+        foo <- project_poc(fit, vind=vind, ns = 100, seed=seed)
         r2 <- rnorm(s)
         expect_true(any(r1!=r2))
         
-        # proj_linpred
+        # proj_linpred_poc
         vind <- c(1,3)
-        foo <- proj_linpred(fit, x[,vind], vind=vind, seed=seed)
+        foo <- proj_linpred_poc(fit, x[,vind], vind=vind, seed=seed)
         r1 <- rnorm(s)
-        foo <- proj_linpred(fit, x[,vind], vind=vind, seed=seed)
+        foo <- proj_linpred_poc(fit, x[,vind], vind=vind, seed=seed)
         r2 <- rnorm(s)
         expect_true(any(r1!=r2))
         
-        # proj_predict
+        # proj_predict_poc
         vind <- c(1,3)
-        foo <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
+        foo <- proj_predict_poc(fit, x[,vind], vind=vind, seed=seed)
         r1 <- rnorm(s)
-        foo <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
+        foo <- proj_predict_poc(fit, x[,vind], vind=vind, seed=seed)
         r2 <- rnorm(s)
         expect_true(any(r1!=r2))
       }
@@ -106,33 +106,33 @@ if (require(rstanarm)) {
         
         fit <- fit_list[[i]]
         
-        # varsel
-        foo <- varsel(fit, seed=seed)
-        bar <- varsel(fit, seed=seed)
+        # varsel_poc
+        foo <- varsel_poc(fit, seed=seed)
+        bar <- varsel_poc(fit, seed=seed)
         expect_equal(foo, bar)
         
-        # cv_varsel
-        SW(foo <- cv_varsel(fit, seed=seed))
-        SW(bar <- cv_varsel(fit, seed=seed))
+        # cv_varsel_poc
+        SW(foo <- cv_varsel_poc(fit, seed=seed))
+        SW(bar <- cv_varsel_poc(fit, seed=seed))
         expect_equal(foo, bar)
         
-        # project
+        # project_poc
         vind <- c(1,2)
-        foo <- project(fit, vind=vind, nc = 10, seed=seed)
-        bar <- project(fit, vind=vind, nc = 10, seed=seed)
+        foo <- project_poc(fit, vind=vind, nc = 10, seed=seed)
+        bar <- project_poc(fit, vind=vind, nc = 10, seed=seed)
         expect_equal(foo, bar)
         
         
-        # proj_linpred
+        # proj_linpred_poc
         vind <- c(1,3)
-        foo <- proj_linpred(fit, x[,vind], vind=vind, seed=seed)
-        bar <- proj_linpred(fit, x[,vind], vind=vind, seed=seed)
+        foo <- proj_linpred_poc(fit, x[,vind], vind=vind, seed=seed)
+        bar <- proj_linpred_poc(fit, x[,vind], vind=vind, seed=seed)
         expect_equal(foo, bar)
         
-        # proj_predict
+        # proj_predict_poc
         vind <- c(1,3)
-        foo <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
-        bar <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
+        foo <- proj_predict_poc(fit, x[,vind], vind=vind, seed=seed)
+        bar <- proj_predict_poc(fit, x[,vind], vind=vind, seed=seed)
         expect_equal(foo, bar)
       }
     }

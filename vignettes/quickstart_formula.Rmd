@@ -1,0 +1,171 @@
+---
+title: "projpred Quick Start (formula interface)"
+date: "`r Sys.Date()`"
+output:
+  html_vignette
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+---
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{projpred quickstart guide (formula interface)}
+\usepackage[utf8](inputenc)
+-->
+```{r, child="children/SETTINGS-knitr.txt"}
+```
+
+This vignette shows how to use the main functionalities of the ```projpred```-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models. The package is compatible with ```rstanarm``` but also other reference models could be used (see section Custom reference models). The methods implemented in the package are described in detail in Piironen et al. (2018) and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).
+The difference with respect to the standard quickstart guide is that in this vignette we are using a more general API that works with `formula` instances, so that the inner implementation does not depend on any specific structure.
+
+
+## Gaussian example
+First load the packages that are needed, and specify the number of available cores (this speeds up the sampling when multiple cores are available). Uncomment the last line in the following commands (this is commented out to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).
+```{r, results='hide', message=FALSE, warning=FALSE}
+library(devtools)
+library(rstanarm)
+library(projpred)
+library(ggplot2)
+library(bayesplot)
+theme_set(theme_classic())
+#options(mc.cores = parallel::detectCores())
+devtools::load_all()
+```
+
+The package contains a simple Gaussian example dataset accessible with the `data`-command. This dataset is one of the example cases from the `glmnet`-package. The following command loads a dataframe `df_gaussian` with the predictor matrix `x` and the corresponding targets `y` into the workspace.
+```{r}
+data('df_gaussian', package = 'projpred')
+```
+
+
+We then fit the model with all the variables and sparsifying horseshoe prior (Carvalho et al., 2010) on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017b,c), in which the prior for the global shrinkage parameter is defined based on our prior guess for the number of relevant variables.
+```{r, results='hide', message=FALSE, warning=FALSE}
+n <- nrow(df_gaussian$x) # 100
+D <- ncol(df_gaussian$x) # 20
+p0 <- 5 # prior guess for the number of relevant variables
+tau0 <- p0/(D-p0) * 1/sqrt(n) # scale for tau (notice that stan_glm will automatically scale this by sigma)
+prior_coeff <- hs(global_scale = tau0, slab_scale = 1) # regularized horseshoe prior
+fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
+                # to make this vignette build fast, we use only 2 chains and
+                # 500 draws. In practice, more conservative values, eg. 4 chains
+                # and 2000 draws might be required for reliable inference.
+                seed=1, chains=2, iter=500)
+```
+
+In order to have a very general interface to `projpred` we need to specify some functions ourselves. These are:
+  - Maximum Likelihood Estimator for the projections.
+  - Prediction function for each of the submodels.
+  - Prediction function for the reference model.
+  - Function to fetch data from the original dataset, given that we are using cross validation to determine the solution path.
+
+For most models these will be quite simple functions interfacing with other packages, as we will see next.
+
+```{r, results='hide', messages=FALSE, warning=FALSE}
+predfun <- function(fit, newdata=NULL)
+  t(posterior_linpred(fit, newdata = newdata))
+
+proj_predfun <- function(fit, newdata=NULL) {
+  newdata <- as.data.frame(fetch_data(xnew=newdata))
+  predict(fit, newdata = newdata)
+}
+
+mle <- function(form, dat)
+  lm(form, data = dat)
+
+fetch_data <- function(obs=NULL, xnew=NULL) {
+  if (is.null(obs))
+    if (is.null(xnew))
+      return(d)
+    else
+      return(xnew)
+  else if (is.null(xnew))
+    return(d[obs, ])
+  else
+    return(xnew[obs, ])
+}
+```
+
+The first function, `predfun`, is the prediction function for the reference model, so we use `posterior_linpred` from `rstanarm`.
+For each of the submodels we use `proj_predfun`, which uses `lme4` `predict` function for linear models.
+To fit the projections we use `lm` as usual.
+Note that in this function we are writing some boilerplate code to handle the different data options that we can get.
+We need to do this because this function is used in different contexts inside `projpred`.
+Finally, we write a `fetch_data` function that simply extracts a set of data points from the dataset, that will be used during the cross validation stage.
+
+We can now build our `refmodel` structure as follows
+
+```{r, results='hide', warning=FALSE, messages=FALSE}
+split_structure <- break_up_matrix_term(y ~ x, data=df_gaussian)
+df_gaussian <- split_structure$data
+formula <- split_structure$formula
+d <- df_gaussian
+
+refmodel <- get_refmodel_poc(fit, d$y, formula,
+                             predfun=predfun,
+                             proj_predfun=proj_predfun,
+                             mle=mle,
+                             fetch_data=fetch_data)
+```
+
+Before actually building the `refmodel `structure we are calling `break_up_matrix_term`.
+This is a convenience function to automatically split matrix terms like in `y ~ x`.
+Nonetheless, note that this function will only work for linear terms.
+If we do not call this function `projpred `will then try to jointly select all the features in the matrix.
+
+The variable selection can then be excecuted with the command `cv_varsel_poc`. This returns an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
+Even though it is technically possible to use L1 penalization search for this linear model, we have not implemented it for the general `formula` interface, so we will use `forward` here.
+
+```{r, results='hide', messages=FALSE, warnings=FALSE}
+vs <- cv_varsel_poc(refmodel, method='forward')
+```
+
+```{r, messages=FALSE, warnings=FALSE}
+vs$vind # variables ordered as they enter during the search
+```
+
+We can then plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
+```{r, fig.width=5, fig.height=4}
+# plot predictive performance on training data
+varsel_plot(vs, stats=c('elpd', 'rmse'))
+```
+
+```{r, fig.width=5, fig.height=4}
+# plot the validation results, this time relative to the full model
+varsel_plot(vs, stats = c('elpd', 'rmse'), deltas=T)
+```
+
+We can now perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with e.g. the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables.
+
+```{r, fig.width=6, fig.height=2}
+ # Visualise the three most relevant variables in the full model -->
+ mcmc_areas(as.matrix(refmodel$fit),
+            pars = c('(Intercept)', unlist(vs$vind[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
+```
+
+```{r, fig.width=6, fig.height=2}
+# Visualise the projected three most relevant variables
+proj <- project_poc(vs, nv = 3, ns = 500)
+mcmc_areas(t(as.matrix(proj$sub_fit$coefficients))) + coord_cartesian(xlim = c(-2, 2))
+```
+
+We can make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+```{r}
+xnew <- df_gaussian[, colnames(df_gaussian) != "y"]
+pred <- proj_linpred_poc(vs, xnew=xnew, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
+```
+
+Visualize the predictions
+```{r, fig.width=5, fig.height=3}
+ggplot() +
+  geom_point(aes(x=pred$pred,y=df_gaussian$y)) +
+  geom_abline(slope = 1, color='red') +
+  labs(x = 'prediction', y = 'y')
+```
+
+We can also draw  samples from the projected predictive distribution. Here's an example prediction for the first data point using 6 variables (the observed value is marked by the red line)
+```{r, fig.height=3, fig.width=5}
+xnew <- df_gaussian[, colnames(df_gaussian) != "y"]
+y1_rep <- proj_predict_poc(vs, xnew=xnew[1,,drop=F], nv=6, seed=7560)
+qplot(as.vector(y1_rep), bins=25) +
+geom_vline(xintercept = df_gaussian$y[1], color='red') +
+xlab('y1_rep')
+```

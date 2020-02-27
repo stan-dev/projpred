@@ -20,7 +20,7 @@ if (require(rstanarm)) {
   # selection
   vs <- varsel(fit)
   SW(cvs <- cv_varsel(fit, verbose=F))
-  ssize <- suggest_size(cvs)
+  suggested_size <- suggest_size(cvs)
   
   # project onto some model size
   proj <- project(cvs, nv = 3)
@@ -34,7 +34,7 @@ if (require(rstanarm)) {
   })
   
   test_that('suggested model size is ok', {
-    expect_true(!is.na(ssize))
+    expect_true(!is.na(suggested_size))
   })
   
 }  

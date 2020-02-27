@@ -120,7 +120,7 @@ test_that("glm_elnet: various families and setups, glm_elnet and glmnet should g
 
 
 test_that("glm_elnet: poisson, log-link, normalization should not affect the maximum likelihood solution", {
-  fam <- kl_helpers(poisson(link = 'log'))
+  fam <- extend_family(poisson(link = 'log'))
   y <- rpois(n, fam$linkinv(x%*%b))
   
   nlam <- 100

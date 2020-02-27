@@ -4,33 +4,32 @@
   packageStartupMessage(msg)
 }
 
-weighted.sd <- function(x, w, na.rm=F) {
-	if (na.rm) {
-		ind <- !is.na(w) & !is.na(x)
-		n <- sum(ind)
-	} else {
-		n <- length(x)
-		ind <- rep(T,n)
-	}
-	w <- w/sum(w[ind])
-  m <- sum(x[ind]*w[ind])
-  sqrt(n/(n-1)*sum(w[ind]*(x[ind] - m)^2))
+weighted.sd <- function(x, w, na.rm = F) {
+  if (na.rm) {
+    ind <- !is.na(w) & !is.na(x)
+    n <- sum(ind)
+  } else {
+    n <- length(x)
+    ind <- rep(T, n)
+  }
+  w <- w / sum(w[ind])
+  m <- sum(x[ind] * w[ind])
+  sqrt(n / (n - 1) * sum(w[ind] * (x[ind] - m)^2))
 }
 
-weighted.cov <- function(x,y, w, na.rm=F) {
-	if (na.rm) {
-		ind <- !is.na(w) & !is.na(x) & !is.na(y)
-		n <- sum(ind)
-	} else {
-		n <- length(x)
-		ind <- rep(T,n)
-	}
-	w <- w/sum(w[ind])
-	mx <- sum(x[ind]*w[ind])
-	my <- sum(y[ind]*w[ind])
-	n/(n-1)*sum(w[ind]*(x[ind] - mx)*(x[ind] - my))
+weighted.cov <- function(x, y, w, na.rm = F) {
+  if (na.rm) {
+    ind <- !is.na(w) & !is.na(x) & !is.na(y)
+    n <- sum(ind)
+  } else {
+    n <- length(x)
+    ind <- rep(T, n)
+  }
+  w <- w / sum(w[ind])
+  mx <- sum(x[ind] * w[ind])
+  my <- sum(y[ind] * w[ind])
+  n / (n - 1) * sum(w[ind] * (x[ind] - mx) * (x[ind] - my))
 }
-
 
 log_weighted_mean_exp <- function(x, w) {
   x <- x + log(w)
@@ -39,8 +38,8 @@ log_weighted_mean_exp <- function(x, w) {
 }
 
 log_sum_exp <- function(x) {
-	max_x <- max(x)
-	max_x + log(sum(exp(x - max_x)))
+  max_x <- max(x)
+  max_x + log(sum(exp(x - max_x)))
 }
 
 auc <- function(x) {
@@ -76,7 +75,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   # as the first input. other parameters to fun can be passed in as ...
   # example: boostrap(x,mean)
   #
-  
+
   # set random seed but ensure the old RNG state is restored on exit
   if (exists('.Random.seed')) {
     rng_state_old <- .Random.seed
@@ -173,9 +172,9 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   # a vector with length zero in which case it is replaced by a vector of ones).
   if(NCOL(y) == 1) {
     # weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
-    if(length(weights) > 0) 
+    if(length(weights) > 0)
       weights <- unname(weights)
-    else 
+    else
       weights <- rep(1, length(y))
     if (fam$family == 'binomial') {
       if (is.factor(y)) {
@@ -196,18 +195,18 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   } else {
     stop('y cannot have more than two columns.')
   }
-  return(list(y=y,weights=weights))
+  return(nlist(y, weights))
 }
 
 
 
-.get_refdist <- function(refmodel, ns=NULL, nc=NULL, seed=NULL) {
-	#
-	# Creates the reference distribution based on the refmodel-object, and the
-	# desired number of clusters (nc) or number of subsamples (ns). If nc is specified,
+.get_refdist <- function(refmodel, ns = NULL, nc = NULL, seed = NULL) {
+  #
+  # Creates the reference distribution based on the refmodel-object, and the
+  # desired number of clusters (nc) or number of subsamples (ns). If nc is specified,
   # then clustering is used and ns is ignored. Returns a list with fields:
   #
-	#   mu: n-by-s matrix, vector of expected values for y for each draw/cluster. here s
+  #   mu: n-by-s matrix, vector of expected values for y for each draw/cluster. here s
   #       means either the number of draws ns or clusters nc used, depending on which one is used.
   #   var: n-by-s matrix, vector of predictive variances for y for each draw/cluster which
   #         which are needed for projecting the dispersion parameter (note that this can be
@@ -215,130 +214,136 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   #   weights: s-element vector of weights for the draws/clusters
   #   cl: cluster assignment for each posterior draw, that is, a vector that has length equal to the
   #       number of posterior draws and each value is an integer between 1 and s
-	# 
-  if (is.null(seed))
+  #
+  if (is.null(seed)) {
     seed <- 17249420
+  }
 
   # set random seed but ensure the old RNG state is restored on exit
-  if (exists('.Random.seed')) {
+  if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)
-  
-	fam <- refmodel$fam
-	S <- NCOL(refmodel$mu) # number of draws in the reference model
 
-	if (!is.null(nc)) {
-		# use clustering (ignore ns argument)
-		if (nc == 1) {
-			# special case, only one cluster
-			cl <- rep(1, S)
-			p_ref <- .get_p_clust(fam, refmodel$mu, refmodel$dis, wobs=refmodel$wobs, cl=cl)
-		} else if (nc == NCOL(refmodel$mu)) {
-		    # number of clusters equal to the number of samples, so return the samples
-		    return(.get_refdist(refmodel, ns=nc))
-		} else {
-			# several clusters
-		    if (nc > NCOL(refmodel$mu))
-		        stop('The number of clusters nc cannot exceed the number of columns in mu.')
-			p_ref <- .get_p_clust(fam, refmodel$mu, refmodel$dis, wobs=refmodel$wobs, nc=nc)
-		}
-	} else if (!is.null(ns)) {
-		# subsample from the reference model
-		# would it be safer to actually randomly draw the subsample?
-		if (ns > NCOL(refmodel$mu))
-			stop('The number of subsamples ns cannot exceed the number of columns in mu.')
-		s_ind <- round(seq(1, S, length.out  = ns))
-		cl <- rep(NA, S)
-		cl[s_ind] <- c(1:ns)
-		predvar <- sapply(s_ind, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j]) })
-		p_ref <- list(mu = refmodel$mu[, s_ind, drop=F], var = predvar, dis = refmodel$dis[s_ind], weights = rep(1/ns, ns), cl=cl)
-	} else {
-		# use all the draws from the reference model
-		predvar <- sapply(1:S, function(j) { fam$predvar(refmodel$mu[,j,drop=F], refmodel$dis[j])	})
-		p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis, weights = refmodel$wsample, cl=c(1:S))
-	}
+  family <- refmodel$family
+  S <- NCOL(refmodel$mu) # number of draws in the reference model
 
-	return(p_ref)
+  if (!is.null(nc)) {
+    # use clustering (ignore ns argument)
+    if (nc == 1) {
+      # special case, only one cluster
+      cl <- rep(1, S)
+      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis, wobs = refmodel$wobs, cl = cl)
+    } else if (nc == NCOL(refmodel$mu)) {
+      # number of clusters equal to the number of samples, so return the samples
+      return(.get_refdist(refmodel, ns = nc))
+    } else {
+      # several clusters
+      if (nc > NCOL(refmodel$mu)) {
+        stop("The number of clusters nc cannot exceed the number of columns in mu.")
+      }
+      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis, wobs = refmodel$wobs, nc = nc)
+    }
+  } else if (!is.null(ns)) {
+    # subsample from the reference model
+    # would it be safer to actually randomly draw the subsample?
+    if (ns > NCOL(refmodel$mu)) {
+      stop("The number of subsamples ns cannot exceed the number of columns in mu.")
+    }
+    s_ind <- round(seq(1, S, length.out = ns))
+    cl <- rep(NA, S)
+    cl[s_ind] <- c(1:ns)
+    predvar <- sapply(s_ind, function(j) {
+      family$predvar(refmodel$mu[, j, drop = F], refmodel$dis[j])
+    })
+    p_ref <- list(mu = refmodel$mu[, s_ind, drop = F], var = predvar, dis = refmodel$dis[s_ind], weights = rep(1 / ns, ns), cl = cl)
+  } else {
+    # use all the draws from the reference model
+    predvar <- sapply(1:S, function(j) {
+      family$predvar(refmodel$mu[, j, drop = F], refmodel$dis[j])
+    })
+    p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis, weights = refmodel$wsample, cl = c(1:S))
+  }
+
+  return(p_ref)
 }
-
-
 
 .get_p_clust <- function(family_kl, mu, dis, nc=10, wobs=rep(1,dim(mu)[1]), wsample=rep(1,dim(mu)[2]), cl = NULL) {
-	# Function for perfoming the clustering over the samples.
-	#
-	# cluster the samples in the latent space if no clustering provided
-	if (is.null(cl)) {
-		f <- family_kl$linkfun(mu)
-		out <- kmeans(t(f), nc, iter.max = 50)
-		cl <- out$cluster # cluster indices for each sample
-	} else if (typeof(cl)=='list') {
-		# old clustering solution provided, so fetch the cluster indices
-		if (is.null(cl$cluster))
-			stop('argument cl must be a vector of cluster indices or a clustering object returned by k-means.')
-		cl <- cl$cluster
-	}
-	
-	# (re)compute the cluster centers, because they may be different from the ones
-	# returned by kmeans if the samples have differing weights
-	nc <- max(cl, na.rm=T) # number of clusters (assumes labeling 1,...,nc)
-	centers <- matrix(0, nrow=nc, ncol=dim(mu)[1])
-	wcluster <- rep(0,nc) # cluster weights
-	eps <- 1e-10
-	for (j in 1:nc) {
-		# compute normalized weights within the cluster, 1-eps is for numerical stability
-		ind <- which(cl==j)
-		ws <- wsample[ind]/sum(wsample[ind])*(1-eps)
-		
-		# cluster centers and their weights
-		centers[j,] <- mu[,ind,drop=F] %*% ws
-		wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
-	}
-	wcluster <- wcluster/sum(wcluster)
-	
-	# predictive variances
-	predvar <- sapply(1:nc, function(j) {
-		# compute normalized weights within the cluster, 1-eps is for numerical stability
-		ind <- which(cl == j)
-		ws <- wsample[ind]/sum(wsample[ind])*(1-eps)
-		family_kl$predvar( mu[,ind,drop=F], dis[ind], ws )
-	})
-	
-	# combine the results
-	p <- list(mu = unname(t(centers)),
-						var = predvar,
-						weights = wcluster,
-						cl = cl)
-	return(p)
+  # Function for perfoming the clustering over the samples.
+  #
+  # cluster the samples in the latent space if no clustering provided
+  if (is.null(cl)) {
+    f <- family_kl$linkfun(mu)
+    out <- kmeans(t(f), nc, iter.max = 50)
+    cl <- out$cluster # cluster indices for each sample
+  } else if (typeof(cl) == "list") {
+    # old clustering solution provided, so fetch the cluster indices
+    if (is.null(cl$cluster)) {
+      stop("argument cl must be a vector of cluster indices or a clustering object returned by k-means.")
+    }
+    cl <- cl$cluster
+  }
+
+  # (re)compute the cluster centers, because they may be different from the ones
+  # returned by kmeans if the samples have differing weights
+  nc <- max(cl, na.rm = T) # number of clusters (assumes labeling 1,...,nc)
+  centers <- matrix(0, nrow = nc, ncol = dim(mu)[1])
+  wcluster <- rep(0, nc) # cluster weights
+  eps <- 1e-10
+  for (j in 1:nc) {
+    # compute normalized weights within the cluster, 1-eps is for numerical stability
+    ind <- which(cl == j)
+    ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
+
+    # cluster centers and their weights
+    centers[j, ] <- mu[, ind, drop = F] %*% ws
+    wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
+  }
+  wcluster <- wcluster / sum(wcluster)
+
+  # predictive variances
+  predvar <- sapply(1:nc, function(j) {
+    # compute normalized weights within the cluster, 1-eps is for numerical stability
+    ind <- which(cl == j)
+    ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
+    family_kl$predvar(mu[, ind, drop = F], dis[ind], ws)
+  })
+
+  # combine the results
+  p <- list(
+    mu = unname(t(centers)),
+    var = predvar,
+    weights = wcluster,
+    cl = cl
+  )
+  return(p)
 }
 
-
-
 .get_traindata <- function(refmodel) {
-	#
-	# Returns the training data fetched from the reference model object.
-	return(list(z = refmodel$z, x = refmodel$x, y = refmodel$y, weights = refmodel$wobs, offset = refmodel$offset))
+  #
+  # Returns the training data fetched from the reference model object.
+  return(list(z = refmodel$z, x = refmodel$x, y = refmodel$y, weights = refmodel$wobs, offset = refmodel$offset))
 }
 
 .check_data <- function(data) {
-	#
-	# Check that data object has the correct form for internal use. The object must
-	# be a list with with fields 'x', 'y', 'weights' and 'offset'.
-	# Raises error if x or y is missing, but fills weights and offset with default
-	# values if missing.
-	#
-	if (is.null(data$z)) stop('The data object must be a list with field z giving the reference model inputs.')
-	if (is.null(data$x)) stop('The data object must be a list with field x giving the feature values.')
-	if (is.null(data$y)) stop('The data object must be a list with field y giving the target values.')
-	if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
-	if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
-	return(data)
+  #
+  # Check that data object has the correct form for internal use. The object must
+  # be a list with with fields 'x', 'y', 'weights' and 'offset'.
+  # Raises error if x or y is missing, but fills weights and offset with default
+  # values if missing.
+  #
+  if (is.null(data$z)) stop("The data object must be a list with field z giving the reference model inputs.")
+  if (is.null(data$x)) stop("The data object must be a list with field x giving the feature values.")
+  if (is.null(data$y)) stop("The data object must be a list with field y giving the target values.")
+  if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
+  if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
+  return(data)
 }
 
 
 .split_coef <- function(b, intercept) {
-  if(intercept) {
+  if (intercept) {
     list(alpha = b[1, ], beta = b[-1, , drop = F])
   } else {
     list(alpha = rep(0, NCOL(b)), beta = b)
@@ -346,32 +351,32 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 }
 
 .augmented_x <- function(x, intercept) {
-  if (intercept)
+  if (intercept) {
     return(cbind(1, x))
-  else
+  } else {
     return(x)
+  }
 }
 
 .nonaugmented_x <- function(x, intercept) {
   if (intercept) {
-    if (ncol(x) == 1)
+    if (ncol(x) == 1) {
       # there is only the column of ones in x, so return empty matrix
-      return(matrix(nrow=nrow(x), ncol=0))
-    else
-      return(x[,2:ncol(x),drop=F])
-  } else
+      return(matrix(nrow = nrow(x), ncol = 0))
+    } else {
+      return(x[, 2:ncol(x), drop = F])
+    }
+  } else {
     return(x)
+  }
 }
 
-    
-
-
 .varsel_errors <- function(e) {
-  if(grepl('computationally singular', e$message)) {
+  if (grepl("computationally singular", e$message)) {
     stop(paste(
-      'Numerical problems with inverting the covariance matrix. Possibly a',
-      'problem with the convergence of the stan model?, If not, consider',
-      'stopping the selection early by setting the variable nv_max accordingly.'
+      "Numerical problems with inverting the covariance matrix. Possibly a",
+      "problem with the convergence of the stan model?, If not, consider",
+      "stopping the selection early by setting the variable nv_max accordingly."
     ))
   } else {
     stop(e$message)
@@ -380,10 +385,36 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 
 
 .df_to_model_mat <- function(dfnew, var_names) {
-  f <- formula(paste('~', paste(c('0', var_names), collapse = ' + ')))
+  f <- formula(paste("~", paste(c("0", var_names), collapse = " + ")))
   model.matrix(terms(f, keep.order = T), data = dfnew)
 }
 
-.is_proj_list <- function(proj) { !( 'family_kl' %in% names(proj) ) }
+.is_proj_list <- function(proj) {
+  !("family_kl" %in% names(proj))
+}
 
-.unlist_proj <- function(p) if(length(p) == 1) p[[1]] else p
+.unlist_proj <- function(p) if (length(p) == 1) p[[1]] else p
+
+## create a named list using object names
+nlist <- function(...) {
+  m <- match.call()
+  dots <- list(...)
+  no_names <- is.null(names(dots))
+  has_name <- if (no_names) FALSE else nzchar(names(dots))
+  if (all(has_name)) {
+    return(dots)
+  }
+  nms <- as.character(m)[-1]
+  if (no_names) {
+    names(dots) <- nms
+  } else {
+    names(dots)[!has_name] <- nms[!has_name]
+  }
+  dots
+}
+
+## ifelse operator
+"%||%" <- function(x, y) {
+  if (is.null(x)) x <- y
+  x
+}

@@ -26,7 +26,7 @@ proj_predict(
   weightsnew = NULL,
   nv = NULL,
   draws = NULL,
-  seed_samp = NULL,
+  seed = NULL,
   ...
 )
 }
@@ -70,7 +70,7 @@ is an object returned by \link{varsel} or \link{cv_varsel}.}
 the projection. The default is 1000.
 For \code{proj_predict} only.}
 
-\item{seed_samp}{An optional seed to use for drawing from the projection.
+\item{seed}{An optional seed to use for drawing from the projection.
 For \code{proj_predict} only.}
 }
 \value{

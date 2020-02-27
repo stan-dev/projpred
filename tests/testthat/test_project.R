@@ -41,13 +41,13 @@ if (require(rstanarm)) {
   vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
   
   
-  test_that("project: relaxing has the expected effect", {
+  test_that("project: cv_searching has the expected effect", {
     
     vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE, method='l1')
     for (i in seq_along(vs_list)) {
       
-      p0 <- project(vs_list[[i]], relax=F, nv=1:nv)
-      p1 <- project(vs_list[[i]], relax=T, nv=1:nv, nc=1, regul=1e-9)
+      p0 <- project(vs_list[[i]], cv_search=F, nv=1:nv)
+      p1 <- project(vs_list[[i]], cv_search=T, nv=1:nv, nc=1, regul=1e-9)
       
       for (j in seq_along(p1)) {
         # L1-penalised coefficients should have smaller L1-norm
@@ -114,8 +114,8 @@ if (require(rstanarm)) {
       # if only one model size is projected, do not return a list of length one
       expect_true(length(p) >= 1, info = i_inf)
       # beta has the correct number of rows
-      expect_equal(nrow(p$beta), vs_list[[i]]$ssize, info = i_inf)
-      expect_length(p$vind, vs_list[[i]]$ssize)
+      expect_equal(nrow(p$beta), vs_list[[i]]$suggested_size, info = i_inf)
+      expect_length(p$vind, vs_list[[i]]$suggested_size)
     }
   })
   
