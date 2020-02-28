@@ -21,7 +21,7 @@ offset <- rnorm(n)
 chains <- 2
 seed <- 1235
 iter <- 500
-source(file.path("tests", "testthat", "helpers", "SW.R"))
+source(file.path("helpers", "SW.R"))
 
 f_gauss <- gaussian()
 df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
@@ -42,10 +42,10 @@ dref_poiss <- init_refmodel_poc(fit = NULL, df_poiss, df_poiss$y, formula, poiss
 dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
 
 # varsel
-vsd_list <- lapply(dref_list, varsel_poc, nv_max = nv, verbose = FALSE)
+vsd_list <- lapply(dref_list, varsel_poc, nv_max = nv + 1, verbose = FALSE)
 
 # cv_varsel
-cvvsd_list <- lapply(dref_list, cv_varsel_poc, nv_max = nv, verbose = FALSE)
+cvvsd_list <- lapply(dref_list, cv_varsel_poc, nv_max = nv + 1, verbose = FALSE)
 
 #
 predd_list <- lapply(vsd_list, proj_linpred_poc, xnew = data.frame(x=x),
@@ -120,7 +120,8 @@ test_that("output of project is sensible with only data provided as reference mo
       ns <- length(p[[j]]$weights)
       expect_equal(length(p[[j]]$sub_fit$alpha), ns)
       expect_equal(length(p[[j]]$dis), ns)
-      expect_equal(ncol(p[[j]]$sub_fit$beta), ns)
+      if (j > 1)
+        expect_equal(ncol(p[[j]]$sub_fit$beta), ns)
       # j:th element should have j-1 variables
       expect_equal(length(which(p[[j]]$sub_fit$beta != 0)), j - 1)
       expect_equal(length(p[[j]]$vind), j - 1)
@@ -231,14 +232,15 @@ test_that("L1-projection with data reference gives the same results as Lasso fro
     # check that the predictions agree (up to nv-2 only, because glmnet terminates the coefficient
     # path computation too early for some reason...)
     for (j in 1:(nv - 2)) {
-      expect_true(max(abs(pred1[[j]]$pred - pred2[, j])) < 3 * 1e-2)
+      expect_true(max(abs(pred1[[j]]$pred - pred2[, j])) < 1e-1)
     }
 
     # check that the coefficients are similar
     ind <- match(vs$vind, setdiff(split_formula(formula), "1"))
-    delta <- abs(sapply(vs$spath$sub_fits, function(x) x$beta)
-                 - lasso$beta[ind, lambdainds])[, 1:(nv - 2)]
-    expect_true(max(delta) < 3e-2)
+    betas <- sapply(vs$spath$sub_fits, function(x) x$beta %||% 0)
+    delta <- sapply(seq_len(nv), function(i)
+                    abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]]))
+    expect_true(max(unlist(delta)) < 3e-2)
     expect_true(max(abs(sapply(vs$spath$sub_fits, function(x) x$alpha) -
                     lasso$a0[lambdainds])) < 1e-2)
   }
