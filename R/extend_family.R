@@ -11,13 +11,12 @@
 #' @return Extended family object.
 #' @export
 extend_family <- function(family) {
-  if (.has_family_extras(family))
+  if (.has_family_extras(family)) {
     ## if the object already was created using this function, then return
     return(family)
-
-  if (family$family == "bernoulli")
-    family$family <- "binomial"
-  extend_family_specific <- match.fun(paste0("extend_family_", family$family))
+  }
+  extend_family_specific <- paste0("extend_family_", family$family)
+  extend_family_specific <- get(extend_family_specific, mode = "function")
   extend_family_specific(family)
 }
 
