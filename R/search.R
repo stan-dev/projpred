@@ -143,6 +143,7 @@ search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, o
     sub <- list(alpha = spath$alpha[nv + 1],
                 beta = spath$beta[, nv  + 1, drop = FALSE],
                 w = spath$w[, nv + 1],
+                formula = refmodel$formula,
                 x = x)
     class(sub) <- "subfit"
     return(sub)
@@ -159,8 +160,7 @@ predict.subfit <- function(subfit, newdata=NULL) {
   if (is.null(newdata))
     return((x * w) %*% rbind(alpha, beta))
   else {
-    ## FIXME: find better way of removing the response
-    x <- as.matrix(newdata[, -1])
-    return(alpha + x %*% beta)
+    x <- model.matrix(subfit$formula, newdata)
+    return(x %*% rbind(alpha, beta))
   }
 }
