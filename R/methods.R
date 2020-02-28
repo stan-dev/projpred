@@ -91,7 +91,7 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   }
 
   projected_sizes <- sapply(proj, function(x)
-    count_terms_chosen(object$formula, x$vind))
+    count_terms_chosen(x$vind))
   nv <- list(...)$nv %ORifNULL% projected_sizes
 
   if (!all(nv %in% projected_sizes))
@@ -135,7 +135,7 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
 #' @export
 proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
                              weightsnew = NULL, nv = NULL, transform = FALSE,
-                             integrated = FALSE, ...) {
+                             integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, offset, weights) {
@@ -155,7 +155,7 @@ proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper_poc(object = object, xnew = xnew, offsetnew = offsetnew,
-                  weightsnew = weightsnew, nv = nv, seed = NULL,
+                  weightsnew = weightsnew, nv = nv, seed = seed,
                   proj_predict = proj_predict, ...)
 }
 

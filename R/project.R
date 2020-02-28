@@ -116,7 +116,7 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
   p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
 
   ## project onto the submodels
-  subm <- .get_submodels_poc(list(vind=vind), nv, family_kl, p_ref,
+  subm <- .get_submodels_poc(object$spath, nv, family_kl, p_ref,
                              refmodel, intercept, regul, cv_search=cv_search)
 
   ## add family_kl
