@@ -293,14 +293,49 @@ subset_formula_and_data <- function(formula, terms_, data, y=NULL, split_formula
       formula <- lapply(response_cols, function(response)
         update(formula, paste0(response, " ~ .")))
     }
-    data <- data.frame(y, data)
   } else {
     formula <- update(formula, paste(response_cols, "~ ."))
   }
 
+  ## don't overwrite original y name
+  data <- data.frame(.z = y, data)
   colnames(data)[seq_len(response_ncol)] <- response_cols
   return(nlist(formula, data))
 }
+
+#' Utility to just replace the response in the data frame
+#' @param formula A formula for a valid model.
+#' @param terms_ A vector of terms to subset.
+#' @param split_formula If TRUE breaks the response down into single response formulas.
+#' Default FALSE. It only works if `y` represents a multi-output response.
+#' @return a function that replaces the response in the data with arguments
+#' @param y The response vector. Default NULL.
+#' @param data The original data frame for the full formula.
+get_replace_response <- function(formula, terms_, split_formula=FALSE) {
+  formula <- make_formula(terms_, formula = formula)
+  tt <- extract_terms_response(formula)
+  response_name <- tt$response
+
+  response_cols <- paste0(".", response_name)
+  replace_response <- function(y, data) {
+    response_ncol <- ncol(y) %||% 1
+    if (!is.null(ncol(y)) && ncol(y) > 1) {
+      response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
+      if (!split_formula) {
+        response_vector <- paste0("cbind(", paste(response_cols,
+          collapse = ", "
+        ), ")")
+      }
+    }
+
+    ## don't overwrite original y name
+    data <- data.frame(.z = y, data)
+    colnames(data)[seq_len(response_ncol)] <- response_cols
+    return(data)
+  }
+  return(replace_response)
+}
+
 
 #' Subsets a formula by the given terms.
 #' @param terms_ A vector of terms to subset from the right hand side.
