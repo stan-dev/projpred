@@ -136,19 +136,24 @@ search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, o
   terms_ <- split_formula(refmodel$formula)
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
   spath <- search_L1(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)
-  ## TODO: check this? can we reduce the above line and this one to a single thing?
-  ## extract the path from glmnet
-  ## sub_fit <- glmnet::glmnet(x, p_ref$mu, family, intercept = intercept, dfmax = nv_max, lambda = penalty)
+  vind <- terms_[spath$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
+    if (nv == 0) {
+      formula <- make_formula(c("1"))
+      beta <- NULL
+    } else {
+      formula <- make_formula(vind[seq_len(nv)])
+      beta <- spath$beta[seq_len(nv), nv + 1, drop = FALSE]
+    }
     sub <- list(alpha = spath$alpha[nv + 1],
-                beta = spath$beta[, nv  + 1, drop = FALSE],
+                beta = beta,
                 w = spath$w[, nv + 1],
-                formula = refmodel$formula,
+                formula = formula,
                 x = x)
     class(sub) <- "subfit"
     return(sub)
   })
-  return(list(vind = terms_[spath$vind], sub_fits = sub_fits))
+  return(nlist(vind, sub_fits))
 }
 
 ## FIXME: find a way that allows us to remove this
@@ -157,10 +162,16 @@ predict.subfit <- function(subfit, newdata=NULL) {
   alpha <- subfit$alpha
   x <- subfit$x
   w <- subfit$w
-  if (is.null(newdata))
-    return((x * w) %*% rbind(alpha, beta))
-  else {
+  if (is.null(newdata)) {
+    if (is.null(beta))
+      return((x * w) %*% as.matrix(alpha))
+    else
+      return((x * w) %*% rbind(alpha, beta))
+  } else {
     x <- model.matrix(delete.response(terms(subfit$formula)), newdata)
-    return(x %*% rbind(alpha, beta))
+    if (is.null(beta))
+      return(x %*% as.matrix(alpha))
+    else
+      return(x %*% rbind(alpha, beta))
   }
 }
