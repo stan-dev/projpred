@@ -62,7 +62,7 @@
 #' @export
 varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                        nspred = NULL, ncpred = NULL, cv_search=FALSE, nv_max = NULL,
-                       intercept = FALSE, verbose=TRUE, lambda_min_ratio=1e-5,
+                       intercept = TRUE, verbose=TRUE, lambda_min_ratio=1e-5,
                        nlambda=150, thresh=1e-6, regul=1e-4, penalty = NULL,
                        groups=NULL, ...) {
 
@@ -155,7 +155,7 @@ select_poc <- function(method, p_sel, refmodel, family_kl, intercept, nv_max,
   ##
   ## routine that can be used with several clusters
   if (method == 'l1') {
-    searchpath <- search_L1_poc(p_sel, refmodel, family_kl, intercept, nv_max, penalty, opt)
+    searchpath <- search_L1_poc(p_sel, refmodel, family_kl, intercept, nv_max - intercept, penalty, opt)
     searchpath$p_sel <- p_sel
     return(searchpath)
   } else if (method == 'forward') {

@@ -132,12 +132,12 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   vs <- nlist(refmodel, spath=sel$spath, d_test=sel_cv$d_test,
               summaries=sel_cv$summaries, family_kl=sel$family_kl, kl=sel$kl,
               vind=sel$vind, pctch, nv_max,
-              nv_all=count_terms_in_subformula(refmodel$formula),
-              suggested_size=suggest_size(vs, warnings=FALSE,
-                                          has_group_features=has_group_features,
-                                          groups=groups))
-  class(vs) <- 'cvsel'
-
+              nv_all=count_terms_in_subformula(refmodel$formula))
+  class(vs) <- "cvsel"
+  vs$suggested_size <- suggest_size(vs,
+    warnings = FALSE,
+    has_group_features = has_group_features,
+    groups = groups)
   if (verbose)
     print('Done.')
 

@@ -25,7 +25,7 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   capture.output(proj_refit <- refmodel$mle(flatten_formula(subset$formula),
                                             subset$data),
                  type = "message")
-  musub <- family_kl$mu_fun(proj_refit)
+  musub <- family_kl$mu_fun(proj_refit, offset = refmodel$offset)
 
   if (family_kl$family == "gaussian")
     ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
@@ -70,26 +70,24 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
       vind <- utils::head(varorder, nv)
 
       mu_ref <- p_sel$mu
-      wobs <- rep(1.0, NROW(mu_ref))
-      wsample <- rep(1.0, NCOL(mu_ref))
+
+      if (is.null(refmodel$wobs))
+        wobs <- rep(1.0, NROW(mu_ref))
+      else
+        wobs <- refmodel$wobs
+
+      if (is.null(p_sel$weights))
+        wsample <- rep(1.0, NCOL(mu_ref))
+      else
+        wsample <- p_sel$weights
 
       wobs <- wobs / sum(wobs)
       wsample <- wsample / sum(wsample)
 
       pobs <- pseudo_data(0, mu_ref, family_kl, weights = wobs)
 
-      if (nv == 0) {
-        sub_refit <- list(
-          alpha = 0,
-          beta = rep(0, length(varorder)),
-          w = wobs,
-          x = refmodel$fetch_data()
-        )
-        class(sub_refit) <- "subfit"
-      } else {
-        ## reuse sub_fit as projected during search
-        sub_refit <- searchpath$sub_fits[[nv]]
-      }
+      ## reuse sub_fit as projected during search
+      sub_refit <- searchpath$sub_fits[[nv + 1]]
 
       ## split b to alpha and beta, add it to submodel and return the result
       if (family_kl$family == "gaussian")
@@ -99,7 +97,7 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
         ref$w <- rep(0, NROW(mu_ref))
       }
 
-      mu <- family_kl$mu_fun(sub_refit)
+      mu <- family_kl$mu_fun(sub_refit, offset = refmodel$offset)
       submodel$dis <- family_kl$dis_fun(ref, list(mu = mu), ref$w)
       submodel$kl <- family_kl$kl(ref, list(weights = wobs), list(mu = mu, dis = submodel$dis))
       submodel$weights <- wsample
@@ -113,7 +111,7 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
     fetch_submodel <- function(nv) {
       if (nv == 0)
         ## empty
-        vind <- integer(length=0)
+        vind <- c("1")
       else
         vind <- varorder[1:nv]
       return(projfun(vind, p_ref, refmodel, intercept))

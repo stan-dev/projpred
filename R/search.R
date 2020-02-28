@@ -68,7 +68,7 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
-  list(vind = reduce_models(chosen), sub_fits = submodels)
+  list(vind = setdiff(reduce_models(chosen), "1"), sub_fits = submodels)
 }
 
 #' copied over from search until we resolve the TODO below
@@ -139,7 +139,7 @@ search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, o
   ## TODO: check this? can we reduce the above line and this one to a single thing?
   ## extract the path from glmnet
   ## sub_fit <- glmnet::glmnet(x, p_ref$mu, family, intercept = intercept, dfmax = nv_max, lambda = penalty)
-  sub_fits <- lapply(seq_len(nv_max), function(nv) {
+  sub_fits <- lapply(0:nv_max, function(nv) {
     sub <- list(alpha = spath$alpha[nv + 1],
                 beta = spath$beta[, nv  + 1, drop = FALSE],
                 w = spath$w[, nv + 1],
@@ -148,7 +148,7 @@ search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, o
     class(sub) <- "subfit"
     return(sub)
   })
-  return(list(vind = terms_[spath$vind - 1], sub_fits = sub_fits))
+  return(list(vind = terms_[spath$vind], sub_fits = sub_fits))
 }
 
 ## FIXME: find a way that allows us to remove this
@@ -160,7 +160,7 @@ predict.subfit <- function(subfit, newdata=NULL) {
   if (is.null(newdata))
     return((x * w) %*% rbind(alpha, beta))
   else {
-    x <- model.matrix(subfit$formula, newdata)
+    x <- model.matrix(delete.response(terms(subfit$formula)), newdata)
     return(x %*% rbind(alpha, beta))
   }
 }

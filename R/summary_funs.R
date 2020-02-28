@@ -6,7 +6,7 @@
     if (length(vind) == 0)
       vind <- c("1")
     sub_fit <- model$sub_fit
-    mu <- family_kl$mu_fun(sub_fit, obs = test_points)
+    mu <- family_kl$mu_fun(sub_fit, obs = test_points, offset = refmodel$offset)
 
     weights <- refmodel$wobs[test_points]
     y <- refmodel$y[test_points]

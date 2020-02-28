@@ -173,7 +173,7 @@ split_formula <- function(formula, return_group_terms=TRUE) {
     allterms_nobias <- unlist(lapply(allterms_, function(term) paste0(term, " + 0")))
     return(unique(allterms_nobias))
   } else
-    return(unique(allterms_))
+    return(c("1", unique(allterms_)))
 }
 
 #' Plugs the main effects to the interaction terms to consider jointly for
@@ -322,7 +322,7 @@ count_terms_in_subformula <- function(subformula) {
   ind_interaction_terms <- length(tt$individual_terms) +
     length(tt$interaction_terms)
   group_terms <- sum(unlist(lapply(tt$group_terms, count_terms_in_group_term)))
-  ind_interaction_terms + group_terms
+  ind_interaction_terms + group_terms + tt$global_intercept
 }
 
 #' Utility to count the number of terms in a given group term.
@@ -342,7 +342,7 @@ count_terms_in_group_term <- function(term) {
     terms_ <- c(terms_, "1")
   }
 
-  return(length(terms_))
+  return(length(terms_) + tt$global_intercept)
 }
 
 #' Given a list of formulas, sort them by number of terms in them.

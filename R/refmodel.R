@@ -119,7 +119,8 @@ get_refmodel_poc.cvsel <- function(object, ...) {
 #' @export
 get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfun,
                                      mle, fetch_data, family=NULL, wobs=NULL,
-                                     folds=NULL, cvfits=NULL, penalized=FALSE) {
+                                     folds=NULL, cvfits=NULL, penalized=FALSE,
+                                     offest=NULL, cvfun=NULL) {
   fetch_data_wrapper <- function(obs=folds, newdata=NULL)
     fetch_data(data, obs, newdata)
 
@@ -128,15 +129,10 @@ get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfu
   else
     family <- extend_family(family)
 
-  family$mu_fun <- function(fit, obs=folds, xnew=NULL) {
-    newdata <- fetch_data_wrapper(obs=obs, newdata=xnew)
-    family$linkinv(proj_predfun(fit, newdata=newdata))
-  }
-
   refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
-                                proj_predfun, fetch_data, fetch_data_wrapper,
-                                penalized=penalized)
-  refmodel$folds <- folds
+                                proj_predfun, penalized=penalized, weights=wobs,
+                                offset=offset, cvfits=cvfits, folds=folds,
+                                cvfun=cvfun)
   return(refmodel)
 }
 
@@ -254,9 +250,11 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=N
     family <- extend_family(family)
 
   ## TODO: ideally remove this, have to think about it
-  family$mu_fun <- function(fit, obs=folds, xnew=NULL) {
+  family$mu_fun <- function(fit, obs=folds, xnew=NULL, offset=NULL) {
+    if (is.null(offset))
+      offset <- rep(0, length(obs))
     newdata <- fetch_data_wrapper(obs = obs, newdata = xnew)
-    family$linkinv(proj_predfun(fit, newdata = newdata))
+    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
   }
 
   proper_model <- !is.null(fit)
