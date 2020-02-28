@@ -143,7 +143,7 @@ proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
     pred <- t(mu)
-    if (!transform) pred <- proj$family_kl$linkinv(pred)
+    if (!transform) pred <- proj$family_kl$linkfun(pred)
     if (integrated) {
       ## average over the parameters
       pred <- as.vector( proj$weights %*% pred )
