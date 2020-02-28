@@ -23,7 +23,9 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
 
   link <- function(f, wprev=NULL)
     pseudo_data(f, mu, family_kl, offset = refmodel$offset, weights = wprev)
-  replace_response <- get_replace_response(vind, form)
+  mle <- function(formula, data, weights)
+    refmodel$mle(formula, data, weights = weights, offset = refmodel$offset)
+  replace_response <- get_replace_response(form, vind)
 
   subset <- subset_formula_and_data(form, unique(unlist(vind)),
                                     refmodel$fetch_data(), y = pobs$z)
@@ -31,8 +33,8 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   ##                                           subset$data),
   ##                type = "message")
   capture.output(proj_refit <- iterative_weighted_least_squares(
-    subset$formula, refmodel$fetch_data(), 100, link,
-    replace_response, wprev = wobs, mle = refmodel$mle),
+    flatten_formula(subset$formula), refmodel$fetch_data(), 100, link,
+    replace_response, wprev = wobs, mle = mle),
     type = "message")
   musub <- family_kl$mu_fun(proj_refit, offset = refmodel$offset)
   if (family_kl$family == "gaussian")
@@ -52,7 +54,8 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
 }
 
 iterative_weighted_least_squares <- function(formula, data, iters, link,
-                                             replace_response, wprev = NULL, mle = lm) {
+                                             replace_response, wprev = NULL,
+                                             mle = lm) {
   pobs <- link(0, wprev)
   wprev <- pobs$w
   data <- replace_response(pobs$z, data)
