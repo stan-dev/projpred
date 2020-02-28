@@ -18,15 +18,23 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   wobs <- wobs / sum(wobs)
   wsample <- wsample / sum(wsample)
 
-  pobs <- pseudo_data(0, mu, family_kl, weights = wobs)
   form <- refmodel$formula
+  pobs <- pseudo_data(0, mu, family_kl, offset = refmodel$offset, weights = wobs)
+
+  link <- function(f, wprev=NULL)
+    pseudo_data(f, mu, family_kl, offset = refmodel$offset, weights = wprev)
+  replace_response <- get_replace_response(vind, form)
+
   subset <- subset_formula_and_data(form, unique(unlist(vind)),
                                     refmodel$fetch_data(), y = pobs$z)
-  capture.output(proj_refit <- refmodel$mle(flatten_formula(subset$formula),
-                                            subset$data),
-                 type = "message")
+  ## capture.output(proj_refit <- refmodel$mle(flatten_formula(subset$formula),
+  ##                                           subset$data),
+  ##                type = "message")
+  capture.output(proj_refit <- iterative_weighted_least_squares(
+    subset$formula, refmodel$fetch_data(), 100, link,
+    replace_response, wprev = wobs, mle = refmodel$mle),
+    type = "message")
   musub <- family_kl$mu_fun(proj_refit, offset = refmodel$offset)
-
   if (family_kl$family == "gaussian")
     ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
   else {
@@ -43,6 +51,21 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   return(submodel)
 }
 
+iterative_weighted_least_squares <- function(formula, data, iters, link,
+                                             replace_response, wprev = NULL, mle = lm) {
+  pobs <- link(0, wprev)
+  wprev <- pobs$w
+  data <- replace_response(pobs$z, data)
+  for (i in seq_len(iters)) {
+    fit <- mle(formula, data, weights = wprev)
+    pobs <- link(predict(fit), wprev)
+    if (any(is.na(pobs$z)))
+      break
+    data <- replace_response(pobs$z, data)
+    wprev <- pobs$w
+  }
+  fit
+}
 
 ## function handle for the projection over samples
 .get_proj_handle_poc <- function(family_kl, regul=1e-9) {
