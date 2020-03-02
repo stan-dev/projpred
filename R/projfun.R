@@ -24,7 +24,7 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
   link <- function(f, wprev=NULL)
     pseudo_data(f, mu, family, offset = refmodel$offset, weights = wprev)
   mle <- function(formula, data, weights)
-    refmodel$mle(formula, data, weights = weights, offset = refmodel$offset)
+    refmodel$mle(formula, data, weights = weights)
   replace_response <- get_replace_response(form, vind)
 
   subset <- subset_formula_and_data(form, unique(unlist(vind)),

@@ -73,7 +73,7 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
     if (type == 'link')
       pred <- mu
     else
-      pred <- object$family$linkinv(mu)
+      pred <- object$family$linkinv(mu + offset)
 
     ## integrate over the samples
     if (NCOL(pred) > 1)
