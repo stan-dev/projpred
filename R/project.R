@@ -29,7 +29,7 @@
 ##' @return A list of submodels (or a single submodel if projection was performed onto
 ##' a single variable combination), each of which contains the following elements:
 ##' \describe{
-##'  \item{\code{kl}}{The kl divergence from the reference model to the submodel.}
+##'  \item{\code{kl}}{The KL divergence from the reference model to the submodel.}
 ##'  \item{\code{weights}}{Weights for each draw of the projected model.}
 ##'  \item{\code{dis}}{Draws from the projected dispersion parameter.}
 ##'  \item{\code{alpha}}{Draws from the projected intercept.}

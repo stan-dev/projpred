@@ -14,7 +14,7 @@ linear_mle <- function(formula, data, weights=NULL, regul=NULL)
   lm(formula, data = data, weights = weights)
 
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
-#' Note that we don't use #' glmer because the target is a pseudo-Gaussian
+#' Note that we don't use glmer because the target is a pseudo-Gaussian
 #' transformation.
 linear_multilevel_mle <- function(formula, data, weights = NULL, regul=NULL) {
   formula <- validate_response_formula(formula)

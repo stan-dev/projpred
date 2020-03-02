@@ -161,7 +161,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
     w0 <- weights
   }
 
-  # call the c++-function that serves as the workhorse
+  # call the C++-function that serves as the workhorse
   pseudo_obs <- function(f,wprev)
                   pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
   out <- glm_elnet_c(x,pseudo_obs,lambda,alpha,intercept,penalty,
@@ -169,7 +169,7 @@ glm_elnet <- function(x, y, family=gaussian(), nlambda=100, lambda_min_ratio=1e-
   beta <- out[[1]]
   beta0 <- as.vector(out[[2]])
 
-  # # return the intecept and the coefficients on the original scale
+  # return the intercept and the coefficients on the original scale
   beta <- beta/transf$scale
   beta0 <- beta0 - colSums(transf$shift*beta)
 
@@ -253,7 +253,7 @@ glm_ridge <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updates
   loss <- out[[4]]
 
 
-  # return the intecept and the coefficients on the original scale
+  # return the intercept and the coefficients on the original scale
   beta_orig <- beta/transf$scale
   beta0_orig <- beta0 - sum(transf$shift*beta_orig)
 
@@ -313,14 +313,14 @@ glm_forward <- function(x, y, family=gaussian(), lambda=0, thresh=1e-7, qa_updat
   transf$scale[transf$scale==0] <- 1
   x <- t((t(x)-transf$shift)/transf$scale)
 
-  # forward search (use the c++ function)
+  # forward search (use the C++ function)
   w0 <- weights
   pseudo_obs <- function(f,wprev) pseudo_data(f,y,family,offset=offset,weights=weights,obsvar=obsvar,wprev=wprev)
   path <- glm_forward_c(x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, pmax, w0)
   beta <- cbind(rep(0,ncol(x)), path[[1]])
   beta0 <- c(nullmodel$beta0, as.vector(path[[2]]))
 
-  # return the intecept and the coefficients on the original scale
+  # return the intercept and the coefficients on the original scale
   beta <- beta/transf$scale
   beta0 <- beta0 - colSums(transf$shift*beta)
 
