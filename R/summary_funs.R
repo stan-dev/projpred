@@ -1,4 +1,4 @@
-.get_sub_summaries_poc <- function(submodels, test_points, refmodel, family_kl, groups=NULL) {
+.get_sub_summaries <- function(submodels, test_points, refmodel, family, groups=NULL) {
 
   has_group_features <- !is.null(groups)
   res <- lapply(submodels, function(model) {
@@ -6,19 +6,19 @@
     if (length(vind) == 0)
       vind <- c("1")
     sub_fit <- model$sub_fit
-    mu <- family_kl$mu_fun(sub_fit, obs = test_points,
+    mu <- family$mu_fun(sub_fit, obs = test_points,
                            offset = refmodel$offset[test_points])
 
     weights <- refmodel$wobs[test_points]
     y <- refmodel$y[test_points]
     y_test <- nlist(y, weights)
 
-    .weighted_summary_means_poc(y_test, family_kl, model$weights, matrix(mu, NROW(y), NCOL(mu)), model$dis)
+    .weighted_summary_means(y_test, family, model$weights, matrix(mu, NROW(y), NCOL(mu)), model$dis)
   })
 }
 
-.weighted_summary_means_poc <- function(y_test, family_kl, wsample, mu, dis) {
-  loglik <- family_kl$ll_fun(mu, dis, matrix(y_test$y, nrow=NROW(mu)),
+.weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
+  loglik <- family$ll_fun(mu, dis, matrix(y_test$y, nrow=NROW(mu)),
                              y_test$weights)
   if (length(loglik) == 1) {
                                         # one observation, one sample
@@ -66,7 +66,7 @@
 
     ## reference model statistics
     summ <- summ_ref
-    res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family_kl, stat,
+    res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
       mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
     )
     row <- data.frame(
@@ -82,10 +82,10 @@
         ## special case (subsampling loo): reference model summaries computed for more points
         ## than for the submodel, so utilize the reference model results to get more accurate
         ## statistic fot the submodel on the actual scale
-        res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$d_test, varsel$family_kl, stat,
+        res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$d_test, varsel$family, stat,
           mu.bs = NULL, lppd.bs = NULL, weights = summ_ref$w, alpha = alpha
         )
-        res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family_kl, stat,
+        res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
           mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd, weights = summ$w, alpha = alpha
         )
         val <- res_ref$value + res_diff$value
@@ -98,7 +98,7 @@
         )
       } else {
         ## normal case
-        res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family_kl, stat,
+        res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
           mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
         )
         row <- data.frame(

@@ -67,7 +67,7 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
+proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
                             proj_predict, ...) {
 
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
@@ -78,14 +78,14 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
     proj <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
-    proj <- project_poc(object = object, nv = nv, ...)
+    proj <- project(object = object, nv = nv, ...)
   }
 
   if (!.is_proj_list(proj)) {
     proj <- list(proj)
   } else {
     ## proj is not a projection object
-    if(any(sapply(proj, function(x) !('family_kl' %in% names(x)))))
+    if(any(sapply(proj, function(x) !('family' %in% names(x)))))
       stop(paste('proj_linpred only works with objects returned by',
                  ' varsel, cv_varsel or project'))
   }
@@ -126,7 +126,7 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
-    mu <- proj$family_kl$mu_fun(proj$sub_fit, xnew=xnew, offset = offsetnew)
+    mu <- proj$family$mu_fun(proj$sub_fit, xnew=xnew, offset = offsetnew)
 
     proj_predict(proj, mu, weightsnew)
   })
@@ -136,14 +136,14 @@ proj_helper_poc <- function(object, xnew, offsetnew, weightsnew, nv, seed,
 
 #' @rdname proj-pred
 #' @export
-proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
+proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
                              weightsnew = NULL, nv = NULL, transform = FALSE,
                              integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
     pred <- t(mu)
-    if (!transform) pred <- proj$family_kl$linkfun(pred)
+    if (!transform) pred <- proj$family$linkfun(pred)
     if (integrated) {
       ## average over the parameters
       pred <- as.vector( proj$weights %*% pred )
@@ -157,7 +157,7 @@ proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
   }
 
   ## proj_helper lapplies fun to each projection in object
-  proj_helper_poc(object = object, xnew = xnew, offsetnew = offsetnew,
+  proj_helper(object = object, xnew = xnew, offsetnew = offsetnew,
                   weightsnew = weightsnew, nv = nv, seed = seed,
                   proj_predict = proj_predict, ...)
 }
@@ -165,10 +165,10 @@ proj_linpred_poc <- function(object, xnew, ynew = NULL, offsetnew = NULL,
 compute_lpd <- function(ynew, pred, proj, weights, integrated=FALSE) {
   if (!is.null(ynew)) {
     ## compute also the log-density
-    target <- .get_standard_y(ynew, weights, proj$family_kl)
+    target <- .get_standard_y(ynew, weights, proj$family)
     ynew <- target$y
     weights <- target$weights
-    lpd <- proj$family_kl$ll_fun(pred, proj$dis, ynew, weights)
+    lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
       lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
     } else if (!is.null(dim(lpd))) {
@@ -182,7 +182,7 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated=FALSE) {
 
 #' @rdname proj-pred
 #' @export
-proj_predict_poc <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
+proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
                              nv = NULL, draws = 1000, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
@@ -191,12 +191,12 @@ proj_predict_poc <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
                         replace = TRUE, prob = proj$weights)
 
     t(sapply(draw_inds, function(i) {
-      proj$family_kl$ppd(mu[,i], proj$dis[i], weights)
+      proj$family$ppd(mu[,i], proj$dis[i], weights)
     }))
   }
 
   ## proj_helper lapplies fun to each projection in object
-  proj_helper_poc(object = object, xnew = xnew, offsetnew = offsetnew,
+  proj_helper(object = object, xnew = xnew, offsetnew = offsetnew,
                   weightsnew = weightsnew, nv = nv, seed = seed,
                   proj_predict = proj_predict, ...)
 }
@@ -511,7 +511,7 @@ as.matrix.projection <- function(x, ...) {
   }
   res <- t(x$sub_fit[[1]])
   if (x$intercept) colnames(res) <- c('Intercept', x$vind)
-  if (x$family_kl$family == 'gaussian') res <- cbind(res, sigma = x$dis)
+  if (x$family$family == 'gaussian') res <- cbind(res, sigma = x$dis)
   res
 }
 

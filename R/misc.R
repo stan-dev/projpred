@@ -134,7 +134,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 
   recognized_stats <- c('elpd', 'mlpd','mse', 'rmse', 'acc', 'pctcorr', 'auc')
   binomial_only_stats <- c('acc', 'pctcorr', 'auc')
-  family <- object$family_kl$family
+  family <- object$family$family
 
   if (is.null(stats))
      stop('Statistic specified as NULL.')
@@ -269,12 +269,12 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   return(p_ref)
 }
 
-.get_p_clust <- function(family_kl, mu, dis, nc=10, wobs=rep(1,dim(mu)[1]), wsample=rep(1,dim(mu)[2]), cl = NULL) {
+.get_p_clust <- function(family, mu, dis, nc=10, wobs=rep(1,dim(mu)[1]), wsample=rep(1,dim(mu)[2]), cl = NULL) {
   # Function for perfoming the clustering over the samples.
   #
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
-    f <- family_kl$linkfun(mu)
+    f <- family$linkfun(mu)
     out <- kmeans(t(f), nc, iter.max = 50)
     cl <- out$cluster # cluster indices for each sample
   } else if (typeof(cl) == "list") {
@@ -307,7 +307,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
     # compute normalized weights within the cluster, 1-eps is for numerical stability
     ind <- which(cl == j)
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
-    family_kl$predvar(mu[, ind, drop = F], dis[ind], ws)
+    family$predvar(mu[, ind, drop = F], dis[ind], ws)
   })
 
   # combine the results
@@ -390,7 +390,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 }
 
 .is_proj_list <- function(proj) {
-  !("family_kl" %in% names(proj))
+  !("family" %in% names(proj))
 }
 
 .unlist_proj <- function(p) if (length(p) == 1) p[[1]] else p

@@ -32,23 +32,23 @@ df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
 
 formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
 
-dref_gauss <- init_refmodel_poc(fit = NULL, df_gauss, df_gauss$y, formula, gaussian(),
+dref_gauss <- init_refmodel(fit = NULL, df_gauss, df_gauss$y, formula, gaussian(),
                                 offset = offset, weights = weights)
-dref_binom <- init_refmodel_poc(fit = NULL, df_binom, df_binom$y / weights, formula,
+dref_binom <- init_refmodel(fit = NULL, df_binom, df_binom$y / weights, formula,
                                 binomial(), offset = offset, weights = weights)
-dref_poiss <- init_refmodel_poc(fit = NULL, df_poiss, df_poiss$y, formula, poisson(),
+dref_poiss <- init_refmodel(fit = NULL, df_poiss, df_poiss$y, formula, poisson(),
                                 offset = offset, weights = weights)
 
 dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
 
 # varsel
-vsd_list <- lapply(dref_list, varsel_poc, nv_max = nv + 1, verbose = FALSE)
+vsd_list <- lapply(dref_list, varsel, nv_max = nv + 1, verbose = FALSE)
 
 # cv_varsel
-cvvsd_list <- lapply(dref_list, cv_varsel_poc, nv_max = nv + 1, verbose = FALSE)
+cvvsd_list <- lapply(dref_list, cv_varsel, nv_max = nv + 1, verbose = FALSE)
 
 #
-predd_list <- lapply(vsd_list, proj_linpred_poc, xnew = data.frame(x=x),
+predd_list <- lapply(vsd_list, proj_linpred, xnew = data.frame(x=x),
                      offsetnew = offset, weightsnew = weights, nv = 3,
                      seed = seed)
 
@@ -108,12 +108,12 @@ test_that("output of project is sensible with only data provided as reference mo
   for (i in 1:length(vsd_list)) {
 
     # length of output of project is legit
-    p <- project_poc(vsd_list[[i]], nv = 0:nv)
+    p <- project(vsd_list[[i]], nv = 0:nv)
     expect_equal(length(p), nv + 1)
 
     for (j in 1:length(p)) {
       expect_named(p[[j]], c("kl", "weights", "dis", "vind",
-                             "sub_fit", "p_type", "family_kl"),
+                             "sub_fit", "p_type", "family"),
       ignore.order = TRUE
       )
       # number of draws should equal to the number of draw weights
@@ -126,7 +126,7 @@ test_that("output of project is sensible with only data provided as reference mo
       expect_equal(length(which(p[[j]]$sub_fit$beta != 0)), j - 1)
       expect_equal(length(p[[j]]$vind), j - 1)
       # family kl
-      expect_equal(p[[j]]$family_kl, vsd_list[[i]]$family_kl)
+      expect_equal(p[[j]]$family, vsd_list[[i]]$family)
     }
     # kl should be non-increasing on training data
     klseq <- sapply(p, function(e) e$kl)
@@ -142,13 +142,13 @@ test_that("output of proj_linpred is sensible with only data provided as referen
   for (i in 1:length(vsd_list)) {
 
     # length of output of project is legit
-    pred <- proj_linpred_poc(vsd_list[[i]],
+    pred <- proj_linpred(vsd_list[[i]],
       xnew = data.frame(x=x), seed = seed,
       offsetnew = offset, weightsnew = weights, nv = 3
     )
     expect_equal(length(pred$pred), nrow(x))
 
-    pred <- proj_linpred_poc(vsd_list[[i]],
+    pred <- proj_linpred(vsd_list[[i]],
       xnew = data.frame(x=x), ynew = dref_list[[i]]$y, seed = seed,
       offsetnew = offset, weightsnew = weights, nv = 3
     )
@@ -214,9 +214,9 @@ test_that("L1-projection with data reference gives the same results as Lasso fro
     df <- data.frame(y=y, x=x)
     formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5 + x.6 + x.7 + x.8 + x.9 + x.10
     # Lasso solution with projpred
-    ref <- init_refmodel_poc(NULL, df, y, formula, family = fam, weights = weights, offset = offset)
-    vs <- varsel_poc(ref, method = "l1", lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12)
-    pred1 <- proj_linpred_poc(vs, xnew = data.frame(x=x), nv = 0:nv,
+    ref <- init_refmodel(NULL, df, y, formula, family = fam, weights = weights, offset = offset)
+    vs <- varsel(ref, method = "l1", lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12)
+    pred1 <- proj_linpred(vs, xnew = data.frame(x=x), nv = 0:nv,
                               transform = FALSE, offsetnew = offset)
 
     # compute the results for the Lasso

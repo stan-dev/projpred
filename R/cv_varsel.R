@@ -53,17 +53,17 @@
 #'
 
 #' @export
-cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
+cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                           ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, cv_search=FALSE,
                           nv_max = NULL, intercept = NULL, penalty = NULL, verbose = TRUE,
                           nloo=NULL, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
                           thresh=1e-6, regul=1e-4, validate_search=TRUE, seed=NULL,
                           groups=NULL, ...) {
 
-  refmodel <- get_refmodel_poc(fit, ...)
+  refmodel <- get_refmodel(fit, ...)
 
   ## resolve the arguments similar to varsel
-  args <- parse_args_varsel_poc(refmodel=refmodel, method=method, cv_search=cv_search,
+  args <- parse_args_varsel(refmodel=refmodel, method=method, cv_search=cv_search,
                                 intercept=intercept, nv_max=nv_max, nc=nc, ns=ns,
                                 ncpred=ncpred, nspred=nspred, groups=groups)
   method <- args$method
@@ -87,14 +87,14 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
 
   if (cv_method == 'loo')  {
     if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
-    sel_cv <- loo_varsel_poc(refmodel=refmodel, method=method, nv_max=nv_max,
+    sel_cv <- loo_varsel(refmodel=refmodel, method=method, nv_max=nv_max,
                              ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
                              cv_search=cv_search, intercept=intercept, penalty=penalty,
                              verbose=verbose, opt=opt, nloo=nloo,
                              validate_search=validate_search, seed=seed,
                              groups=groups)
   } else if (cv_method == 'kfold')  {
-    sel_cv <- kfold_varsel_poc(refmodel=refmodel, method=method, nv_max=nv_max,
+    sel_cv <- kfold_varsel(refmodel=refmodel, method=method, nv_max=nv_max,
                                ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
                                cv_search=cv_search, intercept=intercept,
                                penalty=penalty, verbose=verbose, opt=opt, K=K,
@@ -106,7 +106,7 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   ## run the selection using the full dataset
   if (verbose)
     print(paste('Performing the selection using all the data..'))
-  sel <- varsel_poc(refmodel, method=method, ns=ns, nc=nc, nspred=nspred,
+  sel <- varsel(refmodel, method=method, ns=ns, nc=nc, nspred=nspred,
                     ncpred=ncpred, cv_search=cv_search, nv_max=nv_max, intercept=intercept,
                     penalty=penalty, verbose=verbose,
                     lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul,
@@ -130,7 +130,7 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
 
   ## create the object to be returned
   vs <- nlist(refmodel, spath=sel$spath, d_test=sel_cv$d_test,
-              summaries=sel_cv$summaries, family_kl=sel$family_kl, kl=sel$kl,
+              summaries=sel_cv$summaries, family=sel$family, kl=sel$kl,
               vind=sel$vind, pctch, nv_max,
               nv_all=count_terms_in_subformula(refmodel$formula))
   class(vs) <- "cvsel"
@@ -149,7 +149,7 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
 #' This is similar in spirit to parse_args_varsel, that is, to avoid the main function to become
 #' too long and complicated to maintain.
 #'
-#' @param refmodel Reference model as extracted by get_refmodel_poc
+#' @param refmodel Reference model as extracted by get_refmodel
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
 #' @param K Number of folds in the k-fold cross validation. Default is 5 for genuine
 #' reference models and 10 for datafits (that is, for penalized maximum likelihood estimation).
@@ -173,7 +173,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
   return(nlist(cv_method, K))
 }
 
-loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept,
+loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept,
                            penalty, verbose, opt, nloo = NULL, validate_search = TRUE, seed = NULL,
                            groups=NULL) {
   ##
@@ -233,7 +233,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
   if (!validate_search) {
     ## perform selection only once using all the data (not separately for each fold),
     ## and perform the projection then for each submodel size
-    spath <- select_poc(method=method, p_sel=p_sel, refmodel=refmodel, family=family,
+    spath <- select(method=method, p_sel=p_sel, refmodel=refmodel, family=family,
                         intercept=intercept, nv_max=nv_max, penalty=penalty,
                         verbose=FALSE, opt=opt, groups=groups)
     vind <- spath$vind
@@ -250,7 +250,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
 
     if (validate_search) {
       ## perform selection with the reweighted clusters/samples
-      spath <- select_poc(method=method, p_sel=p_sel, refmodel=refmodel,
+      spath <- select(method=method, p_sel=p_sel, refmodel=refmodel,
                           family=family, intercept=intercept, nv_max=nv_max,
                           penalty=penalty, verbose=FALSE, opt=opt,
                           groups=groups)
@@ -258,9 +258,9 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
     }
 
     ## project onto the selected models and compute the prediction accuracy for the left-out point
-    submodels <- .get_submodels_poc(spath, c(0, seq_along(vind)), family, p_pred,
+    submodels <- .get_submodels(spath, c(0, seq_along(vind)), family, p_pred,
                                     refmodel, intercept, opt$regul, cv_search=cv_search)
-    summaries_sub <- .get_sub_summaries_poc(submodels, c(i), refmodel, family)
+    summaries_sub <- .get_sub_summaries(submodels, c(i), refmodel, family)
 
     for (k in seq_along(summaries_sub)) {
       loo_sub[i,k] <- summaries_sub[[k]]$lppd
@@ -296,17 +296,17 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
 
 }
 
-kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search,
+kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search,
                              intercept, penalty, verbose, opt, K, seed=NULL, groups=NULL) {
 
   ## fetch the k_fold list (or compute it now if not already computed)
-  k_fold <- .get_kfold_poc(refmodel, K, verbose, seed)
+  k_fold <- .get_kfold(refmodel, K, verbose, seed)
 
   ## check that k_fold has the correct form
   ## .validate_kfold(refmodel, k_fold, refmodel$nobs)
 
   K <- length(k_fold)
-  family_kl <- refmodel$family
+  family <- refmodel$family
 
   ## extract variables from each fit-object (samples, x, y, etc.)
   ## to a list of size K
@@ -345,8 +345,8 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
   }
   spath_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
-    family_kl <- fold$refmodel$family
-    out <- select_poc(method, fold$p_sel, fold$refmodel, family_kl, intercept,
+    family <- fold$refmodel$family
+    out <- select(method, fold$p_sel, fold$refmodel, family, intercept,
                       nv_max, penalty, verbose, opt, groups=groups)
     if (verbose)
       utils::setTxtProgressBar(pb, fold_index)
@@ -365,9 +365,9 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
 
   get_submodels_cv <- function(spath, fold_index) {
     fold <- list_cv[[fold_index]]
-    family_kl <- fold$refmodel$family
+    family <- fold$refmodel$family
     vind <- spath$vind
-    p_sub <- .get_submodels_poc(spath, c(0, seq_along(vind)), family_kl,
+    p_sub <- .get_submodels(spath, c(0, seq_along(vind)), family,
                                 fold$p_pred, fold$refmodel, intercept,
                                 opt$regul, cv_search=cv_search)
     if (verbose && cv_search)
@@ -388,16 +388,16 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
   get_summaries_submodel_cv <- function(p_sub, fold) {
-    ## family_kl <- fold$refmodel$family
-    lapply(.get_sub_summaries_poc(p_sub, fold$d_test$omitted, refmodel, family_kl),
+    ## family <- fold$refmodel$family
+    lapply(.get_sub_summaries(p_sub, fold$d_test$omitted, refmodel, family),
            data.frame)
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, hf)
 
   ref <- hf(lapply(list_cv, function(fold) {
-    ## family_kl <- fold$refmodel$family
-    data.frame(.weighted_summary_means_poc(fold$d_test, family_kl, fold$d_test$w,
+    ## family <- fold$refmodel$family
+    data.frame(.weighted_summary_means(fold$d_test, family, fold$d_test$w,
                                            fold$mu_test, fold$refmodel$dis))
   }))
 
@@ -413,7 +413,7 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
 }
 
 
-.get_kfold_poc <- function(refmodel, K, verbose, seed) {
+.get_kfold <- function(refmodel, K, verbose, seed) {
   ## Fetch the k_fold list or compute it now if not already computed. This
   ## function will return a list of length K, where each element is a list
   ## with fields 'refmodel' (object of type refmodel computed by init_refmodel)
@@ -464,7 +464,7 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
     proj_predfun <- function(fit, newdata = default_data) {
       refmodel$proj_predfun(fit, newdata = newdata)
     }
-    refmod <- init_refmodel_poc(refmodel$cvfit, fetch_fold(),
+    refmod <- init_refmodel(refmodel$cvfit, fetch_fold(),
                                 refmodel$y[fold], refmodel$formula, family =
                                 refmodel$family, predfun, mle = refmodel$mle,
                                 proj_predfun = proj_predfun, folds = seq_along(fold),

@@ -1,8 +1,8 @@
-search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
+search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
                                verbose=TRUE, opt, groups=NULL, increasing_order=TRUE) {
   ## initialize the forward selection
   ## proj performs the projection over samples
-  projfun <- .get_proj_handle_poc(family_kl, opt$regul)
+  projfun <- .get_proj_handle(family, opt$regul)
 
   formula <- refmodel$formula
   iq <- ceiling(quantile(1:nv_max, 1:10/10))
@@ -132,7 +132,7 @@ search_L1 <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
   return(out)
 }
 
-search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
+search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
   terms_ <- split_formula(refmodel$formula)
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
   spath <- search_L1(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)

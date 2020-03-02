@@ -66,7 +66,7 @@ if (require(rstanarm)) {
       for(j in 1:length(p)) {
         expect_s3_class(p[[j]], "projection")
         expect_named(p[[j]], c('kl', 'weights', 'dis', 'alpha', 'beta', 'vind',
-                               'p_type', 'intercept', 'family_kl'),
+                               'p_type', 'intercept', 'family'),
                      ignore.order = T, info = i_inf)
         # number of draws should equal to the number of draw weights
         ns <- length(p[[j]]$weights)
@@ -77,7 +77,7 @@ if (require(rstanarm)) {
         expect_equal(nrow(p[[j]]$beta), j - 1, info = i_inf)
         expect_length(p[[j]]$vind, j - 1)
         # family kl
-        expect_equal(p[[j]]$family_kl, vs_list[[i]]$family_kl,
+        expect_equal(p[[j]]$family, vs_list[[i]]$family,
                      info = i_inf)
       }
       # kl should be non-increasing on training data
@@ -266,7 +266,7 @@ if (require(rstanarm)) {
       i_inf <- names(vs_list)[i]
       p <- project(vs_list[[i]], nv = nv, seed = seed)
       expect_named(p, c('kl', 'weights', 'dis', 'alpha', 'beta', 'vind',
-                        'p_type', 'intercept', 'family_kl'),
+                        'p_type', 'intercept', 'family'),
                    ignore.order = T, info = i_inf)
     }
   })

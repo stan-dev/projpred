@@ -1,7 +1,7 @@
 ## Function handles for the projection
 ##
 
-project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, regul = 1e-12) {
+project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1e-12) {
   mu <- p_ref$mu
   dis <- p_ref$dis
 
@@ -19,10 +19,10 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   wsample <- wsample / sum(wsample)
 
   form <- refmodel$formula
-  pobs <- pseudo_data(0, mu, family_kl, offset = refmodel$offset, weights = wobs)
+  pobs <- pseudo_data(0, mu, family, offset = refmodel$offset, weights = wobs)
 
   link <- function(f, wprev=NULL)
-    pseudo_data(f, mu, family_kl, offset = refmodel$offset, weights = wprev)
+    pseudo_data(f, mu, family, offset = refmodel$offset, weights = wprev)
   mle <- function(formula, data, weights)
     refmodel$mle(formula, data, weights = weights, offset = refmodel$offset)
   replace_response <- get_replace_response(form, vind)
@@ -37,16 +37,16 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
     flatten_formula(subset$formula), refmodel$fetch_data(), 100, link,
     replace_response, wprev = wobs, mle = mle),
     type = "message")
-  musub <- family_kl$mu_fun(proj_refit, offset = refmodel$offset)
-  if (family_kl$family == "gaussian")
+  musub <- family$mu_fun(proj_refit, offset = refmodel$offset)
+  if (family$family == "gaussian")
     ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
   else {
     ref <- p_ref
     ref$w <- rep(0, NROW(mu))
   }
 
-  dis_sub <- family_kl$dis_fun(ref, list(mu = musub), ref$w)
-  kl <- family_kl$kl(ref, list(weights = wobs), list(mu = musub, dis = dis_sub))
+  dis_sub <- family$dis_fun(ref, list(mu = musub), ref$w)
+  kl <- family$kl(ref, list(weights = wobs), list(mu = musub, dis = dis_sub))
   submodel <- list(kl = kl, dis = dis_sub, weights = wsample)
 
   submodel$vind <- vind
@@ -76,12 +76,12 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
 }
 
 ## function handle for the projection over samples
-.get_proj_handle_poc <- function(family_kl, regul=1e-9) {
+.get_proj_handle <- function(family, regul=1e-9) {
   return(function(vind, p_ref, refmodel, intercept)
-    project_submodel_poc(vind, p_ref, refmodel, family_kl, intercept, regul = regul))
+    project_submodel(vind, p_ref, refmodel, family, intercept, regul = regul))
 }
 
-.get_submodels_poc <- function(searchpath, nv, family_kl, p_ref,
+.get_submodels <- function(searchpath, nv, family, p_ref,
                                refmodel, intercept, regul, cv_search=FALSE) {
   ##
   ##
@@ -115,22 +115,22 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
       wobs <- wobs / sum(wobs)
       wsample <- wsample / sum(wsample)
 
-      pobs <- pseudo_data(0, mu_ref, family_kl, weights = wobs)
+      pobs <- pseudo_data(0, mu_ref, family, weights = wobs)
 
       ## reuse sub_fit as projected during search
       sub_refit <- searchpath$sub_fits[[nv + 1]]
 
       ## split b to alpha and beta, add it to submodel and return the result
-      if (family_kl$family == "gaussian")
+      if (family$family == "gaussian")
         ref <- list(mu = pobs$z, var = p_sel$var, w = pobs$w)
       else {
         ref <- p_sel
         ref$w <- rep(0, NROW(mu_ref))
       }
 
-      mu <- family_kl$mu_fun(sub_refit, offset = refmodel$offset)
-      submodel$dis <- family_kl$dis_fun(ref, list(mu = mu), ref$w)
-      submodel$kl <- family_kl$kl(ref, list(weights = wobs), list(mu = mu, dis = submodel$dis))
+      mu <- family$mu_fun(sub_refit, offset = refmodel$offset)
+      submodel$dis <- family$dis_fun(ref, list(mu = mu), ref$w)
+      submodel$kl <- family$kl(ref, list(weights = wobs), list(mu = mu, dis = submodel$dis))
       submodel$weights <- wsample
       submodel$vind <- vind
       submodel$sub_fit <- sub_refit
@@ -138,7 +138,7 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
     }
   } else {
     ## need to project again for each submodel size
-    projfun <- .get_proj_handle_poc(family_kl, regul)
+    projfun <- .get_proj_handle(family, regul)
     fetch_submodel <- function(nv) {
       if (nv == 0)
         ## empty

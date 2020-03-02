@@ -94,30 +94,30 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
 }
 
 #' @export
-get_refmodel_poc <- function(fit, ...) {
-  UseMethod("get_refmodel_poc", fit)
+get_refmodel <- function(fit, ...) {
+  UseMethod("get_refmodel", fit)
 }
 
 #' @export
-get_refmodel_poc.refmodel <- function(object, ...) {
+get_refmodel.refmodel <- function(object, ...) {
   ## if the object is reference model already, then simply return it as is
   object
 }
 
 #' @export
-get_refmodel_poc.vsel <- function(object, ...) {
+get_refmodel.vsel <- function(object, ...) {
   ## the reference model is stored in vsel-object
   object$refmodel
 }
 
 #' @export
-get_refmodel_poc.cvsel <- function(object, ...) {
+get_refmodel.cvsel <- function(object, ...) {
   ## the reference model is stored in cvsel object
   object$refmodel
 }
 
 #' @export
-get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfun,
+get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
                                      mle, fetch_data, family=NULL, wobs=NULL,
                                      folds=NULL, cvfits=NULL, penalized=FALSE,
                                      offest=NULL, cvfun=NULL) {
@@ -129,7 +129,7 @@ get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfu
   else
     family <- extend_family(family)
 
-  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
                                 proj_predfun, penalized=penalized, weights=wobs,
                                 offset=offset, cvfits=cvfits, folds=folds,
                                 cvfun=cvfun)
@@ -137,7 +137,7 @@ get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfu
 }
 
 #' export
-get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
+get_refmodel.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
                                      predfun=NULL, proj_predfun=NULL, mle=NULL,
                                      folds=NULL, ...) {
   family_name <- family(fit)$family
@@ -176,13 +176,13 @@ get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
   }
 
   ## TODO: return y, weights and offset as right hand side formulas
-  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
                                 proj_predfun, folds, weights=weights)
   return(refmodel)
 }
 
 #' @export
-get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
+get_refmodel.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
                                      predfun=NULL, proj_predfun=NULL, mle=NULL,
                                      folds=NULL, penalized=FALSE, ...) {
   family <- family(fit)
@@ -198,13 +198,13 @@ get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
   if (is.null(y))
     y <- fit$data[, colnames(fit$data) == response_name]
 
-  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
                                 proj_predfun, folds, penalized)
   return(refmodel)
 }
 
 #' @export
-init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
+init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
                               proj_predfun=NULL, folds=NULL, penalized=FALSE,
                               weights=NULL, offset=NULL, cvfun=NULL,
                               cvfits=NULL) {

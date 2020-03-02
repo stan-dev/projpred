@@ -151,7 +151,7 @@ extend_family_gamma <- function(family) {
   return(family)
 }
 
-extend_family_student_t <- function(family) {
+extend_family_Student_t <- function(family) {
   kl_student_t <- function(pref, data, psub)
     log(psub$dis) #- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
   dis_student_t <- function(pref, psub, wobs=1) {

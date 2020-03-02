@@ -61,7 +61,7 @@ a single variable combination), each of which contains the following elements:
  \item{\code{beta}}{Draws from the projected weight vector.}
  \item{\code{vind}}{The order in which the variables were added to the submodel.}
  \item{\code{intercept}}{Whether or not the model contains an intercept.}
- \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
+ \item{\code{family}}{A modified \code{\link{family}}-object.}
 }
 }
 \description{

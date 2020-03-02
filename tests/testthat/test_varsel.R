@@ -93,14 +93,14 @@ if (require(rstanarm)) {
                      info = paste(i_inf, j_inf))
         expect_named(vs_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
                      info = paste(i_inf, j_inf))
-        # family_kl seems legit
+        # family seems legit
         expect_equal(vs_list[[i]][[j]]$family$family,
-                     vs_list[[i]][[j]]$family_kl$family,
+                     vs_list[[i]][[j]]$family$family,
                      info = paste(i_inf, j_inf))
         expect_equal(vs_list[[i]][[j]]$family$link,
-                     vs_list[[i]][[j]]$family_kl$link,
+                     vs_list[[i]][[j]]$family$link,
                      info = paste(i_inf, j_inf))
-        expect_true(length(vs_list[[i]][[j]]$family_kl) >=
+        expect_true(length(vs_list[[i]][[j]]$family) >=
                       length(vs_list[[i]][[j]]$family$family),
                     info = paste(i_inf, j_inf))
       }
@@ -248,14 +248,14 @@ if (require(rstanarm)) {
                      ignore.order = TRUE, info = paste(i_inf, j_inf))
         expect_named(cvs_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
                      ignore.order = TRUE, info = paste(i_inf, j_inf))
-        # family_kl seems legit
+        # family seems legit
         expect_equal(cvs_list[[i]][[j]]$family$family,
-                     cvs_list[[i]][[j]]$family_kl$family,
+                     cvs_list[[i]][[j]]$family$family,
                      info = paste(i_inf, j_inf))
         expect_equal(cvs_list[[i]][[j]]$family$link,
-                     cvs_list[[i]][[j]]$family_kl$link,
+                     cvs_list[[i]][[j]]$family$link,
                      info = paste(i_inf, j_inf))
-        expect_true(length(cvs_list[[i]][[j]]$family_kl) >=
+        expect_true(length(cvs_list[[i]][[j]]$family) >=
                       length(cvs_list[[i]][[j]]$family$family),
                     info = paste(i_inf, j_inf))
         # pctch seems legit
@@ -347,14 +347,14 @@ if (require(rstanarm)) {
                      ignore.order = TRUE, info = paste(i_inf, j_inf))
         expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c('mu', 'lppd'),
                      ignore.order = TRUE, info = paste(i_inf, j_inf))
-        # family_kl seems legit
+        # family seems legit
         expect_equal(cv_kf_list[[i]][[j]]$family$family,
-                     cv_kf_list[[i]][[j]]$family_kl$family,
+                     cv_kf_list[[i]][[j]]$family$family,
                      info = paste(i_inf, j_inf))
         expect_equal(cv_kf_list[[i]][[j]]$family$link,
-                     cv_kf_list[[i]][[j]]$family_kl$link,
+                     cv_kf_list[[i]][[j]]$family$link,
                      info = paste(i_inf, j_inf))
-        expect_true(length(cv_kf_list[[i]][[j]]$family_kl) >=
+        expect_true(length(cv_kf_list[[i]][[j]]$family) >=
                       length(cv_kf_list[[i]][[j]]$family$family),
                     info = paste(i_inf, j_inf))
         # pctch seems legit
@@ -426,11 +426,11 @@ if (require(rstanarm)) {
                  ignore.order = TRUE)
     expect_named(fit_cv$summaries$ref, c('mu', 'lppd'),
                  ignore.order = TRUE)
-    # family_kl seems legit
+    # family seems legit
     expect_equal(fit_cv$family$family,
-                 fit_cv$family_kl$family)
-    expect_equal(fit_cv$family$link, fit_cv$family_kl$link)
-    expect_true(length(fit_cv$family_kl) >= length(fit_cv$family$family))
+                 fit_cv$family$family)
+    expect_equal(fit_cv$family$link, fit_cv$family$link)
+    expect_true(length(fit_cv$family) >= length(fit_cv$family$family))
     # pctch seems legit
     expect_equal(dim(fit_cv$pctch), c(nv, nv + 1))
     expect_true(all(fit_cv$pctch[,-1] <= 1 &
@@ -479,9 +479,9 @@ if (require(rstanarm)) {
     for(i in seq_along(cvs_list)) {
       for(j in seq_along(cvs_list[[i]])) {
         cvs <- cvs_list[[i]][[j]]
-        if (cvs$family_kl$family == 'gaussian')
+        if (cvs$family$family == 'gaussian')
           stats_str <- valid_stats_gauss
-        else if (cvs$family_kl$family == 'binomial')
+        else if (cvs$family$family == 'binomial')
           stats_str <- valid_stats_binom
         else
           stats_str <- valid_stats_all
@@ -499,7 +499,7 @@ if (require(rstanarm)) {
     for (i in seq_along(vsref_list)) {
       for (j in seq_along(vsref_list[[i]])) {
         vs <- vsref_list[[i]][[j]]
-        if (vs$family_kl$family == 'gaussian')
+        if (vs$family$family == 'gaussian')
           stats_str <- valid_stats_gauss
         else
           stats_str <- valid_stats_binom
