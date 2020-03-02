@@ -32,6 +32,7 @@ project_submodel_poc <- function(vind, p_ref, refmodel, family_kl, intercept, re
   ## capture.output(proj_refit <- refmodel$mle(flatten_formula(subset$formula),
   ##                                           subset$data),
   ##                type = "message")
+
   capture.output(proj_refit <- iterative_weighted_least_squares(
     flatten_formula(subset$formula), refmodel$fetch_data(), 100, link,
     replace_response, wprev = wobs, mle = mle),
@@ -59,15 +60,19 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
   pobs <- link(0, wprev)
   wprev <- pobs$w
   data <- replace_response(pobs$z, data)
+  old_fit <- NULL
   for (i in seq_len(iters)) {
     fit <- mle(formula, data, weights = wprev)
     pobs <- link(predict(fit), wprev)
     if (any(is.na(pobs$z)))
       break
+    old_fit <- fit
     data <- replace_response(pobs$z, data)
     wprev <- pobs$w
   }
-  fit
+  if (is.null(old_fit))
+    return(fit)
+  return(old_fit)
 }
 
 ## function handle for the projection over samples
