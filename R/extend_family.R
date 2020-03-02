@@ -3,7 +3,7 @@
 # \code{extend_family(family)} returns a family object augmented with auxiliary functions that
 # are needed for computing KL-divergence, log predictive density, dispersion projection etc.
 #
-# Missing: Quasi-familyies are not implemented. If dis_gamma is the correct shape
+# Missing: Quasi-families are not implemented. If dis_gamma is the correct shape
 # parameter for projected Gamma regression, everything should be OK for gamma.
 
 #' Add extra fields to the family object.
