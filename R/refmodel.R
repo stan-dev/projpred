@@ -280,9 +280,9 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun=NULL, mle=N
 
   ndraws <- ncol(mu)
 
+  dis <- rep(0, ndraws)
   if (proper_model) {
     ## TODO: eventually this will be a function provided by the user
-    dis <- rep(0, ndraws)
     tryCatch({
         dis <- as.data.frame(fit)$sigma %ORifNULL% rep(0, ndraws)
       },
