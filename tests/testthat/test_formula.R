@@ -152,7 +152,7 @@ test_that("check that we count terms correctly", {
 
   expect_equal(count_terms_chosen(c("x", "z")), 3)
   expect_equal(count_terms_chosen(c("x", "z", "x:z")), 4)
-  expect_equal(count_terms_chosen(c("x", "z", "x:z", "x + (x | g)")), 6)
+  expect_equal(count_terms_chosen(c("x", "z", "x:z", "x + (x | g)")), 7)
 })
 
 test_that("check that we correctly sort models by size", {

@@ -2,7 +2,7 @@ context('as.matrix.projection')
 
 # tests for as_matrix
 
-if (require(rstanarm)) {
+if (require(rstanarm) && require(brms)) {
 
 
   set.seed(1235)
@@ -30,7 +30,7 @@ if (require(rstanarm)) {
                           chains = chains, seed = seed, iter = iter)
   )
   SW(
-    fit_binom <- stan_glm(cbind(y, weights-y) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom, QR = T,
+    fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
                           data = df_binom, weights = weights, offset = offset,
                           chains = chains, seed = seed, iter = iter)
   )
