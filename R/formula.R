@@ -345,7 +345,7 @@ count_terms_in_group_term <- function(term) {
   return(length(terms_))
 }
 
-#' Given a list of formulas, sort them by number of terms in them.
+#' Given a list of formulas, sort them by the number of terms in them.
 #' @param submodels A list of models' formulas.
 #' @return a sorted list of submodels by included terms.
 sort_submodels_by_size <- function(submodels) {

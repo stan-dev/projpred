@@ -1,9 +1,9 @@
 # Model-specific helper functions.
 #
 # \code{extend_family(family)} returns a family object augmented with auxiliary functions that
-# are needed for computing KL divergence, log predictive density, projecting dispersion etc.
+# are needed for computing KL-divergence, log predictive density, dispersion projection etc.
 #
-# Missing: Quasi-familyilies not implemented. If dis_gamma is the correct shape
+# Missing: Quasi-families are not implemented. If dis_gamma is the correct shape
 # parameter for projected Gamma regression, everything should be OK for gamma.
 
 #' Add extra fields to the family object.
@@ -80,7 +80,7 @@ extend_family_poisson <- function(family) {
 
 extend_family_gaussian <- function(family) {
   kl_gauss <- function(pref, data, psub)
-    colSums(data$weights * (psub$mu-pref$mu)^2) # not the actual kl but reasonable surrogate..
+    colSums(data$weights * (psub$mu-pref$mu)^2) # not the actual KL but reasonable surrogate..
   dis_gauss <- function(pref, psub, wobs=1) {
   	sqrt(colSums(wobs/sum(wobs)*(pref$var + (pref$mu-psub$mu)^2)))
   }

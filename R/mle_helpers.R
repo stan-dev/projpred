@@ -13,9 +13,8 @@ fetch_data <- function(data, obs=NULL, newdata=NULL) {
 linear_mle <- function(formula, data, regul=NULL)
   lm(formula, data = data)
 
-#' Use lmer to fit the projection to the posterior draws for multilevel models.
-#' Note that we don't use #' glmer because the target is a pseudo-Gaussian
-#' transformation.
+#' Use lmer to fit the projection to the posterior draws for <multilevel models.
+#' We don't use glmer because the target is a pseudo-Gaussian transformation.
 linear_multilevel_mle <- function(formula, data, regul=NULL) {
   formula <- validate_response_formula(formula)
   fit_lmer_callback <- function(f) {
