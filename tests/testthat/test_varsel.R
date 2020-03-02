@@ -109,22 +109,22 @@ if (require(rstanarm) && require(brms)) {
 
   test_that('nv_max has an effect on varsel for gaussian models', {
     vs1 <- varsel(fit_gauss, method = 'forward', nv_max = 3, verbose = FALSE)
-    expect_length(vs1$vind, 3-1)
+    expect_length(vs1$vind, 3)
   })
 
   test_that('nv_max has an effect on varsel for non-gaussian models', {
     vs1 <- varsel(fit_binom, method = 'forward', nv_max = 3, verbose = FALSE)
-    expect_length(vs1$vind, 3-1)
+    expect_length(vs1$vind, 3)
   })
 
   test_that('specifying the number of clusters has an expected effect', {
     vs <- varsel(fit_binom, method = 'forward', nv_max = 3, nc = 10)
-    expect_length(vs$vind, 3-1)
+    expect_length(vs$vind, 3)
   })
 
   test_that('specifying d_test has the expected effect', {
     vs <- varsel(fit_gauss, d_test = vs_list[[1]][[1]]$refmodel, nv_max = 3)
-    expect_length(vs$vind, 3-1)
+    expect_length(vs$vind, 3)
   })
 
   test_that('Having something else than stan_glm as the fit throws an error', {
