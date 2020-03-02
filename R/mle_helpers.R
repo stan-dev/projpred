@@ -10,7 +10,7 @@ fetch_data <- function(data, obs=NULL, newdata=NULL) {
     return(newdata[obs,, drop = FALSE])
 }
 
-linear_mle <- function(formula, data, weights=NULL, offset = NULL, regul=NULL)
+linear_mle <- function(formula, data, weights=NULL, offset=NULL, regul=NULL)
   lm(formula, data = data, weights = weights, offset = offset)
 
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
