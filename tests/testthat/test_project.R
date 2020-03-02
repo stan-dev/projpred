@@ -4,7 +4,7 @@ context('project')
 # tests for project
 
 if (require(rstanarm)) {
-  
+
 
   seed <- 1235
   set.seed(seed)
@@ -18,51 +18,49 @@ if (require(rstanarm)) {
   chains <- 2
   iter <- 500
   source(file.path('helpers', 'SW.R'))
-  
+
   f_gauss <- gaussian()
   df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = x)
   f_binom <- binomial()
-  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x)
+  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x, weights=weights)
   f_poiss <- poisson()
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
-  
+
   SW({
-  fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
+  fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss, QR = T,
                         weights = weights, offset = offset,
                         chains = chains, seed = seed, iter = iter)
-  fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
-                        data = df_binom, weights = weights, offset = offset,
-                        chains = chains, seed = seed, iter = iter)
-  fit_poiss <- stan_glm(y ~ x, family = f_poiss, data = df_poiss, QR = T,
-                        weights = weights, offset = offset,
-                        chains = chains, seed = seed, iter = iter)
+  fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
+                   data = df_binom, chains = chains, seed = seed, iter = iter)
+  fit_poiss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_poiss, data = df_poiss,
+                   chains = chains, seed = seed, iter = iter)
   })
   fit_list <- list(fit_gauss, fit_binom, fit_poiss)
   vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
-  
-  
+
+
   test_that("project: cv_searching has the expected effect", {
-    
+
     vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE, method='l1')
     for (i in seq_along(vs_list)) {
-      
+
       p0 <- project(vs_list[[i]], cv_search=F, nv=1:nv)
       p1 <- project(vs_list[[i]], cv_search=T, nv=1:nv, nc=1, regul=1e-9)
-      
+
       for (j in seq_along(p1)) {
         # L1-penalised coefficients should have smaller L1-norm
         expect_true( sum(abs(p0[[j]]$beta)) < sum(abs(p1[[j]]$beta)) )
       }
     }
   })
-  
+
   test_that("object returned by project contains the relevant fields", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
       p <- project(vs_list[[i]], nv=0:nv)
       expect_type(p, "list")
       expect_length(p, nv + 1)
-  
+
       for(j in 1:length(p)) {
         expect_s3_class(p[[j]], "projection")
         expect_named(p[[j]], c('kl', 'weights', 'dis', 'alpha', 'beta', 'vind',
@@ -83,19 +81,19 @@ if (require(rstanarm)) {
       # kl should be non-increasing on training data
       klseq <- sapply(p, function(x) x$kl)
       expect_equal(klseq, cummin(klseq), info = i_inf)
-  
+
       # all submodels should use the same clustering
       expect_equal(p[[1]]$weights, p[[nv]]$weights, info = i_inf)
     }
   })
-  
+
   test_that("project: error when varsel has not been performed for the object", {
     expect_error(project(1, xnew = x),
                  'is not a variable selection object')
     expect_error(project(fit_gauss, xnew = x),
                  'is not a variable selection object')
   })
-  
+
   test_that("project: nv is checked", {
     expect_error(project(vs_list[[1]], nv = 1000),
                  'Cannot perform the projection with 1000 variables')
@@ -106,7 +104,7 @@ if (require(rstanarm)) {
     expect_error(project(vs_list[[1]], nv = df_gauss),
                  'must contain non-negative values')
   })
-  
+
   test_that("project: setting nv = NULL has the expected effect", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -118,7 +116,7 @@ if (require(rstanarm)) {
       expect_length(p$vind, vs_list[[i]]$suggested_size)
     }
   })
-  
+
   test_that("project: setting nv = 0 has an expected effect", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -131,7 +129,7 @@ if (require(rstanarm)) {
       expect_length(p$vind, nv)
     }
   })
-  
+
   test_that("project: setting nv = 3 has an expected effect", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -144,7 +142,7 @@ if (require(rstanarm)) {
       expect_length(p$vind, nv)
     }
   })
-  
+
   test_that("project: setting vind to 4 has an expected effect", {
     for(i in 1:length(vs_list)) {
       vind <- 4
@@ -155,7 +153,7 @@ if (require(rstanarm)) {
       expect_named(p$vind, names(vs_list[[i]]$vind)[exp_ind])
     }
   })
-  
+
   test_that("project: setting vind to 1:2 has an expected effect", {
     for(i in 1:length(vs_list)) {
       # i_inf <- names(vs_list)[i]
@@ -168,21 +166,21 @@ if (require(rstanarm)) {
       expect_named(p$vind, names(vs_list[[i]]$vind)[exp_ind])
     }
   })
-  
+
   test_that("project: setting vind to something nonsensical returns an error", {
     # variable selection objects
     expect_error(project(vs_list[[1]], vind = 1:10),
                  'vind contains an index larger than')
     expect_error(project(vs_list[[1]], vind = 17),
                  'vind contains an index larger than')
-  
+
     # fit objects
     expect_error(project(fit_list[[1]], vind = 1:10),
                  'vind contains an index larger than')
     expect_error(project(fit_list[[1]], vind = 17),
                  'vind contains an index larger than')
   })
-  
+
   test_that("project: setting ns to 1 has an expected effect", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -196,7 +194,7 @@ if (require(rstanarm)) {
       expect_equal(p$weights, 1, info = i_inf)
     }
   })
-  
+
   test_that("project: setting ns to 40 has an expected effect", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -207,12 +205,12 @@ if (require(rstanarm)) {
       expect_length(p$alpha, ns)
       expect_length(p$dis, ns)
       expect_equal(ncol(p$beta), ns, info = i_inf)
-  
+
       # no clustering, so draw weights should be identical
       expect_true(do.call(all.equal, as.list(p$weights)), info = i_inf)
     }
   })
-  
+
   test_that("project: setting nc to 1 has an expected effect", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -225,7 +223,7 @@ if (require(rstanarm)) {
       expect_equal(ncol(p$beta), nc, info = i_inf)
     }
   })
-  
+
   test_that("project: setting nc to 20 has an expected effect", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -238,7 +236,7 @@ if (require(rstanarm)) {
       expect_equal(ncol(p$beta), nc, info = i_inf)
     }
   })
-  
+
   test_that("project: setting ns or nc to too big throws an error", {
     expect_error(project(vs_list[[1]], ns = 400000, nv = nv),
                  'exceed the number of columns')
@@ -249,7 +247,7 @@ if (require(rstanarm)) {
     expect_error(project(fit_list[[1]], vind = 1:nv, nc = 400000),
                  'exceed the number of columns')
   })
-  
+
   test_that("project: specifying intercept has an expected effect", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -260,7 +258,7 @@ if (require(rstanarm)) {
       expect_true(all(p$alpha==0), info = i_inf)
     }
   })
-  
+
   test_that("project: specifying the seed does not cause errors", {
     for(i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
@@ -270,7 +268,7 @@ if (require(rstanarm)) {
                    ignore.order = T, info = i_inf)
     }
   })
-  
+
   test_that("project: adding more regularization has an expected effect", {
       regul <- c(1e-6, 1e-3, 1e-1, 1e1, 1e4)
       for(i in 1:length(vs_list)) {
@@ -282,11 +280,11 @@ if (require(rstanarm)) {
               expect_gt(norms[j],norms[j+1])
       }
   })
-  
+
   test_that("project: projecting full model onto itself does not change results", {
-  	
+
   	tol <- 1e-3
-    
+
     for (i in 1:length(fit_list)) {
       fit <- fit_list[[i]]
       draws <- as.data.frame(fit)
@@ -294,13 +292,13 @@ if (require(rstanarm)) {
       beta_ref <- draws[,1+(1:nv),drop=F]
       S <- nrow(draws)
       proj <- project(fit, vind = 1:nv, seed = seed, ns=S, regul=0)
-      
+
       # test alpha and beta
       dalpha <- max(abs(proj$alpha - alpha_ref))
       dbeta <- max(abs(proj$beta - t(beta_ref)))
       expect_lt(dalpha, tol)
       expect_lt(dbeta, tol)
-      
+
       if (ncol(draws) > nv+1) {
         # test dispersion
         dis_ref <- draws[,ncol(draws)]
@@ -309,7 +307,7 @@ if (require(rstanarm)) {
       }
     }
   })
-  
+
   test_that("project: works as expected from a cvsel object", {
     SW({
     cvs <- cv_varsel(fit_gauss, nv_max = 3, verbose = FALSE)

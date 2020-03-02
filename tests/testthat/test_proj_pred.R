@@ -16,7 +16,7 @@ if (require(brms)) {
   offset <- rnorm(n)
   chains <- 2
   iter <- 500
-  source(file.path('tests', 'testthat', 'helpers', 'SW.R'))
+  source(file.path('helpers', 'SW.R'))
 
 
   f_gauss <- gaussian()
