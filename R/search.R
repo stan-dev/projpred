@@ -72,7 +72,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
 }
 
 #' copied over from search until we resolve the TODO below
-search_L1 <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
+search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
 
   ## predictive mean and variance of the reference model (with parameters integrated out)
   mu <- p_ref$mu
@@ -135,7 +135,7 @@ search_L1 <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
 search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
   terms_ <- split_formula(refmodel$formula)
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
-  spath <- search_L1(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)
+  spath <- search_L1_surrogate(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)
   vind <- terms_[spath$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
     if (nv == 0) {
