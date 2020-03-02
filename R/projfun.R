@@ -34,7 +34,7 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
   ##                type = "message")
 
   capture.output(proj_refit <- iterative_weighted_least_squares(
-    flatten_formula(subset$formula), refmodel$fetch_data(), 100, link,
+    flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
     replace_response, wprev = wobs, mle = mle),
     type = "message")
   musub <- family$mu_fun(proj_refit, offset = refmodel$offset)
