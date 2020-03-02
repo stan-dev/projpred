@@ -1,7 +1,7 @@
 search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
                                verbose=TRUE, opt, groups=NULL, increasing_order=TRUE) {
   ## initialize the forward selection
-  ## proj performs the projection over samples
+  ## proj performs the projection over draws
   projfun <- .get_proj_handle_poc(family_kl, opt$regul)
 
   formula <- refmodel$formula

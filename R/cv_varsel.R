@@ -1,4 +1,4 @@
-#' Cross-validate the variable selection (varsel)
+#' Cross-validated variable selection (varsel)
 #'
 #' Perform cross-validation for the projective variable selection for a generalized
 #' linear model.
@@ -174,7 +174,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
                            penalty, verbose, opt, nloo = NULL, validate_search = TRUE, seed = NULL,
                            groups=NULL) {
   ##
-  ## Performs the validation of the searching process using LOO.
+  ## Perform the validation of the searching process using LOO.
   ## validate_search indicates whether the selection is performed separately for each
   ## fold (for each data point)
   ##
