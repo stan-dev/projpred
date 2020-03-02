@@ -19,7 +19,7 @@ linear_mle <- function(formula, data, weights=NULL, regul=NULL)
 linear_multilevel_mle <- function(formula, data, weights = NULL, regul=NULL) {
   formula <- validate_response_formula(formula)
   fit_lmer_callback <- function(f) {
-    tryCatch(lme4::lmer(f, data = data, weigts = weights),
+    tryCatch(lme4::lmer(f, data = data, weights = weights),
              error=function(e) {
                if (grepl("No random effects", as.character(e)))
                  lm(f, data = data, weights = weights)

@@ -110,7 +110,7 @@ Before building the `refmodel `structure we call `break_up_matrix_term`.
 This is a convenience function to automatically split matrix variables in linear terms. For example, in `y ~ x`, `x` can be a matrix.
 If this function is not used, `projpred` considers `x` to be jointly included or excluded in the variable selection.
 
-The function `cv_varsel_poc` runs the variable selection, and returns an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
+The function `cv_varsel` runs the variable selection, and returns an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
 Although it is theoretically possible to use L1-search for this linear model, it has not been implemented for the general `formula` interface, and we will use the `forward` method.
 
 ```{r, results='hide', messages=FALSE, warnings=FALSE}

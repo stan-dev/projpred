@@ -78,9 +78,11 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
   has_group_features <- formula_contains_group_terms(refmodel$formula)
 
   ## arguments specific to this function
-  args <- parse_args_cv_varsel(refmodel, cv_method, K)
+  args <- parse_args_cv_varsel(refmodel, cv_method, K, nc, ncpred)
   cv_method <- args$cv_method
   K <- args$K
+  nc <- args$nc
+  ncpred <- args$ncpred
 
   ## search options
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
@@ -153,7 +155,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
 #' @param K Number of folds in the k-fold cross validation. Default is 5 for genuine
 #' reference models and 10 for datafits (that is, for penalized maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
+parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL, nc=NULL, ncpred=NULL) {
   if (is.null(cv_method)) {
     if (inherits(refmodel, "datafit"))
       ## only data given, no actual reference model
@@ -167,10 +169,12 @@ parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
       K <- 10
     else
       K <- 5
+    ncpred <- 1
+    nc <- 1
   }
 
   cv_method <- tolower(cv_method)
-  return(nlist(cv_method, K))
+  return(nlist(cv_method, K, nc, ncpred))
 }
 
 loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept,
@@ -222,8 +226,8 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_sear
 
   ## initialize matrices where to store the results
   vind_mat <- matrix(nrow=n, ncol=nv_max)
-  loo_sub <- matrix(nrow=n, ncol=nv_max+1)
-  mu_sub <- matrix(nrow=n, ncol=nv_max+1)
+  loo_sub <- matrix(nrow=n, ncol=nv_max + 1)
+  mu_sub <- matrix(nrow=n, ncol=nv_max + 1)
 
   if (verbose) {
     print('Computing LOOs...')
@@ -234,8 +238,8 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_sear
     ## perform selection only once using all the data (not separately for each fold),
     ## and perform the projection then for each submodel size
     spath <- select(method=method, p_sel=p_sel, refmodel=refmodel, family=family,
-                        intercept=intercept, nv_max=nv_max, penalty=penalty,
-                        verbose=FALSE, opt=opt, groups=groups)
+                    intercept=intercept, nv_max=nv_max + 1, penalty=penalty,
+                    verbose=FALSE, opt=opt, groups=groups)
     vind <- spath$vind
   }
 
@@ -251,9 +255,9 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_sear
     if (validate_search) {
       ## perform selection with the reweighted clusters/samples
       spath <- select(method=method, p_sel=p_sel, refmodel=refmodel,
-                          family=family, intercept=intercept, nv_max=nv_max,
-                          penalty=penalty, verbose=FALSE, opt=opt,
-                          groups=groups)
+                      family=family, intercept=intercept, nv_max=nv_max + 1,
+                      penalty=penalty, verbose=FALSE, opt=opt,
+                      groups=groups)
       vind <- spath$vind
     }
 
@@ -347,7 +351,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
     fold <- list_cv[[fold_index]]
     family <- fold$refmodel$family
     out <- select(method, fold$p_sel, fold$refmodel, family, intercept,
-                      nv_max, penalty, verbose, opt, groups=groups)
+                  nv_max + 1, penalty, verbose, opt, groups=groups)
     if (verbose)
       utils::setTxtProgressBar(pb, fold_index)
     out
@@ -465,11 +469,11 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
       refmodel$proj_predfun(fit, newdata = newdata)
     }
     refmod <- init_refmodel(refmodel$cvfit, fetch_fold(),
-                                refmodel$y[fold], refmodel$formula, family =
-                                refmodel$family, predfun, mle = refmodel$mle,
-                                proj_predfun = proj_predfun, folds = seq_along(fold),
-                                offset = refmodel$offset[fold],
-                                weights = refmodel$wobs[fold])
+                            refmodel$y[fold], refmodel$formula,
+                            family = refmodel$family, predfun, mle = refmodel$mle,
+                            proj_predfun = proj_predfun, folds = seq_along(fold),
+                            offset = refmodel$offset[fold],
+                            weights = refmodel$wobs[fold])
     refmod$fetch_data <- fetch_fold
     return(list(refmodel=refmod, omitted=cvfit$omitted))
   })
