@@ -16,7 +16,7 @@ if (require(rstanarm)) {
   chains <- 2
   seed <- 1235
   iter <- 500
-  source(file.path('tests', 'testthat', 'helpers', 'SW.R'))
+  source(file.path('helpers', 'SW.R'))
   
   
   f_gauss <- gaussian()

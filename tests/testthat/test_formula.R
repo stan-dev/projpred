@@ -47,10 +47,10 @@ test_that("check that we properly flatten a formula with duplicated terms", {
 test_that("check that we properly split a formula", {
   formula <- y ~ x + z + x:z + (x + z + x:z | g)
   sp <- split_formula(formula)
-  expect_length(sp, 10)
+  expect_length(sp, 11)
   expect_length(setdiff(
     c(
-      "x", "z", "x + z + x:z", "(1 | g)", "x + (x | g)", "z + (z | g)",
+      "1", "x", "z", "x + z + x:z", "(1 | g)", "x + (x | g)", "z + (z | g)",
       "x + (1 | g)", "z + (1 | g)", "x + z + x:z + (1 | g)",
       "x + z + x:z + (x:z | g)"
     ),
@@ -70,7 +70,7 @@ test_that("check that we properly split a formula", {
 
   formula <- y ~ (x + z + x:z | g)
   sp <- split_formula(formula)
-  expect_length(sp, 7)
+  expect_length(sp, 8)
   expect_length(setdiff(
     c(
       "(1 | g)", "x + (x | g)", "z + (z | g)",
@@ -81,20 +81,20 @@ test_that("check that we properly split a formula", {
 
   formula <- y ~ (0 + x + z + x:z | g)
   sp <- split_formula(formula)
-  expect_length(sp, 3)
+  expect_length(sp, 4)
   expect_length(setdiff(
     c(
-      "x + (0 + x | g)", "z + (0 + z | g)", "x + z + x:z + (0 + x:z | g)"
+      "1", "x + (0 + x | g)", "z + (0 + z | g)", "x + z + x:z + (0 + x:z | g)"
     ),
     sp
   ), 0)
 
   formula <- y ~ x + z + x:z
   sp <- split_formula(formula)
-  expect_length(sp, 3)
+  expect_length(sp, 4)
   expect_length(setdiff(
     c(
-      "x", "z", "x + z + x:z"
+      "1", "x", "z", "x + z + x:z"
     ),
     sp), 0)
 
@@ -139,20 +139,20 @@ test_that("check that we can subset a formula and update the data columns proper
 
 test_that("check that we count terms correctly", {
   formula <- y ~ x + z
-  expect_equal(count_terms_in_subformula(formula), 2)
-
-  formula <- y ~ x + z + x:z
   expect_equal(count_terms_in_subformula(formula), 3)
 
-  formula <- y ~ x + z + x:z + (1 | g)
+  formula <- y ~ x + z + x:z
   expect_equal(count_terms_in_subformula(formula), 4)
 
-  formula <- y ~ x + z + x:z + (x | g)
-  expect_equal(count_terms_in_subformula(formula), 5)
+  formula <- y ~ x + z + x:z + (1 | g)
+  expect_equal(count_terms_in_subformula(formula), 6)
 
-  expect_equal(count_terms_chosen(c("x", "z")), 2)
-  expect_equal(count_terms_chosen(c("x", "z", "x:z")), 3)
-  expect_equal(count_terms_chosen(c("x", "z", "x:z", "x + (x | g)")), 5)
+  formula <- y ~ x + z + x:z + (x | g)
+  expect_equal(count_terms_in_subformula(formula), 7)
+
+  expect_equal(count_terms_chosen(c("x", "z")), 3)
+  expect_equal(count_terms_chosen(c("x", "z", "x:z")), 4)
+  expect_equal(count_terms_chosen(c("x", "z", "x:z", "x + (x | g)")), 6)
 })
 
 test_that("check that we correctly sort models by size", {
