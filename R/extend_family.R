@@ -64,7 +64,7 @@ extend_family_poisson <- function(family) {
   dev_poiss <- function(mu, y, weights=1, dis=NULL) {
   	if (NCOL(y) < NCOL(mu))
   		y <- matrix(y, nrow=length(y), ncol=NCOL(mu))
-  	-2*weights*(y*log(y / mu) - (y - mu))
+  	-2*weights*(y*log(mu) - mu)
   }
   ppd_poiss <- function(mu, dis, weights = 1) rpois(length(mu), mu)
 
