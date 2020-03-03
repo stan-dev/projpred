@@ -54,10 +54,10 @@ if (require(rstanarm)) {
                      ignore.order = T, info = i_inf)
         # number of draws should equal to the number of draw weights
         ns <- length(p[[j]]$weights)
-        expect_length(coef(p[[j]]$sub_fit), ns)
+        expect_length(NCOL(coef(p[[j]]$sub_fit)), ns)
         expect_length(p[[j]]$dis, ns)
         # j:th element should have j variables, including the intercept
-        expect_length(p[[j]]$vind, j)
+        expect_length(p[[j]]$vind, j - 1)
         # family kl
         expect_equal(p[[j]]$family, vs_list[[i]]$family,
                      info = i_inf)

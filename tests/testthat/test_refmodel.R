@@ -28,7 +28,7 @@ if (require(rstanarm) && require(brms)) {
     fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss,
                           chains = chains, seed = seed, iter = iter)
     fit_binom <- brm(y | trials(weights) ~ x, family = f_binom,
-                     data = df_binom chains = chains, seed = seed, iter = iter)
+                     data = df_binom, chains = chains, seed = seed, iter = iter)
     ref_gauss <- get_refmodel(fit_gauss)
     ref_binom <- get_refmodel(fit_binom)
   })

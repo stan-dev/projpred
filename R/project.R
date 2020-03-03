@@ -103,19 +103,20 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
     }
   }
 
-  if (is.null(nc))
-    nc <- 1
-  else
-    if (nc > NCOL(refmodel$mu))
-      stop("number of clusters exceed the number of columns in the reference model's posterior.")
-
   if (is.null(ns))
     ns <- min(ns, NCOL(refmodel$mu))
   else {
     if (ns > NCOL(refmodel$mu))
       stop("number of samples exceed the number of columns in the reference model's posterior.")
-    nc <- ns
+    if (is.null(nc))
+      nc <- ns
   }
+
+  if (is.null(nc))
+    nc <- 1
+  else
+    if (nc > NCOL(refmodel$mu))
+      stop("number of clusters exceed the number of columns in the reference model's posterior.")
 
   if (is.null(intercept))
     intercept <- refmodel$intercept
