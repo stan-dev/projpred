@@ -26,9 +26,8 @@ if (require(rstanarm) && require(brms)) {
                          weights=weights, offset=offset)
 
   SW(
-    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss, QR = T,
-                          weights = weights, offset = offset,
-                          chains = chains, seed = seed, iter = iter)
+    fit_gauss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss,
+                     chains = chains, seed = seed, iter = iter)
   )
   SW(
     fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
