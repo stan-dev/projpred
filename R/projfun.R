@@ -25,6 +25,8 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
     pseudo_data(f, mu, family, offset = refmodel$offset, weights = wprev)
   mle <- function(formula, data, weights)
     refmodel$mle(formula, data, weights = weights)
+  linear_predict <- function(fit)
+    refmodel$proj_predict(fit)
   replace_response <- get_replace_response(form, vind)
 
   subset <- subset_formula_and_data(form, unique(unlist(vind)),
@@ -40,9 +42,7 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
   browser()
   proj_refit <- iterative_weighted_least_squares(
     flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
-    replace_response,
-    wprev = wobs, mle = mle
-  )
+    replace_response, wprev = wobs, mle = mle,  linear_predict)
   musub <- family$mu_fun(proj_refit, offset = refmodel$offset)
   if (family$family == "gaussian")
     ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
@@ -62,14 +62,14 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
 
 iterative_weighted_least_squares <- function(formula, data, iters, link,
                                              replace_response, wprev = NULL,
-                                             mle = lm) {
+                                             mle = lm, linear_predict) {
   pobs <- link(0, wprev)
   wprev <- pobs$w
   data <- replace_response(pobs$z, data)
   old_fit <- NULL
   for (i in seq_len(iters)) {
     fit <- mle(formula, cbind(data, weights = wprev), weights = wprev)
-    pobs <- link(predict(fit), wprev)
+    pobs <- link(linear_predict(fit), wprev)
     if (any(is.na(pobs$z)))
       break
     old_fit <- fit
