@@ -3,7 +3,7 @@ context('project')
 
 # tests for project
 
-if (require(rstanarm)) {
+if (require(rstanarm) && require(brms)) {
 
 
   seed <- 1235
