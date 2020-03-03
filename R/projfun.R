@@ -74,7 +74,7 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
       break
     old_fit <- fit
     data <- replace_response(pobs$z, data)
-    wprev <- pobs$w
+    wprev <- pobs$w[seq_len(NROW(data))]
   }
   if (is.null(old_fit))
     return(fit)

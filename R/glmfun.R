@@ -31,7 +31,7 @@ pseudo_data <- function(f, y, family, offset=rep(0,NROW(f)), weights=rep(1.0,NRO
   # and its pointwise derivative w.r.t f at the current f.
   #
   mu <- family$linkinv(f+offset)
-  dmu_df <- matrix(family$mu.eta(f+offset), NROW(f), NCOL(f))
+  dmu_df <- family$mu.eta(f+offset)
   z <- f + (y - mu)/dmu_df
 
   if (family$family == 'Student_t') {
