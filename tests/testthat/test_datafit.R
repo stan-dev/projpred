@@ -48,7 +48,7 @@ vsd_list <- lapply(dref_list, varsel, nv_max = nv + 1, verbose = FALSE)
 cvvsd_list <- lapply(dref_list, cv_varsel, nv_max = nv + 1, verbose = FALSE)
 
 #
-predd_list <- lapply(vsd_list, proj_linpred, xnew = data.frame(x=x),
+predd_list <- lapply(vsd_list, proj_linpred, xnew = data.frame(x=x, weights=weights),
                      offsetnew = offset, weightsnew = weights, nv = 3,
                      seed = seed)
 

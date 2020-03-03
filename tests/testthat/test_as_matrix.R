@@ -17,31 +17,23 @@ if (require(rstanarm) && require(brms)) {
   iter <- 500
   source(file.path('helpers', 'SW.R'))
 
-  f_gauss <- gaussian()
-  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = x)
   f_binom <- binomial()
   df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x,
                          weights=weights, offset=offset)
 
   SW(
-    fit_gauss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss,
-                     chains = chains, seed = seed, iter = iter)
-  )
-  SW(
     fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
                      data = df_binom, chains = chains, seed = seed, iter = iter)
   )
 
-  vs_gauss <- varsel(fit_gauss)
   vs_binom <- varsel(fit_binom)
   vind <- c(2,3)
   ns <- 100
-  p_gauss <- project(vs_gauss, vind = vind, ns = ns)
   p_binom <- project(vs_binom, vind = vind, ns = ns)
 
   test_that("as.matrix.projection returns the relevant variables for gaussian", {
-    m <- as.matrix(p_gauss)
-    expect_equal(colnames(m), c('Intercept', vs_gauss$vind[vind], 'sigma'))
+    m <- as.matrix(p_binom)
+    expect_equal(colnames(m), c('Intercept', vs_binom$vind[vind], 'sigma'))
     expect_equal(dim(m), c(ns, length(vind) + 2))
   })
 
@@ -52,14 +44,14 @@ if (require(rstanarm) && require(brms)) {
   })
 
   ## test_that("as.matrix.projection works as expected without an intercept", {
-  ##   p_nointercept <- project(vs_gauss, vind = vind, ns = ns, intercept = FALSE)
+  ##   p_nointercept <- project(vs_binom, vind = vind, ns = ns, intercept = FALSE)
   ##   m <- as.matrix(p_nointercept)
-  ##   expect_equal(colnames(m), c(names(coef(fit_gauss))[vind + 1], 'sigma'))
+  ##   expect_equal(colnames(m), c(names(coef(fit_binom))[vind + 1], 'sigma'))
   ##   expect_equal(dim(m), c(ns, length(vind) + 1))
   ## })
 
   test_that("as.matrix.projection works as expected with zero variables", {
-    p_novars <- project(vs_gauss, nv = 0, ns = ns)
+    p_novars <- project(vs_binom, nv = 0, ns = ns)
     m <- as.matrix(p_novars)
     expect_equal(colnames(m), c('Intercept', 'sigma' ))
     expect_equal(dim(m), c(ns, 2))
@@ -67,9 +59,9 @@ if (require(rstanarm) && require(brms)) {
 
   test_that("as.matrix.projection gives a warning but works with clustering", {
     nc <- 3
-    p_clust <- project(vs_gauss, vind = vind, nc = nc)
+    p_clust <- project(vs_binom, vind = vind, nc = nc)
     expect_warning(m <- as.matrix(p_clust))
-    expect_equal(colnames(m), c("Intercept", vs_gauss$vind[vind], "sigma"))
+    expect_equal(colnames(m), c("Intercept", vs_binom$vind[vind], "sigma"))
     expect_equal(dim(m), c(nc, length(vind) + 2))
   })
 

@@ -3,7 +3,7 @@ context('proj_linpred')
 
 # tests for proj_linpred and proj_predict
 
-if (require(brms)) {
+if (require(brms) && require(rstanarm)) {
 
   seed <- 1235
   set.seed(seed)

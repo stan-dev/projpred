@@ -69,6 +69,9 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
     cv_search <- !inherits(refmodel, "datafit")
   }
 
+  if (inherits(refmodel, "datafit"))
+    ns <- nc <- 1
+
   if (!is.null(vind) &&
       any(object$vind[1:length(vind)] != vind)) {
     ## search path not found, or the given variable combination
@@ -127,8 +130,11 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
   p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
 
   ## project onto the submodels
-  subm <- .get_submodels(list(vind=vind, p_sel=object$spath$p_sel), nv, family,
-                         p_ref, refmodel, intercept, regul, cv_search=cv_search)
+  subm <- .get_submodels(list(vind=vind,
+                              p_sel=object$spath$p_sel,
+                              sub_fits=object$spath$sub_fits),
+                         nv, family, p_ref, refmodel, intercept, regul,
+                         cv_search = cv_search)
 
   ## add family
   proj <- lapply(subm, function(model) {

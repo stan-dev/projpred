@@ -54,10 +54,10 @@ if (require(rstanarm)) {
                      ignore.order = T, info = i_inf)
         # number of draws should equal to the number of draw weights
         ns <- length(p[[j]]$weights)
-        expect_length(NCOL(coef(p[[j]]$sub_fit)), ns)
+        expect_equal(NCOL(coef(p[[j]]$sub_fit)), ns)
         expect_length(p[[j]]$dis, ns)
         # j:th element should have j variables, including the intercept
-        expect_length(p[[j]]$vind, j - 1)
+        expect_length(p[[j]]$vind, max(j - 1, 1))
         # family kl
         expect_equal(p[[j]]$family, vs_list[[i]]$family,
                      info = i_inf)
@@ -176,9 +176,6 @@ if (require(rstanarm)) {
       # expected number of draws
       expect_length(p$weights, ns)
       expect_equal(NCOL(coef(p$sub_fit)), ns)
-
-      # no clustering, so draw weights should be identical
-      expect_true(do.call(all.equal, as.list(p$weights)), info = i_inf)
     }
   })
 

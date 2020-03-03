@@ -3,7 +3,7 @@ context('syntax')
 # test for simple fits but with varying syntax (e.g. varying formula etc.)
 
 
-if (require(rstanarm)) {
+if (require(brms)) {
 
 
   # load the mesquite data
@@ -12,13 +12,12 @@ if (require(rstanarm)) {
   
   # fit the model with some transformations on the target variable and the original inputs
   SW( 
-    fit <- stan_glm(log(LeafWt) ~ log(Diam1) + log(Diam2) + log(CanHt) + log(TotHt) + log(Dens) +
+    fit <- brm(log(LeafWt) ~ log(Diam1) + log(Diam2) + log(CanHt) + log(TotHt) + log(Dens) +
                   log(Diam1)*log(Diam2) + Group, 
-                   data = mesquite, QR=TRUE, refresh=0, chain=2)
+                   data = mesquite, refresh=0, chain=2)
   )
   
   # selection
-  vs <- varsel(fit)
   SW(cvs <- cv_varsel(fit, verbose=F))
   suggested_size <- suggest_size(cvs)
   

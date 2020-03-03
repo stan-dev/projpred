@@ -25,9 +25,9 @@ if (require(rstanarm) && require(brms)) {
   df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x, weights=weights)
   
   SW({
-    fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss,
+    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss,
                           chains = chains, seed = seed, iter = iter)
-    fit_binom <- brm(y | trials(weights) ~ x, family = f_binom,
+    fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
                      data = df_binom, chains = chains, seed = seed, iter = iter)
     ref_gauss <- get_refmodel(fit_gauss)
     ref_binom <- get_refmodel(fit_binom)
