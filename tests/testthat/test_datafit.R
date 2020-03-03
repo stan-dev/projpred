@@ -113,7 +113,8 @@ test_that("output of project is sensible with only data provided as reference mo
 
     for (j in 1:length(p)) {
       expect_named(p[[j]], c("kl", "weights", "dis", "vind",
-                             "sub_fit", "p_type", "family"),
+                             "sub_fit", "p_type", "family",
+                             "intercept"),
       ignore.order = TRUE
       )
       # number of draws should equal to the number of draw weights

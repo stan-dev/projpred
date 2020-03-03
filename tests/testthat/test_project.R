@@ -50,7 +50,7 @@ if (require(rstanarm) && require(brms)) {
       for(j in 1:length(p)) {
         expect_s3_class(p[[j]], "projection")
         expect_named(p[[j]], c('kl', 'weights', 'dis', 'sub_fit', 'vind',
-                               'p_type', 'family'),
+                               'p_type', 'family', 'intercept'),
                      ignore.order = T, info = i_inf)
         # number of draws should equal to the number of draw weights
         ns <- length(p[[j]]$weights)
