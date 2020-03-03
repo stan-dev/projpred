@@ -39,7 +39,6 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
   ##   flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
   ##   replace_response, wprev = wobs, mle = mle),
   ##   type = "message")
-  browser()
   proj_refit <- iterative_weighted_least_squares(
     flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
     replace_response, wprev = wobs, mle = mle, linear_predict = linear_predict)

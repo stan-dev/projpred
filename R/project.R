@@ -62,7 +62,6 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
     stop(paste('The given object is not a variable selection -object.',
                'Run the variable selection first, or provide the variable indices (vind).'))
 
-  browser()
   refmodel <- get_refmodel(object)
 
   if (cv_search) {
