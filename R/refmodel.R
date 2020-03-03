@@ -63,6 +63,8 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
     stop("type should be one of ('response', 'link')")
   if ('datafit' %in% class(object))
     stop('Cannot make predictions with data reference only.')
+  if (!is.null(ynew) || (!(inherits(ynew, "numerical")) && NCOL(ynew) == 1))
+    stop("ynew must be a numerical vector")
 
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))

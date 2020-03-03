@@ -50,7 +50,7 @@ if (require(rstanarm) && require(brms)) {
   
   test_that('predict checks the \'type\' argument', {
     expect_error(predict(ref_gauss, df_gauss, type = 'zzz'),
-                 '\'arg\' should be one of')
+                 'type should be one of')
   })
   
   test_that('predict produces sensible results for gaussian models', {
