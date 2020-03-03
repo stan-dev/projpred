@@ -3,7 +3,7 @@ context('refmodel')
 
 # tests for generic reference model
 
-if (require(rstanarm)) {
+if (require(rstanarm) && require(brms)) {
   
 
   seed <- 1235
@@ -20,17 +20,15 @@ if (require(rstanarm)) {
   source(file.path('helpers', 'SW.R'))
   
   f_gauss <- gaussian()
-  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = I(x))
+  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = x)
   f_binom <- binomial()
-  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = I(x))
+  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x, weights=weights)
   
   SW({
-    fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
-                          weights = weights, offset = offset,
+    fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss,
                           chains = chains, seed = seed, iter = iter)
-    fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
-                          data = df_binom, weights = weights, offset = offset,
-                          chains = chains, seed = seed, iter = iter)
+    fit_binom <- brm(y | trials(weights) ~ x, family = f_binom,
+                     data = df_binom chains = chains, seed = seed, iter = iter)
     ref_gauss <- get_refmodel(fit_gauss)
     ref_binom <- get_refmodel(fit_binom)
   })
