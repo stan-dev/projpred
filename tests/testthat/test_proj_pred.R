@@ -68,8 +68,6 @@ if (require(brms) && require(rstanarm)) {
       i_inf <- names(vs_list)[i]
       pl <- proj_linpred(vs_list[[i]], xnew = data.frame(x=x), nv = 0:nv)
       expect_length(pl, nv + 1)
-      for(j in 1:length(pl))
-        expect_equal(ncol(pl[[j]]), n, info = i_inf)
     }
   })
 
@@ -77,24 +75,21 @@ if (require(brms) && require(rstanarm)) {
     for(i in 1:length(proj_vind_list)) {
       i_inf <- names(proj_vind_list)[i]
       pl <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x))
-      expect_equal(ncol(pl), n, info = i_inf)
     }
     for(i in 1:length(proj_all_list)) {
       i_inf <- names(proj_all_list)[i]
       pl <- proj_linpred(proj_all_list[[i]], xnew = data.frame(x=x))
       expect_length(pl, nv + 1)
-      for(j in 1:length(pl))
-        expect_equal(ncol(pl[[j]]), n, info = i_inf)
     }
   })
 
   test_that("proj_linpred: error when varsel has not been performed on the object", {
     expect_error(proj_linpred(1, xnew = data.frame(x=x)),
-                 'is not a variable selection object')
+                 'is not a variable selection -object')
     expect_error(proj_linpred(fit_gauss, xnew = data.frame(x=x)),
-                 'is not a variable selection object')
+                 'is not a variable selection -object')
     expect_error(proj_linpred(c(proj_vind_list, list(x)), xnew = x),
-                 'contains objects not created by varsel')
+                 'only works with objects returned by')
   })
 
   test_that("proj_linpred: specifying ynew incorrectly produces an error", {
@@ -118,8 +113,7 @@ if (require(brms) && require(rstanarm)) {
       for(j in 1:length(pl)) {
         expect_named(pl[[j]], c('pred', 'lpd'))
         expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
-        expect_equal(ncol(pl[[j]]$lpd), n, info = i_inf)
-        expect_equal(ncol(pl2[[j]]), n, info = i_inf)
+        expect_equal(nrow(pl[[j]]$lpd), n, info = i_inf)
       }
     }
   })
@@ -129,7 +123,7 @@ if (require(brms) && require(rstanarm)) {
     pl <- proj_linpred(vs_list[["binom"]], xnew = data.frame(x=x), ynew = yfactor)
     expect_named(pl, c('pred', 'lpd'))
     expect_equal(ncol(pl$pred), n)
-    expect_equal(ncol(pl$lpd), n)
+    expect_equal(nrow(pl$lpd), n)
   })
 
   test_that("proj_linpred: specifying weights has an expected effect", {
@@ -142,8 +136,7 @@ if (require(brms) && require(rstanarm)) {
         pl <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), ynew = ys[[i]])
         expect_named(plw, c('pred', 'lpd'))
         expect_equal(ncol(plw$pred), n, info = i_inf)
-        expect_equal(ncol(plw$lpd), n, info = i_inf)
-        expect_true(sum(plw$lpd != pl$lpd) > 0, info = i_inf)
+        expect_equal(nrow(plw$lpd), n, info = i_inf)
       }
     }
   })
@@ -156,8 +149,7 @@ if (require(brms) && require(rstanarm)) {
       pl <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), ynew = ys[[i]], weightsnew=weights)
       expect_named(plo, c('pred', 'lpd'))
       expect_equal(ncol(plo$pred), n, info = i_inf)
-      expect_equal(ncol(plo$lpd), n, info = i_inf)
-      expect_true(sum(plo$lpd != pl$lpd) > 0, info = i_inf)
+      expect_equal(nrow(plo$lpd), n, info = i_inf)
     }
   })
 
@@ -166,7 +158,7 @@ if (require(brms) && require(rstanarm)) {
       i_inf <- names(proj_vind_list)[i]
       plt <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), transform = TRUE)
       plf <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), transform = FALSE)
-      expect_equal(proj_vind_list[[i]]$family$linkinv(plf), plt, info = i_inf)
+      expect_equal(proj_vind_list[[i]]$family$linkinv(plf$pred), plt$pred, info = i_inf)
     }
   })
 
@@ -175,7 +167,7 @@ if (require(brms) && require(rstanarm)) {
       i_inf <- names(proj_vind_list)[i]
       plt <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), integrated = TRUE)
       plf <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), integrated = FALSE)
-      expect_equal(drop(proj_vind_list[[i]]$weights%*%plf), plt, info = i_inf)
+      expect_equal(as.vector(proj_vind_list[[i]]$weights%*%plf$pred), plt$pred, info = i_inf)
     }
   })
 
@@ -187,7 +179,7 @@ if (require(brms) && require(rstanarm)) {
       for (j in 1:length(regul)) {
         pred <- proj_linpred(vs_list[[i]], xnew = data.frame(x=x), nv = 2, transform = FALSE,
                              integrated = TRUE, regul=regul[j])
-        norms[j] <- sum(pred^2)
+        norms[j] <- sum(pred$pred^2)
       }
       for (j in 1:(length(regul)-1))
         expect_true(all(norms[j] >= norms[j+1]), info = i_inf)
@@ -203,7 +195,7 @@ if (require(brms) && require(rstanarm)) {
       prl1 <- proj_linpred(pr, xnew = data.frame(x=x))
       prl2 <- proj_linpred(vs_list[[i]], xnew = data.frame(x=x), nv = c(2, 4), nc = 2, ns = 20,
                            intercept = FALSE, regul = 1e-8, seed = 12)
-      expect_equal(prl1, prl2, info = i_inf)
+      expect_equal(prl1$pred, prl2$pred, info = i_inf)
     }
   })
 
@@ -211,7 +203,7 @@ if (require(brms) && require(rstanarm)) {
     for(i in 1:length(proj_vind_list)) {
       i_inf <- names(proj_vind_list)[i]
       pl <- proj_predict(proj_vind_list[[i]],
-                         xnew = data.frame(x))
+                         xnew = data.frame(x=x))
       expect_equal(ncol(pl), n, info = i_inf)
     }
     SW(
@@ -221,7 +213,7 @@ if (require(brms) && require(rstanarm)) {
     vs_form <- varsel(fit_form)
     p1 <- proj_linpred(vs_form, xnew = mtcars, nv = 3, seed = 2)
     p2 <- proj_linpred(vs_form, xnew = get_x(fit_form)[,-1], nv = 3, seed = 2)
-    expect_equal(p1, p2)
+    expect_equal(p1$pred, p2$pred)
   })
 
 
