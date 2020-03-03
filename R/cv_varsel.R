@@ -349,7 +349,9 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
     p_sel <- .get_refdist(refmodel, ns, nc)
     p_pred <- .get_refdist(refmodel, nspred, ncpred)
     newdata <- d_test$newdata
-    mu_test <- family$linkinv(refmodel$predfun(refmodel$fit, newdata=newdata))
+    pred <- matrix(as.numeric(refmodel$predfun(refmodel$fit, newdata=newdata)),
+                   NROW(newdata), NCOL(refmodel$y))
+    mu_test <- family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test, dis = refmodel$dis,
           w_test = refmodel$wsample, d_test, msg)
   }

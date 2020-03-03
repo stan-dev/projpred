@@ -206,7 +206,7 @@ get_refmodel.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
 #' @export
 init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
                           proj_predfun=NULL, folds=NULL, penalized=FALSE,
-                          weights=NULL, offset=NULL, cvfun=NULL, cvfits=NULL) {
+                          weights=NULL, offset=NULL, cvfun=NULL, cvfits=NULL, ...) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun))
     predfun <- function(fit, newdata=NULL)

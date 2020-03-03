@@ -79,11 +79,10 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
 
   if (!is.null(vind)) {
     ## if vind is given, nv is ignored (project only onto the given submodel)
-    vind <- object$vind[vind]
-    if (length(vind) > count_terms_chosen(vind))
-      nv <- count_terms_chosen(vind)
-    else
-      nv <- length(vind)
+    if (max(vind) > length(object$vind))
+      stop("vind contains an index larger than the number of variables in the model.")
+    vind <- c(object$vind[vind])
+    nv <- length(vind)
   } else {
     ## by default take the variable ordering from the selection
     vind <- object$vind
@@ -105,7 +104,18 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
   }
 
   if (is.null(nc))
+    nc <- 1
+  else
+    if (nc > NCOL(refmodel$mu))
+      stop("number of clusters exceed the number of columns in the reference model's posterior.")
+
+  if (is.null(ns))
     ns <- min(ns, NCOL(refmodel$mu))
+  else {
+    if (ns > NCOL(refmodel$mu))
+      stop("number of samples exceed the number of columns in the reference model's posterior.")
+    nc <- ns
+  }
 
   if (is.null(intercept))
     intercept <- refmodel$intercept
@@ -116,8 +126,8 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
   p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
 
   ## project onto the submodels
-  subm <- .get_submodels(object$spath, nv, family, p_ref,
-                             refmodel, intercept, regul, cv_search=cv_search)
+  subm <- .get_submodels(list(vind=vind, p_sel=object$spath$p_sel), nv, family,
+                         p_ref, refmodel, intercept, regul, cv_search=cv_search)
 
   ## add family
   proj <- lapply(subm, function(model) {
