@@ -329,8 +329,12 @@ get_replace_response <- function(formula, terms_, split_formula=FALSE) {
     }
 
     ## don't overwrite original y name
-    data <- data.frame(.z = y, data)
-    colnames(data)[seq_len(response_ncol)] <- response_cols
+    if (all(response_cols %in% colnames(data)))
+      data[, response_cols] <- y
+    else {
+      data <- data.frame(.z = y, data)
+      colnames(data)[seq_len(response_ncol)] <- response_cols
+    }
     return(data)
   }
   return(replace_response)
