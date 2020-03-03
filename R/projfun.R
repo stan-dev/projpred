@@ -38,7 +38,7 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
   ##   replace_response, wprev = wobs, mle = mle),
   ##   type = "message")
   proj_refit <- iterative_weighted_least_squares(
-    flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
+    flatten_formula(subset$formula), refmodel$fetch_data(), 1, link,
     replace_response, wprev = wobs, mle = mle)
   musub <- family$mu_fun(proj_refit, offset = refmodel$offset)
   if (family$family == "gaussian")
