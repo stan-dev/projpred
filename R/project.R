@@ -139,6 +139,7 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
   ## add family
   proj <- lapply(subm, function(model) {
     model <- c(model, nlist(family), list(p_type = is.null(ns)))
+    model$intercept <- intercept
     class(model) <- 'projection'
     return(model)
   })
