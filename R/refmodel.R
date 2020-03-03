@@ -177,7 +177,7 @@ get_refmodel.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
 
   ## TODO: return y, weights and offset as right hand side formulas
   refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
-                                proj_predfun, folds, weights=weights)
+                            proj_predfun, folds, weights=weights, ...)
   return(refmodel)
 }
 
@@ -199,15 +199,14 @@ get_refmodel.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
     y <- fit$data[, colnames(fit$data) == response_name]
 
   refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
-                                proj_predfun, folds, penalized)
+                            proj_predfun, folds, penalized, ...)
   return(refmodel)
 }
 
 #' @export
 init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
-                              proj_predfun=NULL, folds=NULL, penalized=FALSE,
-                              weights=NULL, offset=NULL, cvfun=NULL,
-                              cvfits=NULL) {
+                          proj_predfun=NULL, folds=NULL, penalized=FALSE,
+                          weights=NULL, offset=NULL, cvfun=NULL, cvfits=NULL) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun))
     predfun <- function(fit, newdata=NULL)
@@ -274,7 +273,7 @@ init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
         else
           matrix(rep(NA, NROW(newdata)))
       else
-        predfun(fit, newdata)
+        family$linkinv(predfun(fit, newdata))
     }
   }
 

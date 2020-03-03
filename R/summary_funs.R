@@ -28,7 +28,7 @@
     stop('Internal error encountered: loglik is a vector, but should be a scalar or matrix')
   } else {
                                         # mu is a matrix, so apply weighted sum over the samples
-    list(mu = c(mu %*% wsample),
+    list(mu = c(mu * wsample),
          lppd = apply(loglik, 1, log_weighted_mean_exp, wsample))
   }
 }

@@ -291,7 +291,6 @@ if (require(rstanarm) && require(brms)) {
   })
 
   test_that('Having something else than stan_glm as the fit throws an error', {
-    expect_error(cv_varsel(fit_glmer, verbose = FALSE), regexp = 'not yet supported')
     expect_error(cv_varsel(rnorm(5), verbose = FALSE), regexp = 'no applicable method')
   })
 
@@ -302,20 +301,14 @@ if (require(rstanarm) && require(brms)) {
         j_inf <- names(cv_kf_list[[i]])[j]
         # vind seems legit
         expect_length(cv_kf_list[[i]][[j]]$vind, nv)
-        expect_equal(names(coef(fit_gauss)[-1])[cv_kf_list[[i]][[j]]$vind],
-                     names(cv_kf_list[[i]][[j]]$vind),
-                     info = paste(i_inf, j_inf))
+        expect_true(all(!is.na(match(names(coef(fit_gauss)[-1]),
+                                     cv_kf_list[[i]][[j]]$vind))),
+                    info = paste(i_inf, j_inf))
         # kl seems legit
         expect_length(cv_kf_list[[i]][[j]]$kl, nv + 1)
         # decreasing
         expect_equal(cv_kf_list[[i]][[j]]$kl,
                      cummin(cv_kf_list[[i]][[j]]$kl),
-                     info = paste(i_inf, j_inf))
-        # d_test seems legit
-        expect_length(cv_kf_list[[i]][[j]]$d_test$y, n)
-        expect_length(cv_kf_list[[i]][[j]]$d_test$weights, n)
-        expect_type(cv_kf_list[[i]][[j]]$d_test$type, 'character')
-        expect_equal(cv_kf_list[[i]][[j]]$d_test$type, 'kfold',
                      info = paste(i_inf, j_inf))
         # summaries seems legit
         expect_named(cv_kf_list[[i]][[j]]$summaries, c('sub', 'ref'),
@@ -344,7 +337,7 @@ if (require(rstanarm) && require(brms)) {
         expect_equal(cv_kf_list[[i]][[j]]$pctch[,1], 1:nv,
                      info = paste(i_inf, j_inf))
         expect_equal(colnames(cv_kf_list[[i]][[j]]$pctch),
-                     c('size', names(cv_kf_list[[i]][[j]]$vind)),
+                     c('size', cv_kf_list[[i]][[j]]$vind),
                      info = paste(i_inf, j_inf))
       }
     }
@@ -368,19 +361,10 @@ if (require(rstanarm) && require(brms)) {
                  'a single integer value')
   })
 
-  test_that('omitting the \'data\' argument causes an error', {
-    out <- SW(fit_nodata <- stan_glm(df_gauss$y~df_gauss$x, QR = T,
-                                     chains = chains, seed = seed, iter = iter))
-    expect_error(cv_varsel(fit_nodata, cv_method = 'loo'),
-                 'Model was fitted without a \'data\' argument')
-    expect_error(cv_varsel(fit_nodata, cv_method = 'kfold'),
-                 'Model was fitted without a \'data\' argument')
-  })
-
   test_that('providing k_fold works', {
     out <- SW({
       k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
-      fit_cv <- cv_varsel(glm_simp, cv_method = 'kfold', k_fold = k_fold)
+      fit_cv <- cv_varsel(glm_simp, cv_method = 'kfold', cvfits = k_fold)
     })
     expect_false(any(grepl('k_fold not provided', out)))
     expect_length(fit_cv$vind, nv)
@@ -390,12 +374,6 @@ if (require(rstanarm) && require(brms)) {
 
     # decreasing
     expect_equal(fit_cv$kl, cummin(fit_cv$kl))
-
-    # d_test seems legit
-    expect_length(fit_cv$d_test$y, n)
-    expect_length(fit_cv$d_test$weights, n)
-    expect_type(fit_cv$d_test$type, 'character')
-    expect_equal(fit_cv$d_test$type, 'kfold')
 
     # summaries seems legit
     expect_named(fit_cv$summaries, c('sub', 'ref'))
@@ -416,7 +394,7 @@ if (require(rstanarm) && require(brms)) {
 
     expect_equal(fit_cv$pctch[,1], 1:nv)
     expect_equal(colnames(fit_cv$pctch),
-                 c('size', names(fit_cv$vind)))
+                 c('size', fit_cv$vind))
   })
 
 

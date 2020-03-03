@@ -164,6 +164,18 @@ parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL, nc=NULL, ncpr
       cv_method <- 'loo'
   }
 
+  if (!is.null(K)) {
+    if (length(K) > 1 || !(is.numeric(K)) || !(K == round(K))) {
+      stop("K must be a single integer value")
+    }
+    if (K < 2) {
+      stop("K must be at least 2")
+    }
+    if (K > NROW(refmodel$y)) {
+      stop("K cannot exceed n")
+    }
+  }
+
   if (tolower(cv_method) == 'kfold' || is.null(K)) {
     if (inherits(refmodel, "datafit"))
       K <- 10
@@ -213,6 +225,10 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_sear
   n <- length(pareto_k)
   ## by default use all observations
   nloo <- min(nloo,n)
+
+  if (nloo < 0) {
+    stop("nloo must be at least 1")
+  }
 
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
@@ -333,7 +349,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
     p_sel <- .get_refdist(refmodel, ns, nc)
     p_pred <- .get_refdist(refmodel, nspred, ncpred)
     newdata <- d_test$newdata
-    mu_test <- refmodel$predfun(refmodel$fit, newdata=newdata)
+    mu_test <- family$linkinv(refmodel$predfun(refmodel$fit, newdata=newdata))
     nlist(refmodel, p_sel, p_pred, mu_test, dis = refmodel$dis,
           w_test = refmodel$wsample, d_test, msg)
   }
@@ -402,7 +418,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
   ref <- hf(lapply(list_cv, function(fold) {
     ## family <- fold$refmodel$family
     data.frame(.weighted_summary_means(fold$d_test, family, fold$d_test$w,
-                                           fold$mu_test, fold$refmodel$dis))
+                                       fold$mu_test, fold$refmodel$dis))
   }))
 
   ## Combine also the K separate test data sets into one list
@@ -450,6 +466,14 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
     }
   } else {
     cvfits <- refmodel$cvfits
+    K <- attr(cvfits, "K")
+    folds <- attr(cvfits, "folds")
+    cvfits <- lapply(seq_len(K), function(k) {
+      cvfit <- cvfits$fits[[k]]
+      obs <- seq_len(NROW(cvfits$data))
+      cvfit$omitted <- obs[folds != k]
+      cvfit
+    })
   }
 
   train <- seq_along(refmodel$y)
@@ -459,6 +483,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
       train,
       cvfit$omitted
     )
+    default_data <- refmodel$fetch_data(obs=fold)
     fetch_fold <- function(data=NULL, obs=NULL, newdata=NULL) {
       refmodel$fetch_data(obs = fold, newdata = newdata)
     }
@@ -468,7 +493,11 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
     proj_predfun <- function(fit, newdata = default_data) {
       refmodel$proj_predfun(fit, newdata = newdata)
     }
-    refmod <- init_refmodel(refmodel$cvfit, fetch_fold(),
+    if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg"))
+      fit <- NULL
+    else
+      fit <- cvfit
+    refmod <- init_refmodel(fit, fetch_fold(),
                             refmodel$y[fold], refmodel$formula,
                             family = refmodel$family, predfun, mle = refmodel$mle,
                             proj_predfun = proj_predfun, folds = seq_along(fold),
