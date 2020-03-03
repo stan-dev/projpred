@@ -214,7 +214,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   if(is.null(nv_max))
     nv_max <- min(max_nv_possible, 20)
   else
-    nv_max <- min(max_nv_possible, nv_max)
+    nv_max <- min(max_nv_possible, nv_max + 1)
 
 
   nlist(method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred, groups)

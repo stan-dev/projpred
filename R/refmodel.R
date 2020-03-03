@@ -59,6 +59,8 @@ NULL
 predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
                              weightsnew = NULL, type = 'response', ...) {
 
+  if (!(type %in% c("response", "link")))
+    stop("type should be one of ('response', 'link')")
   if ('datafit' %in% class(object))
     stop('Cannot make predictions with data reference only.')
 

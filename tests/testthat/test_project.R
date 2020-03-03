@@ -213,7 +213,7 @@ if (require(rstanarm) && require(brms)) {
       i_inf <- names(vs_list)[i]
       p <- project(vs_list[[i]], nv = nv, seed = seed)
       expect_named(p, c('kl', 'weights', 'dis', 'sub_fit', 'vind',
-                        'p_type', 'family'),
+                        'p_type', 'family', 'intercept'),
                    ignore.order = TRUE, info = i_inf)
     }
   })

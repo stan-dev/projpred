@@ -38,15 +38,15 @@ if (require(rstanarm) && require(brms)) {
     expect_s3_class(ref_binom, "refmodel")
   })
   
-  test_that('get_refmode checks for the absence of data', {
-    SW({
-    fit_nodata <- stan_glm(df_gauss$y ~ x, family = f_gauss, QR = T,
-                           weights = weights, offset = offset,
-                           chains = chains, seed = seed, iter = iter)
-    })
-    expect_error(get_refmodel(fit_nodata),
-                 'Model was fitted without a \'data\' argument')
-  })
+  ## test_that('get_refmode checks for the absence of data', {
+  ##   SW({
+  ##   fit_nodata <- stan_glm(df_gauss$y ~ x, family = f_gauss, QR = T,
+  ##                          weights = weights, offset = offset,
+  ##                          chains = chains, seed = seed, iter = iter)
+  ##   })
+  ##   expect_error(get_refmodel(fit_nodata),
+  ##                'Model was fitted without a \'data\' argument')
+  ## })
   
   test_that('predict checks the \'type\' argument', {
     expect_error(predict(ref_gauss, df_gauss, type = 'zzz'),
