@@ -155,7 +155,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
 #' @param K Number of folds in the k-fold cross validation. Default is 5 for genuine
 #' reference models and 10 for datafits (that is, for penalized maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
+parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL, nc=NULL, ncpred=NULL) {
   if (is.null(cv_method)) {
     if (inherits(refmodel, "datafit"))
       ## only data given, no actual reference model
@@ -177,12 +177,12 @@ parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
   }
 
   if (tolower(cv_method) == 'kfold' || is.null(K)) {
-    if (inherits(refmodel, "datafit"))
+    if (inherits(refmodel, "datafit")) {
       K <- 10
-    else
+      ncpred <- 1
+      nc <- 1
+    } else
       K <- 5
-    ncpred <- 1
-    nc <- 1
   }
 
   cv_method <- tolower(cv_method)

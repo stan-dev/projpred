@@ -37,7 +37,7 @@ if (require(rstanarm) && require(brms)) {
   })
   fit_list <- list(#fit_gauss,
                    fit_binom, fit_poiss)
-  vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
+  vs_list <- lapply(fit_list, varsel, nv_max = nv + 1, verbose = FALSE)
 
 
   test_that("object returned by project contains the relevant fields", {
@@ -242,7 +242,7 @@ if (require(rstanarm) && require(brms)) {
 
   test_that("project: works as expected from a cvsel object", {
     SW({
-    cvs <- cv_varsel(fit_binom, nv_max = 3, verbose = FALSE)
+    cvs <- cv_varsel(fit_binom, nv_max = 3 + 1, verbose = FALSE)
     p <- project(cvs, nv=3)
     })
     expect_length(p$vind, 3)

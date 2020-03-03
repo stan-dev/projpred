@@ -45,7 +45,7 @@ if (require(brms) && require(rstanarm)) {
     )
   })
   fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
-  vs_list <- lapply(fit_list, varsel, nv_max = nv, verbose = FALSE)
+  vs_list <- lapply(fit_list, varsel, nv_max = nv + 1, verbose = FALSE)
   proj_vind_list <- lapply(vs_list, project, vind = c(2,3), seed = seed)
   proj_all_list <- lapply(vs_list, project, seed = seed, nv=0:nv)
 
