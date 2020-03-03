@@ -143,7 +143,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
 
 select <- function(method, p_sel, refmodel, family, intercept, nv_max,
-                       penalty, verbose, opt, groups=NULL) {
+                   penalty, verbose, opt, groups=NULL) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
   ## and returns the searchpath, i.e., a list with the followint entries (the last three

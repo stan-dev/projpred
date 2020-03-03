@@ -78,9 +78,11 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
   has_group_features <- formula_contains_group_terms(refmodel$formula)
 
   ## arguments specific to this function
-  args <- parse_args_cv_varsel(refmodel, cv_method, K)
+  args <- parse_args_cv_varsel(refmodel, cv_method, K, nc, ncpred)
   cv_method <- args$cv_method
   K <- args$K
+  nc <- args$nc
+  ncpred <- args$ncpred
 
   ## search options
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
@@ -179,10 +181,12 @@ parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
       K <- 10
     else
       K <- 5
+    ncpred <- 1
+    nc <- 1
   }
 
   cv_method <- tolower(cv_method)
-  return(nlist(cv_method, K))
+  return(nlist(cv_method, K, nc, ncpred))
 }
 
 loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept,
@@ -238,8 +242,8 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_sear
 
   ## initialize matrices where to store the results
   vind_mat <- matrix(nrow=n, ncol=nv_max)
-  loo_sub <- matrix(nrow=n, ncol=nv_max+1)
-  mu_sub <- matrix(nrow=n, ncol=nv_max+1)
+  loo_sub <- matrix(nrow=n, ncol=nv_max + 1)
+  mu_sub <- matrix(nrow=n, ncol=nv_max + 1)
 
   if (verbose) {
     print('Computing LOOs...')

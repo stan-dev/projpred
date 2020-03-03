@@ -62,7 +62,7 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
   data <- replace_response(pobs$z, data)
   old_fit <- NULL
   for (i in seq_len(iters)) {
-    fit <- mle(formula, data, weights = wprev)
+    fit <- mle(formula, cbind(data, weights = wprev), weights = wprev)
     pobs <- link(predict(fit), wprev)
     if (any(is.na(pobs$z)))
       break
