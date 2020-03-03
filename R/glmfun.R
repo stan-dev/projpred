@@ -23,7 +23,7 @@ standardization <- function(x, center=T, scale=T, weights=NULL) {
 }
 
 
-pseudo_data <- function(f, y, family, offset=rep(0,length(f)), weights=rep(1.0,length(f)), obsvar=0, wprev=NULL) {
+pseudo_data <- function(f, y, family, offset=rep(0,NROW(f)), weights=rep(1.0,NROW(f)), obsvar=0, wprev=NULL) {
   #
   # Returns locations z and weights w (inverse-variances) of the Gaussian pseudo-observations
   # based on the linear approximation to the link function at f = eta = x*beta + beta0,
