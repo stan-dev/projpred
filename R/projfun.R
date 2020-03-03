@@ -33,13 +33,10 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
   ##                                           subset$data),
   ##                type = "message")
 
-  ## capture.output(proj_refit <- iterative_weighted_least_squares(
-  ##   flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
-  ##   replace_response, wprev = wobs, mle = mle),
-  ##   type = "message")
-  proj_refit <- iterative_weighted_least_squares(
-    flatten_formula(subset$formula), refmodel$fetch_data(), 1, link,
-    replace_response, wprev = wobs, mle = mle)
+  capture.output(proj_refit <- iterative_weighted_least_squares(
+    flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
+    replace_response, wprev = wobs, mle = mle),
+    type = "message")
   musub <- family$mu_fun(proj_refit, offset = refmodel$offset)
   if (family$family == "gaussian")
     ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
@@ -65,7 +62,7 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
   data <- replace_response(pobs$z, data)
   old_fit <- NULL
   for (i in seq_len(iters)) {
-    fit <- mle(formula, cbind(data, weights = wprev), weights = wprev)
+    fit <- mle(formula, data, weights = wprev)
     pobs <- link(predict(fit), wprev)
     if (any(is.na(pobs$z)))
       break

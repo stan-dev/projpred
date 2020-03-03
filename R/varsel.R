@@ -70,8 +70,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
-  args <- parse_args_varsel(refmodel, method, cv_search, intercept, nv_max, nc,
-                            ns, ncpred, nspred, groups, penalty)
+  args <- parse_args_varsel(refmodel, method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred, groups)
   method <- args$method
   cv_search <- args$cv_search
   intercept <- args$intercept
@@ -97,8 +96,8 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
   ## perform the selection
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
-  searchpath <- select(method, p_sel, refmodel, family, intercept, nv_max + 1,
-                       penalty, verbose, opt, groups=groups)
+  searchpath <- select(method, p_sel, refmodel, family, intercept, nv_max,
+                           penalty, verbose, opt, groups=groups)
   vind <- searchpath$vind
 
   ## statistics for the selected submodels
@@ -144,7 +143,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
 
 select <- function(method, p_sel, refmodel, family, intercept, nv_max,
-                   penalty, verbose, opt, groups=NULL) {
+                       penalty, verbose, opt, groups=NULL) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
   ## and returns the searchpath, i.e., a list with the followint entries (the last three
@@ -170,8 +169,7 @@ select <- function(method, p_sel, refmodel, family, intercept, nv_max,
 
 
 parse_args_varsel <- function(refmodel, method, cv_search, intercept,
-                              nv_max, nc, ns, ncpred, nspred, groups,
-                              penalty) {
+                                  nv_max, nc, ns, ncpred, nspred, groups) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel. The arguments
   ## specified by the user (or the function calling this function) are treated as they are, but if
@@ -187,11 +185,8 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
       method <- "forward"
     else
       method <- "l1"
-  else {
+  else
     method <- tolower(method)
-    if (!(method %in% c("forward", "l1")))
-      stop("Unknown search method")
-  }
 
   ## if (has_group_features)
   ##   ## if we are doing a grouped search we don't usually have that many groups
@@ -217,9 +212,10 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   if(is.null(intercept))
     intercept <- refmodel$intercept
   if(is.null(nv_max))
-    nv_max <- min(max_nv_possible - 1, 20)
+    nv_max <- min(max_nv_possible, 20)
   else
-    nv_max <- min(max_nv_possible - 1, nv_max)
+    nv_max <- min(max_nv_possible, nv_max)
+
 
   nlist(method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred, groups)
 }

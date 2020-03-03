@@ -2,7 +2,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
                                verbose=TRUE, opt, groups=NULL, increasing_order=TRUE) {
   ## initialize the forward selection
   ## proj performs the projection over draws
-  projfun <- .get_proj_handle(family, opt$regul)
+  projfun <- .get_proj_handle_poc(family_kl, opt$regul)
 
   formula <- refmodel$formula
   iq <- ceiling(quantile(1:nv_max, 1:10/10))
@@ -57,8 +57,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
 
     p_sub <- sapply(cands, projfun, p_ref, refmodel, intercept)
 
-    imin <- which.min(sapply(seq_len(NCOL(p_sub)), function(i)
-      min(unlist(p_sub['kl', i]))))
+    imin <- which.min(p_sub['kl', ])
     chosen <- c(chosen, notchosen[imin])
 
     ## append submodels
@@ -87,7 +86,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
   ## down to the least regularization also for model size nv_max)
   search <- glm_elnet(d_train$x, mu, family, lambda_min_ratio=opt$lambda_min_ratio, nlambda=opt$nlambda,
                       pmax=nv_max+1, pmax_strict=FALSE, offset=d_train$offset, weights=d_train$weights,
-                      intercept=intercept, obsvar=v, penalty=penalty, thresh=opt$thresh, lambda=opt$regul)
+                      intercept=intercept, obsvar=v, penalty=penalty, thresh=opt$thresh)
 
   ## sort the variables according to the order in which they enter the model in the L1-path
   entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1]) # na for those that did not enter
@@ -134,10 +133,10 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
 }
 
 search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
-  terms_ <- setdiff(split_formula(refmodel$formula), "1")
+  terms_ <- split_formula(refmodel$formula)
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
   spath <- search_L1_surrogate(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)
-  vind <- terms_[order(spath$vind)]
+  vind <- terms_[spath$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
     if (nv == 0) {
       formula <- make_formula(c("1"))

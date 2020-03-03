@@ -301,9 +301,11 @@ init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
   else
     loglik <- NULL
 
-  # this is a dummy definition for cvfun, but it will lead to standard cross-validation
-  # for datafit reference; see cv_varsel and get_kfold
-  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+  if (!proper_model) {
+    # this is a dummy definition for cvfun, but it will lead to standard cross-validation
+    # for datafit reference; see cv_varsel and get_kfold
+    cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+  }
 
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   if (is.null(offset))
