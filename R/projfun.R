@@ -22,7 +22,7 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
   pobs <- pseudo_data(0, mu, family, offset = refmodel$offset, weights = wobs)
 
   link <- function(f, wprev=NULL)
-    pseudo_data(f, mu, family, offset = refmodel$offset, weights = wprev)
+    pseudo_data(f, mu, family, offset = refmodel$offset, wprev = wprev)
   mle <- function(formula, data, weights)
     refmodel$mle(formula, data, weights = weights)
   linear_predict <- function(fit)
