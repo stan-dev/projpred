@@ -139,7 +139,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
   ## complex terms like "x + z + x:z"
   terms_ <- colnames(x)
   spath <- search_L1_surrogate(p_ref, list(refmodel, x = x[, -1]), family, intercept, nv_max, penalty, opt)
-  vind <- c("1", terms_[-1][spath$vind])
+  vind <- terms_[-1][spath$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
     if (nv == 0) {
       formula <- make_formula(c("1"))
