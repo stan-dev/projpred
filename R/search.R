@@ -138,8 +138,8 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
   ## splitting the formula is what we want, but l1 search cannot deal with
   ## complex terms like "x + z + x:z"
   terms_ <- colnames(x)
-  spath <- search_L1_surrogate(p_ref, list(refmodel, x = x), family, intercept=FALSE, nv_max, penalty, opt)
-  vind <- terms_[spath$vind]
+  spath <- search_L1_surrogate(p_ref, list(refmodel, x = x[, -1]), family, intercept, nv_max, penalty, opt)
+  vind <- c("1", terms_[-1][spath$vind])
   sub_fits <- lapply(0:nv_max, function(nv) {
     if (nv == 0) {
       formula <- make_formula(c("1"))
@@ -178,7 +178,7 @@ predict.subfit <- function(subfit, newdata=NULL) {
     ## in case of factors, model.matrix splits the factor as K columns, wher K
     ## is the number of levels. We have to split the factor in the newdata as well
     ## because the model finds a different coefficient for every contrast.
-    x <- model.matrix(subfit$ref_formula, newdata)
+    x <- model.matrix(subfit$formula, newdata)
     if (is.null(beta))
       return(x %*% as.matrix(alpha))
     else
