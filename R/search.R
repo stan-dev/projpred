@@ -175,10 +175,12 @@ predict.subfit <- function(subfit, newdata=NULL) {
     ## in case of factors, model.matrix splits the factor as K columns, wher K
     ## is the number of levels. We have to split the factor in the newdata as well
     ## because the model finds a different coefficient for every contrast.
-    newdata_split <- as.data.frame(model.matrix(update(subfit$ref_formula,
-                                                       ". ~ . -1"),
-                                                newdata))
-    x <- model.matrix(delete.response(terms(subfit$formula)), newdata_split)
+    newdata_split <- model.matrix(update(subfit$ref_formula,
+                                         ". ~ . -1"),
+                                  newdata)
+    tt <- extract_terms_response(subfit$formula)
+    vind <- c(tt$individual_terms, tt$interaction_terms)
+    x <- newdata_split[, vind]
     if (is.null(beta))
       return(x %*% as.matrix(alpha))
     else
