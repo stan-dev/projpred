@@ -145,8 +145,7 @@ test_that("output of proj_linpred is sensible with only data provided as referen
     # length of output of project is legit
     pred <- proj_linpred(vsd_list[[i]],
       xnew = data.frame(x=x), seed = seed,
-      offsetnew = offset, weightsnew = weights, nv = 3
-    )
+      offsetnew = offset, weightsnew = weights, nv = 3)
     expect_equal(length(pred$pred), nrow(x))
 
     pred <- proj_linpred(vsd_list[[i]],
