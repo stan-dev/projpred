@@ -152,7 +152,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
                 beta = beta,
                 w = spath$w[, nv + 1],
                 formula = formula,
-                ref_formula = formula,
+                ref_formula = refmodel$formula,
                 x = x)
     class(sub) <- "subfit"
     return(sub)
