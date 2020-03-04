@@ -135,28 +135,25 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
 
 search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
-  ## splitting the formula is what we want, but l1 search cannot deal with
-  ## complex terms like "x + z + x:z"
+  ## it's important to keep the original order because that's the order
+  ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
-  spath <- search_L1_surrogate(p_ref, list(refmodel, x = x[, -1]), family, intercept, nv_max, penalty, opt)
+  spath <- search_L1_surrogate(p_ref, list(refmodel, x = x[, -1]), family,
+                               intercept, nv_max, penalty, opt)
   vind <- terms_[spath$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
     if (nv == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
-      vind_local <- c("1")
     } else {
-      vind_local <- vind[seq_len(nv)]
-      formula <- make_formula(vind_local)
+      formula <- make_formula(vind[seq_len(nv)])
       beta <- spath$beta[seq_len(nv), nv + 1, drop = FALSE]
     }
     sub <- list(alpha = spath$alpha[nv + 1],
                 beta = beta,
                 w = spath$w[, nv + 1],
                 formula = formula,
-                ref_formula = refmodel$formula,
-                vind = vind_local,
                 x = x)
     class(sub) <- "subfit"
     return(sub)
@@ -176,9 +173,6 @@ predict.subfit <- function(subfit, newdata=NULL) {
     else
       return((x * w) %*% rbind(alpha, beta))
   } else {
-    ## in case of factors, model.matrix splits the factor as K columns, wher K
-    ## is the number of levels. We have to split the factor in the newdata as well
-    ## because the model finds a different coefficient for every contrast.
     x <- model.matrix(delete.response(terms(subfit$formula)), newdata)
     if (is.null(beta))
       return(x %*% as.matrix(alpha))
