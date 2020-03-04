@@ -36,8 +36,10 @@ if (require(rstanarm) && require(brms)) {
     fit_glmer <- brm(mpg ~ wt + (1|cyl), data = mtcars,
                      chains = chains, seed = seed, iter = iter)
   })
-  fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss,
-                   lm = fit_lm)
+  fit_list <- list(#gauss = fit_gauss,
+                   binom = fit_binom, poiss = fit_poiss
+                                        #lm = fit_lm
+    )
 
   formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
   vsf <- function(x, m) varsel(x, method = m, nv_max = nv + 1, verbose = FALSE)
@@ -156,7 +158,7 @@ if (require(rstanarm) && require(brms)) {
   })
 
   test_that("varsel: specifying penalties for variables has an expected effect", {
-    penalty <- rep(1,nv+1)
+    penalty <- rep(1,nv)
     ind_zeropen <- c(3,5) # a few variables without cost
     ind_infpen <- c(2) # one variable with infinite penalty, should be selected last
     penalty[ind_zeropen] <- 0

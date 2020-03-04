@@ -134,8 +134,8 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
 }
 
 search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
-  terms_ <- split_formula(refmodel$formula)
-  x <- model.matrix(refmodel$formula, refmodel$fetch_data())
+  terms_ <- setdiff(split_formula(refmodel$formula), "1")
+  x <- model.matrix(update(refmodel$formula, ". ~ . -1"), refmodel$fetch_data())
   spath <- search_L1_surrogate(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)
   vind <- terms_[spath$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
