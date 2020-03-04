@@ -18,7 +18,8 @@ if (require(brms)) {
   )
   
   # selection
-  SW(cvs <- cv_varsel(fit, verbose=F))
+  SW(cvs <- cv_varsel(fit, verbose=FALSE)
+     vs <- varsel(fit, verbose=FALSE))
   suggested_size <- suggest_size(cvs)
   
   # project onto some model size
@@ -27,7 +28,7 @@ if (require(brms)) {
   
   
   test_that('varsel/cv_varsel/project return objects with correct types', {
-    expect_true('vsel' %in% class(vs))
+    expect_true("vsel" %in% class(vs))
     expect_true('cvsel' %in% class(cvs))
     expect_true('projection' %in% class(proj))
   })
