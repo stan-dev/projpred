@@ -69,7 +69,7 @@ if (require(rstanarm) && require(brms)) {
         expect_s3_class(vs_list[[i]][[j]]$refmodel, 'refmodel')
         # vind seems legit
         expect_length(vs_list[[i]][[j]]$vind, nv)
-        expect_true(all(!is.na(match(names(coef(fit_gauss)[-1]),
+        expect_true(all(!is.na(match(colnames(fit_gauss$data[,-1]),
                                      vs_list[[i]][[j]]$vind))),
                     info = paste(i_inf, j_inf))
         # kl seems legit
@@ -221,7 +221,7 @@ if (require(rstanarm) && require(brms)) {
         expect_s3_class(cvs_list[[i]][[j]]$refmodel, 'refmodel')
         # vind seems legit
         expect_length(cvs_list[[i]][[j]]$vind, nv)
-        expect_true(all(!is.na(match(names(coef(fit_gauss)[-1]),
+        expect_true(all(!is.na(match(colnames(fit_gauss$data[, -1]),
                                      cvs_list[[i]][[j]]$vind))),
                     info = paste(i_inf, j_inf))
         # kl seems legit
@@ -300,7 +300,7 @@ if (require(rstanarm) && require(brms)) {
         j_inf <- names(cv_kf_list[[i]])[j]
         # vind seems legit
         expect_length(cv_kf_list[[i]][[j]]$vind, nv)
-        expect_true(all(!is.na(match(names(coef(fit_gauss)[-1]),
+        expect_true(all(!is.na(match(colnames(fit_gauss$data[, -1]),
                                      cv_kf_list[[i]][[j]]$vind))),
                     info = paste(i_inf, j_inf))
         # kl seems legit
