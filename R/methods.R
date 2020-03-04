@@ -510,7 +510,11 @@ as.matrix.projection <- function(x, ...) {
                    'clustering and the clusters might have different weights.'))
   }
   res <- t(x$sub_fit[[1]])
-  if (x$intercept) colnames(res) <- c('Intercept', x$vind)
+  if (x$intercept)
+    if ("1" %in% x$vind)
+      colnames(res) <- gsub("^1", "Intercept", x$vind)
+    else
+      colnames(res) <- c('Intercept', x$vind)
   if (x$family$family == 'gaussian') res <- cbind(res, sigma = x$dis)
   res
 }
