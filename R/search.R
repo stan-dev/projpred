@@ -144,6 +144,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
     if (nv == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
+      vind_local <- c("1")
     } else {
       vind_local <- vind[seq_len(nv)]
       formula <- make_formula(vind_local)
