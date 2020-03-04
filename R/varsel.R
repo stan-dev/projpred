@@ -188,6 +188,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   else
     method <- tolower(method)
 
+  if (!(method %in% c("l1", "forward")))
+    stop("Unknown search method")
+
   ## if (has_group_features)
   ##   ## if we are doing a grouped search we don't usually have that many groups
   ##   method <- 'forward'

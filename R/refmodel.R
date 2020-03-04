@@ -64,7 +64,7 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
   if ('datafit' %in% class(object))
     stop('Cannot make predictions with data reference only.')
   if (!is.null(ynew))
-    if (!(inherits(ynew, "numerical")) || NCOL(ynew) != 1)
+    if (!(inherits(ynew, "numeric")) || NCOL(ynew) != 1)
       stop("ynew must be a numerical vector")
 
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
@@ -78,7 +78,7 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
     if (type == 'link')
       pred <- mu
     else
-      pred <- object$family$linkinv(mu + offset)
+      pred <- object$family$linkinv(mu + offsetnew)
 
     ## integrate over the samples
     if (NCOL(pred) > 1)
