@@ -146,7 +146,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
       beta <- NULL
       vind_local <- c("(Intercept)")
     } else {
-      vind_local <- vind[seq_len(nv)]
+      vind_local <- c("(Intercept)", vind[seq_len(nv)])
       formula <- make_formula(vind_local)
       beta <- spath$beta[seq_len(nv), nv + 1, drop = FALSE]
     }
