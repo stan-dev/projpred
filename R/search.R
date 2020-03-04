@@ -144,8 +144,10 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
     if (nv == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
+      vind_local <- c("(Intercept)")
     } else {
-      formula <- make_formula(vind[seq_len(nv)])
+      vind_local <- vind[seq_len(nv)]
+      formula <- make_formula(vind_local)
       beta <- spath$beta[seq_len(nv), nv + 1, drop = FALSE]
     }
     sub <- list(alpha = spath$alpha[nv + 1],
@@ -153,6 +155,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
                 w = spath$w[, nv + 1],
                 formula = formula,
                 ref_formula = refmodel$formula,
+                vind = vind_local,
                 x = x)
     class(sub) <- "subfit"
     return(sub)
@@ -175,12 +178,9 @@ predict.subfit <- function(subfit, newdata=NULL) {
     ## in case of factors, model.matrix splits the factor as K columns, wher K
     ## is the number of levels. We have to split the factor in the newdata as well
     ## because the model finds a different coefficient for every contrast.
-    newdata_split <- model.matrix(update(subfit$ref_formula,
-                                         ". ~ . -1"),
+    newdata_split <- model.matrix(subfit$ref_formula,
                                   newdata)
-    tt <- extract_terms_response(subfit$formula)
-    vind <- c(tt$individual_terms, tt$interaction_terms)
-    x <- newdata_split[, vind]
+    x <- newdata_split[, subfit$vind]
     if (is.null(beta))
       return(x %*% as.matrix(alpha))
     else
