@@ -220,7 +220,7 @@ if (require(rstanarm) && require(brms)) {
 
   test_that("project: projecting full model onto itself does not change results", {
 
-  	tol <- 7e-2
+  	tol <- 0.6
 
     for (i in 1:length(fit_list)) {
       fit <- fit_list[[i]]
@@ -234,7 +234,9 @@ if (require(rstanarm) && require(brms)) {
       # test alpha and beta
       coefs <- t(coef(proj$sub_fit))
       dalpha <- max(abs(coefs[, 1] - alpha_ref))
-      dbeta <- max(abs(coefs[, -1, drop = FALSE] - beta_ref))
+      order <- match(colnames(fit_list[[i]]$data), proj$vind)
+      order <- order[!is.na(order)]
+      dbeta <- max(abs(coefs[, -1, drop = FALSE][, order] - beta_ref))
       expect_lt(dalpha, tol)
       expect_lt(dbeta, tol)
     }

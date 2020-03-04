@@ -25,15 +25,14 @@ if (require(rstanarm) && require(brms)) {
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
 
   SW({
-    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss, QR = T,
-                          weights = weights, offset = offset,
-                          chains = chains, seed = seed, iter = iter)
+    fit_gauss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss,
+                     chains = chains, seed = seed, iter = iter)
     fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
-                          data = df_binom, chains = chains, seed = seed, iter = iter)
+                     data = df_binom, chains = chains, seed = seed, iter = iter)
     fit_poiss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_poiss, data = df_poiss,
                      chains = chains, seed = seed, iter = iter)
-    fit_lm <- stan_lm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, data = df_gauss, weights = weights, offset = offset,
-                      prior = R2(0.3), chains = chains, seed = seed, iter = iter)
+    fit_lm <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, data = df_gauss,
+                  chains = chains, seed = seed, iter = iter)
     fit_glmer <- brm(mpg ~ wt + (1|cyl), data = mtcars,
                      chains = chains, seed = seed, iter = iter)
   })
@@ -162,7 +161,7 @@ if (require(rstanarm) && require(brms)) {
     ind_infpen <- c(2) # one variable with infinite penalty, should be selected last
     penalty[ind_zeropen] <- 0
     penalty[ind_infpen] <- Inf
-    vsf <- function(obj) varsel(obj, method = 'L1', nv_max = nv + 1, verbose = FALSE, penalty=penalty)
+    vsf <- function(obj) varsel(obj, method = 'L1', nv_max = nv, verbose = FALSE, penalty=penalty)
     vs_list_pen <- lapply(fit_list, vsf)
     for (i in seq_along(vs_list_pen)) {
       # check that the variables with no cost are selected first and the ones with
