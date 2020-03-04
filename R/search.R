@@ -152,6 +152,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
                 beta = beta,
                 w = spath$w[, nv + 1],
                 formula = formula,
+                ref_formula = formula,
                 x = x)
     class(sub) <- "subfit"
     return(sub)
@@ -171,7 +172,11 @@ predict.subfit <- function(subfit, newdata=NULL) {
     else
       return((x * w) %*% rbind(alpha, beta))
   } else {
-    x <- model.matrix(delete.response(terms(subfit$formula)), newdata)
+    ## in case of factors, model.matrix splits the factor as K columns, wher K
+    ## is the number of levels. We have to split the factor in the newdata as well
+    ## because the model finds a different coefficient for every contrast.
+    newdata_split <- model.matrix(update(subfit$ref_formula, ". ~ . -1"), newdata)
+    x <- model.matrix(delete.response(terms(subfit$formula)), newdata_split)
     if (is.null(beta))
       return(x %*% as.matrix(alpha))
     else
