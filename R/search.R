@@ -134,8 +134,10 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
 }
 
 search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
-  terms_ <- setdiff(split_formula(refmodel$formula), "1")
   x <- model.matrix(update(refmodel$formula, ". ~ . -1"), refmodel$fetch_data())
+  ## splitting the formula is what we want, but l1 search cannot deal with
+  ## complex terms like "x + z + x:z"
+  terms_ <- colnames(x)
   spath <- search_L1_surrogate(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)
   vind <- terms_[spath$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
