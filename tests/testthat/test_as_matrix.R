@@ -50,23 +50,16 @@ if (require(rstanarm) && require(brms)) {
 
   test_that("as.matrix.projection returns the relevant variables for binomial", {
     m <- as.matrix(p_binom)
-    expect_equal(colnames(m), names(fixef(fit_binom))[c(1, vind + 1)])
+    expect_equal(colnames(m), c("Intercept", vs_binom$vind[vind]))
     expect_equal(dim(m), c(ns, length(vind) + 1))
   })
 
-  ## test_that("as.matrix.projection works as expected without an intercept", {
-  ##   p_nointercept <- project(vs_gauss, vind = vind, ns = ns, intercept = FALSE)
-  ##   m <- as.matrix(p_nointercept)
-  ##   expect_equal(colnames(m), c(names(fixef(fit_gauss))[vind + 1], 'sigma'))
-  ##   expect_equal(dim(m), c(ns, length(vind) + 1))
-  ## })
-
-  ## test_that("as.matrix.projection works as expected with zero variables", {
-  ##   p_novars <- project(vs_gauss, nv = 0, ns = ns)
-  ##   m <- as.matrix(p_novars)
-  ##   expect_equal(colnames(m), c('Intercept', 'sigma' ))
-  ##   expect_equal(dim(m), c(ns, 2))
-  ## })
+  test_that("as.matrix.projection works as expected with zero variables", {
+    p_novars <- project(vs_gauss, nv = 0, ns = ns)
+    m <- as.matrix(p_novars)
+    expect_equal(colnames(m), c('Intercept', 'sigma' ))
+    expect_equal(dim(m), c(ns, 2))
+  })
 
   test_that("as.matrix.projection works with clustering", {
     nc <- 3
