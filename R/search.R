@@ -180,7 +180,7 @@ predict.subfit <- function(subfit, newdata=NULL) {
     ## because the model finds a different coefficient for every contrast.
     newdata_split <- model.matrix(subfit$ref_formula,
                                   newdata)
-    x <- newdata_split[, subfit$vind]
+    x <- newdata_split[, subfit$vind, drop = FALSE]
     if (is.null(beta))
       return(x %*% as.matrix(alpha))
     else
