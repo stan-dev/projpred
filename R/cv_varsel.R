@@ -109,7 +109,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
   if (verbose)
     print(paste('Performing the selection using all the data..'))
   sel <- varsel(refmodel, method=method, ns=ns, nc=nc, nspred=nspred,
-                    ncpred=ncpred, cv_search=cv_search, nv_max=nv_max, intercept=intercept,
+                    ncpred=ncpred, cv_search=cv_search, nv_max=nv_max - 1, intercept=intercept,
                     penalty=penalty, verbose=verbose,
                     lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul,
                     groups=groups)
@@ -133,7 +133,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
   ## create the object to be returned
   vs <- nlist(refmodel, spath=sel$spath, d_test=sel_cv$d_test,
               summaries=sel_cv$summaries, family=sel$family, kl=sel$kl,
-              vind=sel$vind, pctch, nv_max,
+              vind=sel$vind, pctch, nv_max=nv_max - 1,
               nv_all=count_terms_in_subformula(refmodel$formula))
   class(vs) <- "cvsel"
   vs$suggested_size <- suggest_size(vs,
@@ -241,9 +241,9 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_sear
   inds <- validset$inds
 
   ## initialize matrices where to store the results
-  vind_mat <- matrix(nrow=n, ncol=nv_max)
-  loo_sub <- matrix(nrow=n, ncol=nv_max + 1)
-  mu_sub <- matrix(nrow=n, ncol=nv_max + 1)
+  vind_mat <- matrix(nrow=n, ncol=nv_max - 1)
+  loo_sub <- matrix(nrow=n, ncol=nv_max)
+  mu_sub <- matrix(nrow=n, ncol=nv_max)
 
   if (verbose) {
     print('Computing LOOs...')
@@ -302,7 +302,7 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_sear
     close(pb)
 
   ## put all the results together in the form required by cv_varsel
-  summ_sub <-	lapply(0:nv_max, function(k)
+  summ_sub <-	lapply(0:(nv_max - 1), function(k)
     list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1], w=validset$w))
   summ_ref <- list(lppd=loo_ref, mu=mu_ref)
   summaries <- list(sub=summ_sub, ref=summ_ref)

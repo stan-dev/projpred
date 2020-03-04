@@ -242,8 +242,8 @@ if (require(rstanarm) && require(brms)) {
 
   test_that("project: works as expected from a cvsel object", {
     SW({
-    cvs <- cv_varsel(fit_binom, nv_max = 3 + 1, verbose = FALSE)
-    p <- project(cvs, nv=3)
+      cvs <- cv_varsel(fit_binom, nv_max = 3, verbose = FALSE)
+      p <- project(cvs, nv=3)
     })
     expect_length(p$vind, 3)
   })
