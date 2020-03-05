@@ -209,7 +209,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   }
   if (is.null(nspred) && is.null(ncpred))
     ## use 5 clusters for prediction by default
-    ncpred <- min(ncol(refmodel$mu), 5)
+    ncpred <- min(NCOL(refmodel$mu), 5)
 
   max_nv_possible <- count_terms_in_subformula(refmodel$formula)
   if(is.null(intercept))

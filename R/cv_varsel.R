@@ -346,6 +346,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
   ## List of K elements, each containing d_train, p_pred, etc. corresponding
   ## to each fold.
   make_list_cv <- function(refmodel, d_test, msg) {
+    ncpred <- min(refmodel$ncpred, ncpred)
     p_sel <- .get_refdist(refmodel, ns, nc)
     p_pred <- .get_refdist(refmodel, nspred, ncpred)
     newdata <- d_test$newdata
@@ -506,6 +507,7 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
                             offset = refmodel$offset[fold],
                             weights = refmodel$wobs[fold])
     refmod$fetch_data <- fetch_fold
+    refmod$ncpred <- min(NCOL(refmod$mu), 5)
     return(list(refmodel=refmod, omitted=cvfit$omitted))
   })
 

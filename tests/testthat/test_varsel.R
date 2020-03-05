@@ -36,8 +36,7 @@ if (require(rstanarm) && require(brms)) {
     fit_glmer <- brm(mpg ~ wt + (1|cyl), data = mtcars,
                      chains = chains, seed = seed, iter = iter)
   })
-  fit_list <- list(#gauss = fit_gauss,
-                   binom = fit_binom, poiss = fit_poiss
+  fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss
                                         #lm = fit_lm
     )
 
