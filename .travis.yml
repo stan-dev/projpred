@@ -4,7 +4,6 @@ cache: packages
 
 latex: true
 r_build_args: '--no-build-vignettes'
-r_check: travis_wait mvn r_check
 r_check_args: '--ignore-vignettes --no-examples'
 
 r_github_packages:
@@ -25,3 +24,8 @@ before_install:
 
 after_success:
 - Rscript -e 'covr::codecov()'
+
+script: 
+  - |
+    R CMD build .
+    travis_wait 20 R CMD check projpred*tar.gz
