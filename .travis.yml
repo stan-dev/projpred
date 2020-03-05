@@ -27,5 +27,5 @@ after_success:
 
 script: 
   - |
-    R CMD build .
-    travis_wait 20 R CMD check projpred*tar.gz
+    R CMD build . --no-build-vignettes
+    travis_wait 20 R CMD check projpred_*.tar.gz --ignore-vignettes --no-examples
