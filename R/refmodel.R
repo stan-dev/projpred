@@ -59,8 +59,13 @@ NULL
 predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
                              weightsnew = NULL, type = 'response', ...) {
 
+  if (!(type %in% c("response", "link")))
+    stop("type should be one of ('response', 'link')")
   if ('datafit' %in% class(object))
     stop('Cannot make predictions with data reference only.')
+  if (!is.null(ynew))
+    if (!(inherits(ynew, "numeric")) || NCOL(ynew) != 1)
+      stop("ynew must be a numerical vector")
 
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
@@ -73,7 +78,7 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
     if (type == 'link')
       pred <- mu
     else
-      pred <- object$family$linkinv(mu)
+      pred <- object$family$linkinv(mu + offsetnew)
 
     ## integrate over the samples
     if (NCOL(pred) > 1)
@@ -94,32 +99,33 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
 }
 
 #' @export
-get_refmodel_poc <- function(fit, ...) {
-  UseMethod("get_refmodel_poc", fit)
+get_refmodel <- function(fit, ...) {
+  UseMethod("get_refmodel", fit)
 }
 
 #' @export
-get_refmodel_poc.refmodel <- function(object, ...) {
+get_refmodel.refmodel <- function(object, ...) {
   ## if the object is reference model already, then simply return it as is
   object
 }
 
 #' @export
-get_refmodel_poc.vsel <- function(object, ...) {
+get_refmodel.vsel <- function(object, ...) {
   ## the reference model is stored in vsel-object
   object$refmodel
 }
 
 #' @export
-get_refmodel_poc.cvsel <- function(object, ...) {
+get_refmodel.cvsel <- function(object, ...) {
   ## the reference model is stored in cvsel object
   object$refmodel
 }
 
 #' @export
-get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfun,
+get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
                                      mle, fetch_data, family=NULL, wobs=NULL,
-                                     folds=NULL, cvfits=NULL, penalized=FALSE) {
+                                     folds=NULL, cvfits=NULL, penalized=FALSE,
+                                     offest=NULL, cvfun=NULL) {
   fetch_data_wrapper <- function(obs=folds, newdata=NULL)
     fetch_data(data, obs, newdata)
 
@@ -128,20 +134,15 @@ get_refmodel_poc.default <- function(fit, data, y, formula, predfun, proj_predfu
   else
     family <- extend_family(family)
 
-  family$mu_fun <- function(fit, obs=folds, xnew=NULL) {
-    newdata <- fetch_data_wrapper(obs=obs, newdata=xnew)
-    family$linkinv(proj_predfun(fit, newdata=newdata))
-  }
-
-  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
-                                proj_predfun, fetch_data, fetch_data_wrapper,
-                                penalized=penalized)
-  refmodel$folds <- folds
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
+                                proj_predfun, penalized=penalized, weights=wobs,
+                                offset=offset, cvfits=cvfits, folds=folds,
+                                cvfun=cvfun)
   return(refmodel)
 }
 
 #' export
-get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
+get_refmodel.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
                                      predfun=NULL, proj_predfun=NULL, mle=NULL,
                                      folds=NULL, ...) {
   family_name <- family(fit)$family
@@ -180,13 +181,13 @@ get_refmodel_poc.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
   }
 
   ## TODO: return y, weights and offset as right hand side formulas
-  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
-                                proj_predfun, folds, weights=weights)
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
+                            proj_predfun, folds, weights=weights, ...)
   return(refmodel)
 }
 
 #' @export
-get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
+get_refmodel.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
                                      predfun=NULL, proj_predfun=NULL, mle=NULL,
                                      folds=NULL, penalized=FALSE, ...) {
   family <- family(fit)
@@ -202,19 +203,19 @@ get_refmodel_poc.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
   if (is.null(y))
     y <- fit$data[, colnames(fit$data) == response_name]
 
-  refmodel <- init_refmodel_poc(fit, data, y, formula, family, predfun, mle,
-                                proj_predfun, folds, penalized)
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
+                            proj_predfun, folds, penalized, ...)
   return(refmodel)
 }
 
 #' @export
-init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
-                              proj_predfun, folds, penalized=FALSE, weights=NULL,
-                              offset=NULL) {
+init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
+                          proj_predfun=NULL, folds=NULL, penalized=FALSE,
+                          weights=NULL, offset=NULL, cvfun=NULL, cvfits=NULL, ...) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun))
     predfun <- function(fit, newdata=NULL)
-      t(posterior_linpred(fit, transform=FALSE, newdata=newdata))
+      t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
 
   if (is.null(mle) && is.null(proj_predfun))
     if (length(terms$group_terms) != 0) {
@@ -249,27 +250,49 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
   fetch_data_wrapper <- function(obs=folds, newdata=NULL)
     as.data.frame(fetch_data(data, obs, newdata))
 
+  if (!.has_family_extras (family))
+    family <- extend_family(family)
+
   ## TODO: ideally remove this, have to think about it
-  family$mu_fun <- function(fit, obs=folds, xnew=NULL) {
-    newdata <- fetch_data_wrapper(obs=obs, newdata=xnew)
-    family$linkinv(proj_predfun(fit, newdata=newdata))
+  family$mu_fun <- function(fit, obs=folds, xnew=NULL, offset=NULL) {
+    if (is.null(offset))
+      offset <- rep(0, length(obs))
+    newdata <- fetch_data_wrapper(obs = obs, newdata = xnew)
+    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
   }
+
+  proper_model <- !is.null(fit)
 
   ## predfun should already take into account the family of the model
   ## we leave this here just in case
-  mu <- predfun(fit)
-  mu <- unname(as.matrix(mu))
-  mu <- family$linkinv(mu)
+  if (proper_model) {
+    mu <- predfun(fit)
+    mu <- unname(as.matrix(mu))
+    mu <- family$linkinv(mu)
+  } else {
+    mu <- matrix(y, NROW(y), 1)
+		predfun_datafit <- function(fit=NULL, newdata=NULL, offset = 0) {
+      if (is.null(fit))
+        if (is.null(newdata))
+          matrix(rep(NA, NROW(y)))
+        else
+          matrix(rep(NA, NROW(newdata)))
+      else
+        family$linkinv(predfun(fit, newdata))
+    }
+  }
 
   ndraws <- ncol(mu)
 
-  ## TODO: eventually this will be a function provided by the user
   dis <- rep(0, ndraws)
-  tryCatch ({
-    dis <- as.data.frame(fit)[["sigma"]] %ORifNULL% rep(0, ndraws)
-  }, error = function(e) e
-  )
-
+  if (proper_model) {
+    ## TODO: eventually this will be a function provided by the user
+    tryCatch({
+        dis <- as.data.frame(fit)$sigma %ORifNULL% rep(0, ndraws)
+      },
+      error = function(e) e
+    )
+  }
   target <- .get_standard_y(y, weights, family)
   y <- target$y
 
@@ -277,18 +300,31 @@ init_refmodel_poc <- function(fit, data, y, formula, family, predfun, mle,
   if (is.null(weights)) {
     weights <- rep(1, length(y))
   }
-  loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
 
-	wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
+  if (proper_model)
+    loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
+  else
+    loglik <- NULL
+
+  # this is a dummy definition for cvfun, but it will lead to standard cross-validation
+  # for datafit reference; see cv_varsel and get_kfold
+  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+
+  wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   if (is.null(offset))
     offset <- rep(0, NROW(y))
 
   intercept <- as.logical(attr(terms(formula), 'intercept'))
-  refmodel <- list(fit=fit, formula=formula, predfun=predfun, mle=mle,
-                   family=family, mu=mu, dis=dis, y=y, loglik=loglik,
-                   intercept=intercept, proj_predfun=proj_predfun,
-                   fetch_data=fetch_data_wrapper, wobs=weights,
-                   wsample=wsample, offset=offset, folds=folds)
-  class(refmodel) <- "refmodel"
+  refmodel <- nlist(fit, formula, mle, family, mu, dis, y, loglik,
+                    intercept, proj_predfun, fetch_data=fetch_data_wrapper,
+                    wobs=weights, wsample, offset, folds, cvfun, cvfits)
+  if (proper_model) {
+    refmodel$predfun <- predfun
+    class(refmodel) <- "refmodel"
+  } else {
+    refmodel$predfun <- predfun_datafit
+    class(refmodel) <- c("datafit", "refmodel")
+  }
+
   return(refmodel)
 }

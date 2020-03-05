@@ -53,17 +53,17 @@
 #'
 
 #' @export
-cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
+cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
                           ns = NULL, nc = NULL, nspred = NULL, ncpred = NULL, cv_search=FALSE,
                           nv_max = NULL, intercept = NULL, penalty = NULL, verbose = TRUE,
                           nloo=NULL, K = NULL, lambda_min_ratio=1e-5, nlambda=150,
                           thresh=1e-6, regul=1e-4, validate_search=TRUE, seed=NULL,
                           groups=NULL, ...) {
 
-  refmodel <- get_refmodel_poc(fit, ...)
+  refmodel <- get_refmodel(fit, ...)
 
   ## resolve the arguments similar to varsel
-  args <- parse_args_varsel_poc(refmodel=refmodel, method=method, cv_search=cv_search,
+  args <- parse_args_varsel(refmodel=refmodel, method=method, cv_search=cv_search,
                                 intercept=intercept, nv_max=nv_max, nc=nc, ns=ns,
                                 ncpred=ncpred, nspred=nspred, groups=groups)
   method <- args$method
@@ -75,26 +75,28 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   ncpred <- args$ncpred
   nspred <- args$nspred
   groups <- args$groups
-  has_group_features <- !is.null(groups)
+  has_group_features <- formula_contains_group_terms(refmodel$formula)
 
   ## arguments specific to this function
-  args <- parse_args_cv_varsel(refmodel, cv_method, K)
+  args <- parse_args_cv_varsel(refmodel, cv_method, K, nc, ncpred)
   cv_method <- args$cv_method
   K <- args$K
+  nc <- args$nc
+  ncpred <- args$ncpred
 
   ## search options
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
   if (cv_method == 'loo')  {
     if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
-    sel_cv <- loo_varsel_poc(refmodel=refmodel, method=method, nv_max=nv_max,
+    sel_cv <- loo_varsel(refmodel=refmodel, method=method, nv_max=nv_max,
                              ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
                              cv_search=cv_search, intercept=intercept, penalty=penalty,
                              verbose=verbose, opt=opt, nloo=nloo,
                              validate_search=validate_search, seed=seed,
                              groups=groups)
   } else if (cv_method == 'kfold')  {
-    sel_cv <- kfold_varsel_poc(refmodel=refmodel, method=method, nv_max=nv_max,
+    sel_cv <- kfold_varsel(refmodel=refmodel, method=method, nv_max=nv_max,
                                ns=ns, nc=nc, nspred=nspred, ncpred=ncpred,
                                cv_search=cv_search, intercept=intercept,
                                penalty=penalty, verbose=verbose, opt=opt, K=K,
@@ -106,8 +108,8 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   ## run the selection using the full dataset
   if (verbose)
     print(paste('Performing the selection using all the data..'))
-  sel <- varsel_poc(refmodel, method=method, ns=ns, nc=nc, nspred=nspred,
-                    ncpred=ncpred, cv_search=cv_search, nv_max=nv_max, intercept=intercept,
+  sel <- varsel(refmodel, method=method, ns=ns, nc=nc, nspred=nspred,
+                    ncpred=ncpred, cv_search=cv_search, nv_max=nv_max - 1, intercept=intercept,
                     penalty=penalty, verbose=verbose,
                     lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, regul=regul,
                     groups=groups)
@@ -117,6 +119,7 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
   ## the same variables as the selection with all the data.
   ch <- as.matrix(unname(as.data.frame(sel_cv$vind_cv)))
   ## these weights might be non-constant in case of subsampling LOO
+  w <- sel_cv$summaries$sub[[1]]$w
   selvind <- sel$vind
   ## if weights are not set, then all validation folds have equal weight
   vars <- unlist(selvind)
@@ -129,14 +132,14 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
 
   ## create the object to be returned
   vs <- nlist(refmodel, spath=sel$spath, d_test=sel_cv$d_test,
-              summaries=sel_cv$summaries, family_kl=sel$family_kl, kl=sel$kl,
-              vind=sel$vind, pctch, nv_max,
-              nv_all=count_terms_in_subformula(refmodel$formula),
-              suggested_size=suggest_size(vs, warnings=FALSE,
-                                          has_group_features=has_group_features,
-                                          groups=groups))
-  class(vs) <- 'cvsel'
-
+              summaries=sel_cv$summaries, family=sel$family, kl=sel$kl,
+              vind=sel$vind, pctch, nv_max=nv_max - 1,
+              nv_all=count_terms_in_subformula(refmodel$formula))
+  class(vs) <- "cvsel"
+  vs$suggested_size <- suggest_size(vs,
+    warnings = FALSE,
+    has_group_features = has_group_features,
+    groups = groups)
   if (verbose)
     print('Done.')
 
@@ -148,29 +151,45 @@ cv_varsel_poc <- function(fit,  method = NULL, cv_method = NULL,
 #' This is similar in spirit to parse_args_varsel, that is, to avoid the main function to become
 #' too long and complicated to maintain.
 #'
-#' @param refmodel Reference model as extracted by get_refmodel_poc
+#' @param refmodel Reference model as extracted by get_refmodel
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.
 #' @param K Number of folds in the k-fold cross validation. Default is 5 for genuine
 #' reference models and 10 for datafits (that is, for penalized maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL) {
+parse_args_cv_varsel <- function(refmodel, cv_method=NULL, K=NULL, nc=NULL, ncpred=NULL) {
   if (is.null(cv_method)) {
     if (inherits(refmodel, "datafit"))
       ## only data given, no actual reference model
       cv_method <- 'kfold'
     else
       cv_method <- 'loo'
-  } else if (tolower(cv_method) == 'kfold' && is.null(K)) {
-    if (inherits(refmodel, "datafit"))
+  }
+
+  if (!is.null(K)) {
+    if (length(K) > 1 || !(is.numeric(K)) || !(K == round(K))) {
+      stop("K must be a single integer value")
+    }
+    if (K < 2) {
+      stop("K must be at least 2")
+    }
+    if (K > NROW(refmodel$y)) {
+      stop("K cannot exceed n")
+    }
+  }
+
+  if (tolower(cv_method) == 'kfold' || is.null(K)) {
+    if (inherits(refmodel, "datafit")) {
       K <- 10
-    else
+      ncpred <- 1
+      nc <- 1
+    } else
       K <- 5
   }
 
   cv_method <- tolower(cv_method)
-  nlist(cv_method, K)
+  return(nlist(cv_method, K, nc, ncpred))
 }
 
-loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept,
+loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search, intercept,
                            penalty, verbose, opt, nloo = NULL, validate_search = TRUE, seed = NULL,
                            groups=NULL) {
   ##
@@ -179,7 +198,6 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
   ## fold (for each data point)
   ##
 
-  has_group_features <- !is.null(groups)
   family <- refmodel$family
   mu <- refmodel$mu
   dis <- refmodel$dis
@@ -208,6 +226,10 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
   ## by default use all observations
   nloo <- min(nloo,n)
 
+  if (nloo < 0) {
+    stop("nloo must be at least 1")
+  }
+
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
   mu_ref <- rep(0,n)
@@ -219,9 +241,9 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
   inds <- validset$inds
 
   ## initialize matrices where to store the results
-  vind_mat <- matrix(nrow=n, ncol=nv_max)
-  loo_sub <- matrix(nrow=n, ncol=nv_max+1)
-  mu_sub <- matrix(nrow=n, ncol=nv_max+1)
+  vind_mat <- matrix(nrow=n, ncol=nv_max - 1)
+  loo_sub <- matrix(nrow=n, ncol=nv_max)
+  mu_sub <- matrix(nrow=n, ncol=nv_max)
 
   if (verbose) {
     print('Computing LOOs...')
@@ -231,7 +253,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
   if (!validate_search) {
     ## perform selection only once using all the data (not separately for each fold),
     ## and perform the projection then for each submodel size
-    spath <- select_poc(method=method, p_sel=p_sel, refmodel=refmodel, family=family,
+    spath <- select(method=method, p_sel=p_sel, refmodel=refmodel, family=family,
                         intercept=intercept, nv_max=nv_max, penalty=penalty,
                         verbose=FALSE, opt=opt, groups=groups)
     vind <- spath$vind
@@ -248,7 +270,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
 
     if (validate_search) {
       ## perform selection with the reweighted clusters/samples
-      spath <- select_poc(method=method, p_sel=p_sel, refmodel=refmodel,
+      spath <- select(method=method, p_sel=p_sel, refmodel=refmodel,
                           family=family, intercept=intercept, nv_max=nv_max,
                           penalty=penalty, verbose=FALSE, opt=opt,
                           groups=groups)
@@ -256,9 +278,9 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
     }
 
     ## project onto the selected models and compute the prediction accuracy for the left-out point
-    submodels <- .get_submodels_poc(spath, c(0, seq_along(vind)), family, p_pred,
+    submodels <- .get_submodels(spath, c(0, seq_along(vind)), family, p_pred,
                                     refmodel, intercept, opt$regul, cv_search=cv_search)
-    summaries_sub <- .get_sub_summaries_poc(submodels, c(i), refmodel, family)
+    summaries_sub <- .get_sub_summaries(submodels, c(i), refmodel, family)
 
     for (k in seq_along(summaries_sub)) {
       loo_sub[i,k] <- summaries_sub[[k]]$lppd
@@ -280,7 +302,7 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
     close(pb)
 
   ## put all the results together in the form required by cv_varsel
-  summ_sub <-	lapply(0:nv_max, function(k)
+  summ_sub <-	lapply(0:(nv_max - 1), function(k)
     list(lppd=loo_sub[,k+1], mu=mu_sub[,k+1], w=validset$w))
   summ_ref <- list(lppd=loo_ref, mu=mu_ref)
   summaries <- list(sub=summ_sub, ref=summ_ref)
@@ -294,37 +316,49 @@ loo_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_
 
 }
 
-kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search,
+kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_search,
                              intercept, penalty, verbose, opt, K, seed=NULL, groups=NULL) {
 
-  has_group_features <- !is.null(groups)
   ## fetch the k_fold list (or compute it now if not already computed)
-  k_fold <- .get_kfold_poc(refmodel, K, verbose, seed)
+  k_fold <- .get_kfold(refmodel, K, verbose, seed)
 
   ## check that k_fold has the correct form
   ## .validate_kfold(refmodel, k_fold, refmodel$nobs)
 
-  K <- length(k_fold$refmodel)
-  family_kl <- refmodel$family
+  K <- length(k_fold)
+  family <- refmodel$family
 
   ## extract variables from each fit-object (samples, x, y, etc.)
   ## to a list of size K
-  refmodels_cv <- k_fold$refmodel
+  refmodels_cv <- lapply(k_fold, function(fold) fold$refmodel)
+
+  # List of size K with test data for each fold
+  d_test_cv <- lapply(k_fold, function(fold) {
+    list(
+      newdata = refmodel$fetch_data(obs=fold$omitted),
+      y = refmodel$y[fold$omitted],
+      weights = refmodel$wobs[fold$omitted],
+      offset = refmodel$offset[fold$omitted],
+      omitted = fold$omitted
+    )
+  })
 
   ## List of K elements, each containing d_train, p_pred, etc. corresponding
   ## to each fold.
-  make_list_cv <- function(refmodel, test_points, msg) {
+  make_list_cv <- function(refmodel, d_test, msg) {
+    ncpred <- min(refmodel$ncpred, ncpred)
     p_sel <- .get_refdist(refmodel, ns, nc)
     p_pred <- .get_refdist(refmodel, nspred, ncpred)
-    newdata <- refmodel$fetch_data(obs=test_points)
-    mu_test <- refmodel$predfun(refmodel$fit, newdata=newdata)
+    newdata <- d_test$newdata
+    pred <- matrix(as.numeric(refmodel$predfun(refmodel$fit, newdata=newdata)),
+                   NROW(newdata), NCOL(refmodel$y))
+    mu_test <- family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test, dis = refmodel$dis,
-          w_test = refmodel$wsample, msg, y_test = refmodel$y[test_points],
-          test_points)
+          w_test = refmodel$wsample, d_test, msg)
   }
 
   msgs <- paste0(method, ' search for fold ', 1:K, '/', K, '.')
-  list_cv <- mapply(make_list_cv, refmodels_cv, k_fold$test_points, msgs,
+  list_cv <- mapply(make_list_cv, refmodels_cv, d_test_cv, msgs,
                     SIMPLIFY = FALSE)
 
   ## Perform the selection for each of the K folds
@@ -334,8 +368,8 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
   }
   spath_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
-    family_kl <- fold$refmodel$family
-    out <- select_poc(method, fold$p_sel, fold$refmodel, family_kl, intercept,
+    family <- fold$refmodel$family
+    out <- select(method, fold$p_sel, fold$refmodel, family, intercept,
                       nv_max, penalty, verbose, opt, groups=groups)
     if (verbose)
       utils::setTxtProgressBar(pb, fold_index)
@@ -354,9 +388,9 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
 
   get_submodels_cv <- function(spath, fold_index) {
     fold <- list_cv[[fold_index]]
-    family_kl <- fold$refmodel$family
+    family <- fold$refmodel$family
     vind <- spath$vind
-    p_sub <- .get_submodels_poc(spath, c(0, seq_along(vind)), family_kl,
+    p_sub <- .get_submodels(spath, c(0, seq_along(vind)), family,
                                 fold$p_pred, fold$refmodel, intercept,
                                 opt$regul, cv_search=cv_search)
     if (verbose && cv_search)
@@ -377,66 +411,106 @@ kfold_varsel_poc <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, c
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
   get_summaries_submodel_cv <- function(p_sub, fold) {
-    family_kl <- fold$refmodel$family
-    lapply(.get_sub_summaries_poc(p_sub, fold$test_points, fold$refmodel,
-                                  family_kl),
+    ## family <- fold$refmodel$family
+    lapply(.get_sub_summaries(p_sub, fold$d_test$omitted, refmodel, family),
            data.frame)
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, hf)
 
   ref <- hf(lapply(list_cv, function(fold) {
-    family_kl <- fold$refmodel$family
-    test <- fold$test_points
-    d <- list(y=fold$y_test)
-    data.frame(.weighted_summary_means_poc(d, family_kl, fold$mu_test,
-                                           fold$dis))}))
+    ## family <- fold$refmodel$family
+    data.frame(.weighted_summary_means(fold$d_test, family, fold$d_test$w,
+                                       fold$mu_test, fold$refmodel$dis))
+  }))
 
   ## Combine also the K separate test data sets into one list
   ## with n y's and weights's.
-  d_cv <- hf(lapply(list_cv, function(fold) {
-    test <- fold$test_points
-    data.frame(y=fold$y_test)}))
+  d_cv <- hf(lapply(d_test_cv, function(fold) {
+    data.frame(y = fold$y, weights = fold$weights)
+  }))
 
-  list(vind_cv = vind_cv,
-       summaries = list(sub = sub, ref = ref),
-       d_test = c(d_cv, type = 'kfold'))
+  return(nlist(vind_cv,
+               summaries = list(sub = sub, ref = ref),
+               d_test = c(d_cv, type = "kfold")))
 }
 
 
-.get_kfold_poc <- function(refmodel, K, verbose, seed) {
-  ## Fetch the k_fold list or compute it now if not already computed. This function will
-  ## return a list of length K, where each element is a list with fields 'refmodel' (object
-  ## of type refmodel computed by init_refmodel) and index list 'test_points' that denotes which
-  ## of the data points were left out for the corresponding fold.
+.get_kfold <- function(refmodel, K, verbose, seed) {
+  ## Fetch the k_fold list or compute it now if not already computed. This
+  ## function will return a list of length K, where each element is a list
+  ## with fields 'refmodel' (object of type refmodel computed by init_refmodel)
+  ## and index list 'test_points' that denotes which of the data points were
+  ## left out for the corresponding fold.
 
-  ## TODO: pass cvfits for refmodel so that each fold has a different fit with
-  ## the proper subset of the data
-  indices <- seq_along(refmodel$y)
-  test_points <- split(indices, sort(rank(indices) %% K) + 1)
-  train_points <- lapply(test_points, function(test) setdiff(indices, test))
+  if (is.null(refmodel$cvfits)) {
+    if (!is.null(refmodel$cvfun)) {
+      # cv-function provided so perform the cross-validation now. In case refmodel
+      # is datafit, cvfun will return an empty list and this will lead to normal cross-validation
+      # for the submodels although we don't have an actual reference model
+      if (verbose && !("datafit" %in% class(refmodel))) {
+        print("Performing cross-validation for the reference model..")
+      }
+      nobs <- NROW(refmodel$y)
+      folds <- cvfolds(nobs, k = K, seed = seed)
+      cvfits <- refmodel$cvfun(folds)
+      cvfits <- lapply(seq_along(cvfits), function(k) {
+        # add the 'omitted' indices for the cvfits
+        cvfit <- cvfits[[k]]
+        cvfit$omitted <- which(folds == k)
+        cvfit
+      })
+    } else {
+      ## genuine probabilistic model but no k-fold fits nor cvfun provided, so raise an error
+      stop(
+        "For a generic reference model, you must provide either cvfits or",
+        "cvfun for k-fold cross-validation. See function init_refmodel."
+      )
+    }
+  } else {
+    cvfits <- refmodel$cvfits
+    K <- attr(cvfits, "K")
+    folds <- attr(cvfits, "folds")
+    cvfits <- lapply(seq_len(K), function(k) {
+      cvfit <- cvfits$fits[[k]]
+      obs <- seq_len(NROW(cvfits$data))
+      cvfit$omitted <- obs[folds != k]
+      cvfit
+    })
+  }
 
-  if (is.null(refmodel$cvfits))
-    stop("You need to provide cvfits!")
+  train <- seq_along(refmodel$y)
 
-  refmodels <- lapply(1:K, function(i) {
-    test <- test_points[[i]]
-    train <- train_points[[i]]
-    default_data <- refmodel$fetch_data(obs=train)
-    predfun <- function(fit, newdata=default_data)
-      refmodel$predfun(fit, newdata=newdata)
-    proj_predfun <- function(fit, newdata=default_data)
-      refmodel$proj_predfun(fit, newdata=newdata)
-    refmod <- get_refmodel_poc(refmodel$cvfits[[i]],
-                               fetch_data(data=refmodel$fetch_data()),
-                               refmodel$y, refmodel$formula, predfun,
-                               proj_predfun, refmodel$mle, fetch_data,
-                               family=refmodel$family,
-                               folds=train)
-    refmod
+  k_fold <- lapply(cvfits, function(cvfit) {
+    fold <- setdiff(
+      train,
+      cvfit$omitted
+    )
+    default_data <- refmodel$fetch_data(obs=fold)
+    fetch_fold <- function(data=NULL, obs=NULL, newdata=NULL) {
+      refmodel$fetch_data(obs = fold, newdata = newdata)
+    }
+    predfun <- function(fit, newdata = default_data) {
+      refmodel$predfun(fit, newdata = newdata)
+    }
+    proj_predfun <- function(fit, newdata = default_data) {
+      refmodel$proj_predfun(fit, newdata = newdata)
+    }
+    if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg"))
+      fit <- NULL
+    else
+      fit <- cvfit
+    refmod <- init_refmodel(fit, fetch_fold(),
+                            refmodel$y[fold], refmodel$formula,
+                            family = refmodel$family, predfun, mle = refmodel$mle,
+                            proj_predfun = proj_predfun, folds = seq_along(fold),
+                            offset = refmodel$offset[fold],
+                            weights = refmodel$wobs[fold])
+    refmod$fetch_data <- fetch_fold
+    refmod$ncpred <- min(NCOL(refmod$mu), 5)
+    return(list(refmodel=refmod, omitted=cvfit$omitted))
   })
 
-  k_fold <- list(refmodel=refmodels, test_points=test_points, train_points=train_points)
   return(k_fold)
 }
 

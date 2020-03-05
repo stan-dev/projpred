@@ -1,8 +1,8 @@
-search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
+search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
                                verbose=TRUE, opt, groups=NULL, increasing_order=TRUE) {
   ## initialize the forward selection
   ## proj performs the projection over draws
-  projfun <- .get_proj_handle_poc(family_kl, opt$regul)
+  projfun <- .get_proj_handle(family, opt$regul)
 
   formula <- refmodel$formula
   iq <- ceiling(quantile(1:nv_max, 1:10/10))
@@ -57,7 +57,8 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
 
     p_sub <- sapply(cands, projfun, p_ref, refmodel, intercept)
 
-    imin <- which.min(p_sub['kl', ])
+    imin <- which.min(sapply(seq_len(NCOL(p_sub)), function(i)
+      min(unlist(p_sub['kl', i]))))
     chosen <- c(chosen, notchosen[imin])
 
     ## append submodels
@@ -68,11 +69,11 @@ search_forward_poc <- function(p_ref, refmodel, family_kl, intercept, nv_max,
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
-  list(vind = reduce_models(chosen), sub_fits = submodels)
+  list(vind = setdiff(reduce_models(chosen), "1"), sub_fits = submodels)
 }
 
 #' copied over from search until we resolve the TODO below
-search_L1 <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
+search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
 
   ## predictive mean and variance of the reference model (with parameters integrated out)
   mu <- p_ref$mu
@@ -132,23 +133,32 @@ search_L1 <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
   return(out)
 }
 
-search_L1_poc <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
-  terms_ <- split_formula(refmodel$formula)
+search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
-  spath <- search_L1(p_ref, list(refmodel, x = x), family, intercept, nv_max, penalty, opt)
-  ## TODO: check this? can we reduce the above line and this one to a single thing?
-  ## extract the path from glmnet
-  ## sub_fit <- glmnet::glmnet(x, p_ref$mu, family, intercept = intercept, dfmax = nv_max, lambda = penalty)
-  sub_fits <- lapply(seq_len(nv_max), function(nv) {
+  ## it's important to keep the original order because that's the order
+  ## in which lasso will estimate the parameters
+  tt <- terms(refmodel$formula)
+  terms_ <- attr(tt, "term.labels")
+  spath <- search_L1_surrogate(p_ref, list(refmodel, x = x[, -1]), family,
+                               intercept, nv_max, penalty, opt)
+  vind <- terms_[spath$vind]
+  sub_fits <- lapply(0:nv_max, function(nv) {
+    if (nv == 0) {
+      formula <- make_formula(c("1"))
+      beta <- NULL
+    } else {
+      formula <- make_formula(vind[seq_len(nv)])
+      beta <- spath$beta[seq_len(nv), nv + 1, drop = FALSE]
+    }
     sub <- list(alpha = spath$alpha[nv + 1],
-                beta = spath$beta[, nv  + 1, drop = FALSE],
+                beta = beta,
                 w = spath$w[, nv + 1],
-                formula = refmodel$formula,
+                formula = formula,
                 x = x)
     class(sub) <- "subfit"
     return(sub)
   })
-  return(list(vind = terms_[spath$vind - 1], sub_fits = sub_fits))
+  return(nlist(vind, sub_fits))
 }
 
 ## FIXME: find a way that allows us to remove this
@@ -157,10 +167,16 @@ predict.subfit <- function(subfit, newdata=NULL) {
   alpha <- subfit$alpha
   x <- subfit$x
   w <- subfit$w
-  if (is.null(newdata))
-    return((x * w) %*% rbind(alpha, beta))
-  else {
-    x <- model.matrix(subfit$formula, newdata)
-    return(x %*% rbind(alpha, beta))
+  if (is.null(newdata)) {
+    if (is.null(beta))
+      return((x * w) %*% as.matrix(alpha))
+    else
+      return((x * w) %*% rbind(alpha, beta))
+  } else {
+    x <- model.matrix(delete.response(terms(subfit$formula)), newdata)
+    if (is.null(beta))
+      return(x %*% as.matrix(alpha))
+    else
+      return(x %*% rbind(alpha, beta))
   }
 }

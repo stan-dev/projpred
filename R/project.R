@@ -36,7 +36,7 @@
 ##'  \item{\code{beta}}{Draws from the projected weight vector.}
 ##'  \item{\code{vind}}{The order in which the variables were added to the submodel.}
 ##'  \item{\code{intercept}}{Whether or not the model contains an intercept.}
-##'  \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
+##'  \item{\code{family}}{A modified \code{\link{family}}-object.}
 ##' }
 ##'
 ##'
@@ -55,19 +55,22 @@
 ##'
 
 ##' @export
-project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, nc = NULL,
+project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, nc = NULL,
                         intercept = NULL, seed = NULL, regul=1e-4, ...) {
 
   if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) && is.null(vind) )
     stop(paste('The given object is not a variable selection -object.',
                'Run the variable selection first, or provide the variable indices (vind).'))
 
-  refmodel <- get_refmodel_poc(object)
+  refmodel <- get_refmodel(object)
 
   if (cv_search) {
     ## use non-cv_searched solution for datafits by default
     cv_search <- !inherits(refmodel, "datafit")
   }
+
+  if (inherits(refmodel, "datafit"))
+    ns <- nc <- 1
 
   if (!is.null(vind) &&
       any(object$vind[1:length(vind)] != vind)) {
@@ -79,11 +82,10 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
 
   if (!is.null(vind)) {
     ## if vind is given, nv is ignored (project only onto the given submodel)
-    vind <- object$vind[vind]
-    if (length(vind) > count_terms_chosen(vind))
-      nv <- count_terms_chosen(vind)
-    else
-      nv <- length(vind)
+    if (max(vind) > length(object$vind))
+      stop("vind contains an index larger than the number of variables in the model.")
+    vind <- c(object$vind[vind])
+    nv <- length(vind)
   } else {
     ## by default take the variable ordering from the selection
     vind <- object$vind
@@ -104,24 +106,40 @@ project_poc <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 4
     }
   }
 
-  if (is.null(nc))
+  if (is.null(ns))
     ns <- min(ns, NCOL(refmodel$mu))
+  else {
+    if (ns > NCOL(refmodel$mu))
+      stop("number of samples exceed the number of columns in the reference model's posterior.")
+    if (is.null(nc))
+      nc <- ns
+  }
+
+  if (is.null(nc))
+    nc <- 1
+  else
+    if (nc > NCOL(refmodel$mu))
+      stop("number of clusters exceed the number of columns in the reference model's posterior.")
 
   if (is.null(intercept))
     intercept <- refmodel$intercept
 
-  family_kl <- refmodel$family
+  family <- refmodel$family
 
   ## get the clustering or subsample
   p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
 
   ## project onto the submodels
-  subm <- .get_submodels_poc(list(vind=vind), nv, family_kl, p_ref,
-                             refmodel, intercept, regul, cv_search=cv_search)
+  subm <- .get_submodels(list(vind=vind,
+                              p_sel=object$spath$p_sel,
+                              sub_fits=object$spath$sub_fits),
+                         nv, family, p_ref, refmodel, intercept, regul,
+                         cv_search = cv_search)
 
-  ## add family_kl
+  ## add family
   proj <- lapply(subm, function(model) {
-    model <- c(model, nlist(family_kl), list(p_type = is.null(ns)))
+    model <- c(model, nlist(family), list(p_type = is.null(ns)))
+    model$intercept <- intercept
     class(model) <- 'projection'
     return(model)
   })

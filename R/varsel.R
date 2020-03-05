@@ -60,17 +60,17 @@
 #'
 
 #' @export
-varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
+varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                        nspred = NULL, ncpred = NULL, cv_search=FALSE, nv_max = NULL,
-                       intercept = FALSE, verbose=TRUE, lambda_min_ratio=1e-5,
+                       intercept = TRUE, verbose=TRUE, lambda_min_ratio=1e-5,
                        nlambda=150, thresh=1e-6, regul=1e-4, penalty = NULL,
                        groups=NULL, ...) {
 
-  refmodel <- get_refmodel_poc(object, ...)
-  family_kl <- refmodel$family
+  refmodel <- get_refmodel(object, ...)
+  family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
-  args <- parse_args_varsel_poc(refmodel, method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred, groups)
+  args <- parse_args_varsel(refmodel, method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred, groups)
   method <- args$method
   cv_search <- args$cv_search
   intercept <- args$intercept
@@ -96,28 +96,28 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
 
   ## perform the selection
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
-  searchpath <- select_poc(method, p_sel, refmodel, family_kl, intercept, nv_max,
+  searchpath <- select(method, p_sel, refmodel, family, intercept, nv_max,
                            penalty, verbose, opt, groups=groups)
   vind <- searchpath$vind
 
   ## statistics for the selected submodels
-  p_sub <- .get_submodels_poc(searchpath, c(0, seq_along(vind)), family_kl, p_pred,
+  p_sub <- .get_submodels(searchpath, c(0, seq_along(vind)), family, p_pred,
                               refmodel, intercept, regul, cv_search=cv_search)
-  sub <- .get_sub_summaries_poc(p_sub, seq_along(refmodel$y), refmodel, family_kl)
+  sub <- .get_sub_summaries(p_sub, seq_along(refmodel$y), refmodel, family)
 
   ## predictive statistics of the reference model on test data. if no test data are provided,
   ## simply fetch the statistics on the train data
   if ('datafit' %in% class(refmodel)) {
     ## no actual reference model, so we don't know how to predict test observations
-    ntest <- nrow(refmodel$y)
-    ref <- list(mu=rep(NA,ntest), lppd=rep(NA,ntest))
+    ntest <- NROW(refmodel$y)
+    ref <- list(mu=rep(NA, ntest), lppd=rep(NA, ntest))
   } else {
     d_test$weights <- refmodel$wobs[d_test$test_points]
     if (d_type == 'train') {
-      ref <- .weighted_summary_means_poc(d_test, family_kl, refmodel$wsample, refmodel$mu, refmodel$dis)
+      ref <- .weighted_summary_means(d_test, family, refmodel$wsample, refmodel$mu, refmodel$dis)
     } else {
       mu_test <- refmodel$predfun(refmodel$fit, newdata=d_test$data)
-      ref <- .weighted_summary_means_poc(d_test, family_kl, refmodel$wsample, mu_test, refmodel$dis)
+      ref <- .weighted_summary_means(d_test, family, refmodel$wsample, mu_test, refmodel$dis)
     }
   }
 
@@ -126,7 +126,7 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
              spath=searchpath,
              d_test = c(d_test["y"], type = d_type),
              summaries = list(sub = sub, ref = ref),
-             family_kl = family_kl,
+             family = family,
              vind = searchpath$vind,
              kl = sapply(p_sub, function(x) x$kl) )
 
@@ -142,8 +142,8 @@ varsel_poc <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NUL
 }
 
 
-select_poc <- function(method, p_sel, refmodel, family_kl, intercept, nv_max,
-                       penalty, verbose, opt, groups=NULL) {
+select <- function(method, p_sel, refmodel, family, intercept, nv_max,
+                   penalty, verbose, opt, groups=NULL) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
   ## and returns the searchpath, i.e., a list with the followint entries (the last three
@@ -155,11 +155,11 @@ select_poc <- function(method, p_sel, refmodel, family_kl, intercept, nv_max,
   ##
   ## routine that can be used with several clusters
   if (method == 'l1') {
-    searchpath <- search_L1_poc(p_sel, refmodel, family_kl, intercept, nv_max, penalty, opt)
+    searchpath <- search_L1(p_sel, refmodel, family, intercept, nv_max - intercept, penalty, opt)
     searchpath$p_sel <- p_sel
     return(searchpath)
   } else if (method == 'forward') {
-    tryCatch(searchpath <- search_forward_poc(p_sel, refmodel, family_kl, intercept, nv_max, verbose, opt, groups=groups),
+    tryCatch(searchpath <- search_forward(p_sel, refmodel, family, intercept, nv_max, verbose, opt, groups=groups),
              'error' = .varsel_errors)
 
     searchpath$p_sel <- p_sel
@@ -168,7 +168,7 @@ select_poc <- function(method, p_sel, refmodel, family_kl, intercept, nv_max,
 }
 
 
-parse_args_varsel_poc <- function(refmodel, method, cv_search, intercept,
+parse_args_varsel <- function(refmodel, method, cv_search, intercept,
                                   nv_max, nc, ns, ncpred, nspred, groups) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel. The arguments
@@ -188,6 +188,9 @@ parse_args_varsel_poc <- function(refmodel, method, cv_search, intercept,
   else
     method <- tolower(method)
 
+  if (!(method %in% c("l1", "forward")))
+    stop("Unknown search method")
+
   ## if (has_group_features)
   ##   ## if we are doing a grouped search we don't usually have that many groups
   ##   method <- 'forward'
@@ -206,7 +209,7 @@ parse_args_varsel_poc <- function(refmodel, method, cv_search, intercept,
   }
   if (is.null(nspred) && is.null(ncpred))
     ## use 5 clusters for prediction by default
-    ncpred <- min(ncol(refmodel$mu), 5)
+    ncpred <- min(NCOL(refmodel$mu), 5)
 
   max_nv_possible <- count_terms_in_subformula(refmodel$formula)
   if(is.null(intercept))
@@ -214,7 +217,7 @@ parse_args_varsel_poc <- function(refmodel, method, cv_search, intercept,
   if(is.null(nv_max))
     nv_max <- min(max_nv_possible, 20)
   else
-    nv_max <- min(max_nv_possible, nv_max)
+    nv_max <- min(max_nv_possible, nv_max + 1)
 
 
   nlist(method, cv_search, intercept, nv_max, nc, ns, ncpred, nspred, groups)

@@ -3,7 +3,7 @@ context('refmodel')
 
 # tests for generic reference model
 
-if (require(rstanarm)) {
+if (require(rstanarm) && require(brms)) {
   
 
   seed <- 1235
@@ -20,17 +20,15 @@ if (require(rstanarm)) {
   source(file.path('helpers', 'SW.R'))
   
   f_gauss <- gaussian()
-  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = I(x))
+  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x%*%b), dis), x = x)
   f_binom <- binomial()
-  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = I(x))
+  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x%*%b)), x = x, weights=weights)
   
   SW({
-    fit_gauss <- stan_glm(y ~ x, family = f_gauss, data = df_gauss, QR = T,
-                          weights = weights, offset = offset,
+    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss,
                           chains = chains, seed = seed, iter = iter)
-    fit_binom <- stan_glm(cbind(y, weights-y) ~ x, family = f_binom, QR = T,
-                          data = df_binom, weights = weights, offset = offset,
-                          chains = chains, seed = seed, iter = iter)
+    fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
+                     data = df_binom, chains = chains, seed = seed, iter = iter)
     ref_gauss <- get_refmodel(fit_gauss)
     ref_binom <- get_refmodel(fit_binom)
   })
@@ -40,19 +38,19 @@ if (require(rstanarm)) {
     expect_s3_class(ref_binom, "refmodel")
   })
   
-  test_that('get_refmode checks for the absence of data', {
-    SW({
-    fit_nodata <- stan_glm(df_gauss$y ~ x, family = f_gauss, QR = T,
-                           weights = weights, offset = offset,
-                           chains = chains, seed = seed, iter = iter)
-    })
-    expect_error(get_refmodel(fit_nodata),
-                 'Model was fitted without a \'data\' argument')
-  })
+  ## test_that('get_refmode checks for the absence of data', {
+  ##   SW({
+  ##   fit_nodata <- stan_glm(df_gauss$y ~ x, family = f_gauss, QR = T,
+  ##                          weights = weights, offset = offset,
+  ##                          chains = chains, seed = seed, iter = iter)
+  ##   })
+  ##   expect_error(get_refmodel(fit_nodata),
+  ##                'Model was fitted without a \'data\' argument')
+  ## })
   
   test_that('predict checks the \'type\' argument', {
     expect_error(predict(ref_gauss, df_gauss, type = 'zzz'),
-                 '\'arg\' should be one of')
+                 'type should be one of')
   })
   
   test_that('predict produces sensible results for gaussian models', {

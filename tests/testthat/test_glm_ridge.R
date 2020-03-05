@@ -18,7 +18,7 @@ x_tr <- x[,1:nv_fit]
 weights <- sample(1:4, n, replace = T)
 offset <- rnorm(n, 0, 1)
 
-tol <- 1e-03
+tol <- 3e-03
 # some link-functions seem to need higher thresh-argument for glm_ridge
 # (gaussian-log, binomial-cauchit, Gamma-log)
 extra_thresh <- 1e-10
