@@ -22,14 +22,12 @@ The difference with respect to the standard quickstart guide is that in this vig
 ## Gaussian example
 Load the necessary packages. If the sampling takes more than 10 seconds and multiple cores are available, uncomment the line setting `mc.cores` to set the number of cores used (this is commented out as the sampling in the example is fast and to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).
 ```{r, results='hide', message=FALSE, warning=FALSE}
-library(devtools)
-library(rstanarm)
+library(brms)
 library(projpred)
 library(ggplot2)
 library(bayesplot)
 theme_set(theme_classic())
 #options(mc.cores = parallel::detectCores())
-devtools::load_all()
 ```
 
 The package contains a simple Gaussian example dataset accessible with the `data`-command. This dataset is one of the example cases from the `glmnet`-package. The following loads a dataframe `df_gaussian` with the predictor matrix `x` and the corresponding targets `y` into the workspace.
@@ -38,6 +36,7 @@ data('df_gaussian', package = 'projpred')
 ```
 
 We first construct a model with all the variables and regularized horseshoe prior (Piironen and Vehtari, 2017c) on the regression coefficients. This gives us the full Bayesian solution to the problem. We specify the prior on the number of relevant variables using the approch by Piironen and Vehtari (2017b,c). The prior for the global shrinkage parameter is defined based on the prior on the number of relevant variables.
+
 ```{r, results='hide', message=FALSE, warning=FALSE}
 split_structure <- break_up_matrix_term(y ~ x, data=df_gaussian)
 df_gaussian <- split_structure$data
