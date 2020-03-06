@@ -37,6 +37,10 @@ data('df_gaussian', package = 'projpred')
 
 We first construct a model with all the variables and regularized horseshoe prior (Piironen and Vehtari, 2017c) on the regression coefficients. This gives us the full Bayesian solution to the problem. We specify the prior on the number of relevant variables using the approch by Piironen and Vehtari (2017b,c). The prior for the global shrinkage parameter is defined based on the prior on the number of relevant variables.
 
+Before building the model we call `break_up_matrix_term`.
+This is a convenience function to automatically split matrix variables in linear terms. For example, in `y ~ x`, `x` can be a matrix.
+If this function is not used, `projpred` considers `x` to be jointly included or excluded in the variable selection.
+
 ```{r, results='hide', message=FALSE, warning=FALSE}
 split_structure <- break_up_matrix_term(y ~ x, data=df_gaussian)
 df_gaussian <- split_structure$data
@@ -99,10 +103,6 @@ Next we construct the reference model structure `refmodel`.
 ```{r, results='hide', warning=FALSE, messages=FALSE}
 refmodel <- get_refmodel(fit)
 ```
-
-Before building the `refmodel `structure we call `break_up_matrix_term`.
-This is a convenience function to automatically split matrix variables in linear terms. For example, in `y ~ x`, `x` can be a matrix.
-If this function is not used, `projpred` considers `x` to be jointly included or excluded in the variable selection.
 
 The function `cv_varsel_poc` runs the variable selection, and returns an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
 Although it is theoretically possible to use L1-search for this linear model, it has not been implemented for the general `formula` interface, and we will use the `forward` method.
