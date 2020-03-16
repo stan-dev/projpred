@@ -1,6 +1,6 @@
 .onAttach <- function(...) {
   ver <- utils::packageVersion("projpred")
-  msg <- paste0('This is projpred version ', ver, '.')
+  msg <- paste0("This is projpred version ", ver, ".")
   packageStartupMessage(msg)
 }
 
@@ -47,7 +47,7 @@ auc <- function(x) {
   pred <- x[, 2]
   weights <- x[, 3]
   n <- nrow(x)
-  ord <- order(pred, decreasing=TRUE)
+  ord <- order(pred, decreasing = TRUE)
   resp <- resp[ord]
   pred <- pred[ord]
   weights <- weights[ord]
@@ -69,7 +69,7 @@ auc <- function(x) {
   return(sum(delta_fpr * tpr) + sum(delta_fpr * delta_tpr) / 2)
 }
 
-bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
+bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) {
   #
   # bootstrap an arbitrary quantity fun that takes the sample x
   # as the first input. other parameters to fun can be passed in as ...
@@ -77,7 +77,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   #
 
   # set random seed but ensure the old RNG state is restored on exit
-  if (exists('.Random.seed')) {
+  if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
@@ -88,7 +88,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   bsstat <- rep(NA, b)
   oobstat <- rep(NA, b)
   for (i in 1:b) {
-    bsind <- sample(seq_x, replace=T)
+    bsind <- sample(seq_x, replace = T)
     bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
     if (!is.null(oobfun)) {
       oobind <- setdiff(seq_x, unique(bsind))
@@ -96,17 +96,18 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
     }
   }
   if (!is.null(oobfun)) {
-    return(list(bs=bsstat, oob=oobstat))
-  } else
+    return(list(bs = bsstat, oob = oobstat))
+  } else {
     return(bsstat)
+  }
 }
 
 
-.bbweights <- function(N,B) {
+.bbweights <- function(N, B) {
   # generate Bayesian bootstrap weights, N = original sample size,
   # B = number of bootstrap samples
-  bbw <- matrix(rgamma(N*B, 1), ncol = N)
-  bbw <- bbw/rowSums(bbw)
+  bbw <- matrix(rgamma(N * B, 1), ncol = N)
+  bbw <- bbw / rowSums(bbw)
   return(bbw)
 }
 
@@ -119,46 +120,54 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
 .is.wholenumber <- function(x) abs(x - round(x)) < .Machine$double.eps^0.5
 
 .validate_num_folds <- function(k, n) {
-  if (!is.numeric(k) || length(k) != 1 || !.is.wholenumber(k))
-    stop('Number of folds must be a single integer value.')
-  if (k < 2)
-    stop('Number of folds must be at least 2.')
-  if (k > n)
-    stop('Number of folds cannot exceed n.')
+  if (!is.numeric(k) || length(k) != 1 || !.is.wholenumber(k)) {
+    stop("Number of folds must be a single integer value.")
+  }
+  if (k < 2) {
+    stop("Number of folds must be at least 2.")
+  }
+  if (k > n) {
+    stop("Number of folds cannot exceed n.")
+  }
 }
 
 .validate_vsel_object_stats <- function(object, stats) {
+  if (!inherits(object, c("vsel", "cvsel"))) {
+    stop("The object is not a variable selection object. Run variable selection first")
+  }
 
-  if (!inherits(object, c('vsel', 'cvsel')))
-    stop('The object is not a variable selection object. Run variable selection first')
-
-  recognized_stats <- c('elpd', 'mlpd','mse', 'rmse', 'acc', 'pctcorr', 'auc')
-  binomial_only_stats <- c('acc', 'pctcorr', 'auc')
+  recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
+  binomial_only_stats <- c("acc", "pctcorr", "auc")
   family <- object$family$family
 
-  if (is.null(stats))
-     stop('Statistic specified as NULL.')
+  if (is.null(stats)) {
+    stop("Statistic specified as NULL.")
+  }
   for (stat in stats) {
-    if (!(stat %in% recognized_stats))
-      stop(sprintf('Statistic \'%s\' not recognized.', stat))
-    if (stat %in% binomial_only_stats && family != 'binomial')
-      stop('Statistic \'', stat, '\' available only for the binomial family.')
+    if (!(stat %in% recognized_stats)) {
+      stop(sprintf("Statistic '%s' not recognized.", stat))
+    }
+    if (stat %in% binomial_only_stats && family != "binomial") {
+      stop("Statistic '", stat, "' available only for the binomial family.")
+    }
   }
 }
 
 .validate_baseline <- function(refmodel, baseline, deltas) {
   if (is.null(baseline)) {
-    if (inherits(refmodel, 'datafit'))
-      baseline <- 'best'
-    else
-      baseline <- 'ref'
+    if (inherits(refmodel, "datafit")) {
+      baseline <- "best"
+    } else {
+      baseline <- "ref"
+    }
   } else {
-    if (!(baseline %in% c('ref', 'best')))
-      stop('Argument \'baseline\' must be either \'ref\' or \'best\'.')
-    if (baseline == 'ref' && deltas == TRUE && inherits(refmodel, 'datafit')) {
+    if (!(baseline %in% c("ref", "best"))) {
+      stop("Argument 'baseline' must be either 'ref' or 'best'.")
+    }
+    if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
       # no reference model (or the results missing for some other reason),
       # so cannot compute differences between the reference model and submodels
-      stop('Cannot use deltas = TRUE and baseline = \'ref\' when there is no reference model.')
+      stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no reference model.")
     }
   }
   return(baseline)
@@ -170,30 +179,33 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   # and weights give the number of observations at each x.
   # for all other families, y and weights are kept as they are (unless weights is
   # a vector with length zero in which case it is replaced by a vector of ones).
-  if(NCOL(y) == 1) {
+  if (NCOL(y) == 1) {
     # weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
-    if(length(weights) > 0)
+    if (length(weights) > 0) {
       weights <- unname(weights)
-    else
-      weights <- rep(1, length(y))
-    if (fam$family == 'binomial') {
-      if (is.factor(y)) {
-        if (nlevels(y) > 2)
-          stop('y cannot contain more than two classes if specified as factor.')
-        y <- as.vector(y, mode='integer') - 1 # zero-one vector
-      } else {
-        if (any(y < 0 | y > 1))
-          stop("y values must be 0 <= y <= 1 for the binomial model.")
-      }
     } else {
-      if (is.factor(y))
-        stop('y cannot be a factor for models other than the binomial model.')
+      weights <- rep(1, length(y))
+    }
+    if (fam$family == "binomial") {
+      if (is.factor(y)) {
+        if (nlevels(y) > 2) {
+          stop("y cannot contain more than two classes if specified as factor.")
+        }
+        y <- as.vector(y, mode = "integer") - 1 # zero-one vector
+      } ## else {
+      ##   if (any(y < 0 | y > 1))
+      ##     stop("y values must be 0 <= y <= 1 for the binomial model.")
+      ## }
+    } else {
+      if (is.factor(y)) {
+        stop("y cannot be a factor for models other than the binomial model.")
+      }
     }
   } else if (NCOL(y) == 2) {
     weights <- rowSums(y)
     y <- y[, 1] / weights
   } else {
-    stop('y cannot have more than two columns.')
+    stop("y cannot have more than two columns.")
   }
   return(nlist(y, weights))
 }
@@ -269,7 +281,7 @@ bootstrap <- function(x, fun=mean, b=1000, oobfun=NULL, seed=NULL, ...) {
   return(p_ref)
 }
 
-.get_p_clust <- function(family, mu, dis, nc=10, wobs=rep(1,dim(mu)[1]), wsample=rep(1,dim(mu)[2]), cl = NULL) {
+.get_p_clust <- function(family, mu, dis, nc = 10, wobs = rep(1, dim(mu)[1]), wsample = rep(1, dim(mu)[2]), cl = NULL) {
   # Function for perfoming the clustering over the samples.
   #
   # cluster the samples in the latent space if no clustering provided
