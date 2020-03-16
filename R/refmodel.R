@@ -17,16 +17,16 @@
 #'
 #' @examples
 #' \donttest{
-## Usage with stanreg objects
+#' ## Usage with stanreg objects
 #' dat <- data.frame(y = rnorm(100), x = rnorm(100))
 #' fit <- stan_glm(y ~ x, family = gaussian(), data = dat)
 #' ref <- get_refmodel(fit)
 #' print(class(ref))
 #'
-## variable selection, use the already constructed reference model
+#' ## variable selection, use the already constructed reference model
 #' vs <- varsel(ref)
-## this will first construct the reference model and then execute
-## exactly the same way as the previous command (the result is identical)
+#' ## this will first construct the reference model and then execute
+#' ## exactly the same way as the previous command (the result is identical)
 #' vs <- varsel(fit)
 #' }
 #'
@@ -57,15 +57,18 @@ NULL
 
 #' @export
 predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
-                             weightsnew = NULL, type = 'response', ...) {
-
-  if (!(type %in% c("response", "link")))
+                             weightsnew = NULL, type = "response", ...) {
+  if (!(type %in% c("response", "link"))) {
     stop("type should be one of ('response', 'link')")
-  if ('datafit' %in% class(object))
-    stop('Cannot make predictions with data reference only.')
-  if (!is.null(ynew))
-    if (!(inherits(ynew, "numeric")) || NCOL(ynew) != 1)
+  }
+  if ("datafit" %in% class(object)) {
+    stop("Cannot make predictions with data reference only.")
+  }
+  if (!is.null(ynew)) {
+    if (!(inherits(ynew, "numeric")) || NCOL(ynew) != 1) {
       stop("ynew must be a numerical vector")
+    }
+  }
 
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
@@ -74,28 +77,29 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
   mu <- object$predfun(object$fit, znew)
 
   if (is.null(ynew)) {
-
-    if (type == 'link')
+    if (type == "link") {
       pred <- mu
-    else
+    } else {
       pred <- object$family$linkinv(mu + offsetnew)
+    }
 
     ## integrate over the samples
-    if (NCOL(pred) > 1)
+    if (NCOL(pred) > 1) {
       pred <- rowMeans(pred)
+    }
 
     return(pred)
-
   } else {
 
     ## evaluate the log predictive density at the given ynew values
-    loglik <- object$fam$ll_fun(object$family$linkinv(mu), object$dis, ynew,
-                                weightsnew)
+    loglik <- object$fam$ll_fun(
+      object$family$linkinv(mu), object$dis, ynew,
+      weightsnew
+    )
     S <- ncol(loglik)
     lpd <- apply(loglik, 1, log_sum_exp) - log(S)
     return(lpd)
   }
-
 }
 
 #' @export
@@ -123,28 +127,32 @@ get_refmodel.cvsel <- function(object, ...) {
 
 #' @export
 get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
-                                     mle, fetch_data, family=NULL, wobs=NULL,
-                                     folds=NULL, cvfits=NULL, penalized=FALSE,
-                                     offest=NULL, cvfun=NULL) {
-  fetch_data_wrapper <- function(obs=folds, newdata=NULL)
+                                 mle, fetch_data, family = NULL, wobs = NULL,
+                                 folds = NULL, cvfits = NULL, penalized = FALSE,
+                                 offest = NULL, cvfun = NULL) {
+  fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
     fetch_data(data, obs, newdata)
+  }
 
-  if (is.null(family))
+  if (is.null(family)) {
     family <- extend_family(family(fit))
-  else
+  } else {
     family <- extend_family(family)
+  }
 
   refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
-                                proj_predfun, penalized=penalized, weights=wobs,
-                                offset=offset, cvfits=cvfits, folds=folds,
-                                cvfun=cvfun)
+    proj_predfun,
+    penalized = penalized, weights = wobs,
+    offset = offset, cvfits = cvfits, folds = folds,
+    cvfun = cvfun
+  )
   return(refmodel)
 }
 
 #' export
-get_refmodel.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
-                                     predfun=NULL, proj_predfun=NULL, mle=NULL,
-                                     folds=NULL, ...) {
+get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
+                                 predfun = NULL, proj_predfun = NULL, mle = NULL,
+                                 folds = NULL, ...) {
   family_name <- family(fit)$family
   fam <- ifelse(family_name == "bernoulli", "binomial", family_name)
   fam <- get(fam, mode = "function")()
@@ -155,8 +163,9 @@ get_refmodel.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
   family <- extend_family(brms_family)
 
   brms_formula <- formula(fit)
-  if (is.null(formula))
+  if (is.null(formula)) {
     formula <- brms_formula$formula
+  }
 
   terms <- extract_terms_response(formula)
   response_name <- brms_formula$resp
@@ -164,60 +173,86 @@ get_refmodel.brmsfit <- function(fit, data=NULL, y=NULL, formula=NULL,
   formula <- update(formula, paste(response_name, " ~ ."))
   p <- parse_bf(brms_formula)
 
-  if (is.null(data))
+  if (is.null(data)) {
     data <- fit$data
-  if (is.null(y))
+  }
+  if (is.null(y)) {
     y <- fit$data[, response_name]
+  }
 
   if ("trials" %in% family$ad &&
-      inherits(p$adforms$trials, "formula")) {
+    inherits(p$adforms$trials, "formula")) {
     trials_form <- p$adforms$trials
-    trials_var <- eval(trials_form[[2]], data,
-                       environment(trials_form))$vars$trials
+    trials_var <- eval(
+      trials_form[[2]], data,
+      environment(trials_form)
+    )$vars$trials
     weights <- data[, trials_var]
-    y <- y / weights
   } else {
     weights <- NULL
   }
 
   ## TODO: return y, weights and offset as right hand side formulas
   refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
-                            proj_predfun, folds, weights=weights, ...)
+    proj_predfun, folds,
+    weights = weights, ...
+  )
   return(refmodel)
 }
 
 #' @export
-get_refmodel.stanreg <- function(fit, data=NULL, y=NULL, formula=NULL,
-                                     predfun=NULL, proj_predfun=NULL, mle=NULL,
-                                     folds=NULL, penalized=FALSE, ...) {
+get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
+                                 predfun = NULL, proj_predfun = NULL, mle = NULL,
+                                 folds = NULL, penalized = FALSE, ...) {
   family <- family(fit)
   family <- extend_family(family)
 
-  if (is.null(formula))
+  if (is.null(formula)) {
     formula <- formula(fit)
+  }
   terms <- extract_terms_response(formula)
   response_name <- terms$response
 
-  if (is.null(data))
+  if (is.null(data)) {
     data <- fit$data
-  if (is.null(y))
-    y <- fit$data[, colnames(fit$data) == response_name]
+  }
 
-  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
-                            proj_predfun, folds, penalized, ...)
+  weights <- NULL
+  if (is.null(y)) {
+    if (family$family == "binomial" && length(response_name) == 2) {
+      ## in rstanarm the convention is to set
+      ## cbind(y, weight - y) ~ .
+      response <- lapply(response_name, function(rhs) {
+        f <- as.formula(paste0("~ ", rhs))
+        eval(f[[2]], data, environment(f))
+      })
+      y <- response[[1]]
+      weights <- response[[2]] + y ## weights - y
+    } else if (length(response_name == 1)) {
+      y <- fit$data[, colnames(fit$data) == response_name]
+    }
+  }
+
+  refmodel <- init_refmodel(
+    fit, data, y, formula, family, predfun, mle,
+    proj_predfun, folds, penalized,
+    weights = weights, ...
+  )
   return(refmodel)
 }
 
 #' @export
-init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
-                          proj_predfun=NULL, folds=NULL, penalized=FALSE,
-                          weights=NULL, offset=NULL, cvfun=NULL, cvfits=NULL, ...) {
+init_refmodel <- function(fit, data, y, formula, family, predfun = NULL, mle = NULL,
+                          proj_predfun = NULL, folds = NULL, penalized = FALSE,
+                          weights = NULL, offset = NULL, cvfun = NULL, cvfits = NULL, ...) {
   terms <- extract_terms_response(formula)
-  if (is.null(predfun))
-    predfun <- function(fit, newdata=NULL)
+  if (is.null(predfun)) {
+    predfun <- function(fit, newdata = NULL) {
       t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
+    }
+  }
 
-  if (is.null(mle) && is.null(proj_predfun))
+  if (is.null(mle) && is.null(proj_predfun)) {
     if (length(terms$group_terms) != 0) {
       mle <- linear_multilevel_mle
       proj_predfun <- linear_multilevel_proj_predfun
@@ -230,33 +265,39 @@ init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
         proj_predfun <- penalized_linear_proj_predfun
       }
     }
-  else if (is.null(mle) && !is.null(proj_predfun))
-    if (length(terms$group_terms) != 0)
+  } else if (is.null(mle) && !is.null(proj_predfun)) {
+    if (length(terms$group_terms) != 0) {
       mle <- linear_multilevel_mle
-    else
-      if (!penalized)
-        mle <- linear_mle
-    else
+    } else
+    if (!penalized) {
+      mle <- linear_mle
+    } else {
       mle <- penalized_linear_mle
-  else if (!is.null(mle) && is.null(proj_predfun))
-    if (length(terms$group_terms) != 0)
+    }
+  } else if (!is.null(mle) && is.null(proj_predfun)) {
+    if (length(terms$group_terms) != 0) {
       proj_predfun <- linear_multilevel_proj_predfun
-    else
-      if (!penalized)
-        proj_predfun <- linear_proj_predfun
-    else
+    } else
+    if (!penalized) {
+      proj_predfun <- linear_proj_predfun
+    } else {
       proj_predfun <- penalized_linear_proj_predfun
+    }
+  }
 
-  fetch_data_wrapper <- function(obs=folds, newdata=NULL)
+  fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
     as.data.frame(fetch_data(data, obs, newdata))
+  }
 
-  if (!.has_family_extras (family))
+  if (!.has_family_extras(family)) {
     family <- extend_family(family)
+  }
 
   ## TODO: ideally remove this, have to think about it
-  family$mu_fun <- function(fit, obs=folds, xnew=NULL, offset=NULL) {
-    if (is.null(offset))
+  family$mu_fun <- function(fit, obs = folds, xnew = NULL, offset = NULL) {
+    if (is.null(offset)) {
       offset <- rep(0, length(obs))
+    }
     newdata <- fetch_data_wrapper(obs = obs, newdata = xnew)
     family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
   }
@@ -271,14 +312,16 @@ init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
     mu <- family$linkinv(mu)
   } else {
     mu <- matrix(y, NROW(y), 1)
-		predfun_datafit <- function(fit=NULL, newdata=NULL, offset = 0) {
-      if (is.null(fit))
-        if (is.null(newdata))
+    predfun_datafit <- function(fit = NULL, newdata = NULL, offset = 0) {
+      if (is.null(fit)) {
+        if (is.null(newdata)) {
           matrix(rep(NA, NROW(y)))
-        else
+        } else {
           matrix(rep(NA, NROW(newdata)))
-      else
+        }
+      } else {
         family$linkinv(predfun(fit, newdata))
+      }
     }
   }
 
@@ -287,7 +330,8 @@ init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
   dis <- rep(0, ndraws)
   if (proper_model) {
     ## TODO: eventually this will be a function provided by the user
-    tryCatch({
+    tryCatch(
+      {
         dis <- as.data.frame(fit)$sigma %ORifNULL% rep(0, ndraws)
       },
       error = function(e) e
@@ -301,23 +345,27 @@ init_refmodel <- function(fit, data, y, formula, family, predfun=NULL, mle=NULL,
     weights <- rep(1, length(y))
   }
 
-  if (proper_model)
+  if (proper_model) {
     loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
-  else
+  } else {
     loglik <- NULL
+  }
 
   # this is a dummy definition for cvfun, but it will lead to standard cross-validation
   # for datafit reference; see cv_varsel and get_kfold
   cvfun <- function(folds) lapply(1:max(folds), function(k) list())
 
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
-  if (is.null(offset))
+  if (is.null(offset)) {
     offset <- rep(0, NROW(y))
+  }
 
-  intercept <- as.logical(attr(terms(formula), 'intercept'))
+  intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(fit, formula, mle, family, mu, dis, y, loglik,
-                    intercept, proj_predfun, fetch_data=fetch_data_wrapper,
-                    wobs=weights, wsample, offset, folds, cvfun, cvfits)
+    intercept, proj_predfun,
+    fetch_data = fetch_data_wrapper,
+    wobs = weights, wsample, offset, folds, cvfun, cvfits
+  )
   if (proper_model) {
     refmodel$predfun <- predfun
     class(refmodel) <- "refmodel"
