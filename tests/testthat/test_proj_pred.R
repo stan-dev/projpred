@@ -260,16 +260,25 @@ if (require(brms) && require(rstanarm)) {
       proj_predict(proj_vind_list),
       'argument "xnew" is missing, with no default'
     )
-    ## expect_error(proj_predict(proj_vind_list, xnew = NULL),
-    ##              'must be a data.frame or a matrix')
-    ## expect_error(proj_predict(proj_vind_list, xnew = data.frame(x.1=x[, 1])),
-    ##              'must be a data.frame or a matrix')
+    expect_error(
+      proj_predict(proj_vind_list, xnew = NULL),
+      "must be a data.frame or a matrix"
+    )
+    expect_error(
+      proj_predict(proj_vind_list, xnew = x[, 1]),
+      "must be a data.frame or a matrix"
+    )
     expect_error(
       proj_predict(proj_vind_list, xnew = data.frame(x = x), vind = 1:1000),
       "number of columns in xnew does not match"
     )
-    ## expect_error(proj_predict(proj_vind_list, xnew = data.frame(x=x[, 1:2])),
-    ##              'xnew has 2 columns, but vind expects 3 columns')
+    expect_error(
+      proj_predict(proj_vind_list,
+        xnew = data.frame(x = x)[, 1:2],
+        vind = 1:3
+      ),
+      "number of columns in xnew does not match"
+    )
   })
 
   test_that("output of proj_predict is sensible with fit-object as input", {
