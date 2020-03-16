@@ -49,14 +49,13 @@
 #'
 #' @examples
 #' \donttest{
-## Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
+#' ## Usage with stanreg objects
+#' fit <- stan_glm(y ~ x, binomial())
 #' vs <- varsel(fit)
 #'
-## compute predictions with 4 variables at the training points
-#' pred <- proj_linpred(vs, xnew=x, nv = 4)
-#' pred <- proj_predict(vs, xnew=x, nv = 4)
-#'
+#' ## compute predictions with 4 variables at the training points
+#' pred <- proj_linpred(vs, xnew = x, nv = 4)
+#' pred <- proj_predict(vs, xnew = x, nv = 4)
 #' }
 #'
 NULL
@@ -68,13 +67,12 @@ NULL
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
-                            proj_predict, ...) {
-
+                        proj_predict, ...) {
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
 
   if (inherits(object, "projection") ||
-      (length(object) > 0 && inherits(object[[1]], "projection"))) {
+    (length(object) > 0 && inherits(object[[1]], "projection"))) {
     proj <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
@@ -85,23 +83,31 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
     proj <- list(proj)
   } else {
     ## proj is not a projection object
-    if(any(sapply(proj, function(x) !('family' %in% names(x)))))
-      stop(paste('proj_linpred only works with objects returned by',
-                 ' varsel, cv_varsel or project'))
+    if (any(sapply(proj, function(x) !("family" %in% names(x))))) {
+      stop(paste(
+        "proj_linpred only works with objects returned by",
+        " varsel, cv_varsel or project"
+      ))
+    }
   }
 
-  projected_sizes <- sapply(proj, function(x)
-    if (length(x$vind) > 1)
+  projected_sizes <- sapply(proj, function(x) {
+    if (length(x$vind) > 1) {
       count_terms_chosen(x$vind)
-    else
-      1)
+    } else {
+      1
+    }
+  })
   nv <- list(...)$nv %ORifNULL% projected_sizes
 
-  if (!all(nv %in% projected_sizes))
-    stop(paste0('Linear prediction requested for nv = ',
-                paste(nv, collapse = ', '),
-                ', but projection performed only for nv = ',
-                paste(projected_sizes, collapse = ', '), '.'))
+  if (!all(nv %in% projected_sizes)) {
+    stop(paste0(
+      "Linear prediction requested for nv = ",
+      paste(nv, collapse = ", "),
+      ", but projection performed only for nv = ",
+      paste(projected_sizes, collapse = ", "), "."
+    ))
+  }
 
   projs <- Filter(function(x) length(x$vind) + 1 %in% nv, proj)
   names(projs) <- nv
@@ -116,9 +122,12 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   ##   stop('xnew not provided in the correct format. See ?proj-pred.')
 
   vind <- list(...)$vind
-  if (!is.null(vind) && NCOL(xnew) != length(vind))
-    stop(paste('The number of columns in xnew does not match with the given',
-               'number of variable indices (vind).'))
+  if (!is.null(vind) && NCOL(xnew) != length(vind)) {
+    stop(paste(
+      "The number of columns in xnew does not match with the given",
+      "number of variable indices (vind)."
+    ))
+  }
 
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
@@ -126,7 +135,7 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
-    mu <- proj$family$mu_fun(proj$sub_fit, xnew=xnew, offset = offsetnew)
+    mu <- proj$family$mu_fun(proj$sub_fit, xnew = xnew, offset = offsetnew)
 
     proj_predict(proj, mu, weightsnew)
   })
@@ -137,8 +146,8 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
 #' @rdname proj-pred
 #' @export
 proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
-                             weightsnew = NULL, nv = NULL, transform = FALSE,
-                             integrated = FALSE, seed = NULL, ...) {
+                         weightsnew = NULL, nv = NULL, transform = FALSE,
+                         integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
@@ -146,23 +155,26 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
     if (!transform) pred <- proj$family$linkfun(pred)
     if (integrated) {
       ## average over the parameters
-      pred <- as.vector( proj$weights %*% pred )
+      pred <- as.vector(proj$weights %*% pred)
     } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
       ## return a vector if pred contains only one row
       pred <- as.vector(pred)
     }
 
-    return(nlist(pred, lpd=compute_lpd(ynew, pred, proj, weights,
-                                       integrated=integrated)))
+    return(nlist(pred, lpd = compute_lpd(ynew, pred, proj, weights,
+      integrated = integrated
+    )))
   }
 
   ## proj_helper lapplies fun to each projection in object
-  proj_helper(object = object, xnew = xnew, offsetnew = offsetnew,
-                  weightsnew = weightsnew, nv = nv, seed = seed,
-                  proj_predict = proj_predict, ...)
+  proj_helper(
+    object = object, xnew = xnew, offsetnew = offsetnew,
+    weightsnew = weightsnew, nv = nv, seed = seed,
+    proj_predict = proj_predict, ...
+  )
 }
 
-compute_lpd <- function(ynew, pred, proj, weights, integrated=FALSE) {
+compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$family)
@@ -183,22 +195,27 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated=FALSE) {
 #' @rdname proj-pred
 #' @export
 proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
-                             nv = NULL, draws = 1000, seed = NULL, ...) {
+                         nv = NULL, draws = 1000, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
-    draw_inds <- sample(x = seq_along(proj$weights), size = draws,
-                        replace = TRUE, prob = proj$weights)
+    draw_inds <- sample(
+      x = seq_along(proj$weights), size = draws,
+      replace = TRUE, prob = proj$weights
+    )
 
+    browser()
     t(sapply(draw_inds, function(i) {
-      proj$family$ppd(mu[,i], proj$dis[i], weights)
+      proj$family$ppd(mu[, i], proj$dis[i], weights)
     }))
   }
 
   ## proj_helper lapplies fun to each projection in object
-  proj_helper(object = object, xnew = xnew, offsetnew = offsetnew,
-                  weightsnew = weightsnew, nv = nv, seed = seed,
-                  proj_predict = proj_predict, ...)
+  proj_helper(
+    object = object, xnew = xnew, offsetnew = offsetnew,
+    weightsnew = weightsnew, nv = nv, seed = seed,
+    proj_predict = proj_predict, ...
+  )
 }
 
 #' copied from methods to avoid duplicate code
@@ -244,120 +261,134 @@ NULL
 #' @examples
 #' \donttest{
 #' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
+#' fit <- stan_glm(y ~ x, binomial())
 #' vs <- cv_varsel(fit)
 #' varsel_plot(vs)
 #'
 #' # print out some stats
-#' varsel_stats(vs, stats=c('acc'), type = c('mean','se'))
+#' varsel_stats(vs, stats = c("acc"), type = c("mean", "se"))
 #' }
 #'
 NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, nv_max = NULL, stats = 'elpd', deltas = F, alpha = 0.32, baseline=NULL, ...) {
-
+varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = F, alpha = 0.32, baseline = NULL, ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmode, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-  tab <- rbind(.tabulate_stats(object, stats, alpha = alpha, nfeat_baseline=nfeat_baseline),
-               .tabulate_stats(object, stats, alpha = alpha))
-  stats_table <- subset(tab, tab$delta==deltas)
-  stats_ref <- subset(stats_table, stats_table$size==Inf)
-  stats_sub <- subset(stats_table, stats_table$size!=Inf)
+  tab <- rbind(
+    .tabulate_stats(object, stats, alpha = alpha, nfeat_baseline = nfeat_baseline),
+    .tabulate_stats(object, stats, alpha = alpha)
+  )
+  stats_table <- subset(tab, tab$delta == deltas)
+  stats_ref <- subset(stats_table, stats_table$size == Inf)
+  stats_sub <- subset(stats_table, stats_table$size != Inf)
   stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
 
 
-  if(NROW(stats_sub) == 0) {
-    stop(paste0(ifelse(length(stats)==1, 'Statistics ', 'Statistic '),
-                paste0(unique(stats), collapse=', '), ' not available.'))
+  if (NROW(stats_sub) == 0) {
+    stop(paste0(
+      ifelse(length(stats) == 1, "Statistics ", "Statistic "),
+      paste0(unique(stats), collapse = ", "), " not available."
+    ))
   }
 
-  if(is.null(nv_max))
+  if (is.null(nv_max)) {
     nv_max <- max(stats_sub$size)
-  else {
-                                        # don't exceed the maximum submodel size
+  } else {
+    # don't exceed the maximum submodel size
     nv_max <- min(nv_max, max(stats_sub$size))
-    if (nv_max < 1)
-      stop('nv_max must be at least 1')
+    if (nv_max < 1) {
+      stop("nv_max must be at least 1")
+    }
   }
-  ylab <- if(deltas) 'Difference to the baseline' else 'Value'
+  ylab <- if (deltas) "Difference to the baseline" else "Value"
 
-                                        # make sure that breaks on the x-axis are integers
-  n_opts <- c(4,5,6)
+  # make sure that breaks on the x-axis are integers
+  n_opts <- c(4, 5, 6)
   n_possible <- Filter(function(x) nv_max %% x == 0, n_opts)
   n_alt <- n_opts[which.min(n_opts - (nv_max %% n_opts))]
   nb <- ifelse(length(n_possible) > 0, min(n_possible), n_alt)
-  by <- ceiling(nv_max/min(nv_max, nb))
-  breaks <- seq(0, by*min(nv_max, nb), by)
-  minor_breaks <- if(by%%2 == 0)
-                    seq(by/2, by*min(nv_max, nb), by)
-                  else
-                    NULL
+  by <- ceiling(nv_max / min(nv_max, nb))
+  breaks <- seq(0, by * min(nv_max, nb), by)
+  minor_breaks <- if (by %% 2 == 0) {
+    seq(by / 2, by * min(nv_max, nb), by)
+  } else {
+    NULL
+  }
 
-                                        # plot submodel results
-  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max), mapping = aes_string(x = 'size')) +
-    geom_linerange(aes_string(ymin = 'lq', ymax = 'uq', alpha=0.1)) +
-    geom_line(aes_string(y = 'value')) +
-    geom_point(aes_string(y = 'value'))
+  # plot submodel results
+  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max), mapping = aes_string(x = "size")) +
+    geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
+    geom_line(aes_string(y = "value")) +
+    geom_point(aes_string(y = "value"))
 
-  if (!all(is.na(stats_ref$se)))
-                                        # add reference model results if they exist
-    pp <- pp + geom_hline(aes_string(yintercept = 'value'), data = stats_ref,
-                          color = 'darkred', linetype=2)
-  if (baseline != 'ref')
-                                        # add the baseline result (if different from the reference model)
-    pp <- pp + geom_hline(aes_string(yintercept = 'value'), data = stats_bs,
-                          color = 'black', linetype=3)
+  if (!all(is.na(stats_ref$se))) {
+    # add reference model results if they exist
+    pp <- pp + geom_hline(aes_string(yintercept = "value"),
+      data = stats_ref,
+      color = "darkred", linetype = 2
+    )
+  }
+  if (baseline != "ref") {
+    # add the baseline result (if different from the reference model)
+    pp <- pp + geom_hline(aes_string(yintercept = "value"),
+      data = stats_bs,
+      color = "black", linetype = 3
+    )
+  }
   pp <- pp +
-    scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
-                       limits = c(min(breaks), max(breaks))) +
-    labs(x = 'Number of variables in the submodel', y = ylab) +
-    theme(legend.position = 'none') +
-    facet_grid(statistic ~ ., scales = 'free_y')
+    scale_x_continuous(
+      breaks = breaks, minor_breaks = minor_breaks,
+      limits = c(min(breaks), max(breaks))
+    ) +
+    labs(x = "Number of variables in the submodel", y = ylab) +
+    theme(legend.position = "none") +
+    facet_grid(statistic ~ ., scales = "free_y")
   pp
 }
 
 ##' @rdname varsel-statistics
 ##' @export
-varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean','se'),
-                         deltas = F, alpha=0.32, baseline=NULL, ...) {
-
+varsel_stats <- function(object, nv_max = NULL, stats = "elpd", type = c("mean", "se"),
+                         deltas = F, alpha = 0.32, baseline = NULL, ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmode, baseline, deltas)
 
   ## fetch statistics
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-    tab <- .tabulate_stats(object, stats, alpha=alpha, nfeat_baseline=nfeat_baseline)
+    tab <- .tabulate_stats(object, stats, alpha = alpha, nfeat_baseline = nfeat_baseline)
   } else {
-    tab <- .tabulate_stats(object, stats, alpha=alpha)
+    tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
   stats_table <- subset(tab, tab$size != Inf)
 
 
   ## these are the corresponding names for mean, se, upper and lower in the stats_table, and their suffices
   ## in the table to be returned
-  qty <- unname(sapply(type, function(t) switch(t, mean='value', upper='uq', lower='lq', se='se')))
-  suffix <- unname(sapply(type, function(t) switch(t, mean='', upper='.upper', lower='.lower', se='.se')))
+  qty <- unname(sapply(type, function(t) switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")))
+  suffix <- unname(sapply(type, function(t) switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")))
 
   ## loop through all the required statistics
   arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$vind))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
-    newnames <- sapply(suffix, function(s) paste0(stats[i],s))
+    newnames <- sapply(suffix, function(s) paste0(stats[i], s))
     colnames(temp) <- newnames
     arr <- cbind(arr, temp)
   }
 
-  if(is.null(nv_max))
+  if (is.null(nv_max)) {
     nv_max <- max(stats_table$size)
+  }
 
-  if('pctch' %in% names(object))
-    arr$pctch <- c(NA, diag(object$pctch[,-1]))
+  if ("pctch" %in% names(object)) {
+    arr$pctch <- c(NA, diag(object$pctch[, -1]))
+  }
 
   subset(arr, arr$size <= nv_max)
 }
@@ -378,10 +409,10 @@ varsel_stats <- function(object, nv_max = NULL, stats = 'elpd', type = c('mean',
 ##'
 ##' @export
 ##' @method print vsel
-print.vsel <- function(x, digits=2, ...) {
+print.vsel <- function(x, digits = 2, ...) {
   stats <- varsel_stats(x, ...)
   v <- match("vind", colnames(stats))
-  stats[, -v] <- round(stats[,  -v], digits)
+  stats[, -v] <- round(stats[, -v], digits)
   print(stats[, -v])
   invisible(stats)
 }
@@ -389,7 +420,7 @@ print.vsel <- function(x, digits=2, ...) {
 ##' @rdname print-vsel
 ##' @export
 ##' @method print cvsel
-print.cvsel <- function(x, digits=2, ...) {
+print.cvsel <- function(x, digits = 2, ...) {
   stats <- varsel_stats(x, ...)
   v <- match("vind", colnames(stats))
   stats[, -v] <- round(stats[, -v], digits)
@@ -457,41 +488,46 @@ print.cvsel <- function(x, digits=2, ...) {
 ##'
 
 ##' @export
-suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='upper',
-                         baseline=NULL, warnings=TRUE, ...) {
-
+suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = "upper",
+                         baseline = NULL, warnings = TRUE, ...) {
   .validate_vsel_object_stats(object, stat)
-  if (length(stat) > 1)
-    stop('Only one statistic can be specified to suggest_size')
+  if (length(stat) > 1) {
+    stop("Only one statistic can be specified to suggest_size")
+  }
 
   if (.is_util(stat)) {
     sgn <- 1
   } else {
     sgn <- -1
-    if (type == 'upper')
-      type <- 'lower'
-    else
-      type <- 'upper'
-  }
-  bound <- paste0(stat,'.',type)
-  stats <- varsel_stats(object, stats=stat, alpha=alpha, type=c('mean','upper','lower'),
-                        baseline=baseline, deltas = T)
-  util_null <- sgn*unlist(unname(subset(stats, stats$size==0, stat)))
-  util_cutoff <- pct*util_null
-  res <- subset(stats, sgn*stats[,bound] >= util_cutoff, 'size')
-
-  if(nrow(res) == 0) {
-    ## no submodel satisfying the criterion found
-    if (object$nv_max == object$nv_all)
-      suggested_size <- object$nv_max
-    else {
-      suggested_size <- NA
-      if (warnings)
-        warning(paste('Could not suggest model size. Investigate varsel_plot to identify',
-                      'if the search was terminated too early. If this is the case,',
-                      'run variable selection with larger value for nv_max.'))
+    if (type == "upper") {
+      type <- "lower"
+    } else {
+      type <- "upper"
     }
+  }
+  bound <- paste0(stat, ".", type)
+  stats <- varsel_stats(object,
+    stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
+    baseline = baseline, deltas = T
+  )
+  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
+  util_cutoff <- pct * util_null
+  res <- subset(stats, sgn * stats[, bound] >= util_cutoff, "size")
 
+  if (nrow(res) == 0) {
+    ## no submodel satisfying the criterion found
+    if (object$nv_max == object$nv_all) {
+      suggested_size <- object$nv_max
+    } else {
+      suggested_size <- NA
+      if (warnings) {
+        warning(paste(
+          "Could not suggest model size. Investigate varsel_plot to identify",
+          "if the search was terminated too early. If this is the case,",
+          "run variable selection with larger value for nv_max."
+        ))
+      }
+    }
   } else {
     suggested_size <- min(res)
   }
@@ -506,16 +542,20 @@ suggest_size <- function(object, stat = 'elpd', alpha = 0.32, pct = 0.0, type='u
 ##' @export
 as.matrix.projection <- function(x, ...) {
   if (x$p_type) {
-    warning(paste0('Note, that projection was performed using',
-                   'clustering and the clusters might have different weights.'))
+    warning(paste0(
+      "Note, that projection was performed using",
+      "clustering and the clusters might have different weights."
+    ))
   }
   res <- t(x$sub_fit[[1]])
-  if (x$intercept)
-    if ("1" %in% x$vind)
+  if (x$intercept) {
+    if ("1" %in% x$vind) {
       colnames(res) <- gsub("^1", "Intercept", x$vind)
-    else
-      colnames(res) <- c('Intercept', x$vind)
-  if (x$family$family == 'gaussian') res <- cbind(res, sigma = x$dis)
+    } else {
+      colnames(res) <- c("Intercept", x$vind)
+    }
+  }
+  if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   res
 }
 
@@ -558,12 +598,11 @@ NULL
 
 ##' @rdname cv-indices
 ##' @export
-cvfolds <- function(n, k, seed=NULL) {
-
+cvfolds <- function(n, k, seed = NULL) {
   .validate_num_folds(k, n)
 
   ## set random seed but ensure the old RNG state is restored on exit
-  if (exists('.Random.seed')) {
+  if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
@@ -571,41 +610,39 @@ cvfolds <- function(n, k, seed=NULL) {
 
   ## create and shuffle the indices
   folds <- rep_len(1:k, length.out = n)
-  folds <- sample(folds, n, replace=FALSE)
+  folds <- sample(folds, n, replace = FALSE)
 
   return(folds)
-
 }
 
 ##' @rdname cv-indices
 ##' @export
-cvind <- function(n, k, out=c('foldwise', 'indices'), seed=NULL) {
-
+cvind <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
   .validate_num_folds(k, n)
   out <- match.arg(out)
 
-                                        # set random seed but ensure the old RNG state is restored on exit
-  if (exists('.Random.seed')) {
+  # set random seed but ensure the old RNG state is restored on exit
+  if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)
 
-                                        # shuffle the indices
-  ind <- sample(1:n, n, replace=FALSE)
+  # shuffle the indices
+  ind <- sample(1:n, n, replace = FALSE)
 
-  if (out == 'foldwise') {
+  if (out == "foldwise") {
     cv <- lapply(1:k, function(i) {
-      ts <- sort(ind[seq(i,n,k)])  # test set
+      ts <- sort(ind[seq(i, n, k)]) # test set
       tr <- setdiff(1:n, ts) # training set
-      list(tr=tr,ts=ts)
+      list(tr = tr, ts = ts)
     })
-  }	else if (out == 'indices') {
+  } else if (out == "indices") {
     cv <- list()
     cv$tr <- list()
     cv$ts <- list()
     for (i in 1:k) {
-      ts <- sort(ind[seq(i,n,k)]) # test set
+      ts <- sort(ind[seq(i, n, k)]) # test set
       tr <- setdiff(1:n, ts) # training set
       cv$tr[[i]] <- tr
       cv$ts[[i]] <- ts
