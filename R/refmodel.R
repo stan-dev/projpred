@@ -216,13 +216,27 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
   if (is.null(data)) {
     data <- fit$data
   }
+
+  weights <- NULL
   if (is.null(y)) {
-    y <- fit$data[, colnames(fit$data) == response_name]
+    if (family$family == "binomial" && length(response_name) == 2) {
+      ## in rstanarm the convention is to set
+      ## cbind(y, weight - y) ~ .
+      response <- lapply(response_name, function(rhs) {
+        f <- as.formula(paste0("~ ", rhs))
+        eval(f[[2]], data, environment(f))
+      })
+      y <- response[[1]]
+      weights <- response[[2]] + y ## weights - y
+    } else if (length(response_name == 1)) {
+      y <- fit$data[, colnames(fit$data) == response_name]
+    }
   }
 
   refmodel <- init_refmodel(
     fit, data, y, formula, family, predfun, mle,
-    proj_predfun, folds, penalized, ...
+    proj_predfun, folds, penalized,
+    weights = weights, ...
   )
   return(refmodel)
 }
