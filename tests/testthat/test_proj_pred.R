@@ -59,7 +59,7 @@ if (require(brms) && require(rstanarm)) {
       "must be a data.frame or a matrix"
     )
     expect_error(
-      proj_linpred(proj_vind_list, xnew = data.frame(x.1 = x[, 1])),
+      proj_linpred(proj_vind_list, xnew = x[, 1]),
       "must be a data.frame or a matrix"
     )
     expect_error(
@@ -67,8 +67,8 @@ if (require(brms) && require(rstanarm)) {
       "number of columns in xnew does not match"
     )
     expect_error(
-      proj_linpred(proj_vind_list, xnew = data.frame(x = x[, 1:2])),
-      "xnew has 2 columns, but vind expects 3 columns"
+      proj_linpred(proj_vind_list, xnew = data.frame(x = x)[, 1:2], vind = 1:3),
+      "number of columns in xnew does not match"
     )
   })
 

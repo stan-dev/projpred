@@ -68,9 +68,13 @@ NULL
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
                         proj_predict, ...) {
+  if (is.null(xnew) ||
+    !(inherits(xnew, "data.frame") ||
+      inherits(xnew, "matrix"))) {
+    stop("xnew must be a data.frame or a matrix")
+  }
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
-  if (is.null(xnew)) stop("xnew must be a data.frame or a matrix")
 
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
