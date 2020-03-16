@@ -21,12 +21,15 @@ if (require(brms) && require(rstanarm)) {
   f_gauss <- gaussian()
   df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
   f_binom <- binomial()
-  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x %*% b)), x = x, weights = weights)
+  df_binom <- data.frame(
+    y = rbinom(n, weights, f_binom$linkinv(x %*% b)), x = x,
+    weights = weights
+  )
   f_poiss <- poisson()
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
   ys <- list()
   ys[[1]] <- df_gauss$y
-  ys[[2]] <- df_binom$y / weights
+  ys[[2]] <- df_binom$y
   ys[[3]] <- df_poiss$y
 
   SW({
@@ -43,7 +46,11 @@ if (require(brms) && require(rstanarm)) {
       chains = chains, seed = seed, iter = iter
     )
   })
-  fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
+  fit_list <- list(
+    gauss = fit_gauss,
+    binom = fit_binom,
+    poiss = fit_poiss
+  )
   vs_list <- lapply(fit_list, varsel, nv_max = nv + 1, verbose = FALSE)
   proj_vind_list <- lapply(vs_list, project, vind = c(2, 3), seed = seed)
   proj_all_list <- lapply(vs_list, project, seed = seed, nv = 0:nv)
@@ -130,18 +137,24 @@ if (require(brms) && require(rstanarm)) {
     )
   })
 
-  ## test_that("proj_linpred: specifying ynew has an expected effect", {
-  ##   for(i in 1:length(vs_list)) {
-  ##     i_inf <- names(vs_list)[i]
-  ##     pl <- proj_linpred(vs_list[[i]], xnew = data.frame(x=x), ynew = ys[[i]], weightsnew=weights, nv = 0:nv)
-  ##     pl2 <- proj_linpred(vs_list[[i]], xnew = data.frame(x=x), weightsnew=weights, nv = 0:nv)
-  ##     for(j in 1:length(pl)) {
-  ##       expect_named(pl[[j]], c('pred', 'lpd'))
-  ##       expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
-  ##       expect_equal(nrow(pl[[j]]$lpd), n, info = i_inf)
-  ##     }
-  ##   }
-  ## })
+  test_that("proj_linpred: specifying ynew has an expected effect", {
+    for (i in 1:length(vs_list)) {
+      i_inf <- names(vs_list)[i]
+      pl <- proj_linpred(vs_list[[i]],
+        xnew = df_binom, ynew = ys[[i]],
+        weightsnew = df_binom$weights, nv = 0:nv
+      )
+      pl2 <- proj_linpred(vs_list[[i]],
+        xnew = data.frame(x = x),
+        weightsnew = weights, nv = 0:nv
+      )
+      for (j in 1:length(pl)) {
+        expect_named(pl[[j]], c("pred", "lpd"))
+        expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
+        expect_equal(nrow(pl[[j]]$lpd), n, info = i_inf)
+      }
+    }
+  })
 
   ## test_that("proj_linpred: specifying ynew as a factor works in a binomial model", {
   ##   yfactor <- factor(rbinom(n, 1, 0.5))

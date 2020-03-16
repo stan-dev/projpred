@@ -167,7 +167,7 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
     }
 
     return(nlist(pred, lpd = compute_lpd(ynew, pred, proj, weights,
-      integrated = integrated
+      integrated = integrated, transform = transform
     )))
   }
 
@@ -179,12 +179,15 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
   )
 }
 
-compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE) {
+compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
+                        transform = FALSE) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$family)
     ynew <- target$y
     weights <- target$weights
+    ## if !transform then we are passing linkfun(mu)
+    if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
       lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
