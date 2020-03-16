@@ -127,10 +127,10 @@ if (require(brms) && require(rstanarm)) {
       proj_linpred(vs_list[["poiss"]], xnew = data.frame(x = x), ynew = factor(ys[[3]])),
       "cannot be a factor"
     )
-    expect_error(
-      proj_linpred(vs_list[["binom"]], xnew = data.frame(x = x), ynew = ys[[1]]),
-      "y values must be 0 <= y <= 1 for the binomial model"
-    )
+    ## expect_error(
+    ##   proj_linpred(vs_list[["binom"]], xnew = data.frame(x = x), ynew = ys[[1]]),
+    ##   "y values must be 0 <= y <= 1 for the binomial model"
+    ## )
     expect_error(
       proj_linpred(vs_list[["binom"]], xnew = data.frame(x = x), ynew = factor(ys[[1]])),
       "y cannot contain more than two classes"
