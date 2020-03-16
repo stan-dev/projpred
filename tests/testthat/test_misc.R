@@ -2,7 +2,7 @@ context("miscellaneous")
 
 # miscellaneous tests
 
-if (require(rstanarm)) {
+if (require(brms)) {
   set.seed(1235)
   n <- 40
   nv <- 5
@@ -28,122 +28,113 @@ if (require(rstanarm)) {
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
 
   SW(
-    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_gauss, data = df_gauss, QR = T,
-      weights = weights, offset = offset,
-      chains = chains, seed = seed, iter = iter,
-      refresh = 0
+    fit_gauss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+      family = f_gauss, data = df_gauss,
+      chains = chains, seed = seed, iter = iter
     )
   )
   SW(
-    fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom, QR = T,
-      data = df_binom, weights = weights, offset = offset,
-      chains = chains, seed = seed, iter = iter, refresh = 0
+    fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5,
+      family = f_binom, data = df_binom,
+      chains = chains, seed = seed, iter = iter
     )
   )
   SW(
-    fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_poiss, data = df_poiss, QR = T,
-      weights = weights, offset = offset,
-      chains = chains, seed = seed, iter = iter, refresh = 0
+    fit_poiss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+      family = f_poiss, data = df_poiss,
+      chains = chains, seed = seed, iter = iter
     )
   )
-  fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss)
+  fit_list <- list( ## gauss = fit_gauss,
+    binom = fit_binom, poiss = fit_poiss
+  )
 
 
 
 
-  ## test_that("check that the main function calls do not return the same RNG state every time", {
+  test_that("check that the main function calls do not return the same RNG state every time", {
+    s <- 5
 
-  ##   s <- 5
+    for (seed in c(130927, NULL)) {
+      for (i in seq_along(fit_list)) {
+        fit <- fit_list[[i]]
 
-  ##   for (seed in c(130927, NULL)) {
-  ##     for (i in seq_along(fit_list)) {
+        # varsel
+        foo <- varsel(fit, seed = seed)
+        r1 <- rnorm(s)
+        foo <- varsel(fit, seed = seed)
+        r2 <- rnorm(s)
+        expect_true(any(r1 != r2))
 
-  ##       fit <- fit_list[[i]]
+        # cv_varsel
+        SW(foo <- cv_varsel(fit, seed = seed))
+        r1 <- rnorm(s)
+        SW(foo <- cv_varsel(fit, seed = seed))
+        r2 <- rnorm(s)
+        expect_true(any(r1 != r2))
 
-  ##       # varsel
-  ##       foo <- varsel(fit, seed=seed)
-  ##       r1 <- rnorm(s)
-  ##       foo <- varsel(fit, seed=seed)
-  ##       r2 <- rnorm(s)
-  ##       expect_true(any(r1!=r2))
+        # project
+        vind <- c(1, 2)
+        foo <- project(fit, vind = vind, ns = 100, seed = seed)
+        r1 <- rnorm(s)
+        foo <- project(fit, vind = vind, ns = 100, seed = seed)
+        r2 <- rnorm(s)
+        expect_true(any(r1 != r2))
 
-  ##       # cv_varsel
-  ##       SW(foo <- cv_varsel(fit, seed=seed))
-  ##       r1 <- rnorm(s)
-  ##       SW(foo <- cv_varsel(fit, seed=seed))
-  ##       r2 <- rnorm(s)
-  ##       expect_true(any(r1!=r2))
+        # proj_linpred
+        vind <- c(1, 3)
+        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        r1 <- rnorm(s)
+        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        r2 <- rnorm(s)
+        expect_true(any(r1 != r2))
 
-  ##       # project
-  ##       vind <- c(1,2)
-  ##       foo <- project(fit, vind=vind, ns = 100, seed=seed)
-  ##       r1 <- rnorm(s)
-  ##       foo <- project(fit, vind=vind, ns = 100, seed=seed)
-  ##       r2 <- rnorm(s)
-  ##       expect_true(any(r1!=r2))
-
-  ##       # proj_linpred
-  ##       vind <- c(1,3)
-  ##       foo <- proj_linpred(fit, x[,vind], vind=vind, seed=seed)
-  ##       r1 <- rnorm(s)
-  ##       foo <- proj_linpred(fit, x[,vind], vind=vind, seed=seed)
-  ##       r2 <- rnorm(s)
-  ##       expect_true(any(r1!=r2))
-
-  ##       # proj_predict
-  ##       vind <- c(1,3)
-  ##       foo <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
-  ##       r1 <- rnorm(s)
-  ##       foo <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
-  ##       r2 <- rnorm(s)
-  ##       expect_true(any(r1!=r2))
-  ##     }
-  ##   }
-
-  ## })
+        # proj_predict
+        vind <- c(1, 3)
+        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        r1 <- rnorm(s)
+        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        r2 <- rnorm(s)
+        expect_true(any(r1 != r2))
+      }
+    }
+  })
 
 
+  test_that("check that providing seed has the expected effect", {
+    for (seed in c(130927, 1524542)) {
+      for (i in seq_along(fit_list)) {
+        fit <- fit_list[[i]]
 
-  ## test_that("check that providing seed has the expected effect", {
+        # varsel
+        foo <- varsel(fit, seed = seed)
+        bar <- varsel(fit, seed = seed)
+        expect_equal(foo, bar)
 
-  ##   for (seed in c(130927, 1524542)) {
-  ##     for (i in seq_along(fit_list)) {
+        # cv_varsel
+        SW(foo <- cv_varsel(fit, seed = seed))
+        SW(bar <- cv_varsel(fit, seed = seed))
+        expect_equal(foo, bar)
 
-  ##       fit <- fit_list[[i]]
-
-  ##       # varsel
-  ##       foo <- varsel(fit, seed=seed)
-  ##       bar <- varsel(fit, seed=seed)
-  ##       expect_equal(foo, bar)
-
-  ##       # cv_varsel
-  ##       SW(foo <- cv_varsel(fit, seed=seed))
-  ##       SW(bar <- cv_varsel(fit, seed=seed))
-  ##       expect_equal(foo, bar)
-
-  ##       # project
-  ##       vind <- c(1,2)
-  ##       foo <- project(fit, vind=vind, nc = 10, seed=seed)
-  ##       bar <- project(fit, vind=vind, nc = 10, seed=seed)
-  ##       expect_equal(foo, bar)
+        # project
+        vind <- c(1, 2)
+        foo <- project(fit, vind = vind, nc = 10, seed = seed)
+        bar <- project(fit, vind = vind, nc = 10, seed = seed)
+        expect_equal(foo, bar)
 
 
-  ##       # proj_linpred
-  ##       vind <- c(1,3)
-  ##       foo <- proj_linpred(fit, x[,vind], vind=vind, seed=seed)
-  ##       bar <- proj_linpred(fit, x[,vind], vind=vind, seed=seed)
-  ##       expect_equal(foo, bar)
+        # proj_linpred
+        vind <- c(1, 3)
+        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        bar <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        expect_equal(foo, bar)
 
-  ##       # proj_predict
-  ##       vind <- c(1,3)
-  ##       foo <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
-  ##       bar <- proj_predict(fit, x[,vind], vind=vind, seed=seed)
-  ##       expect_equal(foo, bar)
-  ##     }
-  ##   }
-
-  ## })
+        # proj_predict
+        vind <- c(1, 3)
+        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        bar <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        expect_equal(foo, bar)
+      }
+    }
+  })
 }
