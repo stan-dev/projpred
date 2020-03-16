@@ -88,7 +88,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
   bsstat <- rep(NA, b)
   oobstat <- rep(NA, b)
   for (i in 1:b) {
-    bsind <- sample(seq_x, replace = T)
+    bsind <- sample(seq_x, replace = TRUE)
     bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
     if (!is.null(oobfun)) {
       oobind <- setdiff(seq_x, unique(bsind))
@@ -299,7 +299,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
 
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
-  nc <- max(cl, na.rm = T) # number of clusters (assumes labeling 1,...,nc)
+  nc <- max(cl, na.rm = TRUE) # number of clusters (assumes labeling 1,...,nc)
   centers <- matrix(0, nrow = nc, ncol = dim(mu)[1])
   wcluster <- rep(0, nc) # cluster weights
   eps <- 1e-10
@@ -398,7 +398,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
 
 .df_to_model_mat <- function(dfnew, var_names) {
   f <- formula(paste("~", paste(c("0", var_names), collapse = " + ")))
-  model.matrix(terms(f, keep.order = T), data = dfnew)
+  model.matrix(terms(f, keep.order = TRUE), data = dfnew)
 }
 
 .is_proj_list <- function(proj) {
