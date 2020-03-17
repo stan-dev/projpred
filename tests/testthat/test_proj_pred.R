@@ -408,15 +408,27 @@ if (require(brms) && require(rstanarm)) {
     }
   })
 
-  ## test_that("proj_predict: arguments passed to project work accordingly", {
-  ##   for(i in 1:length(vs_list)) {
-  ##     i_inf <- names(vs_list)[i]
-  ##     pr1 <- project(vs_list[[i]], nv = c(2, 4), nc = 2, ns = 20,
-  ##                    regul = 1e-8, seed = 12)
-  ##     prp1 <- proj_predict(pr1, xnew = data.frame(x=x), draws = 100)
-  ##     prp2 <- proj_predict(vs_list[[i]], xnew = data.frame(x=x), draws = 100,
-  ##                          nv = c(2, 4), nc = 2, ns = 20, regul = 1e-8, seed = 12)
-  ##     expect_equal(prp1, prp2, info = i_inf)
-  ##   }
-  ## })
+  test_that("proj_predict: arguments passed to project work accordingly", {
+    for (i in 1:length(vs_list)) {
+      i_inf <- names(vs_list)[i]
+      prp1 <- proj_predict(vs_list[[i]],
+        xnew = data.frame(x = x), draws = 100,
+        seed = 12, nv = c(2, 4), nc = 2, ns = 20, regul = 1e-08
+      )
+      prp2 <- proj_predict(vs_list[[i]],
+        xnew = data.frame(x = x), draws = 100,
+        nv = c(2, 4), nc = 2, ns = 20, regul = 1e-8, seed = 12
+      )
+      prp3 <- proj_predict(vs_list[[i]],
+        xnew = data.frame(x = x), draws = 100,
+        seed = 120, nv = c(2, 4), nc = 2, ns = 20, regul = 1e-08
+      )
+      expect_equal(prp1, prp2, info = i_inf)
+      expect_false(all(unlist(lapply(seq_along(prp1), function(i) {
+        all(prp1[[i]] == prp3[[i]])
+      }))),
+      info = i_inf
+      )
+    }
+  })
 }
