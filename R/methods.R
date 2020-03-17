@@ -140,7 +140,10 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
-    mu <- proj$family$mu_fun(proj$sub_fit, xnew = xnew, offset = offsetnew)
+    mu <- proj$family$mu_fun(proj$sub_fit,
+      xnew = xnew, offset = offsetnew,
+      weights = weightsnew
+    )
 
     proj_predict(proj, mu, weightsnew)
   })

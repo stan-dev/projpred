@@ -294,12 +294,19 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL, mle = N
   }
 
   ## TODO: ideally remove this, have to think about it
-  family$mu_fun <- function(fit, obs = folds, xnew = NULL, offset = NULL) {
+  family$mu_fun <- function(fit, obs = folds, xnew = NULL, offset = NULL,
+                            weights = NULL) {
     if (is.null(offset)) {
       offset <- rep(0, length(obs))
     }
+    if (is.null(weights)) {
+      weights <- rep(1, length(obs))
+    }
     newdata <- fetch_data_wrapper(obs = obs, newdata = xnew)
-    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
+    family$linkinv(proj_predfun(fit,
+      newdata = newdata,
+      weights = weights
+    ) + offset)
   }
 
   proper_model <- !is.null(fit)
