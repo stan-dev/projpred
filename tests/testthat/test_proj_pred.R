@@ -156,40 +156,54 @@ if (require(brms) && require(rstanarm)) {
     }
   })
 
-  ## test_that("proj_linpred: specifying ynew as a factor works in a binomial model", {
-  ##   yfactor <- factor(rbinom(n, 1, 0.5))
-  ##   pl <- proj_linpred(vs_list[["binom"]], xnew = data.frame(x=x), ynew = yfactor)
-  ##   expect_named(pl, c('pred', 'lpd'))
-  ##   expect_equal(ncol(pl$pred), n)
-  ##   expect_equal(nrow(pl$lpd), n)
-  ## })
+  test_that("proj_linpred: specifying ynew as a factor works in a binomial model", {
+    yfactor <- factor(rbinom(n, 1, 0.5))
+    pl <- proj_linpred(vs_list[["binom"]], xnew = data.frame(x = x), ynew = yfactor)
+    expect_named(pl, c("pred", "lpd"))
+    expect_equal(ncol(pl$pred), n)
+    expect_equal(nrow(pl$lpd), n)
+  })
 
-  ## test_that("proj_linpred: specifying weights has an expected effect", {
-  ##   for(i in 1:length(proj_vind_list)) {
-  ##     # for binomial models weights have to be specified
-  ##     if (proj_vind_list[[i]]$family$family != 'binomial') {
-  ##       i_inf <- names(proj_vind_list)[i]
-  ##       plw <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), ynew = ys[[i]],
-  ##                           weightsnew = weights)
-  ##       pl <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), ynew = ys[[i]])
-  ##       expect_named(plw, c('pred', 'lpd'))
-  ##       expect_equal(ncol(plw$pred), n, info = i_inf)
-  ##       expect_equal(nrow(plw$lpd), n, info = i_inf)
-  ##     }
-  ##   }
-  ## })
+  test_that("proj_linpred: specifying weights has an expected effect", {
+    for (i in 1:length(proj_vind_list)) {
+      # for binomial models weights have to be specified
+      if (proj_vind_list[[i]]$family$family != "binomial") {
+        i_inf <- names(proj_vind_list)[i]
+        weightsnew <- sample(1:4, n, replace = TRUE)
+        plw <- proj_linpred(proj_vind_list[[i]],
+          xnew = data.frame(x = x), ynew = ys[[i]],
+          weightsnew = weightsnew
+        )
+        pl <- proj_linpred(proj_vind_list[[i]],
+          xnew = data.frame(x = x),
+          ynew = ys[[i]],
+          weightsnew = weights
+        )
+        expect_named(plw, c("pred", "lpd"))
+        expect_equal(ncol(plw$pred), n, info = i_inf)
+        expect_equal(nrow(plw$lpd), n, info = i_inf)
+        expect_false(all(plw$lpd == pl$lpd))
+      }
+    }
+  })
 
-  ## test_that("proj_linpred: specifying offset has an expected effect", {
-  ##   for(i in 1:length(proj_vind_list)) {
-  ##     i_inf <- names(proj_vind_list)[i]
-  ##     plo <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), ynew = ys[[i]], weightsnew=weights,
-  ##                         offsetnew = offset)
-  ##     pl <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x=x), ynew = ys[[i]], weightsnew=weights)
-  ##     expect_named(plo, c('pred', 'lpd'))
-  ##     expect_equal(ncol(plo$pred), n, info = i_inf)
-  ##     expect_equal(nrow(plo$lpd), n, info = i_inf)
-  ##   }
-  ## })
+  test_that("proj_linpred: specifying offset has an expected effect", {
+    for (i in 1:length(proj_vind_list)) {
+      i_inf <- names(proj_vind_list)[i]
+      plo <- proj_linpred(proj_vind_list[[i]],
+        xnew = data.frame(x = x),
+        ynew = ys[[i]], weightsnew = weights, offsetnew = offset
+      )
+      pl <- proj_linpred(proj_vind_list[[i]],
+        xnew = data.frame(x = x),
+        ynew = ys[[i]], weightsnew = weights
+      )
+      expect_named(plo, c("pred", "lpd"))
+      expect_equal(ncol(plo$pred), n, info = i_inf)
+      expect_equal(nrow(plo$lpd), n, info = i_inf)
+      expect_equal(t(plo$pred) - offset, t(pl$pred), tol = 1e-8)
+    }
+  })
 
   test_that("proj_linpred: specifying transform has an expected effect", {
     for (i in 1:length(proj_vind_list)) {
