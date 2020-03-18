@@ -257,31 +257,20 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL, mle = N
       mle <- linear_multilevel_mle
       proj_predfun <- linear_multilevel_proj_predfun
     } else {
-      if (!penalized) {
-        mle <- linear_mle
-        proj_predfun <- linear_proj_predfun
-      } else {
-        mle <- penalized_linear_mle
-        proj_predfun <- penalized_linear_proj_predfun
-      }
+      mle <- linear_mle
+      proj_predfun <- linear_proj_predfun
     }
   } else if (is.null(mle) && !is.null(proj_predfun)) {
     if (length(terms$group_terms) != 0) {
       mle <- linear_multilevel_mle
-    } else
-    if (!penalized) {
-      mle <- linear_mle
     } else {
-      mle <- penalized_linear_mle
+      mle <- linear_mle
     }
   } else if (!is.null(mle) && is.null(proj_predfun)) {
     if (length(terms$group_terms) != 0) {
       proj_predfun <- linear_multilevel_proj_predfun
-    } else
-    if (!penalized) {
-      proj_predfun <- linear_proj_predfun
     } else {
-      proj_predfun <- penalized_linear_proj_predfun
+      proj_predfun <- linear_proj_predfun
     }
   }
 
@@ -307,6 +296,11 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL, mle = N
       newdata = newdata,
       weights = weights
     ) + offset)
+  }
+
+  ## equal sample weights by default
+  if (is.null(weights)) {
+    weights <- rep(1, length(y))
   }
 
   proper_model <- !is.null(fit)
@@ -346,11 +340,6 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL, mle = N
   }
   target <- .get_standard_y(y, weights, family)
   y <- target$y
-
-  ## equal sample weights by default
-  if (is.null(weights)) {
-    weights <- rep(1, length(y))
-  }
 
   if (proper_model) {
     loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
