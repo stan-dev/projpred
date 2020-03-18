@@ -539,7 +539,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = 
       }
     }
   } else {
-    suggested_size <- min(res)
+    suggested_size <- max(min(res), 1) # always include intercept
   }
 
   suggested_size
