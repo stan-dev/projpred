@@ -32,12 +32,18 @@ df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
 
 formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
 
-dref_gauss <- init_refmodel(fit = NULL, df_gauss, df_gauss$y, formula, gaussian(),
-                                offset = offset, weights = weights)
-dref_binom <- init_refmodel(fit = NULL, df_binom, df_binom$y / weights, formula,
-                                binomial(), offset = offset, weights = weights)
-dref_poiss <- init_refmodel(fit = NULL, df_poiss, df_poiss$y, formula, poisson(),
-                                offset = offset, weights = weights)
+dref_gauss <- init_refmodel(
+  fit = NULL, df_gauss, df_gauss$y, formula, gaussian(),
+  offset = offset, weights = weights
+)
+dref_binom <- init_refmodel(
+  fit = NULL, df_binom, df_binom$y, formula,
+  binomial(), offset = offset, weights = weights
+)
+dref_poiss <- init_refmodel(
+  fit = NULL, df_poiss, df_poiss$y, formula, poisson(),
+  offset = offset, weights = weights
+)
 
 dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
 
@@ -48,9 +54,11 @@ vsd_list <- lapply(dref_list, varsel, nv_max = nv + 1, verbose = FALSE)
 cvvsd_list <- lapply(dref_list, cv_varsel, nv_max = nv + 1, verbose = FALSE)
 
 #
-predd_list <- lapply(vsd_list, proj_linpred, xnew = data.frame(x=x, weights=weights),
-                     offsetnew = offset, weightsnew = weights, nv = 3,
-                     seed = seed)
+predd_list <- lapply(vsd_list, proj_linpred,
+  xnew = data.frame(x = x, weights = weights),
+  offsetnew = offset, weightsnew = weights, nv = 3,
+  seed = seed
+)
 
 test_that("predict fails for 'datafit' objects", {
   expect_error(
@@ -68,7 +76,7 @@ test_that("output of varsel is sensible with only data provided as reference mod
     expect_equal(length(vsd_list[[i]]$kl), nv + 1)
 
     # kl decreasing
-    expect_equal(vsd_list[[i]]$kl, cummin(vsd_list[[i]]$kl), tolerance=1e-2)
+    expect_equal(vsd_list[[i]]$kl, cummin(vsd_list[[i]]$kl), tolerance = 1e-2)
 
     # summaries seems legit
     expect_named(vsd_list[[i]]$summaries, c("sub", "ref"))
@@ -87,7 +95,7 @@ test_that("output of cv_varsel is sensible with only data provided as reference 
     expect_equal(length(cvvsd_list[[i]]$kl), nv + 1)
 
     # kl decreasing
-    expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl), tolerance=1e-2)
+    expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl), tolerance = 1e-2)
 
     # summaries seems legit
     expect_named(cvvsd_list[[i]]$summaries, c("sub", "ref"))
@@ -112,17 +120,20 @@ test_that("output of project is sensible with only data provided as reference mo
     expect_equal(length(p), nv + 1)
 
     for (j in 1:length(p)) {
-      expect_named(p[[j]], c("kl", "weights", "dis", "vind",
-                             "sub_fit", "p_type", "family",
-                             "intercept"),
+      expect_named(p[[j]], c(
+        "kl", "weights", "dis", "vind",
+        "sub_fit", "p_type", "family",
+        "intercept"
+      ),
       ignore.order = TRUE
       )
       # number of draws should equal to the number of draw weights
       ns <- length(p[[j]]$weights)
       expect_equal(length(p[[j]]$sub_fit$alpha), ns)
       expect_equal(length(p[[j]]$dis), ns)
-      if (j > 1)
+      if (j > 1) {
         expect_equal(ncol(p[[j]]$sub_fit$beta), ns)
+      }
       # j:th element should have j-1 variables
       expect_equal(length(which(p[[j]]$sub_fit$beta != 0)), j - 1)
       expect_equal(length(p[[j]]$vind), j - 1)
@@ -131,7 +142,7 @@ test_that("output of project is sensible with only data provided as reference mo
     }
     # kl should be non-increasing on training data
     klseq <- sapply(p, function(e) e$kl)
-    expect_equal(klseq, cummin(klseq), tolerance=1e-2)
+    expect_equal(klseq, cummin(klseq), tolerance = 1e-2)
 
     # all submodels should use the same clustering/subsampling
     expect_equal(p[[1]]$weights, p[[nv]]$weights)
@@ -144,13 +155,15 @@ test_that("output of proj_linpred is sensible with only data provided as referen
 
     # length of output of project is legit
     pred <- proj_linpred(vsd_list[[i]],
-      xnew = data.frame(x=x), seed = seed,
-      offsetnew = offset, weightsnew = weights, nv = 3)
+      xnew = data.frame(x = x), seed = seed,
+      offsetnew = offset, weightsnew = weights, nv = 3
+    )
     expect_equal(length(pred$pred), nrow(x))
 
     pred <- proj_linpred(vsd_list[[i]],
-      xnew = data.frame(x=x), ynew = dref_list[[i]]$y, seed = seed,
-      offsetnew = offset, weightsnew = weights, nv = 3)
+      xnew = data.frame(x = x), ynew = dref_list[[i]]$y, seed = seed,
+      offsetnew = offset, weightsnew = weights, nv = 3
+    )
 
     expect_equal(length(pred$pred), nrow(x))
     expect_equal(length(pred$lpd), nrow(x))
@@ -185,8 +198,8 @@ y_list <- lapply(fams, function(fam) {
     y_glmnet <- y
   } else if (fam$family == "binomial") {
     y <- rbinom(n, weights, fam$linkinv(x %*% b))
-    y <- y / weights
-    y_glmnet <- cbind(1 - y, y) # different way of specifying binomial y for glmnet
+    ## y <- y / weights
+    y_glmnet <- cbind(1 - y / weights, y / weights) # different way of specifying binomial y for glmnet
     weights <- weights
   } else if (fam$family == "poisson") {
     y <- rpois(n, fam$linkinv(x %*% b))
@@ -204,24 +217,28 @@ test_that("L1-projection with data reference gives the same results as Lasso fro
     y_glmnet <- y_list[[i]]$y_glmnet
     fam <- fams[[i]]
     weights <- y_list[[i]]$weights
-    if (is.null(weights))
+    if (is.null(weights)) {
       weights <- rep(1, NROW(y))
+    }
 
     lambda_min_ratio <- 1e-7
     nlambda <- 1500
 
-    df <- data.frame(y=y, x=x)
+    df <- data.frame(y = y, x = x)
     formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5 + x.6 + x.7 + x.8 + x.9 + x.10
     # Lasso solution with projpred
     ref <- init_refmodel(NULL, df, y, formula, family = fam, weights = weights, offset = offset)
     vs <- varsel(ref, method = "l1", lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12)
-    pred1 <- proj_linpred(vs, xnew = data.frame(x=x), nv = 0:nv,
-                              transform = FALSE, offsetnew = offset)
+    pred1 <- proj_linpred(vs,
+      xnew = data.frame(x = x), nv = 0:nv,
+      transform = FALSE, offsetnew = offset
+    )
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
       family = fam$family, weights = weights, offset = offset,
-      lambda.min.ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12)
+      lambda.min.ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12
+    )
     vind <- predict(lasso, type = "nonzero", s = lasso$lambda)
     nselected <- sapply(vind, function(e) length(e))
     lambdainds <- sapply(unique(nselected), function(nv) max(which(nselected == nv)))
@@ -237,10 +254,11 @@ test_that("L1-projection with data reference gives the same results as Lasso fro
     # check that the coefficients are similar
     ind <- match(vs$vind, setdiff(split_formula(formula), "1"))
     betas <- sapply(vs$spath$sub_fits, function(x) x$beta %||% 0)
-    delta <- sapply(seq_len(nv), function(i)
-                    abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]]))
+    delta <- sapply(seq_len(nv), function(i) {
+      abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
+    })
     expect_true(median(unlist(delta)) < 6e-2)
     expect_true(median(abs(sapply(vs$spath$sub_fits, function(x) x$alpha) -
-                           lasso$a0[lambdainds])) < 1.5e-1)
+      lasso$a0[lambdainds])) < 1.5e-1)
   }
 })
