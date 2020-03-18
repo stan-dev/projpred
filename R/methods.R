@@ -527,7 +527,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = 
   if (nrow(res) == 0) {
     ## no submodel satisfying the criterion found
     if (object$nv_max == object$nv_all) {
-      suggested_size <- object$nv_max
+      suggested_size <- object$nv_max - 1 # intercept is always in
     } else {
       suggested_size <- NA
       if (warnings) {
