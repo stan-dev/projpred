@@ -528,29 +528,31 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
       train,
       cvfit$omitted
     )
-    default_data <- refmodel$fetch_data(obs=fold)
-    fetch_fold <- function(data=NULL, obs=NULL, newdata=NULL) {
+    default_data <- refmodel$fetch_data(obs = fold)
+    fetch_fold <- function(data = NULL, obs = NULL, newdata = NULL) {
       refmodel$fetch_data(obs = fold, newdata = newdata)
     }
     predfun <- function(fit, newdata = default_data) {
       refmodel$predfun(fit, newdata = newdata)
     }
-    proj_predfun <- function(fit, newdata = default_data) {
-      refmodel$proj_predfun(fit, newdata = newdata)
+    proj_predfun <- function(fit, newdata = default_data, weights = NULL) {
+      refmodel$proj_predfun(fit, newdata = newdata, weights = weights)
     }
-    if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg"))
+    if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg")) {
       fit <- NULL
-    else
+    } else {
       fit <- cvfit
+    }
     refmod <- init_refmodel(fit, fetch_fold(),
-                            refmodel$y[fold], refmodel$formula,
-                            family = refmodel$family, predfun, mle = refmodel$mle,
-                            proj_predfun = proj_predfun, folds = seq_along(fold),
-                            offset = refmodel$offset[fold],
-                            weights = refmodel$wobs[fold])
+      refmodel$y[fold], refmodel$formula,
+      family = refmodel$family, predfun, mle = refmodel$mle,
+      proj_predfun = proj_predfun, folds = seq_along(fold),
+      offset = refmodel$offset[fold],
+      weights = refmodel$wobs[fold]
+    )
     refmod$fetch_data <- fetch_fold
     refmod$ncpred <- min(NCOL(refmod$mu), 5)
-    return(list(refmodel=refmod, omitted=cvfit$omitted))
+    return(list(refmodel = refmod, omitted = cvfit$omitted))
   })
 
   return(k_fold)
