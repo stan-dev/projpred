@@ -572,34 +572,32 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, cv_se
   resample <- function(x, ...) x[sample.int(length(x), ...)]
 
   if (nloo < n) {
-
     bad <- which(pareto_k > 0.7)
     ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
     good <- which(pareto_k <= 0.5)
-    inds <- resample(bad, min(length(bad), floor(nloo/3)) )
-    inds <- c(inds, resample(ok, min(length(ok), floor(nloo/3))))
-    inds <- c(inds, resample(good, min(length(good), floor(nloo/3))))
+    inds <- resample(bad, min(length(bad), floor(nloo / 3)))
+    inds <- c(inds, resample(ok, min(length(ok), floor(nloo / 3))))
+    inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
     if (length(inds) < nloo) {
       ## not enough points selected, so choose randomly among the rest
-      inds <- c(inds, resample(setdiff(1:n, inds), nloo-length(inds)))
+      inds <- c(inds, resample(setdiff(1:n, inds), nloo - length(inds)))
     }
 
     ## assign the weights corresponding to this stratification (for example, the
     ## 'bad' values are likely to be overpresented in the sample)
-    w <- rep(0,n)
+    w <- rep(0, n)
     w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
     w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
     w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
-
   } else {
 
     ## all points used
     inds <- c(1:n)
-    w <- rep(1,n)
+    w <- rep(1, n)
   }
 
   ## ensure weights are normalized
-  w <- w/sum(w)
+  w <- w / sum(w)
 
   return(nlist(inds, w))
 }
