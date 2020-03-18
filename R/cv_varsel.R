@@ -141,8 +141,8 @@ cv_varsel <- function(fit, method = NULL, cv_method = NULL,
   vs <- nlist(refmodel,
     spath = sel$spath, d_test = sel_cv$d_test,
     summaries = sel_cv$summaries, family = sel$family, kl = sel$kl,
-    vind = sel$vind, pctch, nv_max = nv_max - 1,
-    nv_all = count_terms_in_subformula(refmodel$formula) - 1
+    vind = sel$vind, pctch, nv_max = nv_max,
+    nv_all = count_terms_in_subformula(refmodel$formula)
   )
   class(vs) <- "cvsel"
   vs$suggested_size <- suggest_size(vs,

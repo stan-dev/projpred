@@ -132,7 +132,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
 
   ## suggest model size
   vs$nv_max <- nv_max
-  vs$nv_all <- count_terms_in_subformula(refmodel$formula) - 1
+  vs$nv_all <- count_terms_in_subformula(refmodel$formula)
   class(vs) <- 'vsel'
   vs$suggested_size <- suggest_size(vs, warnings = FALSE,
                                     has_group_features = has_group_features,
