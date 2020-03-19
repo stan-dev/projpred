@@ -68,6 +68,11 @@ NULL
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
                         proj_predict, ...) {
+  if (is.null(xnew) ||
+    !(inherits(xnew, "data.frame") ||
+      inherits(xnew, "matrix"))) {
+    stop("xnew must be a data.frame or a matrix")
+  }
   if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
   if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
 
@@ -135,7 +140,10 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
-    mu <- proj$family$mu_fun(proj$sub_fit, xnew = xnew, offset = offsetnew)
+    mu <- proj$family$mu_fun(proj$sub_fit,
+      xnew = xnew, offset = offsetnew,
+      weights = weightsnew
+    )
 
     proj_predict(proj, mu, weightsnew)
   })
@@ -162,7 +170,7 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
     }
 
     return(nlist(pred, lpd = compute_lpd(ynew, pred, proj, weights,
-      integrated = integrated
+      integrated = integrated, transform = transform
     )))
   }
 
@@ -174,12 +182,15 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
   )
 }
 
-compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE) {
+compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
+                        transform = FALSE) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$family)
     ynew <- target$y
     weights <- target$weights
+    ## if !transform then we are passing linkfun(mu)
+    if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
       lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
@@ -529,7 +540,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = 
       }
     }
   } else {
-    suggested_size <- min(res)
+    suggested_size <- max(min(res), 1) # always include intercept
   }
 
   suggested_size

@@ -1,35 +1,45 @@
-.get_sub_summaries <- function(submodels, test_points, refmodel, family, groups=NULL) {
-
+.get_sub_summaries <- function(submodels, test_points, refmodel, family, groups = NULL) {
   has_group_features <- !is.null(groups)
   res <- lapply(submodels, function(model) {
-  	vind <- model$vind
-    if (length(vind) == 0)
+    vind <- model$vind
+    if (length(vind) == 0) {
       vind <- c("1")
+    }
     sub_fit <- model$sub_fit
-    mu <- family$mu_fun(sub_fit, obs = test_points,
-                           offset = refmodel$offset[test_points])
-
     weights <- refmodel$wobs[test_points]
+    mu <- family$mu_fun(sub_fit,
+      obs = test_points,
+      offset = refmodel$offset[test_points],
+      weights = weights
+    )
+
     y <- refmodel$y[test_points]
     y_test <- nlist(y, weights)
 
-    .weighted_summary_means(y_test, family, model$weights, matrix(mu, NROW(y), NCOL(mu)), model$dis)
+    .weighted_summary_means(
+      y_test, family, model$weights,
+      matrix(mu, NROW(y), NCOL(mu)), model$dis
+    )
   })
 }
 
 .weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
-  loglik <- family$ll_fun(mu, dis, matrix(y_test$y, nrow=NROW(mu)),
-                             y_test$weights)
+  loglik <- family$ll_fun(
+    mu, dis, matrix(y_test$y, nrow = NROW(mu)),
+    y_test$weights
+  )
   if (length(loglik) == 1) {
-                                        # one observation, one sample
+    # one observation, one sample
     list(mu = mu, lppd = loglik)
-  } else if (is.null(dim(loglik))){
-                                        # loglik is a vector, but not sure if it means one observation with many samples, or vice versa?
-    stop('Internal error encountered: loglik is a vector, but should be a scalar or matrix')
+  } else if (is.null(dim(loglik))) {
+    # loglik is a vector, but not sure if it means one observation with many samples, or vice versa?
+    stop("Internal error encountered: loglik is a vector, but should be a scalar or matrix")
   } else {
-                                        # mu is a matrix, so apply weighted sum over the samples
-    list(mu = c(mu * wsample),
-         lppd = apply(loglik, 1, log_weighted_mean_exp, wsample))
+    # mu is a matrix, so apply weighted sum over the samples
+    list(
+      mu = c(mu * wsample),
+      lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
+    )
   }
 }
 

@@ -1,15 +1,16 @@
 search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
-                               verbose=TRUE, opt, groups=NULL, increasing_order=TRUE) {
+                           verbose = TRUE, opt, groups = NULL, increasing_order = TRUE) {
   ## initialize the forward selection
   ## proj performs the projection over draws
   projfun <- .get_proj_handle(family, opt$regul)
 
   formula <- refmodel$formula
-  iq <- ceiling(quantile(1:nv_max, 1:10/10))
-  if (is.null(groups))
+  iq <- ceiling(quantile(1:nv_max, 1:10 / 10))
+  if (is.null(groups)) {
     terms_ <- split_formula(formula)
-  else
+  } else {
     terms_ <- groups
+  }
   if (increasing_order) {
     terms_ <- sort_submodels_by_size(unname(unlist(terms_)))
     order <- 1:length(terms_)
@@ -25,9 +26,8 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
   submodels <- c()
 
   ## start adding terms one at a time
-  while(count_terms_chosen(reduce_models(chosen)) < nv_max
-        & count_terms_chosen(chosen) < total_terms) {
-
+  while (count_terms_chosen(reduce_models(chosen)) < nv_max
+  & count_terms_chosen(chosen) < total_terms) {
     notchosen <- setdiff(current_terms, chosen)
 
     ## if we have included all submodels in a class start with next class
@@ -40,8 +40,9 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
         current_terms <- terms_[[current]]
         notchosen <- setdiff(current_terms, chosen)
 
-        already_selected <- lapply(notchosen, function(x)
-          if (is_next_submodel_redundant(chosen, x)) x else NA)
+        already_selected <- lapply(notchosen, function(x) {
+          if (is_next_submodel_redundant(chosen, x)) x else NA
+        })
 
         ## if redundant models add the terms to the list so we don't iterate forever
         chosen <- c(chosen, unname(unlist(already_selected[!is.na(already_selected)])))
@@ -49,23 +50,26 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
     }
 
     ## only add candidates that are not redundant with previous chosen submodels
-    cands <- lapply(notchosen, function(x)
-      if (is_next_submodel_redundant(chosen, x)) NA else c(chosen, x))
+    cands <- lapply(notchosen, function(x) {
+      if (is_next_submodel_redundant(chosen, x)) NA else c(chosen, x)
+    })
 
     ## remove already selected terms
     cands <- cands[!is.na(cands)]
 
     p_sub <- sapply(cands, projfun, p_ref, refmodel, intercept)
 
-    imin <- which.min(sapply(seq_len(NCOL(p_sub)), function(i)
-      min(unlist(p_sub['kl', i]))))
+    imin <- which.min(sapply(seq_len(NCOL(p_sub)), function(i) {
+      min(unlist(p_sub["kl", i]))
+    }))
     chosen <- c(chosen, notchosen[imin])
 
     ## append submodels
-    submodels <- c(submodels, p_sub['sub_fit', imin])
+    submodels <- c(submodels, p_sub["sub_fit", imin])
 
-    if (verbose && length(chosen) %in% iq)
+    if (verbose && length(chosen) %in% iq) {
       print(paste0(names(iq)[max(which(length(chosen) == iq))], " of terms selected."))
+    }
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
@@ -79,55 +83,63 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
   mu <- p_ref$mu
   v <- p_ref$var
 
-  if (NCOL(mu) > 1 || NCOL(v) > 1)
-    stop('Internal error: search_L1 received multiple draws. Please report to the developers.')
+  if (NCOL(mu) > 1 || NCOL(v) > 1) {
+    stop("Internal error: search_L1 received multiple draws. Please report to the developers.")
+  }
 
   ## L1-penalized projection (projection path).
   ## (Notice: here we use pmax = nv_max+1 so that the computation gets carried until all the way
   ## down to the least regularization also for model size nv_max)
-  search <- glm_elnet(d_train$x, mu, family, lambda_min_ratio=opt$lambda_min_ratio, nlambda=opt$nlambda,
-                      pmax=nv_max+1, pmax_strict=FALSE, offset=d_train$offset, weights=d_train$weights,
-                      intercept=intercept, obsvar=v, penalty=penalty, thresh=opt$thresh)
+  search <- glm_elnet(d_train$x, mu, family,
+    lambda_min_ratio = opt$lambda_min_ratio, nlambda = opt$nlambda,
+    pmax = nv_max + 1, pmax_strict = FALSE, offset = d_train$offset, weights = d_train$weights,
+    intercept = intercept, obsvar = v, penalty = penalty, thresh = opt$thresh
+  )
 
   ## sort the variables according to the order in which they enter the model in the L1-path
-  entering_indices <- apply(search$beta!=0, 1, function(num) which(num)[1]) # na for those that did not enter
+  entering_indices <- apply(search$beta != 0, 1, function(num) which(num)[1]) # na for those that did not enter
   entered_variables <- c(1:NCOL(d_train$x))[!is.na(entering_indices)] # variables that entered at some point
   notentered_variables <- c(1:NCOL(d_train$x))[is.na(entering_indices)] # variables that did not enter at any point
-  order_of_entered <- sort(entering_indices, index.return=TRUE)$ix
+  order_of_entered <- sort(entering_indices, index.return = TRUE)$ix
   order <- c(entered_variables[order_of_entered], notentered_variables)
 
   ## fetch the coefficients corresponding to those points at the searchpath where new variable enters
   nvar <- length(order)
   n <- nrow(p_ref$mu)
-  out <- list(alpha=rep(NA, nv_max+1), beta=matrix(0, nrow=nv_max, ncol=nv_max+1),
-              lambda=rep(NA, nv_max+1), w=matrix(NA, nrow=n, ncol=nv_max+1))
+  out <- list(
+    alpha = rep(NA, nv_max + 1), beta = matrix(0, nrow = nv_max, ncol = nv_max + 1),
+    lambda = rep(NA, nv_max + 1), w = matrix(NA, nrow = n, ncol = nv_max + 1)
+  )
   for (k in 0:nv_max) {
     if (k == 0) {
       out$alpha[1] <- search$beta0[1]
       out$lambda[1] <- search$lambda[1]
-      out$w[,1] <- search$w[,1]
+      out$w[, 1] <- search$w[, 1]
     } else {
       ## find those points in the L1-path where only the k most relevant features can have nonzero
       ## coefficient, and then fetch their coefficients with least regularization
-      ivar <- utils::tail(order, nvar-k)
-      steps_k_var <- which(colSums(search$beta[ivar,,drop=F] != 0) == 0)
-      if (length(steps_k_var) > 0)
+      ivar <- utils::tail(order, nvar - k)
+      steps_k_var <- which(colSums(search$beta[ivar, , drop = F] != 0) == 0)
+      if (length(steps_k_var) > 0) {
         j <- utils::tail(steps_k_var, 1)
-      else
+      } else {
         ## no steps where all the variables in set ivar would have zero coefficient (could be due
         ## to one or more of these variables having penalty = 0 so they are always in the model)
         ## so set the coefficients to be equal to the starting value
         j <- 1
-      out$alpha[k+1] <- search$beta0[j]
-      out$beta[1:k,k+1] <- search$beta[order[1:k],j]
-      out$lambda[k+1] <- search$lambda[j]
-      out$w[,k+1] <- search$w[,j]
+      }
+      out$alpha[k + 1] <- search$beta0[j]
+      out$beta[1:k, k + 1] <- search$beta[order[1:k], j]
+      out$lambda[k + 1] <- search$lambda[j]
+      out$w[, k + 1] <- search$w[, j]
     }
   }
 
-  if (length(entered_variables) < nv_max)
-    if (length(setdiff(notentered_variables, which(penalty == Inf))) > 0)
-      warning('Less than nv_max variables entered L1-path. Try reducing lambda_min_ratio. ')
+  if (length(entered_variables) < nv_max) {
+    if (length(setdiff(notentered_variables, which(penalty == Inf))) > 0) {
+      warning("Less than nv_max variables entered L1-path. Try reducing lambda_min_ratio. ")
+    }
+  }
 
   out$vind <- order[1:nv_max]
   return(out)
@@ -139,8 +151,10 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
-  spath <- search_L1_surrogate(p_ref, list(refmodel, x = x[, -1]), family,
-                               intercept, nv_max, penalty, opt)
+  spath <- search_L1_surrogate(
+    p_ref, list(refmodel, x = x[, -1]), family,
+    intercept, nv_max, penalty, opt
+  )
   vind <- terms_[spath$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
     if (nv == 0) {
@@ -150,11 +164,13 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
       formula <- make_formula(vind[seq_len(nv)])
       beta <- spath$beta[seq_len(nv), nv + 1, drop = FALSE]
     }
-    sub <- list(alpha = spath$alpha[nv + 1],
-                beta = beta,
-                w = spath$w[, nv + 1],
-                formula = formula,
-                x = x)
+    sub <- list(
+      alpha = spath$alpha[nv + 1],
+      beta = beta,
+      w = spath$w[, nv + 1],
+      formula = formula,
+      x = x
+    )
     class(sub) <- "subfit"
     return(sub)
   })
@@ -162,21 +178,27 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) 
 }
 
 ## FIXME: find a way that allows us to remove this
-predict.subfit <- function(subfit, newdata=NULL) {
+predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
+  if (is.null(weights)) {
+    weights <- rep(1, NROW(subfit$x))
+  }
   beta <- subfit$beta
   alpha <- subfit$alpha
   x <- subfit$x
   w <- subfit$w
   if (is.null(newdata)) {
-    if (is.null(beta))
+    if (is.null(beta)) {
       return((x * w) %*% as.matrix(alpha))
-    else
+    } else {
       return((x * w) %*% rbind(alpha, beta))
+    }
   } else {
     x <- model.matrix(delete.response(terms(subfit$formula)), newdata)
-    if (is.null(beta))
+    x <- weights * x
+    if (is.null(beta)) {
       return(x %*% as.matrix(alpha))
-    else
+    } else {
       return(x %*% rbind(alpha, beta))
+    }
   }
 }

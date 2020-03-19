@@ -202,8 +202,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
       }
     }
   } else if (NCOL(y) == 2) {
-    weights <- rowSums(y)
-    y <- y[, 1] / weights
+    weights <- y[, 2]
+    y <- y[, 1]
   } else {
     stop("y cannot have more than two columns.")
   }
@@ -335,7 +335,10 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
 .get_traindata <- function(refmodel) {
   #
   # Returns the training data fetched from the reference model object.
-  return(list(z = refmodel$z, x = refmodel$x, y = refmodel$y, weights = refmodel$wobs, offset = refmodel$offset))
+  return(list(
+    z = refmodel$z, x = refmodel$x, y = refmodel$y,
+    weights = refmodel$wobs, offset = refmodel$offset
+  ))
 }
 
 .check_data <- function(data) {
