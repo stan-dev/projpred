@@ -56,11 +56,13 @@
 
 ##' @export
 project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, nc = NULL,
-                        intercept = NULL, seed = NULL, regul=1e-4, ...) {
-
-  if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) && is.null(vind) )
-    stop(paste('The given object is not a variable selection -object.',
-               'Run the variable selection first, or provide the variable indices (vind).'))
+                    intercept = NULL, seed = NULL, regul = 1e-4, ...) {
+  if (!("vsel" %in% class(object) || "cvsel" %in% class(object)) && is.null(vind)) {
+    stop(paste(
+      "The given object is not a variable selection -object.",
+      "Run the variable selection first, or provide the variable indices (vind)."
+    ))
+  }
 
   refmodel <- get_refmodel(object)
 
@@ -69,11 +71,12 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if (inherits(refmodel, "datafit"))
+  if (inherits(refmodel, "datafit")) {
     ns <- nc <- 1
+  }
 
   if (!is.null(vind) &&
-      any(object$vind[1:length(vind)] != vind)) {
+    any(object$vind[1:length(vind)] != vind)) {
     ## search path not found, or the given variable combination
     ## not in the search path, then we need to project the
     ## required variables
@@ -82,9 +85,18 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
 
   if (!is.null(vind)) {
     ## if vind is given, nv is ignored (project only onto the given submodel)
-    if (max(vind) > length(object$vind))
+    if (!is.null(object$vind)) {
+      vars <- object$vind
+    } else {
+      ## project only the given model on a fit object
+      vars <- setdiff(split_formula(refmodel$formula), "1")
+    }
+
+    if (max(vind) > length(vars)) {
       stop("vind contains an index larger than the number of variables in the model.")
-    vind <- c(object$vind[vind])
+    }
+
+    vind <- c(vars[vind])
     nv <- length(vind)
   } else {
     ## by default take the variable ordering from the selection
@@ -93,36 +105,44 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
       if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
         ## by default, project onto the suggested model size
         nv <- object$suggested_size
-      } else
-        stop('No suggested model size found, please specify nv or vind')
+      } else {
+        stop("No suggested model size found, please specify nv or vind")
+      }
     } else {
-      if (!is.numeric(nv) || any(nv < 0))
-        stop('nv must contain non-negative values.')
+      if (!is.numeric(nv) || any(nv < 0)) {
+        stop("nv must contain non-negative values.")
+      }
       if (max(nv) > length(vind)) {
-        stop(paste('Cannot perform the projection with', max(nv), 'variables,',
-                   'because variable selection was run only up to', length(vind),
-                   'variables.'))
+        stop(paste(
+          "Cannot perform the projection with", max(nv), "variables,",
+          "because variable selection was run only up to", length(vind),
+          "variables."
+        ))
       }
     }
   }
 
-  if (is.null(ns))
+  if (is.null(ns)) {
     ns <- min(ns, NCOL(refmodel$mu))
-  else {
-    if (ns > NCOL(refmodel$mu))
+  } else {
+    if (ns > NCOL(refmodel$mu)) {
       stop("number of samples exceed the number of columns in the reference model's posterior.")
-    if (is.null(nc))
+    }
+    if (is.null(nc)) {
       nc <- ns
+    }
   }
 
-  if (is.null(nc))
+  if (is.null(nc)) {
     nc <- 1
-  else
-    if (nc > NCOL(refmodel$mu))
-      stop("number of clusters exceed the number of columns in the reference model's posterior.")
+  } else
+  if (nc > NCOL(refmodel$mu)) {
+    stop("number of clusters exceed the number of columns in the reference model's posterior.")
+  }
 
-  if (is.null(intercept))
+  if (is.null(intercept)) {
     intercept <- refmodel$intercept
+  }
 
   family <- refmodel$family
 
@@ -130,17 +150,20 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, ns = 400, 
   p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
 
   ## project onto the submodels
-  subm <- .get_submodels(list(vind=vind,
-                              p_sel=object$spath$p_sel,
-                              sub_fits=object$spath$sub_fits),
-                         nv, family, p_ref, refmodel, intercept, regul,
-                         cv_search = cv_search)
+  subm <- .get_submodels(list(
+    vind = vind,
+    p_sel = object$spath$p_sel,
+    sub_fits = object$spath$sub_fits
+  ),
+  nv, family, p_ref, refmodel, intercept, regul,
+  cv_search = cv_search
+  )
 
   ## add family
   proj <- lapply(subm, function(model) {
     model <- c(model, nlist(family), list(p_type = is.null(ns)))
     model$intercept <- intercept
-    class(model) <- 'projection'
+    class(model) <- "projection"
     return(model)
   })
 
