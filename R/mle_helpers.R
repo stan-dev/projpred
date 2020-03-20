@@ -13,7 +13,7 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
 }
 
 linear_mle <- function(formula, data, weights = NULL, regul = NULL) {
-  lm(formula, data = data, weights = weights)
+  lm.ridge(formula, data = data, weights = weights, lambda = regul)
 }
 
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
@@ -25,7 +25,7 @@ linear_multilevel_mle <- function(formula, data, weights = NULL, regul = NULL) {
     tryCatch(lme4::lmer(f, data = data, weights = weights),
       error = function(e) {
         if (grepl("No random effects", as.character(e))) {
-          lm(f, data = data, weights = weights)
+          lm.ridge(f, data = data, weights = weights, lambda = regul)
         } else if (grepl("not positive definite", as.character(e))) {
           lme4::lmer(f,
             data = data, weights = weights,

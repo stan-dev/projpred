@@ -25,7 +25,8 @@ Imports:
     ggplot2, 
     Rcpp, 
     utils,
-    rngtools (>= 1.2.4)
+    rngtools (>= 1.2.4),
+    MASS
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
