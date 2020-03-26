@@ -215,7 +215,6 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
       replace = TRUE, prob = proj$weights
     )
 
-    browser()
     t(sapply(draw_inds, function(i) {
       proj$family$ppd(mu[, i], proj$dis[i], weights)
     }))
