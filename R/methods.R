@@ -571,7 +571,15 @@ as.matrix.projection <- function(x, ...) {
 }
 
 
+##'@method as.matrix ridgelm
+##'@export
+as.matrix.ridgelm <- function(x, ...) {
+  coef(x)
+}
 
+t.ridgelm <- function(x, ...) {
+  t(as.matrix(x))
+}
 
 
 ##' Create cross-validation indices
