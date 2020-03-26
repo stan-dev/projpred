@@ -576,6 +576,10 @@ as.matrix.ridgelm <- function(x, ...) {
   coef(x)
 }
 
+as.matrix.lm <- function(x, ...) {
+  coef(x)
+}
+
 as.matrix.list <- function(x, ...) {
   do.call(cbind, lapply(x, as.matrix))
 }
