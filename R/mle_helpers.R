@@ -16,7 +16,7 @@ linear_mle <- function(formula, data, weights = NULL, regul = NULL) {
   formula <- validate_response_formula(formula)
   fit_lm_ridge_callback <- function(f) {
     if (count_terms_in_subformula(f) == 1) {
-      lme4::lm(f, data = data, weights = weights)
+      lm(f, data = data, weights = weights)
     } else {
       fit <- MASS::lm.ridge(f, data = data, weights = weights, lambda = regul)
       fit$data <- data
