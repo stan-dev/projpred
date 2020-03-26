@@ -15,11 +15,15 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
 linear_mle <- function(formula, data, weights = NULL, regul = NULL) {
   formula <- validate_response_formula(formula)
   fit_lm_ridge_callback <- function(f) {
-    fit <- MASS::lm.ridge(f, data = data, weights = weights, lambda = regul)
-    fit$data <- data
-    fit$formula <- f
-    fit$weights <- weights
-    fit
+    if (count_terms_in_subformula(f) == 1) {
+      lm(f, data = data, weights = weights)
+    } else {
+      fit <- MASS::lm.ridge(f, data = data, weights = weights, lambda = regul)
+      fit$data <- data
+      fit$formula <- f
+      fit$weights <- weights
+      fit
+    }
   }
   if (inherits(formula, "formula")) {
     return(fit_lm_ridge_callback(formula))
@@ -120,8 +124,9 @@ predict.ridgelm <- function(fit, newdata = NULL, weights = NULL) {
     }
     x <- model.matrix(delete.response(terms(fit$formula)), fit$data)
   }
-  if (NCOL(x) > 1)
+  if (NCOL(x) > 1) {
     x <- cbind(x[, 1], scale(x[, -1], center = center, scale = scales))
+  }
   x <- weights * x
   return(x %*% b)
 }
