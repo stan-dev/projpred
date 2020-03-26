@@ -19,6 +19,7 @@ linear_mle <- function(formula, data, weights = NULL, regul = NULL) {
     fit$data <- data
     fit$formula <- f
     fit$weights <- weights
+    fit
   }
   if (inherits(formula, "formula")) {
     return(fit_lm_ridge_callback(formula))
@@ -119,7 +120,8 @@ predict.ridgelm <- function(fit, newdata = NULL, weights = NULL) {
     }
     x <- model.matrix(delete.response(terms(fit$formula)), fit$data)
   }
-  x <- scale(x, center = center, scale = scales)
+  if (NCOL(x) > 1)
+    x <- cbind(x[, 1], scale(x[, -1], center = center, scale = scales))
   x <- weights * x
   return(x %*% b)
 }
