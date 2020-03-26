@@ -13,7 +13,20 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
 }
 
 linear_mle <- function(formula, data, weights = NULL, regul = NULL) {
-  MASS::lm.ridge(formula, data = data, weights = weights, lambda = regul)
+  formula <- validate_response_formula(formula)
+  fit_lm_ridge_callback <- function(f) {
+    fit <- MASS::lm.ridge(f, data = data, weights = weights, lambda = regul)
+    fit$data <- data
+    fit$formula <- f
+    fit$weights <- weights
+  }
+  if (inherits(formula, "formula")) {
+    return(fit_lm_ridge_callback(formula))
+  } else if (inherits(formula, "list")) {
+    return(lapply(formula, function(f) (fit_lm_ridge_callback(f))))
+  } else {
+    stop("The provided formula is neither a formula object nor a list")
+  }
 }
 
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
@@ -69,9 +82,46 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
   if (is.null(weights)) {
     weights <- 1
   }
-  if (!is.null(newdata)) {
-    return(predict(fit, newdata = newdata, weights = weights))
-  } else {
-    return(predict(fit))
+  if (inherits(fit, "list")) {
+    if (!is.null(newdata)) {
+      return(do.call(cbind, lapply(fit, function(fit) {
+        predict(fit, newdata = newdata, weights = weights)
+      })))
+    } else {
+      return(do.call(cbind, lapply(fit, function(fit) {
+        predict(fit)
+      })))
+    }
   }
+  else {
+    if (!is.null(newdata)) {
+      return(predict(fit, newdata = newdata, weights = weights))
+    } else {
+      return(predict(fit))
+    }
+  }
+}
+
+predict.ridgelm <- function(fit, newdata = NULL, weights = NULL) {
+  b <- coef(fit)
+  center <- fit$xm
+  scales <- fit$scales
+  if (!is.null(newdata)) {
+    if (is.null(weights)) {
+      weights <- 1
+    }
+    x <- model.matrix(delete.response(terms(fit$formula)), newdata)
+    x <- scale(x, center = center, scale = scales)
+    x <- weights * x
+  } else {
+    if (is.null(fit$weights)) {
+      weights <- 1
+    } else {
+      weights <- fit$weights
+    }
+    x <- model.matrix(delete.response(terms(fit$formula)), fit$data)
+    x <- scale(x, center = center, scale = scales)
+    x <- weights * x
+  }
+  return(x %*% b)
 }
