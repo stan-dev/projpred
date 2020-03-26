@@ -111,8 +111,6 @@ predict.ridgelm <- function(fit, newdata = NULL, weights = NULL) {
       weights <- 1
     }
     x <- model.matrix(delete.response(terms(fit$formula)), newdata)
-    x <- scale(x, center = center, scale = scales)
-    x <- weights * x
   } else {
     if (is.null(fit$weights)) {
       weights <- 1
@@ -120,8 +118,8 @@ predict.ridgelm <- function(fit, newdata = NULL, weights = NULL) {
       weights <- fit$weights
     }
     x <- model.matrix(delete.response(terms(fit$formula)), fit$data)
-    x <- scale(x, center = center, scale = scales)
-    x <- weights * x
   }
+  x <- scale(x, center = center, scale = scales)
+  x <- weights * x
   return(x %*% b)
 }
