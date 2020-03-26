@@ -558,7 +558,7 @@ as.matrix.projection <- function(x, ...) {
       "clustering and the clusters might have different weights."
     ))
   }
-  res <- t(x$sub_fit[[1]])
+  res <- t(x$sub_fit)
   if (x$intercept) {
     if ("1" %in% x$vind) {
       colnames(res) <- gsub("^1", "Intercept", x$vind)
@@ -577,10 +577,17 @@ as.matrix.ridgelm <- function(x, ...) {
   coef(x)
 }
 
+as.matrix.list <- function(x, ...) {
+  do.call(cbind, lapply(x, as.matrix))
+}
+
 t.ridgelm <- function(x, ...) {
   t(as.matrix(x))
 }
 
+t.list <- function(x, ...) {
+  t(as.matrix(x))
+}
 
 ##' Create cross-validation indices
 ##'
