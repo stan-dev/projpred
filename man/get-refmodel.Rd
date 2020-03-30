@@ -39,7 +39,7 @@ for all those objects that have this method. All these implementations are wrapp
 to the \code{\link{init_refmodel}}-function so the returned object has the same type.
 }
 \examples{
-\donttest{
+\dontrun{
 ### Usage with stanreg objects
 dat <- data.frame(y = rnorm(100), x = rnorm(100))
 fit <- stan_glm(y ~ x, family = gaussian(), data = dat)

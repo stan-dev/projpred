@@ -69,7 +69,7 @@ Perform projection onto submodels of selected sizes or a specified feature
 combination.
 }
 \examples{
-\donttest{
+\dontrun{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
 vs <- varsel(fit)

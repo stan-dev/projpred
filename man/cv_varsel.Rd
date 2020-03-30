@@ -95,7 +95,7 @@ Perform cross-validation for the projective variable selection for a generalized
 linear model.
 }
 \examples{
-\donttest{
+\dontrun{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
 cvs <- cv_varsel(fit)

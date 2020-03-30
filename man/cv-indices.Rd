@@ -36,7 +36,7 @@ arguments for \link[=init_refmodel]{init_refmodel}. The returned value is differ
 these two methods, see below for details.
 }
 \examples{
-\donttest{
+\dontrun{
 ### compute sample means within each fold
 n <- 100
 y <- rnorm(n)

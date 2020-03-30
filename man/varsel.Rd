@@ -93,7 +93,7 @@ Perform the projection predictive variable selection for generalized linear mode
 generic reference models.
 }
 \examples{
-\donttest{
+\dontrun{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
 vs <- varsel(fit)
