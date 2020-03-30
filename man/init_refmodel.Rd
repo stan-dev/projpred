@@ -88,7 +88,7 @@ of the reference fit from arbitrary fitted models, because only limited
 information is needed for the actual projection and variable selection.
 }
 \examples{
-\donttest{
+\dontrun{
 
 # generate some toy data
 set.seed(1)

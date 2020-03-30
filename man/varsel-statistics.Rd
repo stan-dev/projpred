@@ -69,7 +69,7 @@ variable selection. The same statistics can be plotted with
 \code{varsel_plot}.
 }
 \examples{
-\donttest{
+\dontrun{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
 vs <- cv_varsel(fit)

@@ -88,7 +88,7 @@ submodel or submodels. If the projection has not been performed, the
 functions also perform the projection.
 }
 \examples{
-\donttest{
+\dontrun{
 ### Usage with stanreg objects
 fit <- stan_glm(y~x, binomial())
 vs <- varsel(fit)
