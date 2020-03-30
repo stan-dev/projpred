@@ -15,7 +15,7 @@
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ### Usage with stanreg objects
 #' dat <- data.frame(y = rnorm(100), x = rnorm(100))
 #' fit <- stan_glm(y ~ x, family = gaussian(), data = dat)
@@ -293,7 +293,7 @@ get_refmodel.brmsfit <- function(object, ...) {
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' 
 #' # generate some toy data
 #' set.seed(1)

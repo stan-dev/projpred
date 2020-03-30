@@ -51,7 +51,7 @@
 #' to see the main functions in the package.)
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
 #' vs <- varsel(fit)

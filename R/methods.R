@@ -48,7 +48,7 @@
 #' for each submodel.
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
 #' vs <- varsel(fit)
@@ -244,7 +244,7 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' 
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
 #' vs <- cv_varsel(fit)
@@ -445,7 +445,7 @@ print.cvsel <- function(x, digits=2, ...) {
 #' the interpretation of the argument \code{type} the same regardless of argument \code{stat}.
 #' 
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
 #' vs <- cv_varsel(fit)
@@ -541,7 +541,7 @@ as.matrix.projection <- function(x, ...) {
 #' and \code{ts}
 #' each of which is a list with \code{k} elements giving the training and test indices for each fold.
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ### compute sample means within each fold
 #' n <- 100
 #' y <- rnorm(n)
