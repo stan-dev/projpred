@@ -576,18 +576,26 @@ as.matrix.ridgelm <- function(x, ...) {
   coef(x)
 }
 
+##'@method as.matrix lm
+##'@export
 as.matrix.lm <- function(x, ...) {
   coef(x)
 }
 
+##'@method as.matrix list
+##'@export
 as.matrix.list <- function(x, ...) {
   do.call(cbind, lapply(x, as.matrix))
 }
 
+##'@method t ridgelm
+##'@export
 t.ridgelm <- function(x, ...) {
   t(as.matrix(x))
 }
 
+##'@method t list
+##'@export
 t.list <- function(x, ...) {
   t(as.matrix(x))
 }
