@@ -107,6 +107,9 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
   }
 }
 
+# importing MASS solves a weird error caused by coef(fit) sometimes
+# returning NULL for some reason that seems platform dependent
+#' @import MASS
 predict.ridgelm <- function(fit, newdata = NULL, weights = NULL) {
   b <- coef(fit)
   center <- fit$xm
