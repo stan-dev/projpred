@@ -39,18 +39,20 @@ for all those objects that have this method. All these implementations are wrapp
 to the \code{\link{init_refmodel}}-function so the returned object has the same type.
 }
 \examples{
-\dontrun{
-### Usage with stanreg objects
-dat <- data.frame(y = rnorm(100), x = rnorm(100))
-fit <- stan_glm(y ~ x, family = gaussian(), data = dat)
-ref <- get_refmodel(fit)
-print(class(ref))
+\donttest{
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  ### Usage with stanreg objects
+  dat <- data.frame(y = rnorm(100), x = rnorm(100))
+  fit <- rstanarm::stan_glm(y ~ x, family = gaussian(), data = dat)
+  ref <- get_refmodel(fit)
+  print(class(ref))
 
-# variable selection, use the already constructed reference model
-vs <- varsel(ref) 
-# this will first construct the reference model and then execute 
-# exactly the same way as the previous command (the result is identical)
-vs <- varsel(fit) 
+  # variable selection, use the already constructed reference model
+  vs <- varsel(ref) 
+  # this will first construct the reference model and then execute 
+  # exactly the same way as the previous command (the result is identical)
+  vs <- varsel(fit) 
+}
 }
 
 }

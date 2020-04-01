@@ -51,11 +51,18 @@
 #' to see the main functions in the package.)
 #'
 #' @examples
-#' \dontrun{
-#' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
-#' vs <- varsel(fit)
-#' varsel_plot(vs)
+#' \donttest{
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   vs <- varsel(fit)
+#'   varsel_plot(vs)
+#' }
 #' }
 #'
 
@@ -64,35 +71,35 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
                    nspred = NULL, ncpred = NULL, relax=NULL, nv_max = NULL, 
                    intercept = NULL, penalty=NULL, verbose = F, 
                    lambda_min_ratio=1e-5, nlambda=150, thresh=1e-6, regul=1e-4, ...) {
-
-	refmodel <- get_refmodel(object, ...)
-	family_kl <- refmodel$fam
-	
-	# fetch the default arguments or replace them by the user defined values
-	args <- parseargs_varsel(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred)
-	method <- args$method
-	relax <- args$relax
-	intercept <- args$intercept
-	nv_max <- args$nv_max
-	nc <- args$nc
-	ns <- args$ns
-	ncpred <- args$ncpred
-	nspred <- args$nspred
-	
+  
+  refmodel <- get_refmodel(object, ...)
+  family_kl <- refmodel$fam
+  
+  # fetch the default arguments or replace them by the user defined values
+  args <- parseargs_varsel(refmodel, method, relax, intercept, nv_max, nc, ns, ncpred, nspred)
+  method <- args$method
+  relax <- args$relax
+  intercept <- args$intercept
+  nv_max <- args$nv_max
+  nc <- args$nc
+  ns <- args$ns
+  ncpred <- args$ncpred
+  nspred <- args$nspred
+  
   # training and test data
   d_train <- .get_traindata(refmodel)
   if (is.null(d_test)) {
-  	d_test <- d_train
-  	d_type <- 'train'
+    d_test <- d_train
+    d_type <- 'train'
   } else {
-  	d_test <- .check_data(d_test)
-  	d_type <- 'test'
+    d_test <- .check_data(d_test)
+    d_type <- 'test'
   }
-
+  
   # reference distributions for selection and prediction after selection
   p_sel <- .get_refdist(refmodel, ns, nc)
   p_pred <- .get_refdist(refmodel, nspred, ncpred)
-
+  
   # perform the selection
   opt <- list(lambda_min_ratio=lambda_min_ratio, nlambda=nlambda, thresh=thresh, regul=regul)
   searchpath <- select(method, p_sel, d_train, family_kl, intercept, nv_max, penalty, verbose, opt)
@@ -103,33 +110,33 @@ varsel <- function(object, d_test = NULL, method = NULL, ns = NULL, nc = NULL,
   p_sub <- .get_submodels(searchpath, c(0, seq_along(vind)), family_kl, p_pred,
                           d_train, intercept, regul, as.search=as.search)
   sub <- .get_sub_summaries(p_sub, d_test, family_kl)
-
+  
   # predictive statistics of the reference model on test data. if no test data are provided, 
   # simply fetch the statistics on the train data
   if ('datafit' %in% class(refmodel)) {
-  	# no actual reference model, so we don't know how to predict test observations
+    # no actual reference model, so we don't know how to predict test observations
     ntest <- nrow(d_test$z)
-  	ref <- list(mu=rep(NA,ntest), lppd=rep(NA,ntest))
+    ref <- list(mu=rep(NA,ntest), lppd=rep(NA,ntest))
   } else {
-  	if (d_type == 'train') {
-  		ref <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, refmodel$mu, refmodel$dis)
-  	} else {
-  		mu_test <- refmodel$predfun(d_test$z, d_test$offset)
-  		ref <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, mu_test, refmodel$dis)
-  	}
+    if (d_type == 'train') {
+      ref <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, refmodel$mu, refmodel$dis)
+    } else {
+      mu_test <- refmodel$predfun(d_test$z, d_test$offset)
+      ref <- .weighted_summary_means(d_test, family_kl, refmodel$wsample, mu_test, refmodel$dis)
+    }
   }
   
   # store the relevant fields into the object to be returned
   vs <- list(refmodel=refmodel,
-  					 spath=searchpath,
+             spath=searchpath,
              d_test = c(d_test[c('y','weights')], type = d_type),
              summaries = list(sub = sub, ref = ref),
              family_kl = family_kl,
              method = method,
-  					 vind = setNames(vind, refmodel$coefnames[vind]),
-  					 kl = sapply(p_sub, function(x) x$kl) )
+             vind = setNames(vind, refmodel$coefnames[vind]),
+             kl = sapply(p_sub, function(x) x$kl) )
   class(vs) <- 'vsel'
-
+  
   # suggest model size
   vs$nv_max <- nv_max
   vs$nv_all <- ncol(refmodel$x)

@@ -93,11 +93,18 @@ Perform the projection predictive variable selection for generalized linear mode
 generic reference models.
 }
 \examples{
-\dontrun{
-### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
-vs <- varsel(fit)
-varsel_plot(vs)
+\donttest{
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  ### Usage with stanreg objects
+  n <- 30
+  d <- 5
+  x <- matrix(rnorm(n*d), nrow=n)
+  y <- x[,1] + 0.5*rnorm(n)
+  data <- data.frame(x,y)
+  fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+  vs <- varsel(fit)
+  varsel_plot(vs)
+}
 }
 
 }

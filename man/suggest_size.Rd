@@ -72,12 +72,19 @@ the smallest model whose upper credible bound of the \emph{negative} RMSE exceed
 the interpretation of the argument \code{type} the same regardless of argument \code{stat}.
 }
 \examples{
-\dontrun{
-### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
-vs <- cv_varsel(fit)
-suggest_size(vs)
-
+\donttest{
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  ### Usage with stanreg objects
+  n <- 30
+  d <- 5
+  x <- matrix(rnorm(n*d), nrow=n)
+  y <- x[,1] + 0.5*rnorm(n)
+  data <- data.frame(x,y)
+  
+  fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+  vs <- cv_varsel(fit)
+  suggest_size(vs)
+}
 }
 
 }

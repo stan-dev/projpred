@@ -15,18 +15,20 @@
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 #' 
 #' @examples
-#' \dontrun{
-#' ### Usage with stanreg objects
-#' dat <- data.frame(y = rnorm(100), x = rnorm(100))
-#' fit <- stan_glm(y ~ x, family = gaussian(), data = dat)
-#' ref <- get_refmodel(fit)
-#' print(class(ref))
+#' \donttest{
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   dat <- data.frame(y = rnorm(100), x = rnorm(100))
+#'   fit <- rstanarm::stan_glm(y ~ x, family = gaussian(), data = dat)
+#'   ref <- get_refmodel(fit)
+#'   print(class(ref))
 #' 
-#' # variable selection, use the already constructed reference model
-#' vs <- varsel(ref) 
-#' # this will first construct the reference model and then execute 
-#' # exactly the same way as the previous command (the result is identical)
-#' vs <- varsel(fit) 
+#'   # variable selection, use the already constructed reference model
+#'   vs <- varsel(ref) 
+#'   # this will first construct the reference model and then execute 
+#'   # exactly the same way as the previous command (the result is identical)
+#'   vs <- varsel(fit) 
+#' }
 #' }
 #'
 NULL
@@ -47,72 +49,72 @@ get_refmodel.refmodel <- function(object, ...) {
 #' @rdname get-refmodel
 #' @export
 get_refmodel.vsel <- function(object, ...) {
-	# the reference model is stored in vsel-object
-	object$refmodel
+  # the reference model is stored in vsel-object
+  object$refmodel
 }
 
 #' @rdname get-refmodel
 #' @export
 get_refmodel.cvsel <- function(object, ...) {
-	# the reference model is stored in cvsel object
-	object$refmodel
+  # the reference model is stored in cvsel object
+  object$refmodel
 }
 
 #' @rdname get-refmodel
 #' @export
 get_refmodel.stanreg <- function(object, ...) {
-	
-	# the fit is an rstanarm-object
+  
+  # the fit is an rstanarm-object
   
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("You need package \"rstanarm\". Please install it.",
          call. = FALSE)
   }
-	
-	if ('lmerMod' %in% class(object))
-		stop('stan_lmer and stan_glmer are not yet supported.')
-	
-	families <- c('gaussian','binomial','poisson')
-	if (!(family(object)$family %in% families))
-		stop(paste0('Only the following families are currently supported:\n',
-								paste(families, collapse = ', '), '.'))
-	
-	# fetch the draws
-	samp <- as.data.frame(object)
-	ndraws <- nrow(samp)
-	
-	# data, family and the predictor matrix x
-	z <- object$data # inputs of the reference model (this contains also the target or a transformation of it, but that shouldn't hurt)
-	if (is.null(dim(z)))
-		stop('Model was fitted without a \'data\' argument')
-	fam <- kl_helpers(family(object))
-	x <- rstanarm::get_x(object)
-	rownames(x) <- NULL # ignore the rownames
-	x <- x[, as.logical(attr(x, 'assign')), drop=F] # drop the column of ones
-	attr(x, 'assign') <- NULL
-	
-	y <- unname(rstanarm::get_y(object))
-	dis <- samp$sigma %ORifNULL% rep(0, ndraws) # TODO: handle other than gaussian likelihoods..
-	offset <- object$offset %ORifNULL% rep(0, nobs(object))
-	intercept <- as.logical(attr(object$terms,'intercept') %ORifNULL% 0)
-	predfun <- function(zt) t(rstanarm::posterior_linpred(object, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
-	wsample <- rep(1/ndraws, ndraws) # equal sample weights by default
-	wobs <- unname(weights(object)) # observation weights
-	if (length(wobs)==0) wobs <- rep(1,nrow(z))
-	
-	# cvfun for k-fold cross-validation
-	cvfun <- function(folds) {
-	  cvres <- rstanarm::kfold(object, K = max(folds), save_fits = T, folds = folds)
-	  fits <- cvres$fits[,'fit']
-	  lapply(fits, function (fit) {
-	    dis <- as.data.frame(fit)$sigma # NOTE: this works only for Gaussian family
-	    predfun <- function(zt) t(rstanarm::posterior_linpred(fit, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
-	    list(predfun=predfun, dis=dis)
-	  })
-	}
   
-	init_refmodel(z=z, y=y, family=fam, x=x, predfun=predfun, dis=dis, offset=offset,
-	              wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun) 
+  if ('lmerMod' %in% class(object))
+    stop('stan_lmer and stan_glmer are not yet supported.')
+  
+  families <- c('gaussian','binomial','poisson')
+  if (!(family(object)$family %in% families))
+    stop(paste0('Only the following families are currently supported:\n',
+                paste(families, collapse = ', '), '.'))
+  
+  # fetch the draws
+  samp <- as.data.frame(object)
+  ndraws <- nrow(samp)
+  
+  # data, family and the predictor matrix x
+  z <- object$data # inputs of the reference model (this contains also the target or a transformation of it, but that shouldn't hurt)
+  if (is.null(dim(z)))
+    stop('Model was fitted without a \'data\' argument')
+  fam <- kl_helpers(family(object))
+  x <- rstanarm::get_x(object)
+  rownames(x) <- NULL # ignore the rownames
+  x <- x[, as.logical(attr(x, 'assign')), drop=F] # drop the column of ones
+  attr(x, 'assign') <- NULL
+  
+  y <- unname(rstanarm::get_y(object))
+  dis <- samp$sigma %ORifNULL% rep(0, ndraws) # TODO: handle other than gaussian likelihoods..
+  offset <- object$offset %ORifNULL% rep(0, nobs(object))
+  intercept <- as.logical(attr(object$terms,'intercept') %ORifNULL% 0)
+  predfun <- function(zt) t(rstanarm::posterior_linpred(object, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
+  wsample <- rep(1/ndraws, ndraws) # equal sample weights by default
+  wobs <- unname(weights(object)) # observation weights
+  if (length(wobs)==0) wobs <- rep(1,nrow(z))
+  
+  # cvfun for k-fold cross-validation
+  cvfun <- function(folds) {
+    cvres <- rstanarm::kfold(object, K = max(folds), save_fits = T, folds = folds)
+    fits <- cvres$fits[,'fit']
+    lapply(fits, function (fit) {
+      dis <- as.data.frame(fit)$sigma # NOTE: this works only for Gaussian family
+      predfun <- function(zt) t(rstanarm::posterior_linpred(fit, newdata=data.frame(zt), transform=T, offset=rep(0,nrow(zt))))
+      list(predfun=predfun, dis=dis)
+    })
+  }
+  
+  init_refmodel(z=z, y=y, family=fam, x=x, predfun=predfun, dis=dis, offset=offset,
+                wobs=wobs, wsample=wsample, intercept=intercept, cvfits=NULL, cvfun=cvfun) 
 }
 
 #' @rdname get-refmodel
@@ -293,39 +295,40 @@ get_refmodel.brmsfit <- function(object, ...) {
 #' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
 #' 
 #' @examples
-#' \dontrun{
+#' \donttest{
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   # generate some toy data
+#'   set.seed(1)
+#'   n <- 100
+#'   d <- 10
+#'   x <- matrix(rnorm(n*d), nrow=n, ncol=d)
+#'   b <- c(c(1,1),rep(0,d-2)) # first two variables are relevant
+#'   y <- x %*% b + rnorm(n)
+#'   data <- data.frame(x=I(x),y=y)
 #' 
-#' # generate some toy data
-#' set.seed(1)
-#' n <- 100
-#' d <- 10
-#' x <- matrix(rnorm(n*d), nrow=n, ncol=d)
-#' b <- c(c(1,1),rep(0,d-2)) # first two variables are relevant
-#' y <- x %*% b + rnorm(n)
+#'   # fit the model (this uses rstanarm for posterior inference, 
+#'   # but any other tool could also be used)
+#'   fit <- rstanarm::stan_glm(y~x, family=gaussian(), data=data, chains=2, iter=500)
+#'   draws <- as.matrix(fit)
+#'   a <- draws[,1] # intercept
+#'   b <- draws[,2:(ncol(draws)-1)] # regression coefficients
+#'   sigma <- draws[,ncol(draws)] # noise std
 #' 
-#' # fit the model (this uses rstanarm for posterior inference, 
-#' # but any other tool could also be used)
-#' fit <- stan_glm(y~x, family=gaussian(), data=data.frame(x=I(x),y=y))
-#' draws <- as.matrix(fit)
-#' a <- draws[,1] # intercept
-#' b <- draws[,2:(ncol(draws)-1)] # regression coefficients
-#' sigma <- draws[,ncol(draws)] # noise std
+#'   # initialize the reference model structure
+#'   predfun <- function(xt) t( b %*% t(xt) + a )
+#'   ref <- init_refmodel(x,y, gaussian(), predfun=predfun, dis=sigma)
 #' 
-#' # initialize the reference model structure
-#' predfun <- function(xt) t( b %*% t(xt) + a )
-#' ref <- init_refmodel(x,y, gaussian(), predfun=predfun, dis=sigma)
-#' 
-#' # variable selection based on the reference model
-#' vs <- cv_varsel(ref)
-#' varsel_plot(vs)
+#'   # variable selection based on the reference model
+#'   vs <- cv_varsel(ref)
+#'   varsel_plot(vs)
 #' 
 #' 
-#' # pass in the original data as 'reference'; this allows us to compute 
-#' # traditional estimates like Lasso
-#' dref <- init_refmodel(x,y,gaussian())
-#' lasso <- cv_varsel(dref, method='l1') # lasso
-#' varsel_plot(lasso, stat='rmse')
-#' 
+#'   # pass in the original data as 'reference'; this allows us to compute 
+#'   # traditional estimates like Lasso
+#'   dref <- init_refmodel(x,y,gaussian())
+#'   lasso <- cv_varsel(dref, method='l1') # lasso
+#'   varsel_plot(lasso, stat='rmse')
+#' }
 #' }
 #'
 

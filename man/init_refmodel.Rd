@@ -88,39 +88,40 @@ of the reference fit from arbitrary fitted models, because only limited
 information is needed for the actual projection and variable selection.
 }
 \examples{
-\dontrun{
+\donttest{
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  # generate some toy data
+  set.seed(1)
+  n <- 100
+  d <- 10
+  x <- matrix(rnorm(n*d), nrow=n, ncol=d)
+  b <- c(c(1,1),rep(0,d-2)) # first two variables are relevant
+  y <- x \%*\% b + rnorm(n)
+  data <- data.frame(x=I(x),y=y)
 
-# generate some toy data
-set.seed(1)
-n <- 100
-d <- 10
-x <- matrix(rnorm(n*d), nrow=n, ncol=d)
-b <- c(c(1,1),rep(0,d-2)) # first two variables are relevant
-y <- x \%*\% b + rnorm(n)
+  # fit the model (this uses rstanarm for posterior inference, 
+  # but any other tool could also be used)
+  fit <- rstanarm::stan_glm(y~x, family=gaussian(), data=data, chains=2, iter=500)
+  draws <- as.matrix(fit)
+  a <- draws[,1] # intercept
+  b <- draws[,2:(ncol(draws)-1)] # regression coefficients
+  sigma <- draws[,ncol(draws)] # noise std
 
-# fit the model (this uses rstanarm for posterior inference, 
-# but any other tool could also be used)
-fit <- stan_glm(y~x, family=gaussian(), data=data.frame(x=I(x),y=y))
-draws <- as.matrix(fit)
-a <- draws[,1] # intercept
-b <- draws[,2:(ncol(draws)-1)] # regression coefficients
-sigma <- draws[,ncol(draws)] # noise std
+  # initialize the reference model structure
+  predfun <- function(xt) t( b \%*\% t(xt) + a )
+  ref <- init_refmodel(x,y, gaussian(), predfun=predfun, dis=sigma)
 
-# initialize the reference model structure
-predfun <- function(xt) t( b \%*\% t(xt) + a )
-ref <- init_refmodel(x,y, gaussian(), predfun=predfun, dis=sigma)
-
-# variable selection based on the reference model
-vs <- cv_varsel(ref)
-varsel_plot(vs)
+  # variable selection based on the reference model
+  vs <- cv_varsel(ref)
+  varsel_plot(vs)
 
 
-# pass in the original data as 'reference'; this allows us to compute 
-# traditional estimates like Lasso
-dref <- init_refmodel(x,y,gaussian())
-lasso <- cv_varsel(dref, method='l1') # lasso
-varsel_plot(lasso, stat='rmse')
-
+  # pass in the original data as 'reference'; this allows us to compute 
+  # traditional estimates like Lasso
+  dref <- init_refmodel(x,y,gaussian())
+  lasso <- cv_varsel(dref, method='l1') # lasso
+  varsel_plot(lasso, stat='rmse')
+}
 }
 
 }

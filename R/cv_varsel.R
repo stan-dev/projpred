@@ -43,11 +43,18 @@
 #' to see the main functions in the package.)
 #'
 #' @examples
-#' \dontrun{
-#' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
-#' cvs <- cv_varsel(fit)
-#' varsel_plot(cvs)
+#' \donttest{
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   cvs <- cv_varsel(fit)
+#'   varsel_plot(cvs)
+#' }
 #' }
 #'
 

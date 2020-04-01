@@ -48,15 +48,22 @@
 #' for each submodel.
 #' 
 #' @examples
-#' \dontrun{
-#' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
-#' vs <- varsel(fit)
-#' 
-#' # compute predictions with 4 variables at the training points
-#' pred <- proj_linpred(vs, xnew=x, nv = 4)
-#' pred <- proj_predict(vs, xnew=x, nv = 4)
-#' 
+#' \donttest{
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   
+#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   vs <- varsel(fit)
+#'   
+#'   # compute predictions with 4 variables at the training points
+#'   pred <- proj_linpred(vs, xnew=x, nv = 4)
+#'   pred <- proj_predict(vs, xnew=x, nv = 4)
+#' }
 #' }
 #'
 NULL
@@ -244,14 +251,22 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
 #' 
 #' 
 #' @examples
-#' \dontrun{
-#' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
-#' vs <- cv_varsel(fit)
-#' varsel_plot(vs)
-#' 
-#' # print out some stats
-#' varsel_stats(vs, stats=c('acc'), type = c('mean','se'))
+#' \donttest{
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   
+#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   vs <- cv_varsel(fit)
+#'   varsel_plot(vs)
+#'   
+#'   # print out some stats
+#'   varsel_stats(vs, stats=c('mse'), type = c('mean','se'))
+#' }
 #' }
 #' 
 NULL
@@ -445,12 +460,19 @@ print.cvsel <- function(x, digits=2, ...) {
 #' the interpretation of the argument \code{type} the same regardless of argument \code{stat}.
 #' 
 #' @examples
-#' \dontrun{
-#' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
-#' vs <- cv_varsel(fit)
-#' suggest_size(vs)
-#' 
+#' \donttest{
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   
+#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   vs <- cv_varsel(fit)
+#'   suggest_size(vs)
+#' }
 #' }
 #' 
 
@@ -541,7 +563,7 @@ as.matrix.projection <- function(x, ...) {
 #' and \code{ts}
 #' each of which is a list with \code{k} elements giving the training and test indices for each fold.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' ### compute sample means within each fold
 #' n <- 100
 #' y <- rnorm(n)
