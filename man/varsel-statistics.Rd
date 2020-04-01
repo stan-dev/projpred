@@ -69,14 +69,22 @@ variable selection. The same statistics can be plotted with
 \code{varsel_plot}.
 }
 \examples{
-\dontrun{
-### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
-vs <- cv_varsel(fit)
-varsel_plot(vs)
-
-# print out some stats
-varsel_stats(vs, stats=c('acc'), type = c('mean','se'))
+\donttest{
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  ### Usage with stanreg objects
+  n <- 30
+  d <- 5
+  x <- matrix(rnorm(n*d), nrow=n)
+  y <- x[,1] + 0.5*rnorm(n)
+  data <- data.frame(x,y)
+  
+  fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+  vs <- cv_varsel(fit)
+  varsel_plot(vs)
+  
+  # print out some stats
+  varsel_stats(vs, stats=c('mse'), type = c('mean','se'))
+}
 }
 
 }
