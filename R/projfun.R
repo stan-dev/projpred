@@ -1,7 +1,7 @@
 ## Function handles for the projection
 ##
 
-project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1e-12) {
+project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1e-4) {
   mu <- p_ref$mu
   dis <- p_ref$dis
 
@@ -27,7 +27,7 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
     pseudo_data(f, mu, family, offset = refmodel$offset, wprev = wprev)
   }
   mle <- function(formula, data, weights) {
-    refmodel$mle(formula, data, weights = weights)
+    refmodel$mle(formula, data, weights = weights, regul = regul)
   }
   linear_predict <- function(fit) {
     refmodel$proj_predfun(fit)

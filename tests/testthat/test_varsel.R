@@ -307,8 +307,8 @@ if (require(rstanarm) && require(brms)) {
         # kl seems legit
         expect_length(cv_kf_list[[i]][[j]]$kl, nv + 1)
         # decreasing
-        expect_equal(cv_kf_list[[i]][[j]]$kl,
-                     cummin(cv_kf_list[[i]][[j]]$kl),
+        expect_equal(cv_kf_list[[i]][[j]]$kl[-1],
+                     cummin(cv_kf_list[[i]][[j]]$kl[-1]),
                      info = paste(i_inf, j_inf),
                      tolerance = 1e-3)
         # summaries seems legit
