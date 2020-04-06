@@ -25,15 +25,15 @@ if (require(rstanarm) && require(brms)) {
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x%*%b)), x = x)
 
   SW({
-    fit_gauss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss,
+    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss,
                      chains = chains, seed = seed, iter = iter)
-    fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
+    fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
                      data = df_binom, chains = chains, seed = seed, iter = iter)
-    fit_poiss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_poiss, data = df_poiss,
+    fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_poiss, data = df_poiss,
                      chains = chains, seed = seed, iter = iter)
-    fit_lm <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, data = df_gauss,
+    fit_lm <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, data = df_gauss,
                   chains = chains, seed = seed, iter = iter)
-    fit_glmer <- brm(mpg ~ wt + (1|cyl), data = mtcars,
+    fit_glmer <- stan_glmer(mpg ~ wt + (1|cyl), data = mtcars,
                      chains = chains, seed = seed, iter = iter)
   })
   fit_list <- list(gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss
@@ -191,9 +191,9 @@ if (require(rstanarm) && require(brms)) {
     # of seed = seed), otherwise when the calls are evaluated in refmodel$cvfun()
     # they may not be found in the evaluation frame of the calling function,
     # causing the test to fail
-    glm_simp <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = poisson(), data = df_poiss,
+    glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = poisson(), data = df_poiss,
                     chains = 2, seed = 1235, iter = 400)
-    lm_simp <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, data = df_gauss, family=gaussian(),
+    lm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, data = df_gauss, family=gaussian(),
                    chains = 2, seed = 1235, iter = 400)
     simp_list <- list(glm = glm_simp)
 
@@ -307,8 +307,8 @@ if (require(rstanarm) && require(brms)) {
         # kl seems legit
         expect_length(cv_kf_list[[i]][[j]]$kl, nv + 1)
         # decreasing
-        expect_equal(cv_kf_list[[i]][[j]]$kl,
-                     cummin(cv_kf_list[[i]][[j]]$kl),
+        expect_equal(cv_kf_list[[i]][[j]]$kl[-1],
+                     cummin(cv_kf_list[[i]][[j]]$kl[-1]),
                      info = paste(i_inf, j_inf),
                      tolerance = 1e-3)
         # summaries seems legit

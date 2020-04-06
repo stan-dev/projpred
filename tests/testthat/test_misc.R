@@ -28,19 +28,19 @@ if (require(brms)) {
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
 
   SW(
-    fit_gauss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
       family = f_gauss, data = df_gauss,
       chains = chains, seed = seed, iter = iter
     )
   )
   SW(
-    fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5,
+    fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
       family = f_binom, data = df_binom,
       chains = chains, seed = seed, iter = iter
     )
   )
   SW(
-    fit_poiss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+    fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
       family = f_poiss, data = df_poiss,
       chains = chains, seed = seed, iter = iter
     )
