@@ -215,7 +215,6 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
       replace = TRUE, prob = proj$weights
     )
 
-    browser()
     t(sapply(draw_inds, function(i) {
       proj$family$ppd(mu[, i], proj$dis[i], weights)
     }))
@@ -558,7 +557,7 @@ as.matrix.projection <- function(x, ...) {
       "clustering and the clusters might have different weights."
     ))
   }
-  res <- t(x$sub_fit[[1]])
+  res <- t(x$sub_fit)
   if (x$intercept) {
     if ("1" %in% x$vind) {
       colnames(res) <- gsub("^1", "Intercept", x$vind)
@@ -571,8 +570,35 @@ as.matrix.projection <- function(x, ...) {
 }
 
 
+##'@method as.matrix ridgelm
+##'@export
+as.matrix.ridgelm <- function(x, ...) {
+  coef(x)
+}
 
+##'@method as.matrix lm
+##'@export
+as.matrix.lm <- function(x, ...) {
+  coef(x)
+}
 
+##'@method as.matrix list
+##'@export
+as.matrix.list <- function(x, ...) {
+  do.call(cbind, lapply(x, as.matrix))
+}
+
+##'@method t ridgelm
+##'@export
+t.ridgelm <- function(x, ...) {
+  t(as.matrix(x))
+}
+
+##'@method t list
+##'@export
+t.list <- function(x, ...) {
+  t(as.matrix(x))
+}
 
 ##' Create cross-validation indices
 ##'
