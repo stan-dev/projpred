@@ -65,7 +65,7 @@ if (require(rstanarm) && require(brms)) {
       # kl should be non-increasing on training data
       klseq <- sapply(p, function(x) sum(x$kl))
       # remove intercept from the comparison
-      expect_true(all(diff(klseq)[-1] - 1e-2 < 0), info = i_inf)
+      expect_true(all(diff(klseq)[-1] - 1e-1 < 0), info = i_inf)
       ## expect_equal(klseq, cummin(klseq), info = i_inf)
 
       # all submodels should use the same clustering
