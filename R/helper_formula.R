@@ -8,6 +8,7 @@ NULL
 #' @param formula A formula for a valid model.
 #' @param data The original data frame with a matrix as predictor.
 #' @return a  list containing the expanded formula and the expanded data frame.
+#' @export
 break_up_matrix_term <- function(formula, data) {
   tt <- terms(formula)
   response <- attr(tt, "response")

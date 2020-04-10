@@ -22,14 +22,12 @@ The difference with respect to the standard quickstart guide is that in this vig
 ## Gaussian example
 Load the necessary packages. If the sampling takes more than 10 seconds and multiple cores are available, uncomment the line setting `mc.cores` to set the number of cores used (this is commented out as the sampling in the example is fast and to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).
 ```{r, results='hide', message=FALSE, warning=FALSE}
-library(devtools)
-library(rstanarm)
+library(brms)
 library(projpred)
 library(ggplot2)
 library(bayesplot)
 theme_set(theme_classic())
 #options(mc.cores = parallel::detectCores())
-devtools::load_all()
 ```
 
 The package contains a simple Gaussian example dataset accessible with the `data`-command. This dataset is one of the example cases from the `glmnet`-package. The following loads a dataframe `df_gaussian` with the predictor matrix `x` and the corresponding targets `y` into the workspace.
@@ -38,18 +36,27 @@ data('df_gaussian', package = 'projpred')
 ```
 
 We first construct a model with all the variables and regularized horseshoe prior (Piironen and Vehtari, 2017c) on the regression coefficients. This gives us the full Bayesian solution to the problem. We specify the prior on the number of relevant variables using the approch by Piironen and Vehtari (2017b,c). The prior for the global shrinkage parameter is defined based on the prior on the number of relevant variables.
+
+Before building the model we call `break_up_matrix_term`.
+This is a convenience function to automatically split matrix variables in linear terms. For example, in `y ~ x`, `x` can be a matrix.
+If this function is not used, `projpred` considers `x` to be jointly included or excluded in the variable selection.
+
 ```{r, results='hide', message=FALSE, warning=FALSE}
-n <- nrow(df_gaussian$x) # 100
-D <- ncol(df_gaussian$x) # 20
+split_structure <- break_up_matrix_term(y ~ x, data=df_gaussian)
+df_gaussian <- split_structure$data
+formula <- split_structure$formula
+d <- df_gaussian
+n <- nrow(df_gaussian) # 100
+D <- ncol(df_gaussian[, -1]) # 20
 p0 <- 5 # prior guess for the number of relevant variables
 tau0 <- p0/(D-p0) * 1/sqrt(n) # scale for tau (notice that stan_glm will automatically scale this by sigma)
-prior_coeff <- hs(global_scale = tau0, slab_scale = 1) # regularized horseshoe prior
-fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
-                # To make this vignette build fast, we use only 2 chains and
-                # 500 iterations. In practice, at least 4 chains should be 
-                # used and 2000 iterations might be required for reliable
-		# inference.
-                seed=1, chains=2, iter=500)
+fit <- brm(formula, family=gaussian(), data=df_gaussian,
+           prior=prior(horseshoe(scale_global = tau0, scale_slab = 1), class=b),
+           ## To make this vignette build fast, we use only 2 chains and
+           ## 500 iterations. In practice, at least 4 chains should be 
+           ## used and 2000 iterations might be required for reliable
+           ## inference.
+           seed=1, chains=2, iter=500)
 ```
 
 In order to have a very general interface to `projpred` we need to specify some functions. These are:
@@ -94,21 +101,8 @@ The `fetch_data` function needs to handle the different data structures needed i
 Next we construct the reference model structure `refmodel`.
 
 ```{r, results='hide', warning=FALSE, messages=FALSE}
-split_structure <- break_up_matrix_term(y ~ x, data=df_gaussian)
-df_gaussian <- split_structure$data
-formula <- split_structure$formula
-d <- df_gaussian
-
-refmodel <- get_refmodel(fit, d$y, formula,
-                             predfun=predfun,
-                             proj_predfun=proj_predfun,
-                             mle=mle,
-                             fetch_data=fetch_data)
+refmodel <- get_refmodel(fit)
 ```
-
-Before building the `refmodel `structure we call `break_up_matrix_term`.
-This is a convenience function to automatically split matrix variables in linear terms. For example, in `y ~ x`, `x` can be a matrix.
-If this function is not used, `projpred` considers `x` to be jointly included or excluded in the variable selection.
 
 The function `cv_varsel_poc` runs the variable selection, and returns an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
 Although it is theoretically possible to use L1-search for this linear model, it has not been implemented for the general `formula` interface, and we will use the `forward` method.
