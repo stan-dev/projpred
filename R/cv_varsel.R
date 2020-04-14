@@ -122,7 +122,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	vs$spath <- sel$spath
 	vs$method <- method
 	vs$cv_method <- cv_method
-	vs <- c(vs, c(sel_cv[c('d_test', 'summaries', 'pseudo_bma')],
+	vs <- c(vs, c(sel_cv[c('d_test', 'summaries', 'loo_bb_weights')],
 	              sel[c('family_kl', 'vind', 'kl')],
 	              list(pctch = pctch)))
 	class(vs) <- 'cvsel'
@@ -160,7 +160,7 @@ parseargs_cv_varsel <- function(refmodel, cv_method, K) {
 
 
 kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax,
-                         intercept, penalty, verbose, opt, K, seed=NULL) {
+                         intercept, penalty, verbose, opt, K, seed=NULL, B=20) {
 	
 	# fetch the k_fold list (or compute it now if not already computed)
 	k_fold <- .get_kfold(refmodel, K, verbose, seed)
@@ -254,9 +254,20 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
     data.frame(d[c('y', 'weights')])
   }))
 
+  ## LOO-BB weights based on
+  ## Y. Yao et al, "Using stacking to average Bayesian predictive distributions", 2017
+  n <- refmodel$nobs
+  alpha <- dirichlet_rng(B, rep(1, n))
+  z <- sub
+  z_b <- alpha %*% z * n
+  ref <- exp(sum(ref) - max(z_b))
+  z_b <- exp(z_b - max(z_b))
+  w <- rowMeans(sapply(1:nrow(z_b), function(i)
+    z_b[i,] / (z_b[i,] + ref)))
+
   list(vind_cv = vind_cv,
        summaries = list(sub = sub, ref = ref),
-       pseudo_bma = NULL,
+       loo_bb_weights = w,
        d_test = c(d_cv, type = 'kfold'))
 }
 
@@ -427,7 +438,7 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
 
   d_test <- list(y=d_train$y, weights=d_train$weights, type='loo')
 
-  ## pseudo-BMA+ weights based on
+  ## LOO-BB weights based on
   ## Y. Yao et al, "Using stacking to average Bayesian predictive distributions", 2017
   n <- length(inds)
   alpha <- dirichlet_rng(B, rep(1, n))
@@ -438,7 +449,7 @@ loo_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, 
   w <- rowMeans(sapply(1:nrow(z_b), function(i)
     z_b[i,] / (z_b[i,] + ref)))
 
-	return(list(vind_cv=vind_cv, summaries=summaries, d_test=d_test, pseudo_bma=w))
+	return(list(vind_cv=vind_cv, summaries=summaries, d_test=d_test, loo_bb_weights=w))
 
 }
 
