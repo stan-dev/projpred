@@ -86,7 +86,7 @@ cv_varsel <- function(fit,  method = NULL, cv_method = NULL,
 	  # TODO: should we save the cvfits object to the reference model so that it need not be computed again
 	  # if the user wants to compute the search again?
 		sel_cv <- kfold_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty,
-		                       verbose, opt, K, seed=seed)
+		                       verbose, opt, K, seed=seed, B=B)
 	} else if (tolower(cv_method) == 'loo')  {
 	  if (!(is.null(K))) warning('K provided, but cv_method is LOO.')
 		sel_cv <- loo_varsel(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax, intercept, penalty, 
@@ -258,12 +258,12 @@ kfold_varsel <- function(refmodel, method, nv_max, ns, nc, nspred, ncpred, relax
   ## Y. Yao et al, "Using stacking to average Bayesian predictive distributions", 2017
   n <- refmodel$nobs
   alpha <- dirichlet_rng(B, rep(1, n))
-  z <- sub
+  z <- do.call(cbind, lapply(sub, function(s) s$lppd))
   z_b <- alpha %*% z * n
-  ref <- exp(sum(ref) - max(z_b))
+  ref_ <- exp(sum(ref$lppd) - max(z_b))
   z_b <- exp(z_b - max(z_b))
   w <- rowMeans(sapply(1:nrow(z_b), function(i)
-    z_b[i,] / (z_b[i,] + ref)))
+    z_b[i,] / (z_b[i,] + ref_)))
 
   list(vind_cv = vind_cv,
        summaries = list(sub = sub, ref = ref),
