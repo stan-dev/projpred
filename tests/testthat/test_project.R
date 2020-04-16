@@ -30,9 +30,9 @@ if (require(rstanarm) && require(brms)) {
   fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_gauss, data = df_gauss, QR = T,
                         weights = weights, offset = offset,
                         chains = chains, seed = seed, iter = iter)
-  fit_binom <- brm(y | trials(weights) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
+  fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_binom,
                    data = df_binom, chains = chains, seed = seed, iter = iter)
-  fit_poiss <- brm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_poiss, data = df_poiss,
+  fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5, family = f_poiss, data = df_poiss,
                    chains = chains, seed = seed, iter = iter)
   })
   fit_list <- list(#fit_gauss,
@@ -65,7 +65,7 @@ if (require(rstanarm) && require(brms)) {
       # kl should be non-increasing on training data
       klseq <- sapply(p, function(x) sum(x$kl))
       # remove intercept from the comparison
-      expect_true(all(diff(klseq)[-1] - 1e-2 < 0), info = i_inf)
+      expect_true(all(diff(klseq)[-1] - 1e-1 < 0), info = i_inf)
       ## expect_equal(klseq, cummin(klseq), info = i_inf)
 
       # all submodels should use the same clustering

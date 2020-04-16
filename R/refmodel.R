@@ -228,6 +228,7 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
       })
       y <- response[[1]]
       weights <- response[[2]] + y ## weights - y
+      formula <- update(formula, paste0(response_name[[1]], " ~ ."))
     } else if (length(response_name == 1)) {
       y <- fit$data[, colnames(fit$data) == response_name]
     }
