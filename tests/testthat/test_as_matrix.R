@@ -42,31 +42,31 @@ if (require(rstanarm) && require(brms)) {
   p_binom <- project(vs_binom, vind = vind, ns = ns)
 
 
-  ## test_that("as.matrix.projection returns the relevant variables for gaussian", {
-  ##   m <- as.matrix(p_gauss)
-  ##   expect_length(setdiff(colnames(m), c('Intercept', vs_gauss$vind[vind], 'sigma')), 0)
-  ##   expect_equal(dim(m), c(ns, length(vind) + 2))
-  ## })
+  test_that("as.matrix.projection returns the relevant variables for gaussian", {
+    m <- as.matrix(p_gauss)
+    expect_length(setdiff(colnames(m), c('Intercept', vs_gauss$vind[vind], 'sigma')), 0)
+    expect_equal(dim(m), c(ns, length(vind) + 2))
+  })
 
-  ## test_that("as.matrix.projection returns the relevant variables for binomial", {
-  ##   m <- as.matrix(p_binom)
-  ##   expect_length(setdiff(colnames(m), c("Intercept", vs_binom$vind[vind])), 0)
-  ##   expect_equal(dim(m), c(ns, length(vind) + 1))
-  ## })
+  test_that("as.matrix.projection returns the relevant variables for binomial", {
+    m <- as.matrix(p_binom)
+    expect_length(setdiff(colnames(m), c("Intercept", vs_binom$vind[vind])), 0)
+    expect_equal(dim(m), c(ns, length(vind) + 1))
+  })
 
-  ## test_that("as.matrix.projection works as expected with zero variables", {
-  ##   p_novars <- project(vs_gauss, nv = 0, ns = ns)
-  ##   m <- as.matrix(p_novars)
-  ##   expect_length(setdiff(colnames(m), c('Intercept', 'sigma')), 0)
-  ##   expect_equal(dim(m), c(ns, 2))
-  ## })
+  test_that("as.matrix.projection works as expected with zero variables", {
+    p_novars <- project(vs_gauss, nv = 0, ns = ns)
+    m <- as.matrix(p_novars)
+    expect_length(setdiff(colnames(m), c('Intercept', 'sigma')), 0)
+    expect_equal(dim(m), c(ns, 2))
+  })
 
-  ## test_that("as.matrix.projection works with clustering", {
-  ##   nc <- 3
-  ##   p_clust <- project(vs_gauss, vind = vind, nc = nc)
-  ##   m <- as.matrix(p_clust)
-  ##   expect_length(setdiff(colnames(m), c("Intercept", vs_gauss$vind[vind], "sigma")), 0)
-  ##   expect_equal(dim(m), c(nc, length(vind) + 2))
-  ## })
+  test_that("as.matrix.projection works with clustering", {
+    nc <- 3
+    p_clust <- project(vs_gauss, vind = vind, nc = nc)
+    m <- as.matrix(p_clust)
+    expect_length(setdiff(colnames(m), c("Intercept", vs_gauss$vind[vind], "sigma")), 0)
+    expect_equal(dim(m), c(nc, length(vind) + 2))
+  })
 
 }
