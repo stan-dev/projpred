@@ -132,8 +132,8 @@ get_refmodel.cvsel <- function(object, ...) {
 #' @export
 get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
                                  div_minimizer, fetch_data, family = NULL, wobs = NULL,
-                                 folds = NULL, cvfits = NULL, penalized = FALSE,
-                                 offest = NULL, cvfun = NULL) {
+                                 folds = NULL, cvfits = NULL, offset = NULL,
+                                 cvfun = NULL) {
   fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
     fetch_data(data, obs, newdata)
   }
@@ -144,11 +144,9 @@ get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
     family <- extend_family(family)
   }
 
-  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, div_minimizer,
-    proj_predfun,
-    penalized = penalized, weights = wobs,
-    offset = offset, cvfits = cvfits, folds = folds,
-    cvfun = cvfun
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun,
+    div_minimizer, proj_predfun, weights = wobs, offset = offset,
+    cvfits = cvfits, folds = folds, cvfun = cvfun
   )
   return(refmodel)
 }
@@ -220,8 +218,7 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
 #' @export
 get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
                                  predfun = NULL, proj_predfun = NULL,
-                                 div_minimizer = NULL, folds = NULL,
-                                 penalized = FALSE, ...) {
+                                 div_minimizer = NULL, folds = NULL, ...) {
   family <- family(fit)
   family <- extend_family(family)
 
@@ -245,8 +242,9 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
     response <- lapply(response_name, function(rhs) {
       eval_rhs(as.formula(paste("~", rhs)), data)
     })
-    if (is.null(y))
+    if (is.null(y)) {
       y <- response[[1]]
+    }
     weights <- response[[2]] + y ## weights - y
     formula <- update(formula, paste0(response_name[[1]], " ~ ."))
   } else if (length(response_name) == 1 && is.null(y)) {
@@ -265,7 +263,7 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
 
   refmodel <- init_refmodel(
     fit, data, y, formula, family, predfun, div_minimizer,
-    proj_predfun, folds, penalized,
+    proj_predfun, folds,
     weights = weights, dis = dis, offset = offset, ...
   )
   return(refmodel)
@@ -274,9 +272,8 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
 #' @export
 init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
-                          folds = NULL, penalized = FALSE, weights = NULL,
-                          offset = NULL, cvfun = NULL, cvfits = NULL,
-                          dis = NULL, ...) {
+                          folds = NULL, weights = NULL, offset = NULL,
+                          cvfun = NULL, cvfits = NULL, dis = NULL, ...) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun)) {
     predfun <- function(fit, newdata = NULL) {
