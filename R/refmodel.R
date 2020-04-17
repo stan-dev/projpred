@@ -189,22 +189,30 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
     dis <- NULL
   }
 
+  weights <- NULL
   if ("trials" %in% family$ad &&
     inherits(p$adforms$trials, "formula")) {
     trials_form <- p$adforms$trials
-    trials_var <- eval(
-      trials_form[[2]], data,
-      environment(trials_form)
-    )$vars$trials
+    trials_var <- eval_rhs(trials_form, data)$vars$trials
     weights <- eval_rhs(as.formula(paste("~", trials_var)), data)
-  } else {
-    weights <- NULL
+  }
+
+  if ("weights" %in% family$ad &&
+    inherits(p$adforms$weights, "formula")) {
+    weights_form <- p$adforms$weights
+    weights_var <- eval_rhs(weights_form, data)$vars$weights
+    weights <- eval_rhs(as.formula(paste("~", weights_var)), data)
+  }
+
+  if (!is.null(p$dpars$mu$offset)) {
+    offset_form <- p$dpars$mu$offset
+    offset <- eval_rhs(offset_form, data)
   }
 
   ## TODO: return y, weights and offset as right hand side formulas
   refmodel <- init_refmodel(fit, data, y, formula, family, predfun,
     div_minimizer, proj_predfun, folds,
-    weights = weights, dis = dis, ...
+    weights = weights, dis = dis, offset = offset, ...
   )
   return(refmodel)
 }
@@ -227,6 +235,10 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
   }
 
   weights <- NULL
+  if (!is.null(fit$weights)) {
+    weights <- fit$weights
+  }
+
   if (family$family == "binomial" && length(response_name) == 2) {
     ## in rstanarm the convention is to set
     ## cbind(y, weight - y) ~ .
@@ -241,6 +253,10 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
     y <- eval_rhs(as.formula(paste("~", response_name)), data)
   }
 
+  if (!is.null(fit$offset)) {
+    offset <- fit$offset
+  }
+
   if (.has_dispersion(family)) {
     dis <- data.frame(fit)[, "sigma"]
   } else {
@@ -250,7 +266,7 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
   refmodel <- init_refmodel(
     fit, data, y, formula, family, predfun, div_minimizer,
     proj_predfun, folds, penalized,
-    weights = weights, dis = dis, ...
+    weights = weights, dis = dis, offset = offset, ...
   )
   return(refmodel)
 }
