@@ -74,8 +74,9 @@ pseudo_data <- function(f, y, family, offset = rep(0, NROW(f)),
   return(nlist(z, w, loss, grad))
 }
 
-lambda_grid <- function(x, y, family, offset, weights, intercept, penalty, obsvar = 0,
-                        alpha = 1.0, lambda_min_ratio = 1e-2, nlam = 100) {
+lambda_grid <- function(x, y, family, offset, weights, intercept, penalty,
+                        obsvar = 0, alpha = 1.0, lambda_min_ratio = 1e-2,
+                        nlam = 100) {
   #
   # Standard lambda sequence as described in Friedman et al. (2009), section
   # 2.5. The grid will have nlam values, evenly spaced in the log-space between
@@ -149,7 +150,8 @@ glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
   if (is.null(penalty)) {
     penalty <- rep(1.0, ncol(x))
   } else if (length(penalty) != ncol(x)) {
-    stop(paste0("Incorrect length of penalty vector (should be ", ncol(x), ")."))
+    stop(paste0("Incorrect length of penalty vector (should be ",
+                ncol(x), ")."))
   }
 
   # standardize the features (notice that the variables are centered only if
@@ -164,8 +166,8 @@ glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
   # default lambda-sequence, including optimal start point
   if (is.null(lambda)) {
     temp <- lambda_grid(x, y, family, offset, weights, intercept, penalty,
-      alpha = alpha,
-      obsvar = obsvar, nlam = nlambda, lambda_min_ratio = lambda_min_ratio
+      alpha = alpha, obsvar = obsvar, nlam = nlambda,
+      lambda_min_ratio = lambda_min_ratio
     )
     lambda <- temp$lambda
     w0 <- temp$w0
@@ -194,7 +196,7 @@ glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
   beta0 <- beta0 - colSums(transf$shift * beta)
 
   return(nlist(
-    beta, beta0, w = out[[3]], lambda = lambda[1:ncol(beta)],
+    beta, beta0, w = out[[3]], lambda = lambda[seq_len(ncol(beta))],
     npasses = out[[4]], updates_qa = as.vector(out[[5]]),
     updates_as = as.vector(out[[6]])
   ))
@@ -297,16 +299,10 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
   beta_orig <- beta / transf$scale
   beta0_orig <- beta0 - sum(transf$shift * beta_orig)
 
-  out <- nlist(beta = beta_orig, beta0_orig, w,
+  out <- nlist(beta = beta_orig, beta0 = beta0_orig, w,
               qa_updates = out[[5]])
   return(out)
 }
-
-
-
-
-
-
 
 glm_forward <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
                         qa_updates_max = NULL, weights = NULL, offset = NULL,

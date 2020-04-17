@@ -11,8 +11,8 @@
 ##'   taken from the \code{varsel} information). If a list, then the projection
 ##'   is performed for each model size. Default is the model size suggested by
 ##'   the variable selection (see function \code{suggest_size}). Ignored if
-##'   \code{vind} is specified.
-##' @param vind Variable indices onto which the projection is done. If
+##'   \code{solution_terms} is specified.
+##' @param solution_terms Variable indices onto which the projection is done. If
 ##'   specified, \code{nv} is ignored.
 ##' @param cv_search If TRUE, then the projected coefficients after L1-selection
 ##'   are computed without any penalization (or using only the regularization
@@ -42,7 +42,7 @@
 ##'  \item{\code{dis}}{Draws from the projected dispersion parameter.}
 ##'  \item{\code{alpha}}{Draws from the projected intercept.}
 ##'  \item{\code{beta}}{Draws from the projected weight vector.}
-##'  \item{\code{vind}}{The order in which the variables were added to the
+##'  \item{\code{solution_terms}}{The order in which the variables were added to the
 ##'   submodel.} \item{\code{intercept}}{Whether or not the model contains an
 ##'   intercept.}
 ##'  \item{\code{family}}{A modified \code{\link{family}}-object.}
@@ -59,19 +59,19 @@
 ##' proj4 <- project(vs, nv = 4)
 ##'
 ## project onto an arbitrary variable combination (variable indices 3,4 and 8)
-##' proj <- project(fit, vind=c(3,4,8))
+##' proj <- project(fit, solution_terms=c(3,4,8))
 ##' }
 ##'
 
 ##' @export
-project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, number_samples = 400,
+project <- function(object, nv = NULL, solution_terms = NULL, cv_search = TRUE, number_samples = 400,
                     number_clusters = NULL, intercept = NULL, seed = NULL, regul = 1e-4,
                     ...) {
   if (!("vsel" %in% class(object) || "cvsel" %in% class(object))
-      && is.null(vind)) {
+      && is.null(solution_terms)) {
     stop("The given object is not a variable selection -object.",
          "Run the variable selection first, or provide the variable ",
-         "indices (vind).")
+         "indices (solution_terms).")
   }
 
   refmodel <- get_refmodel(object)
@@ -85,48 +85,48 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, number_sam
     number_samples <- number_clusters <- 1
   }
 
-  if (!is.null(vind) &&
-    any(object$vind[1:length(vind)] != vind)) {
+  if (!is.null(solution_terms) &&
+    any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
     ## search path not found, or the given variable combination
     ## not in the search path, then we need to project the
     ## required variables
     cv_search <- TRUE
   }
 
-  if (!is.null(vind)) {
-    ## if vind is given, nv is ignored (project only onto the given submodel)
-    if (!is.null(object$vind)) {
-      vars <- object$vind
+  if (!is.null(solution_terms)) {
+    ## if solution_terms is given, nv is ignored (project only onto the given submodel)
+    if (!is.null(object$solution_terms)) {
+      vars <- object$solution_terms
     } else {
       ## project only the given model on a fit object
       vars <- setdiff(split_formula(refmodel$formula), "1")
     }
 
-    if (max(vind) > length(vars)) {
-      stop("vind contains an index larger than the number of variables ",
+    if (max(solution_terms) > length(vars)) {
+      stop("solution_terms contains an index larger than the number of variables ",
            "in the model.")
     }
 
-    vind <- c(vars[vind])
-    nv <- length(vind)
+    solution_terms <- c(vars[solution_terms])
+    nv <- length(solution_terms)
   } else {
     ## by default take the variable ordering from the selection
-    vind <- object$vind
+    solution_terms <- object$solution_terms
     if (is.null(nv)) {
       if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
         ## by default, project onto the suggested model size
         nv <- object$suggested_size
       } else {
-        stop("No suggested model size found, please specify nv or vind")
+        stop("No suggested model size found, please specify nv or solution_terms")
       }
     } else {
       if (!is.numeric(nv) || any(nv < 0)) {
         stop("nv must contain non-negative values.")
       }
-      if (max(nv) > length(vind)) {
+      if (max(nv) > length(solution_terms)) {
         stop(paste(
           "Cannot perform the projection with", max(nv), "variables,",
-          "because variable selection was run only up to", length(vind),
+          "because variable selection was run only up to", length(solution_terms),
           "variables."
         ))
       }
@@ -164,7 +164,7 @@ project <- function(object, nv = NULL, vind = NULL, cv_search = TRUE, number_sam
 
   ## project onto the submodels
   subm <- .get_submodels(list(
-    vind = vind,
+    solution_terms = solution_terms,
     p_sel = object$search_path$p_sel,
     sub_fits = object$search_path$sub_fits
   ),

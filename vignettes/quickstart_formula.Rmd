@@ -112,7 +112,7 @@ vs <- cv_varsel(refmodel, method='forward')
 ```
 
 ```{r, messages=FALSE, warnings=FALSE}
-vs$vind # selection order of the variables
+vs$solution_terms # selection order of the variables
 ```
 
 We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
@@ -131,7 +131,7 @@ We perform the projection for a submodel of desired size using the function `pro
 ```{r, fig.width=6, fig.height=2}
  # Visualise the three most relevant variables in the full model -->
  mcmc_areas(as.matrix(refmodel$fit),
-            pars = c('(Intercept)', unlist(vs$vind[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
+            pars = c('(Intercept)', unlist(vs$solution_terms[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
 ```
 
 ```{r, fig.width=6, fig.height=2}

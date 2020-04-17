@@ -11,12 +11,13 @@
 #' @param object Either an object returned by \link[=varsel]{varsel},
 #'   \link[=cv_varsel]{cv_varsel} or \link[=init_refmodel]{init_refmodel}, or
 #'   alternatively any object that can be converted to a reference model.
-#' @param xnew The predictor values used in the prediction. If \code{vind} is
-#'   specified, then \code{xnew} should either be a dataframe containing column
-#'   names that correspond to \code{vind} or a matrix with the number and order
-#'   of columns corresponding to \code{vind}. If \code{vind} is unspecified,
-#'   then \code{xnew} must either be a dataframe containing all the column names
-#'   as in the original data or a matrix with the same columns at the same
+#' @param xnew The predictor values used in the prediction. If
+#'   \code{solution_terms} is specified, then \code{xnew} should either be a
+#'   dataframe containing column names that correspond to \code{solution_terms}
+#'   or a matrix with the number and order of columns corresponding to
+#'   \code{solution_terms}. If \code{solution_terms} is unspecified, then
+#'   \code{xnew} must either be a dataframe containing all the column names as
+#'   in the original data or a matrix with the same columns at the same
 #'   positions as in the original data.
 #' @param ynew New (test) target variables. If given, then the log predictive
 #'   density for the new observations is computed.
@@ -34,8 +35,8 @@
 #' @param nv Number of variables in the submodel (the variable combination is
 #'   taken from the variable selection information). If a vector with several
 #'   values, then results for all specified model sizes are returned. Ignored if
-#'   \code{vind} is specified. By default use the automatically suggested model
-#'   size.
+#'   \code{solution_terms} is specified. By default use the automatically
+#'   suggested model size.
 #' @param draws Number of draws to return from the predictive distribution of
 #'   the projection. The default is 1000. For \code{proj_predict} only.
 #' @param seed An optional seed to use for drawing from the projection. For
@@ -44,11 +45,12 @@
 #'   an object returned by \link{varsel} or \link{cv_varsel}.
 #'
 #' @return If the prediction is done for one submodel only (\code{nv} has length
-#'   one or \code{vind} is specified) and ynew is unspecified, a matrix or
-#'   vector of predictions (depending on the value of \code{integrated}). If
-#'   \code{ynew} is specified, returns a list with elements pred (predictions)
-#'   and lpd (log predictive densities). If the predictions are done for several
-#'   submodel sizes, returns a list with one element for each submodel.
+#'   one or \code{solution_terms} is specified) and ynew is unspecified, a
+#'   matrix or vector of predictions (depending on the value of
+#'   \code{integrated}). If \code{ynew} is specified, returns a list with
+#'   elements pred (predictions) and lpd (log predictive densities). If the
+#'   predictions are done for several submodel sizes, returns a list with one
+#'   element for each submodel.
 #'
 #' @examples
 #' \donttest{
@@ -100,8 +102,8 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   }
 
   projected_sizes <- sapply(proj, function(x) {
-    if (length(x$vind) > 1) {
-      count_terms_chosen(x$vind)
+    if (length(x$solution_terms) > 1) {
+      count_terms_chosen(x$solution_terms)
     } else {
       1
     }
@@ -117,16 +119,14 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
     ))
   }
 
-  projs <- Filter(function(x) length(x$vind) + 1 %in% nv, proj)
+  projs <- Filter(function(x) length(x$solution_terms) + 1 %in% nv, proj)
   names(projs) <- nv
 
-  xnew_df <- is.data.frame(xnew)
-
-  vind <- list(...)$vind
-  if (!is.null(vind) && NCOL(xnew) != length(vind)) {
+  solution_terms <- list(...)$solution_terms
+  if (!is.null(solution_terms) && NCOL(xnew) != length(solution_terms)) {
     stop(paste(
       "The number of columns in xnew does not match with the given",
-      "number of variable indices (vind)."
+      "number of variable indices (solution_terms)."
     ))
   }
 
@@ -144,7 +144,7 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
     proj_predict(proj, mu, weightsnew)
   })
 
-  .unlist_proj(preds)
+  return(.unlist_proj(preds))
 }
 
 #' @rdname proj-pred
@@ -290,8 +290,10 @@ varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = FALSE,
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
   tab <- rbind(
-    .tabulate_stats(object, stats, alpha = alpha,
-                    nfeat_baseline = nfeat_baseline),
+    .tabulate_stats(object, stats,
+      alpha = alpha,
+      nfeat_baseline = nfeat_baseline
+    ),
     .tabulate_stats(object, stats, alpha = alpha)
   )
   stats_table <- subset(tab, tab$delta == deltas)
@@ -332,8 +334,10 @@ varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = FALSE,
   }
 
   # plot submodel results
-  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max),
-               mapping = aes_string(x = "size")) +
+  pp <- ggplot(
+    data = subset(stats_sub, stats_sub$size <= nv_max),
+    mapping = aes_string(x = "size")
+  ) +
     geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
     geom_line(aes_string(y = "value")) +
     geom_point(aes_string(y = "value"))
@@ -360,7 +364,7 @@ varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = FALSE,
     labs(x = "Number of variables in the submodel", y = ylab) +
     theme(legend.position = "none") +
     facet_grid(statistic ~ ., scales = "free_y")
-  pp
+  return(pp)
 }
 
 ##' @rdname varsel-statistics
@@ -374,8 +378,10 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd",
   ## fetch statistics
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-    tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           nfeat_baseline = nfeat_baseline)
+    tab <- .tabulate_stats(object, stats,
+      alpha = alpha,
+      nfeat_baseline = nfeat_baseline
+    )
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
@@ -384,13 +390,15 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd",
 
   ## these are the corresponding names for mean, se, upper and lower in the
   ## stats_table, and their suffices in the table to be returned
-  qty <- unname(sapply(type, function(t)
-    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")))
-  suffix <- unname(sapply(type, function(t)
-    switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")))
+  qty <- unname(sapply(type, function(t) {
+    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")
+  }))
+  suffix <- unname(sapply(type, function(t) {
+    switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")
+  }))
 
   ## loop through all the required statistics
-  arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$vind))
+  arr <- data.frame(size = unique(stats_table$size), solution_terms = c(NA, object$solution_terms))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- sapply(suffix, function(s) paste0(stats[i], s))
@@ -406,7 +414,7 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd",
     arr$pct_vind_cv <- c(NA, diag(object$pctch[, -1]))
   }
 
-  subset(arr, arr$size <= nv_max)
+  return(subset(arr, arr$size <= nv_max))
 }
 
 ##' Print methods for vsel/cvsel objects
@@ -429,10 +437,10 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd",
 ##' @method print vsel
 print.vsel <- function(x, digits = 2, ...) {
   stats <- varsel_stats(x, ...)
-  v <- match("vind", colnames(stats))
+  v <- match("solution_terms", colnames(stats))
   stats[, -v] <- round(stats[, -v], digits)
   print(stats[, -v])
-  invisible(stats)
+  return(invisible(stats))
 }
 
 ##' @rdname print-vsel
@@ -440,10 +448,10 @@ print.vsel <- function(x, digits = 2, ...) {
 ##' @method print cvsel
 print.cvsel <- function(x, digits = 2, ...) {
   stats <- varsel_stats(x, ...)
-  v <- match("vind", colnames(stats))
+  v <- match("solution_terms", colnames(stats))
   stats[, -v] <- round(stats[, -v], digits)
   print(stats[, -v])
-  invisible(stats)
+  return(invisible(stats))
 }
 
 
@@ -558,7 +566,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
     suggested_size <- max(min(res), 1) # always include intercept
   }
 
-  suggested_size
+  return(suggested_size)
 }
 
 
@@ -575,45 +583,45 @@ as.matrix.projection <- function(x, ...) {
   }
   res <- t(x$sub_fit)
   if (x$intercept) {
-    if ("1" %in% x$vind) {
-      colnames(res) <- gsub("^1", "Intercept", x$vind)
+    if ("1" %in% x$solution_terms) {
+      colnames(res) <- gsub("^1", "Intercept", x$solution_terms)
     } else {
-      colnames(res) <- c("Intercept", x$vind)
+      colnames(res) <- c("Intercept", x$solution_terms)
     }
   }
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
-  res
+  return(res)
 }
 
 
 ##' @method as.matrix ridgelm
 ##' @export
 as.matrix.ridgelm <- function(x, ...) {
-  coef(x)
+  return(coef(x))
 }
 
 ##' @method as.matrix lm
 ##' @export
 as.matrix.lm <- function(x, ...) {
-  coef(x)
+  return(coef(x))
 }
 
 ##' @method as.matrix list
 ##' @export
 as.matrix.list <- function(x, ...) {
-  do.call(cbind, lapply(x, as.matrix))
+  return(do.call(cbind, lapply(x, as.matrix)))
 }
 
 ##' @method t ridgelm
 ##' @export
 t.ridgelm <- function(x, ...) {
-  t(as.matrix(x))
+  return(t(as.matrix(x)))
 }
 
 ##' @method t list
 ##' @export
 t.list <- function(x, ...) {
-  t(as.matrix(x))
+  return(t(as.matrix(x)))
 }
 
 ##' Create cross-validation indices

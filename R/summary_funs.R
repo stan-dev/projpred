@@ -1,10 +1,10 @@
 .get_sub_summaries <- function(submodels, test_points, refmodel, family,
-                               groups = NULL) {
-  has_group_features <- !is.null(groups)
+                               search_terms = NULL) {
+  has_group_features <- !is.null(search_terms)
   res <- lapply(submodels, function(model) {
-    vind <- model$vind
-    if (length(vind) == 0) {
-      vind <- c("1")
+    solution_terms <- model$solution_terms
+    if (length(solution_terms) == 0) {
+      solution_terms <- c("1")
     }
     sub_fit <- model$sub_fit
     weights <- refmodel$wobs[test_points]

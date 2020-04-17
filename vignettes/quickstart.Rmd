@@ -52,7 +52,7 @@ fit <- stan_glm(y ~ x, family=gaussian(), data=df_gaussian, prior=prior_coeff,
 The variable selection can then be excecuted with the command `varsel`. This returns an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`. Currently the package implements forward search and Lasso type L1-penalization to find the variable ordering (Tran et al., 2012). The latter is much faster for large problems but the forward search is more accurate.
 ```{r}
 vs <- varsel(fit, method='forward')
-vs$vind # selection order of the variables
+vs$solution_terms # selection order of the variables
 ```
 
 We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
@@ -81,7 +81,7 @@ We perform the projection for a submodel of desired size using the function `pro
 ```{r, fig.width=6, fig.height=2}
 # Visualise the three most relevant variables in the full model
 mcmc_areas(as.matrix(fit), 
-           pars = c('(Intercept)', names(vs$vind[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
+           pars = c('(Intercept)', names(vs$solution_terms[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
 ```
 ```{r, fig.width=6, fig.height=2}
 # Visualise the projected three most relevant variables
@@ -136,7 +136,7 @@ fit <- stan_glm(y ~ x, family=binomial(), data=df_binom, prior=prior_coeff,
 Run the variable selection and print out the variable ordering
 ```{r}
 vs <- varsel(fit, method='forward')
-vs$vind
+vs$solution_terms
 ```
 
 Plot the ELPD and classification accuracy on the training data:
@@ -166,15 +166,15 @@ ng <- 20
 x1g <- seq(-4,4,len=ng)
 x2g <- seq(-4,4,len=ng)
 xnew <- cbind( rep(x1g,each=ng), rep(x2g,ng) )
-vind <- vs$vind[1:2]
-pr <- proj_linpred(vs, xnew, vind=vind, transform=T, integrated=T)
+solution_terms <- vs$solution_terms[1:2]
+pr <- proj_linpred(vs, xnew, solution_terms=solution_terms, transform=T, integrated=T)
 
 # visualize the contours showing the predicted class probabilities
 pp <- ggplot()
 pp <- pp + geom_contour(aes(x=xnew[,1],y=xnew[,2], z=pr, colour=..level..))
 pp <- pp + scale_colour_gradient(low = "red", high = "green")
-pp <- pp + geom_point(aes(x=df_binom$x[,vind[1]],y=df_binom$x[,vind[2]]), color=df_binom$y+2)
-pp <- pp + xlab(sprintf('Feature %d',vind[1])) + ylab(sprintf('Feature %d',vind[2]))
+pp <- pp + geom_point(aes(x=df_binom$x[,solution_terms[1]],y=df_binom$x[,solution_terms[2]]), color=df_binom$y+2)
+pp <- pp + xlab(sprintf('Feature %d',solution_terms[1])) + ylab(sprintf('Feature %d',solution_terms[2]))
 pp
 ```
 

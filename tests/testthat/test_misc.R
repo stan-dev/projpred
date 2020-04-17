@@ -45,14 +45,14 @@ if (require(brms)) {
       chains = chains, seed = seed, iter = iter
     )
   )
-  fit_list <- list( ## gauss = fit_gauss,
-    binom = fit_binom, poiss = fit_poiss
+  fit_list <- list(
+    gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss
   )
 
-
-
-
-  test_that("check that the main function calls do not return the same RNG state every time", {
+  test_that(paste(
+    "check that the main function calls do not return the",
+    "same RNG state every time"
+  ), {
     s <- 5
 
     for (seed in c(130927, NULL)) {
@@ -74,26 +74,40 @@ if (require(brms)) {
         expect_true(any(r1 != r2))
 
         # project
-        vind <- c(1, 2)
-        foo <- project(fit, vind = vind, number_samples = 100, seed = seed)
+        solution_terms <- c(1, 2)
+        foo <- project(fit,
+          solution_terms = solution_terms,
+          number_samples = 100, seed = seed
+        )
         r1 <- rnorm(s)
-        foo <- project(fit, vind = vind, number_samples = 100, seed = seed)
+        foo <- project(fit,
+          solution_terms = solution_terms,
+          number_samples = 100, seed = seed
+        )
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
 
         # proj_linpred
-        vind <- c(1, 3)
-        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        solution_terms <- c(1, 3)
+        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         r1 <- rnorm(s)
-        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
 
         # proj_predict
-        vind <- c(1, 3)
-        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        solution_terms <- c(1, 3)
+        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         r1 <- rnorm(s)
-        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
       }
@@ -117,22 +131,34 @@ if (require(brms)) {
         expect_equal(foo, bar)
 
         # project
-        vind <- c(1, 2)
-        foo <- project(fit, vind = vind, number_clusters = 10, seed = seed)
-        bar <- project(fit, vind = vind, number_clusters = 10, seed = seed)
+        solution_terms <- c(1, 2)
+        foo <- project(fit,
+          solution_terms = solution_terms,
+          number_clusters = 10, seed = seed
+        )
+        bar <- project(fit,
+          solution_terms = solution_terms,
+          number_clusters = 10, seed = seed
+        )
         expect_equal(foo, bar)
 
 
         # proj_linpred
-        vind <- c(1, 3)
-        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
-        bar <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        solution_terms <- c(1, 3)
+        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
+        bar <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         expect_equal(foo, bar)
 
         # proj_predict
-        vind <- c(1, 3)
-        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
-        bar <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        solution_terms <- c(1, 3)
+        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+                            solution_terms = solution_terms, seed = seed)
+        bar <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+                            solution_terms = solution_terms, seed = seed)
         expect_equal(foo, bar)
       }
     }

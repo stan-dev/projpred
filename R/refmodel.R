@@ -131,7 +131,7 @@ get_refmodel.cvsel <- function(object, ...) {
 
 #' @export
 get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
-                                 mle, fetch_data, family = NULL, wobs = NULL,
+                                 div_minimizer, fetch_data, family = NULL, wobs = NULL,
                                  folds = NULL, cvfits = NULL, penalized = FALSE,
                                  offest = NULL, cvfun = NULL) {
   fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
@@ -144,7 +144,7 @@ get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
     family <- extend_family(family)
   }
 
-  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, div_minimizer,
     proj_predfun,
     penalized = penalized, weights = wobs,
     offset = offset, cvfits = cvfits, folds = folds,
@@ -156,7 +156,7 @@ get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
 #' export
 get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
                                  predfun = NULL, proj_predfun = NULL,
-                                 mle = NULL, folds = NULL, ...) {
+                                 div_minimizer = NULL, folds = NULL, ...) {
   family_name <- family(fit)$family
   fam <- ifelse(family_name == "bernoulli", "binomial", family_name)
   fam <- get(fam, mode = "function")()
@@ -183,6 +183,12 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
     y <- fit$data[, response_name]
   }
 
+  if (.has_dispersion(family)) {
+    dis <- data.frame(fit)[, "sigma"]
+  } else {
+    dis <- NULL
+  }
+
   if ("trials" %in% family$ad &&
     inherits(p$adforms$trials, "formula")) {
     trials_form <- p$adforms$trials
@@ -196,9 +202,9 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
   }
 
   ## TODO: return y, weights and offset as right hand side formulas
-  refmodel <- init_refmodel(fit, data, y, formula, family, predfun, mle,
-    proj_predfun, folds,
-    weights = weights, ...
+  refmodel <- init_refmodel(fit, data, y, formula, family, predfun,
+    div_minimizer, proj_predfun, folds,
+    weights = weights, dis = dis, ...
   )
   return(refmodel)
 }
@@ -206,8 +212,8 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
 #' @export
 get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
                                  predfun = NULL, proj_predfun = NULL,
-                                 mle = NULL, folds = NULL, penalized = FALSE,
-                                 ...) {
+                                 div_minimizer = NULL, folds = NULL,
+                                 penalized = FALSE, ...) {
   family <- family(fit)
   family <- extend_family(family)
 
@@ -237,19 +243,26 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
     }
   }
 
+  if (.has_dispersion(family)) {
+    dis <- data.frame(fit)[, "sigma"]
+  } else {
+    dis <- NULL
+  }
+
   refmodel <- init_refmodel(
-    fit, data, y, formula, family, predfun, mle,
+    fit, data, y, formula, family, predfun, div_minimizer,
     proj_predfun, folds, penalized,
-    weights = weights, ...
+    weights = weights, dis = dis, ...
   )
   return(refmodel)
 }
 
 #' @export
 init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
-                          mle = NULL, proj_predfun = NULL, folds = NULL,
-                          penalized = FALSE, weights = NULL, offset = NULL,
-                          cvfun = NULL, cvfits = NULL, ...) {
+                          div_minimizer = NULL, proj_predfun = NULL,
+                          folds = NULL, penalized = FALSE, weights = NULL,
+                          offset = NULL, cvfun = NULL, cvfits = NULL,
+                          dis = NULL, ...) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun)) {
     predfun <- function(fit, newdata = NULL) {
@@ -257,21 +270,21 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
     }
   }
 
-  if (is.null(mle) && is.null(proj_predfun)) {
+  if (is.null(div_minimizer) && is.null(proj_predfun)) {
     if (length(terms$group_terms) != 0) {
-      mle <- linear_multilevel_mle
+      div_minimizer <- linear_multilevel_mle
       proj_predfun <- linear_multilevel_proj_predfun
     } else {
-      mle <- linear_mle
+      div_minimizer <- linear_mle
       proj_predfun <- linear_proj_predfun
     }
-  } else if (is.null(mle) && !is.null(proj_predfun)) {
+  } else if (is.null(div_minimizer) && !is.null(proj_predfun)) {
     if (length(terms$group_terms) != 0) {
-      mle <- linear_multilevel_mle
+      div_minimizer <- linear_multilevel_mle
     } else {
-      mle <- linear_mle
+      div_minimizer <- linear_mle
     }
-  } else if (!is.null(mle) && is.null(proj_predfun)) {
+  } else if (!is.null(div_minimizer) && is.null(proj_predfun)) {
     if (length(terms$group_terms) != 0) {
       proj_predfun <- linear_multilevel_proj_predfun
     } else {
@@ -336,12 +349,9 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
   dis <- rep(0, ndraws)
   if (proper_model) {
     ## TODO: eventually this will be a function provided by the user
-    tryCatch(
-      {
-        dis <- as.data.frame(fit)$sigma %ORifNULL% rep(0, ndraws)
-      },
-      error = function(e) e
-    )
+    if (is.null(dis)) {
+      dis <- rep(0, ndraws)
+    }
   }
   target <- .get_standard_y(y, weights, family)
   y <- target$y
@@ -362,7 +372,7 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
   }
 
   intercept <- as.logical(attr(terms(formula), "intercept"))
-  refmodel <- nlist(fit, formula, mle, family, mu, dis, y, loglik,
+  refmodel <- nlist(fit, formula, div_minimizer, family, mu, dis, y, loglik,
     intercept, proj_predfun,
     fetch_data = fetch_data_wrapper,
     wobs = weights, wsample, offset, folds, cvfun, cvfits

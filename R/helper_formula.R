@@ -2,7 +2,7 @@
 NULL
 
 #' Sometimes there can be terms in a formula that refer to a matrix instead of
-#' a single predictor. Because we can handle groups of predictors, this function
+#' a single predictor. Because we can handle search_terms of predictors, this function
 #' breaks the matrix term into individual predictors to handle separately, as
 #' that is probably the intention of the user.
 #' @param formula A formula for a valid model.

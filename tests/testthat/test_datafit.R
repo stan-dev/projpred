@@ -67,10 +67,11 @@ test_that("predict fails for 'datafit' objects", {
   )
 })
 
-test_that("output of varsel is sensible with only data provided as reference model", {
+test_that(paste("output of varsel is sensible with only data provided as",
+                "reference model"), {
   for (i in seq_along(vsd_list)) {
-    # vind seems legit
-    expect_equal(length(vsd_list[[i]]$vind), nv)
+    # solution_terms seems legit
+    expect_equal(length(vsd_list[[i]]$solution_terms), nv)
 
     # kl seems legit
     expect_equal(length(vsd_list[[i]]$kl), nv + 1)
@@ -86,16 +87,18 @@ test_that("output of varsel is sensible with only data provided as reference mod
   }
 })
 
-test_that("output of cv_varsel is sensible with only data provided as reference model", {
+test_that(paste("output of cv_varsel is sensible with only data provided as",
+                "reference model"), {
   for (i in seq_along(cvvsd_list)) {
-    # vind seems legit
-    expect_equal(length(cvvsd_list[[i]]$vind), nv)
+    # solution_terms seems legit
+    expect_equal(length(cvvsd_list[[i]]$solution_terms), nv)
 
     # kl seems legit
     expect_equal(length(cvvsd_list[[i]]$kl), nv + 1)
 
     # kl decreasing
-    expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl), tolerance = 1e-2)
+    expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl),
+                 tolerance = 1e-2)
 
     # summaries seems legit
     expect_named(cvvsd_list[[i]]$summaries, c("sub", "ref"))
@@ -108,11 +111,13 @@ test_that("output of cv_varsel is sensible with only data provided as reference 
 test_that("varsel_stats stops if baseline = 'ref' and deltas = TRUE", {
   expect_error(
     varsel_stats(vsd_list[[1]], baseline = "ref", deltas = TRUE),
-    "Cannot use deltas = TRUE and baseline = 'ref' when there is no reference model"
+    paste("Cannot use deltas = TRUE and baseline = 'ref' when there is no",
+          "reference model")
   )
 })
 
-test_that("output of project is sensible with only data provided as reference model", {
+test_that(paste("output of project is sensible with only data provided as"<
+                "reference model"), {
   for (i in 1:length(vsd_list)) {
 
     # length of output of project is legit
@@ -121,7 +126,7 @@ test_that("output of project is sensible with only data provided as reference mo
 
     for (j in 1:length(p)) {
       expect_named(p[[j]], c(
-        "kl", "weights", "dis", "vind",
+        "kl", "weights", "dis", "solution_terms",
         "sub_fit", "p_type", "family",
         "intercept"
       ),
@@ -136,7 +141,7 @@ test_that("output of project is sensible with only data provided as reference mo
       }
       # j:th element should have j-1 variables
       expect_equal(length(which(p[[j]]$sub_fit$beta != 0)), j - 1)
-      expect_equal(length(p[[j]]$vind), j - 1)
+      expect_equal(length(p[[j]]$solution_terms), j - 1)
       # family kl
       expect_equal(p[[j]]$family, vsd_list[[i]]$family)
     }
@@ -150,7 +155,8 @@ test_that("output of project is sensible with only data provided as reference mo
 })
 
 
-test_that("output of proj_linpred is sensible with only data provided as reference model", {
+test_that(paste("output of proj_linpred is sensible with only data provided as",
+                "reference model"), {
   for (i in 1:length(vsd_list)) {
 
     # length of output of project is legit
@@ -171,10 +177,10 @@ test_that("output of proj_linpred is sensible with only data provided as referen
 })
 
 
-# below are some tests that check Lasso solution computed with varsel is the same
-# as that of glmnet. (notice that glm_ridge and glm_elnet are already tested separately, so
-# these would only check that the results do not change due to varsel/cv_varsel etc.)
-
+# below are some tests that check Lasso solution computed with varsel is the
+# same as that of glmnet. (notice that glm_ridge and glm_elnet are already
+# tested separately, so these would only check that the results do not change
+# due to varsel/cv_varsel etc.)
 
 set.seed(1235)
 n <- 100
@@ -187,8 +193,6 @@ offset <- 0.1 * rnorm(n)
 seed <- 1235
 source(file.path("helpers", "SW.R"))
 
-
-
 fams <- list(gaussian(), binomial(), poisson())
 x_list <- lapply(fams, function(fam) x)
 y_list <- lapply(fams, function(fam) {
@@ -199,7 +203,8 @@ y_list <- lapply(fams, function(fam) {
   } else if (fam$family == "binomial") {
     y <- rbinom(n, weights, fam$linkinv(x %*% b))
     ## y <- y / weights
-    y_glmnet <- cbind(1 - y / weights, y / weights) # different way of specifying binomial y for glmnet
+    ## different way of specifying binomial y for glmnet
+    y_glmnet <- cbind(1 - y / weights, y / weights)
     weights <- weights
   } else if (fam$family == "poisson") {
     y <- rpois(n, fam$linkinv(x %*% b))
@@ -210,7 +215,8 @@ y_list <- lapply(fams, function(fam) {
 })
 
 
-test_that("L1-projection with data reference gives the same results as Lasso from glmnet.", {
+test_that(paste("L1-projection with data reference gives the same results as",
+                "Lasso from glmnet."), {
   for (i in seq_along(fams)) {
     x <- x_list[[i]]
     y <- y_list[[i]]$y
@@ -227,8 +233,10 @@ test_that("L1-projection with data reference gives the same results as Lasso fro
     df <- data.frame(y = y, x = x)
     formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5 + x.6 + x.7 + x.8 + x.9 + x.10
     # Lasso solution with projpred
-    ref <- init_refmodel(NULL, df, y, formula, family = fam, weights = weights, offset = offset)
-    vs <- varsel(ref, method = "l1", lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12)
+    ref <- init_refmodel(NULL, df, y, formula, family = fam, weights = weights,
+                         offset = offset)
+    vs <- varsel(ref, method = "l1", lambda_min_ratio = lambda_min_ratio,
+                 nlambda = nlambda, thresh = 1e-12)
     pred1 <- proj_linpred(vs,
       xnew = data.frame(x = x), nv = 0:nv,
       transform = FALSE, offsetnew = offset
@@ -239,11 +247,13 @@ test_that("L1-projection with data reference gives the same results as Lasso fro
       family = fam$family, weights = weights, offset = offset,
       lambda.min.ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12
     )
-    vind <- predict(lasso, type = "nonzero", s = lasso$lambda)
-    nselected <- sapply(vind, function(e) length(e))
-    lambdainds <- sapply(unique(nselected), function(nv) max(which(nselected == nv)))
+    solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
+    nselected <- sapply(solution_terms, function(e) length(e))
+    lambdainds <- sapply(unique(nselected), function(nv)
+      max(which(nselected == nv)))
     lambdaval <- lasso$lambda[lambdainds]
-    pred2 <- predict(lasso, newx = x, type = "link", s = lambdaval, newoffset = offset)
+    pred2 <- predict(lasso, newx = x, type = "link", s = lambdaval,
+                     newoffset = offset)
 
     # check that the predictions agree (up to nv-2 only, because glmnet terminates the coefficient
     # path computation too early for some reason...)
@@ -252,13 +262,13 @@ test_that("L1-projection with data reference gives the same results as Lasso fro
     }
 
     # check that the coefficients are similar
-    ind <- match(vs$vind, setdiff(split_formula(formula), "1"))
+    ind <- match(vs$solution_terms, setdiff(split_formula(formula), "1"))
     betas <- sapply(vs$search_path$sub_fits, function(x) x$beta %||% 0)
     delta <- sapply(seq_len(nv), function(i) {
       abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
     })
     expect_true(median(unlist(delta)) < 6e-2)
-    expect_true(median(abs(sapply(vs$search_path$sub_fits, function(x) x$alpha) -
-      lasso$a0[lambdainds])) < 1.5e-1)
+    expect_true(median(abs(sapply(vs$search_path$sub_fits, function(x)
+      x$alpha) - lasso$a0[lambdainds])) < 1.5e-1)
   }
 })

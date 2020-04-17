@@ -1,7 +1,7 @@
 ## Function handles for the projection
 ##
 
-project_submodel <- function(vind, p_ref, refmodel, family, intercept,
+project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
                              regul = 1e-4) {
   mu <- p_ref$mu
   dis <- p_ref$dis
@@ -27,29 +27,29 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept,
   link <- function(f, wprev = NULL) {
     pseudo_data(f, mu, family, offset = refmodel$offset, wprev = wprev)
   }
-  mle <- function(formula, data, weights) {
-    refmodel$mle(formula, data, weights = weights, regul = regul)
+  div_minimizer <- function(formula, data, weights) {
+    refmodel$div_minimizer(formula, data, weights = weights, regul = regul)
   }
   linear_predict <- function(fit) {
     refmodel$proj_predfun(fit)
   }
-  replace_response <- get_replace_response(form, vind)
+  replace_response <- get_replace_response(form, solution_terms)
 
-  subset <- subset_formula_and_data(form, unique(unlist(vind)),
+  subset <- subset_formula_and_data(form, unique(unlist(solution_terms)),
     refmodel$fetch_data(),
     y = pobs$z
   )
 
-  ## capture.output(proj_refit <- iterative_weighted_least_squares(
+  ## capture.output(sub_fit <- iterative_weighted_least_squares(
   ##   flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
-  ##   replace_response, wprev = wobs, mle = mle),
+  ##   replace_response, wprev = wobs, div_minimizer = div_minimizer),
   ##   type = "message")
-  proj_refit <- iterative_weighted_least_squares(
+  sub_fit <- iterative_weighted_least_squares(
     flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
-    replace_response,
-    wprev = wobs, mle = mle, linear_predict = linear_predict
+    replace_response, wprev = wobs, div_minimizer = div_minimizer,
+    linear_predict = linear_predict
   )
-  musub <- family$mu_fun(proj_refit, offset = refmodel$offset, weights = wobs)
+  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = wobs)
   if (family$family == "gaussian") {
     ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
   } else {
@@ -57,24 +57,24 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept,
     ref$w <- rep(0, NROW(mu))
   }
 
-  dis_sub <- family$dis_fun(ref, list(mu = musub), ref$w)
-  kl <- family$kl(ref, list(weights = wobs), list(mu = musub, dis = dis_sub))
-  submodel <- list(kl = kl, dis = dis_sub, weights = wsample)
+  weights <- wsample
+  dis <- family$dis_fun(ref, nlist(mu), ref$w)
+  kl <- family$kl(ref, list(weights = wobs), nlist(mu, dis))
+  submodel <- nlist(kl, dis, weights, solution_terms, sub_fit)
 
-  submodel$vind <- vind
-  submodel$sub_fit <- proj_refit
   return(submodel)
 }
 
 iterative_weighted_least_squares <- function(formula, data, iters, link,
                                              replace_response, wprev = NULL,
-                                             mle = lm, linear_predict) {
+                                             div_minimizer = lm,
+                                             linear_predict) {
   pobs <- link(0, wprev)
   wprev <- pobs$w
   data <- replace_response(pobs$z, data)
   old_fit <- NULL
   for (i in seq_len(iters)) {
-    fit <- mle(formula, cbind(data, weights = wprev), weights = wprev)
+    fit <- div_minimizer(formula, cbind(data, weights = wprev), weights = wprev)
     pobs <- link(linear_predict(fit), wprev)
     if (any(is.na(pobs$z))) {
       break
@@ -91,8 +91,8 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
 
 ## function handle for the projection over samples
 .get_proj_handle <- function(family, regul = 1e-9) {
-  return(function(vind, p_ref, refmodel, intercept) {
-    project_submodel(vind, p_ref, refmodel, family, intercept, regul = regul)
+  return(function(solution_terms, p_ref, refmodel, intercept) {
+    project_submodel(solution_terms, p_ref, refmodel, family, intercept, regul = regul)
   })
 }
 
@@ -106,14 +106,14 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
   ## function simply fetches the information from the search_path list, which
   ## contains the parameter values.
 
-  varorder <- search_path$vind
+  varorder <- search_path$solution_terms
   p_sel <- search_path$p_sel
 
   if (!cv_search) {
     ## simply fetch the already computed quantities for each submodel size
     fetch_submodel <- function(nv) {
       submodel <- list()
-      vind <- utils::head(varorder, nv)
+      solution_terms <- utils::head(varorder, nv)
 
       mu_ref <- p_sel$mu
 
@@ -149,10 +149,10 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
       submodel$dis <- family$dis_fun(ref, list(mu = mu), ref$w)
       submodel$kl <- family$kl(
         ref, list(weights = wobs),
-        list(mu = mu, dis = submodel$dis)
+        nlist(mu, dis = submodel$dis)
       )
       submodel$weights <- wsample
-      submodel$vind <- vind
+      submodel$solution_terms <- solution_terms
       submodel$sub_fit <- sub_refit
       return(submodel)
     }
@@ -162,11 +162,11 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
     fetch_submodel <- function(nv) {
       if (nv == 0) {
         ## empty
-        vind <- c("1")
+        solution_terms <- c("1")
       } else {
-        vind <- varorder[1:nv]
+        solution_terms <- varorder[seq_len(nv)]
       }
-      return(projfun(vind, p_ref, refmodel, intercept))
+      return(projfun(solution_terms, p_ref, refmodel, intercept))
     }
   }
   submodels <- lapply(nv, fetch_submodel)

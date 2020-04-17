@@ -1,5 +1,5 @@
 search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
-                           verbose = TRUE, opt, groups = NULL,
+                           verbose = TRUE, opt, search_terms = NULL,
                            increasing_order = TRUE) {
   ## initialize the forward selection
   ## proj performs the projection over draws
@@ -7,10 +7,10 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
 
   formula <- refmodel$formula
   iq <- ceiling(quantile(1:nv_max, 1:10 / 10))
-  if (is.null(groups)) {
+  if (is.null(search_terms)) {
     terms_ <- split_formula(formula)
   } else {
-    terms_ <- groups
+    terms_ <- search_terms
   }
   if (increasing_order) {
     terms_ <- sort_submodels_by_size(unname(unlist(terms_)))
@@ -77,7 +77,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
-  list(vind = setdiff(reduce_models(chosen), "1"), sub_fits = submodels)
+  list(solution_terms = setdiff(reduce_models(chosen), "1"), sub_fits = submodels)
 }
 
 #' copied over from search until we resolve the TODO below
@@ -162,7 +162,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max,
     }
   }
 
-  out$vind <- order[1:nv_max]
+  out$solution_terms <- order[1:nv_max]
   return(out)
 }
 
@@ -177,13 +177,13 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty,
     p_ref, list(refmodel, x = x[, -1]), family,
     intercept, nv_max, penalty, opt
   )
-  vind <- terms_[search_path$vind]
+  solution_terms <- terms_[search_path$solution_terms]
   sub_fits <- lapply(0:nv_max, function(nv) {
     if (nv == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
     } else {
-      formula <- make_formula(vind[seq_len(nv)])
+      formula <- make_formula(solution_terms[seq_len(nv)])
       beta <- search_path$beta[seq_len(nv), nv + 1, drop = FALSE]
     }
     sub <- list(
@@ -196,7 +196,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty,
     class(sub) <- "subfit"
     return(sub)
   })
-  return(nlist(vind, sub_fits))
+  return(nlist(solution_terms, sub_fits))
 }
 
 ## FIXME: find a way that allows us to remove this
