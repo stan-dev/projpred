@@ -180,7 +180,7 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
     data <- fit$data
   }
   if (is.null(y)) {
-    y <- fit$data[, response_name]
+    y <- eval_rhs(as.formula(paste("~", response_name)), data)
   }
 
   if (.has_dispersion(family)) {
@@ -196,7 +196,7 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
       trials_form[[2]], data,
       environment(trials_form)
     )$vars$trials
-    weights <- data[, trials_var]
+    weights <- eval_rhs(as.formula(paste("~", trials_var)), data)
   } else {
     weights <- NULL
   }
@@ -227,20 +227,18 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
   }
 
   weights <- NULL
-  if (is.null(y)) {
-    if (family$family == "binomial" && length(response_name) == 2) {
-      ## in rstanarm the convention is to set
-      ## cbind(y, weight - y) ~ .
-      response <- lapply(response_name, function(rhs) {
-        f <- as.formula(paste0("~ ", rhs))
-        eval(f[[2]], data, environment(f))
-      })
+  if (family$family == "binomial" && length(response_name) == 2) {
+    ## in rstanarm the convention is to set
+    ## cbind(y, weight - y) ~ .
+    response <- lapply(response_name, function(rhs) {
+      eval_rhs(as.formula(paste("~", rhs)), data)
+    })
+    if (is.null(y))
       y <- response[[1]]
-      weights <- response[[2]] + y ## weights - y
-      formula <- update(formula, paste0(response_name[[1]], " ~ ."))
-    } else if (length(response_name == 1)) {
-      y <- fit$data[, colnames(fit$data) == response_name]
-    }
+    weights <- response[[2]] + y ## weights - y
+    formula <- update(formula, paste0(response_name[[1]], " ~ ."))
+  } else if (length(response_name) == 1 && is.null(y)) {
+    y <- eval_rhs(as.formula(paste("~", response_name)), data)
   }
 
   if (.has_dispersion(family)) {
@@ -270,21 +268,15 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
     }
   }
 
-  if (is.null(div_minimizer) && is.null(proj_predfun)) {
-    if (length(terms$group_terms) != 0) {
-      div_minimizer <- linear_multilevel_mle
-      proj_predfun <- linear_multilevel_proj_predfun
-    } else {
-      div_minimizer <- linear_mle
-      proj_predfun <- linear_proj_predfun
-    }
-  } else if (is.null(div_minimizer) && !is.null(proj_predfun)) {
+  if (is.null(div_minimizer)) {
     if (length(terms$group_terms) != 0) {
       div_minimizer <- linear_multilevel_mle
     } else {
       div_minimizer <- linear_mle
     }
-  } else if (!is.null(div_minimizer) && is.null(proj_predfun)) {
+  }
+
+  if (is.null(proj_predfun)) {
     if (length(terms$group_terms) != 0) {
       proj_predfun <- linear_multilevel_proj_predfun
     } else {
