@@ -11,7 +11,7 @@ if (require(rstanarm) && require(brms)) {
   x <- matrix(rnorm(n*nv, 0, 1), n, nv)
   b <- runif(nv)-0.5
   dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = T)
+  weights <- sample(1:4, n, replace = TRUE)
   chains <- 2
   iter <- 500
   offset <- rnorm(n)
@@ -118,7 +118,7 @@ if (require(rstanarm) && require(brms)) {
   })
 
   test_that('specifying the number of clusters has an expected effect', {
-    vs <- varsel(fit_binom, method = 'forward', nv_max = 3, nc = 10)
+    vs <- varsel(fit_binom, method = 'forward', nv_max = 3, number_clusters = 10)
     expect_length(vs$vind, 3)
   })
 
@@ -139,7 +139,7 @@ if (require(rstanarm) && require(brms)) {
       msize <- 3
       for (j in 1:length(regul)) {
         vsel <- varsel(fit_list[[i]], regul = regul[j], nv_max = 6)
-        x <- vsel$spath$sub_fits[[6]]
+        x <- vsel$search_path$sub_fits[[6]]
         sol <- rbind(x$alpha, x$beta)
         nonzeros[j] <- length(which(sol != 0))
       }
@@ -167,7 +167,7 @@ if (require(rstanarm) && require(brms)) {
     for (i in seq_along(vs_list_pen)) {
       # check that the variables with no cost are selected first and the ones with
       # inf penalty last
-      sdiff <- length(which(vs_list_pen[[i]]$spath$sub_fits[[nv + 1]]$beta == 0))
+      sdiff <- length(which(vs_list_pen[[i]]$search_path$sub_fits[[nv + 1]]$beta == 0))
       expect_gte(sdiff, 1)
     }
   })
@@ -329,15 +329,15 @@ if (require(rstanarm) && require(brms)) {
         expect_true(length(cv_kf_list[[i]][[j]]$family) >=
                       length(cv_kf_list[[i]][[j]]$family$family),
                     info = paste(i_inf, j_inf))
-        # pctch seems legit
-        expect_equal(dim(cv_kf_list[[i]][[j]]$pctch), c(nv, nv + 1),
+        # pct_vind_cv seems legit
+        expect_equal(dim(cv_kf_list[[i]][[j]]$pct_vind_cv), c(nv, nv + 1),
                      info = paste(i_inf, j_inf))
-        expect_true(all(cv_kf_list[[i]][[j]]$pctch[,-1] <= 1 &
-                          cv_kf_list[[i]][[j]]$pctch[,-1] >= 0),
+        expect_true(all(cv_kf_list[[i]][[j]]$pct_vind_cv[,-1] <= 1 &
+                          cv_kf_list[[i]][[j]]$pct_vind_cv[,-1] >= 0),
                     info = paste(i_inf, j_inf))
-        expect_equal(cv_kf_list[[i]][[j]]$pctch[,1], 1:nv,
+        expect_equal(cv_kf_list[[i]][[j]]$pct_vind_cv[,1], 1:nv,
                      info = paste(i_inf, j_inf))
-        expect_equal(colnames(cv_kf_list[[i]][[j]]$pctch),
+        expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_vind_cv),
                      c('size', cv_kf_list[[i]][[j]]$vind),
                      info = paste(i_inf, j_inf))
       }
@@ -388,13 +388,13 @@ if (require(rstanarm) && require(brms)) {
                  fit_cv$family$family)
     expect_equal(fit_cv$family$link, fit_cv$family$link)
     expect_true(length(fit_cv$family) >= length(fit_cv$family$family))
-    # pctch seems legit
-    expect_equal(dim(fit_cv$pctch), c(nv, nv + 1))
-    expect_true(all(fit_cv$pctch[,-1] <= 1 &
-                      fit_cv$pctch[,-1] >= 0))
+    # pct_vind_cv seems legit
+    expect_equal(dim(fit_cv$pct_vind_cv), c(nv, nv + 1))
+    expect_true(all(fit_cv$pct_vind_cv[,-1] <= 1 &
+                      fit_cv$pct_vind_cv[,-1] >= 0))
 
-    expect_equal(fit_cv$pctch[,1], 1:nv)
-    expect_equal(colnames(fit_cv$pctch),
+    expect_equal(fit_cv$pct_vind_cv[,1], 1:nv)
+    expect_equal(colnames(fit_cv$pct_vind_cv),
                  c('size', fit_cv$vind))
   })
 
@@ -487,7 +487,7 @@ if (require(rstanarm) && require(brms)) {
 
     expect_output(out <- print(cvs_list[[1]][[1]], nv_max = 3, stats = 'mse'))
     expect_equal(nrow(out) - 1, 3)
-    expect_named(out, c('size', 'vind', 'mse', 'mse.se', 'pctch'))
+    expect_named(out, c('size', 'vind', 'mse', 'mse.se', 'pct_vind_cv'))
   })
 
 

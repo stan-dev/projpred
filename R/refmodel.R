@@ -1,19 +1,22 @@
-
 #' Get reference model structure
 #'
-#' Generic function that can be used to create and fetch the reference model structure
-#' for all those objects that have this method. All these implementations are wrappers
-#' to the \code{\link{init_refmodel}}-function so the returned object has the same type.
+#' Generic function that can be used to create and fetch the reference model
+#' structure for all those objects that have this method. All these
+#' implementations are wrappers to the \code{\link{init_refmodel}}-function so
+#' the returned object has the same type.
 #'
 #' @name get-refmodel
 #'
-#' @param object Object based on which the reference model is created. See possible types below.
+#' @param object Object based on which the reference model is created. See
+#'   possible types below.
+#'
 #' @param ... Arguments passed to the methods.
 #'
-#' @return An object of type \code{refmodel} (the same type as returned by \link{init_refmodel})
-#' that can be passed to all the functions that
-#' take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel}, \link{project},
-#' \link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
+#' @return An object of type \code{refmodel} (the same type as returned by
+#'   \link{init_refmodel}) that can be passed to all the functions that take the
+#'   reference fit as the first argument, such as \link{varsel},
+#'   \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict} and
+#'   \link[=proj-pred]{proj_linpred}.
 #'
 #' @examples
 #' \donttest{
@@ -40,20 +43,21 @@ NULL
 #'
 #' @param object The object of class \code{refmodel}.
 #' @param znew Matrix of predictor values used in the prediction.
-#' @param ynew New (test) target variables. If given, then the log predictive density
-#' for the new observations is computed.
+#' @param ynew New (test) target variables. If given, then the log predictive
+#'   density for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
 #' zeros.
 #' @param weightsnew Weights for the new observations. For binomial model,
-#' corresponds to the number trials per observation. Has effect only if \code{ynew} is specified.
-#' By default a vector of ones.
-#' @param type Scale on which the predictions are returned. Either 'link' (the latent function
-#' value, from -inf to inf) or 'response' (the scale on which the target \code{y} is measured,
-#' obtained by taking the inverse-link from the latent value).
+#'   corresponds to the number trials per observation. Has effect only if
+#'   \code{ynew} is specified. By default a vector of ones.
+#' @param type Scale on which the predictions are returned. Either 'link' (the
+#'   latent function value, from -inf to inf) or 'response' (the scale on which
+#'   the target \code{y} is measured, obtained by taking the inverse-link from
+#'   the latent value).
 #' @param ... Currently ignored.
 #'
-#' @return Returns either a vector of predictions, or vector of log predictive densities evaluated
-#' at \code{ynew} if \code{ynew} is not \code{NULL}.
+#' @return Returns either a vector of predictions, or vector of log predictive
+#'   densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
 
 #' @export
 predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
@@ -151,8 +155,8 @@ get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
 
 #' export
 get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
-                                 predfun = NULL, proj_predfun = NULL, mle = NULL,
-                                 folds = NULL, ...) {
+                                 predfun = NULL, proj_predfun = NULL,
+                                 mle = NULL, folds = NULL, ...) {
   family_name <- family(fit)$family
   fam <- ifelse(family_name == "bernoulli", "binomial", family_name)
   fam <- get(fam, mode = "function")()
@@ -167,7 +171,6 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
     formula <- brms_formula$formula
   }
 
-  terms <- extract_terms_response(formula)
   response_name <- brms_formula$resp
 
   formula <- update(formula, paste(response_name, " ~ ."))
@@ -202,15 +205,15 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
 
 #' @export
 get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
-                                 predfun = NULL, proj_predfun = NULL, mle = NULL,
-                                 folds = NULL, penalized = FALSE, ...) {
+                                 predfun = NULL, proj_predfun = NULL,
+                                 mle = NULL, folds = NULL, penalized = FALSE,
+                                 ...) {
   family <- family(fit)
   family <- extend_family(family)
 
   if (is.null(formula)) {
     formula <- formula(fit)
   }
-  terms <- extract_terms_response(formula)
   response_name <- terms$response
 
   if (is.null(data)) {
@@ -243,9 +246,10 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
 }
 
 #' @export
-init_refmodel <- function(fit, data, y, formula, family, predfun = NULL, mle = NULL,
-                          proj_predfun = NULL, folds = NULL, penalized = FALSE,
-                          weights = NULL, offset = NULL, cvfun = NULL, cvfits = NULL, ...) {
+init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
+                          mle = NULL, proj_predfun = NULL, folds = NULL,
+                          penalized = FALSE, weights = NULL, offset = NULL,
+                          cvfun = NULL, cvfits = NULL, ...) {
   terms <- extract_terms_response(formula)
   if (is.null(predfun)) {
     predfun <- function(fit, newdata = NULL) {
@@ -348,8 +352,8 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL, mle = N
     loglik <- NULL
   }
 
-  # this is a dummy definition for cvfun, but it will lead to standard cross-validation
-  # for datafit reference; see cv_varsel and get_kfold
+  # this is a dummy definition for cvfun, but it will lead to standard
+  # cross-validation for datafit reference; see cv_varsel and get_kfold
   cvfun <- function(folds) lapply(1:max(folds), function(k) list())
 
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default

@@ -16,7 +16,7 @@ nv <- 5
 x <- matrix(rnorm(n * nv, 0, 1), n, nv)
 b <- runif(nv) - 0.5
 dis <- runif(1, 1, 2)
-weights <- sample(1:4, n, replace = T)
+weights <- sample(1:4, n, replace = TRUE)
 offset <- rnorm(n)
 chains <- 2
 seed <- 1235
@@ -128,11 +128,11 @@ test_that("output of project is sensible with only data provided as reference mo
       ignore.order = TRUE
       )
       # number of draws should equal to the number of draw weights
-      ns <- length(p[[j]]$weights)
-      expect_equal(length(p[[j]]$sub_fit$alpha), ns)
-      expect_equal(length(p[[j]]$dis), ns)
+      number_samples <- length(p[[j]]$weights)
+      expect_equal(length(p[[j]]$sub_fit$alpha), number_samples)
+      expect_equal(length(p[[j]]$dis), number_samples)
       if (j > 1) {
-        expect_equal(ncol(p[[j]]$sub_fit$beta), ns)
+        expect_equal(ncol(p[[j]]$sub_fit$beta), number_samples)
       }
       # j:th element should have j-1 variables
       expect_equal(length(which(p[[j]]$sub_fit$beta != 0)), j - 1)
@@ -182,7 +182,7 @@ nv <- 10
 x <- matrix(rnorm(n * nv, 0, 1), n, nv)
 b <- seq(0, 1, length.out = nv)
 dis <- runif(1, 0.3, 0.5)
-weights <- sample(1:4, n, replace = T) #
+weights <- sample(1:4, n, replace = TRUE) #
 offset <- 0.1 * rnorm(n)
 seed <- 1235
 source(file.path("helpers", "SW.R"))
@@ -253,12 +253,12 @@ test_that("L1-projection with data reference gives the same results as Lasso fro
 
     # check that the coefficients are similar
     ind <- match(vs$vind, setdiff(split_formula(formula), "1"))
-    betas <- sapply(vs$spath$sub_fits, function(x) x$beta %||% 0)
+    betas <- sapply(vs$search_path$sub_fits, function(x) x$beta %||% 0)
     delta <- sapply(seq_len(nv), function(i) {
       abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
     })
     expect_true(median(unlist(delta)) < 6e-2)
-    expect_true(median(abs(sapply(vs$spath$sub_fits, function(x) x$alpha) -
+    expect_true(median(abs(sapply(vs$search_path$sub_fits, function(x) x$alpha) -
       lasso$a0[lambdainds])) < 1.5e-1)
   }
 })

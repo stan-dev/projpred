@@ -15,7 +15,7 @@ x <- matrix(rnorm(n*nv, 0, 1), n, nv)
 b <- runif(nv)-0.5
 dis <- runif(1, 1, 2)
 x_tr <- x[,1:nv_fit]
-weights <- sample(1:4, n, replace = T)
+weights <- sample(1:4, n, replace = TRUE)
 offset <- rnorm(n, 0, 1)
 
 tol <- 3e-03
@@ -30,7 +30,7 @@ extra_thresh <- 1e-10
 
 
 test_that("glmfun: gradients should give the same results as finite differences", {
-  
+
   fdiffu <- function(f, x, h=1e-3, order=1) {
     # function for computing derivative of univariate function f at x using finite difference.
     if (order != 1 && order != 2)
@@ -45,7 +45,7 @@ test_that("glmfun: gradients should give the same results as finite differences"
     }
     return(df)
   }
-  
+
   fams <- list(extend_family(gaussian(link='identity')),
                extend_family(gaussian(link='log')),
                extend_family(binomial(link='logit')),
@@ -56,13 +56,13 @@ test_that("glmfun: gradients should give the same results as finite differences"
                extend_family(Student_t(nu=4, link='log')),
                extend_family(Student_t(nu=7, link='inverse'))
   )
-  
+
   n <- 10
-  weights <- sample(1:4, n, replace = T)
+  weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n, 0, 1)
-  
+
   for (i in seq_along(fams)) {
-    
+
     fam <- fams[[i]]
     if (fam$family == 'gaussian' || fam$family == 'Student_t')
       y <- rnorm(n)
@@ -70,13 +70,13 @@ test_that("glmfun: gradients should give the same results as finite differences"
       y <- rbinom(n,1,0.6)
     else if (fam$family == 'poisson')
       y <- rpois(n, 1)
-    
+
     devfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$loss
     zfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$z
     wfun <- function(f) projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$w
     gradan <- function(f) sum(projpred:::pseudo_data(f,y,fam,weights=weights,offset=offset)$grad) # analytic
     gradfd <- function(f) fdiffu(devfun, f, h=1e-5) # finite difference
-    
+
     # compare analytic and finite difference gradients
     fval <- seq(-5,5,len=100)
     gan <- sapply(fval, gradan)
@@ -223,13 +223,12 @@ test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
 #   fam <- extend_family(Gamma(link = 'log'))
 #   y <- rgamma(n, fam$linkinv(x%*%b + 1))
 #   lambda <- 0
-# 
+#
 #   glmfit <- glm(y ~ x_tr, family = fam, weights = weights, offset = offset)
 #   ridgefit <- glm_ridge(x_tr, y, family = fam, lambda = lambda,
 #                         weights = weights, offset = offset, intercept = TRUE,
 #                         thresh = extra_thresh)
-# 
+#
 #   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
 #                tolerance = tol)
 # })
-

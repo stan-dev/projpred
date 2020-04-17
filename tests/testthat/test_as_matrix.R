@@ -11,7 +11,7 @@ if (require(rstanarm) && require(brms)) {
   x <- matrix(rnorm(n*nv, 0, 1), n, nv)
   b <- runif(nv)-0.5
   dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = T)
+  weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
   chains <- 2
   seed <- 1235
@@ -37,36 +37,36 @@ if (require(rstanarm) && require(brms)) {
   vs_gauss <- varsel(fit_gauss)
   vs_binom <- varsel(fit_binom)
   vind <- c(2,3)
-  ns <- 100
-  p_gauss <- project(vs_gauss, vind = vind, ns = ns)
-  p_binom <- project(vs_binom, vind = vind, ns = ns)
+  number_samples <- 100
+  p_gauss <- project(vs_gauss, vind = vind, number_samples = number_samples)
+  p_binom <- project(vs_binom, vind = vind, number_samples = number_samples)
 
 
   ## test_that("as.matrix.projection returns the relevant variables for gaussian", {
   ##   m <- as.matrix(p_gauss)
   ##   expect_length(setdiff(colnames(m), c('Intercept', vs_gauss$vind[vind], 'sigma')), 0)
-  ##   expect_equal(dim(m), c(ns, length(vind) + 2))
+  ##   expect_equal(dim(m), c(number_samples, length(vind) + 2))
   ## })
 
   ## test_that("as.matrix.projection returns the relevant variables for binomial", {
   ##   m <- as.matrix(p_binom)
   ##   expect_length(setdiff(colnames(m), c("Intercept", vs_binom$vind[vind])), 0)
-  ##   expect_equal(dim(m), c(ns, length(vind) + 1))
+  ##   expect_equal(dim(m), c(number_samples, length(vind) + 1))
   ## })
 
   ## test_that("as.matrix.projection works as expected with zero variables", {
-  ##   p_novars <- project(vs_gauss, nv = 0, ns = ns)
+  ##   p_novars <- project(vs_gauss, nv = 0, number_samples = number_samples)
   ##   m <- as.matrix(p_novars)
   ##   expect_length(setdiff(colnames(m), c('Intercept', 'sigma')), 0)
-  ##   expect_equal(dim(m), c(ns, 2))
+  ##   expect_equal(dim(m), c(number_samples, 2))
   ## })
 
   ## test_that("as.matrix.projection works with clustering", {
-  ##   nc <- 3
-  ##   p_clust <- project(vs_gauss, vind = vind, nc = nc)
+  ##   number_clusters <- 3
+  ##   p_clust <- project(vs_gauss, vind = vind, number_clusters = number_clusters)
   ##   m <- as.matrix(p_clust)
   ##   expect_length(setdiff(colnames(m), c("Intercept", vs_gauss$vind[vind], "sigma")), 0)
-  ##   expect_equal(dim(m), c(nc, length(vind) + 2))
+  ##   expect_equal(dim(m), c(number_clusters, length(vind) + 2))
   ## })
 
 }

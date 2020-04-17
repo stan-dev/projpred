@@ -8,44 +8,47 @@
 #'
 #' @name proj-pred
 #'
-#' @param object Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
-#' or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.
+#' @param object Either an object returned by \link[=varsel]{varsel},
+#'   \link[=cv_varsel]{cv_varsel} or \link[=init_refmodel]{init_refmodel}, or
+#'   alternatively any object that can be converted to a reference model.
 #' @param xnew The predictor values used in the prediction. If \code{vind} is
-#' specified, then \code{xnew} should either be a dataframe containing column names
-#' that correspond to \code{vind} or a matrix with the number and order of columns
-#' corresponding to \code{vind}. If \code{vind} is unspecified, then \code{xnew} must
-#' either be a dataframe containing all the column names as in the original data or a matrix
-#' with the same columns at the same positions as in the original data.
-#' @param ynew New (test) target variables. If given, then the log predictive density
-#' for the new observations is computed.
+#'   specified, then \code{xnew} should either be a dataframe containing column
+#'   names that correspond to \code{vind} or a matrix with the number and order
+#'   of columns corresponding to \code{vind}. If \code{vind} is unspecified,
+#'   then \code{xnew} must either be a dataframe containing all the column names
+#'   as in the original data or a matrix with the same columns at the same
+#'   positions as in the original data.
+#' @param ynew New (test) target variables. If given, then the log predictive
+#'   density for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
-#' zeros.
+#'   zeros.
 #' @param weightsnew Weights for the new observations. For binomial model,
-#' corresponds to the number trials per observation. For \code{proj_linpred},
-#' this argument matters only if \code{ynew} is specified. By default a vector
-#' of ones.
+#'   corresponds to the number trials per observation. For \code{proj_linpred},
+#'   this argument matters only if \code{ynew} is specified. By default a vector
+#'   of ones.
 #' @param transform Should the linear predictor be transformed using the
-#' inverse-link function? Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param integrated If \code{TRUE}, the output is averaged over the
-#' parameters. Default is \code{FALSE}. For \code{proj_linpred} only.
+#'   inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
+#'   only.
+#' @param integrated If \code{TRUE}, the output is averaged over the parameters.
+#'   Default is \code{FALSE}. For \code{proj_linpred} only.
 #' @param nv Number of variables in the submodel (the variable combination is
-#' taken from the variable selection information). If a vector with several values,
-#' then results for all specified model sizes are returned. Ignored if \code{vind} is specified.
-#' By default use the automatically suggested model size.
+#'   taken from the variable selection information). If a vector with several
+#'   values, then results for all specified model sizes are returned. Ignored if
+#'   \code{vind} is specified. By default use the automatically suggested model
+#'   size.
 #' @param draws Number of draws to return from the predictive distribution of
-#' the projection. The default is 1000.
-#' For \code{proj_predict} only.
-#' @param seed An optional seed to use for drawing from the projection.
-#' For \code{proj_predict} only.
-#' @param ... Additional argument passed to \link{project} if \code{object}
-#' is an object returned by \link{varsel} or \link{cv_varsel}.
+#'   the projection. The default is 1000. For \code{proj_predict} only.
+#' @param seed An optional seed to use for drawing from the projection. For
+#'   \code{proj_predict} only.
+#' @param ... Additional argument passed to \link{project} if \code{object} is
+#'   an object returned by \link{varsel} or \link{cv_varsel}.
 #'
-#' @return If the prediction is done for one submodel only (\code{nv} has length one
-#' or \code{vind} is specified) and ynew is unspecified, a matrix or vector of
-#' predictions (depending on the value of \code{integrated}). If \code{ynew} is specified,
-#' returns a list with elements pred (predictions) and lpd (log predictive densities).
-#' If the predictions are done for several submodel sizes, returns a list with one element
-#' for each submodel.
+#' @return If the prediction is done for one submodel only (\code{nv} has length
+#'   one or \code{vind} is specified) and ynew is unspecified, a matrix or
+#'   vector of predictions (depending on the value of \code{integrated}). If
+#'   \code{ynew} is specified, returns a list with elements pred (predictions)
+#'   and lpd (log predictive densities). If the predictions are done for several
+#'   submodel sizes, returns a list with one element for each submodel.
 #'
 #' @examples
 #' \donttest{
@@ -118,13 +121,6 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   names(projs) <- nv
 
   xnew_df <- is.data.frame(xnew)
-  ## if (xnew_df) {
-  ##   terms <- unique(unlist(lapply(projs, function(x) unlist(unname(x$vind)))))
-  ##   xnew <- .df_to_model_mat(xnew, terms)
-  ## }
-
-  ## if (!is.matrix(xnew))
-  ##   stop('xnew not provided in the correct format. See ?proj-pred.')
 
   vind <- list(...)$vind
   if (!is.null(vind) && NCOL(xnew) != length(vind)) {
@@ -240,31 +236,34 @@ NULL
 #' @name varsel-statistics
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
-#' \link[=cv_varsel]{cv_varsel}.
+#'   \link[=cv_varsel]{cv_varsel}.
 #' @param nv_max Maximum submodel size for which the statistics are calculated.
-#' For \code{varsel_plot} it must be at least 1.
-#' @param stats One or several strings determining which statistics to calculate. Available
-#' statistics are:
+#'   For \code{varsel_plot} it must be at least 1.
+#' @param stats One or several strings determining which statistics to
+#'   calculate. Available statistics are:
 #' \itemize{
 #'  \item{elpd:} {(Expected) sum of log predictive densities}
-#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the number of datapoints.}
-#'  \item{mse:} {Mean squared error (gaussian family only)}
+#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
+#'   number of datapoints.} \item{mse:} {Mean squared error (gaussian family
+#'   only)}
 #'  \item{rmse:} {Root mean squared error (gaussian family only)}
 #'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
 #'  \item{auc:} {Area under the ROC curve (binomial family only)}
 #' }
 #' Default is elpd.
-#' @param type One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
-#' compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
-#' that \code{1-alpha} percent of the mass falls between them.
-#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative to the baseline model
-#' (see argument \code{baseline}) instead of estimating the actual values of the statistics.
-#' Defaults to \code{FALSE}.
+#' @param type One or more items from 'mean', 'se', 'lower' and 'upper'
+#'   indicating which of these to compute (mean, standard error, and lower and
+#'   upper credible bounds). The credible bounds are determined so that
+#'   \code{1-alpha} percent of the mass falls between them.
+#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative
+#'   to the baseline model (see argument \code{baseline}) instead of estimating
+#'   the actual values of the statistics. Defaults to \code{FALSE}.
 #' @param alpha A number indicating the desired coverage of the credible
-#' intervals. For example \code{alpha=0.32} corresponds to 68\% probability mass
-#' within the intervals, that is, one standard error intervals.
-#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the reference model or
-#' the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.
+#'   intervals. For example \code{alpha=0.32} corresponds to 68\% probability
+#'   mass within the intervals, that is, one standard error intervals.
+#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
+#'   reference model or the best submodel found. Default is 'ref' when the
+#'   reference model exists, and 'best' otherwise.
 #' @param ... Currently ignored.
 #'
 #'
@@ -283,14 +282,16 @@ NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = F, alpha = 0.32, baseline = NULL, ...) {
+varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = FALSE,
+                        alpha = 0.32, baseline = NULL, ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmode, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
   tab <- rbind(
-    .tabulate_stats(object, stats, alpha = alpha, nfeat_baseline = nfeat_baseline),
+    .tabulate_stats(object, stats, alpha = alpha,
+                    nfeat_baseline = nfeat_baseline),
     .tabulate_stats(object, stats, alpha = alpha)
   )
   stats_table <- subset(tab, tab$delta == deltas)
@@ -331,7 +332,8 @@ varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = F, alpha
   }
 
   # plot submodel results
-  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max), mapping = aes_string(x = "size")) +
+  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max),
+               mapping = aes_string(x = "size")) +
     geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
     geom_line(aes_string(y = "value")) +
     geom_point(aes_string(y = "value"))
@@ -363,25 +365,29 @@ varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = F, alpha
 
 ##' @rdname varsel-statistics
 ##' @export
-varsel_stats <- function(object, nv_max = NULL, stats = "elpd", type = c("mean", "se"),
-                         deltas = F, alpha = 0.32, baseline = NULL, ...) {
+varsel_stats <- function(object, nv_max = NULL, stats = "elpd",
+                         type = c("mean", "se"), deltas = FALSE,
+                         alpha = 0.32, baseline = NULL, ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmode, baseline, deltas)
 
   ## fetch statistics
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-    tab <- .tabulate_stats(object, stats, alpha = alpha, nfeat_baseline = nfeat_baseline)
+    tab <- .tabulate_stats(object, stats, alpha = alpha,
+                           nfeat_baseline = nfeat_baseline)
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
   stats_table <- subset(tab, tab$size != Inf)
 
 
-  ## these are the corresponding names for mean, se, upper and lower in the stats_table, and their suffices
-  ## in the table to be returned
-  qty <- unname(sapply(type, function(t) switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")))
-  suffix <- unname(sapply(type, function(t) switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")))
+  ## these are the corresponding names for mean, se, upper and lower in the
+  ## stats_table, and their suffices in the table to be returned
+  qty <- unname(sapply(type, function(t)
+    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")))
+  suffix <- unname(sapply(type, function(t)
+    switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")))
 
   ## loop through all the required statistics
   arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$vind))
@@ -396,8 +402,8 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd", type = c("mean",
     nv_max <- max(stats_table$size)
   }
 
-  if ("pctch" %in% names(object)) {
-    arr$pctch <- c(NA, diag(object$pctch[, -1]))
+  if ("pct_vind_cv" %in% names(object)) {
+    arr$pct_vind_cv <- c(NA, diag(object$pctch[, -1]))
   }
 
   subset(arr, arr$size <= nv_max)
@@ -405,9 +411,10 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd", type = c("mean",
 
 ##' Print methods for vsel/cvsel objects
 ##'
-##' The \code{print} methods for vsel/cvsel objects created by \code{\link{varsel}}
-##' or \code{\link{cv_varsel}}) rely on \code{\link{varsel_stats}} to display
-##' a summary of the results of the projection predictive variable selection.
+##' The \code{print} methods for vsel/cvsel objects created by
+##' \code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
+##' \code{\link{varsel_stats}} to display a summary of the results of the
+##' projection predictive variable selection.
 ##'
 ##' @name print-vsel
 ##'
@@ -415,7 +422,8 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd", type = c("mean",
 ##' @param digits Number of decimal places to be reported (2 by default).
 ##' @param ... Further arguments passed to \code{\link{varsel_stats}}.
 ##'
-##' @return Returns invisibly the data frame produced by \code{\link{varsel_stats}}.
+##' @return Returns invisibly the data frame produced by
+##'   \code{\link{varsel_stats}}.
 ##'
 ##' @export
 ##' @method print vsel
@@ -441,51 +449,58 @@ print.cvsel <- function(x, digits = 2, ...) {
 
 ##' Suggest model size
 ##'
-##' This function can be used for suggesting an appropriate model size
-##' based on a certain default rule. Notice that the decision rules are heuristic
-##' and should be interpreted as guidelines. It is recommended that the user
-##' studies the results via \code{varsel_plot} and/or \code{varsel_stats}
-##' and makes the final decision based on what is most appropriate for the given
-##' problem.
+##' This function can be used for suggesting an appropriate model size based on
+##' a certain default rule. Notice that the decision rules are heuristic and
+##' should be interpreted as guidelines. It is recommended that the user studies
+##' the results via \code{varsel_plot} and/or \code{varsel_stats} and makes the
+##' final decision based on what is most appropriate for the given problem.
 ##'
 ##' @param object The object returned by \link[=varsel]{varsel} or
 ##' \link[=cv_varsel]{cv_varsel}.
-##' @param stat Statistic used for the decision. Default is 'elpd'. See \code{varsel_stats} for
-##' other possible choices.
+##' @param stat Statistic used for the decision. Default is 'elpd'. See
+##'   \code{varsel_stats} for other possible choices.
 ##' @param alpha A number indicating the desired coverage of the credible
-##' intervals based on which the decision is made. E.g. \code{alpha=0.32} corresponds to
-##' 68\% probability mass within the intervals (one standard error intervals).
-##' See details for more information.
-##' @param pct Number indicating the relative proportion between baseline model and null model
-##' utilities one is willing to sacrifice. See details for more information.
-##' @param type Either 'upper' (default) or 'lower' determining whether the decisions are
-##' based on the upper or lower credible bounds. See details for more information.
-##' @param baseline Either 'ref' or 'best' indicating whether the baseline is the reference model or
-##' the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.
-##' @param warnings Whether to give warnings if automatic suggestion fails, mainly for internal use.
-##' Default is TRUE, and usually no reason to set to FALSE.
+##'   intervals based on which the decision is made. E.g. \code{alpha=0.32}
+##'   corresponds to 68\% probability mass within the intervals (one standard
+##'   error intervals). See details for more information.
+##' @param pct Number indicating the relative proportion between baseline model
+##'   and null model utilities one is willing to sacrifice. See details for more
+##'   information. @param type Either 'upper' (default) or 'lower' determining
+##'   whether the decisions are based on the upper or lower credible bounds. See
+##'   details for more information.
+##' @param baseline Either 'ref' or 'best' indicating whether the baseline is
+##'   the reference model or the best submodel found. Default is 'ref' when the
+##'   reference model exists, and 'best' otherwise.
+##' @param warnings Whether to give warnings if automatic suggestion fails,
+##'   mainly for internal use. Default is TRUE, and usually no reason to set to
+##'   FALSE.
 ##' @param ... Currently ignored.
 ##'
-##' @details The suggested model size is the smallest model for which
-##' either the lower or upper (depending on argument \code{type}) credible bound
-##' of the submodel utility \eqn{u_k} with significance level \code{alpha} falls above
-##'   \deqn{u_base - pct*(u_base - u_0)}
-##' Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0} the null model utility.
-##' The baseline is either the reference model or the best submodel found (see argument \code{baseline}).
-##' The lower and upper bounds are defined to contain the submodel utility with
-##' probability 1-alpha (each tail has mass alpha/2).
+##' @details The suggested model size is the smallest model for which either the
+##'   lower or upper (depending on argument \code{type}) credible bound of the
+##'   submodel utility \eqn{u_k} with significance level \code{alpha} falls
+##'   above \deqn{u_base - pct*(u_base - u_0)} Here \eqn{u_base} denotes the
+##'   utility for the baseline model and \eqn{u_0} the null model utility. The
+##'   baseline is either the reference model or the best submodel found (see
+##'   argument \code{baseline}). The lower and upper bounds are defined to
+##'   contain the submodel utility with probability 1-alpha (each tail has mass
+##'   alpha/2).
 ##'
-##' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which means that we select the smallest
-##' model for which the upper tail exceeds the baseline model level, that is, which is better than the baseline
-##' model with probability 0.16 (and consequently, worse with probability 0.84). In other words,
-##' the estimated difference between the baseline model and submodel utilities is at most one standard error
-##' away from zero, so the two utilities are considered to be close.
+##' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
+##'   means that we select the smallest model for which the upper tail exceeds
+##'   the baseline model level, that is, which is better than the baseline model
+##'   with probability 0.16 (and consequently, worse with probability 0.84). In
+##'   other words, the estimated difference between the baseline model and
+##'   submodel utilities is at most one standard error away from zero, so the
+##'   two utilities are considered to be close.
 ##'
-##' NOTE: Loss statistics like RMSE and MSE are converted to utilities by multiplying them by -1, so call
-##' such as \code{suggest_size(object, stat='rmse', type='upper')} should be interpreted as finding
-##' the smallest model whose upper credible bound of the \emph{negative} RMSE exceeds the cutoff level
-##' (or equivalently has the lower credible bound of RMSE below the cutoff level). This is done to make
-##' the interpretation of the argument \code{type} the same regardless of argument \code{stat}.
+##' NOTE: Loss statistics like RMSE and MSE are converted to utilities by
+##'   multiplying them by -1, so call such as \code{suggest_size(object,
+##'   stat='rmse', type='upper')} should be interpreted as finding the smallest
+##'   model whose upper credible bound of the \emph{negative} RMSE exceeds the
+##'   cutoff level (or equivalently has the lower credible bound of RMSE below
+##'   the cutoff level). This is done to make the interpretation of the argument
+##'   \code{type} the same regardless of argument \code{stat}.
 ##'
 ##' @examples
 ##' \donttest{
@@ -498,8 +513,9 @@ print.cvsel <- function(x, digits = 2, ...) {
 ##'
 
 ##' @export
-suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = "upper",
-                         baseline = NULL, warnings = TRUE, ...) {
+suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
+                         type = "upper", baseline = NULL, warnings = TRUE,
+                         ...) {
   .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
@@ -518,7 +534,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = 
   bound <- paste0(stat, ".", type)
   stats <- varsel_stats(object,
     stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
-    baseline = baseline, deltas = T
+    baseline = baseline, deltas = TRUE
   )
   util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
   util_cutoff <- pct * util_null
@@ -570,58 +586,62 @@ as.matrix.projection <- function(x, ...) {
 }
 
 
-##'@method as.matrix ridgelm
-##'@export
+##' @method as.matrix ridgelm
+##' @export
 as.matrix.ridgelm <- function(x, ...) {
   coef(x)
 }
 
-##'@method as.matrix lm
-##'@export
+##' @method as.matrix lm
+##' @export
 as.matrix.lm <- function(x, ...) {
   coef(x)
 }
 
-##'@method as.matrix list
-##'@export
+##' @method as.matrix list
+##' @export
 as.matrix.list <- function(x, ...) {
   do.call(cbind, lapply(x, as.matrix))
 }
 
-##'@method t ridgelm
-##'@export
+##' @method t ridgelm
+##' @export
 t.ridgelm <- function(x, ...) {
   t(as.matrix(x))
 }
 
-##'@method t list
-##'@export
+##' @method t list
+##' @export
 t.list <- function(x, ...) {
   t(as.matrix(x))
 }
 
 ##' Create cross-validation indices
 ##'
-##' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross validation.
-##' These functions are potentially useful when creating the \code{cvfits} and \code{cvfun}
-##' arguments for \link[=init_refmodel]{init_refmodel}. The returned value is different for
+##' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross
+##' validation. These functions are potentially useful when creating the
+##' \code{cvfits} and \code{cvfun} arguments for
+##' \link[=init_refmodel]{init_refmodel}. The returned value is different for
 ##' these two methods, see below for details.
 ##'
 ##' @name cv-indices
 ##'
 ##' @param n Number of data points.
 ##' @param k Number of folds. Must be at least 2 and not exceed \code{n}.
-##' @param out Format of the output, either 'foldwise' (default) or 'indices'. See below for details.
-##' @param seed Random seed so that the same division could be obtained again if needed.
+##' @param out Format of the output, either 'foldwise' (default) or 'indices'.
+##'   See below for details.
+##' @param seed Random seed so that the same division could be obtained again if
+##'   needed.
 ##'
-##' @return \code{cvfolds} returns a vector of length \code{n} such that each element is an integer
-##' between 1 and \code{k} denoting which fold the corresponding data point belongs to.
-##' The returned value of \code{cvind} depends on the \code{out}-argument. If \code{out}='foldwise',
-##' the returned value is a list with \code{k} elements,
-##' each having fields \code{tr} and \code{ts} which give the training and test indices, respectively,
-##' for the corresponding fold. If \code{out}='indices', the returned value is a list with fields \code{tr}
-##' and \code{ts}
-##' each of which is a list with \code{k} elements giving the training and test indices for each fold.
+##' @return \code{cvfolds} returns a vector of length \code{n} such that each
+##'   element is an integer between 1 and \code{k} denoting which fold the
+##'   corresponding data point belongs to. The returned value of \code{cvind}
+##'   depends on the \code{out}-argument. If \code{out}='foldwise', the returned
+##'   value is a list with \code{k} elements, each having fields \code{tr} and
+##'   \code{ts} which give the training and test indices, respectively, for the
+##'   corresponding fold. If \code{out}='indices', the returned value is a list
+##'   with fields \code{tr} and \code{ts} each of which is a list with \code{k}
+##'   elements giving the training and test indices for each fold.
 ##' @examples
 ##' \donttest{
 ##' ### compute sample means within each fold

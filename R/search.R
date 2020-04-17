@@ -1,5 +1,6 @@
 search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
-                           verbose = TRUE, opt, groups = NULL, increasing_order = TRUE) {
+                           verbose = TRUE, opt, groups = NULL,
+                           increasing_order = TRUE) {
   ## initialize the forward selection
   ## proj performs the projection over draws
   projfun <- .get_proj_handle(family, opt$regul)
@@ -30,10 +31,10 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
   & count_terms_chosen(chosen) < total_terms) {
     notchosen <- setdiff(current_terms, chosen)
 
-    ## if we have included all submodels in a class start with next class
-    ## this only happens with multilevel or interaction models, where some terms may include
-    ## more than one variable.
-    ## In GLMs every term represents a single variable and therefore all terms are within size==1
+    ## if we have included all submodels in a class start with next class this
+    ## only happens with multilevel or interaction models, where some terms may
+    ## include more than one variable. In GLMs every term represents a single
+    ## variable and therefore all terms are within size==1
     if (length(notchosen) == 0 & !is.null(order)) {
       if (current < order[length(order)]) {
         current <- current + 1
@@ -44,8 +45,10 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
           if (is_next_submodel_redundant(chosen, x)) x else NA
         })
 
-        ## if redundant models add the terms to the list so we don't iterate forever
-        chosen <- c(chosen, unname(unlist(already_selected[!is.na(already_selected)])))
+        ## if redundant models add the terms to the list so we don't iterate
+        ## forever
+        chosen <- c(chosen,
+                    unname(unlist(already_selected[!is.na(already_selected)])))
       }
     }
 
@@ -68,7 +71,8 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
     submodels <- c(submodels, p_sub["sub_fit", imin])
 
     if (verbose && length(chosen) %in% iq) {
-      print(paste0(names(iq)[max(which(length(chosen) == iq))], " of terms selected."))
+      print(paste0(names(iq)[max(which(length(chosen) == iq))],
+                   " of terms selected."))
     }
   }
 
@@ -77,38 +81,51 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
 }
 
 #' copied over from search until we resolve the TODO below
-search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penalty, opt) {
+search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max,
+                                penalty, opt) {
 
-  ## predictive mean and variance of the reference model (with parameters integrated out)
+  ## predictive mean and variance of the reference model (with parameters
+  ## integrated out)
   mu <- p_ref$mu
   v <- p_ref$var
 
   if (NCOL(mu) > 1 || NCOL(v) > 1) {
-    stop("Internal error: search_L1 received multiple draws. Please report to the developers.")
+    stop("Internal error: search_L1 received multiple draws. ",
+         "Please report to the developers.")
   }
 
   ## L1-penalized projection (projection path).
-  ## (Notice: here we use pmax = nv_max+1 so that the computation gets carried until all the way
-  ## down to the least regularization also for model size nv_max)
+  ## (Notice: here we use pmax = nv_max+1 so that the computation gets carried
+  ## until all the way down to the least regularization also for model size
+  ## nv_max)
   search <- glm_elnet(d_train$x, mu, family,
     lambda_min_ratio = opt$lambda_min_ratio, nlambda = opt$nlambda,
-    pmax = nv_max + 1, pmax_strict = FALSE, offset = d_train$offset, weights = d_train$weights,
-    intercept = intercept, obsvar = v, penalty = penalty, thresh = opt$thresh
-  )
+    pmax = nv_max + 1, pmax_strict = FALSE, offset = d_train$offset,
+    weights = d_train$weights, intercept = intercept, obsvar = v,
+    penalty = penalty, thresh = opt$thresh)
 
-  ## sort the variables according to the order in which they enter the model in the L1-path
-  entering_indices <- apply(search$beta != 0, 1, function(num) which(num)[1]) # na for those that did not enter
-  entered_variables <- c(1:NCOL(d_train$x))[!is.na(entering_indices)] # variables that entered at some point
-  notentered_variables <- c(1:NCOL(d_train$x))[is.na(entering_indices)] # variables that did not enter at any point
+  ## sort the variables according to the order in which they enter the model in
+  ## the L1-path
+  entering_indices <- apply(search$beta != 0, 1, function(num)
+    which(num)[1]) # na for those that did not enter
+  ## variables that entered at some point
+  entered_variables <-
+    c(seq_len(NCOL(d_train$x)))[!is.na(entering_indices)]
+  ## variables that did not enter at any point
+  notentered_variables <-
+    c(seq_len(NCOL(d_train$x)))[is.na(entering_indices)]
   order_of_entered <- sort(entering_indices, index.return = TRUE)$ix
   order <- c(entered_variables[order_of_entered], notentered_variables)
 
-  ## fetch the coefficients corresponding to those points at the searchpath where new variable enters
+  ## fetch the coefficients corresponding to those points at the search_path
+  ## where new variable enters
   nvar <- length(order)
   n <- nrow(p_ref$mu)
   out <- list(
-    alpha = rep(NA, nv_max + 1), beta = matrix(0, nrow = nv_max, ncol = nv_max + 1),
-    lambda = rep(NA, nv_max + 1), w = matrix(NA, nrow = n, ncol = nv_max + 1)
+    alpha = rep(NA, nv_max + 1),
+    beta = matrix(0, nrow = nv_max, ncol = nv_max + 1),
+    lambda = rep(NA, nv_max + 1),
+    w = matrix(NA, nrow = n, ncol = nv_max + 1)
   )
   for (k in 0:nv_max) {
     if (k == 0) {
@@ -116,16 +133,18 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
       out$lambda[1] <- search$lambda[1]
       out$w[, 1] <- search$w[, 1]
     } else {
-      ## find those points in the L1-path where only the k most relevant features can have nonzero
-      ## coefficient, and then fetch their coefficients with least regularization
+      ## find those points in the L1-path where only the k most relevant
+      ## features can have nonzero coefficient, and then fetch their
+      ## coefficients with least regularization
       ivar <- utils::tail(order, nvar - k)
-      steps_k_var <- which(colSums(search$beta[ivar, , drop = F] != 0) == 0)
+      steps_k_var <- which(colSums(search$beta[ivar, , drop = FALSE] != 0) == 0)
       if (length(steps_k_var) > 0) {
         j <- utils::tail(steps_k_var, 1)
       } else {
-        ## no steps where all the variables in set ivar would have zero coefficient (could be due
-        ## to one or more of these variables having penalty = 0 so they are always in the model)
-        ## so set the coefficients to be equal to the starting value
+        ## no steps where all the variables in set ivar would have zero
+        ## coefficient (could be due to one or more of these variables having
+        ## penalty = 0 so they are always in the model) so set the coefficients
+        ## to be equal to the starting value
         j <- 1
       }
       out$alpha[k + 1] <- search$beta0[j]
@@ -136,8 +155,10 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
   }
 
   if (length(entered_variables) < nv_max) {
-    if (length(setdiff(notentered_variables, which(penalty == Inf))) > 0) {
-      warning("Less than nv_max variables entered L1-path. Try reducing lambda_min_ratio. ")
+    if (length(setdiff(notentered_variables,
+                       which(penalty == Inf))) > 0) {
+      warning("Less than nv_max variables entered L1-path. ",
+              "Try reducing lambda_min_ratio. ")
     }
   }
 
@@ -145,29 +166,30 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max, penal
   return(out)
 }
 
-search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty, opt) {
+search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty,
+                      opt) {
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
-  terms_ <- attr(tt, "term.labels")
-  spath <- search_L1_surrogate(
+  terms_ <- attr(tt, "term_labels")
+  search_path <- search_L1_surrogate(
     p_ref, list(refmodel, x = x[, -1]), family,
     intercept, nv_max, penalty, opt
   )
-  vind <- terms_[spath$vind]
+  vind <- terms_[search_path$vind]
   sub_fits <- lapply(0:nv_max, function(nv) {
     if (nv == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
     } else {
       formula <- make_formula(vind[seq_len(nv)])
-      beta <- spath$beta[seq_len(nv), nv + 1, drop = FALSE]
+      beta <- search_path$beta[seq_len(nv), nv + 1, drop = FALSE]
     }
     sub <- list(
-      alpha = spath$alpha[nv + 1],
+      alpha = search_path$alpha[nv + 1],
       beta = beta,
-      w = spath$w[, nv + 1],
+      w = search_path$w[, nv + 1],
       formula = formula,
       x = x
     )

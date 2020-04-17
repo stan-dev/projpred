@@ -9,7 +9,7 @@ if (require(brms)) {
   x <- matrix(rnorm(n * nv, 0, 1), n, nv)
   b <- runif(nv) - 0.5
   dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = T)
+  weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
   chains <- 2
   seed <- 1235
@@ -75,9 +75,9 @@ if (require(brms)) {
 
         # project
         vind <- c(1, 2)
-        foo <- project(fit, vind = vind, ns = 100, seed = seed)
+        foo <- project(fit, vind = vind, number_samples = 100, seed = seed)
         r1 <- rnorm(s)
-        foo <- project(fit, vind = vind, ns = 100, seed = seed)
+        foo <- project(fit, vind = vind, number_samples = 100, seed = seed)
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
 
@@ -118,8 +118,8 @@ if (require(brms)) {
 
         # project
         vind <- c(1, 2)
-        foo <- project(fit, vind = vind, nc = 10, seed = seed)
-        bar <- project(fit, vind = vind, nc = 10, seed = seed)
+        foo <- project(fit, vind = vind, number_clusters = 10, seed = seed)
+        bar <- project(fit, vind = vind, number_clusters = 10, seed = seed)
         expect_equal(foo, bar)
 
 

@@ -11,7 +11,7 @@ if (require(brms) && require(rstanarm)) {
   x <- matrix(rnorm(n * nv, 0, 1), n, nv)
   b <- runif(nv) - 0.5
   dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = T)
+  weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
   chains <- 2
   iter <- 500
@@ -246,12 +246,12 @@ if (require(brms) && require(rstanarm)) {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
       pr <- project(vs_list[[i]],
-        nv = c(2, 4), nc = 2, ns = 20,
+        nv = c(2, 4), number_clusters = 2, number_samples = 20,
         intercept = FALSE, regul = 1e-8, seed = 12
       )
       prl1 <- proj_linpred(pr, xnew = data.frame(x = x))
       prl2 <- proj_linpred(vs_list[[i]],
-        xnew = data.frame(x = x), nv = c(2, 4), nc = 2, ns = 20,
+        xnew = data.frame(x = x), nv = c(2, 4), number_clusters = 2, number_samples = 20,
         intercept = FALSE, regul = 1e-8, seed = 12
       )
       expect_equal(prl1$pred, prl2$pred, info = i_inf)
@@ -268,7 +268,7 @@ if (require(brms) && require(rstanarm)) {
     }
     SW(
       fit_form <- stan_glm(mpg ~ (drat + wt)^2,
-        data = mtcars, QR = T,
+        data = mtcars, QR = TRUE,
         chains = chains, seed = seed, iter = iter
       )
     )
@@ -413,15 +413,15 @@ if (require(brms) && require(rstanarm)) {
       i_inf <- names(vs_list)[i]
       prp1 <- proj_predict(vs_list[[i]],
         xnew = data.frame(x = x), draws = 100,
-        seed = 12, nv = c(2, 4), nc = 2, ns = 20, regul = 1e-08
+        seed = 12, nv = c(2, 4), number_clusters = 2, number_samples = 20, regul = 1e-08
       )
       prp2 <- proj_predict(vs_list[[i]],
         xnew = data.frame(x = x), draws = 100,
-        nv = c(2, 4), nc = 2, ns = 20, regul = 1e-8, seed = 12
+        nv = c(2, 4), number_clusters = 2, number_samples = 20, regul = 1e-8, seed = 12
       )
       prp3 <- proj_predict(vs_list[[i]],
         xnew = data.frame(x = x), draws = 100,
-        seed = 120, nv = c(2, 4), nc = 2, ns = 20, regul = 1e-08
+        seed = 120, nv = c(2, 4), number_clusters = 2, number_samples = 20, regul = 1e-08
       )
       expect_equal(prp1, prp2, info = i_inf)
       expect_false(all(unlist(lapply(seq_along(prp1), function(i) {

@@ -1,7 +1,8 @@
 ## Function handles for the projection
 ##
 
-project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1e-4) {
+project_submodel <- function(vind, p_ref, refmodel, family, intercept,
+                             regul = 1e-4) {
   mu <- p_ref$mu
   dis <- p_ref$dis
 
@@ -38,9 +39,6 @@ project_submodel <- function(vind, p_ref, refmodel, family, intercept, regul = 1
     refmodel$fetch_data(),
     y = pobs$z
   )
-  ## capture.output(proj_refit <- refmodel$mle(flatten_formula(subset$formula),
-  ##                                           subset$data),
-  ##                type = "message")
 
   ## capture.output(proj_refit <- iterative_weighted_least_squares(
   ##   flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
@@ -98,18 +96,18 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
   })
 }
 
-.get_submodels <- function(searchpath, nv, family, p_ref,
+.get_submodels <- function(search_path, nv, family, p_ref,
                            refmodel, intercept, regul, cv_search = FALSE) {
   ##
   ##
-  ## Project onto given model sizes nv. Returns a list of submodels. If cv_search=FALSE,
-  ## submodels parameters will be as they were computed during the search, so there is
-  ## no need to project anything anymore, and this function simply fetches the information
-  ## from the searchpath list, which contains the parameter values.
-  ##
+  ## Project onto given model sizes nv. Returns a list of submodels. If
+  ## cv_search=FALSE, submodels parameters will be as they were computed during
+  ## the search, so there is no need to project anything anymore, and this
+  ## function simply fetches the information from the search_path list, which
+  ## contains the parameter values.
 
-  varorder <- searchpath$vind
-  p_sel <- searchpath$p_sel
+  varorder <- search_path$vind
+  p_sel <- search_path$p_sel
 
   if (!cv_search) {
     ## simply fetch the already computed quantities for each submodel size
@@ -137,7 +135,7 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
       pobs <- pseudo_data(0, mu_ref, family, weights = wobs)
 
       ## reuse sub_fit as projected during search
-      sub_refit <- searchpath$sub_fits[[nv + 1]]
+      sub_refit <- search_path$sub_fits[[nv + 1]]
 
       ## split b to alpha and beta, add it to submodel and return the result
       if (family$family == "gaussian") {
