@@ -382,7 +382,9 @@ loo_varsel <- function(refmodel, method, nv_max, number_samples,
 
   d_test <- list(
     y = refmodel$y, type = "loo",
-    test_points = seq_along(refmodel$y)
+    test_points = seq_along(refmodel$y),
+    weights = refmodel$wobs,
+    data = NULL
   )
 
   return(nlist(vind_cv = vind_mat, summaries, d_test))
