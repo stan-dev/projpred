@@ -69,7 +69,8 @@ extend_family_poisson <- function(family) {
   predvar_na <- function(mu, dis, wsample = 1) {
     0
   }
-  ll_poiss <- function(mu, dis, y, weights = 1) weights * dpois(y, mu, log = TRUE)
+  ll_poiss <- function(mu, dis, y, weights = 1)
+    weights * dpois(y, mu, log = TRUE)
   dev_poiss <- function(mu, y, weights = 1, dis = NULL) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))

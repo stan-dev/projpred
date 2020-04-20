@@ -103,10 +103,9 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
 
   if (is.null(d_test)) {
     d_type <- "train"
-    test_points <- seq_along(NROW(refmodel$y))
+    test_points <- seq_len(NROW(refmodel$y))
     d_test <- nlist(
-      y = refmodel$y, test_points,
-      data = NULL, weights = refmodel$wobs,
+      y = refmodel$y, test_points, data = NULL, weights = refmodel$wobs,
       type = d_type
     )
   }
@@ -124,9 +123,8 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
   solution_terms <- search_path$solution_terms
 
   ## statistics for the selected submodels
-  p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)), family, p_pred,
-    refmodel, intercept, regul,
-    cv_search = cv_search
+  p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)), family,
+    p_pred, refmodel, intercept, regul, cv_search = cv_search
   )
   sub <- .get_sub_summaries(p_sub, seq_along(refmodel$y), refmodel, family)
 

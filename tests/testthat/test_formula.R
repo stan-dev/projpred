@@ -45,7 +45,7 @@ test_that("check that we properly flatten a formula with duplicated terms", {
     (x + z + x:z | g))
   flat <- projpred:::flatten_formula(formula)
   # don't check 'flat' directly as sorting of terms is OS specific
-  terms <- attr(terms(flat), "term_labels")
+  terms <- attr(terms(flat), "term.labels")
   expect_length(terms, 4)
   expect_true(all(terms %in% c("x", "z", "x + z + x:z | g", "x:z")))
 })

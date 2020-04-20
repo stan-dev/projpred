@@ -172,7 +172,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty,
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
-  terms_ <- attr(tt, "term_labels")
+  terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
     p_ref, list(refmodel, x = x[, -1]), family,
     intercept, nv_max, penalty, opt

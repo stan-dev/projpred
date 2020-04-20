@@ -6,7 +6,7 @@
 #'   intercept is included or not.
 extract_terms_response <- function(formula) {
   tt <- terms(formula)
-  terms_ <- attr(tt, "term_labels")
+  terms_ <- attr(tt, "term.labels")
   ## when converting the terms_ to a list the first element is
   ## "list" itself, so we remove it
   allterms_ <- as.list(attr(tt, "variables")[-1])
@@ -148,7 +148,7 @@ flatten_group_terms <- function(terms_) {
 
     partial_form <- as.formula(paste0(". ~ ", paste(g, collapse = " + ")))
     t <- terms(partial_form)
-    t.labels <- attr(terms(partial_form), "term_labels")
+    t.labels <- attr(terms(partial_form), "term.labels")
 
     if ("1" %in% g) {
       attr(t, "intercept") <- 1
@@ -322,7 +322,7 @@ split_group_term <- function(term) {
 formula_contains_group_terms <- function(formula) {
   t <- terms(formula)
   attributes <- attributes(t)
-  terms_ <- attributes$term_labels
+  terms_ <- attributes$term.labels
 
   hier <- grepl("\\|", terms_)
   group_terms <- terms_[hier]

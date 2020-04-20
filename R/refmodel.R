@@ -131,9 +131,9 @@ get_refmodel.cvsel <- function(object, ...) {
 
 #' @export
 get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
-                                 div_minimizer, fetch_data, family = NULL, wobs = NULL,
-                                 folds = NULL, cvfits = NULL, offset = NULL,
-                                 cvfun = NULL) {
+                                 div_minimizer, fetch_data, family = NULL,
+                                 wobs = NULL, folds = NULL, cvfits = NULL,
+                                 offset = NULL, cvfun = NULL) {
   fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
     fetch_data(data, obs, newdata)
   }
@@ -202,6 +202,7 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
     weights <- eval_rhs(as.formula(paste("~", weights_var)), data)
   }
 
+  offset <- NULL
   if (!is.null(p$dpars$mu$offset)) {
     offset_form <- p$dpars$mu$offset
     offset <- eval_rhs(offset_form, data)
@@ -225,6 +226,8 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
   if (is.null(formula)) {
     formula <- formula(fit)
   }
+
+  terms <- extract_terms_response(formula)
   response_name <- terms$response
 
   if (is.null(data)) {
@@ -232,7 +235,7 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
   }
 
   weights <- NULL
-  if (!is.null(fit$weights)) {
+  if (!is.null(fit$weights) && length(fit$weights) != 0) {
     weights <- fit$weights
   }
 
@@ -251,7 +254,8 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
     y <- eval_rhs(as.formula(paste("~", response_name)), data)
   }
 
-  if (!is.null(fit$offset)) {
+  offset <- NULL
+  if (!is.null(fit$offset) && length(fit$offset) != 0) {
     offset <- fit$offset
   }
 
@@ -350,8 +354,6 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
   }
 
   ndraws <- ncol(mu)
-
-  dis <- rep(0, ndraws)
   if (proper_model) {
     ## TODO: eventually this will be a function provided by the user
     if (is.null(dis)) {
@@ -378,8 +380,7 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
 
   intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(fit, formula, div_minimizer, family, mu, dis, y, loglik,
-    intercept, proj_predfun,
-    fetch_data = fetch_data_wrapper,
+    intercept, proj_predfun, fetch_data = fetch_data_wrapper,
     wobs = weights, wsample, offset, folds, cvfun, cvfits
   )
   if (proper_model) {

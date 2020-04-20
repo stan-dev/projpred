@@ -379,8 +379,7 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd",
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
     tab <- .tabulate_stats(object, stats,
-      alpha = alpha,
-      nfeat_baseline = nfeat_baseline
+      alpha = alpha, nfeat_baseline = nfeat_baseline
     )
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
@@ -398,7 +397,8 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd",
   }))
 
   ## loop through all the required statistics
-  arr <- data.frame(size = unique(stats_table$size), solution_terms = c(NA, object$solution_terms))
+  arr <- data.frame(size = unique(stats_table$size),
+                    solution_terms = c(NA, object$solution_terms))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- sapply(suffix, function(s) paste0(stats[i], s))
