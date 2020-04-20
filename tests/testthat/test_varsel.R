@@ -400,18 +400,18 @@ test_that("object returned by cv_varsel contains the relevant fields", {
           length(cv_kf_list[[i]][[j]]$family$family),
         info = paste(i_inf, j_inf)
         )
-        # pct_vind_cv seems legit
-        expect_equal(dim(cv_kf_list[[i]][[j]]$pct_vind_cv), c(nv, nv + 1),
+        # pct_solution_terms_cv seems legit
+        expect_equal(dim(cv_kf_list[[i]][[j]]$pct_solution_terms_cv), c(nv, nv + 1),
           info = paste(i_inf, j_inf)
         )
-        expect_true(all(cv_kf_list[[i]][[j]]$pct_vind_cv[, -1] <= 1 &
-          cv_kf_list[[i]][[j]]$pct_vind_cv[, -1] >= 0),
+        expect_true(all(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
+          cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0),
         info = paste(i_inf, j_inf)
         )
-        expect_equal(cv_kf_list[[i]][[j]]$pct_vind_cv[, 1], 1:nv,
+        expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1], 1:nv,
           info = paste(i_inf, j_inf)
         )
-        expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_vind_cv),
+        expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
           c("size", cv_kf_list[[i]][[j]]$solution_terms),
           info = paste(i_inf, j_inf)
         )
@@ -479,14 +479,14 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     )
     expect_equal(fit_cv$family$link, fit_cv$family$link)
     expect_true(length(fit_cv$family) >= length(fit_cv$family$family))
-    # pct_vind_cv seems legit
-    expect_equal(dim(fit_cv$pct_vind_cv), c(nv, nv + 1))
-    expect_true(all(fit_cv$pct_vind_cv[, -1] <= 1 &
-      fit_cv$pct_vind_cv[, -1] >= 0))
+    # pct_solution_terms_cv seems legit
+    expect_equal(dim(fit_cv$pct_solution_terms_cv), c(nv, nv + 1))
+    expect_true(all(fit_cv$pct_solution_terms_cv[, -1] <= 1 &
+      fit_cv$pct_solution_terms_cv[, -1] >= 0))
 
-    expect_equal(fit_cv$pct_vind_cv[, 1], 1:nv)
+    expect_equal(fit_cv$pct_solution_terms_cv[, 1], 1:nv)
     expect_equal(
-      colnames(fit_cv$pct_vind_cv),
+      colnames(fit_cv$pct_solution_terms_cv),
       c("size", fit_cv$solution_terms)
     )
   })

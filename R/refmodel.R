@@ -354,11 +354,9 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
   }
 
   ndraws <- ncol(mu)
-  if (proper_model) {
-    ## TODO: eventually this will be a function provided by the user
-    if (is.null(dis)) {
-      dis <- rep(0, ndraws)
-    }
+  ## TODO: eventually this will be a function provided by the user
+  if (is.null(dis)) {
+    dis <- rep(0, ndraws)
   }
   target <- .get_standard_y(y, weights, family)
   y <- target$y

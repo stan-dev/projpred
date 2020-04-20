@@ -33,15 +33,15 @@ df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
 formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
 
 dref_gauss <- init_refmodel(
-  fit = NULL, df_gauss, df_gauss$y, formula, gaussian(),
+  fit = NULL, df_gauss, df_gauss$y, formula, f_gauss,
   offset = offset, weights = weights
 )
 dref_binom <- init_refmodel(
   fit = NULL, df_binom, df_binom$y, formula,
-  binomial(), offset = offset, weights = weights
+  f_binom, offset = offset, weights = weights
 )
 dref_poiss <- init_refmodel(
-  fit = NULL, df_poiss, df_poiss$y, formula, poisson(),
+  fit = NULL, df_poiss, df_poiss$y, formula, f_poiss,
   offset = offset, weights = weights
 )
 

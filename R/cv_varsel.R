@@ -149,25 +149,35 @@ cv_varsel <- function(fit, method = NULL, cv_method = NULL,
 
   ## find out how many of cross-validated iterations select
   ## the same variables as the selection with all the data.
-  vind_cv_ch <- sapply(seq_len(NROW(sel_cv$vind_cv)), function(i) {
-    unlist(search_terms)[sel_cv$vind_cv[i, ]]
-  })
+  solution_terms_cv_ch <- sapply(
+    seq_len(NROW(sel_cv$solution_terms_cv)),
+    function(i) {
+      if (!is.character(sel_cv$solution_terms_cv[i, ])) {
+        unlist(search_terms)[sel_cv$solution_terms_cv[i, ]]
+      } else {
+        sel_cv$solution_terms_cv[i, ]
+      }
+    }
+  )
 
   ## these weights might be non-constant in case of subsampling LOO
   w <- sel_cv$summaries$sub[[1]]$w
   sel_solution_terms <- sel$solution_terms
   ## if weights are not set, then all validation folds have equal weight
   vars <- unlist(sel_solution_terms)
-  pct_vind_cv <- t(sapply(seq_along(sel_solution_terms), function(size) {
-    c(
-      size = size,
-      sapply(vars, function(var) {
-        sum((vind_cv_ch[seq_len(size), , drop = FALSE] == var) * w,
-          na.rm = TRUE
-        )
-      })
-    )
-  }))
+  pct_solution_terms_cv <- t(sapply(
+    seq_along(sel_solution_terms),
+    function(size) {
+      c(
+        size = size,
+        sapply(vars, function(var) {
+          sum((solution_terms_cv_ch[seq_len(size), , drop = FALSE] == var) * w,
+            na.rm = TRUE
+          )
+        })
+      )
+    }
+  ))
 
   ## create the object to be returned
   vs <- nlist(refmodel,
@@ -242,7 +252,8 @@ loo_varsel <- function(refmodel, method, nv_max, number_samples,
                        number_clusters, number_samples_pred,
                        number_clusters_pred, cv_search, intercept,
                        penalty, verbose, opt, nloo = NULL,
-                       validate_search = TRUE, seed = NULL, search_terms = NULL) {
+                       validate_search = TRUE, seed = NULL,
+                       search_terms = NULL) {
   ##
   ## Perform the validation of the searching process using LOO. validate_search
   ## indicates whether the selection is performed separately for each fold (for
@@ -302,7 +313,7 @@ loo_varsel <- function(refmodel, method, nv_max, number_samples,
   inds <- validset$inds
 
   ## initialize matrices where to store the results
-  vind_mat <- matrix(nrow = n, ncol = nv_max - 1)
+  solution_terms_mat <- matrix(nrow = n, ncol = nv_max - 1)
   loo_sub <- matrix(nrow = n, ncol = nv_max)
   mu_sub <- matrix(nrow = n, ncol = nv_max)
 
@@ -347,8 +358,8 @@ loo_varsel <- function(refmodel, method, nv_max, number_samples,
 
     ## project onto the selected models and compute the prediction accuracy for
     ## the left-out point
-    submodels <- .get_submodels(search_path, c(0, seq_along(solution_terms)), family,
-      p_pred, refmodel, intercept, opt$regul,
+    submodels <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
+      family, p_pred, refmodel, intercept, opt$regul,
       cv_search = cv_search
     )
     summaries_sub <- .get_sub_summaries(submodels, c(i), refmodel, family)
@@ -387,7 +398,7 @@ loo_varsel <- function(refmodel, method, nv_max, number_samples,
     data = NULL
   )
 
-  return(nlist(vind_cv = vind_mat, summaries, d_test))
+  return(nlist(solution_terms_cv = solution_terms_mat, summaries, d_test))
 }
 
 kfold_varsel <- function(refmodel, method, nv_max, number_samples,
@@ -460,7 +471,7 @@ kfold_varsel <- function(refmodel, method, nv_max, number_samples,
     out
   })
 
-  solution_terms_cv <- lapply(search_path_cv, function(e) e$solution_terms)
+  solution_terms_cv <- t(sapply(search_path_cv, function(e) e$solution_terms))
   if (verbose) {
     close(pb)
   }
@@ -475,9 +486,8 @@ kfold_varsel <- function(refmodel, method, nv_max, number_samples,
     fold <- list_cv[[fold_index]]
     family <- fold$refmodel$family
     solution_terms <- search_path$solution_terms
-    p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)), family,
-      fold$p_pred, fold$refmodel, intercept,
-      opt$regul,
+    p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
+      family, fold$p_pred, fold$refmodel, intercept, opt$regul,
       cv_search = cv_search
     )
     if (verbose && cv_search) {
@@ -507,6 +517,11 @@ kfold_varsel <- function(refmodel, method, nv_max, number_samples,
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, hf)
+  sub <- lapply(sub, function(summ) {
+    summ$w <- rep(1, NROW(solution_terms_cv))
+    summ$w <- summ$w / sum(summ$w)
+    summ
+  })
 
   ref <- hf(lapply(list_cv, function(fold) {
     data.frame(.weighted_summary_means(
@@ -522,8 +537,7 @@ kfold_varsel <- function(refmodel, method, nv_max, number_samples,
                test_points = fold$omitted)
   }))
 
-  return(nlist(vind_cv,
-    summaries = list(sub = sub, ref = ref),
+  return(nlist(solution_terms_cv, summaries = list(sub = sub, ref = ref),
     d_test = c(d_cv, type = "kfold")
   ))
 }

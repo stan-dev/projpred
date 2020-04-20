@@ -77,7 +77,6 @@
     delta <- TRUE
   }
 
-  browser()
   for (s in seq_along(stats)) {
     stat <- stats[s]
 

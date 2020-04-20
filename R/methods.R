@@ -410,8 +410,8 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd",
     nv_max <- max(stats_table$size)
   }
 
-  if ("pct_vind_cv" %in% names(object)) {
-    arr$pct_vind_cv <- c(NA, diag(object$pctch[, -1]))
+  if ("pct_solution_terms_cv" %in% names(object)) {
+    arr$pct_solution_terms_cv <- c(NA, diag(object$pctch[, -1]))
   }
 
   return(subset(arr, arr$size <= nv_max))
