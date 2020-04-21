@@ -66,17 +66,17 @@ if (require(rstanarm) && require(brms)) {
   )
 
   test_that('varsel returns an object of type "vsel"', {
-    for (i in 1:length(vs_list)) {
-      for (j in 1:length(vs_list[[i]])) {
+    for (i in seq_len(length(vs_list))) {
+      for (j in seq_len(length(vs_list[[i]]))) {
         expect_s3_class(vs_list[[i]][[j]], "vsel")
       }
     }
   })
 
   test_that("object returned by varsel contains the relevant fields", {
-    for (i in 1:length(vs_list)) {
+    for (i in seq_len(length(vs_list))) {
       i_inf <- names(vs_list)[i]
-      for (j in 1:length(vs_list[[i]])) {
+      for (j in seq_len(length(vs_list[[i]]))) {
         j_inf <- names(vs_list[[i]])[j]
         # refmodel seems legit
         expect_s3_class(vs_list[[i]][[j]]$refmodel, "refmodel")
