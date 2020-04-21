@@ -364,7 +364,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
   })
 
   test_that(paste("object returned by cv_varsel, kfold contains the relevant",
-                  "fields")) {
+                  "fields"), {
     for (i in seq_len(length(cv_kf_list))) {
       i_inf <- names(cv_kf_list)[i]
       for (j in seq_len(length(cv_kf_list[[i]]))) {
