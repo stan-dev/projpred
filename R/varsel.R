@@ -108,6 +108,8 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
       y = refmodel$y, test_points, data = NULL, weights = refmodel$wobs,
       type = d_type
     )
+  } else {
+    d_type <- d_test$type
   }
 
   ## reference distributions for selection and prediction after selection

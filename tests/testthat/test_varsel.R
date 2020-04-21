@@ -147,10 +147,17 @@ if (require(rstanarm) && require(brms)) {
     expect_length(vs$solution_terms, 3)
   })
 
-  ## test_that('specifying d_test has the expected effect', {
-  ##   vs <- varsel(fit_gauss, d_test = vs_list[[1]][[1]]$refmodel, nv_max = 3)
-  ##   expect_length(vs$solution_terms, 3)
-  ## })
+  test_that("specifying d_test has the expected effect", {
+    refmodel_ <- vs_list[[1]][[1]]$refmodel
+    d_test <- list(
+      data = fit_gauss$data, y = refmodel_$y,
+      test_points = seq_along(refmodel_$y),
+      weights = refmodel_$wobs,
+      type = "test"
+    )
+    vs <- varsel(fit_gauss, d_test = d_test, nv_max = 3)
+    expect_length(vs$solution_terms, 3)
+  })
 
   test_that("Having something else than stan_glm as the fit throws an error", {
     expect_error(varsel(rnorm(5), verbose = FALSE),
