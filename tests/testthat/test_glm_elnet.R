@@ -10,13 +10,13 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
 
 set.seed(1235)
 n <- 40
-nv <- 10
-nv_fit <- nv - 5
-x <- matrix(rnorm(n * nv, 0, 1), n, nv)
-b <- c(seq(0, 1, length.out = nv_fit), rep(0, nv - nv_fit)) # runif(nv)-0.5
+nterms <- 10
+nterms_fit <- nterms - 5
+x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
+b <- c(seq(0, 1, length.out = nterms_fit), rep(0, nterms - nterms_fit)) # runif(nterms)-0.5
 dis <- runif(1, 0.3, 0.5) # runif(1, 1, 2)
-x_tr <- x[, 1:nv_fit]
-b_tr <- b[1:nv_fit]
+x_tr <- x[, 1:nterms_fit]
+b_tr <- b[1:nterms_fit]
 weights <- sample(1:4, n, replace = TRUE)
 weights_norm <- weights / sum(weights) * n
 offset <- 0.1 * rnorm(n) # rnorm(n)
@@ -38,7 +38,8 @@ test_that(paste("glm_elnet: various families and setups, glm_elnet and glmnet",
     } else if (fam$family == "binomial") {
       y <- rbinom(n, weights, fam$linkinv(x_tr %*% b_tr))
       y <- y / weights
-      y_glmnet <- cbind(1 - y, y) # different way of specifying binomial y for glmnet
+      ## different way of specifying binomial y for glmnet
+      y_glmnet <- cbind(1 - y, y)
     } else if (fam$family == "poisson") {
       y <- rpois(n, fam$linkinv(x_tr %*% b_tr))
       y_glmnet <- y
@@ -51,7 +52,7 @@ test_that(paste("glm_elnet: various families and setups, glm_elnet and glmnet",
     ## elastic net
     for (alpha in c(0, 1)) {
       ## it seems glmnet does the normalization differently so we can't test
-      ## normalize=T
+      ## normalize TRUE
       for (normalize in c(FALSE)) {
         for (use_offset in c(FALSE, TRUE)) {
           for (use_weights in c(FALSE, TRUE)) {

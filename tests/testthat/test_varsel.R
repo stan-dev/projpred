@@ -6,9 +6,9 @@ if (require(rstanarm) && require(brms)) {
   seed <- 1235
   set.seed(seed)
   n <- 50
-  nv <- 5
-  x <- matrix(rnorm(n * nv, 0, 1), n, nv)
-  b <- runif(nv) - 0.5
+  nterms <- 5
+  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
+  b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
   weights <- sample(1:4, n, replace = TRUE)
   chains <- 2
@@ -47,7 +47,7 @@ if (require(rstanarm) && require(brms)) {
   )
 
   formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
-  vsf <- function(x, m) varsel(x, method = m, nv_max = nv + 1, verbose = FALSE)
+  vsf <- function(x, m) varsel(x, method = m, nterms_max = nterms + 1, verbose = FALSE)
   vs_list <- list(
     l1 = lapply(fit_list, vsf, "L1"),
     fs = lapply(fit_list, vsf, "forward")
@@ -81,7 +81,7 @@ if (require(rstanarm) && require(brms)) {
         # refmodel seems legit
         expect_s3_class(vs_list[[i]][[j]]$refmodel, "refmodel")
         # solution_terms seems legit
-        expect_length(vs_list[[i]][[j]]$solution_terms, nv)
+        expect_length(vs_list[[i]][[j]]$solution_terms, nterms)
         expect_true(all(!is.na(match(
           colnames(fit_gauss$data[, -1]),
           vs_list[[i]][[j]]$solution_terms
@@ -89,7 +89,7 @@ if (require(rstanarm) && require(brms)) {
         info = paste(i_inf, j_inf)
         )
         # kl seems legit
-        expect_length(vs_list[[i]][[j]]$kl, nv + 1)
+        expect_length(vs_list[[i]][[j]]$kl, nterms + 1)
         # decreasing
         expect_equal(vs_list[[i]][[j]]$kl,
           cummin(vs_list[[i]][[j]]$kl),
@@ -100,7 +100,7 @@ if (require(rstanarm) && require(brms)) {
         expect_named(vs_list[[i]][[j]]$summaries, c("sub", "ref"),
           info = paste(i_inf, j_inf)
         )
-        expect_length(vs_list[[i]][[j]]$summaries$sub, nv + 1)
+        expect_length(vs_list[[i]][[j]]$summaries$sub, nterms + 1)
         expect_named(vs_list[[i]][[j]]$summaries$sub[[1]], c("mu", "lppd"),
           info = paste(i_inf, j_inf)
         )
@@ -131,19 +131,19 @@ if (require(rstanarm) && require(brms)) {
     )
   })
 
-  test_that("nv_max has an effect on varsel for gaussian models", {
-    vs1 <- varsel(fit_gauss, method = "forward", nv_max = 3, verbose = FALSE)
+  test_that("nterms_max has an effect on varsel for gaussian models", {
+    vs1 <- varsel(fit_gauss, method = "forward", nterms_max = 3, verbose = FALSE)
     expect_length(vs1$solution_terms, 3)
   })
 
-  test_that("nv_max has an effect on varsel for non-gaussian models", {
-    vs1 <- varsel(fit_binom, method = "forward", nv_max = 3, verbose = FALSE)
+  test_that("nterms_max has an effect on varsel for non-gaussian models", {
+    vs1 <- varsel(fit_binom, method = "forward", nterms_max = 3, verbose = FALSE)
     expect_length(vs1$solution_terms, 3)
   })
 
   test_that("specifying the number of clusters has an expected effect", {
-    vs <- varsel(fit_binom, method = "forward", nv_max = 3,
-                 number_clusters = 10)
+    vs <- varsel(fit_binom, method = "forward", nterms_max = 3,
+                 nclusters = 10)
     expect_length(vs$solution_terms, 3)
   })
 
@@ -155,7 +155,7 @@ if (require(rstanarm) && require(brms)) {
       weights = refmodel_$wobs,
       type = "test"
     )
-    vs <- varsel(fit_gauss, d_test = d_test, nv_max = 3)
+    vs <- varsel(fit_gauss, d_test = d_test, nterms_max = 3)
     expect_length(vs$solution_terms, 3)
   })
 
@@ -171,7 +171,7 @@ if (require(rstanarm) && require(brms)) {
       nonzeros <- rep(0, length(regul))
       msize <- 3
       for (j in 1:length(regul)) {
-        vsel <- varsel(fit_list[[i]], regul = regul[j], nv_max = 6)
+        vsel <- varsel(fit_list[[i]], regul = regul[j], nterms_max = 6)
         x <- vsel$search_path$sub_fits[[6]]
         sol <- rbind(x$alpha, x$beta)
         nonzeros[j] <- length(which(sol != 0))
@@ -185,30 +185,30 @@ if (require(rstanarm) && require(brms)) {
   test_that("varsel: length of the penalty vector is checked", {
     vsf <- function(obj, penalty) {
       varsel(obj,
-        method = "L1", nv_max = nv + 1,
+        method = "L1", nterms_max = nterms + 1,
         verbose = FALSE, penalty = penalty
       )
     }
-    expect_error(vsf(fit_list$gauss, rep(1, nv + 10)))
+    expect_error(vsf(fit_list$gauss, rep(1, nterms + 10)))
     expect_error(vsf(fit_list$gauss, 1))
   })
 
   test_that(paste("varsel: specifying penalties for variables has an expected",
                   "effect"), {
-    penalty <- rep(1, nv)
+    penalty <- rep(1, nterms)
     ind_zeropen <- c(3, 5) # a few variables without cost
     ind_infpen <- c(2) # one variable with infinite penalty
     penalty[ind_zeropen] <- 0
     penalty[ind_infpen] <- Inf
     vsf <- function(obj)
-      varsel(obj, method = "L1", nv_max = nv, verbose = FALSE,
+      varsel(obj, method = "L1", nterms_max = nterms, verbose = FALSE,
              penalty = penalty)
     vs_list_pen <- lapply(fit_list, vsf)
     for (i in seq_along(vs_list_pen)) {
       # check that the variables with no cost are selected first and the ones
       # with inf penalty last
       sub_fits <- vs_list_pen[[i]]$search_path$sub_fits
-      sdiff <- length(which(sub_fits[[nv + 1]]$beta == 0))
+      sdiff <- length(which(sub_fits[[nterms + 1]]$beta == 0))
       expect_gte(sdiff, 1)
     }
   })
@@ -218,7 +218,7 @@ if (require(rstanarm) && require(brms)) {
   context("cv_varsel")
 
   cvsf <- function(x, m, cvm, K = NULL) {
-    cv_varsel(x, method = m, cv_method = cvm, nv_max = nv, K = K)
+    cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K)
   }
 
   SW({
@@ -273,7 +273,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
       # refmodel seems legit
       expect_s3_class(cvs_list[[i]][[j]]$refmodel, "refmodel")
       # solution_terms seems legit
-      expect_length(cvs_list[[i]][[j]]$solution_terms, nv)
+      expect_length(cvs_list[[i]][[j]]$solution_terms, nterms)
       expect_true(all(!is.na(match(
         colnames(fit_gauss$data[, -1]),
         cvs_list[[i]][[j]]$solution_terms
@@ -281,7 +281,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
       info = paste(i_inf, j_inf)
       )
       # kl seems legit
-      expect_length(cvs_list[[i]][[j]]$kl, nv + 1)
+      expect_length(cvs_list[[i]][[j]]$kl, nterms + 1)
       # decreasing
       expect_equal(cvs_list[[i]][[j]]$kl,
         cummin(cvs_list[[i]][[j]]$kl),
@@ -292,7 +292,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
       expect_named(cvs_list[[i]][[j]]$summaries, c("sub", "ref"),
         info = paste(i_inf, j_inf)
       )
-      expect_length(cvs_list[[i]][[j]]$summaries$sub, nv + 1)
+      expect_length(cvs_list[[i]][[j]]$summaries$sub, nterms + 1)
       expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]],
         c("lppd", "mu", "w"),
         info = paste(i_inf, j_inf)
@@ -317,17 +317,17 @@ test_that("object returned by cv_varsel contains the relevant fields", {
   }
 })
 
-  test_that("nv_max has an effect on cv_varsel for gaussian models", {
+  test_that("nterms_max has an effect on cv_varsel for gaussian models", {
     suppressWarnings(
-      vs1 <- cv_varsel(fit_gauss, method = "forward", nv_max = 3,
+      vs1 <- cv_varsel(fit_gauss, method = "forward", nterms_max = 3,
                        verbose = FALSE)
     )
     expect_length(vs1$solution_terms, 3)
   })
 
-  test_that("nv_max has an effect on cv_varsel for non-gaussian models", {
+  test_that("nterms_max has an effect on cv_varsel for non-gaussian models", {
     suppressWarnings(
-      vs1 <- cv_varsel(fit_binom, method = "forward", nv_max = 3,
+      vs1 <- cv_varsel(fit_binom, method = "forward", nterms_max = 3,
                        verbose = FALSE)
     )
     expect_length(vs1$solution_terms, 3)
@@ -340,8 +340,8 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     )
     SW({
       expect_equal(
-        cv_varsel(fit_gauss, cv_method = "loo", nv_max = nv, nloo = NULL),
-        cv_varsel(fit_gauss, cv_method = "loo", nv_max = nv, nloo = 1000)
+        cv_varsel(fit_gauss, cv_method = "loo", nterms_max = nterms, nloo = NULL),
+        cv_varsel(fit_gauss, cv_method = "loo", nterms_max = nterms, nloo = 1000)
       )
 
       # nloo less than number of observations
@@ -370,7 +370,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
       for (j in seq_len(length(cv_kf_list[[i]]))) {
         j_inf <- names(cv_kf_list[[i]])[j]
         # solution_terms seems legit
-        expect_length(cv_kf_list[[i]][[j]]$solution_terms, nv)
+        expect_length(cv_kf_list[[i]][[j]]$solution_terms, nterms)
         expect_true(all(!is.na(match(
           colnames(fit_gauss$data[, -1]),
           cv_kf_list[[i]][[j]]$solution_terms
@@ -378,7 +378,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
         info = paste(i_inf, j_inf)
         )
         # kl seems legit
-        expect_length(cv_kf_list[[i]][[j]]$kl, nv + 1)
+        expect_length(cv_kf_list[[i]][[j]]$kl, nterms + 1)
         # decreasing
         expect_equal(cv_kf_list[[i]][[j]]$kl[-1],
           cummin(cv_kf_list[[i]][[j]]$kl[-1]),
@@ -389,7 +389,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
         expect_named(cv_kf_list[[i]][[j]]$summaries, c("sub", "ref"),
           info = paste(i_inf, j_inf)
         )
-        expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nv + 1)
+        expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nterms + 1)
         expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]],
                      c("mu", "lppd", "w"),
           ignore.order = TRUE, info = paste(i_inf, j_inf)
@@ -412,14 +412,14 @@ test_that("object returned by cv_varsel contains the relevant fields", {
         )
         # pct_solution_terms_cv seems legit
         expect_equal(dim(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
-                     c(nv, nv + 1),
+                     c(nterms, nterms + 1),
           info = paste(i_inf, j_inf)
         )
         expect_true(all(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
           cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0),
         info = paste(i_inf, j_inf)
         )
-        expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1], 1:nv,
+        expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1], 1:nterms,
           info = paste(i_inf, j_inf)
         )
         expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
@@ -466,17 +466,17 @@ test_that("object returned by cv_varsel contains the relevant fields", {
       fit_cv <- cv_varsel(glm_simp, cv_method = "kfold", cvfits = k_fold)
     })
     expect_false(any(grepl("k_fold not provided", out)))
-    expect_length(fit_cv$solution_terms, nv)
+    expect_length(fit_cv$solution_terms, nterms)
 
     # kl seems legit
-    expect_length(fit_cv$kl, nv + 1)
+    expect_length(fit_cv$kl, nterms + 1)
 
     # decreasing
     expect_equal(fit_cv$kl, cummin(fit_cv$kl))
 
     # summaries seems legit
     expect_named(fit_cv$summaries, c("sub", "ref"))
-    expect_length(fit_cv$summaries$sub, nv + 1)
+    expect_length(fit_cv$summaries$sub, nterms + 1)
     expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd", "w"),
       ignore.order = TRUE
     )
@@ -491,11 +491,11 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     expect_equal(fit_cv$family$link, fit_cv$family$link)
     expect_true(length(fit_cv$family) >= length(fit_cv$family$family))
     # pct_solution_terms_cv seems legit
-    expect_equal(dim(fit_cv$pct_solution_terms_cv), c(nv, nv + 1))
+    expect_equal(dim(fit_cv$pct_solution_terms_cv), c(nterms, nterms + 1))
     expect_true(all(fit_cv$pct_solution_terms_cv[, -1] <= 1 &
       fit_cv$pct_solution_terms_cv[, -1] >= 0))
 
-    expect_equal(fit_cv$pct_solution_terms_cv[, 1], 1:nv)
+    expect_equal(fit_cv$pct_solution_terms_cv[, 1], 1:nterms)
     expect_equal(
       colnames(fit_cv$pct_solution_terms_cv),
       c("size", fit_cv$solution_terms)
@@ -555,7 +555,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
         }
         stats <- varsel_stats(cvs, stats = stats_str,
                               type = c("mean", "lower", "upper", "se"))
-        expect_true(nrow(stats) == nv + 1)
+        expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
           "size", "solution_terms", stats_str, paste0(stats_str, ".se"),
           paste0(stats_str, ".upper"), paste0(stats_str, ".lower")
@@ -596,11 +596,11 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     expect_equal(out$elpd, round(out$elpd, 4))
 
     # options to varsel_stats
-    expect_output(out <- print(vs_list[[1]][[1]], nv_max = 3, stats = "mse"))
+    expect_output(out <- print(vs_list[[1]][[1]], nterms_max = 3, stats = "mse"))
     expect_equal(nrow(out) - 1, 3)
     expect_named(out, c("size", "solution_terms", "mse", "mse.se"))
 
-    expect_output(out <- print(cvs_list[[1]][[1]], nv_max = 3, stats = "mse"))
+    expect_output(out <- print(cvs_list[[1]][[1]], nterms_max = 3, stats = "mse"))
     expect_equal(nrow(out) - 1, 3)
     expect_named(out, c("size", "solution_terms", "mse", "mse.se",
                         "pct_solution_terms_cv"))
@@ -612,7 +612,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
 
   test_that("plotting works", {
     expect_s3_class(varsel_plot(vs_list[[1]][[1]]), "ggplot")
-    expect_visible(varsel_plot(vs_list[[1]][[1]], nv_max = 3))
+    expect_visible(varsel_plot(vs_list[[1]][[1]], nterms_max = 3))
   })
 
   test_that("invalid 'baseline' arguments are rejected", {
@@ -622,17 +622,17 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     )
   })
 
-  test_that("the value of nv_max is valid", {
+  test_that("the value of nterms_max is valid", {
     expect_error(
-      varsel_plot(vs_list[[1]][[1]], nv_max = 0),
-      "nv_max must be at least 1"
+      varsel_plot(vs_list[[1]][[1]], nterms_max = 0),
+      "nterms_max must be at least 1"
     )
   })
 
-  test_that("nv_max is capped to the largest model size", {
+  test_that("nterms_max is capped to the largest model size", {
     expect_equal(
       varsel_plot(vs_list[[1]][[1]]),
-      varsel_plot(vs_list[[1]][[1]], nv_max = 1000)
+      varsel_plot(vs_list[[1]][[1]], nterms_max = 1000)
     )
   })
 

@@ -24,7 +24,7 @@ if (require(rstanarm)) {
   suggested_size <- suggest_size(cvs)
 
   # project onto some model size
-  proj <- project(cvs, nv = 3)
+  proj <- project(cvs, nterms = 3)
 
   test_that("varsel/cv_varsel/project return objects with correct types", {
     expect_true("vsel" %in% class(vs))

@@ -20,16 +20,16 @@
 #'   solution from the' L1-penalized projection. This option is relevant only if
 #'   \code{method}='L1'. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param number_samples Number of posterior draws used in the variable
+#' @param ndraws Number of posterior draws used in the variable
 #'   selection. Cannot be larger than the number of draws in the reference
-#'   model. Ignored if number_clusters is set.
-#' @param number_clusters Number of clusters to use in the clustered projection.
-#'   Overrides the \code{number_samples} argument. Defaults to 1.
-#' @param number_samples_pred Number of samples used for prediction (after
-#'   selection). Ignored if number_clusters_pred is given.
-#' @param number_clusters_pred Number of clusters used for prediction (after
+#'   model. Ignored if nclusters is set.
+#' @param nclusters Number of clusters to use in the clustered projection.
+#'   Overrides the \code{ndraws} argument. Defaults to 1.
+#' @param ndraws_pred Number of samples used for prediction (after
+#'   selection). Ignored if nclusters_pred is given.
+#' @param nclusters_pred Number of clusters used for prediction (after
 #'   selection). Default is 5.
-#' @param nv_max Maximum number of varibles until which the selection is
+#' @param nterms_max Maximum number of varibles until which the selection is
 #'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 #'   observations and D the number of variables.
 #' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
@@ -69,10 +69,10 @@
 #' }
 #'
 #' @export
-varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
-                   number_clusters = NULL, number_samples_pred = NULL,
-                   number_clusters_pred = NULL, cv_search = FALSE,
-                   nv_max = NULL, intercept = TRUE, verbose = TRUE,
+varsel <- function(object, d_test = NULL, method = NULL, ndraws = NULL,
+                   nclusters = NULL, ndraws_pred = NULL,
+                   nclusters_pred = NULL, cv_search = FALSE,
+                   nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                    lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
                    regul = 1e-4, penalty = NULL, search_terms = NULL, ...) {
   refmodel <- get_refmodel(object, ...)
@@ -80,18 +80,17 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-    refmodel, method, cv_search, intercept, nv_max,
-    number_clusters, number_samples,
-    number_clusters_pred, number_samples_pred, search_terms
+    refmodel, method, cv_search, intercept, nterms_max,
+    nclusters, ndraws, nclusters_pred, ndraws_pred, search_terms
   )
   method <- args$method
   cv_search <- args$cv_search
   intercept <- args$intercept
-  nv_max <- args$nv_max
-  number_clusters <- args$number_clusters
-  number_samples <- args$number_samples
-  number_clusters_pred <- args$number_clusters_pred
-  number_samples_pred <- args$number_samples_pred
+  nterms_max <- args$nterms_max
+  nclusters <- args$nclusters
+  ndraws <- args$ndraws
+  nclusters_pred <- args$nclusters_pred
+  ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
   has_group_features <- formula_contains_group_terms(refmodel$formula)
 
@@ -113,22 +112,25 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
   }
 
   ## reference distributions for selection and prediction after selection
-  p_sel <- .get_refdist(refmodel, number_samples, number_clusters)
-  p_pred <- .get_refdist(refmodel, number_samples_pred, number_clusters_pred)
+  p_sel <- .get_refdist(refmodel, ndraws, nclusters)
+  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
 
   ## perform the selection
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
-  search_path <- select(method, p_sel, refmodel, family, intercept, nv_max,
-    penalty, verbose, opt,
-    search_terms = search_terms
+  search_path <- select(
+    method = method, p_sel = p_sel, refmodel = refmodel,
+    family = family, intercept = intercept, nterms_max = nterms_max,
+    penalty = penalty, verbose = verbose, opt = opt, search_terms = search_terms
   )
   solution_terms <- search_path$solution_terms
-
   ## statistics for the selected submodels
   p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)), family,
     p_pred, refmodel, intercept, regul, cv_search = cv_search
   )
-  sub <- .get_sub_summaries(p_sub, seq_along(refmodel$y), refmodel, family)
+  sub <- .get_sub_summaries(
+    submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
+    family = family
+  )
 
   ## predictive statistics of the reference model on test data. if no test data
   ## are provided,
@@ -140,17 +142,14 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
     ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
   } else {
     if (d_type == "train") {
-      ref <- .weighted_summary_means(
-        d_test, family, refmodel$wsample,
-        refmodel$mu, refmodel$dis
-      )
+      mu_test <- refmodel$mu
     } else {
       mu_test <- refmodel$predfun(refmodel$fit, newdata = d_test$data)
-      ref <- .weighted_summary_means(
-        d_test, family, refmodel$wsample,
-        mu_test, refmodel$dis
-      )
     }
+    ref <- .weighted_summary_means(
+      y_test = d_test, family = family, wsample = refmodel$wsample,
+      mu = mu_test, dis = refmodel$dis
+    )
   }
 
   ## store the relevant fields into the object to be returned
@@ -162,8 +161,8 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
     family,
     solution_terms = search_path$solution_terms,
     kl = sapply(p_sub, function(x) x$kl),
-    nv_max,
-    nv_all = count_terms_in_subformula(refmodel$formula)
+    nterms_max,
+    nterms_all = count_terms_in_subformula(refmodel$formula)
   )
   ## suggest model size
   class(vs) <- "vsel"
@@ -175,7 +174,7 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
 }
 
 
-select <- function(method, p_sel, refmodel, family, intercept, nv_max,
+select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
                    penalty, verbose, opt, search_terms = NULL) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
@@ -192,13 +191,13 @@ select <- function(method, p_sel, refmodel, family, intercept, nv_max,
   if (method == "l1") {
     search_path <- search_L1(
       p_sel, refmodel, family, intercept,
-      nv_max - intercept, penalty, opt
+      nterms_max - intercept, penalty, opt
     )
     search_path$p_sel <- p_sel
     return(search_path)
   } else if (method == "forward") {
     search_path <- search_forward(p_sel, refmodel, family,
-      intercept, nv_max, verbose, opt, search_terms = search_terms
+      intercept, nterms_max, verbose, opt, search_terms = search_terms
     )
     search_path$p_sel <- p_sel
     return(search_path)
@@ -206,10 +205,9 @@ select <- function(method, p_sel, refmodel, family, intercept, nv_max,
 }
 
 
-parse_args_varsel <- function(refmodel, method, cv_search, intercept, nv_max,
-                              number_clusters, number_samples,
-                              number_clusters_pred, number_samples_pred,
-                              search_terms) {
+parse_args_varsel <- function(refmodel, method, cv_search, intercept,
+                              nterms_max, nclusters, ndraws, nclusters_pred,
+                              ndraws_pred, search_terms) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel.
   ## The arguments specified by the user (or the function calling this function)
@@ -240,26 +238,26 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept, nv_max,
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if ((is.null(number_samples) && is.null(number_clusters)) || method == "l1") {
+  if ((is.null(ndraws) && is.null(nclusters)) || method == "l1") {
     ## use one cluster for selection by default, and always with L1-search
-    number_clusters <- 1
+    nclusters <- 1
   }
-  if (is.null(number_samples_pred) && is.null(number_clusters_pred)) {
+  if (is.null(ndraws_pred) && is.null(nclusters_pred)) {
     ## use 5 clusters for prediction by default
-    number_clusters_pred <- min(NCOL(refmodel$mu), 5)
+    nclusters_pred <- min(NCOL(refmodel$mu), 5)
   }
 
   max_nv_possible <- count_terms_in_subformula(refmodel$formula)
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
   }
-  if (is.null(nv_max)) {
-    nv_max <- min(max_nv_possible, 20)
+  if (is.null(nterms_max)) {
+    nterms_max <- min(max_nv_possible, 20)
   } else {
-    nv_max <- min(max_nv_possible, nv_max + 1)
+    nterms_max <- min(max_nv_possible, nterms_max + 1)
   }
 
-  return(nlist(method, cv_search, intercept, nv_max, number_clusters,
-               number_samples, number_clusters_pred, number_samples_pred,
+  return(nlist(method, cv_search, intercept, nterms_max, nclusters,
+               ndraws, nclusters_pred, ndraws_pred,
                search_terms))
 }

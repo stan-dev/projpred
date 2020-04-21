@@ -7,9 +7,9 @@ if (require(rstanarm)) {
   seed <- 1235
   set.seed(seed)
   n <- 40
-  nv <- 5
-  x <- matrix(rnorm(n * nv, 0, 1), n, nv)
-  b <- runif(nv) - 0.5
+  nterms <- 5
+  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
+  b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
   weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
@@ -50,91 +50,93 @@ if (require(rstanarm)) {
     binom = fit_binom,
     poiss = fit_poiss
   )
-  vs_list <- lapply(fit_list, varsel, nv_max = nv + 1, verbose = FALSE)
+  vs_list <- lapply(fit_list, varsel, nterms_max = nterms + 1, verbose = FALSE)
   proj_solution_terms_list <- lapply(vs_list, project, solution_terms = c(2, 3),
                                      seed = seed)
-  proj_all_list <- lapply(vs_list, project, seed = seed, nv = 0:nv)
+  proj_all_list <- lapply(vs_list, project, seed = seed, nterms = 0:nterms)
 
 
-  test_that("proj_linpred: xnew is specified correctly", {
+  test_that("proj_linpred: newdata is specified correctly", {
     expect_error(
       proj_linpred(proj_solution_terms_list),
-      'argument "xnew" is missing, with no default'
+      'argument "newdata" is missing, with no default'
     )
     expect_error(
-      proj_linpred(proj_solution_terms_list, xnew = NULL),
+      proj_linpred(proj_solution_terms_list, newdata = NULL),
       "must be a data.frame or a matrix"
     )
     expect_error(
-      proj_linpred(proj_solution_terms_list, xnew = x[, 1]),
+      proj_linpred(proj_solution_terms_list, newdata = x[, 1]),
       "must be a data.frame or a matrix"
     )
     expect_error(
-      proj_linpred(proj_solution_terms_list, xnew = data.frame(x = x),
-                   solution_terms = 1:1000),
-      "number of columns in xnew does not match"
+      proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x),
+                   solution_terms = 1:10000),
+      "number of columns in newdata does not match"
     )
     expect_error(
-      proj_linpred(proj_solution_terms_list, xnew = data.frame(x = x)[, 1:2],
+      proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x)[, 1:2],
                    solution_terms = 1:3),
-      "number of columns in xnew does not match"
+      "number of columns in newdata does not match"
     )
   })
 
   test_that("output of proj_linpred is sensible with fit-object as input", {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
-      pl <- proj_linpred(vs_list[[i]], xnew = data.frame(x = x), nv = 0:nv)
-      expect_length(pl, nv + 1)
+      pl <- proj_linpred(vs_list[[i]], newdata = data.frame(x = x),
+                         nterms = 0:nterms)
+      expect_length(pl, nterms + 1)
     }
   })
 
   test_that("output of proj_linpred is sensible with project-object as input", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
-      pl <- proj_linpred(proj_solution_terms_list[[i]], xnew = data.frame(x = x))
+      pl <- proj_linpred(proj_solution_terms_list[[i]],
+                         newdata = data.frame(x = x))
     }
     for (i in 1:length(proj_all_list)) {
       i_inf <- names(proj_all_list)[i]
-      pl <- proj_linpred(proj_all_list[[i]], xnew = data.frame(x = x))
-      expect_length(pl, nv + 1)
+      pl <- proj_linpred(proj_all_list[[i]], newdata = data.frame(x = x))
+      expect_length(pl, nterms + 1)
     }
   })
 
   test_that(paste("proj_linpred: error when varsel has not been performed on",
                   "the object"), {
     expect_error(
-      proj_linpred(1, xnew = data.frame(x = x)),
+      proj_linpred(1, newdata = data.frame(x = x)),
       "is not a variable selection -object"
     )
     expect_error(
-      proj_linpred(fit_gauss, xnew = data.frame(x = x)),
+      proj_linpred(fit_gauss, newdata = data.frame(x = x)),
       "is not a variable selection -object"
     )
     expect_error(
-      proj_linpred(c(proj_solution_terms_list, list(x)), xnew = x),
+      proj_linpred(c(proj_solution_terms_list, list(x)), newdata = x),
       "only works with objects returned by"
     )
   })
 
   test_that("proj_linpred: specifying ynew incorrectly produces an error", {
     expect_error(
-      proj_linpred(vs_list[["gauss"]], xnew = data.frame(x = x),
+      proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
                    ynew = x[, 1:3]),
       "y cannot have more than two columns"
     )
     expect_error(
-      proj_linpred(vs_list[["gauss"]], xnew = data.frame(x = x),
+      proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
                    ynew = factor(ys[[1]])),
       "cannot be a factor"
     )
     expect_error(
-      proj_linpred(vs_list[["poiss"]], xnew = data.frame(x = x),
+      proj_linpred(vs_list[["poiss"]], newdata = data.frame(x = x),
                    ynew = factor(ys[[3]])),
       "cannot be a factor"
     )
     expect_error(
-      proj_linpred(vs_list[["binom"]], xnew = data.frame(x = x),
+      proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
                    ynew = factor(ys[[1]])),
       "y cannot contain more than two classes"
     )
@@ -144,12 +146,12 @@ if (require(rstanarm)) {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
       pl <- proj_linpred(vs_list[[i]],
-        xnew = df_binom, ynew = ys[[i]],
-        weightsnew = df_binom$weights, nv = 0:nv
+        newdata = df_binom, ynew = ys[[i]],
+        weightsnew = df_binom$weights, nterms = 0:nterms
       )
       pl2 <- proj_linpred(vs_list[[i]],
-        xnew = data.frame(x = x),
-        weightsnew = weights, nv = 0:nv
+        newdata = data.frame(x = x),
+        weightsnew = weights, nterms = 0:nterms
       )
       for (j in 1:length(pl)) {
         expect_named(pl[[j]], c("pred", "lpd"))
@@ -162,7 +164,7 @@ if (require(rstanarm)) {
   test_that(paste("proj_linpred: specifying ynew as a factor works in a",
                   "binomial model"), {
     yfactor <- factor(rbinom(n, 1, 0.5))
-    pl <- proj_linpred(vs_list[["binom"]], xnew = data.frame(x = x),
+    pl <- proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
                        ynew = yfactor)
     expect_named(pl, c("pred", "lpd"))
     expect_equal(ncol(pl$pred), n)
@@ -176,11 +178,11 @@ if (require(rstanarm)) {
         i_inf <- names(proj_solution_terms_list)[i]
         weightsnew <- sample(1:4, n, replace = TRUE)
         plw <- proj_linpred(proj_solution_terms_list[[i]],
-          xnew = data.frame(x = x), ynew = ys[[i]],
+          newdata = data.frame(x = x), ynew = ys[[i]],
           weightsnew = weightsnew
         )
         pl <- proj_linpred(proj_solution_terms_list[[i]],
-          xnew = data.frame(x = x),
+          newdata = data.frame(x = x),
           ynew = ys[[i]],
           weightsnew = weights
         )
@@ -196,11 +198,11 @@ if (require(rstanarm)) {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       plo <- proj_linpred(proj_solution_terms_list[[i]],
-        xnew = data.frame(x = x),
+        newdata = data.frame(x = x),
         ynew = ys[[i]], weightsnew = weights, offsetnew = offset
       )
       pl <- proj_linpred(proj_solution_terms_list[[i]],
-        xnew = data.frame(x = x),
+        newdata = data.frame(x = x),
         ynew = ys[[i]], weightsnew = weights
       )
       expect_named(plo, c("pred", "lpd"))
@@ -214,9 +216,9 @@ if (require(rstanarm)) {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       plt <- proj_linpred(proj_solution_terms_list[[i]],
-                          xnew = data.frame(x = x), transform = TRUE)
+                          newdata = data.frame(x = x), transform = TRUE)
       plf <- proj_linpred(proj_solution_terms_list[[i]],
-                          xnew = data.frame(x = x), transform = FALSE)
+                          newdata = data.frame(x = x), transform = FALSE)
       expect_equal(proj_solution_terms_list[[i]]$family$linkinv(plf$pred),
                    plt$pred, info = i_inf)
     }
@@ -226,9 +228,9 @@ if (require(rstanarm)) {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       plt <- proj_linpred(proj_solution_terms_list[[i]],
-                          xnew = data.frame(x = x), integrated = TRUE)
+                          newdata = data.frame(x = x), integrated = TRUE)
       plf <- proj_linpred(proj_solution_terms_list[[i]],
-                          xnew = data.frame(x = x), integrated = FALSE)
+                          newdata = data.frame(x = x), integrated = FALSE)
       expect_equal(as.vector(proj_solution_terms_list[[i]]$weights %*%
                              plf$pred),
                    plt$pred, info = i_inf)
@@ -242,7 +244,7 @@ if (require(rstanarm)) {
       norms <- rep(0, length(regul))
       for (j in 1:length(regul)) {
         pred <- proj_linpred(vs_list[[i]],
-          xnew = data.frame(x = x), nv = 2, transform = FALSE,
+          newdata = data.frame(x = x), nterms = 2, transform = FALSE,
           integrated = TRUE, regul = regul[j]
         )
         norms[j] <- sum(pred$pred^2)
@@ -258,23 +260,23 @@ if (require(rstanarm)) {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
       pr <- project(vs_list[[i]],
-        nv = c(2, 4), number_clusters = 2, number_samples = 20,
+        nterms = c(2, 4), nclusters = 2, ndraws = 20,
         intercept = FALSE, regul = 1e-8, seed = 12
       )
-      prl1 <- proj_linpred(pr, xnew = data.frame(x = x))
+      prl1 <- proj_linpred(pr, newdata = data.frame(x = x))
       prl2 <- proj_linpred(vs_list[[i]],
-        xnew = data.frame(x = x), nv = c(2, 4), number_clusters = 2,
-        number_samples = 20, intercept = FALSE, regul = 1e-8, seed = 12
+        newdata = data.frame(x = x), nterms = c(2, 4), nclusters = 2,
+        ndraws = 20, intercept = FALSE, regul = 1e-8, seed = 12
       )
       expect_equal(prl1$pred, prl2$pred, info = i_inf)
     }
   })
 
-  test_that("proj_linpred: providing xnew as a data frame works as expected", {
+  test_that("proj_linpred: providing newdata as a data frame works as expected", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl <- proj_predict(proj_solution_terms_list[[i]],
-        xnew = data.frame(x = x)
+        newdata = data.frame(x = x)
       )
       expect_equal(ncol(pl), n, info = i_inf)
     }
@@ -285,8 +287,8 @@ if (require(rstanarm)) {
       )
     )
     vs_form <- varsel(fit_form)
-    p1 <- proj_linpred(vs_form, xnew = mtcars, nv = 3, seed = 2)
-    p2 <- proj_linpred(vs_form, xnew = get_x(fit_form)[, -1], nv = 3, seed = 2)
+    p1 <- proj_linpred(vs_form, newdata = mtcars, nterms = 3, seed = 2)
+    p2 <- proj_linpred(vs_form, newdata = get_x(fit_form)[, -1], nterms = 3, seed = 2)
     expect_equal(p1$pred, p2$pred)
   })
 
@@ -294,38 +296,38 @@ if (require(rstanarm)) {
   # -------------------------------------------------------------
   context("proj_predict")
 
-  test_that("proj_predict: xnew is specified correctly", {
+  test_that("proj_predict: newdata is specified correctly", {
     expect_error(
       proj_predict(proj_solution_terms_list),
-      'argument "xnew" is missing, with no default'
+      'argument "newdata" is missing, with no default'
     )
     expect_error(
-      proj_predict(proj_solution_terms_list, xnew = NULL),
+      proj_predict(proj_solution_terms_list, newdata = NULL),
       "must be a data.frame or a matrix"
     )
     expect_error(
-      proj_predict(proj_solution_terms_list, xnew = x[, 1]),
+      proj_predict(proj_solution_terms_list, newdata = x[, 1]),
       "must be a data.frame or a matrix"
     )
     expect_error(
-      proj_predict(proj_solution_terms_list, xnew = data.frame(x = x),
+      proj_predict(proj_solution_terms_list, newdata = data.frame(x = x),
                    solution_terms = 1:1000),
-      "number of columns in xnew does not match"
+      "number of columns in newdata does not match"
     )
     expect_error(
       proj_predict(proj_solution_terms_list,
-        xnew = data.frame(x = x)[, 1:2],
+        newdata = data.frame(x = x)[, 1:2],
         solution_terms = 1:3
       ),
-      "number of columns in xnew does not match"
+      "number of columns in newdata does not match"
     )
   })
 
   test_that("output of proj_predict is sensible with fit-object as input", {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
-      pl <- proj_predict(vs_list[[i]], xnew = data.frame(x = x), nv = 0:nv)
-      expect_length(pl, nv + 1)
+      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x), nterms = 0:nterms)
+      expect_length(pl, nterms + 1)
       for (j in 1:length(pl)) {
         expect_equal(ncol(pl[[j]]), n, info = i_inf)
       }
@@ -336,13 +338,13 @@ if (require(rstanarm)) {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         xnew = data.frame(x = x))
+                         newdata = data.frame(x = x))
       expect_equal(ncol(pl), n, info = i_inf)
     }
     for (i in 1:length(proj_all_list)) {
       i_inf <- names(proj_all_list)[i]
-      pl <- proj_predict(proj_all_list[[i]], xnew = data.frame(x = x))
-      expect_length(pl, nv + 1)
+      pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
+      expect_length(pl, nterms + 1)
       for (j in 1:length(pl)) {
         expect_equal(ncol(pl[[j]]), n, info = i_inf)
       }
@@ -352,25 +354,25 @@ if (require(rstanarm)) {
   test_that(paste("proj_predict: error when varsel has not been performed on",
                   "the object"), {
     expect_error(
-      proj_predict(1, xnew = data.frame(x = x)),
+      proj_predict(1, newdata = data.frame(x = x)),
       "is not a variable selection -object"
     )
     expect_error(
-      proj_predict(fit_gauss, xnew = data.frame(x = x)),
+      proj_predict(fit_gauss, newdata = data.frame(x = x)),
       "is not a variable selection -object"
     )
     expect_error(
       proj_predict(c(proj_solution_terms_list, list(x)),
-                   xnew = data.frame(x = x)),
+                   newdata = data.frame(x = x)),
       "only works with objects returned by"
     )
   })
 
   test_that("proj_predict: specifying ynew has an expected effect", {
     for (i in seq_along(vs_list)) {
-      pl <- proj_predict(vs_list[[i]], xnew = data.frame(x = x), ynew = ys[[i]],
-                         nv = 0:3)
-      pl2 <- proj_predict(vs_list[[i]], xnew = data.frame(x = x), nv = 0:3)
+      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x), ynew = ys[[i]],
+                         nterms = 0:3)
+      pl2 <- proj_predict(vs_list[[i]], newdata = data.frame(x = x), nterms = 0:3)
       for (j in seq_len(length(pl))) {
         expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
       }
@@ -380,7 +382,7 @@ if (require(rstanarm)) {
   test_that(paste("proj_predict: specifying ynew as a factor works in a",
                   "binomial model"), {
     yfactor <- factor(rbinom(n, 1, 0.5))
-    pl <- proj_predict(vs_list[["binom"]], xnew = data.frame(x = x),
+    pl <- proj_predict(vs_list[["binom"]], newdata = data.frame(x = x),
                        ynew = yfactor)
     expect_equal(ncol(pl), n)
     expect_true(all(pl %in% c(0, 1)))
@@ -388,9 +390,9 @@ if (require(rstanarm)) {
 
   test_that("proj_predict: specifying weightsnew has an expected effect", {
     pl <- proj_predict(proj_solution_terms_list[["binom"]],
-                       xnew = data.frame(x = x), seed = seed)
+                       newdata = data.frame(x = x), seed = seed)
     plw <- proj_predict(proj_solution_terms_list[["binom"]],
-      xnew = data.frame(x = x), seed = seed,
+      newdata = data.frame(x = x), seed = seed,
       weightsnew = weights
     )
     expect_true(sum(pl != plw) > 0)
@@ -400,22 +402,22 @@ if (require(rstanarm)) {
     for (i in seq_len(length(proj_solution_terms_list))) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl <- proj_predict(proj_solution_terms_list[[i]],
-        xnew = data.frame(x = x), draws = iter,
+        newdata = data.frame(x = x), ndraws = iter,
         seed = seed
       )
       plo <- proj_predict(proj_solution_terms_list[[i]],
-        xnew = data.frame(x = x), draws = iter,
+        newdata = data.frame(x = x), ndraws = iter,
         seed = seed, offsetnew = offset
       )
       expect_true(sum(pl != plo) > 0, info = i_inf)
     }
   })
 
-  test_that("proj_predict: specifying draws has an expected effect", {
+  test_that("proj_predict: specifying ndraws has an expected effect", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
-      pl <- proj_predict(proj_solution_terms_list[[i]], xnew = data.frame(x = x),
-                         draws = iter)
+      pl <- proj_predict(proj_solution_terms_list[[i]],
+                         newdata = data.frame(x = x), ndraws = iter)
       expect_equal(dim(pl), c(iter, n))
     }
   })
@@ -423,10 +425,10 @@ if (require(rstanarm)) {
   test_that("proj_predict: specifying seed_sam has an expected effect", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
-      pl1 <- proj_predict(proj_solution_terms_list[[i]], xnew = data.frame(x = x),
-                          seed = seed)
-      pl2 <- proj_predict(proj_solution_terms_list[[i]], xnew = data.frame(x = x),
-                          seed = seed)
+      pl1 <- proj_predict(proj_solution_terms_list[[i]],
+                          newdata = data.frame(x = x), seed = seed)
+      pl2 <- proj_predict(proj_solution_terms_list[[i]],
+                          newdata = data.frame(x = x), seed = seed)
       expect_equal(pl1, pl2, info = i_inf)
     }
   })
@@ -435,18 +437,18 @@ if (require(rstanarm)) {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
       prp1 <- proj_predict(vs_list[[i]],
-        xnew = data.frame(x = x), draws = 100,
-        seed = 12, nv = c(2, 4), number_clusters = 2, number_samples = 20,
+        newdata = data.frame(x = x), ndraws = 100,
+        seed = 12, nterms = c(2, 4), nclusters = 2,
         regul = 1e-08
       )
       prp2 <- proj_predict(vs_list[[i]],
-        xnew = data.frame(x = x), draws = 100,
-        nv = c(2, 4), number_clusters = 2, number_samples = 20, regul = 1e-8,
+        newdata = data.frame(x = x), ndraws = 100,
+        nterms = c(2, 4), nclusters = 2, regul = 1e-8,
         seed = 12
       )
       prp3 <- proj_predict(vs_list[[i]],
-        xnew = data.frame(x = x), draws = 100,
-        seed = 120, nv = c(2, 4), number_clusters = 2, number_samples = 20,
+        newdata = data.frame(x = x), ndraws = 100,
+        seed = 120, nterms = c(2, 4), nclusters = 2,
         regul = 1e-08
       )
       expect_equal(prp1, prp2, info = i_inf)

@@ -207,15 +207,15 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
 
 
-.get_refdist <- function(refmodel, number_samples = NULL, number_clusters = NULL, seed = NULL) {
+.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL) {
   #
   # Creates the reference distribution based on the refmodel-object, and the
-  # desired number of clusters (number_clusters) or number of subsamples (number_samples). If number_clusters is
-  # specified, then clustering is used and number_samples is ignored. Returns a list with
+  # desired number of clusters (nclusters) or number of subsamples (ndraws). If nclusters is
+  # specified, then clustering is used and ndraws is ignored. Returns a list with
   # fields:
   #
   #   mu: n-by-s matrix, vector of expected values for y for each draw/cluster.
-  #       here s means either the number of draws number_samples or clusters number_clusters used,
+  #       here s means either the number of draws ndraws or clusters nclusters used,
   #       depending on which one is used.
   #   var: n-by-s matrix, vector of predictive variances for y for each
   #         draw/cluster which which are needed for projecting the dispersion
@@ -240,40 +240,40 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   family <- refmodel$family
   S <- NCOL(refmodel$mu) # number of draws in the reference model
 
-  if (!is.null(number_clusters)) {
-    # use clustering (ignore number_samples argument)
-    if (number_clusters == 1) {
+  if (!is.null(nclusters)) {
+    # use clustering (ignore ndraws argument)
+    if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
       p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, cl = cl)
-    } else if (number_clusters == NCOL(refmodel$mu)) {
+    } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, number_samples = number_clusters))
+      return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
-      if (number_clusters > NCOL(refmodel$mu)) {
-        stop("The number of clusters number_clusters cannot exceed the number of ",
+      if (nclusters > NCOL(refmodel$mu)) {
+        stop("The number of clusters nclusters cannot exceed the number of ",
              "columns in mu.")
       }
       p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
-                            wobs = refmodel$wobs, number_clusters = number_clusters)
+                            wobs = refmodel$wobs, nclusters = nclusters)
     }
-  } else if (!is.null(number_samples)) {
+  } else if (!is.null(ndraws)) {
     # subsample from the reference model
     # would it be safer to actually randomly draw the subsample?
-    if (number_samples > NCOL(refmodel$mu)) {
-      stop("The number of subsamples number_samples cannot exceed the number of ",
+    if (ndraws > NCOL(refmodel$mu)) {
+      stop("The number of subsamples ndraws cannot exceed the number of ",
            "columns in mu.")
     }
-    s_ind <- round(seq(1, S, length.out = number_samples))
+    s_ind <- round(seq(1, S, length.out = ndraws))
     cl <- rep(NA, S)
-    cl[s_ind] <- c(1:number_samples)
+    cl[s_ind] <- c(1:ndraws)
     predvar <- sapply(s_ind, function(j) {
       family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     })
     p_ref <- list(mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
-                  dis = refmodel$dis[s_ind], weights = rep(1 / number_samples, number_samples),
+                  dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws),
                   cl = cl)
   } else {
     # use all the draws from the reference model
@@ -287,14 +287,14 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   return(p_ref)
 }
 
-.get_p_clust <- function(family, mu, dis, number_clusters = 10, wobs = rep(1, dim(mu)[1]),
+.get_p_clust <- function(family, mu, dis, nclusters = 10, wobs = rep(1, dim(mu)[1]),
                          wsample = rep(1, dim(mu)[2]), cl = NULL) {
   # Function for perfoming the clustering over the samples.
   #
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
     f <- family$linkfun(mu)
-    out <- kmeans(t(f), number_clusters, iter.max = 50)
+    out <- kmeans(t(f), nclusters, iter.max = 50)
     cl <- out$cluster # cluster indices for each sample
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices
@@ -307,11 +307,11 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
-  number_clusters <- max(cl, na.rm = TRUE) # number of clusters (assumes labeling 1,...,number_clusters)
-  centers <- matrix(0, nrow = number_clusters, ncol = dim(mu)[1])
-  wcluster <- rep(0, number_clusters) # cluster weights
+  nclusters <- max(cl, na.rm = TRUE) # number of clusters (assumes labeling 1,...,nclusters)
+  centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
+  wcluster <- rep(0, nclusters) # cluster weights
   eps <- 1e-10
-  for (j in 1:number_clusters) {
+  for (j in 1:nclusters) {
     # compute normalized weights within the cluster, 1-eps is for numerical
     # stability
     ind <- which(cl == j)
@@ -324,7 +324,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   wcluster <- wcluster / sum(wcluster)
 
   # predictive variances
-  predvar <- sapply(1:number_clusters, function(j) {
+  predvar <- sapply(1:nclusters, function(j) {
     # compute normalized weights within the cluster, 1-eps is for numerical
     # stability
     ind <- which(cl == j)
@@ -407,7 +407,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     stop(paste(
       "Numerical problems with inverting the covariance matrix. Possibly a",
       "problem with the convergence of the stan model?, If not, consider",
-      "stopping the selection early by setting the variable nv_max accordingly."
+      "stopping the selection early by setting the variable nterms_max accordingly."
     ))
   } else {
     stop(e$message)

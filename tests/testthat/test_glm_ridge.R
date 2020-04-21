@@ -9,12 +9,12 @@ context("ridge")
 
 set.seed(1235)
 n <- 40
-nv <- 10
-nv_fit <- nv - 5
-x <- matrix(rnorm(n * nv, 0, 1), n, nv)
-b <- runif(nv) - 0.5
+nterms <- 10
+nterms_fit <- nterms - 5
+x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
+b <- runif(nterms) - 0.5
 dis <- runif(1, 1, 2)
-x_tr <- x[, 1:nv_fit]
+x_tr <- x[, 1:nterms_fit]
 weights <- sample(1:4, n, replace = TRUE)
 offset <- rnorm(n, 0, 1)
 
@@ -129,7 +129,7 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
     weights = weights, offset = offset, intercept = TRUE
   )
   # analytic solution, no penalty on the intercept term
-  penalty <- 0.5 * diag(c(0, rep(lambda, nv_fit)))
+  penalty <- 0.5 * diag(c(0, rep(lambda, nterms_fit)))
   exp_beta <- c(solve(
     crossprod(cbind(1, x_tr) * sqrt(weights)) + penalty,
     crossprod(cbind(1, x_tr) * weights, y - offset)

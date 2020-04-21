@@ -310,7 +310,7 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
   }
 
   ## TODO: ideally remove this, have to think about it
-  family$mu_fun <- function(fit, obs = folds, xnew = NULL, offset = NULL,
+  family$mu_fun <- function(fit, obs = folds, newdata = NULL, offset = NULL,
                             weights = NULL) {
     if (is.null(offset)) {
       offset <- rep(0, length(obs))
@@ -318,7 +318,7 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
     if (is.null(weights)) {
       weights <- rep(1, length(obs))
     }
-    newdata <- fetch_data_wrapper(obs = obs, newdata = xnew)
+    newdata <- fetch_data_wrapper(obs = obs, newdata = newdata)
     family$linkinv(proj_predfun(fit,
       newdata = newdata,
       weights = weights

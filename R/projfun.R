@@ -6,26 +6,19 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   mu <- p_ref$mu
   dis <- p_ref$dis
 
-  if (is.null(refmodel$wobs)) {
-    wobs <- rep(1.0, NROW(mu))
-  } else {
-    wobs <- refmodel$wobs
-  }
-
-  if (is.null(p_ref$weights)) {
-    wsample <- rep(1.0, NCOL(mu))
-  } else {
-    wsample <- p_ref$weights
-  }
-
-  wobs <- wobs / sum(wobs)
-  wsample <- wsample / sum(wsample)
+  validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, mu)
+  wobs <- validparams$wobs
+  wsample <- validparams$wsample
 
   form <- refmodel$formula
-  pobs <- pseudo_data(0, mu, family, offset = refmodel$offset, weights = wobs)
+  pobs <- pseudo_data(
+    f = 0, y = mu, family = family, offset = refmodel$offset, weights = wobs
+  )
 
   link <- function(f, wprev = NULL) {
-    pseudo_data(f, mu, family, offset = refmodel$offset, wprev = wprev)
+    pseudo_data(
+      f = f, y = mu, family = family, offset = refmodel$offset, wprev = wprev
+    )
   }
   div_minimizer <- function(formula, data, weights) {
     refmodel$div_minimizer(formula, data, weights = weights, regul = regul)
@@ -35,34 +28,26 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   }
   replace_response <- get_replace_response(form, solution_terms)
 
-  subset <- subset_formula_and_data(form, unique(unlist(solution_terms)),
-    refmodel$fetch_data(),
-    y = pobs$z
+  subset <- subset_formula_and_data(
+    formula = form, terms_ = unique(unlist(solution_terms)),
+    data = refmodel$fetch_data(), y = pobs$z
   )
-
   ## capture.output(sub_fit <- iterative_weighted_least_squares(
   ##   flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
   ##   replace_response, wprev = wobs, div_minimizer = div_minimizer),
   ##   type = "message")
   sub_fit <- iterative_weighted_least_squares(
     flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
-    replace_response, wprev = wobs, div_minimizer = div_minimizer,
+    replace_response,
+    wprev = wobs, div_minimizer = div_minimizer,
     linear_predict = linear_predict
   )
-  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = wobs)
-  if (family$family == "gaussian") {
-    ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
-  } else {
-    ref <- p_ref
-    ref$w <- rep(0, NROW(mu))
-  }
 
-  weights <- wsample
-  dis <- family$dis_fun(ref, nlist(mu), ref$w)
-  kl <- family$kl(ref, list(weights = wobs), nlist(mu, dis))
-  submodel <- nlist(kl, dis, weights, solution_terms, sub_fit)
-
-  return(submodel)
+  return(.init_submodel(
+    sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
+    family = family, solution_terms = solution_terms, ref_mu = mu,
+    weights = wobs, wsample = wsample
+  ))
 }
 
 iterative_weighted_least_squares <- function(formula, data, iters, link,
@@ -92,15 +77,18 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
 ## function handle for the projection over samples
 .get_proj_handle <- function(family, regul = 1e-9) {
   return(function(solution_terms, p_ref, refmodel, intercept) {
-    project_submodel(solution_terms, p_ref, refmodel, family, intercept, regul = regul)
+    project_submodel(
+      solution_terms = solution_terms, p_ref = p_ref, refmodel = refmodel,
+      family = family, intercept = intercept, regul = regul
+    )
   })
 }
 
-.get_submodels <- function(search_path, nv, family, p_ref,
+.get_submodels <- function(search_path, nterms, family, p_ref,
                            refmodel, intercept, regul, cv_search = FALSE) {
   ##
   ##
-  ## Project onto given model sizes nv. Returns a list of submodels. If
+  ## Project onto given model sizes nterms. Returns a list of submodels. If
   ## cv_search=FALSE, submodels parameters will be as they were computed during
   ## the search, so there is no need to project anything anymore, and this
   ## function simply fetches the information from the search_path list, which
@@ -111,64 +99,84 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
 
   if (!cv_search) {
     ## simply fetch the already computed quantities for each submodel size
-    fetch_submodel <- function(nv) {
-      submodel <- list()
-      solution_terms <- utils::head(varorder, nv)
+    fetch_submodel <- function(nterms) {
+      solution_terms <- utils::head(varorder, nterms)
 
-      mu_ref <- p_sel$mu
+      ref_mu <- p_sel$mu
 
-      if (is.null(refmodel$wobs)) {
-        wobs <- rep(1.0, NROW(mu_ref))
-      } else {
-        wobs <- refmodel$wobs
-      }
-
-      if (is.null(p_sel$weights)) {
-        wsample <- rep(1.0, NCOL(mu_ref))
-      } else {
-        wsample <- p_sel$weights
-      }
-
-      wobs <- wobs / sum(wobs)
-      wsample <- wsample / sum(wsample)
-
-      pobs <- pseudo_data(0, mu_ref, family, weights = wobs)
+      validparams <- .validate_wobs_wsample(
+        refmodel$wobs, p_sel$weights, ref_mu
+      )
+      wobs <- validparams$wobs
+      wsample <- validparams$wsample
 
       ## reuse sub_fit as projected during search
-      sub_refit <- search_path$sub_fits[[nv + 1]]
+      sub_refit <- search_path$sub_fits[[nterms + 1]]
 
-      ## split b to alpha and beta, add it to submodel and return the result
-      if (family$family == "gaussian") {
-        ref <- list(mu = pobs$z, var = p_sel$var, w = pobs$w)
-      } else {
-        ref <- p_sel
-        ref$w <- rep(0, NROW(mu_ref))
-      }
-
-      mu <- family$mu_fun(sub_refit, offset = refmodel$offset, weights = wobs)
-      submodel$dis <- family$dis_fun(ref, list(mu = mu), ref$w)
-      submodel$kl <- family$kl(
-        ref, list(weights = wobs),
-        nlist(mu, dis = submodel$dis)
-      )
-      submodel$weights <- wsample
-      submodel$solution_terms <- solution_terms
-      submodel$sub_fit <- sub_refit
-      return(submodel)
+      return(.init_submodel(
+        sub_fit = sub_refit, p_ref = p_sel, refmodel = refmodel,
+        family = family, solution_terms = solution_terms, ref_mu = ref_mu,
+        weights = wobs, wsample = wsample
+      ))
     }
   } else {
     ## need to project again for each submodel size
     projfun <- .get_proj_handle(family, regul)
-    fetch_submodel <- function(nv) {
-      if (nv == 0) {
+    fetch_submodel <- function(nterms) {
+      if (nterms == 0) {
         ## empty
         solution_terms <- c("1")
       } else {
-        solution_terms <- varorder[seq_len(nv)]
+        solution_terms <- varorder[seq_len(nterms)]
       }
       return(projfun(solution_terms, p_ref, refmodel, intercept))
     }
   }
-  submodels <- lapply(nv, fetch_submodel)
+  submodels <- lapply(nterms, fetch_submodel)
   return(submodels)
+}
+
+.validate_wobs_wsample <- function(ref_wobs, ref_wsample, ref_mu) {
+  if (is.null(ref_wobs)) {
+    wobs <- rep(1.0, NROW(ref_mu))
+  } else {
+    wobs <- ref_wobs
+  }
+
+  if (is.null(ref_wsample)) {
+    wsample <- rep(1.0, NCOL(ref_mu))
+  } else {
+    wsample <- ref_wsample
+  }
+
+  wobs <- wobs / sum(wobs)
+  wsample <- wsample / sum(wsample)
+  return(nlist(wobs, wsample))
+}
+
+.init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
+                           ref_mu, weights, wsample) {
+  pobs <- pseudo_data(
+    f = 0, y = ref_mu, family = family, weights = weights,
+    offset = refmodel$offset
+  )
+
+  ## split b to alpha and beta, add it to submodel and return the result
+  if (family$family == "gaussian") {
+    ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
+  } else {
+    ref <- p_ref
+    ref$w <- rep(0, NROW(ref_mu))
+  }
+
+  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = weights)
+  dis <- family$dis_fun(ref, list(mu = mu), ref$w)
+  kl <- family$kl(
+    ref, list(weights = weights),
+    nlist(mu, dis)
+  )
+  weights <- wsample
+  solution_terms <- solution_terms
+  submodel <- nlist(dis, kl, weights = wsample, solution_terms, sub_fit)
+  return(submodel)
 }

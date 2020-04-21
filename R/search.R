@@ -1,4 +1,4 @@
-search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
+search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
                            verbose = TRUE, opt, search_terms = NULL,
                            increasing_order = TRUE) {
   ## initialize the forward selection
@@ -6,7 +6,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
   projfun <- .get_proj_handle(family, opt$regul)
 
   formula <- refmodel$formula
-  iq <- ceiling(quantile(1:nv_max, 1:10 / 10))
+  iq <- ceiling(quantile(1:nterms_max, 1:10 / 10))
   if (is.null(search_terms)) {
     terms_ <- split_formula(formula)
   } else {
@@ -27,7 +27,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
   submodels <- c()
 
   ## start adding terms one at a time
-  while (count_terms_chosen(reduce_models(chosen)) < nv_max
+  while (count_terms_chosen(reduce_models(chosen)) < nterms_max
   & count_terms_chosen(chosen) < total_terms) {
     notchosen <- setdiff(current_terms, chosen)
 
@@ -81,7 +81,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nv_max,
 }
 
 #' copied over from search until we resolve the TODO below
-search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max,
+search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
                                 penalty, opt) {
 
   ## predictive mean and variance of the reference model (with parameters
@@ -95,12 +95,12 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max,
   }
 
   ## L1-penalized projection (projection path).
-  ## (Notice: here we use pmax = nv_max+1 so that the computation gets carried
+  ## (Notice: here we use pmax = nterms_max+1 so that the computation gets carried
   ## until all the way down to the least regularization also for model size
-  ## nv_max)
+  ## nterms_max)
   search <- glm_elnet(d_train$x, mu, family,
     lambda_min_ratio = opt$lambda_min_ratio, nlambda = opt$nlambda,
-    pmax = nv_max + 1, pmax_strict = FALSE, offset = d_train$offset,
+    pmax = nterms_max + 1, pmax_strict = FALSE, offset = d_train$offset,
     weights = d_train$weights, intercept = intercept, obsvar = v,
     penalty = penalty, thresh = opt$thresh)
 
@@ -122,12 +122,12 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max,
   nvar <- length(order)
   n <- nrow(p_ref$mu)
   out <- list(
-    alpha = rep(NA, nv_max + 1),
-    beta = matrix(0, nrow = nv_max, ncol = nv_max + 1),
-    lambda = rep(NA, nv_max + 1),
-    w = matrix(NA, nrow = n, ncol = nv_max + 1)
+    alpha = rep(NA, nterms_max + 1),
+    beta = matrix(0, nrow = nterms_max, ncol = nterms_max + 1),
+    lambda = rep(NA, nterms_max + 1),
+    w = matrix(NA, nrow = n, ncol = nterms_max + 1)
   )
-  for (k in 0:nv_max) {
+  for (k in 0:nterms_max) {
     if (k == 0) {
       out$alpha[1] <- search$beta0[1]
       out$lambda[1] <- search$lambda[1]
@@ -154,19 +154,19 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nv_max,
     }
   }
 
-  if (length(entered_variables) < nv_max) {
+  if (length(entered_variables) < nterms_max) {
     if (length(setdiff(notentered_variables,
                        which(penalty == Inf))) > 0) {
-      warning("Less than nv_max variables entered L1-path. ",
+      warning("Less than nterms_max variables entered L1-path. ",
               "Try reducing lambda_min_ratio. ")
     }
   }
 
-  out$solution_terms <- order[1:nv_max]
+  out$solution_terms <- order[1:nterms_max]
   return(out)
 }
 
-search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty,
+search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
                       opt) {
   x <- model.matrix(refmodel$formula, refmodel$fetch_data())
   ## it's important to keep the original order because that's the order
@@ -175,21 +175,21 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nv_max, penalty,
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
     p_ref, list(refmodel, x = x[, -1]), family,
-    intercept, nv_max, penalty, opt
+    intercept, nterms_max, penalty, opt
   )
   solution_terms <- terms_[search_path$solution_terms]
-  sub_fits <- lapply(0:nv_max, function(nv) {
-    if (nv == 0) {
+  sub_fits <- lapply(0:nterms_max, function(nterms) {
+    if (nterms == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
     } else {
-      formula <- make_formula(solution_terms[seq_len(nv)])
-      beta <- search_path$beta[seq_len(nv), nv + 1, drop = FALSE]
+      formula <- make_formula(solution_terms[seq_len(nterms)])
+      beta <- search_path$beta[seq_len(nterms), nterms + 1, drop = FALSE]
     }
     sub <- list(
-      alpha = search_path$alpha[nv + 1],
+      alpha = search_path$alpha[nterms + 1],
       beta = beta,
-      w = search_path$w[, nv + 1],
+      w = search_path$w[, nterms + 1],
       formula = formula,
       x = x
     )

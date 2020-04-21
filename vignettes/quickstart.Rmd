@@ -85,13 +85,13 @@ mcmc_areas(as.matrix(fit),
 ```
 ```{r, fig.width=6, fig.height=2}
 # Visualise the projected three most relevant variables
-proj <- project(vs, nv = 3, ns = 500)
+proj <- project(vs, nterms = 3, ns = 500)
 mcmc_areas(as.matrix(proj)) + coord_cartesian(xlim = c(-2, 2))
 ```
 
 We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r}
-pred <- proj_linpred(vs, xnew=df_gaussian$x, ynew=df_gaussian$y, nv = 6, integrated = TRUE)
+pred <- proj_linpred(vs, xnew=df_gaussian$x, ynew=df_gaussian$y, nterms = 6, integrated = TRUE)
 ```
 
 Visualize the predictions
@@ -104,7 +104,7 @@ ggplot() +
 
 We also obtain draws from the projected predictive distribution. Here's an example prediction for the first data point using 6 variables (the observed value is marked by the red line)
 ```{r, fig.height=3, fig.width=5}
-y1_rep <- proj_predict(vs, xnew=df_gaussian$x[1,,drop=F], nv=6, seed=7560)
+y1_rep <- proj_predict(vs, xnew=df_gaussian$x[1,,drop=F], nterms=6, seed=7560)
 qplot(as.vector(y1_rep), bins=25) +
   geom_vline(xintercept = df_gaussian$y[1], color='red') +
   xlab('y1_rep')
@@ -245,7 +245,7 @@ These can be computed by passing in the original data as "reference", and then u
 ```{r, fig.width=5, fig.height=2.5, results='hide', message=F, warning=F, cache=T}
 # initialize the data reference
 dref <- init_refmodel(x,y,family=gaussian())
-lasso <- cv_varsel(dref, K=10, method='l1', nv_max=30) # tenfold CV for Lasso
+lasso <- cv_varsel(dref, K=10, method='l1', nterms_max=30) # tenfold CV for Lasso
 varsel_plot(lasso, stats='rmse')
 ```
 

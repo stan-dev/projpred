@@ -7,9 +7,9 @@ if (require(rstanarm) && require(brms)) {
   seed <- 1235
   set.seed(seed)
   n <- 50
-  nv <- 5
-  x <- matrix(rnorm(n * nv, 0, 1), n, nv)
-  b <- runif(nv) - 0.5
+  nterms <- 5
+  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
+  b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
   weights <- sample(1:4, n, replace = TRUE)
   chains <- 2

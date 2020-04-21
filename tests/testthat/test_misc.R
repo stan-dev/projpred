@@ -5,9 +5,9 @@ context("miscellaneous")
 if (require(brms)) {
   set.seed(1235)
   n <- 40
-  nv <- 5
-  x <- matrix(rnorm(n * nv, 0, 1), n, nv)
-  b <- runif(nv) - 0.5
+  nterms <- 5
+  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
+  b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
   weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
@@ -77,12 +77,12 @@ if (require(brms)) {
         solution_terms <- c(1, 2)
         foo <- project(fit,
           solution_terms = solution_terms,
-          number_samples = 100, seed = seed
+          ndraws = 100, seed = seed
         )
         r1 <- rnorm(s)
         foo <- project(fit,
           solution_terms = solution_terms,
-          number_samples = 100, seed = seed
+          ndraws = 100, seed = seed
         )
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
@@ -134,11 +134,11 @@ if (require(brms)) {
         solution_terms <- c(1, 2)
         foo <- project(fit,
           solution_terms = solution_terms,
-          number_clusters = 10, seed = seed
+          nclusters = 10, seed = seed
         )
         bar <- project(fit,
           solution_terms = solution_terms,
-          number_clusters = 10, seed = seed
+          nclusters = 10, seed = seed
         )
         expect_equal(foo, bar)
 
