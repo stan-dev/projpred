@@ -92,7 +92,6 @@ cv_varsel <- function(fit, method = NULL, cv_method = NULL,
   number_clusters_pred <- args$number_clusters_pred
   number_samples_pred <- args$number_samples_pred
   search_terms <- args$search_terms
-  has_group_features <- formula_contains_group_terms(refmodel$formula)
 
   ## arguments specific to this function
   args <- parse_args_cv_varsel(
@@ -188,9 +187,7 @@ cv_varsel <- function(fit, method = NULL, cv_method = NULL,
   )
   class(vs) <- "cvsel"
   vs$suggested_size <- suggest_size(vs,
-    warnings = FALSE,
-    has_group_features = has_group_features,
-    search_terms = search_terms
+    warnings = FALSE
   )
   if (verbose) {
     print("Done.")

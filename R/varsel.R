@@ -166,9 +166,7 @@ varsel <- function(object, d_test = NULL, method = NULL, number_samples = NULL,
   ## suggest model size
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs,
-    warnings = FALSE,
-    has_group_features = has_group_features,
-    search_terms = search_terms
+    warnings = FALSE
   )
 
   return(vs)
