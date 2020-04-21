@@ -236,7 +236,7 @@ if (require(rstanarm) && require(brms)) {
       data = df_gauss, family = gaussian(),
       chains = 2, seed = 1235, iter = 400
     )
-    simp_list <- list(glm = glm_simp)
+    simp_list <- list(glm = lm_simp)
 
     cv_kf_list <- list(
       l1 = lapply(simp_list, cvsf, "L1", "kfold", K = 2),
@@ -251,17 +251,17 @@ if (require(rstanarm) && require(brms)) {
   })
 
   test_that('cv_varsel returns an object of type "cvsel"', {
-    for (i in 1:length(cvs_list)) {
-      for (j in 1:length(cvs_list[[i]])) {
+    for (i in seq_len(length(cvs_list))) {
+      for (j in seq_len(length(cvs_list[[i]]))) {
         expect_s3_class(cvs_list[[i]][[j]], "cvsel")
       }
     }
   })
 
 test_that("object returned by cv_varsel contains the relevant fields", {
-  for (i in 1:length(cvs_list)) {
+  for (i in seq_len(length(cvs_list))) {
     i_inf <- names(cvs_list)[i]
-    for (j in 1:length(cvs_list[[i]])) {
+    for (j in seq_len(length(cvs_list[[i]]))) {
       j_inf <- names(cvs_list[[i]])[j]
       # refmodel seems legit
       expect_s3_class(cvs_list[[i]][[j]]$refmodel, "refmodel")
@@ -352,13 +352,15 @@ test_that("object returned by cv_varsel contains the relevant fields", {
   })
 
   test_that("Having something else than stan_glm as the fit throws an error", {
-    expect_error(cv_varsel(rnorm(5), verbose = FALSE), regexp = "no applicable method")
+    expect_error(cv_varsel(rnorm(5), verbose = FALSE),
+                 regexp = "no applicable method")
   })
 
-  test_that("object returned by cv_varsel, kfold contains the relevant fields", {
-    for (i in 1:length(cv_kf_list)) {
+  test_that(paste("object returned by cv_varsel, kfold contains the relevant",
+                  "fields")) {
+    for (i in seq_len(length(cv_kf_list))) {
       i_inf <- names(cv_kf_list)[i]
-      for (j in 1:length(cv_kf_list[[i]])) {
+      for (j in seq_len(length(cv_kf_list[[i]]))) {
         j_inf <- names(cv_kf_list[[i]])[j]
         # solution_terms seems legit
         expect_length(cv_kf_list[[i]][[j]]$solution_terms, nv)
@@ -381,7 +383,8 @@ test_that("object returned by cv_varsel contains the relevant fields", {
           info = paste(i_inf, j_inf)
         )
         expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nv + 1)
-        expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]], c("mu", "lppd"),
+        expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]],
+                     c("mu", "lppd", "w"),
           ignore.order = TRUE, info = paste(i_inf, j_inf)
         )
         expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c("mu", "lppd"),
@@ -401,7 +404,8 @@ test_that("object returned by cv_varsel contains the relevant fields", {
         info = paste(i_inf, j_inf)
         )
         # pct_solution_terms_cv seems legit
-        expect_equal(dim(cv_kf_list[[i]][[j]]$pct_solution_terms_cv), c(nv, nv + 1),
+        expect_equal(dim(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
+                     c(nv, nv + 1),
           info = paste(i_inf, j_inf)
         )
         expect_true(all(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
@@ -466,7 +470,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     # summaries seems legit
     expect_named(fit_cv$summaries, c("sub", "ref"))
     expect_length(fit_cv$summaries$sub, nv + 1)
-    expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd"),
+    expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd", "w"),
       ignore.order = TRUE
     )
     expect_named(fit_cv$summaries$ref, c("mu", "lppd"),

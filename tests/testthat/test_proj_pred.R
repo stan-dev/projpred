@@ -58,15 +58,15 @@ if (require(rstanarm)) {
 
   test_that("proj_linpred: xnew is specified correctly", {
     expect_error(
-      proj_linpred(proj_vind_list),
+      proj_linpred(proj_solution_terms_list),
       'argument "xnew" is missing, with no default'
     )
     expect_error(
-      proj_linpred(proj_vind_list, xnew = NULL),
+      proj_linpred(proj_solution_terms_list, xnew = NULL),
       "must be a data.frame or a matrix"
     )
     expect_error(
-      proj_linpred(proj_vind_list, xnew = x[, 1]),
+      proj_linpred(proj_solution_terms_list, xnew = x[, 1]),
       "must be a data.frame or a matrix"
     )
     expect_error(
@@ -90,9 +90,9 @@ if (require(rstanarm)) {
   })
 
   test_that("output of proj_linpred is sensible with project-object as input", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      pl <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x = x))
+    for (i in 1:length(proj_solution_terms_list)) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      pl <- proj_linpred(proj_solution_terms_list[[i]], xnew = data.frame(x = x))
     }
     for (i in 1:length(proj_all_list)) {
       i_inf <- names(proj_all_list)[i]
@@ -112,7 +112,7 @@ if (require(rstanarm)) {
       "is not a variable selection -object"
     )
     expect_error(
-      proj_linpred(c(proj_vind_list, list(x)), xnew = x),
+      proj_linpred(c(proj_solution_terms_list, list(x)), xnew = x),
       "only works with objects returned by"
     )
   })
@@ -170,16 +170,16 @@ if (require(rstanarm)) {
   })
 
   test_that("proj_linpred: specifying weights has an expected effect", {
-    for (i in 1:length(proj_vind_list)) {
+    for (i in 1:length(proj_solution_terms_list)) {
       # for binomial models weights have to be specified
-      if (proj_vind_list[[i]]$family$family != "binomial") {
-        i_inf <- names(proj_vind_list)[i]
+      if (proj_solution_terms_list[[i]]$family$family != "binomial") {
+        i_inf <- names(proj_solution_terms_list)[i]
         weightsnew <- sample(1:4, n, replace = TRUE)
-        plw <- proj_linpred(proj_vind_list[[i]],
+        plw <- proj_linpred(proj_solution_terms_list[[i]],
           xnew = data.frame(x = x), ynew = ys[[i]],
           weightsnew = weightsnew
         )
-        pl <- proj_linpred(proj_vind_list[[i]],
+        pl <- proj_linpred(proj_solution_terms_list[[i]],
           xnew = data.frame(x = x),
           ynew = ys[[i]],
           weightsnew = weights
@@ -193,13 +193,13 @@ if (require(rstanarm)) {
   })
 
   test_that("proj_linpred: specifying offset has an expected effect", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      plo <- proj_linpred(proj_vind_list[[i]],
+    for (i in 1:length(proj_solution_terms_list)) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      plo <- proj_linpred(proj_solution_terms_list[[i]],
         xnew = data.frame(x = x),
         ynew = ys[[i]], weightsnew = weights, offsetnew = offset
       )
-      pl <- proj_linpred(proj_vind_list[[i]],
+      pl <- proj_linpred(proj_solution_terms_list[[i]],
         xnew = data.frame(x = x),
         ynew = ys[[i]], weightsnew = weights
       )
@@ -211,25 +211,26 @@ if (require(rstanarm)) {
   })
 
   test_that("proj_linpred: specifying transform has an expected effect", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      plt <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x = x),
-                          transform = TRUE)
-      plf <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x = x),
-                          transform = FALSE)
-      expect_equal(proj_vind_list[[i]]$family$linkinv(plf$pred), plt$pred,
-                   info = i_inf)
+    for (i in 1:length(proj_solution_terms_list)) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      plt <- proj_linpred(proj_solution_terms_list[[i]],
+                          xnew = data.frame(x = x), transform = TRUE)
+      plf <- proj_linpred(proj_solution_terms_list[[i]],
+                          xnew = data.frame(x = x), transform = FALSE)
+      expect_equal(proj_solution_terms_list[[i]]$family$linkinv(plf$pred),
+                   plt$pred, info = i_inf)
     }
   })
 
   test_that("proj_linpred: specifying integrated has an expected effect", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      plt <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x = x),
-                          integrated = TRUE)
-      plf <- proj_linpred(proj_vind_list[[i]], xnew = data.frame(x = x),
-                          integrated = FALSE)
-      expect_equal(as.vector(proj_vind_list[[i]]$weights %*% plf$pred),
+    for (i in 1:length(proj_solution_terms_list)) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      plt <- proj_linpred(proj_solution_terms_list[[i]],
+                          xnew = data.frame(x = x), integrated = TRUE)
+      plf <- proj_linpred(proj_solution_terms_list[[i]],
+                          xnew = data.frame(x = x), integrated = FALSE)
+      expect_equal(as.vector(proj_solution_terms_list[[i]]$weights %*%
+                             plf$pred),
                    plt$pred, info = i_inf)
     }
   })
@@ -270,9 +271,9 @@ if (require(rstanarm)) {
   })
 
   test_that("proj_linpred: providing xnew as a data frame works as expected", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      pl <- proj_predict(proj_vind_list[[i]],
+    for (i in 1:length(proj_solution_terms_list)) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      pl <- proj_predict(proj_solution_terms_list[[i]],
         xnew = data.frame(x = x)
       )
       expect_equal(ncol(pl), n, info = i_inf)
@@ -295,15 +296,15 @@ if (require(rstanarm)) {
 
   test_that("proj_predict: xnew is specified correctly", {
     expect_error(
-      proj_predict(proj_vind_list),
+      proj_predict(proj_solution_terms_list),
       'argument "xnew" is missing, with no default'
     )
     expect_error(
-      proj_predict(proj_vind_list, xnew = NULL),
+      proj_predict(proj_solution_terms_list, xnew = NULL),
       "must be a data.frame or a matrix"
     )
     expect_error(
-      proj_predict(proj_vind_list, xnew = x[, 1]),
+      proj_predict(proj_solution_terms_list, xnew = x[, 1]),
       "must be a data.frame or a matrix"
     )
     expect_error(
@@ -312,7 +313,7 @@ if (require(rstanarm)) {
       "number of columns in xnew does not match"
     )
     expect_error(
-      proj_predict(proj_vind_list,
+      proj_predict(proj_solution_terms_list,
         xnew = data.frame(x = x)[, 1:2],
         solution_terms = 1:3
       ),
@@ -332,9 +333,10 @@ if (require(rstanarm)) {
   })
 
   test_that("output of proj_predict is sensible with project-object as input", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      pl <- proj_predict(proj_vind_list[[i]], xnew = data.frame(x = x))
+    for (i in 1:length(proj_solution_terms_list)) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      pl <- proj_predict(proj_solution_terms_list[[i]],
+                         xnew = data.frame(x = x))
       expect_equal(ncol(pl), n, info = i_inf)
     }
     for (i in 1:length(proj_all_list)) {
@@ -358,7 +360,8 @@ if (require(rstanarm)) {
       "is not a variable selection -object"
     )
     expect_error(
-      proj_predict(c(proj_vind_list, list(x)), xnew = data.frame(x = x)),
+      proj_predict(c(proj_solution_terms_list, list(x)),
+                   xnew = data.frame(x = x)),
       "only works with objects returned by"
     )
   })
@@ -368,7 +371,7 @@ if (require(rstanarm)) {
       pl <- proj_predict(vs_list[[i]], xnew = data.frame(x = x), ynew = ys[[i]],
                          nv = 0:3)
       pl2 <- proj_predict(vs_list[[i]], xnew = data.frame(x = x), nv = 0:3)
-      for (j in 1:length(pl)) {
+      for (j in seq_len(length(pl))) {
         expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
       }
     }
@@ -384,9 +387,9 @@ if (require(rstanarm)) {
   })
 
   test_that("proj_predict: specifying weightsnew has an expected effect", {
-    pl <- proj_predict(proj_vind_list[["binom"]], xnew = data.frame(x = x),
-                       seed = seed)
-    plw <- proj_predict(proj_vind_list[["binom"]],
+    pl <- proj_predict(proj_solution_terms_list[["binom"]],
+                       xnew = data.frame(x = x), seed = seed)
+    plw <- proj_predict(proj_solution_terms_list[["binom"]],
       xnew = data.frame(x = x), seed = seed,
       weightsnew = weights
     )
@@ -394,13 +397,13 @@ if (require(rstanarm)) {
   })
 
   test_that("proj_predict: specifying offsetnew has an expected effect", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      pl <- proj_predict(proj_vind_list[[i]],
+    for (i in seq_len(length(proj_solution_terms_list))) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      pl <- proj_predict(proj_solution_terms_list[[i]],
         xnew = data.frame(x = x), draws = iter,
         seed = seed
       )
-      plo <- proj_predict(proj_vind_list[[i]],
+      plo <- proj_predict(proj_solution_terms_list[[i]],
         xnew = data.frame(x = x), draws = iter,
         seed = seed, offsetnew = offset
       )
@@ -409,20 +412,20 @@ if (require(rstanarm)) {
   })
 
   test_that("proj_predict: specifying draws has an expected effect", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      pl <- proj_predict(proj_vind_list[[i]], xnew = data.frame(x = x),
+    for (i in 1:length(proj_solution_terms_list)) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      pl <- proj_predict(proj_solution_terms_list[[i]], xnew = data.frame(x = x),
                          draws = iter)
       expect_equal(dim(pl), c(iter, n))
     }
   })
 
   test_that("proj_predict: specifying seed_sam has an expected effect", {
-    for (i in 1:length(proj_vind_list)) {
-      i_inf <- names(proj_vind_list)[i]
-      pl1 <- proj_predict(proj_vind_list[[i]], xnew = data.frame(x = x),
+    for (i in 1:length(proj_solution_terms_list)) {
+      i_inf <- names(proj_solution_terms_list)[i]
+      pl1 <- proj_predict(proj_solution_terms_list[[i]], xnew = data.frame(x = x),
                           seed = seed)
-      pl2 <- proj_predict(proj_vind_list[[i]], xnew = data.frame(x = x),
+      pl2 <- proj_predict(proj_solution_terms_list[[i]], xnew = data.frame(x = x),
                           seed = seed)
       expect_equal(pl1, pl2, info = i_inf)
     }

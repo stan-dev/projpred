@@ -103,7 +103,7 @@ test_that(paste("output of cv_varsel is sensible with only data provided as",
     # summaries seems legit
     expect_named(cvvsd_list[[i]]$summaries, c("sub", "ref"))
     expect_equal(length(cvvsd_list[[i]]$summaries$sub), nv + 1)
-    expect_named(cvvsd_list[[i]]$summaries$sub[[1]], c("mu", "lppd"))
+    expect_named(cvvsd_list[[i]]$summaries$sub[[1]], c("mu", "lppd", "w"))
     expect_named(cvvsd_list[[i]]$summaries$ref, c("mu", "lppd"))
   }
 })
