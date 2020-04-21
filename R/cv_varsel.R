@@ -625,7 +625,7 @@ kfold_varsel <- function(refmodel, method, nv_max, number_samples,
     weights = refmodel$wobs[fold]
   )
   k_refmodel$fetch_data <- fetch_fold
-  k_refmodel$number_clusters_pred <- min(NCOL(refmodel$mu), 5)
+  k_refmodel$number_clusters_pred <- min(NCOL(k_refmodel$mu), 5)
   return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
 }
 
