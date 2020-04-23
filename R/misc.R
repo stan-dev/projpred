@@ -129,7 +129,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 }
 
 .validate_vsel_object_stats <- function(object, stats) {
-  if (!inherits(object, c("vsel", "cvsel"))) {
+  if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. ",
          "Run variable selection first")
   }
@@ -407,7 +407,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     stop(paste(
       "Numerical problems with inverting the covariance matrix. Possibly a",
       "problem with the convergence of the stan model?, If not, consider",
-      "stopping the selection early by setting the variable nterms_max accordingly."
+      "stopping the selection early by setting the variable nterms_max",
+      "accordingly."
     ))
   } else {
     stop(e$message)

@@ -288,7 +288,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: works as expected from a cvsel object", {
+  test_that("project: works as expected from a vsel object", {
     SW({
       cvs <- cv_varsel(fit_binom, nterms_max = 3, verbose = FALSE)
       p <- project(cvs, nterms = 3)

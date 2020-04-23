@@ -3,72 +3,33 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
                            increasing_order = TRUE) {
   ## initialize the forward selection
   ## proj performs the projection over draws
-  projfun <- .get_proj_handle(family, opt$regul)
+  projfun <- .get_proj_handle(refmodel, p_ref, family, opt$regul, intercept)
 
   formula <- refmodel$formula
-  iq <- ceiling(quantile(1:nterms_max, 1:10 / 10))
+  iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
   if (is.null(search_terms)) {
-    terms_ <- split_formula(formula)
+    allterms <- split_formula(formula)
   } else {
-    terms_ <- search_terms
-  }
-  if (increasing_order) {
-    terms_ <- sort_submodels_by_size(unname(unlist(terms_)))
-    order <- 1:length(terms_)
-    current <- order[1]
-    current_terms <- terms_[[current]]
-  } else {
-    order <- NULL
-    current_terms <- terms_
+    allterms <- search_terms
   }
 
   chosen <- NULL
   total_terms <- count_terms_in_subformula(formula)
+  stop_search <- min(total_terms, nterms_max)
   submodels <- c()
 
-  ## start adding terms one at a time
-  while (count_terms_chosen(reduce_models(chosen)) < nterms_max
-  & count_terms_chosen(chosen) < total_terms) {
-    notchosen <- setdiff(current_terms, chosen)
+  for (size in seq_len(stop_search)) {
+    cands <- select_possible_terms_size(chosen, allterms, size = size)
+    sub <- sapply(cands, projfun)
 
-    ## if we have included all submodels in a class start with next class this
-    ## only happens with multilevel or interaction models, where some terms may
-    ## include more than one variable. In GLMs every term represents a single
-    ## variable and therefore all terms are within size==1
-    if (length(notchosen) == 0 & !is.null(order)) {
-      if (current < order[length(order)]) {
-        current <- current + 1
-        current_terms <- terms_[[current]]
-        notchosen <- setdiff(current_terms, chosen)
-
-        already_selected <- lapply(notchosen, function(x) {
-          if (is_next_submodel_redundant(chosen, x)) x else NA
-        })
-
-        ## if redundant models add the terms to the list so we don't iterate
-        ## forever
-        chosen <- c(chosen,
-                    unname(unlist(already_selected[!is.na(already_selected)])))
-      }
-    }
-
-    ## only add candidates that are not redundant with previous chosen submodels
-    cands <- lapply(notchosen, function(x) {
-      if (is_next_submodel_redundant(chosen, x)) NA else c(chosen, x)
-    })
-
-    ## remove already selected terms
-    cands <- cands[!is.na(cands)]
-
-    p_sub <- sapply(cands, projfun, p_ref, refmodel, intercept)
-
-    imin <- which.min(sapply(seq_len(NCOL(p_sub)), function(i) {
-      min(unlist(p_sub["kl", i]))
+    ## select best candidate
+    imin <- which.min(sapply(seq_len(NCOL(sub)), function(i) {
+      min(unlist(sub["kl", i]))
     }))
-    chosen <- c(chosen, notchosen[imin])
+    chosen <- c(chosen, cands[imin])
 
     ## append submodels
-    submodels <- c(submodels, p_sub["sub_fit", imin])
+    submodels <- c(submodels, sub["sub_fit", imin])
 
     if (verbose && length(chosen) %in% iq) {
       print(paste0(names(iq)[max(which(length(chosen) == iq))],
@@ -77,7 +38,8 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
   }
 
   ## reduce chosen to a list of non-redundant accumulated models
-  list(solution_terms = setdiff(reduce_models(chosen), "1"), sub_fits = submodels)
+  return(list(solution_terms = setdiff(reduce_models(chosen), "1"),
+              sub_fits = submodels))
 }
 
 #' copied over from search until we resolve the TODO below
@@ -95,9 +57,9 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   }
 
   ## L1-penalized projection (projection path).
-  ## (Notice: here we use pmax = nterms_max+1 so that the computation gets carried
-  ## until all the way down to the least regularization also for model size
-  ## nterms_max)
+  ## (Notice: here we use pmax = nterms_max+1 so that the computation gets
+  ## carried until all the way down to the least regularization also for model
+  ## size nterms_max)
   search <- glm_elnet(d_train$x, mu, family,
     lambda_min_ratio = opt$lambda_min_ratio, nlambda = opt$nlambda,
     pmax = nterms_max + 1, pmax_strict = FALSE, offset = d_train$offset,

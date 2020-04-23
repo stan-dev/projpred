@@ -276,7 +276,7 @@ split_group_term <- function(term) {
         function(v) {
           paste0(
             split_interaction_term(v), " + ",
-            "(", v, " | ", group, ")"
+            "(", split_interaction_term(v), " | ", group, ")"
           )
         }
       )
@@ -309,7 +309,8 @@ split_group_term <- function(term) {
       paste0(v, " + ", "(0 + ", v, " | ", group, ")")
     })
     group_terms <- c(group_terms, lapply(int_v, function(v) {
-      paste0(split_interaction_term(v), " + ", "(0 + ", v, " | ", group, ")")
+      paste0(split_interaction_term(v), " + ",
+             "(0 + ", split_interaction_term(v), " | ", group, ")")
     }))
   }
 
@@ -451,7 +452,7 @@ count_terms_in_group_term <- function(term) {
     terms_ <- c(terms_, "1")
   }
 
-  return(length(terms_) + tt$global_intercept)
+  return(length(terms_))
 }
 
 #' Given a list of formulas, sort them by the number of terms in them.
@@ -464,7 +465,8 @@ sort_submodels_by_size <- function(submodels) {
 
   search_terms <- list()
   for (size in unique(ordered$size)) {
-    search_terms[[size]] <- as.character(ordered$submodels[ordered$size == size])
+    search_terms[[size]] <-
+      as.character(ordered$submodels[ordered$size == size])
   }
 
   ord_list <- search_terms
@@ -472,6 +474,45 @@ sort_submodels_by_size <- function(submodels) {
   ord_list_nona <- lapply(ord_list, function(l) l[!is.na(l)])
   ## remove NA at the submodels level
   ord_list_nona[!is.na(ord_list_nona)]
+}
+
+#' Select next possible terms without surpassing a specific size
+#' @param chosen A list of currently chosen terms
+#' @param terms A list of all possible terms
+#' @param size Maximum allowed size
+select_possible_terms_size <- function(chosen, terms, size) {
+  if (size < 1) {
+    stop("size must be at least 1")
+  }
+
+  valid_submodels <- lapply(terms, function(x) {
+    current <- count_terms_chosen(chosen)
+    increment <- size - current
+    if ((count_terms_chosen(c(chosen, x)) - current) == increment)
+      x
+    else
+      NA
+  })
+  valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
+  if (length(chosen) > 0) {
+    add_chosen <- paste0(paste(chosen, collapse = "+"), " + ")
+    remove_chosen <- paste0(" - ", paste(chosen, collapse = "-"))
+  } else {
+    add_chosen <- ""
+    remove_chosen <- ""
+  }
+  full_valid_submodels <- unique(unlist(lapply(valid_submodels, function(x)
+    to_character_rhs(flatten_formula(make_formula(
+      paste(add_chosen, x, remove_chosen)))))))
+  return(full_valid_submodels)
+}
+
+#' Cast a right hand side formula to a character vector.
+#' @param rhs a right hand side formula of the type . ~ x + z + ...
+#' @return a character vector containing only the right hand side.
+to_character_rhs <- function(rhs) {
+  chr <- as.character(rhs)
+  return(chr[length(chr)])
 }
 
 #' Given a refmodel structure, count the number of terms included.

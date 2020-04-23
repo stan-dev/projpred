@@ -147,11 +147,11 @@ if (require(rstanarm)) {
       i_inf <- names(vs_list)[i]
       pl <- proj_linpred(vs_list[[i]],
         newdata = df_binom, ynew = ys[[i]],
-        weightsnew = df_binom$weights, nterms = 0:nterms
+        weightsnew = ~weights, nterms = 0:nterms
       )
       pl2 <- proj_linpred(vs_list[[i]],
-        newdata = data.frame(x = x),
-        weightsnew = weights, nterms = 0:nterms
+        newdata = data.frame(x = x, weights = weights),
+        weightsnew = ~weights, nterms = 0:nterms
       )
       for (j in 1:length(pl)) {
         expect_named(pl[[j]], c("pred", "lpd"))
@@ -178,13 +178,13 @@ if (require(rstanarm)) {
         i_inf <- names(proj_solution_terms_list)[i]
         weightsnew <- sample(1:4, n, replace = TRUE)
         plw <- proj_linpred(proj_solution_terms_list[[i]],
-          newdata = data.frame(x = x), ynew = ys[[i]],
-          weightsnew = weightsnew
+          newdata = data.frame(x = x, weights = weightsnew), ynew = ys[[i]],
+          weightsnew = ~weights
         )
         pl <- proj_linpred(proj_solution_terms_list[[i]],
-          newdata = data.frame(x = x),
+          newdata = data.frame(x = x, weights = weights),
           ynew = ys[[i]],
-          weightsnew = weights
+          weightsnew = ~weights
         )
         expect_named(plw, c("pred", "lpd"))
         expect_equal(ncol(plw$pred), n, info = i_inf)
@@ -198,12 +198,12 @@ if (require(rstanarm)) {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       plo <- proj_linpred(proj_solution_terms_list[[i]],
-        newdata = data.frame(x = x),
-        ynew = ys[[i]], weightsnew = weights, offsetnew = offset
+        newdata = data.frame(x = x, weights = weights, offset = offset),
+        ynew = ys[[i]], weightsnew = ~weights, offsetnew = ~offset
       )
       pl <- proj_linpred(proj_solution_terms_list[[i]],
-        newdata = data.frame(x = x),
-        ynew = ys[[i]], weightsnew = weights
+        newdata = data.frame(x = x, weights = weights),
+        ynew = ys[[i]], weightsnew = ~weights
       )
       expect_named(plo, c("pred", "lpd"))
       expect_equal(ncol(plo$pred), n, info = i_inf)
@@ -326,7 +326,8 @@ if (require(rstanarm)) {
   test_that("output of proj_predict is sensible with fit-object as input", {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
-      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x), nterms = 0:nterms)
+      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+                         nterms = 0:nterms)
       expect_length(pl, nterms + 1)
       for (j in 1:length(pl)) {
         expect_equal(ncol(pl[[j]]), n, info = i_inf)
@@ -370,9 +371,10 @@ if (require(rstanarm)) {
 
   test_that("proj_predict: specifying ynew has an expected effect", {
     for (i in seq_along(vs_list)) {
-      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x), ynew = ys[[i]],
-                         nterms = 0:3)
-      pl2 <- proj_predict(vs_list[[i]], newdata = data.frame(x = x), nterms = 0:3)
+      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+                         ynew = ys[[i]], nterms = 0:3)
+      pl2 <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+                          nterms = 0:3)
       for (j in seq_len(length(pl))) {
         expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
       }
@@ -392,8 +394,8 @@ if (require(rstanarm)) {
     pl <- proj_predict(proj_solution_terms_list[["binom"]],
                        newdata = data.frame(x = x), seed = seed)
     plw <- proj_predict(proj_solution_terms_list[["binom"]],
-      newdata = data.frame(x = x), seed = seed,
-      weightsnew = weights
+      newdata = data.frame(x = x, weights = weights), seed = seed,
+      weightsnew = ~weights
     )
     expect_true(sum(pl != plw) > 0)
   })
@@ -406,8 +408,8 @@ if (require(rstanarm)) {
         seed = seed
       )
       plo <- proj_predict(proj_solution_terms_list[[i]],
-        newdata = data.frame(x = x), ndraws = iter,
-        seed = seed, offsetnew = offset
+        newdata = data.frame(x = x, offset = offset), ndraws = iter,
+        seed = seed, offsetnew = ~offset
       )
       expect_true(sum(pl != plo) > 0, info = i_inf)
     }

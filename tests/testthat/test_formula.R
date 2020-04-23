@@ -58,7 +58,7 @@ test_that("check that we properly split a formula", {
     c(
       "1", "x", "z", "x + z + x:z", "(1 | g)", "x + (x | g)", "z + (z | g)",
       "x + (1 | g)", "z + (1 | g)", "x + z + x:z + (1 | g)",
-      "x + z + x:z + (x:z | g)"
+      "x + z + x:z + (x + z + x:z | g)"
     ),
     sp
   ), 0)
@@ -70,7 +70,7 @@ test_that("check that we properly split a formula", {
     c(
       "(1 | g) + 0", "x + (x | g) + 0", "z + (z | g) + 0",
       "x + (1 | g) + 0", "z + (1 | g) + 0", "x + z + x:z + (1 | g) + 0",
-      "x + z + x:z + (x:z | g) + 0"
+      "x + z + x:z + (x + z + x:z | g) + 0"
     ),
     sp
   ), 0)
@@ -82,7 +82,7 @@ test_that("check that we properly split a formula", {
     c(
       "(1 | g)", "x + (x | g)", "z + (z | g)",
       "x + (1 | g)", "z + (1 | g)", "x + z + x:z + (1 | g)",
-      "x + z + x:z + (x:z | g)"
+      "x + z + x:z + (x + z + x:z | g)"
     ),
     sp
   ), 0)
@@ -92,7 +92,8 @@ test_that("check that we properly split a formula", {
   expect_length(sp, 4)
   expect_length(setdiff(
     c(
-      "1", "x + (0 + x | g)", "z + (0 + z | g)", "x + z + x:z + (0 + x:z | g)"
+      "1", "x + (0 + x | g)", "z + (0 + z | g)",
+      "x + z + x:z + (0 + x + z + x:z | g)"
     ),
     sp
   ), 0)
@@ -156,14 +157,14 @@ test_that("check that we count terms correctly", {
   expect_equal(count_terms_in_subformula(formula), 4)
 
   formula <- y ~ x + z + x:z + (1 | g)
-  expect_equal(count_terms_in_subformula(formula), 6)
+  expect_equal(count_terms_in_subformula(formula), 5)
 
   formula <- y ~ x + z + x:z + (x | g)
-  expect_equal(count_terms_in_subformula(formula), 7)
+  expect_equal(count_terms_in_subformula(formula), 6)
 
   expect_equal(count_terms_chosen(c("x", "z")), 3)
   expect_equal(count_terms_chosen(c("x", "z", "x:z")), 4)
-  expect_equal(count_terms_chosen(c("x", "z", "x:z", "x + (x | g)")), 7)
+  expect_equal(count_terms_chosen(c("x", "z", "x:z", "x + (x | g)")), 6)
 })
 
 test_that("check that we correctly sort models by size", {

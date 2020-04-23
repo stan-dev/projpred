@@ -51,7 +51,7 @@
 #' @param ... Additional arguments to be passed to the
 #'   \code{get_refmodel}-function.
 #'
-#' @return An object of type \code{cvsel} that contains information about the
+#' @return An object of type \code{vsel} that contains information about the
 #'   feature selection. The fields are not meant to be accessed directly by the
 #'   user but instead via the helper functions (see the vignettes or type
 #'   ?projpred to see the main functions in the package.)
@@ -185,7 +185,7 @@ cv_varsel <- function(fit, method = NULL, cv_method = NULL,
     nterms_max = nterms_max,
     nterms_all = count_terms_in_subformula(refmodel$formula)
   )
-  class(vs) <- "cvsel"
+  class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
   if (verbose) {
     print("Done.")

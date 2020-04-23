@@ -28,7 +28,7 @@ if (require(rstanarm)) {
 
   test_that("varsel/cv_varsel/project return objects with correct types", {
     expect_true("vsel" %in% class(vs))
-    expect_true("cvsel" %in% class(cvs))
+    expect_true("vsel" %in% class(cvs))
     expect_true("projection" %in% class(proj))
   })
 

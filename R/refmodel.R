@@ -42,14 +42,17 @@ NULL
 #' density at a given point.
 #'
 #' @param object The object of class \code{refmodel}.
-#' @param znew Matrix of predictor values used in the prediction.
+#' @param newdata Matrix of predictor values used in the prediction.
 #' @param ynew New (test) target variables. If given, then the log predictive
 #'   density for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
-#' zeros.
+#'   zeros. By default we take the weights from newdata as in the original
+#'   model. Either NULL or right hand side formulas.
 #' @param weightsnew Weights for the new observations. For binomial model,
 #'   corresponds to the number trials per observation. Has effect only if
-#'   \code{ynew} is specified. By default a vector of ones.
+#'   \code{ynew} is specified. By default a vector of ones. By default we take
+#'   the weights from newdata as in the original model. Either NULL or right
+#'   hand side formulas.
 #' @param type Scale on which the predictions are returned. Either 'link' (the
 #'   latent function value, from -inf to inf) or 'response' (the scale on which
 #'   the target \code{y} is measured, obtained by taking the inverse-link from
@@ -60,7 +63,7 @@ NULL
 #'   densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
 
 #' @export
-predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
+predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
                              weightsnew = NULL, type = "response", ...) {
   if (!(type %in% c("response", "link"))) {
     stop("type should be one of ('response', 'link')")
@@ -74,11 +77,23 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
     }
   }
 
-  if (is.null(offsetnew)) offsetnew <- rep(0, nrow(znew))
-  if (is.null(weightsnew)) weightsnew <- rep(1, nrow(znew))
+  if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
+    stop("offsetnew specified but it's not a right hand side formula")
+  }
+
+  if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
+    stop("weightsnew specified but it's not a right hand side formula")
+  }
+
+  w_o <- extract_weights_offset(object$refmodel$fit, weightsnew,
+    offsetnew, newdata = newdata
+  )
+
+  weightsnew <- w_o$weights
+  offsetnew <- w_o$offset
 
   ## predfun returns link(mu)
-  mu <- object$predfun(object$fit, znew)
+  mu <- object$predfun(object$fit, newdata)
 
   if (is.null(ynew)) {
     if (type == "link") {
@@ -107,6 +122,68 @@ predict.refmodel <- function(object, znew, ynew = NULL, offsetnew = NULL,
 }
 
 #' @export
+extract_weights_offset <- function(object, ...) {
+  UseMethod("extract_weights_offset", object)
+}
+
+extract_weights_offset.default <- function(fit, wrhs, orhs, newdata = NULL) {
+  if (is.null(newdata)) {
+    newdata <- fit$data
+  }
+
+  if (inherits(wrhs, "formula")) {
+    weights <- eval_rhs(wrhs, newdata)
+  } else if (is.null(wrhs)) {
+    weights <- rep(1, NROW(newdata))
+  }
+
+  if (inherits(orhs, "formula")) {
+    offset <- eval_rhs(orhs, newdata)
+  } else if (is.null(orhs)) {
+    offset <- rep(0, NROW(newdata))
+  }
+
+  return(nlist(weights, offset))
+}
+
+extract_weights_offset.brmsfit <- function(fit, wrhs, orhs, newdata = NULL) {
+  ## ignore wrhs and orhs
+  if (is.null(newdata)) {
+    newdata <- fit$data
+  }
+
+  brms_formula <- formula(fit)
+  if (is.null(formula)) {
+    formula <- brms_formula$formula
+  }
+
+  p <- parse_bf(brms_formula)
+
+  weights <- rep(1, NROW(newdata))
+  if ("trials" %in% family$ad &&
+    inherits(p$adforms$trials, "formula")) {
+    trials_form <- p$adforms$trials
+    trials_var <- eval_rhs(trials_form, newdata)$vars$trials
+    weights <- eval_rhs(as.formula(paste("~", trials_var)), newdata)
+  }
+
+  if ("weights" %in% family$ad &&
+    inherits(p$adforms$weights, "formula")) {
+    weights_form <- p$adforms$weights
+    weights_var <- eval_rhs(weights_form, newdata)$vars$weights
+    weights <- eval_rhs(as.formula(paste("~", weights_var)), newdata)
+  }
+
+  offset <- rep(0, NROW(newdata))
+  if (!is.null(p$dpars$mu$offset)) {
+    offset_form <- p$dpars$mu$offset
+    offset <- eval_rhs(offset_form, newdata)
+  }
+
+  return(nlist(weights, offset))
+}
+
+#' @export
 get_refmodel <- function(fit, ...) {
   UseMethod("get_refmodel", fit)
 }
@@ -119,13 +196,7 @@ get_refmodel.refmodel <- function(object, ...) {
 
 #' @export
 get_refmodel.vsel <- function(object, ...) {
-  ## the reference model is stored in vsel-object
-  object$refmodel
-}
-
-#' @export
-get_refmodel.cvsel <- function(object, ...) {
-  ## the reference model is stored in cvsel object
+  ## the reference model is stored in vsel object
   object$refmodel
 }
 
@@ -187,31 +258,14 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
     dis <- NULL
   }
 
-  weights <- NULL
-  if ("trials" %in% family$ad &&
-    inherits(p$adforms$trials, "formula")) {
-    trials_form <- p$adforms$trials
-    trials_var <- eval_rhs(trials_form, data)$vars$trials
-    weights <- eval_rhs(as.formula(paste("~", trials_var)), data)
-  }
-
-  if ("weights" %in% family$ad &&
-    inherits(p$adforms$weights, "formula")) {
-    weights_form <- p$adforms$weights
-    weights_var <- eval_rhs(weights_form, data)$vars$weights
-    weights <- eval_rhs(as.formula(paste("~", weights_var)), data)
-  }
-
-  offset <- NULL
-  if (!is.null(p$dpars$mu$offset)) {
-    offset_form <- p$dpars$mu$offset
-    offset <- eval_rhs(offset_form, data)
-  }
+  w_o <- extract_weights_offset(fit)
+  weights <- w_o$weights
+  offset <- w_o$offset
 
   ## TODO: return y, weights and offset as right hand side formulas
   refmodel <- init_refmodel(fit, data, y, formula, family, predfun,
-    div_minimizer, proj_predfun, folds,
-    weights = weights, dis = dis, offset = offset, ...
+    div_minimizer, proj_predfun, folds, weights = weights,
+    dis = dis, offset = offset, ...
   )
   return(refmodel)
 }

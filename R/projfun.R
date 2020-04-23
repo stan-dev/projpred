@@ -75,8 +75,9 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
 }
 
 ## function handle for the projection over samples
-.get_proj_handle <- function(family, regul = 1e-9) {
-  return(function(solution_terms, p_ref, refmodel, intercept) {
+.get_proj_handle <- function(refmodel, p_ref, family, regul = 1e-9,
+                             intercept = TRUE) {
+  return(function(solution_terms) {
     project_submodel(
       solution_terms = solution_terms, p_ref = p_ref, refmodel = refmodel,
       family = family, intercept = intercept, regul = regul
@@ -121,7 +122,7 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
     }
   } else {
     ## need to project again for each submodel size
-    projfun <- .get_proj_handle(family, regul)
+    projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept)
     fetch_submodel <- function(nterms) {
       if (nterms == 0) {
         ## empty
@@ -129,7 +130,7 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
       } else {
         solution_terms <- varorder[seq_len(nterms)]
       }
-      return(projfun(solution_terms, p_ref, refmodel, intercept))
+      return(projfun(solution_terms))
     }
   }
   submodels <- lapply(nterms, fetch_submodel)

@@ -2,7 +2,7 @@ context("miscellaneous")
 
 # miscellaneous tests
 
-if (require(brms)) {
+if (require(rstanarm)) {
   set.seed(1235)
   n <- 40
   nterms <- 5

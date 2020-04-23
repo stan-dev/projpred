@@ -70,8 +70,7 @@ NULL
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     intercept = NULL, seed = NULL, regul = 1e-4, ...) {
-  if (!("vsel" %in% class(object) || "cvsel" %in% class(object))
-      && is.null(solution_terms)) {
+  if (!("vsel" %in% class(object)) && is.null(solution_terms)) {
     stop("The given object is not a variable selection -object.",
          "Run the variable selection first, or provide the variable ",
          "indices (solution_terms).")

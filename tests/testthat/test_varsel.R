@@ -2,7 +2,7 @@ context("varsel")
 
 # tests for varsel and cv_varsel
 
-if (require(rstanarm) && require(brms)) {
+if (require(rstanarm)) {
   seed <- 1235
   set.seed(seed)
   n <- 50
@@ -47,7 +47,8 @@ if (require(rstanarm) && require(brms)) {
   )
 
   formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
-  vsf <- function(x, m) varsel(x, method = m, nterms_max = nterms + 1, verbose = FALSE)
+  vsf <- function(x, m)
+    varsel(x, method = m, nterms_max = nterms + 1, verbose = FALSE)
   vs_list <- list(
     l1 = lapply(fit_list, vsf, "L1"),
     fs = lapply(fit_list, vsf, "forward")
@@ -93,7 +94,7 @@ if (require(rstanarm) && require(brms)) {
         # decreasing
         expect_equal(vs_list[[i]][[j]]$kl,
           cummin(vs_list[[i]][[j]]$kl),
-          tolerance = 1e-2,
+          tolerance = 2e-2,
           info = paste(i_inf, j_inf)
         )
         # summaries seems legit
@@ -257,10 +258,10 @@ if (require(rstanarm) && require(brms)) {
     )
   })
 
-  test_that('cv_varsel returns an object of type "cvsel"', {
+  test_that('cv_varsel returns an object of type "vsel"', {
     for (i in seq_len(length(cvs_list))) {
       for (j in seq_len(length(cvs_list[[i]]))) {
-        expect_s3_class(cvs_list[[i]][[j]], "cvsel")
+        expect_s3_class(cvs_list[[i]][[j]], "vsel")
       }
     }
   })
@@ -285,7 +286,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
       # decreasing
       expect_equal(cvs_list[[i]][[j]]$kl,
         cummin(cvs_list[[i]][[j]]$kl),
-        tolerance = 1e-2,
+        tolerance = 2e-2,
         info = paste(i_inf, j_inf)
       )
       # summaries seems legit
@@ -383,7 +384,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
         expect_equal(cv_kf_list[[i]][[j]]$kl[-1],
           cummin(cv_kf_list[[i]][[j]]$kl[-1]),
           info = paste(i_inf, j_inf),
-          tolerance = 1e-3
+          tolerance = 1e-2
         )
         # summaries seems legit
         expect_named(cv_kf_list[[i]][[j]]$summaries, c("sub", "ref"),

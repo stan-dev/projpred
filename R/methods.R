@@ -22,11 +22,13 @@
 #' @param ynew New (test) target variables. If given, then the log predictive
 #'   density for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
-#'   zeros.
+#'   zeros. By default we take the weights from newdata as in the original
+#'   model. Either NULL or right hand side formula.
 #' @param weightsnew Weights for the new observations. For binomial model,
 #'   corresponds to the number trials per observation. For \code{proj_linpred},
-#'   this argument matters only if \code{ynew} is specified. By default a vector
-#'   of ones.
+#'   this argument matters only if \code{ynew} is specified. By default we take
+#'   the weights from newdata as in the original model. Either NULL or right
+#'   hand side formula.
 #' @param transform Should the linear predictor be transformed using the
 #'   inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
 #'   only.
@@ -171,6 +173,29 @@ proj_linpred <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     )))
   }
 
+  if (.is_vsel_object(object)) {
+    if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
+      stop("offsetnew specified but it's not a right hand side formula")
+    }
+
+    if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
+      stop("weightsnew specified but it's not a right hand side formula")
+    }
+
+    w_o <- extract_weights_offset(object$refmodel$fit, weightsnew,
+      offsetnew, newdata = newdata
+    )
+
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
+  }  else {
+    w_o <- extract_weights_offset(NULL, weightsnew,
+      offsetnew, newdata = newdata
+    )
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
+  }
+
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
@@ -215,6 +240,29 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
     t(sapply(draw_inds, function(i) {
       proj$family$ppd(mu[, i], proj$dis[i], weights)
     }))
+  }
+
+  if (.is_vsel_object(object)) {
+    if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
+      stop("offsetnew specified but it's not a right hand side formula")
+    }
+
+    if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
+      stop("weightsnew specified but it's not a right hand side formula")
+    }
+
+    w_o <- extract_weights_offset(object$refmodel$fit, weightsnew,
+      offsetnew, newdata = newdata
+    )
+
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
+  }  else {
+    w_o <- extract_weights_offset(NULL, weightsnew,
+      offsetnew, newdata = newdata
+    )
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
   }
 
   ## proj_helper lapplies fun to each projection in object
@@ -421,16 +469,16 @@ varsel_stats <- function(object, nterms_max = NULL, stats = "elpd",
   return(subset(arr, arr$size <= nterms_max))
 }
 
-##' Print methods for vsel/cvsel objects
+##' Print methods for vsel/vsel objects
 ##'
-##' The \code{print} methods for vsel/cvsel objects created by
+##' The \code{print} methods for vsel/vsel objects created by
 ##' \code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
 ##' \code{\link{varsel_stats}} to display a summary of the results of the
 ##' projection predictive variable selection.
 ##'
 ##' @name print-vsel
 ##'
-##' @param x An object of class vsel/cvsel.
+##' @param x An object of class vsel/vsel.
 ##' @param digits Number of decimal places to be reported (2 by default).
 ##' @param ... Further arguments passed to \code{\link{varsel_stats}}.
 ##'
@@ -446,18 +494,6 @@ print.vsel <- function(x, digits = 2, ...) {
   print(stats[, -v])
   return(invisible(stats))
 }
-
-##' @rdname print-vsel
-##' @export
-##' @method print cvsel
-print.cvsel <- function(x, digits = 2, ...) {
-  stats <- varsel_stats(x, ...)
-  v <- match("solution_terms", colnames(stats))
-  stats[, -v] <- round(stats[, -v], digits)
-  print(stats[, -v])
-  return(invisible(stats))
-}
-
 
 ##' Suggest model size
 ##'
@@ -716,4 +752,8 @@ cv_ids <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
   }
 
   return(cv)
+}
+
+.is_vsel_object <- function(object) {
+  return("vsel" %in% class(object))
 }
