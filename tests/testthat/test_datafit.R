@@ -51,7 +51,8 @@ dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
 vsd_list <- lapply(dref_list, varsel, nterms_max = nterms + 1, verbose = FALSE)
 
 # cv_varsel
-cvvsd_list <- lapply(dref_list, cv_varsel, nterms_max = nterms + 1, verbose = FALSE)
+cvvsd_list <- lapply(dref_list, cv_varsel, nterms_max = nterms + 1,
+                     verbose = FALSE)
 
 #
 predd_list <- lapply(vsd_list, proj_linpred,
@@ -79,7 +80,7 @@ test_that(paste(
     expect_equal(length(vsd_list[[i]]$kl), nterms + 1)
 
     # kl decreasing
-    expect_equal(vsd_list[[i]]$kl, cummin(vsd_list[[i]]$kl), tolerance = 1e-2)
+    expect_equal(vsd_list[[i]]$kl, cummin(vsd_list[[i]]$kl), tolerance = 15e-2)
 
     # summaries seems legit
     expect_named(vsd_list[[i]]$summaries, c("sub", "ref"))
@@ -102,7 +103,7 @@ test_that(paste(
 
     # kl decreasing
     expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl),
-      tolerance = 1e-2
+      tolerance = 15e-2
     )
 
     # summaries seems legit
@@ -154,7 +155,7 @@ test_that(paste("output of project is sensible with only data provided as" <
     }
     # kl should be non-increasing on training data
     klseq <- sapply(p, function(e) e$kl)
-    expect_equal(klseq, cummin(klseq), tolerance = 1e-2)
+    expect_equal(klseq, cummin(klseq), tolerance = 15e-2)
 
     # all submodels should use the same clustering/subsampling
     expect_equal(p[[1]]$weights, p[[nterms]]$weights)
@@ -274,8 +275,8 @@ test_that(paste(
       newoffset = offset
     )
 
-    # check that the predictions agree (up to nterms-2 only, because glmnet terminates the coefficient
-    # path computation too early for some reason...)
+    # check that the predictions agree (up to nterms-2 only, because glmnet
+    # terminates the coefficient path computation too early for some reason...)
     for (j in 1:(nterms - 2)) {
       expect_true(median(abs(pred1[[j]]$pred - pred2[, j])) < 3e-1)
     }

@@ -4,7 +4,6 @@
 project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
                              regul = 1e-4) {
   mu <- p_ref$mu
-  dis <- p_ref$dis
 
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, mu)
   wobs <- validparams$wobs
@@ -38,8 +37,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   ##   type = "message")
   sub_fit <- iterative_weighted_least_squares(
     flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
-    replace_response,
-    wprev = wobs, div_minimizer = div_minimizer,
+    replace_response, wprev = wobs, div_minimizer = div_minimizer,
     linear_predict = linear_predict
   )
 
@@ -170,14 +168,13 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
     ref$w <- rep(0, NROW(ref_mu))
   }
 
-  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = weights)
-  dis <- family$dis_fun(ref, list(mu = mu), ref$w)
-  kl <- family$kl(
+  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = 1)
+  dis <- family$dis_fun(ref, nlist(mu), ref$w)
+  kl <- weighted.mean(family$kl(
     ref, list(weights = weights),
     nlist(mu, dis)
-  )
+  ), wsample)
   weights <- wsample
-  solution_terms <- solution_terms
-  submodel <- nlist(dis, kl, weights = wsample, solution_terms, sub_fit)
+  submodel <- nlist(dis, kl, weights, solution_terms, sub_fit)
   return(submodel)
 }

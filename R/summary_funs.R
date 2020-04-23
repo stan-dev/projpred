@@ -40,7 +40,7 @@
   } else {
     # mu is a matrix, so apply weighted sum over the samples
     list(
-      mu = c(mu * wsample),
+      mu = c(mu %*% wsample),
       lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
     )
   }

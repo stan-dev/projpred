@@ -135,7 +135,8 @@ if (require(rstanarm)) {
       # if only one model size is projected, do not return a list of length one
       expect_true(length(p) >= 1, info = i_inf)
       # beta has the correct number of rows
-      expect_equal(count_terms_chosen(p$solution_terms) - 1, nterms, info = i_inf)
+      expect_equal(count_terms_chosen(p$solution_terms) - 1, nterms,
+                   info = i_inf)
       expect_length(p$solution_terms, 1)
     }
   })
@@ -223,7 +224,6 @@ if (require(rstanarm)) {
       p <- project(vs_list[[i]], nclusters = nclusters, nterms = nterms)
       # expected number of clusters
       expect_length(p$weights, nclusters)
-      expect_length(p$kl, nclusters)
     }
   })
 
@@ -234,7 +234,7 @@ if (require(rstanarm)) {
       p <- project(vs_list[[i]], nclusters = nclusters, nterms = nterms)
       # expected number of ndraws
       expect_length(p$weights, nclusters)
-      expect_length(p$kl, nclusters)
+      expect_length(p$sub_fit, nclusters)
     }
   })
 

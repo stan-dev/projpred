@@ -157,6 +157,7 @@ extract_weights_offset.brmsfit <- function(fit, wrhs, orhs, newdata = NULL) {
     formula <- brms_formula$formula
   }
 
+  family <- family(fit)
   p <- parse_bf(brms_formula)
 
   weights <- rep(1, NROW(newdata))
@@ -248,8 +249,11 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
   if (is.null(data)) {
     data <- fit$data
   }
+
   if (is.null(y)) {
-    y <- eval_rhs(as.formula(paste("~", response_name)), data)
+    respform <- validate_resp_formula(brms_formula)
+    y <- as.numeric(model.response(model.frame(respform, data)))
+    data[, response_name] <- y
   }
 
   if (.has_dispersion(family)) {

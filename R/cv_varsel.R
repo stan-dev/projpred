@@ -68,7 +68,7 @@
 cv_varsel <- function(fit, method = NULL, cv_method = NULL,
                       ndraws = NULL, nclusters = NULL,
                       ndraws_pred = NULL, nclusters_pred = NULL,
-                      cv_search = FALSE, nterms_max = NULL, intercept = NULL,
+                      cv_search = TRUE, nterms_max = NULL, intercept = NULL,
                       penalty = NULL, verbose = TRUE, nloo = NULL, K = NULL,
                       lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
                       regul = 1e-4, validate_search = TRUE, seed = NULL,
@@ -355,7 +355,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     submodels <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
       family = family, p_ref = p_pred, refmodel = refmodel,
-      intercept = intercept, regul = opt$regul, cv_search = cv_search
+      intercept = intercept, regul = opt$regul, cv_search = FALSE
     )
     summaries_sub <- .get_sub_summaries(
       submodels = submodels, test_points = c(i), refmodel = refmodel,
@@ -489,7 +489,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_sub <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
       family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
-      intercept = intercept, regul = opt$regul, cv_search = cv_search
+      intercept = intercept, regul = opt$regul, cv_search = FALSE
     )
     if (verbose && cv_search) {
       utils::setTxtProgressBar(pb, fold_index)

@@ -210,22 +210,21 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL) {
   #
   # Creates the reference distribution based on the refmodel-object, and the
-  # desired number of clusters (nclusters) or number of subsamples (ndraws). If nclusters is
-  # specified, then clustering is used and ndraws is ignored. Returns a list with
-  # fields:
+  # desired number of clusters (nclusters) or number of subsamples (ndraws). If
+  # nclusters is specified, then clustering is used and ndraws is ignored.
+  # Returns a list with fields:
   #
   #   mu: n-by-s matrix, vector of expected values for y for each draw/cluster.
-  #       here s means either the number of draws ndraws or clusters nclusters used,
-  #       depending on which one is used.
+  #       here s means either the number of draws ndraws or clusters nclusters
+  #       used, depending on which one is used.
   #   var: n-by-s matrix, vector of predictive variances for y for each
   #         draw/cluster which which are needed for projecting the dispersion
   #         parameter (note that this can be unintuitively zero for those
-  #         families that do not have dispersion)
-  #   weights: s-element vector of weights for the draws/clusters
+  #         families that do not have dispersion) weights: s-element vector of
+  #   weights for the draws/clusters
   #   cl: cluster assignment for each posterior draw, that is, a vector that has
   #       length equal to the number of posterior draws and each value is an
   #       integer between 1 and s
-  #
   if (is.null(seed)) {
     seed <- 17249420
   }
@@ -287,7 +286,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   return(p_ref)
 }
 
-.get_p_clust <- function(family, mu, dis, nclusters = 10, wobs = rep(1, dim(mu)[1]),
+.get_p_clust <- function(family, mu, dis, nclusters = 10,
+                         wobs = rep(1, dim(mu)[1]),
                          wsample = rep(1, dim(mu)[2]), cl = NULL) {
   # Function for perfoming the clustering over the samples.
   #
@@ -307,7 +307,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
-  nclusters <- max(cl, na.rm = TRUE) # number of clusters (assumes labeling 1,...,nclusters)
+  # number of clusters (assumes labeling 1,...,nclusters)
+  nclusters <- max(cl, na.rm = TRUE)
   centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
   wcluster <- rep(0, nclusters) # cluster weights
   eps <- 1e-10

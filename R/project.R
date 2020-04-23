@@ -118,7 +118,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     if (is.null(nterms)) {
       if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
         ## by default, project onto the suggested model size
-        nterms <- object$suggested_size
+        nterms <- min(object$suggested_size, length(solution_terms))
       } else {
         stop("No suggested model size found, please specify nterms or solution",
              "terms")

@@ -172,15 +172,15 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   w <- subfit$w
   if (is.null(newdata)) {
     if (is.null(beta)) {
-      return((x * w) %*% as.matrix(alpha))
+      return(rep(alpha, NROW(subfit$x)))
     } else {
-      return((x * w) %*% rbind(alpha, beta))
+      return(x %*% rbind(alpha, beta))
     }
   } else {
     x <- model.matrix(delete.response(terms(subfit$formula)), newdata)
-    x <- weights * x
+    ## x <- weights * x
     if (is.null(beta)) {
-      return(x %*% as.matrix(alpha))
+      return(rep(alpha, NROW(x)))
     } else {
       return(x %*% rbind(alpha, beta))
     }

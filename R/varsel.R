@@ -71,7 +71,7 @@
 #' @export
 varsel <- function(object, d_test = NULL, method = NULL, ndraws = NULL,
                    nclusters = NULL, ndraws_pred = NULL,
-                   nclusters_pred = NULL, cv_search = FALSE,
+                   nclusters_pred = NULL, cv_search = TRUE,
                    nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                    lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
                    regul = 1e-4, penalty = NULL, search_terms = NULL, ...) {
@@ -123,9 +123,11 @@ varsel <- function(object, d_test = NULL, method = NULL, ndraws = NULL,
     penalty = penalty, verbose = verbose, opt = opt, search_terms = search_terms
   )
   solution_terms <- search_path$solution_terms
+
   ## statistics for the selected submodels
-  p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)), family,
-    p_pred, refmodel, intercept, regul, cv_search = cv_search
+  p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
+    family = family, p_ref = p_pred, refmodel = refmodel, intercept = intercept,
+    regul = regul, cv_search = cv_search
   )
   sub <- .get_sub_summaries(
     submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
