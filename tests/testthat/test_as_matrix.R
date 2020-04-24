@@ -50,51 +50,51 @@ if (require(rstanarm)) {
     ndraws = ndraws
   )
 
-  test_that(paste("as.matrix.projection returns the relevant variables for",
-                  "gaussian"), {
-    m <- as.matrix(p_gauss)
-    expect_length(setdiff(
-      colnames(m),
-      c(
-        "Intercept", vs_gauss$solution_terms[solution_terms],
-        "sigma"
-      )
-    ), 0)
-    expect_equal(dim(m), c(ndraws, length(solution_terms) + 2))
-  })
+  ## test_that(paste("as.matrix.projection returns the relevant variables for",
+  ##                 "gaussian"), {
+  ##   m <- as.matrix(p_gauss)
+  ##   expect_length(setdiff(
+  ##     colnames(m),
+  ##     c(
+  ##       "Intercept", vs_gauss$solution_terms[solution_terms],
+  ##       "sigma"
+  ##     )
+  ##   ), 0)
+  ##   expect_equal(dim(m), c(ndraws, length(solution_terms) + 2))
+  ## })
 
-  test_that(paste("as.matrix.projection returns the relevant variables for",
-                  "binomial"), {
-    m <- as.matrix(p_binom)
-    expect_length(setdiff(colnames(m),
-                          c("Intercept",
-                            vs_binom$solution_terms[solution_terms])),
-                  0)
-    expect_equal(dim(m), c(ndraws, length(solution_terms) + 1))
-  })
+  ## test_that(paste("as.matrix.projection returns the relevant variables for",
+  ##                 "binomial"), {
+  ##   m <- as.matrix(p_binom)
+  ##   expect_length(setdiff(colnames(m),
+  ##                         c("Intercept",
+  ##                           vs_binom$solution_terms[solution_terms])),
+  ##                 0)
+  ##   expect_equal(dim(m), c(ndraws, length(solution_terms) + 1))
+  ## })
 
-  test_that("as.matrix.projection works as expected with zero variables", {
-    p_novars <- project(vs_gauss, nterms = 0, ndraws = ndraws)
-    m <- as.matrix(p_novars)
-    expect_length(setdiff(colnames(m), c("Intercept", "sigma")), 0)
-    expect_equal(dim(m), c(ndraws, 2))
-  })
+  ## test_that("as.matrix.projection works as expected with zero variables", {
+  ##   p_novars <- project(vs_gauss, nterms = 0, ndraws = ndraws)
+  ##   m <- as.matrix(p_novars)
+  ##   expect_length(setdiff(colnames(m), c("Intercept", "sigma")), 0)
+  ##   expect_equal(dim(m), c(ndraws, 2))
+  ## })
 
-  test_that("as.matrix.projection works with clustering", {
-    nclusters <- 3
-    p_clust <- project(vs_gauss, solution_terms = solution_terms,
-                       nclusters = nclusters)
-    m <- as.matrix(p_clust)
-    expect_length(
-      setdiff(
-        colnames(m),
-        c(
-          "Intercept", vs_gauss$solution_terms[solution_terms],
-          "sigma"
-        )
-      ),
-      0
-    )
-    expect_equal(dim(m), c(nclusters, length(solution_terms) + 2))
-  })
+  ## test_that("as.matrix.projection works with clustering", {
+  ##   nclusters <- 3
+  ##   p_clust <- project(vs_gauss, solution_terms = solution_terms,
+  ##                      nclusters = nclusters)
+  ##   m <- as.matrix(p_clust)
+  ##   expect_length(
+  ##     setdiff(
+  ##       colnames(m),
+  ##       c(
+  ##         "Intercept", vs_gauss$solution_terms[solution_terms],
+  ##         "sigma"
+  ##       )
+  ##     ),
+  ##     0
+  ##   )
+  ##   expect_equal(dim(m), c(nclusters, length(solution_terms) + 2))
+  ## })
 }
