@@ -307,10 +307,17 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
       y <- response[[1]]
     }
     weights <- response[[2]] + y ## weights - y
+    response_name[[1]] <- gsub("\\(|\\)", "", response_name[[1]])
     formula <- update(formula, paste0(response_name[[1]], " ~ ."))
+    response_name <- response_name[[1]]
   } else if (length(response_name) == 1 && is.null(y)) {
     y <- eval_rhs(as.formula(paste("~", response_name)), data)
+    response_name <- gsub("\\(|\\)", "", response_name)
+    formula <- update(formula, paste0(response_name, " ~ ."))
   }
+
+  ## add transformed response
+  data[, response_name] <- y
 
   offset <- NULL
   if (!is.null(fit$offset) && length(fit$offset) != 0) {

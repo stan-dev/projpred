@@ -3,7 +3,7 @@ context("refmodel")
 
 # tests for generic reference model
 
-if (require(rstanarm) && require(brms)) {
+if (require(rstanarm)) {
   seed <- 1235
   set.seed(seed)
   n <- 50
