@@ -67,13 +67,15 @@ linear_multilevel_mle <- function(formula, data, weights = NULL, regul = NULL) {
   }
 }
 
-linear_multilevel_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
+linear_multilevel_proj_predfun <- function(fit, newdata = NULL,
+                                           weights = NULL) {
   if (is.null(weights)) {
     weights <- 1
   }
   if (inherits(fit, "list")) {
     return(do.call(cbind, lapply(fit, function(fit) {
-      predict(fit, newdata = newdata, allow.new.levels = TRUE, weights = weights)
+      predict(fit, newdata = newdata, allow.new.levels = TRUE,
+              weights = weights)
     })))
   } else {
     return(predict(fit,
@@ -128,16 +130,19 @@ predict.ridgelm <- function(fit, newdata = NULL, weights = NULL) {
     x <- model.matrix(delete.response(terms(fit$formula)), fit$data)
   }
   if (NCOL(x) > 1) {
-    x <- cbind(x[, 1, drop = FALSE],
-               scale(x[, -1, drop = FALSE], center = center, scale = scales))
+    x <- cbind(
+      x[, 1, drop = FALSE],
+      scale(x[, -1, drop = FALSE], center = center, scale = scales)
+    )
   }
   x <- weights * x
   return(x %*% b)
 }
 
 ## taken from MASS, but fix a small bug when removing the intercept
-lm.ridge <- function(formula, data, subset, na.action, lambda = 0, model = FALSE,
-                     x = FALSE, y = FALSE, contrasts = NULL, ...) {
+lm.ridge <- function(formula, data, subset, na.action, lambda = 0,
+                     model = FALSE, x = FALSE, y = FALSE, contrasts = NULL,
+                     ...) {
   m <- match.call(expand.dots = FALSE)
   m$model <- m$x <- m$y <- m$contrasts <- m$... <- m$lambda <- NULL
   m[[1L]] <- quote(stats::model.frame)

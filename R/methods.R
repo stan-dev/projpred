@@ -8,44 +8,51 @@
 #'
 #' @name proj-pred
 #'
-#' @param object Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
-#' or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.
-#' @param xnew The predictor values used in the prediction. If \code{vind} is
-#' specified, then \code{xnew} should either be a dataframe containing column names
-#' that correspond to \code{vind} or a matrix with the number and order of columns
-#' corresponding to \code{vind}. If \code{vind} is unspecified, then \code{xnew} must
-#' either be a dataframe containing all the column names as in the original data or a matrix
-#' with the same columns at the same positions as in the original data.
-#' @param ynew New (test) target variables. If given, then the log predictive density
-#' for the new observations is computed.
+#' @param object Either an object returned by \link[=varsel]{varsel},
+#'   \link[=cv_varsel]{cv_varsel} or \link[=init_refmodel]{init_refmodel}, or
+#'   alternatively any object that can be converted to a reference model.
+#' @param newdata The predictor values used in the prediction. If
+#'   \code{solution_terms} is specified, then \code{newdata} should either be a
+#'   dataframe containing column names that correspond to \code{solution_terms}
+#'   or a matrix with the number and order of columns corresponding to
+#'   \code{solution_terms}. If \code{solution_terms} is unspecified, then
+#'   \code{newdata} must either be a dataframe containing all the column names
+#'   as in the original data or a matrix with the same columns at the same
+#'   positions as in the original data.
+#' @param ynew New (test) target variables. If given, then the log predictive
+#'   density for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
-#' zeros.
+#'   zeros. By default we take the weights from newdata as in the original
+#'   model. Either NULL or right hand side formula.
 #' @param weightsnew Weights for the new observations. For binomial model,
-#' corresponds to the number trials per observation. For \code{proj_linpred},
-#' this argument matters only if \code{ynew} is specified. By default a vector
-#' of ones.
+#'   corresponds to the number trials per observation. For \code{proj_linpred},
+#'   this argument matters only if \code{ynew} is specified. By default we take
+#'   the weights from newdata as in the original model. Either NULL or right
+#'   hand side formula.
 #' @param transform Should the linear predictor be transformed using the
-#' inverse-link function? Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param integrated If \code{TRUE}, the output is averaged over the
-#' parameters. Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param nv Number of variables in the submodel (the variable combination is
-#' taken from the variable selection information). If a vector with several values,
-#' then results for all specified model sizes are returned. Ignored if \code{vind} is specified.
-#' By default use the automatically suggested model size.
+#'   inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
+#'   only.
+#' @param integrated If \code{TRUE}, the output is averaged over the parameters.
+#'   Default is \code{FALSE}. For \code{proj_linpred} only.
+#' @param nterms Number of variables in the submodel (the variable combination
+#'   is taken from the variable selection information). If a vector with several
+#'   values, then results for all specified model sizes are returned. Ignored if
+#'   \code{solution_terms} is specified. By default use the automatically
+#'   suggested model size.
 #' @param draws Number of draws to return from the predictive distribution of
-#' the projection. The default is 1000.
-#' For \code{proj_predict} only.
-#' @param seed An optional seed to use for drawing from the projection.
-#' For \code{proj_predict} only.
-#' @param ... Additional argument passed to \link{project} if \code{object}
-#' is an object returned by \link{varsel} or \link{cv_varsel}.
+#'   the projection. The default is 1000. For \code{proj_predict} only.
+#' @param seed An optional seed to use for drawing from the projection. For
+#'   \code{proj_predict} only.
+#' @param ... Additional argument passed to \link{project} if \code{object} is
+#'   an object returned by \link{varsel} or \link{cv_varsel}.
 #'
-#' @return If the prediction is done for one submodel only (\code{nv} has length one
-#' or \code{vind} is specified) and ynew is unspecified, a matrix or vector of
-#' predictions (depending on the value of \code{integrated}). If \code{ynew} is specified,
-#' returns a list with elements pred (predictions) and lpd (log predictive densities).
-#' If the predictions are done for several submodel sizes, returns a list with one element
-#' for each submodel.
+#' @return If the prediction is done for one submodel only (\code{nterms} has
+#'   length one or \code{solution_terms} is specified) and ynew is unspecified,
+#'   a matrix or vector of predictions (depending on the value of
+#'   \code{integrated}). If \code{ynew} is specified, returns a list with
+#'   elements pred (predictions) and lpd (log predictive densities). If the
+#'   predictions are done for several submodel sizes, returns a list with one
+#'   element for each submodel.
 #'
 #' @examples
 #' \donttest{
@@ -54,8 +61,8 @@
 #' vs <- varsel(fit)
 #'
 #' ## compute predictions with 4 variables at the training points
-#' pred <- proj_linpred(vs, xnew = x, nv = 4)
-#' pred <- proj_predict(vs, xnew = x, nv = 4)
+#' pred <- proj_linpred(vs, newdata = x, nterms = 4)
+#' pred <- proj_predict(vs, newdata = x, nterms = 4)
 #' }
 #'
 NULL
@@ -66,22 +73,22 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
+proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
                         proj_predict, ...) {
-  if (is.null(xnew) ||
-    !(inherits(xnew, "data.frame") ||
-      inherits(xnew, "matrix"))) {
-    stop("xnew must be a data.frame or a matrix")
+  if (is.null(newdata) ||
+    !(inherits(newdata, "data.frame") ||
+      inherits(newdata, "matrix"))) {
+    stop("newdata must be a data.frame or a matrix")
   }
-  if (is.null(offsetnew)) offsetnew <- rep(0, nrow(xnew))
-  if (is.null(weightsnew)) weightsnew <- rep(1, nrow(xnew))
+  if (is.null(offsetnew)) offsetnew <- rep(0, nrow(newdata))
+  if (is.null(weightsnew)) weightsnew <- rep(1, nrow(newdata))
 
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     proj <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
-    proj <- project(object = object, nv = nv, ...)
+    proj <- project(object = object, nterms = nterms, ...)
   }
 
   if (!.is_proj_list(proj)) {
@@ -97,43 +104,34 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
   }
 
   projected_sizes <- sapply(proj, function(x) {
-    if (length(x$vind) > 1) {
-      count_terms_chosen(x$vind)
+    if (length(x$solution_terms) > 1) {
+      count_terms_chosen(x$solution_terms)
     } else {
       1
     }
   })
-  nv <- list(...)$nv %ORifNULL% projected_sizes
+  nterms <- list(...)$nterms %ORifNULL% projected_sizes
 
-  if (!all(nv %in% projected_sizes)) {
+  if (!all(nterms %in% projected_sizes)) {
     stop(paste0(
-      "Linear prediction requested for nv = ",
-      paste(nv, collapse = ", "),
-      ", but projection performed only for nv = ",
+      "Linear prediction requested for nterms = ",
+      paste(nterms, collapse = ", "),
+      ", but projection performed only for nterms = ",
       paste(projected_sizes, collapse = ", "), "."
     ))
   }
 
-  projs <- Filter(function(x) length(x$vind) + 1 %in% nv, proj)
-  names(projs) <- nv
+  projs <- Filter(function(x) length(x$solution_terms) + 1 %in% nterms, proj)
+  names(projs) <- nterms
 
-  xnew_df <- is.data.frame(xnew)
-  ## if (xnew_df) {
-  ##   terms <- unique(unlist(lapply(projs, function(x) unlist(unname(x$vind)))))
-  ##   xnew <- .df_to_model_mat(xnew, terms)
-  ## }
-
-  ## if (!is.matrix(xnew))
-  ##   stop('xnew not provided in the correct format. See ?proj-pred.')
-
-  vind <- list(...)$vind
-  if (!is.null(vind) && NCOL(xnew) != length(vind)) {
+  solution_terms <- list(...)$solution_terms
+  if (!is.null(solution_terms) &&
+      length(solution_terms) > NCOL(newdata)) {
     stop(paste(
-      "The number of columns in xnew does not match with the given",
-      "number of variable indices (vind)."
+      "The number of columns in newdata does not match with the given",
+      "number of terms indices (solution_terms)."
     ))
   }
-
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
@@ -141,20 +139,20 @@ proj_helper <- function(object, xnew, offsetnew, weightsnew, nv, seed,
 
   preds <- lapply(projs, function(proj) {
     mu <- proj$family$mu_fun(proj$sub_fit,
-      xnew = xnew, offset = offsetnew,
+      newdata = newdata, offset = offsetnew,
       weights = weightsnew
     )
 
     proj_predict(proj, mu, weightsnew)
   })
 
-  .unlist_proj(preds)
+  return(.unlist_proj(preds))
 }
 
 #' @rdname proj-pred
 #' @export
-proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
-                         weightsnew = NULL, nv = NULL, transform = FALSE,
+proj_linpred <- function(object, newdata, ynew = NULL, offsetnew = NULL,
+                         weightsnew = NULL, nterms = NULL, transform = FALSE,
                          integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
@@ -169,15 +167,39 @@ proj_linpred <- function(object, xnew, ynew = NULL, offsetnew = NULL,
       pred <- as.vector(pred)
     }
 
-    return(nlist(pred, lpd = compute_lpd(ynew, pred, proj, weights,
-      integrated = integrated, transform = transform
+    return(nlist(pred, lpd = compute_lpd(
+      ynew = ynew, pred = pred, proj = proj,
+      weights = weights, integrated = integrated, transform = transform
     )))
+  }
+
+  if (.is_vsel_object(object)) {
+    if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
+      stop("offsetnew specified but it's not a right hand side formula")
+    }
+
+    if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
+      stop("weightsnew specified but it's not a right hand side formula")
+    }
+
+    w_o <- extract_weights_offset(object$refmodel$fit, weightsnew,
+      offsetnew, newdata = newdata
+    )
+
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
+  }  else {
+    w_o <- extract_weights_offset(NULL, weightsnew,
+      offsetnew, newdata = newdata
+    )
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
   }
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
-    object = object, xnew = xnew, offsetnew = offsetnew,
-    weightsnew = weightsnew, nv = nv, seed = seed,
+    object = object, newdata = newdata, offsetnew = offsetnew,
+    weightsnew = weightsnew, nterms = nterms, seed = seed,
     proj_predict = proj_predict, ...
   )
 }
@@ -205,13 +227,13 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 
 #' @rdname proj-pred
 #' @export
-proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
-                         nv = NULL, draws = 1000, seed = NULL, ...) {
+proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
+                         nterms = NULL, ndraws = 1000, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
     draw_inds <- sample(
-      x = seq_along(proj$weights), size = draws,
+      x = seq_along(proj$weights), size = ndraws,
       replace = TRUE, prob = proj$weights
     )
 
@@ -220,10 +242,33 @@ proj_predict <- function(object, xnew, offsetnew = NULL, weightsnew = NULL,
     }))
   }
 
+  if (.is_vsel_object(object)) {
+    if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
+      stop("offsetnew specified but it's not a right hand side formula")
+    }
+
+    if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
+      stop("weightsnew specified but it's not a right hand side formula")
+    }
+
+    w_o <- extract_weights_offset(object$refmodel$fit, weightsnew,
+      offsetnew, newdata = newdata
+    )
+
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
+  }  else {
+    w_o <- extract_weights_offset(NULL, weightsnew,
+      offsetnew, newdata = newdata
+    )
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
+  }
+
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
-    object = object, xnew = xnew, offsetnew = offsetnew,
-    weightsnew = weightsnew, nv = nv, seed = seed,
+    object = object, newdata = newdata, offsetnew = offsetnew,
+    weightsnew = weightsnew, nterms = nterms, seed = seed,
     proj_predict = proj_predict, ...
   )
 }
@@ -240,31 +285,34 @@ NULL
 #' @name varsel-statistics
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
-#' \link[=cv_varsel]{cv_varsel}.
-#' @param nv_max Maximum submodel size for which the statistics are calculated.
-#' For \code{varsel_plot} it must be at least 1.
-#' @param stats One or several strings determining which statistics to calculate. Available
-#' statistics are:
+#'   \link[=cv_varsel]{cv_varsel}.
+#' @param nterms_max Maximum submodel size for which the statistics are
+#'   calculated. For \code{varsel_plot} it must be at least 1.
+#' @param stats One or several strings determining which statistics to
+#'   calculate. Available statistics are:
 #' \itemize{
 #'  \item{elpd:} {(Expected) sum of log predictive densities}
-#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the number of datapoints.}
-#'  \item{mse:} {Mean squared error (gaussian family only)}
+#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
+#'   number of datapoints.} \item{mse:} {Mean squared error (gaussian family
+#'   only)}
 #'  \item{rmse:} {Root mean squared error (gaussian family only)}
 #'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
 #'  \item{auc:} {Area under the ROC curve (binomial family only)}
 #' }
 #' Default is elpd.
-#' @param type One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
-#' compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
-#' that \code{1-alpha} percent of the mass falls between them.
-#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative to the baseline model
-#' (see argument \code{baseline}) instead of estimating the actual values of the statistics.
-#' Defaults to \code{FALSE}.
+#' @param type One or more items from 'mean', 'se', 'lower' and 'upper'
+#'   indicating which of these to compute (mean, standard error, and lower and
+#'   upper credible bounds). The credible bounds are determined so that
+#'   \code{1-alpha} percent of the mass falls between them.
+#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative
+#'   to the baseline model (see argument \code{baseline}) instead of estimating
+#'   the actual values of the statistics. Defaults to \code{FALSE}.
 #' @param alpha A number indicating the desired coverage of the credible
-#' intervals. For example \code{alpha=0.32} corresponds to 68\% probability mass
-#' within the intervals, that is, one standard error intervals.
-#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the reference model or
-#' the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.
+#'   intervals. For example \code{alpha=0.32} corresponds to 68\% probability
+#'   mass within the intervals, that is, one standard error intervals.
+#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
+#'   reference model or the best submodel found. Default is 'ref' when the
+#'   reference model exists, and 'best' otherwise.
 #' @param ... Currently ignored.
 #'
 #'
@@ -283,14 +331,19 @@ NULL
 
 #' @rdname varsel-statistics
 #' @export
-varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = F, alpha = 0.32, baseline = NULL, ...) {
+varsel_plot <- function(object, nterms_max = NULL, stats = "elpd",
+                        deltas = FALSE, alpha = 0.32, baseline = NULL,
+                        ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmode, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
   tab <- rbind(
-    .tabulate_stats(object, stats, alpha = alpha, nfeat_baseline = nfeat_baseline),
+    .tabulate_stats(object, stats,
+      alpha = alpha,
+      nfeat_baseline = nfeat_baseline
+    ),
     .tabulate_stats(object, stats, alpha = alpha)
   )
   stats_table <- subset(tab, tab$delta == deltas)
@@ -306,32 +359,35 @@ varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = F, alpha
     ))
   }
 
-  if (is.null(nv_max)) {
-    nv_max <- max(stats_sub$size)
+  if (is.null(nterms_max)) {
+    nterms_max <- max(stats_sub$size)
   } else {
     # don't exceed the maximum submodel size
-    nv_max <- min(nv_max, max(stats_sub$size))
-    if (nv_max < 1) {
-      stop("nv_max must be at least 1")
+    nterms_max <- min(nterms_max, max(stats_sub$size))
+    if (nterms_max < 1) {
+      stop("nterms_max must be at least 1")
     }
   }
   ylab <- if (deltas) "Difference to the baseline" else "Value"
 
   # make sure that breaks on the x-axis are integers
   n_opts <- c(4, 5, 6)
-  n_possible <- Filter(function(x) nv_max %% x == 0, n_opts)
-  n_alt <- n_opts[which.min(n_opts - (nv_max %% n_opts))]
+  n_possible <- Filter(function(x) nterms_max %% x == 0, n_opts)
+  n_alt <- n_opts[which.min(n_opts - (nterms_max %% n_opts))]
   nb <- ifelse(length(n_possible) > 0, min(n_possible), n_alt)
-  by <- ceiling(nv_max / min(nv_max, nb))
-  breaks <- seq(0, by * min(nv_max, nb), by)
+  by <- ceiling(nterms_max / min(nterms_max, nb))
+  breaks <- seq(0, by * min(nterms_max, nb), by)
   minor_breaks <- if (by %% 2 == 0) {
-    seq(by / 2, by * min(nv_max, nb), by)
+    seq(by / 2, by * min(nterms_max, nb), by)
   } else {
     NULL
   }
 
   # plot submodel results
-  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nv_max), mapping = aes_string(x = "size")) +
+  pp <- ggplot(
+    data = subset(stats_sub, stats_sub$size <= nterms_max),
+    mapping = aes_string(x = "size")
+  ) +
     geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
     geom_line(aes_string(y = "value")) +
     geom_point(aes_string(y = "value"))
@@ -358,33 +414,43 @@ varsel_plot <- function(object, nv_max = NULL, stats = "elpd", deltas = F, alpha
     labs(x = "Number of variables in the submodel", y = ylab) +
     theme(legend.position = "none") +
     facet_grid(statistic ~ ., scales = "free_y")
-  pp
+  return(pp)
 }
 
 ##' @rdname varsel-statistics
 ##' @export
-varsel_stats <- function(object, nv_max = NULL, stats = "elpd", type = c("mean", "se"),
-                         deltas = F, alpha = 0.32, baseline = NULL, ...) {
+varsel_stats <- function(object, nterms_max = NULL, stats = "elpd",
+                         type = c("mean", "se"), deltas = FALSE,
+                         alpha = 0.32, baseline = NULL, ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmode, baseline, deltas)
 
   ## fetch statistics
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-    tab <- .tabulate_stats(object, stats, alpha = alpha, nfeat_baseline = nfeat_baseline)
+    tab <- .tabulate_stats(object, stats,
+      alpha = alpha, nfeat_baseline = nfeat_baseline
+    )
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
   stats_table <- subset(tab, tab$size != Inf)
 
 
-  ## these are the corresponding names for mean, se, upper and lower in the stats_table, and their suffices
-  ## in the table to be returned
-  qty <- unname(sapply(type, function(t) switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")))
-  suffix <- unname(sapply(type, function(t) switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")))
+  ## these are the corresponding names for mean, se, upper and lower in the
+  ## stats_table, and their suffices in the table to be returned
+  qty <- unname(sapply(type, function(t) {
+    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")
+  }))
+  suffix <- unname(sapply(type, function(t) {
+    switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")
+  }))
 
   ## loop through all the required statistics
-  arr <- data.frame(size = unique(stats_table$size), vind = c(NA, object$vind))
+  arr <- data.frame(
+    size = unique(stats_table$size),
+    solution_terms = c(NA, object$solution_terms)
+  )
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- sapply(suffix, function(s) paste0(stats[i], s))
@@ -392,100 +458,97 @@ varsel_stats <- function(object, nv_max = NULL, stats = "elpd", type = c("mean",
     arr <- cbind(arr, temp)
   }
 
-  if (is.null(nv_max)) {
-    nv_max <- max(stats_table$size)
+  if (is.null(nterms_max)) {
+    nterms_max <- max(stats_table$size)
   }
 
-  if ("pctch" %in% names(object)) {
-    arr$pctch <- c(NA, diag(object$pctch[, -1]))
+  if ("pct_solution_terms_cv" %in% names(object)) {
+    arr$pct_solution_terms_cv <- c(NA, diag(object$pctch[, -1]))
   }
 
-  subset(arr, arr$size <= nv_max)
+  return(subset(arr, arr$size <= nterms_max))
 }
 
-##' Print methods for vsel/cvsel objects
+##' Print methods for vsel/vsel objects
 ##'
-##' The \code{print} methods for vsel/cvsel objects created by \code{\link{varsel}}
-##' or \code{\link{cv_varsel}}) rely on \code{\link{varsel_stats}} to display
-##' a summary of the results of the projection predictive variable selection.
+##' The \code{print} methods for vsel/vsel objects created by
+##' \code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
+##' \code{\link{varsel_stats}} to display a summary of the results of the
+##' projection predictive variable selection.
 ##'
 ##' @name print-vsel
 ##'
-##' @param x An object of class vsel/cvsel.
+##' @param x An object of class vsel/vsel.
 ##' @param digits Number of decimal places to be reported (2 by default).
 ##' @param ... Further arguments passed to \code{\link{varsel_stats}}.
 ##'
-##' @return Returns invisibly the data frame produced by \code{\link{varsel_stats}}.
+##' @return Returns invisibly the data frame produced by
+##'   \code{\link{varsel_stats}}.
 ##'
 ##' @export
 ##' @method print vsel
 print.vsel <- function(x, digits = 2, ...) {
   stats <- varsel_stats(x, ...)
-  v <- match("vind", colnames(stats))
+  v <- match("solution_terms", colnames(stats))
   stats[, -v] <- round(stats[, -v], digits)
   print(stats[, -v])
-  invisible(stats)
+  return(invisible(stats))
 }
-
-##' @rdname print-vsel
-##' @export
-##' @method print cvsel
-print.cvsel <- function(x, digits = 2, ...) {
-  stats <- varsel_stats(x, ...)
-  v <- match("vind", colnames(stats))
-  stats[, -v] <- round(stats[, -v], digits)
-  print(stats[, -v])
-  invisible(stats)
-}
-
 
 ##' Suggest model size
 ##'
-##' This function can be used for suggesting an appropriate model size
-##' based on a certain default rule. Notice that the decision rules are heuristic
-##' and should be interpreted as guidelines. It is recommended that the user
-##' studies the results via \code{varsel_plot} and/or \code{varsel_stats}
-##' and makes the final decision based on what is most appropriate for the given
-##' problem.
+##' This function can be used for suggesting an appropriate model size based on
+##' a certain default rule. Notice that the decision rules are heuristic and
+##' should be interpreted as guidelines. It is recommended that the user studies
+##' the results via \code{varsel_plot} and/or \code{varsel_stats} and makes the
+##' final decision based on what is most appropriate for the given problem.
 ##'
 ##' @param object The object returned by \link[=varsel]{varsel} or
 ##' \link[=cv_varsel]{cv_varsel}.
-##' @param stat Statistic used for the decision. Default is 'elpd'. See \code{varsel_stats} for
-##' other possible choices.
+##' @param stat Statistic used for the decision. Default is 'elpd'. See
+##'   \code{varsel_stats} for other possible choices.
 ##' @param alpha A number indicating the desired coverage of the credible
-##' intervals based on which the decision is made. E.g. \code{alpha=0.32} corresponds to
-##' 68\% probability mass within the intervals (one standard error intervals).
-##' See details for more information.
-##' @param pct Number indicating the relative proportion between baseline model and null model
-##' utilities one is willing to sacrifice. See details for more information.
-##' @param type Either 'upper' (default) or 'lower' determining whether the decisions are
-##' based on the upper or lower credible bounds. See details for more information.
-##' @param baseline Either 'ref' or 'best' indicating whether the baseline is the reference model or
-##' the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.
-##' @param warnings Whether to give warnings if automatic suggestion fails, mainly for internal use.
-##' Default is TRUE, and usually no reason to set to FALSE.
+##'   intervals based on which the decision is made. E.g. \code{alpha=0.32}
+##'   corresponds to 68\% probability mass within the intervals (one standard
+##'   error intervals). See details for more information.
+##' @param pct Number indicating the relative proportion between baseline model
+##'   and null model utilities one is willing to sacrifice. See details for more
+##'   information. @param type Either 'upper' (default) or 'lower' determining
+##'   whether the decisions are based on the upper or lower credible bounds. See
+##'   details for more information.
+##' @param baseline Either 'ref' or 'best' indicating whether the baseline is
+##'   the reference model or the best submodel found. Default is 'ref' when the
+##'   reference model exists, and 'best' otherwise.
+##' @param warnings Whether to give warnings if automatic suggestion fails,
+##'   mainly for internal use. Default is TRUE, and usually no reason to set to
+##'   FALSE.
 ##' @param ... Currently ignored.
 ##'
-##' @details The suggested model size is the smallest model for which
-##' either the lower or upper (depending on argument \code{type}) credible bound
-##' of the submodel utility \eqn{u_k} with significance level \code{alpha} falls above
-##'   \deqn{u_base - pct*(u_base - u_0)}
-##' Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0} the null model utility.
-##' The baseline is either the reference model or the best submodel found (see argument \code{baseline}).
-##' The lower and upper bounds are defined to contain the submodel utility with
-##' probability 1-alpha (each tail has mass alpha/2).
+##' @details The suggested model size is the smallest model for which either the
+##'   lower or upper (depending on argument \code{type}) credible bound of the
+##'   submodel utility \eqn{u_k} with significance level \code{alpha} falls
+##'   above \deqn{u_base - pct*(u_base - u_0)} Here \eqn{u_base} denotes the
+##'   utility for the baseline model and \eqn{u_0} the null model utility. The
+##'   baseline is either the reference model or the best submodel found (see
+##'   argument \code{baseline}). The lower and upper bounds are defined to
+##'   contain the submodel utility with probability 1-alpha (each tail has mass
+##'   alpha/2).
 ##'
-##' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which means that we select the smallest
-##' model for which the upper tail exceeds the baseline model level, that is, which is better than the baseline
-##' model with probability 0.16 (and consequently, worse with probability 0.84). In other words,
-##' the estimated difference between the baseline model and submodel utilities is at most one standard error
-##' away from zero, so the two utilities are considered to be close.
+##' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
+##'   means that we select the smallest model for which the upper tail exceeds
+##'   the baseline model level, that is, which is better than the baseline model
+##'   with probability 0.16 (and consequently, worse with probability 0.84). In
+##'   other words, the estimated difference between the baseline model and
+##'   submodel utilities is at most one standard error away from zero, so the
+##'   two utilities are considered to be close.
 ##'
-##' NOTE: Loss statistics like RMSE and MSE are converted to utilities by multiplying them by -1, so call
-##' such as \code{suggest_size(object, stat='rmse', type='upper')} should be interpreted as finding
-##' the smallest model whose upper credible bound of the \emph{negative} RMSE exceeds the cutoff level
-##' (or equivalently has the lower credible bound of RMSE below the cutoff level). This is done to make
-##' the interpretation of the argument \code{type} the same regardless of argument \code{stat}.
+##' NOTE: Loss statistics like RMSE and MSE are converted to utilities by
+##'   multiplying them by -1, so call such as \code{suggest_size(object,
+##'   stat='rmse', type='upper')} should be interpreted as finding the smallest
+##'   model whose upper credible bound of the \emph{negative} RMSE exceeds the
+##'   cutoff level (or equivalently has the lower credible bound of RMSE below
+##'   the cutoff level). This is done to make the interpretation of the argument
+##'   \code{type} the same regardless of argument \code{stat}.
 ##'
 ##' @examples
 ##' \donttest{
@@ -498,8 +561,9 @@ print.cvsel <- function(x, digits = 2, ...) {
 ##'
 
 ##' @export
-suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = "upper",
-                         baseline = NULL, warnings = TRUE, ...) {
+suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
+                         type = "upper", baseline = NULL, warnings = TRUE,
+                         ...) {
   .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
@@ -518,7 +582,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = 
   bound <- paste0(stat, ".", type)
   stats <- varsel_stats(object,
     stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
-    baseline = baseline, deltas = T
+    baseline = baseline, deltas = TRUE
   )
   util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
   util_cutoff <- pct * util_null
@@ -526,15 +590,15 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = 
 
   if (nrow(res) == 0) {
     ## no submodel satisfying the criterion found
-    if (object$nv_max == object$nv_all) {
-      suggested_size <- object$nv_max
+    if (object$nterms_max == object$nterms_all) {
+      suggested_size <- object$nterms_max
     } else {
       suggested_size <- NA
       if (warnings) {
         warning(paste(
           "Could not suggest model size. Investigate varsel_plot to identify",
           "if the search was terminated too early. If this is the case,",
-          "run variable selection with larger value for nv_max."
+          "run variable selection with larger value for nterms_max."
         ))
       }
     }
@@ -542,7 +606,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0, type = 
     suggested_size <- max(min(res), 1) # always include intercept
   }
 
-  suggested_size
+  return(suggested_size)
 }
 
 
@@ -559,75 +623,76 @@ as.matrix.projection <- function(x, ...) {
   }
   res <- t(x$sub_fit)
   if (x$intercept) {
-    if ("1" %in% x$vind) {
-      colnames(res) <- gsub("^1", "Intercept", x$vind)
+    if ("1" %in% x$solution_terms) {
+      colnames(res) <- gsub("^1", "Intercept", x$solution_terms)
     } else {
-      colnames(res) <- c("Intercept", x$vind)
+      colnames(res) <- c("Intercept", x$solution_terms)
     }
   }
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
-  res
+  return(res)
 }
 
 
-##'@method as.matrix ridgelm
-##'@export
+##' @method as.matrix ridgelm
+##' @export
 as.matrix.ridgelm <- function(x, ...) {
-  coef(x)
+  return(coef(x))
 }
 
-##'@method as.matrix lm
-##'@export
+##' @method as.matrix lm
 as.matrix.lm <- function(x, ...) {
-  coef(x)
+  return(coef(x))
 }
 
-##'@method as.matrix list
-##'@export
+##' @method as.matrix list
 as.matrix.list <- function(x, ...) {
-  do.call(cbind, lapply(x, as.matrix))
+  return(do.call(cbind, lapply(x, as.matrix)))
 }
 
-##'@method t ridgelm
-##'@export
+##' @method t ridgelm
+##' @export
 t.ridgelm <- function(x, ...) {
-  t(as.matrix(x))
+  return(t(as.matrix(x)))
 }
 
-##'@method t list
-##'@export
+##' @method t list
 t.list <- function(x, ...) {
-  t(as.matrix(x))
+  return(t(as.matrix(x)))
 }
 
 ##' Create cross-validation indices
 ##'
-##' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross validation.
-##' These functions are potentially useful when creating the \code{cvfits} and \code{cvfun}
-##' arguments for \link[=init_refmodel]{init_refmodel}. The returned value is different for
+##' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross
+##' validation. These functions are potentially useful when creating the
+##' \code{cvfits} and \code{cvfun} arguments for
+##' \link[=init_refmodel]{init_refmodel}. The returned value is different for
 ##' these two methods, see below for details.
 ##'
 ##' @name cv-indices
 ##'
 ##' @param n Number of data points.
 ##' @param k Number of folds. Must be at least 2 and not exceed \code{n}.
-##' @param out Format of the output, either 'foldwise' (default) or 'indices'. See below for details.
-##' @param seed Random seed so that the same division could be obtained again if needed.
+##' @param out Format of the output, either 'foldwise' (default) or 'indices'.
+##'   See below for details.
+##' @param seed Random seed so that the same division could be obtained again if
+##'   needed.
 ##'
-##' @return \code{cvfolds} returns a vector of length \code{n} such that each element is an integer
-##' between 1 and \code{k} denoting which fold the corresponding data point belongs to.
-##' The returned value of \code{cvind} depends on the \code{out}-argument. If \code{out}='foldwise',
-##' the returned value is a list with \code{k} elements,
-##' each having fields \code{tr} and \code{ts} which give the training and test indices, respectively,
-##' for the corresponding fold. If \code{out}='indices', the returned value is a list with fields \code{tr}
-##' and \code{ts}
-##' each of which is a list with \code{k} elements giving the training and test indices for each fold.
+##' @return \code{cvfolds} returns a vector of length \code{n} such that each
+##'   element is an integer between 1 and \code{k} denoting which fold the
+##'   corresponding data point belongs to. The returned value of \code{cv_ids}
+##'   depends on the \code{out}-argument. If \code{out}='foldwise', the returned
+##'   value is a list with \code{k} elements, each having fields \code{tr} and
+##'   \code{ts} which give the training and test indices, respectively, for the
+##'   corresponding fold. If \code{out}='indices', the returned value is a list
+##'   with fields \code{tr} and \code{ts} each of which is a list with \code{k}
+##'   elements giving the training and test indices for each fold.
 ##' @examples
 ##' \donttest{
 ##' ### compute sample means within each fold
 ##' n <- 100
 ##' y <- rnorm(n)
-##' cv <- cvind(n, k=5)
+##' cv <- cv_ids(n, k=5)
 ##' cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
 ##' }
 ##'
@@ -654,7 +719,7 @@ cvfolds <- function(n, k, seed = NULL) {
 
 ##' @rdname cv-indices
 ##' @export
-cvind <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
+cv_ids <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
   .validate_num_folds(k, n)
   out <- match.arg(out)
 
@@ -687,4 +752,8 @@ cvind <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
   }
 
   return(cv)
+}
+
+.is_vsel_object <- function(object) {
+  return("vsel" %in% class(object))
 }

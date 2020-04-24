@@ -63,11 +63,11 @@ vs <- varsel(fit)
 # print the results
 varsel_stats(vs)
 
-# project the parameters for model sizes nv = 3,5 variables 
-projs <- project(vs, nv = c(3, 5))
+# project the parameters for model sizes nterms = 3,5 variables 
+projs <- project(vs, nterms = c(3, 5))
 
 # predict using only the 5 most relevant variables
-pred <- proj_linpred(vs, xnew=df_gaussian$x, nv=5, integrated=T)
+pred <- proj_linpred(vs, xnew=df_gaussian$x, nterms=5, integrated=T)
 
 # perform cross-validation for the variable selection
 cvs <- cv_varsel(fit, cv_method='LOO')

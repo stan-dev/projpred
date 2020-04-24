@@ -4,26 +4,26 @@
   packageStartupMessage(msg)
 }
 
-weighted.sd <- function(x, w, na.rm = F) {
+weighted.sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
     n <- sum(ind)
   } else {
     n <- length(x)
-    ind <- rep(T, n)
+    ind <- rep(TRUE, n)
   }
   w <- w / sum(w[ind])
   m <- sum(x[ind] * w[ind])
   sqrt(n / (n - 1) * sum(w[ind] * (x[ind] - m)^2))
 }
 
-weighted.cov <- function(x, y, w, na.rm = F) {
+weighted.cov <- function(x, y, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x) & !is.na(y)
     n <- sum(ind)
   } else {
     n <- length(x)
-    ind <- rep(T, n)
+    ind <- rep(TRUE, n)
   }
   w <- w / sum(w[ind])
   mx <- sum(x[ind] * w[ind])
@@ -69,7 +69,8 @@ auc <- function(x) {
   return(sum(delta_fpr * tpr) + sum(delta_fpr * delta_tpr) / 2)
 }
 
-bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) {
+bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
+                      ...) {
   #
   # bootstrap an arbitrary quantity fun that takes the sample x
   # as the first input. other parameters to fun can be passed in as ...
@@ -102,7 +103,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
   }
 }
 
-
 .bbweights <- function(N, B) {
   # generate Bayesian bootstrap weights, N = original sample size,
   # B = number of bootstrap samples
@@ -111,11 +111,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
   return(bbw)
 }
 
-
-
 # from rstanarm
 `%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
-
 
 .is.wholenumber <- function(x) abs(x - round(x)) < .Machine$double.eps^0.5
 
@@ -132,11 +129,13 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
 }
 
 .validate_vsel_object_stats <- function(object, stats) {
-  if (!inherits(object, c("vsel", "cvsel"))) {
-    stop("The object is not a variable selection object. Run variable selection first")
+  if (!inherits(object, c("vsel"))) {
+    stop("The object is not a variable selection object. ",
+         "Run variable selection first")
   }
 
-  recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
+  recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc",
+                        "pctcorr", "auc")
   binomial_only_stats <- c("acc", "pctcorr", "auc")
   family <- object$family$family
 
@@ -175,12 +174,11 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
 
 .get_standard_y <- function(y, weights, fam) {
   # return y and the corresponding observation weights into the 'standard' form:
-  # for binomial family, y is transformed into a vector with values between 0 and 1,
-  # and weights give the number of observations at each x.
-  # for all other families, y and weights are kept as they are (unless weights is
-  # a vector with length zero in which case it is replaced by a vector of ones).
+  # for binomial family, y is transformed into a vector with values between 0
+  # and 1, and weights give the number of observations at each x. for all other
+  # families, y and weights are kept as they are (unless weights is a vector
+  # with length zero in which case it is replaced by a vector of ones).
   if (NCOL(y) == 1) {
-    # weights <- if(length(weights) > 0) unname(weights) else rep(1, length(y))
     if (length(weights) > 0) {
       weights <- unname(weights)
     } else {
@@ -192,10 +190,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
           stop("y cannot contain more than two classes if specified as factor.")
         }
         y <- as.vector(y, mode = "integer") - 1 # zero-one vector
-      } ## else {
-      ##   if (any(y < 0 | y > 1))
-      ##     stop("y values must be 0 <= y <= 1 for the binomial model.")
-      ## }
+      }
     } else {
       if (is.factor(y)) {
         stop("y cannot be a factor for models other than the binomial model.")
@@ -212,21 +207,24 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
 
 
 
-.get_refdist <- function(refmodel, ns = NULL, nc = NULL, seed = NULL) {
+.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL) {
   #
   # Creates the reference distribution based on the refmodel-object, and the
-  # desired number of clusters (nc) or number of subsamples (ns). If nc is specified,
-  # then clustering is used and ns is ignored. Returns a list with fields:
+  # desired number of clusters (nclusters) or number of subsamples (ndraws). If
+  # nclusters is specified, then clustering is used and ndraws is ignored.
+  # Returns a list with fields:
   #
-  #   mu: n-by-s matrix, vector of expected values for y for each draw/cluster. here s
-  #       means either the number of draws ns or clusters nc used, depending on which one is used.
-  #   var: n-by-s matrix, vector of predictive variances for y for each draw/cluster which
-  #         which are needed for projecting the dispersion parameter (note that this can be
-  #         unintuitively zero for those families that do not have dispersion)
-  #   weights: s-element vector of weights for the draws/clusters
-  #   cl: cluster assignment for each posterior draw, that is, a vector that has length equal to the
-  #       number of posterior draws and each value is an integer between 1 and s
-  #
+  #   mu: n-by-s matrix, vector of expected values for y for each draw/cluster.
+  #       here s means either the number of draws ndraws or clusters nclusters
+  #       used, depending on which one is used.
+  #   var: n-by-s matrix, vector of predictive variances for y for each
+  #         draw/cluster which which are needed for projecting the dispersion
+  #         parameter (note that this can be unintuitively zero for those
+  #         families that do not have dispersion) weights: s-element vector of
+  #   weights for the draws/clusters
+  #   cl: cluster assignment for each posterior draw, that is, a vector that has
+  #       length equal to the number of posterior draws and each value is an
+  #       integer between 1 and s
   if (is.null(seed)) {
     seed <- 17249420
   }
@@ -241,85 +239,98 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
   family <- refmodel$family
   S <- NCOL(refmodel$mu) # number of draws in the reference model
 
-  if (!is.null(nc)) {
-    # use clustering (ignore ns argument)
-    if (nc == 1) {
+  if (!is.null(nclusters)) {
+    # use clustering (ignore ndraws argument)
+    if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
-      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis, wobs = refmodel$wobs, cl = cl)
-    } else if (nc == NCOL(refmodel$mu)) {
+      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
+                            wobs = refmodel$wobs, cl = cl)
+    } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ns = nc))
+      return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
-      if (nc > NCOL(refmodel$mu)) {
-        stop("The number of clusters nc cannot exceed the number of columns in mu.")
+      if (nclusters > NCOL(refmodel$mu)) {
+        stop("The number of clusters nclusters cannot exceed the number of ",
+             "columns in mu.")
       }
-      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis, wobs = refmodel$wobs, nc = nc)
+      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
+                            wobs = refmodel$wobs, nclusters = nclusters)
     }
-  } else if (!is.null(ns)) {
+  } else if (!is.null(ndraws)) {
     # subsample from the reference model
     # would it be safer to actually randomly draw the subsample?
-    if (ns > NCOL(refmodel$mu)) {
-      stop("The number of subsamples ns cannot exceed the number of columns in mu.")
+    if (ndraws > NCOL(refmodel$mu)) {
+      stop("The number of subsamples ndraws cannot exceed the number of ",
+           "columns in mu.")
     }
-    s_ind <- round(seq(1, S, length.out = ns))
+    s_ind <- round(seq(1, S, length.out = ndraws))
     cl <- rep(NA, S)
-    cl[s_ind] <- c(1:ns)
+    cl[s_ind] <- c(1:ndraws)
     predvar <- sapply(s_ind, function(j) {
-      family$predvar(refmodel$mu[, j, drop = F], refmodel$dis[j])
+      family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     })
-    p_ref <- list(mu = refmodel$mu[, s_ind, drop = F], var = predvar, dis = refmodel$dis[s_ind], weights = rep(1 / ns, ns), cl = cl)
+    p_ref <- list(mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
+                  dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws),
+                  cl = cl)
   } else {
     # use all the draws from the reference model
-    predvar <- sapply(1:S, function(j) {
-      family$predvar(refmodel$mu[, j, drop = F], refmodel$dis[j])
+    predvar <- sapply(seq_len(S), function(j) {
+      family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     })
-    p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis, weights = refmodel$wsample, cl = c(1:S))
+    p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis,
+                  weights = refmodel$wsample, cl = c(1:S))
   }
 
   return(p_ref)
 }
 
-.get_p_clust <- function(family, mu, dis, nc = 10, wobs = rep(1, dim(mu)[1]), wsample = rep(1, dim(mu)[2]), cl = NULL) {
+.get_p_clust <- function(family, mu, dis, nclusters = 10,
+                         wobs = rep(1, dim(mu)[1]),
+                         wsample = rep(1, dim(mu)[2]), cl = NULL) {
   # Function for perfoming the clustering over the samples.
   #
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
     f <- family$linkfun(mu)
-    out <- kmeans(t(f), nc, iter.max = 50)
+    out <- kmeans(t(f), nclusters, iter.max = 50)
     cl <- out$cluster # cluster indices for each sample
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices
     if (is.null(cl$cluster)) {
-      stop("argument cl must be a vector of cluster indices or a clustering object returned by k-means.")
+      stop("argument cl must be a vector of cluster indices or a clustering ",
+           "object returned by k-means.")
     }
     cl <- cl$cluster
   }
 
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
-  nc <- max(cl, na.rm = TRUE) # number of clusters (assumes labeling 1,...,nc)
-  centers <- matrix(0, nrow = nc, ncol = dim(mu)[1])
-  wcluster <- rep(0, nc) # cluster weights
+  # number of clusters (assumes labeling 1,...,nclusters)
+  nclusters <- max(cl, na.rm = TRUE)
+  centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
+  wcluster <- rep(0, nclusters) # cluster weights
   eps <- 1e-10
-  for (j in 1:nc) {
-    # compute normalized weights within the cluster, 1-eps is for numerical stability
+  for (j in 1:nclusters) {
+    # compute normalized weights within the cluster, 1-eps is for numerical
+    # stability
     ind <- which(cl == j)
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
 
     # cluster centers and their weights
-    centers[j, ] <- mu[, ind, drop = F] %*% ws
+    centers[j, ] <- mu[, ind, drop = FALSE] %*% ws
     wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
   }
   wcluster <- wcluster / sum(wcluster)
 
   # predictive variances
-  predvar <- sapply(1:nc, function(j) {
-    # compute normalized weights within the cluster, 1-eps is for numerical stability
+  predvar <- sapply(1:nclusters, function(j) {
+    # compute normalized weights within the cluster, 1-eps is for numerical
+    # stability
     ind <- which(cl == j)
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
-    family$predvar(mu[, ind, drop = F], dis[ind], ws)
+    family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
   })
 
   # combine the results
@@ -343,14 +354,20 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
 
 .check_data <- function(data) {
   #
-  # Check that data object has the correct form for internal use. The object must
-  # be a list with with fields 'x', 'y', 'weights' and 'offset'.
-  # Raises error if x or y is missing, but fills weights and offset with default
-  # values if missing.
+  # Check that data object has the correct form for internal use. The object
+  # must be a list with with fields 'x', 'y', 'weights' and 'offset'. Raises
+  # error if x or y is missing, but fills weights and offset with default values
+  # if missing.
   #
-  if (is.null(data$z)) stop("The data object must be a list with field z giving the reference model inputs.")
-  if (is.null(data$x)) stop("The data object must be a list with field x giving the feature values.")
-  if (is.null(data$y)) stop("The data object must be a list with field y giving the target values.")
+  if (is.null(data$z))
+    stop("The data object must be a list with field z giving the reference ",
+         "model inputs.")
+  if (is.null(data$x))
+    stop("The data object must be a list with field x giving the feature ",
+         "values.")
+  if (is.null(data$y))
+    stop("The data object must be a list with field y giving the target ",
+         "values.")
   if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
   if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
   return(data)
@@ -359,7 +376,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
 
 .split_coef <- function(b, intercept) {
   if (intercept) {
-    list(alpha = b[1, ], beta = b[-1, , drop = F])
+    list(alpha = b[1, ], beta = b[-1, , drop = FALSE])
   } else {
     list(alpha = rep(0, NCOL(b)), beta = b)
   }
@@ -379,7 +396,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
       # there is only the column of ones in x, so return empty matrix
       return(matrix(nrow = nrow(x), ncol = 0))
     } else {
-      return(x[, 2:ncol(x), drop = F])
+      return(x[, 2:ncol(x), drop = FALSE])
     }
   } else {
     return(x)
@@ -391,13 +408,13 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL, ...) 
     stop(paste(
       "Numerical problems with inverting the covariance matrix. Possibly a",
       "problem with the convergence of the stan model?, If not, consider",
-      "stopping the selection early by setting the variable nv_max accordingly."
+      "stopping the selection early by setting the variable nterms_max",
+      "accordingly."
     ))
   } else {
     stop(e$message)
   }
 }
-
 
 .df_to_model_mat <- function(dfnew, var_names) {
   f <- formula(paste("~", paste(c("0", var_names), collapse = " + ")))

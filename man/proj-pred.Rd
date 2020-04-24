@@ -34,10 +34,10 @@ proj_predict(
 \item{object}{Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
 or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.}
 
-\item{xnew}{The predictor values used in the prediction. If \code{vind} is
+\item{xnew}{The predictor values used in the prediction. If \code{solution_terms} is
 specified, then \code{xnew} should either be a dataframe containing column names
-that correspond to \code{vind} or a matrix with the number and order of columns
-corresponding to \code{vind}. If \code{vind} is unspecified, then \code{xnew} must
+that correspond to \code{solution_terms} or a matrix with the number and order of columns
+corresponding to \code{solution_terms}. If \code{solution_terms} is unspecified, then \code{xnew} must
 either be a dataframe containing all the column names as in the original data or a matrix
 with the same columns at the same positions as in the original data.}
 
@@ -54,7 +54,7 @@ of ones.}
 
 \item{nv}{Number of variables in the submodel (the variable combination is
 taken from the variable selection information). If a vector with several values,
-then results for all specified model sizes are returned. Ignored if \code{vind} is specified.
+then results for all specified model sizes are returned. Ignored if \code{solution_terms} is specified.
 By default use the automatically suggested model size.}
 
 \item{transform}{Should the linear predictor be transformed using the
@@ -75,7 +75,7 @@ For \code{proj_predict} only.}
 }
 \value{
 If the prediction is done for one submodel only (\code{nv} has length one
-or \code{vind} is specified) and ynew is unspecified, a matrix or vector of
+or \code{solution_terms} is specified) and ynew is unspecified, a matrix or vector of
 predictions (depending on the value of \code{integrated}). If \code{ynew} is specified,
 returns a list with elements pred (predictions) and lpd (log predictive densities).
 If the predictions are done for several submodel sizes, returns a list with one element

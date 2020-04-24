@@ -2,14 +2,14 @@ context("miscellaneous")
 
 # miscellaneous tests
 
-if (require(brms)) {
+if (require(rstanarm)) {
   set.seed(1235)
   n <- 40
-  nv <- 5
-  x <- matrix(rnorm(n * nv, 0, 1), n, nv)
-  b <- runif(nv) - 0.5
+  nterms <- 5
+  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
+  b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = T)
+  weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
   chains <- 2
   seed <- 1235
@@ -45,14 +45,14 @@ if (require(brms)) {
       chains = chains, seed = seed, iter = iter
     )
   )
-  fit_list <- list( ## gauss = fit_gauss,
-    binom = fit_binom, poiss = fit_poiss
+  fit_list <- list(
+    gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss
   )
 
-
-
-
-  test_that("check that the main function calls do not return the same RNG state every time", {
+  test_that(paste(
+    "check that the main function calls do not return the",
+    "same RNG state every time"
+  ), {
     s <- 5
 
     for (seed in c(130927, NULL)) {
@@ -74,26 +74,40 @@ if (require(brms)) {
         expect_true(any(r1 != r2))
 
         # project
-        vind <- c(1, 2)
-        foo <- project(fit, vind = vind, ns = 100, seed = seed)
+        solution_terms <- c(1, 2)
+        foo <- project(fit,
+          solution_terms = solution_terms,
+          ndraws = 100, seed = seed
+        )
         r1 <- rnorm(s)
-        foo <- project(fit, vind = vind, ns = 100, seed = seed)
+        foo <- project(fit,
+          solution_terms = solution_terms,
+          ndraws = 100, seed = seed
+        )
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
 
         # proj_linpred
-        vind <- c(1, 3)
-        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        solution_terms <- c(1, 3)
+        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         r1 <- rnorm(s)
-        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
 
         # proj_predict
-        vind <- c(1, 3)
-        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        solution_terms <- c(1, 3)
+        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         r1 <- rnorm(s)
-        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
       }
@@ -117,22 +131,34 @@ if (require(brms)) {
         expect_equal(foo, bar)
 
         # project
-        vind <- c(1, 2)
-        foo <- project(fit, vind = vind, nc = 10, seed = seed)
-        bar <- project(fit, vind = vind, nc = 10, seed = seed)
+        solution_terms <- c(1, 2)
+        foo <- project(fit,
+          solution_terms = solution_terms,
+          nclusters = 10, seed = seed
+        )
+        bar <- project(fit,
+          solution_terms = solution_terms,
+          nclusters = 10, seed = seed
+        )
         expect_equal(foo, bar)
 
 
         # proj_linpred
-        vind <- c(1, 3)
-        foo <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
-        bar <- proj_linpred(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        solution_terms <- c(1, 3)
+        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
+        bar <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
+          solution_terms = solution_terms, seed = seed
+        )
         expect_equal(foo, bar)
 
         # proj_predict
-        vind <- c(1, 3)
-        foo <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
-        bar <- proj_predict(fit, data.frame(x = x)[, vind], vind = vind, seed = seed)
+        solution_terms <- c(1, 3)
+        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+                            solution_terms = solution_terms, seed = seed)
+        bar <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+                            solution_terms = solution_terms, seed = seed)
         expect_equal(foo, bar)
       }
     }

@@ -7,7 +7,7 @@
 project(
   object,
   nv = NULL,
-  vind = NULL,
+  solution_terms = NULL,
   cv_search = NULL,
   ns = NULL,
   nc = NULL,
@@ -25,9 +25,9 @@ using \link[=get_refmodel]{get_refmodel}.}
 \item{nv}{Number of variables in the submodel (the variable combination is taken from the
 \code{varsel} information). If a list, then the projection is performed for each model size.
 Default is the model size suggested by the variable selection (see function \code{suggest_size}).
- Ignored if \code{vind} is specified.}
+ Ignored if \code{solution_terms} is specified.}
 
-\item{vind}{Variable indices onto which the projection is done. If specified, \code{nv} is ignored.}
+\item{solution_terms}{Variable indices onto which the projection is done. If specified, \code{nv} is ignored.}
 
 \item{cv_search}{If TRUE, then the projected coefficients after L1-selection are computed
 without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
@@ -59,7 +59,7 @@ a single variable combination), each of which contains the following elements:
  \item{\code{dis}}{Draws from the projected dispersion parameter.}
  \item{\code{alpha}}{Draws from the projected intercept.}
  \item{\code{beta}}{Draws from the projected weight vector.}
- \item{\code{vind}}{The order in which the variables were added to the submodel.}
+ \item{\code{solution_terms}}{The order in which the variables were added to the submodel.}
  \item{\code{intercept}}{Whether or not the model contains an intercept.}
  \item{\code{family}}{A modified \code{\link{family}}-object.}
 }
@@ -78,7 +78,7 @@ vs <- varsel(fit)
 proj4 <- project(vs, nv = 4)
 
 # project onto an arbitrary variable combination (variable indices 3,4 and 8)
-proj <- project(fit, vind=c(3,4,8))
+proj <- project(fit, solution_terms=c(3,4,8))
 }
 
 }

@@ -1,7 +1,9 @@
 # Model-specific helper functions.
 #
-# \code{extend_family(family)} returns a family object augmented with auxiliary functions that
-# are needed for computing KL-divergence, log predictive density, dispersion projection etc.
+# \code{extend_family(family)} returns a family object augmented with auxiliary
+# functions that
+# are needed for computing KL-divergence, log predictive density, dispersion
+# projection etc.
 #
 # Missing: Quasi-families are not implemented. If dis_gamma is the correct shape
 # parameter for projected Gamma regression, everything should be OK for gamma.
@@ -15,7 +17,7 @@ extend_family <- function(family) {
     ## if the object already was created using this function, then return
     return(family)
   }
-  extend_family_specific <- paste0("extend_family_", family$family)
+  extend_family_specific <- paste0("extend_family_", tolower(family$family))
   extend_family_specific <- get(extend_family_specific, mode = "function")
   extend_family_specific(family)
 }
@@ -67,7 +69,8 @@ extend_family_poisson <- function(family) {
   predvar_na <- function(mu, dis, wsample = 1) {
     0
   }
-  ll_poiss <- function(mu, dis, y, weights = 1) weights * dpois(y, mu, log = T)
+  ll_poiss <- function(mu, dis, y, weights = 1)
+    weights * dpois(y, mu, log = TRUE)
   dev_poiss <- function(mu, y, weights = 1, dis = NULL) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
@@ -101,7 +104,7 @@ extend_family_gaussian <- function(family) {
   }
   ll_gauss <- function(mu, dis, y, weights = 1) {
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
-    weights * dnorm(y, mu, dis, log = T)
+    weights * dnorm(y, mu, dis, log = TRUE)
   }
   dev_gauss <- function(mu, y, weights = 1, dis = NULL) {
     if (is.null(dis)) {
@@ -136,7 +139,8 @@ extend_family_gamma <- function(family) {
   }
   dis_gamma <- function(pref, psub, wobs = 1) {
     ## TODO, IMPLEMENT THIS
-    stop("Projection of dispersion parameter not yet implemented for family Gamma.")
+    stop("Projection of dispersion parameter not yet implemented for family",
+         " Gamma.")
     ## mean(data$weights*((pref$mu - p_sub$mu)/
     ##                      family$mu.eta(family$linkfun(p_sub$mu))^2))
   }
@@ -145,12 +149,12 @@ extend_family_gamma <- function(family) {
   }
   ll_gamma <- function(mu, dis, y, weights = 1) {
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
-    weights * dgamma(y, dis, dis / matrix(mu), log = T)
+    weights * dgamma(y, dis, dis / matrix(mu), log = TRUE)
   }
   dev_gamma <- function(mu, dis, y, weights = 1) {
-    ## dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
-    ## weights*dgamma(y, dis, dis/matrix(mu), log=T)
     stop("Loss function not implemented for Gamma-family yet.")
+    ## dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
+    ## weights*dgamma(y, dis, dis/matrix(mu), log= TRUE)
   }
   ppd_gamma <- function(mu, dis, weights = 1) rgamma(length(mu), dis, dis / mu)
 
@@ -164,12 +168,13 @@ extend_family_gamma <- function(family) {
   return(family)
 }
 
-extend_family_Student_t <- function(family) {
+extend_family_student_t <- function(family) {
   kl_student_t <- function(pref, data, psub) {
     log(psub$dis)
   } #- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
   dis_student_t <- function(pref, psub, wobs = 1) {
-    s2 <- colSums(psub$w / sum(wobs) * (pref$var + (pref$mu - psub$mu)^2)) # CHECK THIS
+    s2 <- colSums(psub$w / sum(wobs) *
+                  (pref$var + (pref$mu - psub$mu)^2)) # CHECK THIS
     sqrt(s2)
     ## stop('Projection of dispersion not yet implemented for student-t')
   }
@@ -184,7 +189,7 @@ extend_family_Student_t <- function(family) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
     }
-    weights * (dt((y - mu) / dis, family$nu, log = T) - log(dis))
+    weights * (dt((y - mu) / dis, family$nu, log = TRUE) - log(dis))
   }
   dev_student_t <- function(mu, y, weights = 1, dis = NULL) {
     if (is.null(dis)) {
@@ -195,9 +200,11 @@ extend_family_Student_t <- function(family) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
     }
-    -2 * weights * (-0.5 * (family$nu + 1) * log(1 + 1 / family$nu * ((y - mu) / dis)^2) - log(dis))
+    (-2 * weights * (-0.5 * (family$nu + 1)
+      * log(1 + 1 / family$nu * ((y - mu) / dis)^2) - log(dis)))
   }
-  ppd_student_t <- function(mu, dis, weights = 1) rt(length(mu), family$nu) * dis + mu
+  ppd_student_t <- function(mu, dis, weights = 1)
+    rt(length(mu), family$nu) * dis + mu
 
   family$kl <- kl_student_t
   family$dis_fun <- dis_student_t
@@ -215,7 +222,7 @@ extend_family_Student_t <- function(family) {
 }
 
 .has_family_extras <- function(family) {
-  # check whether the family object has the extra functions, that is, whether it was
-  # created by extend_family
+  # check whether the family object has the extra functions, that is, whether it
+  # was created by extend_family
   !is.null(family$deviance)
 }
