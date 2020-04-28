@@ -266,7 +266,6 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
   weights <- w_o$weights
   offset <- w_o$offset
 
-  ## TODO: return y, weights and offset as right hand side formulas
   refmodel <- init_refmodel(fit, data, y, formula, family, predfun,
     div_minimizer, proj_predfun, folds, weights = weights,
     dis = dis, offset = offset, ...
