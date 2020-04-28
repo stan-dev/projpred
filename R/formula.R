@@ -574,10 +574,10 @@ lhs <- function(x) {
 }
 
 # taken from brms
-# validate formulas dedicated to response variables
-# @param x coerced to a formula object
-# @param empty_ok is an empty left-hand-side ok?
-# @return a formula of the form <response> ~ 1
+#' validate formulas dedicated to response variables
+#' @param x coerced to a formula object
+#' @param empty_ok is an empty left-hand-side ok?
+#' @return a formula of the form <response> ~ 1
 validate_resp_formula <- function(x, empty_ok = TRUE) {
   out <- lhs(as.formula(x))
   if (is.null(out)) {
@@ -599,12 +599,12 @@ validate_resp_formula <- function(x, empty_ok = TRUE) {
 }
 
 # taken from brms
-# convert a formula to a character string
-# @param formula a model formula
-# @param rm a vector of to elements indicating how many characters
-#   should be removed at the beginning and end of the string respectively
-# @param space how should whitespaces be treated?
-# @return a single character string or NULL
+#' convert a formula to a character string
+#' @param formula a model formula
+#' @param rm a vector of to elements indicating how many characters
+#'   should be removed at the beginning and end of the string respectively
+#' @param space how should whitespaces be treated?
+#' @return a single character string or NULL
 formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
   if (is.null(formula)) {
     return(NULL)
