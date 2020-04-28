@@ -68,7 +68,7 @@ In order to have a very general interface to `projpred` we need to specify some 
 For most models these will be quite simple functions interfacing with other packages, as shown next.
 
 ```{r, results='hide', messages=FALSE, warning=FALSE}
-predfun <- function(fit, newdata=NULL)
+ref_predfun <- function(fit, newdata=NULL)
   t(posterior_linpred(fit, newdata = newdata))
 
 proj_predfun <- function(fit, newdata=NULL) {
@@ -92,7 +92,7 @@ fetch_data <- function(obs=NULL, xnew=NULL) {
 }
 ```
 
-The first function, `predfun`, is the prediction function for the reference model, so we use `posterior_linpred` from `rstanarm`.
+The first function, `ref_predfun`, is the prediction function for the reference model, so we use `posterior_linpred` from `rstanarm`.
 For each of the submodels we use `proj_predfun`, which uses `lme4` `predict` function for linear models.
 To fit the projections we use `lm`.
 Finally, the `fetch_data` function that simply extracts a set of data points from the dataset, that will be used during the cross validation stage.

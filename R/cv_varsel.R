@@ -437,7 +437,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
     newdata <- d_test$newdata
     pred <- matrix(
-      as.numeric(refmodel$predfun(refmodel$fit, newdata = newdata)),
+      as.numeric(refmodel$ref_predfun(refmodel$fit, newdata = newdata)),
       NROW(newdata), NCOL(refmodel$y)
     )
     mu_test <- family$linkinv(pred)
@@ -611,8 +611,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   fetch_fold <- function(data = NULL, obs = NULL, newdata = NULL) {
     refmodel$fetch_data(obs = fold, newdata = newdata)
   }
-  predfun <- function(fit, newdata = default_data) {
-    refmodel$predfun(fit, newdata = newdata)
+  ref_predfun <- function(fit, newdata = default_data) {
+    refmodel$ref_predfun(fit, newdata = newdata)
   }
   proj_predfun <- function(fit, newdata = default_data, weights = NULL) {
     refmodel$proj_predfun(fit, newdata = newdata, weights = weights)
@@ -624,7 +624,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   k_refmodel <- init_refmodel(fit, fetch_fold(),
     refmodel$y[fold], refmodel$formula,
-    family = refmodel$family, predfun,
+    family = refmodel$family, ref_predfun,
     div_minimizer = refmodel$div_minimizer,
     proj_predfun = proj_predfun,
     folds = seq_along(fold),

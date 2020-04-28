@@ -92,8 +92,8 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
 
-  ## predfun returns link(mu)
-  mu <- object$predfun(object$fit, newdata)
+  ## ref_predfun returns link(mu)
+  mu <- object$ref_predfun(object$fit, newdata)
 
   if (is.null(ynew)) {
     if (type == "link") {
@@ -202,7 +202,7 @@ get_refmodel.vsel <- function(object, ...) {
 }
 
 #' @export
-get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
+get_refmodel.default <- function(fit, data, y, formula, ref_predfun, proj_predfun,
                                  div_minimizer, fetch_data, family = NULL,
                                  wobs = NULL, folds = NULL, cvfits = NULL,
                                  offset = NULL, cvfun = NULL) {
@@ -216,7 +216,7 @@ get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
     family <- extend_family(family)
   }
 
-  refmodel <- init_refmodel(fit, data, y, formula, family, predfun,
+  refmodel <- init_refmodel(fit, data, y, formula, family, ref_predfun,
     div_minimizer, proj_predfun, weights = wobs, offset = offset,
     cvfits = cvfits, folds = folds, cvfun = cvfun
   )
@@ -225,7 +225,7 @@ get_refmodel.default <- function(fit, data, y, formula, predfun, proj_predfun,
 
 #' export
 get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
-                                 predfun = NULL, proj_predfun = NULL,
+                                 ref_predfun = NULL, proj_predfun = NULL,
                                  div_minimizer = NULL, folds = NULL, ...) {
   family_name <- family(fit)$family
   fam <- ifelse(family_name == "bernoulli", "binomial", family_name)
@@ -266,7 +266,7 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
   weights <- w_o$weights
   offset <- w_o$offset
 
-  refmodel <- init_refmodel(fit, data, y, formula, family, predfun,
+  refmodel <- init_refmodel(fit, data, y, formula, family, ref_predfun,
     div_minimizer, proj_predfun, folds, weights = weights,
     dis = dis, offset = offset, ...
   )
@@ -275,7 +275,7 @@ get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
 
 #' @export
 get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
-                                 predfun = NULL, proj_predfun = NULL,
+                                 ref_predfun = NULL, proj_predfun = NULL,
                                  div_minimizer = NULL, folds = NULL, ...) {
   family <- family(fit)
   family <- extend_family(family)
@@ -330,7 +330,7 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
   }
 
   refmodel <- init_refmodel(
-    fit, data, y, formula, family, predfun, div_minimizer,
+    fit, data, y, formula, family, ref_predfun, div_minimizer,
     proj_predfun, folds,
     weights = weights, dis = dis, offset = offset, ...
   )
@@ -338,13 +338,13 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
 }
 
 #' @export
-init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
+init_refmodel <- function(fit, data, y, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, weights = NULL, offset = NULL,
                           cvfun = NULL, cvfits = NULL, dis = NULL, ...) {
   terms <- extract_terms_response(formula)
-  if (is.null(predfun)) {
-    predfun <- function(fit, newdata = NULL) {
+  if (is.null(ref_predfun)) {
+    ref_predfun <- function(fit, newdata = NULL) {
       t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
     }
   }
@@ -396,10 +396,10 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
 
   proper_model <- !is.null(fit)
 
-  ## predfun should already take into account the family of the model
+  ## ref_predfun should already take into account the family of the model
   ## we leave this here just in case
   if (proper_model) {
-    mu <- predfun(fit)
+    mu <- ref_predfun(fit)
     mu <- unname(as.matrix(mu))
     mu <- family$linkinv(mu)
   } else {
@@ -412,7 +412,7 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
           matrix(rep(NA, NROW(newdata)))
         }
       } else {
-        family$linkinv(predfun(fit, newdata))
+        family$linkinv(ref_predfun(fit, newdata))
       }
     }
   }
@@ -446,10 +446,10 @@ init_refmodel <- function(fit, data, y, formula, family, predfun = NULL,
     wobs = weights, wsample, offset, folds, cvfun, cvfits
   )
   if (proper_model) {
-    refmodel$predfun <- predfun
+    refmodel$ref_predfun <- ref_predfun
     class(refmodel) <- "refmodel"
   } else {
-    refmodel$predfun <- predfun_datafit
+    refmodel$ref_predfun <- ref_predfun_datafit
     class(refmodel) <- c("datafit", "refmodel")
   }
 

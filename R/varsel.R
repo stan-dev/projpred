@@ -146,7 +146,7 @@ varsel <- function(object, d_test = NULL, method = NULL, ndraws = NULL,
     if (d_type == "train") {
       mu_test <- refmodel$mu
     } else {
-      mu_test <- refmodel$predfun(refmodel$fit, newdata = d_test$data)
+      mu_test <- refmodel$ref_predfun(refmodel$fit, newdata = d_test$data)
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = family, wsample = refmodel$wsample,
