@@ -85,7 +85,7 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     stop("weightsnew specified but it's not a right hand side formula")
   }
 
-  w_o <- extract_weights_offset(object$refmodel$fit, weightsnew,
+  w_o <- extract_weights_offset(object$fit, weightsnew,
     offsetnew, newdata = newdata
   )
 
