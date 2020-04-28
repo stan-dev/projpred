@@ -404,7 +404,7 @@ init_refmodel <- function(fit, data, y, formula, family, ref_predfun = NULL,
     mu <- family$linkinv(mu)
   } else {
     mu <- matrix(y / weights, NROW(y), 1)
-    predfun_datafit <- function(fit = NULL, newdata = NULL, offset = 0) {
+    ref_predfun_datafit <- function(fit = NULL, newdata = NULL, offset = 0) {
       if (is.null(fit)) {
         if (is.null(newdata)) {
           matrix(rep(NA, NROW(y)))
