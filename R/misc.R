@@ -166,7 +166,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
       # no reference model (or the results missing for some other reason),
       # so cannot compute differences between the reference model and submodels
-      stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no reference model.")
+      stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no",
+           "reference model.")
     }
   }
   return(baseline)
