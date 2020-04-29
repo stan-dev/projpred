@@ -130,7 +130,8 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
 
 search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
                       opt) {
-  x <- model.matrix(refmodel$formula, refmodel$fetch_data())
+  frame <- model.frame(refmodel$formula, refmodel$fetch_data())
+  x <- model.matrix(refmodel$formula, data = frame)
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
@@ -148,12 +149,12 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
       formula <- make_formula(solution_terms[seq_len(nterms)])
       beta <- search_path$beta[seq_len(nterms), nterms + 1, drop = FALSE]
     }
-    sub <- list(
+    sub <- nlist(
       alpha = search_path$alpha[nterms + 1],
-      beta = beta,
+      beta,
       w = search_path$w[, nterms + 1],
-      formula = formula,
-      x = x
+      formula,
+      x
     )
     class(sub) <- "subfit"
     return(sub)
