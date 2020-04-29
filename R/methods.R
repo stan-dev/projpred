@@ -182,15 +182,21 @@ proj_linpred <- function(object, newdata, ynew = NULL, offsetnew = NULL,
       stop("weightsnew specified but it's not a right hand side formula")
     }
 
-    w_o <- extract_weights_offset(object$refmodel$fit, weightsnew,
-      offsetnew, newdata = newdata
+    w_o <- object$refmodel$extract_model_data(object$refmodel$fit,
+      newdata = newdata, weightsnew, offsetnew
     )
 
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
   }  else {
-    w_o <- extract_weights_offset(NULL, weightsnew,
-      offsetnew, newdata = newdata
+    if (length(object) > 1) {
+      extract_model_data <- object[[1]]$extract_model_data
+    } else {
+      extract_model_data <- object$extract_model_data
+    }
+    w_o <- extract_model_data(NULL,
+      newdata = newdata, weightsnew,
+      offsetnew
     )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
@@ -251,15 +257,22 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
       stop("weightsnew specified but it's not a right hand side formula")
     }
 
-    w_o <- extract_weights_offset(object$refmodel$fit, weightsnew,
-      offsetnew, newdata = newdata
+    w_o <- object$refmodel$extract_model_data(object$refmodel$fit,
+      newdata = newdata,
+      weightsnew, offsetnew
     )
 
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
   }  else {
-    w_o <- extract_weights_offset(NULL, weightsnew,
-      offsetnew, newdata = newdata
+    if (length(object) > 1) {
+      extract_model_data <- object[[1]]$extract_model_data
+    } else {
+      extract_model_data <- object$extract_model_data
+    }
+    w_o <- extract_model_data(NULL,
+      newdata = newdata,
+      weightsnew, offsetnew
     )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset

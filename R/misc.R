@@ -451,3 +451,82 @@ nlist <- function(...) {
   if (is.null(x)) x <- y
   x
 }
+
+#' Execute a Function Call
+#'
+#' Execute a function call similar to \code{\link{do.call}}, but without
+#' deparsing function arguments.
+#'
+#' @param what Either a function or a non-empty character string naming the
+#'   function to be called.
+#' @param args A list of arguments to the function call. The names attribute of
+#'   \code{args} gives the argument names.
+#' @param pkg Optional name of the package in which to search for the
+#'   function if \code{what} is a character string.
+#'
+#' @return The result of the (evaluated) function call.
+#'
+#' @keywords internal
+#' @export
+do_call <- function(what, args, pkg = NULL) {
+  call <- ""
+  if (length(args)) {
+    if (!is.list(args)) {
+      stop2("'args' must be a list.")
+    }
+    fun_args <- names(args)
+    if (is.null(fun_args)) {
+      fun_args <- rep("", length(args))
+    } else {
+      nzc <- nzchar(fun_args)
+      fun_args[nzc] <- paste0("`", fun_args[nzc], "` = ")
+    }
+    names(args) <- paste0(".x", seq_along(args))
+    call <- paste0(fun_args, names(args), collapse = ",")
+  } else {
+    args <- list()
+  }
+  if (is.function(what)) {
+    args$.fun <- what
+    what <- ".fun"
+  } else {
+    what <- paste0("`", as_one_character(what), "`")
+    if (!is.null(pkg)) {
+      what <- paste0(as_one_character(pkg), "::", what)
+    }
+  }
+  call <- paste0(what, "(", call, ")")
+  eval2(call, envir = args, enclos = parent.frame())
+}
+
+# like 'eval' but parses characters before evaluation
+eval2 <- function(expr, envir = parent.frame(), ...) {
+  if (is.character(expr)) {
+    expr <- parse(text = expr)
+  }
+  eval(expr, envir, ...)
+}
+
+# coerce 'x' to a single character string
+as_one_character <- function(x, allow_na = FALSE) {
+  s <- substitute(x)
+  x <- as.character(x)
+  if (length(x) != 1L || anyNA(x) && !allow_na) {
+    s <- deparse_combine(s, max_char = 100L)
+    stop2("Cannot coerce '", s, "' to a single character value.")
+  }
+  x
+}
+
+stop2 <- function(...) {
+  stop(..., call. = FALSE)
+}
+
+# combine deparse lines into one string
+deparse_combine <- function(x, max_char = NULL) {
+  out <- collapse(deparse(x))
+  if (isTRUE(max_char > 0)) {
+    out <- substr(out, 1L, max_char)
+  }
+  out
+}

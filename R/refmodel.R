@@ -85,8 +85,9 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     stop("weightsnew specified but it's not a right hand side formula")
   }
 
-  w_o <- extract_weights_offset(object$fit, weightsnew,
-    offsetnew, newdata = newdata
+  w_o <- object$extract_model_data(object$fit,
+    newdata = newdata, weightsnew,
+    offsetnew
   )
 
   weightsnew <- w_o$weights
@@ -121,12 +122,8 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
   }
 }
 
-#' @export
-extract_weights_offset <- function(object, ...) {
-  UseMethod("extract_weights_offset", object)
-}
-
-extract_weights_offset.default <- function(fit, wrhs, orhs, newdata = NULL) {
+.extract_model_data <- function(fit, newdata = NULL, wrhs = NULL,
+                                orhs = NULL, resp_form = NULL) {
   if (is.null(newdata)) {
     newdata <- fit$data
   }
@@ -143,45 +140,13 @@ extract_weights_offset.default <- function(fit, wrhs, orhs, newdata = NULL) {
     offset <- rep(0, NROW(newdata))
   }
 
-  return(nlist(weights, offset))
-}
-
-extract_weights_offset.brmsfit <- function(fit, wrhs, orhs, newdata = NULL) {
-  ## ignore wrhs and orhs
-  if (is.null(newdata)) {
-    newdata <- fit$data
+  if (inherits(resp_form, "formula")) {
+    y <- eval_rhs(resp_form, newdata)
+  } else {
+    y <- NULL
   }
 
-  brms_formula <- formula(fit)
-  if (is.null(formula)) {
-    formula <- brms_formula$formula
-  }
-
-  family <- family(fit)
-  p <- parse_bf(brms_formula)
-
-  weights <- rep(1, NROW(newdata))
-  if ("trials" %in% family$ad &&
-    inherits(p$adforms$trials, "formula")) {
-    trials_form <- p$adforms$trials
-    trials_var <- eval_rhs(trials_form, newdata)$vars$trials
-    weights <- eval_rhs(as.formula(paste("~", trials_var)), newdata)
-  }
-
-  if ("weights" %in% family$ad &&
-    inherits(p$adforms$weights, "formula")) {
-    weights_form <- p$adforms$weights
-    weights_var <- eval_rhs(weights_form, newdata)$vars$weights
-    weights <- eval_rhs(as.formula(paste("~", weights_var)), newdata)
-  }
-
-  offset <- rep(0, NROW(newdata))
-  if (!is.null(p$dpars$mu$offset)) {
-    offset_form <- p$dpars$mu$offset
-    offset <- eval_rhs(offset_form, newdata)
-  }
-
-  return(nlist(weights, offset))
+  return(nlist(y, weights, offset))
 }
 
 #' @export
@@ -202,10 +167,10 @@ get_refmodel.vsel <- function(object, ...) {
 }
 
 #' @export
-get_refmodel.default <- function(fit, data, y, formula, ref_predfun, proj_predfun,
-                                 div_minimizer, fetch_data, family = NULL,
-                                 wobs = NULL, folds = NULL, cvfits = NULL,
-                                 offset = NULL, cvfun = NULL) {
+get_refmodel.default <- function(fit, data, y, formula, ref_predfun,
+                                 proj_predfun, div_minimizer, fetch_data,
+                                 family = NULL, wobs = NULL, folds = NULL,
+                                 cvfits = NULL, offset = NULL, cvfun = NULL) {
   fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
     fetch_data(data, obs, newdata)
   }
@@ -216,74 +181,27 @@ get_refmodel.default <- function(fit, data, y, formula, ref_predfun, proj_predfu
     family <- extend_family(family)
   }
 
+  extract_model_data <- function(fit, newdata = NULL, wrhs = NULL,
+                                 orhs = NULL) {
+    resp_form <- lhs(formula)
+    args <- nlist(fit, newdata, wrhs, orhs, resp_form)
+    return(do_call(.extract_model_data, args))
+  }
+
   refmodel <- init_refmodel(fit, data, y, formula, family, ref_predfun,
-    div_minimizer, proj_predfun, weights = wobs, offset = offset,
+    div_minimizer, proj_predfun, extract_model_data = extract_model_data,
     cvfits = cvfits, folds = folds, cvfun = cvfun
   )
   return(refmodel)
 }
 
-#' export
-get_refmodel.brmsfit <- function(fit, data = NULL, y = NULL, formula = NULL,
-                                 ref_predfun = NULL, proj_predfun = NULL,
-                                 div_minimizer = NULL, folds = NULL, ...) {
-  family_name <- family(fit)$family
-  fam <- ifelse(family_name == "bernoulli", "binomial", family_name)
-  fam <- get(fam, mode = "function")()
-  brms_family <- family(fit)
-  brms_family$mu.eta <- fam$mu.eta
-  brms_family$variance <- fam$variance
-  brms_family$dev.resids <- fam$dev.resids
-  family <- extend_family(brms_family)
-
-  brms_formula <- formula(fit)
-  if (is.null(formula)) {
-    formula <- brms_formula$formula
-  }
-
-  response_name <- brms_formula$resp
-
-  formula <- update(formula, paste(response_name, " ~ ."))
-  p <- parse_bf(brms_formula)
-
-  if (is.null(data)) {
-    data <- fit$data
-  }
-
-  if (is.null(y)) {
-    respform <- validate_resp_formula(brms_formula)
-    y <- as.numeric(model.response(model.frame(respform, data)))
-    data[, response_name] <- y
-  }
-
-  if (.has_dispersion(family)) {
-    dis <- data.frame(fit)[, "sigma"]
-  } else {
-    dis <- NULL
-  }
-
-  w_o <- extract_weights_offset(fit)
-  weights <- w_o$weights
-  offset <- w_o$offset
-
-  refmodel <- init_refmodel(fit, data, y, formula, family, ref_predfun,
-    div_minimizer, proj_predfun, folds, weights = weights,
-    dis = dis, offset = offset, ...
-  )
-  return(refmodel)
-}
-
 #' @export
-get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
-                                 ref_predfun = NULL, proj_predfun = NULL,
-                                 div_minimizer = NULL, folds = NULL, ...) {
+get_refmodel.stanreg <- function(fit, data = NULL, ref_predfun = NULL,
+                                 proj_predfun = NULL, div_minimizer = NULL,
+                                 folds = NULL, ...) {
   family <- family(fit)
   family <- extend_family(family)
-
-  if (is.null(formula)) {
-    formula <- formula(fit)
-  }
-
+  formula <- formula(fit)
   terms <- extract_terms_response(formula)
   response_name <- terms$response
 
@@ -291,36 +209,45 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
     data <- fit$data
   }
 
-  weights <- NULL
-  if (!is.null(fit$weights) && length(fit$weights) != 0) {
-    weights <- fit$weights
-  }
-
-  if (family$family == "binomial" && length(response_name) == 2) {
-    ## in rstanarm the convention is to set
-    ## cbind(y, weight - y) ~ .
-    response <- lapply(response_name, function(rhs) {
-      eval_rhs(as.formula(paste("~", rhs)), data)
-    })
-    if (is.null(y)) {
-      y <- response[[1]]
-    }
-    weights <- response[[2]] + y ## weights - y
-    response_name[[1]] <- gsub("\\(|\\)", "", response_name[[1]])
-    formula <- update(formula, paste0(response_name[[1]], " ~ ."))
+  if (length(response_name) > 1) {
     response_name <- response_name[[1]]
-  } else if (length(response_name) == 1 && is.null(y)) {
-    y <- eval_rhs(as.formula(paste("~", response_name)), data)
-    response_name <- gsub("\\(|\\)", "", response_name)
-    formula <- update(formula, paste0(response_name, " ~ ."))
   }
 
-  ## add transformed response
-  data[, response_name] <- y
+  formula <- update(formula,
+    as.formula(paste(response_name, "~ ."))
+  )
 
-  offset <- NULL
-  if (!is.null(fit$offset) && length(fit$offset) != 0) {
-    offset <- fit$offset
+  extract_model_data <- function(fit, newdata = NULL, wrhs = NULL,
+                                 orhs = NULL) {
+    if (length(response_name) > 1) {
+      resp_form <- response_name[[1]]
+      if (is.null(newdata)) {
+        wrhs <- as.formula(paste("~", response_name[[2]], "+",
+                                response_name[[1]]))
+      }
+    } else {
+      resp_form <- response_name
+    }
+    resp_form <- as.formula(paste("~", resp_form))
+
+    if (is.null(newdata)) {
+      newdata <- fit$data
+    }
+
+    if (is.null(wrhs) && !is.null(fit) &&
+        !is.null(fit$weights) && length(fit$weights) != 0) {
+      wrhs <- ~ weights
+      newdata <- cbind(newdata, weights = fit$weights)
+    }
+
+    if (is.null(orhs) && !is.null(fit) &&
+        !is.null(fit$offset) && length(fit$offset) != 0) {
+      orhs <- ~ offset
+      newdata <- cbind(newdata, offset = fit$offset)
+    }
+
+    args <- nlist(fit, newdata, wrhs, orhs, resp_form)
+    return(do_call(.extract_model_data, args))
   }
 
   if (.has_dispersion(family)) {
@@ -330,24 +257,40 @@ get_refmodel.stanreg <- function(fit, data = NULL, y = NULL, formula = NULL,
   }
 
   refmodel <- init_refmodel(
-    fit, data, y, formula, family, ref_predfun, div_minimizer,
-    proj_predfun, folds,
-    weights = weights, dis = dis, offset = offset, ...
+    fit, data, formula, family, ref_predfun = ref_predfun,
+    div_minimizer = div_minimizer, proj_predfun = proj_predfun, folds = folds,
+    extract_model_data = extract_model_data, dis = dis, ...
   )
   return(refmodel)
 }
 
 #' @export
-init_refmodel <- function(fit, data, y, formula, family, ref_predfun = NULL,
+init_refmodel <- function(fit, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
-                          folds = NULL, weights = NULL, offset = NULL,
-                          cvfun = NULL, cvfits = NULL, dis = NULL, ...) {
+                          folds = NULL, extract_model_data = NULL, cvfun = NULL,
+                          cvfits = NULL, dis = NULL, ...) {
   terms <- extract_terms_response(formula)
+  response_name <- terms$response
   if (is.null(ref_predfun)) {
     ref_predfun <- function(fit, newdata = NULL) {
       t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
     }
   }
+
+  ## remove parens from response
+  response_name <- gsub("\\(\\)", "", response_name)
+  formula <- update(
+    formula,
+    paste(response_name, "~ .")
+  )
+
+  model_data <- extract_model_data(fit)
+  weights <- model_data$weights
+  offset <- model_data$offset
+  y <- model_data$y
+
+  ## add (transformed) response with new name
+  data[, response_name] <- y
 
   if (is.null(div_minimizer)) {
     if (length(terms$group_terms) != 0) {
@@ -373,7 +316,6 @@ init_refmodel <- function(fit, data, y, formula, family, ref_predfun = NULL,
     family <- extend_family(family)
   }
 
-  ## TODO: ideally remove this, have to think about it
   family$mu_fun <- function(fit, obs = folds, newdata = NULL, offset = NULL,
                             weights = NULL) {
     if (is.null(offset)) {
@@ -387,11 +329,6 @@ init_refmodel <- function(fit, data, y, formula, family, ref_predfun = NULL,
       newdata = newdata,
       weights = weights
     ) + offset)
-  }
-
-  ## equal sample weights by default
-  if (is.null(weights)) {
-    weights <- rep(1, length(y))
   }
 
   proper_model <- !is.null(fit)
@@ -418,7 +355,6 @@ init_refmodel <- function(fit, data, y, formula, family, ref_predfun = NULL,
   }
 
   ndraws <- ncol(mu)
-  ## TODO: eventually this will be a function provided by the user
   if (is.null(dis)) {
     dis <- rep(0, ndraws)
   }
@@ -436,14 +372,11 @@ init_refmodel <- function(fit, data, y, formula, family, ref_predfun = NULL,
   cvfun <- function(folds) lapply(1:max(folds), function(k) list())
 
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
-  if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
-  }
-
   intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(fit, formula, div_minimizer, family, mu, dis, y, loglik,
     intercept, proj_predfun, fetch_data = fetch_data_wrapper,
-    wobs = weights, wsample, offset, folds, cvfun, cvfits
+    wobs = weights, wsample, offset, folds, cvfun, cvfits,
+    extract_model_data
   )
   if (proper_model) {
     refmodel$ref_predfun <- ref_predfun

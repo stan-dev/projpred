@@ -181,8 +181,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   )
   ## add family
   proj <- lapply(subm, function(model) {
-    model <- c(model, nlist(family), list(p_type = is.null(ndraws)))
+    model <- c(model, nlist(family))
+    model$p_type <- is.null(ndraws)
     model$intercept <- intercept
+    model$extract_model_data <- refmodel$extract_model_data
     class(model) <- "projection"
     return(model)
   })
