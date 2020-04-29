@@ -122,10 +122,10 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
   }
 }
 
-.extract_model_data <- function(fit, newdata = NULL, wrhs = NULL,
+.extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                 orhs = NULL, resp_form = NULL) {
   if (is.null(newdata)) {
-    newdata <- fit$data
+    newdata <- object$data
   }
 
   if (inherits(wrhs, "formula")) {
@@ -150,8 +150,8 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
 }
 
 #' @export
-get_refmodel <- function(fit, ...) {
-  UseMethod("get_refmodel", fit)
+get_refmodel <- function(object, ...) {
+  UseMethod("get_refmodel", object)
 }
 
 #' @export
@@ -167,7 +167,7 @@ get_refmodel.vsel <- function(object, ...) {
 }
 
 #' @export
-get_refmodel.default <- function(fit, data, y, formula, ref_predfun,
+get_refmodel.default <- function(object, data, y, formula, ref_predfun,
                                  proj_predfun, div_minimizer, fetch_data,
                                  family = NULL, wobs = NULL, folds = NULL,
                                  cvfits = NULL, offset = NULL, cvfun = NULL) {
@@ -176,19 +176,19 @@ get_refmodel.default <- function(fit, data, y, formula, ref_predfun,
   }
 
   if (is.null(family)) {
-    family <- extend_family(family(fit))
+    family <- extend_family(family(object))
   } else {
     family <- extend_family(family)
   }
 
-  extract_model_data <- function(fit, newdata = NULL, wrhs = NULL,
+  extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL) {
     resp_form <- lhs(formula)
-    args <- nlist(fit, newdata, wrhs, orhs, resp_form)
+    args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do_call(.extract_model_data, args))
   }
 
-  refmodel <- init_refmodel(fit, data, y, formula, family, ref_predfun,
+  refmodel <- init_refmodel(object, data, y, formula, family, ref_predfun,
     div_minimizer, proj_predfun, extract_model_data = extract_model_data,
     cvfits = cvfits, folds = folds, cvfun = cvfun
   )
@@ -196,17 +196,17 @@ get_refmodel.default <- function(fit, data, y, formula, ref_predfun,
 }
 
 #' @export
-get_refmodel.stanreg <- function(fit, data = NULL, ref_predfun = NULL,
+get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
                                  proj_predfun = NULL, div_minimizer = NULL,
                                  folds = NULL, ...) {
-  family <- family(fit)
+  family <- family(object)
   family <- extend_family(family)
-  formula <- formula(fit)
+  formula <- formula(object)
   terms <- extract_terms_response(formula)
   response_name <- terms$response
 
   if (is.null(data)) {
-    data <- fit$data
+    data <- object$data
   }
 
   if (length(response_name) > 1) {
@@ -217,7 +217,7 @@ get_refmodel.stanreg <- function(fit, data = NULL, ref_predfun = NULL,
     as.formula(paste(response_name, "~ ."))
   )
 
-  extract_model_data <- function(fit, newdata = NULL, wrhs = NULL,
+  extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL) {
     if (length(response_name) > 1) {
       resp_form <- response_name[[1]]
@@ -231,33 +231,33 @@ get_refmodel.stanreg <- function(fit, data = NULL, ref_predfun = NULL,
     resp_form <- as.formula(paste("~", resp_form))
 
     if (is.null(newdata)) {
-      newdata <- fit$data
+      newdata <- object$data
     }
 
-    if (is.null(wrhs) && !is.null(fit) &&
-        !is.null(fit$weights) && length(fit$weights) != 0) {
+    if (is.null(wrhs) && !is.null(object) &&
+        !is.null(object$weights) && length(object$weights) != 0) {
       wrhs <- ~ weights
-      newdata <- cbind(newdata, weights = fit$weights)
+      newdata <- cbind(newdata, weights = object$weights)
     }
 
-    if (is.null(orhs) && !is.null(fit) &&
-        !is.null(fit$offset) && length(fit$offset) != 0) {
+    if (is.null(orhs) && !is.null(object) &&
+        !is.null(object$offset) && length(object$offset) != 0) {
       orhs <- ~ offset
-      newdata <- cbind(newdata, offset = fit$offset)
+      newdata <- cbind(newdata, offset = object$offset)
     }
 
-    args <- nlist(fit, newdata, wrhs, orhs, resp_form)
+    args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do_call(.extract_model_data, args))
   }
 
   if (.has_dispersion(family)) {
-    dis <- data.frame(fit)[, "sigma"]
+    dis <- data.frame(object)[, "sigma"]
   } else {
     dis <- NULL
   }
 
   refmodel <- init_refmodel(
-    fit, data, formula, family, ref_predfun = ref_predfun,
+    object, data, formula, family, ref_predfun = ref_predfun,
     div_minimizer = div_minimizer, proj_predfun = proj_predfun, folds = folds,
     extract_model_data = extract_model_data, dis = dis, ...
   )
@@ -265,7 +265,7 @@ get_refmodel.stanreg <- function(fit, data = NULL, ref_predfun = NULL,
 }
 
 #' @export
-init_refmodel <- function(fit, data, formula, family, ref_predfun = NULL,
+init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, extract_model_data = NULL, cvfun = NULL,
                           cvfits = NULL, dis = NULL, ...) {
@@ -284,12 +284,15 @@ init_refmodel <- function(fit, data, formula, family, ref_predfun = NULL,
     paste(response_name, "~ .")
   )
 
-  model_data <- extract_model_data(fit)
+  model_data <- extract_model_data(object)
   weights <- model_data$weights
   offset <- model_data$offset
   y <- model_data$y
 
   ## add (transformed) response with new name
+  if (is.null(data)) {
+    data <- object$data
+  }
   data[, response_name] <- y
 
   if (is.null(div_minimizer)) {
@@ -331,12 +334,12 @@ init_refmodel <- function(fit, data, formula, family, ref_predfun = NULL,
     ) + offset)
   }
 
-  proper_model <- !is.null(fit)
+  proper_model <- !is.null(object)
 
   ## ref_predfun should already take into account the family of the model
   ## we leave this here just in case
   if (proper_model) {
-    mu <- ref_predfun(fit)
+    mu <- ref_predfun(object)
     mu <- unname(as.matrix(mu))
     mu <- family$linkinv(mu)
   } else {
@@ -371,12 +374,20 @@ init_refmodel <- function(fit, data, formula, family, ref_predfun = NULL,
   # cross-validation for datafit reference; see cv_varsel and get_kfold
   cvfun <- function(folds) lapply(1:max(folds), function(k) list())
 
+  if (is.null(offset)) {
+    offset <- rep(0, NROW(y))
+  }
+
+  if (is.null(weights)) {
+    weights <- rep(1, NROW(y))
+  }
+
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   intercept <- as.logical(attr(terms(formula), "intercept"))
-  refmodel <- nlist(fit, formula, div_minimizer, family, mu, dis, y, loglik,
-    intercept, proj_predfun, fetch_data = fetch_data_wrapper,
-    wobs = weights, wsample, offset, folds, cvfun, cvfits,
-    extract_model_data
+  refmodel <- nlist(
+    fit = object, formula, div_minimizer, family, mu, dis, y,
+    loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
+    wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
   )
   if (proper_model) {
     refmodel$ref_predfun <- ref_predfun
