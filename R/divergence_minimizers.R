@@ -14,24 +14,31 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
 
 linear_mle <- function(formula, data, family, weights = NULL, regul = NULL) {
   formula <- validate_response_formula(formula)
-  fit_lm_ridge_callback <- function(f) {
-    if (count_terms_in_subformula(f) == 1) {
-      glm(f, data = data, weights = weights, family = family)
-    } else {
-      fit <- glm(f, data = data, weights = weights, family = family)
-      fit$data <- data
-      fit$formula <- f
-      fit$weights <- weights
-      fit
-    }
-  }
   if (inherits(formula, "formula")) {
-    return(fit_lm_ridge_callback(formula))
+    return(fit_lm_ridge_callback(formula, data, family, weights))
   } else if (inherits(formula, "list")) {
-    return(lapply(formula, function(f) (fit_lm_ridge_callback(f))))
+    return(lapply(formula, fit_lm_ridge_callback, data, family, weights))
   } else {
     stop("The provided formula is neither a formula object nor a list")
   }
+}
+
+# helper function of 'linear_mle'
+fit_lm_ridge_callback <- function(formula, data, family, weights) {
+  # make sure correct 'weights' can be found
+  environment(formula) <- environment()
+  # TODO: is it correct to use glm for the ref predicted responses?
+  # TODO: why is there a special case for a single term?
+  if (count_terms_in_subformula(formula) == 1) {
+    fit <- glm(formula, data = data, family = family, weights = weights)
+  } else {
+    fit <- glm(formula, data = data, family = family, weights = weights)
+    fit$data <- data
+    fit$formula <- formula
+    fit$weights <- weights
+    fit
+  }
+  fit
 }
 
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
@@ -40,38 +47,41 @@ linear_mle <- function(formula, data, family, weights = NULL, regul = NULL) {
 linear_multilevel_mle <- function(formula, data, family, weights = NULL,
                                   regul = NULL) {
   formula <- validate_response_formula(formula)
-  fit_lmer_callback <- function(f) {
-    tryCatch({
-      lme4::glmer(f, data = data, weights = weights, family = family)
-    },
-      error = function(e) {
-        if (grepl("No random effects", as.character(e))) {
-          glm(f, data = data, weights = weights, family = family)
-        } else if (grepl("not positive definite", as.character(e))) {
-          lme4::glmer(f,
-            data = data, weights = weights, family = family,
-            control = glmerControl(
-              optimizer = "optimx",
-              optCtrl = list(method = "nlminb")
-            )
-          )
-        } else {
-          browser()
-          e
-        }
-      }
-    )
-  }
   if (inherits(formula, "formula")) {
-    return(fit_lmer_callback(formula))
+    return(fit_lmer_callback(formula, data, family, weights))
   } else if (inherits(formula, "list")) {
-    return(lapply(formula, function(f) (fit_lmer_callback(f))))
+    return(lapply(formula, fit_lmer_callback, data, family, weights))
   } else {
     stop("The provided formula is neither a formula object nor a list")
   }
 }
 
-linear_multilevel_proj_predfun <- function(fit, newdata = NULL,
+# helper function of 'linear_multilevel_mle'
+fit_lmer_callback <- function(formula, data, family, weights) {
+  # make sure correct 'weights' can be found
+  environment(formula) <- environment()
+  tryCatch({
+    lme4::glmer(formula, data = data, family = family, weights = weights)
+  },
+  error = function(e) {
+    if (grepl("No random effects", as.character(e))) {
+      glm(formula, data = data, family = family, weights = weights)
+    } else if (grepl("not positive definite", as.character(e))) {
+      lme4::glmer(formula,
+                  data = data, weights = weights, family = family,
+                  control = glmerControl(
+                    optimizer = "optimx",
+                    optCtrl = list(method = "nlminb")
+                  )
+      )
+    } else {
+      e
+    }
+  }
+  )
+}
+
+linear_multilevel_proj_predfun <- function(fit, newdata = NULL, 
                                            weights = NULL) {
   if (is.null(weights)) {
     weights <- 1
