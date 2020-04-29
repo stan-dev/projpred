@@ -20,7 +20,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     )
   }
   div_minimizer <- function(formula, data, weights) {
-    refmodel$div_minimizer(formula, data, weights = weights, regul = regul)
+    refmodel$div_minimizer(formula, data, weights = weights, family = family,
+                           regul = regul)
   }
   linear_predict <- function(fit) {
     refmodel$proj_predfun(fit)
@@ -29,23 +30,41 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   subset <- subset_formula_and_data(
     formula = form, terms_ = unique(unlist(solution_terms)),
-    data = refmodel$fetch_data(), y = pobs$z
+    data = refmodel$fetch_data(), y = mu
   )
   ## capture.output(sub_fit <- iterative_weighted_least_squares(
   ##   flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
   ##   replace_response, wprev = wobs, div_minimizer = div_minimizer),
   ##   type = "message")
-  sub_fit <- iterative_weighted_least_squares(
-    flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
-    replace_response, wprev = wobs, div_minimizer = div_minimizer,
-    linear_predict = linear_predict
-  )
+  sub_fit <- div_minimizer(subset$formula, subset$data, weights = wobs)
+  ## sub_fit <- iterative_weighted_least_squares(
+  ##   flatten_formula(subset$formula), subset$data, 1, link,
+  ##   replace_response, wprev = wobs, div_minimizer = div_minimizer,
+  ##   linear_predict = linear_predict
+  ## )
 
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
     family = family, solution_terms = solution_terms, ref_mu = mu,
     weights = wobs, wsample = wsample
   ))
+}
+
+preprocess_data <- function(formula, data, intercept = TRUE, weights = NULL) {
+  frame <- model.frame(formula, data)
+  x <- model.matrix(formula,
+    data = frame
+  )[, -1, drop = FALSE]
+
+  transf <- standardization(x,
+    center = intercept, scale = TRUE,
+    weights = weights
+  )
+  transf$scale[transf$scale == 0] <- 1
+  x <- t((t(x) - transf$shift) / transf$scale)
+  data[colnames(x)] <- x
+
+  return(data)
 }
 
 iterative_weighted_least_squares <- function(formula, data, iters, link,
@@ -165,7 +184,6 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
     ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
   } else {
     ref <- p_ref
-    ref$w <- rep(0, NROW(ref_mu))
   }
 
   mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = 1)

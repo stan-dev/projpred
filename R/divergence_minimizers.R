@@ -12,13 +12,13 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
   }
 }
 
-linear_mle <- function(formula, data, weights = NULL, regul = NULL) {
+linear_mle <- function(formula, data, family, weights = NULL, regul = NULL) {
   formula <- validate_response_formula(formula)
   fit_lm_ridge_callback <- function(f) {
     if (count_terms_in_subformula(f) == 1) {
-      lm(f, data = data, weights = weights)
+      glm(f, data = data, weights = weights, family = family)
     } else {
-      fit <- lm.ridge(f, data = data, weights = weights, lambda = regul)
+      fit <- glm(f, data = data, weights = weights, family = family)
       fit$data <- data
       fit$formula <- f
       fit$weights <- weights
@@ -37,22 +37,26 @@ linear_mle <- function(formula, data, weights = NULL, regul = NULL) {
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
 #' Note that we don't use glmer because the target is a pseudo-Gaussian
 #' transformation.
-linear_multilevel_mle <- function(formula, data, weights = NULL, regul = NULL) {
+linear_multilevel_mle <- function(formula, data, family, weights = NULL,
+                                  regul = NULL) {
   formula <- validate_response_formula(formula)
   fit_lmer_callback <- function(f) {
-    tryCatch(lme4::lmer(f, data = data, weights = weights),
+    tryCatch({
+      lme4::glmer(f, data = data, weights = weights, family = family)
+    },
       error = function(e) {
         if (grepl("No random effects", as.character(e))) {
-          lm.ridge(f, data = data, weights = weights, lambda = regul)
+          glm(f, data = data, weights = weights, family = family)
         } else if (grepl("not positive definite", as.character(e))) {
-          lme4::lmer(f,
-            data = data, weights = weights,
-            control = lmerControl(
+          lme4::glmer(f,
+            data = data, weights = weights, family = family,
+            control = glmerControl(
               optimizer = "optimx",
               optCtrl = list(method = "nlminb")
             )
           )
         } else {
+          browser()
           e
         }
       }
