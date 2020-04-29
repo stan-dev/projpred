@@ -8,9 +8,9 @@
 \usage{
 varsel_plot(
   object,
-  nv_max = NULL,
+  nterms_max = NULL,
   stats = "elpd",
-  deltas = F,
+  deltas = FALSE,
   alpha = 0.32,
   baseline = NULL,
   ...
@@ -18,10 +18,10 @@ varsel_plot(
 
 varsel_stats(
   object,
-  nv_max = NULL,
+  nterms_max = NULL,
   stats = "elpd",
   type = c("mean", "se"),
-  deltas = F,
+  deltas = FALSE,
   alpha = 0.32,
   baseline = NULL,
   ...
@@ -31,37 +31,40 @@ varsel_stats(
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
-\item{nv_max}{Maximum submodel size for which the statistics are calculated.
-For \code{varsel_plot} it must be at least 1.}
+\item{nterms_max}{Maximum submodel size for which the statistics are
+calculated. For \code{varsel_plot} it must be at least 1.}
 
-\item{stats}{One or several strings determining which statistics to calculate. Available
-statistics are: 
+\item{stats}{One or several strings determining which statistics to
+  calculate. Available statistics are:
 \itemize{
  \item{elpd:} {(Expected) sum of log predictive densities}
- \item{mlpd:} {Mean log predictive density, that is, elpd divided by the number of datapoints.}
- \item{mse:} {Mean squared error (gaussian family only)}
+ \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
+  number of datapoints.} \item{mse:} {Mean squared error (gaussian family
+  only)}
  \item{rmse:} {Root mean squared error (gaussian family only)}
  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
  \item{auc:} {Area under the ROC curve (binomial family only)}
 }
 Default is elpd.}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative to the baseline model 
-(see argument \code{baseline}) instead of estimating the actual values of the statistics.
-Defaults to \code{FALSE}.}
+\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative
+to the baseline model (see argument \code{baseline}) instead of estimating
+the actual values of the statistics. Defaults to \code{FALSE}.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
-intervals. For example \code{alpha=0.32} corresponds to 68\% probability mass
-within the intervals, that is, one standard error intervals.}
+intervals. For example \code{alpha=0.32} corresponds to 68\% probability
+mass within the intervals, that is, one standard error intervals.}
 
-\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the reference model or
-the best submodel found. Default is 'ref' when the reference model exists, and 'best' otherwise.}
+\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the
+reference model or the best submodel found. Default is 'ref' when the
+reference model exists, and 'best' otherwise.}
 
 \item{...}{Currently ignored.}
 
-\item{type}{One or more items from 'mean', 'se', 'lower' and 'upper' indicating which of these to
-compute (mean, standard error, and lower and upper credible bounds). The credible bounds are determined so
-that \code{1-alpha} percent of the mass falls between them.}
+\item{type}{One or more items from 'mean', 'se', 'lower' and 'upper'
+indicating which of these to compute (mean, standard error, and lower and
+upper credible bounds). The credible bounds are determined so that
+\code{1-alpha} percent of the mass falls between them.}
 }
 \description{
 \code{varsel_stats} can be used to obtain summary statistics related to
@@ -71,12 +74,12 @@ variable selection. The same statistics can be plotted with
 \examples{
 \donttest{
 ### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
+fit <- stan_glm(y ~ x, binomial())
 vs <- cv_varsel(fit)
 varsel_plot(vs)
 
 # print out some stats
-varsel_stats(vs, stats=c('acc'), type = c('mean','se'))
+varsel_stats(vs, stats = c("acc"), type = c("mean", "se"))
 }
 
 }

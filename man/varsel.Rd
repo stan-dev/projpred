@@ -8,94 +8,106 @@ varsel(
   object,
   d_test = NULL,
   method = NULL,
-  ns = NULL,
-  nc = NULL,
-  nspred = NULL,
-  ncpred = NULL,
-  cv_search = NULL,
-  nv_max = NULL,
-  intercept = NULL,
-  penalty = NULL,
-  verbose = F,
+  ndraws = NULL,
+  nclusters = NULL,
+  ndraws_pred = NULL,
+  nclusters_pred = NULL,
+  cv_search = TRUE,
+  nterms_max = NULL,
+  intercept = TRUE,
+  verbose = TRUE,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
   thresh = 1e-06,
   regul = 1e-04,
+  penalty = NULL,
+  search_terms = NULL,
   ...
 )
 }
 \arguments{
-\item{object}{Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
-or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
-using \link[=get_refmodel]{get_refmodel}.}
+\item{object}{Either a \code{refmodel}-type object created by
+\link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+or an object which can be converted to a reference model using
+\link[=get_refmodel]{get_refmodel}.}
 
-\item{d_test}{A test dataset, which is used to evaluate model performance.
-If not provided, training data is used. Currently this argument is for internal use only.}
+\item{d_test}{A test dataset, which is used to evaluate model performance. If
+not provided, training data is used. Currently this argument is for
+internal use only.}
 
 \item{method}{The method used in the variable selection. Possible options are
 \code{'L1'} for L1-search and \code{'forward'} for forward selection.
-Default is 'forward' if the number of variables in the full data is at most 20, and
-\code{'L1'} otherwise.}
+Default is 'forward' if the number of variables in the full data is at most
+20,' and \code{'L1'} otherwise.}
 
-\item{ns}{Number of posterior draws used in the variable selection.
-Cannot be larger than the number of draws in the reference model.
-Ignored if nc is set.}
+\item{ndraws}{Number of posterior draws used in the variable
+selection. Cannot be larger than the number of draws in the reference
+model. Ignored if nclusters is set.}
 
-\item{nc}{Number of clusters to use in the clustered projection.
-Overrides the \code{ns} argument. Defaults to 1.}
+\item{nclusters}{Number of clusters to use in the clustered projection.
+Overrides the \code{ndraws} argument. Defaults to 1.}
 
-\item{nspred}{Number of samples used for prediction (after selection). Ignored if ncpred is given.}
+\item{ndraws_pred}{Number of samples used for prediction (after
+selection). Ignored if nclusters_pred is given.}
 
-\item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
+\item{nclusters_pred}{Number of clusters used for prediction (after
+selection). Default is 5.}
 
-\item{cv_search}{If TRUE, then the projected coefficients after L1-selection are computed
-without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
-the coefficients are the solution from the L1-penalized projection. This option is relevant only
-if \code{method}='L1'. Default is TRUE for genuine reference models and FALSE if \code{object} is
-datafit (see \link[=init_refmodel]{init_refmodel}).}
+\item{cv_search}{If TRUE, then the projected coefficients after L1-selection
+are computed without any penalization (or using only the regularization
+determined by \code{regul}). If FALSE, then the coefficients are the
+solution from the' L1-penalized projection. This option is relevant only if
+\code{method}='L1'. Default is TRUE for genuine reference models and FALSE
+if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 
-\item{nv_max}{Maximum number of varibles until which the selection is continued.
-Defaults to min(20, D, floor(0.4*n)) where n is the number of observations and
-D the number of variables.}
+\item{nterms_max}{Maximum number of varibles until which the selection is
+continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
+observations and D the number of variables.}
 
 \item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}
-
-\item{penalty}{Vector determining the relative penalties or costs for the variables.
-Zero means that those variables have no cost and will therefore be selected first,
-whereas Inf means that those variables will never be selected. Currently works only 
-if method == 'L1'. By default 1 for each variable.}
 
 \item{verbose}{If TRUE, may print out some information during the selection.
 Defaults to FALSE.}
 
-\item{lambda_min_ratio}{Ratio between the smallest and largest lambda in the L1-penalized search.
-This parameter essentially determines how long the search is carried out, i.e., how large submodels
-are explored. No need to change the default value unless the program gives a warning about this.}
+\item{lambda_min_ratio}{Ratio between the smallest and largest lambda in the
+L1-penalized search. This parameter essentially determines how long the
+search is carried out, i.e., how large submodels are explored. No need to
+change the default value unless the program gives a warning about this.}
 
-\item{nlambda}{Number of values in the lambda grid for L1-penalized search. No need to change unless
-the program gives a warning about this.}
+\item{nlambda}{Number of values in the lambda grid for L1-penalized search.
+No need to change unless the program gives a warning about this.}
 
-\item{thresh}{Convergence threshold when computing L1-path. Usually no need to change this.}
+\item{thresh}{Convergence threshold when computing L1-path. Usually no need
+to change this.}
 
-\item{regul}{Amount of regularization in the projection. Usually there is no need for 
-regularization, but sometimes for some models the projection can be ill-behaved and we
-need to add some regularization to avoid numerical problems.}
+\item{regul}{Amount of regularization in the projection. Usually there is no
+need for regularization, but sometimes for some models the projection can
+be ill-behaved and we need to add some regularization to avoid numerical
+problems.}
 
-\item{...}{Additional arguments to be passed to the \code{get_refmodel}-function.}
+\item{penalty}{Vector determining the relative penalties or costs for the
+variables. Zero means that those variables have no cost and will therefore
+be selected first, whereas Inf means those variables will never be
+selected. Currently works only if method == 'L1'. By default 1 for each
+variable.}
+
+\item{...}{Additional arguments to be passed to the
+\code{get_refmodel}-function.}
 }
 \value{
-An object of type \code{vsel} that contains information about the feature selection. The fields are not 
-meant to be accessed directly by the user but instead via the helper functions (see the vignettes or type ?projpred
-to see the main functions in the package.)
+An object of type \code{vsel} that contains information about the
+  feature selection. The fields are not #' meant to be accessed directly by
+  the user but instead via the helper #' functions (see the vignettes or type
+  ?projpred #' to see the main functions in the package.)
 }
 \description{
-Perform the projection predictive variable selection for generalized linear models using
-generic reference models.
+Perform the projection predictive variable selection for generalized linear
+models using generic reference models.
 }
 \examples{
 \donttest{
-### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
+## Usage with stanreg objects
+fit <- stan_glm(y ~ x, binomial())
 vs <- varsel(fit)
 varsel_plot(vs)
 }

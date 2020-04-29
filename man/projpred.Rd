@@ -7,9 +7,10 @@
 \description{
 Description
 
-\pkg{projpred} is an R package to perform projection predictive variable selection for generalized
-linear models. The package is aimed to be compatible with \pkg{rstanarm} but also other
-reference models can be used (see function \code{\link{init_refmodel}}). 
+\pkg{projpred} is an R package to perform projection predictive variable (feature)
+selection for generalized linear models. The package is aimed to be compatible with
+\pkg{rstanarm} but also other reference models can be used (see function
+\code{\link{init_refmodel}}). 
 
 Currently, the supported models (family objects in R) include Gaussian,
 Binomial and Poisson families, but more will be implemented later. See the

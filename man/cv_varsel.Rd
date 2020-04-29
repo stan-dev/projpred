@@ -2,29 +2,30 @@
 % Please edit documentation in R/cv_varsel.R
 \name{cv_varsel}
 \alias{cv_varsel}
-\title{Cross-validate the variable selection (varsel)}
+\title{Cross-validated variable selection (varsel)}
 \usage{
 cv_varsel(
   fit,
   method = NULL,
   cv_method = NULL,
-  ns = NULL,
-  nc = NULL,
-  nspred = NULL,
-  ncpred = NULL,
-  cv_search = NULL,
-  nv_max = NULL,
+  ndraws = NULL,
+  nclusters = NULL,
+  ndraws_pred = NULL,
+  nclusters_pred = NULL,
+  cv_search = TRUE,
+  nterms_max = NULL,
   intercept = NULL,
   penalty = NULL,
-  verbose = T,
+  verbose = TRUE,
   nloo = NULL,
   K = NULL,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
   thresh = 1e-06,
   regul = 1e-04,
-  validate_search = T,
+  validate_search = TRUE,
   seed = NULL,
+  search_terms = NULL,
   ...
 )
 }
@@ -33,35 +34,42 @@ cv_varsel(
 
 \item{method}{Same as in \link[=varsel]{varsel}.}
 
-\item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'. Default is 'LOO'.}
+\item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'.
+Default is 'LOO'.}
 
-\item{ns}{Number of samples used for selection. Ignored if nc is provided or if method='L1'.}
+\item{ndraws}{Number of samples used for selection. Ignored if
+nclusters is provided or if method='L1'.}
 
-\item{nc}{Number of clusters used for selection. Default is 1 and ignored if method='L1' 
-(L1-search uses always one cluster).}
+\item{nclusters}{Number of clusters used for selection. Default is 1
+and ignored if method='L1' (L1-search uses always one cluster).}
 
-\item{nspred}{Number of samples used for prediction (after selection). Ignored if ncpred is given.}
+\item{ndraws_pred}{Number of samples used for prediction (after
+selection). Ignored if nclusters_pred is given.}
 
-\item{ncpred}{Number of clusters used for prediction (after selection). Default is 5.}
+\item{nclusters_pred}{Number of clusters used for prediction (after
+selection). Default is 5.}
 
 \item{cv_search}{Same as in \link[=varsel]{varsel}.}
 
-\item{nv_max}{Same as in \link[=varsel]{varsel}.}
+\item{nterms_max}{Same as in \link[=varsel]{varsel}.}
 
 \item{intercept}{Same as in \link[=varsel]{varsel}.}
 
 \item{penalty}{Same as in \link[=varsel]{varsel}.}
 
-\item{verbose}{Whether to print out some information during the validation, Default is TRUE.}
+\item{verbose}{Whether to print out some information during the validation,
+Default is TRUE.}
 
-\item{nloo}{Number of observations used to compute the LOO validation (anything between 1 and the 
-total number of observations). Smaller values lead to
-faster computation but higher uncertainty (larger errorbars) in the accuracy estimation.
-Default is to use all observations, but for faster experimentation, one can set this to a small value such as 100.
-Only applicable if \code{cv_method = 'LOO'}.}
+\item{nloo}{Number of observations used to compute the LOO validation
+(anything between 1 and the total number of observations). Smaller values
+lead to faster computation but higher uncertainty (larger errorbars) in the
+accuracy estimation. Default is to use all observations, but for faster
+experimentation, one can set this to a small value such as 100. Only
+applicable if \code{cv_method = 'LOO'}.}
 
-\item{K}{Number of folds in the k-fold cross validation. Default is 5 for genuine
-reference models and 10 for datafits (that is, for penalized maximum likelihood estimation).}
+\item{K}{Number of folds in the k-fold cross validation. Default is 5 for
+genuine reference models and 10 for datafits (that is, for penalized
+maximum likelihood estimation).}
 
 \item{lambda_min_ratio}{Same as in \link[=varsel]{varsel}.}
 
@@ -69,35 +77,43 @@ reference models and 10 for datafits (that is, for penalized maximum likelihood 
 
 \item{thresh}{Same as in \link[=varsel]{varsel}.}
 
-\item{regul}{Amount of regularization in the projection. Usually there is no need for 
-regularization, but sometimes for some models the projection can be ill-behaved and we
-need to add some regularization to avoid numerical problems.}
+\item{regul}{Amount of regularization in the projection. Usually there is no
+need for regularization, but sometimes for some models the projection can
+be ill-behaved and we need to add some regularization to avoid numerical
+problems.}
 
-\item{validate_search}{Whether to cross-validate also the selection process, that is, whether to perform
-selection separately for each fold. Default is TRUE and we strongly recommend not setting this
-to FALSE, because this is known to bias the accuracy estimates for the selected submodels.
-However, setting this to FALSE can sometimes be useful because comparing the results to the case
-where this parameter is TRUE gives idea how strongly the feature selection is (over)fitted to the
-data (the difference corresponds to the search degrees of freedom or the effective number 
-of parameters introduced by the selectin process).}
+\item{validate_search}{Whether to cross-validate also the selection process,
+that is, whether to perform selection separately for each fold. Default is
+TRUE and we strongly recommend not setting this to FALSE, because this is
+known to bias the accuracy estimates for the selected submodels. However,
+setting this to FALSE can sometimes be useful because comparing the results
+to the case where this parameter is TRUE gives idea how strongly the
+feature selection is (over)fitted to the data (the difference corresponds
+to the search degrees of freedom or the effective number of parameters
+introduced by the selectin process).}
 
-\item{seed}{Random seed used in the subsampling LOO. By default uses a fixed seed.}
+\item{seed}{Random seed used in the subsampling LOO. By default uses a fixed
+seed.}
 
-\item{...}{Additional arguments to be passed to the \code{get_refmodel}-function.}
+\item{search_terms}{User defined list of terms to consider for selection.}
+
+\item{...}{Additional arguments to be passed to the
+\code{get_refmodel}-function.}
 }
 \value{
-An object of type \code{cvsel} that contains information about the feature selection. The fields are not 
-meant to be accessed directly by the user but instead via the helper functions (see the vignettes or type ?projpred
-to see the main functions in the package.)
+An object of type \code{vsel} that contains information about the
+  feature selection. The fields are not meant to be accessed directly by the
+  user but instead via the helper functions (see the vignettes or type
+  ?projpred to see the main functions in the package.)
 }
 \description{
-Perform cross-validation for the projective variable selection for a generalized
-linear model.
+Perform cross-validation for the projective variable selection for a
+generalized linear model.
 }
 \examples{
 \donttest{
-### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
+# Usage with stanreg objects
+fit <- stan_glm(y ~ x, binomial())
 cvs <- cv_varsel(fit)
 varsel_plot(cvs)
 }

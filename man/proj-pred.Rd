@@ -9,77 +9,85 @@ distribution of the projected submodel}
 \usage{
 proj_linpred(
   object,
-  xnew,
+  newdata,
   ynew = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
-  nv = NULL,
+  nterms = NULL,
   transform = FALSE,
   integrated = FALSE,
+  seed = NULL,
   ...
 )
 
 proj_predict(
   object,
-  xnew,
+  newdata,
   offsetnew = NULL,
   weightsnew = NULL,
-  nv = NULL,
-  draws = NULL,
+  nterms = NULL,
+  ndraws = 1000,
   seed = NULL,
   ...
 )
 }
 \arguments{
-\item{object}{Either an object returned by \link[=varsel]{varsel}, \link[=cv_varsel]{cv_varsel}
-or \link[=init_refmodel]{init_refmodel}, or alternatively any object that can be converted to a reference model.}
+\item{object}{Either an object returned by \link[=varsel]{varsel},
+\link[=cv_varsel]{cv_varsel} or \link[=init_refmodel]{init_refmodel}, or
+alternatively any object that can be converted to a reference model.}
 
-\item{xnew}{The predictor values used in the prediction. If \code{solution_terms} is
-specified, then \code{xnew} should either be a dataframe containing column names
-that correspond to \code{solution_terms} or a matrix with the number and order of columns
-corresponding to \code{solution_terms}. If \code{solution_terms} is unspecified, then \code{xnew} must
-either be a dataframe containing all the column names as in the original data or a matrix
-with the same columns at the same positions as in the original data.}
+\item{newdata}{The predictor values used in the prediction. If
+\code{solution_terms} is specified, then \code{newdata} should either be a
+dataframe containing column names that correspond to \code{solution_terms}
+or a matrix with the number and order of columns corresponding to
+\code{solution_terms}. If \code{solution_terms} is unspecified, then
+\code{newdata} must either be a dataframe containing all the column names
+as in the original data or a matrix with the same columns at the same
+positions as in the original data.}
 
-\item{ynew}{New (test) target variables. If given, then the log predictive density
-for the new observations is computed.}
+\item{ynew}{New (test) target variables. If given, then the log predictive
+density for the new observations is computed.}
 
 \item{offsetnew}{Offsets for the new observations. By default a vector of
-zeros.}
+zeros. By default we take the weights from newdata as in the original
+model. Either NULL or right hand side formula.}
 
 \item{weightsnew}{Weights for the new observations. For binomial model,
 corresponds to the number trials per observation. For \code{proj_linpred},
-this argument matters only if \code{ynew} is specified. By default a vector
-of ones.}
+this argument matters only if \code{ynew} is specified. By default we take
+the weights from newdata as in the original model. Either NULL or right
+hand side formula.}
 
-\item{nv}{Number of variables in the submodel (the variable combination is
-taken from the variable selection information). If a vector with several values,
-then results for all specified model sizes are returned. Ignored if \code{solution_terms} is specified.
-By default use the automatically suggested model size.}
+\item{nterms}{Number of variables in the submodel (the variable combination
+is taken from the variable selection information). If a vector with several
+values, then results for all specified model sizes are returned. Ignored if
+\code{solution_terms} is specified. By default use the automatically
+suggested model size.}
 
 \item{transform}{Should the linear predictor be transformed using the
-inverse-link function? Default is \code{FALSE}. For \code{proj_linpred} only.}
+inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
+only.}
 
-\item{integrated}{If \code{TRUE}, the output is averaged over the
-parameters. Default is \code{FALSE}. For \code{proj_linpred} only.}
+\item{integrated}{If \code{TRUE}, the output is averaged over the parameters.
+Default is \code{FALSE}. For \code{proj_linpred} only.}
 
-\item{...}{Additional argument passed to \link{project} if \code{object}
-is an object returned by \link{varsel} or \link{cv_varsel}.}
+\item{seed}{An optional seed to use for drawing from the projection. For
+\code{proj_predict} only.}
+
+\item{...}{Additional argument passed to \link{project} if \code{object} is
+an object returned by \link{varsel} or \link{cv_varsel}.}
 
 \item{draws}{Number of draws to return from the predictive distribution of
-the projection. The default is 1000.
-For \code{proj_predict} only.}
-
-\item{seed}{An optional seed to use for drawing from the projection.
-For \code{proj_predict} only.}
+the projection. The default is 1000. For \code{proj_predict} only.}
 }
 \value{
-If the prediction is done for one submodel only (\code{nv} has length one
-or \code{solution_terms} is specified) and ynew is unspecified, a matrix or vector of
-predictions (depending on the value of \code{integrated}). If \code{ynew} is specified,
-returns a list with elements pred (predictions) and lpd (log predictive densities).
-If the predictions are done for several submodel sizes, returns a list with one element
-for each submodel.
+If the prediction is done for one submodel only (\code{nterms} has
+  length one or \code{solution_terms} is specified) and ynew is unspecified,
+  a matrix or vector of predictions (depending on the value of
+  \code{integrated}). If \code{ynew} is specified, returns a list with
+  elements pred (predictions) and lpd (log predictive densities). If the
+  predictions are done for several submodel sizes, returns a list with one
+  element for each submodel.
 }
 \description{
 \code{proj_linpred} extracts draws of the linear predictor and
@@ -89,14 +97,13 @@ functions also perform the projection.
 }
 \examples{
 \donttest{
-### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
+## Usage with stanreg objects
+fit <- stan_glm(y ~ x, binomial())
 vs <- varsel(fit)
 
-# compute predictions with 4 variables at the training points
-pred <- proj_linpred(vs, xnew=x, nv = 4)
-pred <- proj_predict(vs, xnew=x, nv = 4)
-
+## compute predictions with 4 variables at the training points
+pred <- proj_linpred(vs, newdata = x, nterms = 4)
+pred <- proj_predict(vs, newdata = x, nterms = 4)
 }
 
 }
