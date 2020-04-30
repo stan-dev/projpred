@@ -255,6 +255,35 @@ y_list <- lapply(fams, function(fam) {
   nlist(y, y_glmnet, weights)
 })
 
+extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
+                               orhs = NULL, extract_y = FALSE) {
+  if (!is.null(object)) {
+    formula <- formula(object)
+    tt <- extract_terms_response(formula)
+    response_name <- tt$response
+  } else {
+    response_name <- NULL
+  }
+
+  if (is.null(newdata)) {
+    newdata <- object$data
+  }
+
+  resp_form <- NULL
+  if (is.null(object)) {
+    if ("weights" %in% colnames(newdata))
+      wrhs <- ~ weights
+    if ("offset" %in% colnames(newdata))
+      orhs <- ~ offset
+    if ("y" %in% colnames(newdata))
+      resp_form <- ~ y
+  }
+
+  args <- nlist(object, newdata, wrhs, orhs, resp_form)
+  return(do_call(.extract_model_data, args))
+}
+
+
 
 test_that(paste(
   "L1-projection with data reference gives the same results as",
@@ -285,8 +314,8 @@ test_that(paste(
       nlambda = nlambda, thresh = 1e-12
     )
     pred1 <- proj_linpred(vs,
-      newdata = data.frame(x = x, offset = offset), nterms = 0:nterms,
-      transform = FALSE, offsetnew = ~offset,
+      newdata = data.frame(x = x, offset = offset, weights = weights),
+      nterms = 0:nterms, transform = FALSE, offsetnew = ~offset,
     )
 
     # compute the results for the Lasso
