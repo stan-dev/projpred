@@ -605,9 +605,19 @@ as.matrix.lm <- function(x, ...) {
   return(coef(x))
 }
 
+##' @method as.matrix glm
+as.matrix.glm <- function(x, ...) {
+  return(coef(x))
+}
+
 ##' @method as.matrix list
 as.matrix.list <- function(x, ...) {
   return(do.call(cbind, lapply(x, as.matrix)))
+}
+
+##' @method t glm
+t.glm <- function(x, ...) {
+  return(t(as.matrix(x)))
 }
 
 ##' @method t lm
