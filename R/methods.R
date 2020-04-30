@@ -569,33 +569,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
   return(suggested_size)
 }
 
-
-
-
-##' @method as.matrix projection
-##' @export
-as.matrix.projection <- function(x, ...) {
-  if (x$p_type) {
-    warning(paste0(
-      "Note, that projection was performed using",
-      "clustering and the clusters might have different weights."
-    ))
-  }
-  res <- t(x$sub_fit)
-  if (x$intercept) {
-    if ("1" %in% x$solution_terms) {
-      colnames(res) <- gsub("^1", "Intercept", x$solution_terms)
-    } else {
-      colnames(res) <- c("Intercept", x$solution_terms)
-    }
-  }
-  if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
-  return(res)
-}
-
-
 ##' @method as.matrix ridgelm
-##' @export
 as.matrix.ridgelm <- function(x, ...) {
   return(coef(x))
 }
@@ -610,9 +584,14 @@ as.matrix.glm <- function(x, ...) {
   return(coef(x))
 }
 
+##' @method as.matrix noquote
+as.matrix.noquote <- function(x, ...) {
+  return(coef(x))
+}
+
 ##' @method as.matrix list
 as.matrix.list <- function(x, ...) {
-  return(do.call(cbind, lapply(x, as.matrix)))
+  return(do.call(cbind, lapply(x, as.matrix.glm)))
 }
 
 ##' @method t glm
@@ -632,7 +611,32 @@ t.ridgelm <- function(x, ...) {
 
 ##' @method t list
 t.list <- function(x, ...) {
-  return(t(as.matrix(x)))
+  return(t(as.matrix.list(x)))
+}
+
+##' @method as.matrix projection
+##' @export
+as.matrix.projection <- function(x, ...) {
+  if (x$p_type) {
+    warning(paste0(
+      "Note, that projection was performed using",
+      "clustering and the clusters might have different weights."
+    ))
+  }
+  if (inherits(x$sub_fit, "list")) {
+    res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lm)))
+  } else {
+    res <- t(as.matrix.lm(x$sub_fit))
+  }
+  if (x$intercept) {
+    if ("1" %in% x$solution_terms) {
+      colnames(res) <- gsub("^1", "Intercept", x$solution_terms)
+    } else {
+      colnames(res) <- c("Intercept", x$solution_terms)
+    }
+  }
+  if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  return(res)
 }
 
 ##' Create cross-validation indices
