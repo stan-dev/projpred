@@ -291,7 +291,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   ## add (transformed) response with new name
   if (is.null(data)) {
-    data <- object$data
+    stop("Data was not provided.")
   }
   data[, response_name] <- y
 
