@@ -333,10 +333,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       weights <- rep(1, length(obs))
     }
     newdata <- fetch_data_wrapper(obs = obs, newdata = newdata)
-    family$linkinv(proj_predfun(fit,
+    suppressWarnings(family$linkinv(proj_predfun(fit,
       newdata = newdata,
       weights = weights
-    ) + offset)
+    ) + offset))
   }
 
   proper_model <- !is.null(object)

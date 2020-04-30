@@ -27,14 +27,8 @@ linear_mle <- function(formula, data, family, weights = NULL, regul = NULL) {
 fit_lm_ridge_callback <- function(formula, data, family, weights) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
-  # TODO: is it correct to use glm for the ref predicted responses?
-  # TODO: why is there a special case for a single term?
-  if (count_terms_in_subformula(formula) == 1) {
-    fit <- glm(formula, data = data, family = family, weights = weights)
-  } else {
-    fit <- glm(formula, data = data, family = family, weights = weights)
-  }
-  fit
+  # TODO: is it correct to use glm for the ref predicted mean?
+  glm(formula, data = data, family = family, weights = weights)
 }
 
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
@@ -64,11 +58,11 @@ fit_lmer_callback <- function(formula, data, family, weights) {
       glm(formula, data = data, family = family, weights = weights)
     } else if (grepl("not positive definite", as.character(e))) {
       lme4::glmer(formula,
-                  data = data, weights = weights, family = family,
-                  control = glmerControl(
-                    optimizer = "optimx",
-                    optCtrl = list(method = "nlminb")
-                  )
+        data = data, weights = weights, family = family,
+        control = glmerControl(
+          optimizer = "optimx",
+          optCtrl = list(method = "nlminb")
+        )
       )
     } else {
       e
