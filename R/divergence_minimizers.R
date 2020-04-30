@@ -59,7 +59,7 @@ fit_lmer_callback <- function(formula, data, family, weights) {
     } else if (grepl("not positive definite", as.character(e))) {
       lme4::glmer(formula,
         data = data, weights = weights, family = family,
-        control = glmerControl(
+        control = lme4::glmerControl(
           optimizer = "optimx",
           optCtrl = list(method = "nlminb")
         )
