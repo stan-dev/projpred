@@ -54,12 +54,42 @@ if (require(rstanarm)) {
     fs = lapply(fit_list, vsf, "forward")
   )
 
-  df_binom_ <- df_binom
-  df_binom_$y <- rbinom(n, 1, f_binom$linkinv(x %*% b))
-  ref_gauss <- init_refmodel(NULL, df_gauss, df_gauss$y, formula,
-                             family = f_gauss)
-  ref_binom <- init_refmodel(NULL, df_binom, df_binom_$y, formula,
-                             family = f_binom)
+  extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
+                                 orhs = NULL, extract_y = FALSE) {
+    if (!is.null(object)) {
+      formula <- formula(object)
+      tt <- extract_terms_response(formula)
+      response_name <- tt$response
+    } else {
+      response_name <- NULL
+    }
+
+    if (is.null(newdata)) {
+      newdata <- object$data
+    }
+
+    resp_form <- NULL
+    if (is.null(object)) {
+      if ("weights" %in% colnames(newdata))
+        wrhs <- ~ weights
+      if ("offset" %in% colnames(newdata))
+        orhs <- ~ offset
+      if ("y" %in% colnames(newdata))
+        resp_form <- ~ y
+    }
+
+    args <- nlist(object, newdata, wrhs, orhs, resp_form)
+    return(do_call(.extract_model_data, args))
+  }
+
+  ref_gauss <- init_refmodel(
+    object = NULL, df_gauss, formula,
+    family = f_gauss, extract_model_data = extract_model_data
+  )
+  ref_binom <- init_refmodel(
+    object = NULL, df_binom, formula,
+    family = f_binom, extract_model_data = extract_model_data
+  )
   ref_list <- list(ref_gauss = ref_gauss, ref_binom = ref_binom)
   vsref_list <- list(
     l1 = lapply(ref_list, vsf, "L1"),

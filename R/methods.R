@@ -610,8 +610,12 @@ as.matrix.list <- function(x, ...) {
   return(do.call(cbind, lapply(x, as.matrix)))
 }
 
+##' @method t lm
+t.lm <- function(x, ...) {
+  return(t(as.matrix(x)))
+}
+
 ##' @method t ridgelm
-##' @export
 t.ridgelm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
