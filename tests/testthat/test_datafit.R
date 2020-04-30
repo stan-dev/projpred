@@ -26,23 +26,53 @@ source(file.path("helpers", "SW.R"))
 f_gauss <- gaussian()
 df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
 f_binom <- binomial()
-df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x %*% b)), x = x)
+df_binom <- data.frame(
+  y = rbinom(n, weights, f_binom$linkinv(x %*% b)),
+  x = x, weights = weights
+)
 f_poiss <- poisson()
 df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
 
 formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
+extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
+                               orhs = NULL, extract_y = FALSE) {
+  if (!is.null(object)) {
+    formula <- formula(object)
+    tt <- extract_terms_response(formula)
+    response_name <- tt$response
+  } else {
+    response_name <- NULL
+  }
+
+  if (is.null(newdata)) {
+    newdata <- object$data
+  }
+
+  resp_form <- NULL
+  if (is.null(object)) {
+    if ("weights" %in% colnames(newdata))
+      wrhs <- ~ weights
+    if ("offset" %in% colnames(newdata))
+      orhs <- ~ offset
+    if ("y" %in% colnames(newdata))
+      resp_form <- ~ y
+  }
+
+  args <- nlist(object, newdata, wrhs, orhs, resp_form)
+  return(do_call(.extract_model_data, args))
+}
 
 dref_gauss <- init_refmodel(
-  fit = NULL, df_gauss, df_gauss$y, formula, f_gauss,
-  offset = offset, weights = weights
+  object = NULL, df_gauss, formula, f_gauss,
+  extract_model_data = extract_model_data
 )
 dref_binom <- init_refmodel(
-  fit = NULL, df_binom, df_binom$y, formula,
-  f_binom, offset = offset, weights = weights
+  object = NULL, df_binom, formula, f_binom,
+  extract_model_data = extract_model_data
 )
 dref_poiss <- init_refmodel(
-  fit = NULL, df_poiss, df_poiss$y, formula, f_poiss,
-  offset = offset, weights = weights
+  object = NULL, df_poiss, formula, f_poiss,
+  extract_model_data = extract_model_data
 )
 
 dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
@@ -136,7 +166,7 @@ test_that(paste("output of project is sensible with only data provided as" <
       expect_named(p[[j]], c(
         "kl", "weights", "dis", "solution_terms",
         "sub_fit", "p_type", "family",
-        "intercept"
+        "intercept", "extract_model_data"
       ),
       ignore.order = TRUE
       )
@@ -243,12 +273,12 @@ test_that(paste(
     lambda_min_ratio <- 1e-7
     nlambda <- 1500
 
-    df <- data.frame(y = y, x = x)
+    df <- data.frame(y = y, x = x, weights = weights)
     formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5 + x.6 + x.7 + x.8 + x.9 + x.10
     # Lasso solution with projpred
-    ref <- init_refmodel(NULL, df, y, formula,
-      family = fam, weights = weights,
-      offset = offset
+    ref <- init_refmodel(
+      object = NULL, data = df, formula = formula,
+      family = fam, extract_model_data = extract_model_data
     )
     vs <- varsel(ref,
       method = "l1", lambda_min_ratio = lambda_min_ratio,
@@ -256,7 +286,7 @@ test_that(paste(
     )
     pred1 <- proj_linpred(vs,
       newdata = data.frame(x = x, offset = offset), nterms = 0:nterms,
-      transform = FALSE, offsetnew = ~offset
+      transform = FALSE, offsetnew = ~offset,
     )
 
     # compute the results for the Lasso

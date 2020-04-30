@@ -11,9 +11,9 @@ if (require(rstanarm)) {
   # fit the model with some transformations on the target variable and the
   # original inputs
   SW(
-    fit <- stan_glm(log(LeafWt) ~ log(Diam1) + log(Diam2) + log(CanHt) + log(TotHt)
-      + log(Dens) + log(Diam1) * log(Diam2) + Group,
-    data = mesquite, refresh = 0, chain = 2
+    fit <- stan_glm(log(LeafWt) ~ log(Diam1) + log(Diam2) + log(CanHt) +
+      log(TotHt) + log(Dens) + log(Diam1) * log(Diam2) + Group, data = mesquite,
+      refresh = 0, chain = 2
     )
   )
   # selection

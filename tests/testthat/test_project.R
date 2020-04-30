@@ -32,7 +32,7 @@ if (require(rstanarm)) {
       chains = chains, seed = seed, iter = iter
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom,
+      family = f_binom, weights = weights,
       data = df_binom, chains = chains, seed = seed, iter = iter
     )
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
@@ -57,7 +57,7 @@ if (require(rstanarm)) {
         expect_s3_class(p[[j]], "projection")
         expect_named(p[[j]], c(
           "kl", "weights", "dis", "sub_fit", "solution_terms",
-          "p_type", "family", "intercept"
+          "p_type", "family", "intercept", "extract_model_data"
         ),
         ignore.order = TRUE, info = i_inf
         )
@@ -256,7 +256,7 @@ if (require(rstanarm)) {
       p <- project(vs_list[[i]], nterms = nterms, seed = seed)
       expect_named(p, c(
         "kl", "weights", "dis", "sub_fit", "solution_terms",
-        "p_type", "family", "intercept"
+        "p_type", "family", "intercept", "extract_model_data"
       ),
       ignore.order = TRUE, info = i_inf
       )

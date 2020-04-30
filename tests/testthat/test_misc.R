@@ -35,7 +35,7 @@ if (require(rstanarm)) {
   )
   SW(
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom, data = df_binom,
+      family = f_binom, data = df_binom, weights = weights,
       chains = chains, seed = seed, iter = iter
     )
   )
@@ -89,23 +89,27 @@ if (require(rstanarm)) {
 
         # proj_linpred
         solution_terms <- c(1, 3)
-        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
-          solution_terms = solution_terms, seed = seed
+        frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
+        foo <- proj_linpred(fit, frame,
+          solution_terms = solution_terms,
+          seed = seed, weightsnew = ~weights
         )
         r1 <- rnorm(s)
-        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
-          solution_terms = solution_terms, seed = seed
+        foo <- proj_linpred(fit, frame,
+          solution_terms = solution_terms,
+          seed = seed, weightsnew = ~weights
         )
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
 
         # proj_predict
         solution_terms <- c(1, 3)
-        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+        frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
+        foo <- proj_predict(fit, frame,
           solution_terms = solution_terms, seed = seed
         )
         r1 <- rnorm(s)
-        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
+        foo <- proj_predict(fit, frame,
           solution_terms = solution_terms, seed = seed
         )
         r2 <- rnorm(s)
@@ -145,20 +149,28 @@ if (require(rstanarm)) {
 
         # proj_linpred
         solution_terms <- c(1, 3)
-        foo <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
-          solution_terms = solution_terms, seed = seed
+        frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
+        foo <- proj_linpred(fit, frame,
+          solution_terms = solution_terms,
+          seed = seed
         )
-        bar <- proj_linpred(fit, data.frame(x = x)[, solution_terms],
-          solution_terms = solution_terms, seed = seed
+        bar <- proj_linpred(fit, frame,
+          solution_terms = solution_terms,
+          seed = seed
         )
         expect_equal(foo, bar)
 
         # proj_predict
         solution_terms <- c(1, 3)
-        foo <- proj_predict(fit, data.frame(x = x)[, solution_terms],
-                            solution_terms = solution_terms, seed = seed)
-        bar <- proj_predict(fit, data.frame(x = x)[, solution_terms],
-                            solution_terms = solution_terms, seed = seed)
+        frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
+        foo <- proj_predict(fit, frame,
+          solution_terms = solution_terms,
+          seed = seed
+        )
+        bar <- proj_predict(fit, frame,
+          solution_terms = solution_terms,
+          seed = seed
+        )
         expect_equal(foo, bar)
       }
     }
