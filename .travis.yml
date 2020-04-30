@@ -1,6 +1,7 @@
 language: r
 sudo: false
 cache: packages
+warnings_are_errors: false
 
 latex: true
 r_build_args: '--no-build-vignettes'
