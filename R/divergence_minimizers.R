@@ -33,10 +33,6 @@ fit_lm_ridge_callback <- function(formula, data, family, weights) {
     fit <- glm(formula, data = data, family = family, weights = weights)
   } else {
     fit <- glm(formula, data = data, family = family, weights = weights)
-    fit$data <- data
-    fit$formula <- formula
-    fit$weights <- weights
-    fit
   }
   fit
 }
