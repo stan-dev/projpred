@@ -89,14 +89,6 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
     proj <- project(object = object, nterms = nterms, ...)
   }
 
-  extract_model_data <- proj$extract_model_data
-  w_o <- extract_model_data(NULL,
-    newdata = newdata, weightsnew,
-    offsetnew, extract_y = FALSE
-  )
-  weightsnew <- w_o$weights
-  offsetnew <- w_o$offset
-
   if (!.is_proj_list(proj)) {
     proj <- list(proj)
   } else {
@@ -144,6 +136,13 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
   set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
+    extract_model_data <- proj$extract_model_data
+    w_o <- extract_model_data(NULL,
+      newdata = newdata, weightsnew,
+      offsetnew, extract_y = FALSE
+    )
+    weightsnew <- w_o$weights
+    offsetnew <- w_o$offset
     mu <- proj$family$mu_fun(proj$sub_fit,
       newdata = newdata, offset = offsetnew,
       weights = weightsnew
