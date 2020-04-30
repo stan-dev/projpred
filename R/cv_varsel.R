@@ -622,14 +622,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     fit <- cvfit
   }
-  k_refmodel <- init_refmodel(fit, fetch_fold(),
-    refmodel$y[fold], refmodel$formula,
-    family = refmodel$family, ref_predfun,
-    div_minimizer = refmodel$div_minimizer,
-    proj_predfun = proj_predfun,
-    folds = seq_along(fold),
-    offset = refmodel$offset[fold],
-    weights = refmodel$wobs[fold]
+  extract_model_data <- function(object, newdata = fetch_fold(), ...) {
+    refmodel$extract_model_data(object = object, newdata = newdata)
+  }
+  k_refmodel <- init_refmodel(
+    object = fit, data = fetch_fold(),
+    formula = refmodel$formula, family = refmodel$family,
+    ref_predfun = ref_predfun, div_minimizer = refmodel$div_minimizer,
+    proj_predfun = proj_predfun, folds = seq_along(fold),
+    extract_model_data = extract_model_data
   )
   k_refmodel$fetch_data <- fetch_fold
   k_refmodel$nclusters_pred <- min(NCOL(k_refmodel$mu), 5)

@@ -32,11 +32,9 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     formula = form, terms_ = unique(unlist(solution_terms)),
     data = refmodel$fetch_data(), y = mu
   )
-  ## capture.output(sub_fit <- iterative_weighted_least_squares(
-  ##   flatten_formula(subset$formula), refmodel$fetch_data(), 3, link,
-  ##   replace_response, wprev = wobs, div_minimizer = div_minimizer),
-  ##   type = "message")
-  sub_fit <- div_minimizer(subset$formula, subset$data, weights = wobs)
+  suppressWarnings(
+    sub_fit <- div_minimizer(subset$formula, subset$data, weights = wobs)
+  )
   ## sub_fit <- iterative_weighted_least_squares(
   ##   flatten_formula(subset$formula), subset$data, 1, link,
   ##   replace_response, wprev = wobs, div_minimizer = div_minimizer,

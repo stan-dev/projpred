@@ -80,8 +80,6 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
       inherits(newdata, "matrix"))) {
     stop("newdata must be a data.frame or a matrix")
   }
-  if (is.null(offsetnew)) offsetnew <- rep(0, nrow(newdata))
-  if (is.null(weightsnew)) weightsnew <- rep(1, nrow(newdata))
 
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
@@ -90,6 +88,14 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
     ## reference model or varsel object obtained, so run the projection
     proj <- project(object = object, nterms = nterms, ...)
   }
+
+  extract_model_data <- proj$extract_model_data
+  w_o <- extract_model_data(NULL,
+    newdata = newdata, weightsnew,
+    offsetnew, extract_y = FALSE
+  )
+  weightsnew <- w_o$weights
+  offsetnew <- w_o$offset
 
   if (!.is_proj_list(proj)) {
     proj <- list(proj)
@@ -173,35 +179,6 @@ proj_linpred <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     )))
   }
 
-  if (.is_vsel_object(object)) {
-    if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
-      stop("offsetnew specified but it's not a right hand side formula")
-    }
-
-    if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
-      stop("weightsnew specified but it's not a right hand side formula")
-    }
-
-    w_o <- object$refmodel$extract_model_data(object$refmodel$fit,
-      newdata = newdata, weightsnew, offsetnew
-    )
-
-    weightsnew <- w_o$weights
-    offsetnew <- w_o$offset
-  }  else {
-    if (length(object) > 1) {
-      extract_model_data <- object[[1]]$extract_model_data
-    } else {
-      extract_model_data <- object$extract_model_data
-    }
-    w_o <- extract_model_data(NULL,
-      newdata = newdata, weightsnew,
-      offsetnew
-    )
-    weightsnew <- w_o$weights
-    offsetnew <- w_o$offset
-  }
-
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
@@ -246,36 +223,6 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
     t(sapply(draw_inds, function(i) {
       proj$family$ppd(mu[, i], proj$dis[i], weights)
     }))
-  }
-
-  if (.is_vsel_object(object)) {
-    if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
-      stop("offsetnew specified but it's not a right hand side formula")
-    }
-
-    if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
-      stop("weightsnew specified but it's not a right hand side formula")
-    }
-
-    w_o <- object$refmodel$extract_model_data(object$refmodel$fit,
-      newdata = newdata,
-      weightsnew, offsetnew
-    )
-
-    weightsnew <- w_o$weights
-    offsetnew <- w_o$offset
-  }  else {
-    if (length(object) > 1) {
-      extract_model_data <- object[[1]]$extract_model_data
-    } else {
-      extract_model_data <- object$extract_model_data
-    }
-    w_o <- extract_model_data(NULL,
-      newdata = newdata,
-      weightsnew, offsetnew
-    )
-    weightsnew <- w_o$weights
-    offsetnew <- w_o$offset
   }
 
   ## proj_helper lapplies fun to each projection in object

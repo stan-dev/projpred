@@ -218,17 +218,22 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
   )
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                 orhs = NULL) {
-    if (length(response_name) > 1) {
-      resp_form <- response_name[[1]]
-      if (is.null(newdata)) {
-        wrhs <- as.formula(paste("~", response_name[[2]], "+",
-                                response_name[[1]]))
+                                 orhs = NULL, extract_y = TRUE) {
+    if (extract_y) {
+      if (length(response_name) > 1) {
+        resp_form <- response_name[[1]]
+        if (is.null(newdata)) {
+          wrhs <- as.formula(paste("~", response_name[[2]], "+",
+                                   response_name[[1]]))
+        }
+      } else {
+        resp_form <- response_name
       }
+      resp_form <- as.formula(paste("~", resp_form))
+
     } else {
-      resp_form <- response_name
+      resp_form <- NULL
     }
-    resp_form <- as.formula(paste("~", resp_form))
 
     if (is.null(newdata)) {
       newdata <- object$data
@@ -278,21 +283,21 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   ## remove parens from response
-  response_name <- gsub("\\(\\)", "", response_name)
+  response_name <- gsub("[()]", "", response_name)
   formula <- update(
     formula,
     paste(response_name, "~ .")
   )
 
-  model_data <- extract_model_data(object)
-  weights <- model_data$weights
-  offset <- model_data$offset
-  y <- model_data$y
-
   ## add (transformed) response with new name
   if (is.null(data)) {
     stop("Data was not provided.")
   }
+  model_data <- extract_model_data(object, newdata = data)
+  weights <- model_data$weights
+  offset <- model_data$offset
+  y <- model_data$y
+
   data[, response_name] <- y
 
   if (is.null(div_minimizer)) {
