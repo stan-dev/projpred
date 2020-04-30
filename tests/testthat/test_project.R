@@ -265,12 +265,12 @@ if (require(rstanarm)) {
 
   test_that(paste("project: projecting full model onto itself does not change",
                   "results"), {
-    tol <- 0.6
+    tol <- 1e-4
 
     for (i in 1:length(fit_list)) {
       fit <- fit_list[[i]]
       draws <- as.data.frame(fit)
-      alpha_ref <- draws$`b_Intercept`
+      alpha_ref <- draws[, "(Intercept)"]
       beta_ref <- draws[, 1 + seq_len(nterms), drop = FALSE]
       S <- nrow(draws)
       vs <- varsel(fit)
@@ -278,13 +278,13 @@ if (require(rstanarm)) {
                       ndraws = S)
 
       # test alpha and beta
-      ## coefs <- as.matrix(proj)
-      ## dalpha <- max(abs(coefs[, 1] - alpha_ref))
-      ## order <- match(colnames(fit_list[[i]]$data), proj$solution_terms)
-      ## order <- order[!is.na(order)]
-      ## dbeta <- max(abs(coefs[, -1, drop = FALSE][, order] - beta_ref))
-      ## expect_lt(dalpha, tol)
-      ## expect_lt(dbeta, tol)
+      coefs <- as.matrix(proj)
+      dalpha <- max(abs(coefs[, 1] - alpha_ref))
+      order <- match(colnames(fit_list[[i]]$data), proj$solution_terms)
+      order <- order[!is.na(order)]
+      dbeta <- max(abs(coefs[, -1, drop = FALSE][, order] - beta_ref))
+      expect_lt(dalpha, tol)
+      expect_lt(dbeta, tol)
     }
   })
 
