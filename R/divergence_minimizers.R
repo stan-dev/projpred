@@ -50,7 +50,8 @@ linear_multilevel_mle <- function(formula, data, family, weights = NULL,
 }
 
 # helper function of 'linear_multilevel_mle'
-fit_glmer_callback <- function(formula, data, family, weights, control = NULL) {
+fit_glmer_callback <- function(formula, data, family, weights,
+                               control = control_callback(family)) {
   ## make sure correct 'weights' can be found
   environment(formula) <- environment()
   tryCatch({
