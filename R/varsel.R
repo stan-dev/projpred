@@ -69,13 +69,24 @@
 #' }
 #'
 #' @export
-varsel <- function(object, d_test = NULL, method = NULL, ndraws = NULL,
-                   nclusters = NULL, ndraws_pred = NULL,
-                   nclusters_pred = NULL, cv_search = TRUE,
-                   nterms_max = NULL, intercept = TRUE, verbose = TRUE,
-                   lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
-                   regul = 1e-4, penalty = NULL, search_terms = NULL, ...) {
-  refmodel <- get_refmodel(object, ...)
+varsel <- function(object, ...) {
+  UseMethod("varsel", object)
+}
+
+#' @export
+varsel.default <- function(object, ...) {
+  refmodel <- get_refmodel(object)
+  return(varsel(refmodel, ...))
+}
+
+#' @export
+varsel.refmodel <- function(refmodel, d_test = NULL, method = NULL,
+                            ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
+                            nclusters_pred = NULL, cv_search = TRUE,
+                            nterms_max = NULL, intercept = TRUE, verbose = TRUE,
+                            lambda_min_ratio = 1e-5, nlambda = 150,
+                            thresh = 1e-6, regul = 1e-4, penalty = NULL,
+                            search_terms = NULL, ...) {
   family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
@@ -199,7 +210,8 @@ select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
     return(search_path)
   } else if (method == "forward") {
     search_path <- search_forward(p_sel, refmodel, family,
-      intercept, nterms_max, verbose, opt, search_terms = search_terms
+      intercept, nterms_max, verbose, opt,
+      search_terms = search_terms
     )
     search_path$p_sel <- p_sel
     return(search_path)
@@ -259,7 +271,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nterms_max <- min(max_nv_possible, nterms_max + 1)
   }
 
-  return(nlist(method, cv_search, intercept, nterms_max, nclusters,
-               ndraws, nclusters_pred, ndraws_pred,
-               search_terms))
+  return(nlist(
+    method, cv_search, intercept, nterms_max, nclusters,
+    ndraws, nclusters_pred, ndraws_pred,
+    search_terms
+  ))
 }

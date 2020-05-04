@@ -65,16 +65,26 @@
 #' }
 #'
 #' @export
-cv_varsel <- function(fit, method = NULL, cv_method = NULL,
-                      ndraws = NULL, nclusters = NULL,
-                      ndraws_pred = NULL, nclusters_pred = NULL,
-                      cv_search = TRUE, nterms_max = NULL, intercept = NULL,
-                      penalty = NULL, verbose = TRUE, nloo = NULL, K = NULL,
-                      lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
-                      regul = 1e-4, validate_search = TRUE, seed = NULL,
-                      search_terms = NULL, ...) {
-  refmodel <- get_refmodel(fit, ...)
+cv_varsel <- function(object, ...) {
+  UseMethod("cv_varsel", object)
+}
 
+#' @export
+cv_varsel.default <- function(object, ...) {
+  refmodel <- get_refmodel(object)
+  return(cv_varsel(refmodel, ...))
+}
+
+#' @export
+cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
+                               ndraws = NULL, nclusters = NULL,
+                               ndraws_pred = NULL, nclusters_pred = NULL,
+                               cv_search = TRUE, nterms_max = NULL,
+                               intercept = NULL, penalty = NULL, verbose = TRUE,
+                               nloo = NULL, K = NULL, lambda_min_ratio = 1e-5,
+                               nlambda = 150, thresh = 1e-6, regul = 1e-4,
+                               validate_search = TRUE, seed = NULL,
+                               search_terms = NULL, ...) {
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,
