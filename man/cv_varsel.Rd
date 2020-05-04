@@ -4,38 +4,15 @@
 \alias{cv_varsel}
 \title{Cross-validated variable selection (varsel)}
 \usage{
-cv_varsel(
-  fit,
-  method = NULL,
-  cv_method = NULL,
-  ndraws = NULL,
-  nclusters = NULL,
-  ndraws_pred = NULL,
-  nclusters_pred = NULL,
-  cv_search = TRUE,
-  nterms_max = NULL,
-  intercept = NULL,
-  penalty = NULL,
-  verbose = TRUE,
-  nloo = NULL,
-  K = NULL,
-  lambda_min_ratio = 1e-05,
-  nlambda = 150,
-  thresh = 1e-06,
-  regul = 1e-04,
-  validate_search = TRUE,
-  seed = NULL,
-  search_terms = NULL,
-  ...
-)
+cv_varsel(object, ...)
 }
 \arguments{
+\item{...}{Additional arguments to be passed to the
+\code{get_refmodel}-function.}
+
 \item{fit}{Same as in \link[=varsel]{varsel}.}
 
 \item{method}{Same as in \link[=varsel]{varsel}.}
-
-\item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'.
-Default is 'LOO'.}
 
 \item{ndraws}{Number of samples used for selection. Ignored if
 nclusters is provided or if method='L1'.}
@@ -59,6 +36,9 @@ selection). Default is 5.}
 
 \item{verbose}{Whether to print out some information during the validation,
 Default is TRUE.}
+
+\item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'.
+Default is 'LOO'.}
 
 \item{nloo}{Number of observations used to compute the LOO validation
 (anything between 1 and the total number of observations). Smaller values
@@ -96,9 +76,6 @@ introduced by the selectin process).}
 seed.}
 
 \item{search_terms}{User defined list of terms to consider for selection.}
-
-\item{...}{Additional arguments to be passed to the
-\code{get_refmodel}-function.}
 }
 \value{
 An object of type \code{vsel} that contains information about the

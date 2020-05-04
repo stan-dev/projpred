@@ -4,11 +4,13 @@
 \name{df_gaussian}
 \alias{df_gaussian}
 \title{Gaussian toy example.}
-\format{A simulated regression dataset containing 100 observations.
+\format{
+A simulated regression dataset containing 100 observations.
 \describe{
   \item{y}{target, real-valued.}
   \item{x}{features, 20 in total. Mean and sd approximately 0 and 1.}
-}}
+}
+}
 \source{
 \url{http://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData}
 }
