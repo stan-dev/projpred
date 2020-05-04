@@ -46,7 +46,7 @@ pseudo_data <- function(f, y, family, offset = rep(0, NROW(f)),
       wprev <- weights
       while (TRUE) {
         wtemp <- pseudo_data(f, y, family, offset = offset, weights = weights,
-                             wprev = wprev, obsvar = obsvar)$w
+                             wprev = wprev, obsvar = obsvar)$wobs
         if (max(abs(wtemp - wprev)) < 1e-6) {
           break
         }
@@ -57,21 +57,21 @@ pseudo_data <- function(f, y, family, offset = rep(0, NROW(f)),
     # previous weights and mu, and then compute new weights w
     nu <- family$nu
     s2 <- sum(wprev * (obsvar + (y - mu)^2)) / sum(weights)
-    w <- weights * (nu + 1) / (nu + 1 / s2 * (obsvar + (y - mu)^2))
+    wobs <- weights * (nu + 1) / (nu + 1 / s2 * (obsvar + (y - mu)^2))
     loss <- 0.5 * sum(family$deviance(mu, y, weights, sqrt(s2)))
     grad <- weights * (mu - y) / (nu * s2) * (nu + 1) /
       (1 + (y - mu)^2 / (nu * s2)) * dmu_df
   } else if (family$family %in% c("gaussian", "poisson", "binomial")) {
     # exponential family distributions
-    w <- (weights * dmu_df^2) / family$variance(mu) # 2* because of deviance
+    wobs <- (weights * dmu_df^2) / family$variance(mu) # 2* because of deviance
     loss <- 0.5 * sum(family$deviance(mu, y, weights))
-    grad <- -w * (z - f)
+    grad <- -wobs * (z - f)
   } else {
     stop("Don't know how to compute quadratic approximation and gradients",
          sprintf(" for family '%s'.", family$family))
   }
 
-  return(nlist(z, w, loss, grad))
+  return(nlist(z, wobs, loss, grad))
 }
 
 lambda_grid <- function(x, y, family, offset, weights, intercept, penalty,
@@ -107,7 +107,7 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty,
 
   obs <- pseudo_data(f0, y, family, offset, weights, obsvar = obsvar)
   resid <- obs$z - f0 # residual from the initial solution
-  lambda_max_cand <- abs(t(x) %*% (resid * obs$w)) / (penalty * alpha)
+  lambda_max_cand <- abs(t(x) %*% (resid * obs$wobs)) / (penalty * alpha)
   lambda_max <- max(lambda_max_cand[is.finite(lambda_max_cand)])
   ## to prevent some variable from entering at the first step due to numerical
   ## inaccuracy
@@ -118,7 +118,7 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty,
   beta <- rep(0, ncol(x))
   beta[penalty == 0] <- init$beta
   return(list(lambda = rev(exp(loglambda)), beta = beta,
-              beta0 = init$beta0, w0 = obs$w))
+              beta0 = init$beta0, w0 = obs$wobs))
 }
 
 glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
@@ -266,7 +266,7 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
         pseudo_data(f, y, family, offset = offset, weights = weights,
                     obsvar = obsvar, wprev = wprev)
       pobs <- pseudo_obs(rep(0, length(y)), weights)
-      return(list(beta = matrix(integer(length = 0)), beta0 = 0, w = pobs$w,
+      return(list(beta = matrix(integer(length = 0)), beta0 = 0, w = pobs$wobs,
                   qa_updates = 0))
     }
   }

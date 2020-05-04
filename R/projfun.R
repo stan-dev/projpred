@@ -10,23 +10,11 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   wsample <- validparams$wsample
 
   form <- refmodel$formula
-  pobs <- pseudo_data(
-    f = 0, y = mu, family = family, offset = refmodel$offset, weights = wobs
-  )
 
-  link <- function(f, wprev = NULL) {
-    pseudo_data(
-      f = f, y = mu, family = family, offset = refmodel$offset, wprev = wprev
-    )
-  }
   div_minimizer <- function(formula, data, weights) {
     refmodel$div_minimizer(formula, data, weights = weights, family = family,
                            regul = regul)
   }
-  linear_predict <- function(fit) {
-    refmodel$proj_predfun(fit)
-  }
-  replace_response <- get_replace_response(form, solution_terms)
 
   subset <- subset_formula_and_data(
     formula = form, terms_ = unique(unlist(solution_terms)),
@@ -37,16 +25,11 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       weights = refmodel$wobs
     )
   )
-  ## sub_fit <- iterative_weighted_least_squares(
-  ##   flatten_formula(subset$formula), subset$data, 1, link,
-  ##   replace_response, wprev = wobs, div_minimizer = div_minimizer,
-  ##   linear_predict = linear_predict
-  ## )
 
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
     family = family, solution_terms = solution_terms, ref_mu = mu,
-    weights = wobs, wsample = wsample
+    wobs = wobs, wsample = wsample
   ))
 }
 
@@ -65,30 +48,6 @@ preprocess_data <- function(formula, data, intercept = TRUE, weights = NULL) {
   data[colnames(x)] <- x
 
   return(data)
-}
-
-iterative_weighted_least_squares <- function(formula, data, iters, link,
-                                             replace_response, wprev = NULL,
-                                             div_minimizer = lm,
-                                             linear_predict) {
-  pobs <- link(0, wprev)
-  wprev <- pobs$w
-  data <- replace_response(pobs$z, data)
-  old_fit <- NULL
-  for (i in seq_len(iters)) {
-    fit <- div_minimizer(formula, cbind(data, weights = wprev), weights = wprev)
-    pobs <- link(linear_predict(fit), wprev)
-    if (any(is.na(pobs$z))) {
-      break
-    }
-    old_fit <- fit
-    data <- replace_response(pobs$z, data)
-    wprev <- pobs$w[seq_len(NROW(data))]
-  }
-  if (is.null(old_fit)) {
-    return(fit)
-  }
-  return(old_fit)
 }
 
 ## function handle for the projection over samples
@@ -134,7 +93,7 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
       return(.init_submodel(
         sub_fit = sub_refit, p_ref = p_sel, refmodel = refmodel,
         family = family, solution_terms = solution_terms, ref_mu = ref_mu,
-        weights = wobs, wsample = wsample
+        wobs = wobs, wsample = wsample
       ))
     }
   } else {
@@ -173,23 +132,23 @@ iterative_weighted_least_squares <- function(formula, data, iters, link,
 }
 
 .init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
-                           ref_mu, weights, wsample) {
+                           ref_mu, wobs, wsample) {
   pobs <- pseudo_data(
-    f = 0, y = ref_mu, family = family, weights = weights,
+    f = 0, y = ref_mu, family = family, weights = wobs,
     offset = refmodel$offset
   )
 
   ## split b to alpha and beta, add it to submodel and return the result
   if (family$family == "gaussian") {
-    ref <- list(mu = pobs$z, var = p_ref$var, w = pobs$w)
+    ref <- list(mu = pobs$z, var = p_ref$var, wobs = pobs$wobs)
   } else {
     ref <- p_ref
   }
 
   mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = 1)
-  dis <- family$dis_fun(ref, nlist(mu), ref$w)
+  dis <- family$dis_fun(ref, nlist(mu), ref$wobs)
   kl <- weighted.mean(family$kl(
-    ref, list(weights = weights),
+    ref, nlist(weights = wobs),
     nlist(mu, dis)
   ), wsample)
   weights <- wsample
