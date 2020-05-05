@@ -82,7 +82,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
           )
         ))
       } else {
-        return(e)
+        stop(e)
       }
     }
   )

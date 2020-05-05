@@ -21,7 +21,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     data = refmodel$fetch_data(), y = mu
   )
   suppressWarnings(
-    sub_fit <- div_minimizer(subset$formula, subset$data,
+    sub_fit <- div_minimizer(flatten_formula(subset$formula), subset$data,
       weights = refmodel$wobs
     )
   )

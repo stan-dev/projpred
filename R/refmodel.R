@@ -366,6 +366,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (is.null(dis)) {
     dis <- rep(0, ndraws)
   }
+
+  if (is.null(offset)) {
+    offset <- rep(0, NROW(y))
+  }
+
+  if (is.null(weights)) {
+    weights <- rep(1, NROW(y))
+  }
+
   target <- .get_standard_y(y, weights, family)
   y <- target$y
 
@@ -378,15 +387,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # this is a dummy definition for cvfun, but it will lead to standard
   # cross-validation for datafit reference; see cv_varsel and get_kfold
   cvfun <- function(folds) lapply(1:max(folds), function(k) list())
-
-  if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
-  }
-
-  if (is.null(weights)) {
-    weights <- rep(1, NROW(y))
-  }
-
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(
