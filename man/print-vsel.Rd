@@ -12,15 +12,15 @@
 
 \item{digits}{Number of decimal places to be reported (2 by default).}
 
-\item{...}{Further arguments passed to \code{\link{varsel_stats}}.}
+\item{...}{Further arguments passed to \code{\link{summary.vsel}}.}
 }
 \value{
 Returns invisibly the data frame produced by
-  \code{\link{varsel_stats}}.
+  \code{\link{summary.vsel}}.
 }
 \description{
 The \code{print} methods for vsel/vsel objects created by
 \code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
-\code{\link{varsel_stats}} to display a summary of the results of the
+\code{\link{summary.vsel}} to display a summary of the results of the
 projection predictive variable selection.
 }

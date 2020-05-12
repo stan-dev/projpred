@@ -65,7 +65,7 @@
 #' ## Usage with stanreg objects
 #' fit <- stan_glm(y ~ x, binomial())
 #' vs <- varsel(fit)
-#' varsel_plot(vs)
+#' plot(vs)
 #' }
 #'
 #' @export

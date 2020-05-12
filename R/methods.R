@@ -232,69 +232,25 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
   )
 }
 
-#' copied from methods to avoid duplicate code
-NULL
-
-#' Plot or fetch summary statistics related to variable selection
+#' Plot summary statistics related to variable selection
 #'
-#' \code{varsel_stats} can be used to obtain summary statistics related to
-#' variable selection. The same statistics can be plotted with
-#' \code{varsel_plot}.
-#'
-#' @name varsel-statistics
-#'
-#' @param object The object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
-#' @param nterms_max Maximum submodel size for which the statistics are
-#'   calculated. For \code{varsel_plot} it must be at least 1.
-#' @param stats One or several strings determining which statistics to
-#'   calculate. Available statistics are:
-#' \itemize{
-#'  \item{elpd:} {(Expected) sum of log predictive densities}
-#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
-#'   number of datapoints.} \item{mse:} {Mean squared error (gaussian family
-#'   only)}
-#'  \item{rmse:} {Root mean squared error (gaussian family only)}
-#'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
-#'  \item{auc:} {Area under the ROC curve (binomial family only)}
-#' }
-#' Default is elpd.
-#' @param type One or more items from 'mean', 'se', 'lower' and 'upper'
-#'   indicating which of these to compute (mean, standard error, and lower and
-#'   upper credible bounds). The credible bounds are determined so that
-#'   \code{1-alpha} percent of the mass falls between them.
-#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative
-#'   to the baseline model (see argument \code{baseline}) instead of estimating
-#'   the actual values of the statistics. Defaults to \code{FALSE}.
-#' @param alpha A number indicating the desired coverage of the credible
-#'   intervals. For example \code{alpha=0.32} corresponds to 68\% probability
-#'   mass within the intervals, that is, one standard error intervals.
-#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
-#'   reference model or the best submodel found. Default is 'ref' when the
-#'   reference model exists, and 'best' otherwise.
-#' @param ... Currently ignored.
-#'
+#' @inheritParams summary.vsel 
 #'
 #' @examples
 #' \donttest{
 #' ### Usage with stanreg objects
 #' fit <- stan_glm(y ~ x, binomial())
 #' vs <- cv_varsel(fit)
-#' varsel_plot(vs)
-#'
-#' # print out some stats
-#' varsel_stats(vs, stats = c("acc"), type = c("mean", "se"))
+#' plot(vs)
 #' }
 #'
-NULL
-
-#' @rdname varsel-statistics
+#' @method plot vsel
 #' @export
-varsel_plot <- function(object, nterms_max = NULL, stats = "elpd",
-                        deltas = FALSE, alpha = 0.32, baseline = NULL,
-                        ...) {
+plot.vsel <- function(object, nterms_max = NULL, stats = "elpd",
+                      deltas = FALSE, alpha = 0.32, baseline = NULL,
+                      ...) {
   .validate_vsel_object_stats(object, stats)
-  baseline <- .validate_baseline(object$refmode, baseline, deltas)
+  baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
@@ -376,13 +332,54 @@ varsel_plot <- function(object, nterms_max = NULL, stats = "elpd",
   return(pp)
 }
 
-##' @rdname varsel-statistics
-##' @export
-varsel_stats <- function(object, nterms_max = NULL, stats = "elpd",
+#' Summary statistics related to variable selection
+#'
+#' @param object The object returned by \link[=varsel]{varsel} or
+#'   \link[=cv_varsel]{cv_varsel}.
+#' @param nterms_max Maximum submodel size for which the statistics are
+#'   calculated. For \code{plot.vsel} it must be at least 1.
+#' @param stats One or several strings determining which statistics to
+#'   calculate. Available statistics are:
+#' \itemize{
+#'  \item{elpd:} {(Expected) sum of log predictive densities}
+#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
+#'   number of datapoints.} \item{mse:} {Mean squared error (gaussian family
+#'   only)}
+#'  \item{rmse:} {Root mean squared error (gaussian family only)}
+#'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
+#'  \item{auc:} {Area under the ROC curve (binomial family only)}
+#' }
+#' Default is \code{"elpd"}.
+#' @param type One or more items from 'mean', 'se', 'lower' and 'upper'
+#'   indicating which of these to compute (mean, standard error, and lower and
+#'   upper credible bounds). The credible bounds are determined so that
+#'   \code{1-alpha} percent of the mass falls between them.
+#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative
+#'   to the baseline model (see argument \code{baseline}) instead of estimating
+#'   the actual values of the statistics. Defaults to \code{FALSE}.
+#' @param alpha A number indicating the desired coverage of the credible
+#'   intervals. For example \code{alpha=0.32} corresponds to 68\% probability
+#'   mass within the intervals, that is, one standard error intervals.
+#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
+#'   reference model or the best submodel found. Default is 'ref' when the
+#'   reference model exists, and 'best' otherwise.
+#' @param ... Currently ignored.
+#'
+#' @examples
+#' \donttest{
+#' ### Usage with stanreg objects
+#' fit <- stan_glm(y ~ x, binomial())
+#' vs <- cv_varsel(fit)
+#' summary(vs, stats = c("acc"), type = c("mean", "se"))
+#' }
+#'
+#' @method summary vsel
+#' @export
+summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
                          type = c("mean", "se"), deltas = FALSE,
                          alpha = 0.32, baseline = NULL, ...) {
   .validate_vsel_object_stats(object, stats)
-  baseline <- .validate_baseline(object$refmode, baseline, deltas)
+  baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   ## fetch statistics
   if (deltas) {
@@ -428,26 +425,26 @@ varsel_stats <- function(object, nterms_max = NULL, stats = "elpd",
   return(subset(arr, arr$size <= nterms_max))
 }
 
-##' Print methods for vsel/vsel objects
-##'
-##' The \code{print} methods for vsel/vsel objects created by
-##' \code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
-##' \code{\link{varsel_stats}} to display a summary of the results of the
-##' projection predictive variable selection.
-##'
-##' @name print-vsel
-##'
-##' @param x An object of class vsel/vsel.
-##' @param digits Number of decimal places to be reported (2 by default).
-##' @param ... Further arguments passed to \code{\link{varsel_stats}}.
-##'
-##' @return Returns invisibly the data frame produced by
-##'   \code{\link{varsel_stats}}.
-##'
-##' @export
-##' @method print vsel
+#' Print methods for vsel/vsel objects
+#'
+#' The \code{print} methods for vsel/vsel objects created by
+#' \code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
+#' \code{\link{summary.vsel}} to display a summary of the results of the
+#' projection predictive variable selection.
+#'
+#' @name print-vsel
+#'
+#' @param x An object of class vsel/vsel.
+#' @param digits Number of decimal places to be reported (2 by default).
+#' @param ... Further arguments passed to \code{\link{summary.vsel}}.
+#'
+#' @return Returns invisibly the data frame produced by
+#'   \code{\link{summary.vsel}}.
+#'
+#' @export
+#' @method print vsel
 print.vsel <- function(x, digits = 2, ...) {
-  stats <- varsel_stats(x, ...)
+  stats <- summary.vsel(x, ...)
   v <- match("solution_terms", colnames(stats))
   stats[, -v] <- round(stats[, -v], digits)
   print(stats[, -v])
@@ -459,13 +456,13 @@ print.vsel <- function(x, digits = 2, ...) {
 ##' This function can be used for suggesting an appropriate model size based on
 ##' a certain default rule. Notice that the decision rules are heuristic and
 ##' should be interpreted as guidelines. It is recommended that the user studies
-##' the results via \code{varsel_plot} and/or \code{varsel_stats} and makes the
+##' the results via \code{plot.vsel} and/or \code{summary.vsel} and makes the
 ##' final decision based on what is most appropriate for the given problem.
 ##'
 ##' @param object The object returned by \link[=varsel]{varsel} or
 ##' \link[=cv_varsel]{cv_varsel}.
 ##' @param stat Statistic used for the decision. Default is 'elpd'. See
-##'   \code{varsel_stats} for other possible choices.
+##'   \code{summary.vsel} for other possible choices.
 ##' @param alpha A number indicating the desired coverage of the credible
 ##'   intervals based on which the decision is made. E.g. \code{alpha=0.32}
 ##'   corresponds to 68\% probability mass within the intervals (one standard
@@ -515,14 +512,18 @@ print.vsel <- function(x, digits = 2, ...) {
 ##' fit <- stan_glm(y~x, binomial())
 ##' vs <- cv_varsel(fit)
 ##' suggest_size(vs)
-##'
 ##' }
-##'
-
+##' 
 ##' @export
-suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
-                         type = "upper", baseline = NULL, warnings = TRUE,
-                         ...) {
+suggest_size <- function(object, ...) {
+  UseMethod("suggest_size")
+}
+
+#' @rdname suggest_size
+#' @export
+suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
+                              type = "upper", baseline = NULL, warnings = TRUE,
+                              ...) {
   .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
@@ -539,7 +540,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
     }
   }
   bound <- paste0(stat, ".", type)
-  stats <- varsel_stats(object,
+  stats <- summary.vsel(object,
     stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
     baseline = baseline, deltas = TRUE
   )
@@ -555,7 +556,7 @@ suggest_size <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
       suggested_size <- NA
       if (warnings) {
         warning(paste(
-          "Could not suggest model size. Investigate varsel_plot to identify",
+          "Could not suggest model size. Investigate plot.vsel to identify",
           "if the search was terminated too early. If this is the case,",
           "run variable selection with larger value for nterms_max."
         ))
@@ -731,6 +732,6 @@ cv_ids <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
   return(cv)
 }
 
-.is_vsel_object <- function(object) {
-  return("vsel" %in% class(object))
+is.vsel <- function(object) {
+  inherits(object, "vsel")
 }

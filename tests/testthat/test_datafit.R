@@ -144,9 +144,9 @@ test_that(paste(
   }
 })
 
-test_that("varsel_stats stops if baseline = 'ref' and deltas = TRUE", {
+test_that("summary.vsel stops if baseline = 'ref' and deltas = TRUE", {
   expect_error(
-    varsel_stats(vsd_list[[1]], baseline = "ref", deltas = TRUE),
+    summary(vsd_list[[1]], baseline = "ref", deltas = TRUE),
     paste(
       "Cannot use deltas = TRUE and baseline = 'ref' when there is no",
       "reference model"

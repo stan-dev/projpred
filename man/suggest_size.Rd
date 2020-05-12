@@ -2,9 +2,12 @@
 % Please edit documentation in R/methods.R
 \name{suggest_size}
 \alias{suggest_size}
+\alias{suggest_size.vsel}
 \title{Suggest model size}
 \usage{
-suggest_size(
+suggest_size(object, ...)
+
+\method{suggest_size}{vsel}(
   object,
   stat = "elpd",
   alpha = 0.32,
@@ -19,8 +22,10 @@ suggest_size(
 \item{object}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
+\item{...}{Currently ignored.}
+
 \item{stat}{Statistic used for the decision. Default is 'elpd'. See
-\code{varsel_stats} for other possible choices.}
+\code{summary.vsel} for other possible choices.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
 intervals based on which the decision is made. E.g. \code{alpha=0.32}
@@ -40,14 +45,12 @@ reference model exists, and 'best' otherwise.}
 \item{warnings}{Whether to give warnings if automatic suggestion fails,
 mainly for internal use. Default is TRUE, and usually no reason to set to
 FALSE.}
-
-\item{...}{Currently ignored.}
 }
 \description{
 This function can be used for suggesting an appropriate model size based on
 a certain default rule. Notice that the decision rules are heuristic and
 should be interpreted as guidelines. It is recommended that the user studies
-the results via \code{varsel_plot} and/or \code{varsel_stats} and makes the
+the results via \code{plot.vsel} and/or \code{summary.vsel} and makes the
 final decision based on what is most appropriate for the given problem.
 }
 \details{
@@ -83,7 +86,6 @@ NOTE: Loss statistics like RMSE and MSE are converted to utilities by
 fit <- stan_glm(y~x, binomial())
 vs <- cv_varsel(fit)
 suggest_size(vs)
-
 }
 
 }

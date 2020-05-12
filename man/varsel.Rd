@@ -115,7 +115,7 @@ models using generic reference models.
 ## Usage with stanreg objects
 fit <- stan_glm(y ~ x, binomial())
 vs <- varsel(fit)
-varsel_plot(vs)
+plot(vs)
 }
 
 }
