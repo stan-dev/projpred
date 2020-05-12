@@ -4,13 +4,11 @@
 \name{df_binom}
 \alias{df_binom}
 \title{Binomial toy example.}
-\format{
-A simulated classification dataset containing 100 observations.
+\format{A simulated classification dataset containing 100 observations.
 \describe{
   \item{y}{target, 0 or 1.}
   \item{x}{features, 30 in total.}
-}
-}
+}}
 \source{
 \url{http://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData}
 }

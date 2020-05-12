@@ -2,9 +2,34 @@
 % Please edit documentation in R/varsel.R
 \name{varsel}
 \alias{varsel}
+\alias{varsel.default}
+\alias{varsel.refmodel}
 \title{Variable selection for generalized linear models}
 \usage{
 varsel(object, ...)
+
+\method{varsel}{default}(object, ...)
+
+\method{varsel}{refmodel}(
+  refmodel,
+  d_test = NULL,
+  method = NULL,
+  ndraws = NULL,
+  nclusters = NULL,
+  ndraws_pred = NULL,
+  nclusters_pred = NULL,
+  cv_search = TRUE,
+  nterms_max = NULL,
+  intercept = TRUE,
+  verbose = TRUE,
+  lambda_min_ratio = 1e-05,
+  nlambda = 150,
+  thresh = 1e-06,
+  regul = 1e-04,
+  penalty = NULL,
+  search_terms = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by
@@ -24,13 +49,6 @@ internal use only.}
 Default is 'forward' if the number of variables in the full data is at most
 20,' and \code{'L1'} otherwise.}
 
-\item{cv_search}{If TRUE, then the projected coefficients after L1-selection
-are computed without any penalization (or using only the regularization
-determined by \code{regul}). If FALSE, then the coefficients are the
-solution from the' L1-penalized projection. This option is relevant only if
-\code{method}='L1'. Default is TRUE for genuine reference models and FALSE
-if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
-
 \item{ndraws}{Number of posterior draws used in the variable
 selection. Cannot be larger than the number of draws in the reference
 model. Ignored if nclusters is set.}
@@ -44,17 +62,18 @@ selection). Ignored if nclusters_pred is given.}
 \item{nclusters_pred}{Number of clusters used for prediction (after
 selection). Default is 5.}
 
+\item{cv_search}{If TRUE, then the projected coefficients after L1-selection
+are computed without any penalization (or using only the regularization
+determined by \code{regul}). If FALSE, then the coefficients are the
+solution from the' L1-penalized projection. This option is relevant only if
+\code{method}='L1'. Default is TRUE for genuine reference models and FALSE
+if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
+
 \item{nterms_max}{Maximum number of varibles until which the selection is
 continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 observations and D the number of variables.}
 
 \item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}
-
-\item{penalty}{Vector determining the relative penalties or costs for the
-variables. Zero means that those variables have no cost and will therefore
-be selected first, whereas Inf means those variables will never be
-selected. Currently works only if method == 'L1'. By default 1 for each
-variable.}
 
 \item{verbose}{If TRUE, may print out some information during the selection.
 Defaults to FALSE.}
@@ -74,6 +93,12 @@ to change this.}
 need for regularization, but sometimes for some models the projection can
 be ill-behaved and we need to add some regularization to avoid numerical
 problems.}
+
+\item{penalty}{Vector determining the relative penalties or costs for the
+variables. Zero means that those variables have no cost and will therefore
+be selected first, whereas Inf means those variables will never be
+selected. Currently works only if method == 'L1'. By default 1 for each
+variable.}
 }
 \value{
 An object of type \code{vsel} that contains information about the

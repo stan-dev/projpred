@@ -66,15 +66,17 @@
 #'
 #' @export
 cv_varsel <- function(object, ...) {
-  UseMethod("cv_varsel", object)
+  UseMethod("cv_varsel")
 }
 
+#' @rdname cv_varsel
 #' @export
 cv_varsel.default <- function(object, ...) {
   refmodel <- get_refmodel(object)
   return(cv_varsel(refmodel, ...))
 }
 
+#' @rdname cv_varsel
 #' @export
 cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
                                ndraws = NULL, nclusters = NULL,

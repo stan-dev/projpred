@@ -70,15 +70,17 @@
 #'
 #' @export
 varsel <- function(object, ...) {
-  UseMethod("varsel", object)
+  UseMethod("varsel")
 }
 
+#' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
   refmodel <- get_refmodel(object)
   return(varsel(refmodel, ...))
 }
 
+#' @rdname varsel
 #' @export
 varsel.refmodel <- function(refmodel, d_test = NULL, method = NULL,
                             ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
