@@ -1,5 +1,5 @@
 ---
-title: "projpred Quick Start (formula interface)"
+title: "projpred Quick Start"
 date: "`r Sys.Date()`"
 output:
   html_vignette
@@ -42,7 +42,7 @@ This is a convenience function to automatically split matrix variables in linear
 If this function is not used, `projpred` considers `x` to be jointly included or excluded in the variable selection.
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
-split_structure <- break_up_matrix_term(y ~ x, data=df_gaussian)
+split_structure <- break_up_matrix_term(y ~ x, data = df_gaussian)
 df_gaussian <- split_structure$data
 formula <- split_structure$formula
 d <- df_gaussian
@@ -59,44 +59,44 @@ fit <- brm(formula, family=gaussian(), data=df_gaussian,
            seed=1, chains=2, iter=500)
 ```
 
-In order to have a very general interface to `projpred` we need to specify some functions. These are:
-  - Maximum likelihood estimator for the projections.
-  - Prediction function for each of the submodels.
-  - Prediction function for the reference model.
-  - Function to fetch data from the original dataset, given that we are using cross validation to determine the solution path.
+Thanks to its general interface, `projpred` can be applied to a very wide set of models. To achieve so, we internally define the following set of functions:
+  - Divergence minimizer for the projection, which in this case it simply corresponds to a maximum likelihood estimator.
+  - Prediction function for the projections.
+  - Prediction function for the reference model that outputs the linear predictor. 
+  - Function to fetch data from the original dataset.
 
-For most models these will be quite simple functions interfacing with other packages, as shown next.
+For most models, `projpred` is able to generate these itself without any user input more than the reference model object. Nonetheless, for custom or not supported models, the user can provide those himself (more details in the documentation about reference models).
 
-```{r, results='hide', messages=FALSE, warning=FALSE}
-ref_predfun <- function(fit, newdata=NULL)
-  t(posterior_linpred(fit, newdata = newdata))
+<!-- ```{r, results='hide', messages=FALSE, warning=FALSE} -->
+<!-- ref_predfun <- function(fit, newdata=NULL) -->
+<!--   t(posterior_linpred(fit, newdata = newdata)) -->
 
-proj_predfun <- function(fit, newdata=NULL) {
-  newdata <- as.data.frame(fetch_data(xnew=newdata))
-  predict(fit, newdata = newdata)
-}
+<!-- proj_predfun <- function(fit, newdata=NULL) { -->
+<!--   newdata <- as.data.frame(fetch_data(xnew=newdata)) -->
+<!--   predict(fit, newdata = newdata) -->
+<!-- } -->
 
-mle <- function(form, dat)
-  lm(form, data = dat)
+<!-- mle <- function(form, dat) -->
+<!--   lm(form, data = dat) -->
 
-fetch_data <- function(obs=NULL, xnew=NULL) {
-  if (is.null(obs))
-    if (is.null(xnew))
-      return(d)
-    else
-      return(xnew)
-  else if (is.null(xnew))
-    return(d[obs, ])
-  else
-    return(xnew[obs, ])
-}
-```
+<!-- fetch_data <- function(obs=NULL, xnew=NULL) { -->
+<!--   if (is.null(obs)) -->
+<!--     if (is.null(xnew)) -->
+<!--       return(d) -->
+<!--     else -->
+<!--       return(xnew) -->
+<!--   else if (is.null(xnew)) -->
+<!--     return(d[obs, ]) -->
+<!--   else -->
+<!--     return(xnew[obs, ]) -->
+<!-- } -->
+<!-- ``` -->
 
-The first function, `ref_predfun`, is the prediction function for the reference model, so we use `posterior_linpred` from `rstanarm`.
-For each of the submodels we use `proj_predfun`, which uses `lme4` `predict` function for linear models.
-To fit the projections we use `lm`.
-Finally, the `fetch_data` function that simply extracts a set of data points from the dataset, that will be used during the cross validation stage.
-The `fetch_data` function needs to handle the different data structures needed in different contexts inside `projpred`.
+<!-- The first function, `ref_predfun`, is the prediction function for the reference model, so we use `posterior_linpred` from `rstanarm`. -->
+<!-- For each of the submodels we use `proj_predfun`, which uses `lme4` `predict` function for linear models. -->
+<!-- To fit the projections we use `lm`. -->
+<!-- Finally, the `fetch_data` function that simply extracts a set of data points from the dataset, that will be used during the cross validation stage. -->
+<!-- The `fetch_data` function needs to handle the different data structures needed in different contexts inside `projpred`. -->
 
 Next we construct the reference model structure `refmodel`.
 
@@ -104,11 +104,11 @@ Next we construct the reference model structure `refmodel`.
 refmodel <- get_refmodel(fit)
 ```
 
-The function `cv_varsel_poc` runs the variable selection, and returns an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
-Although it is theoretically possible to use L1-search for this linear model, it has not been implemented for the general `formula` interface, and we will use the `forward` method.
+The function `cv_varsel` runs a cross-validated variable selection, and returns an object that contains the relevant information about the procedure, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
+For a simple linear model, the fastest method is to use L1--search, that is the default option. 
 
 ```{r, results='hide', messages=FALSE, warnings=FALSE}
-vs <- cv_varsel(refmodel, method='forward')
+vs <- cv_varsel(refmodel)
 ```
 
 ```{r, messages=FALSE, warnings=FALSE}
@@ -118,12 +118,12 @@ vs$solution_terms # selection order of the variables
 We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
 ```{r, fig.width=5, fig.height=4}
 # plot predictive performance on training data
-plot(vs, stats=c('elpd', 'rmse'))
+plot(vs, stats = c('elpd', 'rmse'))
 ```
 
 ```{r, fig.width=5, fig.height=4}
 # plot the validation results, this time relative to the full model
-plot(vs, stats = c('elpd', 'rmse'), deltas=T)
+plot(vs, stats = c('elpd', 'rmse'), deltas = TRUE)
 ```
 
 We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables.
@@ -131,34 +131,38 @@ We perform the projection for a submodel of desired size using the function `pro
 ```{r, fig.width=6, fig.height=2}
  # Visualise the three most relevant variables in the full model -->
  mcmc_areas(as.matrix(refmodel$fit),
-            pars = c('(Intercept)', unlist(vs$solution_terms[1:3]), 'sigma')) + coord_cartesian(xlim = c(-2, 2))
+            pars = c("b_Intercept", paste0("b_", vs$solution_terms[1:3]),
+                     "sigma")) +
+   coord_cartesian(xlim = c(-2, 2))
 ```
 
 ```{r, fig.width=6, fig.height=2}
 # Visualise the projected three most relevant variables
 proj <- project(vs, nterms = 3, ns = 500)
-mcmc_areas(t(as.matrix(proj$sub_fit$coefficients))) + coord_cartesian(xlim = c(-2, 2))
+mcmc_areas(as.matrix(proj)) +
+  coord_cartesian(xlim = c(-2, 2))
 ```
 
-We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `xnew`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r}
-xnew <- df_gaussian[, colnames(df_gaussian) != "y"]
-pred <- proj_linpred(vs, xnew=xnew, ynew=df_gaussian$y, nterms = 6, integrated = TRUE)
+pred <- proj_linpred(vs, newdata = df_gaussian, ynew = df_gaussian$y,
+                     nterms = 6, integrated = TRUE)
 ```
 
 Visualize the predictions
 ```{r, fig.width=5, fig.height=3}
 ggplot() +
-  geom_point(aes(x=pred$pred,y=df_gaussian$y)) +
-  geom_abline(slope = 1, color='red') +
-  labs(x = 'prediction', y = 'y')
+  geom_point(aes(x = pred$pred,y = df_gaussian$y)) +
+  geom_abline(slope = 1, color = "red") +
+  labs(x = "prediction", y = "y")
 ```
 
 We also obtain draws from the projected predictive distribution. Here's an example prediction for the first data point using 6 variables (the observed value is marked by the red line)
 ```{r, fig.height=3, fig.width=5}
-xnew <- df_gaussian[, colnames(df_gaussian) != "y"]
-y1_rep <- proj_predict(vs, xnew=xnew[1,,drop=F], nterms=6, seed=7560)
-qplot(as.vector(y1_rep), bins=25) +
-geom_vline(xintercept = df_gaussian$y[1], color='red') +
-xlab('y1_rep')
+subset <- df_gaussian %>% dplyr::sample_n(1)
+y_subset <- subset %>% dplyr::select(y)
+y1_rep <- proj_predict(vs, newdata = subset, nterms = 6, seed = 7560)
+qplot(as.vector(y1_rep), bins = 25) +
+  geom_vline(xintercept = as.numeric(y_subset), color = "red") +
+  xlab("y1_rep")
 ```
