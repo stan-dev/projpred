@@ -118,12 +118,12 @@ vs$solution_terms # selection order of the variables
 We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
 ```{r, fig.width=5, fig.height=4}
 # plot predictive performance on training data
-varsel_plot(vs, stats=c('elpd', 'rmse'))
+plot(vs, stats=c('elpd', 'rmse'))
 ```
 
 ```{r, fig.width=5, fig.height=4}
 # plot the validation results, this time relative to the full model
-varsel_plot(vs, stats = c('elpd', 'rmse'), deltas=T)
+plot(vs, stats = c('elpd', 'rmse'), deltas=T)
 ```
 
 We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables.

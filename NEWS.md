@@ -36,7 +36,7 @@ This version contains only a few patches, no new features to the user.
 
 * Added more examples to the vignette.
 
-* Added possibility to change the baseline in ```varsel_plot/varsel_stats```. Now it is possible to compare also to the best submodel found, not only to the reference model.
+* Added possibility to change the baseline in ```plot/summary```. Now it is possible to compare also to the best submodel found, not only to the reference model.
 
 * Bug fix: RMSE was previously computed wrong, this is now fixed.
 

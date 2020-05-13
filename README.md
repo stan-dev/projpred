@@ -61,7 +61,7 @@ fit <- stan_glm(y ~ x, family = gaussian(), data = df_gaussian,
 vs <- varsel(fit)
 
 # print the results
-varsel_stats(vs)
+summary(vs)
 
 # project the parameters for model sizes nterms = 3,5 variables 
 projs <- project(vs, nterms = c(3, 5))
@@ -73,7 +73,7 @@ pred <- proj_linpred(vs, xnew=df_gaussian$x, nterms=5, integrated=T)
 cvs <- cv_varsel(fit, cv_method='LOO')
 
 # plot the validation results 
-varsel_plot(cvs)
+plot(cvs)
 ```
 
 

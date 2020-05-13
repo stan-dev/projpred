@@ -58,7 +58,7 @@ vs$solution_terms # selection order of the variables
 We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
 ```{r, fig.width=5, fig.height=4}
 # plot predictive performance on training data 
-varsel_plot(vs, stats=c('elpd', 'rmse'))
+plot(vs, stats=c('elpd', 'rmse'))
 ```
 
 
@@ -73,7 +73,7 @@ suggest_size(cvs)
 ```
 ```{r, fig.width=5, fig.height=4}
 # plot the validation results, this time relative to the full model
-varsel_plot(cvs, stats = c('elpd', 'rmse'), deltas=T)
+plot(cvs, stats = c('elpd', 'rmse'), deltas=T)
 ```
 
 We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables.
@@ -141,7 +141,7 @@ vs$solution_terms
 
 Plot the ELPD and classification accuracy on the training data:
 ```{r, fig.width=5, fig.height=4}
-varsel_plot(vs, stats=c('elpd', 'acc'), deltas=F)
+plot(vs, stats=c('elpd', 'acc'), deltas=F)
 ```
 
 Cross-validate the full model and the variable selection. Let's use K-fold cross validation this time for illustration (here we use only K=3 folds to make this vignette build faster, but in practice it is customary to use more folds, e.g. K=5 or K=10):
@@ -156,7 +156,7 @@ suggest_size(cvs)
 ```
 ```{r, fig.width=5, fig.height=4}
 # plot the validation results
-varsel_plot(cvs, stats=c('elpd', 'acc'))
+plot(cvs, stats=c('elpd', 'acc'))
 ```
 
 Finally, for illustration, we compute here the predictive class probabilities using only the two most relevant variables, and visualize the results.
@@ -228,7 +228,7 @@ Now we can perform everything similarly as in the previous examples. The followi
 ```{r, fig.width=5, fig.height=4, results='hide', message=F, warning=F, cache=T}
 # LOO validation for the feature selection
 cvs <- cv_varsel(ref)
-varsel_plot(cvs, stats=c('elpd','rmse'))
+plot(cvs, stats=c('elpd','rmse'))
 ```
 
 
@@ -246,7 +246,7 @@ These can be computed by passing in the original data as "reference", and then u
 # initialize the data reference
 dref <- init_refmodel(x,y,family=gaussian())
 lasso <- cv_varsel(dref, K=10, method='l1', nterms_max=30) # tenfold CV for Lasso
-varsel_plot(lasso, stats='rmse')
+plot(lasso, stats='rmse')
 ```
 
 Also Lasso gives a good fit, comparable to that of the Bayesian model in terms of RMSE, but the projection finds a submodel with similar performance with fewer features. Furthermore, estimation of the noise variance is less straightforward for Lasso, so if we were interested in computing well calibrated predictive distributions for future data, projection would be the preferred choice also in this respect.
@@ -254,7 +254,7 @@ Also Lasso gives a good fit, comparable to that of the Bayesian model in terms o
 Here's the greedy forward search with small L2-penalty for the coefficients. 
 ```{r, fig.width=5, fig.height=2.5, results='hide', message=F, warning=F, cache=T}
 fsel <- cv_varsel(dref, K=10, method='forward', regul=1)
-varsel_plot(fsel, stats='rmse')
+plot(fsel, stats='rmse')
 ```
 
 Forward search finds a sparser model with comparable performance to Lasso but starts overfitting when more features are added.

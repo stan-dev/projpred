@@ -28,7 +28,7 @@ for examples.
  Get the projected posteriors of the reduced models.}
  \item{\link{proj_predict}, \link{proj_linpred}}{
  Make predictions with reduced number of features.}
- \item{\link{varsel_plot}, \link{varsel_stats}}{
+ \item{\link{plot}, \link{summary}}{
  Visualize and get some key statistics about the variable selection.}
 }
 }

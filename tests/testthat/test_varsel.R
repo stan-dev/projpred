@@ -390,7 +390,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
       vs1 <- cv_varsel(fit_gauss, validate_search = FALSE)
       vs2 <- cv_varsel(fit_gauss, validate_search = TRUE)
     })
-    expect_true(all(varsel_stats(vs1)$elpd >= varsel_stats(vs2)$elpd))
+    expect_true(all(summary(vs1)$elpd >= summary(vs2)$elpd))
   })
 
   test_that("Having something else than stan_glm as the fit throws an error", {
@@ -541,14 +541,14 @@ test_that("object returned by cv_varsel contains the relevant fields", {
 
 
   # -------------------------------------------------------------
-  context("varsel_stats")
+  context("summary")
 
   valid_stats_all <- c("elpd", "mlpd")
   valid_stats_gauss_only <- c("mse", "rmse")
   valid_stats_binom_only <- c("acc", "auc")
   valid_stats_gauss <- c(valid_stats_all, valid_stats_gauss_only)
   valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
-  vs_funs <- c(varsel_stats, varsel_plot, suggest_size)
+  vs_funs <- c(summary, plot, suggest_size)
 
   test_that("invalid objects are rejected", {
     for (fun in vs_funs) {
@@ -574,12 +574,12 @@ test_that("object returned by cv_varsel contains the relevant fields", {
 
   test_that("invalid 'baseline' arguments are rejected", {
     expect_error(
-      varsel_stats(vs_list[[1]][["gauss"]], baseline = "zzz"),
+      summary(vs_list[[1]][["gauss"]], baseline = "zzz"),
       "Argument 'baseline' must be either 'ref' or 'best'"
     )
   })
 
-  test_that("varsel_stats output seems legit", {
+  test_that("summary output seems legit", {
     for (i in seq_along(cvs_list)) {
       for (j in seq_along(cvs_list[[i]])) {
         cvs <- cvs_list[[i]][[j]]
@@ -590,7 +590,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
         } else {
           stats_str <- valid_stats_all
         }
-        stats <- varsel_stats(cvs, stats = stats_str,
+        stats <- summary(cvs, stats = stats_str,
                               type = c("mean", "lower", "upper", "se"))
         expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
@@ -603,7 +603,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     }
   })
 
-  test_that("varsel_stats works with reference models", {
+  test_that("summary works with reference models", {
     for (i in seq_along(vsref_list)) {
       for (j in seq_along(vsref_list[[i]])) {
         vs <- vsref_list[[i]][[j]]
@@ -612,7 +612,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
         } else {
           stats_str <- valid_stats_binom
         }
-        stats <- varsel_stats(vs, stats = stats_str)
+        stats <- summary(vs, stats = stats_str)
         expect_true(is.data.frame(stats))
       }
     }
@@ -632,7 +632,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
     expect_equal(out$elpd, round(out$elpd, 4))
 
-    # options to varsel_stats
+    # options to summary
     expect_output(out <- print(vs_list[[1]][[1]], nterms_max = 3, stats = "mse"))
     expect_equal(nrow(out) - 1, 3)
     expect_named(out, c("size", "solution_terms", "mse", "mse.se"))
@@ -645,31 +645,31 @@ test_that("object returned by cv_varsel contains the relevant fields", {
 
 
   # -------------------------------------------------------------
-  context("varsel_plots")
+  context("plots")
 
   test_that("plotting works", {
-    expect_s3_class(varsel_plot(vs_list[[1]][[1]]), "ggplot")
-    expect_visible(varsel_plot(vs_list[[1]][[1]], nterms_max = 3))
+    expect_s3_class(plot(vs_list[[1]][[1]]), "ggplot")
+    expect_visible(plot(vs_list[[1]][[1]], nterms_max = 3))
   })
 
   test_that("invalid 'baseline' arguments are rejected", {
     expect_error(
-      varsel_plot(vs_list[[1]][[1]], baseline = "zzz"),
+      plot(vs_list[[1]][[1]], baseline = "zzz"),
       "Argument 'baseline' must be either 'ref' or 'best'"
     )
   })
 
   test_that("the value of nterms_max is valid", {
     expect_error(
-      varsel_plot(vs_list[[1]][[1]], nterms_max = 0),
+      plot(vs_list[[1]][[1]], nterms_max = 0),
       "nterms_max must be at least 1"
     )
   })
 
   test_that("nterms_max is capped to the largest model size", {
     expect_equal(
-      varsel_plot(vs_list[[1]][[1]]),
-      varsel_plot(vs_list[[1]][[1]], nterms_max = 1000)
+      plot(vs_list[[1]][[1]]),
+      plot(vs_list[[1]][[1]], nterms_max = 1000)
     )
   })
 
