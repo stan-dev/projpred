@@ -137,12 +137,18 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 
   preds <- lapply(projs, function(proj) {
     extract_model_data <- proj$extract_model_data
-    w_o <- extract_model_data(NULL,
+    w_o <- extract_model_data(proj$refmodel$fit,
       newdata = newdata, weightsnew,
       offsetnew, extract_y = FALSE
     )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
+    if (is.null(weightsnew)) {
+      weightsnew <- rep(1, NROW(newdata))
+    }
+    if (is.null(offsetnew)) {
+      offsetnew <- rep(0, NROW(newdata))
+    }
     mu <- proj$family$mu_fun(proj$sub_fit,
       newdata = newdata, offset = offsetnew,
       weights = weightsnew

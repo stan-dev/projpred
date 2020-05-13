@@ -185,6 +185,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     model$p_type <- is.null(ndraws)
     model$intercept <- intercept
     model$extract_model_data <- refmodel$extract_model_data
+    model$refmodel <- refmodel
     class(model) <- "projection"
     return(model)
   })
