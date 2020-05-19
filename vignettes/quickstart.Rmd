@@ -16,8 +16,6 @@ params:
 
 This vignette shows how to use the main functionalities of the ```projpred```-package, which implements the projective variable selection (Piironen et al., 2018) for (hierarchical) generalized linear models. The package is compatible with many models in ```rstanarm``` and ```brms``` but also other reference models could be used (see section Custom reference models). The main methods implemented in the package are described in Piironen et al. (2018). Performance for generalized linear models in comparison to many other methods is evaluated in Piironen and Vehtari (2017a).
 
-The difference with respect to the standard quickstart guide is that in this vignette we are using a more general API that works with `formula` instances, so that the inner implementation does not depend on any specific structure.
-
 
 ## Gaussian example
 Load the necessary packages. If the sampling takes more than 10 seconds and multiple cores are available, uncomment the line setting `mc.cores` to set the number of cores used (this is commented out as the sampling in the example is fast and to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).
