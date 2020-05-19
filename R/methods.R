@@ -590,6 +590,14 @@ as.matrix.glm <- function(x, ...) {
   return(coef(x))
 }
 
+##' @method as.matrix.lmerMod
+as.matrix.lmerMod <- function(x, ...) {
+  population_effects <- lme4::fixef(x)
+  group_effects <- lme4::ranef(x)
+  group_effects <- unlist(lapply(group_effects, function(ge) apply(ge, 2, sd)))
+  return(c(population_effects, group_effects))
+}
+
 ##' @method as.matrix noquote
 as.matrix.noquote <- function(x, ...) {
   return(coef(x))
@@ -630,7 +638,11 @@ as.matrix.projection <- function(x, ...) {
     ))
   }
   if (inherits(x$sub_fit, "list")) {
-    res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lm)))
+    if ("lmerMod" %in% class(x$sub_fit[[1]])) {
+      res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
+    } else {
+      res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lm)))
+    }
   } else {
     res <- t(as.matrix.lm(x$sub_fit))
   }
