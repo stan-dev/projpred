@@ -21,11 +21,12 @@ Load the necessary packages. If the sampling takes more than 30 seconds and mult
 ```{r, results='hide', message=FALSE, warning=FALSE}
 library(projpred)
 library(brms)
+library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(bayesplot)
 theme_set(theme_classic())
-#options(mc.cores = parallel::detectCores())
+options(mc.cores = 4)
 ```
 
 For the first Gaussian example we borrow the popular `orthodont` dataset from the `nlme` package. This data include observations from a growth curve on an orthodontic measurement. It contains 108 observations with 4 variables. The variables contained in this dataset are:
@@ -41,16 +42,16 @@ data("Orthodont", package = "nlme")
 
  We first build the following complete `brms` model including all variables:
  
- ```{r}
+```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
  fit <- brm(distance ~ age * Sex + (age | Subject),
             chains = 2,  data = Orthodont, seed = 1)
- ```
+```
  
  To run `projpred` on this model we can first run a simple variable selection with the full dataset. This approach may be overconfident in some cases and therefore in general cases it is recommended to run a cross validated variable selection.
  
- ```{r, results="hide", messages=FALSE, warnings=FALSE}
+```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
  vs <- varsel(fit)
- ```
+```
 
 Because our model includes group effects, the only available search method is forward search, which is a bit slower than \ell_1 search but is quite accurate. Beware that the underlying projection fitting method could return some warnings in cases where the optimization may not have converged properly. This is more common in the case of generalized models (non Gaussian families). We print the list of the variables ordered by relevance:
 
@@ -124,19 +125,19 @@ be downloaded from the corresponding website (http://www.mpcm-evolution.com/).
 The model is taken from *Estimating Phylogenetic Multilevel Models with brms*
 (B\"urkner, 2020).
 
-```{r}
+```{r, cache=TRUE, messages=FALSE, warnings=FALSE, results="hide"}
 fit <- brm(
   phen_pois ~ cofactor + (1 | phylo) + (1 | obs), data = data_pois,
-  family = poisson("log"), chains = 2, iter = 4000,
+  family = poisson("log"), chains = 2, iter = 2000,
   control = list(adapt_delta = 0.95))
 ```
 
  As we did in the previous example, we can perform variable selection and look
  at the projection.
  
- ```{r, results="hide", messages=FALSE, warnings=FALSE}
+```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
  vs <- varsel(fit)
- ```
+```
 
 Because our model includes group effects, the only available search method is forward search, which is a bit slower than \ell_1 search but is quite accurate. Beware that the underlying projection fitting method could return some warnings in cases where the optimization may not have converged properly. This is more common in the case of generalized models (non Gaussian families). We print the list of the variables ordered by relevance:
 
@@ -150,12 +151,12 @@ We plot some statistics computed on the training data, such as the sum of log pr
 plot(vs, stats = c('elpd', 'rmse'))
 ```
 
-We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the two most relevant variables.
+We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the most relevant variables.
 
 ```{r, fig.width=6, fig.height=2}
- # Visualise the three most relevant variables in the full model -->
+ # Visualise the most relevant variable in the full model -->
  mcmc_areas(as.matrix(vs$refmodel$fit),
-            pars = c("b_Intercept", "sd_phylo__Intercept", "sigma"))
+            pars = c("b_Intercept", "sd_phylo__Intercept"))
 ```
 
 ```{r, fig.width=6, fig.height=2}
@@ -205,15 +206,15 @@ VerbAgg_subsample <- VerbAgg %>%
 For this simple model we will add some variables that we know are not quite
 relevant.
 
-```{r}
+```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
 ## simple bernoulli model
 formula_va <- bf(
   r2 ~ btype + situ + mode + (btype + situ + mode | id)
 )
-fit_va <- brm(
+fit_va <- stan_glmer(
   formula = formula_va,
   data = VerbAgg_subsample,
-  family = brmsfamily("bernoulli", "logit"),
+  family = binomial("logit"),
   seed = 1234,
   chains = 4
 )
