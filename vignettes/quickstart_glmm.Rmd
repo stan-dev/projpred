@@ -1,0 +1,273 @@
+---
+title: "projpred Performing variable selection on Generalized Linear Multilevel Models"
+date: "`r Sys.Date()`"
+output:
+  html_vignette
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+---
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{projpred quickstart guide (formula interface)}
+\usepackage[utf8](inputenc)
+-->
+```{r, child="children/SETTINGS-knitr.txt"}
+```
+
+This vignette shows how to use `projpred` to perform variable selection in the context of Generalized Linear Multilevel Models (GLMMs). For a general overview of the package we refer the reader to the quickstart vignette. The method used here is described in the latest preprint (Catalina et al. 2020, arxiv link).
+
+## Gaussian example
+Load the necessary packages. If the sampling takes more than 30 seconds and multiple cores are available, uncomment the line setting `mc.cores` to set the number of cores used (this is commented out as the sampling in the example is fast and to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).
+```{r, results='hide', message=FALSE, warning=FALSE}
+library(projpred)
+library(brms)
+library(dplyr)
+library(ggplot2)
+library(bayesplot)
+theme_set(theme_classic())
+#options(mc.cores = parallel::detectCores())
+```
+
+For the first Gaussian example we borrow the popular `orthodont` dataset from the `nlme` package. This data include observations from a growth curve on an orthodontic measurement. It contains 108 observations with 4 variables. The variables contained in this dataset are:
+
+ - distance, numeric distances from the pituitary to the pterygomaxillary fissure (mm). These are measured on x-ray images of the skull.
+ - age, the age of the subject (years).
+ - Subject, an ordered factor indicating the subject on which the measurement is taken.
+ - Sex, indicator of sex in the subject.
+ 
+```{r}
+data("Orthodont", package = "nlme")
+```
+
+ We first build the following complete `brms` model including all variables:
+ 
+ ```{r}
+ fit <- brm(distance ~ age * Sex + (age | Subject),
+            chains = 2,  data = Orthodont, seed = 1)
+ ```
+ 
+ To run `projpred` on this model we can first run a simple variable selection with the full dataset. This approach may be overconfident in some cases and therefore in general cases it is recommended to run a cross validated variable selection.
+ 
+ ```{r, results="hide", messages=FALSE, warnings=FALSE}
+ vs <- varsel(fit)
+ ```
+
+Because our model includes group effects, the only available search method is forward search, which is a bit slower than \ell_1 search but is quite accurate. Beware that the underlying projection fitting method could return some warnings in cases where the optimization may not have converged properly. This is more common in the case of generalized models (non Gaussian families). We print the list of the variables ordered by relevance:
+
+```{r, messages=FALSE, warnings=FALSE}
+vs$solution_terms # selection order of the variables
+```
+
+We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
+```{r, fig.width=5, fig.height=4}
+# plot predictive performance on training data
+plot(vs, stats = c('elpd', 'rmse'))
+```
+
+We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables.
+
+```{r, fig.width=6, fig.height=2}
+ # Visualise the three most relevant variables in the full model -->
+ mcmc_areas(as.matrix(vs$refmodel$fit),
+            pars = c("b_Intercept", "sd_Subject__Intercept", "b_age",
+                     "sd_Subject__age", "sigma"))
+```
+
+```{r, fig.width=6, fig.height=2}
+# Visualise the projected three most relevant variables
+proj <- project(vs, nterms = 3, ns = 500)
+mcmc_areas(as.matrix(proj))
+```
+
+We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 5 most relevant variables.
+```{r}
+pred <- proj_linpred(vs, newdata = Orthodont, ynew = Orthodont$distance,
+                     nterms = 5, integrated = TRUE)
+```
+
+Visualize the predictions
+```{r, fig.width=5, fig.height=3}
+ggplot() +
+  geom_point(aes(x = pred$pred, y = Orthodont$distance)) +
+  geom_abline(slope = 1, color = "red") +
+  labs(x = "prediction", y = "y")
+```
+
+We also obtain draws from the projected predictive distribution. Here's an example prediction for the first data point using 5 variables (the observed value is marked by the red line)
+```{r, fig.height=3, fig.width=5}
+subset <- Orthodont %>% dplyr::sample_n(1)
+y_subset <- subset %>% dplyr::select(distance)
+y1_rep <- proj_predict(vs, newdata = subset, nterms = 5, seed = 7560)
+qplot(as.vector(y1_rep), bins = 25) +
+  geom_vline(xintercept = as.numeric(y_subset), color = "red") +
+  xlab("y1_rep")
+```
+
+## Poisson example
+
+In this case we will download count data from the web,
+
+```{r}
+data_pois <- read.table(
+  "https://paul-buerkner.github.io/data/data_pois.txt",
+  header = TRUE
+)
+data_pois$obs <- seq_len(nrow(data_pois))
+```
+
+These data correspond to a phylogenetic dataset where the phentype is expressed
+as counts. This kind of data is relevant in evolutionary biology when data of
+many species are analyzed at the same time. The model we fit here is borrowed
+from *Modern Phylogenetic Comparative Methods and the application in
+Evolutionary Biology* (de Villemeruil & Nakagawa, 2014). The necessary data can
+be downloaded from the corresponding website (http://www.mpcm-evolution.com/).
+The model is taken from *Estimating Phylogenetic Multilevel Models with brms*
+(B\"urkner, 2020).
+
+```{r}
+fit <- brm(
+  phen_pois ~ cofactor + (1 | phylo) + (1 | obs), data = data_pois,
+  family = poisson("log"), chains = 2, iter = 4000,
+  control = list(adapt_delta = 0.95))
+```
+
+ As we did in the previous example, we can perform variable selection and look
+ at the projection.
+ 
+ ```{r, results="hide", messages=FALSE, warnings=FALSE}
+ vs <- varsel(fit)
+ ```
+
+Because our model includes group effects, the only available search method is forward search, which is a bit slower than \ell_1 search but is quite accurate. Beware that the underlying projection fitting method could return some warnings in cases where the optimization may not have converged properly. This is more common in the case of generalized models (non Gaussian families). We print the list of the variables ordered by relevance:
+
+```{r, messages=FALSE, warnings=FALSE}
+vs$solution_terms # selection order of the variables
+```
+
+We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
+```{r, fig.width=5, fig.height=4}
+# plot predictive performance on training data
+plot(vs, stats = c('elpd', 'rmse'))
+```
+
+We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the two most relevant variables.
+
+```{r, fig.width=6, fig.height=2}
+ # Visualise the three most relevant variables in the full model -->
+ mcmc_areas(as.matrix(vs$refmodel$fit),
+            pars = c("b_Intercept", "sd_phylo__Intercept", "sigma"))
+```
+
+```{r, fig.width=6, fig.height=2}
+# Visualise the projected two most relevant variables
+proj <- project(vs, nterms = 2, ns = 500)
+mcmc_areas(as.matrix(proj))
+```
+
+We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 2 most relevant variables.
+```{r}
+pred <- proj_linpred(vs, newdata = data_pois, ynew = data_pois$phen_pois,
+                     nterms = 2, integrated = TRUE)
+```
+
+Visualize the predictions
+```{r, fig.width=5, fig.height=3}
+ggplot() +
+  geom_point(aes(x = pred$pred, y = data_poin$phen_pois)) +
+  geom_abline(slope = 1, color = "red") +
+  labs(x = "prediction", y = "y")
+```
+
+## Bernoulli example
+
+For both of the previous cases, running variable selection with the full data
+was actually enough because they were pretty simple. In this section we work on
+a slightly more complex data set.
+
+We can load the data from the popular `lme4` package:
+
+```{r}
+data("VerbAgg", package = "lme4")
+```
+
+The whole dataset consists of 7584 questionnaire answers from different
+subjects. Given that the full data could take a long time to fit, we will
+subsample 50 individuals (whose fitting still takes a bit). For this, we use the
+great `tidyverse` environment.
+
+```{r}
+## subsample 50 participants
+VerbAgg_subsample <- VerbAgg %>%
+  tidyr::as_tibble() %>%
+  dplyr::filter(id %in% sample(id, 50))
+```
+
+For this simple model we will add some variables that we know are not quite
+relevant.
+
+```{r}
+## simple bernoulli model
+formula_va <- bf(
+  r2 ~ btype + situ + mode + (btype + situ + mode | id)
+)
+fit_va <- brm(
+  formula = formula_va,
+  data = VerbAgg_subsample,
+  family = brmsfamily("bernoulli", "logit"),
+  seed = 1234,
+  chains = 4
+)
+```
+
+As we did before, we can run the standard variable selection with
+
+```{r, results="hide", messages=FALSE, warnings=FALSE}
+vs_va <- varsel(fit_va)
+```
+
+```{r}
+vs_va$solution_terms
+```
+
+
+```{r, fig.height=4, fig.width=5}
+plot(vs_va, stats = c("elpd", "acc"))
+```
+
+Even though the ordering of the variables make sense, the performance of the
+projected models does not quite match the reference model. This can be explained
+by the fact that we are running variable selection in the full data, which can
+give raise to overconfident predictions on the reference model. In this case it
+is necessary to run a cross validated variable selection with `cv_varsel`. By
+default, `cv_varsel` will run LOO cross validation, and will try to run a full
+variable selection for every data point. Given that our dataset is still a bit
+large to fully fit for this vignette, we can omit this behaviour by fitting the
+model once and computing the LOO elpd posterior from it by passing the argument
+`validate_search = FALSE`. Note that in general it is recommended to run the
+full validation search.
+
+```{r, results="hide", messages=FALSE, warnings=FALSE}
+cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE)
+```
+
+```{r, fig.height=4, fig.width=5}
+plot(cv_vs_va, stats = c("elpd", "acc"))
+```
+
+Now we see that the projected models behave as expected and can proceed with the
+usual analysis.
+
+We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 3 most relevant variables.
+```{r}
+pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample,
+                     ynew = VerbAgg_subsample$r2,
+                     nterms = 3, integrated = TRUE)
+```
+
+Visualize the predictions
+```{r, fig.width=5, fig.height=3}
+ggplot() +
+  geom_point(aes(x = pred$pred, y = VerbAgg_subsample$r2)) +
+  geom_abline(slope = 1, color = "red") +
+  labs(x = "prediction", y = "y")
+```
