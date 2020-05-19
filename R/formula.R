@@ -568,6 +568,10 @@ eval_rhs <- function(formula, data) {
   eval(formula[[2]], data, environment(formula))
 }
 
+#' Extract left hand side of a formula as a formula itself by removing the right
+#' hand side.
+#' @param x Formula
+#' @return updated formula with an intercept in the right hand side.
 lhs <- function(x) {
   x <- as.formula(x)
   if (length(x) == 3L) update(x, . ~ 1) else NULL
