@@ -638,7 +638,8 @@ as.matrix.projection <- function(x, ...) {
     ))
   }
   if (inherits(x$sub_fit, "list")) {
-    if ("lmerMod" %in% class(x$sub_fit[[1]])) {
+    if ("lmerMod" %in% class(x$sub_fit[[1]]) ||
+        "glmerMod" %in% class(x$sub_fit[[1]])) {
       res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
     } else {
       res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lm)))
