@@ -42,20 +42,20 @@ data("Orthodont", package = "nlme")
 
  We first build the following complete `rstanarm` model including all variables:
  
-```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
+```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
  fit <- stan_glmer(distance ~ age * Sex + (age | Subject),
                    chains = 2,  data = Orthodont, seed = 1)
 ```
  
  To run `projpred` on this model we can first run a simple variable selection with the full dataset. This approach may be overconfident in some cases and therefore in general cases it is recommended to run a cross validated variable selection.
  
-```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
+```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
  vs <- varsel(fit)
 ```
 
 Because our model includes group effects, the only available search method is forward search, which is a bit slower than \ell_1 search but is quite accurate. Beware that the underlying projection fitting method could return some warnings in cases where the optimization may not have converged properly. This is more common in the case of generalized models (non Gaussian families). We print the list of the variables ordered by relevance:
 
-```{r, messages=FALSE, warnings=FALSE}
+```{r, message=FALSE, warning=FALSE}
 vs$solution_terms # selection order of the variables
 ```
 
@@ -67,12 +67,12 @@ plot(vs, stats = c('elpd', 'rmse'))
 
 We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the three most relevant variables.
 
-```{r, fig.width=6, fig.height=2}
- # Visualise the three most relevant variables in the full model -->
- mcmc_areas(as.matrix(vs$refmodel$fit),
-            pars = c("b_Intercept", "sd_Subject__Intercept", "b_age",
-                     "sd_Subject__age", "sigma"))
-```
+<!-- ```{r, fig.width=6, fig.height=2} -->
+<!--  # Visualise the three most relevant variables in the full model -\-> -->
+<!--  mcmc_areas(as.matrix(vs$refmodel$fit), -->
+<!--             pars = c("(Intercept)", "Subject__Intercept", "age", -->
+<!--                      "sd_Subject__age", "sigma")) -->
+<!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2}
 # Visualise the projected three most relevant variables
@@ -110,7 +110,7 @@ In this case we will download count data from the web,
 
 ```{r}
 data_pois <- read.table(
-  "https://paul-buerkner.github.io/data/data_pois.txt",
+  "data_pois.csv",
   header = TRUE
 )
 data_pois$obs <- seq_len(nrow(data_pois))
@@ -125,7 +125,7 @@ be downloaded from the corresponding website (http://www.mpcm-evolution.com/).
 The model is taken from *Estimating Phylogenetic Multilevel Models with brms*
 (B\"urkner, 2020).
 
-```{r, cache=TRUE, messages=FALSE, warnings=FALSE, results="hide"}
+```{r, cache=TRUE, message=FALSE, warning=FALSE, results="hide"}
 fit <- stan_glmer(
   phen_pois ~ cofactor + (1 | phylo) + (1 | obs), data = data_pois,
   family = poisson("log"), chains = 2, iter = 2000,
@@ -135,13 +135,13 @@ fit <- stan_glmer(
  As we did in the previous example, we can perform variable selection and look
  at the projection.
  
-```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
+```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 vs <- varsel(fit)
 ```
 
 Because our model includes group effects, the only available search method is forward search, which is a bit slower than \ell_1 search but is quite accurate. Beware that the underlying projection fitting method could return some warnings in cases where the optimization may not have converged properly. This is more common in the case of generalized models (non Gaussian families). We print the list of the variables ordered by relevance:
 
-```{r, messages=FALSE, warnings=FALSE}
+```{r, message=FALSE, warning=FALSE}
 vs$solution_terms # selection order of the variables
 ```
 
@@ -153,11 +153,11 @@ plot(vs, stats = c('elpd', 'rmse'))
 
 We perform the projection for a submodel of desired size using the function `project`. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the `mcmc_areas` function in the `bayesplot` package. Below we compare how the projection affects the most relevant variables.
 
-```{r, fig.width=6, fig.height=2}
- # Visualise the most relevant variable in the full model -->
- mcmc_areas(as.matrix(vs$refmodel$fit),
-            pars = c("b_Intercept", "b_cofactor", "sd_phylo__Intercept"))
-```
+<!-- ```{r, fig.width=6, fig.height=2} -->
+<!--  # Visualise the most relevant variable in the full model -\-> -->
+<!--  mcmc_areas(as.matrix(vs$refmodel$fit), -->
+<!--             pars = c("b_Intercept", "b_cofactor", "sd_phylo__Intercept")) -->
+<!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2}
 # Visualise the projected two most relevant variables
@@ -168,7 +168,7 @@ mcmc_areas(as.matrix(proj))
 We make predictions with the projected submodels. For point estimates we can use the method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 2 most relevant variables.
 ```{r, cache=TRUE}
 pred <- proj_linpred(proj, newdata = data_pois, ynew = data_pois$phen_pois,
-                     integrated = TRUE, ndraws = 10)
+                     integrated = TRUE)
 ```
 
 Visualize the predictions
@@ -206,15 +206,13 @@ VerbAgg_subsample <- VerbAgg %>%
 For this simple model we will add some group effects that we know are not quite
 relevant.
 
-```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
+```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 ## simple bernoulli model
-formula_va <- bf(
-  r2 ~ btype + situ + mode + (btype + situ + mode | id)
-)
+formula_va <- r2num ~ btype + situ + mode + (btype + situ + mode | id)
 fit_va <- stan_glmer(
   formula = formula_va,
   data = VerbAgg_subsample,
-  family = bernoulli("logit"),
+  family = binomial("logit"),
   seed = 1234,
   chains = 2
 )
@@ -222,7 +220,7 @@ fit_va <- stan_glmer(
 
 As we did before, we can run the standard variable selection with
 
-```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
+```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 vs_va <- varsel(fit_va)
 ```
 
@@ -247,7 +245,7 @@ model once and computing the LOO elpd posterior from it by passing the argument
 `validate_search = FALSE`. Note that in general it is recommended to run the
 full validation search.
 
-```{r, cache=TRUE, results="hide", messages=FALSE, warnings=FALSE}
+```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE)
 ```
 
@@ -261,14 +259,14 @@ usual analysis.
 We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 3 most relevant variables.
 ```{r, cache=TRUE}
 pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample,
-                     ynew = VerbAgg_subsample$r2,
+                     ynew = VerbAgg_subsample$r2num,
                      nterms = 3, integrated = TRUE, ndraws = 10)
 ```
 
 Visualize the predictions
 ```{r, fig.width=5, fig.height=3}
 ggplot() +
-  geom_point(aes(x = pred$pred, y = VerbAgg_subsample$r2)) +
+  geom_point(aes(x = pred$pred, y = VerbAgg_subsample$r2num)) +
   geom_abline(slope = 1, color = "red") +
   labs(x = "prediction", y = "y")
 ```
