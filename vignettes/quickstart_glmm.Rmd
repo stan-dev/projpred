@@ -165,7 +165,7 @@ proj <- project(vs, nterms = 2, ndraws = 10)
 mcmc_areas(as.matrix(proj))
 ```
 
-We make predictions with the projected submodels. For point estimates we can use the method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 2 most relevant variables.
+As we did in the Gaussian example, we make predictions with the projected submodels. The following computes the mean of the predictive distribution and evaluates the log density at the training points using the previously projected model.
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
 pred <- proj_linpred(proj, newdata = data_pois, ynew = data_pois$phen_pois,
                      integrated = TRUE)
@@ -235,7 +235,7 @@ vs_va$solution_terms
 plot(vs_va, stats = c("elpd", "acc"))
 ```
 
-Even though the ordering of the variables make sense, the performance of the
+Even though the ordering of the variables makes sense, the performance of the
 projected models does not quite match the reference model. This can be explained
 by the fact that we are running variable selection in the full data, which can
 give raise to overconfident predictions on the reference model. In this case it
@@ -258,7 +258,7 @@ plot(cv_vs_va, stats = c("elpd", "acc"))
 Now we see that the projected models behave as expected and can proceed with the
 usual analysis.
 
-We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+As in previous examples, we can show the mean prediction with `proj_linpred`. The following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
 pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample,
                      ynew = VerbAgg_subsample$r2num,
@@ -267,7 +267,7 @@ pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample,
 
 Visualize the predictions
 ```{r, fig.width=5, fig.height=3}
-xaxis <- seq(-3, 3, length.out = 1000)
+xaxis <- seq(-6, 6, length.out = 1000)
 yaxis <- cv_vs_va$family$linkinv(xaxis)
 
 y_mu <- rowMeans(cv_vs_va$refmodel$mu)
