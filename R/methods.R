@@ -590,7 +590,7 @@ as.matrix.glm <- function(x, ...) {
   return(coef(x))
 }
 
-##' @method as.matrix.lmerMod
+##' @method as.matrix lmerMod
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x)
   group_effects <- lme4::ranef(x)
