@@ -74,14 +74,14 @@ We perform the projection for a submodel of desired size using the function `pro
 <!--                      "sd_Subject__age", "sigma")) -->
 <!-- ``` -->
 
-```{r, cache=TRUE, fig.width=6, fig.height=2}
+```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
 # Visualise the projected three most relevant variables
 proj <- project(vs, nterms = 3, ns = 500)
 mcmc_areas(as.matrix(proj))
 ```
 
 We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 5 most relevant variables.
-```{r, cache=TRUE}
+```{r, cache=TRUE, message=FALSE, warning=FALSE}
 pred <- proj_linpred(vs, newdata = Orthodont, ynew = Orthodont$distance,
                      nterms = 5, integrated = TRUE)
 ```
@@ -95,7 +95,7 @@ ggplot() +
 ```
 
 We also obtain draws from the projected predictive distribution. Here's an example prediction for the first data point using 5 variables (the observed value is marked by the red line)
-```{r, fig.height=3, fig.width=5}
+```{r, fig.height=3, fig.width=5, message=FALSE, warning=FALSE}
 subset <- Orthodont %>% dplyr::sample_n(1)
 y_subset <- subset %>% dplyr::select(distance)
 y1_rep <- proj_predict(vs, newdata = subset, nterms = 5, seed = 7560)
@@ -159,23 +159,25 @@ We perform the projection for a submodel of desired size using the function `pro
 <!--             pars = c("b_Intercept", "b_cofactor", "sd_phylo__Intercept")) -->
 <!-- ``` -->
 
-```{r, cache=TRUE, fig.width=6, fig.height=2}
+```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
 # Visualise the projected two most relevant variables
 proj <- project(vs, nterms = 2, ndraws = 10)
 mcmc_areas(as.matrix(proj))
 ```
 
 We make predictions with the projected submodels. For point estimates we can use the method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 2 most relevant variables.
-```{r, cache=TRUE}
+```{r, cache=TRUE, message=FALSE, warning=FALSE}
 pred <- proj_linpred(proj, newdata = data_pois, ynew = data_pois$phen_pois,
                      integrated = TRUE)
 ```
 
 Visualize the predictions
 ```{r, fig.width=5, fig.height=3}
+xaxis <- seq(-3, 3, length.out = 1000)
+y_mu <- rowMeans(vs$refmodel$mu)
 ggplot() +
-  geom_point(aes(x = pred$pred, y = data_pois$phen_pois)) +
-  geom_abline(slope = 1, color = "red") +
+  geom_point(aes(x = pred$pred, y = y_mu)) +
+  geom_line(aes(x=xaxis, y = exp(xaxis)), color = "red") +
   labs(x = "prediction", y = "y")
 ```
 
@@ -256,17 +258,21 @@ plot(cv_vs_va, stats = c("elpd", "acc"))
 Now we see that the projected models behave as expected and can proceed with the
 usual analysis.
 
-We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 3 most relevant variables.
-```{r, cache=TRUE}
+We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
+```{r, cache=TRUE, message=FALSE, warning=FALSE}
 pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample,
                      ynew = VerbAgg_subsample$r2num,
-                     nterms = 3, integrated = TRUE, ndraws = 10)
+                     nterms = 6, integrated = TRUE, ndraws = 10)
 ```
 
 Visualize the predictions
 ```{r, fig.width=5, fig.height=3}
+xaxis <- seq(-3, 3, length.out = 1000)
+yaxis <- cv_vs_va$family$linkinv(xaxis)
+
+y_mu <- rowMeans(cv_vs_va$refmodel$mu)
 ggplot() +
-  geom_point(aes(x = pred$pred, y = VerbAgg_subsample$r2num)) +
-  geom_abline(slope = 1, color = "red") +
+  geom_point(aes(x = pred$pred, y = y_mu)) +
+  geom_line(aes(x = xaxis, y = yaxis), color = "red") +
   labs(x = "prediction", y = "y")
 ```
