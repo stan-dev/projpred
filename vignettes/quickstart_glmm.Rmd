@@ -79,7 +79,7 @@ common in the case of generalized models (non-Gaussian families). We print the
 list of the variables ordered by relevance:
 
 ```{r, message=FALSE, warning=FALSE}
-vs$solution_terms # selection order of the variables
+solution_terms(vs) # selection order of the variables
 ```
 
 We plot some statistics computed on the training data, such as the sum of log
@@ -122,8 +122,7 @@ mean of the predictive distribution and evaluates the log density at the
 training points using the 5 most relevant variables.
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
-pred <- proj_linpred(vs, newdata = Orthodont, ynew = Orthodont$distance,
-                     nterms = 5, integrated = TRUE)
+pred <- proj_linpred(vs, newdata = Orthodont, nterms = 5, integrated = TRUE)
 ```
 
 Visualize the predictions
@@ -192,7 +191,7 @@ common in the case of generalized models (non-Gaussian families). We print the
 list of the variables ordered by relevance:
 
 ```{r, message=FALSE, warning=FALSE}
-vs$solution_terms # selection order of the variables
+solution_terms(vs) # selection order of the variables
 ```
 
 We plot some statistics computed on the training data, such as the sum of log
@@ -230,8 +229,7 @@ evaluates the log density at the training points using the previously projected
 model.
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
-pred <- proj_linpred(proj, newdata = data_pois, ynew = data_pois$phen_pois,
-                     integrated = TRUE)
+pred <- proj_linpred(proj, newdata = data_pois, integrated = TRUE)
 ```
 
 We can also visualize the corresponding projected predictions.
@@ -292,7 +290,7 @@ vs_va <- varsel(fit_va)
 ```
 
 ```{r}
-vs_va$solution_terms
+solution_terms(vs_va)
 ```
 
 ```{r, fig.height=4, fig.width=5}
@@ -301,15 +299,15 @@ plot(vs_va, stats = c("elpd", "acc"))
 
 Even though the ordering of the variables makes sense, the performance of the
 projected models does not quite match the reference model. This can be explained
-by the fact that we are running variable selection in the full data, which can
-give raise to overconfident predictions on the reference model. In this case it
-is necessary to run a cross validated variable selection with `cv_varsel`. By
-default, `cv_varsel` will run LOO cross validation, and will try to run a full
-variable selection for every data point. Given that our dataset is still a bit
-large to fully fit for this vignette, we can omit this behaviour by fitting the
-model once and computing the LOO elpd posterior from it by passing the argument
-`validate_search = FALSE`. Note that in general it is recommended to run the
-full validation search.
+by the way `varsel` computes the ELPD of the reference model without taking into
+account LOO weights, which can give raise to overconfident predictions. In this
+case it is necessary to run a cross validated variable selection with
+`cv_varsel`. By default, `cv_varsel` will run LOO cross validation, and will try
+to run a full variable selection for every data point. Given that our dataset is
+still a bit large to fully fit for this vignette, we can omit this behaviour by
+fitting the model once and computing the LOO elpd posterior from it by passing
+the argument `validate_search = FALSE`. Note that in general it is recommended
+to run the full validation search.
 
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE)
@@ -328,7 +326,6 @@ log density at the training points using the 6 most relevant variables.
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
 pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample,
-                     ynew = VerbAgg_subsample$r2num,
                      nterms = 6, integrated = TRUE, ndraws = 10)
 ```
 
