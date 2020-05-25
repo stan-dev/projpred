@@ -151,11 +151,7 @@ qplot(as.vector(y1_rep), bins = 25) +
 In this case we will download count data from the web,
 
 ```{r}
-data_pois <- read.table(
-  "https://paul-buerkner.github.io/data/data_repeat.txt", 
-  header = TRUE
-)
-data_pois$obs <- seq_len(nrow(data_pois))
+data_pois <- read.table("data_pois.csv", header = TRUE)
 ```
 
 These data correspond to a phylogenetic dataset where the phenotype is expressed
