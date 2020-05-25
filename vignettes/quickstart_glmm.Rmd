@@ -111,7 +111,7 @@ projection affects the three most relevant variables.
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
 # Visualise the projected three most relevant variables
 proj <- project(vs, nterms = 2, ns = 500)
-mcmc_areas(as.matrix(proj))
+mcmc_areas(as.matrix(proj), pars = solution_terms(vs)[1:2])
 ```
 
 We make predictions with the projected submodels. For point estimates we can use
@@ -216,7 +216,7 @@ projection affects the most relevant variables.
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
 # Visualise the projected two most relevant variables
 proj <- project(vs, nterms = 2, ndraws = 10)
-mcmc_areas(as.matrix(proj))
+mcmc_areas(as.matrix(proj), pars = solution_terms(vs)[1:2])
 ```
 
 As we did in the Gaussian example, we make predictions with the projected
