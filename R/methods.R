@@ -162,9 +162,9 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 
 #' @rdname proj-pred
 #' @export
-proj_linpred <- function(object, newdata, ynew = NULL, offsetnew = NULL,
-                         weightsnew = NULL, nterms = NULL, transform = FALSE,
-                         integrated = FALSE, seed = NULL, ...) {
+proj_linpred <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
+                         nterms = NULL, transform = FALSE, integrated = FALSE,
+                         seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
@@ -176,6 +176,16 @@ proj_linpred <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
       ## return a vector if pred contains only one row
       pred <- as.vector(pred)
+    }
+
+    extract_model_data <- proj$extract_model_data
+    w_o <- extract_model_data(proj$refmodel$fit,
+      newdata = newdata, weightsnew,
+      offsetnew, extract_y = TRUE
+    )
+
+    if (!is.null(w_o$y)) {
+      ynew <- w_o$y
     }
 
     return(nlist(pred, lpd = compute_lpd(
@@ -753,4 +763,11 @@ cv_ids <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
 
 is.vsel <- function(object) {
   inherits(object, "vsel")
+}
+
+#' @export
+solution_terms <- function(object) {
+  stopifnot(is.vsel(object))
+
+  return(object$solution_terms)
 }
