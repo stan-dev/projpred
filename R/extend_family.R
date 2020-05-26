@@ -45,7 +45,28 @@ extend_family_binomial <- function(family) {
     -2 * weights * (y * log(mu) + (1 - y) * log(1 - mu))
   }
   ppd_binom <- function(mu, dis, weights = 1) rbinom(length(mu), weights, mu)
+  initialize_binom <- expression({
+    if (NCOL(y) == 1) {
+      if (is.factor(y)) {
+        y <- y != levels(y)[1L]
+      }
+      n <- rep.int(1, nobs)
+      y[weights == 0] <- 0
+      mustart <- (weights * y + 0.5) / (weights + 1)
+      m <- weights * y
+    }
+    else if (NCOL(y) == 2) {
+      n <- (y1 <- y[, 1L]) + y[, 2L]
+      y <- y1 / n
+      if (any(n0 <- n == 0)) {
+        y[n0] <- 0
+      }
+      weights <- weights * n
+      mustart <- (n * y + 0.5) / (n + 1)
+    }
+  })
 
+  family$initialize <- initialize_binom
   family$kl <- kl_dev
   family$dis_fun <- dis_na
   family$predvar <- predvar_na
