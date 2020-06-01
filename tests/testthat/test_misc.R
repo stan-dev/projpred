@@ -60,10 +60,12 @@ if (require(rstanarm)) {
         fit <- fit_list[[i]]
 
         # varsel
-        foo <- varsel(fit, seed = seed)
-        r1 <- rnorm(s)
-        foo <- varsel(fit, seed = seed)
-        r2 <- rnorm(s)
+        SW({
+          foo <- varsel(fit, seed = seed)
+          r1 <- rnorm(s)
+          foo <- varsel(fit, seed = seed)
+          r2 <- rnorm(s)
+        })
         expect_true(any(r1 != r2))
 
         # cv_varsel
@@ -75,44 +77,54 @@ if (require(rstanarm)) {
 
         # project
         solution_terms <- c(1, 2)
-        foo <- project(fit,
-          solution_terms = solution_terms,
-          ndraws = 100, seed = seed
-        )
-        r1 <- rnorm(s)
-        foo <- project(fit,
-          solution_terms = solution_terms,
-          ndraws = 100, seed = seed
-        )
-        r2 <- rnorm(s)
+        SW({
+          foo <- project(fit,
+            solution_terms = solution_terms,
+            ndraws = 100, seed = seed
+          )
+          r1 <- rnorm(s)
+          foo <- project(fit,
+            solution_terms = solution_terms,
+            ndraws = 100, seed = seed
+          )
+          r2 <- rnorm(s)
+        })
         expect_true(any(r1 != r2))
 
         # proj_linpred
         solution_terms <- c(1, 3)
-        frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
-        foo <- proj_linpred(fit, frame,
-          solution_terms = solution_terms,
-          seed = seed, weightsnew = ~weights
+        y <- foo$refmodel$y
+        frame <- cbind(
+          y = y, data.frame(x = x)[, solution_terms],
+          weights = weights
         )
-        r1 <- rnorm(s)
-        foo <- proj_linpred(fit, frame,
-          solution_terms = solution_terms,
-          seed = seed, weightsnew = ~weights
-        )
-        r2 <- rnorm(s)
+        SW({
+          foo <- proj_linpred(fit, frame,
+            solution_terms = solution_terms,
+            seed = seed, weightsnew = ~weights
+          )
+          r1 <- rnorm(s)
+          foo <- proj_linpred(fit, frame,
+            solution_terms = solution_terms,
+            seed = seed, weightsnew = ~weights
+          )
+          r2 <- rnorm(s)
+        })
         expect_true(any(r1 != r2))
 
         # proj_predict
         solution_terms <- c(1, 3)
         frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
-        foo <- proj_predict(fit, frame,
-          solution_terms = solution_terms, seed = seed
-        )
-        r1 <- rnorm(s)
-        foo <- proj_predict(fit, frame,
-          solution_terms = solution_terms, seed = seed
-        )
-        r2 <- rnorm(s)
+        SW({
+          foo <- proj_predict(fit, frame,
+            solution_terms = solution_terms, seed = seed
+          )
+          r1 <- rnorm(s)
+          foo <- proj_predict(fit, frame,
+            solution_terms = solution_terms, seed = seed
+          )
+          r2 <- rnorm(s)
+        })
         expect_true(any(r1 != r2))
       }
     }
@@ -125,8 +137,10 @@ if (require(rstanarm)) {
         fit <- fit_list[[i]]
 
         # varsel
-        foo <- varsel(fit, seed = seed)
-        bar <- varsel(fit, seed = seed)
+        SW({
+          foo <- varsel(fit, seed = seed)
+          bar <- varsel(fit, seed = seed)
+        })
         expect_equal(foo, bar)
 
         # cv_varsel
@@ -136,41 +150,51 @@ if (require(rstanarm)) {
 
         # project
         solution_terms <- c(1, 2)
-        foo <- project(fit,
-          solution_terms = solution_terms,
-          nclusters = 10, seed = seed
-        )
-        bar <- project(fit,
-          solution_terms = solution_terms,
-          nclusters = 10, seed = seed
-        )
+        SW({
+          foo <- project(fit,
+            solution_terms = solution_terms,
+            nclusters = 10, seed = seed
+          )
+          bar <- project(fit,
+            solution_terms = solution_terms,
+            nclusters = 10, seed = seed
+          )
+        })
         expect_equal(foo, bar)
 
 
         # proj_linpred
         solution_terms <- c(1, 3)
-        frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
-        foo <- proj_linpred(fit, frame,
-          solution_terms = solution_terms,
-          seed = seed
+        y <- foo$refmodel$y
+        frame <- cbind(
+          y = y, data.frame(x = x)[, solution_terms],
+          weights = weights
         )
-        bar <- proj_linpred(fit, frame,
-          solution_terms = solution_terms,
-          seed = seed
-        )
+        SW({
+          foo <- proj_linpred(fit, frame,
+            solution_terms = solution_terms,
+            seed = seed
+          )
+          bar <- proj_linpred(fit, frame,
+            solution_terms = solution_terms,
+            seed = seed
+          )
+        })
         expect_equal(foo, bar)
 
         # proj_predict
         solution_terms <- c(1, 3)
         frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
-        foo <- proj_predict(fit, frame,
-          solution_terms = solution_terms,
-          seed = seed
-        )
-        bar <- proj_predict(fit, frame,
-          solution_terms = solution_terms,
-          seed = seed
-        )
+        SW({
+          foo <- proj_predict(fit, frame,
+            solution_terms = solution_terms,
+            seed = seed
+          )
+          bar <- proj_predict(fit, frame,
+            solution_terms = solution_terms,
+            seed = seed
+          )
+        })
         expect_equal(foo, bar)
       }
     }

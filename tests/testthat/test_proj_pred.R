@@ -44,17 +44,24 @@ if (require(rstanarm)) {
       family = f_poiss, data = df_poiss,
       chains = chains, seed = seed, iter = iter
     )
+    fit_list <- list(
+      gauss = fit_gauss,
+      binom = fit_binom,
+      poiss = fit_poiss
+    )
+    vs_list <- lapply(fit_list, varsel,
+      nterms_max = nterms + 1,
+      verbose = FALSE
+    )
+    proj_solution_terms_list <- lapply(vs_list, project,
+      solution_terms = c(2, 3),
+      seed = seed
+    )
+    proj_all_list <- lapply(vs_list, project,
+      seed = seed,
+      nterms = 0:nterms
+    )
   })
-  fit_list <- list(
-    gauss = fit_gauss,
-    binom = fit_binom,
-    poiss = fit_poiss
-  )
-  vs_list <- lapply(fit_list, varsel, nterms_max = nterms + 1, verbose = FALSE)
-  proj_solution_terms_list <- lapply(vs_list, project, solution_terms = c(2, 3),
-                                     seed = seed)
-  proj_all_list <- lapply(vs_list, project, seed = seed, nterms = 0:nterms)
-
 
   test_that("proj_linpred: newdata is specified correctly", {
     expect_error(
@@ -84,7 +91,8 @@ if (require(rstanarm)) {
   test_that("output of proj_linpred is sensible with fit-object as input", {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
-      pl <- proj_linpred(vs_list[[i]], newdata = data.frame(x = x),
+      y <- vs_list$refmodel$y
+      pl <- proj_linpred(vs_list[[i]], newdata = data.frame(y = y, x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
     }
@@ -93,12 +101,17 @@ if (require(rstanarm)) {
   test_that("output of proj_linpred is sensible with project-object as input", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
+      y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_linpred(proj_solution_terms_list[[i]],
-                         newdata = data.frame(x = x))
+        newdata = data.frame(y = y, x = x)
+      )
     }
     for (i in 1:length(proj_all_list)) {
       i_inf <- names(proj_all_list)[i]
-      pl <- proj_linpred(proj_all_list[[i]], newdata = data.frame(x = x))
+      y <- proj_all_list[[i]]$refmodel$y
+      pl <- proj_linpred(proj_all_list[[i]],
+        newdata = data.frame(y = y, x = x)
+      )
       expect_length(pl, nterms + 1)
     }
   })
@@ -119,57 +132,57 @@ if (require(rstanarm)) {
     )
   })
 
-  test_that("proj_linpred: specifying ynew incorrectly produces an error", {
-    expect_error(
-      proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
-                   ynew = x[, 1:3]),
-      "y cannot have more than two columns"
-    )
-    expect_error(
-      proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
-                   ynew = factor(ys[[1]])),
-      "cannot be a factor"
-    )
-    expect_error(
-      proj_linpred(vs_list[["poiss"]], newdata = data.frame(x = x),
-                   ynew = factor(ys[[3]])),
-      "cannot be a factor"
-    )
-    expect_error(
-      proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
-                   ynew = factor(ys[[1]])),
-      "y cannot contain more than two classes"
-    )
-  })
+  ## test_that("proj_linpred: specifying ynew incorrectly produces an error", {
+  ##   expect_error(
+  ##     proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
+  ##                  ynew = x[, 1:3]),
+  ##     "y cannot have more than two columns"
+  ##   )
+  ##   expect_error(
+  ##     proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
+  ##                  ynew = factor(ys[[1]])),
+  ##     "cannot be a factor"
+  ##   )
+  ##   expect_error(
+  ##     proj_linpred(vs_list[["poiss"]], newdata = data.frame(x = x),
+  ##                  ynew = factor(ys[[3]])),
+  ##     "cannot be a factor"
+  ##   )
+  ##   expect_error(
+  ##     proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
+  ##                  ynew = factor(ys[[1]])),
+  ##     "y cannot contain more than two classes"
+  ##   )
+  ## })
 
-  test_that("proj_linpred: specifying ynew has an expected effect", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
-      pl <- proj_linpred(vs_list[[i]],
-        newdata = df_binom, ynew = ys[[i]],
-        weightsnew = ~weights, nterms = 0:nterms
-      )
-      pl2 <- proj_linpred(vs_list[[i]],
-        newdata = data.frame(x = x, weights = weights),
-        weightsnew = ~weights, nterms = 0:nterms
-      )
-      for (j in 1:length(pl)) {
-        expect_named(pl[[j]], c("pred", "lpd"))
-        expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
-        expect_equal(nrow(pl[[j]]$lpd), n, info = i_inf)
-      }
-    }
-  })
+  ## test_that("proj_linpred: specifying ynew has an expected effect", {
+  ##   for (i in 1:length(vs_list)) {
+  ##     i_inf <- names(vs_list)[i]
+  ##     pl <- proj_linpred(vs_list[[i]],
+  ##       newdata = df_binom, ynew = ys[[i]],
+  ##       weightsnew = ~weights, nterms = 0:nterms
+  ##     )
+  ##     pl2 <- proj_linpred(vs_list[[i]],
+  ##       newdata = data.frame(x = x, weights = weights),
+  ##       weightsnew = ~weights, nterms = 0:nterms
+  ##     )
+  ##     for (j in 1:length(pl)) {
+  ##       expect_named(pl[[j]], c("pred", "lpd"))
+  ##       expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
+  ##       expect_equal(nrow(pl[[j]]$lpd), n, info = i_inf)
+  ##     }
+  ##   }
+  ## })
 
-  test_that(paste("proj_linpred: specifying ynew as a factor works in a",
-                  "binomial model"), {
-    yfactor <- factor(rbinom(n, 1, 0.5))
-    pl <- proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
-                       ynew = yfactor)
-    expect_named(pl, c("pred", "lpd"))
-    expect_equal(ncol(pl$pred), n)
-    expect_equal(nrow(pl$lpd), n)
-  })
+  ## test_that(paste("proj_linpred: specifying ynew as a factor works in a",
+  ##                 "binomial model"), {
+  ##   yfactor <- factor(rbinom(n, 1, 0.5))
+  ##   pl <- proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
+  ##                      ynew = yfactor)
+  ##   expect_named(pl, c("pred", "lpd"))
+  ##   expect_equal(ncol(pl$pred), n)
+  ##   expect_equal(nrow(pl$lpd), n)
+  ## })
 
   test_that("proj_linpred: specifying weights has an expected effect", {
     for (i in 1:length(proj_solution_terms_list)) {
@@ -178,12 +191,11 @@ if (require(rstanarm)) {
         i_inf <- names(proj_solution_terms_list)[i]
         weightsnew <- sample(1:4, n, replace = TRUE)
         plw <- proj_linpred(proj_solution_terms_list[[i]],
-          newdata = data.frame(x = x, weights = weightsnew), ynew = ys[[i]],
+          newdata = data.frame(y = ys[[i]], x = x, weights = weightsnew),
           weightsnew = ~weights
         )
         pl <- proj_linpred(proj_solution_terms_list[[i]],
-          newdata = data.frame(x = x, weights = weights),
-          ynew = ys[[i]],
+          newdata = data.frame(y = ys[[i]], x = x, weights = weights),
           weightsnew = ~weights
         )
         expect_named(plw, c("pred", "lpd"))
@@ -198,12 +210,15 @@ if (require(rstanarm)) {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       plo <- proj_linpred(proj_solution_terms_list[[i]],
-        newdata = data.frame(x = x, weights = weights, offset = offset),
-        ynew = ys[[i]], weightsnew = ~weights, offsetnew = ~offset
+        newdata = data.frame(
+          y = ys[[i]], x = x, weights = weights,
+          offset = offset
+        ),
+        weightsnew = ~weights, offsetnew = ~offset
       )
       pl <- proj_linpred(proj_solution_terms_list[[i]],
-        newdata = data.frame(x = x, weights = weights),
-        ynew = ys[[i]], weightsnew = ~weights
+        newdata = data.frame(y = ys[[i]], x = x, weights = weights),
+        weightsnew = ~weights
       )
       expect_named(plo, c("pred", "lpd"))
       expect_equal(ncol(plo$pred), n, info = i_inf)
@@ -215,10 +230,11 @@ if (require(rstanarm)) {
   test_that("proj_linpred: specifying transform has an expected effect", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
+      y <- proj_solution_terms_list[[i]]$refmodel$y
       plt <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(x = x), transform = TRUE)
+                          newdata = data.frame(y = y, x = x), transform = TRUE)
       plf <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(x = x), transform = FALSE)
+                          newdata = data.frame(y = y, x = x), transform = FALSE)
       expect_equal(proj_solution_terms_list[[i]]$family$linkinv(plf$pred),
                    plt$pred, info = i_inf)
     }
@@ -227,10 +243,11 @@ if (require(rstanarm)) {
   test_that("proj_linpred: specifying integrated has an expected effect", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
+      y <- proj_solution_terms_list[[i]]$refmodel$y
       plt <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(x = x), integrated = TRUE)
+                          newdata = data.frame(y = y, x = x), integrated = TRUE)
       plf <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(x = x), integrated = FALSE)
+                          newdata = data.frame(y = y, x = x), integrated = FALSE)
       expect_equal(as.vector(proj_solution_terms_list[[i]]$weights %*%
                              plf$pred),
                    plt$pred, info = i_inf)
@@ -243,8 +260,9 @@ if (require(rstanarm)) {
       i_inf <- names(vs_list)[i]
       norms <- rep(0, length(regul))
       for (j in 1:length(regul)) {
+        y <- vs_list[[i]]$refmodel$y
         pred <- proj_linpred(vs_list[[i]],
-          newdata = data.frame(x = x), nterms = 2, transform = FALSE,
+          newdata = data.frame(y = y, x = x), nterms = 2, transform = FALSE,
           integrated = TRUE, regul = regul[j]
         )
         norms[j] <- sum(pred$pred^2)
@@ -275,8 +293,9 @@ if (require(rstanarm)) {
   test_that("proj_linpred: providing newdata as a data frame works as expected", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
+      y <- proj_solution_terms_list[[i]]$refmdel$y
       pl <- proj_predict(proj_solution_terms_list[[i]],
-        newdata = data.frame(x = x)
+        newdata = data.frame(y = y, x = x)
       )
       expect_equal(ncol(pl), n, info = i_inf)
     }
@@ -288,7 +307,10 @@ if (require(rstanarm)) {
     )
     vs_form <- varsel(fit_form)
     p1 <- proj_linpred(vs_form, newdata = mtcars, nterms = 3, seed = 2)
-    p2 <- proj_linpred(vs_form, newdata = get_x(fit_form)[, -1], nterms = 3, seed = 2)
+    p2 <- proj_linpred(vs_form,
+      newdata = get_x(fit_form)[, -1], nterms = 3,
+      seed = 2
+    )
     expect_equal(p1$pred, p2$pred)
   })
 
@@ -369,26 +391,26 @@ if (require(rstanarm)) {
     )
   })
 
-  test_that("proj_predict: specifying ynew has an expected effect", {
-    for (i in seq_along(vs_list)) {
-      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
-                         ynew = ys[[i]], nterms = 0:3)
-      pl2 <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
-                          nterms = 0:3)
-      for (j in seq_len(length(pl))) {
-        expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
-      }
-    }
-  })
+  ## test_that("proj_predict: specifying ynew has an expected effect", {
+  ##   for (i in seq_along(vs_list)) {
+  ##     pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+  ##                        ynew = ys[[i]], nterms = 0:3)
+  ##     pl2 <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+  ##                         nterms = 0:3)
+  ##     for (j in seq_len(length(pl))) {
+  ##       expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
+  ##     }
+  ##   }
+  ## })
 
-  test_that(paste("proj_predict: specifying ynew as a factor works in a",
-                  "binomial model"), {
-    yfactor <- factor(rbinom(n, 1, 0.5))
-    pl <- proj_predict(vs_list[["binom"]], newdata = data.frame(x = x),
-                       ynew = yfactor)
-    expect_equal(ncol(pl), n)
-    expect_true(all(pl %in% c(0, 1)))
-  })
+  ## test_that(paste("proj_predict: specifying ynew as a factor works in a",
+  ##                 "binomial model"), {
+  ##   yfactor <- factor(rbinom(n, 1, 0.5))
+  ##   pl <- proj_predict(vs_list[["binom"]], newdata = data.frame(x = x),
+  ##                      ynew = yfactor)
+  ##   expect_equal(ncol(pl), n)
+  ##   expect_true(all(pl %in% c(0, 1)))
+  ## })
 
   test_that("proj_predict: specifying weightsnew has an expected effect", {
     pl <- proj_predict(proj_solution_terms_list[["binom"]],

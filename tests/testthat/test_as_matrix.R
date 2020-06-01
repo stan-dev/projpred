@@ -24,31 +24,29 @@ if (require(rstanarm)) {
     weights = weights, offset = offset
   )
 
-  SW(
+  SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
       family = f_gauss, data = df_gauss,
       chains = chains, seed = seed, iter = iter
     )
-  )
-  SW(
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
       family = f_binom, weights = weights,
       data = df_binom, chains = chains, seed = seed, iter = iter
     )
-  )
 
-  vs_gauss <- varsel(fit_gauss)
-  vs_binom <- varsel(fit_binom)
-  solution_terms <- c(2, 3)
-  ndraws <- 100
-  p_gauss <- project(vs_gauss,
-    solution_terms = solution_terms,
-    ndraws = ndraws
-  )
-  p_binom <- project(vs_binom,
-    solution_terms = solution_terms,
-    ndraws = ndraws
-  )
+    vs_gauss <- varsel(fit_gauss)
+    vs_binom <- varsel(fit_binom)
+    solution_terms <- c(2, 3)
+    ndraws <- 100
+    p_gauss <- project(vs_gauss,
+      solution_terms = solution_terms,
+      ndraws = ndraws
+    )
+    p_binom <- project(vs_binom,
+      solution_terms = solution_terms,
+      ndraws = ndraws
+    )
+  })
 
   test_that(paste("as.matrix.projection returns the relevant variables for",
                   "gaussian"), {

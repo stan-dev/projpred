@@ -164,12 +164,9 @@ test_that(paste("output of project is sensible with only data provided as" <
 
     for (j in 1:length(p)) {
       expect_named(p[[j]], c(
-        "kl", "weights", "dis", "solution_terms",
-        "sub_fit", "p_type", "family",
-        "intercept", "extract_model_data"
-      ),
-      ignore.order = TRUE
-      )
+        "kl", "weights", "dis", "solution_terms", "sub_fit", "p_type",
+        "family", "intercept", "extract_model_data", "refmodel"
+      ), ignore.order = TRUE)
       # number of draws should equal to the number of draw weights
       ndraws <- length(p[[j]]$weights)
       expect_equal(length(p[[j]]$sub_fit$alpha), ndraws)
@@ -206,9 +203,13 @@ test_that(paste(
     )
     expect_equal(length(pred$pred), nrow(x))
 
+    ynew <- dref_list[[i]]$y
     pred <- proj_linpred(vsd_list[[i]],
-      newdata = data.frame(x = x, weights = weights, offset = offset),
-      ynew = dref_list[[i]]$y, seed = seed, offsetnew = ~offset,
+      newdata = data.frame(
+        y = ynew, x = x,
+        weights = weights, offset = offset
+      ),
+      seed = seed, offsetnew = ~offset,
       weightsnew = ~weights, nterms = 3
     )
 
