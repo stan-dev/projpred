@@ -28,9 +28,12 @@ fit_glm_callback <- function(formula, data, family, weights) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
   if (family$family == "gaussian" && family$link == "identity") {
-    return(lm(formula, data = data, weights = weights))
+    return(suppressWarnings(lm(formula, data = data, weights = weights)))
   } else {
-    return(glm(formula, data = data, family = family, weights = weights))
+    return(suppressWarnings(glm(formula,
+      data = data, family = family,
+      weights = weights
+    )))
   }
 }
 
@@ -54,7 +57,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
                                control = control_callback(family)) {
   ## make sure correct 'weights' can be found
   environment(formula) <- environment()
-  tryCatch({
+  suppressWarnings(tryCatch({
       if (family$family == "gaussian" && family$link == "identity") {
         return(lme4::lmer(formula,
           data = data, weights = weights,
@@ -85,7 +88,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
         stop(e)
       }
     }
-  )
+  ))
 }
 
 # helper function of fit_glmer_callback to pass the proper kind of control
