@@ -57,7 +57,10 @@ model. Ignored if nclusters is set.}
 Overrides the \code{ndraws} argument. Defaults to 1.}
 
 \item{ndraws_pred}{Number of samples used for prediction (after
-selection). Ignored if nclusters_pred is given.}
+selection). Ignored if nclusters_pred is given. Note that setting less
+draws or clusters than posterior draws in the reference model may result in
+slightly inaccurate projection performance, although increasing this
+argument linearly affects the computation time.}
 
 \item{nclusters_pred}{Number of clusters used for prediction (after
 selection). Default is 5.}

@@ -10,7 +10,6 @@ distribution of the projected submodel}
 proj_linpred(
   object,
   newdata,
-  ynew = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
   nterms = NULL,
@@ -45,9 +44,6 @@ or a matrix with the number and order of columns corresponding to
 as in the original data or a matrix with the same columns at the same
 positions as in the original data.}
 
-\item{ynew}{New (test) target variables. If given, then the log predictive
-density for the new observations is computed.}
-
 \item{offsetnew}{Offsets for the new observations. By default a vector of
 zeros. By default we take the weights from newdata as in the original
 model. Either NULL or right hand side formula.}
@@ -76,6 +72,9 @@ Default is \code{FALSE}. For \code{proj_linpred} only.}
 
 \item{...}{Additional argument passed to \link{project} if \code{object} is
 an object returned by \link{varsel} or \link{cv_varsel}.}
+
+\item{ynew}{New (test) target variables. If given, then the log predictive
+density for the new observations is computed.}
 
 \item{draws}{Number of draws to return from the predictive distribution of
 the projection. The default is 1000. For \code{proj_predict} only.}
