@@ -179,9 +179,10 @@ varsel.refmodel <- function(refmodel, d_test = NULL, method = NULL,
 
   if (ref_elpd$value > (proj_elpd$value + proj_elpd$se) ||
       ref_elpd$value < (proj_elpd$value - proj_elpd$se)) {
-    warning("The performance of the reference model seems to be misleading, we",
+    warning("The performance of the projected model seems to be misleading, we",
             " recommend checking the reference model as well as running ",
-            "`cv_varsel` for a more robust estimation.")
+            "`varsel` with a larger `ndraws_pred` or `cv_varsel` for a more",
+            " robust estimation.")
   }
 
   ## store the relevant fields into the object to be returned
