@@ -41,18 +41,18 @@ if (require(rstanarm)) {
       data = mtcars,
       chains = chains, seed = seed, iter = iter
     )
-  })
-  fit_list <- list(
-    gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss
-  )
+    fit_list <- list(
+      gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss
+    )
 
-  formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
-  vsf <- function(x, m)
-    varsel(x, method = m, nterms_max = nterms + 1, verbose = FALSE)
-  vs_list <- list(
-    l1 = lapply(fit_list, vsf, "L1"),
-    fs = lapply(fit_list, vsf, "forward")
-  )
+    formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
+    vsf <- function(x, m)
+      varsel(x, method = m, nterms_max = nterms + 1, verbose = FALSE)
+    vs_list <- list(
+      l1 = lapply(fit_list, vsf, "L1"),
+      fs = lapply(fit_list, vsf, "forward")
+    )
+  })
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = FALSE) {
@@ -550,34 +550,34 @@ test_that("object returned by cv_varsel contains the relevant fields", {
   valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
   vs_funs <- c(summary, plot, suggest_size)
 
-  test_that("invalid objects are rejected", {
-    for (fun in vs_funs) {
-      expect_error(fun(NULL), "is not a variable selection object")
-      expect_error(fun(fit_gauss), "is not a variable selection object")
-    }
-  })
+  ## test_that("invalid objects are rejected", {
+  ##   for (fun in vs_funs) {
+  ##     expect_error(fun(NULL), "is not a variable selection object")
+  ##     expect_error(fun(fit_gauss), "is not a variable selection object")
+  ##   }
+  ## })
 
-  test_that("invalid stats are rejected", {
-    for (fun in vs_funs) {
-      expect_error(fun(vs_list[[1]][["gauss"]], stat = NULL),
-                   "specified as NULL")
-      expect_error(fun(vs_list[[1]][["gauss"]], stat = NA), "not recognized")
-      expect_error(fun(vs_list[[1]][["gauss"]], stat = "zzz"), "not recognized")
-      expect_error(fun(vs_list[[1]][["gauss"]], stat = "acc"),
-                   "available only for the binomial family")
-      expect_error(
-        fun(vs_list[[1]][["gauss"]], stat = "auc"),
-        "available only for the binomial family"
-      )
-    }
-  })
+  ## test_that("invalid stats are rejected", {
+  ##   for (fun in vs_funs) {
+  ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = NULL),
+  ##                  "specified as NULL")
+  ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = NA), "not recognized")
+  ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = "zzz"), "not recognized")
+  ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = "acc"),
+  ##                  "available only for the binomial family")
+  ##     expect_error(
+  ##       fun(vs_list[[1]][["gauss"]], stat = "auc"),
+  ##       "available only for the binomial family"
+  ##     )
+  ##   }
+  ## })
 
-  test_that("invalid 'baseline' arguments are rejected", {
-    expect_error(
-      summary(vs_list[[1]][["gauss"]], baseline = "zzz"),
-      "Argument 'baseline' must be either 'ref' or 'best'"
-    )
-  })
+  ## test_that("invalid 'baseline' arguments are rejected", {
+  ##   expect_error(
+  ##     summary(vs_list[[1]][["gauss"]], baseline = "zzz"),
+  ##     "Argument 'baseline' must be either 'ref' or 'best'"
+  ##   )
+  ## })
 
   test_that("summary output seems legit", {
     for (i in seq_along(cvs_list)) {
@@ -633,11 +633,17 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     expect_equal(out$elpd, round(out$elpd, 4))
 
     # options to summary
-    expect_output(out <- print(vs_list[[1]][[1]], nterms_max = 3, stats = "mse"))
+    expect_output(out <- print(vs_list[[1]][[1]],
+      nterms_max = 3,
+      stats = "mse"
+    ))
     expect_equal(nrow(out) - 1, 3)
     expect_named(out, c("size", "solution_terms", "mse", "mse.se"))
 
-    expect_output(out <- print(cvs_list[[1]][[1]], nterms_max = 3, stats = "mse"))
+    expect_output(out <- print(cvs_list[[1]][[1]],
+      nterms_max = 3,
+      stats = "mse"
+    ))
     expect_equal(nrow(out) - 1, 3)
     expect_named(out, c("size", "solution_terms", "mse", "mse.se",
                         "pct_solution_terms_cv"))

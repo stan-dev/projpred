@@ -39,12 +39,14 @@ if (require(rstanarm)) {
       family = f_poiss, data = df_poiss,
       chains = chains, seed = seed, iter = iter
     )
+    fit_list <- list( # fit_gauss,
+      fit_binom, fit_poiss
+    )
+    vs_list <- lapply(fit_list, varsel,
+      nterms_max = nterms + 1,
+      verbose = FALSE
+    )
   })
-  fit_list <- list( # fit_gauss,
-    fit_binom, fit_poiss
-  )
-  vs_list <- lapply(fit_list, varsel, nterms_max = nterms + 1, verbose = FALSE)
-
 
   test_that("object returned by project contains the relevant fields", {
     for (i in 1:length(vs_list)) {
@@ -57,7 +59,8 @@ if (require(rstanarm)) {
         expect_s3_class(p[[j]], "projection")
         expect_named(p[[j]], c(
           "kl", "weights", "dis", "sub_fit", "solution_terms",
-          "p_type", "family", "intercept", "extract_model_data"
+          "p_type", "family", "intercept", "extract_model_data",
+          "refmodel"
         ),
         ignore.order = TRUE, info = i_inf
         )
@@ -256,7 +259,8 @@ if (require(rstanarm)) {
       p <- project(vs_list[[i]], nterms = nterms, seed = seed)
       expect_named(p, c(
         "kl", "weights", "dis", "sub_fit", "solution_terms",
-        "p_type", "family", "intercept", "extract_model_data"
+        "p_type", "family", "intercept", "extract_model_data",
+        "refmodel"
       ),
       ignore.order = TRUE, info = i_inf
       )
@@ -273,7 +277,7 @@ if (require(rstanarm)) {
       alpha_ref <- draws[, "(Intercept)"]
       beta_ref <- draws[, 1 + seq_len(nterms), drop = FALSE]
       S <- nrow(draws)
-      vs <- varsel(fit)
+      SW(vs <- varsel(fit))
       proj <- project(vs, solution_terms = 1:nterms, seed = seed,
                       ndraws = S)
 

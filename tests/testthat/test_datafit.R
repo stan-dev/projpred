@@ -77,19 +77,22 @@ dref_poiss <- init_refmodel(
 
 dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
 
-# varsel
-vsd_list <- lapply(dref_list, varsel, nterms_max = nterms + 1, verbose = FALSE)
+SW({
+  # varsel
+  vsd_list <- lapply(dref_list, varsel, nterms_max = nterms + 1, verbose = FALSE)
 
-# cv_varsel
-cvvsd_list <- lapply(dref_list, cv_varsel, nterms_max = nterms + 1,
-                     verbose = FALSE)
+  # cv_varsel
+  cvvsd_list <- lapply(dref_list, cv_varsel,
+    nterms_max = nterms + 1,
+    verbose = FALSE
+  )
 
-#
-predd_list <- lapply(vsd_list, proj_linpred,
-  newdata = data.frame(x = x, weights = weights, offset = offset),
-  offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
-  seed = seed
-)
+  predd_list <- lapply(vsd_list, proj_linpred,
+    newdata = data.frame(x = x, weights = weights, offset = offset),
+    offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
+    seed = seed
+  )
+})
 
 test_that("predict fails for 'datafit' objects", {
   expect_error(
@@ -310,10 +313,12 @@ test_that(paste(
       object = NULL, data = df, formula = formula,
       family = fam, extract_model_data = extract_model_data
     )
-    vs <- varsel(ref,
-      method = "l1", lambda_min_ratio = lambda_min_ratio,
-      nlambda = nlambda, thresh = 1e-12
-    )
+    SW({
+      vs <- varsel(ref,
+        method = "l1", lambda_min_ratio = lambda_min_ratio,
+        nlambda = nlambda, thresh = 1e-12
+      )
+    })
     pred1 <- proj_linpred(vs,
       newdata = data.frame(x = x, offset = offset, weights = weights),
       nterms = 0:nterms, transform = FALSE, offsetnew = ~offset,

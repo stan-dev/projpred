@@ -91,7 +91,7 @@ if (require(rstanarm)) {
   test_that("output of proj_linpred is sensible with fit-object as input", {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
-      y <- vs_list$refmodel$y
+      y <- vs_list[[i]]$refmodel$y
       pl <- proj_linpred(vs_list[[i]], newdata = data.frame(y = y, x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
@@ -108,7 +108,7 @@ if (require(rstanarm)) {
     }
     for (i in 1:length(proj_all_list)) {
       i_inf <- names(proj_all_list)[i]
-      y <- proj_all_list[[i]]$refmodel$y
+      y <- proj_all_list[[i]][[1]]$refmodel$y
       pl <- proj_linpred(proj_all_list[[i]],
         newdata = data.frame(y = y, x = x)
       )
@@ -277,23 +277,25 @@ if (require(rstanarm)) {
   test_that("proj_linpred: arguments passed to project work accordingly", {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
-      pr <- project(vs_list[[i]],
+      y <- vs_list[[i]]$refmodel$y
+      SW(pr <- project(vs_list[[i]],
         nterms = c(2, 4), nclusters = 2, ndraws = 20,
         intercept = FALSE, regul = 1e-8, seed = 12
-      )
-      prl1 <- proj_linpred(pr, newdata = data.frame(x = x))
-      prl2 <- proj_linpred(vs_list[[i]],
-        newdata = data.frame(x = x), nterms = c(2, 4), nclusters = 2,
+      ))
+      prl1 <- proj_linpred(pr, newdata = data.frame(y = y, x = x))
+      SW(prl2 <- proj_linpred(vs_list[[i]],
+        newdata = data.frame(y = y, x = x), nterms = c(2, 4), nclusters = 2,
         ndraws = 20, intercept = FALSE, regul = 1e-8, seed = 12
-      )
+      ))
       expect_equal(prl1$pred, prl2$pred, info = i_inf)
     }
   })
 
-  test_that("proj_linpred: providing newdata as a data frame works as expected", {
+  test_that("proj_linpred: providing newdata as a data frame works as expected",
+  {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
-      y <- proj_solution_terms_list[[i]]$refmdel$y
+      y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_predict(proj_solution_terms_list[[i]],
         newdata = data.frame(y = y, x = x)
       )
@@ -307,8 +309,10 @@ if (require(rstanarm)) {
     )
     vs_form <- varsel(fit_form)
     p1 <- proj_linpred(vs_form, newdata = mtcars, nterms = 3, seed = 2)
+    x <- get_x(fit_form)[, -1]
+    newdata <- data.frame(mpg = get_y(fit_form), x)
     p2 <- proj_linpred(vs_form,
-      newdata = get_x(fit_form)[, -1], nterms = 3,
+      newdata = newdata, nterms = 3,
       seed = 2
     )
     expect_equal(p1$pred, p2$pred)
@@ -360,8 +364,9 @@ if (require(rstanarm)) {
   test_that("output of proj_predict is sensible with project-object as input", {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
+      y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(x = x))
+                         newdata = data.frame(y = y, x = x))
       expect_equal(ncol(pl), n, info = i_inf)
     }
     for (i in 1:length(proj_all_list)) {
@@ -414,7 +419,9 @@ if (require(rstanarm)) {
 
   test_that("proj_predict: specifying weightsnew has an expected effect", {
     pl <- proj_predict(proj_solution_terms_list[["binom"]],
-                       newdata = data.frame(x = x), seed = seed)
+      newdata = data.frame(x = x, weights = rep(1, NROW(x))),
+      seed = seed
+    )
     plw <- proj_predict(proj_solution_terms_list[["binom"]],
       newdata = data.frame(x = x, weights = weights), seed = seed,
       weightsnew = ~weights
