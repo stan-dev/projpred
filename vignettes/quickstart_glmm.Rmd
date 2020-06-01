@@ -294,16 +294,31 @@ plot(vs_va, stats = c("elpd", "acc"))
 ```
 
 Even though the ordering of the variables makes sense, the performance of the
-projected models does not quite match the reference model. This can be explained
-by the way `varsel` computes the ELPD of the reference model without taking into
-account LOO weights, which can give raise to overconfident predictions. In this
-case it is necessary to run a cross validated variable selection with
-`cv_varsel`. By default, `cv_varsel` will run LOO cross validation, and will try
-to run a full variable selection for every data point. Given that our dataset is
-still a bit large to fully fit for this vignette, we can omit this behaviour by
-fitting the model once and computing the LOO elpd posterior from it by passing
-the argument `validate_search = FALSE`. Note that in general it is recommended
-to run the full validation search.
+projected models does not quite match the reference model. There may be
+different reasons that can explain this behaviour:
+
+1. The reference model posterior may not be very narrow and then running
+   `varsel` with the default `ndraws_pred` could be not enough. Increasing
+   `ndraws_pred` helps but also increases the computational cost. Re fitting the
+   reference model ensuring a narrower posterior (usually employing a stronger
+   sparsifying prior) would have a similar effect. This is usually the case when
+   the difference in predictive performance is not very large.
+2. For non-Gaussian models the source of the inaccuracy may come from the fact
+   that we are running an approximate projection. In this case, increasing the
+   number of draws for the prediction `ndraws_pred` should also help.
+3. Given that `varsel` computes the expected predictive performance of the
+   reference model from the in-sample mean, it may sometimes result in
+   overconfident results. Running `cv_varsel` with LOO cross validation computes
+   the predictive performance by taking PSIS-LOO weights into account, usually
+   reporting a more realistic ELPD.
+
+By default, `cv_varsel` will run LOO cross validation, and will try to run a
+full variable selection for every data point. Given the large computational cost
+of running more draws, we'll first try running `cv_varsel` without validating
+the search. We can omit this behaviour by fitting the model once and computing
+the LOO elpd posterior from it by passing the argument `validate_search =
+FALSE`. Note that in general it is recommended to run the full validation
+search.
 
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE)
