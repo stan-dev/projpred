@@ -33,23 +33,6 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   ))
 }
 
-preprocess_data <- function(formula, data, intercept = TRUE, weights = NULL) {
-  frame <- model.frame(formula, data)
-  x <- model.matrix(formula,
-    data = frame
-  )[, -1, drop = FALSE]
-
-  transf <- standardization(x,
-    center = intercept, scale = TRUE,
-    weights = weights
-  )
-  transf$scale[transf$scale == 0] <- 1
-  x <- t((t(x) - transf$shift) / transf$scale)
-  data[colnames(x)] <- x
-
-  return(data)
-}
-
 ## function handle for the projection over samples
 .get_proj_handle <- function(refmodel, p_ref, family, regul = 1e-9,
                              intercept = TRUE) {
