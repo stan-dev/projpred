@@ -186,11 +186,13 @@ proj_linpred <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
 
     if (!is.null(w_o$y)) {
       ynew <- w_o$y
+    } else {
+      ynew <- NULL
     }
 
     return(nlist(pred, lpd = compute_lpd(
-      ynew = ynew, pred = pred, proj = proj,
-      weights = weights, integrated = integrated, transform = transform
+      ynew = ynew, pred = pred, proj = proj, weights = weights,
+      integrated = integrated, transform = transform
     )))
   }
 
