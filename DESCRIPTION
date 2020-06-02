@@ -11,7 +11,7 @@ Maintainer:
     Juho Piironen <juho.t.piironen@gmail.com>
 Description:
     Performs projection predictive feature selection for generalized linear models
-    (see, Piironen, Paasiniemi and Vehtari, 2018, <arXiv:1810.02406>).
+    (see, Piironen, Paasiniemi and Vehtari, 2020, <https://projecteuclid.org/euclid.ejs/1589335310>).
     The package is compatible with the 'rstanarm' and 'brms' packages, but other 
     reference models can also be used. See the package vignette for more 
     information and examples.
