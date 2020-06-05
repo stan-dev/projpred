@@ -84,6 +84,13 @@ fit_glmer_callback <- function(formula, data, family, weights,
             optCtrl = list(method = "nlminb")
           )
         ))
+      } else if (grepl("PIRLS step-halvings", as.character(e))) {
+        return(fit_glmer_callback(formula,
+          data = data, weights = weights, family = family,
+          control = control_callback(family,
+            optimizer = "bobyqa"
+          )
+        ))
       } else {
         stop(e)
       }
