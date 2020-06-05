@@ -20,10 +20,9 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     formula = form, terms_ = unique(unlist(solution_terms)),
     data = refmodel$fetch_data(), y = mu
   )
-  capture.output(
-    sub_fit <- div_minimizer(flatten_formula(subset$formula), subset$data,
-      weights = refmodel$wobs
-    )
+
+  sub_fit <- div_minimizer(flatten_formula(subset$formula), subset$data,
+    weights = refmodel$wobs
   )
 
   return(.init_submodel(

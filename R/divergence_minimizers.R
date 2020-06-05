@@ -85,17 +85,25 @@ fit_glmer_callback <- function(formula, data, family, weights,
           )
         ))
       } else if (grepl("PIRLS step-halvings", as.character(e))) {
+        data <- preprocess_data(data, formula)
         return(fit_glmer_callback(formula,
-          data = data, weights = weights, family = family,
-          control = control_callback(family,
-            optimizer = "bobyqa"
-          )
+          data = data, weights = weights, family = family
         ))
       } else {
         stop(e)
       }
     }
   ))
+}
+
+preprocess_data <- function(data, formula) {
+  tt <- extract_terms_response(formula)
+  non_group_terms <- c(tt$individual_terms, tt$interaction_terms)
+  X <- data %>%
+    dplyr::select(non_group_terms) %>%
+    scale()
+  data[, non_group_terms] <- X
+  return(data)
 }
 
 # helper function of fit_glmer_callback to pass the proper kind of control
