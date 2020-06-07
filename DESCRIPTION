@@ -26,6 +26,7 @@ Imports:
     Rcpp, 
     utils,
     rngtools (>= 1.2.4),
+    tidyverse,
     MASS
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
