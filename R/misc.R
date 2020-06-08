@@ -530,3 +530,7 @@ deparse_combine <- function(x, max_char = NULL) {
   }
   out
 }
+
+#' @importFrom magrittr %>%
+#' @export
+magrittr::`%>%`
