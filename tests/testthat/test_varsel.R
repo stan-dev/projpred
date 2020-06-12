@@ -169,14 +169,14 @@ if (require(rstanarm)) {
   })
 
   test_that("nterms_max has an effect on varsel for non-gaussian models", {
-    vs1 <- varsel(fit_binom, method = "forward", nterms_max = 3,
-                  verbose = FALSE)
+    SW(vs1 <- varsel(fit_binom, method = "forward", nterms_max = 3,
+                  verbose = FALSE))
     expect_length(vs1$solution_terms, 3)
   })
 
   test_that("specifying the number of clusters has an expected effect", {
-    vs <- varsel(fit_binom, method = "forward", nterms_max = 3,
-                 nclusters = 10)
+    SW(vs <- varsel(fit_binom, method = "forward", nterms_max = 3,
+                 nclusters = 10))
     expect_length(vs$solution_terms, 3)
   })
 
@@ -204,7 +204,9 @@ if (require(rstanarm)) {
       nonzeros <- rep(0, length(regul))
       msize <- 3
       for (j in 1:length(regul)) {
-        vsel <- varsel(fit_list[[i]], regul = regul[j], nterms_max = 6)
+        SW(
+          vsel <- varsel(fit_list[[i]], regul = regul[j], nterms_max = 6)
+        )
         x <- vsel$search_path$sub_fits[[6]]
         sol <- rbind(x$alpha, x$beta)
         nonzeros[j] <- length(which(sol != 0))
@@ -236,7 +238,7 @@ if (require(rstanarm)) {
     vsf <- function(obj)
       varsel(obj, method = "L1", nterms_max = nterms, verbose = FALSE,
              penalty = penalty)
-    vs_list_pen <- lapply(fit_list, vsf)
+    SW(vs_list_pen <- lapply(fit_list, vsf))
     for (i in seq_along(vs_list_pen)) {
       # check that the variables with no cost are selected first and the ones
       # with inf penalty last
@@ -368,7 +370,7 @@ test_that("object returned by cv_varsel contains the relevant fields", {
 
   test_that("nloo works as expected", {
     expect_error(
-      cv_varsel(fit_gauss, cv_method = "loo", nloo = -1),
+      SW(cv_varsel(fit_gauss, cv_method = "loo", nloo = -1)),
       "must be at least 1"
     )
     SW({

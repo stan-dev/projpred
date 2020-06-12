@@ -188,11 +188,11 @@ if (require(rstanarm)) {
 
     # fit objects
     expect_error(
-      project(fit_list[[1]], solution_terms = 1:10),
+      SW(project(fit_list[[1]], solution_terms = 1:10)),
       "solution_terms contains an index larger than"
     )
     expect_error(
-      project(fit_list[[1]], solution_terms = 17),
+      SW(project(fit_list[[1]], solution_terms = 17)),
       "solution_terms contains an index larger than"
     )
   })
