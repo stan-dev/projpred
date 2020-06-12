@@ -209,29 +209,22 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     data <- object$data
   }
 
-  if (length(response_name) > 1) {
-    response_name <- response_name[[1]]
-  }
-
   formula <- update(formula,
     as.formula(paste(response_name, "~ ."))
   )
 
-  extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                 orhs = NULL, extract_y = TRUE) {
-    if (extract_y) {
-      if (length(response_name) > 1) {
-        resp_form <- response_name[[1]]
-        if (is.null(newdata)) {
-          wrhs <- as.formula(paste("~", response_name[[2]], "+",
-                                   response_name[[1]]))
-        }
-      } else {
-        resp_form <- response_name
-      }
-      resp_form <- as.formula(paste("~", resp_form))
+  if (length(response_name) > 1) {
+    resp_form <- as.formula(paste("~", response_name[[1]]))
+    default_wrhs <- as.formula(paste("~", response_name[[2]], "+",
+                                     response_name[[1]]))
+  } else {
+    resp_form <- as.formula(paste("~", response_name))
+    default_wrhs <- NULL
+  }
 
-    } else {
+  extract_model_data <- function(object, newdata = NULL, wrhs = default_wrhs,
+                                 orhs = NULL, extract_y = TRUE) {
+    if (!extract_y) {
       resp_form <- NULL
     }
 
@@ -253,6 +246,10 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do_call(.extract_model_data, args))
+  }
+
+  if (length(response_name) > 1) {
+    response_name <- response_name[[1]]
   }
 
   if (.has_dispersion(family)) {

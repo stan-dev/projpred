@@ -587,13 +587,21 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
   return(suggested_size)
 }
 
-#' @method coef.subfit
-#
+#' @method coef subfit
 coef.subfit <- function(x, ...) {
+  variables <- colnames(x$x)
+  coefs <- with(x, rbind(alpha, beta))
+  named_coefs <- setNames(coefs, variables)
+  return(named_coefs)
 }
 
 #' @method as.matrix ridgelm
 as.matrix.ridgelm <- function(x, ...) {
+  return(coef(x))
+}
+
+#' @method as.matrix subfit
+as.matrix.subfit <- function(x, ...) {
   return(coef(x))
 }
 

@@ -14,10 +14,9 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
 
 linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
                        var = 0) {
-
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
-    return(fit_glm_ridge_callback(formula, data, family, weights, regul, var))
+    return(fit_glm_ridge_callback(formula, data, family, weights, var, regul))
   } else if (inherits(formula, "list")) {
     return(lapply(seq_along(formula), function(s) {
       fit_glm_ridge_callback(formula[[s]], data, family, weights,
