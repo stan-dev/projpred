@@ -269,7 +269,7 @@ if (require(rstanarm)) {
 
   test_that(paste("project: projecting full model onto itself does not change",
                   "results"), {
-    tol <- 1e-4
+    tol <- 1e-3
 
     for (i in 1:length(fit_list)) {
       fit <- fit_list[[i]]
