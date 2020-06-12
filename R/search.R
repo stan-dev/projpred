@@ -162,29 +162,3 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
   })
   return(nlist(solution_terms, sub_fits))
 }
-
-## FIXME: find a way that allows us to remove this
-predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
-  if (is.null(weights)) {
-    weights <- rep(1, NROW(subfit$x))
-  }
-  beta <- subfit$beta
-  alpha <- subfit$alpha
-  x <- subfit$x
-  w <- subfit$w
-  if (is.null(newdata)) {
-    if (is.null(beta)) {
-      return(rep(alpha, NROW(subfit$x)))
-    } else {
-      return(x %*% rbind(alpha, beta))
-    }
-  } else {
-    x <- model.matrix(delete.response(terms(subfit$formula)), newdata)
-    ## x <- weights * x
-    if (is.null(beta)) {
-      return(rep(alpha, NROW(x)))
-    } else {
-      return(x %*% rbind(alpha, beta))
-    }
-  }
-}

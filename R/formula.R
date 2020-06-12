@@ -625,3 +625,31 @@ formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
   }
   substr(x, 1 + rm[1], nchar(x) - rm[2])
 }
+
+#' remove intercept from formula
+#' @param formula a model formula
+#' @return the updated formula without intercept
+delete.intercept <- function(formula) {
+  return(update(formula, . ~ . - 1))
+}
+
+#' construct contrasts.arg list argument for model.matrix based on the current
+#' model's formula.
+#' @param formula
+#' @param data
+get_contrasts_arg_list <- function(formula, data) {
+  ## extract model frame
+  ## check categorical variables
+  ## add contrasts for those
+  frame <- model.frame(delete.response(terms(formula)),
+    data = data
+  )
+  factors <- sapply(frame, is.factor)
+  contrasts_arg <- lapply(names(factors)[as.logical(factors)], function(v) {
+    stats::contrasts(frame[, v],
+      contrasts = FALSE
+    )
+  })
+  contrasts_arg <- setNames(contrasts_arg, names(factors)[as.logical(factors)])
+  return(contrasts_arg)
+}

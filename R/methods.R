@@ -587,22 +587,27 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
   return(suggested_size)
 }
 
-##' @method as.matrix ridgelm
+#' @method coef.subfit
+#
+coef.subfit <- function(x, ...) {
+}
+
+#' @method as.matrix ridgelm
 as.matrix.ridgelm <- function(x, ...) {
   return(coef(x))
 }
 
-##' @method as.matrix lm
+#' @method as.matrix lm
 as.matrix.lm <- function(x, ...) {
   return(coef(x))
 }
 
-##' @method as.matrix glm
+#' @method as.matrix glm
 as.matrix.glm <- function(x, ...) {
   return(coef(x))
 }
 
-##' @method as.matrix lmerMod
+#' @method as.matrix lmerMod
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x)
   group_effects <- lme4::ranef(x)
@@ -610,38 +615,38 @@ as.matrix.lmerMod <- function(x, ...) {
   return(c(population_effects, group_effects))
 }
 
-##' @method as.matrix noquote
+#' @method as.matrix noquote
 as.matrix.noquote <- function(x, ...) {
   return(coef(x))
 }
 
-##' @method as.matrix list
+#' @method as.matrix list
 as.matrix.list <- function(x, ...) {
   return(do.call(cbind, lapply(x, as.matrix.glm)))
 }
 
-##' @method t glm
+#' @method t glm
 t.glm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
-##' @method t lm
+#' @method t lm
 t.lm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
-##' @method t ridgelm
+#' @method t ridgelm
 t.ridgelm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
-##' @method t list
+#' @method t list
 t.list <- function(x, ...) {
   return(t(as.matrix.list(x)))
 }
 
-##' @method as.matrix projection
-##' @export
+#' @method as.matrix projection
+#' @export
 as.matrix.projection <- function(x, ...) {
   if (x$p_type) {
     warning(paste0(
