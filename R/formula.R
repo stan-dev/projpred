@@ -635,8 +635,9 @@ delete.intercept <- function(formula) {
 
 #' construct contrasts.arg list argument for model.matrix based on the current
 #' model's formula.
-#' @param formula
-#' @param data
+#' @param formula a formula object
+#' @param data model's data
+#' @return a named list with each factor and its contrasts
 get_contrasts_arg_list <- function(formula, data) {
   ## extract model frame
   ## check categorical variables
@@ -652,4 +653,34 @@ get_contrasts_arg_list <- function(formula, data) {
   })
   contrasts_arg <- setNames(contrasts_arg, names(factors)[as.logical(factors)])
   return(contrasts_arg)
+}
+
+#' collapse a list of terms including contrasts
+#' @param formula model's formula
+#' @param path list of terms possibly including contrasts
+#' @param data model's data
+#' @return the updated list of terms replacing the contrasts with the term name
+collapse_contrasts_solution_path <- function(formula, path, data) {
+  tt <- terms(formula)
+  terms_ <- attr(tt, "term.labels")
+  for (term in terms_) {
+    current_form <- as.formula(paste("~ 0 +", term))
+    contrasts_arg <- get_contrasts_arg_list(
+      current_form,
+      data
+    )
+    if (length(contrasts_arg) == 0) {
+      next
+    }
+    x <- model.matrix(current_form, data, contrasts.arg = contrasts_arg)
+    path <- unique(Reduce(function(current, pattern) {
+      list(
+        current[[1]],
+        gsub(pattern, current[[1]], current[[2]])
+      )
+    },
+    x = colnames(x), init = list(term, path)
+    )[[ncol(x)]])
+  }
+  return(path)
 }

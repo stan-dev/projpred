@@ -117,7 +117,9 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
     }
   }
 
-  if (length(entered_variables) < nterms_max) {
+  out$solution_terms <- order[1:nterms_max]
+  if (any(is.na(out$solution_terms)) &&
+      length(entered_variables) < nterms_max) {
     if (length(setdiff(notentered_variables,
                        which(penalty == Inf))) > 0) {
       warning("Less than nterms_max variables entered L1-path. ",
@@ -125,30 +127,54 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
     }
   }
 
-  out$solution_terms <- order[1:nterms_max]
   return(out)
 }
 
 search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
                       opt) {
   frame <- model.frame(refmodel$formula, refmodel$fetch_data())
-  x <- model.matrix(refmodel$formula, data = frame)
+  contrasts_arg <- get_contrasts_arg_list(
+    refmodel$formula,
+    refmodel$fetch_data()
+  )
+  x <- model.matrix(delete.intercept(refmodel$formula),
+    data = frame,
+    contrasts.arg = contrasts_arg
+  )
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
-    p_ref, list(refmodel, x = x[, -1]), family,
-    intercept, nterms_max, penalty, opt
+    p_ref, list(refmodel, x = x), family,
+    intercept, ncol(x), penalty, opt
   )
-  solution_terms <- terms_[search_path$solution_terms]
-  sub_fits <- lapply(0:nterms_max, function(nterms) {
+  solution_terms <- collapse_contrasts_solution_path(
+    refmodel$formula, colnames(x)[search_path$solution_terms],
+    refmodel$fetch_data()
+  )
+  sub_fits <- lapply(0:length(solution_terms), function(nterms) {
     if (nterms == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
     } else {
       formula <- make_formula(solution_terms[seq_len(nterms)])
-      beta <- search_path$beta[seq_len(nterms), nterms + 1, drop = FALSE]
+      variables <- unlist(lapply(
+        solution_terms[seq_len(nterms)],
+        function(term) {
+          form <- as.formula(paste("~ 0 +", term))
+          contrasts_arg <- get_contrasts_arg_list(
+            form,
+            refmodel$fetch_data()
+          )
+          return(colnames(model.matrix(form,
+            data = refmodel$fetch_data(),
+            contrasts.arg = contrasts_arg
+          )))
+        }
+      ))
+      indices <- match(variables, colnames(x)[search_path$solution_terms])
+      beta <- search_path$beta[indices, max(indices) + 1, drop = FALSE]
     }
     sub <- nlist(
       alpha = search_path$alpha[nterms + 1],
@@ -160,5 +186,5 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
     class(sub) <- "subfit"
     return(sub)
   })
-  return(nlist(solution_terms, sub_fits))
+  return(nlist(solution_terms, sub_fits[seq_len(nterms_max + 1)]))
 }
