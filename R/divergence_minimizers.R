@@ -209,8 +209,8 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
       return(x %*% rbind(alpha, beta))
     }
   } else {
-    contrasts_arg <- get_contrasts_arg_list(formula(subfit), newdata)
-    x <- model.matrix(delete.response(terms(formula(subfit))), newdata,
+    contrasts_arg <- get_contrasts_arg_list(subfit$formula, newdata)
+    x <- model.matrix(delete.response(terms(subfit$formula)), newdata,
       contrasts.arg = contrasts_arg
     )
     ## x <- weights * x
