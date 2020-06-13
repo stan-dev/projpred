@@ -50,7 +50,7 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
 }
 
 # helper function of 'linear_mle'
-fit_glm_callback <- function(formula, data, family, weights) {
+fit_glm_callback <- function(formula, data, family, weights, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
   if (family$family == "gaussian" && family$link == "identity") {
@@ -67,7 +67,7 @@ fit_glm_callback <- function(formula, data, family, weights) {
 #' Note that we don't use glmer because the target is a pseudo-Gaussian
 #' transformation.
 linear_multilevel_mle <- function(formula, data, family, weights = NULL,
-                                  regul = NULL) {
+                                  regul = NULL, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     return(fit_glmer_callback(formula, data, family, weights))
@@ -80,7 +80,7 @@ linear_multilevel_mle <- function(formula, data, family, weights = NULL,
 
 # helper function of 'linear_multilevel_mle'
 fit_glmer_callback <- function(formula, data, family, weights,
-                               control = control_callback(family)) {
+                               control = control_callback(family), ...) {
   ## make sure correct 'weights' can be found
   environment(formula) <- environment()
   suppressWarnings(tryCatch({
