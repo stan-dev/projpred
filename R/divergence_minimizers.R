@@ -13,7 +13,7 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
 }
 
 linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
-                       var = 0) {
+                       var = 0, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     return(fit_glm_ridge_callback(formula, data, family, weights, var, regul))
@@ -29,7 +29,7 @@ linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
 }
 
 fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
-                                   regul = 1e-4) {
+                                   regul = 1e-4, ...) {
   fr <- model.frame(delete.intercept(formula), data = data)
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
@@ -100,7 +100,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
       if (grepl("No random effects", as.character(e))) {
         return(fit_glm_ridge_callback(formula,
           data = data, family = family,
-          weights = weights
+          weights = weights, ...
         ))
       } else if (grepl("not positive definite", as.character(e))) {
         return(fit_glmer_callback(formula,
