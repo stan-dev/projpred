@@ -98,7 +98,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
     },
     error = function(e) {
       if (grepl("No random effects", as.character(e))) {
-        return(fit_glm_callback(formula,
+        return(fit_glm_ridge_callback(formula,
           data = data, family = family,
           weights = weights
         ))
