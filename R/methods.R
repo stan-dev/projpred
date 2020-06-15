@@ -437,7 +437,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   }
 
   if ("pct_solution_terms_cv" %in% names(object)) {
-    arr$pct_solution_terms_cv <- object$pct_solution_terms_cv
+    arr$pct_solution_terms_cv <- c(NA, diag(object$pct_solution_terms_cv[, -1]))
   }
 
   return(subset(arr, arr$size <= nterms_max))
