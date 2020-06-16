@@ -28,7 +28,8 @@ Imports:
     rngtools (>= 1.2.4),
     tidyverse,
     MASS,
-    magrittr
+    magrittr,
+    future.apply
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8

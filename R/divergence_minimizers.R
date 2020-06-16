@@ -12,13 +12,14 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
   }
 }
 
+#' @importFrom future.apply future_lapply
 linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
                        var = 0, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     return(fit_glm_ridge_callback(formula, data, family, weights, var, regul))
   } else if (inherits(formula, "list")) {
-    return(lapply(seq_along(formula), function(s) {
+    return(future_lapply(seq_along(formula), function(s) {
       fit_glm_ridge_callback(formula[[s]], data, family, weights,
         regul = regul, var = var[, s, drop = FALSE]
       )
@@ -66,13 +67,14 @@ fit_glm_callback <- function(formula, data, family, weights, ...) {
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
 #' Note that we don't use glmer because the target is a pseudo-Gaussian
 #' transformation.
+#' @importFrom future.apply future_lapply
 linear_multilevel_mle <- function(formula, data, family, weights = NULL,
                                   regul = NULL, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     return(fit_glmer_callback(formula, data, family, weights))
   } else if (inherits(formula, "list")) {
-    return(lapply(formula, fit_glmer_callback, data, family, weights))
+    return(future_lapply(formula, fit_glmer_callback, data, family, weights))
   } else {
     stop("The provided formula is neither a formula object nor a list")
   }

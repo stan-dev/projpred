@@ -6,7 +6,7 @@
 Note that we don't use glmer because the target is a pseudo-Gaussian
 transformation.}
 \usage{
-linear_multilevel_mle(formula, data, family, weights = NULL, regul = NULL)
+linear_multilevel_mle(formula, data, family, weights = NULL, regul = NULL, ...)
 }
 \description{
 Use lmer to fit the projection to the posterior draws for multilevel models.
