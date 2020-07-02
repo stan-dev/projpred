@@ -2,14 +2,10 @@
 % Please edit documentation in R/divergence_minimizers.R
 \name{linear_multilevel_mle}
 \alias{linear_multilevel_mle}
-\title{Use lmer to fit the projection to the posterior draws for multilevel models.
-Note that we don't use glmer because the target is a pseudo-Gaussian
-transformation.}
+\title{Use lmer to fit the projection to the posterior draws for multilevel models.}
 \usage{
-linear_multilevel_mle(formula, data, family, weights = NULL, regul = NULL)
+linear_multilevel_mle(formula, data, family, weights = NULL, regul = NULL, ...)
 }
 \description{
 Use lmer to fit the projection to the posterior draws for multilevel models.
-Note that we don't use glmer because the target is a pseudo-Gaussian
-transformation.
 }
