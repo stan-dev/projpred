@@ -254,7 +254,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   ## avoid repeating the same code both in varsel and cv_varsel.
   ##
   if (is.null(search_terms)) {
-    search_terms <- split_formula(refmodel$formula)
+    search_terms <- split_formula(refmodel$formula,
+      data = refmodel$fetch_data()
+    )
   }
   has_group_features <- formula_contains_group_terms(refmodel$formula)
 

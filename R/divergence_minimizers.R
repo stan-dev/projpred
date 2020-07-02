@@ -63,9 +63,53 @@ fit_glm_callback <- function(formula, data, family, weights, ...) {
   }
 }
 
+#' Use mgcv to fit the projection to the posterior draws for additive multilevel
+#' models.
+additive_mle <- function(formula, data, family, weights = NULL, ...) {
+  f <- split_formula_random_gamm4(formula)
+  formula <- f$formula
+  random <- f$random
+  formula <- validate_response_formula(formula)
+  if (inherits(formula, "formula")) {
+    if (is.null(random)) {
+      return(fit_gam_callback(formula, data, family, weights))
+    } else {
+      return(fit_gamm_callback(formula, random, data, family, weights))
+    }
+  } else if (inherits(formula, "list")) {
+    if (is.null(random)) {
+      return(lapply(formula, fit_gam_callback, data, family, weights))
+    } else {
+      return(lapply(formula, fit_gamm_callback, random, data, family, weights))
+    }
+  } else {
+    stop("The provided formula is neither a formula object nor a list")
+  }
+}
+
+# helper function of 'additive_mle'
+#' @importFrom mgcv gam
+fit_gam_callback <- function(formula, data, family, weights, ...) {
+  # make sure correct 'weights' can be found
+  environment(formula) <- environment()
+  return(suppressWarnings(gam(formula,
+    data = data, family = family,
+    weights = weights, method = "REML"
+  )))
+}
+
+# helper function of 'additive_mle'
+#' @importFrom gamm4 gamm4
+fit_gamm_callback <- function(formula, random, data, family, weights, ...) {
+  # make sure correct 'weights' can be found
+  environment(formula) <- environment()
+  return(suppressWarnings(gamm4(formula,
+    random = random, data = data,
+    family = family, weights = weights
+  )))
+}
+
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
-#' Note that we don't use glmer because the target is a pseudo-Gaussian
-#' transformation.
 linear_multilevel_mle <- function(formula, data, family, weights = NULL,
                                   regul = NULL, ...) {
   formula <- validate_response_formula(formula)

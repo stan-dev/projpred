@@ -102,7 +102,9 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       vars <- object$solution_terms
     } else {
       ## project only the given model on a fit object
-      vars <- setdiff(split_formula(refmodel$formula), "1")
+      vars <- setdiff(split_formula(refmodel$formula,
+        data = refmodel$fetch_data()
+      ), "1")
     }
 
     if (max(solution_terms) > length(vars)) {

@@ -24,11 +24,14 @@ extract_terms_response <- function(formula) {
   group_terms <- terms_[hier]
   interaction_terms <- terms_[int & !hier]
   individual_terms <- terms_[!hier & !int]
+  additive_terms <- parse_additive_terms(individual_terms)
+  individual_terms <- setdiff(individual_terms, additive_terms)
 
   response <- extract_response(response)
   return(nlist(
     individual_terms,
     interaction_terms,
+    additive_terms,
     group_terms,
     response,
     global_intercept
@@ -52,6 +55,35 @@ extract_response <- function(response) {
     response_name_ch <- as.character(response)
   }
   return(response_name_ch)
+}
+
+#' Parse additive terms from a list of individual terms. These may include
+#' individual smoothers s(x), interaction smoothers s(x, z), smooth intercepts
+#' s(factor, bs = "re"), group level independent smoothers s(x, by = g), or
+#' shared smoothers for low dimensional factors s(x, g, bs = "fs"), interaction
+#' group level smoothers with same shape for high dimensional factors t2(x, z,
+#' g, bs = c(., ., "re")), interaction group level independent smoothers te(x,
+#' z, by = g), population level interaction smoothers te(x, z, bs = c(., .)),
+#' s(x, z).
+#' @param terms list of terms to parse
+#' @return a vector of smooth terms
+parse_additive_terms <- function(terms) {
+  excluded_terms <- c("te")
+  smooth_terms <- c("s", "t2")
+  excluded <- unlist(sapply(excluded_terms, function(et) {
+    grep(make_function_regexp(et), terms)
+  }))
+  if (sum(excluded) > 0) {
+    stop("te terms are not supported, please use t2 instead.")
+  }
+  smooth <- sapply(smooth_terms, function(et) {
+    terms[grep(make_function_regexp(et), terms)]
+  }) %>% unlist() %>% unname()
+  return(smooth)
+}
+
+make_function_regexp <- function(fname) {
+  return(paste0(fname, "\\(.+\\)"))
 }
 
 #' Because the formula can imply multiple or single response, in this function
@@ -86,13 +118,16 @@ flatten_formula <- function(formula) {
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
   individual_terms <- terms_$individual_terms
+  additive_terms <- terms_$additive_terms
 
   if (length(individual_terms) > 0 ||
     length(interaction_terms) > 0 ||
-    length(group_terms) > 0) {
+    length(group_terms) > 0 ||
+    length(additive_terms) > 0) {
     update(formula, paste(c(
       ". ~ ",
       flatten_individual_terms(individual_terms),
+      flatten_additive_terms(additive_terms),
       flatten_interaction_terms(interaction_terms),
       flatten_group_terms(group_terms)
     ),
@@ -121,6 +156,16 @@ flatten_interaction_terms <- function(terms_) {
     return(terms_)
   }
   ## TODO: do this right; a:b == b:a.
+  return(unique(terms_))
+}
+
+#' Remove duplicated additive terms.
+#' @param terms A vector of additive terms as strings.
+#' @return a vector of unique linear interaction terms.
+flatten_additive_terms <- function(terms_) {
+  if (length(terms_) == 0) {
+    return(terms_)
+  }
   return(unique(terms_))
 }
 
@@ -176,24 +221,28 @@ flatten_group_terms <- function(terms_) {
 #' Simplify and split a formula by breaking it into all possible submodels.
 #' @param formula A formula for a valid model.
 #' @param return_group_terms If TRUE, return group terms as well. Default TRUE.
+#' @param data The reference model data.
 #' @return a vector of all the minimal valid terms that make up for submodels.
-split_formula <- function(formula, return_group_terms = TRUE) {
+split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
   individual_terms <- terms_$individual_terms
+  additive_terms <- terms_$additive_terms
   global_intercept <- terms_$global_intercept
 
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
     allterms_ <- c(
       individual_terms,
+      unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(group_terms, split_group_term)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
   } else {
     allterms_ <- c(
       individual_terms,
+      unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
   }
@@ -219,9 +268,28 @@ split_interaction_term <- function(term) {
   terms_ <- unlist(strsplit(term, ":"))
   individual_joint <- paste(terms_, collapse = " + ")
   joint_term <- paste(c(individual_joint, term), collapse = " + ")
-
-  joint_term
+  return(joint_term)
 }
+
+#' Plugs the main effects to the smooth additive term if `by` argument is
+#' provided.
+#' @param term An additive term as a string.
+#' @param data The reference model data.
+#' @return a minimally valid submodel for the additive term.
+split_additive_term <- function(term, data) {
+  out <- mgcv::interpret.gam(as.formula(paste("~", term)))
+  if (out$smooth.spec[[1]]$by == "NA") {
+    return(term)
+  }
+  main <- out$smooth.spec[[1]]$by
+  fac <- eval_rhs(as.formula(paste("~", main)), data = data)
+  if (!is.factor(fac)) {
+    return(term)
+  }
+  joint_term <- paste(c(main, term), collapse = " + ")
+  return(c(main, joint_term))
+}
+
 
 #' Simplify a single group term by breaking it down in as many terms_
 #' as varying effects. It also explicitly adds or removes the varying intercept.
@@ -430,7 +498,7 @@ count_terms_in_subformula <- function(subformula) {
   }
   tt <- extract_terms_response(subformula)
   ind_interaction_terms <- length(tt$individual_terms) +
-    length(tt$interaction_terms)
+    length(tt$interaction_terms) + length(tt$additive_terms)
   group_terms <- sum(unlist(lapply(tt$group_terms, count_terms_in_group_term)))
   ind_interaction_terms + group_terms + tt$global_intercept
 }
@@ -683,4 +751,19 @@ collapse_contrasts_solution_path <- function(formula, path, data) {
     )[[ncol(x)]])
   }
   return(path)
+}
+
+split_formula_random_gamm4 <- function(formula) {
+  tt <- extract_terms_response(formula)
+  parens_group_terms <- unlist(lapply(tt$group_terms, function(t) {
+    paste0("(", t, ")")
+  }))
+  if (length(parens_group_terms) == 0) {
+    return(nlist(formula, random = NULL))
+  }
+  random <- as.formula(paste(
+    "~",
+    paste(parens_group_terms, collapse = " + ")
+  ))
+  return(nlist(formula, random))
 }
