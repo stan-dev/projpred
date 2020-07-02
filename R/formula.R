@@ -767,3 +767,14 @@ split_formula_random_gamm4 <- function(formula) {
   ))
   return(nlist(formula, random))
 }
+
+# utility to recover the full gam + random formula from a stan_gamm4 model
+formula.gamm4 <- function(x) {
+  formula <- x$formula
+  ref <- extract_terms_response(x$glmod$formula)$group_terms
+  ref <- unlist(lapply(ref, function(t) {
+    paste0("(", t, ")")
+  }))
+  ref <- paste(ref, collapse = " + ")
+  return(update(formula, paste(". ~ . + ", ref)))
+}

@@ -201,7 +201,11 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
                                  folds = NULL, ...) {
   family <- family(object)
   family <- extend_family(family)
-  formula <- formula(object)
+  if (inherits(object, "gamm4")) {
+    formula <- formula.gamm4(object)
+  } else {
+    formula <- object$formula
+  }
   terms <- extract_terms_response(formula)
   response_name <- terms$response
 
@@ -300,6 +304,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (is.null(div_minimizer)) {
     if (length(terms$group_terms) != 0) {
       div_minimizer <- linear_multilevel_mle
+    } else if (length(terms$additive_terms) != 0) {
+      div_minimizer <- additive_mle
     } else {
       div_minimizer <- linear_mle
     }
