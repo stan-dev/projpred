@@ -4,12 +4,14 @@
 \alias{split_formula}
 \title{Simplify and split a formula by breaking it into all possible submodels.}
 \usage{
-split_formula(formula, return_group_terms = TRUE)
+split_formula(formula, return_group_terms = TRUE, data = NULL)
 }
 \arguments{
 \item{formula}{A formula for a valid model.}
 
 \item{return_group_terms}{If TRUE, return group terms as well. Default TRUE.}
+
+\item{data}{The reference model data.}
 }
 \value{
 a vector of all the minimal valid terms that make up for submodels.
