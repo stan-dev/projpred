@@ -259,9 +259,10 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     )
   }
   has_group_features <- formula_contains_group_terms(refmodel$formula)
+  has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
   if (is.null(method)) {
-    if (has_group_features) {
+    if (has_group_features || has_additive_features) {
       method <- "forward"
     } else {
       method <- "l1"

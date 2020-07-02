@@ -302,17 +302,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   data[, response_name] <- y
 
   if (is.null(div_minimizer)) {
-    if (length(terms$group_terms) != 0) {
-      div_minimizer <- linear_multilevel_mle
-    } else if (length(terms$additive_terms) != 0) {
+    if (length(terms$additive_terms) != 0) {
       div_minimizer <- additive_mle
+    } else if (length(terms$group_terms) != 0) {
+      div_minimizer <- linear_multilevel_mle
     } else {
       div_minimizer <- linear_mle
     }
   }
 
   if (is.null(proj_predfun)) {
-    if (length(terms$group_terms) != 0) {
+    if (length(terms$additive_terms) != 0) {
+      proj_predfun <- additive_proj_predfun
+    } else if (length(terms$group_terms) != 0) {
       proj_predfun <- linear_multilevel_proj_predfun
     } else {
       proj_predfun <- linear_proj_predfun

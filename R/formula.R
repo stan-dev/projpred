@@ -389,14 +389,16 @@ split_group_term <- function(term) {
 #' @param formula A formula for a valid model.
 #' @return TRUE if the formula contains group terms, FALSE otherwise.
 formula_contains_group_terms <- function(formula) {
-  t <- terms(formula)
-  attributes <- attributes(t)
-  terms_ <- attributes$term.labels
-
-  hier <- grepl("\\|", terms_)
-  group_terms <- terms_[hier]
-
+  group_terms <- extract_terms_response(formula)$group_terms
   return(length(group_terms) > 0)
+}
+
+#' Checks whether a formula contains additive terms or not.
+#' @param formula A formula for a valid model.
+#' @return TRUE if the formula contains additive terms, FALSE otherwise.
+formula_contains_additive_terms <- function(formula) {
+  additive_terms <- extract_terms_response(formula)$additive_terms
+  return(length(additive_terms) > 0)
 }
 
 #' Utility to both subset the formula and update the data
@@ -482,6 +484,9 @@ get_replace_response <- function(formula, terms_, split_formula = FALSE) {
 #' @param terms_ A vector of terms to subset from the right hand side.
 #' @return A formula object with the collapsed terms.
 make_formula <- function(terms_, formula = NULL) {
+  if (length(terms_) == 0) {
+    terms_ <- c("1")
+  }
   if (is.null(formula)) {
     return(as.formula(paste0(". ~ ", paste(terms_, collapse = " + "))))
   }
@@ -765,12 +770,19 @@ split_formula_random_gamm4 <- function(formula) {
     "~",
     paste(parens_group_terms, collapse = " + ")
   ))
+  formula <- update(formula, make_formula(c(
+    tt$individual_terms, tt$interaction_terms,
+    tt$additive_terms
+  )))
   return(nlist(formula, random))
 }
 
 # utility to recover the full gam + random formula from a stan_gamm4 model
 formula.gamm4 <- function(x) {
   formula <- x$formula
+  if (is.null(x$glmod)) {
+    return(formula)
+  }
   ref <- extract_terms_response(x$glmod$formula)$group_terms
   ref <- unlist(lapply(ref, function(t) {
     paste0("(", t, ")")

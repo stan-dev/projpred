@@ -103,10 +103,14 @@ fit_gam_callback <- function(formula, data, family, weights, ...) {
 fit_gamm_callback <- function(formula, random, data, family, weights, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
-  return(suppressWarnings(gamm4(formula,
+  fit <- suppressWarnings(gamm4(formula,
     random = random, data = data,
     family = family, weights = weights
-  )))
+  ))
+  fit$random <- random
+  fit$formula <- formula
+  class(fit) <- c("gamm4")
+  return(fit)
 }
 
 #' Use lmer to fit the projection to the posterior draws for multilevel models.
@@ -237,6 +241,13 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
   }
 }
 
+additive_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
+  if (!is.null(newdata)) {
+    newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
+  }
+  return(as.matrix(linear_multilevel_proj_predfun(fit, newdata, weights)))
+}
+
 ## FIXME: find a way that allows us to remove this
 predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   if (is.null(weights)) {
@@ -264,4 +275,26 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
       return(x %*% rbind(alpha, beta))
     }
   }
+}
+
+predict.gamm4 <- function(fit, newdata = NULL) {
+  formula <- fit$formula
+  random <- fit$random
+  gamm_struct <- model.matrix.gamm4(formula, random = random, data = newdata)
+  ranef <- ranef(fit$mer)
+  b <- gamm_struct$b
+  mf <- gamm_struct$mf
+
+  gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA)
+
+  sn <- names(ranef)
+  tn <- names(b$reTrms$cnms)
+  ind <- 1:length(tn)
+  for (i in 1:length(tn)) { ## loop through random effect smooths
+    k <- ind[sn[i] == tn] ## which term should contain G$random[[i]]
+    ii <- (b$reTrms$Gp[k] + 1):b$reTrms$Gp[k + 1]
+    r_pred <- t(as.matrix(b$reTrms$Zt[ii, ])) %*% as.matrix(ranef[[i]])
+    gamm_pred <- gamm_pred + r_pred
+  }
+  return(gamm_pred)
 }
