@@ -109,12 +109,13 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
 model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
                                family = gaussian()) {
   if (!is.null(random)) {
-    if (!inherits(random, "formula")) stop("gamm4 requires `random' to be a formula")
+    if (!inherits(random, "formula")) {
+      stop("gamm4 requires `random' to be a formula")
+    }
     random.vars <- all.vars(random)
   } else {
     random.vars <- NULL
   }
-
   # create model frame.....
   gp <- mgcv::interpret.gam(formula) # interpret the formula
   mf <- match.call(expand.dots = FALSE)
@@ -138,7 +139,9 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   }
   rm(gmf)
 
-  if (nrow(mf) < 2) stop("Not enough (non-NA) data to do anything meaningful")
+  if (nrow(mf) < 2) {
+    stop("Not enough (non-NA) data to do anything meaningful")
+  }
 
   ## summarize the *raw* input variables
   ## note can't use get_all_vars here -- buggy with matrices
@@ -234,24 +237,4 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   }
 
   return(nlist(mf, b))
-}
-
-predict.gamm4 <- function(fit, newdata = NULL) {
-  gamm_struct <- model.matrix.gamm4(formula, random = random, data = newdata)
-  ranef <- ranef(fit$mer)
-  b <- gamm_struct$b
-  mf <- gamm_struct$mf
-
-  gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA)
-
-  sn <- names(ranef)
-  tn <- names(b$reTrms$cnms)
-  ind <- 1:length(tn)
-  for (i in 1:length(tn)) { ## loop through random effect smooths
-    k <- ind[sn[i] == tn] ## which term should contain G$random[[i]]
-    ii <- (b$reTrms$Gp[k] + 1):b$reTrms$Gp[k + 1]
-    r_pred <- t(as.matrix(b$reTrms$Zt[ii, ])) %*% as.matrix(ranef[[i]])
-    gamm_pred <- gamm_pred + r_pred
-  }
-  return(gamm_pred)
 }

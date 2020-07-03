@@ -278,6 +278,9 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
 }
 
 predict.gamm4 <- function(fit, newdata = NULL) {
+  if (is.null(newdata)){
+    newdata <- model.frame(fit$mer)
+  }
   formula <- fit$formula
   random <- fit$random
   gamm_struct <- model.matrix.gamm4(formula, random = random, data = newdata)
@@ -285,16 +288,18 @@ predict.gamm4 <- function(fit, newdata = NULL) {
   b <- gamm_struct$b
   mf <- gamm_struct$mf
 
+  ## base pred only smooth and fixed effects
   gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA)
 
+  ## gamm4 trick to replace dummy smooth variables with actual smooth terms
   sn <- names(ranef)
   tn <- names(b$reTrms$cnms)
-  ind <- seq_len(length(tn))
-  for (i in seq_len(length(tn))) { ## loop through random effect smooths
+  ind <- seq_along(tn)
+  for (i in seq_along(tn)) { ## loop through random effect smooths
     k <- ind[sn[i] == tn] ## which term should contain G$random[[i]]
     ii <- (b$reTrms$Gp[k] + 1):b$reTrms$Gp[k + 1]
     r_pred <- t(as.matrix(b$reTrms$Zt[ii, ])) %*% as.matrix(ranef[[i]])
     gamm_pred <- gamm_pred + r_pred
   }
-  return(gamm_pred)
+  return(as.matrix(unname(gamm_pred)))
 }
