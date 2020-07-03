@@ -1,10 +1,14 @@
 ## taken from gam4
 gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
   ## first simply call `gam.setup'....
+  if (is.null(formula$response)) {
+    formula$response <- 1
+    pterms$response <- 1
+  }
   G <- mgcv:::gam.setup(formula, pterms,
-      data = data, knots = knots, sp =
-          NULL, min.sp = NULL, H = NULL, absorb.cons = TRUE, sparse.cons = 0,
-      gamm.call = TRUE
+    data = data, knots = knots, sp = NULL, min.sp = NULL,
+    H = NULL, absorb.cons = TRUE, sparse.cons = 0,
+    gamm.call = TRUE
   )
   if (!is.null(G$L)) {
     stop(

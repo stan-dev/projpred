@@ -100,13 +100,31 @@ fit_gam_callback <- function(formula, data, family, weights, ...) {
 
 # helper function of 'additive_mle'
 #' @importFrom gamm4 gamm4
-fit_gamm_callback <- function(formula, random, data, family, weights, ...) {
+fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
+                              control = control_callback(family), ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
-  fit <- suppressWarnings(gamm4(formula,
-    random = random, data = data,
-    family = family, weights = weights
-  ))
+  fit <- suppressWarnings(tryCatch({
+    gamm4(formula,
+      random = random, data = data,
+      family = family, weights = weights,
+      control = control
+    )
+  }, error = function(e) {
+    if (grepl("not positive definite", as.character(e))) {
+      scaled_data <- preprocess_data(data, formula)
+      fit_gamm_callback(formula, random = random,
+        data = scaled_data, weights = weights, family = family,
+        control = control_callback(family,
+          optimizer = "optimx",
+          optCtrl = list(method = "nlminb")
+        )
+      )
+    } else {
+      stop(e)
+    }
+  }))
+
   fit$random <- random
   fit$formula <- formula
   class(fit) <- c("gamm4")
@@ -277,19 +295,21 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   }
 }
 
-predict.gamm4 <- function(fit, newdata = NULL) {
-  if (is.null(newdata)){
+predict.gamm4 <- function(fit, newdata = NULL, weights = NULL) {
+  if (is.null(newdata)) {
     newdata <- model.frame(fit$mer)
   }
   formula <- fit$formula
   random <- fit$random
-  gamm_struct <- model.matrix.gamm4(formula, random = random, data = newdata)
+  gamm_struct <- model.matrix.gamm4(delete.response(terms(formula)),
+    random = random, data = newdata
+  )
   ranef <- ranef(fit$mer)
   b <- gamm_struct$b
   mf <- gamm_struct$mf
 
   ## base pred only smooth and fixed effects
-  gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA)
+  gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA, weights = weights)
 
   ## gamm4 trick to replace dummy smooth variables with actual smooth terms
   sn <- names(ranef)
