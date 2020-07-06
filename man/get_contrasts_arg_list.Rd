@@ -7,6 +7,14 @@ model's formula.}
 \usage{
 get_contrasts_arg_list(formula, data)
 }
+\arguments{
+\item{formula}{a formula object}
+
+\item{data}{model's data}
+}
+\value{
+a named list with each factor and its contrasts
+}
 \description{
 construct contrasts.arg list argument for model.matrix based on the current
 model's formula.
