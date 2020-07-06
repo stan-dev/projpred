@@ -673,14 +673,16 @@ collapse_contrasts_solution_path <- function(formula, path, data) {
       next
     }
     x <- model.matrix(current_form, data, contrasts.arg = contrasts_arg)
-    path <- unique(Reduce(function(current, pattern) {
+    path <- Reduce(function(current, pattern) {
+      pattern <- gsub("\\+", "\\\\+", pattern)
       list(
         current[[1]],
         gsub(pattern, current[[1]], current[[2]])
       )
     },
     x = colnames(x), init = list(term, path)
-    )[[ncol(x)]])
+    )
+    path <- unique(path[[length(path)]])
   }
   return(path)
 }
