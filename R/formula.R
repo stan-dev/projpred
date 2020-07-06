@@ -494,14 +494,14 @@ make_formula <- function(terms_, formula = NULL) {
 }
 
 #' Utility to count the number of terms in a given formula.
-#' @param subformula The right hand side of a formula for a valid model
+#' @param formula The right hand side of a formula for a valid model
 #' either as a formula object or as a string.
-#' @return the number of terms in the subformula.
-count_terms_in_subformula <- function(subformula) {
-  if (!inherits(subformula, "formula")) {
-    subformula <- as.formula(paste0("~ ", subformula))
+#' @return the number of terms in the formula.
+count_terms_in_formula <- function(formula) {
+  if (!inherits(formula, "formula")) {
+    formula <- as.formula(paste0("~ ", formula))
   }
-  tt <- extract_terms_response(subformula)
+  tt <- extract_terms_response(formula)
   ind_interaction_terms <- length(tt$individual_terms) +
     length(tt$interaction_terms) + length(tt$additive_terms)
   group_terms <- sum(unlist(lapply(tt$group_terms, count_terms_in_group_term)))
@@ -532,7 +532,7 @@ count_terms_in_group_term <- function(term) {
 #' @param submodels A list of models' formulas.
 #' @return a sorted list of submodels by included terms.
 sort_submodels_by_size <- function(submodels) {
-  size <- lapply(submodels, count_terms_in_subformula)
+  size <- lapply(submodels, count_terms_in_formula)
   df <- data.frame(submodels = as.character(submodels), size = unlist(size))
   ordered <- df[order(df$size), ]
 
@@ -596,7 +596,7 @@ count_terms_chosen <- function(list_of_terms) {
     return(0)
   }
   formula <- make_formula(list_of_terms)
-  count_terms_in_subformula(flatten_formula(formula))
+  count_terms_in_formula(flatten_formula(formula))
 }
 
 #' Utility that checks if the next submodel is redundant with the current one.
@@ -790,5 +790,13 @@ formula.gamm4 <- function(x) {
     paste0("(", t, ")")
   }))
   ref <- paste(ref, collapse = " + ")
-  return(update(formula, paste(". ~ . + ", ref)))
+  updated <- update(formula, paste(". ~ . + ", ref))
+  form <- flatten_formula(update(
+    updated,
+    paste(
+      ". ~",
+      paste(split_formula(updated), collapse = " + ")
+    )
+  ))
+  return(form)
 }

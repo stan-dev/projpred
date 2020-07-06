@@ -199,7 +199,7 @@ varsel.refmodel <- function(refmodel, d_test = NULL, method = NULL,
     solution_terms = search_path$solution_terms,
     kl = sapply(p_sub, function(x) x$kl),
     nterms_max,
-    nterms_all = count_terms_in_subformula(refmodel$formula)
+    nterms_all = count_terms_in_formula(refmodel$formula)
   )
   ## suggest model size
   class(vs) <- "vsel"
@@ -288,7 +288,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters_pred <- min(NCOL(refmodel$mu), 5)
   }
 
-  max_nv_possible <- count_terms_in_subformula(refmodel$formula)
+  max_nv_possible <- count_terms_in_formula(refmodel$formula)
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
   }

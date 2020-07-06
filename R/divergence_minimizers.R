@@ -95,7 +95,7 @@ fit_gam_callback <- function(formula, data, family, weights, ...) {
   environment(formula) <- environment()
   return(suppressWarnings(gam(formula,
     data = data, family = family,
-    weights = weights, method = "REML"
+    weights = weights
   )))
 }
 
