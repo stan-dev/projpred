@@ -648,7 +648,8 @@ test_that("object returned by cv_varsel contains the relevant fields", {
     ))
     expect_equal(nrow(out) - 1, 3)
     expect_named(out, c("size", "solution_terms", "mse", "mse.se",
-                        "pct_solution_terms_cv"))
+                                        # "pct_solution_terms_cv"
+                        ))
   })
 
 
