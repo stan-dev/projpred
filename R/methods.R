@@ -436,9 +436,9 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     nterms_max <- max(stats_table$size)
   }
 
-  if ("pct_solution_terms_cv" %in% names(object)) {
-    arr$pct_solution_terms_cv <- c(NA, diag(object$pct_solution_terms_cv[, -1]))
-  }
+  ## if ("pct_solution_terms_cv" %in% names(object)) {
+  ##   arr$pct_solution_terms_cv <- c(NA, diag(object$pct_solution_terms_cv[, -1]))
+  ## }
 
   return(subset(arr, arr$size <= nterms_max))
 }
@@ -667,7 +667,11 @@ as.matrix.projection <- function(x, ...) {
         "glmerMod" %in% class(x$sub_fit[[1]])) {
       res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
     } else {
-      res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lm)))
+      if (inherits(x$sub_fit[[1]], "subfit")) {
+        res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.subfit)))
+      } else {
+        res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lm)))
+      }
     }
   } else {
     res <- t(as.matrix.lm(x$sub_fit))
@@ -675,6 +679,8 @@ as.matrix.projection <- function(x, ...) {
   if (x$intercept) {
     if ("1" %in% x$solution_terms) {
       colnames(res) <- gsub("^1", "Intercept", x$solution_terms)
+    } else if ("alpha" %in% colnames(res)) {
+      colnames(res) <- gsub("^alpha", "Intercept", colnames(res))
     } else {
       colnames(res) <- c("Intercept", x$solution_terms)
     }

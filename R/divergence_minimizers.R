@@ -38,6 +38,7 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
     family = family, lambda = regul,
     weights = weights, obsvar = var
   )
+  rownames(fit$beta) <- colnames(x)
   sub <- nlist(
     alpha = fit$beta0,
     beta = fit$beta,
