@@ -135,6 +135,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
           "variables."
         ))
       }
+      solution_terms <- solution_terms[seq_len(nterms)]
     }
   }
 
