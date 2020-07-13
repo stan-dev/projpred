@@ -319,7 +319,8 @@ predict.gamm4 <- function(fit, newdata = NULL, weights = NULL) {
   for (i in seq_along(tn)) { ## loop through random effect smooths
     k <- ind[sn[i] == tn] ## which term should contain G$random[[i]]
     ii <- (b$reTrms$Gp[k] + 1):b$reTrms$Gp[k + 1]
-    r_pred <- t(as.matrix(b$reTrms$Zt[ii, ])) %*% as.matrix(ranef[[i]])
+    r_pred <- t(as.matrix(b$reTrms$Zt[ii, ])) %*%
+      as.matrix(c(as.matrix(ranef[[i]])))
     gamm_pred <- gamm_pred + r_pred
   }
   return(as.matrix(unname(gamm_pred)))
