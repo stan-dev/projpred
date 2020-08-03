@@ -2,41 +2,25 @@
 % Please edit documentation in R/refmodel.R
 \name{get-refmodel}
 \alias{get-refmodel}
-\alias{get_refmodel}
-\alias{get_refmodel.refmodel}
-\alias{get_refmodel.vsel}
-\alias{get_refmodel.cvsel}
-\alias{get_refmodel.stanreg}
-\alias{get_refmodel.brmsfit}
 \title{Get reference model structure}
-\usage{
-get_refmodel(object, ...)
-
-\method{get_refmodel}{refmodel}(object, ...)
-
-\method{get_refmodel}{vsel}(object, ...)
-
-\method{get_refmodel}{cvsel}(object, ...)
-
-\method{get_refmodel}{stanreg}(object, ...)
-
-\method{get_refmodel}{brmsfit}(object, ...)
-}
 \arguments{
-\item{object}{Object based on which the reference model is created. See possible types below.}
+\item{object}{Object based on which the reference model is created. See
+possible types below.}
 
 \item{...}{Arguments passed to the methods.}
 }
 \value{
-An object of type \code{refmodel} (the same type as returned by \link{init_refmodel}) 
-that can be passed to all the functions that
-take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel}, \link{project},
-\link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
+An object of type \code{refmodel} (the same type as returned by
+  \link{init_refmodel}) that can be passed to all the functions that take the
+  reference fit as the first argument, such as \link{varsel},
+  \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict} and
+  \link[=proj-pred]{proj_linpred}.
 }
 \description{
-Generic function that can be used to create and fetch the reference model structure
-for all those objects that have this method. All these implementations are wrappers
-to the \code{\link{init_refmodel}}-function so the returned object has the same type.
+Generic function that can be used to create and fetch the reference model
+structure for all those objects that have this method. All these
+implementations are wrappers to the \code{\link{init_refmodel}}-function so
+the returned object has the same type.
 }
 \examples{
 \donttest{
