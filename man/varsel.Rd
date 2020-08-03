@@ -124,7 +124,7 @@ if (requireNamespace('rstanarm', quietly=TRUE)) {
   data <- data.frame(x,y)
   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
   vs <- varsel(fit)
-  varsel_plot(vs)
+  plot(vs)
 }
 }
 

@@ -7,11 +7,11 @@
 count_terms_in_formula(formula)
 }
 \arguments{
-\item{subformula}{The right hand side of a formula for a valid model
+\item{formula}{The right hand side of a formula for a valid model
 either as a formula object or as a string.}
 }
 \value{
-the number of terms in the subformula.
+the number of terms in the formula.
 }
 \description{
 Utility to count the number of terms in a given formula.
