@@ -189,7 +189,8 @@ get_refmodel.default <- function(object, data, y, formula, ref_predfun,
   }
 
   refmodel <- init_refmodel(object, data, y, formula, family, ref_predfun,
-    div_minimizer, proj_predfun, extract_model_data = extract_model_data,
+    div_minimizer, proj_predfun,
+    extract_model_data = extract_model_data,
     cvfits = cvfits, folds = folds, cvfun = cvfun
   )
   return(refmodel)
@@ -213,14 +214,17 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     data <- object$data
   }
 
-  formula <- update(formula,
+  formula <- update(
+    formula,
     as.formula(paste(response_name, "~ ."))
   )
 
   if (length(response_name) > 1) {
     resp_form <- as.formula(paste("~", response_name[[1]]))
-    default_wrhs <- as.formula(paste("~", response_name[[2]], "+",
-                                     response_name[[1]]))
+    default_wrhs <- as.formula(paste(
+      "~", response_name[[2]], "+",
+      response_name[[1]]
+    ))
   } else {
     resp_form <- as.formula(paste("~", response_name))
     default_wrhs <- NULL
@@ -237,14 +241,14 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     }
 
     if (is.null(wrhs) && !is.null(object) &&
-        !is.null(object$weights) && length(object$weights) != 0) {
-      wrhs <- ~ weights
+      !is.null(object$weights) && length(object$weights) != 0) {
+      wrhs <- ~weights
       newdata <- cbind(newdata, weights = object$weights)
     }
 
     if (is.null(orhs) && !is.null(object) &&
-        !is.null(object$offset) && length(object$offset) != 0) {
-      orhs <- ~ offset
+      !is.null(object$offset) && length(object$offset) != 0) {
+      orhs <- ~offset
       newdata <- cbind(newdata, offset = object$offset)
     }
 
@@ -277,8 +281,8 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     proj_predfun = proj_predfun, folds = folds,
     extract_model_data = extract_model_data, dis = dis,
     cvfun = cvfun, ...
-    )
-    return(refmodel)
+  )
+  return(refmodel)
 }
 
 #' @export
@@ -403,22 +407,34 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # this is a dummy definition for cvfun, but it will lead to standard
   # cross-validation for datafit reference; see cv_varsel and get_kfold
   if (!is.null(cvfun)) {
-    cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+    if (inherits(object, "brmsfit")) {
+      cvfun <- function(folds) {
+        cvres <- brms::kfold(
+          object,
+          K = max(folds),
+          save_fits = TRUE, folds = folds
+        )
+        fits <- cvres$fits[, "fit"]
+        return(fits)
+      }
+    } else {
+      cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+    }
   }
 
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(
-  fit = object, formula, div_minimizer, family, mu, dis, y,
-  loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
-  wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
+    fit = object, formula, div_minimizer, family, mu, dis, y,
+    loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
+    wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
   )
   if (proper_model) {
-  refmodel$ref_predfun <- ref_predfun
-  class(refmodel) <- "refmodel"
+    refmodel$ref_predfun <- ref_predfun
+    class(refmodel) <- "refmodel"
   } else {
-  refmodel$ref_predfun <- ref_predfun_datafit
-  class(refmodel) <- c("datafit", "refmodel")
+    refmodel$ref_predfun <- ref_predfun_datafit
+    class(refmodel) <- c("datafit", "refmodel")
   }
 
   return(refmodel)
