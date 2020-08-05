@@ -262,12 +262,23 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     dis <- NULL
   }
 
+  cvfun <- function(folds) {
+    cvres <- rstanarm::kfold(object,
+      K = max(folds), save_fits = TRUE,
+      folds = folds
+    )
+    fits <- cvres$fits[, "fit"]
+    return(fits)
+  }
+
   refmodel <- init_refmodel(
-    object, data, formula, family, ref_predfun = ref_predfun,
-    div_minimizer = div_minimizer, proj_predfun = proj_predfun, folds = folds,
-    extract_model_data = extract_model_data, dis = dis, ...
-  )
-  return(refmodel)
+    object, data, formula, family,
+    ref_predfun = ref_predfun, div_minimizer = div_minimizer,
+    proj_predfun = proj_predfun, folds = folds,
+    extract_model_data = extract_model_data, dis = dis,
+    cvfun = cvfun, ...
+    )
+    return(refmodel)
 }
 
 #' @export
@@ -391,20 +402,23 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # this is a dummy definition for cvfun, but it will lead to standard
   # cross-validation for datafit reference; see cv_varsel and get_kfold
-  cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+  if (!is.null(cvfun)) {
+    cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+  }
+
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, dis, y,
-    loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
-    wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
+  fit = object, formula, div_minimizer, family, mu, dis, y,
+  loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
+  wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
   )
   if (proper_model) {
-    refmodel$ref_predfun <- ref_predfun
-    class(refmodel) <- "refmodel"
+  refmodel$ref_predfun <- ref_predfun
+  class(refmodel) <- "refmodel"
   } else {
-    refmodel$ref_predfun <- ref_predfun_datafit
-    class(refmodel) <- c("datafit", "refmodel")
+  refmodel$ref_predfun <- ref_predfun_datafit
+  class(refmodel) <- c("datafit", "refmodel")
   }
 
   return(refmodel)
