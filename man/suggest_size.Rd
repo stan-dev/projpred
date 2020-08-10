@@ -38,6 +38,11 @@ information. @param type Either 'upper' (default) or 'lower' determining
 whether the decisions are based on the upper or lower credible bounds. See
 details for more information.}
 
+\item{type}{One or more items from 'mean', 'se', 'lower' and 'upper'
+indicating which of these to compute (mean, standard error, and lower and
+upper credible bounds). The credible bounds are determined so that
+\code{1-alpha} percent of the mass falls between them.}
+
 \item{baseline}{Either 'ref' or 'best' indicating whether the baseline is
 the reference model or the best submodel found. Default is 'ref' when the
 reference model exists, and 'best' otherwise.}

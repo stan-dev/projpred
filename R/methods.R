@@ -19,16 +19,14 @@
 #'   \code{newdata} must either be a dataframe containing all the column names
 #'   as in the original data or a matrix with the same columns at the same
 #'   positions as in the original data.
-#' @param ynew New (test) target variables. If given, then the log predictive
-#'   density for the new observations is computed.
 #' @param offsetnew Offsets for the new observations. By default a vector of
 #'   zeros. By default we take the weights from newdata as in the original
 #'   model. Either NULL or right hand side formula.
 #' @param weightsnew Weights for the new observations. For binomial model,
 #'   corresponds to the number trials per observation. For \code{proj_linpred},
-#'   this argument matters only if \code{ynew} is specified. By default we take
-#'   the weights from newdata as in the original model. Either NULL or right
-#'   hand side formula.
+#'   this argument matters only if \code{newdata} is specified. By default we
+#'   take the weights from newdata as in the original model. Either NULL or
+#'   right hand side formula.
 #' @param transform Should the linear predictor be transformed using the
 #'   inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
 #'   only.
@@ -39,7 +37,7 @@
 #'   values, then results for all specified model sizes are returned. Ignored if
 #'   \code{solution_terms} is specified. By default use the automatically
 #'   suggested model size.
-#' @param draws Number of draws to return from the predictive distribution of
+#' @param ndraws Number of draws to return from the predictive distribution of
 #'   the projection. The default is 1000. For \code{proj_predict} only.
 #' @param seed An optional seed to use for drawing from the projection. For
 #'   \code{proj_predict} only.
@@ -47,9 +45,9 @@
 #'   an object returned by \link{varsel} or \link{cv_varsel}.
 #'
 #' @return If the prediction is done for one submodel only (\code{nterms} has
-#'   length one or \code{solution_terms} is specified) and ynew is unspecified,
-#'   a matrix or vector of predictions (depending on the value of
-#'   \code{integrated}). If \code{ynew} is specified, returns a list with
+#'   length one or \code{solution_terms} is specified) and newdata is
+#'   unspecified, a matrix or vector of predictions (depending on the value of
+#'   \code{integrated}). If \code{newdata} is specified, returns a list with
 #'   elements pred (predictions) and lpd (log predictive densities). If the
 #'   predictions are done for several submodel sizes, returns a list with one
 #'   element for each submodel.
@@ -248,6 +246,13 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
     weightsnew = weightsnew, nterms = nterms, seed = seed,
     proj_predict = proj_predict, ...
   )
+}
+
+#' Plot summary statistics related to variable selection
+#' @inheritParams summary.vsel
+#' @export
+plot <- function(object, ...) {
+  UseMethod("plot", object)
 }
 
 #' Plot summary statistics related to variable selection
@@ -490,6 +495,10 @@ print.vsel <- function(x, digits = 2, ...) {
 ##'   information. @param type Either 'upper' (default) or 'lower' determining
 ##'   whether the decisions are based on the upper or lower credible bounds. See
 ##'   details for more information.
+##' @param type One or more items from 'mean', 'se', 'lower' and 'upper'
+##'   indicating which of these to compute (mean, standard error, and lower and
+##'   upper credible bounds). The credible bounds are determined so that
+##'   \code{1-alpha} percent of the mass falls between them.
 ##' @param baseline Either 'ref' or 'best' indicating whether the baseline is
 ##'   the reference model or the best submodel found. Default is 'ref' when the
 ##'   reference model exists, and 'best' otherwise.
@@ -786,6 +795,11 @@ is.vsel <- function(object) {
   inherits(object, "vsel")
 }
 
+#' Recovers solution path from a variable selection object.
+#'
+#' @param object A vsel object returned by \link[=varsel]{varsel} or
+#'   \link[=cv_varsel]{cv_varsel}.
+#' @return Variable selection solution path
 #' @export
 solution_terms <- function(object) {
   stopifnot(is.vsel(object))

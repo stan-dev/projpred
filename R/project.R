@@ -3,10 +3,12 @@
 #' Perform projection onto submodels of selected sizes or a specified feature
 #' combination.
 #'
+#' @name project
+#'
 #' @param object Either a \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel} or
-#'   \link[=init_refmodel]{init_refmodel}, or an object which can be converted
-#'   to a reference model using \link[=get_refmodel]{get_refmodel}.
+#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+#'   or an object which can be converted to a reference model using
+#'   \link[=get_refmodel]{get_refmodel}.
 #' @param nterms Number of variables in the submodel (the variable combination
 #'   is taken from the \code{varsel} information). If a list, then the
 #'   projection is performed for each model size. Default is the model size
@@ -30,6 +32,7 @@
 #'   regularization, but sometimes for some models the projection can be
 #'   ill-behaved and we need to add some regularization to avoid numerical
 #'   problems.
+#' @param regul Ridgre regularization constant to fit the projections.
 #' @param ... Currently ignored.
 #'
 #' @return A list of submodels (or a single submodel if projection was
@@ -52,7 +55,7 @@
 #'
 #' @examples
 #' \donttest{
-#' Usage with stanreg objects
+#' ### Usage with stanreg objects
 #' fit <- stan_glm(y~x, binomial())
 #' vs <- varsel(fit)
 #'
@@ -66,7 +69,8 @@
 #'
 NULL
 
-##' @export
+#' @rdname project
+#' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     intercept = NULL, seed = NULL, regul = 1e-4, ...) {

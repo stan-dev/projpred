@@ -36,8 +36,15 @@ cv_varsel(object, ...)
 )
 }
 \arguments{
+\item{object}{Same as in \link[=varsel]{varsel}.}
+
 \item{...}{Additional arguments to be passed to the
 \code{get_refmodel}-function.}
+
+\item{refmodel}{A \code{refmodel}-type object created by
+\link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+or an object which can be converted to a reference model using
+\link[=get_refmodel]{get_refmodel}.}
 
 \item{method}{Same as in \link[=varsel]{varsel}.}
 
@@ -103,8 +110,6 @@ introduced by the selectin process).}
 seed.}
 
 \item{search_terms}{User defined list of terms to consider for selection.}
-
-\item{fit}{Same as in \link[=varsel]{varsel}.}
 }
 \value{
 An object of type \code{vsel} that contains information about the

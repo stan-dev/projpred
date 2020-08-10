@@ -7,9 +7,41 @@
 #'
 #' @name get-refmodel
 #'
-#' @param object Object based on which the reference model is created. See
-#'   possible types below.
-#'
+#' @param object Object on which the reference model is created. See possible
+#'   types below.
+#' @param data Data on which the reference model was fitted.
+#' @param y Target response.
+#' @param formula Reference model's lme4-like formula.
+#' @param ref_predfun Prediction function for the linear predictor of the
+#'   reference model.
+#' @param proj_predfun Prediction function for the linear predictor of the
+#'   projections.
+#' @param div_minimizer Maximum likelihood estimator for the underlying
+#'   projection.
+#' @param fetch_data Wrapper function for fetching the data without directly
+#'   accesing it. It should have a prototype fetch_data(data, data_points,
+#'   newdata = NULL), where data_points is a vector of data indices and newdata,
+#'   if not NULL, is a data frame with new data for testing.
+#' @param extract_model_data A function with protopyte
+#'   extract_model_data(object, newdata, wrhs, orhs), where object is a
+#'   reference model fit, newdata is either NULL or a data frame with new
+#'   observations, wrhs is a right hand side formula to recover the weights from
+#'   the data frame and orhs is a right hand side formula to recover the offset
+#'   from the data frame.
+#' @param family A family object that represents the observation model for the
+#'   reference model.
+#' @param wobs A weights vector for the observations in the data. By default is
+#'   taken as a vector of ones.
+#' @param folds Only used for k-fold variable selection. It is a vector of fold
+#'   indices for each data point in data.
+#' @param cvfits Only used for k-fold variable selection. A list of k-fold
+#'   fitted objects on which reference models are created.
+#' @param cvfun Only used for k-fold variable selection. A function that, given
+#'   a folds vector, fits a reference model per fold and returns the fitted
+#'   object.
+#' @param offset A vector of offsets per observation to add to the linear
+#'   predictor.
+#' @param dis A dispersion vector for each observation.
 #' @param ... Arguments passed to the methods.
 #'
 #' @return An object of type \code{refmodel} (the same type as returned by
@@ -149,28 +181,33 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
   return(nlist(y, weights, offset))
 }
 
+#' @rdname get-refmodel
 #' @export
 get_refmodel <- function(object, ...) {
   UseMethod("get_refmodel", object)
 }
 
+#' @rdname get-refmodel
 #' @export
 get_refmodel.refmodel <- function(object, ...) {
   ## if the object is reference model already, then simply return it as is
   object
 }
 
+#' @rdname get-refmodel
 #' @export
 get_refmodel.vsel <- function(object, ...) {
   ## the reference model is stored in vsel object
   object$refmodel
 }
 
+#' @rdname get-refmodel
 #' @export
 get_refmodel.default <- function(object, data, y, formula, ref_predfun,
                                  proj_predfun, div_minimizer, fetch_data,
                                  family = NULL, wobs = NULL, folds = NULL,
-                                 cvfits = NULL, offset = NULL, cvfun = NULL) {
+                                 cvfits = NULL, offset = NULL, cvfun = NULL,
+                                 dis = NULL) {
   fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
     fetch_data(data, obs, newdata)
   }
@@ -189,13 +226,13 @@ get_refmodel.default <- function(object, data, y, formula, ref_predfun,
   }
 
   refmodel <- init_refmodel(object, data, y, formula, family, ref_predfun,
-    div_minimizer, proj_predfun,
-    extract_model_data = extract_model_data,
-    cvfits = cvfits, folds = folds, cvfun = cvfun
+    div_minimizer, proj_predfun, extract_model_data = extract_model_data,
+    cvfits = cvfits, folds = folds, cvfun = cvfun, dis = dis
   )
   return(refmodel)
 }
 
+#' @rdname get-refmodel
 #' @export
 get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
                                  proj_predfun = NULL, div_minimizer = NULL,
@@ -285,6 +322,7 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
   return(refmodel)
 }
 
+#' @rdname get-refmodel
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,

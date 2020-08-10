@@ -1,4 +1,5 @@
 ## taken from gam4
+#' @importFrom methods as cbind2 is
 gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
   ## first simply call `gam.setup'....
   if (is.null(formula$response)) {

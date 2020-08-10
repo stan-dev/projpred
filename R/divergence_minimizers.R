@@ -64,8 +64,8 @@ fit_glm_callback <- function(formula, data, family, weights, ...) {
   }
 }
 
-#' Use mgcv to fit the projection to the posterior draws for additive multilevel
-#' models.
+# Use mgcv to fit the projection to the posterior draws for additive multilevel
+# models.
 additive_mle <- function(formula, data, family, weights = NULL, ...) {
   f <- split_formula_random_gamm4(formula)
   formula <- f$formula
@@ -132,7 +132,7 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
   return(fit)
 }
 
-#' Use lmer to fit the projection to the posterior draws for multilevel models.
+# Use lmer to fit the projection to the posterior draws for multilevel models.
 linear_multilevel_mle <- function(formula, data, family, weights = NULL,
                                   regul = NULL, ...) {
   formula <- validate_response_formula(formula)

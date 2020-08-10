@@ -2,7 +2,14 @@
 #'
 #' Perform cross-validation for the projective variable selection for a
 #' generalized linear model.
-#' @param fit Same as in \link[=varsel]{varsel}.
+#'
+#' @name cv_varsel
+#'
+#' @param object Same as in \link[=varsel]{varsel}.
+#' @param refmodel A \code{refmodel}-type object created by
+#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+#'   or an object which can be converted to a reference model using
+#'   \link[=get_refmodel]{get_refmodel}.
 #' @param method Same as in \link[=varsel]{varsel}.
 #' @param ndraws Number of samples used for selection. Ignored if
 #'   nclusters is provided or if method='L1'.
@@ -205,17 +212,17 @@ cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
   return(vs)
 }
 
-#'
-#' Auxiliary function for parsing the input arguments for specific cv_varsel.
-#' This is similar in spirit to parse_args_varsel, that is, to avoid the main
-#' function to become too long and complicated to maintain.
-#'
-#' @param refmodel Reference model as extracted by get_refmodel
-#' @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
-#'   Default is 'LOO'.
-#' @param K Number of folds in the k-fold cross validation. Default is 5 for
-#'   genuine reference models and 10 for datafits (that is, for penalized
-#'   maximum likelihood estimation).
+#
+# Auxiliary function for parsing the input arguments for specific cv_varsel.
+# This is similar in spirit to parse_args_varsel, that is, to avoid the main
+# function to become too long and complicated to maintain.
+#
+# @param refmodel Reference model as extracted by get_refmodel
+# @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
+#   Default is 'LOO'.
+# @param K Number of folds in the k-fold cross validation. Default is 5 for
+#   genuine reference models and 10 for datafits (that is, for penalized
+#   maximum likelihood estimation).
 parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
                                  nclusters = NULL,
                                  nclusters_pred = NULL) {

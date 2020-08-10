@@ -7,6 +7,10 @@
 #'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
 #'   or an object which can be converted to a reference model using
 #'   \link[=get_refmodel]{get_refmodel}.
+#' @param refmodel A \code{refmodel}-type object created by
+#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+#'   or an object which can be converted to a reference model using
+#'   \link[=get_refmodel]{get_refmodel}.
 #' @param d_test A test dataset, which is used to evaluate model performance. If
 #'   not provided, training data is used. Currently this argument is for
 #'   internal use only.
@@ -55,6 +59,9 @@
 #'   need for regularization, but sometimes for some models the projection can
 #'   be ill-behaved and we need to add some regularization to avoid numerical
 #'   problems.
+#' @param search_terms A custom list of terms to evaluate for variable
+#'   selection. By default considers all the terms in the reference model's
+#'   formula.
 #' @param ... Additional arguments to be passed to the
 #'   \code{get_refmodel}-function.
 #'

@@ -46,7 +46,7 @@
   }
 }
 
-#' copied from summary_funs to remove duplicated code
+# copied from summary_funs to remove duplicated code
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
                             nfeat_baseline = NULL) {
   ##

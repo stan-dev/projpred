@@ -40,6 +40,11 @@ or an object which can be converted to a reference model using
 \item{...}{Additional arguments to be passed to the
 \code{get_refmodel}-function.}
 
+\item{refmodel}{A \code{refmodel}-type object created by
+\link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+or an object which can be converted to a reference model using
+\link[=get_refmodel]{get_refmodel}.}
+
 \item{d_test}{A test dataset, which is used to evaluate model performance. If
 not provided, training data is used. Currently this argument is for
 internal use only.}
@@ -102,6 +107,10 @@ variables. Zero means that those variables have no cost and will therefore
 be selected first, whereas Inf means those variables will never be
 selected. Currently works only if method == 'L1'. By default 1 for each
 variable.}
+
+\item{search_terms}{A custom list of terms to evaluate for variable
+selection. By default considers all the terms in the reference model's
+formula.}
 }
 \value{
 An object of type \code{vsel} that contains information about the

@@ -43,7 +43,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
               sub_fits = submodels))
 }
 
-#' copied over from search until we resolve the TODO below
+# copied over from search until we resolve the TODO below
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
                                 penalty, opt) {
 

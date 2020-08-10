@@ -19,6 +19,8 @@ Description:
 Depends:
     R (>= 3.5.0)
 Imports:
+    methods,
+    dplyr,
     loo (>= 2.0.0), 
     lme4,
     optimx,

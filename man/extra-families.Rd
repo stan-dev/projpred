@@ -12,8 +12,6 @@ Student_t(link = "identity", nu = 3)
 \link[=family]{family}-objects.}
 
 \item{nu}{Degrees of freedom for the Student-t distribution.}
-
-\item{...}{Further arguments, currently ignored.}
 }
 \value{
 A family object analogous to those described in

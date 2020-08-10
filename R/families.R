@@ -7,7 +7,6 @@
 #' @param link Specification of the link function, as for the default
 #'   \link[=family]{family}-objects.
 #' @param nu Degrees of freedom for the Student-t distribution.
-#' @param ... Further arguments, currently ignored.
 #'
 #' @return A family object analogous to those described in
 #'   \link[=family]{family}
