@@ -5,7 +5,7 @@
 \title{Plot summary statistics related to variable selection}
 \usage{
 \method{plot}{vsel}(
-  object,
+  x,
   nterms_max = NULL,
   stats = "elpd",
   deltas = FALSE,
@@ -15,9 +15,6 @@
 )
 }
 \arguments{
-\item{object}{The object returned by \link[=varsel]{varsel} or
-\link[=cv_varsel]{cv_varsel}.}
-
 \item{nterms_max}{Maximum submodel size for which the statistics are
 calculated. For \code{plot.vsel} it must be at least 1.}
 

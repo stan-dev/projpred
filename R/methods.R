@@ -249,13 +249,6 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
 }
 
 #' Plot summary statistics related to variable selection
-#' @inheritParams summary.vsel
-#' @export
-plot <- function(object, ...) {
-  UseMethod("plot", object)
-}
-
-#' Plot summary statistics related to variable selection
 #'
 #' @inheritParams summary.vsel 
 #'
@@ -269,9 +262,10 @@ plot <- function(object, ...) {
 #'
 #' @method plot vsel
 #' @export
-plot.vsel <- function(object, nterms_max = NULL, stats = "elpd",
+plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
                       deltas = FALSE, alpha = 0.32, baseline = NULL,
                       ...) {
+  object <- x
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
