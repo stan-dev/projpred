@@ -55,16 +55,23 @@
 #'
 #' @examples
 #' \donttest{
-#' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
-#' vs <- varsel(fit)
-#'
-#' ## project onto the best model with 4 variables
-#' proj4 <- project(vs, nterms = 4)
-#'
-#' ## project onto an arbitrary variable combination
-#' ## (variable indices 3, 4 and 8)
-#' proj <- project(fit, solution_terms=c(3,4,8))
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   
+#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   vs <- varsel(fit)
+#'   
+#'   # project onto the best model with 4 variables
+#'   proj4 <- project(vs, nterms = 4)
+#'   
+#'   # project onto an arbitrary variable combination (variable indices 1, 3 and 5)
+#'   proj <- project(fit, solution_terms=c(1,3,5))
+#' }
 #' }
 #'
 NULL

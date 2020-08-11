@@ -52,17 +52,19 @@
 #'
 #' @examples
 #' \donttest{
-#' ## Usage with stanreg objects
-#' dat <- data.frame(y = rnorm(100), x = rnorm(100))
-#' fit <- stan_glm(y ~ x, family = gaussian(), data = dat)
-#' ref <- get_refmodel(fit)
-#' print(class(ref))
-#'
-#' ## variable selection, use the already constructed reference model
-#' vs <- varsel(ref)
-#' ## this will first construct the reference model and then execute
-#' ## exactly the same way as the previous command (the result is identical)
-#' vs <- varsel(fit)
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   dat <- data.frame(y = rnorm(100), x = rnorm(100))
+#'   fit <- rstanarm::stan_glm(y ~ x, family = gaussian(), data = dat)
+#'   ref <- get_refmodel(fit)
+#'   print(class(ref))
+#' 
+#'   # variable selection, use the already constructed reference model
+#'   vs <- varsel(ref) 
+#'   # this will first construct the reference model and then execute 
+#'   # exactly the same way as the previous command (the result is identical)
+#'   vs <- varsel(fit) 
+#' }
 #' }
 #'
 NULL
@@ -197,7 +199,7 @@ get_refmodel.refmodel <- function(object, ...) {
 #' @rdname get-refmodel
 #' @export
 get_refmodel.vsel <- function(object, ...) {
-  ## the reference model is stored in vsel object
+  # the reference model is stored in vsel-object
   object$refmodel
 }
 

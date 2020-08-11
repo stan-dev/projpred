@@ -11,7 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 
-<meta name="date" content="2020-05-13" />
+<meta name="date" content="2020-06-02" />
 
 <title>projpred Quick Start</title>
 
@@ -313,7 +313,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 <h1 class="title toc-ignore">projpred Quick Start</h1>
-<h4 class="date">2020-05-13</h4>
+<h4 class="date">2020-06-02</h4>
 
 
 
@@ -322,8 +322,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 %\VignetteIndexEntry{projpred quickstart guide (formula interface)}
 \usepackage[utf8](inputenc)
 -->
-<p>This vignette shows how to use the main functionalities of the <code>projpred</code>-package, which implements the projective variable selection (Piironen et al., 2018) for (hierarchical) generalized linear models. The package is compatible with many models in <code>rstanarm</code> and <code>brms</code> but also other reference models could be used (see section Custom reference models). The main methods implemented in the package are described in Piironen et al. (2018). Performance for generalized linear models in comparison to many other methods is evaluated in Piironen and Vehtari (2017a).</p>
-<p>The difference with respect to the standard quickstart guide is that in this vignette we are using a more general API that works with <code>formula</code> instances, so that the inner implementation does not depend on any specific structure.</p>
+<p>This vignette shows how to use the main functionalities of the <code>projpred</code>-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models. The package is compatible with <code>rstanarm</code> but also other reference models could be used (see section Custom reference models). The methods implemented in the package are described in detail in Piironen et al. (2020) and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).</p>
 <div id="gaussian-example" class="section level2">
 <h2>Gaussian example</h2>
 <p>Load the necessary packages. If the sampling takes more than 10 seconds and multiple cores are available, uncomment the line setting <code>mc.cores</code> to set the number of cores used (this is commented out as the sampling in the example is fast and to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).</p>
