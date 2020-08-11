@@ -265,9 +265,11 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
 #' @examples
 #' \donttest{
 #' ### Usage with stanreg objects
-#' fit <- stan_glm(y ~ x, binomial())
-#' vs <- cv_varsel(fit)
-#' plot(vs)
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   fit <- stan_glm(y ~ x, binomial())
+#'   vs <- cv_varsel(fit)
+#'   plot(vs)
+#' }
 #' }
 #'
 #' @method plot vsel
