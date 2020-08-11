@@ -62,7 +62,7 @@
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
 #'   
-#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
 #'   vs <- varsel(fit)
 #'   
 #'   # compute predictions with 4 variables at the training points
@@ -404,7 +404,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
 #'   
-#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
 #'   varsel_plot(vs)
 #'   
@@ -563,7 +563,7 @@ suggest_size <- function(object, ...) {
 #'   x <- matrix(rnorm(n*d), nrow=n)
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
-#'   fit <- rstanarm::stan_glm(y ~ x1 + x2 + x3 + x4 + x5, gaussian(),
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
 #'            data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
 #'   suggest_size(vs)
