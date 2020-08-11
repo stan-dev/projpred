@@ -6,10 +6,6 @@
 #' @name cv_varsel
 #'
 #' @param object Same as in \link[=varsel]{varsel}.
-#' @param refmodel A \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
-#'   or an object which can be converted to a reference model using
-#'   \link[=get_refmodel]{get_refmodel}.
 #' @param method Same as in \link[=varsel]{varsel}.
 #' @param ndraws Number of samples used for selection. Ignored if
 #'   nclusters is provided or if method='L1'.
@@ -85,7 +81,7 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
-cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
+cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
                                ndraws = NULL, nclusters = NULL,
                                ndraws_pred = NULL, nclusters_pred = NULL,
                                cv_search = TRUE, nterms_max = NULL,
@@ -94,6 +90,7 @@ cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
                                nlambda = 150, thresh = 1e-6, regul = 1e-4,
                                validate_search = TRUE, seed = NULL,
                                search_terms = NULL, ...) {
+  refmodel <- object
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,

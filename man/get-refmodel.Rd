@@ -31,7 +31,8 @@ get_refmodel(object, ...)
   cvfits = NULL,
   offset = NULL,
   cvfun = NULL,
-  dis = NULL
+  dis = NULL,
+  ...
 )
 
 \method{get_refmodel}{stanreg}(

@@ -7,10 +7,6 @@
 #'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
 #'   or an object which can be converted to a reference model using
 #'   \link[=get_refmodel]{get_refmodel}.
-#' @param refmodel A \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
-#'   or an object which can be converted to a reference model using
-#'   \link[=get_refmodel]{get_refmodel}.
 #' @param d_test A test dataset, which is used to evaluate model performance. If
 #'   not provided, training data is used. Currently this argument is for
 #'   internal use only.
@@ -92,13 +88,14 @@ varsel.default <- function(object, ...) {
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(refmodel, d_test = NULL, method = NULL,
+varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
                             nclusters_pred = NULL, cv_search = TRUE,
                             nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, ...) {
+  refmodel <- object
   family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values

@@ -11,7 +11,7 @@ cv_varsel(object, ...)
 \method{cv_varsel}{default}(object, ...)
 
 \method{cv_varsel}{refmodel}(
-  refmodel,
+  object,
   method = NULL,
   cv_method = NULL,
   ndraws = NULL,
@@ -40,11 +40,6 @@ cv_varsel(object, ...)
 
 \item{...}{Additional arguments to be passed to the
 \code{get_refmodel}-function.}
-
-\item{refmodel}{A \code{refmodel}-type object created by
-\link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
-or an object which can be converted to a reference model using
-\link[=get_refmodel]{get_refmodel}.}
 
 \item{method}{Same as in \link[=varsel]{varsel}.}
 

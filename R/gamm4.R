@@ -1,4 +1,9 @@
+`%:::%` <- function(pkg, fun) {
+  get(fun, envir = asNamespace(pkg), inherits = FALSE)
+}
+
 ## taken from gam4
+#' @noRd
 #' @importFrom methods as cbind2 is
 gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
   ## first simply call `gam.setup'....
@@ -6,7 +11,9 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
     formula$response <- 1
     pterms$response <- 1
   }
-  G <- mgcv:::gam.setup(formula, pterms,
+  gam.setup <- `mgcv` %:::% `gam.setup`
+
+  G <- gam.setup(formula, pterms,
     data = data, knots = knots, sp = NULL, min.sp = NULL,
     H = NULL, absorb.cons = TRUE, sparse.cons = 0,
     gamm.call = TRUE
@@ -47,8 +54,8 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
         n.lev <- length(flev)
         for (k in 1:n.lev) {
           G$Xf <- cbind2(G$Xf, as(
-              sm$X * as.numeric(sm$fac == flev[k]),
-              "dgCMatrix"
+            sm$X * as.numeric(sm$fac == flev[k]),
+            "dgCMatrix"
           ))
         }
       } else {
@@ -111,6 +118,7 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
 
 ## refactored from gamm4 to return the model matrix for generating predictions
 ## with fit$mer and newdata
+#' @noRd
 model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
                                family = gaussian()) {
   if (!is.null(random)) {
@@ -155,7 +163,9 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   dl <- eval(inp, data, parent.frame())
   names(dl) <- vars ## list of all variables needed
   ## summarize the input data
-  var.summary <- mgcv:::variable.summary(gp$pf, dl, nrow(mf))
+
+  variable.summary <- `mgcv` %:::% `variable.summary`
+  var.summary <- variable.summary(gp$pf, dl, nrow(mf))
 
   ## lmer offset handling work around...
   ## variables not in mf raw -- can cause lmer problem
@@ -184,7 +194,7 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   Xname <- mgcv::new.name("X", names(mf))
   eval(parse(text = paste("mf$", Xname, "<-G$X", sep = "")))
 
-  offset.name <- attr(mf,"names")[attr(attr(mf,"terms"),"offset")]
+  offset.name <- attr(mf, "names")[attr(attr(mf, "terms"), "offset")]
   lme4.formula <- paste(yname, "~", Xname, "-1")
   if (length(offset.name)) {
     lme4.formula <- paste(lme4.formula, "+", offset.name)
@@ -211,11 +221,17 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
     )
   }
   lme4.formula <- as.formula(lme4.formula)
-  if (family$family == "gaussian" && family$link == "identity")
-    linear <- TRUE else linear <- FALSE
+  if (family$family == "gaussian" && family$link == "identity") {
+    linear <- TRUE
+  } else {
+    linear <- FALSE
+  }
 
-  control <- if (linear) lme4::lmerControl()
-             else lme4::glmerControl()
+  control <- if (linear) {
+    lme4::lmerControl()
+  } else {
+    lme4::glmerControl()
+  }
 
   ## NOTE: further arguments should be passed here...
   b <- if (linear) {

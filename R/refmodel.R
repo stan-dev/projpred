@@ -207,7 +207,7 @@ get_refmodel.default <- function(object, data, y, formula, ref_predfun,
                                  proj_predfun, div_minimizer, fetch_data,
                                  family = NULL, wobs = NULL, folds = NULL,
                                  cvfits = NULL, offset = NULL, cvfun = NULL,
-                                 dis = NULL) {
+                                 dis = NULL, ...) {
   fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
     fetch_data(data, obs, newdata)
   }
@@ -226,7 +226,8 @@ get_refmodel.default <- function(object, data, y, formula, ref_predfun,
   }
 
   refmodel <- init_refmodel(object, data, y, formula, family, ref_predfun,
-    div_minimizer, proj_predfun, extract_model_data = extract_model_data,
+    div_minimizer, proj_predfun,
+    extract_model_data = extract_model_data,
     cvfits = cvfits, folds = folds, cvfun = cvfun, dis = dis
   )
   return(refmodel)
