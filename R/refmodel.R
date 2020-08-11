@@ -326,6 +326,7 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 }
 
 #' @rdname get-refmodel
+#' @importFrom rstantools posterior_linpred
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,

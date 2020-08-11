@@ -55,7 +55,7 @@ Plot summary statistics related to variable selection
 \donttest{
 ### Usage with stanreg objects
 if (requireNamespace('rstanarm', quietly=TRUE)) {
-  fit <- stan_glm(y ~ x, binomial())
+  fit <- rstanarm::stan_glm(y ~ x, binomial())
   vs <- cv_varsel(fit)
   plot(vs)
 }

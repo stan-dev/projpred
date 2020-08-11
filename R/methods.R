@@ -266,7 +266,7 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
 #' \donttest{
 #' ### Usage with stanreg objects
 #' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   fit <- stan_glm(y ~ x, binomial())
+#'   fit <- rstanarm::stan_glm(y ~ x, binomial())
 #'   vs <- cv_varsel(fit)
 #'   plot(vs)
 #' }
@@ -491,11 +491,11 @@ print.vsel <- function(x, digits = 2, ...) {
   return(invisible(stats))
 }
 
+#' @rdname suggest_size.vsel
 #' @export
 suggest_size <- function(object, ...) {
   UseMethod("suggest_size")
 }
-
 
 #' Suggest model size 
 #'

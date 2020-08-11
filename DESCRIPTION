@@ -22,6 +22,7 @@ Imports:
     methods,
     dplyr,
     loo (>= 2.0.0), 
+    rstantools (>= 2.0.0),
     lme4,
     optimx,
     ggplot2, 
@@ -37,7 +38,7 @@ LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
 LazyData: TRUE
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Suggests:
     rstanarm, 
     brms,

@@ -524,7 +524,7 @@ stop2 <- function(...) {
 
 # combine deparse lines into one string
 deparse_combine <- function(x, max_char = NULL) {
-  out <- collapse(deparse(x))
+  out <- paste0(deparse(x), collapse = "")
   if (isTRUE(max_char > 0)) {
     out <- substr(out, 1L, max_char)
   }
