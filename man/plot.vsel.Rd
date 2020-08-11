@@ -15,6 +15,9 @@
 )
 }
 \arguments{
+\item{x}{The object returned by \link[=varsel]{varsel} or
+\link[=cv_varsel]{cv_varsel}.}
+
 \item{nterms_max}{Maximum submodel size for which the statistics are
 calculated. For \code{plot.vsel} it must be at least 1.}
 
@@ -51,9 +54,11 @@ Plot summary statistics related to variable selection
 \examples{
 \donttest{
 ### Usage with stanreg objects
-fit <- stan_glm(y ~ x, binomial())
-vs <- cv_varsel(fit)
-plot(vs)
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  fit <- stan_glm(y ~ x, binomial())
+  vs <- cv_varsel(fit)
+  plot(vs)
+}
 }
 
 }

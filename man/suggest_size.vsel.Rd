@@ -89,8 +89,8 @@ if (requireNamespace('rstanarm', quietly=TRUE)) {
   x <- matrix(rnorm(n*d), nrow=n)
   y <- x[,1] + 0.5*rnorm(n)
   data <- data.frame(x,y)
-  
-  fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+  fit <- rstanarm::stan_glm(y ~ x1 + x2 + x3 + x4 + x5, gaussian(),
+           data=data, chains=2, iter=500)
   vs <- cv_varsel(fit)
   suggest_size(vs)
 }

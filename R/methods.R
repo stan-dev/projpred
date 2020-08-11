@@ -491,74 +491,7 @@ print.vsel <- function(x, digits = 2, ...) {
   return(invisible(stats))
 }
 
-##' Suggest model size
-##'
-##' This function can be used for suggesting an appropriate model size based on
-##' a certain default rule. Notice that the decision rules are heuristic and
-##' should be interpreted as guidelines. It is recommended that the user studies
-##' the results via \code{plot.vsel} and/or \code{summary.vsel} and makes the
-##' final decision based on what is most appropriate for the given problem.
-##'
-##' @param object The object returned by \link[=varsel]{varsel} or
-##' \link[=cv_varsel]{cv_varsel}.
-##' @param stat Statistic used for the decision. Default is 'elpd'. See
-##'   \code{summary.vsel} for other possible choices.
-##' @param alpha A number indicating the desired coverage of the credible
-##'   intervals based on which the decision is made. E.g. \code{alpha=0.32}
-##'   corresponds to 68\% probability mass within the intervals (one standard
-##'   error intervals). See details for more information.
-##' @param pct Number indicating the relative proportion between baseline model
-##'   and null model utilities one is willing to sacrifice. See details for more
-##'   information. @param type Either 'upper' (default) or 'lower' determining
-##'   whether the decisions are based on the upper or lower credible bounds. See
-##'   details for more information.
-##' @param type One or more items from 'mean', 'se', 'lower' and 'upper'
-##'   indicating which of these to compute (mean, standard error, and lower and
-##'   upper credible bounds). The credible bounds are determined so that
-##'   \code{1-alpha} percent of the mass falls between them.
-##' @param baseline Either 'ref' or 'best' indicating whether the baseline is
-##'   the reference model or the best submodel found. Default is 'ref' when the
-##'   reference model exists, and 'best' otherwise.
-##' @param warnings Whether to give warnings if automatic suggestion fails,
-##'   mainly for internal use. Default is TRUE, and usually no reason to set to
-##'   FALSE.
-##' @param ... Currently ignored.
-##'
-##' @details The suggested model size is the smallest model for which either the
-##'   lower or upper (depending on argument \code{type}) credible bound of the
-##'   submodel utility \eqn{u_k} with significance level \code{alpha} falls
-##'   above \deqn{u_base - pct*(u_base - u_0)} Here \eqn{u_base} denotes the
-##'   utility for the baseline model and \eqn{u_0} the null model utility. The
-##'   baseline is either the reference model or the best submodel found (see
-##'   argument \code{baseline}). The lower and upper bounds are defined to
-##'   contain the submodel utility with probability 1-alpha (each tail has mass
-##'   alpha/2).
-##'
-##' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
-##'   means that we select the smallest model for which the upper tail exceeds
-##'   the baseline model level, that is, which is better than the baseline model
-##'   with probability 0.16 (and consequently, worse with probability 0.84). In
-##'   other words, the estimated difference between the baseline model and
-##'   submodel utilities is at most one standard error away from zero, so the
-##'   two utilities are considered to be close.
-##'
-##' NOTE: Loss statistics like RMSE and MSE are converted to utilities by
-##'   multiplying them by -1, so call such as \code{suggest_size(object,
-##'   stat='rmse', type='upper')} should be interpreted as finding the smallest
-##'   model whose upper credible bound of the \emph{negative} RMSE exceeds the
-##'   cutoff level (or equivalently has the lower credible bound of RMSE below
-##'   the cutoff level). This is done to make the interpretation of the argument
-##'   \code{type} the same regardless of argument \code{stat}.
-##'
-##' @examples
-##' \donttest{
-##' ### Usage with stanreg objects
-##' fit <- stan_glm(y~x, binomial())
-##' vs <- cv_varsel(fit)
-##' suggest_size(vs)
-##' }
-##' 
-##' @export
+#' @export
 suggest_size <- function(object, ...) {
   UseMethod("suggest_size")
 }
@@ -630,14 +563,13 @@ suggest_size <- function(object, ...) {
 #'   x <- matrix(rnorm(n*d), nrow=n)
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
-#'   
-#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   fit <- rstanarm::stan_glm(y ~ x1 + x2 + x3 + x4 + x5, gaussian(),
+#'            data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
 #'   suggest_size(vs)
 #' }
 #' }
 #' 
-
 #' @export
 suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
                               type = "upper", baseline = NULL, warnings = TRUE,
