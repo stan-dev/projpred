@@ -258,7 +258,9 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
 
 #' Plot summary statistics related to variable selection
 #'
-#' @inheritParams summary.vsel 
+#' @inheritParams summary.vsel
+#' @param x The object returned by \link[=varsel]{varsel} or
+#'   \link[=cv_varsel]{cv_varsel}.
 #'
 #' @examples
 #' \donttest{
