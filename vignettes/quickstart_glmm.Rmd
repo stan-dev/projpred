@@ -17,7 +17,8 @@ params:
 This vignette shows how to use `projpred` to perform variable selection in the
 context of Generalized Linear Multilevel Models (GLMMs). For a general overview
 of the package we refer the reader to the quickstart vignette. The method used
-here is described in the latest preprint (Catalina et al. 2020, arxiv link).
+here is described in the latest preprint (by Catalina et al. (2020), arxiv
+link).
 
 ## Gaussian example
 
@@ -65,18 +66,18 @@ Since we have repeated measurements over subjects at multiple time points, the
 effect of `age` is allowed to vary over subjects. To run `projpred` on this
 model we can first run a simple variable selection with the full dataset. This
 approach may be overconfident in some cases and therefore in general cases it is
-recommended to run a cross validated variable selection.
- 
+recommended to run a cross validated variable selection instead.
+    
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 vs <- varsel(fit)
 ```
 
 Because our model includes group effects, the only available search method is
-forward search, which is a bit slower than L_1 search but is quite accurate.
-Beware that the underlying projection fitting method could return some warnings
-in cases where the optimization may not have converged properly. This is more
-common in the case of generalized models (non-Gaussian families). We print the
-list of the variables ordered by relevance:
+forward search, which is a bit slower than L_1 search but tends to find smaller
+models. Beware that the underlying projection fitting method could return some
+warnings in cases where the optimization may not have converged properly. This
+is more common in the case of generalized models (non-Gaussian families). We
+print the list of the variables ordered by relevance:
 
 ```{r, message=FALSE, warning=FALSE}
 solution_terms(vs) # selection order of the variables
@@ -148,7 +149,7 @@ qplot(as.vector(y1_rep), bins = 25) +
 
 ## Poisson example
 
-In this case we will download count data from the web,
+As previously, we first load the data,
 
 ```{r}
 data_pois <- read.table("data_pois.csv", header = TRUE)
@@ -160,8 +161,9 @@ many species are analyzed at the same time. The model we fit here is borrowed
 from *Modern Phylogenetic Comparative Methods and the application in
 Evolutionary Biology* (de Villemeruil & Nakagawa, 2014). The necessary data can
 also be downloaded from the corresponding website
-(http://www.mpcm-evolution.com/). The model is taken from the *Estimating
-Phylogenetic Multilevel Models with brms* vignette of the brms package
+(http://www.mpcm-evolution.com/). The specific formula is taken from the
+*Estimating Phylogenetic Multilevel Models with brms* vignette of the brms
+package
 (https://cran.r-project.org/web/packages/brms/vignettes/brms_phylogenetics.html).
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE, results="hide"}
@@ -180,11 +182,11 @@ vs <- varsel(fit)
 ```
 
 Because our model includes group effects, the only available search method is
-forward search, which is a bit slower than L_1 search but is quite accurate.
-Beware that the underlying projection fitting method could return some warnings
-in cases where the optimization may not have converged properly. This is more
-common in the case of generalized models (non-Gaussian families). We print the
-list of the variables ordered by relevance:
+forward search, which is a bit slower than L_1 search but tends to find smaller
+models. Beware that the underlying projection fitting method could return some
+warnings in cases where the optimization may not have converged properly. This
+is more common in the case of generalized models (non-Gaussian families). We
+print the list of the variables ordered by relevance:
 
 ```{r, message=FALSE, warning=FALSE}
 solution_terms(vs) # selection order of the variables
@@ -243,7 +245,7 @@ ggplot() +
 
 For both of the previous cases, running variable selection with the full data
 was actually enough because they were pretty simple. In this section we work on
-a slightly more complex data set.
+a slightly more difficult data set.
 
 We can load the data from the popular `lme4` package:
 
@@ -308,11 +310,11 @@ different reasons that can explain this behaviour:
    number of draws for the prediction `ndraws_pred` should also help.
 3. Given that `varsel` computes the expected predictive performance of the
    reference model from the in-sample mean, it may sometimes result in
-   overconfident results. Running `cv_varsel` with LOO cross validation computes
+   overconfident results. Running `cv_varsel` with LOO cross-validation computes
    the predictive performance by taking PSIS-LOO weights into account, usually
    reporting a more realistic ELPD.
 
-By default, `cv_varsel` will run LOO cross validation, and will try to run a
+By default, `cv_varsel` will run LOO cross-validation, and will try to run a
 full variable selection for every data point. Given the large computational cost
 of running more draws, we'll first try running `cv_varsel` without validating
 the search. We can omit this behaviour by fitting the model once and computing

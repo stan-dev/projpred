@@ -32,8 +32,8 @@
 #'   only.
 #' @param integrated If \code{TRUE}, the output is averaged over the parameters.
 #'   Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param nterms Number of variables in the submodel (the variable combination
-#'   is taken from the variable selection information). If a vector with several
+#' @param nterms Number of terms in the submodel (the variable combination is
+#'   taken from the variable selection information). If a vector with several
 #'   values, then results for all specified model sizes are returned. Ignored if
 #'   \code{solution_terms} is specified. By default use the automatically
 #'   suggested model size.
@@ -494,7 +494,7 @@ print.vsel <- function(x, digits = 2, ...) {
 #' @rdname suggest_size.vsel
 #' @export
 suggest_size <- function(object, ...) {
-  UseMethod("suggest_size")
+    UseMethod("suggest_size")
 }
 
 #' Suggest model size 
@@ -507,7 +507,7 @@ suggest_size <- function(object, ...) {
 #' problem.
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
-#' \link[=cv_varsel]{cv_varsel}.
+#'   \link[=cv_varsel]{cv_varsel}.
 #' @param stat Statistic used for the decision. Default is 'elpd'. See
 #'   \code{varsel_stats} for other possible choices.
 #' @param alpha A number indicating the desired coverage of the credible
@@ -524,8 +524,8 @@ suggest_size <- function(object, ...) {
 #'   reference model or the best submodel found. Default is 'ref' when the
 #'   reference model exists, and 'best' otherwise.
 #' @param warnings Whether to give warnings if automatic suggestion fails,
-#'   mainly for internal use. Default is TRUE, and usually no reason to set to
-#'   FALSE.
+#'   mainly for internal use. Default is TRUE, and usually there is no reason to
+#'   set to FALSE.
 #' @param ... Currently ignored.
 #' 
 #' @details The suggested model size is the smallest model for which either the
@@ -732,7 +732,7 @@ as.matrix.projection <- function(x, ...) {
 ##' @name cv-indices
 ##'
 ##' @param n Number of data points.
-##' @param k Number of folds. Must be at least 2 and not exceed \code{n}.
+##' @param K Number of folds. Must be at least 2 and not exceed \code{n}.
 ##' @param out Format of the output, either 'foldwise' (default) or 'indices'.
 ##'   See below for details.
 ##' @param seed Random seed so that the same division could be obtained again if
@@ -752,7 +752,7 @@ as.matrix.projection <- function(x, ...) {
 ##' ### compute sample means within each fold
 ##' n <- 100
 ##' y <- rnorm(n)
-##' cv <- cv_ids(n, k=5)
+##' cv <- cv_ids(n, K=5)
 ##' cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
 ##' }
 ##'
@@ -760,8 +760,8 @@ NULL
 
 ##' @rdname cv-indices
 ##' @export
-cvfolds <- function(n, k, seed = NULL) {
-  .validate_num_folds(k, n)
+cvfolds <- function(n, K, seed = NULL) {
+  .validate_num_folds(K, n)
 
   ## set random seed but ensure the old RNG state is restored on exit
   if (exists(".Random.seed")) {
@@ -771,7 +771,7 @@ cvfolds <- function(n, k, seed = NULL) {
   set.seed(seed)
 
   ## create and shuffle the indices
-  folds <- rep_len(1:k, length.out = n)
+  folds <- rep_len(seq_len(K), length.out = n)
   folds <- sample(folds, n, replace = FALSE)
 
   return(folds)
@@ -779,8 +779,8 @@ cvfolds <- function(n, k, seed = NULL) {
 
 ##' @rdname cv-indices
 ##' @export
-cv_ids <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
-  .validate_num_folds(k, n)
+cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
+  .validate_num_folds(K, n)
   out <- match.arg(out)
 
   # set random seed but ensure the old RNG state is restored on exit
@@ -791,21 +791,21 @@ cv_ids <- function(n, k, out = c("foldwise", "indices"), seed = NULL) {
   set.seed(seed)
 
   # shuffle the indices
-  ind <- sample(1:n, n, replace = FALSE)
+  ind <- sample(seq_len(n), n, replace = FALSE)
 
   if (out == "foldwise") {
-    cv <- lapply(1:k, function(i) {
-      ts <- sort(ind[seq(i, n, k)]) # test set
-      tr <- setdiff(1:n, ts) # training set
+    cv <- lapply(seq_len(K), function(i) {
+      ts <- sort(ind[seq(i, n, K)]) # test set
+      tr <- setdiff(seq_len(n), ts) # training set
       list(tr = tr, ts = ts)
     })
   } else if (out == "indices") {
     cv <- list()
     cv$tr <- list()
     cv$ts <- list()
-    for (i in 1:k) {
-      ts <- sort(ind[seq(i, n, k)]) # test set
-      tr <- setdiff(1:n, ts) # training set
+    for (i in seq_len(K)) {
+      ts <- sort(ind[seq(i, n, K)]) # test set
+      tr <- setdiff(seq_len(n), ts) # training set
       cv$tr[[i]] <- tr
       cv$ts[[i]] <- ts
     }

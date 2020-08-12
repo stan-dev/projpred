@@ -64,7 +64,7 @@ Thanks to its general interface, `projpred` can be applied to a very wide set of
   - Prediction function for the reference model that outputs the linear predictor. 
   - Function to fetch data from the original dataset.
 
-For most models, `projpred` is able to generate these itself without any user input more than the reference model object. Nonetheless, for custom or not supported models, the user can provide those himself (more details in the documentation about reference models).
+For most models, `projpred` is able to generate these itself without any user input more than the reference model object. Nonetheless, for custom or not supported models, the user can provide those themself (more details in the documentation about reference models).
 
 <!-- ```{r, results='hide', messages=FALSE, warning=FALSE} -->
 <!-- ref_predfun <- function(fit, newdata=NULL) -->
@@ -103,8 +103,8 @@ Next we construct the reference model structure `refmodel`.
 refmodel <- get_refmodel(fit)
 ```
 
-The function `cv_varsel` runs a cross-validated variable selection, and returns an object that contains the relevant information about the procedure, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
-For a simple linear model, the fastest method is to use L1--search, that is the default option. 
+The function `cv_varsel` runs a cross-validated variable selection, and returns an object that contains the relevant information about the procedure, such as the solution path of the terms. The search heuristic can be specified by the keyword `method`.
+For a simple linear model (without multilevel structure), the fastest method is to use L1--search. 
 
 ```{r, results='hide', messages=FALSE, warnings=FALSE}
 vs <- cv_varsel(refmodel)

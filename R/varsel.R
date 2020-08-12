@@ -20,12 +20,12 @@
 #'   solution from the' L1-penalized projection. This option is relevant only if
 #'   \code{method}='L1'. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param ndraws Number of posterior draws used in the variable
-#'   selection. Cannot be larger than the number of draws in the reference
-#'   model. Ignored if nclusters is set.
+#' @param ndraws Number of posterior draws used in the variable selection.
+#'   Cannot be larger than the number of draws in the reference model. Ignored
+#'   if nclusters is set.
 #' @param nclusters Number of clusters to use in the clustered projection.
 #'   Overrides the \code{ndraws} argument. Defaults to 1.
-#' @param ndraws_pred Number of samples used for prediction (after
+#' @param ndraws_pred Number of posterior draws used for prediction (after
 #'   selection). Ignored if nclusters_pred is given. Note that setting less
 #'   draws or clusters than posterior draws in the reference model may result in
 #'   slightly inaccurate projection performance, although increasing this
@@ -83,20 +83,20 @@
 #'
 #' @export
 varsel <- function(object, ...) {
-  UseMethod("varsel")
+    UseMethod("varsel")
 }
 
 #' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
-  refmodel <- get_refmodel(object)
-  return(varsel(refmodel, ...))
+    refmodel <- get_refmodel(object)
+    return(varsel(refmodel, ...))
 }
 
 #' @rdname varsel
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
-                            ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
+    ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
                             nclusters_pred = NULL, cv_search = TRUE,
                             nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,

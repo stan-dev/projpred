@@ -19,10 +19,10 @@
 #' @param div_minimizer Maximum likelihood estimator for the underlying
 #'   projection.
 #' @param fetch_data Wrapper function for fetching the data without directly
-#'   accesing it. It should have a prototype fetch_data(data, data_points,
+#'   accessing it. It should have a prototype fetch_data(data, data_points,
 #'   newdata = NULL), where data_points is a vector of data indices and newdata,
 #'   if not NULL, is a data frame with new data for testing.
-#' @param extract_model_data A function with protopyte
+#' @param extract_model_data A function with prototype
 #'   extract_model_data(object, newdata, wrhs, orhs), where object is a
 #'   reference model fit, newdata is either NULL or a data frame with new
 #'   observations, wrhs is a right hand side formula to recover the weights from
@@ -30,13 +30,13 @@
 #'   from the data frame.
 #' @param family A family object that represents the observation model for the
 #'   reference model.
-#' @param wobs A weights vector for the observations in the data. By default is
-#'   taken as a vector of ones.
-#' @param folds Only used for k-fold variable selection. It is a vector of fold
+#' @param wobs A weights vector for the observations in the data. The default is
+#'   a vector of ones.
+#' @param folds Only used for K-fold variable selection. It is a vector of fold
 #'   indices for each data point in data.
-#' @param cvfits Only used for k-fold variable selection. A list of k-fold
+#' @param cvfits Only used for K-fold variable selection. A list of K-fold
 #'   fitted objects on which reference models are created.
-#' @param cvfun Only used for k-fold variable selection. A function that, given
+#' @param cvfun Only used for K-fold variable selection. A function that, given
 #'   a folds vector, fits a reference model per fold and returns the fitted
 #'   object.
 #' @param offset A vector of offsets per observation to add to the linear
