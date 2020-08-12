@@ -25,7 +25,7 @@
 #'   if nclusters is set.
 #' @param nclusters Number of clusters to use in the clustered projection.
 #'   Overrides the \code{ndraws} argument. Defaults to 1.
-#' @param ndraws_pred Number of posterior draws used for prediction (after
+#' @param ndraws_pred Number of projected draws used for prediction (after
 #'   selection). Ignored if nclusters_pred is given. Note that setting less
 #'   draws or clusters than posterior draws in the reference model may result in
 #'   slightly inaccurate projection performance, although increasing this

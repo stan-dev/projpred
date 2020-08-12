@@ -69,7 +69,8 @@ approach may be overconfident in some cases and therefore in general cases it is
 recommended to run a cross validated variable selection instead.
     
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
-vs <- varsel(fit)
+ref <- get_refmodel(fit)
+vs <- varsel(ref)
 ```
 
 Because our model includes group effects, the only available search method is
@@ -139,8 +140,8 @@ example prediction for the first data point using 5 terms (the observed
 value is marked by the red line).
 
 ```{r, fig.height=3, fig.width=5, message=FALSE, warning=FALSE}
-subset <- Orthodont %>% dplyr::sample_n(1)
-y_subset <- subset %>% dplyr::select(distance)
+subset <- Orthodont %>% as_tibble() %>% dplyr::sample_n(1)
+y_subset <- subset %>% dplyr::select(distance) %>% as.data.frame()
 y1_rep <- proj_predict(vs, newdata = subset, nterms = 5, seed = 7560)
 qplot(as.vector(y1_rep), bins = 25) +
   geom_vline(xintercept = as.numeric(y_subset), color = "red") +
