@@ -33,7 +33,8 @@ Imports:
     MASS,
     magrittr,
     mgcv,
-    gamm4
+    gamm4,
+    future.apply
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8

@@ -19,7 +19,7 @@ linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
   if (inherits(formula, "formula")) {
     return(fit_glm_ridge_callback(formula, data, family, weights, var, regul))
   } else if (inherits(formula, "list")) {
-    return(future_lapply(seq_along(formula), function(s) {
+    return(future.apply::future_lapply(seq_along(formula), function(s) {
       fit_glm_ridge_callback(formula[[s]], data, family, weights,
         regul = regul, var = var[, s, drop = FALSE]
       )
@@ -80,9 +80,9 @@ additive_mle <- function(formula, data, family, weights = NULL, ...) {
     }
   } else if (inherits(formula, "list")) {
     if (is.null(random)) {
-      return(lapply(formula, fit_gam_callback, data, family, weights))
+      return(future.apply::future_lapply(formula, fit_gam_callback, data, family, weights))
     } else {
-      return(lapply(formula, fit_gamm_callback, random, data, family, weights))
+      return(future.apply::future_lapply(formula, fit_gamm_callback, random, data, family, weights))
     }
   } else {
     stop("The provided formula is neither a formula object nor a list")
@@ -140,7 +140,11 @@ linear_multilevel_mle <- function(formula, data, family, weights = NULL,
   if (inherits(formula, "formula")) {
     return(fit_glmer_callback(formula, data, family, weights))
   } else if (inherits(formula, "list")) {
+<<<<<<< variant A
     return(future_lapply(formula, fit_glmer_callback, data, family, weights))
+>>>>>>> variant B
+    return(future.apply::future_lapply(formula, fit_glmer_callback, data, family, weights))
+======= end
   } else {
     stop("The provided formula is neither a formula object nor a list")
   }
@@ -229,7 +233,7 @@ linear_multilevel_proj_predfun <- function(fit, newdata = NULL,
     weights <- 1
   }
   if (inherits(fit, "list")) {
-    return(do.call(cbind, lapply(fit, function(fit) {
+    return(do.call(cbind, future.apply::future_lapply(fit, function(fit) {
       predict_multilevel_callback(fit, newdata, weights)
     })))
   } else {
@@ -243,11 +247,11 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
   }
   if (inherits(fit, "list")) {
     if (!is.null(newdata)) {
-      return(do.call(cbind, lapply(fit, function(fit) {
+      return(do.call(cbind, future.apply::future_lapply(fit, function(fit) {
         predict(fit, newdata = newdata, weights = weights)
       })))
     } else {
-      return(do.call(cbind, lapply(fit, function(fit) {
+      return(do.call(cbind, future.apply::future_lapply(fit, function(fit) {
         predict(fit)
       })))
     }
