@@ -3,15 +3,17 @@
 #' Perform projection onto submodels of selected sizes or a specified feature
 #' combination.
 #'
+#' @name project
+#'
 #' @param object Either a \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel} or
-#'   \link[=init_refmodel]{init_refmodel}, or an object which can be converted
-#'   to a reference model using \link[=get_refmodel]{get_refmodel}.
-#' @param nterms Number of variables in the submodel (the variable combination
-#'   is taken from the \code{varsel} information). If a list, then the
-#'   projection is performed for each model size. Default is the model size
-#'   suggested by the variable selection (see function \code{suggest_size}).
-#'   Ignored if \code{solution_terms} is specified.
+#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+#'   or an object which can be converted to a reference model using
+#'   \link[=get_refmodel]{get_refmodel}.
+#' @param nterms Number of terms in the submodel (the variable combination is
+#'   taken from the \code{varsel} information). If a list, then the projection
+#'   is performed for each model size. Default is the model size suggested by
+#'   the variable selection (see function \code{suggest_size}). Ignored if
+#'   \code{solution_terms} is specified.
 #' @param solution_terms Variable indices onto which the projection is done. If
 #'   specified, \code{nterms} is ignored.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
@@ -20,8 +22,8 @@
 #'   solution from the L1-penalized projection. This option is relevant only if
 #'   L1-search was used. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param ndraws Number of samples to be projected. Ignored if \code{nclusters}
-#'   is specified. Default is 400.
+#' @param ndraws Number of posterior draws to be projected. Ignored if
+#'   \code{nclusters} is specified. Default is 400.
 #' @param nclusters Number of clusters in the clustered projection.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
@@ -30,6 +32,7 @@
 #'   regularization, but sometimes for some models the projection can be
 #'   ill-behaved and we need to add some regularization to avoid numerical
 #'   problems.
+#' @param regul Ridgre regularization constant to fit the projections.
 #' @param ... Currently ignored.
 #'
 #' @return A list of submodels (or a single submodel if projection was
@@ -52,28 +55,38 @@
 #'
 #' @examples
 #' \donttest{
-#' Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
-#' vs <- varsel(fit)
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n * d), nrow = n)
+#'   y <- x[, 1] + 0.5 * rnorm(n)
+#'   data <- data.frame(x, y)
 #'
-#' ## project onto the best model with 4 variables
-#' proj4 <- project(vs, nterms = 4)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data = data, chains = 2, iter = 500)
+#'   vs <- varsel(fit)
 #'
-#' ## project onto an arbitrary variable combination
-#' ## (variable indices 3, 4 and 8)
-#' proj <- project(fit, solution_terms=c(3,4,8))
+#'   # project onto the best model with 4 variables
+#'   proj4 <- project(vs, nterms = 4)
+#'
+#'   # project onto an arbitrary variable combination (variable indices 1, 3 and 5)
+#'   proj <- project(fit, solution_terms = c(1, 3, 5))
+#' }
 #' }
 #'
 NULL
 
-##' @export
+#' @rdname project
+#' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     intercept = NULL, seed = NULL, regul = 1e-4, ...) {
   if (!("vsel" %in% class(object)) && is.null(solution_terms)) {
-    stop("The given object is not a variable selection -object.",
-         "Run the variable selection first, or provide the variable ",
-         "indices (solution_terms).")
+    stop(
+      "The given object is not a variable selection -object.",
+      "Run the variable selection first, or provide the variable ",
+      "indices (solution_terms)."
+    )
   }
 
   refmodel <- get_refmodel(object)
@@ -102,12 +115,16 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       vars <- object$solution_terms
     } else {
       ## project only the given model on a fit object
-      vars <- setdiff(split_formula(refmodel$formula), "1")
+      vars <- setdiff(split_formula(refmodel$formula,
+        data = refmodel$fetch_data()
+      ), "1")
     }
 
     if (max(solution_terms) > length(vars)) {
-      stop("solution_terms contains an index larger than the number of",
-           "variables in the model.")
+      stop(
+        "solution_terms contains an index larger than the number of",
+        "variables in the model."
+      )
     }
 
     solution_terms <- c(vars[solution_terms])
@@ -120,8 +137,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         ## by default, project onto the suggested model size
         nterms <- min(object$suggested_size, length(solution_terms))
       } else {
-        stop("No suggested model size found, please specify nterms or solution",
-             "terms")
+        stop(
+          "No suggested model size found, please specify nterms or solution",
+          "terms"
+        )
       }
     } else {
       if (!is.numeric(nterms) || any(nterms < 0)) {
@@ -142,8 +161,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     ndraws <- min(ndraws, NCOL(refmodel$mu))
   } else {
     if (ndraws > NCOL(refmodel$mu)) {
-      stop("number of samples exceed the number of columns in the reference ",
-           "model's posterior.")
+      stop(
+        "Number of posterior draws exceeds the number of columns in the ",
+        "reference model's posterior."
+      )
     }
     if (is.null(nclusters)) {
       nclusters <- ndraws
@@ -154,8 +175,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   } else
   if (nclusters > NCOL(refmodel$mu)) {
-    stop("number of clusters exceed the number of columns in the reference ",
-         "model's posterior.")
+    stop(
+      "number of clusters exceed the number of columns in the reference ",
+      "model's posterior."
+    )
   }
 
   if (is.null(intercept)) {

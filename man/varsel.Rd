@@ -11,7 +11,7 @@ varsel(object, ...)
 \method{varsel}{default}(object, ...)
 
 \method{varsel}{refmodel}(
-  refmodel,
+  object,
   d_test = NULL,
   method = NULL,
   ndraws = NULL,
@@ -102,6 +102,10 @@ variables. Zero means that those variables have no cost and will therefore
 be selected first, whereas Inf means those variables will never be
 selected. Currently works only if method == 'L1'. By default 1 for each
 variable.}
+
+\item{search_terms}{A custom list of terms to evaluate for variable
+selection. By default considers all the terms in the reference model's
+formula.}
 }
 \value{
 An object of type \code{vsel} that contains information about the
@@ -115,10 +119,17 @@ models using generic reference models.
 }
 \examples{
 \donttest{
-## Usage with stanreg objects
-fit <- stan_glm(y ~ x, binomial())
-vs <- varsel(fit)
-plot(vs)
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  ### Usage with stanreg objects
+  n <- 30
+  d <- 5
+  x <- matrix(rnorm(n*d), nrow=n)
+  y <- x[,1] + 0.5*rnorm(n)
+  data <- data.frame(x,y)
+  fit <- rstanarm::stan_glm(y ~ x1 + x2 + x3 + x4 + x5, gaussian(), data=data, chains=2, iter=500)
+  vs <- varsel(fit)
+  plot(vs)
+}
 }
 
 }

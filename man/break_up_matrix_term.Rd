@@ -2,10 +2,10 @@
 % Please edit documentation in R/helper_formula.R
 \name{break_up_matrix_term}
 \alias{break_up_matrix_term}
-\title{Sometimes there can be terms in a formula that refer to a matrix instead of
-a single predictor. Because we can handle search_terms of predictors, this function
-breaks the matrix term into individual predictors to handle separately, as
-that is probably the intention of the user.}
+\title{Sometimes there can be terms in a formula that refer to a matrix instead of a
+single predictor. Because we can handle search_terms of predictors, this
+function breaks the matrix term into individual predictors to handle
+separately, as that is probably the intention of the user.}
 \usage{
 break_up_matrix_term(formula, data)
 }
@@ -18,8 +18,8 @@ break_up_matrix_term(formula, data)
 a  list containing the expanded formula and the expanded data frame.
 }
 \description{
-Sometimes there can be terms in a formula that refer to a matrix instead of
-a single predictor. Because we can handle search_terms of predictors, this function
-breaks the matrix term into individual predictors to handle separately, as
-that is probably the intention of the user.
+Sometimes there can be terms in a formula that refer to a matrix instead of a
+single predictor. Because we can handle search_terms of predictors, this
+function breaks the matrix term into individual predictors to handle
+separately, as that is probably the intention of the user.
 }

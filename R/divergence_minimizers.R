@@ -39,6 +39,7 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
     family = family, lambda = regul,
     weights = weights, obsvar = var
   )
+  rownames(fit$beta) <- colnames(x)
   sub <- nlist(
     alpha = fit$beta0,
     beta = fit$beta,
@@ -64,10 +65,75 @@ fit_glm_callback <- function(formula, data, family, weights, ...) {
   }
 }
 
-#' Use lmer to fit the projection to the posterior draws for multilevel models.
-#' Note that we don't use glmer because the target is a pseudo-Gaussian
-#' transformation.
-#' @importFrom future.apply future_lapply
+# Use mgcv to fit the projection to the posterior draws for additive multilevel
+# models.
+additive_mle <- function(formula, data, family, weights = NULL, ...) {
+  f <- split_formula_random_gamm4(formula)
+  formula <- f$formula
+  random <- f$random
+  formula <- validate_response_formula(formula)
+  if (inherits(formula, "formula")) {
+    if (is.null(random)) {
+      return(fit_gam_callback(formula, data, family, weights))
+    } else {
+      return(fit_gamm_callback(formula, random, data, family, weights))
+    }
+  } else if (inherits(formula, "list")) {
+    if (is.null(random)) {
+      return(lapply(formula, fit_gam_callback, data, family, weights))
+    } else {
+      return(lapply(formula, fit_gamm_callback, random, data, family, weights))
+    }
+  } else {
+    stop("The provided formula is neither a formula object nor a list")
+  }
+}
+
+# helper function of 'additive_mle'
+#' @importFrom mgcv gam
+fit_gam_callback <- function(formula, data, family, weights, ...) {
+  # make sure correct 'weights' can be found
+  environment(formula) <- environment()
+  return(suppressWarnings(gam(formula,
+    data = data, family = family,
+    weights = weights
+  )))
+}
+
+# helper function of 'additive_mle'
+#' @importFrom gamm4 gamm4
+fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
+                              control = control_callback(family), ...) {
+  # make sure correct 'weights' can be found
+  environment(formula) <- environment()
+  fit <- suppressWarnings(tryCatch({
+    gamm4(formula,
+      random = random, data = data,
+      family = family, weights = weights,
+      control = control
+    )
+  }, error = function(e) {
+    if (grepl("not positive definite", as.character(e))) {
+      scaled_data <- preprocess_data(data, formula)
+      fit_gamm_callback(formula, random = random,
+        data = scaled_data, weights = weights, family = family,
+        control = control_callback(family,
+          optimizer = "optimx",
+          optCtrl = list(method = "nlminb")
+        )
+      )
+    } else {
+      stop(e)
+    }
+  }))
+
+  fit$random <- random
+  fit$formula <- formula
+  class(fit) <- c("gamm4")
+  return(fit)
+}
+
+# Use lmer to fit the projection to the posterior draws for multilevel models.
 linear_multilevel_mle <- function(formula, data, family, weights = NULL,
                                   regul = NULL, ...) {
   formula <- validate_response_formula(formula)
@@ -195,6 +261,13 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
   }
 }
 
+additive_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
+  if (!is.null(newdata)) {
+    newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
+  }
+  return(as.matrix(linear_multilevel_proj_predfun(fit, newdata, weights)))
+}
+
 ## FIXME: find a way that allows us to remove this
 predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   if (is.null(weights)) {
@@ -222,4 +295,34 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
       return(x %*% rbind(alpha, beta))
     }
   }
+}
+
+predict.gamm4 <- function(fit, newdata = NULL, weights = NULL) {
+  if (is.null(newdata)) {
+    newdata <- model.frame(fit$mer)
+  }
+  formula <- fit$formula
+  random <- fit$random
+  gamm_struct <- model.matrix.gamm4(delete.response(terms(formula)),
+    random = random, data = newdata
+  )
+  ranef <- ranef(fit$mer)
+  b <- gamm_struct$b
+  mf <- gamm_struct$mf
+
+  ## base pred only smooth and fixed effects
+  gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA, weights = weights)
+
+  ## gamm4 trick to replace dummy smooth variables with actual smooth terms
+  sn <- names(ranef)
+  tn <- names(b$reTrms$cnms)
+  ind <- seq_along(tn)
+  for (i in seq_along(tn)) { ## loop through random effect smooths
+    k <- ind[sn[i] == tn] ## which term should contain G$random[[i]]
+    ii <- (b$reTrms$Gp[k] + 1):b$reTrms$Gp[k + 1]
+    r_pred <- t(as.matrix(b$reTrms$Zt[ii, ])) %*%
+      as.matrix(c(as.matrix(ranef[[i]])))
+    gamm_pred <- gamm_pred + r_pred
+  }
+  return(as.matrix(unname(gamm_pred)))
 }

@@ -20,12 +20,12 @@
 #'   solution from the' L1-penalized projection. This option is relevant only if
 #'   \code{method}='L1'. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param ndraws Number of posterior draws used in the variable
-#'   selection. Cannot be larger than the number of draws in the reference
-#'   model. Ignored if nclusters is set.
+#' @param ndraws Number of posterior draws used in the variable selection.
+#'   Cannot be larger than the number of draws in the reference model. Ignored
+#'   if nclusters is set.
 #' @param nclusters Number of clusters to use in the clustered projection.
 #'   Overrides the \code{ndraws} argument. Defaults to 1.
-#' @param ndraws_pred Number of samples used for prediction (after
+#' @param ndraws_pred Number of projected draws used for prediction (after
 #'   selection). Ignored if nclusters_pred is given. Note that setting less
 #'   draws or clusters than posterior draws in the reference model may result in
 #'   slightly inaccurate projection performance, although increasing this
@@ -55,6 +55,9 @@
 #'   need for regularization, but sometimes for some models the projection can
 #'   be ill-behaved and we need to add some regularization to avoid numerical
 #'   problems.
+#' @param search_terms A custom list of terms to evaluate for variable
+#'   selection. By default considers all the terms in the reference model's
+#'   formula.
 #' @param ... Additional arguments to be passed to the
 #'   \code{get_refmodel}-function.
 #'
@@ -65,33 +68,41 @@
 #'
 #' @examples
 #' \donttest{
-#' ## Usage with stanreg objects
-#' fit <- stan_glm(y ~ x, binomial())
-#' vs <- varsel(fit)
-#' plot(vs)
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   fit <- rstanarm::stan_glm(y ~ x1 + x2 + x3 + x4 + x5, gaussian(), data=data, chains=2, iter=500)
+#'   vs <- varsel(fit)
+#'   plot(vs)
+#' }
 #' }
 #'
 #' @export
 varsel <- function(object, ...) {
-  UseMethod("varsel")
+    UseMethod("varsel")
 }
 
 #' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
-  refmodel <- get_refmodel(object)
-  return(varsel(refmodel, ...))
+    refmodel <- get_refmodel(object)
+    return(varsel(refmodel, ...))
 }
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(refmodel, d_test = NULL, method = NULL,
-                            ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
+varsel.refmodel <- function(object, d_test = NULL, method = NULL,
+    ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
                             nclusters_pred = NULL, cv_search = TRUE,
                             nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, ...) {
+  refmodel <- object
   family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
@@ -199,7 +210,7 @@ varsel.refmodel <- function(refmodel, d_test = NULL, method = NULL,
     solution_terms = search_path$solution_terms,
     kl = sapply(p_sub, function(x) x$kl),
     nterms_max,
-    nterms_all = count_terms_in_subformula(refmodel$formula)
+    nterms_all = count_terms_in_formula(refmodel$formula)
   )
   ## suggest model size
   class(vs) <- "vsel"
@@ -254,12 +265,15 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   ## avoid repeating the same code both in varsel and cv_varsel.
   ##
   if (is.null(search_terms)) {
-    search_terms <- split_formula(refmodel$formula)
+    search_terms <- split_formula(refmodel$formula,
+      data = refmodel$fetch_data()
+    )
   }
   has_group_features <- formula_contains_group_terms(refmodel$formula)
+  has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
   if (is.null(method)) {
-    if (has_group_features) {
+    if (has_group_features || has_additive_features) {
       method <- "forward"
     } else {
       method <- "l1"
@@ -285,7 +299,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters_pred <- min(NCOL(refmodel$mu), 5)
   }
 
-  max_nv_possible <- count_terms_in_subformula(refmodel$formula)
+  max_nv_possible <- count_terms_in_formula(refmodel$formula)
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
   }

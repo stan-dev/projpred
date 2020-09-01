@@ -25,7 +25,7 @@ suggest_size(object, ...)
 \item{...}{Currently ignored.}
 
 \item{stat}{Statistic used for the decision. Default is 'elpd'. See
-\code{summary.vsel} for other possible choices.}
+\code{varsel_stats} for other possible choices.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
 intervals based on which the decision is made. E.g. \code{alpha=0.32}
@@ -34,12 +34,14 @@ error intervals). See details for more information.}
 
 \item{pct}{Number indicating the relative proportion between baseline model
 and null model utilities one is willing to sacrifice. See details for more
-information. @param type Either 'upper' (default) or 'lower' determining
-whether the decisions are based on the upper or lower credible bounds. See
-details for more information.}
+information.}
 
-\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is
-the reference model or the best submodel found. Default is 'ref' when the
+\item{type}{Either 'upper' (default) or 'lower' determining whether the
+decisions are based on the upper or lower credible bounds. See details for
+more information.}
+
+\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the
+reference model or the best submodel found. Default is 'ref' when the
 reference model exists, and 'best' otherwise.}
 
 \item{warnings}{Whether to give warnings if automatic suggestion fails,
@@ -47,30 +49,31 @@ mainly for internal use. Default is TRUE, and usually no reason to set to
 FALSE.}
 }
 \description{
-This function can be used for suggesting an appropriate model size based on
-a certain default rule. Notice that the decision rules are heuristic and
-should be interpreted as guidelines. It is recommended that the user studies
-the results via \code{plot.vsel} and/or \code{summary.vsel} and makes the
-final decision based on what is most appropriate for the given problem.
+This function can be used for suggesting an appropriate model size
+based on a certain default rule. Notice that the decision rules are heuristic
+and should be interpreted as guidelines. It is recommended that the user
+studies the results via \code{varsel_plot} and/or \code{varsel_stats}
+and makes the final decision based on what is most appropriate for the given
+problem.
 }
 \details{
 The suggested model size is the smallest model for which either the
   lower or upper (depending on argument \code{type}) credible bound of the
-  submodel utility \eqn{u_k} with significance level \code{alpha} falls
-  above \deqn{u_base - pct*(u_base - u_0)} Here \eqn{u_base} denotes the
-  utility for the baseline model and \eqn{u_0} the null model utility. The
-  baseline is either the reference model or the best submodel found (see
-  argument \code{baseline}). The lower and upper bounds are defined to
-  contain the submodel utility with probability 1-alpha (each tail has mass
-  alpha/2).
+  submodel utility \eqn{u_k} with significance level \code{alpha} falls above
+  \deqn{u_base - pct*(u_base - u_0)}
+Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0}
+  the null model utility. The baseline is either the reference model or the
+  best submodel found (see argument \code{baseline}). The lower and upper
+  bounds are defined to contain the submodel utility with probability 1-alpha
+  (each tail has mass alpha/2).
 
 By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
   means that we select the smallest model for which the upper tail exceeds
   the baseline model level, that is, which is better than the baseline model
   with probability 0.16 (and consequently, worse with probability 0.84). In
   other words, the estimated difference between the baseline model and
-  submodel utilities is at most one standard error away from zero, so the
-  two utilities are considered to be close.
+  submodel utilities is at most one standard error away from zero, so the two
+  utilities are considered to be close.
 
 NOTE: Loss statistics like RMSE and MSE are converted to utilities by
   multiplying them by -1, so call such as \code{suggest_size(object,
@@ -82,10 +85,18 @@ NOTE: Loss statistics like RMSE and MSE are converted to utilities by
 }
 \examples{
 \donttest{
-### Usage with stanreg objects
-fit <- stan_glm(y~x, binomial())
-vs <- cv_varsel(fit)
-suggest_size(vs)
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  ### Usage with stanreg objects
+  n <- 30
+  d <- 5
+  x <- matrix(rnorm(n*d), nrow=n)
+  y <- x[,1] + 0.5*rnorm(n)
+  data <- data.frame(x,y)
+  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+           data=data, chains=2, iter=500)
+  vs <- cv_varsel(fit)
+  suggest_size(vs)
+}
 }
 
 }

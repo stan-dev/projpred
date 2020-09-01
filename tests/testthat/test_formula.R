@@ -151,16 +151,16 @@ test_that(paste(
 
 test_that("check that we count terms correctly", {
   formula <- y ~ x + z
-  expect_equal(count_terms_in_subformula(formula), 3)
+  expect_equal(count_terms_in_formula(formula), 3)
 
   formula <- y ~ x + z + x:z
-  expect_equal(count_terms_in_subformula(formula), 4)
+  expect_equal(count_terms_in_formula(formula), 4)
 
   formula <- y ~ x + z + x:z + (1 | g)
-  expect_equal(count_terms_in_subformula(formula), 5)
+  expect_equal(count_terms_in_formula(formula), 5)
 
   formula <- y ~ x + z + x:z + (x | g)
-  expect_equal(count_terms_in_subformula(formula), 6)
+  expect_equal(count_terms_in_formula(formula), 6)
 
   expect_equal(count_terms_chosen(c("x", "z")), 3)
   expect_equal(count_terms_chosen(c("x", "z", "x:z")), 4)

@@ -12,14 +12,17 @@ Maintainer:
     Juho Piironen <juho.t.piironen@gmail.com>
 Description:
     Performs projection predictive feature selection for generalized linear models
-    (see, Piironen, Paasiniemi and Vehtari, 2018, <arXiv:1810.02406>).
+    (see, Piironen, Paasiniemi and Vehtari, 2020, <https://projecteuclid.org/euclid.ejs/1589335310>).
     The package is compatible with the 'rstanarm' and 'brms' packages, but other 
     reference models can also be used. See the package vignette for more 
     information and examples.
 Depends:
     R (>= 3.5.0)
 Imports:
+    methods,
+    dplyr,
     loo (>= 2.0.0), 
+    rstantools (>= 2.0.0),
     lme4,
     optimx,
     ggplot2, 
@@ -29,12 +32,13 @@ Imports:
     tidyverse,
     MASS,
     magrittr,
-    future.apply
+    mgcv,
+    gamm4
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
 LazyData: TRUE
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Suggests:
     rstanarm, 
     brms,

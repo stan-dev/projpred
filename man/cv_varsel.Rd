@@ -11,7 +11,7 @@ cv_varsel(object, ...)
 \method{cv_varsel}{default}(object, ...)
 
 \method{cv_varsel}{refmodel}(
-  refmodel,
+  object,
   method = NULL,
   cv_method = NULL,
   ndraws = NULL,
@@ -36,6 +36,8 @@ cv_varsel(object, ...)
 )
 }
 \arguments{
+\item{object}{Same as in \link[=varsel]{varsel}.}
+
 \item{...}{Additional arguments to be passed to the
 \code{get_refmodel}-function.}
 
@@ -103,8 +105,6 @@ introduced by the selectin process).}
 seed.}
 
 \item{search_terms}{User defined list of terms to consider for selection.}
-
-\item{fit}{Same as in \link[=varsel]{varsel}.}
 }
 \value{
 An object of type \code{vsel} that contains information about the
@@ -118,10 +118,17 @@ generalized linear model.
 }
 \examples{
 \donttest{
-# Usage with stanreg objects
-fit <- stan_glm(y ~ x, binomial())
-cvs <- cv_varsel(fit)
-plot(cvs)
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  ### Usage with stanreg objects
+  n <- 30
+  d <- 5
+  x <- matrix(rnorm(n*d), nrow=n)
+  y <- x[,1] + 0.5*rnorm(n)
+  data <- data.frame(x,y)
+  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
+  cvs <- cv_varsel(fit)
+  plot(cvs)
+}
 }
 
 }

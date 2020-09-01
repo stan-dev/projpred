@@ -50,9 +50,9 @@ model. Either NULL or right hand side formula.}
 
 \item{weightsnew}{Weights for the new observations. For binomial model,
 corresponds to the number trials per observation. For \code{proj_linpred},
-this argument matters only if \code{ynew} is specified. By default we take
-the weights from newdata as in the original model. Either NULL or right
-hand side formula.}
+this argument matters only if \code{newdata} is specified. By default we
+take the weights from newdata as in the original model. Either NULL or
+right hand side formula.}
 
 \item{nterms}{Number of variables in the submodel (the variable combination
 is taken from the variable selection information). If a vector with several
@@ -73,17 +73,14 @@ Default is \code{FALSE}. For \code{proj_linpred} only.}
 \item{...}{Additional argument passed to \link{project} if \code{object} is
 an object returned by \link{varsel} or \link{cv_varsel}.}
 
-\item{ynew}{New (test) target variables. If given, then the log predictive
-density for the new observations is computed.}
-
-\item{draws}{Number of draws to return from the predictive distribution of
+\item{ndraws}{Number of draws to return from the predictive distribution of
 the projection. The default is 1000. For \code{proj_predict} only.}
 }
 \value{
 If the prediction is done for one submodel only (\code{nterms} has
-  length one or \code{solution_terms} is specified) and ynew is unspecified,
-  a matrix or vector of predictions (depending on the value of
-  \code{integrated}). If \code{ynew} is specified, returns a list with
+  length one or \code{solution_terms} is specified) and newdata is
+  unspecified, a matrix or vector of predictions (depending on the value of
+  \code{integrated}). If \code{newdata} is specified, returns a list with
   elements pred (predictions) and lpd (log predictive densities). If the
   predictions are done for several submodel sizes, returns a list with one
   element for each submodel.
@@ -96,13 +93,21 @@ functions also perform the projection.
 }
 \examples{
 \donttest{
-## Usage with stanreg objects
-fit <- stan_glm(y ~ x, binomial())
-vs <- varsel(fit)
-
-## compute predictions with 4 variables at the training points
-pred <- proj_linpred(vs, newdata = x, nterms = 4)
-pred <- proj_predict(vs, newdata = x, nterms = 4)
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  ### Usage with stanreg objects
+  n <- 30
+  d <- 5
+  x <- matrix(rnorm(n*d), nrow=n)
+  y <- x[,1] + 0.5*rnorm(n)
+  data <- data.frame(x,y)
+  
+  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
+  vs <- varsel(fit)
+  
+  # compute predictions with 4 variables at the training points
+  pred <- proj_linpred(vs, xnew=x, nv = 4)
+  pred <- proj_predict(vs, xnew=x, nv = 4)
+}
 }
 
 }

@@ -5,7 +5,7 @@
 \title{Plot summary statistics related to variable selection}
 \usage{
 \method{plot}{vsel}(
-  object,
+  x,
   nterms_max = NULL,
   stats = "elpd",
   deltas = FALSE,
@@ -15,7 +15,7 @@
 )
 }
 \arguments{
-\item{object}{The object returned by \link[=varsel]{varsel} or
+\item{x}{The object returned by \link[=varsel]{varsel} or
 \link[=cv_varsel]{cv_varsel}.}
 
 \item{nterms_max}{Maximum submodel size for which the statistics are
@@ -54,9 +54,11 @@ Plot summary statistics related to variable selection
 \examples{
 \donttest{
 ### Usage with stanreg objects
-fit <- stan_glm(y ~ x, binomial())
-vs <- cv_varsel(fit)
-plot(vs)
+if (requireNamespace('rstanarm', quietly=TRUE)) {
+  fit <- rstanarm::stan_glm(y ~ x, binomial())
+  vs <- cv_varsel(fit)
+  plot(vs)
+}
 }
 
 }

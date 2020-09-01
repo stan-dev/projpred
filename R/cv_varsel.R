@@ -2,14 +2,17 @@
 #'
 #' Perform cross-validation for the projective variable selection for a
 #' generalized linear model.
-#' @param fit Same as in \link[=varsel]{varsel}.
+#'
+#' @name cv_varsel
+#'
+#' @param object Same as in \link[=varsel]{varsel}.
 #' @param method Same as in \link[=varsel]{varsel}.
-#' @param ndraws Number of samples used for selection. Ignored if
+#' @param ndraws Number of posterior draws used for selection. Ignored if
 #'   nclusters is provided or if method='L1'.
-#' @param nclusters Number of clusters used for selection. Default is 1
-#'   and ignored if method='L1' (L1-search uses always one cluster).
-#' @param ndraws_pred Number of samples used for prediction (after
-#'   selection). Ignored if nclusters_pred is given.
+#' @param nclusters Number of clusters used for selection. Default is 1 and
+#'   ignored if method='L1' (L1-search uses always one cluster).
+#' @param ndraws_pred Number of samples used for prediction (after selection).
+#'   Ignored if nclusters_pred is given.
 #' @param nclusters_pred Number of clusters used for prediction (after
 #'   selection). Default is 5.
 #' @param cv_search Same as in \link[=varsel]{varsel}.
@@ -26,7 +29,7 @@
 #'   accuracy estimation. Default is to use all observations, but for faster
 #'   experimentation, one can set this to a small value such as 100. Only
 #'   applicable if \code{cv_method = 'LOO'}.
-#' @param K Number of folds in the k-fold cross validation. Default is 5 for
+#' @param K Number of folds in the K-fold cross validation. Default is 5 for
 #'   genuine reference models and 10 for datafits (that is, for penalized
 #'   maximum likelihood estimation).
 #' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
@@ -58,10 +61,18 @@
 #'
 #' @examples
 #' \donttest{
-#' # Usage with stanreg objects
-#' fit <- stan_glm(y ~ x, binomial())
-#' cvs <- cv_varsel(fit)
-#' plot(cvs)
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+#'      data=data, chains=2, iter=500)
+#'   cvs <- cv_varsel(fit)
+#'   plot(cvs)
+#' }
 #' }
 #'
 #' @export
@@ -78,7 +89,7 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
-cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
+cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
                                ndraws = NULL, nclusters = NULL,
                                ndraws_pred = NULL, nclusters_pred = NULL,
                                cv_search = TRUE, nterms_max = NULL,
@@ -87,6 +98,7 @@ cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
                                nlambda = 150, thresh = 1e-6, regul = 1e-4,
                                validate_search = TRUE, seed = NULL,
                                search_terms = NULL, ...) {
+  refmodel <- object
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,
@@ -195,7 +207,7 @@ cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
     summaries = sel_cv$summaries, family = sel$family, kl = sel$kl,
     solution_terms = sel$solution_terms, pct_solution_terms_cv,
     nterms_max = nterms_max,
-    nterms_all = count_terms_in_subformula(refmodel$formula)
+    nterms_all = count_terms_in_formula(refmodel$formula)
   )
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
@@ -205,17 +217,17 @@ cv_varsel.refmodel <- function(refmodel, method = NULL, cv_method = NULL,
   return(vs)
 }
 
-#'
-#' Auxiliary function for parsing the input arguments for specific cv_varsel.
-#' This is similar in spirit to parse_args_varsel, that is, to avoid the main
-#' function to become too long and complicated to maintain.
-#'
-#' @param refmodel Reference model as extracted by get_refmodel
-#' @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
-#'   Default is 'LOO'.
-#' @param K Number of folds in the k-fold cross validation. Default is 5 for
-#'   genuine reference models and 10 for datafits (that is, for penalized
-#'   maximum likelihood estimation).
+#
+# Auxiliary function for parsing the input arguments for specific cv_varsel.
+# This is similar in spirit to parse_args_varsel, that is, to avoid the main
+# function to become too long and complicated to maintain.
+#
+# @param refmodel Reference model as extracted by get_refmodel
+# @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
+#   Default is 'LOO'.
+# @param K Number of folds in the K-fold cross validation. Default is 5 for
+#   genuine reference models and 10 for datafits (that is, for penalized
+#   maximum likelihood estimation).
 parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
                                  nclusters = NULL,
                                  nclusters_pred = NULL) {
@@ -588,11 +600,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         cvfit
       })
     } else {
-      ## genuine probabilistic model but no k-fold fits nor cvfun provided, so
+      ## genuine probabilistic model but no K-fold fits nor cvfun provided, so
       ## raise an error
       stop(
         "For a generic reference model, you must provide either cvfits or ",
-        "cvfun for k-fold cross-validation. See function init_refmodel."
+        "cvfun for K-fold cross-validation. See function init_refmodel."
       )
     }
   } else {

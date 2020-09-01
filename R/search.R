@@ -8,13 +8,13 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
   formula <- refmodel$formula
   iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
   if (is.null(search_terms)) {
-    allterms <- split_formula(formula)
+    allterms <- split_formula(formula, data = refmodel$fetch_data())
   } else {
     allterms <- search_terms
   }
 
   chosen <- NULL
-  total_terms <- count_terms_in_subformula(formula)
+  total_terms <- count_terms_in_formula(formula)
   stop_search <- min(total_terms, nterms_max)
   submodels <- c()
 
@@ -43,7 +43,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
               sub_fits = submodels))
 }
 
-#' copied over from search until we resolve the TODO below
+# copied over from search until we resolve the TODO below
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
                                 penalty, opt) {
 
