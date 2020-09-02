@@ -22,7 +22,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
     cands <- select_possible_terms_size(chosen, allterms, size = size)
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     if (!is.null(cl)) {
-      sub <- snow::clusterApply(cl, full_cands, projfun)
+      sub <- snow::parSapply(cl, full_cands, projfun)
     } else {
       sub <- sapply(full_cands, projfun)
     }

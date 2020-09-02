@@ -20,7 +20,7 @@ linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
   } else if (inherits(formula, "list")) {
     if (!is.null(cl)) {
       apply <- function(list, fun) {
-        snow::clusterApply(cl, list, fun)
+        snow::parLapply(cl, list, fun)
       }
     } else {
       apply <- function(list, fun) {
@@ -90,7 +90,7 @@ additive_mle <- function(formula, data, family, weights = NULL,
   } else if (inherits(formula, "list")) {
     if (!is.null(cl)) {
       apply <- function(list, fun, ...) {
-        snow::clusterApply(cl, list, fun, ...)
+        snow::parLapply(cl, list, fun, ...)
       }
     } else {
       apply <- function(list, fun) {
@@ -166,7 +166,7 @@ linear_multilevel_mle <- function(formula, data, family, weights = NULL,
   } else if (inherits(formula, "list")) {
     if (!is.null(cl)) {
       apply <- function(list, fun) {
-        snow::clusterApply(cl, list, fun)
+        snow::parLapply(cl, list, fun)
       }
     } else {
       apply <- function(list, fun) {
@@ -264,7 +264,7 @@ linear_multilevel_proj_predfun <- function(fit, newdata = NULL,
   if (inherits(fit, "list")) {
     if (!is.null(cl)) {
       apply <- function(list, fun) {
-        snow::clusterApply(cl, list, fun)
+        snow::parLapply(cl, list, fun)
       }
     } else {
       apply <- function(list, fun) {
@@ -287,7 +287,7 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL,
   if (inherits(fit, "list")) {
     if (!is.null(cl)) {
       apply <- function(list, fun) {
-        snow::clusterApply(cl, list, fun)
+        snow::parLapply(cl, list, fun)
       }
     } else {
       apply <- function(list, fun) {
