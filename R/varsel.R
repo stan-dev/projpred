@@ -105,6 +105,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   refmodel <- object
   family <- refmodel$family
 
+  if (!is.null(cl)) {
+    snow::clusterExport(cl, ls())
+  }
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
     refmodel, method, cv_search, intercept, nterms_max,
