@@ -34,6 +34,7 @@ Imports:
     magrittr,
     mgcv,
     gamm4,
+    future,
     future.apply
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3

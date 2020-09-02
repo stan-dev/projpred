@@ -18,10 +18,11 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
   stop_search <- min(total_terms, nterms_max)
   submodels <- c()
 
+  future::plan(multicore)
   for (size in seq_len(stop_search)) {
     cands <- select_possible_terms_size(chosen, allterms, size = size)
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
-    sub <- sapply(full_cands, projfun)
+    sub <- future.apply::future_sapply(full_cands, projfun)
 
     ## select best candidate
     imin <- which.min(sapply(seq_len(NCOL(sub)), function(i) {

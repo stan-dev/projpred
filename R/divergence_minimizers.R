@@ -82,9 +82,15 @@ additive_mle <- function(formula, data, family, weights = NULL, ...) {
   } else if (inherits(formula, "list")) {
     future::plan(multicore)
     if (is.null(random)) {
-      return(future.apply::future_lapply(formula, fit_gam_callback, data, family, weights))
+      return(future.apply::future_lapply(
+        formula, fit_gam_callback,
+        data, family, weights
+      ))
     } else {
-      return(future.apply::future_lapply(formula, fit_gamm_callback, random, data, family, weights))
+      return(future.apply::future_lapply(
+        formula, fit_gamm_callback, random,
+        data, family, weights
+      ))
     }
   } else {
     stop("The provided formula is neither a formula object nor a list")
