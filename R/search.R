@@ -18,7 +18,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
   stop_search <- min(total_terms, nterms_max)
   submodels <- c()
 
-  future::plan(multicore)
+  future::plan(future::multicore)
   for (size in seq_len(stop_search)) {
     cands <- select_possible_terms_size(chosen, allterms, size = size)
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
