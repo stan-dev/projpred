@@ -106,7 +106,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   family <- refmodel$family
 
   if (!is.null(cl)) {
-    snow::clusterExport(cl, ls())
+    ex <- Filter(function(x) is.function(get(x, .GlobalEnv)), ls(.GlobalEnv))
+    snow::clusterExport(cl, ex)
   }
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
