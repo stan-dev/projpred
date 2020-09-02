@@ -106,8 +106,16 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   family <- refmodel$family
 
   if (!is.null(cl)) {
-    ex <- Filter(function(x) is.function(get(x, .GlobalEnv)), ls(.GlobalEnv))
-    snow::clusterExport(cl, ex)
+    snow::clusterEvaluateQ(cl, library(lme4))
+    snow::clusterEvaluateQ(cl, library(gamm4))
+    snow::clusterEvaluateQ(cl, library(tidyverse))
+    snow::clusterEvaluateQ(cl, library(magrittr))
+    snow::clusterEvaluateQ(cl, library(mgcv))
+    snow::clusterEvaluateQ(cl, library(MASS))
+    snow::clusterEvaluateQ(cl, library(optimx))
+    snow::clusterExport(cl, list("project_submodel", "subset_formula_and_data",
+                                 ".validate_wobs_wsample", "flatten_formula",
+                                 ".init_submodel", "pseudo_data", "nlist"))
   }
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
