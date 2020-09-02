@@ -106,13 +106,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   family <- refmodel$family
 
   if (!is.null(cl)) {
-    snow::clusterEvaluateQ(cl, library(lme4))
-    snow::clusterEvaluateQ(cl, library(gamm4))
-    snow::clusterEvaluateQ(cl, library(tidyverse))
-    snow::clusterEvaluateQ(cl, library(magrittr))
-    snow::clusterEvaluateQ(cl, library(mgcv))
-    snow::clusterEvaluateQ(cl, library(MASS))
-    snow::clusterEvaluateQ(cl, library(optimx))
+    snow::clusterEvalQ(cl, library(lme4))
+    snow::clusterEvalQ(cl, library(gamm4))
+    snow::clusterEvalQ(cl, library(tidyverse))
+    snow::clusterEvalQ(cl, library(magrittr))
+    snow::clusterEvalQ(cl, library(mgcv))
+    snow::clusterEvalQ(cl, library(MASS))
+    snow::clusterEvalQ(cl, library(optimx))
     snow::clusterExport(cl, list("project_submodel", "subset_formula_and_data",
                                  ".validate_wobs_wsample", "flatten_formula",
                                  ".init_submodel", "pseudo_data", "nlist"))
