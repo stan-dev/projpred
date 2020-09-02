@@ -317,7 +317,7 @@ predict.gamm4 <- function(fit, newdata = NULL, weights = NULL) {
   gamm_struct <- model.matrix.gamm4(delete.response(terms(formula)),
     random = random, data = newdata
   )
-  ranef <- ranef(fit$mer)
+  ranef <- lme4::ranef(fit$mer)
   b <- gamm_struct$b
   mf <- gamm_struct$mf
 
