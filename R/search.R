@@ -1,6 +1,6 @@
 search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
                            verbose = TRUE, opt, search_terms = NULL,
-                           increasing_order = TRUE) {
+                           increasing_order = TRUE, cl = NULL) {
   ## initialize the forward selection
   ## proj performs the projection over draws
   projfun <- .get_proj_handle(refmodel, p_ref, family, opt$regul, intercept)
@@ -22,7 +22,11 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
   for (size in seq_len(stop_search)) {
     cands <- select_possible_terms_size(chosen, allterms, size = size)
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
-    sub <- future.apply::future_sapply(full_cands, projfun)
+    if (!is.null(cl)) {
+      sub <- snow::clusterApply(cl, full_cands, projfun)
+    } else {
+      sub <- sapply(full_cands, projfun)
+    }
 
     ## select best candidate
     imin <- which.min(sapply(seq_len(NCOL(sub)), function(i) {

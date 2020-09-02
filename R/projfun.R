@@ -2,7 +2,7 @@
 ##
 
 project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
-                             regul = 1e-4) {
+                             regul = 1e-4, cl = NULL) {
   mu <- p_ref$mu
 
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, mu)
@@ -13,7 +13,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   div_minimizer <- function(formula, data, weights) {
     refmodel$div_minimizer(formula, data, weights = weights, family = family,
-                           regul = regul, var = p_ref$var)
+                           regul = regul, var = p_ref$var, cl = cl)
   }
 
   subset <- subset_formula_and_data(
@@ -28,23 +28,24 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
     family = family, solution_terms = solution_terms, ref_mu = mu,
-    wobs = wobs, wsample = wsample
+    wobs = wobs, wsample = wsample, cl = cl
   ))
 }
 
 ## function handle for the projection over samples
 .get_proj_handle <- function(refmodel, p_ref, family, regul = 1e-9,
-                             intercept = TRUE) {
+                             intercept = TRUE, cl = NULL) {
   return(function(solution_terms) {
     project_submodel(
       solution_terms = solution_terms, p_ref = p_ref, refmodel = refmodel,
-      family = family, intercept = intercept, regul = regul
+      family = family, intercept = intercept, regul = regul, cl = cl
     )
   })
 }
 
 .get_submodels <- function(search_path, nterms, family, p_ref,
-                           refmodel, intercept, regul, cv_search = FALSE) {
+                           refmodel, intercept, regul, cv_search = FALSE,
+                           cl = NULL) {
   ##
   ##
   ## Project onto given model sizes nterms. Returns a list of submodels. If
@@ -75,12 +76,14 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       return(.init_submodel(
         sub_fit = sub_refit, p_ref = p_sel, refmodel = refmodel,
         family = family, solution_terms = solution_terms, ref_mu = ref_mu,
-        wobs = wobs, wsample = wsample
+        wobs = wobs, wsample = wsample, cl = cl
       ))
     }
   } else {
     ## need to project again for each submodel size
-    projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept)
+    projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept,
+      cl = cl
+    )
     fetch_submodel <- function(nterms) {
       if (nterms == 0) {
         ## empty
@@ -114,7 +117,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 }
 
 .init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
-                           ref_mu, wobs, wsample) {
+                           ref_mu, wobs, wsample, cl = NULL) {
   pobs <- pseudo_data(
     f = 0, y = ref_mu, family = family, weights = wobs,
     offset = refmodel$offset
@@ -127,7 +130,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     ref <- p_ref
   }
 
-  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = 1)
+  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = 1, cl = cl)
   dis <- family$dis_fun(ref, nlist(mu), ref$wobs)
   kl <- weighted.mean(family$kl(
     ref, nlist(weights = wobs),

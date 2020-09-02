@@ -387,7 +387,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   family$mu_fun <- function(fit, obs = folds, newdata = NULL, offset = NULL,
-                            weights = NULL) {
+                            weights = NULL, cl = NULL) {
     if (is.null(offset)) {
       offset <- rep(0, length(obs))
     }
@@ -397,7 +397,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     newdata <- fetch_data_wrapper(obs = obs, newdata = newdata)
     suppressWarnings(family$linkinv(proj_predfun(fit,
       newdata = newdata,
-      weights = weights
+      weights = weights,
+      cl = cl
     ) + offset))
   }
 

@@ -101,7 +101,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL, ...) {
+                            search_terms = NULL, cl = NULL, ...) {
   refmodel <- object
   family <- refmodel$family
 
@@ -145,16 +145,16 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## perform the selection
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   search_path <- select(
-    method = method, p_sel = p_sel, refmodel = refmodel,
-    family = family, intercept = intercept, nterms_max = nterms_max,
-    penalty = penalty, verbose = verbose, opt = opt, search_terms = search_terms
+    method = method, p_sel = p_sel, refmodel = refmodel, family = family,
+    intercept = intercept, nterms_max = nterms_max, penalty = penalty,
+    verbose = verbose, opt = opt, search_terms = search_terms, cl = cl
   )
   solution_terms <- search_path$solution_terms
 
   ## statistics for the selected submodels
   p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
     family = family, p_ref = p_pred, refmodel = refmodel, intercept = intercept,
-    regul = regul, cv_search = cv_search
+    regul = regul, cv_search = cv_search, cl = cl
   )
   sub <- .get_sub_summaries(
     submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
@@ -223,7 +223,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
 
 select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
-                   penalty, verbose, opt, search_terms = NULL) {
+                   penalty, verbose, opt, search_terms = NULL, cl = NULL) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
   ## and returns the search_path, i.e., a list with the followint entries (the
@@ -246,7 +246,7 @@ select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
   } else if (method == "forward") {
     search_path <- search_forward(p_sel, refmodel, family,
       intercept, nterms_max, verbose, opt,
-      search_terms = search_terms
+      search_terms = search_terms, cl = cl
     )
     search_path$p_sel <- p_sel
     return(search_path)

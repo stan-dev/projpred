@@ -12,15 +12,22 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
   }
 }
 
-#' @importFrom future.apply future_lapply
 linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
-                       var = 0, ...) {
+                       var = 0, cl = NULL, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     return(fit_glm_ridge_callback(formula, data, family, weights, var, regul))
   } else if (inherits(formula, "list")) {
-    future::plan(future::multicore)
-    return(future.apply::future_lapply(seq_along(formula), function(s) {
+    if (!is.null(cl)) {
+      apply <- function(list, fun) {
+        snow::clusterApply(cl, list, fun)
+      }
+    } else {
+      apply <- function(list, fun) {
+        lapply(list, fun)
+      }
+    }
+    return(apply(seq_along(formula), function(s) {
       fit_glm_ridge_callback(formula[[s]], data, family, weights,
         regul = regul, var = var[, s, drop = FALSE]
       )
@@ -68,7 +75,8 @@ fit_glm_callback <- function(formula, data, family, weights, ...) {
 
 # Use mgcv to fit the projection to the posterior draws for additive multilevel
 # models.
-additive_mle <- function(formula, data, family, weights = NULL, ...) {
+additive_mle <- function(formula, data, family, weights = NULL,
+                         cl = NULL, ...) {
   f <- split_formula_random_gamm4(formula)
   formula <- f$formula
   random <- f$random
@@ -80,14 +88,22 @@ additive_mle <- function(formula, data, family, weights = NULL, ...) {
       return(fit_gamm_callback(formula, random, data, family, weights))
     }
   } else if (inherits(formula, "list")) {
-    future::plan(future::multicore)
+    if (!is.null(cl)) {
+      apply <- function(list, fun, ...) {
+        snow::clusterApply(cl, list, fun, ...)
+      }
+    } else {
+      apply <- function(list, fun) {
+        lapply(list, fun, ...)
+      }
+    }
     if (is.null(random)) {
-      return(future.apply::future_lapply(
+      return(apply(
         formula, fit_gam_callback,
         data, family, weights
       ))
     } else {
-      return(future.apply::future_lapply(
+      return(apply(
         formula, fit_gamm_callback, random,
         data, family, weights
       ))
@@ -143,13 +159,21 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
 
 # Use lmer to fit the projection to the posterior draws for multilevel models.
 linear_multilevel_mle <- function(formula, data, family, weights = NULL,
-                                  regul = NULL, ...) {
+                                  regul = NULL, cl = NULL, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     return(fit_glmer_callback(formula, data, family, weights))
   } else if (inherits(formula, "list")) {
-    future::plan(future::multicore)
-    return(future.apply::future_lapply(formula, fit_glmer_callback, data, family, weights))
+    if (!is.null(cl)) {
+      apply <- function(list, fun) {
+        snow::clusterApply(cl, list, fun)
+      }
+    } else {
+      apply <- function(list, fun) {
+        lapply(list, fun)
+      }
+    }
+    return(apply(formula, fit_glmer_callback, data, family, weights))
   } else {
     stop("The provided formula is neither a formula object nor a list")
   }
@@ -233,13 +257,21 @@ predict_multilevel_callback <- function(fit, newdata = NULL, weights = NULL) {
 }
 
 linear_multilevel_proj_predfun <- function(fit, newdata = NULL,
-                                           weights = NULL) {
+                                           weights = NULL, cl = NULL) {
   if (is.null(weights)) {
     weights <- 1
   }
   if (inherits(fit, "list")) {
-    future::plan(future::multicore)
-    return(do.call(cbind, future.apply::future_lapply(fit, function(fit) {
+    if (!is.null(cl)) {
+      apply <- function(list, fun) {
+        snow::clusterApply(cl, list, fun)
+      }
+    } else {
+      apply <- function(list, fun) {
+        lapply(list, fun)
+      }
+    }
+    return(do.call(cbind, apply(fit, function(fit) {
       predict_multilevel_callback(fit, newdata, weights)
     })))
   } else {
@@ -247,18 +279,27 @@ linear_multilevel_proj_predfun <- function(fit, newdata = NULL,
   }
 }
 
-linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
+linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL,
+                                cl = NULL) {
   if (is.null(weights)) {
     weights <- 1
   }
   if (inherits(fit, "list")) {
-    future::plan(future::multicore)
+    if (!is.null(cl)) {
+      apply <- function(list, fun) {
+        snow::clusterApply(cl, list, fun)
+      }
+    } else {
+      apply <- function(list, fun) {
+        lapply(list, fun)
+      }
+    }
     if (!is.null(newdata)) {
-      return(do.call(cbind, future.apply::future_lapply(fit, function(fit) {
+      return(do.call(cbind, apply(fit, function(fit) {
         predict(fit, newdata = newdata, weights = weights)
       })))
     } else {
-      return(do.call(cbind, future.apply::future_lapply(fit, function(fit) {
+      return(do.call(cbind, apply(fit, function(fit) {
         predict(fit)
       })))
     }
