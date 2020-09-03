@@ -591,7 +591,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         print("Performing cross-validation for the reference model..")
       }
       nobs <- NROW(refmodel$y)
-      folds <- cvfolds(nobs, k = K, seed = seed)
+      folds <- cvfolds(nobs, K = K, seed = seed)
       cvfits <- refmodel$cvfun(folds)
       cvfits <- lapply(seq_along(cvfits), function(k) {
         # add the 'omitted' indices for the cvfits
