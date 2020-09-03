@@ -379,7 +379,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     submodels <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
       family = family, p_ref = p_pred, refmodel = refmodel,
-      intercept = intercept, regul = opt$regul, cv_search = FALSE
+      intercept = intercept, regul = opt$regul, cv_search = cv_search
     )
     summaries_sub <- .get_sub_summaries(
       submodels = submodels, test_points = c(i), refmodel = refmodel,
