@@ -62,9 +62,9 @@
 #'   \code{get_refmodel}-function.
 #'
 #' @return An object of type \code{vsel} that contains information about the
-#'   feature selection. The fields are not #' meant to be accessed directly by
-#'   the user but instead via the helper #' functions (see the vignettes or type
-#'   ?projpred #' to see the main functions in the package.)
+#'   feature selection. The fields are not meant to be accessed directly by
+#'   the user but instead via the helper functions (see the vignettes or type
+#'   ?projpred to see the main functions in the package.)
 #'
 #' @examples
 #' \donttest{
