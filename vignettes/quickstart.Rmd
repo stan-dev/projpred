@@ -116,7 +116,6 @@ solution_terms(vs) # selection order of the variables
 
 We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
 ```{r, fig.width=5, fig.height=4}
-# plot predictive performance on training data
 plot(vs, stats = c('elpd', 'rmse'))
 ```
 
@@ -155,7 +154,7 @@ ggplot() +
   labs(x = "prediction", y = "y")
 ```
 
-We also obtain draws from the projected predictive distribution. Here's an example prediction for the first data point using 6 variables (the observed value is marked by the red line)
+We also obtain draws from the projected predictive distribution. Here's an example prediction for a random data point using 6 variables (the observed value is marked by the red line)
 ```{r, fig.height=3, fig.width=5}
 subset <- df_gaussian %>% dplyr::sample_n(1)
 y_subset <- subset %>% dplyr::select(y)
