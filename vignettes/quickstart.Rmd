@@ -107,7 +107,7 @@ The function `cv_varsel` runs a cross-validated variable selection, and returns 
 For a simple linear model (without multilevel structure), the fastest method is to use L1--search. 
 
 ```{r, results='hide', messages=FALSE, warnings=FALSE}
-vs <- cv_varsel(refmodel)
+vs <- cv_varsel(refmodel, method = "forward")
 ```
 
 ```{r, messages=FALSE, warnings=FALSE}
