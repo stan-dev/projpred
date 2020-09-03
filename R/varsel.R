@@ -113,9 +113,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     snow::clusterEvalQ(cl, library(mgcv))
     snow::clusterEvalQ(cl, library(MASS))
     snow::clusterEvalQ(cl, library(optimx))
-    snow::clusterExport(cl, list("project_submodel", "subset_formula_and_data",
-                                 ".validate_wobs_wsample", "flatten_formula",
-                                 ".init_submodel", "pseudo_data", "nlist"))
+    snow::clusterExport(cl, ls())
   }
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
