@@ -114,6 +114,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     snow::clusterEvalQ(cl, library(MASS))
     snow::clusterEvalQ(cl, library(optimx))
     snow::clusterExport(cl, ls())
+    snow::clusterExport(cl, ls(), envir = NULL)
     snow::clusterExport(cl, list("cv_search"), envir = NULL)
   }
   ## fetch the default arguments or replace them by the user defined values
