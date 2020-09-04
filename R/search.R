@@ -3,7 +3,9 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
                            increasing_order = TRUE, cl = NULL) {
   ## initialize the forward selection
   ## proj performs the projection over draws
-  projfun <- .get_proj_handle(refmodel, p_ref, family, opt$regul, intercept)
+  projfun <- .get_proj_handle(refmodel, p_ref, family, opt$regul, intercept,
+    cl = cl
+  )
 
   formula <- refmodel$formula
   iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
