@@ -313,7 +313,7 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL,
   }
 }
 
-additive_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
+additive_proj_predfun <- function(fit, newdata = NULL, weights = NULL, ...) {
   if (!is.null(newdata)) {
     newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
   }
@@ -321,7 +321,7 @@ additive_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
 }
 
 ## FIXME: find a way that allows us to remove this
-predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
+predict.subfit <- function(subfit, newdata = NULL, weights = NULL, ...) {
   if (is.null(weights)) {
     weights <- rep(1, NROW(subfit$x))
   }
@@ -349,7 +349,7 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   }
 }
 
-predict.gamm4 <- function(fit, newdata = NULL, weights = NULL) {
+predict.gamm4 <- function(fit, newdata = NULL, weights = NULL, ...) {
   if (is.null(newdata)) {
     newdata <- model.frame(fit$mer)
   }
