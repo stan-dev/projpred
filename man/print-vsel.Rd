@@ -3,25 +3,24 @@
 \name{print-vsel}
 \alias{print-vsel}
 \alias{print.vsel}
-\alias{print.cvsel}
-\title{Print methods for vsel/cvsel objects}
+\title{Print methods for vsel/vsel objects}
 \usage{
 \method{print}{vsel}(x, digits = 2, ...)
-
-\method{print}{cvsel}(x, digits = 2, ...)
 }
 \arguments{
-\item{x}{An object of class vsel/cvsel.}
+\item{x}{An object of class vsel/vsel.}
 
 \item{digits}{Number of decimal places to be reported (2 by default).}
 
-\item{...}{Further arguments passed to \code{\link{varsel_stats}}.}
+\item{...}{Further arguments passed to \code{\link{summary.vsel}}.}
 }
 \value{
-Returns invisibly the data frame produced by \code{\link{varsel_stats}}.
+Returns invisibly the data frame produced by
+  \code{\link{summary.vsel}}.
 }
 \description{
-The \code{print} methods for vsel/cvsel objects created by \code{\link{varsel}}
-or \code{\link{cv_varsel}}) rely on \code{\link{varsel_stats}} to display
-a summary of the results of the projection predictive variable selection.
+The \code{print} methods for vsel/vsel objects created by
+\code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
+\code{\link{summary.vsel}} to display a summary of the results of the
+projection predictive variable selection.
 }

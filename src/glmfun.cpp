@@ -201,7 +201,7 @@ List glm_elnet_c(arma::mat x, // input matrix
   
   obs = pseudo_obs(f,w0);
   z = as<vec>(obs["z"]);
-  w = as<vec>(obs["w"]);
+  w = as<vec>(obs["wobs"]);
   double loss_initial = loss_approx(beta, f, z, w, lambda(0), alpha, penalty); // initial loss
   double loss_old = loss_initial; // will be updated iteratively
   double loss; // will be updated iteratively
@@ -218,7 +218,7 @@ List glm_elnet_c(arma::mat x, // input matrix
       // update the quadratic likelihood approximation
       obs = pseudo_obs(f,w);
       z = as<vec>(obs["z"]);
-      w = as<vec>(obs["w"]);
+      w = as<vec>(obs["wobs"]);
       ++qau;
       
       // current value of the (approximate) loss function
@@ -336,7 +336,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   // initial quadratic approximation
   List obs = pseudo_obs(f,w);
   vec z = as<vec>(obs["z"]);
-  w = as<vec>(obs["w"]);
+  w = as<vec>(obs["wobs"]);
   grad_f = as<vec>(obs["grad"]);
   double loss_initial = ((double) obs["loss"]) + elnet_penalty(beta, lambda, 0, penalty);
   double loss_old = loss_initial; // will be updated iteratively
@@ -403,7 +403,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     // update the solution
     beta = beta + t*dbeta;
     z = as<vec>(obs["z"]);
-    w = as<vec>(obs["w"]);
+    w = as<vec>(obs["wobs"]);
     grad_f = as<vec>(obs["grad"]);
     loss_old = loss;
     ++qau;

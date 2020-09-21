@@ -5,9 +5,9 @@
 \alias{get_refmodel}
 \alias{get_refmodel.refmodel}
 \alias{get_refmodel.vsel}
-\alias{get_refmodel.cvsel}
+\alias{get_refmodel.default}
 \alias{get_refmodel.stanreg}
-\alias{get_refmodel.brmsfit}
+\alias{init_refmodel}
 \title{Get reference model structure}
 \usage{
 get_refmodel(object, ...)
@@ -16,27 +16,117 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
 
-\method{get_refmodel}{cvsel}(object, ...)
+\method{get_refmodel}{default}(
+  object,
+  data,
+  y,
+  formula,
+  ref_predfun,
+  proj_predfun,
+  div_minimizer,
+  fetch_data,
+  family = NULL,
+  wobs = NULL,
+  folds = NULL,
+  cvfits = NULL,
+  offset = NULL,
+  cvfun = NULL,
+  dis = NULL,
+  ...
+)
 
-\method{get_refmodel}{stanreg}(object, ...)
+\method{get_refmodel}{stanreg}(
+  object,
+  data = NULL,
+  ref_predfun = NULL,
+  proj_predfun = NULL,
+  div_minimizer = NULL,
+  folds = NULL,
+  ...
+)
 
-\method{get_refmodel}{brmsfit}(object, ...)
+init_refmodel(
+  object,
+  data,
+  formula,
+  family,
+  ref_predfun = NULL,
+  div_minimizer = NULL,
+  proj_predfun = NULL,
+  folds = NULL,
+  extract_model_data = NULL,
+  cvfun = NULL,
+  cvfits = NULL,
+  dis = NULL,
+  ...
+)
 }
 \arguments{
-\item{object}{Object based on which the reference model is created. See possible types below.}
+\item{object}{Object on which the reference model is created. See possible
+types below.}
 
 \item{...}{Arguments passed to the methods.}
+
+\item{data}{Data on which the reference model was fitted.}
+
+\item{y}{Target response.}
+
+\item{formula}{Reference model's lme4-like formula.}
+
+\item{ref_predfun}{Prediction function for the linear predictor of the
+reference model.}
+
+\item{proj_predfun}{Prediction function for the linear predictor of the
+projections.}
+
+\item{div_minimizer}{Maximum likelihood estimator for the underlying
+projection.}
+
+\item{fetch_data}{Wrapper function for fetching the data without directly
+accesing it. It should have a prototype fetch_data(data, data_points,
+newdata = NULL), where data_points is a vector of data indices and newdata,
+if not NULL, is a data frame with new data for testing.}
+
+\item{family}{A family object that represents the observation model for the
+reference model.}
+
+\item{wobs}{A weights vector for the observations in the data. By default is
+taken as a vector of ones.}
+
+\item{folds}{Only used for k-fold variable selection. It is a vector of fold
+indices for each data point in data.}
+
+\item{cvfits}{Only used for k-fold variable selection. A list of k-fold
+fitted objects on which reference models are created.}
+
+\item{offset}{A vector of offsets per observation to add to the linear
+predictor.}
+
+\item{cvfun}{Only used for k-fold variable selection. A function that, given
+a folds vector, fits a reference model per fold and returns the fitted
+object.}
+
+\item{dis}{A dispersion vector for each observation.}
+
+\item{extract_model_data}{A function with protopyte
+extract_model_data(object, newdata, wrhs, orhs), where object is a
+reference model fit, newdata is either NULL or a data frame with new
+observations, wrhs is a right hand side formula to recover the weights from
+the data frame and orhs is a right hand side formula to recover the offset
+from the data frame.}
 }
 \value{
-An object of type \code{refmodel} (the same type as returned by \link{init_refmodel}) 
-that can be passed to all the functions that
-take the reference fit as the first argument, such as \link{varsel}, \link{cv_varsel}, \link{project},
-\link[=proj-pred]{proj_predict} and \link[=proj-pred]{proj_linpred}.
+An object of type \code{refmodel} (the same type as returned by
+  \link{init_refmodel}) that can be passed to all the functions that take the
+  reference fit as the first argument, such as \link{varsel},
+  \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict} and
+  \link[=proj-pred]{proj_linpred}.
 }
 \description{
-Generic function that can be used to create and fetch the reference model structure
-for all those objects that have this method. All these implementations are wrappers
-to the \code{\link{init_refmodel}}-function so the returned object has the same type.
+Generic function that can be used to create and fetch the reference model
+structure for all those objects that have this method. All these
+implementations are wrappers to the \code{\link{init_refmodel}}-function so
+the returned object has the same type.
 }
 \examples{
 \donttest{

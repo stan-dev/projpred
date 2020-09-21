@@ -4,7 +4,8 @@
 \name{mesquite}
 \alias{mesquite}
 \title{Mesquite data set.}
-\format{The outcome variable is the total weight (in grams) of photosynthetic
+\format{
+The outcome variable is the total weight (in grams) of photosynthetic
 material as derived from actual harvesting of the bush. The predictor
 variables are:
 \describe{
@@ -15,7 +16,8 @@ in meters, measured along the longer axis of the bush.}
 \item{total height}{total height of the bush.}
 \item{density}{plant unit density (# of primary stems per plant unit).}
 \item{group}{group of measurements (0 for the first group, 1 for the second group)}
-}}
+}
+}
 \source{
 \url{http://www.stat.columbia.edu/~gelman/arm/examples/}
 }
