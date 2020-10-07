@@ -49,7 +49,15 @@ remove_duplicates <- function(formula) {
     )
   ))
   dups <- linear[!is.na(match(linear, additive))]
-  update(formula, as.formula(paste0(". ~ . - ", paste(dups, collapse = " - "))))
+  if (length(dups) > 0) {
+    update(formula, as.formula(paste0(
+      ". ~ . - ",
+      paste(dups, collapse = " - ")
+    )))
+  }
+  else {
+    formula
+  }
 }
 
 ## At any point inside projpred, the response can be a single object or instead
