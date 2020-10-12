@@ -254,17 +254,44 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
   additive_terms <- terms_$additive_terms
   global_intercept <- terms_$global_intercept
 
+  additive <- unlist(regmatches(
+    additive_terms,
+    gregexpr("(?<=\\().*?(?=\\))",
+      terms_$additive_terms,
+      perl = TRUE
+    )
+  ))
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
+    group_split <- unlist(lapply(group_terms, split_group_term))
     allterms_ <- c(
-      individual_terms,
       unlist(lapply(additive_terms, split_additive_term, data)),
-      unlist(lapply(group_terms, split_group_term)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
+
+    group_replace <- regmatches(
+      group_split,
+      gregexpr("\\w+(?![^(]*\\))", group_split, perl = TRUE)
+    )
+    groups_to_replace <- group_split[unlist(lapply(
+      group_replace,
+      function(x) length(x) > 0
+    ))]
+    to_replace <- group_split[match(group_replace, additive) %>%
+      (function(x) !is.na(x))]
+    not_replace <- setdiff(group_split, to_replace)
+
+    replacement <- gsub(
+      pattern = "(\\w+)(?![^(]*\\))", replacement = "s(\\1)",
+      to_replace, perl = TRUE
+    )
+    group_split <- c(not_replace, replacement)
+    nodups <- individual_terms[is.na(match(individual_terms, additive))]
+    allterms_ <- c(allterms_, group_split, nodups)
   } else {
+    nodups <- individual_terms[!is.na(match(individual_terms, additive))]
     allterms_ <- c(
-      individual_terms,
+      nodups,
       unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
