@@ -8,23 +8,36 @@
 
 <title>Create cross-validation indices — cv-indices • projpred</title>
 
-<link rel="shortcut icon" type="image/x-icon" href="../favicon.ico">
+<!-- favicons -->
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.1/clipboard.min.js" integrity="sha256-hIvIxeqhGZF+VVeM55k0mJvWpQ6gTkWk3Emc+NmowYA=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
-<!-- sticky kit -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script>
+<!-- headroom.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -32,20 +45,21 @@
 
 
 
+
 <meta property="og:title" content="Create cross-validation indices — cv-indices" />
-
-<meta property="og:description" content="Divide indices from 1 to n into subsets for k-fold cross validation.
-These functions are potentially useful when creating the cvfits and cvfun
-arguments for init_refmodel. The returned value is different for
+<meta property="og:description" content="Divide indices from 1 to n into subsets for k-fold cross
+validation. These functions are potentially useful when creating the
+cvfits and cvfun arguments for
+init_refmodel. The returned value is different for
 these two methods, see below for details." />
+<meta property="og:image" content="https://mc-stan.org/projpred/logo.png" />
 
-<meta property="og:image" content="/logo.png" />
-<meta name="twitter:card" content="summary" />
 
 
 
 <!-- mathjax -->
-<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script>
 
 <!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -53,9 +67,10 @@ these two methods, see below for details." />
 <![endif]-->
 
 
+
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -69,13 +84,19 @@ these two methods, see below for details." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
+  <a href="../index.html">
+    <span class="fa fa-home fa-lg"></span>
+     
+  </a>
+</li>
+<li>
   <a href="../articles/index.html">Vignettes</a>
 </li>
 <li>
@@ -89,30 +110,35 @@ these two methods, see below for details." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="http://mc-stan.org/rstan">rstan</a>
+      <a href="https://mc-stan.org/rstan">rstan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstanarm">rstanarm</a>
+      <a href="https://mc-stan.org/cmdstanr">cmdstanr</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/bayesplot">bayesplot</a>
+      <a href="https://mc-stan.org/rstanarm">rstanarm</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/shinystan">shinystan</a>
+      <a href="https://mc-stan.org/bayesplot">bayesplot</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/loo">loo</a>
+      <a href="https://mc-stan.org/shinystan">shinystan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstantools">rstantools</a>
+      <a href="https://mc-stan.org/loo">loo</a>
+    </li>
+    <li>
+      <a href="https://mc-stan.org/rstantools">rstantools</a>
+    </li>
+    <li>
+      <a href="https://mc-stan.org/posterior">posterior</a>
     </li>
   </ul>
 </li>
 <li>
-  <a href="http://mc-stan.org">Stan</a>
+  <a href="https://mc-stan.org">Stan</a>
 </li>
       </ul>
-      
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://twitter.com/mcmc_stan">
@@ -127,7 +153,7 @@ these two methods, see below for details." />
   </a>
 </li>
 <li>
-  <a href="http://discourse.mc-stan.org/">
+  <a href="https://discourse.mc-stan.org/">
     <span class="fa fa-users"></span>
      
   </a>
@@ -139,29 +165,29 @@ these two methods, see below for details." />
 </div><!--/.navbar -->
 
       
+
       </header>
 
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Create cross-validation indices</h1>
-    
+    <small class="dont-index">Source: <a href='https://github.com/stan-dev/projpred/blob/master/R/methods.R'><code>R/methods.R</code></a></small>
     <div class="hidden name"><code>cv-indices.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    
-    <p>Divide indices from 1 to <code>n</code> into subsets for <code>k</code>-fold cross validation.
-These functions are potentially useful when creating the <code>cvfits</code> and <code>cvfun</code>
-arguments for <a href='init_refmodel.html'>init_refmodel</a>. The returned value is different for
+    <p>Divide indices from 1 to <code>n</code> into subsets for <code>k</code>-fold cross
+validation. These functions are potentially useful when creating the
+<code>cvfits</code> and <code>cvfun</code> arguments for
+init_refmodel. The returned value is different for
 these two methods, see below for details.</p>
-    
     </div>
 
-    <pre class="usage"><span class='fu'>cvfolds</span>(<span class='no'>n</span>, <span class='no'>k</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)
+    <pre class="usage"><span class='fu'>cvfolds</span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>k</span>, seed <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
 
-<span class='fu'>cvind</span>(<span class='no'>n</span>, <span class='no'>k</span>, <span class='kw'>out</span> <span class='kw'>=</span> <span class='st'>"foldwise"</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
-    
+<span class='fu'>cv_ids</span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>k</span>, out <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"foldwise"</span>, <span class='st'>"indices"</span><span class='op'>)</span>, seed <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
@@ -171,58 +197,58 @@ these two methods, see below for details.</p>
     </tr>
     <tr>
       <th>k</th>
-      <td><p>Number of folds.</p></td>
+      <td><p>Number of folds. Must be at least 2 and not exceed <code>n</code>.</p></td>
     </tr>
     <tr>
       <th>seed</th>
-      <td><p>Random seed so that the same division could be obtained again if needed.</p></td>
+      <td><p>Random seed so that the same division could be obtained again if
+needed.</p></td>
     </tr>
     <tr>
       <th>out</th>
-      <td><p>Format of the output, either 'foldwise' (default) or 'indices'. See below for details.</p></td>
+      <td><p>Format of the output, either 'foldwise' (default) or 'indices'.
+See below for details.</p></td>
     </tr>
     </table>
-    
+
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p><code>cvfolds</code> returns a vector of length <code>n</code> such that each element is an integer
-between 1 and <code>k</code> denoting which fold the corresponding data point belongs to.
-The returned value of <code>cvind</code> depends on the <code>out</code>-argument. If <code>out</code>='foldwise',
-the returned value is a list with <code>k</code> elements, 
-each having fields <code>tr</code> and <code>ts</code> which give the training and test indices, respectively,
-for the corresponding fold. If <code>out</code>='indices', the returned value is a list with fields <code>tr</code>
-and <code>ts</code>
-each of which is a list with <code>k</code> elements giving the training and test indices for each fold.</p>
-    
+    <p><code>cvfolds</code> returns a vector of length <code>n</code> such that each
+  element is an integer between 1 and <code>k</code> denoting which fold the
+  corresponding data point belongs to. The returned value of <code>cv_ids</code>
+  depends on the <code>out</code>-argument. If <code>out</code>='foldwise', the returned
+  value is a list with <code>k</code> elements, each having fields <code>tr</code> and
+  <code>ts</code> which give the training and test indices, respectively, for the
+  corresponding fold. If <code>out</code>='indices', the returned value is a list
+  with fields <code>tr</code> and <code>ts</code> each of which is a list with <code>k</code>
+  elements giving the training and test indices for each fold.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='co'>### compute sample means within each fold</span>
-<span class='no'>n</span> <span class='kw'>&lt;-</span> <span class='fl'>100</span>
-<span class='no'>y</span> <span class='kw'>&lt;-</span> <span class='fu'>rnorm</span>(<span class='no'>n</span>)
-<span class='no'>cv</span> <span class='kw'>&lt;-</span> <span class='fu'>cvind</span>(<span class='no'>n</span>, <span class='kw'>k</span><span class='kw'>=</span><span class='fl'>5</span>)
-<span class='no'>cvmeans</span> <span class='kw'>&lt;-</span> <span class='fu'>lapply</span>(<span class='no'>cv</span>, <span class='kw'>function</span>(<span class='no'>fold</span>) <span class='fu'>mean</span>(<span class='no'>y</span>[<span class='no'>fold</span>$<span class='no'>tr</span>]))</div><div class='input'>
+    <pre class="examples"><div class='input'><span class='co'># \donttest{</span>
+<span class='co'>### compute sample means within each fold</span>
+<span class='va'>n</span> <span class='op'>&lt;-</span> <span class='fl'>100</span>
+<span class='va'>y</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>n</span><span class='op'>)</span>
+<span class='va'>cv</span> <span class='op'>&lt;-</span> <span class='fu'>cv_ids</span><span class='op'>(</span><span class='va'>n</span>, k<span class='op'>=</span><span class='fl'>5</span><span class='op'>)</span>
+<span class='va'>cvmeans</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/lapply.html'>lapply</a></span><span class='op'>(</span><span class='va'>cv</span>, <span class='kw'>function</span><span class='op'>(</span><span class='va'>fold</span><span class='op'>)</span> <span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span><span class='op'>(</span><span class='va'>y</span><span class='op'>[</span><span class='va'>fold</span><span class='op'>$</span><span class='va'>tr</span><span class='op'>]</span><span class='op'>)</span><span class='op'>)</span>
+<span class='co'># }</span>
+
 </div></pre>
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-      
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
+
 
       <footer>
       <div class="copyright">
-  <p>Developed by Juho Piironen, Markus Paasiniemi, Aki Vehtari.</p>
+  <p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="http://pkgdown.r-lib.org/">pkgdown</a>.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>
@@ -230,6 +256,8 @@ each of which is a list with <code>k</code> elements giving the training and tes
 
   
 
+
   </body>
 </html>
+
 

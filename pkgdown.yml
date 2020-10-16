@@ -1,6 +1,11 @@
-pandoc: 1.19.2.1
-pkgdown: 1.1.0.9000
-pkgdown_sha: 3b3188bfbbd8cc42daa3218f3884b85fd5122372
+pandoc: 2.9.2.1
+pkgdown: 1.6.1
+pkgdown_sha: ~
 articles:
   quickstart: quickstart.html
+  quickstart_glmm: quickstart_glmm.html
+last_built: 2020-10-16T08:26Z
+urls:
+  reference: https://mc-stan.org/projpred/reference
+  article: https://mc-stan.org/projpred/articles
 

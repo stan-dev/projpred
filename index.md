@@ -17,7 +17,8 @@ be used.
 
 The methods implemented in the package are discussed in detail in
 
-* Juho Piironen, Markus Paasiniemi and Aki Vehtari (2018). Projective Inference in High-dimensional Problems: Prediction and Feature Selection. ([preprint](https://arxiv.org/abs/1810.02406)).
+* Juho Piironen, Markus Paasiniemi and Aki Vehtari (2020). Projective inference in high-dimensional problems: prediction and feature selection. *Electronic Journal of Statistics*, 14(1): 2155-2197.
+* Alejandro Catalina, Paul-Christian Bürkner and Aki Vehtari (2020). Projection Predictive Inference for Generalized Linear and Additive Multilevel Models ([preprint](http://arxiv.org/abs/2010.06994)).
 
 The projective approach is evaluated in comparison to many other methods in
 

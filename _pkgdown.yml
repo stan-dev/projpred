@@ -54,3 +54,8 @@ articles:
       This vignette provides a quick-start guide to using the projpred package for projection predictive feature selection.
     contents:
       - quickstart
+  - title: "Performing variable and structure selection on Generalize Linear Multilevel Models"
+    desc: >
+      This vignette provides a quick-start guide to using the projpred package for projection predictive variale and structure selection for GLMMs.
+    contents:
+      - quickstart_glmm

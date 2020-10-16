@@ -6,20 +6,26 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>projpred Quick Start • projpred</title>
-<link rel="shortcut icon" type="image/x-icon" href="../favicon.ico">
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script><!-- Font Awesome icons --><link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.1/clipboard.min.js" integrity="sha256-hIvIxeqhGZF+VVeM55k0mJvWpQ6gTkWk3Emc+NmowYA=" crossorigin="anonymous"></script><!-- sticky kit --><script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="projpred Quick Start">
-<meta property="og:description" content="">
-<meta property="og:image" content="/logo.png">
-<meta name="twitter:card" content="summary">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><!--[if lt IE 9]>
+<meta property="og:description" content="projpred">
+<meta property="og:image" content="https://mc-stan.org/projpred/logo.png">
+<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
-<body>
+<body data-spy="scroll" data-target="#toc">
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -32,12 +38,18 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
+<li>
+  <a href="../index.html">
+    <span class="fa fa-home fa-lg"></span>
+     
+  </a>
+</li>
 <li>
   <a href="../articles/index.html">Vignettes</a>
 </li>
@@ -52,27 +64,33 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="http://mc-stan.org/rstan">rstan</a>
+      <a href="https://mc-stan.org/rstan">rstan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstanarm">rstanarm</a>
+      <a href="https://mc-stan.org/cmdstanr">cmdstanr</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/bayesplot">bayesplot</a>
+      <a href="https://mc-stan.org/rstanarm">rstanarm</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/shinystan">shinystan</a>
+      <a href="https://mc-stan.org/bayesplot">bayesplot</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/loo">loo</a>
+      <a href="https://mc-stan.org/shinystan">shinystan</a>
     </li>
     <li>
-      <a href="http://mc-stan.org/rstantools">rstantools</a>
+      <a href="https://mc-stan.org/loo">loo</a>
+    </li>
+    <li>
+      <a href="https://mc-stan.org/rstantools">rstantools</a>
+    </li>
+    <li>
+      <a href="https://mc-stan.org/posterior">posterior</a>
     </li>
   </ul>
 </li>
 <li>
-  <a href="http://mc-stan.org">Stan</a>
+  <a href="https://mc-stan.org">Stan</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
@@ -89,7 +107,7 @@
   </a>
 </li>
 <li>
-  <a href="http://discourse.mc-stan.org/">
+  <a href="https://discourse.mc-stan.org/">
     <span class="fa fa-users"></span>
      
   </a>
@@ -103,14 +121,15 @@
 <!--/.navbar -->
 
       
-      </header><div class="row">
+
+      </header><script src="quickstart_files/header-attrs-2.3/header-attrs.js"></script><script src="quickstart_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1>projpred Quick Start</h1>
+      <h1 data-toc-skip>projpred Quick Start</h1>
             
-            <h4 class="date">2018-10-16</h4>
+            <h4 class="date">2020-10-16</h4>
       
-      
+      <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.Rmd"><code>vignettes/quickstart.Rmd</code></a></small>
       <div class="hidden name"><code>quickstart.Rmd</code></div>
 
     </div>
@@ -119,185 +138,127 @@
     
 <!--
 %\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{projpred quickstart guide}
+%\VignetteIndexEntry{projpred Quick Start}
 \usepackage[utf8](inputenc)
 -->
-<p>This vignette shows how to use the main functionalities of the <code>projpred</code>-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models. The package is compatible with <code>rstanarm</code> but also other reference models could be used (see section Custom reference models). The methods implemented in the package are described in detail in Piironen et al. (2018) and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).</p>
+<p>This vignette shows how to use the main functionalities of the <code>projpred</code>-package, which implements the projective variable selection (Goutis and Robert, 1998; Dupuis and Robert, 2003) for generalized linear models. The package is compatible with <code>rstanarm</code> but also other reference models could be used (see section Custom reference models). The methods implemented in the package are described in detail in Piironen et al. (2020) and evaluated in comparison to many other methods in Piironen and Vehtari (2017a).</p>
 <div id="gaussian-example" class="section level2">
 <h2 class="hasAnchor">
 <a href="#gaussian-example" class="anchor"></a>Gaussian example</h2>
-<p>First load the packages that are needed, and specify the number of available cores (this speeds up the sampling when multiple cores are available). Uncomment the last line in the following commands (this is commented out to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(rstanarm)
-<span class="kw">library</span>(projpred)
-<span class="kw">library</span>(ggplot2)
-<span class="kw">library</span>(bayesplot)
-<span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/theme_get">theme_set</a></span>(<span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggtheme">theme_classic</a></span>())
-<span class="co">#options(mc.cores = parallel::detectCores())</span></code></pre></div>
-<p>The package contains a simple Gaussian example dataset accessible with the <code>data</code>-command. This dataset is one of the example cases from the <code>glmnet</code>-package. The following command loads a dataframe <code>df_gaussian</code> with the predictor matrix <code>x</code> and the corresponding targets <code>y</code> into the workspace.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">data</span>(<span class="st">'df_gaussian'</span>, <span class="dt">package =</span> <span class="st">'projpred'</span>)</code></pre></div>
-<p>We then fit the model with all the variables and sparsifying horseshoe prior (Carvalho et al., 2010) on the regression coefficients. This gives us the full Bayesian solution to the problem. To specify the prior beliefs about the number of relevant variables, we use the framework discussed by Piironen and Vehtari (2017b,c), in which the prior for the global shrinkage parameter is defined based on our prior guess for the number of relevant variables.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">n &lt;-<span class="st"> </span><span class="kw">nrow</span>(df_gaussian<span class="op">$</span>x) <span class="co"># 100</span>
-D &lt;-<span class="st"> </span><span class="kw">ncol</span>(df_gaussian<span class="op">$</span>x) <span class="co"># 20</span>
-p0 &lt;-<span class="st"> </span><span class="dv">5</span> <span class="co"># prior guess for the number of relevant variables</span>
-tau0 &lt;-<span class="st"> </span>p0<span class="op">/</span>(D<span class="op">-</span>p0) <span class="op">*</span><span class="st"> </span><span class="dv">1</span><span class="op">/</span><span class="kw">sqrt</span>(n) <span class="co"># scale for tau (notice that stan_glm will automatically scale this by sigma)</span>
-prior_coeff &lt;-<span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/rstanarm/topics/priors">hs</a></span>(<span class="dt">global_scale =</span> tau0, <span class="dt">slab_scale =</span> <span class="dv">1</span>) <span class="co"># regularized horseshoe prior</span>
-fit &lt;-<span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/rstanarm/topics/stan_glm">stan_glm</a></span>(y <span class="op">~</span><span class="st"> </span>x, <span class="dt">family=</span><span class="kw">gaussian</span>(), <span class="dt">data=</span>df_gaussian, <span class="dt">prior=</span>prior_coeff,
-                <span class="co"># to make this vignette build fast, we use only 2 chains and</span>
-                <span class="co"># 500 draws. In practice, more conservative values, eg. 4 chains</span>
-                <span class="co"># and 2000 draws might be required for reliable inference.</span>
-                <span class="dt">seed=</span><span class="dv">1</span>, <span class="dt">chains=</span><span class="dv">2</span>, <span class="dt">iter=</span><span class="dv">500</span>) </code></pre></div>
-<p>The variable selection can then be excecuted with the command <code>varsel</code>. This return an object that contains the relevant information about the variable selection, such as the ordering of the variables. The search heuristic can be specified by the keyword <code>method</code>. Currently the package implements forward search and Lasso type L1-penalization to find the variable ordering (Tran et al., 2012). The latter is much faster for large problems but the forward search can sometimes be more accurate.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">vs &lt;-<span class="st"> </span><span class="kw"><a href="../reference/varsel.html">varsel</a></span>(fit, <span class="dt">method=</span><span class="st">'forward'</span>)
-vs<span class="op">$</span>vind <span class="co"># variables ordered as they enter during the search</span></code></pre></div>
-<pre><code>##  x1 x14 x20  x5  x3  x6  x8 x11  x7 x10 x15 x12 x18  x4  x2 x13 x16 x17 
-##   1  14  20   5   3   6   8  11   7  10  15  12  18   4   2  13  16  17 
-##  x9 x19 
-##   9  19</code></pre>
-<p>We can then plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with <code>deltas=T</code> the plot shows results relative to the full model.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># plot predictive performance on training data </span>
-<span class="kw"><a href="../reference/varsel-statistics.html">varsel_plot</a></span>(vs, <span class="dt">stats=</span><span class="kw">c</span>(<span class="st">'elpd'</span>, <span class="st">'rmse'</span>))</code></pre></div>
-<p><img src="quickstart_files/figure-html/unnamed-chunk-6-1.png" width="480"></p>
-<p>The statistics computed on the training data typically give us a rough idea of how many variables are needed in order to capture all the predictive power of the full model. However, because these statistics are computed using the same data that was used to fit the models, the results can be biased. More reliable assessment can be obtained by cross-validating both the full model and the variable selection process.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cvs &lt;-<span class="st"> </span><span class="kw"><a href="../reference/cv_varsel.html">cv_varsel</a></span>(fit, <span class="dt">method=</span><span class="st">'forward'</span>)</code></pre></div>
-<p>In this case the cross-validated results look quite similar to those computed on the training data, showing that after 6 or 7 variables the predictions do not change markedly. The model size suggested by the program is stored in the variable <code>ssize</code> in the returned object, and it can be obtained also by calling function <code>suggest_size</code></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># model size suggested by the program</span>
-<span class="kw"><a href="../reference/suggest_size.html">suggest_size</a></span>(cvs)</code></pre></div>
-<pre><code>## [1] 7</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># plot the validation results, this time relative to the full model</span>
-<span class="kw"><a href="../reference/varsel-statistics.html">varsel_plot</a></span>(cvs, <span class="dt">stats =</span> <span class="kw">c</span>(<span class="st">'elpd'</span>, <span class="st">'rmse'</span>), <span class="dt">deltas=</span>T)</code></pre></div>
+<p>Load the necessary packages. If the sampling takes more than 10 seconds and multiple cores are available, uncomment the line setting <code>mc.cores</code> to set the number of cores used (this is commented out as the sampling in the example is fast and to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).</p>
+<div class="sourceCode" id="cb1"><pre class="downlit">
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/paul-buerkner/brms">brms</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/projpred">projpred</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="http://ggplot2.tidyverse.org">ggplot2</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/bayesplot">bayesplot</a></span><span class="op">)</span>
+<span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme_get.html">theme_set</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html">theme_classic</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
+<span class="co">#options(mc.cores = parallel::detectCores())</span></pre></div>
+<p>The package contains a simple Gaussian example dataset accessible with the <code>data</code>-command. This dataset is one of the example cases from the <code>glmnet</code>-package. The following loads a dataframe <code>df_gaussian</code> with the predictor matrix <code>x</code> and the corresponding targets <code>y</code> into the workspace.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit">
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">'df_gaussian'</span>, package <span class="op">=</span> <span class="st">'projpred'</span><span class="op">)</span></pre></div>
+<p>We first construct a model with all the variables and regularized horseshoe prior (Piironen and Vehtari, 2017c) on the regression coefficients. This gives us the full Bayesian solution to the problem. We specify the prior on the number of relevant variables using the approch by Piironen and Vehtari (2017b,c). The prior for the global shrinkage parameter is defined based on the prior on the number of relevant variables.</p>
+<p>Before building the model we call <code>break_up_matrix_term</code>. This is a convenience function to automatically split matrix variables in linear terms. For example, in <code>y ~ x</code>, <code>x</code> can be a matrix. If this function is not used, <code>projpred</code> considers <code>x</code> to be jointly included or excluded in the variable selection.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit">
+<span class="va">split_structure</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/break_up_matrix_term.html">break_up_matrix_term</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, data <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">)</span>
+<span class="va">df_gaussian</span> <span class="op">&lt;-</span> <span class="va">split_structure</span><span class="op">$</span><span class="va">data</span>
+<span class="va">formula</span> <span class="op">&lt;-</span> <span class="va">split_structure</span><span class="op">$</span><span class="va">formula</span>
+<span class="va">d</span> <span class="op">&lt;-</span> <span class="va">df_gaussian</span>
+<span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">df_gaussian</span><span class="op">)</span> <span class="co"># 100</span>
+<span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">df_gaussian</span><span class="op">[</span>, <span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="co"># 20</span>
+<span class="va">p0</span> <span class="op">&lt;-</span> <span class="fl">5</span> <span class="co"># prior guess for the number of relevant variables</span>
+<span class="va">tau0</span> <span class="op">&lt;-</span> <span class="va">p0</span><span class="op">/</span><span class="op">(</span><span class="va">D</span><span class="op">-</span><span class="va">p0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">sqrt</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="co"># scale for tau (notice that stan_glm will automatically scale this by sigma)</span>
+<span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/brms/man/brm.html">brm</a></span><span class="op">(</span><span class="va">formula</span>, family<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/family.html">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data<span class="op">=</span><span class="va">df_gaussian</span>,
+           prior<span class="op">=</span><span class="fu"><a href="https://rdrr.io/pkg/brms/man/set_prior.html">prior</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/brms/man/horseshoe.html">horseshoe</a></span><span class="op">(</span>scale_global <span class="op">=</span> <span class="va">tau0</span>, scale_slab <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, class<span class="op">=</span><span class="va">b</span><span class="op">)</span>,
+           <span class="co">## To make this vignette build fast, we use only 2 chains and</span>
+           <span class="co">## 500 iterations. In practice, at least 4 chains should be </span>
+           <span class="co">## used and 2000 iterations might be required for reliable</span>
+           <span class="co">## inference.</span>
+           seed<span class="op">=</span><span class="fl">1</span>, chains<span class="op">=</span><span class="fl">2</span>, iter<span class="op">=</span><span class="fl">500</span><span class="op">)</span></pre></div>
+<p>Thanks to its general interface, <code>projpred</code> can be applied to a very wide set of models. To achieve so, we internally define the following set of functions: - Divergence minimizer for the projection, which in this case it simply corresponds to a maximum likelihood estimator. - Prediction function for the projections. - Prediction function for the reference model that outputs the linear predictor. - Function to fetch data from the original dataset.</p>
+<p>For most models, <code>projpred</code> is able to generate these itself without any user input more than the reference model object. Nonetheless, for custom or not supported models, the user can provide those himself (more details in the documentation about reference models).</p>
+<!-- ```{r, results='hide', messages=FALSE, warning=FALSE} -->
+<!-- ref_predfun <- function(fit, newdata=NULL) -->
+<!--   t(posterior_linpred(fit, newdata = newdata)) -->
+<!-- proj_predfun <- function(fit, newdata=NULL) { -->
+<!--   newdata <- as.data.frame(fetch_data(xnew=newdata)) -->
+<!--   predict(fit, newdata = newdata) -->
+<!-- } -->
+<!-- mle <- function(form, dat) -->
+<!--   lm(form, data = dat) -->
+<!-- fetch_data <- function(obs=NULL, xnew=NULL) { -->
+<!--   if (is.null(obs)) -->
+<!--     if (is.null(xnew)) -->
+<!--       return(d) -->
+<!--     else -->
+<!--       return(xnew) -->
+<!--   else if (is.null(xnew)) -->
+<!--     return(d[obs, ]) -->
+<!--   else -->
+<!--     return(xnew[obs, ]) -->
+<!-- } -->
+<!-- ``` -->
+<!-- The first function, `ref_predfun`, is the prediction function for the reference model, so we use `posterior_linpred` from `rstanarm`. -->
+<!-- For each of the submodels we use `proj_predfun`, which uses `lme4` `predict` function for linear models. -->
+<!-- To fit the projections we use `lm`. -->
+<!-- Finally, the `fetch_data` function that simply extracts a set of data points from the dataset, that will be used during the cross validation stage. -->
+<!-- The `fetch_data` function needs to handle the different data structures needed in different contexts inside `projpred`. -->
+<p>Next we construct the reference model structure <code>refmodel</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit">
+<span class="va">refmodel</span> <span class="op">&lt;-</span> <span class="fu">get_refmodel</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></pre></div>
+<p>The function <code>cv_varsel</code> runs a cross-validated variable selection, and returns an object that contains the relevant information about the procedure, such as the ordering of the variables. The search heuristic can be specified by the keyword <code>method</code>. For a simple linear model, the fastest method is to use L1–search, that is the default option.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit">
+<span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span><span class="va">refmodel</span><span class="op">)</span></pre></div>
+<pre><code>## Warning in cv_varsel.refmodel(refmodel): K provided, but cv_method is LOO.</code></pre>
+<pre><code>## Warning: Some Pareto k diagnostic values are slightly high. See help('pareto-k-diagnostic') for details.</code></pre>
+<div class="sourceCode" id="cb8"><pre class="downlit">
+<span class="fu">solution_terms</span><span class="op">(</span><span class="va">vs</span><span class="op">)</span> <span class="co"># selection order of the variables</span></pre></div>
+<pre><code>##  [1] "x1"  "x14" "x5"  "x20" "x6"  "x3"  "x8"  "x11" "x7"  "x10" "x13" "x2" 
+## [13] "x15" "x4"  "x12" "x18" "x16" "x9"  "x17"</code></pre>
+<p>We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with <code>deltas=T</code> the plot shows results relative to the full model.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit">
+<span class="co"># plot predictive performance on training data</span>
+<span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">vs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'elpd'</span>, <span class="st">'rmse'</span><span class="op">)</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_files/figure-html/unnamed-chunk-8-1.png" width="480"></p>
+<div class="sourceCode" id="cb11"><pre class="downlit">
+<span class="co"># plot the validation results, this time relative to the full model</span>
+<span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">vs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'elpd'</span>, <span class="st">'rmse'</span><span class="op">)</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></pre></div>
 <p><img src="quickstart_files/figure-html/unnamed-chunk-9-1.png" width="480"></p>
-<p>We can now perform the projection for a submodel of desired size using the function <code>project</code>. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with e.g. the <code>mcmc_areas</code> function in the <code>bayesplot</code> package. Below we compare how the projection affects the three most relevant variables.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Visualise the three most relevant variables in the full model</span>
-<span class="kw"><a href="http://www.rdocumentation.org/packages/bayesplot/topics/MCMC-intervals">mcmc_areas</a></span>(<span class="kw">as.matrix</span>(fit), 
-           <span class="dt">pars =</span> <span class="kw">c</span>(<span class="st">'(Intercept)'</span>, <span class="kw">names</span>(vs<span class="op">$</span>vind[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>]), <span class="st">'sigma'</span>)) <span class="op">+</span><span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/coord_cartesian">coord_cartesian</a></span>(<span class="dt">xlim =</span> <span class="kw">c</span>(<span class="op">-</span><span class="dv">2</span>, <span class="dv">2</span>))</code></pre></div>
+<p>We perform the projection for a submodel of desired size using the function <code>project</code>. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the <code>mcmc_areas</code> function in the <code>bayesplot</code> package. Below we compare how the projection affects the three most relevant variables.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit">
+ <span class="co"># Visualise the three most relevant variables in the full model --&gt;</span>
+ <span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html">mcmc_areas</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="va">refmodel</span><span class="op">$</span><span class="va">fit</span><span class="op">)</span>,
+            pars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"b_Intercept"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"b_"</span>, <span class="fu">solution_terms</span><span class="op">(</span><span class="va">vs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span>,
+                     <span class="st">"sigma"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
+   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html">coord_cartesian</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></pre></div>
+<pre><code>## Warning: `expand_scale()` is deprecated; use `expansion()` instead.</code></pre>
 <p><img src="quickstart_files/figure-html/unnamed-chunk-10-1.png" width="576"></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Visualise the projected three most relevant variables</span>
-proj &lt;-<span class="st"> </span><span class="kw"><a href="../reference/project.html">project</a></span>(vs, <span class="dt">nv =</span> <span class="dv">3</span>, <span class="dt">ns =</span> <span class="dv">500</span>)
-<span class="kw"><a href="http://www.rdocumentation.org/packages/bayesplot/topics/MCMC-intervals">mcmc_areas</a></span>(<span class="kw">as.matrix</span>(proj)) <span class="op">+</span><span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/coord_cartesian">coord_cartesian</a></span>(<span class="dt">xlim =</span> <span class="kw">c</span>(<span class="op">-</span><span class="dv">2</span>, <span class="dv">2</span>))</code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit">
+<span class="co"># Visualise the projected three most relevant variables</span>
+<span class="va">proj</span> <span class="op">&lt;-</span> <span class="fu">project</span><span class="op">(</span><span class="va">vs</span>, nterms <span class="op">=</span> <span class="fl">3</span>, ns <span class="op">=</span> <span class="fl">500</span><span class="op">)</span>
+<span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html">mcmc_areas</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="va">proj</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html">coord_cartesian</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></pre></div>
+<pre><code>## Warning: `expand_scale()` is deprecated; use `expansion()` instead.</code></pre>
 <p><img src="quickstart_files/figure-html/unnamed-chunk-11-1.png" width="576"></p>
-<p>We can make predictions with the projected submodels. For point estimates we can use method <code>proj_linpred</code>. Test inputs can be provided using the keyword <code>xnew</code>. If also the test targets <code>ynew</code> are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pred &lt;-<span class="st"> </span><span class="kw"><a href="../reference/proj-pred.html">proj_linpred</a></span>(vs, <span class="dt">xnew=</span>df_gaussian<span class="op">$</span>x, <span class="dt">ynew=</span>df_gaussian<span class="op">$</span>y, <span class="dt">nv =</span> <span class="dv">6</span>, <span class="dt">integrated =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<p>We make predictions with the projected submodels. For point estimates we can use method <code>proj_linpred</code>. Test inputs can be provided using the keyword <code>newdata</code>. If also the test targets <code>ynew</code> are provided in <code>newdata</code>, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit">
+<span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proj-pred.html">proj_linpred</a></span><span class="op">(</span><span class="va">vs</span>, newdata <span class="op">=</span> <span class="va">df_gaussian</span>, nterms <span class="op">=</span> <span class="fl">6</span>, integrated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></pre></div>
 <p>Visualize the predictions</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>() <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_point">geom_point</a></span>(<span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x=</span>pred<span class="op">$</span>pred,<span class="dt">y=</span>df_gaussian<span class="op">$</span>y)) <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_abline</a></span>(<span class="dt">slope =</span> <span class="dv">1</span>, <span class="dt">color=</span><span class="st">'red'</span>) <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">labs</a></span>(<span class="dt">x =</span> <span class="st">'prediction'</span>, <span class="dt">y =</span> <span class="st">'y'</span>)</code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="downlit">
+<span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">pred</span><span class="op">$</span><span class="va">pred</span>,y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prediction"</span>, y <span class="op">=</span> <span class="st">"y"</span><span class="op">)</span></pre></div>
 <p><img src="quickstart_files/figure-html/unnamed-chunk-13-1.png" width="480"></p>
-<p>We can also draw samples from the projected predictive distribution. Here’s an example prediction for the first data point using 6 variables (the observed value is marked by the red line)</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">y1_rep &lt;-<span class="st"> </span><span class="kw"><a href="../reference/proj-pred.html">proj_predict</a></span>(vs, <span class="dt">xnew=</span>df_gaussian<span class="op">$</span>x[<span class="dv">1</span>,,<span class="dt">drop=</span>F], <span class="dt">nv=</span><span class="dv">6</span>, <span class="dt">seed=</span><span class="dv">7560</span>)
-<span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/qplot">qplot</a></span>(<span class="kw">as.vector</span>(y1_rep), <span class="dt">bins=</span><span class="dv">25</span>) <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_abline">geom_vline</a></span>(<span class="dt">xintercept =</span> df_gaussian<span class="op">$</span>y[<span class="dv">1</span>], <span class="dt">color=</span><span class="st">'red'</span>) <span class="op">+</span>
-<span class="st">  </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">xlab</a></span>(<span class="st">'y1_rep'</span>)</code></pre></div>
+<p>We also obtain draws from the projected predictive distribution. Here’s an example prediction for the first data point using 6 variables (the observed value is marked by the red line)</p>
+<div class="sourceCode" id="cb18"><pre class="downlit">
+<span class="va">subset</span> <span class="op">&lt;-</span> <span class="va">df_gaussian</span> <span class="op">%&gt;%</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/sample_n.html">sample_n</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>
+<span class="va">y_subset</span> <span class="op">&lt;-</span> <span class="va">subset</span> <span class="op">%&gt;%</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>
+<span class="va">y1_rep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proj-pred.html">proj_predict</a></span><span class="op">(</span><span class="va">vs</span>, newdata <span class="op">=</span> <span class="va">subset</span>, nterms <span class="op">=</span> <span class="fl">6</span>, seed <span class="op">=</span> <span class="fl">7560</span><span class="op">)</span>
+<span class="fu"><a href="https://ggplot2.tidyverse.org/reference/qplot.html">qplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html">as.vector</a></span><span class="op">(</span><span class="va">y1_rep</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">25</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">y_subset</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span> <span class="op">+</span>
+  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">xlab</a></span><span class="op">(</span><span class="st">"y1_rep"</span><span class="op">)</span></pre></div>
 <p><img src="quickstart_files/figure-html/unnamed-chunk-14-1.png" width="480"></p>
-</div>
-<div id="binomial-example-logistic-regression" class="section level2">
-<h2 class="hasAnchor">
-<a href="#binomial-example-logistic-regression" class="anchor"></a>Binomial example (logistic regression)</h2>
-<p>This section shows an example of the variable selection for a logistic regression model (binary classification). Everything is very similar to the Gaussian case. First load the data (this dataset is also from the <code>glmnet</code>-package):</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">data</span>(<span class="st">'df_binom'</span>, <span class="dt">package =</span> <span class="st">'projpred'</span>)</code></pre></div>
-<p>Then fit the full model:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># fit the full model</span>
-n &lt;-<span class="st"> </span><span class="kw">nrow</span>(df_binom<span class="op">$</span>x)
-D &lt;-<span class="st"> </span><span class="kw">ncol</span>(df_binom<span class="op">$</span>x)
-p0 &lt;-<span class="st"> </span><span class="dv">5</span> <span class="co"># prior guess for the number of relevant variables</span>
-sigma &lt;-<span class="st"> </span><span class="dv">2</span> <span class="co"># approximate plug-in value for observation information (Piironen and Vehtari, 2017b)</span>
-tau0 &lt;-<span class="st"> </span>p0<span class="op">/</span>(D<span class="op">-</span>p0) <span class="op">*</span><span class="st"> </span>sigma<span class="op">/</span><span class="kw">sqrt</span>(n)
-prior_coeff &lt;-<span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/rstanarm/topics/priors">hs</a></span>(<span class="dt">global_scale =</span> tau0, <span class="dt">slab_scale =</span> <span class="dv">1</span>)
-fit &lt;-<span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/rstanarm/topics/stan_glm">stan_glm</a></span>(y <span class="op">~</span><span class="st"> </span>x, <span class="dt">family=</span><span class="kw">binomial</span>(), <span class="dt">data=</span>df_binom, <span class="dt">prior=</span>prior_coeff,
-                <span class="dt">seed=</span><span class="dv">1</span>, <span class="dt">chains=</span><span class="dv">2</span>, <span class="dt">iter=</span><span class="dv">500</span>)</code></pre></div>
-<p>Run the variable selection and print out the variable ordering</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">vs &lt;-<span class="st"> </span><span class="kw"><a href="../reference/varsel.html">varsel</a></span>(fit, <span class="dt">method=</span><span class="st">'forward'</span>)
-vs<span class="op">$</span>vind</code></pre></div>
-<pre><code>##  x4 x10  x2  x6  x9 x25  x3  x8 x16 x26 x28 x22 x23 x29  x5 x30 x11  x1 
-##   4  10   2   6   9  25   3   8  16  26  28  22  23  29   5  30  11   1 
-## x12 x18 
-##  12  18</code></pre>
-<p>Plot the ELPD and classification accuracy on the training data:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="../reference/varsel-statistics.html">varsel_plot</a></span>(vs, <span class="dt">stats=</span><span class="kw">c</span>(<span class="st">'elpd'</span>, <span class="st">'acc'</span>), <span class="dt">deltas=</span>F)</code></pre></div>
-<p><img src="quickstart_files/figure-html/unnamed-chunk-18-1.png" width="480"></p>
-<p>Cross-validate the full model and the variable selection. Let’s use K-fold cross validation this time for illustration (here we use only K=3 folds to make this vignette build faster, but in practice it is customary to use more folds, e.g. K=5 or K=10):</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cvs &lt;-<span class="st"> </span><span class="kw"><a href="../reference/cv_varsel.html">cv_varsel</a></span>(fit, <span class="dt">method=</span><span class="st">'forward'</span>, <span class="dt">cv_method=</span><span class="st">'kfold'</span>, <span class="dt">K=</span><span class="dv">3</span>, <span class="dt">seed=</span><span class="dv">823217</span>)</code></pre></div>
-<pre><code>## Fitting model 1 out of 3</code></pre>
-<pre><code>## Fitting model 2 out of 3</code></pre>
-<pre><code>## Fitting model 3 out of 3</code></pre>
-<p>Plot the cross-validated performance estimates for the submodels relative to the full model. In this case the cross-validated results differ from the training statistics substantially.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># model size suggested by the program</span>
-<span class="kw"><a href="../reference/suggest_size.html">suggest_size</a></span>(cvs)</code></pre></div>
-<pre><code>## [1] 8</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># plot the validation results</span>
-<span class="kw"><a href="../reference/varsel-statistics.html">varsel_plot</a></span>(cvs, <span class="dt">stats=</span><span class="kw">c</span>(<span class="st">'elpd'</span>, <span class="st">'acc'</span>))</code></pre></div>
-<p><img src="quickstart_files/figure-html/unnamed-chunk-21-1.png" width="480"></p>
-<p>Finally, for illustration, we compute here the predictive class probabilities using only the two most relevant variables, and visualize the results.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># evaluate the predictive distribution in a 2d grid</span>
-ng &lt;-<span class="st"> </span><span class="dv">20</span>
-x1g &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="op">-</span><span class="dv">4</span>,<span class="dv">4</span>,<span class="dt">len=</span>ng)
-x2g &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="op">-</span><span class="dv">4</span>,<span class="dv">4</span>,<span class="dt">len=</span>ng)
-xnew &lt;-<span class="st"> </span><span class="kw">cbind</span>( <span class="kw">rep</span>(x1g,<span class="dt">each=</span>ng), <span class="kw">rep</span>(x2g,ng) )
-vind &lt;-<span class="st"> </span>vs<span class="op">$</span>vind[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]
-pr &lt;-<span class="st"> </span><span class="kw"><a href="../reference/proj-pred.html">proj_linpred</a></span>(vs, xnew, <span class="dt">vind=</span>vind, <span class="dt">transform=</span>T, <span class="dt">integrated=</span>T)
-
-<span class="co"># visualize the contours showing the predicted class probabilities</span>
-pp &lt;-<span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/ggplot">ggplot</a></span>()
-pp &lt;-<span class="st"> </span>pp <span class="op">+</span><span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_contour">geom_contour</a></span>(<span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x=</span>xnew[,<span class="dv">1</span>],<span class="dt">y=</span>xnew[,<span class="dv">2</span>], <span class="dt">z=</span>pr, <span class="dt">colour=</span>..level..))
-pp &lt;-<span class="st"> </span>pp <span class="op">+</span><span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/scale_gradient">scale_colour_gradient</a></span>(<span class="dt">low =</span> <span class="st">"red"</span>, <span class="dt">high =</span> <span class="st">"green"</span>)
-pp &lt;-<span class="st"> </span>pp <span class="op">+</span><span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/geom_point">geom_point</a></span>(<span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/aes">aes</a></span>(<span class="dt">x=</span>df_binom<span class="op">$</span>x[,vind[<span class="dv">1</span>]],<span class="dt">y=</span>df_binom<span class="op">$</span>x[,vind[<span class="dv">2</span>]]), <span class="dt">color=</span>df_binom<span class="op">$</span>y<span class="op">+</span><span class="dv">2</span>)
-pp &lt;-<span class="st"> </span>pp <span class="op">+</span><span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">xlab</a></span>(<span class="kw">sprintf</span>(<span class="st">'Feature %d'</span>,vind[<span class="dv">1</span>])) <span class="op">+</span><span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/ggplot2/topics/labs">ylab</a></span>(<span class="kw">sprintf</span>(<span class="st">'Feature %d'</span>,vind[<span class="dv">2</span>]))
-pp</code></pre></div>
-<p><img src="quickstart_files/figure-html/unnamed-chunk-22-1.png" width="480"></p>
-</div>
-<div id="custom-reference-models" class="section level2">
-<h2 class="hasAnchor">
-<a href="#custom-reference-models" class="anchor"></a>Custom reference models</h2>
-<p>The package supports using virtually any reference model, the only requirement is that one can make predictions using the reference model. Custom reference models can be initialized using the function <code>init_refmodel</code>.</p>
-<p>Let’s first generate some data where there are lots of correlating features, all of which are about equally predictive about the target variable, but carry similar information.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">324092</span>)
-n &lt;-<span class="st"> </span><span class="dv">100</span> <span class="co"># number of observations</span>
-d &lt;-<span class="st"> </span><span class="dv">200</span> <span class="co"># number of features</span>
-rho &lt;-<span class="st"> </span><span class="fl">0.5</span> <span class="co"># correlation between the features</span>
-f &lt;-<span class="st"> </span><span class="kw">rnorm</span>(n) <span class="co"># the true underlying function</span>
-x &lt;-<span class="st"> </span><span class="kw">sqrt</span>(<span class="dv">1</span><span class="op">-</span>rho)<span class="op">*</span><span class="kw">matrix</span>(<span class="kw">rnorm</span>(n<span class="op">*</span>d), <span class="dt">ncol=</span>d) <span class="op">+</span><span class="st"> </span><span class="kw">sqrt</span>(rho)<span class="op">*</span>f <span class="co"># features are noisy observations from f</span>
-y &lt;-<span class="st"> </span>f <span class="op">+</span><span class="st"> </span><span class="kw">rnorm</span>(n) <span class="co"># target variable</span></code></pre></div>
-<p>We now fit a model to these data, but instead of using the original features, we use only a few first principal components. The following example utilizes <code>rstanarm</code> for fitting the model, but notice that any other tool could be used (this choice simply makes the example more concise).</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># dimension reduction</span>
-nc &lt;-<span class="st"> </span><span class="dv">3</span> <span class="co"># number of principal components to use</span>
-dr &lt;-<span class="st"> </span><span class="kw">prcomp</span>(x, <span class="dt">rank. =</span> nc) 
-z &lt;-<span class="st"> </span>dr<span class="op">$</span>x
-
-<span class="co"># fit the model</span>
-fit &lt;-<span class="st"> </span><span class="kw"><a href="http://www.rdocumentation.org/packages/rstanarm/topics/stan_glm">stan_glm</a></span>(y<span class="op">~</span>., <span class="dt">data=</span><span class="kw">data.frame</span>(z,y), <span class="dt">prior=</span><span class="kw"><a href="http://www.rdocumentation.org/packages/rstanarm/topics/priors">normal</a></span>(<span class="dt">scale=</span><span class="dv">2</span>))
-draws &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(fit) <span class="co"># posterior draws</span>
-sigma &lt;-<span class="st"> </span>draws[,<span class="st">'sigma'</span>] <span class="co"># noise std</span>
-beta &lt;-<span class="st"> </span>draws[,<span class="dv">1</span><span class="op">+</span><span class="kw">c</span>(<span class="dv">1</span><span class="op">:</span>nc)] <span class="co"># regression coefficients</span>
-alpha &lt;-<span class="st"> </span>draws[,<span class="st">'(Intercept)'</span>] <span class="co"># intercept</span></code></pre></div>
-<p>Now we can construct the reference model. In the following, <code>predfun</code> is a function that computes the expected value for the target variable separately for each posterior draw given the new predictor values (see documentation of <code>init_refmodel</code> for more information). Notice also that the reference model uses different features (the principal components) than those from which we are selecting the submodel (the original features).</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># prediction with the reference model</span>
-predfun &lt;-<span class="st"> </span><span class="cf">function</span>(zt) <span class="kw">t</span>( beta <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(zt) <span class="op">+</span><span class="st"> </span>alpha ) 
-
-<span class="co"># initialize the reference model object. notice here that the first argument z </span>
-<span class="co"># denotes the features of the reference model, and x the features from which </span>
-<span class="co"># we want to select from</span>
-ref &lt;-<span class="st"> </span><span class="kw"><a href="../reference/init_refmodel.html">init_refmodel</a></span>(z, y, <span class="kw">gaussian</span>(), <span class="dt">x=</span>x, <span class="dt">predfun=</span>predfun, <span class="dt">dis=</span>sigma)</code></pre></div>
-<p>Now we can perform everything similarly as in the previous examples. The following computes the LOO validation for the projective selection with L1-search.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># LOO validation for the feature selection</span>
-cvs &lt;-<span class="st"> </span><span class="kw"><a href="../reference/cv_varsel.html">cv_varsel</a></span>(ref)
-<span class="kw"><a href="../reference/varsel-statistics.html">varsel_plot</a></span>(cvs, <span class="dt">stats=</span><span class="kw">c</span>(<span class="st">'elpd'</span>,<span class="st">'rmse'</span>))</code></pre></div>
-<p><img src="quickstart_files/figure-html/unnamed-chunk-26-1.png" width="480"></p>
-</div>
-<div id="penalized-maximum-likelihood" class="section level2">
-<h2 class="hasAnchor">
-<a href="#penalized-maximum-likelihood" class="anchor"></a>Penalized maximum likelihood</h2>
-<p>It is also possible to use <code>projpred</code> for computing traditional point estimates, such as Lasso (Tibshirani, 1996) or forward stepwise regression. These are fast to compute (require no reference model) and are therefore useful especially as baseline methods.</p>
-<p>These can be computed by passing in the original data as “reference”, and then using all the same functions as earlier. We illustrate by computing the Lasso solution for simulated data we used in the previous section</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># initialize the data reference</span>
-dref &lt;-<span class="st"> </span><span class="kw"><a href="../reference/init_refmodel.html">init_refmodel</a></span>(x,y,<span class="dt">family=</span><span class="kw">gaussian</span>())
-lasso &lt;-<span class="st"> </span><span class="kw"><a href="../reference/cv_varsel.html">cv_varsel</a></span>(dref, <span class="dt">K=</span><span class="dv">10</span>, <span class="dt">method=</span><span class="st">'l1'</span>, <span class="dt">nv_max=</span><span class="dv">30</span>) <span class="co"># tenfold CV for Lasso</span>
-<span class="kw"><a href="../reference/varsel-statistics.html">varsel_plot</a></span>(lasso, <span class="dt">stats=</span><span class="st">'rmse'</span>)</code></pre></div>
-<p><img src="quickstart_files/figure-html/unnamed-chunk-27-1.png" width="480"></p>
-<p>Also Lasso gives a good fit, comparable to that of the Bayesian model in terms of RMSE, but the projection finds a submodel with similar performance with fewer features. Furthermore, estimation of the noise variance is less straightforward for Lasso, so if we were interested in computing well calibrated predictive distributions for future data, projection would be the preferred choice also in this respect.</p>
-<p>Here’s the greedy forward search with small L2-penalty for the coefficients.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fsel &lt;-<span class="st"> </span><span class="kw"><a href="../reference/cv_varsel.html">cv_varsel</a></span>(dref, <span class="dt">K=</span><span class="dv">10</span>, <span class="dt">method=</span><span class="st">'forward'</span>, <span class="dt">regul=</span><span class="dv">1</span>)
-<span class="kw"><a href="../reference/varsel-statistics.html">varsel_plot</a></span>(fsel, <span class="dt">stats=</span><span class="st">'rmse'</span>)</code></pre></div>
-<p><img src="quickstart_files/figure-html/unnamed-chunk-28-1.png" width="480"></p>
 <p>Forward search finds a sparser model with comparable performance to Lasso but starts overfitting when more features are added.</p>
 <div id="references" class="section level3">
 <h3 class="hasAnchor">
@@ -308,41 +269,36 @@ lasso &lt;-<span class="st"> </span><span class="kw"><a href="../reference/cv_va
 <p>Piironen, Juho and Vehtari, Aki (2017a). Comparison of Bayesian predictive methods for model selection. <em>Statistics and Computing</em> 27(3):711-735. DOI 10.1007/s11222-016-9649-y. <a href="http://link.springer.com/article/10.1007/s11222-016-9649-y">Online</a></p>
 <p>Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In <em>Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)</em>, PMLR 54:905-913, 2017. <a href="http://proceedings.mlr.press/v54/piironen17a.html">Online</a></p>
 <p>Piironen, Juho and Vehtari, Aki (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. <em>Electronic Journal of Statistics</em>, 11(2): 5018–5051. <a href="https://projecteuclid.org/euclid.ejs/1513306866#info">Online</a></p>
-<p>Piironen, Juho, Paasiniemi, Markus and Vehtari, Aki (2018). Projective Inference in High-dimensional Problems: Prediction and Feature Selection. <a href="https://arxiv.org/abs/1810.02406">Preprint</a></p>
+<p>Piironen, Juho, Paasiniemi, Markus and Vehtari, Aki (2020). Projective Inference in High-dimensional Problems: Prediction and Feature Selection. <a href="https://projecteuclid.org/euclid.ejs/1589335310">Online</a></p>
 <p>Tibshirani, Robert (1996). Regression shrinkage and selection via the Lasso. <em>Journal of the Royal Statistical Society. Series B (Methodological)</em>, 58(1):267–288, 1996.</p>
 <p>Tran, M.N., Nott, D.J., Leng, C. (2012): The predictive Lasso. <em>Statistics and Computing</em> 22(5):1069-1084.</p>
 </div>
 </div>
   </div>
 
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-        <div id="tocnav">
-      <h2 class="hasAnchor">
-<a href="#tocnav" class="anchor"></a>Contents</h2>
-      <ul class="nav nav-pills nav-stacked">
-<li><a href="#gaussian-example">Gaussian example</a></li>
-      <li><a href="#binomial-example-logistic-regression">Binomial example (logistic regression)</a></li>
-      <li><a href="#custom-reference-models">Custom reference models</a></li>
-      <li><a href="#penalized-maximum-likelihood">Penalized maximum likelihood</a></li>
-      </ul>
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+
+        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
+    </nav>
 </div>
-      </div>
 
 </div>
+
 
 
       <footer><div class="copyright">
-  <p>Developed by Juho Piironen, Markus Paasiniemi, Aki Vehtari.</p>
+  <p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="http://pkgdown.r-lib.org/">pkgdown</a>.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>
 </div>
 
   
+
 
   </body>
 </html>

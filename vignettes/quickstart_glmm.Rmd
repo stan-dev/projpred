@@ -1,5 +1,5 @@
 ---
-title: "projpred Performing variable selection on Generalized Linear Multilevel Models"
+title: "projpred Performing variable and structure selection on Generalized Linear Multilevel Models"
 date: "`r Sys.Date()`"
 output:
   html_vignette
@@ -8,16 +8,18 @@ params:
 ---
 <!--
 %\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{projpred quickstart guide (formula interface)}
+%\VignetteIndexEntry{projpred Performing variable and structure selection on Generalized Linear Multilevel Models}
 \usepackage[utf8](inputenc)
 -->
 ```{r, child="children/SETTINGS-knitr.txt"}
 ```
 
+**This vignette runs on the latest master**
+
 This vignette shows how to use `projpred` to perform variable selection in the
 context of Generalized Linear Multilevel Models (GLMMs). For a general overview
 of the package we refer the reader to the quickstart vignette. The method used
-here is described in the latest preprint (Catalina et al. 2020, arxiv link).
+here is described in the latest preprint ([Catalina et al. 2020](http://arxiv.org/abs/2010.06994)).
 
 ## Gaussian example
 
@@ -134,12 +136,12 @@ ggplot() +
 ```
 
 We also obtain draws from the projected predictive distribution. Here's an
-example prediction for the first data point using 5 terms (the observed
+example prediction for a random data point using 5 terms (the observed
 value is marked by the red line).
 
 ```{r, fig.height=3, fig.width=5, message=FALSE, warning=FALSE}
-subset <- Orthodont %>% dplyr::sample_n(1)
-y_subset <- subset %>% dplyr::select(distance)
+subset <- Orthodont %>% as_tibble() %>% dplyr::sample_n(1)
+y_subset <- subset %>% as_tibble() %>% dplyr::select(distance)
 y1_rep <- proj_predict(vs, newdata = subset, nterms = 5, seed = 7560)
 qplot(as.vector(y1_rep), bins = 25) +
   geom_vline(xintercept = as.numeric(y_subset), color = "red") +
@@ -312,43 +314,44 @@ different reasons that can explain this behaviour:
    the predictive performance by taking PSIS-LOO weights into account, usually
    reporting a more realistic ELPD.
 
-By default, `cv_varsel` will run LOO cross validation, and will try to run a
-full variable selection for every data point. Given the large computational cost
-of running more draws, we'll first try running `cv_varsel` without validating
-the search. We can omit this behaviour by fitting the model once and computing
-the LOO elpd posterior from it by passing the argument `validate_search =
-FALSE`. Note that in general it is recommended to run the full validation
-search.
+By default, `cv_varsel` will run LOO cross validation, and will try to run a full variable selection for every data point. 
+We will not run it in this vignette for computational reasons, but it is always recommended to run the full CV procedure. 
+Nonetheless, running `varsel` first can offer a first idea of the performance of the projections. 
+Cross-validated selection procedure can be run with `cv_varsel(object, cv_method = "loo", nloo = ..., K = ...)` with a similar API as `varsel`.
+<!-- Given the large computational cost of running more draws, we'll first try running `cv_varsel` without validating the search.  -->
+<!-- We can omit this behaviour by fitting the model once and computing the LOO elpd posterior from it by passing the argument `validate_search = FALSE`.  -->
+<!-- Note that in general it is recommended to run the full validation -->
+<!-- search. -->
 
-```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
-cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE)
-```
+<!-- ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE} -->
+<!-- cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE) -->
+<!-- ``` -->
 
-```{r, fig.height=4, fig.width=5}
-plot(cv_vs_va, stats = c("elpd", "acc"))
-```
+<!-- ```{r, fig.height=4, fig.width=5} -->
+<!-- plot(cv_vs_va, stats = c("elpd", "acc")) -->
+<!-- ``` -->
 
-Now we see that the projected models behave as expected and can proceed with the
-usual analysis.
+<!-- Now we see that the projected models behave as expected and can proceed with the -->
+<!-- usual analysis. -->
 
-As in previous examples, we can show the mean prediction with `proj_linpred`.
-The following computes the mean of the predictive distribution and evaluates the
-log density at the training points using the 6 most relevant variables.
+<!-- As in previous examples, we can show the mean prediction with `proj_linpred`. -->
+<!-- The following computes the mean of the predictive distribution and evaluates the -->
+<!-- log density at the training points using the 6 most relevant variables. -->
 
-```{r, cache=TRUE, message=FALSE, warning=FALSE}
-pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample,
-                     nterms = 6, integrated = TRUE, ndraws = 10)
-```
+<!-- ```{r, cache=TRUE, message=FALSE, warning=FALSE} -->
+<!-- pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample, -->
+<!--                      nterms = 6, integrated = TRUE, ndraws = 10) -->
+<!-- ``` -->
 
-We can also visualize the corresponding projected predictions.
+<!-- We can also visualize the corresponding projected predictions. -->
 
-```{r, fig.width=5, fig.height=3}
-xaxis <- seq(-6, 6, length.out = 1000)
-yaxis <- cv_vs_va$family$linkinv(xaxis)
+<!-- ```{r, fig.width=5, fig.height=3} -->
+<!-- xaxis <- seq(-6, 6, length.out = 1000) -->
+<!-- yaxis <- cv_vs_va$family$linkinv(xaxis) -->
 
-y_mu <- rowMeans(cv_vs_va$refmodel$mu)
-ggplot() +
-  geom_point(aes(x = pred$pred, y = y_mu)) +
-  geom_line(aes(x = xaxis, y = yaxis), color = "red") +
-  labs(x = "prediction", y = "y")
-```
+<!-- y_mu <- rowMeans(cv_vs_va$refmodel$mu) -->
+<!-- ggplot() + -->
+<!--   geom_point(aes(x = pred$pred, y = y_mu)) + -->
+<!--   geom_line(aes(x = xaxis, y = yaxis), color = "red") + -->
+<!--   labs(x = "prediction", y = "y") -->
+<!-- ``` -->

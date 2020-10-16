@@ -7,9 +7,9 @@
 
 An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] and [brms][] but other reference models can also be used. 
 
-The method is described in detail in Piironen et al. (2020) and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
+The method is described in detail in Piironen et al. (2020) and Catalina et al. (2020) and evaluated in comparison to many other methods for GLMs in Piironen and Vehtari (2017). 
 
-Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples.
+Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples on GLMs and [quickstart-glmm-vignette][] for examples on GLMMs.
 
 
 ### Resources
