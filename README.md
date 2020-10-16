@@ -93,4 +93,5 @@ Piironen, Juho, Paasiniemi, Markus and Vehtari, Aki (2020). Projective inference
   [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
   [projpred]: https://projecteuclid.org/euclid.ejs/1589335310
   [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html
+  [quickstart-glmm-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart_glmm.html
 
