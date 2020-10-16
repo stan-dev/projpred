@@ -2,10 +2,30 @@
 
 # News
 
+## projpred 1.1.4
 
-## Current development version
+Better validation of function arguments.
 
-* Bug fix: the program crashed with ```rstanarm``` models fitted with syntax like ```stan_glm(log(y) ~ log(x), ...)```, that is, it did not allow transformation for ```y```.
+## projpred 1.1.3
+
+Added print methods for vsel and cvsel objects. Added AUC statistics for binomial family. A few additional minor patches.
+
+## projpred 1.1.2
+
+Removed the dependency on the ```rngtools``` package.
+
+## projpred 1.1.1
+
+This version contains only a few patches, no new features to the user.
+
+## projpred 1.1.0
+
+### New features 
+
+* Added support for ```brms``` models. 
+
+### Bug fixes
+* The program crashed with ```rstanarm``` models fitted with syntax like ```stan_glm(log(y) ~ log(x), ...)```, that is, it did not allow transformation for ```y```.
 
 
 ## projpred 1.0.0
@@ -16,7 +36,7 @@
 
 * Added more examples to the vignette.
 
-* Added possibility to change the baseline in ```varsel_plot/varsel_stats```. Now it is possible to compare also to the best submodel found, not only to the reference model.
+* Added possibility to change the baseline in ```plot/summary```. Now it is possible to compare also to the best submodel found, not only to the reference model.
 
 * Bug fix: RMSE was previously computed wrong, this is now fixed.
 
@@ -27,7 +47,7 @@
 
 ### New features and improvements
 
-* Added the ```relax``` argument for the main functions (```varsel```,```cv_varsel```,```project``` and the prediction functions). Now it is possible to make predictions also with those parameter estimates that were computed during the L1-penalized search. This change also allows the user to compute the Lasso-solution by providing the observed data as the 'reference fit' for init_refmodel. An example will be added to the vignette.
+* Added the ```cv_search``` argument for the main functions (```varsel```,```cv_varsel```,```project``` and the prediction functions). Now it is possible to make predictions also with those parameter estimates that were computed during the L1-penalized search. This change also allows the user to compute the Lasso-solution by providing the observed data as the 'reference fit' for init_refmodel. An example will be added to the vignette.
 
 ### Bug fixes
 

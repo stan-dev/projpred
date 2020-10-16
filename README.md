@@ -1,21 +1,21 @@
-[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" width=100 alt="Stan Logo"/>](http://mc-stan.org)
+[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" width=100 alt="Stan Logo"/>](https://mc-stan.org)
 
 # projpred
 
 [![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/projpred?color=blue)](http://cran.r-project.org/web/packages/projpred)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://cran.r-project.org/web/packages/projpred)
 
-An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] but also other reference models can be used. 
+An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] and [brms][] but other reference models can also be used. 
 
-The method is described and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
+The method is described in detail in Piironen et al. (2020) and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
 
 Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples.
 
 
 ### Resources
 
-* [mc-stan.org/projpred](http://mc-stan.org/projpred) (online documentation, vignettes)
-* [Ask a question](http://discourse.mc-stan.org) (Stan Forums on Discourse)
+* [mc-stan.org/projpred](https://mc-stan.org/projpred) (online documentation, vignettes)
+* [Ask a question](https://discourse.mc-stan.org) (Stan Forums on Discourse)
 * [Open an issue](https://github.com/stan-dev/projpred/issues) (GitHub issues for bug reports, feature requests)
 
 
@@ -61,19 +61,19 @@ fit <- stan_glm(y ~ x, family = gaussian(), data = df_gaussian,
 vs <- varsel(fit)
 
 # print the results
-varsel_stats(vs)
+summary(vs)
 
-# project the parameters for model sizes nv = 3,5 variables 
-projs <- project(vs, nv = c(3, 5))
+# project the parameters for model sizes nterms = 3,5 variables 
+projs <- project(vs, nterms = c(3, 5))
 
 # predict using only the 5 most relevant variables
-pred <- proj_linpred(vs, xnew=df_gaussian$x, nv=5, integrated=T)
+pred <- proj_linpred(vs, xnew=df_gaussian$x, nterms=5, integrated=T)
 
 # perform cross-validation for the variable selection
 cvs <- cv_varsel(fit, cv_method='LOO')
 
 # plot the validation results 
-varsel_plot(cvs)
+plot(cvs)
 ```
 
 
@@ -83,10 +83,14 @@ Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models
 
 Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. *Biometrika*, 85(1):29–37.
 
-Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online][piironenvehtari]).
+Piironen, Juho and Vehtari, Aki (2017). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online][piironenvehtari]).
+
+Piironen, Juho, Paasiniemi, Markus and Vehtari, Aki (2020). Projective inference in high-dimensional problems: prediction and feature selection. *Electronic Journal of Statistics*, 14(1): 2155-2197 ([Online][projpred]).
 
 
   [rstanarm]: https://github.com/stan-dev/rstanarm
+  [brms]: https://github.com/paul-buerkner/brms
   [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
+  [projpred]: https://projecteuclid.org/euclid.ejs/1589335310
   [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html
 

@@ -3,36 +3,40 @@
 \name{cv-indices}
 \alias{cv-indices}
 \alias{cvfolds}
-\alias{cvind}
+\alias{cv_ids}
 \title{Create cross-validation indices}
 \usage{
 cvfolds(n, k, seed = NULL)
 
-cvind(n, k, out = "foldwise", seed = NULL)
+cv_ids(n, k, out = c("foldwise", "indices"), seed = NULL)
 }
 \arguments{
 \item{n}{Number of data points.}
 
-\item{k}{Number of folds.}
+\item{k}{Number of folds. Must be at least 2 and not exceed \code{n}.}
 
-\item{seed}{Random seed so that the same division could be obtained again if needed.}
+\item{seed}{Random seed so that the same division could be obtained again if
+needed.}
 
-\item{out}{Format of the output, either 'foldwise' (default) or 'indices'. See below for details.}
+\item{out}{Format of the output, either 'foldwise' (default) or 'indices'.
+See below for details.}
 }
 \value{
-\code{cvfolds} returns a vector of length \code{n} such that each element is an integer
-between 1 and \code{k} denoting which fold the corresponding data point belongs to.
-The returned value of \code{cvind} depends on the \code{out}-argument. If \code{out}='foldwise',
-the returned value is a list with \code{k} elements, 
-each having fields \code{tr} and \code{ts} which give the training and test indices, respectively,
-for the corresponding fold. If \code{out}='indices', the returned value is a list with fields \code{tr}
-and \code{ts}
-each of which is a list with \code{k} elements giving the training and test indices for each fold.
+\code{cvfolds} returns a vector of length \code{n} such that each
+  element is an integer between 1 and \code{k} denoting which fold the
+  corresponding data point belongs to. The returned value of \code{cv_ids}
+  depends on the \code{out}-argument. If \code{out}='foldwise', the returned
+  value is a list with \code{k} elements, each having fields \code{tr} and
+  \code{ts} which give the training and test indices, respectively, for the
+  corresponding fold. If \code{out}='indices', the returned value is a list
+  with fields \code{tr} and \code{ts} each of which is a list with \code{k}
+  elements giving the training and test indices for each fold.
 }
 \description{
-Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross validation.
-These functions are potentially useful when creating the \code{cvfits} and \code{cvfun}
-arguments for \link[=init_refmodel]{init_refmodel}. The returned value is different for
+Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross
+validation. These functions are potentially useful when creating the
+\code{cvfits} and \code{cvfun} arguments for
+\link[=init_refmodel]{init_refmodel}. The returned value is different for
 these two methods, see below for details.
 }
 \examples{
@@ -40,7 +44,7 @@ these two methods, see below for details.
 ### compute sample means within each fold
 n <- 100
 y <- rnorm(n)
-cv <- cvind(n, k=5)
+cv <- cv_ids(n, k=5)
 cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
 }
 

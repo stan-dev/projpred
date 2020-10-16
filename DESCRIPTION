@@ -1,37 +1,49 @@
 Package: projpred
 Title: Projection Predictive Feature Selection
-Version: 1.0.1
-Authors@R: c(person("Juho", "Piironen", role = c("cre", "aut"), email = "juho.piironen@aalto.fi"),
+Version: 2.0.0
+Authors@R: c(person("Juho", "Piironen", role = c("cre", "aut"), email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
+             person("Alejandro", "Catalina", role = "aut", email="alejandro.catalina@aalto.fi"),
              person("Aki", "Vehtari", role = "aut"),
-             person("Jonah", "Gabry", role = "ctb"))
+             person("Jonah", "Gabry", role = "ctb"),
+             person("Marco", "Colombo", role = "ctb"),
+             person("Paul-Christian", "Bürkner", role = "ctb"))
 Maintainer:
-    Juho Piironen <juho.piironen@aalto.fi>
+    Juho Piironen <juho.t.piironen@gmail.com>
 Description:
     Performs projection predictive feature selection for generalized linear models
-    (see, e.g., Piironen and Vehtari, 2017, <doi:10.1007/s11222-016-9649-y>).
-    The package is compatible with 'rstanarm' package, but other reference models
-    can also be used. See the package vignette for more information and examples.
+    (see, Piironen, Paasiniemi and Vehtari, 2020, <https://projecteuclid.org/euclid.ejs/1589335310>).
+    The package is compatible with the 'rstanarm' and 'brms' packages, but other 
+    reference models can also be used. See the package vignette for more 
+    information and examples.
 Depends:
-    R (>= 3.1.2)
+    R (>= 3.5.0)
 Imports:
     loo (>= 2.0.0), 
+    lme4,
+    optimx,
     ggplot2, 
     Rcpp, 
     utils,
-    rngtools (>= 1.2.4)
+    rngtools (>= 1.2.4),
+    tidyverse,
+    MASS,
+    magrittr,
+    mgcv,
+    gamm4
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 Encoding: UTF-8
 LazyData: TRUE
-RoxygenNote: 6.1.0
+RoxygenNote: 7.1.0
 Suggests:
     rstanarm, 
+    brms,
     testthat,
     knitr,
     rmarkdown,
     glmnet,
     bayesplot (>= 1.5.0)
 VignetteBuilder: knitr
-URL: http://mc-stan.org/projpred, http://discourse.mc-stan.org/
+URL: https://mc-stan.org/projpred, https://discourse.mc-stan.org/
 BugReports: https://github.com/stan-dev/projpred/issues

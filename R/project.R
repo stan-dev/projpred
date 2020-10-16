@@ -1,126 +1,203 @@
-#' Projection to submodels 
+#' Projection to submodels
 #'
 #' Perform projection onto submodels of selected sizes or a specified feature
 #' combination.
-#' 
-#' @param object Either a \code{refmodel}-type object created by \link[=get_refmodel]{get_refmodel}
-#' or \link[=init_refmodel]{init_refmodel}, or an object which can be converted to a reference model
-#' using \link[=get_refmodel]{get_refmodel}.
-#' @param nv Number of variables in the submodel (the variable combination is taken from the
-#' \code{varsel} information). If a list, then the projection is performed for each model size.
-#' Default is the model size suggested by the variable selection (see function \code{suggest_size}).
-#'  Ignored if \code{vind} is specified.
-#' @param vind Variable indices onto which the projection is done. If specified, \code{nv} is ignored.
-#' @param relax If TRUE, then the projected coefficients after L1-selection are computed
-#' without any penalization (or using only the regularization determined by \code{regul}). If FALSE, then
-#' the coefficients are the solution from the L1-penalized projection. This option is relevant only
-#' if L1-search was used. Default is TRUE for genuine reference models and FALSE if \code{object} is
-#' datafit (see \link[=init_refmodel]{init_refmodel}). 
-#' @param ns Number of samples to be projected. Ignored if \code{nc} is specified. Default is 400.
-#' @param nc Number of clusters in the clustered projection.
+#'
+#' @param object Either a \code{refmodel}-type object created by
+#'   \link[=get_refmodel]{get_refmodel} or
+#'   \link[=init_refmodel]{init_refmodel}, or an object which can be converted
+#'   to a reference model using \link[=get_refmodel]{get_refmodel}.
+#' @param nterms Number of variables in the submodel (the variable combination
+#'   is taken from the \code{varsel} information). If a list, then the
+#'   projection is performed for each model size. Default is the model size
+#'   suggested by the variable selection (see function \code{suggest_size}).
+#'   Ignored if \code{solution_terms} is specified.
+#' @param solution_terms Variable indices onto which the projection is done. If
+#'   specified, \code{nterms} is ignored.
+#' @param cv_search If TRUE, then the projected coefficients after L1-selection
+#'   are computed without any penalization (or using only the regularization
+#'   determined by \code{regul}). If FALSE, then the coefficients are the
+#'   solution from the L1-penalized projection. This option is relevant only if
+#'   L1-search was used. Default is TRUE for genuine reference models and FALSE
+#'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
+#' @param ndraws Number of samples to be projected. Ignored if \code{nclusters}
+#'   is specified. Default is 400.
+#' @param nclusters Number of clusters in the clustered projection.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
-#' @param seed A seed used in the clustering (if \code{nc!=ns}). Can be used
-#' to ensure same results every time.
-#' @param regul Amount of regularization in the projection. Usually there is no need for
-#' regularization, but sometimes for some models the projection can be ill-behaved and we
-#' need to add some regularization to avoid numerical problems. 
+#' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
+#'   be used to ensure same results every time. @param regul Amount of
+#'   regularization in the projection. Usually there is no need for
+#'   regularization, but sometimes for some models the projection can be
+#'   ill-behaved and we need to add some regularization to avoid numerical
+#'   problems.
 #' @param ... Currently ignored.
 #'
-#' @return A list of submodels (or a single submodel if projection was performed onto
-#' a single variable combination), each of which contains the following elements:
+#' @return A list of submodels (or a single submodel if projection was
+#'   performed onto a single variable combination), each of which contains the
+#'   following elements:
 #' \describe{
-#'  \item{\code{kl}}{The kl divergence from the reference model to the submodel.}
-#'  \item{\code{weights}}{Weights for each draw of the projected model.}
+#'  \item{\code{kl}}{The KL divergence from the reference model to the
+#'   submodel.} \item{\code{weights}}{Weights for each draw of the projected
+#'   model.}
 #'  \item{\code{dis}}{Draws from the projected dispersion parameter.}
 #'  \item{\code{alpha}}{Draws from the projected intercept.}
 #'  \item{\code{beta}}{Draws from the projected weight vector.}
-#'  \item{\code{vind}}{The order in which the variables were added to the submodel.}
-#'  \item{\code{intercept}}{Whether or not the model contains an intercept.}
-#'  \item{\code{family_kl}}{A modified \code{\link{family}}-object.}
+#'  \item{\code{solution_terms}}{The order in which the variables were added to
+#'   the submodel.}
+#'   \item{\code{intercept}}{Whether or not the model contains an
+#'   intercept.}
+#'  \item{\code{family}}{A modified \code{\link{family}}-object.}
 #' }
 #'
 #'
 #' @examples
 #' \donttest{
-#' ### Usage with stanreg objects
-#' fit <- stan_glm(y~x, binomial())
-#' vs <- varsel(fit)
-#' 
-#' # project onto the best model with 4 variables
-#' proj4 <- project(vs, nv = 4)
-#' 
-#' # project onto an arbitrary variable combination (variable indices 3,4 and 8)
-#' proj <- project(fit, vind=c(3,4,8))
+#' if (requireNamespace('rstanarm', quietly=TRUE)) {
+#'   ### Usage with stanreg objects
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'   
+#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   vs <- varsel(fit)
+#'   
+#'   # project onto the best model with 4 variables
+#'   proj4 <- project(vs, nterms = 4)
+#'   
+#'   # project onto an arbitrary variable combination (variable indices 1, 3 and 5)
+#'   proj <- project(fit, solution_terms=c(1,3,5))
+#' }
 #' }
 #'
+NULL
 
-#' @export
-project <- function(object, nv = NULL, vind = NULL, relax = NULL, ns = NULL, nc = NULL, 
-                    intercept = NULL, seed = NULL, regul=1e-4, ...) {
+##' @export
+project <- function(object, nterms = NULL, solution_terms = NULL,
+                    cv_search = TRUE, ndraws = 400, nclusters = NULL,
+                    intercept = NULL, seed = NULL, regul = 1e-4, ...) {
+  if (!("vsel" %in% class(object)) && is.null(solution_terms)) {
+    stop("The given object is not a variable selection -object.",
+         "Run the variable selection first, or provide the variable ",
+         "indices (solution_terms).")
+  }
 
-	if ( !('vsel' %in% class(object) || 'cvsel' %in% class(object)) && is.null(vind) )
-		stop(paste('The given object is not a variable selection -object.',
-							 'Run the variable selection first, or provide the variable indices (vind).'))
+  refmodel <- get_refmodel(object)
 
-	refmodel <- get_refmodel(object)
-  
-  if (is.null(relax)) 
-  	# use non-relaxed solution for datafits by default
-    relax <- ifelse('datafit' %in% class(get_refmodel(object)), FALSE, TRUE)
-  if (is.null(object$spath$beta) || (!is.null(vind) && any(object$spath$vind[1:length(vind)] != vind)))
-  	# search path not found, or the given variable combination not in the search path
-    relax <- TRUE
+  if (cv_search) {
+    ## use non-cv_searched solution for datafits by default
+    cv_search <- !inherits(refmodel, "datafit")
+  }
 
-  if (!is.null(vind)) {
-    nv <- length(vind) # if vind is given, nv is ignored (project only onto the given submodel)
+  if (inherits(refmodel, "datafit")) {
+    ndraws <- nclusters <- 1
+  }
+
+  if (!is.null(solution_terms) &&
+    any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
+    ## search path not found, or the given variable combination
+    ## not in the search path, then we need to project the
+    ## required variables
+    cv_search <- TRUE
+  }
+
+  if (!is.null(solution_terms)) {
+    ## if solution_terms is given, nterms is ignored
+    ## (project only onto the given submodel)
+    if (!is.null(object$solution_terms)) {
+      vars <- object$solution_terms
+    } else {
+      ## project only the given model on a fit object
+      vars <- setdiff(split_formula(refmodel$formula,
+        data = refmodel$fetch_data()
+      ), "1")
+    }
+
+    if (max(solution_terms) > length(vars)) {
+      stop("solution_terms contains an index larger than the number of",
+           "variables in the model.")
+    }
+
+    solution_terms <- c(vars[solution_terms])
+    nterms <- length(solution_terms)
   } else {
-    vind <- object$vind # by default take the variable ordering from the selection
+    ## by default take the variable ordering from the selection
+    solution_terms <- object$solution_terms
+    if (is.null(nterms)) {
+      if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
+        ## by default, project onto the suggested model size
+        nterms <- min(object$suggested_size, length(solution_terms))
+      } else {
+        stop("No suggested model size found, please specify nterms or solution",
+             "terms")
+      }
+    } else {
+      if (!is.numeric(nterms) || any(nterms < 0)) {
+        stop("nterms must contain non-negative values.")
+      }
+      if (max(nterms) > length(solution_terms)) {
+        stop(paste(
+          "Cannot perform the projection with", max(nterms), "variables,",
+          "because variable selection was run only up to",
+          length(solution_terms),
+          "variables."
+        ))
+      }
+    }
   }
-  
-  if (is.null(ns) && is.null(nc))
-    ns <- min(400, NCOL(refmodel$mu)) # by default project at most 400 draws
-  
-  if (is.null(nv)) {
-    if (!is.null(object$ssize) && !is.na(object$ssize))
-      nv <- object$ssize # by default, project onto the suggested model size
-    else
-      stop('No suggested model size found, please specify nv or vind')
+
+  if (is.null(ndraws)) {
+    ndraws <- min(ndraws, NCOL(refmodel$mu))
+  } else {
+    if (ndraws > NCOL(refmodel$mu)) {
+      stop("number of samples exceed the number of columns in the reference ",
+           "model's posterior.")
+    }
+    if (is.null(nclusters)) {
+      nclusters <- ndraws
+    }
   }
 
-	if (is.null(intercept))
-	  intercept <- refmodel$intercept
+  if (is.null(nclusters)) {
+    nclusters <- 1
+  } else
+  if (nclusters > NCOL(refmodel$mu)) {
+    stop("number of clusters exceed the number of columns in the reference ",
+         "model's posterior.")
+  }
 
-	family_kl <- refmodel$fam
+  if (is.null(intercept)) {
+    intercept <- refmodel$intercept
+  }
 
-	if (max(nv) > length(vind))
-	  stop(paste('Cannot perform the projection with', max(nv), 'variables,',
-	             'because the variable selection has been run only up to',
-	             length(object$vind), 'variables.'))
+  family <- refmodel$family
 
-	# training data
-	d_train <- .get_traindata(refmodel)
+  ## get the clustering or subsample
+  p_ref <- .get_refdist(refmodel,
+    ndraws = ndraws, nclusters = nclusters, seed = seed
+  )
 
-	# get the clustering or subsample
-	p_ref <- .get_refdist(refmodel, ns = ns, nc = nc, seed = seed)
-
-	# project onto the submodels
-	if (relax) {
-	  subm <- .get_submodels(list(vind=vind), nv, family_kl, p_ref,
-	                         d_train, intercept, regul, as.search=F)
-	} else {
-	  subm <- .get_submodels(object$spath, nv, family_kl, p_ref,
-	                         d_train, intercept, regul, as.search=T)
-	}
-
-	# add family_kl
-	proj <- lapply(subm, function(model) {
-	  names(model$vind) <- sapply(model$vind, function(i, ch) names(ch)[which(ch == i)],
-	                          object$vind)
-	  model <- c(model, list(family_kl = family_kl), list(p_type = is.null(ns)))
-	  class(model) <- 'projection'
-	  return(model)
-	 })
-
-	# If only one model size, just return the proj instead of a list of projs
-	.unlist_proj(proj)
+  ## project onto the submodels
+  subm <- .get_submodels(
+    search_path = nlist(
+      solution_terms,
+      p_sel = object$search_path$p_sel,
+      sub_fits = object$search_path$sub_fits
+    ),
+    nterms = nterms, family = family, p_ref = p_ref, refmodel = refmodel,
+    intercept = intercept, regul = regul, cv_search = cv_search
+  )
+  ## add family
+  proj <- lapply(subm, function(model) {
+    model <- c(model, nlist(family))
+    model$p_type <- is.null(ndraws)
+    model$intercept <- intercept
+    model$extract_model_data <- refmodel$extract_model_data
+    model$refmodel <- refmodel
+    class(model) <- "projection"
+    return(model)
+  })
+  ## If only one model size, just return the proj instead of a list of projs
+  .unlist_proj(proj)
 }

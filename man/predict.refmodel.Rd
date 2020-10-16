@@ -4,33 +4,44 @@
 \alias{predict.refmodel}
 \title{Predict method for reference model objects}
 \usage{
-\method{predict}{refmodel}(object, znew, ynew = NULL, offsetnew = NULL,
-  weightsnew = NULL, type = "response", ...)
+\method{predict}{refmodel}(
+  object,
+  newdata,
+  ynew = NULL,
+  offsetnew = NULL,
+  weightsnew = NULL,
+  type = "response",
+  ...
+)
 }
 \arguments{
 \item{object}{The object of class \code{refmodel}.}
 
-\item{znew}{Matrix of predictor values used in the prediction.}
+\item{newdata}{Matrix of predictor values used in the prediction.}
 
-\item{ynew}{New (test) target variables. If given, then the log predictive density
-for the new observations is computed.}
+\item{ynew}{New (test) target variables. If given, then the log predictive
+density for the new observations is computed.}
 
 \item{offsetnew}{Offsets for the new observations. By default a vector of
-zeros.}
+zeros. By default we take the weights from newdata as in the original
+model. Either NULL or right hand side formulas.}
 
 \item{weightsnew}{Weights for the new observations. For binomial model,
-corresponds to the number trials per observation. Has effect only if \code{ynew} is specified.
-By default a vector of ones.}
+corresponds to the number trials per observation. Has effect only if
+\code{ynew} is specified. By default a vector of ones. By default we take
+the weights from newdata as in the original model. Either NULL or right
+hand side formulas.}
 
-\item{type}{Scale on which the predictions are returned. Either 'link' (the latent function
-value, from -inf to inf) or 'response' (the scale on which the target \code{y} is measured, 
-obtained by taking the inverse-link from the latent value).}
+\item{type}{Scale on which the predictions are returned. Either 'link' (the
+latent function value, from -inf to inf) or 'response' (the scale on which
+the target \code{y} is measured, obtained by taking the inverse-link from
+the latent value).}
 
 \item{...}{Currently ignored.}
 }
 \value{
-Returns either a vector of predictions, or vector of log predictive densities evaluated
-at \code{ynew} if \code{ynew} is not \code{NULL}.
+Returns either a vector of predictions, or vector of log predictive
+  densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
 }
 \description{
 Compute the predictions using the reference model, that is, compute the
