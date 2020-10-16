@@ -104,10 +104,10 @@ refmodel <- get_refmodel(fit)
 ```
 
 The function `cv_varsel` runs a cross-validated variable selection, and returns an object that contains the relevant information about the procedure, such as the ordering of the variables. The search heuristic can be specified by the keyword `method`.
-For a simple linear model, the fastest method is to use L1--search, that is the default option. 
+For a simple linear model, the fastest method is to use L1--search, that is the default option. For a more accurate result we recommend running forward search.
 
 ```{r, results='hide', messages=FALSE, warnings=FALSE}
-vs <- cv_varsel(refmodel)
+vs <- cv_varsel(refmodel, method = "forward")
 ```
 
 ```{r, messages=FALSE, warnings=FALSE}

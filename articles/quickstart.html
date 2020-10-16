@@ -206,15 +206,16 @@
 <p>Next we construct the reference model structure <code>refmodel</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit">
 <span class="va">refmodel</span> <span class="op">&lt;-</span> <span class="fu">get_refmodel</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></pre></div>
-<p>The function <code>cv_varsel</code> runs a cross-validated variable selection, and returns an object that contains the relevant information about the procedure, such as the ordering of the variables. The search heuristic can be specified by the keyword <code>method</code>. For a simple linear model, the fastest method is to use L1–search, that is the default option.</p>
+<p>The function <code>cv_varsel</code> runs a cross-validated variable selection, and returns an object that contains the relevant information about the procedure, such as the ordering of the variables. The search heuristic can be specified by the keyword <code>method</code>. For a simple linear model, the fastest method is to use L1–search, that is the default option. For a more accurate result we recommend running forward search.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit">
-<span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span><span class="va">refmodel</span><span class="op">)</span></pre></div>
-<pre><code>## Warning in cv_varsel.refmodel(refmodel): K provided, but cv_method is LOO.</code></pre>
+<span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span><span class="va">refmodel</span>, method <span class="op">=</span> <span class="st">"forward"</span><span class="op">)</span></pre></div>
+<pre><code>## Warning in cv_varsel.refmodel(refmodel, method = "forward"): K provided, but
+## cv_method is LOO.</code></pre>
 <pre><code>## Warning: Some Pareto k diagnostic values are slightly high. See help('pareto-k-diagnostic') for details.</code></pre>
 <div class="sourceCode" id="cb8"><pre class="downlit">
 <span class="fu">solution_terms</span><span class="op">(</span><span class="va">vs</span><span class="op">)</span> <span class="co"># selection order of the variables</span></pre></div>
-<pre><code>##  [1] "x1"  "x14" "x5"  "x20" "x6"  "x3"  "x8"  "x11" "x7"  "x10" "x13" "x2" 
-## [13] "x15" "x4"  "x12" "x18" "x16" "x9"  "x17"</code></pre>
+<pre><code>##  [1] "x1"  "x14" "x20" "x5"  "x3"  "x6"  "x8"  "x11" "x10" "x7"  "x15" "x13"
+## [13] "x12" "x4"  "x18" "x16" "x2"  "x17" "x9"</code></pre>
 <p>We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with <code>deltas=T</code> the plot shows results relative to the full model.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit">
 <span class="co"># plot predictive performance on training data</span>
