@@ -11,5 +11,4 @@
 inst/
 vignettes/quickstart_cache
 *cache/
-*files/
 docs
