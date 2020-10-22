@@ -1,7 +1,8 @@
 #' Cross-validated variable selection (varsel)
 #'
 #' Perform cross-validation for the projective variable selection for a
-#' generalized linear model.
+#' generalized linear model or generalized lienar and additive multilevel
+#' models.
 #'
 #' @name cv_varsel
 #'
