@@ -245,11 +245,11 @@ if (require(rstanarm)) {
                   "big throws an error"), {
     expect_error(
       project(vs_list[[1]], ndraws = 400000, nterms = nterms),
-      "exceed the number of columns"
+      "Number of posterior draws exceeds the number of columns in the reference model's posterior."
     )
     expect_error(
       project(vs_list[[1]], nclusters = 400000, nterms = nterms),
-      "exceed the number of columns"
+      "Number of posterior draws exceeds the number of columns in the reference model's posterior."
     )
   })
 
