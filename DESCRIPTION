@@ -14,7 +14,7 @@ Description:
     Performs projection predictive feature selection for generalized linear
     models and generalized linear and additive multilevel models
     (see, Piironen, Paasiniemi and Vehtari, 2020, <https://projecteuclid.org/euclid.ejs/1589335310>,
-    Catalina, Bürkner and Vehtari, 2020, <https://arxiv.org/abs/2010.06994>).
+    Catalina, Bürkner and Vehtari, 2020, <arXiv:2010.06994>).
     The package is compatible with the 'rstanarm' and 'brms' packages, but other
     reference models can also be used. See the package vignette for more
     information and examples.
