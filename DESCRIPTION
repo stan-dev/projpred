@@ -1,3 +1,4 @@
+Encoding: UTF-8
 Package: projpred
 Title: Projection Predictive Feature Selection
 Version: 2.0.0
@@ -38,7 +39,6 @@ Imports:
     gamm4
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
-Encoding: UTF-8
 LazyData: TRUE
 RoxygenNote: 7.1.1
 Suggests:
