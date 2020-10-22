@@ -165,7 +165,7 @@ also be downloaded from the corresponding website
 (http://www.mpcm-evolution.com/). The specific formula is taken from the
 *Estimating Phylogenetic Multilevel Models with brms* vignette of the brms
 package
-(https://cran.r-project.org/web/packages/brms/vignettes/brms_phylogenetics.html).
+(https://cran.r-project.org/package=brms/vignettes/brms_phylogenetics.html).
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE, results="hide"}
 fit <- stan_glmer(

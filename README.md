@@ -3,7 +3,7 @@
 # projpred
 
 [![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
-[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://cran.r-project.org/web/packages/projpred)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://cran.r-project.org/package=projpred)
 
 An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] and [brms][] but other reference models can also be used. 
 
