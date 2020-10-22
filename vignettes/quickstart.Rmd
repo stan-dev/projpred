@@ -8,7 +8,7 @@ params:
 ---
 <!--
 %\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{projpred quickstart guide (formula interface)}
+%\VignetteIndexEntry{projpred Quick Start}
 \usepackage[utf8](inputenc)
 -->
 ```{r, child="children/SETTINGS-knitr.txt"}

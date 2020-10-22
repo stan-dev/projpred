@@ -176,7 +176,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   } else
   if (nclusters > NCOL(refmodel$mu)) {
     stop(
-      "number of clusters exceed the number of columns in the reference ",
+      "Number of clusters exceeds the number of columns in the reference ",
       "model's posterior."
     )
   }

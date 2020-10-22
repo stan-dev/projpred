@@ -46,14 +46,14 @@ cv_varsel(object, ...)
 \item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'.
 Default is 'LOO'.}
 
-\item{ndraws}{Number of samples used for selection. Ignored if
+\item{ndraws}{Number of posterior draws used for selection. Ignored if
 nclusters is provided or if method='L1'.}
 
-\item{nclusters}{Number of clusters used for selection. Default is 1
-and ignored if method='L1' (L1-search uses always one cluster).}
+\item{nclusters}{Number of clusters used for selection. Default is 1 and
+ignored if method='L1' (L1-search uses always one cluster).}
 
-\item{ndraws_pred}{Number of samples used for prediction (after
-selection). Ignored if nclusters_pred is given.}
+\item{ndraws_pred}{Number of samples used for prediction (after selection).
+Ignored if nclusters_pred is given.}
 
 \item{nclusters_pred}{Number of clusters used for prediction (after
 selection). Default is 5.}
@@ -76,7 +76,7 @@ accuracy estimation. Default is to use all observations, but for faster
 experimentation, one can set this to a small value such as 100. Only
 applicable if \code{cv_method = 'LOO'}.}
 
-\item{K}{Number of folds in the k-fold cross validation. Default is 5 for
+\item{K}{Number of folds in the K-fold cross validation. Default is 5 for
 genuine reference models and 10 for datafits (that is, for penalized
 maximum likelihood estimation).}
 
@@ -114,7 +114,8 @@ An object of type \code{vsel} that contains information about the
 }
 \description{
 Perform cross-validation for the projective variable selection for a
-generalized linear model.
+generalized linear model or generalized lienar and additive multilevel
+models.
 }
 \examples{
 \donttest{
@@ -125,7 +126,8 @@ if (requireNamespace('rstanarm', quietly=TRUE)) {
   x <- matrix(rnorm(n*d), nrow=n)
   y <- x[,1] + 0.5*rnorm(n)
   data <- data.frame(x,y)
-  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
+  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+     data=data, chains=2, iter=500)
   cvs <- cv_varsel(fit)
   plot(cvs)
 }

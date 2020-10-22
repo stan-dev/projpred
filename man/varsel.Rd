@@ -33,9 +33,10 @@ varsel(object, ...)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by
-\link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
-or an object which can be converted to a reference model using
-\link[=get_refmodel]{get_refmodel}.}
+\link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
+an object which can be converted to a reference model using
+\link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
+\code{varsel} or \code{cv_varsel}.}
 
 \item{...}{Additional arguments to be passed to the
 \code{get_refmodel}-function.}
@@ -49,14 +50,14 @@ internal use only.}
 Default is 'forward' if the number of variables in the full data is at most
 20,' and \code{'L1'} otherwise.}
 
-\item{ndraws}{Number of posterior draws used in the variable
-selection. Cannot be larger than the number of draws in the reference
-model. Ignored if nclusters is set.}
+\item{ndraws}{Number of posterior draws used in the variable selection.
+Cannot be larger than the number of draws in the reference model. Ignored
+if nclusters is set.}
 
 \item{nclusters}{Number of clusters to use in the clustered projection.
 Overrides the \code{ndraws} argument. Defaults to 1.}
 
-\item{ndraws_pred}{Number of samples used for prediction (after
+\item{ndraws_pred}{Number of projected draws used for prediction (after
 selection). Ignored if nclusters_pred is given. Note that setting less
 draws or clusters than posterior draws in the reference model may result in
 slightly inaccurate projection performance, although increasing this
@@ -109,13 +110,14 @@ formula.}
 }
 \value{
 An object of type \code{vsel} that contains information about the
-  feature selection. The fields are not #' meant to be accessed directly by
-  the user but instead via the helper #' functions (see the vignettes or type
-  ?projpred #' to see the main functions in the package.)
+  feature selection. The fields are not meant to be accessed directly by
+  the user but instead via the helper functions (see the vignettes or type
+  ?projpred to see the main functions in the package.)
 }
 \description{
 Perform the projection predictive variable selection for generalized linear
-models using generic reference models.
+models, generalized linear and additive multilevel models using generic
+reference models.
 }
 \examples{
 \donttest{

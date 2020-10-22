@@ -1,6 +1,13 @@
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
 knitr::opts_chunk$set(
-    fig.width = 7, fig.height = 5
+    fig.width = 7, fig.height = 5,
+    comment = NA,
+    message = FALSE,
+    warning = FALSE,
+    eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+    dev = "png",
+    dpi = 150,
+    fig.align = "center"
 )
 ```

@@ -1,12 +1,14 @@
 #' Variable selection for generalized linear models
 #'
 #' Perform the projection predictive variable selection for generalized linear
-#' models using generic reference models.
+#' models, generalized linear and additive multilevel models using generic
+#' reference models.
 #'
 #' @param object Either a \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
-#'   or an object which can be converted to a reference model using
-#'   \link[=get_refmodel]{get_refmodel}.
+#'   \link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
+#'   an object which can be converted to a reference model using
+#'   \link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
+#'   \code{varsel} or \code{cv_varsel}.
 #' @param d_test A test dataset, which is used to evaluate model performance. If
 #'   not provided, training data is used. Currently this argument is for
 #'   internal use only.

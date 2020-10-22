@@ -54,8 +54,8 @@ this argument matters only if \code{newdata} is specified. By default we
 take the weights from newdata as in the original model. Either NULL or
 right hand side formula.}
 
-\item{nterms}{Number of variables in the submodel (the variable combination
-is taken from the variable selection information). If a vector with several
+\item{nterms}{Number of terms in the submodel (the variable combination is
+taken from the variable selection information). If a vector with several
 values, then results for all specified model sizes are returned. Ignored if
 \code{solution_terms} is specified. By default use the automatically
 suggested model size.}

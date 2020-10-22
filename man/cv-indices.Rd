@@ -6,14 +6,14 @@
 \alias{cv_ids}
 \title{Create cross-validation indices}
 \usage{
-cvfolds(n, k, seed = NULL)
+cvfolds(n, K, seed = NULL)
 
-cv_ids(n, k, out = c("foldwise", "indices"), seed = NULL)
+cv_ids(n, K, out = c("foldwise", "indices"), seed = NULL)
 }
 \arguments{
 \item{n}{Number of data points.}
 
-\item{k}{Number of folds. Must be at least 2 and not exceed \code{n}.}
+\item{K}{Number of folds. Must be at least 2 and not exceed \code{n}.}
 
 \item{seed}{Random seed so that the same division could be obtained again if
 needed.}
@@ -44,7 +44,7 @@ these two methods, see below for details.
 ### compute sample means within each fold
 n <- 100
 y <- rnorm(n)
-cv <- cv_ids(n, k=5)
+cv <- cv_ids(n, K=5)
 cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
 }
 

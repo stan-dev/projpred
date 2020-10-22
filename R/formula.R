@@ -38,6 +38,28 @@ extract_terms_response <- function(formula) {
   ))
 }
 
+remove_duplicates <- function(formula) {
+  terms <- extract_terms_response(formula)
+  linear <- terms$individual_terms
+  additive <- unlist(regmatches(
+    terms$additive_terms,
+    gregexpr("(?<=\\().*?(?=\\))",
+      terms$additive_terms,
+      perl = TRUE
+    )
+  ))
+  dups <- linear[!is.na(match(linear, additive))]
+  if (length(dups) > 0) {
+    update(formula, as.formula(paste0(
+      ". ~ . - ",
+      paste(dups, collapse = " - ")
+    )))
+  }
+  else {
+    formula
+  }
+}
+
 ## At any point inside projpred, the response can be a single object or instead
 ## it can represent multiple outputs. In this function we recover the response/s
 ## as a character vector so we can index the dataframe.
@@ -124,7 +146,7 @@ flatten_formula <- function(formula) {
     length(interaction_terms) > 0 ||
     length(group_terms) > 0 ||
     length(additive_terms) > 0) {
-    update(formula, paste(c(
+    full <- update(formula, paste(c(
       ". ~ ",
       flatten_individual_terms(individual_terms),
       flatten_additive_terms(additive_terms),
@@ -133,6 +155,7 @@ flatten_formula <- function(formula) {
     ),
     collapse = " + "
     ))
+    remove_duplicates(full)
   } else {
     formula
   }
@@ -231,17 +254,44 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
   additive_terms <- terms_$additive_terms
   global_intercept <- terms_$global_intercept
 
+  additive <- unlist(regmatches(
+    additive_terms,
+    gregexpr("(?<=\\().*?(?=\\))",
+      terms_$additive_terms,
+      perl = TRUE
+    )
+  ))
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
+    group_split <- unlist(lapply(group_terms, split_group_term))
     allterms_ <- c(
-      individual_terms,
       unlist(lapply(additive_terms, split_additive_term, data)),
-      unlist(lapply(group_terms, split_group_term)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
+
+    group_replace <- regmatches(
+      group_split,
+      gregexpr("\\w+(?![^(]*\\))", group_split, perl = TRUE)
+    )
+    groups_to_replace <- group_split[unlist(lapply(
+      group_replace,
+      function(x) length(x) > 0
+    ))]
+    to_replace <- group_split[match(group_replace, additive) %>%
+      (function(x) !is.na(x))]
+    not_replace <- setdiff(group_split, to_replace)
+
+    replacement <- gsub(
+      pattern = "(\\w+)(?![^(]*\\))", replacement = "s(\\1)",
+      to_replace, perl = TRUE
+    )
+    group_split <- c(not_replace, replacement)
+    nodups <- individual_terms[is.na(match(individual_terms, additive))]
+    allterms_ <- c(allterms_, group_split, nodups)
   } else {
+    nodups <- individual_terms[!is.na(match(individual_terms, additive))]
     allterms_ <- c(
-      individual_terms,
+      nodups,
       unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
