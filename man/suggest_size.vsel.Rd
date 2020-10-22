@@ -45,8 +45,8 @@ reference model or the best submodel found. Default is 'ref' when the
 reference model exists, and 'best' otherwise.}
 
 \item{warnings}{Whether to give warnings if automatic suggestion fails,
-mainly for internal use. Default is TRUE, and usually no reason to set to
-FALSE.}
+mainly for internal use. Default is TRUE, and usually there is no reason to
+set to FALSE.}
 }
 \description{
 This function can be used for suggesting an appropriate model size

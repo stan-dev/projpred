@@ -23,11 +23,11 @@ project(
 or an object which can be converted to a reference model using
 \link[=get_refmodel]{get_refmodel}.}
 
-\item{nterms}{Number of variables in the submodel (the variable combination
-is taken from the \code{varsel} information). If a list, then the
-projection is performed for each model size. Default is the model size
-suggested by the variable selection (see function \code{suggest_size}).
-Ignored if \code{solution_terms} is specified.}
+\item{nterms}{Number of terms in the submodel (the variable combination is
+taken from the \code{varsel} information). If a list, then the projection
+is performed for each model size. Default is the model size suggested by
+the variable selection (see function \code{suggest_size}). Ignored if
+\code{solution_terms} is specified.}
 
 \item{solution_terms}{Variable indices onto which the projection is done. If
 specified, \code{nterms} is ignored.}
@@ -39,8 +39,8 @@ solution from the L1-penalized projection. This option is relevant only if
 L1-search was used. Default is TRUE for genuine reference models and FALSE
 if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 
-\item{ndraws}{Number of samples to be projected. Ignored if \code{nclusters}
-is specified. Default is 400.}
+\item{ndraws}{Number of posterior draws to be projected. Ignored if
+\code{nclusters} is specified. Default is 400.}
 
 \item{nclusters}{Number of clusters in the clustered projection.}
 
@@ -81,22 +81,22 @@ combination.
 }
 \examples{
 \donttest{
-if (requireNamespace('rstanarm', quietly=TRUE)) {
+if (requireNamespace("rstanarm", quietly = TRUE)) {
   ### Usage with stanreg objects
   n <- 30
   d <- 5
-  x <- matrix(rnorm(n*d), nrow=n)
-  y <- x[,1] + 0.5*rnorm(n)
-  data <- data.frame(x,y)
-  
-  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
+  x <- matrix(rnorm(n * d), nrow = n)
+  y <- x[, 1] + 0.5 * rnorm(n)
+  data <- data.frame(x, y)
+
+  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data = data, chains = 2, iter = 500)
   vs <- varsel(fit)
-  
+
   # project onto the best model with 4 variables
   proj4 <- project(vs, nterms = 4)
-  
+
   # project onto an arbitrary variable combination (variable indices 1, 3 and 5)
-  proj <- project(fit, solution_terms=c(1,3,5))
+  proj <- project(fit, solution_terms = c(1, 3, 5))
 }
 }
 
