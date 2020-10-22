@@ -249,7 +249,7 @@ if (require(rstanarm)) {
     )
     expect_error(
       project(vs_list[[1]], nclusters = 400000, nterms = nterms),
-      "Number of posterior draws exceeds the number of columns in the reference model's posterior."
+      "Number of clusters exceeds the number of columns in the reference model's posterior."
     )
   })
 
