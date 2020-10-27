@@ -25,7 +25,7 @@ suggest_size(object, ...)
 \item{...}{Currently ignored.}
 
 \item{stat}{Statistic used for the decision. Default is 'elpd'. See
-\code{varsel_stats} for other possible choices.}
+\code{summary} for other possible choices.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
 intervals based on which the decision is made. E.g. \code{alpha=0.32}
@@ -52,7 +52,7 @@ set to FALSE.}
 This function can be used for suggesting an appropriate model size
 based on a certain default rule. Notice that the decision rules are heuristic
 and should be interpreted as guidelines. It is recommended that the user
-studies the results via \code{varsel_plot} and/or \code{varsel_stats}
+studies the results via \code{varsel_plot} and/or \code{summary}
 and makes the final decision based on what is most appropriate for the given
 problem.
 }

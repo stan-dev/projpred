@@ -67,7 +67,7 @@ summary(vs)
 projs <- project(vs, nterms = c(3, 5))
 
 # predict using only the 5 most relevant variables
-pred <- proj_linpred(vs, xnew=df_gaussian$x, nterms=5, integrated=T)
+pred <- proj_linpred(vs, newdata=df_gaussian, nterms=5, integrated=TRUE)
 
 # perform cross-validation for the variable selection
 cvs <- cv_varsel(fit, cv_method='LOO')
