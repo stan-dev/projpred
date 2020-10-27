@@ -2,6 +2,16 @@
 
 # News
 
+## projpred 2.0.1
+
+We have fully rewritten the internals in several ways. Most importantly, we now leverage maximum likelihood estimation to third parties depending on the reference model's family. This allows a lot of flexibility and extensibility for various models. Functionality wise, the major updates since the last release are:
+
+* Added support for GLMMs and GAMMs via ```lme4``` and ```gamm4```.
+* Formula syntax support internally that allows for easier building upon projections.
+* Thanks to the above point, we save some computation by only considering sensible projections during forward search instead of fitting every possible submodel.
+* We have added a new argument ```search_terms``` that allows the user to specify custom unit building blocks of the projections. This can be used to include _fixed terms_ across all projections, for instance. New vignette coming up.
+* We have fully changed the way to define custom reference models. The user now provides projection fitting and prediction functions (more information in a new upcoming vignette).
+
 ## projpred 1.1.4
 
 Better validation of function arguments.
