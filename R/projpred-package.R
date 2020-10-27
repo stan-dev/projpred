@@ -23,7 +23,7 @@
 #'   Binomial and Poisson families, but more will be implemented later. See the
 #'   \href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
 #'   and
-#'   \href{https://mc-stan.org/projpred/articles/quickstart-glmms.html}{quickstart-glmms-vignette}
+#'   \href{https://mc-stan.org/projpred/articles/quickstart_glmm.html}{quickstart-glmm-vignette}
 #'   for examples.
 #' 
 #' 
