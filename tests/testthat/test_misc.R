@@ -1,8 +1,7 @@
 context("miscellaneous")
 
 # miscellaneous tests
-
-if (require(rstanarm)) {
+if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   set.seed(1235)
   n <- 40
   nterms <- 5

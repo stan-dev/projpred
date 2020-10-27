@@ -3,7 +3,7 @@ context("proj_linpred")
 
 # tests for proj_linpred and proj_predict
 
-if (require(rstanarm)) {
+if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   seed <- 1235
   set.seed(seed)
   n <- 40
