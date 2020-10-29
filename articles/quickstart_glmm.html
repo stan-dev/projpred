@@ -176,10 +176,13 @@
 <p>Because our model includes group effects, the only available search method is forward search, which is a bit slower than L_1 search but tends to find smaller models. Beware that the underlying projection fitting method could return some warnings in cases where the optimization may not have converged properly. This is more common in the case of generalized models (non-Gaussian families). We print the list of the variables ordered by relevance:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit">
 <span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs</span><span class="op">)</span> <span class="co"># selection order of the variables</span></pre></div>
+<pre><code>[1] "(1 | Subject)"   "age"             "(age | Subject)" "Sex"            
+[5] "age:Sex"        </code></pre>
 <p>We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with <code>deltas = TRUE</code> the plot shows results relative to the full model.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit">
+<div class="sourceCode" id="cb7"><pre class="downlit">
 <span class="co"># plot predictive performance on training data</span>
 <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">vs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'elpd'</span>, <span class="st">'rmse'</span><span class="op">)</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_glmm_files/figure-html/unnamed-chunk-7-1.png" width="750" style="display: block; margin: auto;"></p>
 <p>From this plot, it is clearly visible that the first two terms are probaly enough to achieve predictive performance comparable to the reference model. We perform the projection for a submodel of desired size using the function <code>project</code>. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the <code>mcmc_areas</code> function in the <code>bayesplot</code> package. Below we compare how the projection affects the three most relevant variables.</p>
 <!-- ```{r, fig.width=6, fig.height=2} -->
 <!--  # Visualise the three most relevant variables in the full model -\-> -->
@@ -187,89 +190,96 @@
 <!--             pars = c("(Intercept)", "Subject__Intercept", "age", -->
 <!--                      "sd_Subject__age", "sigma")) -->
 <!-- ``` -->
-<div class="sourceCode" id="cb7"><pre class="downlit">
+<div class="sourceCode" id="cb8"><pre class="downlit">
 <span class="co"># Visualise the projected three most relevant variables</span>
 <span class="va">proj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span><span class="va">vs</span>, nterms <span class="op">=</span> <span class="fl">2</span>, ns <span class="op">=</span> <span class="fl">500</span><span class="op">)</span>
 <span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html">mcmc_areas</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="va">proj</span><span class="op">)</span>, pars <span class="op">=</span> <span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_glmm_files/figure-html/unnamed-chunk-8-1.png" width="900" style="display: block; margin: auto;"></p>
 <p>We make predictions with the projected submodels. For point estimates we can use method <code>proj_linpred</code>. Test inputs can be provided using the keyword <code>newdata</code>. If also the test targets <code>ynew</code> are provided, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 5 most relevant variables.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit">
+<div class="sourceCode" id="cb9"><pre class="downlit">
 <span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proj-pred.html">proj_linpred</a></span><span class="op">(</span><span class="va">vs</span>, newdata <span class="op">=</span> <span class="va">Orthodont</span>, nterms <span class="op">=</span> <span class="fl">5</span>, integrated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></pre></div>
 <p>Visualize the predictions</p>
-<div class="sourceCode" id="cb9"><pre class="downlit">
+<div class="sourceCode" id="cb10"><pre class="downlit">
 <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">pred</span><span class="op">$</span><span class="va">pred</span>, y <span class="op">=</span> <span class="va">Orthodont</span><span class="op">$</span><span class="va">distance</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prediction"</span>, y <span class="op">=</span> <span class="st">"y"</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_glmm_files/figure-html/unnamed-chunk-10-1.png" width="750" style="display: block; margin: auto;"></p>
 <p>We also obtain draws from the projected predictive distribution. Here’s an example prediction for a random data point using 5 terms (the observed value is marked by the red line).</p>
-<div class="sourceCode" id="cb10"><pre class="downlit">
+<div class="sourceCode" id="cb11"><pre class="downlit">
 <span class="va">subset</span> <span class="op">&lt;-</span> <span class="va">Orthodont</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/sample_n.html">sample_n</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>
 <span class="va">y_subset</span> <span class="op">&lt;-</span> <span class="va">subset</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">distance</span><span class="op">)</span>
 <span class="va">y1_rep</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proj-pred.html">proj_predict</a></span><span class="op">(</span><span class="va">vs</span>, newdata <span class="op">=</span> <span class="va">subset</span>, nterms <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">7560</span><span class="op">)</span>
 <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/qplot.html">qplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html">as.vector</a></span><span class="op">(</span><span class="va">y1_rep</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">25</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span><span class="op">(</span><span class="va">y_subset</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">xlab</a></span><span class="op">(</span><span class="st">"y1_rep"</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_glmm_files/figure-html/unnamed-chunk-11-1.png" width="750" style="display: block; margin: auto;"></p>
 </div>
 <div id="poisson-example" class="section level2">
 <h2 class="hasAnchor">
 <a href="#poisson-example" class="anchor"></a>Poisson example</h2>
 <p>As previously, we first load the data,</p>
-<div class="sourceCode" id="cb11"><pre class="downlit">
+<div class="sourceCode" id="cb12"><pre class="downlit">
 <span class="va">data_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.table</a></span><span class="op">(</span><span class="st">"data_pois.csv"</span>, header <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></pre></div>
 <p>These data correspond to a phylogenetic dataset where the phenotype is expressed as counts. This kind of data is relevant in evolutionary biology when data of many species are analyzed at the same time. The model we fit here is borrowed from <em>Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology</em> (de Villemeruil &amp; Nakagawa, 2014). The necessary data can also be downloaded from the corresponding website (<a href="http://www.mpcm-evolution.com/" class="uri">http://www.mpcm-evolution.com/</a>). The specific formula is taken from the <em>Estimating Phylogenetic Multilevel Models with brms</em> vignette of the brms package (<a href="https://cran.r-project.org/package=brms/vignettes/brms_phylogenetics.html" class="uri">https://cran.r-project.org/package=brms/vignettes/brms_phylogenetics.html</a>).</p>
-<div class="sourceCode" id="cb12"><pre class="downlit">
+<div class="sourceCode" id="cb13"><pre class="downlit">
 <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">stan_glmer</span><span class="op">(</span>
   <span class="va">phen_pois</span> <span class="op">~</span> <span class="va">cofactor</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">phylo</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">obs</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">data_pois</span>,
   family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html">poisson</a></span><span class="op">(</span><span class="st">"log"</span><span class="op">)</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">2000</span>,
   control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>adapt_delta <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span>
 <span class="op">)</span></pre></div>
 <p>As we did in the previous example, we can perform variable selection and look at the projection.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit">
+<div class="sourceCode" id="cb14"><pre class="downlit">
 <span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varsel.html">varsel</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></pre></div>
 <p>Because our model includes group effects, the only available search method is forward search, which is a bit slower than L_1 search but tends to find smaller models. Beware that the underlying projection fitting method could return some warnings in cases where the optimization may not have converged properly. This is more common in the case of generalized models (non-Gaussian families). We print the list of the variables ordered by relevance:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit">
-<span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs</span><span class="op">)</span> <span class="co"># selection order of the variables</span></pre></div>
-<p>We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with <code>deltas = TRUE</code> the plot shows results relative to the full model.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit">
+<span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs</span><span class="op">)</span> <span class="co"># selection order of the variables</span></pre></div>
+<pre><code>[1] "cofactor"    "(1 | phylo)" "(1 | obs)"  </code></pre>
+<p>We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with <code>deltas = TRUE</code> the plot shows results relative to the full model.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit">
 <span class="co"># plot predictive performance on training data</span>
 <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">vs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'elpd'</span>, <span class="st">'rmse'</span><span class="op">)</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_glmm_files/figure-html/unnamed-chunk-16-1.png" width="750" style="display: block; margin: auto;"></p>
 <p>We perform the projection for a submodel of desired size using the function <code>project</code>. The projection can also be coerced to a matrix with draws of the selected variables and sigma. The draws can be visualized with, for example, the <code>mcmc_areas</code> function in the <code>bayesplot</code> package. Below we compare how the projection affects the most relevant variables.</p>
 <!-- ```{r, fig.width=6, fig.height=2} -->
 <!--  # Visualise the most relevant variable in the full model -\-> -->
 <!--  mcmc_areas(as.matrix(vs$refmodel$fit), -->
 <!--             pars = c("b_Intercept", "b_cofactor", "sd_phylo__Intercept")) -->
 <!-- ``` -->
-<div class="sourceCode" id="cb16"><pre class="downlit">
+<div class="sourceCode" id="cb18"><pre class="downlit">
 <span class="co"># Visualise the projected two most relevant variables</span>
 <span class="va">proj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span><span class="va">vs</span>, nterms <span class="op">=</span> <span class="fl">2</span>, ndraws <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>
 <span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html">mcmc_areas</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="va">proj</span><span class="op">)</span>, pars <span class="op">=</span> <span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_glmm_files/figure-html/unnamed-chunk-17-1.png" width="900" style="display: block; margin: auto;"></p>
 <p>As we did in the Gaussian example, we make predictions with the projected submodels. The following computes the mean of the predictive distribution and evaluates the log density at the training points using the previously projected model.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit">
+<div class="sourceCode" id="cb19"><pre class="downlit">
 <span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proj-pred.html">proj_linpred</a></span><span class="op">(</span><span class="va">proj</span>, newdata <span class="op">=</span> <span class="va">data_pois</span>, integrated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></pre></div>
 <p>We can also visualize the corresponding projected predictions.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit">
+<div class="sourceCode" id="cb20"><pre class="downlit">
 <span class="va">xaxis</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>, <span class="fl">3</span>, length.out <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span>
 <span class="va">y_mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html">rowMeans</a></span><span class="op">(</span><span class="va">vs</span><span class="op">$</span><span class="va">refmodel</span><span class="op">$</span><span class="va">mu</span><span class="op">)</span>
 <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">pred</span><span class="op">$</span><span class="va">pred</span>, y <span class="op">=</span> <span class="va">y_mu</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x<span class="op">=</span><span class="va">xaxis</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">xaxis</span><span class="op">)</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prediction"</span>, y <span class="op">=</span> <span class="st">"y"</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_glmm_files/figure-html/unnamed-chunk-19-1.png" width="750" style="display: block; margin: auto;"></p>
 </div>
 <div id="bernoulli-example" class="section level2">
 <h2 class="hasAnchor">
 <a href="#bernoulli-example" class="anchor"></a>Bernoulli example</h2>
 <p>For both of the previous cases, running variable selection with the full data was actually enough because they were pretty simple. In this section we work on a slightly more difficult data set.</p>
 <p>We can load the data from the popular <code>lme4</code> package:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit">
+<div class="sourceCode" id="cb21"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"VerbAgg"</span>, package <span class="op">=</span> <span class="st">"lme4"</span><span class="op">)</span></pre></div>
 <p>The whole dataset consists of 7584 questionnaire answers from different subjects. Given that the full data could take a long time to fit, we will subsample 50 individuals (for which sampling still takes a bit). For this, we use the great <code>tidyverse</code> environment.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit">
+<div class="sourceCode" id="cb22"><pre class="downlit">
 <span class="co">## subsample 50 participants</span>
 <span class="va">VerbAgg_subsample</span> <span class="op">&lt;-</span> <span class="va">VerbAgg</span> <span class="op">%&gt;%</span>
   <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">id</span> <span class="op">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html">sample</a></span><span class="op">(</span><span class="va">id</span>, <span class="fl">50</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
   <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>r2num <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">r2</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># binomial family needs numeric target</span></pre></div>
 <p>For this simple model we will add some group effects that we know are not quite relevant.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit">
+<div class="sourceCode" id="cb23"><pre class="downlit">
 <span class="co">## simple bernoulli model</span>
 <span class="va">formula_va</span> <span class="op">&lt;-</span> <span class="va">r2num</span> <span class="op">~</span> <span class="va">btype</span> <span class="op">+</span> <span class="va">situ</span> <span class="op">+</span> <span class="va">mode</span> <span class="op">+</span> <span class="op">(</span><span class="va">btype</span> <span class="op">+</span> <span class="va">situ</span> <span class="op">+</span> <span class="va">mode</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>
 <span class="va">fit_va</span> <span class="op">&lt;-</span> <span class="fu">stan_glmer</span><span class="op">(</span>
@@ -280,12 +290,15 @@
   chains <span class="op">=</span> <span class="fl">2</span>
 <span class="op">)</span></pre></div>
 <p>As we did before, we can run the standard variable selection with</p>
-<div class="sourceCode" id="cb22"><pre class="downlit">
-<span class="va">vs_va</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varsel.html">varsel</a></span><span class="op">(</span><span class="va">fit_va</span><span class="op">)</span></pre></div>
-<div class="sourceCode" id="cb23"><pre class="downlit">
-<span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs_va</span><span class="op">)</span></pre></div>
 <div class="sourceCode" id="cb24"><pre class="downlit">
+<span class="va">vs_va</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varsel.html">varsel</a></span><span class="op">(</span><span class="va">fit_va</span><span class="op">)</span></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit">
+<span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs_va</span><span class="op">)</span></pre></div>
+<pre><code>[1] "(1 | id)"     "btype"        "(btype | id)" "situ"         "(situ | id)" 
+[6] "mode"         "(mode | id)" </code></pre>
+<div class="sourceCode" id="cb27"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html">plot</a></span><span class="op">(</span><span class="va">vs_va</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"elpd"</span>, <span class="st">"acc"</span><span class="op">)</span><span class="op">)</span></pre></div>
+<p><img src="quickstart_glmm_files/figure-html/unnamed-chunk-25-1.png" width="750" style="display: block; margin: auto;"></p>
 <p>Even though the ordering of the variables makes sense, the performance of the projected models does not quite match the reference model. There may be different reasons that can explain this behaviour:</p>
 <ol style="list-style-type: decimal">
 <li>The reference model posterior may not be very narrow and then running <code>varsel</code> with the default <code>ndraws_pred</code> could be not enough. Increasing <code>ndraws_pred</code> helps but also increases the computational cost. Re fitting the reference model ensuring a narrower posterior (usually employing a stronger sparsifying prior) would have a similar effect. This is usually the case when the difference in predictive performance is not very large.</li>
