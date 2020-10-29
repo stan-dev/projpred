@@ -24,5 +24,8 @@ before_install:
   - sed -i.bak "s/ g++/ ${CXX}${CLANG_EXTRA_ARG}/" ~/.R/Makevars
   - sed -i.bak "s/O[0-3]/O$CXX_OLEVEL/" ~/.R/Makevars
 
+script:
+  - travis_wait 45 R CMD check projpred*tar.gz --ignore-vignettes --no-examples
+
 after_success:
 - Rscript -e 'covr::codecov()'
