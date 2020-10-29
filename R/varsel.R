@@ -1,12 +1,14 @@
 #' Variable selection for generalized linear models
 #'
 #' Perform the projection predictive variable selection for generalized linear
-#' models using generic reference models.
+#' models, generalized linear and additive multilevel models using generic
+#' reference models.
 #'
 #' @param object Either a \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
-#'   or an object which can be converted to a reference model using
-#'   \link[=get_refmodel]{get_refmodel}.
+#'   \link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
+#'   an object which can be converted to a reference model using
+#'   \link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
+#'   \code{varsel} or \code{cv_varsel}.
 #' @param d_test A test dataset, which is used to evaluate model performance. If
 #'   not provided, training data is used. Currently this argument is for
 #'   internal use only.
@@ -20,12 +22,12 @@
 #'   solution from the' L1-penalized projection. This option is relevant only if
 #'   \code{method}='L1'. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param ndraws Number of posterior draws used in the variable
-#'   selection. Cannot be larger than the number of draws in the reference
-#'   model. Ignored if nclusters is set.
+#' @param ndraws Number of posterior draws used in the variable selection.
+#'   Cannot be larger than the number of draws in the reference model. Ignored
+#'   if nclusters is set.
 #' @param nclusters Number of clusters to use in the clustered projection.
 #'   Overrides the \code{ndraws} argument. Defaults to 1.
-#' @param ndraws_pred Number of samples used for prediction (after
+#' @param ndraws_pred Number of projected draws used for prediction (after
 #'   selection). Ignored if nclusters_pred is given. Note that setting less
 #'   draws or clusters than posterior draws in the reference model may result in
 #'   slightly inaccurate projection performance, although increasing this
@@ -55,13 +57,16 @@
 #'   need for regularization, but sometimes for some models the projection can
 #'   be ill-behaved and we need to add some regularization to avoid numerical
 #'   problems.
+#' @param search_terms A custom list of terms to evaluate for variable
+#'   selection. By default considers all the terms in the reference model's
+#'   formula.
 #' @param ... Additional arguments to be passed to the
 #'   \code{get_refmodel}-function.
 #'
 #' @return An object of type \code{vsel} that contains information about the
-#'   feature selection. The fields are not #' meant to be accessed directly by
-#'   the user but instead via the helper #' functions (see the vignettes or type
-#'   ?projpred #' to see the main functions in the package.)
+#'   feature selection. The fields are not meant to be accessed directly by
+#'   the user but instead via the helper functions (see the vignettes or type
+#'   ?projpred to see the main functions in the package.)
 #'
 #' @examples
 #' \donttest{
@@ -72,7 +77,8 @@
 #'   x <- matrix(rnorm(n*d), nrow=n)
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
-#'   fit <- rstanarm::stan_glm(y~., gaussian(), data=data, chains=2, iter=500)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data,
+#'     chains=2, iter=500)
 #'   vs <- varsel(fit)
 #'   plot(vs)
 #' }
@@ -80,25 +86,26 @@
 #'
 #' @export
 varsel <- function(object, ...) {
-  UseMethod("varsel")
+    UseMethod("varsel")
 }
 
 #' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
-  refmodel <- get_refmodel(object)
-  return(varsel(refmodel, ...))
+    refmodel <- get_refmodel(object)
+    return(varsel(refmodel, ...))
 }
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(refmodel, d_test = NULL, method = NULL,
-                            ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
+varsel.refmodel <- function(object, d_test = NULL, method = NULL,
+    ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
                             nclusters_pred = NULL, cv_search = TRUE,
                             nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, ...) {
+  refmodel <- object
   family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values

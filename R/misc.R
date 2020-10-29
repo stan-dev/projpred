@@ -130,12 +130,16 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
 .validate_vsel_object_stats <- function(object, stats) {
   if (!inherits(object, c("vsel"))) {
-    stop("The object is not a variable selection object. ",
-         "Run variable selection first")
+    stop(
+      "The object is not a variable selection object. ",
+      "Run variable selection first"
+    )
   }
 
-  recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc",
-                        "pctcorr", "auc")
+  recognized_stats <- c(
+    "elpd", "mlpd", "mse", "rmse", "acc",
+    "pctcorr", "auc"
+  )
   binomial_only_stats <- c("acc", "pctcorr", "auc")
   family <- object$family$family
 
@@ -166,8 +170,10 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
       # no reference model (or the results missing for some other reason),
       # so cannot compute differences between the reference model and submodels
-      stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
-           "reference model.")
+      stop(
+        "Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
+        "reference model."
+      )
     }
   }
   return(baseline)
@@ -246,25 +252,31 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       # special case, only one cluster
       cl <- rep(1, S)
       p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
-                            wobs = refmodel$wobs, cl = cl)
+        wobs = refmodel$wobs, cl = cl
+      )
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
       return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
       if (nclusters > NCOL(refmodel$mu)) {
-        stop("The number of clusters nclusters cannot exceed the number of ",
-             "columns in mu.")
+        stop(
+          "The number of clusters nclusters cannot exceed the number of ",
+          "columns in mu."
+        )
       }
       p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
-                            wobs = refmodel$wobs, nclusters = nclusters)
+        wobs = refmodel$wobs, nclusters = nclusters
+      )
     }
   } else if (!is.null(ndraws)) {
     # subsample from the reference model
     # would it be safer to actually randomly draw the subsample?
     if (ndraws > NCOL(refmodel$mu)) {
-      stop("The number of subsamples ndraws cannot exceed the number of ",
-           "columns in mu.")
+      stop(
+        "The number of draws ndraws cannot exceed the number of ",
+        "columns in mu."
+      )
     }
     s_ind <- round(seq(1, S, length.out = ndraws))
     cl <- rep(NA, S)
@@ -272,16 +284,20 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     predvar <- sapply(s_ind, function(j) {
       family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     })
-    p_ref <- list(mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
-                  dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws),
-                  cl = cl)
+    p_ref <- list(
+      mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
+      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws),
+      cl = cl
+    )
   } else {
     # use all the draws from the reference model
     predvar <- sapply(seq_len(S), function(j) {
       family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     })
-    p_ref <- list(mu = refmodel$mu, var = predvar, dis = refmodel$dis,
-                  weights = refmodel$wsample, cl = c(1:S))
+    p_ref <- list(
+      mu = refmodel$mu, var = predvar, dis = refmodel$dis,
+      weights = refmodel$wsample, cl = c(1:S)
+    )
   }
 
   return(p_ref)
@@ -300,8 +316,10 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices
     if (is.null(cl$cluster)) {
-      stop("argument cl must be a vector of cluster indices or a clustering ",
-           "object returned by k-means.")
+      stop(
+        "argument cl must be a vector of cluster indices or a clustering ",
+        "object returned by k-means."
+      )
     }
     cl <- cl$cluster
   }
@@ -360,15 +378,24 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   # error if x or y is missing, but fills weights and offset with default values
   # if missing.
   #
-  if (is.null(data$z))
-    stop("The data object must be a list with field z giving the reference ",
-         "model inputs.")
-  if (is.null(data$x))
-    stop("The data object must be a list with field x giving the feature ",
-         "values.")
-  if (is.null(data$y))
-    stop("The data object must be a list with field y giving the target ",
-         "values.")
+  if (is.null(data$z)) {
+    stop(
+      "The data object must be a list with field z giving the reference ",
+      "model inputs."
+    )
+  }
+  if (is.null(data$x)) {
+    stop(
+      "The data object must be a list with field x giving the feature ",
+      "values."
+    )
+  }
+  if (is.null(data$y)) {
+    stop(
+      "The data object must be a list with field y giving the target ",
+      "values."
+    )
+  }
   if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
   if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
   return(data)
@@ -408,7 +435,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   if (grepl("computationally singular", e$message)) {
     stop(paste(
       "Numerical problems with inverting the covariance matrix. Possibly a",
-      "problem with the convergence of the stan model?, If not, consider",
+      "problem with the convergence of the Stan model?, If not, consider",
       "stopping the selection early by setting the variable nterms_max",
       "accordingly."
     ))
@@ -524,7 +551,7 @@ stop2 <- function(...) {
 
 # combine deparse lines into one string
 deparse_combine <- function(x, max_char = NULL) {
-  out <- collapse(deparse(x))
+  out <- paste0(deparse(x), collapse = "")
   if (isTRUE(max_char > 0)) {
     out <- substr(out, 1L, max_char)
   }

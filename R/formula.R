@@ -1,9 +1,9 @@
-#' This function splits the given formula in response (left) and predictors
-#' (right).
-#' @param formula Formula object that specifies a model.
-#' @return a list containing the plain linear terms, interaction terms, group
-#'   terms, response and a boolean global intercept indicating whether the
-#'   intercept is included or not.
+## This function splits the given formula in response (left) and predictors
+## (right).
+## @param formula Formula object that specifies a model.
+## @return a list containing the plain linear terms, interaction terms, group
+##   terms, response and a boolean global intercept indicating whether the
+##   intercept is included or not.
 extract_terms_response <- function(formula) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
@@ -38,11 +38,33 @@ extract_terms_response <- function(formula) {
   ))
 }
 
-#' At any point inside projpred, the response can be a single object or instead
-#' it can represent multiple outputs. In this function we recover the response/s
-#' as a character vector so we can index the dataframe.
-#' @param response The response as retrieved from the formula object.
-#' @return the response as a character vector.
+remove_duplicates <- function(formula) {
+  terms <- extract_terms_response(formula)
+  linear <- terms$individual_terms
+  additive <- unlist(regmatches(
+    terms$additive_terms,
+    gregexpr("(?<=\\().*?(?=\\))",
+      terms$additive_terms,
+      perl = TRUE
+    )
+  ))
+  dups <- linear[!is.na(match(linear, additive))]
+  if (length(dups) > 0) {
+    update(formula, as.formula(paste0(
+      ". ~ . - ",
+      paste(dups, collapse = " - ")
+    )))
+  }
+  else {
+    formula
+  }
+}
+
+## At any point inside projpred, the response can be a single object or instead
+## it can represent multiple outputs. In this function we recover the response/s
+## as a character vector so we can index the dataframe.
+## @param response The response as retrieved from the formula object.
+## @return the response as a character vector.
 extract_response <- function(response) {
   if (length(response) > 1) {
     stop("Response must have a single element.")
@@ -57,16 +79,16 @@ extract_response <- function(response) {
   return(response_name_ch)
 }
 
-#' Parse additive terms from a list of individual terms. These may include
-#' individual smoothers s(x), interaction smoothers s(x, z), smooth intercepts
-#' s(factor, bs = "re"), group level independent smoothers s(x, by = g), or
-#' shared smoothers for low dimensional factors s(x, g, bs = "fs"), interaction
-#' group level smoothers with same shape for high dimensional factors t2(x, z,
-#' g, bs = c(., ., "re")), interaction group level independent smoothers te(x,
-#' z, by = g), population level interaction smoothers te(x, z, bs = c(., .)),
-#' s(x, z).
-#' @param terms list of terms to parse
-#' @return a vector of smooth terms
+## Parse additive terms from a list of individual terms. These may include
+## individual smoothers s(x), interaction smoothers s(x, z), smooth intercepts
+## s(factor, bs = "re"), group level independent smoothers s(x, by = g), or
+## shared smoothers for low dimensional factors s(x, g, bs = "fs"), interaction
+## group level smoothers with same shape for high dimensional factors t2(x, z,
+## g, bs = c(., ., "re")), interaction group level independent smoothers te(x,
+## z, by = g), population level interaction smoothers te(x, z, bs = c(., .)),
+## s(x, z).
+## @param terms list of terms to parse
+## @return a vector of smooth terms
 parse_additive_terms <- function(terms) {
   excluded_terms <- c("te")
   smooth_terms <- c("s", "t2")
@@ -86,11 +108,11 @@ make_function_regexp <- function(fname) {
   return(paste0(fname, "\\(.+\\)"))
 }
 
-#' Because the formula can imply multiple or single response, in this function
-#' we make sure that a formula has a single response. Then, in the case of
-#' multiple responses we split the formula.
-#' @param formula A formula specifying a model.
-#' @return a formula or a list of formulas with a single response each.
+## Because the formula can imply multiple or single response, in this function
+## we make sure that a formula has a single response. Then, in the case of
+## multiple responses we split the formula.
+## @param formula A formula specifying a model.
+## @return a formula or a list of formulas with a single response each.
 validate_response_formula <- function(formula) {
   ## if multi-response model, split the formula to have
   ## one formula per model.
@@ -108,11 +130,11 @@ validate_response_formula <- function(formula) {
   }
 }
 
-#' By combining different submodels we may arrive to a formula with repeated
-#' terms.
-#' This function gets rid of duplicated terms_.
-#' @param formula A formula specifying a model.
-#' @return a formula without duplicated structure.
+## By combining different submodels we may arrive to a formula with repeated
+## terms.
+## This function gets rid of duplicated terms_.
+## @param formula A formula specifying a model.
+## @return a formula without duplicated structure.
 flatten_formula <- function(formula) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
@@ -124,7 +146,7 @@ flatten_formula <- function(formula) {
     length(interaction_terms) > 0 ||
     length(group_terms) > 0 ||
     length(additive_terms) > 0) {
-    update(formula, paste(c(
+    full <- update(formula, paste(c(
       ". ~ ",
       flatten_individual_terms(individual_terms),
       flatten_additive_terms(additive_terms),
@@ -133,14 +155,15 @@ flatten_formula <- function(formula) {
     ),
     collapse = " + "
     ))
+    remove_duplicates(full)
   } else {
     formula
   }
 }
 
-#' Remove duplicated linear terms.
-#' @param terms A vector of linear terms as strings.
-#' @return a vector of unique linear individual terms.
+## Remove duplicated linear terms.
+## @param terms A vector of linear terms as strings.
+## @return a vector of unique linear individual terms.
 flatten_individual_terms <- function(terms_) {
   if (length(terms_) == 0) {
     return(terms_)
@@ -148,9 +171,9 @@ flatten_individual_terms <- function(terms_) {
   return(unique(terms_))
 }
 
-#' Remove duplicated linear interaction terms.
-#' @param terms A vector of linear interaction terms as strings.
-#' @return a vector of unique linear interaction terms.
+## Remove duplicated linear interaction terms.
+## @param terms A vector of linear interaction terms as strings.
+## @return a vector of unique linear interaction terms.
 flatten_interaction_terms <- function(terms_) {
   if (length(terms_) == 0) {
     return(terms_)
@@ -159,9 +182,9 @@ flatten_interaction_terms <- function(terms_) {
   return(unique(terms_))
 }
 
-#' Remove duplicated additive terms.
-#' @param terms A vector of additive terms as strings.
-#' @return a vector of unique linear interaction terms.
+## Remove duplicated additive terms.
+## @param terms A vector of additive terms as strings.
+## @return a vector of unique linear interaction terms.
 flatten_additive_terms <- function(terms_) {
   if (length(terms_) == 0) {
     return(terms_)
@@ -169,9 +192,9 @@ flatten_additive_terms <- function(terms_) {
   return(unique(terms_))
 }
 
-#' Unifies group terms removing any duplicates.
-#' @param terms A vector of linear group terms as strings.
-#' @return a vector of unique group terms.
+## Unifies group terms removing any duplicates.
+## @param terms A vector of linear group terms as strings.
+## @return a vector of unique group terms.
 flatten_group_terms <- function(terms_) {
   if (length(terms_) == 0) {
     return(terms_)
@@ -218,11 +241,11 @@ flatten_group_terms <- function(terms_) {
   return(unlist(group_terms))
 }
 
-#' Simplify and split a formula by breaking it into all possible submodels.
-#' @param formula A formula for a valid model.
-#' @param return_group_terms If TRUE, return group terms as well. Default TRUE.
-#' @param data The reference model data.
-#' @return a vector of all the minimal valid terms that make up for submodels.
+## Simplify and split a formula by breaking it into all possible submodels.
+## @param formula A formula for a valid model.
+## @param return_group_terms If TRUE, return group terms as well. Default TRUE.
+## @param data The reference model data.
+## @return a vector of all the minimal valid terms that make up for submodels.
 split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
@@ -231,17 +254,44 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
   additive_terms <- terms_$additive_terms
   global_intercept <- terms_$global_intercept
 
+  additive <- unlist(regmatches(
+    additive_terms,
+    gregexpr("(?<=\\().*?(?=\\))",
+      terms_$additive_terms,
+      perl = TRUE
+    )
+  ))
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
+    group_split <- unlist(lapply(group_terms, split_group_term))
     allterms_ <- c(
-      individual_terms,
       unlist(lapply(additive_terms, split_additive_term, data)),
-      unlist(lapply(group_terms, split_group_term)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
+
+    group_replace <- regmatches(
+      group_split,
+      gregexpr("\\w+(?![^(]*\\))", group_split, perl = TRUE)
+    )
+    groups_to_replace <- group_split[unlist(lapply(
+      group_replace,
+      function(x) length(x) > 0
+    ))]
+    to_replace <- group_split[match(group_replace, additive) %>%
+      (function(x) !is.na(x))]
+    not_replace <- setdiff(group_split, to_replace)
+
+    replacement <- gsub(
+      pattern = "(\\w+)(?![^(]*\\))", replacement = "s(\\1)",
+      to_replace, perl = TRUE
+    )
+    group_split <- c(not_replace, replacement)
+    nodups <- individual_terms[is.na(match(individual_terms, additive))]
+    allterms_ <- c(allterms_, group_split, nodups)
   } else {
+    nodups <- individual_terms[!is.na(match(individual_terms, additive))]
     allterms_ <- c(
-      individual_terms,
+      nodups,
       unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
@@ -258,11 +308,11 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
   }
 }
 
-#' Plugs the main effects to the interaction terms to consider jointly for
-#' projection.
-#' @param term An interaction term as a string.
-#' @return a minimally valid submodel for the interaction term including
-#' the overall effects.
+## Plugs the main effects to the interaction terms to consider jointly for
+## projection.
+## @param term An interaction term as a string.
+## @return a minimally valid submodel for the interaction term including
+## the overall effects.
 split_interaction_term <- function(term) {
   ## strong heredity by default
   terms_ <- unlist(strsplit(term, ":"))
@@ -271,11 +321,11 @@ split_interaction_term <- function(term) {
   return(joint_term)
 }
 
-#' Plugs the main effects to the smooth additive term if `by` argument is
-#' provided.
-#' @param term An additive term as a string.
-#' @param data The reference model data.
-#' @return a minimally valid submodel for the additive term.
+## Plugs the main effects to the smooth additive term if `by` argument is
+## provided.
+## @param term An additive term as a string.
+## @param data The reference model data.
+## @return a minimally valid submodel for the additive term.
 split_additive_term <- function(term, data) {
   out <- mgcv::interpret.gam(as.formula(paste("~", term)))
   if (out$smooth.spec[[1]]$by == "NA") {
@@ -291,11 +341,11 @@ split_additive_term <- function(term, data) {
 }
 
 
-#' Simplify a single group term by breaking it down in as many terms_
-#' as varying effects. It also explicitly adds or removes the varying intercept.
-#' @param term A group term as a string.
-#' @return a vector of all the minimally valid submodels for the group term
-#' including a single varying effect with and without varying intercept.
+## Simplify a single group term by breaking it down in as many terms_
+## as varying effects. It also explicitly adds or removes the varying intercept.
+## @param term A group term as a string.
+## @return a vector of all the minimally valid submodels for the group term
+## including a single varying effect with and without varying intercept.
 split_group_term <- function(term) {
   ## this expands whatever terms() did not expand
   term <- gsub(
@@ -385,31 +435,31 @@ split_group_term <- function(term) {
   group_terms
 }
 
-#' Checks whether a formula contains group terms or not.
-#' @param formula A formula for a valid model.
-#' @return TRUE if the formula contains group terms, FALSE otherwise.
+## Checks whether a formula contains group terms or not.
+## @param formula A formula for a valid model.
+## @return TRUE if the formula contains group terms, FALSE otherwise.
 formula_contains_group_terms <- function(formula) {
   group_terms <- extract_terms_response(formula)$group_terms
   return(length(group_terms) > 0)
 }
 
-#' Checks whether a formula contains additive terms or not.
-#' @param formula A formula for a valid model.
-#' @return TRUE if the formula contains additive terms, FALSE otherwise.
+## Checks whether a formula contains additive terms or not.
+## @param formula A formula for a valid model.
+## @return TRUE if the formula contains additive terms, FALSE otherwise.
 formula_contains_additive_terms <- function(formula) {
   additive_terms <- extract_terms_response(formula)$additive_terms
   return(length(additive_terms) > 0)
 }
 
-#' Utility to both subset the formula and update the data
-#' @param formula A formula for a valid model.
-#' @param terms_ A vector of terms to subset.
-#' @param data The original data frame for the full formula.
-#' @param y The response vector. Default NULL.
-#' @param split_formula If TRUE breaks the response down into single response
-#'   formulas.
-#' Default FALSE. It only works if `y` represents a multi-output response.
-#' @return a list including the updated formula and data
+## Utility to both subset the formula and update the data
+## @param formula A formula for a valid model.
+## @param terms_ A vector of terms to subset.
+## @param data The original data frame for the full formula.
+## @param y The response vector. Default NULL.
+## @param split_formula If TRUE breaks the response down into single response
+##   formulas.
+## Default FALSE. It only works if `y` represents a multi-output response.
+## @return a list including the updated formula and data
 subset_formula_and_data <- function(formula, terms_, data, y = NULL,
                                     split_formula = FALSE) {
   formula <- make_formula(terms_, formula = formula)
@@ -441,15 +491,15 @@ subset_formula_and_data <- function(formula, terms_, data, y = NULL,
   return(nlist(formula, data))
 }
 
-#' Utility to just replace the response in the data frame
-#' @param formula A formula for a valid model.
-#' @param terms_ A vector of terms to subset.
-#' @param split_formula If TRUE breaks the response down into single response
-#'   formulas.
-#' Default FALSE. It only works if `y` represents a multi-output response.
-#' @return a function that replaces the response in the data with arguments
-#' @param y The response vector. Default NULL.
-#' @param data The original data frame for the full formula.
+## Utility to just replace the response in the data frame
+## @param formula A formula for a valid model.
+## @param terms_ A vector of terms to subset.
+## @param split_formula If TRUE breaks the response down into single response
+##   formulas.
+## Default FALSE. It only works if `y` represents a multi-output response.
+## @return a function that replaces the response in the data with arguments
+## @param y The response vector. Default NULL.
+## @param data The original data frame for the full formula.
 get_replace_response <- function(formula, terms_, split_formula = FALSE) {
   formula <- make_formula(terms_, formula = formula)
   tt <- extract_terms_response(formula)
@@ -480,9 +530,9 @@ get_replace_response <- function(formula, terms_, split_formula = FALSE) {
 }
 
 
-#' Subsets a formula by the given terms.
-#' @param terms_ A vector of terms to subset from the right hand side.
-#' @return A formula object with the collapsed terms.
+## Subsets a formula by the given terms.
+## @param terms_ A vector of terms to subset from the right hand side.
+## @return A formula object with the collapsed terms.
 make_formula <- function(terms_, formula = NULL) {
   if (length(terms_) == 0) {
     terms_ <- c("1")
@@ -493,10 +543,10 @@ make_formula <- function(terms_, formula = NULL) {
   return(update(formula, paste0(". ~ ", paste(terms_, collapse = " + "))))
 }
 
-#' Utility to count the number of terms in a given formula.
-#' @param formula The right hand side of a formula for a valid model
-#' either as a formula object or as a string.
-#' @return the number of terms in the formula.
+## Utility to count the number of terms in a given formula.
+## @param formula The right hand side of a formula for a valid model
+## either as a formula object or as a string.
+## @return the number of terms in the formula.
 count_terms_in_formula <- function(formula) {
   if (!inherits(formula, "formula")) {
     formula <- as.formula(paste0("~ ", formula))
@@ -508,9 +558,9 @@ count_terms_in_formula <- function(formula) {
   ind_interaction_terms + group_terms + tt$global_intercept
 }
 
-#' Utility to count the number of terms in a given group term.
-#' @param term A group term as a string.
-#' @return the number of terms in the group term.
+## Utility to count the number of terms in a given group term.
+## @param term A group term as a string.
+## @return the number of terms in the group term.
 count_terms_in_group_term <- function(term) {
   term <- gsub("[\\(\\)]", "", flatten_group_terms(term))
 
@@ -528,9 +578,9 @@ count_terms_in_group_term <- function(term) {
   return(length(terms_))
 }
 
-#' Given a list of formulas, sort them by the number of terms in them.
-#' @param submodels A list of models' formulas.
-#' @return a sorted list of submodels by included terms.
+## Given a list of formulas, sort them by the number of terms in them.
+## @param submodels A list of models' formulas.
+## @return a sorted list of submodels by included terms.
 sort_submodels_by_size <- function(submodels) {
   size <- lapply(submodels, count_terms_in_formula)
   df <- data.frame(submodels = as.character(submodels), size = unlist(size))
@@ -549,10 +599,10 @@ sort_submodels_by_size <- function(submodels) {
   ord_list_nona[!is.na(ord_list_nona)]
 }
 
-#' Select next possible terms without surpassing a specific size
-#' @param chosen A list of currently chosen terms
-#' @param terms A list of all possible terms
-#' @param size Maximum allowed size
+## Select next possible terms without surpassing a specific size
+## @param chosen A list of currently chosen terms
+## @param terms A list of all possible terms
+## @param size Maximum allowed size
 select_possible_terms_size <- function(chosen, terms, size) {
   if (size < 1) {
     stop("size must be at least 1")
@@ -580,17 +630,17 @@ select_possible_terms_size <- function(chosen, terms, size) {
   return(full_valid_submodels)
 }
 
-#' Cast a right hand side formula to a character vector.
-#' @param rhs a right hand side formula of the type . ~ x + z + ...
-#' @return a character vector containing only the right hand side.
+## Cast a right hand side formula to a character vector.
+## @param rhs a right hand side formula of the type . ~ x + z + ...
+## @return a character vector containing only the right hand side.
 to_character_rhs <- function(rhs) {
   chr <- as.character(rhs)
   return(chr[length(chr)])
 }
 
-#' Given a refmodel structure, count the number of terms included.
-#' @param formula The reference model's formula.
-#' @param list_of_terms Subset of terms from formula.
+## Given a refmodel structure, count the number of terms included.
+## @param formula The reference model's formula.
+## @param list_of_terms Subset of terms from formula.
 count_terms_chosen <- function(list_of_terms) {
   if (length(list_of_terms) == 0) {
     return(0)
@@ -599,11 +649,11 @@ count_terms_chosen <- function(list_of_terms) {
   count_terms_in_formula(flatten_formula(formula))
 }
 
-#' Utility that checks if the next submodel is redundant with the current one.
-#' @param formula The reference models' formula.
-#' @param current A list of terms included in the current submodel.
-#' @param new The new term to add to the submodel.
-#' @return TRUE if the new term results in a redundant model, FALSE otherwise.
+## Utility that checks if the next submodel is redundant with the current one.
+## @param formula The reference models' formula.
+## @param current A list of terms included in the current submodel.
+## @param new The new term to add to the submodel.
+## @return TRUE if the new term results in a redundant model, FALSE otherwise.
 is_next_submodel_redundant <- function(current, new) {
   old_submodel <- current
   new_submodel <- c(current, new)
@@ -615,11 +665,11 @@ is_next_submodel_redundant <- function(current, new) {
   }
 }
 
-#' Utility to remove redundant models to consider
-#' @param refmodel The reference model's formula.
-#' @param chosen A list of included terms at a given point of the search.
-#' @return a vector of incremental non redundant submodels for all the possible
-#'   terms included.
+## Utility to remove redundant models to consider
+## @param refmodel The reference model's formula.
+## @param chosen A list of included terms at a given point of the search.
+## @return a vector of incremental non redundant submodels for all the possible
+##   terms included.
 reduce_models <- function(chosen) {
   Reduce(
     function(chosen, x) {
@@ -633,28 +683,28 @@ reduce_models <- function(chosen) {
   )
 }
 
-#' Helper function to evaluate right hand side formulas in a context
-#' @param formula Formula to evaluate.
-#' @param data Data with which to evaluate.
-#' @return output from the evaluation
+## Helper function to evaluate right hand side formulas in a context
+## @param formula Formula to evaluate.
+## @param data Data with which to evaluate.
+## @return output from the evaluation
 eval_rhs <- function(formula, data) {
   eval(formula[[2]], data, environment(formula))
 }
 
-#' Extract left hand side of a formula as a formula itself by removing the right
-#' hand side.
-#' @param x Formula
-#' @return updated formula with an intercept in the right hand side.
+## Extract left hand side of a formula as a formula itself by removing the right
+## hand side.
+## @param x Formula
+## @return updated formula with an intercept in the right hand side.
 lhs <- function(x) {
   x <- as.formula(x)
   if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
 
 # taken from brms
-#' validate formulas dedicated to response variables
-#' @param x coerced to a formula object
-#' @param empty_ok is an empty left-hand-side ok?
-#' @return a formula of the form <response> ~ 1
+## validate formulas dedicated to response variables
+## @param x coerced to a formula object
+## @param empty_ok is an empty left-hand-side ok?
+## @return a formula of the form <response> ~ 1
 validate_resp_formula <- function(x, empty_ok = TRUE) {
   out <- lhs(as.formula(x))
   if (is.null(out)) {
@@ -676,12 +726,12 @@ validate_resp_formula <- function(x, empty_ok = TRUE) {
 }
 
 # taken from brms
-#' convert a formula to a character string
-#' @param formula a model formula
-#' @param rm a vector of to elements indicating how many characters
-#'   should be removed at the beginning and end of the string respectively
-#' @param space how should whitespaces be treated?
-#' @return a single character string or NULL
+## convert a formula to a character string
+## @param formula a model formula
+## @param rm a vector of to elements indicating how many characters
+##   should be removed at the beginning and end of the string respectively
+## @param space how should whitespaces be treated?
+## @return a single character string or NULL
 formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
   if (is.null(formula)) {
     return(NULL)
@@ -699,18 +749,18 @@ formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
   substr(x, 1 + rm[1], nchar(x) - rm[2])
 }
 
-#' remove intercept from formula
-#' @param formula a model formula
-#' @return the updated formula without intercept
+## remove intercept from formula
+## @param formula a model formula
+## @return the updated formula without intercept
 delete.intercept <- function(formula) {
   return(update(formula, . ~ . - 1))
 }
 
-#' construct contrasts.arg list argument for model.matrix based on the current
-#' model's formula.
-#' @param formula a formula object
-#' @param data model's data
-#' @return a named list with each factor and its contrasts
+## construct contrasts.arg list argument for model.matrix based on the current
+## model's formula.
+## @param formula a formula object
+## @param data model's data
+## @return a named list with each factor and its contrasts
 get_contrasts_arg_list <- function(formula, data) {
   ## extract model frame
   ## check categorical variables
@@ -728,11 +778,11 @@ get_contrasts_arg_list <- function(formula, data) {
   return(contrasts_arg)
 }
 
-#' collapse a list of terms including contrasts
-#' @param formula model's formula
-#' @param path list of terms possibly including contrasts
-#' @param data model's data
-#' @return the updated list of terms replacing the contrasts with the term name
+## collapse a list of terms including contrasts
+## @param formula model's formula
+## @param path list of terms possibly including contrasts
+## @param data model's data
+## @return the updated list of terms replacing the contrasts with the term name
 collapse_contrasts_solution_path <- function(formula, path, data) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")

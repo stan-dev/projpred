@@ -4,4 +4,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 README.md
-^pkgdown$
+^\.github$
+^vignettes/quickstart_glmm_cache$
+^vignettes/quickstart_cache$

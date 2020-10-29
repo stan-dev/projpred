@@ -3,7 +3,7 @@
 # projpred
 
 [![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
-[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://cran.r-project.org/web/packages/projpred)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://cran.r-project.org/package=projpred)
 
 An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] and [brms][] but other reference models can also be used. 
 
@@ -67,7 +67,7 @@ summary(vs)
 projs <- project(vs, nterms = c(3, 5))
 
 # predict using only the 5 most relevant variables
-pred <- proj_linpred(vs, xnew=df_gaussian$x, nterms=5, integrated=T)
+pred <- proj_linpred(vs, newdata=df_gaussian, nterms=5, integrated=TRUE)
 
 # perform cross-validation for the variable selection
 cvs <- cv_varsel(fit, cv_method='LOO')

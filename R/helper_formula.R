@@ -1,10 +1,11 @@
 #' Utilities to handle formulas for the external user
+#' @name helper_formula
 NULL
 
-#' Sometimes there can be terms in a formula that refer to a matrix instead of
-#' a single predictor. Because we can handle search_terms of predictors, this function
-#' breaks the matrix term into individual predictors to handle separately, as
-#' that is probably the intention of the user.
+#' Sometimes there can be terms in a formula that refer to a matrix instead of a
+#' single predictor. Because we can handle search_terms of predictors, this
+#' function breaks the matrix term into individual predictors to handle
+#' separately, as that is probably the intention of the user.
 #' @param formula A formula for a valid model.
 #' @param data The original data frame with a matrix as predictor.
 #' @return a  list containing the expanded formula and the expanded data frame.
@@ -91,10 +92,10 @@ break_up_matrix_term <- function(formula, data) {
   list(formula = formula, data = new_data)
 }
 
-#' Splits a linear term into individual predictors.
-#' @param term A matrix term.
-#' @param data The original data frame.
-#' @return a list of the expanded linear matrix term.
+## Splits a linear term into individual predictors.
+## @param term A matrix term.
+## @param data The original data frame.
+## @return a list of the expanded linear matrix term.
 split_linear_term <- function(term, data) {
   appearances <- ncol(data[, term])
 

@@ -64,7 +64,7 @@ Thanks to its general interface, `projpred` can be applied to a very wide set of
   - Prediction function for the reference model that outputs the linear predictor. 
   - Function to fetch data from the original dataset.
 
-For most models, `projpred` is able to generate these itself without any user input more than the reference model object. Nonetheless, for custom or not supported models, the user can provide those himself (more details in the documentation about reference models).
+For most models, `projpred` is able to generate these itself without any user input more than the reference model object. Nonetheless, for custom or not supported models, the user can provide those themself (more details in the documentation about reference models).
 
 <!-- ```{r, results='hide', messages=FALSE, warning=FALSE} -->
 <!-- ref_predfun <- function(fit, newdata=NULL) -->
@@ -116,7 +116,6 @@ solution_terms(vs) # selection order of the variables
 
 We plot some statistics computed on the training data, such as the sum of log predictive densities (ELPD) and root mean squared error (RMSE) as the function of number of variables added. By default, the statistics are shown on absolute scale, but with ```deltas=T``` the plot shows results relative to the full model.
 ```{r, fig.width=5, fig.height=4}
-# plot predictive performance on training data
 plot(vs, stats = c('elpd', 'rmse'))
 ```
 
@@ -155,7 +154,7 @@ ggplot() +
   labs(x = "prediction", y = "y")
 ```
 
-We also obtain draws from the projected predictive distribution. Here's an example prediction for the first data point using 6 variables (the observed value is marked by the red line)
+We also obtain draws from the projected predictive distribution. Here's an example prediction for a random data point using 6 variables (the observed value is marked by the red line)
 ```{r, fig.height=3, fig.width=5}
 subset <- df_gaussian %>% dplyr::sample_n(1)
 y_subset <- subset %>% dplyr::select(y)
@@ -178,7 +177,7 @@ Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models
 
 Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. _Biometrika_, 85(1):29–37.
 
-Piironen, Juho and Vehtari, Aki (2017a). Comparison of Bayesian predictive methods for model selection. _Statistics and Computing_ 27(3):711-735. DOI 10.1007/s11222-016-9649-y. [Online](http://link.springer.com/article/10.1007/s11222-016-9649-y)
+Piironen, Juho and Vehtari, Aki (2017a). Comparison of Bayesian predictive methods for model selection. _Statistics and Computing_ 27(3):711-735. DOI 10.1007/s11222-016-9649-y. [Online](https://link.springer.com/article/10.1007/s11222-016-9649-y)
 
 Piironen, Juho and Vehtari, Aki (2017b). On the Hyperprior Choice for the Global Shrinkage Parameter in the Horseshoe Prior. In _Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)_, PMLR 54:905-913, 2017. [Online](http://proceedings.mlr.press/v54/piironen17a.html)
 
