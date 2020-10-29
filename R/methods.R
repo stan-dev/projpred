@@ -66,8 +66,8 @@
 #'   vs <- varsel(fit)
 #'   
 #'   # compute predictions with 4 variables at the training points
-#'   pred <- proj_linpred(vs, xnew=x, nv = 4)
-#'   pred <- proj_predict(vs, xnew=x, nv = 4)
+#'   pred <- proj_linpred(vs, newdata = data, nv = 4)
+#'   pred <- proj_predict(vs, newdata = data, nv = 4)
 #' }
 #' }
 #'
@@ -266,7 +266,14 @@ proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
 #' \donttest{
 #' ### Usage with stanreg objects
 #' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   fit <- rstanarm::stan_glm(y ~ x, binomial())
+#'   n <- 30
+#'   d <- 5
+#'   x <- matrix(rnorm(n*d), nrow=n)
+#'   y <- x[,1] + 0.5*rnorm(n)
+#'   data <- data.frame(x,y)
+#'
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+#'     data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
 #'   plot(vs)
 #' }
@@ -406,10 +413,10 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   
 #'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
-#'   varsel_plot(vs)
+#'   plot(vs)
 #'   
 #'   # print out some stats
-#'   varsel_stats(vs, stats=c('mse'), type = c('mean','se'))
+#'   summary(vs, stats=c('mse'), type = c('mean','se'))
 #' }
 #' }
 #'
@@ -502,14 +509,14 @@ suggest_size <- function(object, ...) {
 #' This function can be used for suggesting an appropriate model size
 #' based on a certain default rule. Notice that the decision rules are heuristic
 #' and should be interpreted as guidelines. It is recommended that the user
-#' studies the results via \code{varsel_plot} and/or \code{varsel_stats}
+#' studies the results via \code{varsel_plot} and/or \code{summary}
 #' and makes the final decision based on what is most appropriate for the given
 #' problem.
 #'
 #' @param object The object returned by \link[=varsel]{varsel} or
 #'   \link[=cv_varsel]{cv_varsel}.
 #' @param stat Statistic used for the decision. Default is 'elpd'. See
-#'   \code{varsel_stats} for other possible choices.
+#'   \code{summary} for other possible choices.
 #' @param alpha A number indicating the desired coverage of the credible
 #'   intervals based on which the decision is made. E.g. \code{alpha=0.32}
 #'   corresponds to 68\% probability mass within the intervals (one standard

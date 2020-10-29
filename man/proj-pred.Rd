@@ -105,8 +105,8 @@ if (requireNamespace('rstanarm', quietly=TRUE)) {
   vs <- varsel(fit)
   
   # compute predictions with 4 variables at the training points
-  pred <- proj_linpred(vs, xnew=x, nv = 4)
-  pred <- proj_predict(vs, xnew=x, nv = 4)
+  pred <- proj_linpred(vs, newdata = data, nv = 4)
+  pred <- proj_predict(vs, newdata = data, nv = 4)
 }
 }
 
