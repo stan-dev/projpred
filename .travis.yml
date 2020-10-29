@@ -15,6 +15,7 @@ env:
     - CXX_OLEVEL=2 CXX=clang++
 
 before_install:
+  - sudo apt-get -y install libv8-dev
   - mkdir -p ~/.R/
   - echo "CXX = `R CMD config CXX`" >> ~/.R/Makevars
   - echo "CXXFLAGS = `R CMD config CXXFLAGS` -pedantic -g0" >> ~/.R/Makevars
