@@ -48,14 +48,17 @@
 
 <meta property="og:title" content="Projection predictive feature selection — projpred" />
 <meta property="og:description" content="Description
-projpred is an R package to perform projection predictive variable (feature)
-selection for generalized linear models. The package is aimed to be compatible with
-rstanarm but also other reference models can be used (see function
-init_refmodel).
+projpred is an R package to perform projection predictive variable
+  (feature) selection for generalized linear models, generalized linear
+  multilevel models and generalized additive multilevel models. The package
+  is aimed to be compatible with rstanarm but also other reference
+  models can be used (see function init_refmodel).
 Currently, the supported models (family objects in R) include Gaussian,
-Binomial and Poisson families, but more will be implemented later. See the
-quickstart-vignette
-for examples." />
+  Binomial and Poisson families, but more will be implemented later. See the
+  quickstart-vignette
+  and
+  quickstart-glmm-vignette
+  for examples." />
 <meta property="og:image" content="https://mc-stan.org/projpred/logo.png" />
 
 
@@ -88,7 +91,7 @@ for examples." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -182,14 +185,17 @@ for examples." />
 
     <div class="ref-description">
     <p>Description</p>
-<p><span class="pkg">projpred</span> is an R package to perform projection predictive variable (feature)
-selection for generalized linear models. The package is aimed to be compatible with
-<span class="pkg">rstanarm</span> but also other reference models can be used (see function
-<code>init_refmodel</code>).</p>
+<p><span class="pkg">projpred</span> is an R package to perform projection predictive variable
+  (feature) selection for generalized linear models, generalized linear
+  multilevel models and generalized additive multilevel models. The package
+  is aimed to be compatible with <span class="pkg">rstanarm</span> but also other reference
+  models can be used (see function <code><a href='get-refmodel.html'>init_refmodel</a></code>).</p>
 <p>Currently, the supported models (family objects in R) include Gaussian,
-Binomial and Poisson families, but more will be implemented later. See the
-<a href='https://mc-stan.org/projpred/articles/quickstart.html'>quickstart-vignette</a>
-for examples.</p>
+  Binomial and Poisson families, but more will be implemented later. See the
+  <a href='https://mc-stan.org/projpred/articles/quickstart.html'>quickstart-vignette</a>
+  and
+  <a href='https://mc-stan.org/projpred/articles/quickstart_glmm.html'>quickstart-glmm-vignette</a>
+  for examples.</p>
     </div>
 
 
@@ -200,11 +206,14 @@ for examples.</p>
 
 
 <dl>
- <dt><a href='varsel.html'>varsel</a>, <a href='cv_varsel.html'>cv_varsel</a>, init_refmodel, <a href='suggest_size.html'>suggest_size</a></dt><dd><p>Perform and cross-validate the variable selection. init_refmodel can be used to initialize
- a reference model other than <span class="pkg">rstanarm</span>-fit.</p></dd>
- <dt>project</dt><dd><p>Get the projected posteriors of the reduced models.</p></dd>
- <dt><a href='proj-pred.html'>proj_predict</a>, <a href='proj-pred.html'>proj_linpred</a></dt><dd><p>Make predictions with reduced number of features.</p></dd>
- <dt><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a>, <a href='https://rdrr.io/r/base/summary.html'>summary</a></dt><dd><p>Visualize and get some key statistics about the variable selection.</p></dd>
+ <dt><a href='varsel.html'>varsel</a>, <a href='cv_varsel.html'>cv_varsel</a>, <a href='get-refmodel.html'>init_refmodel</a>,
+  <a href='suggest_size.html'>suggest_size</a></dt><dd><p>Perform and cross-validate the variable selection.
+  <a href='get-refmodel.html'>init_refmodel</a> can be used to initialize a reference model other than
+  <span class="pkg">rstanarm</span>-fit.</p></dd> <dt><a href='project.html'>project</a></dt><dd><p>Get the projected posteriors of
+  the reduced models.</p></dd> <dt><a href='proj-pred.html'>proj_predict</a>, <a href='proj-pred.html'>proj_linpred</a></dt><dd><p>Make
+  predictions with reduced number of features.</p></dd> <dt><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a>,
+  <a href='https://rdrr.io/r/base/summary.html'>summary</a></dt><dd><p>Visualize and get some key statistics about the variable
+  selection.</p></dd>
 
 </dl>
 
@@ -213,12 +222,16 @@ for examples.</p>
     
 
 
-<p>Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via 
-an entropic explanatory power. <em>Journal of Statistical Planning and Inference</em>, 111(1-2):77–94.</p>
-<p>Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian 
-approach via Kullback–Leibler projections. <em>Biometrika</em>, 85(1):29–37.</p>
-<p>Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive methods for model selection.
- <em>Statistics and Computing</em>, 27(3):711-735. doi:10.1007/s11222-016-9649-y. (<a href='https://link.springer.com/article/10.1007/s11222-016-9649-y'>Online</a>).</p>
+<p>Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
+  models via an entropic explanatory power. <em>Journal of Statistical
+  Planning and Inference</em>, 111(1-2):77–94.</p>
+<p>Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
+  models: a Bayesian approach via Kullback–Leibler projections.
+  <em>Biometrika</em>, 85(1):29–37.</p>
+<p>Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive
+  methods for model selection. <em>Statistics and Computing</em>,
+  27(3):711-735. doi:10.1007/s11222-016-9649-y.
+  (<a href='https://link.springer.com/article/10.1007/s11222-016-9649-y'>Online</a>).</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

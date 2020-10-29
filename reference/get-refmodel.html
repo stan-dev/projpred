@@ -83,7 +83,7 @@ the returned object has the same type." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -182,18 +182,150 @@ implementations are wrappers to the <code>init_refmodel</code>-function so
 the returned object has the same type.</p>
     </div>
 
+    <pre class="usage"><span class='fu'>get_refmodel</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>...</span><span class='op'>)</span>
+
+<span class='co'># S3 method for refmodel</span>
+<span class='fu'>get_refmodel</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>...</span><span class='op'>)</span>
+
+<span class='co'># S3 method for vsel</span>
+<span class='fu'>get_refmodel</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>...</span><span class='op'>)</span>
+
+<span class='co'># S3 method for default</span>
+<span class='fu'>get_refmodel</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  <span class='va'>data</span>,
+  <span class='va'>y</span>,
+  <span class='va'>formula</span>,
+  <span class='va'>ref_predfun</span>,
+  <span class='va'>proj_predfun</span>,
+  <span class='va'>div_minimizer</span>,
+  <span class='va'>fetch_data</span>,
+  family <span class='op'>=</span> <span class='cn'>NULL</span>,
+  wobs <span class='op'>=</span> <span class='cn'>NULL</span>,
+  folds <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cvfits <span class='op'>=</span> <span class='cn'>NULL</span>,
+  offset <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cvfun <span class='op'>=</span> <span class='cn'>NULL</span>,
+  dis <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
+
+<span class='co'># S3 method for stanreg</span>
+<span class='fu'>get_refmodel</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  data <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ref_predfun <span class='op'>=</span> <span class='cn'>NULL</span>,
+  proj_predfun <span class='op'>=</span> <span class='cn'>NULL</span>,
+  div_minimizer <span class='op'>=</span> <span class='cn'>NULL</span>,
+  folds <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
+
+<span class='fu'>init_refmodel</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  <span class='va'>data</span>,
+  <span class='va'>formula</span>,
+  <span class='va'>family</span>,
+  ref_predfun <span class='op'>=</span> <span class='cn'>NULL</span>,
+  div_minimizer <span class='op'>=</span> <span class='cn'>NULL</span>,
+  proj_predfun <span class='op'>=</span> <span class='cn'>NULL</span>,
+  folds <span class='op'>=</span> <span class='cn'>NULL</span>,
+  extract_model_data <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cvfun <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cvfits <span class='op'>=</span> <span class='cn'>NULL</span>,
+  dis <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>object</th>
-      <td><p>Object based on which the reference model is created. See
-possible types below.</p></td>
+      <td><p>Object on which the reference model is created. See possible
+types below.</p></td>
     </tr>
     <tr>
       <th>...</th>
       <td><p>Arguments passed to the methods.</p></td>
+    </tr>
+    <tr>
+      <th>data</th>
+      <td><p>Data on which the reference model was fitted.</p></td>
+    </tr>
+    <tr>
+      <th>y</th>
+      <td><p>Target response.</p></td>
+    </tr>
+    <tr>
+      <th>formula</th>
+      <td><p>Reference model's lme4-like formula.</p></td>
+    </tr>
+    <tr>
+      <th>ref_predfun</th>
+      <td><p>Prediction function for the linear predictor of the
+reference model.</p></td>
+    </tr>
+    <tr>
+      <th>proj_predfun</th>
+      <td><p>Prediction function for the linear predictor of the
+projections.</p></td>
+    </tr>
+    <tr>
+      <th>div_minimizer</th>
+      <td><p>Maximum likelihood estimator for the underlying
+projection.</p></td>
+    </tr>
+    <tr>
+      <th>fetch_data</th>
+      <td><p>Wrapper function for fetching the data without directly
+accessing it. It should have a prototype fetch_data(data, data_points,
+newdata = NULL), where data_points is a vector of data indices and newdata,
+if not NULL, is a data frame with new data for testing.</p></td>
+    </tr>
+    <tr>
+      <th>family</th>
+      <td><p>A family object that represents the observation model for the
+reference model.</p></td>
+    </tr>
+    <tr>
+      <th>wobs</th>
+      <td><p>A weights vector for the observations in the data. The default is
+a vector of ones.</p></td>
+    </tr>
+    <tr>
+      <th>folds</th>
+      <td><p>Only used for K-fold variable selection. It is a vector of fold
+indices for each data point in data.</p></td>
+    </tr>
+    <tr>
+      <th>cvfits</th>
+      <td><p>Only used for K-fold variable selection. A list of K-fold
+fitted objects on which reference models are created.</p></td>
+    </tr>
+    <tr>
+      <th>offset</th>
+      <td><p>A vector of offsets per observation to add to the linear
+predictor.</p></td>
+    </tr>
+    <tr>
+      <th>cvfun</th>
+      <td><p>Only used for K-fold variable selection. A function that, given
+a folds vector, fits a reference model per fold and returns the fitted
+object.</p></td>
+    </tr>
+    <tr>
+      <th>dis</th>
+      <td><p>A dispersion vector for each observation.</p></td>
+    </tr>
+    <tr>
+      <th>extract_model_data</th>
+      <td><p>A function with prototype
+extract_model_data(object, newdata, wrhs, orhs), where object is a
+reference model fit, newdata is either NULL or a data frame with new
+observations, wrhs is a right hand side formula to recover the weights from
+the data frame and orhs is a right hand side formula to recover the offset
+from the data frame.</p></td>
     </tr>
     </table>
 
@@ -202,7 +334,7 @@ possible types below.</p></td>
     <p>An object of type <code>refmodel</code> (the same type as returned by
   init_refmodel) that can be passed to all the functions that take the
   reference fit as the first argument, such as <a href='varsel.html'>varsel</a>,
-  <a href='cv_varsel.html'>cv_varsel</a>, project, <a href='proj-pred.html'>proj_predict</a> and
+  <a href='cv_varsel.html'>cv_varsel</a>, <a href='project.html'>project</a>, <a href='proj-pred.html'>proj_predict</a> and
   <a href='proj-pred.html'>proj_linpred</a>.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -223,8 +355,8 @@ possible types below.</p></td>
 </div><div class='output co'>#&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 1).
 #&gt; Chain 1: 
-#&gt; Chain 1: Gradient evaluation took 2.3e-05 seconds
-#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#&gt; Chain 1: Gradient evaluation took 1.4e-05 seconds
+#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
 #&gt; Chain 1: Adjust your expectations accordingly!
 #&gt; Chain 1: 
 #&gt; Chain 1: 
@@ -241,15 +373,15 @@ possible types below.</p></td>
 #&gt; Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #&gt; Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #&gt; Chain 1: 
-#&gt; Chain 1:  Elapsed Time: 0.045322 seconds (Warm-up)
-#&gt; Chain 1:                0.057158 seconds (Sampling)
-#&gt; Chain 1:                0.10248 seconds (Total)
+#&gt; Chain 1:  Elapsed Time: 0.022003 seconds (Warm-up)
+#&gt; Chain 1:                0.026857 seconds (Sampling)
+#&gt; Chain 1:                0.04886 seconds (Total)
 #&gt; Chain 1: 
 #&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 2).
 #&gt; Chain 2: 
-#&gt; Chain 2: Gradient evaluation took 2.1e-05 seconds
-#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.21 seconds.
+#&gt; Chain 2: Gradient evaluation took 9e-06 seconds
+#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #&gt; Chain 2: Adjust your expectations accordingly!
 #&gt; Chain 2: 
 #&gt; Chain 2: 
@@ -266,9 +398,9 @@ possible types below.</p></td>
 #&gt; Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #&gt; Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #&gt; Chain 2: 
-#&gt; Chain 2:  Elapsed Time: 0.043446 seconds (Warm-up)
-#&gt; Chain 2:                0.05683 seconds (Sampling)
-#&gt; Chain 2:                0.100276 seconds (Total)
+#&gt; Chain 2:  Elapsed Time: 0.021888 seconds (Warm-up)
+#&gt; Chain 2:                0.03739 seconds (Sampling)
+#&gt; Chain 2:                0.059278 seconds (Total)
 #&gt; Chain 2: 
 #&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 3).
@@ -291,15 +423,15 @@ possible types below.</p></td>
 #&gt; Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #&gt; Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #&gt; Chain 3: 
-#&gt; Chain 3:  Elapsed Time: 0.046116 seconds (Warm-up)
-#&gt; Chain 3:                0.055961 seconds (Sampling)
-#&gt; Chain 3:                0.102077 seconds (Total)
+#&gt; Chain 3:  Elapsed Time: 0.025798 seconds (Warm-up)
+#&gt; Chain 3:                0.027267 seconds (Sampling)
+#&gt; Chain 3:                0.053065 seconds (Total)
 #&gt; Chain 3: 
 #&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 4).
 #&gt; Chain 4: 
-#&gt; Chain 4: Gradient evaluation took 1.8e-05 seconds
-#&gt; Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#&gt; Chain 4: Gradient evaluation took 9e-06 seconds
+#&gt; Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #&gt; Chain 4: Adjust your expectations accordingly!
 #&gt; Chain 4: 
 #&gt; Chain 4: 
@@ -316,10 +448,11 @@ possible types below.</p></td>
 #&gt; Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #&gt; Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #&gt; Chain 4: 
-#&gt; Chain 4:  Elapsed Time: 0.042128 seconds (Warm-up)
-#&gt; Chain 4:                0.060429 seconds (Sampling)
-#&gt; Chain 4:                0.102557 seconds (Total)
-#&gt; Chain 4: </div><div class='output co'>#&gt; <span class='error'>Error in posterior_linpred(fit, transform = FALSE, newdata = newdata): could not find function "posterior_linpred"</span></div><div class='input'><span class='co'># }</span>
+#&gt; Chain 4:  Elapsed Time: 0.023213 seconds (Warm-up)
+#&gt; Chain 4:                0.035243 seconds (Sampling)
+#&gt; Chain 4:                0.058456 seconds (Total)
+#&gt; Chain 4: 
+#&gt; [1] "refmodel"</div><div class='input'><span class='co'># }</span>
 
 </div></pre>
   </div>

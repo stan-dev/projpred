@@ -85,7 +85,7 @@ functions also perform the projection." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -214,7 +214,7 @@ functions also perform the projection.</p>
     <tr>
       <th>object</th>
       <td><p>Either an object returned by <a href='varsel.html'>varsel</a>,
-<a href='cv_varsel.html'>cv_varsel</a> or init_refmodel, or
+<a href='cv_varsel.html'>cv_varsel</a> or <a href='get-refmodel.html'>init_refmodel</a>, or
 alternatively any object that can be converted to a reference model.</p></td>
     </tr>
     <tr>
@@ -238,14 +238,14 @@ model. Either NULL or right hand side formula.</p></td>
       <th>weightsnew</th>
       <td><p>Weights for the new observations. For binomial model,
 corresponds to the number trials per observation. For <code>proj_linpred</code>,
-this argument matters only if <code>ynew</code> is specified. By default we take
-the weights from newdata as in the original model. Either NULL or right
-hand side formula.</p></td>
+this argument matters only if <code>newdata</code> is specified. By default we
+take the weights from newdata as in the original model. Either NULL or
+right hand side formula.</p></td>
     </tr>
     <tr>
       <th>nterms</th>
-      <td><p>Number of variables in the submodel (the variable combination
-is taken from the variable selection information). If a vector with several
+      <td><p>Number of terms in the submodel (the variable combination is
+taken from the variable selection information). If a vector with several
 values, then results for all specified model sizes are returned. Ignored if
 <code>solution_terms</code> is specified. By default use the automatically
 suggested model size.</p></td>
@@ -268,16 +268,11 @@ Default is <code>FALSE</code>. For <code>proj_linpred</code> only.</p></td>
     </tr>
     <tr>
       <th>...</th>
-      <td><p>Additional argument passed to project if <code>object</code> is
+      <td><p>Additional argument passed to <a href='project.html'>project</a> if <code>object</code> is
 an object returned by <a href='varsel.html'>varsel</a> or <a href='cv_varsel.html'>cv_varsel</a>.</p></td>
     </tr>
     <tr>
-      <th>ynew</th>
-      <td><p>New (test) target variables. If given, then the log predictive
-density for the new observations is computed.</p></td>
-    </tr>
-    <tr>
-      <th>draws</th>
+      <th>ndraws</th>
       <td><p>Number of draws to return from the predictive distribution of
 the projection. The default is 1000. For <code>proj_predict</code> only.</p></td>
     </tr>
@@ -286,9 +281,9 @@ the projection. The default is 1000. For <code>proj_predict</code> only.</p></td
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>If the prediction is done for one submodel only (<code>nterms</code> has
-  length one or <code>solution_terms</code> is specified) and ynew is unspecified,
-  a matrix or vector of predictions (depending on the value of
-  <code>integrated</code>). If <code>ynew</code> is specified, returns a list with
+  length one or <code>solution_terms</code> is specified) and newdata is
+  unspecified, a matrix or vector of predictions (depending on the value of
+  <code>integrated</code>). If <code>newdata</code> is specified, returns a list with
   elements pred (predictions) and lpd (log predictive densities). If the
   predictions are done for several submodel sizes, returns a list with one
   element for each submodel.</p>
@@ -303,18 +298,18 @@ the projection. The default is 1000. For <code>proj_predict</code> only.</p></td
   <span class='va'>y</span> <span class='op'>&lt;-</span> <span class='va'>x</span><span class='op'>[</span>,<span class='fl'>1</span><span class='op'>]</span> <span class='op'>+</span> <span class='fl'>0.5</span><span class='op'>*</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>n</span><span class='op'>)</span>
   <span class='va'>data</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span><span class='va'>x</span>,<span class='va'>y</span><span class='op'>)</span>
   
-  <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'>rstanarm</span><span class='fu'>::</span><span class='fu'>stan_glm</span><span class='op'>(</span><span class='va'>y</span><span class='op'>~</span><span class='va'>.</span>, <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>, data<span class='op'>=</span><span class='va'>data</span>, chains<span class='op'>=</span><span class='fl'>2</span>, iter<span class='op'>=</span><span class='fl'>500</span><span class='op'>)</span>
+  <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'>rstanarm</span><span class='fu'>::</span><span class='fu'>stan_glm</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>X1</span> <span class='op'>+</span> <span class='va'>X2</span> <span class='op'>+</span> <span class='va'>X3</span> <span class='op'>+</span> <span class='va'>X4</span> <span class='op'>+</span> <span class='va'>X5</span>, <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>, data<span class='op'>=</span><span class='va'>data</span>, chains<span class='op'>=</span><span class='fl'>2</span>, iter<span class='op'>=</span><span class='fl'>500</span><span class='op'>)</span>
   <span class='va'>vs</span> <span class='op'>&lt;-</span> <span class='fu'><a href='varsel.html'>varsel</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
   
   <span class='co'># compute predictions with 4 variables at the training points</span>
-  <span class='va'>pred</span> <span class='op'>&lt;-</span> <span class='fu'>proj_linpred</span><span class='op'>(</span><span class='va'>vs</span>, xnew<span class='op'>=</span><span class='va'>x</span>, nv <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
-  <span class='va'>pred</span> <span class='op'>&lt;-</span> <span class='fu'>proj_predict</span><span class='op'>(</span><span class='va'>vs</span>, xnew<span class='op'>=</span><span class='va'>x</span>, nv <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
+  <span class='va'>pred</span> <span class='op'>&lt;-</span> <span class='fu'>proj_linpred</span><span class='op'>(</span><span class='va'>vs</span>, newdata <span class='op'>=</span> <span class='va'>data</span>, nv <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
+  <span class='va'>pred</span> <span class='op'>&lt;-</span> <span class='fu'>proj_predict</span><span class='op'>(</span><span class='va'>vs</span>, newdata <span class='op'>=</span> <span class='va'>data</span>, nv <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div><div class='output co'>#&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 1).
 #&gt; Chain 1: 
-#&gt; Chain 1: Gradient evaluation took 3.4e-05 seconds
-#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
+#&gt; Chain 1: Gradient evaluation took 1.4e-05 seconds
+#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
 #&gt; Chain 1: Adjust your expectations accordingly!
 #&gt; Chain 1: 
 #&gt; Chain 1: 
@@ -331,15 +326,15 @@ the projection. The default is 1000. For <code>proj_predict</code> only.</p></td
 #&gt; Chain 1: Iteration: 450 / 500 [ 90%]  (Sampling)
 #&gt; Chain 1: Iteration: 500 / 500 [100%]  (Sampling)
 #&gt; Chain 1: 
-#&gt; Chain 1:  Elapsed Time: 0.023187 seconds (Warm-up)
-#&gt; Chain 1:                0.019889 seconds (Sampling)
-#&gt; Chain 1:                0.043076 seconds (Total)
+#&gt; Chain 1:  Elapsed Time: 0.010246 seconds (Warm-up)
+#&gt; Chain 1:                0.007196 seconds (Sampling)
+#&gt; Chain 1:                0.017442 seconds (Total)
 #&gt; Chain 1: 
 #&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 2).
 #&gt; Chain 2: 
-#&gt; Chain 2: Gradient evaluation took 2.6e-05 seconds
-#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#&gt; Chain 2: Gradient evaluation took 8e-06 seconds
+#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #&gt; Chain 2: Adjust your expectations accordingly!
 #&gt; Chain 2: 
 #&gt; Chain 2: 
@@ -356,10 +351,12 @@ the projection. The default is 1000. For <code>proj_predict</code> only.</p></td
 #&gt; Chain 2: Iteration: 450 / 500 [ 90%]  (Sampling)
 #&gt; Chain 2: Iteration: 500 / 500 [100%]  (Sampling)
 #&gt; Chain 2: 
-#&gt; Chain 2:  Elapsed Time: 0.024779 seconds (Warm-up)
-#&gt; Chain 2:                0.020933 seconds (Sampling)
-#&gt; Chain 2:                0.045712 seconds (Total)
-#&gt; Chain 2: </div><div class='output co'>#&gt; <span class='error'>Error in terms.formula(formula): '.' in formula and no 'data' argument</span></div><div class='input'><span class='co'># }</span>
+#&gt; Chain 2:  Elapsed Time: 0.010307 seconds (Warm-up)
+#&gt; Chain 2:                0.008197 seconds (Sampling)
+#&gt; Chain 2:                0.018504 seconds (Total)
+#&gt; Chain 2: </div><div class='output co'>#&gt; <span class='warning'>Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.</span>
+#&gt; <span class='warning'>Running the chains for more iterations may help. See</span>
+#&gt; <span class='warning'>http://mc-stan.org/misc/warnings.html#bulk-ess</span></div><div class='input'><span class='co'># }</span>
 
 </div></pre>
   </div>

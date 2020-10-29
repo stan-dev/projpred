@@ -14,7 +14,7 @@ params:
 ```{r, child="children/SETTINGS-knitr.txt"}
 ```
 
-**This vignette requires the projpred version currently available in master branch at https://github.com/stan-dev/projpred**
+**This vignette requires the latest CRAN projpred release**
 
 This vignette shows how to use `projpred` to perform variable selection in the
 context of Generalized Linear Multilevel Models (GLMMs). For a general overview

@@ -84,7 +84,7 @@ these two methods, see below for details." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -180,13 +180,13 @@ these two methods, see below for details." />
     <p>Divide indices from 1 to <code>n</code> into subsets for <code>k</code>-fold cross
 validation. These functions are potentially useful when creating the
 <code>cvfits</code> and <code>cvfun</code> arguments for
-init_refmodel. The returned value is different for
+<a href='get-refmodel.html'>init_refmodel</a>. The returned value is different for
 these two methods, see below for details.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>cvfolds</span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>k</span>, seed <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
+    <pre class="usage"><span class='fu'>cvfolds</span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>K</span>, seed <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
 
-<span class='fu'>cv_ids</span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>k</span>, out <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"foldwise"</span>, <span class='st'>"indices"</span><span class='op'>)</span>, seed <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+<span class='fu'>cv_ids</span><span class='op'>(</span><span class='va'>n</span>, <span class='va'>K</span>, out <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"foldwise"</span>, <span class='st'>"indices"</span><span class='op'>)</span>, seed <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -196,7 +196,7 @@ these two methods, see below for details.</p>
       <td><p>Number of data points.</p></td>
     </tr>
     <tr>
-      <th>k</th>
+      <th>K</th>
       <td><p>Number of folds. Must be at least 2 and not exceed <code>n</code>.</p></td>
     </tr>
     <tr>
@@ -228,7 +228,7 @@ See below for details.</p></td>
 <span class='co'>### compute sample means within each fold</span>
 <span class='va'>n</span> <span class='op'>&lt;-</span> <span class='fl'>100</span>
 <span class='va'>y</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>n</span><span class='op'>)</span>
-<span class='va'>cv</span> <span class='op'>&lt;-</span> <span class='fu'>cv_ids</span><span class='op'>(</span><span class='va'>n</span>, k<span class='op'>=</span><span class='fl'>5</span><span class='op'>)</span>
+<span class='va'>cv</span> <span class='op'>&lt;-</span> <span class='fu'>cv_ids</span><span class='op'>(</span><span class='va'>n</span>, K<span class='op'>=</span><span class='fl'>5</span><span class='op'>)</span>
 <span class='va'>cvmeans</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/lapply.html'>lapply</a></span><span class='op'>(</span><span class='va'>cv</span>, <span class='kw'>function</span><span class='op'>(</span><span class='va'>fold</span><span class='op'>)</span> <span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span><span class='op'>(</span><span class='va'>y</span><span class='op'>[</span><span class='va'>fold</span><span class='op'>$</span><span class='va'>tr</span><span class='op'>]</span><span class='op'>)</span><span class='op'>)</span>
 <span class='co'># }</span>
 

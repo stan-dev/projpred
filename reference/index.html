@@ -79,7 +79,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -192,43 +192,12 @@
       <tr>
         
         <td>
-          <p><code><a href="additive_mle.html">additive_mle()</a></code> </p>
-        </td>
-        <td><p>Use mgcv to fit the projection to the posterior draws for additive multilevel
-models.</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="break_up_matrix_term.html">break_up_matrix_term()</a></code> </p>
         </td>
-        <td><p>Sometimes there can be terms in a formula that refer to a matrix instead of
-a single predictor. Because we can handle search_terms of predictors, this function
-breaks the matrix term into individual predictors to handle separately, as
-that is probably the intention of the user.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="collapse_contrasts_solution_path.html">collapse_contrasts_solution_path()</a></code> </p>
-        </td>
-        <td><p>collapse a list of terms including contrasts</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="count_terms_chosen.html">count_terms_chosen()</a></code> </p>
-        </td>
-        <td><p>Given a refmodel structure, count the number of terms included.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="count_terms_in_formula.html">count_terms_in_formula()</a></code> </p>
-        </td>
-        <td><p>Utility to count the number of terms in a given formula.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="count_terms_in_group_term.html">count_terms_in_group_term()</a></code> </p>
-        </td>
-        <td><p>Utility to count the number of terms in a given group term.</p></td>
+        <td><p>Sometimes there can be terms in a formula that refer to a matrix instead of a
+single predictor. Because we can handle search_terms of predictors, this
+function breaks the matrix term into individual predictors to handle
+separately, as that is probably the intention of the user.</p></td>
       </tr><tr>
         
         <td>
@@ -244,12 +213,6 @@ that is probably the intention of the user.</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="delete.intercept.html">delete.intercept()</a></code> </p>
-        </td>
-        <td><p>remove intercept from formula</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="df_binom.html">df_binom</a></code> </p>
         </td>
         <td><p>Binomial toy example.</p></td>
@@ -259,18 +222,6 @@ that is probably the intention of the user.</p></td>
           <p><code><a href="df_gaussian.html">df_gaussian</a></code> </p>
         </td>
         <td><p>Gaussian toy example.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="dot-tabulate_stats.html">.tabulate_stats()</a></code> </p>
-        </td>
-        <td><p>copied from summary_funs to remove duplicated code</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="eval_rhs.html">eval_rhs()</a></code> </p>
-        </td>
-        <td><p>Helper function to evaluate right hand side formulas in a context</p></td>
       </tr><tr>
         
         <td>
@@ -286,139 +237,21 @@ that is probably the intention of the user.</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="extract_response.html">extract_response()</a></code> </p>
-        </td>
-        <td><p>At any point inside projpred, the response can be a single object or instead
-it can represent multiple outputs. In this function we recover the response/s
-as a character vector so we can index the dataframe.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="extract_terms_response.html">extract_terms_response()</a></code> </p>
-        </td>
-        <td><p>This function splits the given formula in response (left) and predictors
-(right).</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="flatten_additive_terms.html">flatten_additive_terms()</a></code> </p>
-        </td>
-        <td><p>Remove duplicated additive terms.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="flatten_formula.html">flatten_formula()</a></code> </p>
-        </td>
-        <td><p>By combining different submodels we may arrive to a formula with repeated
-terms.
-This function gets rid of duplicated terms_.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="flatten_group_terms.html">flatten_group_terms()</a></code> </p>
-        </td>
-        <td><p>Unifies group terms removing any duplicates.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="flatten_individual_terms.html">flatten_individual_terms()</a></code> </p>
-        </td>
-        <td><p>Remove duplicated linear terms.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="flatten_interaction_terms.html">flatten_interaction_terms()</a></code> </p>
-        </td>
-        <td><p>Remove duplicated linear interaction terms.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="formula2str.html">formula2str()</a></code> </p>
-        </td>
-        <td><p>convert a formula to a character string</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="formula_contains_additive_terms.html">formula_contains_additive_terms()</a></code> </p>
-        </td>
-        <td><p>Checks whether a formula contains additive terms or not.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="formula_contains_group_terms.html">formula_contains_group_terms()</a></code> </p>
-        </td>
-        <td><p>Checks whether a formula contains group terms or not.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="get-refmodel.html">get-refmodel</a></code> </p>
+          <p><code><a href="get-refmodel.html">get_refmodel()</a></code> <code><a href="get-refmodel.html">init_refmodel()</a></code> </p>
         </td>
         <td><p>Get reference model structure</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="get_contrasts_arg_list.html">get_contrasts_arg_list()</a></code> </p>
+          <p><code><a href="helper_formula.html">helper_formula</a></code> </p>
         </td>
-        <td><p>construct contrasts.arg list argument for model.matrix based on the current
-model's formula.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="get_replace_response.html">get_replace_response()</a></code> </p>
-        </td>
-        <td><p>Utility to just replace the response in the data frame</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="is_next_submodel_redundant.html">is_next_submodel_redundant()</a></code> </p>
-        </td>
-        <td><p>Utility that checks if the next submodel is redundant with the current one.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="lhs.html">lhs()</a></code> </p>
-        </td>
-        <td><p>Extract left hand side of a formula as a formula itself by removing the right
-hand side.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="linear_multilevel_mle.html">linear_multilevel_mle()</a></code> </p>
-        </td>
-        <td><p>Use lmer to fit the projection to the posterior draws for multilevel models.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="make_formula.html">make_formula()</a></code> </p>
-        </td>
-        <td><p>Subsets a formula by the given terms.</p></td>
+        <td><p>Utilities to handle formulas for the external user</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="mesquite.html">mesquite</a></code> </p>
         </td>
         <td><p>Mesquite data set.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="parse_additive_terms.html">parse_additive_terms()</a></code> </p>
-        </td>
-        <td><p>Parse additive terms from a list of individual terms. These may include
-individual smoothers s(x), interaction smoothers s(x, z), smooth intercepts
-s(factor, bs = "re"), group level independent smoothers s(x, by = g), or
-shared smoothers for low dimensional factors s(x, g, bs = "fs"), interaction
-group level smoothers with same shape for high dimensional factors t2(x, z,
-g, bs = c(., ., "re")), interaction group level independent smoothers te(x,
-z, by = g), population level interaction smoothers te(x, z, bs = c(., .)),
-s(x, z).</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="parse_args_cv_varsel.html">parse_args_cv_varsel()</a></code> </p>
-        </td>
-        <td><p>Auxiliary function for parsing the input arguments for specific cv_varsel.
-This is similar in spirit to parse_args_varsel, that is, to avoid the main
-function to become too long and complicated to maintain.</p></td>
       </tr><tr>
         
         <td>
@@ -447,82 +280,25 @@ distribution of the projected submodel</p></td>
       </tr><tr>
         
         <td>
+          <p><code><a href="project.html">project()</a></code> </p>
+        </td>
+        <td><p>Projection to submodels</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="projpred.html">projpred</a></code> </p>
         </td>
         <td><p>Projection predictive feature selection</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="reduce_models.html">reduce_models()</a></code> </p>
+          <p><code><a href="solution_terms.html">solution_terms()</a></code> </p>
         </td>
-        <td><p>Utility to remove redundant models to consider</p></td>
+        <td><p>Recovers solution path from a variable selection object.</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="search_L1_surrogate.html">search_L1_surrogate()</a></code> </p>
-        </td>
-        <td><p>copied over from search until we resolve the TODO below</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="select_possible_terms_size.html">select_possible_terms_size()</a></code> </p>
-        </td>
-        <td><p>Select next possible terms without surpassing a specific size</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="sort_submodels_by_size.html">sort_submodels_by_size()</a></code> </p>
-        </td>
-        <td><p>Given a list of formulas, sort them by the number of terms in them.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="split_additive_term.html">split_additive_term()</a></code> </p>
-        </td>
-        <td><p>Plugs the main effects to the smooth additive term if `by` argument is
-provided.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="split_formula.html">split_formula()</a></code> </p>
-        </td>
-        <td><p>Simplify and split a formula by breaking it into all possible submodels.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="split_group_term.html">split_group_term()</a></code> </p>
-        </td>
-        <td><p>Simplify a single group term by breaking it down in as many terms_
-as varying effects. It also explicitly adds or removes the varying intercept.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="split_interaction_term.html">split_interaction_term()</a></code> </p>
-        </td>
-        <td><p>Plugs the main effects to the interaction terms to consider jointly for
-projection.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="split_linear_term.html">split_linear_term()</a></code> </p>
-        </td>
-        <td><p>Splits a linear term into individual predictors.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="subset_formula_and_data.html">subset_formula_and_data()</a></code> </p>
-        </td>
-        <td><p>Utility to both subset the formula and update the data</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="suggest_size.html">suggest_size()</a></code> </p>
-        </td>
-        <td><p>Suggest model size</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="suggest_size.vsel.html">suggest_size(<i>&lt;vsel&gt;</i>)</a></code> </p>
+          <p><code><a href="suggest_size.vsel.html">suggest_size()</a></code> </p>
         </td>
         <td><p>Suggest model size</p></td>
       </tr><tr>
@@ -531,26 +307,6 @@ projection.</p></td>
           <p><code><a href="summary.vsel.html">summary(<i>&lt;vsel&gt;</i>)</a></code> </p>
         </td>
         <td><p>Summary statistics related to variable selection</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="to_character_rhs.html">to_character_rhs()</a></code> </p>
-        </td>
-        <td><p>Cast a right hand side formula to a character vector.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="validate_resp_formula.html">validate_resp_formula()</a></code> </p>
-        </td>
-        <td><p>validate formulas dedicated to response variables</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="validate_response_formula.html">validate_response_formula()</a></code> </p>
-        </td>
-        <td><p>Because the formula can imply multiple or single response, in this function
-we make sure that a formula has a single response. Then, in the case of
-multiple responses we split the formula.</p></td>
       </tr><tr>
         
         <td>

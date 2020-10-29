@@ -48,7 +48,8 @@
 
 <meta property="og:title" content="Variable selection for generalized linear models — varsel" />
 <meta property="og:description" content="Perform the projection predictive variable selection for generalized linear
-models using generic reference models." />
+models, generalized linear and additive multilevel models using generic
+reference models." />
 <meta property="og:image" content="https://mc-stan.org/projpred/logo.png" />
 
 
@@ -81,7 +82,7 @@ models using generic reference models." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -175,7 +176,8 @@ models using generic reference models." />
 
     <div class="ref-description">
     <p>Perform the projection predictive variable selection for generalized linear
-models using generic reference models.</p>
+models, generalized linear and additive multilevel models using generic
+reference models.</p>
     </div>
 
     <pre class="usage"><span class='fu'>varsel</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>...</span><span class='op'>)</span>
@@ -185,7 +187,7 @@ models using generic reference models.</p>
 
 <span class='co'># S3 method for refmodel</span>
 <span class='fu'>varsel</span><span class='op'>(</span>
-  <span class='va'>refmodel</span>,
+  <span class='va'>object</span>,
   d_test <span class='op'>=</span> <span class='cn'>NULL</span>,
   method <span class='op'>=</span> <span class='cn'>NULL</span>,
   ndraws <span class='op'>=</span> <span class='cn'>NULL</span>,
@@ -211,9 +213,10 @@ models using generic reference models.</p>
     <tr>
       <th>object</th>
       <td><p>Either a <code>refmodel</code>-type object created by
-get_refmodel or init_refmodel,
-or an object which can be converted to a reference model using
-get_refmodel.</p></td>
+<a href='get-refmodel.html'>get_refmodel</a>, a <a href='get-refmodel.html'>init_refmodel</a>,
+an object which can be converted to a reference model using
+<a href='get-refmodel.html'>get_refmodel</a> or a <code>vsel</code> object resulting from
+<code>varsel</code> or <code>cv_varsel</code>.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -235,9 +238,9 @@ Default is 'forward' if the number of variables in the full data is at most
     </tr>
     <tr>
       <th>ndraws</th>
-      <td><p>Number of posterior draws used in the variable
-selection. Cannot be larger than the number of draws in the reference
-model. Ignored if nclusters is set.</p></td>
+      <td><p>Number of posterior draws used in the variable selection.
+Cannot be larger than the number of draws in the reference model. Ignored
+if nclusters is set.</p></td>
     </tr>
     <tr>
       <th>nclusters</th>
@@ -246,7 +249,7 @@ Overrides the <code>ndraws</code> argument. Defaults to 1.</p></td>
     </tr>
     <tr>
       <th>ndraws_pred</th>
-      <td><p>Number of samples used for prediction (after
+      <td><p>Number of projected draws used for prediction (after
 selection). Ignored if nclusters_pred is given. Note that setting less
 draws or clusters than posterior draws in the reference model may result in
 slightly inaccurate projection performance, although increasing this
@@ -264,7 +267,7 @@ are computed without any penalization (or using only the regularization
 determined by <code>regul</code>). If FALSE, then the coefficients are the
 solution from the' L1-penalized projection. This option is relevant only if
 <code>method</code>='L1'. Default is TRUE for genuine reference models and FALSE
-if <code>object</code> is datafit (see init_refmodel).</p></td>
+if <code>object</code> is datafit (see <a href='get-refmodel.html'>init_refmodel</a>).</p></td>
     </tr>
     <tr>
       <th>nterms_max</th>
@@ -313,14 +316,20 @@ be selected first, whereas Inf means those variables will never be
 selected. Currently works only if method == 'L1'. By default 1 for each
 variable.</p></td>
     </tr>
+    <tr>
+      <th>search_terms</th>
+      <td><p>A custom list of terms to evaluate for variable
+selection. By default considers all the terms in the reference model's
+formula.</p></td>
+    </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>An object of type <code>vsel</code> that contains information about the
-  feature selection. The fields are not #' meant to be accessed directly by
-  the user but instead via the helper #' functions (see the vignettes or type
-  ?projpred #' to see the main functions in the package.)</p>
+  feature selection. The fields are not meant to be accessed directly by
+  the user but instead via the helper functions (see the vignettes or type
+  ?projpred to see the main functions in the package.)</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># \donttest{</span>
@@ -331,15 +340,16 @@ variable.</p></td>
   <span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>n</span><span class='op'>*</span><span class='va'>d</span><span class='op'>)</span>, nrow<span class='op'>=</span><span class='va'>n</span><span class='op'>)</span>
   <span class='va'>y</span> <span class='op'>&lt;-</span> <span class='va'>x</span><span class='op'>[</span>,<span class='fl'>1</span><span class='op'>]</span> <span class='op'>+</span> <span class='fl'>0.5</span><span class='op'>*</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>n</span><span class='op'>)</span>
   <span class='va'>data</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span><span class='va'>x</span>,<span class='va'>y</span><span class='op'>)</span>
-  <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'>rstanarm</span><span class='fu'>::</span><span class='fu'>stan_glm</span><span class='op'>(</span><span class='va'>y</span><span class='op'>~</span><span class='va'>.</span>, <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>, data<span class='op'>=</span><span class='va'>data</span>, chains<span class='op'>=</span><span class='fl'>2</span>, iter<span class='op'>=</span><span class='fl'>500</span><span class='op'>)</span>
+  <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'>rstanarm</span><span class='fu'>::</span><span class='fu'>stan_glm</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>X1</span> <span class='op'>+</span> <span class='va'>X2</span> <span class='op'>+</span> <span class='va'>X3</span> <span class='op'>+</span> <span class='va'>X4</span> <span class='op'>+</span> <span class='va'>X5</span>, <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>, data<span class='op'>=</span><span class='va'>data</span>,
+    chains<span class='op'>=</span><span class='fl'>2</span>, iter<span class='op'>=</span><span class='fl'>500</span><span class='op'>)</span>
   <span class='va'>vs</span> <span class='op'>&lt;-</span> <span class='fu'>varsel</span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
   <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>vs</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div><div class='output co'>#&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 1).
 #&gt; Chain 1: 
-#&gt; Chain 1: Gradient evaluation took 2.7e-05 seconds
-#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
+#&gt; Chain 1: Gradient evaluation took 1.8e-05 seconds
+#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
 #&gt; Chain 1: Adjust your expectations accordingly!
 #&gt; Chain 1: 
 #&gt; Chain 1: 
@@ -356,15 +366,15 @@ variable.</p></td>
 #&gt; Chain 1: Iteration: 450 / 500 [ 90%]  (Sampling)
 #&gt; Chain 1: Iteration: 500 / 500 [100%]  (Sampling)
 #&gt; Chain 1: 
-#&gt; Chain 1:  Elapsed Time: 0.025935 seconds (Warm-up)
-#&gt; Chain 1:                0.019597 seconds (Sampling)
-#&gt; Chain 1:                0.045532 seconds (Total)
+#&gt; Chain 1:  Elapsed Time: 0.012899 seconds (Warm-up)
+#&gt; Chain 1:                0.009515 seconds (Sampling)
+#&gt; Chain 1:                0.022414 seconds (Total)
 #&gt; Chain 1: 
 #&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 2).
 #&gt; Chain 2: 
-#&gt; Chain 2: Gradient evaluation took 2.4e-05 seconds
-#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
+#&gt; Chain 2: Gradient evaluation took 8e-06 seconds
+#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #&gt; Chain 2: Adjust your expectations accordingly!
 #&gt; Chain 2: 
 #&gt; Chain 2: 
@@ -381,10 +391,10 @@ variable.</p></td>
 #&gt; Chain 2: Iteration: 450 / 500 [ 90%]  (Sampling)
 #&gt; Chain 2: Iteration: 500 / 500 [100%]  (Sampling)
 #&gt; Chain 2: 
-#&gt; Chain 2:  Elapsed Time: 0.022403 seconds (Warm-up)
-#&gt; Chain 2:                0.017239 seconds (Sampling)
-#&gt; Chain 2:                0.039642 seconds (Total)
-#&gt; Chain 2: </div><div class='output co'>#&gt; <span class='error'>Error in terms.formula(formula): '.' in formula and no 'data' argument</span></div><div class='input'><span class='co'># }</span>
+#&gt; Chain 2:  Elapsed Time: 0.012368 seconds (Warm-up)
+#&gt; Chain 2:                0.007681 seconds (Sampling)
+#&gt; Chain 2:                0.020049 seconds (Total)
+#&gt; Chain 2: </div><div class='img'><img src='varsel-1.png' alt='' width='700' height='433' /></div><div class='input'><span class='co'># }</span>
 
 </div></pre>
   </div>

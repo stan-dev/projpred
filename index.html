@@ -19,10 +19,12 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
 <script src="pkgdown.js"></script><meta property="og:title" content="Projection Predictive Feature Selection">
 <meta property="og:description" content="
-    Performs projection predictive feature selection for generalized linear models
-    (see, Piironen, Paasiniemi and Vehtari, 2020, &lt;https://projecteuclid.org/euclid.ejs/1589335310&gt;).
-    The package is compatible with the rstanarm and brms packages, but other 
-    reference models can also be used. See the package vignette for more 
+    Performs projection predictive feature selection for generalized linear
+    models and generalized linear and additive multilevel models
+    (see, Piironen, Paasiniemi and Vehtari, 2020, &lt;https://projecteuclid.org/euclid.ejs/1589335310&gt;,
+    Catalina, Bürkner and Vehtari, 2020, &lt;arXiv:2010.06994&gt;).
+    The package is compatible with the rstanarm and brms packages, but other
+    reference models can also be used. See the package vignette for more
     information and examples.">
 <meta property="og:image" content="https://mc-stan.org/projpred/logo.png">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
@@ -43,7 +45,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -183,7 +185,7 @@ Projection predictive variable selection
 </li>
 <li>Browse source code at <br><a href="https://github.com/stan-dev/projpred/">https://​github.com/​stan-dev/​projpred/​</a>
 </li>
-<li>Report a bug at <br><a href="https://github.com/stan-dev/projpred/issues">https://​github.com/​stan-dev/​projpred/​issues</a>
+<li>Report a bug at <br><a href="https://github.com/stan-dev/projpred/issues/">https://​github.com/​stan-dev/​projpred/​issues/​</a>
 </li>
 <li>Ask a question at <br><a href="https://discourse.mc-stan.org/">https://​discourse.mc-stan.org/​</a>
 </li>
@@ -195,12 +197,18 @@ Projection predictive variable selection
 <li><a href="https://www.r-project.org/Licenses/GPL-3">GPL-3</a></li>
 </ul>
 </div>
+<div class="citation">
+<h2>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html">Citing projpred</a></li>
+</ul>
+</div>
 <div class="developers">
 <h2>Developers</h2>
 <ul class="list-unstyled">
-<li>Juho Piironen <br><small class="roles"> Maintainer, author </small>  </li>
+<li>Juho Piironen <br><small class="roles"> Author </small>  </li>
 <li>Markus Paasiniemi <br><small class="roles"> Author </small>  </li>
-<li>Alejandro Catalina <br><small class="roles"> Author </small>  </li>
+<li>Alejandro Catalina <br><small class="roles"> Maintainer, author </small>  </li>
 <li>Aki Vehtari <br><small class="roles"> Author </small>  </li>
 <li><a href="authors.html">All authors...</a></li>
 </ul>

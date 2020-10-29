@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Suggest model size — suggest_size.vsel • projpred</title>
+<title>Suggest model size — suggest_size • projpred</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,11 +46,11 @@
 
 
 
-<meta property="og:title" content="Suggest model size — suggest_size.vsel" />
+<meta property="og:title" content="Suggest model size — suggest_size" />
 <meta property="og:description" content="This function can be used for suggesting an appropriate model size
 based on a certain default rule. Notice that the decision rules are heuristic
 and should be interpreted as guidelines. It is recommended that the user
-studies the results via varsel_plot and/or varsel_stats
+studies the results via varsel_plot and/or summary
 and makes the final decision based on what is most appropriate for the given
 problem." />
 <meta property="og:image" content="https://mc-stan.org/projpred/logo.png" />
@@ -85,7 +85,7 @@ problem." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -181,13 +181,15 @@ problem." />
     <p>This function can be used for suggesting an appropriate model size
 based on a certain default rule. Notice that the decision rules are heuristic
 and should be interpreted as guidelines. It is recommended that the user
-studies the results via <code>varsel_plot</code> and/or <code>varsel_stats</code>
+studies the results via <code>varsel_plot</code> and/or <code>summary</code>
 and makes the final decision based on what is most appropriate for the given
 problem.</p>
     </div>
 
-    <pre class="usage"><span class='co'># S3 method for vsel</span>
-<span class='fu'><a href='suggest_size.html'>suggest_size</a></span><span class='op'>(</span>
+    <pre class="usage"><span class='fu'>suggest_size</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>...</span><span class='op'>)</span>
+
+<span class='co'># S3 method for vsel</span>
+<span class='fu'>suggest_size</span><span class='op'>(</span>
   <span class='va'>object</span>,
   stat <span class='op'>=</span> <span class='st'>"elpd"</span>,
   alpha <span class='op'>=</span> <span class='fl'>0.32</span>,
@@ -207,9 +209,13 @@ problem.</p>
 <a href='cv_varsel.html'>cv_varsel</a>.</p></td>
     </tr>
     <tr>
+      <th>...</th>
+      <td><p>Currently ignored.</p></td>
+    </tr>
+    <tr>
       <th>stat</th>
       <td><p>Statistic used for the decision. Default is 'elpd'. See
-<code>varsel_stats</code> for other possible choices.</p></td>
+<code>summary</code> for other possible choices.</p></td>
     </tr>
     <tr>
       <th>alpha</th>
@@ -239,12 +245,8 @@ reference model exists, and 'best' otherwise.</p></td>
     <tr>
       <th>warnings</th>
       <td><p>Whether to give warnings if automatic suggestion fails,
-mainly for internal use. Default is TRUE, and usually no reason to set to
-FALSE.</p></td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td><p>Currently ignored.</p></td>
+mainly for internal use. Default is TRUE, and usually there is no reason to
+set to FALSE.</p></td>
     </tr>
     </table>
 
@@ -267,8 +269,8 @@ Here \(u_base\) denotes the utility for the baseline model and \(u_0\)
   submodel utilities is at most one standard error away from zero, so the two
   utilities are considered to be close.</p>
 <p>NOTE: Loss statistics like RMSE and MSE are converted to utilities by
-  multiplying them by -1, so call such as <code><a href='suggest_size.html'>suggest_size(object,
-  stat='rmse', type='upper')</a></code> should be interpreted as finding the smallest
+  multiplying them by -1, so call such as <code>suggest_size(object,
+  stat='rmse', type='upper')</code> should be interpreted as finding the smallest
   model whose upper credible bound of the <em>negative</em> RMSE exceeds the
   cutoff level (or equivalently has the lower credible bound of RMSE below
   the cutoff level). This is done to make the interpretation of the argument
@@ -283,16 +285,16 @@ Here \(u_base\) denotes the utility for the baseline model and \(u_0\)
   <span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>n</span><span class='op'>*</span><span class='va'>d</span><span class='op'>)</span>, nrow<span class='op'>=</span><span class='va'>n</span><span class='op'>)</span>
   <span class='va'>y</span> <span class='op'>&lt;-</span> <span class='va'>x</span><span class='op'>[</span>,<span class='fl'>1</span><span class='op'>]</span> <span class='op'>+</span> <span class='fl'>0.5</span><span class='op'>*</span><span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span><span class='va'>n</span><span class='op'>)</span>
   <span class='va'>data</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span><span class='op'>(</span><span class='va'>x</span>,<span class='va'>y</span><span class='op'>)</span>
-  
-  <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'>rstanarm</span><span class='fu'>::</span><span class='fu'>stan_glm</span><span class='op'>(</span><span class='va'>y</span><span class='op'>~</span><span class='va'>.</span>, <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>, data<span class='op'>=</span><span class='va'>data</span>, chains<span class='op'>=</span><span class='fl'>2</span>, iter<span class='op'>=</span><span class='fl'>500</span><span class='op'>)</span>
+  <span class='va'>fit</span> <span class='op'>&lt;-</span> <span class='fu'>rstanarm</span><span class='fu'>::</span><span class='fu'>stan_glm</span><span class='op'>(</span><span class='va'>y</span> <span class='op'>~</span> <span class='va'>X1</span> <span class='op'>+</span> <span class='va'>X2</span> <span class='op'>+</span> <span class='va'>X3</span> <span class='op'>+</span> <span class='va'>X4</span> <span class='op'>+</span> <span class='va'>X5</span>, <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>gaussian</a></span><span class='op'>(</span><span class='op'>)</span>,
+           data<span class='op'>=</span><span class='va'>data</span>, chains<span class='op'>=</span><span class='fl'>2</span>, iter<span class='op'>=</span><span class='fl'>500</span><span class='op'>)</span>
   <span class='va'>vs</span> <span class='op'>&lt;-</span> <span class='fu'><a href='cv_varsel.html'>cv_varsel</a></span><span class='op'>(</span><span class='va'>fit</span><span class='op'>)</span>
-  <span class='fu'><a href='suggest_size.html'>suggest_size</a></span><span class='op'>(</span><span class='va'>vs</span><span class='op'>)</span>
+  <span class='fu'>suggest_size</span><span class='op'>(</span><span class='va'>vs</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div><div class='output co'>#&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 1).
 #&gt; Chain 1: 
-#&gt; Chain 1: Gradient evaluation took 2.5e-05 seconds
-#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.25 seconds.
+#&gt; Chain 1: Gradient evaluation took 1.6e-05 seconds
+#&gt; Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
 #&gt; Chain 1: Adjust your expectations accordingly!
 #&gt; Chain 1: 
 #&gt; Chain 1: 
@@ -309,15 +311,15 @@ Here \(u_base\) denotes the utility for the baseline model and \(u_0\)
 #&gt; Chain 1: Iteration: 450 / 500 [ 90%]  (Sampling)
 #&gt; Chain 1: Iteration: 500 / 500 [100%]  (Sampling)
 #&gt; Chain 1: 
-#&gt; Chain 1:  Elapsed Time: 0.022769 seconds (Warm-up)
-#&gt; Chain 1:                0.015954 seconds (Sampling)
-#&gt; Chain 1:                0.038723 seconds (Total)
+#&gt; Chain 1:  Elapsed Time: 0.013397 seconds (Warm-up)
+#&gt; Chain 1:                0.009248 seconds (Sampling)
+#&gt; Chain 1:                0.022645 seconds (Total)
 #&gt; Chain 1: 
 #&gt; 
 #&gt; SAMPLING FOR MODEL 'continuous' NOW (CHAIN 2).
 #&gt; Chain 2: 
-#&gt; Chain 2: Gradient evaluation took 2.2e-05 seconds
-#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
+#&gt; Chain 2: Gradient evaluation took 1.3e-05 seconds
+#&gt; Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.13 seconds.
 #&gt; Chain 2: Adjust your expectations accordingly!
 #&gt; Chain 2: 
 #&gt; Chain 2: 
@@ -334,12 +336,13 @@ Here \(u_base\) denotes the utility for the baseline model and \(u_0\)
 #&gt; Chain 2: Iteration: 450 / 500 [ 90%]  (Sampling)
 #&gt; Chain 2: Iteration: 500 / 500 [100%]  (Sampling)
 #&gt; Chain 2: 
-#&gt; Chain 2:  Elapsed Time: 0.022619 seconds (Warm-up)
-#&gt; Chain 2:                0.018113 seconds (Sampling)
-#&gt; Chain 2:                0.040732 seconds (Total)
-#&gt; Chain 2: </div><div class='output co'>#&gt; <span class='warning'>Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.</span>
-#&gt; <span class='warning'>Running the chains for more iterations may help. See</span>
-#&gt; <span class='warning'>http://mc-stan.org/misc/warnings.html#bulk-ess</span></div><div class='output co'>#&gt; <span class='error'>Error in terms.formula(formula): '.' in formula and no 'data' argument</span></div><div class='input'><span class='co'># }</span>
+#&gt; Chain 2:  Elapsed Time: 0.01063 seconds (Warm-up)
+#&gt; Chain 2:                0.008028 seconds (Sampling)
+#&gt; Chain 2:                0.018658 seconds (Total)
+#&gt; Chain 2: </div><div class='output co'>#&gt; <span class='warning'>Warning: K provided, but cv_method is LOO.</span></div><div class='output co'>#&gt; <span class='warning'>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</span></div><div class='output co'>#&gt; [1] "Computing LOOs..."
+#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |==                                                                    |   3%  |                                                                              |=====                                                                 |   7%  |                                                                              |=======                                                               |  10%  |                                                                              |=========                                                             |  13%  |                                                                              |============                                                          |  17%  |                                                                              |==============                                                        |  20%  |                                                                              |================                                                      |  23%  |                                                                              |===================                                                   |  27%  |                                                                              |=====================                                                 |  30%  |                                                                              |=======================                                               |  33%  |                                                                              |==========================                                            |  37%  |                                                                              |============================                                          |  40%  |                                                                              |==============================                                        |  43%  |                                                                              |=================================                                     |  47%  |                                                                              |===================================                                   |  50%  |                                                                              |=====================================                                 |  53%  |                                                                              |========================================                              |  57%  |                                                                              |==========================================                            |  60%  |                                                                              |============================================                          |  63%  |                                                                              |===============================================                       |  67%  |                                                                              |=================================================                     |  70%  |                                                                              |===================================================                   |  73%  |                                                                              |======================================================                |  77%  |                                                                              |========================================================              |  80%  |                                                                              |==========================================================            |  83%  |                                                                              |=============================================================         |  87%  |                                                                              |===============================================================       |  90%  |                                                                              |=================================================================     |  93%  |                                                                              |====================================================================  |  97%  |                                                                              |======================================================================| 100%
+#&gt; [1] "Performing the selection using all the data.."
+#&gt; [1] "Done."</div><div class='output co'>#&gt; [1] 1</div><div class='input'><span class='co'># }</span>
 
 </div></pre>
   </div>

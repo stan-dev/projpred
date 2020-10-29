@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Binomial toy example. — df_binom • projpred</title>
+<title>Recovers solution path from a variable selection object. — solution_terms • projpred</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,8 +46,8 @@
 
 
 
-<meta property="og:title" content="Binomial toy example. — df_binom" />
-<meta property="og:description" content="Binomial toy example." />
+<meta property="og:title" content="Recovers solution path from a variable selection object. — solution_terms" />
+<meta property="og:description" content="Recovers solution path from a variable selection object." />
 <meta property="og:image" content="https://mc-stan.org/projpred/logo.png" />
 
 
@@ -167,29 +167,30 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Binomial toy example.</h1>
-    <small class="dont-index">Source: <a href='https://github.com/stan-dev/projpred/blob/master/R/data.R'><code>R/data.R</code></a></small>
-    <div class="hidden name"><code>df_binom.Rd</code></div>
+    <h1>Recovers solution path from a variable selection object.</h1>
+    <small class="dont-index">Source: <a href='https://github.com/stan-dev/projpred/blob/master/R/methods.R'><code>R/methods.R</code></a></small>
+    <div class="hidden name"><code>solution_terms.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Binomial toy example.</p>
+    <p>Recovers solution path from a variable selection object.</p>
     </div>
 
-    <pre class="usage"><span class='va'>df_binom</span></pre>
+    <pre class="usage"><span class='fu'>solution_terms</span><span class='op'>(</span><span class='va'>object</span><span class='op'>)</span></pre>
 
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>object</th>
+      <td><p>A vsel object returned by <a href='varsel.html'>varsel</a> or
+<a href='cv_varsel.html'>cv_varsel</a>.</p></td>
+    </tr>
+    </table>
 
-    <h2 class="hasAnchor" id="format"><a class="anchor" href="#format"></a>Format</h2>
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A simulated classification dataset containing 100 observations.</p><dl>
-  <dt>y</dt><dd><p>target, 0 or 1.</p></dd>
-  <dt>x</dt><dd><p>features, 30 in total.</p></dd>
-
-</dl>
-
-    <h2 class="hasAnchor" id="source"><a class="anchor" href="#source"></a>Source</h2>
-
-    <p><a href='http://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData'>http://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData</a></p>
+    <p>Variable selection solution path</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
