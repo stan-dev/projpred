@@ -19,7 +19,6 @@ get_refmodel(object, ...)
 \method{get_refmodel}{default}(
   object,
   data,
-  y,
   formula,
   ref_predfun,
   proj_predfun,
@@ -69,8 +68,6 @@ types below.}
 
 \item{data}{Data on which the reference model was fitted.}
 
-\item{y}{Target response.}
-
 \item{formula}{Reference model's lme4-like formula.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
@@ -114,6 +111,8 @@ reference model fit, newdata is either NULL or a data frame with new
 observations, wrhs is a right hand side formula to recover the weights from
 the data frame and orhs is a right hand side formula to recover the offset
 from the data frame.}
+
+\item{y}{Target response.}
 }
 \value{
 An object of type \code{refmodel} (the same type as returned by
