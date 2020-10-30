@@ -205,7 +205,7 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname get-refmodel
 #' @export
-get_refmodel.default <- function(object, data, y, formula, ref_predfun,
+get_refmodel.default <- function(object, data, formula, ref_predfun,
                                  proj_predfun, div_minimizer, fetch_data,
                                  family = NULL, wobs = NULL, folds = NULL,
                                  cvfits = NULL, offset = NULL, cvfun = NULL,
@@ -227,9 +227,8 @@ get_refmodel.default <- function(object, data, y, formula, ref_predfun,
     return(do_call(.extract_model_data, args))
   }
 
-  refmodel <- init_refmodel(object, data, y, formula, family, ref_predfun,
-    div_minimizer, proj_predfun,
-    extract_model_data = extract_model_data,
+  refmodel <- init_refmodel(object, data, formula, family, ref_predfun,
+    div_minimizer, proj_predfun, extract_model_data = extract_model_data,
     cvfits = cvfits, folds = folds, cvfun = cvfun, dis = dis
   )
   return(refmodel)

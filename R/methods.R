@@ -362,7 +362,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
     ) +
-    labs(x = "Number of variables in the submodel", y = ylab) +
+    labs(x = "Number of terms in the submodel", y = ylab) +
     theme(legend.position = "none") +
     facet_grid(statistic ~ ., scales = "free_y")
   return(pp)
