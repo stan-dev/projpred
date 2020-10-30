@@ -25,7 +25,8 @@ before_install:
   - sed -i.bak "s/O[0-3]/O$CXX_OLEVEL/" ~/.R/Makevars
 
 script:
+  - R CMD build . --no-build-vignettes
   - travis_wait 45 R CMD check projpred*tar.gz --ignore-vignettes --no-examples
 
 after_success:
-- Rscript -e 'covr::codecov()'
+- travis_wait 45 Rscript -e 'covr::codecov()'
