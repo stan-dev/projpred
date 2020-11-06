@@ -194,14 +194,14 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     weights = summ$w
   )
 
-  if ((ref_elpd$value > (proj_elpd$value + proj_elpd$se) ||
-       ref_elpd$value < (proj_elpd$value - proj_elpd$se)) &&
-      !inherits(refmodel, "datafit")) {
-    warning("The performance of the projected model seems to be misleading, we",
-            " recommend checking the reference model as well as running ",
-            "`varsel` with a larger `ndraws_pred` or `cv_varsel` for a more",
-            " robust estimation.")
-  }
+  ## if ((ref_elpd$value > (proj_elpd$value + proj_elpd$se) ||
+  ##      ref_elpd$value < (proj_elpd$value - proj_elpd$se)) &&
+  ##     !inherits(refmodel, "datafit")) {
+  ##   warning("The performance of the projected model seems to be misleading, we",
+  ##           " recommend checking the reference model as well as running ",
+  ##           "`varsel` with a larger `ndraws_pred` or `cv_varsel` for a more",
+  ##           " robust estimation.")
+  ## }
 
   ## store the relevant fields into the object to be returned
   vs <- nlist(
