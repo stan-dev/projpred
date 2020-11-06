@@ -132,7 +132,6 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
   if (cv_method == "loo") {
-    if (!(is.null(K))) warning("K provided, but cv_method is LOO.")
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters,
