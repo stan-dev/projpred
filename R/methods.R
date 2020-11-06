@@ -492,9 +492,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #' @method print vsel
 print.vsel <- function(x, digits = 2, ...) {
   stats <- summary.vsel(x, ...)
-  v <- match("solution_terms", colnames(stats))
-  stats[, -v] <- round(stats[, -v], digits)
-  print(stats[, -v])
+  print(stats)
   return(invisible(stats))
 }
 
