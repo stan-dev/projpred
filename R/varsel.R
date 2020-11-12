@@ -99,7 +99,7 @@ varsel.default <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
-    ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
+                            ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
                             nclusters_pred = NULL, cv_search = TRUE,
                             nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
