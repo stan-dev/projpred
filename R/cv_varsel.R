@@ -253,7 +253,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
     }
   }
 
-  if (tolower(cv_method) == "kfold" || is.null(K)) {
+  if (tolower(cv_method) == "kfold" && is.null(K)) {
     if (inherits(refmodel, "datafit")) {
       K <- 10
       nclusters_pred <- 1
