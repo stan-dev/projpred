@@ -38,6 +38,10 @@ extract_terms_response <- function(formula) {
   ))
 }
 
+expand_formula <- function(formula, data) {
+  return(formula(terms(formula, data = data)))
+}
+
 remove_duplicates <- function(formula) {
   terms <- extract_terms_response(formula)
   linear <- terms$individual_terms
