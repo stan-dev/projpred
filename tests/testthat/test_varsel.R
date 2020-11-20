@@ -627,15 +627,15 @@ if (require(rstanarm)) {
     skip_on_cran()
     # default rounding
     expect_output(out <- print(vs_list[[1]][[1]]))
-    expect_equal(out$elpd, round(out$elpd, 2))
+    expect_equal(out$elpd, round(out$elpd, 2), tolerance = 1e-3)
     expect_output(out <- print(cvs_list[[1]][[1]]))
-    expect_equal(out$elpd, round(out$elpd, 2))
+    expect_equal(out$elpd, round(out$elpd, 2), tolerance = 1e-3)
 
     # rounding to 4 decimal places
     expect_output(out <- print(vs_list[[1]][[1]], digits = 4))
-    expect_equal(out$elpd, round(out$elpd, 4))
+    expect_equal(out$elpd, round(out$elpd, 4), tolerance = 1e-3)
     expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
-    expect_equal(out$elpd, round(out$elpd, 4))
+    expect_equal(out$elpd, round(out$elpd, 4), tolerance = 1e-3)
 
     # options to summary
     expect_output(out <- print(vs_list[[1]][[1]],
