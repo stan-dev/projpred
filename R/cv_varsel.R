@@ -360,8 +360,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu_sub <- matrix(nrow = n, ncol = nterms_max)
 
   if (verbose) {
-    msg <- paste("Computing", nloo, "LOOs...")
-    print(msg)
+    if (!validate_search) {
+      msg <- paste("Repeating", method, "search for", nloo, "LOO folds...")
+      print(msg)
+    } else {
+      msg <- paste("Computing LOO for", nloo, " models...")
+      print(msg)
+    }
     pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
   }
 
