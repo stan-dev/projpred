@@ -335,7 +335,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu_sub <- matrix(nrow = n, ncol = nterms_max)
 
   if (verbose) {
-    print("Computing LOOs...")
+    msg <- paste("Computing", nloo, "LOOs...")
+    print(msg)
     pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
   }
 
