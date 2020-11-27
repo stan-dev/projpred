@@ -6,8 +6,15 @@
 #'
 #' @name cv_varsel
 #'
-#' @param object Same as in \link[=varsel]{varsel}.
-#' @param method Same as in \link[=varsel]{varsel}.
+#' @param object Either a \code{refmodel}-type object created by
+#'   \link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
+#'   an object which can be converted to a reference model using
+#'   \link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
+#'   \code{varsel} or \code{cv_varsel}.
+#' @param method The method used in the variable selection. Possible options are
+#'   \code{'L1'} for L1-search and \code{'forward'} for forward selection.
+#'   Default is 'forward' if the number of variables in the full data is at most
+#'   20,' and \code{'L1'} otherwise.
 #' @param ndraws Number of posterior draws used for selection. Ignored if
 #'   nclusters is provided or if method='L1'.
 #' @param nclusters Number of clusters used for selection. Default is 1 and
@@ -16,10 +23,21 @@
 #'   Ignored if nclusters_pred is given.
 #' @param nclusters_pred Number of clusters used for prediction (after
 #'   selection). Default is 5.
-#' @param cv_search Same as in \link[=varsel]{varsel}.
-#' @param nterms_max Same as in \link[=varsel]{varsel}.
-#' @param intercept Same as in \link[=varsel]{varsel}.
-#' @param penalty Same as in \link[=varsel]{varsel}.
+#' @param cv_search If TRUE, then the projected coefficients after L1-selection
+#'   are computed without any penalization (or using only the regularization
+#'   determined by \code{regul}). If FALSE, then the coefficients are the
+#'   solution from the' L1-penalized projection. This option is relevant only if
+#'   \code{method}='L1'. Default is TRUE for genuine reference models and FALSE
+#'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
+#' @param nterms_max Maximum number of varibles until which the selection is
+#'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
+#'   observations and D the number of variables.
+#' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
+#' @param penalty Vector determining the relative penalties or costs for the
+#'   variables. Zero means that those variables have no cost and will therefore
+#'   be selected first, whereas Inf means those variables will never be
+#'   selected. Currently works only if method == 'L1'. By default 1 for each
+#'   variable.
 #' @param verbose Whether to print out some information during the validation,
 #'   Default is TRUE.
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
@@ -33,9 +51,14 @@
 #' @param K Number of folds in the K-fold cross validation. Default is 5 for
 #'   genuine reference models and 10 for datafits (that is, for penalized
 #'   maximum likelihood estimation).
-#' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
-#' @param nlambda Same as in \link[=varsel]{varsel}.
-#' @param thresh Same as in \link[=varsel]{varsel}.
+#' @param lambda_min_ratio Ratio between the smallest and largest lambda in the
+#'   L1-penalized search. This parameter essentially determines how long the
+#'   search is carried out, i.e., how large submodels are explored. No need to
+#'   change the default value unless the program gives a warning about this.
+#' @param nlambda Number of values in the lambda grid for L1-penalized search.
+#'   No need to change unless the program gives a warning about this.
+#' @param thresh Convergence threshold when computing L1-path. Usually no need
+#'   to change this.
 #' @param regul Amount of regularization in the projection. Usually there is no
 #'   need for regularization, but sometimes for some models the projection can
 #'   be ill-behaved and we need to add some regularization to avoid numerical

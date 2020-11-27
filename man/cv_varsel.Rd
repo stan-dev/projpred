@@ -36,12 +36,19 @@ cv_varsel(object, ...)
 )
 }
 \arguments{
-\item{object}{Same as in \link[=varsel]{varsel}.}
+\item{object}{Either a \code{refmodel}-type object created by
+\link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
+an object which can be converted to a reference model using
+\link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
+\code{varsel} or \code{cv_varsel}.}
 
 \item{...}{Additional arguments to be passed to the
 \code{get_refmodel}-function.}
 
-\item{method}{Same as in \link[=varsel]{varsel}.}
+\item{method}{The method used in the variable selection. Possible options are
+\code{'L1'} for L1-search and \code{'forward'} for forward selection.
+Default is 'forward' if the number of variables in the full data is at most
+20,' and \code{'L1'} otherwise.}
 
 \item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'.
 Default is 'LOO'.}
@@ -58,13 +65,24 @@ Ignored if nclusters_pred is given.}
 \item{nclusters_pred}{Number of clusters used for prediction (after
 selection). Default is 5.}
 
-\item{cv_search}{Same as in \link[=varsel]{varsel}.}
+\item{cv_search}{If TRUE, then the projected coefficients after L1-selection
+are computed without any penalization (or using only the regularization
+determined by \code{regul}). If FALSE, then the coefficients are the
+solution from the' L1-penalized projection. This option is relevant only if
+\code{method}='L1'. Default is TRUE for genuine reference models and FALSE
+if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 
-\item{nterms_max}{Same as in \link[=varsel]{varsel}.}
+\item{nterms_max}{Maximum number of varibles until which the selection is
+continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
+observations and D the number of variables.}
 
-\item{intercept}{Same as in \link[=varsel]{varsel}.}
+\item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}
 
-\item{penalty}{Same as in \link[=varsel]{varsel}.}
+\item{penalty}{Vector determining the relative penalties or costs for the
+variables. Zero means that those variables have no cost and will therefore
+be selected first, whereas Inf means those variables will never be
+selected. Currently works only if method == 'L1'. By default 1 for each
+variable.}
 
 \item{verbose}{Whether to print out some information during the validation,
 Default is TRUE.}
@@ -80,11 +98,16 @@ applicable if \code{cv_method = 'LOO'}.}
 genuine reference models and 10 for datafits (that is, for penalized
 maximum likelihood estimation).}
 
-\item{lambda_min_ratio}{Same as in \link[=varsel]{varsel}.}
+\item{lambda_min_ratio}{Ratio between the smallest and largest lambda in the
+L1-penalized search. This parameter essentially determines how long the
+search is carried out, i.e., how large submodels are explored. No need to
+change the default value unless the program gives a warning about this.}
 
-\item{nlambda}{Same as in \link[=varsel]{varsel}.}
+\item{nlambda}{Number of values in the lambda grid for L1-penalized search.
+No need to change unless the program gives a warning about this.}
 
-\item{thresh}{Same as in \link[=varsel]{varsel}.}
+\item{thresh}{Convergence threshold when computing L1-path. Usually no need
+to change this.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no
 need for regularization, but sometimes for some models the projection can
