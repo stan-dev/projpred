@@ -424,7 +424,8 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @export
 summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
                          type = c("mean", "se"), deltas = FALSE,
-                         alpha = 0.32, baseline = NULL, ...) {
+                         alpha = 0.32, baseline = NULL, digits = 2,
+                         ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
@@ -511,7 +512,7 @@ print.vselsummary <- function(x, digits = 2, ...) {
   cat(paste0("Search method: ", x$method, "\n"))
   cat(paste0("Optimal projection size: ", x$suggested_size, "\n"))
   cat("\n")
-  print(x$selection)
+  print(x$selection %>% mutate(across(where(is.numeric), ~ round(., digits))))
   return(invisible(x))
 }
 
