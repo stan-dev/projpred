@@ -58,8 +58,7 @@ remove_duplicates <- function(formula) {
       ". ~ . - ",
       paste(dups, collapse = " - ")
     )))
-  }
-  else {
+  } else {
     formula
   }
 }
@@ -138,8 +137,10 @@ validate_response_formula <- function(formula) {
 ## terms.
 ## This function gets rid of duplicated terms_.
 ## @param formula A formula specifying a model.
+## @param duplicates if FALSE removes linear terms if their corresponding smooth
+## is included. Default TRUE
 ## @return a formula without duplicated structure.
-flatten_formula <- function(formula) {
+flatten_formula <- function(formula, duplicates = TRUE) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
@@ -159,7 +160,10 @@ flatten_formula <- function(formula) {
     ),
     collapse = " + "
     ))
-    remove_duplicates(full)
+    if (!duplicates)
+      remove_duplicates(full)
+    else
+      full
   } else {
     formula
   }
@@ -615,10 +619,30 @@ select_possible_terms_size <- function(chosen, terms, size) {
   valid_submodels <- lapply(terms, function(x) {
     current <- count_terms_chosen(chosen)
     increment <- size - current
-    if ((count_terms_chosen(c(chosen, x)) - current) == increment)
+    ## if model is straight redundant
+    not_redundant <- (count_terms_chosen(c(chosen, x),
+                                         duplicates = TRUE
+                                         ) - current) == increment
+    ## if we are adding a linear term whose smooth is already
+    ## included, we reject it
+    terms <- extract_terms_response(make_formula(c(chosen)))
+    terms_all <- extract_terms_response(make_formula(c(chosen, x)))
+    additive <- unlist(regmatches(
+      terms$additive_terms,
+      gregexpr("(?<=\\().*?(?=\\))",
+        terms$additive_terms,
+        perl = TRUE
+      )
+    ))
+    linear <- terms_all$individual_terms
+    dups <- linear[!is.na(match(linear, additive))]
+    ## if already_chosen is not NA it means we have already chosen the linear
+    ## term
+    if (length(dups) == 0 && not_redundant) {
       x
-    else
+    } else {
       NA
+    }
   })
   valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
   if (length(chosen) > 0) {
@@ -643,14 +667,16 @@ to_character_rhs <- function(rhs) {
 }
 
 ## Given a refmodel structure, count the number of terms included.
-## @param formula The reference model's formula.
 ## @param list_of_terms Subset of terms from formula.
-count_terms_chosen <- function(list_of_terms) {
+## @param duplicates if FALSE removes linear terms if their corresponding smooth
+## is included. Default TRUE
+## @return number of terms
+count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
   if (length(list_of_terms) == 0) {
     return(0)
   }
   formula <- make_formula(list_of_terms)
-  count_terms_in_formula(flatten_formula(formula))
+  count_terms_in_formula(flatten_formula(formula, duplicates = duplicates))
 }
 
 ## Utility that checks if the next submodel is redundant with the current one.
