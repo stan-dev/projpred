@@ -393,7 +393,8 @@ if (require(rstanarm)) {
         vs1 <- cv_varsel(fit_gauss, validate_search = FALSE)
         vs2 <- cv_varsel(fit_gauss, validate_search = TRUE)
       })
-      expect_true(all(summary(vs1)$elpd >= summary(vs2)$elpd))
+      expect_true(all(summary(vs1)$selection$elpd >=
+        summary(vs2)$selection$elpd))
     })
 
     test_that("Having something else than stan_glm as the fit throws an error", {
@@ -595,7 +596,7 @@ if (require(rstanarm)) {
           stats_str <- valid_stats_all
         }
         stats <- summary(cvs, stats = stats_str,
-                              type = c("mean", "lower", "upper", "se"))
+                         type = c("mean", "lower", "upper", "se"))$selection
         expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
           "size", "solution_terms", stats_str, paste0(stats_str, ".se"),
@@ -616,7 +617,7 @@ if (require(rstanarm)) {
         } else {
           stats_str <- valid_stats_binom
         }
-        stats <- summary(vs, stats = stats_str)
+        stats <- summary(vs, stats = stats_str)$selection
         expect_true(is.data.frame(stats))
       }
     }
