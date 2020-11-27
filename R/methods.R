@@ -512,7 +512,8 @@ print.vselsummary <- function(x, digits = 2, ...) {
   cat(paste0("Search method: ", x$method, "\n"))
   cat(paste0("Optimal projection size: ", x$suggested_size, "\n"))
   cat("\n")
-  print(x$selection %>% mutate(across(where(is.numeric), ~ round(., digits))))
+  print(x$selection %>% mutate(across(where(is.numeric), ~ round(., digits))),
+        row.names = FALSE)
   return(invisible(x))
 }
 
