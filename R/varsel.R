@@ -213,7 +213,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     solution_terms = search_path$solution_terms,
     kl = sapply(p_sub, function(x) x$kl),
     nterms_max,
-    nterms_all = count_terms_in_formula(refmodel$formula)
+    nterms_all = count_terms_in_formula(refmodel$formula),
+    method = method,
+    cv_method = NULL
   )
   ## suggest model size
   class(vs) <- "vsel"

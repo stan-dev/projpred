@@ -207,7 +207,9 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
     summaries = sel_cv$summaries, family = sel$family, kl = sel$kl,
     solution_terms = sel$solution_terms, pct_solution_terms_cv,
     nterms_max = nterms_max,
-    nterms_all = count_terms_in_formula(refmodel$formula)
+    nterms_all = count_terms_in_formula(refmodel$formula),
+    method = method,
+    cv_method = cv_method
   )
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)

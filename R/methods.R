@@ -428,6 +428,15 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
+  out <- list(
+    formula = object$formula,
+    fit = object$fit,
+    family = object$family,
+    nobs = NROW(object$ref$fetch_data()),
+    method = object$method,
+    cv_method = object$cv_method
+  )
+  class(out) <- "vselsummary"
   ## fetch statistics
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
@@ -465,11 +474,44 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     nterms_max <- max(stats_table$size)
   }
 
-  ## if ("pct_solution_terms_cv" %in% names(object)) {
-  ##   arr$pct_solution_terms_cv <- c(NA, diag(object$pct_solution_terms_cv[, -1]))
-  ## }
+  out$nterms <- nterms_max
+  if ("pct_solution_terms_cv" %in% names(object)) {
+    out$pct_solution_terms_cv <- object$pct_solution_terms_cv
+  }
 
-  return(subset(arr, arr$size <= nterms_max))
+  out$suggested_size <- object$suggested_size
+  out$selection <- subset(arr, arr$size <= nterms_max)
+  return(out)
+}
+
+#' Print methods for summary objects
+#'
+#' The \code{print} methods for summary objects created by
+#' \code{\link{summary}} to display a summary of the results of the
+#' projection predictive variable selection.
+#'
+#' @name print-vselsummary
+#'
+#' @param x An object of class vselsummary.
+#' @param digits Number of decimal places to be reported (2 by default).
+#'
+#' @return Returns invisibly the output produced by
+#'   \code{\link{summary.vsel}}.
+#'
+#' @export
+#' @method print vselsummary
+print.vselsummary <- function(x, digits = 2, ...) {
+  print(x$family)
+  cat(paste0("Formula: ", x$formula, "\n"))
+  cat(paste0("Observations: ", x$nobs, "\n"))
+  if (!is.null(x$cv_method)) {
+    cat(paste0("CV method: ", x$cv_method, "\n"))
+  }
+  cat(paste0("Search method: ", x$method, "\n"))
+  cat(paste0("Optimal projection size: ", x$suggested_size, "\n"))
+  cat("\n")
+  print(x$selection)
+  return(invisible(x))
 }
 
 #' Print methods for vsel/vsel objects
@@ -491,7 +533,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #' @export
 #' @method print vsel
 print.vsel <- function(x, digits = 2, ...) {
-  stats <- summary.vsel(x, ...)
+  stats <- summary.vsel(x, digits = digits, ...)
   print(stats)
   return(invisible(stats))
 }
@@ -598,7 +640,7 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
   stats <- summary.vsel(object,
     stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
     baseline = baseline, deltas = TRUE
-  )
+  )$selection
   util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
   util_cutoff <- pct * util_null
   res <- subset(stats, sgn * stats[, bound] >= util_cutoff, "size")
