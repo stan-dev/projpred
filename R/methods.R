@@ -429,7 +429,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   out <- list(
-    formula = object$formula,
+    formula = object$refmodel$formula,
     fit = object$fit,
     family = object$family,
     nobs = NROW(object$ref$fetch_data()),
@@ -502,7 +502,8 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #' @method print vselsummary
 print.vselsummary <- function(x, digits = 2, ...) {
   print(x$family)
-  cat(paste0("Formula: ", x$formula, "\n"))
+  cat("Formula: ")
+  print(x$formula)
   cat(paste0("Observations: ", x$nobs, "\n"))
   if (!is.null(x$cv_method)) {
     cat(paste0("CV method: ", x$cv_method, "\n"))
