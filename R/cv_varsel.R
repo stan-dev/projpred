@@ -424,7 +424,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     ## with `match` we get the indices of the variables as they enter the
     ## solution path in solution_terms
-    solution_terms_mat <- match(solution_terms, search_terms)
+    solution_terms_mat[, ] <- match(solution_terms, search_terms)
   } else {
     for (run_index in seq_along(inds)) {
       ## observation index
