@@ -431,7 +431,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     ## with `match` we get the indices of the variables as they enter the
     ## solution path in solution_terms
-    solution_terms_mat[, ] <- match(solution_terms, search_terms)
+    solution_terms_mat[, ] <- match(search_terms[-1], solution_terms)
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
                  solution_terms)
   } else {
@@ -481,7 +481,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       ## with `match` we get the indices of the variables as they enter the
       ## solution path in solution_terms
-      solution_terms_mat[i, ] <- match(solution_terms, search_terms)
+      solution_terms_mat[i, ] <- match(search_terms[-1], solution_terms)
 
       if (verbose) {
         utils::setTxtProgressBar(pb, run_index)
