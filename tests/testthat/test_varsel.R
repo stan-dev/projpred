@@ -364,43 +364,61 @@ if (require(rstanarm)) {
 
     test_that("nterms_max has an effect on cv_varsel for gaussian models", {
       suppressWarnings(
-        vs1 <- cv_varsel(fit_gauss, method = "forward", nterms_max = 3,
-                        verbose = FALSE)
+        vs1 <- cv_varsel(fit_gauss,
+          method = "forward", nterms_max = 3,
+          verbose = FALSE, ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
       )
       expect_length(vs1$solution_terms, 3)
     })
 
     test_that("nterms_max has an effect on cv_varsel for non-gaussian models", {
       suppressWarnings(
-        vs1 <- cv_varsel(fit_binom, method = "forward", nterms_max = 3,
-                        verbose = FALSE)
+        vs1 <- cv_varsel(fit_binom,
+          method = "forward", nterms_max = 3,
+          verbose = FALSE, ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
       )
       expect_length(vs1$solution_terms, 3)
     })
 
     test_that("nloo works as expected", {
       expect_error(
-        SW(cv_varsel(fit_gauss, cv_method = "loo", nloo = -1)),
+        SW(
+          cv_varsel(fit_gauss,
+            cv_method = "loo", nloo = -1, ndraws = ndraws,
+            ndraws_pred = ndraws_pred
+          )
+        ),
         "must be at least 1"
       )
       SW({
         expect_equal(
           cv_varsel(fit_gauss, cv_method = "loo", nterms_max = nterms,
-            nloo = NULL),
+            nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred),
           cv_varsel(fit_gauss, cv_method = "loo", nterms_max = nterms,
-            nloo = 1000)
+            nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred)
         )
 
         # nloo less than number of observations
-        out <- cv_varsel(fit_gauss, cv_method = "loo", nloo = 20, verbose = FALSE)
+        out <- cv_varsel(fit_gauss,
+          cv_method = "loo", nloo = 20, verbose = FALSE,
+          ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
         expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
       })
     })
 
     test_that("the validate_search option works as expected", {
       SW({
-        vs1 <- cv_varsel(fit_gauss, validate_search = FALSE)
-        vs2 <- cv_varsel(fit_gauss, validate_search = TRUE)
+        vs1 <- cv_varsel(fit_gauss,
+          validate_search = FALSE,
+          ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
+        vs2 <- cv_varsel(fit_gauss,
+          validate_search = TRUE,
+          ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
       })
       expect_true(all(summary(vs1)$selection$elpd >=
         summary(vs2)$selection$elpd))
@@ -513,7 +531,10 @@ if (require(rstanarm)) {
     test_that("providing k_fold works", {
       out <- SW({
         k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
-        fit_cv <- cv_varsel(glm_simp, cv_method = "kfold", cvfits = k_fold)
+        fit_cv <- cv_varsel(glm_simp,
+          cv_method = "kfold", cvfits = k_fold,
+          ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
       })
       expect_false(any(grepl("k_fold not provided", out)))
       expect_length(fit_cv$solution_terms, nterms)
