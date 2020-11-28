@@ -510,7 +510,7 @@ print.vselsummary <- function(x, digits = 2, ...) {
     cat(paste0("CV method: ", x$cv_method, "\n"))
   }
   cat(paste0("Search method: ", x$method, "\n"))
-  cat(paste0("Optimal Projection Size: ", x$suggested_size, "\n"))
+  cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
   print(x$selection %>% mutate(across(where(is.numeric), ~ round(., digits))),
