@@ -435,10 +435,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
                  solution_terms)
   } else {
-    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
     if (verbose) {
       print(msg)
     }
+    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
 
     for (run_index in seq_along(inds)) {
       ## observation index
