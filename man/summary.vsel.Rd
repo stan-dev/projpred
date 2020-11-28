@@ -12,6 +12,7 @@
   deltas = FALSE,
   alpha = 0.32,
   baseline = NULL,
+  digits = 2,
   ...
 )
 }

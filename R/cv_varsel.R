@@ -16,13 +16,16 @@
 #'   Default is 'forward' if the number of variables in the full data is at most
 #'   20,' and \code{'L1'} otherwise.
 #' @param ndraws Number of posterior draws used for selection. Ignored if
-#'   nclusters is provided or if method='L1'.
-#' @param nclusters Number of clusters used for selection. Default is 1 and
+#'   nclusters is provided or if method='L1'. Default is 10.
+#' @param nclusters Number of clusters used for selection. Defaults to 10 and
 #'   ignored if method='L1' (L1-search uses always one cluster).
-#' @param ndraws_pred Number of samples used for prediction (after selection).
-#'   Ignored if nclusters_pred is given.
+#' @param ndraws_pred Number of projected draws used for prediction (after
+#'   selection). Ignored if nclusters_pred is given. Note that setting less
+#'   draws or clusters than posterior draws in the reference model may result in
+#'   slightly inaccurate projection performance, although increasing this
+#'   argument linearly affects the computation time. Default is 400.
 #' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 5.
+#'   selection). Default is 400.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
 #'   are computed without any penalization (or using only the regularization
 #'   determined by \code{regul}). If FALSE, then the coefficients are the
