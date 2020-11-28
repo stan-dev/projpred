@@ -435,8 +435,16 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     family = object$family,
     nobs = NROW(object$ref$fetch_data()),
     method = object$method,
-    cv_method = object$cv_method
+    cv_method = object$cv_method,
+    validate_search = object$validate_search
   )
+
+  if (out$validate_search) {
+    out$search_included <- "search included"
+  } else {
+    out$search_included <- "search not included"
+  }
+
   class(out) <- "vselsummary"
   ## fetch statistics
   if (deltas) {
@@ -447,8 +455,8 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
-  stats_table <- subset(tab, tab$size != Inf) %>% tidyr::drop_na()
-
+  stats_table <- subset(tab, tab$size != Inf) %>%
+    dplyr::slice_head(n = length(object$solution_terms) + 1)
 
   ## these are the corresponding names for mean, se, upper and lower in the
   ## stats_table, and their suffices in the table to be returned
@@ -507,9 +515,11 @@ print.vselsummary <- function(x, digits = 2, ...) {
   print(x$formula)
   cat(paste0("Observations: ", x$nobs, "\n"))
   if (!is.null(x$cv_method)) {
-    cat(paste0("CV method: ", x$cv_method, "\n"))
+    cat(paste0("CV method: ", x$cv_method, x$search_included, "\n"))
   }
-  cat(paste0("Search method: ", x$method, "\n"))
+  nterms_max <- max(x$selection$size)
+  cat(paste0("Search method: ", x$method, ", maximum number of terms",
+             nterms_max, "\n"))
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
