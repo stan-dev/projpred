@@ -296,13 +296,25 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if ((is.null(ndraws) && is.null(nclusters)) || method == "l1") {
-    ## use one cluster for selection by default, and always with L1-search
-    nclusters <- 10
+  if (is.null(ndraws) && is.null(nclusters)) {
+    nclusters <- min(NCOL(refmodel$mu), 10)
+  } else if (is.null(ndraws)) {
+    nclusters <- min(NCOL(refmodel$mu), 10)
+  } else {
+    nclusters <- ndraws <- min(NCOL(refmodel$mu), 10)
   }
+
+  if (method == "l1") {
+    ndraws <- nclusters <- 1
+  }
+
   if (is.null(ndraws_pred) && is.null(nclusters_pred)) {
     ## use 5 clusters for prediction by default
     nclusters_pred <- min(NCOL(refmodel$mu), 400)
+  } else if (is.null(nclusters_pred)) {
+    nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
+  } else {
+    nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
   max_nv_possible <- count_terms_in_formula(refmodel$formula)
