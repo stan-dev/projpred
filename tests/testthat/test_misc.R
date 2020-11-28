@@ -5,6 +5,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   set.seed(1235)
   n <- 40
   nterms <- 5
+  ndraws <- 1
+  ndraws_pred <- 5
   x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
   b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
@@ -60,17 +62,29 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
         # varsel
         SW({
-          foo <- varsel(fit, seed = seed)
+          foo <- varsel(fit,
+            seed = seed, ndraws = ndraws,
+            ndraws_pred = ndraws_pred
+          )
           r1 <- rnorm(s)
-          foo <- varsel(fit, seed = seed)
+          foo <- varsel(fit,
+            seed = seed, ndraws = ndraws,
+            ndraws_pred = ndraws_pred
+          )
           r2 <- rnorm(s)
         })
         expect_true(any(r1 != r2))
 
         # cv_varsel
-        SW(foo <- cv_varsel(fit, seed = seed))
+        SW(foo <- cv_varsel(fit,
+          seed = seed, ndraws = ndraws,
+          ndraws_pred = ndraws_pred
+        ))
         r1 <- rnorm(s)
-        SW(foo <- cv_varsel(fit, seed = seed))
+        SW(foo <- cv_varsel(fit,
+          seed = seed, ndraws = ndraws,
+          ndraws_pred = ndraws_pred
+        ))
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
 
@@ -137,14 +151,26 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
         # varsel
         SW({
-          foo <- varsel(fit, seed = seed)
-          bar <- varsel(fit, seed = seed)
+          foo <- varsel(fit,
+            seed = seed, ndraws = ndraws,
+            ndraws_pred = ndraws_pred
+          )
+          bar <- varsel(fit,
+            seed = seed, ndraws = ndraws,
+            ndraws_pred = ndraws_pred
+          )
         })
         expect_equal(foo, bar)
 
         # cv_varsel
-        SW(foo <- cv_varsel(fit, seed = seed))
-        SW(bar <- cv_varsel(fit, seed = seed))
+        SW(foo <- cv_varsel(fit,
+          seed = seed, ndraws = ndraws,
+          ndraws_pred = ndraws_pred
+        ))
+        SW(bar <- cv_varsel(fit,
+          seed = seed, ndraws = ndraws,
+          ndraws_pred = ndraws_pred
+        ))
         expect_equal(foo, bar)
 
         # project

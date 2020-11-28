@@ -7,6 +7,8 @@ if (require(rstanarm)) {
   set.seed(seed)
   n <- 50
   nterms <- 5
+  ndraws <- 1
+  ndraws_pred <- 5
   x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
   b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
@@ -47,7 +49,10 @@ if (require(rstanarm)) {
 
     formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
     vsf <- function(x, m)
-      varsel(x, method = m, nterms_max = nterms + 1, verbose = FALSE)
+      varsel(x,
+        method = m, nterms_max = nterms + 1, verbose = FALSE,
+        ndraws = ndraws, ndraws_pred = ndraws_pred
+      )
     vs_list <- list(
       l1 = lapply(fit_list, vsf, "L1"),
       fs = lapply(fit_list, vsf, "forward")
@@ -221,7 +226,8 @@ if (require(rstanarm)) {
     vsf <- function(obj, penalty) {
       varsel(obj,
         method = "L1", nterms_max = nterms + 1,
-        verbose = FALSE, penalty = penalty
+        verbose = FALSE, penalty = penalty,
+        ndraws = ndraws, ndraws_pred = ndraws_pred
       )
     }
     expect_error(vsf(fit_list$gauss, rep(1, nterms + 10)))
@@ -236,8 +242,10 @@ if (require(rstanarm)) {
     penalty[ind_zeropen] <- 0
     penalty[ind_infpen] <- Inf
     vsf <- function(obj)
-      varsel(obj, method = "L1", nterms_max = nterms, verbose = FALSE,
-             penalty = penalty)
+      varsel(obj,
+        method = "L1", nterms_max = nterms, verbose = FALSE,
+        penalty = penalty, ndraws = ndraws, ndraws_pred = ndraws_pred
+      )
     SW(vs_list_pen <- lapply(fit_list, vsf))
     for (i in seq_along(vs_list_pen)) {
       # check that the variables with no cost are selected first and the ones
@@ -253,7 +261,8 @@ if (require(rstanarm)) {
   context("cv_varsel")
 
   cvsf <- function(x, m, cvm, K = NULL) {
-    cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K)
+    cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K,
+              ndraws = ndraws, ndraws_pred = ndraws_pred)
   }
 
   if (Sys.getenv("NOT_CRAN") == "true") {
