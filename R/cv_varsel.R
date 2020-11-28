@@ -179,19 +179,22 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
     stop(sprintf("Unknown cross-validation method: %s.", method))
   }
 
-  ## run the selection using the full dataset
-  if (verbose) {
-    print(paste("Performing the selection using all the data.."))
+  if (validate_search || cv_search == "kfold") {
+    ## run the selection using the full dataset
+    if (verbose) {
+      print(paste("Performing the selection using all the data.."))
+    }
+    sel <- varsel(refmodel,
+      method = method, ndraws = ndraws, nclusters = nclusters,
+      ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
+      cv_search = cv_search, nterms_max = nterms_max - 1,
+      intercept = intercept, penalty = penalty, verbose = verbose,
+      lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
+      search_terms = search_terms
+    )
+  } else if (cv_method == "loo") {
+    sel <- sel_cv$sel
   }
-  sel <- varsel(refmodel,
-    method = method, ndraws = ndraws, nclusters = nclusters,
-    ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
-    cv_search = cv_search, nterms_max = nterms_max - 1,
-    intercept = intercept, penalty = penalty, verbose = verbose,
-    lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
-    search_terms = search_terms
-  )
-
   ## find out how many of cross-validated iterations select
   ## the same variables as the selection with all the data.
   solution_terms_cv_ch <- sapply(
@@ -227,13 +230,13 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   ## create the object to be returned
   vs <- nlist(refmodel,
     search_path = sel$search_path, d_test = sel_cv$d_test,
-    summaries = sel_cv$summaries, family = sel$family, kl = sel$kl,
+    summaries = sel_cv$summaries, family = refmodel$family, kl = sel$kl,
     solution_terms = sel$solution_terms, pct_solution_terms_cv,
     nterms_max = nterms_max,
     nterms_all = count_terms_in_formula(refmodel$formula),
     method = method,
     cv_method = cv_method
-  )
+    )
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
   if (verbose) {
@@ -375,6 +378,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   if (!validate_search) {
+    if (verbose) {
+      print(paste("Performing the selection using all the data.."))
+    }
     ## perform selection only once using all the data (not separately for each
     ## fold), and perform the projection then for each submodel size
     search_path <- select(
@@ -425,6 +431,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## with `match` we get the indices of the variables as they enter the
     ## solution path in solution_terms
     solution_terms_mat[, ] <- match(solution_terms, search_terms)
+    sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
+                 solution_terms)
   } else {
     for (run_index in seq_along(inds)) {
       ## observation index
@@ -494,7 +502,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     data = NULL
   )
 
-  return(nlist(solution_terms_cv = solution_terms_mat, summaries, d_test))
+  if (!validate_search) {
+    return(nlist(
+      solution_terms_cv = solution_terms_mat,
+      summaries, d_test, sel
+    ))
+  } else {
+    return(nlist(solution_terms_cv = solution_terms_mat, summaries, d_test))
+  }
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
