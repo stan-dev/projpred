@@ -447,7 +447,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
-  stats_table <- subset(tab, tab$size != Inf)
+  stats_table <- subset(tab, tab$size != Inf) %>% tidyr::drop_na()
 
 
   ## these are the corresponding names for mean, se, upper and lower in the
