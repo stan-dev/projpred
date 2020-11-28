@@ -273,7 +273,6 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
     ## if there are group levels we should split that into basic components
     group_split <- unlist(lapply(group_terms, split_group_term))
     allterms_ <- c(
-      additive,
       unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
@@ -295,12 +294,12 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
       to_replace, perl = TRUE
     )
     group_split <- c(not_replace, replacement)
-    ## nodups <- individual_terms[is.na(match(individual_terms, additive))]
-    allterms_ <- c(allterms_, group_split)
+    nodups <- unique(c(individual_terms, additive))
+    allterms_ <- c(allterms_, group_split, nodups)
   } else {
-    ## nodups <- individual_terms[!is.na(match(individual_terms, additive))]
+    nodups <- unique(c(individual_terms, additive))
     allterms_ <- c(
-      additive,
+      nodups,
       unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(interaction_terms, split_interaction_term))
     )
