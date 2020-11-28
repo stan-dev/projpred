@@ -628,32 +628,40 @@ if (require(rstanarm)) {
     skip_on_cran()
     # default rounding
     expect_output(out <- print(vs_list[[1]][[1]]))
-    expect_equal(out$elpd, round(out$elpd, 2), tolerance = 1e-3)
+    expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
+      tolerance = 1e-3
+    )
     expect_output(out <- print(cvs_list[[1]][[1]]))
-    expect_equal(out$elpd, round(out$elpd, 2), tolerance = 1e-3)
+    expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
+      tolerance = 1e-3
+    )
 
     # rounding to 4 decimal places
     expect_output(out <- print(vs_list[[1]][[1]], digits = 4))
-    expect_equal(out$elpd, round(out$elpd, 4), tolerance = 1e-3)
+    expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
+      tolerance = 1e-3
+    )
     expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
-    expect_equal(out$elpd, round(out$elpd, 4), tolerance = 1e-3)
-
+    expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
+      tolerance = 1e-3
+    )
     # options to summary
     expect_output(out <- print(vs_list[[1]][[1]],
       nterms_max = 3,
       stats = "mse"
     ))
-    expect_equal(nrow(out) - 1, 3)
-    expect_named(out, c("size", "solution_terms", "mse", "mse.se"))
+    expect_equal(nrow(out$selection) - 1, 3)
+    expect_named(out$selection, c("size", "solution_terms", "mse", "mse.se"))
 
     expect_output(out <- print(cvs_list[[1]][[1]],
       nterms_max = 3,
       stats = "mse"
     ))
-    expect_equal(nrow(out) - 1, 3)
-    expect_named(out, c("size", "solution_terms", "mse", "mse.se"
-                                        # "pct_solution_terms_cv"
-                        ))
+    expect_equal(nrow(out$selection) - 1, 3)
+    expect_named(out$seletion, c(
+      "size", "solution_terms", "mse", "mse.se"
+      # "pct_solution_terms_cv"
+    ))
   })
 
 
