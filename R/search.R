@@ -20,6 +20,8 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
 
   for (size in seq_len(stop_search)) {
     cands <- select_possible_terms_size(chosen, allterms, size = size)
+    if (is.null(cands))
+      break
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     sub <- sapply(full_cands, projfun)
 
