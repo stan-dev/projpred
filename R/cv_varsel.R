@@ -346,7 +346,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
   mu_ref <- rep(0, n)
-  for (i in 1:n) {
+  for (i in seq_len(n)) {
     mu_ref[i] <- mu[i, ] %*% exp(lw[, i])
   }
 
@@ -360,14 +360,18 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu_sub <- matrix(nrow = n, ncol = nterms_max)
 
   if (verbose) {
-    if (!validate_search) {
+    if (validate_search) {
       msg <- paste("Repeating", method, "search for", nloo, "LOO folds...")
       print(msg)
+      pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
     } else {
-      msg <- paste("Computing LOO for", nloo, " models...")
+      msg <- paste("Computing LOO for", nterms_max, "models...")
       print(msg)
+      pb <- utils::txtProgressBar(
+        min = 0, max = nterms_max, style = 3,
+        initial = 0
+      )
     }
-    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
   }
 
   if (!validate_search) {
@@ -379,22 +383,63 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       verbose = FALSE, opt = opt, search_terms = search_terms
     )
     solution_terms <- search_path$solution_terms
-  }
 
-  for (run_index in seq_along(inds)) {
-
-    ## observation index
-    i <- inds[run_index]
-
-    ## reweight the clusters/samples according to the psis-loo weights
-    p_sel <- .get_p_clust(
-      family = family, mu = mu, dis = dis, wsample = exp(lw[, i]), cl = cl_sel
+    ## project onto the selected models and compute the prediction accuracy for
+    ## the full data
+    submodels <- .get_submodels(
+      search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+      family = family, p_ref = p_pred, refmodel = refmodel,
+      intercept = intercept, regul = opt$regul, cv_search = cv_search
     )
-    p_pred <- .get_p_clust(
-      family = family, mu = mu, dis = dis, wsample = exp(lw[, i]), cl = cl_pred
+    summaries_sub <- .get_sub_summaries(
+      submodels = submodels, test_points = seq_len(n), refmodel = refmodel,
+      family = family
     )
 
-    if (validate_search) {
+    ## compute approximate LOO with PSIS weights
+    y <- matrix(refmodel$y, nrow = n)
+    for (k in seq_along(summaries_sub)) {
+      mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
+        offset = refmodel$offset,
+        weights = 1
+      )
+      log_lik_sub <- t(family$ll_fun(
+        mu_k, submodels[[k]]$dis,
+        y, refmodel$wobs
+      ))
+      sub_psisloo <- suppressWarnings(loo::psis(-log_lik_sub,
+        cores = 1,
+        r_eff = rep(1, ncol(log_lik_sub))
+      ))
+      lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
+      loo_sub[, k] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
+      for (i in seq_len(n)) {
+        mu_sub[i, k] <- mu_k[i, ] %*% exp(lw_sub[, i])
+      }
+
+      if (verbose) {
+        utils::setTxtProgressBar(pb, k)
+      }
+    }
+
+    ## with `match` we get the indices of the variables as they enter the
+    ## solution path in solution_terms
+    solution_terms_mat <- match(solution_terms, search_terms)
+  } else {
+    for (run_index in seq_along(inds)) {
+      ## observation index
+      i <- inds[run_index]
+
+      ## reweight the clusters/samples according to the psis-loo weights
+      p_sel <- .get_p_clust(
+        family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
+        cl = cl_sel
+      )
+      p_pred <- .get_p_clust(
+        family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
+        cl = cl_pred
+      )
+
       ## perform selection with the reweighted clusters/samples
       search_path <- select(
         method = method, p_sel = p_sel, refmodel = refmodel,
@@ -403,31 +448,30 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         search_terms = search_terms
       )
       solution_terms <- search_path$solution_terms
-    }
 
-    ## project onto the selected models and compute the prediction accuracy for
-    ## the left-out point
-    submodels <- .get_submodels(
-      search_path = search_path, nterms = c(0, seq_along(solution_terms)),
-      family = family, p_ref = p_pred, refmodel = refmodel,
-      intercept = intercept, regul = opt$regul, cv_search = cv_search
-    )
-    summaries_sub <- .get_sub_summaries(
-      submodels = submodels, test_points = c(i), refmodel = refmodel,
-      family = family
-    )
-    for (k in seq_along(summaries_sub)) {
-      loo_sub[i, k] <- summaries_sub[[k]]$lppd
-      mu_sub[i, k] <- summaries_sub[[k]]$mu
-    }
+      ## project onto the selected models and compute the prediction accuracy
+      ## for the left-out point
+      submodels <- .get_submodels(
+        search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+        family = family, p_ref = p_pred, refmodel = refmodel,
+        intercept = intercept, regul = opt$regul, cv_search = cv_search
+      )
+      summaries_sub <- .get_sub_summaries(
+        submodels = submodels, test_points = c(i), refmodel = refmodel,
+        family = family
+      )
+      for (k in seq_along(summaries_sub)) {
+        loo_sub[i, k] <- summaries_sub[[k]]$lppd
+        mu_sub[i, k] <- summaries_sub[[k]]$mu
+      }
 
-    ## we are always doing group selection
-    ## with `match` we get the indices of the variables as they enter the
-    ## solution path in solution_terms
-    solution_terms_mat[i, ] <- match(solution_terms, search_terms)
+      ## with `match` we get the indices of the variables as they enter the
+      ## solution path in solution_terms
+      solution_terms_mat[i, ] <- match(solution_terms, search_terms)
 
-    if (verbose) {
-      utils::setTxtProgressBar(pb, run_index)
+      if (verbose) {
+        utils::setTxtProgressBar(pb, run_index)
+      }
     }
   }
 
@@ -714,7 +758,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
     if (length(inds) < nloo) {
       ## not enough points selected, so choose randomly among the rest
-      inds <- c(inds, resample(setdiff(1:n, inds), nloo - length(inds)))
+      inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
     }
 
     ## assign the weights corresponding to this stratification (for example, the
