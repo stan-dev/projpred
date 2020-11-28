@@ -365,15 +365,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (verbose) {
     if (validate_search) {
       msg <- paste("Repeating", method, "search for", nloo, "LOO folds...")
-      print(msg)
-      pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
     } else {
       msg <- paste("Computing LOO for", nterms_max, "models...")
-      print(msg)
-      pb <- utils::txtProgressBar(
-        min = 0, max = nterms_max, style = 3,
-        initial = 0
-      )
     }
   }
 
@@ -402,6 +395,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       family = family
     )
 
+    if (verbose) {
+      print(msg)
+    }
+
+    pb <- utils::txtProgressBar(
+      min = 0, max = nterms_max, style = 3,
+      initial = 0
+    )
     ## compute approximate LOO with PSIS weights
     y <- matrix(refmodel$y, nrow = n)
     for (k in seq_along(summaries_sub)) {
@@ -434,6 +435,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
                  solution_terms)
   } else {
+    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+    if (verbose) {
+      print(msg)
+    }
+
     for (run_index in seq_along(inds)) {
       ## observation index
       i <- inds[run_index]
