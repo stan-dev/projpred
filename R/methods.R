@@ -439,7 +439,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     validate_search = object$validate_search
   )
 
-  if (out$validate_search) {
+  if (!is.null(out$validate_search)) {
     out$search_included <- "search included"
   } else {
     out$search_included <- "search not included"
@@ -502,14 +502,14 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #' @name print-vselsummary
 #'
 #' @param x An object of class vselsummary.
-#' @param digits Number of decimal places to be reported (2 by default).
+#' @param digits Number of decimal places to be reported (1 by default).
 #'
 #' @return Returns invisibly the output produced by
 #'   \code{\link{summary.vsel}}.
 #'
 #' @export
 #' @method print vselsummary
-print.vselsummary <- function(x, digits = 2, ...) {
+print.vselsummary <- function(x, digits = 1, ...) {
   print(x$family)
   cat("Formula: ")
   print(x$formula)
@@ -518,13 +518,17 @@ print.vselsummary <- function(x, digits = 2, ...) {
     cat(paste0("CV method: ", x$cv_method, x$search_included, "\n"))
   }
   nterms_max <- max(x$selection$size)
-  cat(paste0("Search method: ", x$method, ", maximum number of terms",
+  cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              nterms_max, "\n"))
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
-  print(x$selection %>% mutate(across(where(is.numeric), ~ round(., digits))),
-        row.names = FALSE)
+  print(x$selection %>% dplyr::mutate(dplyr::across(
+    where(is.numeric),
+    ~ round(., digits)
+  )),
+  row.names = FALSE
+  )
   return(invisible(x))
 }
 
@@ -538,7 +542,7 @@ print.vselsummary <- function(x, digits = 2, ...) {
 #' @name print-vsel
 #'
 #' @param x An object of class vsel/vsel.
-#' @param digits Number of decimal places to be reported (2 by default).
+#' @param digits Number of decimal places to be reported (1 by default).
 #' @param ... Further arguments passed to \code{\link{summary.vsel}}.
 #'
 #' @return Returns invisibly the data frame produced by
@@ -546,7 +550,7 @@ print.vselsummary <- function(x, digits = 2, ...) {
 #'
 #' @export
 #' @method print vsel
-print.vsel <- function(x, digits = 2, ...) {
+print.vsel <- function(x, digits = 1, ...) {
   stats <- summary.vsel(x, digits = digits, ...)
   print(stats)
   return(invisible(stats))
