@@ -859,7 +859,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("Can only subsample less `nloo` than total number of datapoints.")
   }
 
-  weights <- -sapply(lppd, min, 0)
+  weights <- exp(lppd - max(lppd))
   inds <- sample(seq_along(lppd), size = nloo, prob = weights)
   w <- weights[inds]
   w <- w / sum(w)
