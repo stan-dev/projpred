@@ -246,7 +246,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
     method = method,
     cv_method = cv_method,
     validate_search = validate_search
-    )
+  )
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
   summary <- summary(vs)
@@ -596,8 +596,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_sel <- .get_refdist(refmodel, ndraws, nclusters)
     p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
     newdata <- d_test$newdata
-    pred <- as.matrix(
-      as.numeric(refmodel$ref_predfun(refmodel$fit, newdata = newdata))
+    pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata)
+    pred <- matrix(
+      as.numeric(pred), nrow = NROW(pred), ncol = NCOL(pred)
     )
     mu_test <- family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test,
@@ -857,11 +858,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   set.seed(seed)
   if (nloo > length(lppd)) {
     stop("Can only subsample less `nloo` than total number of datapoints.")
+  } else if (nloo == length(lppd)) {
+    inds <- seq_len(nloo)
+    w <- rep(1, nloo)
+  } else if (nloo < length(lppd)) {
+    weights <- exp(lppd - max(lppd))
+    inds <- sample(seq_along(lppd), size = nloo, prob = weights)
+    w <- weights
   }
-
-  weights <- exp(lppd - max(lppd))
-  inds <- sample(seq_along(lppd), size = nloo, prob = weights)
-  w <- weights[inds]
   w <- w / sum(w)
 
   return(nlist(inds, w))

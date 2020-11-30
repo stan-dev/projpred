@@ -280,10 +280,10 @@ if (require(rstanarm)) {
       # instead of seed = seed), otherwise when the calls are evaluated in
       # refmodel$cvfun() they may not be found in the evaluation frame of the
       # calling function, causing the test to fail
-      ## glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      ##   family = poisson(), data = df_poiss,
-      ##   chains = 2, seed = 1235, iter = 400
-      ## )
+      glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+        family = poisson(), data = df_poiss,
+        chains = 2, seed = 1235, iter = 400
+      )
       lm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
         data = df_gauss, family = gaussian(),
         chains = 2, seed = 1235, iter = 400
@@ -627,17 +627,22 @@ if (require(rstanarm)) {
         } else {
           stats_str <- valid_stats_all
         }
+        cv_method <- cvs_list[[i]][[j]]$cv_method
         stats <- summary(cvs,
           stats = stats_str,
           type = c("mean", "lower", "upper", "se")
         )$selection
         expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
-          "size", "solution_terms", stats_str, paste0(stats_str, ".se"),
-          paste0(stats_str, ".upper"), paste0(stats_str, ".lower")
+          "size", "solution_terms", paste0(stats_str, ".", tolower(cv_method)),
+          paste0(stats_str, ".se", ".", tolower(cv_method)),
+          paste0(stats_str, ".upper", ".", tolower(cv_method)),
+          paste0(stats_str, ".lower", ".", tolower(cv_method))
         ) %in% names(stats)))
-        expect_true(all(stats$mlpd > stats$mlpd.lower))
-        expect_true(all(stats$mlpd < stats$mlpd.upper))
+        expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] >
+                        stats[, paste0("mlpd.lower.", tolower(cv_method))]))
+        expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] <
+                        stats[, paste0("mlpd.upper.", tolower(cv_method))]))
       }
     }
   })
