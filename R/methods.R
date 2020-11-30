@@ -456,6 +456,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
   stats_table <- subset(tab, tab$size != Inf) %>%
+    dplyr::group_by(statistic) %>%
     dplyr::slice_head(n = length(object$solution_terms) + 1)
 
   ## these are the corresponding names for mean, se, upper and lower in the
