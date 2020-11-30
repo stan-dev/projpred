@@ -375,7 +375,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   ## decide which points form the validation set based on the k-values
-  validset <- .loo_subsample(n, nloo, pareto_k, seed)
+  ## validset <- .loo_subsample(n, nloo, pareto_k, seed)
+  validset <- .loo_subsample_pps(nloo, loo_ref, seed)
   inds <- validset$inds
 
   ## initialize matrices where to store the results
@@ -837,6 +838,30 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## ensure weights are normalized
   w <- w / sum(w)
+
+  return(nlist(inds, w))
+}
+
+.loo_subsample_pps <- function(nloo, lppd, seed) {
+  ## decide which points to go through in the validation based on
+  ## proportional-to-size subsampling as implemented in Magnusson, M., Riis
+  ## Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
+  ## Cross-Validation for Large Data. In International Conference on Machine
+  ## Learning.
+
+  ## set random seed but ensure the old RNG state is restored on exit
+  if (exists(".Random.seed")) {
+    rng_state_old <- .Random.seed
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(seed)
+  if (nloo > length(lppd)) {
+    stop("Can only subsample less `nloo` than total number of datapoints.")
+  }
+
+  weights <- -sapply(lppd, min, 0)
+  inds <- sample(seq_along(lppd), size = nloo, prob = weights)
+  w <- weights[inds]
 
   return(nlist(inds, w))
 }
