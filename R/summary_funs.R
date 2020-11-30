@@ -87,7 +87,7 @@
     )
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
-      value = res$value, lq = res$lq, uq = res$uq, se = res$se
+      value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA
     )
     stat_tab <- rbind(stat_tab, row)
 
@@ -117,10 +117,15 @@
         res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
           mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
         )
+        if (k == 1) {
+          diff <- NA
+        } else {
+          diff <- res$value - row$value
+        }
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
-          se = res$se)
+          se = res$se, diff = diff)
       }
       stat_tab <- rbind(stat_tab, row)
     }

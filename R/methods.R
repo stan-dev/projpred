@@ -423,7 +423,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @method summary vsel
 #' @export
 summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
-                         type = c("mean", "se"), deltas = FALSE,
+                         type = c("mean", "se", "diff"), deltas = FALSE,
                          alpha = 0.32, baseline = NULL, digits = 2,
                          ...) {
   .validate_vsel_object_stats(object, stats)
@@ -462,10 +462,15 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   ## these are the corresponding names for mean, se, upper and lower in the
   ## stats_table, and their suffices in the table to be returned
   qty <- unname(sapply(type, function(t) {
-    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")
+    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
+           diff = "diff")
   }))
   suffix <- unname(sapply(type, function(t) {
-    switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")
+    switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se",
+           diff = ".diff")
+  }))
+  cv_suffix <- unname(sapply(object$cv_method, function(t) {
+    switch(t, LOO = ".loo", kfold = ".kfold")
   }))
 
   ## loop through all the required statistics
@@ -476,6 +481,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- sapply(suffix, function(s) paste0(stats[i], s))
+    newnames <- sapply(cv_suffix, function(s) paste0(newnames, s))
     colnames(temp) <- newnames
     arr <- cbind(arr, temp)
   }
