@@ -262,7 +262,7 @@ if (require(rstanarm)) {
 
   cvsf <- function(x, m, cvm, K = NULL) {
     cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K,
-              ndraws = ndraws, ndraws_pred = ndraws_pred)
+              ndraws = ndraws, ndraws_pred = ndraws_pred, verbose = FALSE)
   }
 
   if (Sys.getenv("NOT_CRAN") == "true") {
@@ -275,15 +275,15 @@ if (require(rstanarm)) {
       # without weights/offset because kfold does not support them currently
       # test only with one family to make the tests faster
 
-      # the chains, seed and iter arguments to the rstanarm functions here must be
-      # specified directly rather than through a variable (eg, seed = 1235 instead
-      # of seed = seed), otherwise when the calls are evaluated in
+      # the chains, seed and iter arguments to the rstanarm functions here must
+      # be specified directly rather than through a variable (eg, seed = 1235
+      # instead of seed = seed), otherwise when the calls are evaluated in
       # refmodel$cvfun() they may not be found in the evaluation frame of the
       # calling function, causing the test to fail
-      glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-        family = poisson(), data = df_poiss,
-        chains = 2, seed = 1235, iter = 400
-      )
+      ## glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+      ##   family = poisson(), data = df_poiss,
+      ##   chains = 2, seed = 1235, iter = 400
+      ## )
       lm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
         data = df_gauss, family = gaussian(),
         chains = 2, seed = 1235, iter = 400
@@ -386,7 +386,7 @@ if (require(rstanarm)) {
       expect_error(
         SW(
           cv_varsel(fit_gauss,
-            cv_method = "loo", nloo = -1, ndraws = ndraws,
+            cv_method = "LOO", nloo = -1, ndraws = ndraws,
             ndraws_pred = ndraws_pred
           )
         ),
@@ -394,15 +394,15 @@ if (require(rstanarm)) {
       )
       SW({
         expect_equal(
-          cv_varsel(fit_gauss, cv_method = "loo", nterms_max = nterms,
+          cv_varsel(fit_gauss, cv_method = "LOO", nterms_max = nterms,
             nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred),
-          cv_varsel(fit_gauss, cv_method = "loo", nterms_max = nterms,
+          cv_varsel(fit_gauss, cv_method = "LOO", nterms_max = nterms,
             nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred)
         )
 
         # nloo less than number of observations
         out <- cv_varsel(fit_gauss,
-          cv_method = "loo", nloo = 20, verbose = FALSE,
+          cv_method = "LOO", nloo = 20, verbose = FALSE,
           ndraws = ndraws, ndraws_pred = ndraws_pred
         )
         expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
@@ -426,7 +426,8 @@ if (require(rstanarm)) {
 
     test_that("Having something else than stan_glm as the fit throws an error", {
       expect_error(cv_varsel(rnorm(5), verbose = FALSE),
-                  regexp = "no applicable method")
+        regexp = "no applicable method"
+      )
     })
 
     test_that(paste("object returned by cv_varsel, kfold contains the relevant",
@@ -533,7 +534,8 @@ if (require(rstanarm)) {
         k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
         fit_cv <- cv_varsel(glm_simp,
           cv_method = "kfold", cvfits = k_fold,
-          ndraws = ndraws, ndraws_pred = ndraws_pred
+          ndraws = ndraws, ndraws_pred = ndraws_pred,
+          verbose = FALSE
         )
       })
       expect_false(any(grepl("k_fold not provided", out)))
@@ -625,8 +627,10 @@ if (require(rstanarm)) {
         } else {
           stats_str <- valid_stats_all
         }
-        stats <- summary(cvs, stats = stats_str,
-                         type = c("mean", "lower", "upper", "se"))$selection
+        stats <- summary(cvs,
+          stats = stats_str,
+          type = c("mean", "lower", "upper", "se")
+        )$selection
         expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
           "size", "solution_terms", stats_str, paste0(stats_str, ".se"),
@@ -688,7 +692,7 @@ if (require(rstanarm)) {
       stats = "mse"
     ))
     expect_equal(nrow(out$selection) - 1, 3)
-    expect_named(out$seletion, c(
+    expect_named(out$selection, c(
       "size", "solution_terms", "mse", "mse.se"
       # "pct_solution_terms_cv"
     ))
