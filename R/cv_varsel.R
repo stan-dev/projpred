@@ -862,6 +862,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   weights <- -sapply(lppd, min, 0)
   inds <- sample(seq_along(lppd), size = nloo, prob = weights)
   w <- weights[inds]
+  w <- w / sum(w)
 
   return(nlist(inds, w))
 }
