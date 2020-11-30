@@ -83,8 +83,8 @@ SW({
 
   # cv_varsel
   cvvsd_list <- lapply(dref_list, cv_varsel,
-    nterms_max = nterms + 1,
-    verbose = FALSE
+    nterms_max = nterms + 1, ndraws = ndraws,
+    ndraws_pred = ndraws_pred, verbose = FALSE
   )
 
   predd_list <- lapply(vsd_list, proj_linpred,
