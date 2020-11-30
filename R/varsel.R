@@ -223,6 +223,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   vs$suggested_size <- suggest_size(vs,
     warnings = FALSE
   )
+  summary <- summary(vs)
+  vs$summary <- summary$selection
 
   return(vs)
 }
