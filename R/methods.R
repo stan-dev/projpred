@@ -469,9 +469,13 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se",
            diff = ".diff")
   }))
-  cv_suffix <- unname(sapply(object$cv_method, function(t) {
-    switch(t, LOO = ".loo", kfold = ".kfold")
-  }))
+  if (!is.null(object$cv_method)) {
+    cv_suffix <- unname(sapply(object$cv_method, function(t) {
+      switch(t, LOO = ".loo", kfold = ".kfold")
+    }))
+  } else {
+    cv_suffix <- ""
+  }
 
   ## loop through all the required statistics
   arr <- data.frame(
@@ -522,7 +526,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   print(x$formula)
   cat(paste0("Observations: ", x$nobs, "\n"))
   if (!is.null(x$cv_method)) {
-    cat(paste0("CV method: ", x$cv_method, x$search_included, "\n"))
+    cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
   nterms_max <- max(x$selection$size)
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
@@ -661,12 +665,20 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
       type <- "upper"
     }
   }
-  bound <- paste0(stat, ".", type)
+  if (!is.null(object$cv_method)) {
+    suffix <- paste0(".", tolower(object$cv_method))
+  } else {
+    suffix <- ""
+  }
+  bound <- paste0(stat, ".", type, suffix)
   stats <- summary.vsel(object,
     stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
     baseline = baseline, deltas = TRUE
   )$selection
-  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
+  util_null <- sgn * unlist(unname(subset(
+    stats, stats$size == 0,
+    paste0(stat, suffix)
+  )))
   util_cutoff <- pct * util_null
   res <- subset(stats, sgn * stats[, bound] >= util_cutoff, "size")
 
