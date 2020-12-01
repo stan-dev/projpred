@@ -292,9 +292,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   if (is.null(ndraws) && is.null(nclusters)) {
     nclusters <- min(NCOL(refmodel$mu), 10)
   } else if (is.null(ndraws)) {
-    nclusters <- min(NCOL(refmodel$mu), 10)
+    nclusters <- min(NCOL(refmodel$mu), nclusters)
   } else {
-    nclusters <- ndraws <- min(NCOL(refmodel$mu), 10)
+    nclusters <- ndraws <- min(NCOL(refmodel$mu), nclusters)
   }
 
   if (method == "l1") {
