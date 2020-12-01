@@ -622,7 +622,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     out <- select(
       method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
       family = family, intercept = intercept, nterms_max = nterms_max,
-      penalty = penalty, verbose = verbose, opt = opt,
+      penalty = penalty, verbose = FALSE, opt = opt,
       search_terms = search_terms
     )
     if (verbose) {
