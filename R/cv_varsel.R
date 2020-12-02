@@ -250,6 +250,8 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
     method,
     cv_method,
     validate_search,
+    nclusters,
+    nclusters_pred
     ndraws,
     ndraws_pred
   )
