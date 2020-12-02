@@ -438,7 +438,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     cv_method = object$cv_method,
     validate_search = object$validate_search,
     ndraws = object$ndraws,
-    ndraws_pred = object$ndraws_pred
+    ndraws_pred = object$ndraws_pred,
     nclusters = object$nclusters,
     nclusters_pred = object$nclusters_pred
   )
@@ -547,7 +547,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
     x$nclusters, " clusters\n"
   ))
   cat(paste0(
-    "Draws used for prediction: ", x$ndraws_pred, " in ",
+    "Draws used for prediction: ", x$ndraws_pred, ", in ",
     x$nclusters_pred, " clusters\n"
   ))
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
