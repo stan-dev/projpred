@@ -87,7 +87,8 @@
     )
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
-      value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA
+      value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
+      diff.se = NA
     )
     stat_tab <- rbind(stat_tab, row)
 
@@ -109,29 +110,23 @@
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
         uq <- qnorm(1 - alpha / 2, mean = val, sd = val.se)
-        if (k == 1) {
-          diff <- NA
-        } else {
-          diff <- val - row$value
-        }
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = val, lq = lq, uq = uq, se = val.se,
-          diff = diff)
+          diff = res_diff$value, diff.se = res_diff$se)
       } else {
         ## normal case
         res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
           mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
         )
-        if (k == 1) {
-          diff <- NA
-        } else {
-          diff <- res$value - row$value
-        }
+        diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
+          mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd, weights = summ$w,
+          alpha = alpha
+        )
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
-          se = res$se, diff = diff)
+          se = res$se, diff = diff$value, diff.se = diff$se)
       }
       stat_tab <- rbind(stat_tab, row)
     }

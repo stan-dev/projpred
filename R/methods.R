@@ -423,9 +423,9 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @method summary vsel
 #' @export
 summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
-                         type = c("mean", "se", "diff"), deltas = FALSE,
-                         alpha = 0.32, baseline = NULL, digits = 2,
-                         ...) {
+                         type = c("mean", "se", "diff", "diff.se"),
+                         deltas = FALSE, alpha = 0.32, baseline = NULL,
+                         digits = 1, ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
@@ -440,7 +440,11 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   )
 
   if (!is.null(out$validate_search)) {
-    out$search_included <- "search included"
+    if (out$validate_search == TRUE) {
+      out$search_included <- "search included"
+    } else {
+      out$search_included <- "search not included"
+    }
   } else {
     out$search_included <- "search not included"
   }
@@ -459,15 +463,18 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     dplyr::group_by(statistic) %>%
     dplyr::slice_head(n = length(object$solution_terms) + 1)
 
+  if (deltas) {
+    type <- setdiff(type, c("diff", "diff.se"))
+  }
   ## these are the corresponding names for mean, se, upper and lower in the
   ## stats_table, and their suffices in the table to be returned
   qty <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
-           diff = "diff")
+           diff = "diff", diff.se = "diff.se")
   }))
   suffix <- unname(sapply(type, function(t) {
     switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se",
-           diff = ".diff")
+           diff = ".diff", diff.se = ".diff.se")
   }))
   if (!is.null(object$cv_method)) {
     cv_suffix <- unname(sapply(object$cv_method, function(t) {
