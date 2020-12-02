@@ -207,7 +207,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     nterms_all = count_terms_in_formula(refmodel$formula),
     method = method,
     cv_method = NULL,
-    validate_search = NULL
+    validate_search = NULL,
+    ndraws,
+    ndraws_pred
   )
   ## suggest model size
   class(vs) <- "vsel"

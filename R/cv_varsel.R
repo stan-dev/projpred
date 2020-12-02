@@ -238,14 +238,20 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
 
   ## create the object to be returned
   vs <- nlist(refmodel,
-    search_path = sel$search_path, d_test = sel_cv$d_test,
-    summaries = sel_cv$summaries, family = refmodel$family, kl = sel$kl,
-    solution_terms = sel$solution_terms, pct_solution_terms_cv,
-    nterms_max = nterms_max,
+    search_path = sel$search_path,
+    d_test = sel_cv$d_test,
+    summaries = sel_cv$summaries,
+    family = refmodel$family,
+    kl = sel$kl,
+    solution_terms = sel$solution_terms,
+    pct_solution_terms_cv,
     nterms_all = count_terms_in_formula(refmodel$formula),
-    method = method,
-    cv_method = cv_method,
-    validate_search = validate_search
+    nterms_max,
+    method,
+    cv_method,
+    validate_search,
+    ndraws,
+    ndraws_pred
   )
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)

@@ -436,7 +436,9 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     nobs = NROW(object$ref$fetch_data()),
     method = object$method,
     cv_method = object$cv_method,
-    validate_search = object$validate_search
+    validate_search = object$validate_search,
+    ndraws = object$ndraws,
+    ndraws_pred = object$ndraws_pred
   )
 
   if (!is.null(out$validate_search)) {
@@ -538,6 +540,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
   nterms_max <- max(x$selection$size)
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              nterms_max, "\n"))
+  cat(paste0("Draws used for selection: ", x$ndraws, "\n"))
+  cat(paste0("Draws used for prediction: ", x$ndraws_pred, "\n"))
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
