@@ -130,8 +130,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,
     intercept = intercept, nterms_max = nterms_max, nclusters = nclusters,
-    ndraws = ndraws,
-    nclusters_pred = nclusters_pred,
+    ndraws = ndraws, nclusters_pred = nclusters_pred,
     ndraws_pred = ndraws_pred, search_terms = search_terms
   )
   method <- args$method

@@ -297,8 +297,8 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters <- min(NCOL(refmodel$mu), 10)
   } else if (is.null(ndraws)) {
     nclusters <- min(NCOL(refmodel$mu), nclusters)
-  } else {
-    nclusters <- ndraws <- min(NCOL(refmodel$mu), nclusters)
+  } else if (is.null(nclusters)) {
+    nclusters <- ndraws <- min(NCOL(refmodel$mu), ndraws)
   }
 
   if (method == "l1") {
@@ -310,7 +310,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters_pred <- min(NCOL(refmodel$mu), 400)
   } else if (is.null(nclusters_pred)) {
     nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
-  } else {
+  } else if (is.null(ndraws_pred)) {
     nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
