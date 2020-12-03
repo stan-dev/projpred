@@ -436,21 +436,25 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     y <- matrix(refmodel$y, nrow = n)
     for (k in seq_along(summaries_sub)) {
       mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
+        obs = inds,
         offset = refmodel$offset,
         weights = 1
       )
       log_lik_sub <- t(family$ll_fun(
         mu_k, submodels[[k]]$dis,
-        y, refmodel$wobs
+        y[inds], refmodel$wobs
       ))
       sub_psisloo <- suppressWarnings(loo::psis(-log_lik_sub,
         cores = 1,
         r_eff = rep(1, ncol(log_lik_sub))
       ))
       lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
-      loo_sub[, k] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
-      for (i in seq_len(n)) {
-        mu_sub[i, k] <- mu_k[i, ] %*% exp(lw_sub[, i])
+      loo_sub[inds, k] <- apply(
+        log_lik_sub[,] + lw_sub[,], 2,
+        log_sum_exp
+      )
+      for (i in seq_along(inds)) {
+        mu_sub[inds[i], k] <- mu_k[i, ] %*% exp(lw_sub[, i])
       }
 
       if (verbose) {
