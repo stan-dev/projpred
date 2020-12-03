@@ -481,12 +481,28 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
       LOO = ".loo", kfold = ".kfold"
     ))
   } else {
-    cv_suffix <- ""
+    cv_suffix <- NULL
   }
-  suffix <- unname(sapply(type, function(t) {
-    switch(t, mean = NULL, upper = "upper", lower = "lower", se = "se",
-           diff = "diff", diff.se = "diff.se")
-  }))
+
+  if (length(stats) > 1) {
+    suffix <- lapply(stats, function(s) {
+      paste0(
+        s,
+        unname(sapply(type, function(t) {
+          switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
+            se = ".se", diff = ".diff", diff.se = ".diff.se"
+          )
+        }))
+      )
+    })
+  } else {
+    suffix <- list(unname(sapply(type, function(t) {
+      switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
+        lower = "lower", se = "se",
+        diff = "diff", diff.se = "diff.se"
+      )
+    })))
+  }
 
   ## loop through all the required statistics
   arr <- data.frame(
@@ -495,7 +511,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   )
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
-    newnames <- c(paste0(stats[i], cv_suffix), suffix[!sapply(suffix, is.null)])
+    newnames <- suffix[[i]]
     colnames(temp) <- newnames
     arr <- cbind(arr, temp)
   }

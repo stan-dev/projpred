@@ -260,16 +260,17 @@ if (require(rstanarm)) {
   # -------------------------------------------------------------
   context("cv_varsel")
 
-  cvsf <- function(x, m, cvm, K = NULL) {
+  cvsf <- function(x, m, cvm, K = NULL, ...) {
     cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K,
-              ndraws = ndraws, ndraws_pred = ndraws_pred, verbose = FALSE)
+              ndraws = ndraws, ndraws_pred = ndraws_pred, verbose = FALSE,
+              ...)
   }
 
   if (Sys.getenv("NOT_CRAN") == "true") {
     SW({
       cvs_list <- list(
         l1 = lapply(fit_list, cvsf, "L1", "LOO"),
-        fs = lapply(fit_list, cvsf, "forward", "LOO")
+        fs = lapply(fit_list, cvsf, "forward", "LOO", validate_search = FALSE)
       )
 
       # without weights/offset because kfold does not support them currently
@@ -366,7 +367,9 @@ if (require(rstanarm)) {
       suppressWarnings(
         vs1 <- cv_varsel(fit_gauss,
           method = "forward", nterms_max = 3,
-          verbose = FALSE, ndraws = ndraws, ndraws_pred = ndraws_pred
+          verbose = FALSE, ndraws = ndraws,
+          ndraws_pred = ndraws_pred,
+          validate_search = FALSE
         )
       )
       expect_length(vs1$solution_terms, 3)
@@ -376,7 +379,9 @@ if (require(rstanarm)) {
       suppressWarnings(
         vs1 <- cv_varsel(fit_binom,
           method = "forward", nterms_max = 3,
-          verbose = FALSE, ndraws = ndraws, ndraws_pred = ndraws_pred
+          verbose = FALSE, ndraws = ndraws,
+          ndraws_pred = ndraws_pred,
+          validate_search = FALSE
         )
       )
       expect_length(vs1$solution_terms, 3)
@@ -387,17 +392,21 @@ if (require(rstanarm)) {
         SW(
           cv_varsel(fit_gauss,
             cv_method = "LOO", nloo = -1, ndraws = ndraws,
-            ndraws_pred = ndraws_pred
+            ndraws_pred = ndraws_pred, validate_search = FALSE
           )
         ),
         "must be at least 1"
       )
       SW({
         expect_equal(
-          cv_varsel(fit_gauss, cv_method = "LOO", nterms_max = nterms,
-            nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred),
-          cv_varsel(fit_gauss, cv_method = "LOO", nterms_max = nterms,
-            nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred)
+          cv_varsel(fit_gauss,
+            cv_method = "LOO", nterms_max = nterms,
+            nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred
+          ),
+          cv_varsel(fit_gauss,
+            cv_method = "LOO", nterms_max = nterms,
+            nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred
+          )
         )
 
         # nloo less than number of observations
@@ -634,15 +643,13 @@ if (require(rstanarm)) {
         )$selection
         expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
-          "size", "solution_terms", paste0(stats_str, ".", tolower(cv_method)),
-          paste0(stats_str, ".se", ".", tolower(cv_method)),
-          paste0(stats_str, ".upper", ".", tolower(cv_method)),
-          paste0(stats_str, ".lower", ".", tolower(cv_method))
+         "size", "solution_terms", paste0(stats_str, ".", tolower(cv_method)),
+          paste0(stats_str, ".", c("se", "upper", "lower"))
         ) %in% names(stats)))
         expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] >
-                        stats[, paste0("mlpd.lower.", tolower(cv_method))]))
+                        stats[, "mlpd.lower"]))
         expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] <
-                        stats[, paste0("mlpd.upper.", tolower(cv_method))]))
+                        stats[, "mlpd.upper"]))
       }
     }
   })
@@ -690,7 +697,11 @@ if (require(rstanarm)) {
       stats = "mse"
     ))
     expect_equal(nrow(out$selection) - 1, 3)
-    expect_named(out$selection, c("size", "solution_terms", "mse", "mse.se"))
+    expect_named(out$selection, c(
+      "size", "solution_terms",
+      "mse", "se",
+      "diff", "diff.se"
+    ))
 
     expect_output(out <- print(cvs_list[[1]][[1]],
       nterms_max = 3,
@@ -698,7 +709,9 @@ if (require(rstanarm)) {
     ))
     expect_equal(nrow(out$selection) - 1, 3)
     expect_named(out$selection, c(
-      "size", "solution_terms", "mse", "mse.se"
+      "size", "solution_terms",
+      paste0("mse.", tolower(out$cv_method)), "se",
+      "diff", "diff.se"
       # "pct_solution_terms_cv"
     ))
   })
