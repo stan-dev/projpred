@@ -92,7 +92,7 @@ varsel <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
-    refmodel <- get_refmodel(object)
+    refmodel <- get_refmodel(object, ...)
     return(varsel(refmodel, ...))
 }
 

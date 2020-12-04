@@ -110,7 +110,7 @@ cv_varsel <- function(object, ...) {
 #' @rdname cv_varsel
 #' @export
 cv_varsel.default <- function(object, ...) {
-  refmodel <- get_refmodel(object)
+  refmodel <- get_refmodel(object, ...)
   return(cv_varsel(refmodel, ...))
 }
 
