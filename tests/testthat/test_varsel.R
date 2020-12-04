@@ -541,6 +541,11 @@ if (require(rstanarm)) {
     test_that("providing k_fold works", {
       out <- SW({
         k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
+        folds <- seq_len(nrow(glm_simp$data))
+        for (K in seq_len(2)) {
+          folds[as.numeric(rownames(k_fold$fit[[K]]$data))] <- K
+        }
+        attr(k_fold, "folds") <- folds
         fit_cv <- cv_varsel(glm_simp,
           cv_method = "kfold", cvfits = k_fold,
           ndraws = ndraws, ndraws_pred = ndraws_pred,
