@@ -665,14 +665,10 @@ select_possible_terms_size <- function(chosen, terms, size) {
   valid_submodels <- lapply(terms, function(x) {
     current <- count_terms_chosen(chosen)
     increment <- size - current
-    ## if model is straight redundant
-    not_redundant <- (count_terms_chosen(c(chosen, x),
-      duplicates = TRUE
-    ) - current) == increment
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
     terms <- extract_terms_response(make_formula(c(chosen)))
-    terms_all <- extract_terms_response(make_formula(c(chosen, x)))
+    terms_new <- extract_terms_response(make_formula(x))
     additive <- unlist(regmatches(
       terms$additive_terms,
       gregexpr("(?<=\\().*?(?=\\))",
@@ -680,11 +676,20 @@ select_possible_terms_size <- function(chosen, terms, size) {
         perl = TRUE
       )
     ))
-    linear <- terms_all$individual_terms
-    dups <- linear[!is.na(match(linear, additive))]
+    linear <- terms_new$individual_terms
+    dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
+
+    ## if model is straight redundant
+    not_redundant <- (count_terms_chosen(c(chosen, x),
+      duplicates = TRUE
+    ) - current - length(dups)) == increment
     ## if already_chosen is not NA it means we have already chosen the linear
     ## term
-    if (length(dups) == 0 && not_redundant) {
+    if (not_redundant) {
+      if (length(dups) > 0) {
+        tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
+        x <- setdiff(attr(tt, "term.labels"), chosen)
+      }
       x
     } else {
       NA
