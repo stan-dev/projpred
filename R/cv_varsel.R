@@ -570,9 +570,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
-                         nclusters, ndraws_pred,
-                         nclusters_pred, cv_search, intercept, penalty,
-                         verbose, opt, K, seed = NULL, search_terms = NULL) {
+                         nclusters, ndraws_pred, nclusters_pred,
+                         cv_search, intercept, penalty, verbose, opt,
+                         K, seed = NULL, search_terms = NULL) {
   ## fetch the k_fold list (or compute it now if not already computed)
   k_fold <- .get_kfold(refmodel, K, verbose, seed)
 
@@ -722,7 +722,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 }
 
 
-.get_kfold <- function(refmodel, K, verbose, seed) {
+.get_kfold <- function(refmodel, K, verbose, seed, approximate = FALSE) {
   ## Fetch the k_fold list or compute it now if not already computed. This
   ## function will return a list of length K, where each element is a list
   ## with fields 'refmodel' (object of type refmodel computed by init_refmodel)
@@ -748,12 +748,23 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         cvfit
       })
     } else {
-      ## genuine probabilistic model but no K-fold fits nor cvfun provided, so
-      ## raise an error
-      stop(
-        "For a generic reference model, you must provide either cvfits or ",
-        "cvfun for K-fold cross-validation. See function init_refmodel."
-      )
+      ## genuine probabilistic model but no K-fold fits nor cvfun provided,
+      ## this only works for approximate kfold computation
+      if (approximate) {
+        nobs <- NROW(refmodel$y)
+        folds <- cvfolds(nobs, K = K, seed = seed)
+        cvfits <- lapply(seq_long(K), function(k) {
+          ## add the 'omitted' indices for the cvfits
+          cvfit <- refmodel$fit
+          cvfit$omitted <- which(folds == k)
+          cvfit
+        })
+      } else {
+        stop(
+          "For a generic reference model, you must provide either cvfits or ",
+          "cvfun for K-fold cross-validation. See function init_refmodel."
+        )
+      }
     }
   } else {
     cvfits <- refmodel$cvfits

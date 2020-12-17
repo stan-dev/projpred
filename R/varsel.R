@@ -294,9 +294,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   }
 
   if (is.null(ndraws) && is.null(nclusters)) {
-    nclusters <- min(NCOL(refmodel$mu), 10)
+    ndraws <- nclusters <- min(NCOL(refmodel$mu), 20)
   } else if (is.null(ndraws)) {
-    nclusters <- min(NCOL(refmodel$mu), nclusters)
+    ndraws <- nclusters <- min(NCOL(refmodel$mu), nclusters)
   } else if (is.null(nclusters)) {
     nclusters <- ndraws <- min(NCOL(refmodel$mu), ndraws)
   }
@@ -307,7 +307,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
 
   if (is.null(ndraws_pred) && is.null(nclusters_pred)) {
     ## use 5 clusters for prediction by default
-    nclusters_pred <- min(NCOL(refmodel$mu), 400)
+    ndraws_pred <- nclusters_pred <- min(NCOL(refmodel$mu), 400)
   } else if (is.null(nclusters_pred)) {
     nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
   } else if (is.null(ndraws_pred)) {
