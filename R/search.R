@@ -13,7 +13,10 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
     allterms <- search_terms
   }
 
+  ntotal_submodels <- 0
   chosen <- NULL
+  ## total_terms_nodups <- count_terms_in_formula(
+  ##   flatten_formula(make_formula(search_terms), duplicates = FALSE))
   total_terms <- count_terms_chosen(allterms)
   stop_search <- min(total_terms, nterms_max)
   submodels <- c()
@@ -24,6 +27,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
       break
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     sub <- sapply(full_cands, projfun)
+    ntotal_submodels <- ntotal_submodels + length(full_cands)
 
     ## select best candidate
     imin <- which.min(sapply(seq_len(NCOL(sub)), function(i) {
@@ -42,7 +46,8 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
 
   ## reduce chosen to a list of non-redundant accumulated models
   return(list(solution_terms = setdiff(reduce_models(chosen), "1"),
-              sub_fits = submodels))
+              sub_fits = submodels,
+              nsubmodels = ntotal_submodels))
 }
 
 # copied over from search until we resolve the TODO below
@@ -90,7 +95,8 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
     alpha = rep(NA, nterms_max + 1),
     beta = matrix(0, nrow = nterms_max, ncol = nterms_max + 1),
     lambda = rep(NA, nterms_max + 1),
-    w = matrix(NA, nrow = n, ncol = nterms_max + 1)
+    w = matrix(NA, nrow = n, ncol = nterms_max + 1),
+    nsubmodels = length(search$lambda)
   )
   for (k in 0:nterms_max) {
     if (k == 0) {
@@ -189,7 +195,8 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
     return(sub)
   })
   return(nlist(
-    solution_terms[seq_len(nterms_max)],
-    sub_fits[seq_len(nterms_max + 1)]
+    solution_terms = solution_terms[seq_len(nterms_max)],
+    sub_fits = sub_fits[seq_len(nterms_max + 1)],
+    nsubmodels = search_path$nsubmodels
   ))
 }
