@@ -153,8 +153,8 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
     approx_cv * one_proj, " seconds\n"
   ))
   cat(paste0(
-    "Full KFold would roughly take K * ", round(x$time, digits),
-    " + K * ndraws_pred * ",
+    "Full KFold would roughly take K * reference fit time + K * ",
+    round(x$time, digits), " + K * ndraws_pred * ",
     approx_cv * one_proj, " seconds\n"
   ))
   return(invisible(x))
@@ -555,6 +555,7 @@ approximate_kfold.vselsearch <- function(object,
   return(sel_kfold)
 }
 
+#' @export
 diagnostic <- function(object, ...) {
   UseMethod("diagnostic")
 }
@@ -572,6 +573,25 @@ diagnostic.vselapproxcv <- function(x, ...) {
       "we recommend running full cross validation and increasing `ndraws_pred`."
     ))
   } else if ((summ_sub_elpd[NCOL(x$solution_terms_cv)] - summ_ref_elpd)
+             / summ_ref_elpd > 0.01) {
+    return(paste0(
+      "The projections' ELPDs seems overoptimistic, we recommend ",
+      "increasing `ndraws_pred`."
+    ))
+  } else {
+    return(paste0(
+      "The projections' ELPDs match the reference model's."
+    ))
+  }
+}
+
+#' @export
+diagnostic.vselcv <- function(x, ...) {
+  summ_sub_elpd <- sapply(x$summaries$sub, function(s) {
+        sum(s$lppd, na.rm = TRUE)
+    })
+  summ_ref_elpd <- sum(x$summaries$ref$lppd, na.rm = TRUE)
+  if ((summ_sub_elpd[NCOL(x$solution_terms_cv)] - summ_ref_elpd)
              / summ_ref_elpd > 0.01) {
     return(paste0(
       "The projections' ELPDs seems overoptimistic, we recommend ",
@@ -1189,7 +1209,8 @@ summary.vselcv <- function(object, nterms_max = NULL, stats = "elpd",
     time = object$control$time,
     cv_method = object$control$cv_method,
     solution_terms = search_path$solution_terms,
-    search_included = "search included"
+    search_included = "search included",
+    diagnostics = diagnostic(object)
   )
   class(out) <- "vselcvsummary"
 
@@ -1232,6 +1253,7 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
     "Draws used for prediction: ", x$ndraws_pred, ", in ",
     x$nclusters_pred, " clusters\n"
   ))
+  cat(paste0("\nDiagnostics:\n", x$diagnostics, "\n"))
   cat("\nSelection Summary:\n")
   print(x$selection %>% dplyr::mutate(dplyr::across(
     where(is.numeric),

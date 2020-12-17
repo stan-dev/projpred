@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+<meta name="date" content="2020-12-17" />
+
+<title>projpred Bayesian variable and structure selection workflow</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+      pre > code.sourceCode { white-space: pre; position: relative; }
+      pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+      pre > code.sourceCode > span:empty { height: 1.2em; }
+      code.sourceCode > span { color: inherit; text-decoration: inherit; }
+      div.sourceCode { margin: 1em 0; }
+      pre.sourceCode { margin: 0; }
+      @media screen {
+      div.sourceCode { overflow: auto; }
+      }
+      @media print {
+      pre > code.sourceCode { white-space: pre-wrap; }
+      pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+      }
+      pre.numberSource code
+        { counter-reset: source-line 0; }
+      pre.numberSource code > span
+        { position: relative; left: -4em; counter-increment: source-line; }
+      pre.numberSource code > span > a:first-child::before
+        { content: counter(source-line);
+          position: relative; left: -1em; text-align: right; vertical-align: baseline;
+          border: none; display: inline-block;
+          -webkit-touch-callout: none; -webkit-user-select: none;
+          -khtml-user-select: none; -moz-user-select: none;
+          -ms-user-select: none; user-select: none;
+          padding: 0 4px; width: 4em;
+          color: #aaaaaa;
+        }
+      pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+      div.sourceCode
+        {   }
+      @media screen {
+      pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+      }
+      code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+      code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+      code span.at { color: #7d9029; } /* Attribute */
+      code span.bn { color: #40a070; } /* BaseN */
+      code span.bu { } /* BuiltIn */
+      code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+      code span.ch { color: #4070a0; } /* Char */
+      code span.cn { color: #880000; } /* Constant */
+      code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+      code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+      code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+      code span.dt { color: #902000; } /* DataType */
+      code span.dv { color: #40a070; } /* DecVal */
+      code span.er { color: #ff0000; font-weight: bold; } /* Error */
+      code span.ex { } /* Extension */
+      code span.fl { color: #40a070; } /* Float */
+      code span.fu { color: #06287e; } /* Function */
+      code span.im { } /* Import */
+      code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+      code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+      code span.op { color: #666666; } /* Operator */
+      code span.ot { color: #007020; } /* Other */
+      code span.pp { color: #bc7a00; } /* Preprocessor */
+      code span.sc { color: #4070a0; } /* SpecialChar */
+      code span.ss { color: #bb6688; } /* SpecialString */
+      code span.st { color: #4070a0; } /* String */
+      code span.va { color: #19177c; } /* Variable */
+      code span.vs { color: #4070a0; } /* VerbatimString */
+      code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    </style>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">projpred Bayesian variable and structure selection workflow</h1>
+<h4 class="date">2020-12-17</h4>
+
+
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{projpred Bayesian variable and structure selection workflow}
+\usepackage[utf8](inputenc)
+-->
+<p>This vignette shows a Bayesian variable and structure selection incremental workflow split into 3 main steps:</p>
+<ul>
+<li>Run the search through model space. In this first step we aim at determining the correct ordering of the terms in the selection using the full data available.</li>
+<li>Fast approximate cross validation. Next, we perform a fast approximate cross validation that should be enough for most models. It performs an approximate cross validation based on full data projections. It also computes a diagnostic that indicates whether next steps are necessary, namely increasing <code>ndraws_pred</code> or running o fully cross validated selection.</li>
+<li>Full cross validation. If necessary, we can also cross validate the selection path and recompute the projections for each CV fold. This results in more robust and accurate performance at the cost of longer computation times.</li>
+</ul>
+<div id="set-up-the-model" class="section level2">
+<h2>Set up the model</h2>
+<p>We first load the necessary packages. If the sampling takes more than 10 seconds and multiple cores are available, uncomment the line setting <code>mc.cores</code> to set the number of cores used (this is commented out as the sampling in the example is fast and to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(brms)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(projpred)</span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">library</span>(dplyr)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="kw">library</span>(ggplot2)</span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">library</span>(bayesplot)</span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="kw">theme_set</span>(<span class="kw">theme_classic</span>())</span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="co">#options(mc.cores = parallel::detectCores())</span></span></code></pre></div>
+<p>The package contains a simple Gaussian example dataset accessible with the <code>data</code>-command. This dataset is one of the example cases from the <code>glmnet</code>-package. The following loads a dataframe <code>df_gaussian</code> with the predictor matrix <code>x</code> and the corresponding targets <code>y</code> into the workspace.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">data</span>(<span class="st">&#39;df_gaussian&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;projpred&#39;</span>)</span></code></pre></div>
+<p>We first construct a model with all the variables and regularized horseshoe prior (Piironen and Vehtari, 2017c) on the regression coefficients. This gives us the full Bayesian solution to the problem. We specify the prior on the number of relevant variables using the approch by Piironen and Vehtari (2017b,c). The prior for the global shrinkage parameter is defined based on the prior on the number of relevant variables.</p>
+<p>Before building the model we call <code>break_up_matrix_term</code>. This is a convenience function to automatically split matrix variables in linear terms. For example, in <code>y ~ x</code>, <code>x</code> can be a matrix. If this function is not used, <code>projpred</code> considers <code>x</code> to be jointly included or excluded in the variable selection.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>split_structure &lt;-<span class="st"> </span><span class="kw">break_up_matrix_term</span>(y <span class="op">~</span><span class="st"> </span>x, <span class="dt">data =</span> df_gaussian)</span>
+<span id="cb3-2"><a href="#cb3-2"></a>df_gaussian &lt;-<span class="st"> </span>split_structure<span class="op">$</span>data</span>
+<span id="cb3-3"><a href="#cb3-3"></a>formula &lt;-<span class="st"> </span>split_structure<span class="op">$</span>formula</span>
+<span id="cb3-4"><a href="#cb3-4"></a>d &lt;-<span class="st"> </span>df_gaussian</span>
+<span id="cb3-5"><a href="#cb3-5"></a>n &lt;-<span class="st"> </span><span class="kw">nrow</span>(df_gaussian) <span class="co"># 100</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a>D &lt;-<span class="st"> </span><span class="kw">ncol</span>(df_gaussian[, <span class="dv">-1</span>]) <span class="co"># 20</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a>p0 &lt;-<span class="st"> </span><span class="dv">5</span> <span class="co"># prior guess for the number of relevant variables</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a>tau0 &lt;-<span class="st"> </span>p0<span class="op">/</span>(D<span class="op">-</span>p0) <span class="op">*</span><span class="st"> </span><span class="dv">1</span><span class="op">/</span><span class="kw">sqrt</span>(n) <span class="co"># scale for tau (notice that stan_glm will automatically scale this by sigma)</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a>fit &lt;-<span class="st"> </span><span class="kw">brm</span>(formula, <span class="dt">family=</span><span class="kw">gaussian</span>(), <span class="dt">data=</span>df_gaussian,</span>
+<span id="cb3-10"><a href="#cb3-10"></a>           <span class="dt">prior=</span><span class="kw">prior</span>(<span class="kw">horseshoe</span>(<span class="dt">scale_global =</span> tau0, <span class="dt">scale_slab =</span> <span class="dv">1</span>), <span class="dt">class=</span>b),</span>
+<span id="cb3-11"><a href="#cb3-11"></a>           <span class="co">## To make this vignette build fast, we use only 2 chains and</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a>           <span class="co">## 500 iterations. In practice, at least 4 chains should be </span></span>
+<span id="cb3-13"><a href="#cb3-13"></a>           <span class="co">## used and 2000 iterations might be required for reliable</span></span>
+<span id="cb3-14"><a href="#cb3-14"></a>           <span class="co">## inference.</span></span>
+<span id="cb3-15"><a href="#cb3-15"></a>           <span class="dt">seed=</span><span class="dv">1</span>, <span class="dt">chains=</span><span class="dv">2</span>, <span class="dt">iter=</span><span class="dv">500</span>)</span></code></pre></div>
+</div>
+<div id="search" class="section level2">
+<h2>Search</h2>
+<p>In order to search through model space we have two choices by calling <code>varsel_search(object, ...)</code>. In the specific case of simple linear models without multilevel structure we can run a fast heuristic L1 search with the option <code>method = &quot;l1&quot;</code>. In the more general case, we only have forward search available, that is more costly but also more accurate. We can run this with the option <code>method = &quot;forward&quot;</code>. By default, for linear models we run the faster <code>l1</code> search.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>search &lt;-<span class="st"> </span><span class="kw">varsel_search</span>(fit)</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">print</span>(search)</span></code></pre></div>
+<pre><code>
+Family: gaussian 
+Link function: identity 
+
+Formula: y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + 
+    x12 + x13 + x14 + x15 + x16 + x17 + x18 + x19 + x20
+Observations: 100
+Search method: l1, maximum number of terms 20
+
+Solution search path: x1, x14, x5, x20, x6, x3, x8, x11, x7, x2, x13, x10, x15, x18, x4, x12, x9, x16, x17
+Draws used for selection: 1, in 1 clusters
+Number of submodels visited during search: 150
+
+The search took 0.1 seconds
+Projecting one draw takes roughly 0.1 seconds
+
+Approximate LOO would roughly take ndraws_pred * 1.9 + 19 times one LOO seconds
+Approximate KFold would roughly take K * reference fit time + ndraws_pred * 1.9 + K * 19 times one kfold seconds
+
+Full LOO would roughly take n * 0.1 + nloo * ndraws_pred * 1.9 seconds
+Full KFold would roughly take K * reference fit time + K * 0.1 + K * ndraws_pred * 1.9 seconds</code></pre>
+<p>The resulting object is of class <code>vselsearch</code>. The output from this method already gives us some information. On one hand, it lets us know the exact configuration for our search, including how many posterior draws were used for determining the selection path. Note that <code>l1</code> search only allows us to use 1 draw, so the result might not be very robust. Most importantly, it tells us an estimate of how much time the follow up methods might take, since the projection predictive workflow doesn’t end with <code>varsel_search</code>.</p>
+<p>The estimate for the cross validation procedures depends on multiple factors:</p>
+<ul>
+<li>One LOO execution time, which is a constant that involves predicting for one left out data point and computing approximate LPPD values.</li>
+<li>One KFold execution time, which is very similar to LOO’s, but instead predicting for a whole fold.</li>
+<li><code>ndraws_pred</code>, which is the amount of posterior draws to use for determining the predictive performance of the projections. This is commonly the biggest bottleneck as we recommend running at least <code>100</code> draws for accurate and robust projections.</li>
+<li><code>n</code>, the number of observations.</li>
+<li><code>nloo</code>, the number of subsampled LOO data points to compute, which can greatly speedup both approximate and full LOO CV.</li>
+<li><code>K</code>, the number of folds for KFold CV.</li>
+<li>In the case of KFold CV, we also need to take into account the time to fit the reference model for each of the K folds, referred to as <code>reference fit time</code>.</li>
+</ul>
+<p>From this point we can go straight for the full CV procedure providing the <code>vselsearch</code> object as input if we don’t want to run approximate CV first.</p>
+</div>
+<div id="approximate-cv" class="section level2">
+<h2>Approximate CV</h2>
+<p>For the sake of this vignette, we will run the intermediate approximate CV procedure. For most models, this is likely to be enough to ensure a robust and accurate selection, provided enough <code>ndraws_pred</code> are used. This method is also much faster than the full CV, so it’s recommended to check whether it can be enough in specific problems. The more complex the model, the more likely it is that the practitioner may need the extra robustness from the full CV.</p>
+<p>We can run this procedure with either <code>approximate_loo</code> or <code>approximate_kfold</code>. KFold CV is usually much faster when the number of observations is much larger than the number of folds <span class="math inline">\(n \gg K\)</span>. In those cases, we can speed up LOO setting a small <code>nloo</code> argument. The model we are running is fast enough to not be a problem in any case, so we will run LOO here with the default settings, <code>ndraws_pred = 400</code>.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>loo &lt;-<span class="st"> </span><span class="kw">approximate_loo</span>(search)</span></code></pre></div>
+<pre><code>[1] &quot;Computing LOO for 20 models...&quot;
+
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |====                                                                  |   5%
+  |                                                                            
+  |=======                                                               |  10%
+  |                                                                            
+  |==========                                                            |  15%
+  |                                                                            
+  |==============                                                        |  20%
+  |                                                                            
+  |==================                                                    |  25%
+  |                                                                            
+  |=====================                                                 |  30%
+  |                                                                            
+  |========================                                              |  35%
+  |                                                                            
+  |============================                                          |  40%
+  |                                                                            
+  |================================                                      |  45%
+  |                                                                            
+  |===================================                                   |  50%
+  |                                                                            
+  |======================================                                |  55%
+  |                                                                            
+  |==========================================                            |  60%
+  |                                                                            
+  |==============================================                        |  65%
+  |                                                                            
+  |=================================================                     |  70%
+  |                                                                            
+  |====================================================                  |  75%
+  |                                                                            
+  |========================================================              |  80%
+  |                                                                            
+  |============================================================          |  85%
+  |                                                                            
+  |===============================================================       |  90%
+  |                                                                            
+  |==================================================================    |  95%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">print</span>(loo)</span></code></pre></div>
+<pre><code>Approximate LOO CV selection took 45.4 seconds
+
+Family: gaussian 
+Link function: identity 
+
+Formula: y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + 
+    x12 + x13 + x14 + x15 + x16 + x17 + x18 + x19 + x20
+Observations: 100
+CV method: LOO search not included 
+Draws used for selection: 1, in 1 clusters
+Draws used for prediction: 400, in 400 clusters
+
+Diagnostics:
+The projections&#39; ELPDs match the reference model&#39;s.
+
+Selection Summary:
+ size solution_terms   elpd  se   diff diff.se
+    0           &lt;NA&gt; -249.4 5.6 -103.1     7.8
+    1             x1 -231.0 6.1  -84.7     8.3
+    2            x14 -205.9 6.4  -59.7     7.5
+    3             x5 -197.8 7.5  -51.5     7.6
+    4            x20 -179.6 6.2  -33.4     6.4
+    5             x6 -171.2 5.4  -24.9     6.1
+    6             x3 -150.4 6.0   -4.1     4.3
+    7             x8 -142.9 5.3    3.4     2.5
+    8            x11 -141.2 5.3    5.1     1.3
+    9             x7 -141.6 5.4    4.7     1.2
+   10             x2 -142.0 5.5    4.2     1.1
+   11            x13 -142.4 5.6    3.9     1.1
+   12            x10 -142.7 5.5    3.5     1.0
+   13            x15 -143.1 5.6    3.2     0.8
+   14            x18 -143.6 5.7    2.7     0.7
+   15             x4 -144.0 5.8    2.3     0.6
+   16            x12 -144.5 5.9    1.8     0.4
+   17             x9 -145.0 5.9    1.2     0.4
+   18            x16 -145.6 6.0    0.6     0.3
+   19            x17 -146.2 6.0    0.1     0.2</code></pre>
+<p>This method returns an object of class <code>vselapproxcv</code>. As in the previous case, the output gives us some interesting information. First of all, it shows the overall configuration of the approximate CV, particularly the CV method used (LOO in this case), how many draws were used for prediction and a selection summary that includes typical statistics.</p>
+<p>Importantly, we have added a new section in this report regarding diagnostics, that let the practitioner know whether the projections look fine or not. In this case, it’s clear they correctly approximate the reference model. There are three possible outputs for these diagnostics:</p>
+<ul>
+<li>The projections’ ELPDs are much higher than the reference model’s LOO ELPD estimate, which typically means that the selection is overconfident and we recommend increasing <code>ndraws_pred</code> and running the full CV procedure.</li>
+<li>If the projections’ ELPDs are higher than the reference model’s LOO ELPD estimate by a smaller margin, it can be enough to simply increase the number of <code>ndraws_pred</code>.</li>
+<li>Otherwise, the projections are fine.</li>
+</ul>
+</div>
+<div id="full-cv" class="section level2">
+<h2>Full CV</h2>
+<p>Full CV is more expensive than approximate CV because we run both the selection and compute the projections for every fold (or LOO data points). This is increasingly prohibitive with large data sets and many submodels, so it may take some time. Nonetheless, in some complex settings it might be the only possible way to ensure robust selection and projections.</p>
+<p>In our case here, we are already satisfied with the result from approximate CV, but nonetheless want to be extra sure about the selection. We can run full LOO CV with <code>varsel_cv</code>. This method will inherit the settings from the approximate object. Otherwise, if run from a fit object, it will use the default settings of running LOO CV. The user can specify a different method with the argument <code>cv_method = c(&quot;loo&quot;, &quot;kfold&quot;)</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>cv &lt;-<span class="st"> </span><span class="kw">varsel_cv</span>(loo)</span></code></pre></div>
+<pre><code>[1] &quot;Repeating l1 search for 100 LOO folds...&quot;
+
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |=                                                                     |   1%
+  |                                                                            
+  |=                                                                     |   2%
+  |                                                                            
+  |==                                                                    |   3%
+  |                                                                            
+  |===                                                                   |   4%
+  |                                                                            
+  |====                                                                  |   5%
+  |                                                                            
+  |====                                                                  |   6%
+  |                                                                            
+  |=====                                                                 |   7%
+  |                                                                            
+  |======                                                                |   8%
+  |                                                                            
+  |======                                                                |   9%
+  |                                                                            
+  |=======                                                               |  10%
+  |                                                                            
+  |========                                                              |  11%
+  |                                                                            
+  |========                                                              |  12%
+  |                                                                            
+  |=========                                                             |  13%
+  |                                                                            
+  |==========                                                            |  14%
+  |                                                                            
+  |==========                                                            |  15%
+  |                                                                            
+  |===========                                                           |  16%
+  |                                                                            
+  |============                                                          |  17%
+  |                                                                            
+  |=============                                                         |  18%
+  |                                                                            
+  |=============                                                         |  19%
+  |                                                                            
+  |==============                                                        |  20%
+  |                                                                            
+  |===============                                                       |  21%
+  |                                                                            
+  |===============                                                       |  22%
+  |                                                                            
+  |================                                                      |  23%
+  |                                                                            
+  |=================                                                     |  24%
+  |                                                                            
+  |==================                                                    |  25%
+  |                                                                            
+  |==================                                                    |  26%
+  |                                                                            
+  |===================                                                   |  27%
+  |                                                                            
+  |====================                                                  |  28%
+  |                                                                            
+  |====================                                                  |  29%
+  |                                                                            
+  |=====================                                                 |  30%
+  |                                                                            
+  |======================                                                |  31%
+  |                                                                            
+  |======================                                                |  32%
+  |                                                                            
+  |=======================                                               |  33%
+  |                                                                            
+  |========================                                              |  34%
+  |                                                                            
+  |========================                                              |  35%
+  |                                                                            
+  |=========================                                             |  36%
+  |                                                                            
+  |==========================                                            |  37%
+  |                                                                            
+  |===========================                                           |  38%
+  |                                                                            
+  |===========================                                           |  39%
+  |                                                                            
+  |============================                                          |  40%
+  |                                                                            
+  |=============================                                         |  41%
+  |                                                                            
+  |=============================                                         |  42%
+  |                                                                            
+  |==============================                                        |  43%
+  |                                                                            
+  |===============================                                       |  44%
+  |                                                                            
+  |================================                                      |  45%
+  |                                                                            
+  |================================                                      |  46%
+  |                                                                            
+  |=================================                                     |  47%
+  |                                                                            
+  |==================================                                    |  48%
+  |                                                                            
+  |==================================                                    |  49%
+  |                                                                            
+  |===================================                                   |  50%
+  |                                                                            
+  |====================================                                  |  51%
+  |                                                                            
+  |====================================                                  |  52%
+  |                                                                            
+  |=====================================                                 |  53%
+  |                                                                            
+  |======================================                                |  54%
+  |                                                                            
+  |======================================                                |  55%
+  |                                                                            
+  |=======================================                               |  56%
+  |                                                                            
+  |========================================                              |  57%
+  |                                                                            
+  |=========================================                             |  58%
+  |                                                                            
+  |=========================================                             |  59%
+  |                                                                            
+  |==========================================                            |  60%
+  |                                                                            
+  |===========================================                           |  61%
+  |                                                                            
+  |===========================================                           |  62%
+  |                                                                            
+  |============================================                          |  63%
+  |                                                                            
+  |=============================================                         |  64%
+  |                                                                            
+  |==============================================                        |  65%
+  |                                                                            
+  |==============================================                        |  66%
+  |                                                                            
+  |===============================================                       |  67%
+  |                                                                            
+  |================================================                      |  68%
+  |                                                                            
+  |================================================                      |  69%
+  |                                                                            
+  |=================================================                     |  70%
+  |                                                                            
+  |==================================================                    |  71%
+  |                                                                            
+  |==================================================                    |  72%
+  |                                                                            
+  |===================================================                   |  73%
+  |                                                                            
+  |====================================================                  |  74%
+  |                                                                            
+  |====================================================                  |  75%
+  |                                                                            
+  |=====================================================                 |  76%
+  |                                                                            
+  |======================================================                |  77%
+  |                                                                            
+  |=======================================================               |  78%
+  |                                                                            
+  |=======================================================               |  79%
+  |                                                                            
+  |========================================================              |  80%
+  |                                                                            
+  |=========================================================             |  81%
+  |                                                                            
+  |=========================================================             |  82%
+  |                                                                            
+  |==========================================================            |  83%
+  |                                                                            
+  |===========================================================           |  84%
+  |                                                                            
+  |============================================================          |  85%
+  |                                                                            
+  |============================================================          |  86%
+  |                                                                            
+  |=============================================================         |  87%
+  |                                                                            
+  |==============================================================        |  88%
+  |                                                                            
+  |==============================================================        |  89%
+  |                                                                            
+  |===============================================================       |  90%
+  |                                                                            
+  |================================================================      |  91%
+  |                                                                            
+  |================================================================      |  92%
+  |                                                                            
+  |=================================================================     |  93%
+  |                                                                            
+  |==================================================================    |  94%
+  |                                                                            
+  |==================================================================    |  95%
+  |                                                                            
+  |===================================================================   |  96%
+  |                                                                            
+  |====================================================================  |  97%
+  |                                                                            
+  |===================================================================== |  98%
+  |                                                                            
+  |===================================================================== |  99%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">print</span>(cv)</span></code></pre></div>
+<pre><code>Full LOO CV selection took 19.5 seconds
+
+Family: gaussian 
+Link function: identity 
+
+Formula: y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + 
+    x12 + x13 + x14 + x15 + x16 + x17 + x18 + x19 + x20
+Observations: 100
+CV method: LOO search included 
+Draws used for selection: 1, in 1 clusters
+Draws used for prediction: 400, in 400 clusters
+
+Diagnostics:
+The projections&#39; ELPDs match the reference model&#39;s.
+
+Selection Summary:
+ size solution_terms   elpd  se   diff diff.se
+    0           &lt;NA&gt; -249.4 5.7 -103.1     7.8
+    1             x1 -247.4 5.7 -101.2     7.8
+    2            x14 -229.0 6.1  -82.7     7.8
+    3             x5 -227.5 6.1  -81.2     7.8
+    4            x20 -223.5 6.2  -77.2     7.7
+    5             x6 -214.6 6.3  -68.3     7.6
+    6             x3 -186.2 6.7  -39.9     7.1
+    7             x8 -153.2 6.1   -6.9     4.3
+    8            x11 -144.0 5.7    2.3     2.0
+    9             x7 -143.2 5.7    3.0     1.6
+   10             x2 -143.3 5.7    2.9     1.5
+   11            x13 -143.6 5.7    2.7     1.4
+   12            x10 -144.0 5.7    2.2     1.3
+   13            x15 -144.1 5.8    2.1     1.1
+   14            x18 -144.4 5.8    1.8     1.0
+   15             x4 -144.6 5.9    1.7     0.9
+   16            x12 -144.8 5.9    1.4     0.7
+   17             x9 -145.3 6.0    0.9     0.6
+   18            x16 -145.3 6.1    1.0     0.4
+   19            x17 -145.4 6.1    0.9     0.3</code></pre>
+<p>Note that running <code>varsel_cv</code> from an approximate CV object takes less time than running it from a fit or search object, as the full data projections are already computed. This method returns an object of class <code>vselcv</code>. As in previous cases, it shows the overall same information, including a diagnostics section that in this case will only warn the user if they need to increase <code>ndraws_pred</code>. We have a pretty high default for this setting that should make it okay for almost every model.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
