@@ -1,3 +1,58 @@
+search_rsens <- function(p_ref, refmodel, family, intercept, nterms_max,
+                         verbose = TRUE, opt, search_terms = NULL,
+                         increasing_order = TRUE) {
+  ## 1. get possible terms
+  ## 2. if there are no group terms, do rsens on the single variables level
+  ## 3. if there are group terms, do rsens on interactions as well
+  ## 4. order terms present in the formula according to our rules
+  ndraws <- NCOL(p_ref$mu)
+
+  formula <- refmodel$formula
+  terms <- split_formula(formula,
+    data = refmodel$fetch_data(),
+    add_main_effects = FALSE
+  )
+  if (formula_contains_additive_terms(formula)) {
+    stop("Rsens search for additive models is not implemented yet.")
+  }
+  ranks <- rank(refmodel$fit, ndraws = ndraws, summary_type = "both")
+
+  ordering <- bind_cols(
+    as_data_frame(ranks$variables),
+    as_data_frame(ranks$interactions)
+  ) %>%
+    as_data_frame() %>%
+    gather() %>%
+    filter(value > 0) %>%
+    group_by(key) %>%
+    summarise(value = mean(value)) %>%
+    pivot_wider(names_from = "key", values_from = "value") %>%
+    sort() %>%
+    names()
+
+  if (!formula_contains_group_terms(formula)) {
+    return(list(solution_terms = ordering))
+  }
+
+  group_factors <- extract_terms_response(formula) %>%
+    .$group_terms %>%
+    strsplit(., "[ ]*\\|([^\\|]*\\||)[ ]*") %>%
+    lapply(FUN = function(x) x[2]) %>%
+    unlist() %>%
+    unique()
+
+  for (g in group_factors) {
+    ordering <- gsub(paste0("^", g, "$"), paste0("(1 | ", g, ")"), ordering)
+    ordering <- gsub(paste0("([\\w\\d.]+):", g),
+      paste0("(\\1 | ", g, ")"),
+      ordering,
+      perl = TRUE
+    )
+  }
+
+  return(list(solution_terms = ordering))
+}
+
 search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
                            verbose = TRUE, opt, search_terms = NULL,
                            increasing_order = TRUE) {
@@ -188,8 +243,8 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
     class(sub) <- "subfit"
     return(sub)
   })
-  return(nlist(
-    solution_terms[seq_len(nterms_max)],
-    sub_fits[seq_len(nterms_max + 1)]
+  return(list(
+    solution_terms = solution_terms[seq_len(nterms_max)],
+    submodels = sub_fits[seq_len(nterms_max + 1)]
   ))
 }

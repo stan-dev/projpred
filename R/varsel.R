@@ -253,6 +253,13 @@ select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
     )
     search_path$p_sel <- p_sel
     return(search_path)
+  } else if (method == "rsens") {
+    search_path <- search_rsens(p_sel, refmodel, family,
+      intercept, nterms_max, verbose, opt,
+      search_terms = search_terms
+    )
+    search_path$p_sel <- p_sel
+    return(search_path)
   }
 }
 
@@ -285,7 +292,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     method <- tolower(method)
   }
 
-  if (!(method %in% c("l1", "forward"))) {
+  if (!(method %in% c("l1", "forward", "rsens"))) {
     stop("Unknown search method")
   }
 
