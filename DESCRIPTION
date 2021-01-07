@@ -32,7 +32,6 @@ Imports:
     Rcpp,
     utils,
     rngtools (>= 1.2.4),
-    tidyverse,
     MASS,
     magrittr,
     mgcv,
