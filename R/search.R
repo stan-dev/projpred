@@ -15,7 +15,7 @@ search_rsens <- function(p_ref, refmodel, family, intercept, nterms_max,
   if (formula_contains_additive_terms(formula)) {
     stop("Rsens search for additive models is not implemented yet.")
   }
-  ranks <- rank(refmodel$fit, ndraws = ndraws, summary_type = "both")
+  ranks <- rankvars::rank(refmodel$fit, ndraws = ndraws, summary_type = "both")
 
   ordering <- bind_cols(
     as_data_frame(ranks$variables),
@@ -245,6 +245,6 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
   })
   return(list(
     solution_terms = solution_terms[seq_len(nterms_max)],
-    submodels = sub_fits[seq_len(nterms_max + 1)]
+    sub_fits = sub_fits[seq_len(nterms_max + 1)]
   ))
 }

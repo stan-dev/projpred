@@ -298,6 +298,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
 
   if (is.null(cv_search)) {
     cv_search <- !inherits(refmodel, "datafit")
+    if (method == "rsens") {
+      cv_search <- TRUE
+    }
   }
 
   if (is.null(ndraws) && is.null(nclusters)) {
