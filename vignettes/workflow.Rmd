@@ -16,9 +16,9 @@ params:
 
 This vignette shows a Bayesian variable and structure selection incremental workflow split into 3 main steps:
 
-  - Run the search through model space. In this first step we aim at determining the correct ordering of the terms in the selection using the full data available.
-  - Fast approximate cross validation. Next, we perform a fast approximate cross validation that should be enough for most models. It performs an approximate cross validation based on full data projections. It also computes a diagnostic that indicates whether next steps are necessary, namely increasing `ndraws_pred` or running o fully cross validated selection.
-  - Full cross validation. If necessary, we can also cross validate the selection path and recompute the projections for each CV fold. This results in more robust and accurate performance at the cost of longer computation times.
+  - Run the search through the model space: In this first step we aim at determining the correct ordering of the model terms in the selection using the full data.
+  - Fast approximate cross-validation: We perform a fast approximate cross-validation that is likely to be sufficient in many case. We compute an approximate cross-validation for the models in the order determined by the full data search. In additioan we compute a diagnostic that can indicate whether additional computation is needed for more reliable results, namely by increasing `ndraws_pred` or running cross-validation also over the search paths.
+  - Full cross-validation: If necessary, we cross-validate over the selection path and recompute the projections for each CV-fold. This results in more robust and accurate performance at the cost of longer computation times.
 
 ## Set up the model
 We first load the necessary packages. If the sampling takes more than 10 seconds and multiple cores are available, uncomment the line setting `mc.cores` to set the number of cores used (this is commented out as the sampling in the example is fast and to avoid possible problems when building the vignette along the package installation in special environments such as computing clusters).
@@ -37,7 +37,7 @@ The package contains a simple Gaussian example dataset accessible with the `data
 data('df_gaussian', package = 'projpred')
 ```
 
-We first construct a model with all the variables and regularized horseshoe prior (Piironen and Vehtari, 2017c) on the regression coefficients. This gives us the full Bayesian solution to the problem. We specify the prior on the number of relevant variables using the approch by Piironen and Vehtari (2017b,c). The prior for the global shrinkage parameter is defined based on the prior on the number of relevant variables.
+We first construct a model with all the variables and regularized horseshoe prior (Piironen and Vehtari, 2017c) on the regression coefficients. This gives us the full Bayesian solution to the problem. We specify the prior on the number of relevant variables using the approach by Piironen and Vehtari (2017b,c). The prior for the global shrinkage parameter is defined based on the prior on the number of relevant variables.
 
 Before building the model we call `break_up_matrix_term`.
 This is a convenience function to automatically split matrix variables in linear terms. For example, in `y ~ x`, `x` can be a matrix.
@@ -69,46 +69,44 @@ search <- varsel_search(fit)
 print(search)
 ```
 
-The resulting object is of class `vselsearch`. The output from this method already gives us some information. On one hand, it lets us know the exact configuration for our search, including how many posterior draws were used for determining the selection path. Note that `l1` search only allows us to use 1 draw, so the result might not be very robust. Most importantly, it tells us an estimate of how much time the follow up methods might take, since the projection predictive workflow doesn't end with `varsel_search`.
+The resulting object is of class `vselsearch`. The output from this method already gives us some information. On one hand, it lets us know the exact configuration for our search, including how many posterior draws were used for determining the selection path. Note that `l1` search only allows us to use 1 draw, so the result might not be very robust. More importantly, it tells us an estimate of how much time the follow up methods might take, since the projection predictive workflow doesn't end with `varsel_search`.
 
-The estimate for the cross validation procedures depends on multiple factors:
+The estimates for the cross-validation procedures depend on multiple factors:
 
-  - One LOO execution time, which is a constant that involves predicting for one left out data point and computing approximate LPPD values.
-  - One KFold execution time, which is very similar to LOO's, but instead predicting for a whole fold.
+  - One LOO-CV execution time, which is a constant that involves predicting for one left out data point and computing approximate LPPD values.
+  - One K-fold-CV execution time, which is very similar to LOO-CV's, but instead predicting for a whole fold.
   - `ndraws_pred`, which is the amount of posterior draws to use for determining the predictive performance of the projections. This is commonly the biggest bottleneck as we recommend running at least `100` draws for accurate and robust projections.
   - `n`, the number of observations.
-  - `nloo`, the number of subsampled LOO data points to compute, which can greatly speedup both approximate and full LOO CV.
-  - `K`, the number of folds for KFold CV.
-  - In the case of KFold CV, we also need to take into account the time to fit the reference model for each of the K folds, referred to as `reference fit time`.
+  - `nloo`, the number of subsampled LOO data points to compute, which can greatly speedup both approximate and full LOO-CV.
+  - `K`, the number of folds for K-fold-CV.
+  - In the case of K-fold-CV, we also need to take into account the time to fit the reference model for each of the K folds, referred to as `reference fit time`.
 
 From this point we can go straight for the full CV procedure providing the `vselsearch` object as input if we don't want to run approximate CV first.
 
 ## Approximate CV
-For the sake of this vignette, we will run the intermediate approximate CV procedure. For most models, this is likely to be enough to ensure a robust and accurate selection, provided enough `ndraws_pred` are used. This method is also much faster than the full CV, so it's recommended to check whether it can be enough in specific problems. The more complex the model, the more likely it is that the practitioner may need the extra robustness from the full CV.
+In many cases approximate CV that doesn't cross-validate over the selection paths is likely to be enough to ensure a robust and accurate selection, provided enough `ndraws_pred` are used. As this method is much faster than the full CV, it's recommended to first check whether it is sufficiently accurate. For complex models and small data it is more likely that cross-validation over the selection paths is needed.
 
-We can run this procedure with either `approximate_loo` or `approximate_kfold`. KFold CV is usually much faster when the number of observations is much larger than the number of folds $n \gg K$. In those cases, we can speed up LOO setting a small `nloo` argument. The model we are running is fast enough to not be a problem in any case, so we will run LOO here with the default settings, `ndraws_pred = 400`.
+We can run this procedure with either `approximate_loo` or `approximate_kfold`. K-fold-CV is usually much faster when the number of observations is much larger than the number of folds $n \gg K$. LOO can be laso made faster by running only some of the fols by by setting `nloo` argument to a smaller value than $n$. The inference for the model and the data used in this vignette is fast enough to run LOO with the default settings, `ndraws_pred = 400`.
 
 ```{r, message=FALSE, warning=FALSE}
 loo <- approximate_loo(search)
 print(loo)
 ```
 
-This method returns an object of class `vselapproxcv`. As in the previous case, the output gives us some interesting information. First of all, it shows the overall configuration of the approximate CV, particularly the CV method used (LOO in this case), how many draws were used for prediction and a selection summary that includes typical statistics. 
-
-Importantly, we have added a new section in this report regarding diagnostics, that let the practitioner know whether the projections look fine or not. In this case, it's clear they correctly approximate the reference model. There are three possible outputs for these diagnostics:
+This method returns an object of class `vselapproxcv`. The output shows the overall configuration of the approximate CV, particularly the CV method used (LOO in this case), how many draws were used for prediction, a selection summary that includes typical statistics, and possible diagnostic message indicating the reliability of the approximate CV. There are three possible results for the diagnostic:
 
   - The projections' ELPDs are much higher than the reference model's LOO ELPD estimate, which typically means that the selection is overconfident and we recommend increasing `ndraws_pred` and running the full CV procedure.
   - If the projections' ELPDs are higher than the reference model's LOO ELPD estimate by a smaller margin, it can be enough to simply increase the number of `ndraws_pred`.
   - Otherwise, the projections are fine.
 
 ## Full CV
-Full CV is more expensive than approximate CV because we run both the selection and compute the projections for every fold (or LOO data points). This is increasingly prohibitive with large data sets and many submodels, so it may take some time. Nonetheless, in some complex settings it might be the only possible way to ensure robust selection and projections.
+Full cross-validation over the selection paths is more expensive than approximate CV because we run both the selection and compute the projections for every fold (or LOO data points). For large data and many submodels the computation time can be considerable, but it might be the only possible way to ensure reliable and robust selection and projections.
 
-In our case here, we are already satisfied with the result from approximate CV, but nonetheless want to be extra sure about the selection. We can run full LOO CV with `varsel_cv`. This method will inherit the settings from the approximate object. Otherwise, if run from a fit object, it will use the default settings of running LOO CV. The user can specify a different method with the argument `cv_method = c("loo", "kfold")`.
+For the model and the data used in this vignete the results from the faster approximate CV were good, but we run the full CV for illustration. We can run full LOO-CV with `varsel_cv`. This method will inherit the settings from the approximate object. Otherwise, if run from a fit object, it will use the default settings of running LOO-CV. The user can specify a different method with the argument `cv_method = c("loo", "kfold")`.
 
 ```{r, message=FALSE, warning=FALSE}
 cv <- varsel_cv(loo)
 print(cv)
 ```
 
-Note that running `varsel_cv` from an approximate CV object takes less time than running it from a fit or search object, as the full data projections are already computed. This method returns an object of class `vselcv`. As in previous cases, it shows the overall same information, including a diagnostics section that in this case will only warn the user if they need to increase `ndraws_pred`. We have a pretty high default for this setting that should make it okay for almost every model.
+Running `varsel_cv` from an approximate CV object takes less time than running it from a fit or search object, as the full data projections are already computed. This method returns an object of class `vselcv`. The output shows the same general information, including a diagnostics section that in this case will only warn the user if they need to increase `ndraws_pred`. The default vale for this setting should be high enough in most cases.
