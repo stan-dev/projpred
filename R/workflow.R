@@ -187,6 +187,7 @@ approximate_loo.vselsearch <- function(object,
                                        penalty = NULL,
                                        nloo = NULL,
                                        refit_proj = TRUE,
+                                       seed = NULL,
                                        ...) {
   refmodel <- object$refmodel
   family <- refmodel$family
@@ -206,11 +207,10 @@ approximate_loo.vselsearch <- function(object,
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel,
-                         ndraws = ndraws_pred,
-                         nclusters = nclusters_pred
-                         )
+    ndraws = ndraws_pred,
+    nclusters = nclusters_pred
+  )
   cl_pred <- p_pred$cl
-
   ## fetch the log-likelihood for the reference model to obtain the LOO
   ## weights
   if (is.null(refmodel$loglik)) {
@@ -273,9 +273,9 @@ approximate_loo.vselsearch <- function(object,
   if (verbose) {
     print(msg)
     pb <- utils::txtProgressBar(
-                   min = 0, max = nterms_max, style = 3,
-                   initial = 0
-                 )
+      min = 0, max = nterms_max, style = 3,
+      initial = 0
+    )
   }
 
   ## compute approximate LOO with PSIS weights
@@ -399,6 +399,7 @@ approximate_kfold.vselsearch <- function(object,
                                          verbose = TRUE,
                                          penalty = NULL,
                                          refit_proj = TRUE,
+                                         seed = NULL,
                                          ...) {
   refmodel <- object$refmodel
   family <- refmodel$family
