@@ -62,14 +62,14 @@ fit <- brm(formula, family=gaussian(), data=df_gaussian,
 ```
 
 ## Search 
-In order to search through model space we have two choices by calling `varsel_search(object, ...)`. In the specific case of simple linear models without multilevel structure we can run a fast heuristic L1 search with the option `method = "l1"`. In the more general case, we only have forward search available, that is more costly but also more accurate. We can run this with the option `method = "forward"`. By default, for linear models we run the faster `l1` search.
+In order to search through model space we have two choices by calling `varsel_search(object, ...)`. In the specific case of simple linear models without multilevel structure we can run a fast heuristic L1 search with the option `method = "L1"`. In the more general case, we only have forward search available, that is more costly but also more accurate. We can run this with the option `method = "forward"`. By default, for linear models with more than 20 predictors we run the faster `L1` search, otherwise we run `forward` search.
  
 ```{r, message=FALSE, warning=FALSE}
 search <- varsel_search(fit)
 print(search)
 ```
 
-The resulting object is of class `vselsearch`. The output from this method already gives us some information. On one hand, it lets us know the exact configuration for our search, including how many posterior draws were used for determining the selection path. Note that `l1` search only allows us to use 1 draw, so the result might not be very robust. More importantly, it tells us an estimate of how much time the follow up methods might take, since the projection predictive workflow doesn't end with `varsel_search`.
+The resulting object is of class `vselsearch`. The output from this method already gives us some information. On one hand, it lets us know the exact configuration for our search, including how many posterior draws were used for determining the selection path. Note that `L1` search only allows us to use 1 draw, so the result might not be very robust. More importantly, it tells us an estimate of how much time the follow up methods might take, since the projection predictive workflow doesn't end with `varsel_search`.
 
 The estimates for the cross-validation procedures depend on multiple factors:
 
