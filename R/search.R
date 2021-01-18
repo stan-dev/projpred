@@ -17,16 +17,16 @@ search_rsens <- function(p_ref, refmodel, family, intercept, nterms_max,
   }
   ranks <- rankvars::rank(refmodel$fit, ndraws = ndraws, summary_type = "both")
 
-  ordering <- bind_cols(
-    as_data_frame(ranks$variables),
-    as_data_frame(ranks$interactions)
+  ordering <- dplyr::bind_cols(
+    tibble::as_data_frame(ranks$variables),
+    tibble::as_data_frame(ranks$interactions)
   ) %>%
-    as_data_frame() %>%
-    gather() %>%
-    filter(value > 0) %>%
-    group_by(key) %>%
-    summarise(value = mean(value)) %>%
-    pivot_wider(names_from = "key", values_from = "value") %>%
+    tibble::as_data_frame() %>%
+    tidyr::gather() %>%
+    dplyr::filter(value > 0) %>%
+    dplyr::group_by(key) %>%
+    dplyr::summarise(value = mean(value)) %>%
+    tidyr::pivot_wider(names_from = "key", values_from = "value") %>%
     sort() %>%
     names()
 
