@@ -497,6 +497,15 @@ formula_contains_group_terms <- function(formula) {
   return(length(group_terms) > 0)
 }
 
+## Checks whether a formula contains interaction terms or not.
+## @param formula A formula for a valid model.
+## @return TRUE if the formula contains interaction terms, FALSE otherwise.
+formula_contains_interaction_terms <- function(formula) {
+  interaction_terms <- extract_terms_response(formula)$interaction_terms
+  return(length(interaction_terms) > 0)
+}
+
+
 ## Checks whether a formula contains additive terms or not.
 ## @param formula A formula for a valid model.
 ## @return TRUE if the formula contains additive terms, FALSE otherwise.

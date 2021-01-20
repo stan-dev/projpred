@@ -18,17 +18,26 @@ search_rsens <- function(p_ref, refmodel, family, intercept, nterms_max,
   ranks <- rankvars::rank(refmodel$fit, ndraws = ndraws, summary_type = "both")
 
   ordering <- dplyr::bind_cols(
-    tibble::as_data_frame(ranks$variables),
-    tibble::as_data_frame(ranks$interactions)
+    tibble::as_tibble(ranks$variables),
+    tibble::as_tibble(ranks$interactions)
   ) %>%
-    tibble::as_data_frame() %>%
+    tibble::as_tibble() %>%
     tidyr::gather() %>%
     dplyr::filter(value > 0) %>%
     dplyr::group_by(key) %>%
     dplyr::summarise(value = mean(value)) %>%
     tidyr::pivot_wider(names_from = "key", values_from = "value") %>%
-    sort() %>%
+    sort(decreasing = TRUE) %>%
     names()
+
+  terms <- extract_terms_response(refmodel$formula)
+  int_terms <- terms$interaction_terms
+  int_ordering <- grep(":", ordering)
+  int_present <- !is.na(match(ordering[int_ordering], int_present))
+  int_ordering <- int_ordering[int_present]
+  int_not_present <- !int_present
+  ordering[int_ordering[int_not_present]] <- NA
+  ordering <- ordering[!is.na(ordering)]
 
   if (!formula_contains_group_terms(formula)) {
     return(list(solution_terms = ordering))
