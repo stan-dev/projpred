@@ -721,7 +721,7 @@ as.matrix.projection <- function(x, ...) {
     } else if ("alpha" %in% colnames(res)) {
       colnames(res) <- gsub("^alpha", "Intercept", colnames(res))
     } else {
-      colnames(res) <- c("Intercept", x$solution_terms)
+      colnames(res) <- gsub("\\(Intercept\\)", "Intercept", colnames(res))
     }
   }
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
