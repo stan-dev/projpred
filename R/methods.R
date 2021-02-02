@@ -658,7 +658,7 @@ as.matrix.glm <- function(x, ...) {
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x)
   # Extract variance components:
-  group_effects <- unlist(lapply(lme4::VarCorr(x), function(vc_obj){
+  group_vc <- unlist(lapply(lme4::VarCorr(x), function(vc_obj){
     # The vector of standard deviations:
     vc_out <- c("sd" = attr(vc_obj, "stddev"))
     # The correlation matrix:
@@ -677,7 +677,7 @@ as.matrix.lmerMod <- function(x, ...) {
     }
     return(vc_out)
   }))
-  return(c(population_effects, group_effects))
+  return(c(population_effects, group_vc))
 }
 
 #' @method as.matrix noquote
