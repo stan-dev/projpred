@@ -677,7 +677,9 @@ as.matrix.lmerMod <- function(x, ...) {
     }
     return(vc_out)
   }))
-  return(c(population_effects, group_vc))
+  # Extract the group-level effects themselves:
+  group_ef <- unlist(lapply(lme4::ranef(x), as.matrix))
+  return(c(population_effects, group_vc, group_ef))
 }
 
 #' @method as.matrix noquote
