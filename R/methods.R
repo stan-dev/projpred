@@ -678,7 +678,14 @@ as.matrix.lmerMod <- function(x, ...) {
     return(vc_out)
   }))
   # Extract the group-level effects themselves:
-  group_ef <- unlist(lme4::ranef(x))
+  group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df){
+    ranef_mat <- as.matrix(ranef_df)
+    setNames(as.vector(ranef_mat),
+             apply(expand.grid(rownames(ranef_mat), colnames(ranef_mat)),
+                   1, function(row_col_nm){
+                     paste(rev(row_col_nm), collapse = ".")
+                   }))
+  }))
   return(c(population_effects, group_vc, group_ef))
 }
 
