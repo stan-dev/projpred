@@ -2,10 +2,11 @@
 
 # News
 
-## projpred 2.0.2.9000
+## projpred 2.0.2.9002
 
 ### Minor changes
 
+* For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves.
 * For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects.
 
 ### Bug fixes
