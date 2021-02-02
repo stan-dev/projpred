@@ -2,6 +2,12 @@
 
 # News
 
+## projpred 2.0.2.9000
+
+### Bug fixes
+
+* Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix).
+
 ## projpred 2.0.2
 
 We have fully rewritten the internals in several ways. Most importantly, we now leverage maximum likelihood estimation to third parties depending on the reference model's family. This allows a lot of flexibility and extensibility for various models. Functionality wise, the major updates since the last release are:
