@@ -121,14 +121,14 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       ), "1")
     }
 
-    if (max(solution_terms) > length(vars)) {
+    if (length(solution_terms) > length(vars)) {
       stop(
         "solution_terms contains an index larger than the number of",
         "variables in the model."
       )
     }
 
-    solution_terms <- c(vars[solution_terms])
+    solution_terms <- intersect(solution_terms, vars)
     nterms <- length(solution_terms)
   } else {
     ## by default take the variable ordering from the selection
