@@ -123,7 +123,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
     if (length(solution_terms) > length(vars)) {
       stop(
-        "solution_terms contains an index larger than the number of",
+        "solution_terms contains more terms than the number of",
         "variables in the model."
       )
     }
