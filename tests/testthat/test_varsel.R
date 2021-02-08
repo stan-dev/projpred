@@ -7,6 +7,8 @@ if (require(rstanarm)) {
   set.seed(seed)
   n <- 50
   nterms <- 5
+  ndraws <- 1
+  ndraws_pred <- 5
   x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
   b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
@@ -47,7 +49,10 @@ if (require(rstanarm)) {
 
     formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
     vsf <- function(x, m)
-      varsel(x, method = m, nterms_max = nterms + 1, verbose = FALSE)
+      varsel(x,
+        method = m, nterms_max = nterms + 1, verbose = FALSE,
+        ndraws = ndraws, ndraws_pred = ndraws_pred
+      )
     vs_list <- list(
       l1 = lapply(fit_list, vsf, "L1"),
       fs = lapply(fit_list, vsf, "forward")
@@ -221,7 +226,8 @@ if (require(rstanarm)) {
     vsf <- function(obj, penalty) {
       varsel(obj,
         method = "L1", nterms_max = nterms + 1,
-        verbose = FALSE, penalty = penalty
+        verbose = FALSE, penalty = penalty,
+        ndraws = ndraws, ndraws_pred = ndraws_pred
       )
     }
     expect_error(vsf(fit_list$gauss, rep(1, nterms + 10)))
@@ -236,8 +242,10 @@ if (require(rstanarm)) {
     penalty[ind_zeropen] <- 0
     penalty[ind_infpen] <- Inf
     vsf <- function(obj)
-      varsel(obj, method = "L1", nterms_max = nterms, verbose = FALSE,
-             penalty = penalty)
+      varsel(obj,
+        method = "L1", nterms_max = nterms, verbose = FALSE,
+        penalty = penalty, ndraws = ndraws, ndraws_pred = ndraws_pred
+      )
     SW(vs_list_pen <- lapply(fit_list, vsf))
     for (i in seq_along(vs_list_pen)) {
       # check that the variables with no cost are selected first and the ones
@@ -252,23 +260,25 @@ if (require(rstanarm)) {
   # -------------------------------------------------------------
   context("cv_varsel")
 
-  cvsf <- function(x, m, cvm, K = NULL) {
-    cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K)
+  cvsf <- function(x, m, cvm, K = NULL, ...) {
+    cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K,
+              ndraws = ndraws, ndraws_pred = ndraws_pred, verbose = FALSE,
+              ...)
   }
 
   if (Sys.getenv("NOT_CRAN") == "true") {
     SW({
       cvs_list <- list(
         l1 = lapply(fit_list, cvsf, "L1", "LOO"),
-        fs = lapply(fit_list, cvsf, "forward", "LOO")
+        fs = lapply(fit_list, cvsf, "forward", "LOO", validate_search = FALSE)
       )
 
       # without weights/offset because kfold does not support them currently
       # test only with one family to make the tests faster
 
-      # the chains, seed and iter arguments to the rstanarm functions here must be
-      # specified directly rather than through a variable (eg, seed = 1235 instead
-      # of seed = seed), otherwise when the calls are evaluated in
+      # the chains, seed and iter arguments to the rstanarm functions here must
+      # be specified directly rather than through a variable (eg, seed = 1235
+      # instead of seed = seed), otherwise when the calls are evaluated in
       # refmodel$cvfun() they may not be found in the evaluation frame of the
       # calling function, causing the test to fail
       glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
@@ -355,50 +365,78 @@ if (require(rstanarm)) {
 
     test_that("nterms_max has an effect on cv_varsel for gaussian models", {
       suppressWarnings(
-        vs1 <- cv_varsel(fit_gauss, method = "forward", nterms_max = 3,
-                        verbose = FALSE)
+        vs1 <- cv_varsel(fit_gauss,
+          method = "forward", nterms_max = 3,
+          verbose = FALSE, ndraws = ndraws,
+          ndraws_pred = ndraws_pred,
+          validate_search = FALSE
+        )
       )
       expect_length(vs1$solution_terms, 3)
     })
 
     test_that("nterms_max has an effect on cv_varsel for non-gaussian models", {
       suppressWarnings(
-        vs1 <- cv_varsel(fit_binom, method = "forward", nterms_max = 3,
-                        verbose = FALSE)
+        vs1 <- cv_varsel(fit_binom,
+          method = "forward", nterms_max = 3,
+          verbose = FALSE, ndraws = ndraws,
+          ndraws_pred = ndraws_pred,
+          validate_search = FALSE
+        )
       )
       expect_length(vs1$solution_terms, 3)
     })
 
     test_that("nloo works as expected", {
       expect_error(
-        SW(cv_varsel(fit_gauss, cv_method = "loo", nloo = -1)),
+        SW(
+          cv_varsel(fit_gauss,
+            cv_method = "LOO", nloo = -1, ndraws = ndraws,
+            ndraws_pred = ndraws_pred, validate_search = FALSE
+          )
+        ),
         "must be at least 1"
       )
       SW({
         expect_equal(
-          cv_varsel(fit_gauss, cv_method = "loo", nterms_max = nterms,
-            nloo = NULL),
-          cv_varsel(fit_gauss, cv_method = "loo", nterms_max = nterms,
-            nloo = 1000)
+          cv_varsel(fit_gauss,
+            cv_method = "LOO", nterms_max = nterms,
+            nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred
+          ),
+          cv_varsel(fit_gauss,
+            cv_method = "LOO", nterms_max = nterms,
+            nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred
+          )
         )
 
         # nloo less than number of observations
-        out <- cv_varsel(fit_gauss, cv_method = "loo", nloo = 20, verbose = FALSE)
+        out <- cv_varsel(fit_gauss,
+          cv_method = "LOO", nloo = 20, verbose = FALSE,
+          ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
         expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
       })
     })
 
     test_that("the validate_search option works as expected", {
       SW({
-        vs1 <- cv_varsel(fit_gauss, validate_search = FALSE)
-        vs2 <- cv_varsel(fit_gauss, validate_search = TRUE)
+        vs1 <- cv_varsel(fit_gauss,
+          validate_search = FALSE,
+          ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
+        vs2 <- cv_varsel(fit_gauss,
+          validate_search = TRUE,
+          ndraws = ndraws, ndraws_pred = ndraws_pred
+        )
       })
-      expect_true(all(summary(vs1)$elpd >= summary(vs2)$elpd))
+      expect_true(all(summary(vs1)$selection$elpd >=
+        summary(vs2)$selection$elpd))
     })
 
     test_that("Having something else than stan_glm as the fit throws an error", {
       expect_error(cv_varsel(rnorm(5), verbose = FALSE),
-                  regexp = "no applicable method")
+        regexp = "no applicable method"
+      )
     })
 
     test_that(paste("object returned by cv_varsel, kfold contains the relevant",
@@ -503,7 +541,16 @@ if (require(rstanarm)) {
     test_that("providing k_fold works", {
       out <- SW({
         k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
-        fit_cv <- cv_varsel(glm_simp, cv_method = "kfold", cvfits = k_fold)
+        folds <- seq_len(nrow(glm_simp$data))
+        for (K in seq_len(2)) {
+          folds[as.numeric(rownames(k_fold$fit[[K]]$data))] <- K
+        }
+        attr(k_fold, "folds") <- folds
+        fit_cv <- cv_varsel(glm_simp,
+          cv_method = "kfold", cvfits = k_fold,
+          ndraws = ndraws, ndraws_pred = ndraws_pred,
+          verbose = FALSE
+        )
       })
       expect_false(any(grepl("k_fold not provided", out)))
       expect_length(fit_cv$solution_terms, nterms)
@@ -594,15 +641,20 @@ if (require(rstanarm)) {
         } else {
           stats_str <- valid_stats_all
         }
-        stats <- summary(cvs, stats = stats_str,
-                              type = c("mean", "lower", "upper", "se"))
+        cv_method <- cvs_list[[i]][[j]]$cv_method
+        stats <- summary(cvs,
+          stats = stats_str,
+          type = c("mean", "lower", "upper", "se")
+        )$selection
         expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
-          "size", "solution_terms", stats_str, paste0(stats_str, ".se"),
-          paste0(stats_str, ".upper"), paste0(stats_str, ".lower")
+         "size", "solution_terms", paste0(stats_str, ".", tolower(cv_method)),
+          paste0(stats_str, ".", c("se", "upper", "lower"))
         ) %in% names(stats)))
-        expect_true(all(stats$mlpd > stats$mlpd.lower))
-        expect_true(all(stats$mlpd < stats$mlpd.upper))
+        expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] >
+                        stats[, "mlpd.lower"]))
+        expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] <
+                        stats[, "mlpd.upper"]))
       }
     }
   })
@@ -616,7 +668,7 @@ if (require(rstanarm)) {
         } else {
           stats_str <- valid_stats_binom
         }
-        stats <- summary(vs, stats = stats_str)
+        stats <- summary(vs, stats = stats_str)$selection
         expect_true(is.data.frame(stats))
       }
     }
@@ -627,32 +679,46 @@ if (require(rstanarm)) {
     skip_on_cran()
     # default rounding
     expect_output(out <- print(vs_list[[1]][[1]]))
-    expect_equal(out$elpd, round(out$elpd, 2))
+    expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
+      tolerance = 1e-3
+    )
     expect_output(out <- print(cvs_list[[1]][[1]]))
-    expect_equal(out$elpd, round(out$elpd, 2))
+    expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
+      tolerance = 1e-3
+    )
 
     # rounding to 4 decimal places
     expect_output(out <- print(vs_list[[1]][[1]], digits = 4))
-    expect_equal(out$elpd, round(out$elpd, 4))
+    expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
+      tolerance = 1e-3
+    )
     expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
-    expect_equal(out$elpd, round(out$elpd, 4))
-
+    expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
+      tolerance = 1e-3
+    )
     # options to summary
     expect_output(out <- print(vs_list[[1]][[1]],
       nterms_max = 3,
       stats = "mse"
     ))
-    expect_equal(nrow(out) - 1, 3)
-    expect_named(out, c("size", "solution_terms", "mse", "mse.se"))
+    expect_equal(nrow(out$selection) - 1, 3)
+    expect_named(out$selection, c(
+      "size", "solution_terms",
+      "mse", "se",
+      "diff", "diff.se"
+    ))
 
     expect_output(out <- print(cvs_list[[1]][[1]],
       nterms_max = 3,
       stats = "mse"
     ))
-    expect_equal(nrow(out) - 1, 3)
-    expect_named(out, c("size", "solution_terms", "mse", "mse.se"
-                                        # "pct_solution_terms_cv"
-                        ))
+    expect_equal(nrow(out$selection) - 1, 3)
+    expect_named(out$selection, c(
+      "size", "solution_terms",
+      paste0("mse.", tolower(out$cv_method)), "se",
+      "diff", "diff.se"
+      # "pct_solution_terms_cv"
+    ))
   })
 
 

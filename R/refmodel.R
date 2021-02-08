@@ -246,12 +246,14 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
   } else {
     formula <- object$formula
   }
-  terms <- extract_terms_response(formula)
-  response_name <- terms$response
 
   if (is.null(data)) {
     data <- object$data
   }
+
+  formula <- expand_formula(formula, data)
+  terms <- extract_terms_response(formula)
+  response_name <- terms$response
 
   formula <- update(
     formula,
@@ -331,6 +333,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, extract_model_data = NULL, cvfun = NULL,
                           cvfits = NULL, dis = NULL, ...) {
+  formula <- expand_formula(formula, data)
   terms <- extract_terms_response(formula)
   response_name <- terms$response
   if (is.null(ref_predfun)) {

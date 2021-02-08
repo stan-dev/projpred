@@ -24,16 +24,16 @@
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws used in the variable selection.
 #'   Cannot be larger than the number of draws in the reference model. Ignored
-#'   if nclusters is set.
+#'   if nclusters is set. Default is 10.
 #' @param nclusters Number of clusters to use in the clustered projection.
-#'   Overrides the \code{ndraws} argument. Defaults to 1.
+#'   Overrides the \code{ndraws} argument. Default is 10.
 #' @param ndraws_pred Number of projected draws used for prediction (after
 #'   selection). Ignored if nclusters_pred is given. Note that setting less
 #'   draws or clusters than posterior draws in the reference model may result in
 #'   slightly inaccurate projection performance, although increasing this
-#'   argument linearly affects the computation time.
+#'   argument linearly affects the computation time. Default is 400.
 #' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 5.
+#'   selection). Default is 400.
 #' @param nterms_max Maximum number of varibles until which the selection is
 #'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 #'   observations and D the number of variables.
@@ -92,14 +92,14 @@ varsel <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
-    refmodel <- get_refmodel(object)
+    refmodel <- get_refmodel(object, ...)
     return(varsel(refmodel, ...))
 }
 
 #' @rdname varsel
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
-    ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
+                            ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
                             nclusters_pred = NULL, cv_search = TRUE,
                             nterms_max = NULL, intercept = TRUE, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
@@ -194,15 +194,6 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     weights = summ$w
   )
 
-  if ((ref_elpd$value > (proj_elpd$value + proj_elpd$se) ||
-       ref_elpd$value < (proj_elpd$value - proj_elpd$se)) &&
-      !inherits(refmodel, "datafit")) {
-    warning("The performance of the projected model seems to be misleading, we",
-            " recommend checking the reference model as well as running ",
-            "`varsel` with a larger `ndraws_pred` or `cv_varsel` for a more",
-            " robust estimation.")
-  }
-
   ## store the relevant fields into the object to be returned
   vs <- nlist(
     refmodel,
@@ -213,13 +204,22 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     solution_terms = search_path$solution_terms,
     kl = sapply(p_sub, function(x) x$kl),
     nterms_max,
-    nterms_all = count_terms_in_formula(refmodel$formula)
+    nterms_all = count_terms_in_formula(refmodel$formula),
+    method = method,
+    cv_method = NULL,
+    validate_search = NULL,
+    ndraws,
+    ndraws_pred,
+    nclusters,
+    nclusters_pred
   )
   ## suggest model size
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs,
     warnings = FALSE
   )
+  summary <- summary(vs)
+  vs$summary <- summary$selection
 
   return(vs)
 }
@@ -293,16 +293,31 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if ((is.null(ndraws) && is.null(nclusters)) || method == "l1") {
-    ## use one cluster for selection by default, and always with L1-search
-    nclusters <- 1
+  if (is.null(ndraws) && is.null(nclusters)) {
+    ndraws <- nclusters <- min(NCOL(refmodel$mu), 20)
+  } else if (is.null(ndraws)) {
+    ndraws <- nclusters <- min(NCOL(refmodel$mu), nclusters)
+  } else if (is.null(nclusters)) {
+    nclusters <- ndraws <- min(NCOL(refmodel$mu), ndraws)
   }
+
+  if (method == "l1") {
+    ndraws <- nclusters <- 1
+  }
+
   if (is.null(ndraws_pred) && is.null(nclusters_pred)) {
     ## use 5 clusters for prediction by default
-    nclusters_pred <- min(NCOL(refmodel$mu), 5)
+    ndraws_pred <- nclusters_pred <- min(NCOL(refmodel$mu), 400)
+  } else if (is.null(nclusters_pred)) {
+    nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
+  } else if (is.null(ndraws_pred)) {
+    nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
   max_nv_possible <- count_terms_in_formula(refmodel$formula)
+  if (!is.null(search_terms)) {
+    max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
+  }
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
   }

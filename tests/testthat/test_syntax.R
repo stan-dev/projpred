@@ -7,7 +7,8 @@ if (require(rstanarm)) {
   # load the mesquite data
   data("mesquite", package = "projpred")
 
-
+  ndraws <- 1
+  ndraws_pred <- 5
   # fit the model with some transformations on the target variable and the
   # original inputs
   SW(
@@ -18,8 +19,14 @@ if (require(rstanarm)) {
   )
   # selection
   SW({
-    cvs <- cv_varsel(fit, verbose = FALSE)
-    vs <- varsel(fit, verbose = FALSE)
+    cvs <- cv_varsel(fit,
+      verbose = FALSE, ndraws = ndraws,
+      ndraws_pred = ndraws_pred
+    )
+    vs <- varsel(fit,
+      verbose = FALSE, ndraws = ndraws,
+      ndraws_pred = ndraws_pred
+    )
   })
   suggested_size <- suggest_size(cvs)
 

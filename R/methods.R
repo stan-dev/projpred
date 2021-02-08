@@ -362,7 +362,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
     ) +
-    labs(x = "Number of variables in the submodel", y = ylab) +
+    labs(x = "Number of terms in the submodel", y = ylab) +
     theme(legend.position = "none") +
     facet_grid(statistic ~ ., scales = "free_y")
   return(pp)
@@ -423,11 +423,37 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @method summary vsel
 #' @export
 summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
-                         type = c("mean", "se"), deltas = FALSE,
-                         alpha = 0.32, baseline = NULL, ...) {
+                         type = c("mean", "se", "diff", "diff.se"),
+                         deltas = FALSE, alpha = 0.32, baseline = NULL,
+                         digits = 1, ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
+  out <- list(
+    formula = object$refmodel$formula,
+    fit = object$fit,
+    family = object$family,
+    nobs = NROW(object$refmodel$fetch_data()),
+    method = object$method,
+    cv_method = object$cv_method,
+    validate_search = object$validate_search,
+    ndraws = object$ndraws,
+    ndraws_pred = object$ndraws_pred,
+    nclusters = object$nclusters,
+    nclusters_pred = object$nclusters_pred
+  )
+
+  if (!is.null(out$validate_search)) {
+    if (out$validate_search == TRUE) {
+      out$search_included <- "search included"
+    } else {
+      out$search_included <- "search not included"
+    }
+  } else {
+    out$search_included <- "search not included"
+  }
+
+  class(out) <- "vselsummary"
   ## fetch statistics
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
@@ -437,17 +463,46 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
-  stats_table <- subset(tab, tab$size != Inf)
+  stats_table <- subset(tab, tab$size != Inf) %>%
+    dplyr::group_by(statistic) %>%
+    dplyr::slice_head(n = length(object$solution_terms) + 1)
 
-
+  if (deltas) {
+    type <- setdiff(type, c("diff", "diff.se"))
+  }
   ## these are the corresponding names for mean, se, upper and lower in the
   ## stats_table, and their suffices in the table to be returned
   qty <- unname(sapply(type, function(t) {
-    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se")
+    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
+           diff = "diff", diff.se = "diff.se")
   }))
-  suffix <- unname(sapply(type, function(t) {
-    switch(t, mean = "", upper = ".upper", lower = ".lower", se = ".se")
-  }))
+  if (!is.null(object$cv_method)) {
+    cv_suffix <- unname(switch(object$cv_method,
+      LOO = ".loo", kfold = ".kfold"
+    ))
+  } else {
+    cv_suffix <- NULL
+  }
+
+  if (length(stats) > 1) {
+    suffix <- lapply(stats, function(s) {
+      paste0(
+        s,
+        unname(sapply(type, function(t) {
+          switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
+            se = ".se", diff = ".diff", diff.se = ".diff.se"
+          )
+        }))
+      )
+    })
+  } else {
+    suffix <- list(unname(sapply(type, function(t) {
+      switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
+        lower = "lower", se = "se",
+        diff = "diff", diff.se = "diff.se"
+      )
+    })))
+  }
 
   ## loop through all the required statistics
   arr <- data.frame(
@@ -456,7 +511,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   )
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
-    newnames <- sapply(suffix, function(s) paste0(stats[i], s))
+    newnames <- suffix[[i]]
     colnames(temp) <- newnames
     arr <- cbind(arr, temp)
   }
@@ -465,11 +520,61 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     nterms_max <- max(stats_table$size)
   }
 
-  ## if ("pct_solution_terms_cv" %in% names(object)) {
-  ##   arr$pct_solution_terms_cv <- c(NA, diag(object$pct_solution_terms_cv[, -1]))
-  ## }
+  out$nterms <- nterms_max
+  if ("pct_solution_terms_cv" %in% names(object)) {
+    out$pct_solution_terms_cv <- object$pct_solution_terms_cv
+  }
 
-  return(subset(arr, arr$size <= nterms_max))
+  out$suggested_size <- object$suggested_size
+  out$selection <- subset(arr, arr$size <= nterms_max)
+  return(out)
+}
+
+#' Print methods for summary objects
+#'
+#' The \code{print} methods for summary objects created by
+#' \code{\link{summary}} to display a summary of the results of the
+#' projection predictive variable selection.
+#'
+#' @name print-vselsummary
+#'
+#' @param x An object of class vselsummary.
+#' @param digits Number of decimal places to be reported (1 by default).
+#'
+#' @return Returns invisibly the output produced by
+#'   \code{\link{summary.vsel}}.
+#'
+#' @export
+#' @method print vselsummary
+print.vselsummary <- function(x, digits = 1, ...) {
+  print(x$family)
+  cat("Formula: ")
+  print(x$formula)
+  cat(paste0("Observations: ", x$nobs, "\n"))
+  if (!is.null(x$cv_method)) {
+    cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
+  }
+  nterms_max <- max(x$selection$size)
+  cat(paste0("Search method: ", x$method, ", maximum number of terms ",
+             nterms_max, "\n"))
+  cat(paste0(
+    "Draws used for selection: ", x$ndraws, ", in ",
+    x$nclusters, " clusters\n"
+  ))
+  cat(paste0(
+    "Draws used for prediction: ", x$ndraws_pred, ", in ",
+    x$nclusters_pred, " clusters\n"
+  ))
+  cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
+  cat("\n")
+  cat("Selection Summary:\n")
+  print(x$selection %>% dplyr::mutate(dplyr::across(
+    where(is.numeric),
+    ~ round(., digits)
+  )),
+  row.names = FALSE
+  )
+  return(invisible(x))
 }
 
 #' Print methods for vsel/vsel objects
@@ -482,7 +587,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #' @name print-vsel
 #'
 #' @param x An object of class vsel/vsel.
-#' @param digits Number of decimal places to be reported (2 by default).
+#' @param digits Number of decimal places to be reported (1 by default).
 #' @param ... Further arguments passed to \code{\link{summary.vsel}}.
 #'
 #' @return Returns invisibly the data frame produced by
@@ -490,11 +595,9 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #'
 #' @export
 #' @method print vsel
-print.vsel <- function(x, digits = 2, ...) {
-  stats <- summary.vsel(x, ...)
-  v <- match("solution_terms", colnames(stats))
-  stats[, -v] <- round(stats[, -v], digits)
-  print(stats[, -v])
+print.vsel <- function(x, digits = 1, ...) {
+  stats <- summary.vsel(x, digits = digits, ...)
+  print(stats)
   return(invisible(stats))
 }
 
@@ -596,12 +699,20 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
       type <- "upper"
     }
   }
-  bound <- paste0(stat, ".", type)
+  if (!is.null(object$cv_method)) {
+    suffix <- paste0(".", tolower(object$cv_method))
+  } else {
+    suffix <- ""
+  }
+  bound <- type
   stats <- summary.vsel(object,
     stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
     baseline = baseline, deltas = TRUE
-  )
-  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
+  )$selection
+  util_null <- sgn * unlist(unname(subset(
+    stats, stats$size == 0,
+    paste0(stat, suffix)
+  )))
   util_cutoff <- pct * util_null
   res <- subset(stats, sgn * stats[, bound] >= util_cutoff, "size")
 

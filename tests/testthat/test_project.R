@@ -8,6 +8,8 @@ if (require(rstanarm)) {
   set.seed(seed)
   n <- 40
   nterms <- 5
+  ndraws <- 1
+  ndraws_pred <- 5
   x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
   b <- runif(nterms) - 0.5
   dis <- runif(1, 1, 2)
@@ -294,7 +296,10 @@ if (require(rstanarm)) {
 
   test_that("project: works as expected from a vsel object", {
     SW({
-      cvs <- cv_varsel(fit_binom, nterms_max = 3, verbose = FALSE)
+      cvs <- cv_varsel(fit_binom,
+        nterms_max = 3, verbose = FALSE, ndraws = ndraws,
+        ndraws_pred = ndraws_pred
+      )
       p <- project(cvs, nterms = 3)
     })
     expect_length(p$solution_terms, 3)
