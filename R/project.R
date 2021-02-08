@@ -90,7 +90,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     )
   }
 
-  refmodel <- get_refmodel(object)
+  refmodel <- get_refmodel(object, ...)
 
   if (cv_search) {
     ## use non-cv_searched solution for datafits by default

@@ -6,20 +6,41 @@
 #'
 #' @name cv_varsel
 #'
-#' @param object Same as in \link[=varsel]{varsel}.
-#' @param method Same as in \link[=varsel]{varsel}.
+#' @param object Either a \code{refmodel}-type object created by
+#'   \link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
+#'   an object which can be converted to a reference model using
+#'   \link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
+#'   \code{varsel} or \code{cv_varsel}.
+#' @param method The method used in the variable selection. Possible options are
+#'   \code{'L1'} for L1-search and \code{'forward'} for forward selection.
+#'   Default is 'forward' if the number of variables in the full data is at most
+#'   20,' and \code{'L1'} otherwise.
 #' @param ndraws Number of posterior draws used for selection. Ignored if
-#'   nclusters is provided or if method='L1'.
-#' @param nclusters Number of clusters used for selection. Default is 1 and
+#'   nclusters is provided or if method='L1'. Default is 10.
+#' @param nclusters Number of clusters used for selection. Defaults to 10 and
 #'   ignored if method='L1' (L1-search uses always one cluster).
-#' @param ndraws_pred Number of samples used for prediction (after selection).
-#'   Ignored if nclusters_pred is given.
+#' @param ndraws_pred Number of projected draws used for prediction (after
+#'   selection). Ignored if nclusters_pred is given. Note that setting less
+#'   draws or clusters than posterior draws in the reference model may result in
+#'   slightly inaccurate projection performance, although increasing this
+#'   argument linearly affects the computation time. Default is 400.
 #' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 5.
-#' @param cv_search Same as in \link[=varsel]{varsel}.
-#' @param nterms_max Same as in \link[=varsel]{varsel}.
-#' @param intercept Same as in \link[=varsel]{varsel}.
-#' @param penalty Same as in \link[=varsel]{varsel}.
+#'   selection). Default is 400.
+#' @param cv_search If TRUE, then the projected coefficients after L1-selection
+#'   are computed without any penalization (or using only the regularization
+#'   determined by \code{regul}). If FALSE, then the coefficients are the
+#'   solution from the' L1-penalized projection. This option is relevant only if
+#'   \code{method}='L1'. Default is TRUE for genuine reference models and FALSE
+#'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
+#' @param nterms_max Maximum number of varibles until which the selection is
+#'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
+#'   observations and D the number of variables.
+#' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
+#' @param penalty Vector determining the relative penalties or costs for the
+#'   variables. Zero means that those variables have no cost and will therefore
+#'   be selected first, whereas Inf means those variables will never be
+#'   selected. Currently works only if method == 'L1'. By default 1 for each
+#'   variable.
 #' @param verbose Whether to print out some information during the validation,
 #'   Default is TRUE.
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
@@ -33,9 +54,14 @@
 #' @param K Number of folds in the K-fold cross validation. Default is 5 for
 #'   genuine reference models and 10 for datafits (that is, for penalized
 #'   maximum likelihood estimation).
-#' @param lambda_min_ratio Same as in \link[=varsel]{varsel}.
-#' @param nlambda Same as in \link[=varsel]{varsel}.
-#' @param thresh Same as in \link[=varsel]{varsel}.
+#' @param lambda_min_ratio Ratio between the smallest and largest lambda in the
+#'   L1-penalized search. This parameter essentially determines how long the
+#'   search is carried out, i.e., how large submodels are explored. No need to
+#'   change the default value unless the program gives a warning about this.
+#' @param nlambda Number of values in the lambda grid for L1-penalized search.
+#'   No need to change unless the program gives a warning about this.
+#' @param thresh Convergence threshold when computing L1-path. Usually no need
+#'   to change this.
 #' @param regul Amount of regularization in the projection. Usually there is no
 #'   need for regularization, but sometimes for some models the projection can
 #'   be ill-behaved and we need to add some regularization to avoid numerical
@@ -84,7 +110,7 @@ cv_varsel <- function(object, ...) {
 #' @rdname cv_varsel
 #' @export
 cv_varsel.default <- function(object, ...) {
-  refmodel <- get_refmodel(object)
+  refmodel <- get_refmodel(object, ...)
   return(cv_varsel(refmodel, ...))
 }
 
@@ -104,8 +130,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,
     intercept = intercept, nterms_max = nterms_max, nclusters = nclusters,
-    ndraws = ndraws,
-    nclusters_pred = nclusters_pred,
+    ndraws = ndraws, nclusters_pred = nclusters_pred,
     ndraws_pred = ndraws_pred, search_terms = search_terms
   )
   method <- args$method
@@ -131,8 +156,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   ## search options
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
-  if (cv_method == "loo") {
-    if (!(is.null(K))) warning("K provided, but cv_method is LOO.")
+  if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters,
@@ -157,26 +181,34 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
     stop(sprintf("Unknown cross-validation method: %s.", method))
   }
 
-  ## run the selection using the full dataset
-  if (verbose) {
-    print(paste("Performing the selection using all the data.."))
+  if (validate_search || cv_search == "kfold") {
+    ## run the selection using the full dataset
+    if (verbose) {
+      print(paste("Performing the selection using all the data.."))
+    }
+    sel <- varsel(refmodel,
+      method = method, ndraws = ndraws, nclusters = nclusters,
+      ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
+      cv_search = cv_search, nterms_max = nterms_max - 1,
+      intercept = intercept, penalty = penalty, verbose = verbose,
+      lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
+      search_terms = search_terms
+    )
+  } else if (cv_method == "LOO") {
+    sel <- sel_cv$sel
   }
-  sel <- varsel(refmodel,
-    method = method, ndraws = ndraws, nclusters = nclusters,
-    ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
-    cv_search = cv_search, nterms_max = nterms_max - 1,
-    intercept = intercept, penalty = penalty, verbose = verbose,
-    lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
-    search_terms = search_terms
-  )
 
+  candidate_terms <- split_formula(refmodel$formula,
+    data = refmodel$fetch_data(),
+    add_main_effects = FALSE
+  )
   ## find out how many of cross-validated iterations select
   ## the same variables as the selection with all the data.
   solution_terms_cv_ch <- sapply(
     seq_len(NROW(sel_cv$solution_terms_cv)),
     function(i) {
       if (!is.character(sel_cv$solution_terms_cv[i, ])) {
-        unlist(search_terms)[sel_cv$solution_terms_cv[i, ]]
+        unlist(candidate_terms[-1])[sel_cv$solution_terms_cv[i, ]]
       } else {
         sel_cv$solution_terms_cv[i, ]
       }
@@ -184,9 +216,10 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   )
 
   ## these weights might be non-constant in case of subsampling LOO
-  w <- sel_cv$summaries$sub[[1]]$w
   sel_solution_terms <- sel$solution_terms
   ## if weights are not set, then all validation folds have equal weight
+  w <- rep(1, NCOL(solution_terms_cv_ch))
+  w <- w / sum(w)
   vars <- unlist(sel_solution_terms)
   pct_solution_terms_cv <- t(sapply(
     seq_along(sel_solution_terms),
@@ -204,14 +237,27 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
 
   ## create the object to be returned
   vs <- nlist(refmodel,
-    search_path = sel$search_path, d_test = sel_cv$d_test,
-    summaries = sel_cv$summaries, family = sel$family, kl = sel$kl,
-    solution_terms = sel$solution_terms, pct_solution_terms_cv,
-    nterms_max = nterms_max,
-    nterms_all = count_terms_in_formula(refmodel$formula)
+    search_path = sel$search_path,
+    d_test = sel_cv$d_test,
+    summaries = sel_cv$summaries,
+    family = refmodel$family,
+    kl = sel$kl,
+    solution_terms = sel$solution_terms,
+    pct_solution_terms_cv,
+    nterms_all = count_terms_in_formula(refmodel$formula),
+    nterms_max,
+    method,
+    cv_method,
+    validate_search,
+    nclusters,
+    nclusters_pred,
+    ndraws,
+    ndraws_pred
   )
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
+  summary <- summary(vs)
+  vs$summary <- summary$selection
   if (verbose) {
     print("Done.")
   }
@@ -237,7 +283,12 @@ parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
       ## only data given, no actual reference model
       cv_method <- "kfold"
     } else {
-      cv_method <- "loo"
+      cv_method <- "LOO"
+    }
+  } else {
+    if (tolower(cv_method) != "kfold" &&
+        tolower(cv_method) != "loo") {
+      stop("Unknown cross-validation method")
     }
   }
 
@@ -263,7 +314,11 @@ parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
     }
   }
 
-  cv_method <- tolower(cv_method)
+  if (tolower(cv_method) == "loo") {
+    cv_method <- "LOO"
+  } else {
+    cv_method <- "kfold"
+  }
   return(nlist(cv_method, K, nclusters, nclusters_pred))
 }
 
@@ -322,12 +377,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
   mu_ref <- rep(0, n)
-  for (i in 1:n) {
+  for (i in seq_len(n)) {
     mu_ref[i] <- mu[i, ] %*% exp(lw[, i])
   }
 
   ## decide which points form the validation set based on the k-values
-  validset <- .loo_subsample(n, nloo, pareto_k, seed)
+  ## validset <- .loo_subsample(n, nloo, pareto_k, seed)
+  validset <- .loo_subsample_pps(nloo, loo_ref, seed)
   inds <- validset$inds
 
   ## initialize matrices where to store the results
@@ -336,11 +392,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu_sub <- matrix(nrow = n, ncol = nterms_max)
 
   if (verbose) {
-    print("Computing LOOs...")
-    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+    if (validate_search) {
+      msg <- paste("Repeating", method, "search for", nloo, "LOO folds...")
+    } else {
+      msg <- paste("Computing LOO for", nterms_max, "models...")
+    }
   }
 
   if (!validate_search) {
+    if (verbose) {
+      print(paste("Performing the selection using all the data.."))
+    }
     ## perform selection only once using all the data (not separately for each
     ## fold), and perform the projection then for each submodel size
     search_path <- select(
@@ -349,22 +411,91 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       verbose = FALSE, opt = opt, search_terms = search_terms
     )
     solution_terms <- search_path$solution_terms
-  }
 
-  for (run_index in seq_along(inds)) {
-
-    ## observation index
-    i <- inds[run_index]
-
-    ## reweight the clusters/samples according to the psis-loo weights
-    p_sel <- .get_p_clust(
-      family = family, mu = mu, dis = dis, wsample = exp(lw[, i]), cl = cl_sel
+    ## project onto the selected models and compute the prediction accuracy for
+    ## the full data
+    submodels <- .get_submodels(
+      search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+      family = family, p_ref = p_pred, refmodel = refmodel,
+      intercept = intercept, regul = opt$regul, cv_search = cv_search
     )
-    p_pred <- .get_p_clust(
-      family = family, mu = mu, dis = dis, wsample = exp(lw[, i]), cl = cl_pred
+    summaries_sub <- .get_sub_summaries(
+      submodels = submodels, test_points = seq_len(n), refmodel = refmodel,
+      family = family
     )
 
-    if (validate_search) {
+    if (verbose) {
+      print(msg)
+      pb <- utils::txtProgressBar(
+        min = 0, max = nterms_max, style = 3,
+        initial = 0
+      )
+    }
+
+    ## compute approximate LOO with PSIS weights
+    y <- matrix(refmodel$y, nrow = n)
+    for (k in seq_along(summaries_sub)) {
+      mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
+        obs = inds,
+        offset = refmodel$offset,
+        weights = 1
+      )
+      log_lik_sub <- t(family$ll_fun(
+        mu_k, submodels[[k]]$dis,
+        y[inds], refmodel$wobs
+      ))
+      sub_psisloo <- suppressWarnings(loo::psis(-log_lik_sub,
+        cores = 1,
+        r_eff = rep(1, ncol(log_lik_sub))
+      ))
+      lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
+      loo_sub[inds, k] <- apply(
+        log_lik_sub[,] + lw_sub[,], 2,
+        log_sum_exp
+      )
+      for (i in seq_along(inds)) {
+        mu_sub[inds[i], k] <- mu_k[i, ] %*% exp(lw_sub[, i])
+      }
+
+      if (verbose) {
+        utils::setTxtProgressBar(pb, k)
+      }
+    }
+
+    candidate_terms <- split_formula(refmodel$formula,
+      data = refmodel$fetch_data(),
+      add_main_effects = FALSE
+    )
+    ## with `match` we get the indices of the variables as they enter the
+    ## solution path in solution_terms
+    solution <- match(solution_terms, candidate_terms[-1])
+    solution_terms_mat[, seq_along(solution)] <- solution
+    if (length(solution) < (nterms_max - 1)) {
+      not_in_solution <- setdiff(seq_len(nterms_max - 1), seq_along(solution))
+      solution_terms_mat[, not_in_solution] <- NA
+    }
+    sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
+                 solution_terms)
+  } else {
+    if (verbose) {
+      print(msg)
+      pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+    }
+
+    for (run_index in seq_along(inds)) {
+      ## observation index
+      i <- inds[run_index]
+
+      ## reweight the clusters/samples according to the psis-loo weights
+      p_sel <- .get_p_clust(
+        family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
+        cl = cl_sel
+      )
+      p_pred <- .get_p_clust(
+        family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
+        cl = cl_pred
+      )
+
       ## perform selection with the reweighted clusters/samples
       search_path <- select(
         method = method, p_sel = p_sel, refmodel = refmodel,
@@ -373,31 +504,39 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         search_terms = search_terms
       )
       solution_terms <- search_path$solution_terms
-    }
 
-    ## project onto the selected models and compute the prediction accuracy for
-    ## the left-out point
-    submodels <- .get_submodels(
-      search_path = search_path, nterms = c(0, seq_along(solution_terms)),
-      family = family, p_ref = p_pred, refmodel = refmodel,
-      intercept = intercept, regul = opt$regul, cv_search = cv_search
-    )
-    summaries_sub <- .get_sub_summaries(
-      submodels = submodels, test_points = c(i), refmodel = refmodel,
-      family = family
-    )
-    for (k in seq_along(summaries_sub)) {
-      loo_sub[i, k] <- summaries_sub[[k]]$lppd
-      mu_sub[i, k] <- summaries_sub[[k]]$mu
-    }
+      ## project onto the selected models and compute the prediction accuracy
+      ## for the left-out point
+      submodels <- .get_submodels(
+        search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+        family = family, p_ref = p_pred, refmodel = refmodel,
+        intercept = intercept, regul = opt$regul, cv_search = cv_search
+      )
+      summaries_sub <- .get_sub_summaries(
+        submodels = submodels, test_points = c(i), refmodel = refmodel,
+        family = family
+      )
+      for (k in seq_along(summaries_sub)) {
+        loo_sub[i, k] <- summaries_sub[[k]]$lppd
+        mu_sub[i, k] <- summaries_sub[[k]]$mu
+      }
 
-    ## we are always doing group selection
-    ## with `match` we get the indices of the variables as they enter the
-    ## solution path in solution_terms
-    solution_terms_mat[i, ] <- match(solution_terms, search_terms)
+      candidate_terms <- split_formula(refmodel$formula,
+        data = refmodel$fetch_data(),
+        add_main_effects = FALSE
+      )
+      ## with `match` we get the indices of the variables as they enter the
+      ## solution path in solution_terms
+      solution <- match(solution_terms, candidate_terms[-1])
+      solution_terms_mat[i, seq_along(solution)] <- solution
+      if (length(solution) < (nterms_max - 1)) {
+        not_in_solution <- setdiff(seq_len(nterms_max - 1), seq_along(solution))
+        solution_terms_mat[i, not_in_solution] <- NA
+      }
 
-    if (verbose) {
-      utils::setTxtProgressBar(pb, run_index)
+      if (verbose) {
+        utils::setTxtProgressBar(pb, run_index)
+      }
     }
   }
 
@@ -414,19 +553,26 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   d_test <- list(
-    y = refmodel$y, type = "loo",
+    y = refmodel$y, type = "LOO",
     test_points = seq_along(refmodel$y),
     weights = refmodel$wobs,
     data = NULL
   )
 
-  return(nlist(solution_terms_cv = solution_terms_mat, summaries, d_test))
+  if (!validate_search) {
+    return(nlist(
+      solution_terms_cv = solution_terms_mat,
+      summaries, d_test, sel
+    ))
+  } else {
+    return(nlist(solution_terms_cv = solution_terms_mat, summaries, d_test))
+  }
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
-                         nclusters, ndraws_pred,
-                         nclusters_pred, cv_search, intercept, penalty,
-                         verbose, opt, K, seed = NULL, search_terms = NULL) {
+                         nclusters, ndraws_pred, nclusters_pred,
+                         cv_search, intercept, penalty, verbose, opt,
+                         K, seed = NULL, search_terms = NULL) {
   ## fetch the k_fold list (or compute it now if not already computed)
   k_fold <- .get_kfold(refmodel, K, verbose, seed)
 
@@ -461,9 +607,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_sel <- .get_refdist(refmodel, ndraws, nclusters)
     p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
     newdata <- d_test$newdata
+    pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata)
     pred <- matrix(
-      as.numeric(refmodel$ref_predfun(refmodel$fit, newdata = newdata)),
-      NROW(newdata), NCOL(refmodel$y)
+      as.numeric(pred), nrow = NROW(pred), ncol = NCOL(pred)
     )
     mu_test <- family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test,
@@ -487,7 +633,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     out <- select(
       method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
       family = family, intercept = intercept, nterms_max = nterms_max,
-      penalty = penalty, verbose = verbose, opt = opt,
+      penalty = penalty, verbose = FALSE, opt = opt,
       search_terms = search_terms
     )
     if (verbose) {
@@ -542,19 +688,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       submodels = p_sub, test_points = omitted, refmodel = refmodel,
       family = family
     )
-    lapply(fold_summaries, data.frame)
+    summ <- lapply(fold_summaries, data.frame)
+    return(summ)
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
-    summ$w <- rep(1, NROW(solution_terms_cv))
+    summ$w <- rep(1, length(summ$mu))
     summ$w <- summ$w / sum(summ$w)
     summ
   })
 
   ref <- hf(lapply(list_cv, function(fold) {
     data.frame(.weighted_summary_means(
-      y_test = fold$d_test, family = family, wsample = fold$d_test$w,
+      y_test = fold$d_test, family = family, wsample = fold$refmodel$wsample,
       mu = fold$mu_test, dis = fold$refmodel$dis
     ))
   }))
@@ -575,7 +722,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 }
 
 
-.get_kfold <- function(refmodel, K, verbose, seed) {
+.get_kfold <- function(refmodel, K, verbose, seed, approximate = FALSE) {
   ## Fetch the k_fold list or compute it now if not already computed. This
   ## function will return a list of length K, where each element is a list
   ## with fields 'refmodel' (object of type refmodel computed by init_refmodel)
@@ -601,12 +748,23 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         cvfit
       })
     } else {
-      ## genuine probabilistic model but no K-fold fits nor cvfun provided, so
-      ## raise an error
-      stop(
-        "For a generic reference model, you must provide either cvfits or ",
-        "cvfun for K-fold cross-validation. See function init_refmodel."
-      )
+      ## genuine probabilistic model but no K-fold fits nor cvfun provided,
+      ## this only works for approximate kfold computation
+      if (approximate) {
+        nobs <- NROW(refmodel$y)
+        folds <- cvfolds(nobs, K = K, seed = seed)
+        cvfits <- lapply(seq_long(K), function(k) {
+          ## add the 'omitted' indices for the cvfits
+          cvfit <- refmodel$fit
+          cvfit$omitted <- which(folds == k)
+          cvfit
+        })
+      } else {
+        stop(
+          "For a generic reference model, you must provide either cvfits or ",
+          "cvfun for K-fold cross-validation. See function init_refmodel."
+        )
+      }
     }
   } else {
     cvfits <- refmodel$cvfits
@@ -614,8 +772,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     folds <- attr(cvfits, "folds")
     cvfits <- lapply(seq_len(K), function(k) {
       cvfit <- cvfits$fits[[k]]
-      obs <- seq_len(NROW(cvfits$data))
-      cvfit$omitted <- obs[folds != k]
+      cvfit$omitted <- which(folds != k)
       cvfit
     })
   }
@@ -642,21 +799,23 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   proj_predfun <- function(fit, newdata = default_data, weights = NULL) {
     refmodel$proj_predfun(fit, newdata = newdata, weights = weights)
   }
-  if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg")) {
-    fit <- NULL
-  } else {
-    fit <- cvfit
-  }
   extract_model_data <- function(object, newdata = fetch_fold(), ...) {
     refmodel$extract_model_data(object = object, newdata = newdata)
   }
-  k_refmodel <- init_refmodel(
-    object = fit, data = fetch_fold(),
-    formula = refmodel$formula, family = refmodel$family,
-    ref_predfun = ref_predfun, div_minimizer = refmodel$div_minimizer,
-    proj_predfun = proj_predfun, folds = seq_along(fold),
-    extract_model_data = extract_model_data
-  )
+  if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg")) {
+    fit <- NULL
+    k_refmodel <- init_refmodel(
+      object = fit, data = fetch_fold(),
+      formula = refmodel$formula, family = refmodel$family,
+      ref_predfun = ref_predfun, div_minimizer = refmodel$div_minimizer,
+      proj_predfun = proj_predfun, folds = seq_along(fold),
+      extract_model_data = extract_model_data,
+    )
+  } else {
+    fit <- cvfit
+    k_refmodel <- get_refmodel(fit)
+  }
+
   k_refmodel$fetch_data <- fetch_fold
   k_refmodel$nclusters_pred <- min(NCOL(k_refmodel$mu), 5)
   return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
@@ -684,7 +843,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
     if (length(inds) < nloo) {
       ## not enough points selected, so choose randomly among the rest
-      inds <- c(inds, resample(setdiff(1:n, inds), nloo - length(inds)))
+      inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
     }
 
     ## assign the weights corresponding to this stratification (for example, the
@@ -700,6 +859,34 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   ## ensure weights are normalized
+  w <- w / sum(w)
+
+  return(nlist(inds, w))
+}
+
+.loo_subsample_pps <- function(nloo, lppd, seed) {
+  ## decide which points to go through in the validation based on
+  ## proportional-to-size subsampling as implemented in Magnusson, M., Riis
+  ## Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
+  ## Cross-Validation for Large Data. In International Conference on Machine
+  ## Learning.
+
+  ## set random seed but ensure the old RNG state is restored on exit
+  if (exists(".Random.seed")) {
+    rng_state_old <- .Random.seed
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(seed)
+  if (nloo > length(lppd)) {
+    stop("Can only subsample less `nloo` than total number of datapoints.")
+  } else if (nloo == length(lppd)) {
+    inds <- seq_len(nloo)
+    w <- rep(1, nloo)
+  } else if (nloo < length(lppd)) {
+    weights <- exp(lppd - max(lppd))
+    inds <- sample(seq_along(lppd), size = nloo, prob = weights)
+    w <- weights
+  }
   w <- w / sum(w)
 
   return(nlist(inds, w))

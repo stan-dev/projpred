@@ -7,9 +7,9 @@
 
 An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] and [brms][] but other reference models can also be used. 
 
-The method is described in detail in Piironen et al. (2020) and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
+The method is described in detail in Piironen et al. (2020) and Catalina et al. (2020) and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
 
-Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples.
+Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples on GLMs and [quickstart-glmms-vignette][] for examples on GLMMs.
 
 
 ### Resources
@@ -87,10 +87,14 @@ Piironen, Juho and Vehtari, Aki (2017). Comparison of Bayesian predictive method
 
 Piironen, Juho, Paasiniemi, Markus and Vehtari, Aki (2020). Projective inference in high-dimensional problems: prediction and feature selection. *Electronic Journal of Statistics*, 14(1): 2155-2197 ([Online][projpred]).
 
+Catalina, Alejandro, Bürkner, Paul-Christian, Vehtari, Aki (2020). Projection Predictive Inference for Generalized Linear and Additive Multilevel Models. ([arxiv:2010.06994][new-projpred]).
+
 
   [rstanarm]: https://github.com/stan-dev/rstanarm
   [brms]: https://github.com/paul-buerkner/brms
   [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
   [projpred]: https://projecteuclid.org/euclid.ejs/1589335310
+  [new-projpred]: https://arxiv.org/abs/2010.06994
   [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html
+  [quickstart-glmms-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart_glmm.html
 
