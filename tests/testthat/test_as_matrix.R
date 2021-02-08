@@ -34,8 +34,8 @@ if (require(rstanarm)) {
       data = df_binom, chains = chains, seed = seed, iter = iter
     )
 
-    vs_gauss <- varsel(fit_gauss)
-    vs_binom <- varsel(fit_binom)
+    vs_gauss <- varsel(fit_gauss, ndraws = 1, ndraws_pred = 5)
+    vs_binom <- varsel(fit_binom, ndraws = 1, ndraws_pred = 5)
     solution_terms <- c(2, 3)
     ndraws <- 100
     p_gauss <- project(vs_gauss,

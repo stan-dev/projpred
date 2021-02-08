@@ -55,12 +55,15 @@ fit_glm_callback <- function(formula, data, family, weights, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
   if (family$family == "gaussian" && family$link == "identity") {
-    return(suppressWarnings(lm(formula, data = data, weights = weights)))
+    return(suppressMessages(suppressWarnings(lm(formula,
+      data = data,
+      weights = weights
+    ))))
   } else {
-    return(suppressWarnings(glm(formula,
+    return(suppressMessages(suppressWarnings(glm(formula,
       data = data, family = family,
       weights = weights
-    )))
+    ))))
   }
 }
 
@@ -93,10 +96,10 @@ additive_mle <- function(formula, data, family, weights = NULL, ...) {
 fit_gam_callback <- function(formula, data, family, weights, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
-  return(suppressWarnings(gam(formula,
+  return(suppressMessages(suppressWarnings(gam(formula,
     data = data, family = family,
     weights = weights
-  )))
+  ))))
 }
 
 # helper function of 'additive_mle'
@@ -105,7 +108,7 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
                               control = control_callback(family), ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
-  fit <- suppressWarnings(tryCatch({
+  fit <- suppressMessages(suppressWarnings(tryCatch({
     gamm4(formula,
       random = random, data = data,
       family = family, weights = weights,
@@ -124,7 +127,7 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
     } else {
       stop(e)
     }
-  }))
+  })))
 
   fit$random <- random
   fit$formula <- formula
@@ -150,7 +153,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
                                control = control_callback(family), ...) {
   ## make sure correct 'weights' can be found
   environment(formula) <- environment()
-  suppressWarnings(tryCatch({
+  suppressMessages(suppressWarnings(tryCatch({
       if (family$family == "gaussian" && family$link == "identity") {
         return(lme4::lmer(formula,
           data = data, weights = weights,
@@ -186,7 +189,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
         stop(e)
       }
     }
-  ))
+  )))
 }
 
 preprocess_data <- function(data, formula) {

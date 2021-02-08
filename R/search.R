@@ -14,12 +14,14 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
   }
 
   chosen <- NULL
-  total_terms <- count_terms_in_formula(formula)
+  total_terms <- count_terms_chosen(allterms)
   stop_search <- min(total_terms, nterms_max)
   submodels <- c()
 
   for (size in seq_len(stop_search)) {
     cands <- select_possible_terms_size(chosen, allterms, size = size)
+    if (is.null(cands))
+      break
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     sub <- sapply(full_cands, projfun)
 

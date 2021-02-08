@@ -15,6 +15,7 @@ env:
     - CXX_OLEVEL=2 CXX=clang++
 
 before_install:
+  - sudo apt-get -y install libv8-dev
   - mkdir -p ~/.R/
   - echo "CXX = `R CMD config CXX`" >> ~/.R/Makevars
   - echo "CXXFLAGS = `R CMD config CXXFLAGS` -pedantic -g0" >> ~/.R/Makevars
@@ -23,5 +24,9 @@ before_install:
   - sed -i.bak "s/ g++/ ${CXX}${CLANG_EXTRA_ARG}/" ~/.R/Makevars
   - sed -i.bak "s/O[0-3]/O$CXX_OLEVEL/" ~/.R/Makevars
 
+script:
+  - R CMD build . --no-build-vignettes
+  - travis_wait 45 R CMD check projpred*tar.gz --ignore-vignettes --no-examples
+
 after_success:
-- Rscript -e 'covr::codecov()'
+- travis_wait 45 Rscript -e 'covr::codecov()'
