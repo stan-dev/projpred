@@ -1,7 +1,7 @@
 Encoding: UTF-8
 Package: projpred
 Title: Projection Predictive Feature Selection
-Version: 2.0.2
+Version: 2.0.4
 Authors@R: c(person("Juho", "Piironen", role = c("aut"), email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
              person("Alejandro", "Catalina", role = c("cre", "aut"), email="alecatfel@gmail.com"),

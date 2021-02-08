@@ -38,6 +38,10 @@ extract_terms_response <- function(formula) {
   ))
 }
 
+expand_formula <- function(formula, data) {
+  return(formula(terms(formula, data = data)))
+}
+
 remove_duplicates <- function(formula) {
   terms <- extract_terms_response(formula)
   linear <- terms$individual_terms
@@ -54,8 +58,7 @@ remove_duplicates <- function(formula) {
       ". ~ . - ",
       paste(dups, collapse = " - ")
     )))
-  }
-  else {
+  } else {
     formula
   }
 }
@@ -134,8 +137,10 @@ validate_response_formula <- function(formula) {
 ## terms.
 ## This function gets rid of duplicated terms_.
 ## @param formula A formula specifying a model.
+## @param duplicates if FALSE removes linear terms if their corresponding smooth
+## is included. Default TRUE
 ## @return a formula without duplicated structure.
-flatten_formula <- function(formula) {
+flatten_formula <- function(formula, duplicates = TRUE) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
@@ -155,7 +160,10 @@ flatten_formula <- function(formula) {
     ),
     collapse = " + "
     ))
-    remove_duplicates(full)
+    if (!duplicates)
+      remove_duplicates(full)
+    else
+      full
   } else {
     formula
   }
@@ -246,7 +254,8 @@ flatten_group_terms <- function(terms_) {
 ## @param return_group_terms If TRUE, return group terms as well. Default TRUE.
 ## @param data The reference model data.
 ## @return a vector of all the minimal valid terms that make up for submodels.
-split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
+split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
+                          add_main_effects = TRUE) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
@@ -263,12 +272,15 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
   ))
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
-    group_split <- unlist(lapply(group_terms, split_group_term))
+    group_split <- unlist(lapply(group_terms, split_group_term,
+      add_main_effects = add_main_effects
+    ))
     allterms_ <- c(
       unlist(lapply(additive_terms, split_additive_term, data)),
-      unlist(lapply(interaction_terms, split_interaction_term))
+      unlist(lapply(interaction_terms, split_interaction_term,
+        add_main_effects = add_main_effects
+      ))
     )
-
     group_replace <- regmatches(
       group_split,
       gregexpr("\\w+(?![^(]*\\))", group_split, perl = TRUE)
@@ -286,10 +298,10 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
       to_replace, perl = TRUE
     )
     group_split <- c(not_replace, replacement)
-    nodups <- individual_terms[is.na(match(individual_terms, additive))]
+    nodups <- unique(c(individual_terms, additive))
     allterms_ <- c(allterms_, group_split, nodups)
   } else {
-    nodups <- individual_terms[!is.na(match(individual_terms, additive))]
+    nodups <- unique(c(individual_terms, additive))
     allterms_ <- c(
       nodups,
       unlist(lapply(additive_terms, split_additive_term, data)),
@@ -313,11 +325,15 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL) {
 ## @param term An interaction term as a string.
 ## @return a minimally valid submodel for the interaction term including
 ## the overall effects.
-split_interaction_term <- function(term) {
+split_interaction_term <- function(term, add_main_effects = TRUE) {
   ## strong heredity by default
   terms_ <- unlist(strsplit(term, ":"))
   individual_joint <- paste(terms_, collapse = " + ")
-  joint_term <- paste(c(individual_joint, term), collapse = " + ")
+  if (add_main_effects) {
+    joint_term <- paste(c(individual_joint, term), collapse = " + ")
+  } else {
+    return(term)
+  }
   return(joint_term)
 }
 
@@ -346,7 +362,7 @@ split_additive_term <- function(term, data) {
 ## @param term A group term as a string.
 ## @return a vector of all the minimally valid submodels for the group term
 ## including a single varying effect with and without varying intercept.
-split_group_term <- function(term) {
+split_group_term <- function(term, add_main_effects = TRUE) {
   ## this expands whatever terms() did not expand
   term <- gsub(
     "\\)$", "",
@@ -378,57 +394,95 @@ split_group_term <- function(term) {
 
   if (group_intercept) {
     group_terms <- list(paste0("(1 | ", group, ")"))
-    group_terms <- c(
-      group_terms,
-      lapply(
-        lin_v,
-        function(v) {
-          paste0(v, " + ", "(", v, " | ", group, ")")
-        }
+    if (add_main_effects) {
+      group_terms <- c(
+        group_terms,
+        lapply(
+          lin_v,
+          function(v) {
+            paste0(v, " + ", "(", v, " | ", group, ")")
+          }
+        )
       )
-    )
-    group_terms <- c(
-      group_terms,
-      lapply(
-        int_v,
-        function(v) {
-          paste0(
-            split_interaction_term(v), " + ",
-            "(", split_interaction_term(v), " | ", group, ")"
-          )
-        }
+      group_terms <- c(
+        group_terms,
+        lapply(
+          int_v,
+          function(v) {
+            paste0(
+              split_interaction_term(v,
+                add_main_effects = add_main_effects
+              ), " + ",
+              "(", split_interaction_term(v,
+                add_main_effects = add_main_effects
+              ),
+              " | ", group, ")"
+            )
+          }
+        )
       )
-    )
 
-    ## add v + ( 1 | group)
-    group_terms <- c(
-      group_terms,
-      lapply(
-        lin_v,
-        function(v) {
-          paste0(v, " + ", "(1 | ", group, ")")
-        }
+      ## add v + ( 1 | group)
+      group_terms <- c(
+        group_terms,
+        lapply(
+          lin_v,
+          function(v) {
+            paste0(v, " + ", "(1 | ", group, ")")
+          }
+        )
       )
-    )
-    group_terms <- c(
-      group_terms,
-      lapply(
-        int_v,
-        function(v) {
-          paste0(
-            split_interaction_term(v), " + ",
-            "(1 | ", group, ")"
-          )
-        }
+      group_terms <- c(
+        group_terms,
+        lapply(
+          int_v,
+          function(v) {
+            paste0(
+              split_interaction_term(v,
+                add_main_effects = add_main_effects
+              ),
+              " + ",
+              "(1 | ", group, ")"
+            )
+          }
+        )
       )
-    )
+    } else {
+      group_terms <- c(
+        group_terms,
+        lapply(
+          lin_v,
+          function(v) {
+            paste0("(", v, " | ", group, ")")
+          }
+        )
+      )
+      group_terms <- c(
+        group_terms,
+        lapply(
+          int_v,
+          function(v) {
+            paste0(
+              "(", split_interaction_term(v,
+                add_main_effects = add_main_effects
+              ),
+              " | ", group, ")"
+            )
+          }
+        )
+      )
+    }
   } else {
     group_terms <- lapply(lin_v, function(v) {
       paste0(v, " + ", "(0 + ", v, " | ", group, ")")
     })
     group_terms <- c(group_terms, lapply(int_v, function(v) {
-      paste0(split_interaction_term(v), " + ",
-             "(0 + ", split_interaction_term(v), " | ", group, ")")
+      paste0(
+        split_interaction_term(v, add_main_effects = add_main_effects),
+        " + ", "(0 + ", split_interaction_term(v,
+          add_main_effects = add_main_effects
+        ), " | ", group, ")"
+      )
     }))
   }
 
@@ -611,10 +665,35 @@ select_possible_terms_size <- function(chosen, terms, size) {
   valid_submodels <- lapply(terms, function(x) {
     current <- count_terms_chosen(chosen)
     increment <- size - current
-    if ((count_terms_chosen(c(chosen, x)) - current) == increment)
+    ## if we are adding a linear term whose smooth is already
+    ## included, we reject it
+    terms <- extract_terms_response(make_formula(c(chosen)))
+    terms_new <- extract_terms_response(make_formula(x))
+    additive <- unlist(regmatches(
+      terms$additive_terms,
+      gregexpr("(?<=\\().*?(?=\\))",
+        terms$additive_terms,
+        perl = TRUE
+      )
+    ))
+    linear <- terms_new$individual_terms
+    dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
+
+    ## if model is straight redundant
+    not_redundant <- (count_terms_chosen(c(chosen, x),
+      duplicates = TRUE
+    ) - current - length(dups)) == increment
+    ## if already_chosen is not NA it means we have already chosen the linear
+    ## term
+    if (not_redundant) {
+      if (length(dups) > 0) {
+        tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
+        x <- setdiff(attr(tt, "term.labels"), chosen)
+      }
       x
-    else
+    } else {
       NA
+    }
   })
   valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
   if (length(chosen) > 0) {
@@ -639,14 +718,16 @@ to_character_rhs <- function(rhs) {
 }
 
 ## Given a refmodel structure, count the number of terms included.
-## @param formula The reference model's formula.
 ## @param list_of_terms Subset of terms from formula.
-count_terms_chosen <- function(list_of_terms) {
+## @param duplicates if FALSE removes linear terms if their corresponding smooth
+## is included. Default TRUE
+## @return number of terms
+count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
   if (length(list_of_terms) == 0) {
     return(0)
   }
   formula <- make_formula(list_of_terms)
-  count_terms_in_formula(flatten_formula(formula))
+  count_terms_in_formula(flatten_formula(formula, duplicates = duplicates))
 }
 
 ## Utility that checks if the next submodel is redundant with the current one.

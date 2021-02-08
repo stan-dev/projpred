@@ -2,11 +2,20 @@
 
 # News
 
-## projpred 2.0.2.9000
+## projpred 2.0.4
+
+* Added support for weighted LOO proportional-to-size subsampling based on Magnusson, M., Riis Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out  Cross-Validation for Large Data. In International Conference on Machine Learning. 
+* Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
+* Fast approximate LOO computation for `validate_search = FALSE` calls in `cv_varsel(...)`.
+* Improved summary output with important details.
 
 ### Bug fixes
 
 * Fixed a bug raising an error when not projecting from a `vsel` object.
+
+## projpred 2.0.3
+
+Minor fixes for stability, no new features.
 
 ## projpred 2.0.2
 

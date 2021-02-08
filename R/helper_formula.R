@@ -11,6 +11,7 @@ NULL
 #' @return a  list containing the expanded formula and the expanded data frame.
 #' @export
 break_up_matrix_term <- function(formula, data) {
+  formula <- expand_formula(formula, data)
   tt <- terms(formula)
   response <- attr(tt, "response")
   ## when converting the variables to a list the first element is
