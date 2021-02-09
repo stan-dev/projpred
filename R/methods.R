@@ -769,33 +769,46 @@ as.matrix.glm <- function(x, ...) {
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x)
   # Extract variance components:
-  group_vc <- unlist(lapply(lme4::VarCorr(x), function(vc_obj){
+  group_vc <- unlist(lapply(lme4::VarCorr(x), function(vc_obj) {
     # The vector of standard deviations:
     vc_out <- c("sd" = attr(vc_obj, "stddev"))
     # The correlation matrix:
     cor_mat <- attr(vc_obj, "correlation")
-    if(!is.null(cor_mat)){
-      # Auxiliary object: A matrix of the same dimension as cor_mat, but containing the paste()-d
-      # dimnames:
-      cor_mat_nms <- matrix(apply(expand.grid(rownames(cor_mat), colnames(cor_mat)),
-                                  1, paste, collapse = "."),
-                            nrow = nrow(cor_mat), ncol = ncol(cor_mat))
-      # Note: With upper.tri() (and also with lower.tri()), the indexed matrix is coerced to a
-      # vector in column-major order:
+    if (!is.null(cor_mat)) {
+      # Auxiliary object: A matrix of the same dimension as cor_mat, but
+      # containing the paste()-d dimnames:
+      cor_mat_nms <- matrix(apply(expand.grid(
+        rownames(cor_mat),
+        colnames(cor_mat)
+      ),
+      1, paste,
+      collapse = "."
+      ),
+      nrow = nrow(cor_mat), ncol = ncol(cor_mat)
+      )
+      # Note: With upper.tri() (and also with lower.tri()), the indexed matrix
+      # is coerced to a vector in column-major order:
       vc_out <- c(vc_out,
-                  "cor" = setNames(cor_mat[upper.tri(cor_mat)],
-                                   cor_mat_nms[upper.tri(cor_mat_nms)]))
+        "cor" = setNames(
+          cor_mat[upper.tri(cor_mat)],
+          cor_mat_nms[upper.tri(cor_mat_nms)]
+        )
+      )
     }
     return(vc_out)
   }))
   # Extract the group-level effects themselves:
-  group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df){
+  group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df) {
     ranef_mat <- as.matrix(ranef_df)
-    setNames(as.vector(ranef_mat),
-             apply(expand.grid(rownames(ranef_mat), colnames(ranef_mat)),
-                   1, function(row_col_nm){
-                     paste(rev(row_col_nm), collapse = ".")
-                   }))
+    setNames(
+      as.vector(ranef_mat),
+      apply(
+        expand.grid(rownames(ranef_mat), colnames(ranef_mat)),
+        1, function(row_col_nm) {
+          paste(rev(row_col_nm), collapse = ".")
+        }
+      )
+    )
   }))
   return(c(population_effects, group_vc, group_ef))
 }
@@ -841,7 +854,7 @@ as.matrix.projection <- function(x, ...) {
   }
   if (inherits(x$sub_fit, "list")) {
     if ("lmerMod" %in% class(x$sub_fit[[1]]) ||
-        "glmerMod" %in% class(x$sub_fit[[1]])) {
+      "glmerMod" %in% class(x$sub_fit[[1]])) {
       res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
     } else {
       if (inherits(x$sub_fit[[1]], "subfit")) {
