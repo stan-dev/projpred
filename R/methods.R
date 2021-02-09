@@ -768,9 +768,36 @@ as.matrix.glm <- function(x, ...) {
 #' @method as.matrix lmerMod
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x)
-  group_effects <- lme4::ranef(x)
-  group_effects <- unlist(lapply(group_effects, function(ge) apply(ge, 2, sd)))
-  return(c(population_effects, group_effects))
+  # Extract variance components:
+  group_vc <- unlist(lapply(lme4::VarCorr(x), function(vc_obj){
+    # The vector of standard deviations:
+    vc_out <- c("sd" = attr(vc_obj, "stddev"))
+    # The correlation matrix:
+    cor_mat <- attr(vc_obj, "correlation")
+    if(!is.null(cor_mat)){
+      # Auxiliary object: A matrix of the same dimension as cor_mat, but containing the paste()-d
+      # dimnames:
+      cor_mat_nms <- matrix(apply(expand.grid(rownames(cor_mat), colnames(cor_mat)),
+                                  1, paste, collapse = "."),
+                            nrow = nrow(cor_mat), ncol = ncol(cor_mat))
+      # Note: With upper.tri() (and also with lower.tri()), the indexed matrix is coerced to a
+      # vector in column-major order:
+      vc_out <- c(vc_out,
+                  "cor" = setNames(cor_mat[upper.tri(cor_mat)],
+                                   cor_mat_nms[upper.tri(cor_mat_nms)]))
+    }
+    return(vc_out)
+  }))
+  # Extract the group-level effects themselves:
+  group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df){
+    ranef_mat <- as.matrix(ranef_df)
+    setNames(as.vector(ranef_mat),
+             apply(expand.grid(rownames(ranef_mat), colnames(ranef_mat)),
+                   1, function(row_col_nm){
+                     paste(rev(row_col_nm), collapse = ".")
+                   }))
+  }))
+  return(c(population_effects, group_vc, group_ef))
 }
 
 #' @method as.matrix noquote
@@ -832,7 +859,7 @@ as.matrix.projection <- function(x, ...) {
     } else if ("alpha" %in% colnames(res)) {
       colnames(res) <- gsub("^alpha", "Intercept", colnames(res))
     } else {
-      colnames(res) <- c("Intercept", x$solution_terms)
+      colnames(res) <- gsub("\\(Intercept\\)", "Intercept", colnames(res))
     }
   }
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
