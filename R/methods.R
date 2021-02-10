@@ -399,6 +399,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
 #'   reference model or the best submodel found. Default is 'ref' when the
 #'   reference model exists, and 'best' otherwise.
+#' @param digits Number of decimal places to be reported (1 by default).
 #' @param ... Currently ignored.
 #'
 #' @examples

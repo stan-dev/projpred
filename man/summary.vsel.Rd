@@ -53,6 +53,8 @@ mass within the intervals, that is, one standard error intervals.}
 reference model or the best submodel found. Default is 'ref' when the
 reference model exists, and 'best' otherwise.}
 
+\item{digits}{Number of decimal places to be reported (1 by default).}
+
 \item{...}{Currently ignored.}
 }
 \description{
