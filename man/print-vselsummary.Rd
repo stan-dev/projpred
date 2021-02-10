@@ -5,12 +5,12 @@
 \alias{print.vselsummary}
 \title{Print methods for summary objects}
 \usage{
-\method{print}{vselsummary}(x, digits = 2, ...)
+\method{print}{vselsummary}(x, digits = 1, ...)
 }
 \arguments{
 \item{x}{An object of class vselsummary.}
 
-\item{digits}{Number of decimal places to be reported (2 by default).}
+\item{digits}{Number of decimal places to be reported (1 by default).}
 }
 \value{
 Returns invisibly the output produced by

@@ -8,11 +8,11 @@
   object,
   nterms_max = NULL,
   stats = "elpd",
-  type = c("mean", "se"),
+  type = c("mean", "se", "diff", "diff.se"),
   deltas = FALSE,
   alpha = 0.32,
   baseline = NULL,
-  digits = 2,
+  digits = 1,
   ...
 )
 }
