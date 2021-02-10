@@ -866,15 +866,7 @@ as.matrix.projection <- function(x, ...) {
   } else {
     res <- t(as.matrix.lm(x$sub_fit))
   }
-  if (x$intercept) {
-    if ("1" %in% x$solution_terms) {
-      colnames(res) <- gsub("^1", "Intercept", x$solution_terms)
-    } else if ("alpha" %in% colnames(res)) {
-      colnames(res) <- gsub("^alpha", "Intercept", colnames(res))
-    } else {
-      colnames(res) <- gsub("\\(Intercept\\)", "Intercept", colnames(res))
-    }
-  }
+  colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }
