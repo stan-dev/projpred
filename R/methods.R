@@ -540,6 +540,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #'
 #' @param x An object of class vselsummary.
 #' @param digits Number of decimal places to be reported (1 by default).
+#' @param ... Currently ignored.
 #'
 #' @return Returns invisibly the output produced by
 #'   \code{\link{summary.vsel}}.
