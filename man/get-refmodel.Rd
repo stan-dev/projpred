@@ -111,8 +111,6 @@ reference model fit, newdata is either NULL or a data frame with new
 observations, wrhs is a right hand side formula to recover the weights from
 the data frame and orhs is a right hand side formula to recover the offset
 from the data frame.}
-
-\item{y}{Target response.}
 }
 \value{
 An object of type \code{refmodel} (the same type as returned by
