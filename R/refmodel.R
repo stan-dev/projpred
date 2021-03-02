@@ -10,7 +10,6 @@
 #' @param object Object on which the reference model is created. See possible
 #'   types below.
 #' @param data Data on which the reference model was fitted.
-#' @param y Target response.
 #' @param formula Reference model's lme4-like formula.
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model.

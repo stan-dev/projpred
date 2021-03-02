@@ -8,6 +8,12 @@
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
 * Fast approximate LOO computation for `validate_search = FALSE` calls in `cv_varsel(...)`.
 * Improved summary output with important details.
+* For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves.
+* For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects.
+
+### Bug fixes
+
+* Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix).
 
 ### Bug fixes
 

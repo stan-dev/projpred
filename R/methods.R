@@ -399,6 +399,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
 #'   reference model or the best submodel found. Default is 'ref' when the
 #'   reference model exists, and 'best' otherwise.
+#' @param digits Number of decimal places to be reported (1 by default).
 #' @param ... Currently ignored.
 #'
 #' @examples
@@ -540,6 +541,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #'
 #' @param x An object of class vselsummary.
 #' @param digits Number of decimal places to be reported (1 by default).
+#' @param ... Currently ignored.
 #'
 #' @return Returns invisibly the output produced by
 #'   \code{\link{summary.vsel}}.
@@ -768,9 +770,49 @@ as.matrix.glm <- function(x, ...) {
 #' @method as.matrix lmerMod
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x)
-  group_effects <- lme4::ranef(x)
-  group_effects <- unlist(lapply(group_effects, function(ge) apply(ge, 2, sd)))
-  return(c(population_effects, group_effects))
+  # Extract variance components:
+  group_vc <- unlist(lapply(lme4::VarCorr(x), function(vc_obj) {
+    # The vector of standard deviations:
+    vc_out <- c("sd" = attr(vc_obj, "stddev"))
+    # The correlation matrix:
+    cor_mat <- attr(vc_obj, "correlation")
+    if (!is.null(cor_mat)) {
+      # Auxiliary object: A matrix of the same dimension as cor_mat, but
+      # containing the paste()-d dimnames:
+      cor_mat_nms <- matrix(apply(expand.grid(
+        rownames(cor_mat),
+        colnames(cor_mat)
+      ),
+      1, paste,
+      collapse = "."
+      ),
+      nrow = nrow(cor_mat), ncol = ncol(cor_mat)
+      )
+      # Note: With upper.tri() (and also with lower.tri()), the indexed matrix
+      # is coerced to a vector in column-major order:
+      vc_out <- c(vc_out,
+        "cor" = setNames(
+          cor_mat[upper.tri(cor_mat)],
+          cor_mat_nms[upper.tri(cor_mat_nms)]
+        )
+      )
+    }
+    return(vc_out)
+  }))
+  # Extract the group-level effects themselves:
+  group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df) {
+    ranef_mat <- as.matrix(ranef_df)
+    setNames(
+      as.vector(ranef_mat),
+      apply(
+        expand.grid(rownames(ranef_mat), colnames(ranef_mat)),
+        1, function(row_col_nm) {
+          paste(rev(row_col_nm), collapse = ".")
+        }
+      )
+    )
+  }))
+  return(c(population_effects, group_vc, group_ef))
 }
 
 #' @method as.matrix noquote
@@ -814,7 +856,7 @@ as.matrix.projection <- function(x, ...) {
   }
   if (inherits(x$sub_fit, "list")) {
     if ("lmerMod" %in% class(x$sub_fit[[1]]) ||
-        "glmerMod" %in% class(x$sub_fit[[1]])) {
+      "glmerMod" %in% class(x$sub_fit[[1]])) {
       res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
     } else {
       if (inherits(x$sub_fit[[1]], "subfit")) {
@@ -826,15 +868,7 @@ as.matrix.projection <- function(x, ...) {
   } else {
     res <- t(as.matrix.lm(x$sub_fit))
   }
-  if (x$intercept) {
-    if ("1" %in% x$solution_terms) {
-      colnames(res) <- gsub("^1", "Intercept", x$solution_terms)
-    } else if ("alpha" %in% colnames(res)) {
-      colnames(res) <- gsub("^alpha", "Intercept", colnames(res))
-    } else {
-      colnames(res) <- c("Intercept", x$solution_terms)
-    }
-  }
+  colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }
