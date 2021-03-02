@@ -14,9 +14,6 @@
 ### Bug fixes
 
 * Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix).
-
-### Bug fixes
-
 * Fixed a bug raising an error when not projecting from a `vsel` object.
 
 ## projpred 2.0.3
