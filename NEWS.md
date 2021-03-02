@@ -2,7 +2,7 @@
 
 # News
 
-## projpred 2.0.4
+## projpred 2.0.4.9000
 
 * Added support for weighted LOO proportional-to-size subsampling based on Magnusson, M., Riis Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out  Cross-Validation for Large Data. In International Conference on Machine Learning. 
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
