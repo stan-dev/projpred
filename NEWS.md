@@ -4,6 +4,16 @@
 
 ## projpred 2.0.4.9000
 
+### Major changes
+
+### Minor changes
+
+* For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below).
+
+### Bug fixes
+
+## projpred 2.0.4
+
 * Added support for weighted LOO proportional-to-size subsampling based on Magnusson, M., Riis Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out  Cross-Validation for Large Data. In International Conference on Machine Learning. 
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
 * Fast approximate LOO computation for `validate_search = FALSE` calls in `cv_varsel(...)`.
