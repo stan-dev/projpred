@@ -61,10 +61,10 @@
 #'   x <- matrix(rnorm(n*d), nrow=n)
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
-#'   
+#'
 #'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
 #'   vs <- varsel(fit)
-#'   
+#'
 #'   # compute predictions with 4 variables at the training points
 #'   pred <- proj_linpred(vs, newdata = data, nv = 4)
 #'   pred <- proj_predict(vs, newdata = data, nv = 4)
@@ -411,11 +411,11 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   x <- matrix(rnorm(n*d), nrow=n)
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
-#'   
+#'
 #'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
 #'   plot(vs)
-#'   
+#'
 #'   # print out some stats
 #'   summary(vs, stats=c('mse'), type = c('mean','se'))
 #' }
@@ -609,7 +609,7 @@ suggest_size <- function(object, ...) {
     UseMethod("suggest_size")
 }
 
-#' Suggest model size 
+#' Suggest model size
 #'
 #' This function can be used for suggesting an appropriate model size
 #' based on a certain default rule. Notice that the decision rules are heuristic
@@ -639,7 +639,7 @@ suggest_size <- function(object, ...) {
 #'   mainly for internal use. Default is TRUE, and usually there is no reason to
 #'   set to FALSE.
 #' @param ... Currently ignored.
-#' 
+#'
 #' @details The suggested model size is the smallest model for which either the
 #'   lower or upper (depending on argument \code{type}) credible bound of the
 #'   submodel utility \eqn{u_k} with significance level \code{alpha} falls above
@@ -649,7 +649,7 @@ suggest_size <- function(object, ...) {
 #'   best submodel found (see argument \code{baseline}). The lower and upper
 #'   bounds are defined to contain the submodel utility with probability 1-alpha
 #'   (each tail has mass alpha/2).
-#' 
+#'
 #' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
 #'   means that we select the smallest model for which the upper tail exceeds
 #'   the baseline model level, that is, which is better than the baseline model
@@ -657,7 +657,7 @@ suggest_size <- function(object, ...) {
 #'   other words, the estimated difference between the baseline model and
 #'   submodel utilities is at most one standard error away from zero, so the two
 #'   utilities are considered to be close.
-#' 
+#'
 #' NOTE: Loss statistics like RMSE and MSE are converted to utilities by
 #'   multiplying them by -1, so call such as \code{suggest_size(object,
 #'   stat='rmse', type='upper')} should be interpreted as finding the smallest
@@ -665,7 +665,7 @@ suggest_size <- function(object, ...) {
 #'   cutoff level (or equivalently has the lower credible bound of RMSE below
 #'   the cutoff level). This is done to make the interpretation of the argument
 #'   \code{type} the same regardless of argument \code{stat}.
-#' 
+#'
 #' @examples
 #' \donttest{
 #' if (requireNamespace('rstanarm', quietly=TRUE)) {
@@ -681,7 +681,7 @@ suggest_size <- function(object, ...) {
 #'   suggest_size(vs)
 #' }
 #' }
-#' 
+#'
 #' @export
 suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
                               type = "upper", baseline = NULL, warnings = TRUE,
@@ -770,7 +770,7 @@ as.matrix.glm <- function(x, ...) {
 #' @method as.matrix lmerMod
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x)
-  
+
   # Use brms's naming convention:
   names(population_effects) <- gsub(
     "\\(Intercept\\)",
@@ -778,7 +778,7 @@ as.matrix.lmerMod <- function(x, ...) {
     names(population_effects)
   )
   names(population_effects) <- paste0("b_", names(population_effects))
-  
+
   # Extract variance components:
   group_vc_raw <- lme4::VarCorr(x)
   group_vc <- unlist(lapply(group_vc_raw, function(vc_obj) {
@@ -810,7 +810,7 @@ as.matrix.lmerMod <- function(x, ...) {
     }
     return(vc_out)
   }))
-  
+
   # Use brms's naming convention:
   names(group_vc) <- gsub(
     "\\(Intercept\\)",
@@ -856,7 +856,7 @@ as.matrix.lmerMod <- function(x, ...) {
       names(group_vc)
     )
   }
-  
+
   # Extract the group-level effects themselves:
   group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df) {
     ranef_mat <- as.matrix(ranef_df)
@@ -870,7 +870,7 @@ as.matrix.lmerMod <- function(x, ...) {
       )
     )
   }))
-  
+
   # Use brms's naming convention:
   names(group_ef) <- gsub(
     "\\(Intercept\\)",
@@ -903,7 +903,7 @@ as.matrix.lmerMod <- function(x, ...) {
       names(group_ef)
     )
   }
-  
+
   return(c(population_effects, group_vc, group_ef))
 }
 
