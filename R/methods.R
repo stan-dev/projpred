@@ -770,8 +770,18 @@ as.matrix.glm <- function(x, ...) {
 #' @method as.matrix lmerMod
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x)
+  
+  # Use brms's naming convention:
+  names(population_effects) <- gsub(
+    "\\(Intercept\\)",
+    "Intercept",
+    names(population_effects)
+  )
+  names(population_effects) <- paste0("b_", names(population_effects))
+  
   # Extract variance components:
-  group_vc <- unlist(lapply(lme4::VarCorr(x), function(vc_obj) {
+  group_vc_raw <- lme4::VarCorr(x)
+  group_vc <- unlist(lapply(group_vc_raw, function(vc_obj) {
     # The vector of standard deviations:
     vc_out <- c("sd" = attr(vc_obj, "stddev"))
     # The correlation matrix:
@@ -790,7 +800,8 @@ as.matrix.lmerMod <- function(x, ...) {
       )
       # Note: With upper.tri() (and also with lower.tri()), the indexed matrix
       # is coerced to a vector in column-major order:
-      vc_out <- c(vc_out,
+      vc_out <- c(
+        vc_out,
         "cor" = setNames(
           cor_mat[upper.tri(cor_mat)],
           cor_mat_nms[upper.tri(cor_mat_nms)]
@@ -799,6 +810,53 @@ as.matrix.lmerMod <- function(x, ...) {
     }
     return(vc_out)
   }))
+  
+  # Use brms's naming convention:
+  names(group_vc) <- gsub(
+    "\\(Intercept\\)",
+    "Intercept",
+    names(group_vc)
+  )
+  # We will have to move the substrings "sd\\." and "cor\\." up front (i.e. in
+  # front of the group name), so make sure that they don't occur in the group
+  # names:
+  stopifnot(!any(grepl("sd\\.|cor\\.", names(group_vc_raw))))
+  # Move the substrings "sd\\." and "cor\\." up front and replace the dot
+  # following the group name by double underscores:
+  names(group_vc) <- sub(
+    paste0(
+      "(",
+      paste(
+        gsub("\\.", "\\\\.", names(group_vc_raw)),
+        collapse = "|"
+      ),
+      ")\\.(sd|cor)\\."
+    ),
+    "\\2_\\1__",
+    names(group_vc)
+  )
+  # Replace dots between coefficient names by double underscores:
+  coef_nms <- lapply(group_vc_raw, rownames)
+  for (coef_nms_i in coef_nms) {
+    coef_nms_i <- gsub(
+      "\\(Intercept\\)",
+      "Intercept",
+      coef_nms_i
+    )
+    names(group_vc) <- gsub(
+      paste0(
+        "(",
+        paste(
+          gsub("\\.", "\\\\.", coef_nms_i),
+          collapse = "|"
+        ),
+        ")\\."
+      ),
+      "\\1__",
+      names(group_vc)
+    )
+  }
+  
   # Extract the group-level effects themselves:
   group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df) {
     ranef_mat <- as.matrix(ranef_df)
@@ -812,6 +870,40 @@ as.matrix.lmerMod <- function(x, ...) {
       )
     )
   }))
+  
+  # Use brms's naming convention:
+  names(group_ef) <- gsub(
+    "\\(Intercept\\)",
+    "Intercept",
+    names(group_ef)
+  )
+  names(group_ef) <- paste0("r_", names(group_ef))
+  for (coef_nms_idx in seq_along(coef_nms)) {
+    group_nm_i <- names(coef_nms)[coef_nms_idx]
+    coef_nms_i <- coef_nms[[coef_nms_idx]]
+    coef_nms_i <- gsub(
+      "\\(Intercept\\)",
+      "Intercept",
+      coef_nms_i
+    )
+    # Put the part following the group name in square brackets, reorder its two
+    # subparts (coefficient name and group level) and separate them by comma:
+    names(group_ef) <- sub(
+      paste0(
+        "(",
+        gsub("\\.", "\\\\.", group_nm_i),
+        ")\\.(",
+        paste(
+          gsub("\\.", "\\\\.", coef_nms_i),
+          collapse = "|"
+        ),
+        ")\\.(.*)$"
+      ),
+      "\\1[\\3,\\2]",
+      names(group_ef)
+    )
+  }
+  
   return(c(population_effects, group_vc, group_ef))
 }
 
