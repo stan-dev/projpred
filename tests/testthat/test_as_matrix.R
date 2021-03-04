@@ -39,11 +39,11 @@ if (require(rstanarm)) {
     solution_terms <- c(2, 3)
     ndraws <- 100
     p_gauss <- project(vs_gauss,
-      solution_terms = solution_terms,
+      solution_terms = vs_gauss$solution_terms[solution_terms],
       ndraws = ndraws
     )
     p_binom <- project(vs_binom,
-      solution_terms = solution_terms,
+      solution_terms = vs_binom$solution_terms[solution_terms],
       ndraws = ndraws
     )
   })
@@ -80,7 +80,7 @@ if (require(rstanarm)) {
 
   test_that("as.matrix.projection works with clustering", {
     nclusters <- 3
-    p_clust <- project(vs_gauss, solution_terms = solution_terms,
+    p_clust <- project(vs_gauss, solution_terms = vs_gauss$solution_terms[solution_terms],
                        nclusters = nclusters)
     m <- as.matrix(p_clust)
     expect_length(

@@ -22,6 +22,8 @@ chains <- 2
 seed <- 1235
 iter <- 500
 source(file.path("helpers", "SW.R"))
+ndraws <- 1
+ndraws_pred <- 5
 
 f_gauss <- gaussian()
 df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
