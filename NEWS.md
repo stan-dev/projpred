@@ -12,6 +12,8 @@
 
 ### Bug fixes
 
+* Fixed a bug raising an error when not projecting from a `vsel` object.
+
 ## projpred 2.0.4
 
 * Added support for weighted LOO proportional-to-size subsampling based on Magnusson, M., Riis Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out  Cross-Validation for Large Data. In International Conference on Machine Learning. 
@@ -24,7 +26,6 @@
 ### Bug fixes
 
 * Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix).
-* Fixed a bug raising an error when not projecting from a `vsel` object.
 
 ## projpred 2.0.3
 
