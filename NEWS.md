@@ -8,11 +8,11 @@
 
 ### Minor changes
 
-* For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below).
+* For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below). (GitHub: #82)
 
 ### Bug fixes
 
-* Fixed a bug raising an error when not projecting from a `vsel` object.
+* Fixed a bug raising an error when not projecting from a `vsel` object. (GitHub: #79, #80)
 
 ## projpred 2.0.4
 
@@ -20,12 +20,12 @@
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
 * Fast approximate LOO computation for `validate_search = FALSE` calls in `cv_varsel(...)`.
 * Improved summary output with important details.
-* For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves.
-* For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects.
+* For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves. (GitHub: #75)
+* For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects. (GitHub: #74)
 
 ### Bug fixes
 
-* Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix).
+* Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix). (GitHub: #72, #73)
 
 ## projpred 2.0.3
 
