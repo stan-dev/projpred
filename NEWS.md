@@ -2,6 +2,14 @@
 
 # News
 
+## projpred 2.0.4.9001
+
+### Major changes
+
+### Minor changes
+
+### Bug fixes
+
 ## projpred 2.0.4.9000
 
 ### Major changes
