@@ -26,7 +26,7 @@ before_install:
 
 script:
   - R CMD build . --no-build-vignettes
-  - travis_wait 45 R CMD check projpred*tar.gz --ignore-vignettes --no-examples
+  - travis_wait 60 R CMD check projpred*tar.gz --ignore-vignettes --no-examples
 
 after_success:
-- travis_wait 45 Rscript -e 'covr::codecov()'
+- travis_wait 60 Rscript -e 'covr::codecov()'
