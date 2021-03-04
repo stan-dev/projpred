@@ -133,7 +133,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
       length(solution_terms) > NCOL(newdata)) {
     stop(paste(
       "The number of columns in newdata does not match with the given",
-      "number of terms indices (solution_terms)."
+      "number of solution terms."
     ))
   }
   ## set random seed but ensure the old RNG state is restored on exit
