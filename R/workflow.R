@@ -396,6 +396,7 @@ approximate_kfold.refmodel <- function(object, ...) {
 approximate_kfold.vselsearch <- function(object,
                                          ndraws_pred = NULL,
                                          nclusters_pred = NULL,
+                                         K = NULL,
                                          verbose = TRUE,
                                          penalty = NULL,
                                          refit_proj = TRUE,
@@ -415,6 +416,12 @@ approximate_kfold.vselsearch <- function(object,
   )
   nclusters_pred <- args$nclusters_pred
   ndraws_pred <- args$ndraws_pred
+
+  args <- parse_args_cv_varsel(
+    refmodel, "kfold", K, NULL,
+    nclusters_pred
+  )
+  K <- args$K
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel,
@@ -1363,12 +1370,13 @@ varsel_cv.vselapproxcv <- function(object,
           ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
           nterms_max = nterms_max, nloo = nloo, penalty = penalty,
           lambda_min_ratio = lambda_min_ratio, thresh = thresh,
-          regul = regul, seed = seed, search_terms = search_terms
+          regul = regul, seed = seed, search_terms = search_terms,
+          K = K
       )
     } else {
       sel_cv <- approximate_kfold(search_path,
           ndraws_pred = ndraws_pred, penalty = penalty,
-          nclusters_pred = nclusters_pred, nloo = nloo
+          nclusters_pred = nclusters_pred, nloo = nloo, K = K
       )
     }
   }
