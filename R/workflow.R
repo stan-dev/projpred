@@ -369,7 +369,7 @@ approximate_loo.vselsearch <- function(object,
       cv_method = "LOO"
     )
   )
-  class(sel_loo) <- "vselapproxcv"
+  class(sel_loo) <- c("vselapproxcv", "vsel")
   return(sel_loo)
 }
 
@@ -549,7 +549,7 @@ approximate_kfold.vselsearch <- function(object,
     solution_terms_cv = object$solution_terms,
     summaries = list(sub = sub, ref = ref),
     d_test = c(d_cv, type = "kfold"),
-    kl = sapply(p_sub_cv, function(x) x$kl),
+    kl = sapply(p_sub, function(x) x$kl),
     control = nlist(
       time = end - start,
       ndraws = object$control$ndraws,
@@ -559,7 +559,7 @@ approximate_kfold.vselsearch <- function(object,
       cv_method = "KFold"
     )
   )
-  class(sel_kfold) <- "vselapproxcv"
+  class(sel_kfold) <- c("vselapproxcv", "vsel")
   return(sel_kfold)
 }
 
@@ -945,7 +945,7 @@ cv_loo.vselapproxcv <- function(object,
       cv_method = "LOO"
     )
   )
-  class(sel_cv_loo) <- "vselcv"
+  class(sel_cv_loo) <- c("vselcv", "vsel")
   return(sel_cv_loo)
 }
 
@@ -1195,7 +1195,7 @@ cv_kfold.vselapproxcv <- function(object,
       cv_method = "KFold"
     )
   )
-  class(sel_cv_kfold) <- "vselcv"
+  class(sel_cv_kfold) <- c("vselcv", "vsel")
   return(sel_cv_kfold)
 }
 
