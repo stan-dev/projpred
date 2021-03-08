@@ -136,7 +136,7 @@ extend_family_gaussian <- function(family) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
     }
-    -2 * weights * (-0.5 / dis * (y - mu)^2 - log(dis))
+    -2 * weights * (-0.5 / dis^2 * (y - mu)^2 - log(dis))
   }
   ppd_gauss <- function(mu, dis, weights = 1) rnorm(length(mu), mu, dis)
 
