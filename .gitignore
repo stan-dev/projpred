@@ -10,3 +10,4 @@
 vignettes/quickstart_cache
 *cache/
 *files/
+/src/projpred.dll
