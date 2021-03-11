@@ -564,43 +564,10 @@ approximate_kfold.vselsearch <- function(object,
 }
 
 #' @export
-diagnostic <- function(object, ...) {
-  UseMethod("diagnostic")
-}
-
-#' @export
-diagnostic.vselapproxcv <- function(x, ...) {
-  summ_sub_elpd <- sapply(x$summaries$sub, function(s) {
-        sum(s$lppd, na.rm = TRUE)
-    })
-  summ_ref_elpd <- sum(x$summaries$ref$lppd, na.rm = TRUE)
-  if ((summ_sub_elpd[NCOL(x$solution_terms_cv)] - summ_ref_elpd)
-      / summ_ref_elpd > 0.1) {
-    return(paste0(
-      "The projections' ELPDs are much higher than the reference model's,",
-      "we recommend running full cross validation and increasing `ndraws_pred`."
-    ))
-  } else if ((summ_sub_elpd[NCOL(x$solution_terms_cv)] - summ_ref_elpd)
-             / summ_ref_elpd > 0.01) {
-    return(paste0(
-      "The projections' ELPDs seems overoptimistic, we recommend ",
-      "increasing `ndraws_pred`."
-    ))
-  } else {
-    return(paste0(
-      "The projections' ELPDs match the reference model's."
-    ))
-  }
-}
-
-#' @export
-diagnostic.vselcv <- function(x, ...) {
-  summ_sub_elpd <- sapply(x$summaries$sub, function(s) {
-        sum(s$lppd, na.rm = TRUE)
-    })
-  summ_ref_elpd <- sum(x$summaries$ref$lppd, na.rm = TRUE)
-  if ((summ_sub_elpd[NCOL(x$solution_terms_cv)] - summ_ref_elpd)
-             / summ_ref_elpd > 0.01) {
+diagnostic <- function(x, ...) {
+  diff <- x$diff[NROW(x)]
+  diff.se <- x$diff.se[NROW(x)]
+  if (abs(diff) > 2 * diff.se) {
     return(paste0(
       "The projections' ELPDs seems overoptimistic, we recommend ",
       "increasing `ndraws_pred`."
@@ -631,8 +598,7 @@ summary.vselapproxcv <- function(object, nterms_max = NULL, stats = "elpd",
     time = object$control$time,
     cv_method = object$control$cv_method,
     solution_terms = search_path$solution_terms,
-    search_included = "search not included",
-    diagnostics = diagnostic(object)
+    search_included = "search not included"
   )
   class(out) <- "vselapproxcvsummary"
 
@@ -642,6 +608,7 @@ summary.vselapproxcv <- function(object, nterms_max = NULL, stats = "elpd",
   )
 
   out$selection <- stats_table
+  out$diagnostic <- diagnostic(stats_table)
   return(out)
 }
 
@@ -675,7 +642,7 @@ print.vselapproxcvsummary <- function(x, digits = 1, ...) {
     "Draws used for prediction: ", x$ndraws_pred, ", in ",
     x$nclusters_pred, " clusters\n"
   ))
-  cat(paste0("\nDiagnostics:\n", x$diagnostics, "\n"))
+  cat(paste0("\nDiagnostics:\n", x$diagnostic, "\n"))
   cat("\nSelection Summary:\n")
   print(x$selection %>% dplyr::mutate(dplyr::across(
     where(is.numeric),
@@ -1218,8 +1185,7 @@ summary.vselcv <- function(object, nterms_max = NULL, stats = "elpd",
     time = object$control$time,
     cv_method = object$control$cv_method,
     solution_terms = search_path$solution_terms,
-    search_included = "search included",
-    diagnostics = diagnostic(object)
+    search_included = "search included"
   )
   class(out) <- "vselcvsummary"
 
@@ -1228,6 +1194,7 @@ summary.vselcv <- function(object, nterms_max = NULL, stats = "elpd",
     baseline, deltas
   )
   out$selection <- stats_table
+  out$diagnostic <- diagnostic(stats_table)
   
   return(out)
 }
@@ -1262,7 +1229,7 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
     "Draws used for prediction: ", x$ndraws_pred, ", in ",
     x$nclusters_pred, " clusters\n"
   ))
-  cat(paste0("\nDiagnostics:\n", x$diagnostics, "\n"))
+  cat(paste0("\nDiagnostics:\n", x$diagnostic, "\n"))
   cat("\nSelection Summary:\n")
   print(x$selection %>% dplyr::mutate(dplyr::across(
     where(is.numeric),
