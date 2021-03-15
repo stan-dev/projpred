@@ -5,6 +5,7 @@
 \alias{get_refmodel}
 \alias{get_refmodel.refmodel}
 \alias{get_refmodel.vsel}
+\alias{get_refmodel.vselsearch}
 \alias{get_refmodel.vselcv}
 \alias{get_refmodel.vselapproxcv}
 \alias{get_refmodel.default}
@@ -17,6 +18,8 @@ get_refmodel(object, ...)
 \method{get_refmodel}{refmodel}(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
+
+\method{get_refmodel}{vselsearch}(object, ...)
 
 \method{get_refmodel}{vselcv}(object, ...)
 
