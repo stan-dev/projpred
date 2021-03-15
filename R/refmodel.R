@@ -204,6 +204,12 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname get-refmodel
 #' @export
+get_refmodel.vselsearch <- function(object, ...) {
+  object$refmodel
+}
+
+#' @rdname get-refmodel
+#' @export
 get_refmodel.vselcv <- function(object, ...) {
   object$search_path$refmodel
 }
