@@ -1,17 +1,14 @@
-## Three-step workflow for variable and structure selection
-##   1. Run a single search through the model space with the full data
-##   2. Run a fast approximate LOO search. Repeat if ndraws_pred is too low.
-##   3. If necessary, run a validated CV search
-## Two diagnostics:
-##   - How many clusters should we run for selection and/or prediction?
-##     If the projections ELPD is significantly different to the reference
-##     model's ELPD, increase nclusters_pred.
-##   - Do we need to run a validated search?
-##     Run a validated search if the approximate LOO estimate is significantly
-##     different to the reference model's ELPD LOO estimate.
-##   - Repeat diagnostic 1 after validated search.
-##   Summary methods that also output diagnostic information
-##   and recommended next steps.
+#' Variable and structure selection workflow
+#'
+#' Perform variable and structure selection in a cascade workflow. First, it
+#' searches through model space to determine the ordering of model terms for
+#' projection. Second, we compute the projections with approximate cross
+#' validation. Third, if selection diagnostics indicate that more posterior
+#' draws are required, we recommend running a full search with more draws.
+#'
+#' @name workflow
+#'
+NULL
 
 #' @rdname workflow
 #' @export

@@ -5,6 +5,8 @@
 \alias{get_refmodel}
 \alias{get_refmodel.refmodel}
 \alias{get_refmodel.vsel}
+\alias{get_refmodel.vselcv}
+\alias{get_refmodel.vselapproxcv}
 \alias{get_refmodel.default}
 \alias{get_refmodel.stanreg}
 \alias{init_refmodel}
@@ -15,6 +17,10 @@ get_refmodel(object, ...)
 \method{get_refmodel}{refmodel}(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
+
+\method{get_refmodel}{vselcv}(object, ...)
+
+\method{get_refmodel}{vselapproxcv}(object, ...)
 
 \method{get_refmodel}{default}(
   object,
@@ -111,8 +117,6 @@ reference model fit, newdata is either NULL or a data frame with new
 observations, wrhs is a right hand side formula to recover the weights from
 the data frame and orhs is a right hand side formula to recover the offset
 from the data frame.}
-
-\item{y}{Target response.}
 }
 \value{
 An object of type \code{refmodel} (the same type as returned by
