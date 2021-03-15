@@ -10,7 +10,6 @@
 #' @param object Object on which the reference model is created. See possible
 #'   types below.
 #' @param data Data on which the reference model was fitted.
-#' @param y Target response.
 #' @param formula Reference model's lme4-like formula.
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model.
@@ -201,6 +200,18 @@ get_refmodel.refmodel <- function(object, ...) {
 get_refmodel.vsel <- function(object, ...) {
   # the reference model is stored in vsel-object
   object$refmodel
+}
+
+#' @rdname get-refmodel
+#' @export
+get_refmodel.vselcv <- function(object, ...) {
+  object$search_path$refmodel
+}
+
+#' @rdname get-refmodel
+#' @export
+get_refmodel.vselapproxcv <- function(object, ...) {
+  object$search_path$refmodel
 }
 
 #' @rdname get-refmodel
