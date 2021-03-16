@@ -82,7 +82,8 @@ NULL
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     intercept = NULL, seed = NULL, regul = 1e-4, ...) {
-  if (!("vsel" %in% class(object)) && is.null(solution_terms)) {
+  if (!any(inherits(object, c("vsel", "vselsearch"), TRUE) != 0)
+      && is.null(solution_terms)) {
     stop(
       "The given object is not a variable selection -object.",
       "Run the variable selection first, or provide the variable ",
