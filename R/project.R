@@ -10,10 +10,10 @@
 #'   or an object which can be converted to a reference model using
 #'   \link[=get_refmodel]{get_refmodel}.
 #' @param nterms Number of terms in the submodel (the variable combination is
-#'   taken from the \code{varsel} information). If a list, then the projection
-#'   is performed for each model size. Default is the model size suggested by
-#'   the variable selection (see function \code{suggest_size}). Ignored if
-#'   \code{solution_terms} is specified.
+#'   taken from the \code{varsel} information). If a numeric vector, then the
+#'   projection is performed for each model size. Default is the model size
+#'   suggested by the variable selection (see function \code{suggest_size}).
+#'   Ignored if \code{solution_terms} is specified.
 #' @param solution_terms Variable indices onto which the projection is done. If
 #'   specified, \code{nterms} is ignored.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
