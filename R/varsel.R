@@ -24,14 +24,14 @@
 #'   \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws used in the variable selection.
 #'   Cannot be larger than the number of draws in the reference model. Ignored
-#'   if \code{nclusters} is set. Default is 10.
+#'   if \code{nclusters} is set.
 #' @param nclusters Number of clusters to use in the clustered projection.
-#'   Overrides the \code{ndraws} argument. Default is 10.
+#'   Overrides the \code{ndraws} argument. Default is 20.
 #' @param ndraws_pred Number of projected draws used for prediction (after
 #'   selection). Ignored if \code{nclusters_pred} is given. Note that setting
 #'   less draws or clusters than posterior draws in the reference model may
 #'   result in slightly inaccurate projection performance, although increasing
-#'   this argument linearly affects the computation time. Default is 400.
+#'   this argument linearly affects the computation time.
 #' @param nclusters_pred Number of clusters used for prediction (after
 #'   selection). Default is 400.
 #' @param nterms_max Maximum number of variables until which the selection is
@@ -307,7 +307,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   }
 
   if (is.null(ndraws_pred) && is.null(nclusters_pred)) {
-    ## use 5 clusters for prediction by default
+    ## use 400 clusters for prediction by default
     ndraws_pred <- nclusters_pred <- min(NCOL(refmodel$mu), 400)
   } else if (is.null(nclusters_pred)) {
     nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)

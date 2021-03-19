@@ -28,6 +28,7 @@
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
 * Fast approximate LOO computation for `validate_search = FALSE` calls in `cv_varsel(...)`.
 * Improved summary output with important details.
+* The (internally set) default for argument `nclusters` of `varsel()` and `cv_varsel()` was increased from 10 to 20.
 * For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves. (GitHub: #75)
 * For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects. (GitHub: #74)
 
@@ -37,7 +38,9 @@
 
 ## projpred 2.0.3
 
-Minor fixes for stability, no new features.
+* Minor fixes for stability, no new features.
+* The (internally set) default for argument `nclusters` of `varsel()` and `cv_varsel()` was increased from 1 to 10.
+* The (internally set) default for argument `nclusters_pred` of `varsel()` and `cv_varsel()` was increased from 5 to 400.
 
 ## projpred 2.0.2
 
