@@ -51,16 +51,16 @@ Default is 'forward' if the number of variables in the full data is at most
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
 Cannot be larger than the number of draws in the reference model. Ignored
-if \code{nclusters} is set. Default is 10.}
+if \code{nclusters} is set.}
 
 \item{nclusters}{Number of clusters to use in the clustered projection.
-Overrides the \code{ndraws} argument. Default is 10.}
+Overrides the \code{ndraws} argument. Default is 20.}
 
 \item{ndraws_pred}{Number of projected draws used for prediction (after
 selection). Ignored if \code{nclusters_pred} is given. Note that setting
 less draws or clusters than posterior draws in the reference model may
 result in slightly inaccurate projection performance, although increasing
-this argument linearly affects the computation time. Default is 400.}
+this argument linearly affects the computation time.}
 
 \item{nclusters_pred}{Number of clusters used for prediction (after
 selection). Default is 400.}
