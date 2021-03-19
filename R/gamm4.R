@@ -134,7 +134,7 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   mf <- match.call(expand.dots = FALSE)
   mf$formula <- gp$fake.formula
   mf$REML <- mf$verbose <- mf$control <- mf$start <- mf$family <- mf$scale <-
-    mf$knots <- mf$random <- mf$... <- NULL ## mf$weights?
+    mf$knots <- mf$random <- NULL ## mf$weights?
   mf[[1]] <- as.name("model.frame")
   pmf <- mf
   gmf <- eval(mf, parent.frame())
