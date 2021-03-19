@@ -33,10 +33,9 @@ varsel(object, ...)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by
-\link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
-an object which can be converted to a reference model using
-\link[=get_refmodel]{get_refmodel}, or a \code{vsel} object resulting from
-\code{varsel} or \code{cv_varsel}.}
+\link[=init_refmodel]{init_refmodel}, an object which can be converted to a
+reference model using \link[=get_refmodel]{get_refmodel}, or a \code{vsel}
+object resulting from \code{varsel} or \code{cv_varsel}.}
 
 \item{...}{Additional arguments to be passed to the \code{get_refmodel}
 function.}
