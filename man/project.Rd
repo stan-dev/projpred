@@ -47,13 +47,12 @@ if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 \item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 
 \item{seed}{A seed used in the clustering (if \code{nclusters!=ndraws}). Can
-be used to ensure same results every time. @param regul Amount of
-regularization in the projection. Usually there is no need for
-regularization, but sometimes for some models the projection can be
-ill-behaved and we need to add some regularization to avoid numerical
-problems.}
+be used to ensure same results every time.}
 
-\item{regul}{Ridgre regularization constant to fit the projections.}
+\item{regul}{Amount of ridge regularization when fitting the models in the
+projection. Usually there is no need for regularization, but sometimes for
+some models the projection can be ill-behaved and we need to add some
+regularization to avoid numerical problems.}
 
 \item{...}{Currently ignored.}
 }

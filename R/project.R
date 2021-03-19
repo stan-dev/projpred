@@ -27,12 +27,11 @@
 #' @param nclusters Number of clusters in the clustered projection.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
-#'   be used to ensure same results every time. @param regul Amount of
-#'   regularization in the projection. Usually there is no need for
-#'   regularization, but sometimes for some models the projection can be
-#'   ill-behaved and we need to add some regularization to avoid numerical
-#'   problems.
-#' @param regul Ridgre regularization constant to fit the projections.
+#'   be used to ensure same results every time.
+#' @param regul Amount of ridge regularization when fitting the models in the
+#'   projection. Usually there is no need for regularization, but sometimes for
+#'   some models the projection can be ill-behaved and we need to add some
+#'   regularization to avoid numerical problems.
 #' @param ... Currently ignored.
 #'
 #' @return A list of submodels (or a single submodel if projection was
