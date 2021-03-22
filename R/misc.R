@@ -242,6 +242,10 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   family <- refmodel$family
   S <- NCOL(refmodel$mu) # number of draws in the reference model
 
+  if (is.null(ndraws)) {
+    ndraws <- S
+  }
+
   if (!is.null(nclusters)) {
     # use clustering (ignore ndraws argument)
     if (nclusters == 1) {
@@ -265,7 +269,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
         wobs = refmodel$wobs, nclusters = nclusters
       )
     }
-  } else if (!is.null(ndraws)) {
+  } else {
     # subsample from the reference model
     # would it be safer to actually randomly draw the subsample?
     if (ndraws > NCOL(refmodel$mu)) {
@@ -274,7 +278,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
         "columns in mu."
       )
     }
-    s_ind <- round(seq(1, S, length.out = ndraws))
+    s_ind <- sample(seq_len(S), size = ndraws)
     cl <- rep(NA, S)
     cl[s_ind] <- c(1:ndraws)
     predvar <- sapply(s_ind, function(j) {
@@ -284,15 +288,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
       dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws),
       cl = cl
-    )
-  } else {
-    # use all the draws from the reference model
-    predvar <- sapply(seq_len(S), function(j) {
-      family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
-    })
-    p_ref <- list(
-      mu = refmodel$mu, var = predvar, dis = refmodel$dis,
-      weights = refmodel$wsample, cl = c(1:S)
     )
   }
 
