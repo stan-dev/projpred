@@ -374,7 +374,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## by default use all observations
   nloo <- min(nloo, n)
 
-  if (nloo < 0) {
+  if (nloo < 1) {
     stop("nloo must be at least 1")
   }
 
