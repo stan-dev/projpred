@@ -3,9 +3,7 @@
 
 project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
                              regul = 1e-4) {
-  mu <- p_ref$mu
-
-  validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, mu)
+  validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
   wobs <- validparams$wobs
   wsample <- validparams$wsample
 
@@ -18,7 +16,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   subset <- subset_formula_and_data(
     formula = form, terms_ = unique(unlist(solution_terms)),
-    data = refmodel$fetch_data(), y = mu
+    data = refmodel$fetch_data(), y = p_ref$mu
   )
 
   sub_fit <- div_minimizer(flatten_formula(subset$formula), subset$data,
@@ -27,8 +25,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
-    family = family, solution_terms = solution_terms, ref_mu = mu,
-    wobs = wobs, wsample = wsample
+    family = family, solution_terms = solution_terms, wobs = wobs,
+    wsample = wsample
   ))
 }
 
@@ -61,10 +59,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     fetch_submodel <- function(nterms) {
       solution_terms <- utils::head(varorder, nterms)
 
-      ref_mu <- p_sel$mu
-
       validparams <- .validate_wobs_wsample(
-        refmodel$wobs, p_sel$weights, ref_mu
+        refmodel$wobs, p_sel$weights, p_sel$mu
       )
       wobs <- validparams$wobs
       wsample <- validparams$wsample
@@ -74,7 +70,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
       return(.init_submodel(
         sub_fit = sub_refit, p_ref = p_sel, refmodel = refmodel,
-        family = family, solution_terms = solution_terms, ref_mu = ref_mu,
+        family = family, solution_terms = solution_terms,
         wobs = wobs, wsample = wsample
       ))
     }
@@ -114,9 +110,9 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 }
 
 .init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
-                           ref_mu, wobs, wsample) {
+                           wobs, wsample) {
   pobs <- pseudo_data(
-    f = 0, y = ref_mu, family = family, weights = wobs,
+    f = 0, y = p_ref$mu, family = family, weights = wobs,
     offset = refmodel$offset
   )
 
