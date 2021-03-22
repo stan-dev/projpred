@@ -232,10 +232,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   #   cl: cluster assignment for each posterior draw, that is, a vector that has
   #       length equal to the number of posterior draws and each value is an
   #       integer between 1 and s
-  if (is.null(seed)) {
-    seed <- 17249420
-  }
-
   # set random seed but ensure the old RNG state is restored on exit
   if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed
