@@ -23,8 +23,10 @@
 #'   L1-search was used. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws to be projected. Ignored if
-#'   \code{nclusters} is specified. Default is 400.
-#' @param nclusters Number of clusters in the clustered projection.
+#'   \code{nclusters} is specified. Default is 400. We project a single draw
+#'   from each cluster.
+#' @param nclusters Number of clusters in the clustered projection. By default
+#'   we use as many clusters as draws to project.
 #' @param intercept Whether to use intercept. Default is \code{TRUE}.
 #' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
 #'   be used to ensure same results every time. @param regul Amount of

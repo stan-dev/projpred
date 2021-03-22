@@ -38,7 +38,9 @@
 #'   \code{solution_terms} is specified. By default use the automatically
 #'   suggested model size.
 #' @param ndraws Number of draws to return from the predictive distribution of
-#'   the projection. The default is 1000. For \code{proj_predict} only.
+#'   the projection. The default is 1000. For \code{proj_predict} only. We
+#'   compute as many clusters from the reference posterior as draws, so we end
+#'   up projecting a single draw from each cluster.
 #' @param seed An optional seed to use for drawing from the projection. For
 #'   \code{proj_predict} only.
 #' @param ... Additional argument passed to \link{project} if \code{object} is
