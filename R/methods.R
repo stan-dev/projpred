@@ -8,9 +8,9 @@
 #'
 #' @name proj-pred
 #'
-#' @param object Either an object returned by \link[=varsel]{varsel},
-#'   \link[=cv_varsel]{cv_varsel} or \link[=init_refmodel]{init_refmodel}, or
-#'   alternatively any object that can be converted to a reference model.
+#' @param object Either an object returned by \link[=project]{project} or
+#'   alternatively any object that can be passed to argument \code{object} of
+#'   \link[=project]{project}.
 #' @param newdata The predictor values used in the prediction. If
 #'   \code{solution_terms} is specified, then \code{newdata} should either be a
 #'   dataframe containing column names that correspond to \code{solution_terms}
@@ -98,12 +98,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
   if (!.is_proj_list(proj)) {
     proj <- list(proj)
   } else {
-    ## proj is not a projection object
+    ## proj is some other object, not containing an element called "family" (so
+    ## it could be a 'proj_list' but must not necessarily)
     if (any(sapply(proj, function(x) !("family" %in% names(x))))) {
-      stop(paste(
-        "proj_linpred only works with objects returned by",
-        " varsel, cv_varsel or project"
-      ))
+      stop("Invalid object supplied to argument 'object'.")
     }
   }
 
