@@ -11,7 +11,6 @@ project(
   cv_search = TRUE,
   ndraws = 400,
   nclusters = NULL,
-  intercept = NULL,
   seed = NULL,
   regul = 1e-04,
   ...
@@ -45,8 +44,6 @@ from each cluster.}
 
 \item{nclusters}{Number of clusters in the clustered projection. By default
 we use as many clusters as draws to project.}
-
-\item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
 
 \item{seed}{A seed used in the clustering (if \code{nclusters!=ndraws}). Can
 be used to ensure same results every time. @param regul Amount of

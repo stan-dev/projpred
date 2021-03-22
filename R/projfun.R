@@ -78,7 +78,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     ## need to project again for each submodel size
     projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept)
     fetch_submodel <- function(nterms) {
-      if (nterms == 0) {
+      if (nterms == 0 && intercept) {
         ## empty
         solution_terms <- c("1")
       } else {

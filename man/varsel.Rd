@@ -20,7 +20,6 @@ varsel(object, ...)
   nclusters_pred = NULL,
   cv_search = TRUE,
   nterms_max = NULL,
-  intercept = TRUE,
   verbose = TRUE,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
@@ -79,8 +78,6 @@ if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 \item{nterms_max}{Maximum number of varibles until which the selection is
 continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 observations and D the number of variables.}
-
-\item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}
 
 \item{verbose}{If TRUE, may print out some information during the selection.
 Defaults to FALSE.}

@@ -40,7 +40,6 @@
 #' @param nterms_max Maximum number of varibles until which the selection is
 #'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 #'   observations and D the number of variables.
-#' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
 #' @param penalty Vector determining the relative penalties or costs for the
 #'   variables. Zero means that those variables have no cost and will therefore
 #'   be selected first, whereas Inf means those variables will never be
@@ -104,7 +103,7 @@ varsel.default <- function(object, ...) {
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
                             nclusters_pred = NULL, cv_search = TRUE,
-                            nterms_max = NULL, intercept = TRUE, verbose = TRUE,
+                            nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, ...) {
@@ -112,6 +111,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
+  ## use the intercept as indicated by the refmodel
+  intercept <- NULL
   args <- parse_args_varsel(
     refmodel, method, cv_search, intercept, nterms_max,
     nclusters, ndraws, nclusters_pred, ndraws_pred, search_terms

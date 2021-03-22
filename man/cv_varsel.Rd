@@ -20,7 +20,6 @@ cv_varsel(object, ...)
   nclusters_pred = NULL,
   cv_search = TRUE,
   nterms_max = NULL,
-  intercept = NULL,
   penalty = NULL,
   verbose = TRUE,
   nloo = NULL,
@@ -82,8 +81,6 @@ if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 \item{nterms_max}{Maximum number of varibles until which the selection is
 continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 observations and D the number of variables.}
-
-\item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}
 
 \item{penalty}{Vector determining the relative penalties or costs for the
 variables. Zero means that those variables have no cost and will therefore
