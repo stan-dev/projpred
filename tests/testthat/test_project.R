@@ -284,10 +284,11 @@ if (require(rstanarm)) {
 
       # test alpha and beta
       coefs <- as.matrix(proj)
-      dalpha <- max(abs(coefs[, 1] - alpha_ref))
+      dalpha <- abs(mean(coefs[, 1]) - mean(alpha_ref))
       order <- match(colnames(fit_list[[i]]$data), proj$solution_terms)
       order <- order[!is.na(order)]
-      dbeta <- max(abs(coefs[, -1, drop = FALSE][, order] - beta_ref))
+      dbeta <- max(abs(colMeans(coefs[, -1, drop = FALSE][, order])
+      - colMeans(beta_ref)))
       expect_lt(dalpha, tol)
       expect_lt(dbeta, tol)
     }

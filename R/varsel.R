@@ -62,6 +62,8 @@
 #' @param search_terms A custom list of terms to evaluate for variable
 #'   selection. By default considers all the terms in the reference model's
 #'   formula.
+#' @param seed Random seed used in the subsampling LOO. By default uses a fixed
+#'   seed.
 #' @param ... Additional arguments to be passed to the
 #'   \code{get_refmodel}-function.
 #'
@@ -106,7 +108,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL, ...) {
+                            search_terms = NULL, seed = NULL, ...) {
   refmodel <- object
   family <- refmodel$family
 
@@ -146,8 +148,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   }
 
   ## reference distributions for selection and prediction after selection
-  p_sel <- .get_refdist(refmodel, ndraws, nclusters)
-  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
+  p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
+  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
 
   ## perform the selection
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
@@ -180,7 +182,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     if (d_type == "train") {
       mu_test <- refmodel$mu
     } else {
-      mu_test <- family$linkinv(family$ref_predfun(refmodel$fit,
+      mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
         newdata = d_test$data
       ))
     }

@@ -195,7 +195,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
       cv_search = cv_search, nterms_max = nterms_max - 1,
       intercept = intercept, penalty = penalty, verbose = verbose,
       lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
-      search_terms = search_terms
+      search_terms = search_terms, seed = seed
     )
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
@@ -342,14 +342,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel,
     ndraws = ndraws,
-    nclusters = nclusters
+    nclusters = nclusters,
+    seed = seed
   )
   cl_sel <- p_sel$cl # clustering information
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel,
     ndraws = ndraws_pred,
-    nclusters = nclusters_pred
+    nclusters = nclusters_pred,
+    seed = seed
   )
   cl_pred <- p_pred$cl
 
@@ -607,8 +609,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       refmodel$nclusters_pred,
       nclusters_pred
     )
-    p_sel <- .get_refdist(refmodel, ndraws, nclusters)
-    p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
+    p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
+    p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
     newdata <- d_test$newdata
     pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata)
     pred <- matrix(

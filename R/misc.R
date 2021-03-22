@@ -256,7 +256,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       )
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ndraws = nclusters))
+      return(.get_refdist(refmodel, ndraws = nclusters, seed = seed))
     } else {
       # several clusters
       if (nclusters > NCOL(refmodel$mu)) {

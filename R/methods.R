@@ -88,14 +88,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
     proj <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
-    proj <- project(object = object, nterms = nterms, ...)
-  }
-
-  if (is.null(newdata)) {
-    newdata <- proj$extract_model_data(proj$refmodel$fit,
-      wrhs = weightsnew, orhs = offsetnew,
-      extract_y = FALSE
-    )
+    proj <- project(object = object, nterms = nterms, seed = seed, ...)
   }
 
   if (!.is_proj_list(proj)) {
@@ -108,6 +101,16 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
         " varsel, cv_varsel or project"
       ))
     }
+  }
+
+  if (is.null(newdata)) {
+    ## pick first projection's function
+    newdata <- proj[[1]]$extract_model_data(proj[[1]]$refmodel$fit,
+      wrhs = weightsnew, orhs = offsetnew,
+      extract_y = FALSE
+    )
+  } else if (!any(inherits(newdata, c("matrix", "data.frame"), TRUE))) {
+    stop("newdata must be a data.frame or a matrix")
   }
 
   projected_sizes <- sapply(proj, function(x) {

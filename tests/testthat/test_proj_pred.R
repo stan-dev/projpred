@@ -64,14 +64,14 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("proj_linpred: newdata is specified correctly", {
-    expect_error(
-      proj_linpred(proj_solution_terms_list),
-      'argument "newdata" is missing, with no default'
-    )
-    expect_error(
-      proj_linpred(proj_solution_terms_list, newdata = NULL),
-      "must be a data.frame or a matrix"
-    )
+    ## expect_error(
+    ##   proj_linpred(proj_solution_terms_list),
+    ##   'argument "newdata" is missing, with no default'
+    ## )
+    ## expect_error(
+    ##   proj_linpred(proj_solution_terms_list, newdata = NULL),
+    ##   "must be a data.frame or a matrix"
+    ## )
     expect_error(
       proj_linpred(proj_solution_terms_list, newdata = x[, 1]),
       "must be a data.frame or a matrix"
@@ -323,14 +323,14 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   context("proj_predict")
 
   test_that("proj_predict: newdata is specified correctly", {
-    expect_error(
-      proj_predict(proj_solution_terms_list),
-      'argument "newdata" is missing, with no default'
-    )
-    expect_error(
-      proj_predict(proj_solution_terms_list, newdata = NULL),
-      "must be a data.frame or a matrix"
-    )
+    ## expect_error(
+    ##   proj_predict(proj_solution_terms_list),
+    ##   'argument "newdata" is missing, with no default'
+    ## )
+    ## expect_error(
+    ##   proj_predict(proj_solution_terms_list, newdata = NULL),
+    ##   "must be a data.frame or a matrix"
+    ## )
     expect_error(
       proj_predict(proj_solution_terms_list, newdata = x[, 1]),
       "must be a data.frame or a matrix"
