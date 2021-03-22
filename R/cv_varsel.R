@@ -185,7 +185,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
     stop(sprintf("Unknown cross-validation method: %s.", method))
   }
 
-  if (validate_search || cv_search == "kfold") {
+  if (validate_search || cv_method == "kfold") {
     ## run the selection using the full dataset
     if (verbose) {
       print(paste("Performing the selection using all the data.."))
