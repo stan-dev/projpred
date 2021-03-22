@@ -81,18 +81,19 @@ NULL
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
                         proj_predict, ...) {
-  if (is.null(newdata) ||
-    !(inherits(newdata, "data.frame") ||
-      inherits(newdata, "matrix"))) {
-    stop("newdata must be a data.frame or a matrix")
-  }
-
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     proj <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
     proj <- project(object = object, nterms = nterms, ...)
+  }
+
+  if (is.null(newdata)) {
+    newdata <- proj$extract_model_data(proj$refmodel$fit,
+      wrhs = weightsnew, orhs = offsetnew,
+      extract_y = FALSE
+    )
   }
 
   if (!.is_proj_list(proj)) {
@@ -168,9 +169,9 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 
 #' @rdname proj-pred
 #' @export
-proj_linpred <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
-                         nterms = NULL, transform = FALSE, integrated = FALSE,
-                         seed = NULL, ...) {
+proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, nterms = NULL, transform = FALSE,
+                         integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
@@ -233,8 +234,9 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 
 #' @rdname proj-pred
 #' @export
-proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
-                         nterms = NULL, ndraws = 1000, seed = NULL, ...) {
+proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, nterms = NULL, ndraws = 1000,
+                         seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
