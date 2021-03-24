@@ -24,19 +24,20 @@
 #'   \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws used in the variable selection.
 #'   Cannot be larger than the number of draws in the reference model. Ignored
-#'   if \code{nclusters} is set. Default is 10. In other words, we project a
+#'   if \code{nclusters} is set. Default is 20. In other words, we project a
 #'   single draw from each cluster.
-#' @param nclusters Number of clusters used for selection. Defaults to 10 and
-#'   ignored if method='L1' (L1-search uses always one cluster). If nclusters is
-#'   null we use as many clusters as draws to project.
+#' @param nclusters Number of clusters used for selection. Defaults to 20 and
+#'   ignored if \code{method = "L1"} (L1-search uses always one cluster). If
+#'   \code{nclusters} is \code{NULL} we use as many clusters as draws to
+#'   project.
 #' @param ndraws_pred Number of projected draws used for prediction (after
 #'   selection). Ignored if \code{nclusters_pred} is given. Note that setting
 #'   less draws or clusters than posterior draws in the reference model may
 #'   result in slightly inaccurate projection performance, although increasing
 #'   this argument linearly affects the computation time.
 #' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 400. If nclusters_pred is null, we use as many
-#'   clusters for prediction as ndraws_pred.
+#'   selection). Default is 400. If \code{NULL}, we use as many clusters for
+#'   prediction as ndraws_pred.
 #' @param nterms_max Maximum number of variables until which the selection is
 #'   continued. Defaults to \code{min(20, D, floor(0.4 * n))} where \code{n} is
 #'   the number of observations and \code{D} the number of variables.
