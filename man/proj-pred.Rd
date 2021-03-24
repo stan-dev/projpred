@@ -31,9 +31,9 @@ proj_predict(
 )
 }
 \arguments{
-\item{object}{Either an object returned by \link[=varsel]{varsel},
-\link[=cv_varsel]{cv_varsel} or \link[=init_refmodel]{init_refmodel}, or
-alternatively any object that can be converted to a reference model.}
+\item{object}{Either an object returned by \link[=project]{project} or
+alternatively any object that can be passed to argument \code{object} of
+\link[=project]{project}.}
 
 \item{newdata}{The predictor values used in the prediction. If
 \code{solution_terms} is specified, then \code{newdata} should either be a
