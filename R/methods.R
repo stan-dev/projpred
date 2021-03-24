@@ -109,6 +109,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
       wrhs = weightsnew, orhs = offsetnew,
       extract_y = FALSE
     )
+    newdata <- as.data.frame(newdata[!sapply(newdata, is.null)])
   } else if (!any(inherits(newdata, c("matrix", "data.frame"), TRUE))) {
     stop("newdata must be a data.frame or a matrix")
   }
