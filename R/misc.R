@@ -214,7 +214,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
 
 
-.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL) {
+.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
+                         thinning = TRUE) {
   #
   # Creates the reference distribution based on the refmodel-object, and the
   # desired number of clusters (nclusters) or number of subsamples (ndraws). If
@@ -277,7 +278,11 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
         "columns in mu."
       )
     }
-    s_ind <- sample(seq_len(S), size = ndraws)
+    if (thinning) {
+      s_ind <- round(seq(from = 1, to = S, length.out = ndraws))
+    } else {
+      s_ind <- sample(seq_len(S), size = ndraws)
+    }
     cl <- rep(NA, S)
     cl[s_ind] <- c(1:ndraws)
     predvar <- sapply(s_ind, function(j) {
