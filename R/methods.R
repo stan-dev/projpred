@@ -105,10 +105,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 
   if (is.null(newdata)) {
     ## pick first projection's function
-    newdata <- proj[[1]]$extract_model_data(proj[[1]]$refmodel$fit,
-      wrhs = weightsnew, orhs = offsetnew,
-      extract_y = FALSE
-    )
+    newdata <- proj[[1]]$refmodel$fetch_data()
   } else if (!any(inherits(newdata, c("matrix", "data.frame"), TRUE))) {
     stop("newdata must be a data.frame or a matrix")
   }
