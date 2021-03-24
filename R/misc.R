@@ -271,7 +271,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     }
   } else {
     # subsample from the reference model
-    # would it be safer to actually randomly draw the subsample?
     if (ndraws > NCOL(refmodel$mu)) {
       stop(
         "The number of draws ndraws cannot exceed the number of ",
