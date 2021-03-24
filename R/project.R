@@ -23,9 +23,10 @@
 #'   L1-search was used. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws to be projected. Ignored if
-#'   \code{nclusters} is specified. Default is 400.
-#' @param nclusters Number of clusters in the clustered projection.
-#' @param intercept Whether to use intercept. Default is \code{TRUE}.
+#'   \code{nclusters} is specified. Default is 400. We project a single draw
+#'   from each cluster.
+#' @param nclusters Number of clusters in the clustered projection. By default
+#'   we use as many clusters as draws to project.
 #' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
 #'   be used to ensure same results every time.
 #' @param regul Amount of ridge regularization when fitting the models in the
@@ -80,7 +81,7 @@ NULL
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
-                    intercept = NULL, seed = NULL, regul = 1e-4, ...) {
+                    seed = NULL, regul = 1e-4, ...) {
   if (!("vsel" %in% class(object)) && is.null(solution_terms)) {
     stop(
       "The given object is not a variable selection -object.",
@@ -181,10 +182,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     )
   }
 
-  if (is.null(intercept)) {
-    intercept <- refmodel$intercept
-  }
-
+  intercept <- refmodel$intercept
   family <- refmodel$family
 
   ## get the clustering or subsample

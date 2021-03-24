@@ -20,7 +20,6 @@ cv_varsel(object, ...)
   nclusters_pred = NULL,
   cv_search = TRUE,
   nterms_max = NULL,
-  intercept = NULL,
   penalty = NULL,
   verbose = TRUE,
   nloo = NULL,
@@ -53,11 +52,14 @@ Default is 'forward' if the number of variables in the full data is at most
 \item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'.
 Default is 'LOO'.}
 
-\item{ndraws}{Number of posterior draws used for selection. Ignored if
-nclusters is provided or if method='L1'. Default is 10.}
+\item{ndraws}{Number of posterior draws used in the variable selection.
+Cannot be larger than the number of draws in the reference model. Ignored
+if nclusters is set. Default is 10. In other words, we project a single
+draw from each cluster.}
 
 \item{nclusters}{Number of clusters used for selection. Defaults to 10 and
-ignored if method='L1' (L1-search uses always one cluster).}
+ignored if method='L1' (L1-search uses always one cluster). If nclusters is
+null we use as many clusters as draws to project.}
 
 \item{ndraws_pred}{Number of projected draws used for prediction (after
 selection). Ignored if nclusters_pred is given. Note that setting less
@@ -66,7 +68,8 @@ slightly inaccurate projection performance, although increasing this
 argument linearly affects the computation time. Default is 400.}
 
 \item{nclusters_pred}{Number of clusters used for prediction (after
-selection). Default is 400.}
+selection). Default is 400. If nclusters_pred is null, we use as many
+clusters for prediction as ndraws_pred.}
 
 \item{cv_search}{If TRUE, then the projected coefficients after L1-selection
 are computed without any penalization (or using only the regularization
@@ -78,8 +81,6 @@ if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 \item{nterms_max}{Maximum number of varibles until which the selection is
 continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 observations and D the number of variables.}
-
-\item{intercept}{Whether to use intercept in the submodels. Defaults to TRUE.}
 
 \item{penalty}{Vector determining the relative penalties or costs for the
 variables. Zero means that those variables have no cost and will therefore

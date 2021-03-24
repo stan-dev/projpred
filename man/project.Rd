@@ -11,7 +11,6 @@ project(
   cv_search = TRUE,
   ndraws = 400,
   nclusters = NULL,
-  intercept = NULL,
   seed = NULL,
   regul = 1e-04,
   ...
@@ -40,11 +39,11 @@ L1-search was used. Default is TRUE for genuine reference models and FALSE
 if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 
 \item{ndraws}{Number of posterior draws to be projected. Ignored if
-\code{nclusters} is specified. Default is 400.}
+\code{nclusters} is specified. Default is 400. We project a single draw
+from each cluster.}
 
-\item{nclusters}{Number of clusters in the clustered projection.}
-
-\item{intercept}{Whether to use intercept. Default is \code{TRUE}.}
+\item{nclusters}{Number of clusters in the clustered projection. By default
+we use as many clusters as draws to project.}
 
 \item{seed}{A seed used in the clustering (if \code{nclusters!=ndraws}). Can
 be used to ensure same results every time.}
