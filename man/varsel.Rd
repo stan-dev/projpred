@@ -110,8 +110,7 @@ default \code{1} for each variable.}
 selection. By default considers all the terms in the reference model's
 formula.}
 
-\item{seed}{Random seed used in the subsampling LOO. By default uses a fixed
-seed.}
+\item{seed}{Random seed used when clustering the posterior draws.}
 }
 \value{
 An object of type \code{vsel} that contains information about the

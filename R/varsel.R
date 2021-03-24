@@ -63,8 +63,7 @@
 #' @param search_terms A custom list of terms to evaluate for variable
 #'   selection. By default considers all the terms in the reference model's
 #'   formula.
-#' @param seed Random seed used in the subsampling LOO. By default uses a fixed
-#'   seed.
+#' @param seed Random seed used when clustering the posterior draws.
 #' @param ... Additional arguments to be passed to the \code{get_refmodel}
 #'   function.
 #'
