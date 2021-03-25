@@ -128,7 +128,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     )
     expect_error(
       proj_linpred(c(proj_solution_terms_list, list(x)), newdata = x),
-      "only works with objects returned by"
+      "Invalid object supplied to argument 'object'\\."
     )
   })
 
@@ -392,7 +392,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     expect_error(
       proj_predict(c(proj_solution_terms_list, list(x)),
                    newdata = data.frame(x = x)),
-      "only works with objects returned by"
+      "Invalid object supplied to argument 'object'\\."
     )
   })
 
