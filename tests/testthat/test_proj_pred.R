@@ -117,7 +117,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste("proj_linpred: error when varsel has not been performed on",
-                  "the object"), {
+                  "the object (and 'solution_terms' is provided neither)"), {
     expect_error(
       proj_linpred(1, newdata = data.frame(x = x)),
       "is not a variable selection -object"
@@ -380,7 +380,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste("proj_predict: error when varsel has not been performed on",
-                  "the object"), {
+                  "the object (and 'solution_terms' is provided neither)"), {
     expect_error(
       proj_predict(1, newdata = data.frame(x = x)),
       "is not a variable selection -object"
