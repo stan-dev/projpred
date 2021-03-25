@@ -95,9 +95,9 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
     proj <- list(proj)
   } else {
     ## proj is some other object, not containing an element called "family" (so
-    ## it could be a 'proj_list' but must not necessarily)
+    ## it could be a `proj_list` but must not necessarily)
     if (any(sapply(proj, function(x) !("family" %in% names(x))))) {
-      stop("Invalid object supplied to argument 'object'.")
+      stop("Invalid object supplied to argument `object`.")
     }
   }
 
