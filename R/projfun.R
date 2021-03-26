@@ -11,7 +11,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   div_minimizer <- function(formula, data, weights) {
     refmodel$div_minimizer(formula, data, weights = weights, family = family,
-                           regul = regul, var = p_ref$var)
+                           regul = regul, var = p_ref$var,
+                           intercept = intercept)
   }
 
   subset <- subset_formula_and_data(

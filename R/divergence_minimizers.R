@@ -16,11 +16,12 @@ linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
                        var = 0, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
-    return(fit_glm_ridge_callback(formula, data, family, weights, var, regul))
+    return(fit_glm_ridge_callback(formula, data, family, weights, var, regul,
+                                  ...))
   } else if (inherits(formula, "list")) {
     return(lapply(seq_along(formula), function(s) {
       fit_glm_ridge_callback(formula[[s]], data, family, weights,
-        regul = regul, var = var[, s, drop = FALSE]
+        regul = regul, var = var[, s, drop = FALSE], ...
       )
     }))
   } else {
@@ -34,9 +35,16 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
   y <- model.response(fr)
+  dot_args <- list(...)
+  intercept <- if ("intercept" %in% names(dot_args)) {
+    dot_args$intercept
+  } else {
+    TRUE
+  }
   fit <- glm_ridge(x, y,
     family = family, lambda = regul,
-    weights = weights, obsvar = var
+    weights = weights, obsvar = var,
+    intercept = intercept
   )
   rownames(fit$beta) <- colnames(x)
   sub <- nlist(
