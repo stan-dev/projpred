@@ -129,7 +129,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       )
     }
 
-    solution_terms <- intersect(solution_terms, vars)
+    solution_terms <- intersect(
+      solution_terms,
+      sub(" + 0", "", vars, fixed = TRUE)
+    )
     nterms <- length(solution_terms)
   } else {
     ## by default take the variable ordering from the selection
