@@ -142,6 +142,7 @@ validate_response_formula <- function(formula) {
 ## @return a formula without duplicated structure.
 flatten_formula <- function(formula, duplicates = TRUE) {
   terms_ <- extract_terms_response(formula)
+  icpt_term <- as.character(as.numeric(terms_$global_intercept))
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
   individual_terms <- terms_$individual_terms
@@ -153,6 +154,7 @@ flatten_formula <- function(formula, duplicates = TRUE) {
     length(additive_terms) > 0) {
     full <- update(formula, paste(c(
       ". ~ ",
+      icpt_term,
       flatten_individual_terms(individual_terms),
       flatten_additive_terms(additive_terms),
       flatten_interaction_terms(interaction_terms),
