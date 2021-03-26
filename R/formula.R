@@ -512,11 +512,13 @@ formula_contains_additive_terms <- function(formula) {
 ## @param y The response vector. Default NULL.
 ## @param split_formula If TRUE breaks the response down into single response
 ##   formulas.
+## @param intercept If `TRUE` (the default), include an intercept in the
+##   returned formula(s).
 ## Default FALSE. It only works if `y` represents a multi-output response.
 ## @return a list including the updated formula and data
 subset_formula_and_data <- function(formula, terms_, data, y = NULL,
-                                    split_formula = FALSE) {
-  formula <- make_formula(terms_, formula = formula)
+                                    split_formula = FALSE, intercept = TRUE) {
+  formula <- make_formula(terms_, formula = formula, intercept = intercept)
   tt <- extract_terms_response(formula)
   response_name <- tt$response
 
@@ -586,10 +588,17 @@ get_replace_response <- function(formula, terms_, split_formula = FALSE) {
 
 ## Subsets a formula by the given terms.
 ## @param terms_ A vector of terms to subset from the right hand side.
+## @param formula A "baseline formula" to update.
+## @param intercept If `TRUE` (the default), include an intercept in the
+##   returned formula.
 ## @return A formula object with the collapsed terms.
-make_formula <- function(terms_, formula = NULL) {
+make_formula <- function(terms_, formula = NULL, intercept = TRUE) {
   if (length(terms_) == 0) {
-    terms_ <- c("1")
+    terms_ <- if (intercept) {
+      c("1")
+    } else {
+      c("0")
+    }
   }
   if (is.null(formula)) {
     return(as.formula(paste0(". ~ ", paste(terms_, collapse = " + "))))

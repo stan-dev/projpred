@@ -16,7 +16,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   subset <- subset_formula_and_data(
     formula = form, terms_ = unique(unlist(solution_terms)),
-    data = refmodel$fetch_data(), y = p_ref$mu
+    data = refmodel$fetch_data(), y = p_ref$mu, intercept = intercept
   )
 
   sub_fit <- div_minimizer(flatten_formula(subset$formula), subset$data,
