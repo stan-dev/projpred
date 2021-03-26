@@ -280,7 +280,7 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   x <- subfit$x
   w <- subfit$w
   if (is.null(newdata)) {
-    if (is.null(beta)) {
+    if (length(beta) == 0) {
       return(rep(alpha, NROW(subfit$x)))
     } else {
       return(x %*% rbind(alpha, beta))
@@ -291,7 +291,7 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
       contrasts.arg = contrasts_arg
     )
     ## x <- weights * x
-    if (is.null(beta)) {
+    if (length(beta) == 0) {
       return(rep(alpha, NROW(x)))
     } else {
       return(x %*% rbind(alpha, beta))
