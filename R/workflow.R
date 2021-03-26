@@ -353,7 +353,7 @@ approximate_loo.vselsearch <- function(object,
   )
   sel_loo <- nlist(
     search_path = object,
-    solution_terms_cv,
+    solution_terms,
     summaries,
     d_test,
     kl = sapply(submodels, function(x) x$kl),
@@ -543,7 +543,7 @@ approximate_kfold.vselsearch <- function(object,
   end <- Sys.time()
   sel_kfold <- nlist(
     search_path = object,
-    solution_terms_cv = object$solution_terms,
+    solution_terms,
     summaries = list(sub = sub, ref = ref),
     d_test = c(d_cv, type = "kfold"),
     kl = sapply(p_sub, function(x) x$kl),
