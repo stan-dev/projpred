@@ -291,6 +291,13 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
     if (length(beta) == 0) {
       return(rep(alpha, NROW(subfit$x)))
     } else {
+      if (!"(Intercept)" %in% colnames(x)) {
+        # Just to be sure:
+        stopifnot(identical(alpha, 0))
+        # Just to be very sure:
+        stopifnot(attr(terms(subfit$formula), "intercept") == 0)
+        return(x %*% beta)
+      }
       return(x %*% rbind(alpha, beta))
     }
   } else {
@@ -302,6 +309,13 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
     if (length(beta) == 0) {
       return(rep(alpha, NROW(x)))
     } else {
+      if (!"(Intercept)" %in% colnames(x)) {
+        # Just to be sure:
+        stopifnot(identical(alpha, 0))
+        # Just to be very sure:
+        stopifnot(attr(terms(subfit$formula), "intercept") == 0)
+        return(x %*% beta)
+      }
       return(x %*% rbind(alpha, beta))
     }
   }
