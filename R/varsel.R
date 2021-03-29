@@ -325,6 +325,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
   }
+  if (!intercept) {
+    stop("Reference models without an intercept are currently not supported.")
+  }
   max_nv_possible <- count_terms_in_formula(refmodel$formula)
   if (!is.null(search_terms)) {
     max_nv_possible <- count_terms_chosen(
