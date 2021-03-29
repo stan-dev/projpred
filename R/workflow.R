@@ -564,7 +564,7 @@ approximate_kfold.vselsearch <- function(object,
 diagnostic <- function(x, ...) {
   diff <- x$diff[NROW(x)]
   diff.se <- x$diff.se[NROW(x)]
-  if (abs(diff) > 2 * diff.se) {
+  if (diff > diff.se) {
     return(paste0(
       "The projections' ELPDs seems overoptimistic, we recommend ",
       "increasing `ndraws_pred`."
