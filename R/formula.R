@@ -595,8 +595,13 @@ get_replace_response <- function(formula, terms_, split_formula = FALSE) {
 ##   returned formula.
 ## @return A formula object with the collapsed terms.
 make_formula <- function(terms_, formula = NULL, intercept = TRUE) {
-  icpt_term <- as.character(as.numeric(intercept))
-  terms_ <- c(icpt_term, terms_)
+  if (length(terms_) == 0) {
+    terms_ <- if (intercept) {
+      c("1")
+    } else {
+      c("0")
+    }
+  }
   if (is.null(formula)) {
     return(as.formula(paste0(". ~ ", paste(terms_, collapse = " + "))))
   }
