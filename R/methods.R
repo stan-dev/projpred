@@ -112,7 +112,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 
   projected_sizes <- sapply(proj, function(x) {
     if (length(x$solution_terms) > 1) {
-      count_terms_chosen(x$solution_terms)
+      count_terms_chosen(x$solution_terms, intercept = x$refmodel$intercept)
     } else {
       1
     }
