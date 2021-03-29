@@ -334,7 +334,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   if (is.null(nterms_max)) {
     nterms_max <- min(max_nv_possible, 20)
   } else {
-    nterms_max <- min(max_nv_possible, nterms_max + 1)
+    nterms_max <- min(max_nv_possible, nterms_max + as.numeric(intercept))
   }
 
   return(nlist(
