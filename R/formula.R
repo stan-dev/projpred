@@ -601,6 +601,10 @@ make_formula <- function(terms_, formula = NULL, intercept = TRUE) {
     } else {
       c("0")
     }
+  } else {
+    if (!intercept) {
+      terms_ <- c(terms_, "0")
+    }
   }
   if (is.null(formula)) {
     return(as.formula(paste0(". ~ ", paste(terms_, collapse = " + "))))
