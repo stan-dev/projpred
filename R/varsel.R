@@ -322,12 +322,14 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
-  max_nv_possible <- count_terms_in_formula(refmodel$formula)
-  if (!is.null(search_terms)) {
-    max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
-  }
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
+  }
+  max_nv_possible <- count_terms_in_formula(refmodel$formula)
+  if (!is.null(search_terms)) {
+    max_nv_possible <- count_terms_chosen(
+      search_terms, duplicates = TRUE, intercept = intercept
+    )
   }
   if (is.null(nterms_max)) {
     nterms_max <- min(max_nv_possible, 20)

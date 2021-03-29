@@ -10,16 +10,23 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
   if (is.null(search_terms)) {
     allterms <- split_formula(formula, data = refmodel$fetch_data())
   } else {
+    if (!intercept &&
+        !all(grepl("-[[:space:]]*1|[+[:space:]]*0", search_terms))) {
+      stop("The intercept also needs to be excluded from argument ",
+           "`search_terms`.")
+    }
     allterms <- search_terms
   }
 
   chosen <- NULL
-  total_terms <- count_terms_chosen(allterms)
+  total_terms <- count_terms_chosen(allterms, intercept = intercept)
   stop_search <- min(total_terms, nterms_max)
   submodels <- c()
 
   for (size in seq_len(stop_search)) {
-    cands <- select_possible_terms_size(chosen, allterms, size = size)
+    cands <- select_possible_terms_size(
+      chosen, allterms, size = size, intercept = intercept
+    )
     if (is.null(cands))
       break
     full_cands <- lapply(cands, function(cand) c(chosen, cand))

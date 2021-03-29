@@ -139,6 +139,8 @@ validate_response_formula <- function(formula) {
 ## @param formula A formula specifying a model.
 ## @param duplicates if FALSE removes linear terms if their corresponding smooth
 ## is included. Default TRUE
+## @param intercept If `TRUE` (the default), include an intercept in the
+##   returned formula.
 ## @return a formula without duplicated structure.
 flatten_formula <- function(formula, duplicates = TRUE, intercept = TRUE) {
   terms_ <- extract_terms_response(formula)
@@ -676,13 +678,17 @@ sort_submodels_by_size <- function(submodels) {
 ## @param chosen A list of currently chosen terms
 ## @param terms A list of all possible terms
 ## @param size Maximum allowed size
-select_possible_terms_size <- function(chosen, terms, size) {
+## @param intercept If `TRUE` (the default), include an intercept when
+##   determining the valid submodels.
+## @return A character vector containing those of the next possible terms which
+##   give a valid submodel.
+select_possible_terms_size <- function(chosen, terms, size, intercept = TRUE) {
   if (size < 1) {
     stop("size must be at least 1")
   }
 
   valid_submodels <- lapply(terms, function(x) {
-    current <- count_terms_chosen(chosen)
+    current <- count_terms_chosen(chosen, intercept = intercept)
     increment <- size - current
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
@@ -700,7 +706,8 @@ select_possible_terms_size <- function(chosen, terms, size) {
 
     ## if model is straight redundant
     not_redundant <- (count_terms_chosen(c(chosen, x),
-      duplicates = TRUE
+      duplicates = TRUE,
+      intercept = intercept
     ) - current - length(dups)) == increment
     ## if already_chosen is not NA it means we have already chosen the linear
     ## term
@@ -740,13 +747,19 @@ to_character_rhs <- function(rhs) {
 ## @param list_of_terms Subset of terms from formula.
 ## @param duplicates if FALSE removes linear terms if their corresponding smooth
 ## is included. Default TRUE
+## @param intercept If `TRUE` (the default), include an intercept in the
+##   calculation.
 ## @return number of terms
-count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
+count_terms_chosen <- function(list_of_terms,
+                               duplicates = TRUE,
+                               intercept = TRUE) {
   if (length(list_of_terms) == 0) {
     return(0)
   }
-  formula <- make_formula(list_of_terms)
-  count_terms_in_formula(flatten_formula(formula, duplicates = duplicates))
+  formula <- make_formula(list_of_terms, intercept = intercept)
+  count_terms_in_formula(flatten_formula(
+    formula, duplicates = duplicates, intercept = intercept
+  ))
 }
 
 ## Utility that checks if the next submodel is redundant with the current one.
