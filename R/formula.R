@@ -140,9 +140,13 @@ validate_response_formula <- function(formula) {
 ## @param duplicates if FALSE removes linear terms if their corresponding smooth
 ## is included. Default TRUE
 ## @return a formula without duplicated structure.
-flatten_formula <- function(formula, duplicates = TRUE) {
+flatten_formula <- function(formula, duplicates = TRUE, intercept = TRUE) {
   terms_ <- extract_terms_response(formula)
-  icpt_term <- as.character(as.numeric(terms_$global_intercept))
+  icpt_term <- if (intercept) {
+    character()
+  } else {
+    "0"
+  }
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
   individual_terms <- terms_$individual_terms
