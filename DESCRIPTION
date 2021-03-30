@@ -36,7 +36,10 @@ Imports:
     MASS,
     magrittr,
     mgcv,
-    gamm4
+    gamm4,
+    doFuture,
+    doRNG,
+    future.apply
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 LazyData: TRUE
