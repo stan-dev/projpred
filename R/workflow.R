@@ -70,7 +70,7 @@ varsel_search.refmodel <- function(object, method = NULL,
   class(search_path) <- "vselsearch"
   search_path$control <- nlist(
     method,
-    time = Sys.time() - start,
+    time = difftime(Sys.time(), start, units = "seconds"),
     opt,
     nterms_max,
     ndraws,
@@ -127,7 +127,7 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
     x$nclusters, " clusters\n"
   ))
   cat(paste0("Number of submodels visited during search: ", x$nsubmodels, "\n"))
-  cat(paste0("\nThe search took ", round(x$time, digits), " seconds\n"))
+  cat(paste0("\nThe search took ", round(x$time, digits), " seconds.\n"))
   if (x$method != "l1") {
     one_proj <- round(x$time / x$nsubmodels / x$nclusters, digits)
   } else {
@@ -249,12 +249,12 @@ approximate_loo.vselsearch <- function(object,
   loo_sub <- matrix(nrow = n, ncol = nterms_max)
   mu_sub <- matrix(nrow = n, ncol = nterms_max)
 
+  start <- Sys.time()
   if (verbose) {
     msg <- paste("Computing LOO for", nterms_max, "models...")
   }
   solution_terms <- object$solution_terms
 
-  start <- Sys.time()
   ## project onto the selected models and compute the prediction accuracy for
   ## the full data
   submodels <- .get_submodels(
@@ -358,7 +358,7 @@ approximate_loo.vselsearch <- function(object,
     d_test,
     kl = sapply(submodels, function(x) x$kl),
     control = nlist(
-      time = end - start,
+      time = difftime(end, start, units = "seconds"),
       ndraws = object$control$ndraws,
       nclusters = object$control$nclusters,
       ndraws_pred,
@@ -548,7 +548,7 @@ approximate_kfold.vselsearch <- function(object,
     d_test = c(d_cv, type = "kfold"),
     kl = sapply(p_sub, function(x) x$kl),
     control = nlist(
-      time = end - start,
+      time = difftime(end, start, units = "seconds"),
       ndraws = object$control$ndraws,
       nclusters = object$control$nclusters,
       ndraws_pred,
@@ -621,7 +621,7 @@ print.vselapproxcv <- function(x, digits = 1, ...) {
 print.vselapproxcvsummary <- function(x, digits = 1, ...) {
   cat(paste0(
       "Approximate ", x$cv_method, " CV selection took ",
-      round(x$time, digits), " seconds\n"
+      round(x$time, digits), " seconds.\n"
   ))
   print(x$family)
   cat("Formula: ")
@@ -678,6 +678,7 @@ cv_loo.vselsearch <- function(object, ...) {
 }
 
 #' @rdname workflow
+#' @importFrom doRNG %dorng%
 #' @export
 cv_loo.vselapproxcv <- function(object,
                                 method = NULL,
@@ -694,6 +695,7 @@ cv_loo.vselapproxcv <- function(object,
                                 thresh = 1e-6,
                                 regul = 1e-4,
                                 seed = NULL,
+                                cores = parallel::detectCores(),
                                 search_terms = NULL,
                                 ...) {
   search_path_prev <- object$search_path
@@ -703,8 +705,8 @@ cv_loo.vselapproxcv <- function(object,
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-      refmodel, method, NULL, NULL, NULL,
-      ndraws, nclusters, ndraws_pred, nclusters_pred, NULL
+    refmodel, method, NULL, NULL, NULL,
+    ndraws, nclusters, ndraws_pred, nclusters_pred, NULL
   )
   nclusters <- args$nclusters
   ndraws <- args$ndraws
@@ -719,30 +721,30 @@ cv_loo.vselapproxcv <- function(object,
 
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel,
-      ndraws = ndraws,
-      nclusters = nclusters
+    ndraws = ndraws,
+    nclusters = nclusters
   )
   cl_sel <- p_sel$cl # clustering information
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel,
-      ndraws = ndraws_pred,
-      nclusters = nclusters_pred
+    ndraws = ndraws_pred,
+    nclusters = nclusters_pred
   )
   cl_pred <- p_pred$cl
 
   ## fetch the log-likelihood for the reference model to obtain the LOO
   ## weights
   if (is.null(refmodel$loglik)) {
-      ## case where log-likelihood not available, i.e., the reference model is
-      ## not a genuine model => cannot compute LOO
-      stop(
-          "LOO can be performed only if the reference model is a genuine ",
-          "probabilistic model for which the log-likelihood can be evaluated."
-      )
+    ## case where log-likelihood not available, i.e., the reference model is
+    ## not a genuine model => cannot compute LOO
+    stop(
+      "LOO can be performed only if the reference model is a genuine ",
+      "probabilistic model for which the log-likelihood can be evaluated."
+    )
   } else {
-      ## log-likelihood available
-      loglik <- refmodel$loglik
+    ## log-likelihood available
+    loglik <- refmodel$loglik
   }
   psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1, ncol(loglik)))
   lw <- weights(psisloo)
@@ -752,111 +754,147 @@ cv_loo.vselapproxcv <- function(object,
   nloo <- min(nloo, n)
 
   if (nloo < 0) {
-      stop("nloo must be at least 1")
+    stop("nloo must be at least 1")
   }
 
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
   mu_ref <- rep(0, n)
   for (i in seq_len(n)) {
-      mu_ref[i] <- mu[i, ] %*% exp(lw[, i])
+    mu_ref[i] <- mu[i, ] %*% exp(lw[, i])
+  }
+
+  doFuture::registerDoFuture()
+  if (cores > 1) {
+    future::plan(future::multicore, workers = cores)
+  } else {
+    future::plan(future::sequential, workers = cores)
   }
 
   if (verbose) {
-      msg <- paste("Repeating", method, "search for", nloo, "LOO folds...")
-      print(msg)
-      pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+    msg <- paste("Repeating", method, "search for", nloo, "LOO folds...")
+    print(msg)
+    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
   }
 
+  start <- Sys.time()
   validset <- .loo_subsample_pps(nloo, loo_ref, seed)
   inds <- validset$inds
 
-  solution_terms_cv <- matrix(nrow = n, ncol = nterms_max - 1)
-  loo_sub <- matrix(nrow = n, ncol = nterms_max)
-  mu_sub <- matrix(nrow = n, ncol = nterms_max)
+  ## solution_terms_cv <- matrix(nrow = n, ncol = nterms_max - 1)
+  ## loo_sub <- matrix(nrow = n, ncol = nterms_max)
+  ## mu_sub <- matrix(nrow = n, ncol = nterms_max)
 
-  start <- Sys.time()
-  for (run_index in seq_along(inds)) {
-      ## observation index
-      i <- inds[run_index]
-
-      ## reweight the clusters/samples according to the psis-loo weights
-      p_sel <- .get_p_clust(
-        family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
-        cl = cl_sel
-      )
-      p_pred <- .get_p_clust(
-        family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
-        cl = cl_pred
-      )
-
-      ## perform selection with the reweighted clusters/samples
-      search_path <- select(
-        method = method, p_sel = p_sel, refmodel = refmodel,
-        family = family, intercept = TRUE, nterms_max = nterms_max,
-        penalty = penalty, verbose = FALSE, opt = opt,
-        search_terms = search_terms
-      )
-      solution_terms <- search_path$solution_terms
-
-      ## project onto the selected models and compute the prediction accuracy
-      ## for the left-out point
-      submodels <- .get_submodels(
-        search_path = search_path, nterms = c(0, seq_along(solution_terms)),
-        family = family, p_ref = p_pred, refmodel = refmodel,
-        intercept = TRUE, regul = opt$regul, cv_search = FALSE
-      )
-      summaries_sub <- .get_sub_summaries(
-        submodels = submodels, test_points = c(i), refmodel = refmodel,
-        family = family
-      )
-      for (k in seq_along(summaries_sub)) {
-        loo_sub[i, k] <- summaries_sub[[k]]$lppd
-        mu_sub[i, k] <- summaries_sub[[k]]$mu
-      }
-
-      candidate_terms <- split_formula(refmodel$formula,
-        data = refmodel$fetch_data(),
-        add_main_effects = FALSE
-      )
-      ## with `match` we get the indices of the variables as they enter the
-      ## solution path in solution_terms
-      solution <- match(solution_terms, candidate_terms[-1])
-      solution_terms_cv[i, seq_along(solution)] <- solution
-      if (length(solution) < (nterms_max - 1)) {
-        not_in_solution <- setdiff(
-          seq_len(nterms_max - 1),
-          seq_along(solution)
-        )
-        solution_terms_cv[i, not_in_solution] <- NA
-      }
-
-      if (verbose) {
-        utils::setTxtProgressBar(pb, run_index)
-      }
+  comb <- function(r, ...) {
+    for (pr in list(...)) {
+      i <- pr$i
+      r$mu_sub[i, ] <- pr$mu_sub
+      r$loo_sub[i, ] <- pr$loo_sub
+      r$solution_terms_cv[i, ] <- pr$solution_terms_cv
+    }
+    return(r)
   }
 
+  candidate_terms <- split_formula(refmodel$formula,
+    data = refmodel$fetch_data(),
+    add_main_effects = FALSE
+  )
+
+  ## for (run_index in seq_along(inds)) {
+  r <- foreach::foreach(
+    run_index = seq_along(inds),
+    .combine = "comb",
+    .multicombine = TRUE,
+    .init = list(
+      mu_sub = matrix(nrow = n, ncol = nterms_max),
+      loo_sub = matrix(nrow = n, ncol = nterms_max),
+      solution_terms_cv = matrix(nrow = n, ncol = nterms_max - 1)
+    )
+  ) %dorng% {
+    ## observation index
+    i <- inds[run_index]
+
+    ## reweight the clusters/samples according to the psis-loo weights
+    p_sel <- .get_p_clust(
+      family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
+      cl = cl_sel
+    )
+    p_pred <- .get_p_clust(
+      family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
+      cl = cl_pred
+    )
+
+    ## perform selection with the reweighted clusters/samples
+    search_path <- select(
+      method = method, p_sel = p_sel, refmodel = refmodel,
+      family = family, intercept = TRUE, nterms_max = nterms_max,
+      penalty = penalty, verbose = FALSE, opt = opt,
+      search_terms = search_terms
+    )
+    solution_terms <- search_path$solution_terms
+
+    ## project onto the selected models and compute the prediction accuracy
+    ## for the left-out point
+    submodels <- .get_submodels(
+      search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+      family = family, p_ref = p_pred, refmodel = refmodel,
+      intercept = TRUE, regul = opt$regul, cv_search = FALSE
+    )
+    summaries_sub <- .get_sub_summaries(
+      submodels = submodels, test_points = c(i), refmodel = refmodel,
+      family = family
+    )
+
+    loo_sub <- sapply(seq_along(summaries_sub), function(k) {
+      summaries_sub[[k]]$lppd
+    })
+    mu_sub <- sapply(seq_along(summaries_sub), function(k) {
+      summaries_sub[[k]]$mu
+    })
+
+    ## with `match` we get the indices of the variables as they enter the
+    ## solution path in solution_terms
+    solution <- match(solution_terms, candidate_terms[-1])
+    solution_terms_cv <- rep(NA, nterms_max - 1)
+    solution_terms_cv[seq_along(solution)] <- solution
+    if (length(solution) < (nterms_max - 1)) {
+      not_in_solution <- setdiff(
+        seq_len(nterms_max - 1),
+        seq_along(solution)
+      )
+      solution_terms_cv[not_in_solution] <- NA
+    }
+
+    if (verbose) {
+      utils::setTxtProgressBar(pb, run_index)
+    }
+    return(nlist(i, mu_sub, loo_sub, solution_terms_cv))
+  }
   end <- Sys.time()
 
+  mu_sub <- r$mu_sub
+  loo_sub <- r$loo_sub
+  solution_terms_cv <- r$solution_terms_cv
+
   if (verbose) {
-      ## close the progress bar object
-      close(pb)
+    ## close the progress bar object
+    close(pb)
   }
 
   ## find out how many of cross-validated iterations select
   ## the same variables as the selection with all the data.
   solution_terms_cv_ch <- sapply(
-      seq_len(NROW(solution_terms_cv)),
-      function(i) {
-          if (!is.character(solution_terms_cv[i, ])) {
-              unlist(candidate_terms[-1])[solution_terms_cv[i, ]]
-          } else {
-              solution_terms_cv[i, ]
-          }
+    seq_len(NROW(solution_terms_cv)),
+    function(i) {
+      if (!is.character(solution_terms_cv[i, ])) {
+        unlist(candidate_terms[-1])[solution_terms_cv[i, ]]
+      } else {
+        solution_terms_cv[i, ]
       }
+    }
   )
 
-  solution_terms <- search_path$solution_terms
+  solution_terms <- search_path_prev$solution_terms
   ## these weights might be non-constant in case of subsampling LOO
   sel_solution_terms <- solution_terms_cv
   ## if weights are not set, then all validation folds have equal weight
@@ -864,29 +902,29 @@ cv_loo.vselapproxcv <- function(object,
   w <- w / sum(w)
   vars <- unlist(solution_terms)
   pct_solution_terms_cv <- t(sapply(
-      seq_along(solution_terms),
-      function(size) {
-          c(
-              size = size,
-              sapply(vars, function(var) {
-                  sum((solution_terms_cv_ch[seq_len(size), ,
-                      drop = FALSE
-                  ] == var) * w,
-                  na.rm = TRUE
-                  )
-              })
+    seq_along(solution_terms),
+    function(size) {
+      c(
+        size = size,
+        sapply(vars, function(var) {
+          sum((solution_terms_cv_ch[seq_len(size), ,
+            drop = FALSE
+          ] == var) * w,
+          na.rm = TRUE
           )
-      }
+        })
+      )
+    }
   ))
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-      list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w)
+    list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w)
   })
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
-  search_path$refmodel <- refmodel
+  search_path_prev$refmodel <- refmodel
   d_test <- list(
     y = refmodel$y, type = "LOO",
     test_points = seq_along(refmodel$y),
@@ -900,11 +938,13 @@ cv_loo.vselapproxcv <- function(object,
     summaries,
     d_test,
     search_path = search_path_prev,
-    kl = sapply(submodels, function(x) x$kl),
+    kl = object$kl,
     control = nlist(
-      time = end - start,
-      ndraws = search_path_prev$control$ndraws,
-      nclusters = search_path_prev$control$nclusters,
+      nterms_max,
+      method,
+      time = difftime(end, start, units = "seconds"),
+      ndraws,
+      nclusters,
       ndraws_pred,
       nclusters_pred,
       cv_method = "LOO"
@@ -923,13 +963,13 @@ cv_kfold <- function(object, ...) {
 #' @rdname workflow
 #' @export
 cv_kfold.default <- function(object, ...) {
-    cv_kfold(varsel_search(object, ...))
+    cv_kfold(varsel_search(object, ...), ...)
 }
 
 #' @rdname workflow
 #' @export
 cv_kfold.refmodel <- function(object, ...) {
-    cv_kfold(varsel_search(object, ...))
+    cv_kfold(varsel_search(object, ...), ...)
 }
 
 #' @rdname workflow
@@ -955,6 +995,7 @@ cv_kfold.vselapproxcv <- function(object,
                                   nlambda = 150,
                                   thresh = 1e-6,
                                   regul = 1e-4,
+                                  cores = parallel::detectCores(),
                                   seed = NULL,
                                   search_terms = NULL,
                                   ...) {
@@ -1025,25 +1066,35 @@ cv_kfold.vselapproxcv <- function(object,
       SIMPLIFY = FALSE
   )
 
+  if (cores > 1) {
+    future::plan(future::multicore, workers = cores)
+  } else {
+    future::plan(future::sequential, workers = cores)
+  }
+
   ## Perform the selection for each of the K folds
+  start <- Sys.time()
   if (verbose) {
       print(paste0("Repeating ", method, " search for ", K, " folds.."))
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
-  search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
+  search_path_cv <- future.apply::future_lapply(
+    seq_along(list_cv),
+    function(fold_index) {
       fold <- list_cv[[fold_index]]
       family <- fold$refmodel$family
       out <- select(
-          method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
-          family = family, intercept = TRUE, nterms_max = nterms_max,
-          penalty = penalty, verbose = FALSE, opt = opt,
-          search_terms = search_terms
+        method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
+        family = family, intercept = TRUE, nterms_max = nterms_max,
+        penalty = penalty, verbose = FALSE, opt = opt,
+        search_terms = search_terms
       )
       if (verbose) {
-          utils::setTxtProgressBar(pb, fold_index)
+        utils::setTxtProgressBar(pb, fold_index)
       }
       out
-  })
+    }
+  )
 
   solution_terms_cv <- t(sapply(search_path_cv, function(e) e$solution_terms))
   if (verbose) {
@@ -1056,7 +1107,6 @@ cv_kfold.vselapproxcv <- function(object,
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
 
-  start <- Sys.time()
   get_submodels_cv <- function(search_path, fold_index) {
       fold <- list_cv[[fold_index]]
       family <- fold$refmodel$family
@@ -1072,11 +1122,14 @@ cv_kfold.vselapproxcv <- function(object,
       return(p_sub)
   }
 
-  p_sub_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
-      SIMPLIFY = FALSE
+  p_sub_cv <- future.apply::future_mapply(get_submodels_cv,
+    search_path_cv,
+    seq_along(list_cv),
+    future.seed = seed,
+    SIMPLIFY = FALSE
   )
   if (verbose) {
-      close(pb)
+    close(pb)
   }
 
   ## Helper function extract and combine mu and lppd from K lists with each
@@ -1095,7 +1148,10 @@ cv_kfold.vselapproxcv <- function(object,
       summ <- lapply(fold_summaries, data.frame)
       return(summ)
   }
-  sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
+  sub_cv_summaries <- future.apply::future_mapply(
+    get_summaries_submodel_cv,
+    p_sub_cv, list_cv
+  )
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
       summ$w <- rep(1, length(summ$mu))
@@ -1150,12 +1206,14 @@ cv_kfold.vselapproxcv <- function(object,
     solution_terms,
     summaries = nlist(ref, sub),
     search_path,
-    kl = sapply(sub, function(x) x$kl),
+    kl = object$kl,
     d_test = c(d_cv, type = "kfold"),
     control = nlist(
-      time = end - start,
-      ndraws = search_path$control$ndraws,
-      nclusters = search_path$control$nclusters,
+      nterms_max,
+      method,
+      time = difftime(end, start, units = "seconds"),
+      ndraws,
+      nclusters,
       ndraws_pred,
       nclusters_pred,
       cv_method = "KFold"
@@ -1183,6 +1241,8 @@ summary.vselcv <- function(object, nterms_max = NULL, stats = "elpd",
     nclusters_pred = object$control$nclusters_pred,
     time = object$control$time,
     cv_method = object$control$cv_method,
+    method = object$control$method,
+    nterms_max = object$control$nterms_max,
     solution_terms = search_path$solution_terms,
     search_included = "search included"
   )
@@ -1210,12 +1270,16 @@ print.vselcv <- function(x, digits = 1, ...) {
 print.vselcvsummary <- function(x, digits = 1, ...) {
   cat(paste0(
       "Full ", x$cv_method, " CV selection took ",
-      round(x$time, digits), " seconds\n"
+      round(x$time, digits), " seconds.\n"
   ))
   print(x$family)
   cat("Formula: ")
   print(x$formula)
   cat(paste0("Observations: ", x$nobs, "\n"))
+  cat(paste0(
+      "Search method: ", x$method, ", maximum number of terms ",
+      x$nterms_max, "\n"
+  ))
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
@@ -1248,13 +1312,13 @@ varsel_cv <- function(object, ...) {
 #' @rdname workflow
 #' @export
 varsel_cv.default <- function(object, ...) {
-    varsel_cv(varsel_search(object, ...))
+    varsel_cv(varsel_search(object, ...), ...)
 }
 
 #' @rdname workflow
 #' @export
 varsel_cv.refmodel <- function(object, ...) {
-    varsel_cv(varsel_search(object, ...))
+    varsel_cv(varsel_search(object, ...), ...)
 }
 
 #' @rdname workflow
