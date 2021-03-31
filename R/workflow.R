@@ -577,7 +577,7 @@ diagnostic <- function(x, ...) {
 }
 
 #' @export
-summary.vselapproxcv <- function(object, nterms_max = NULL, stats = "elpd",
+summary.vselapproxcv <- function(object, stats = "elpd",
                                  type = c("mean", "se", "diff", "diff.se"),
                                  alpha = 0.32, baseline = NULL, deltas = FALSE,
                                  digits = 1, ...) {
@@ -1224,7 +1224,7 @@ cv_kfold.vselapproxcv <- function(object,
 }
 
 #' @export
-summary.vselcv <- function(object, nterms_max = NULL, stats = "elpd",
+summary.vselcv <- function(object, stats = "elpd",
                            type = c("mean", "se", "diff", "diff.se"),
                            alpha = 0.32, baseline = NULL, deltas = FALSE,
                            digits = 1, ...) {
