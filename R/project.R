@@ -91,6 +91,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     )
   }
 
+  start <- Sys.time()
   refmodel <- get_refmodel(object, ...)
 
   if (cv_search) {
@@ -204,16 +205,37 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nterms = nterms, family = family, p_ref = p_ref, refmodel = refmodel,
     intercept = intercept, regul = regul, cv_search = cv_search
   )
+
+  ## add summaries
+  subsum <- .get_sub_summaries(
+    submodels = subm, test_points = seq_along(refmodel$y),
+    refmodel = refmodel, family = family
+  )
+
+  test_points <- seq_len(NROW(refmodel$y))
+  d_test <- nlist(
+    y = refmodel$y, test_points, data = NULL, weights = refmodel$wobs,
+    type = "train"
+  )
+  refsum <- .weighted_summary_means(
+    y_test = d_test, family = family, wsample = refmodel$wsample,
+    mu = refmodel$mu, dis = refmodel$dis
+  )
+
   ## add family
-  proj <- lapply(subm, function(model) {
-    model <- c(model, nlist(family))
-    model$p_type <- is.null(ndraws)
-    model$intercept <- intercept
-    model$extract_model_data <- refmodel$extract_model_data
-    model$refmodel <- refmodel
-    class(model) <- "projection"
-    return(model)
+  proj <- lapply(seq_along(subm), function(i) {
+    subm[[i]]$summaries <- list(ref = refsum, sub = list(subsum[[i]]))
+    subm[[i]]$family <- family
+    subm[[i]]$d_test <- d_test
+    subm[[i]]$p_type <- is.null(ndraws)
+    subm[[i]]$intercept <- intercept
+    subm[[i]]$extract_model_data <- refmodel$extract_model_data
+    subm[[i]]$refmodel <- refmodel
+    subm[[i]]$time <- difftime(Sys.time(), start, units = "secs")
+    class(subm) <- "projection"
+    return(subm)
   })
+
   ## If only one model size, just return the proj instead of a list of projs
   .unlist_proj(proj)
 }

@@ -947,3 +947,112 @@ solution_terms <- function(object) {
 
   return(object$solution_terms)
 }
+
+#' @method summary projection
+#' @export
+summary.projection <- function(object, stats = "elpd",
+                               type = c("mean", "se", "diff", "diff.se"),
+                               deltas = FALSE, alpha = 0.32, baseline = NULL,
+                               digits = 1, ...) {
+  baseline <- .validate_baseline(object$refmodel, baseline, deltas)
+
+  out <- list(
+    formula = lapply(object, function(o)
+      update(o$refmodel$formula, make_formula(o$solution_terms))),
+    nterms = sapply(object, function(o) length(o$solution_terms)),
+    family = object[[1]]$family,
+    time = object[[1]]$time,
+    nobs = NROW(object[[1]]$refmodel$fetch_data()),
+    ndraws_pred = length(object[[1]]$sub_fit)
+  )
+
+  class(out) <- "projectionsummary"
+  ## fetch statistics
+  if (deltas) {
+    nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+    tabs <- lapply(object, function(o) {
+      .tabulate_stats(o, stats, alpha = alpha, nfeat_baseline = nfeat_baseline)
+    })
+  } else {
+    tabs <- lapply(object, function(o) .tabulate_stats(o, stats, alpha = alpha))
+  }
+  stats_table <- do.call(rbind, lapply(tabs, function(tab) {
+    subset(tab, tab$size != Inf) %>%
+      dplyr::group_by(statistic)
+  }))
+  if (deltas) {
+    type <- setdiff(type, c("diff", "diff.se"))
+  }
+  ## these are the corresponding names for mean, se, upper and lower in the
+  ## stats_table, and their suffices in the table to be returned
+  qty <- unname(sapply(type, function(t) {
+    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
+      diff = "diff", diff.se = "diff.se"
+    )
+  }))
+
+  if (length(stats) > 1) {
+    suffix <- lapply(stats, function(s) {
+      paste0(
+        s,
+        unname(sapply(type, function(t) {
+          switch(t, mean = "", upper = ".upper", lower = ".lower",
+            se = ".se", diff = ".diff", diff.se = ".diff.se"
+          )
+        }))
+      )
+    })
+  } else {
+    suffix <- list(unname(sapply(type, function(t) {
+      switch(t, mean = stats, upper = "upper",
+        lower = "lower", se = "se",
+        diff = "diff", diff.se = "diff.se"
+      )
+    })))
+  }
+
+  ## loop through all the required statistics
+  arr <- data.frame(
+    size = out$nterms
+  )
+  for (i in seq_along(stats)) {
+    temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
+    newnames <- suffix[[i]]
+    colnames(temp) <- newnames
+    arr <- cbind(arr, temp)
+  }
+
+  out$stats_table <- arr
+  return(out)
+}
+
+#' @method print projection
+#' @export
+print.projection <- function(x, digits = 1, ...) {
+  stats <- summary.projection(x, digits = digits, ...)
+  print(stats)
+  return(invisible(stats))
+}
+
+#' @method print projectionsummary
+#' @export
+print.projectionsummary <- function(x, digits = 1, ...) {
+  cat(paste0(
+      "Projection took ", round(unclass(x$time), digits), " seconds.\n"
+  ))
+  print(x$family)
+  cat("Formula: \n")
+  print(x$formula)
+  cat(paste0("Observations: ", x$nobs, "\n"))
+  cat(paste0(
+    "Draws used for projection: ", x$ndraws, "\n"
+  ))
+  cat("\nSummary:\n")
+  print(x$stats_table %>% dplyr::mutate(dplyr::across(
+    where(is.numeric),
+    ~ round(., digits)
+  )),
+  row.names = FALSE
+  )
+  return(invisible(x))
+}

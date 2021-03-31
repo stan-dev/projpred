@@ -604,7 +604,7 @@ summary.vselapproxcv <- function(object, stats = "elpd",
     baseline, deltas
   )
 
-  out$selection <- stats_table
+  out$stats_table <- stats_table
   out$diagnostic <- diagnostic(stats_table)
   return(out)
 }
@@ -630,7 +630,7 @@ print.vselapproxcvsummary <- function(x, digits = 1, ...) {
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
-  nterms_max <- max(x$selection$size)
+  nterms_max <- max(x$stats_table$size)
   cat(paste0(
     "Draws used for selection: ", x$ndraws, ", in ",
     x$nclusters, " clusters\n"
@@ -641,7 +641,7 @@ print.vselapproxcvsummary <- function(x, digits = 1, ...) {
   ))
   cat(paste0("\nDiagnostics:\n", x$diagnostic, "\n"))
   cat("\nSelection Summary:\n")
-  print(x$selection %>% dplyr::mutate(dplyr::across(
+  print(x$stats_table %>% dplyr::mutate(dplyr::across(
     where(is.numeric),
     ~ round(., digits)
   )),
@@ -1252,7 +1252,7 @@ summary.vselcv <- function(object, stats = "elpd",
     object, refmodel, stats, type, alpha,
     baseline, deltas
   )
-  out$selection <- stats_table
+  out$stats_table <- stats_table
   out$diagnostic <- diagnostic(stats_table)
   
   return(out)
@@ -1283,7 +1283,7 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
-  nterms_max <- max(x$selection$size)
+  nterms_max <- max(x$stats_table$size)
   cat(paste0(
     "Draws used for selection: ", x$ndraws, ", in ",
     x$nclusters, " clusters\n"
@@ -1294,7 +1294,7 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
   ))
   cat(paste0("\nDiagnostics:\n", x$diagnostic, "\n"))
   cat("\nSelection Summary:\n")
-  print(x$selection %>% dplyr::mutate(dplyr::across(
+  print(x$stats_table %>% dplyr::mutate(dplyr::across(
     where(is.numeric),
     ~ round(., digits)
   )),

@@ -176,23 +176,15 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     if (d_type == "train") {
       mu_test <- refmodel$mu
     } else {
-      mu_test <- refmodel$ref_predfun(refmodel$fit, newdata = d_test$data)
+      mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
+        newdata = d_test$data
+      ))
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = family, wsample = refmodel$wsample,
       mu = mu_test, dis = refmodel$dis
     )
   }
-
-  ## warn the user if the projection performance does not match the reference
-  ## model's.
-  ref_elpd <- get_stat(ref$mu, ref$lppd, d_test, family, "elpd",
-    weights = ref$w
-  )
-  summ <- sub[[length(sub)]]
-  proj_elpd <- get_stat(summ$mu, summ$lppd, d_test, family, "elpd",
-    weights = summ$w
-  )
 
   ## store the relevant fields into the object to be returned
   vs <- nlist(

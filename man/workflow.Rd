@@ -109,6 +109,7 @@ cv_loo(object, ...)
   thresh = 1e-06,
   regul = 1e-04,
   seed = NULL,
+  cores = parallel::detectCores(),
   search_terms = NULL,
   ...
 )
