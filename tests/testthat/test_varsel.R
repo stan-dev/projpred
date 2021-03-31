@@ -705,7 +705,7 @@ if (require(rstanarm)) {
     expect_named(out$selection, c(
       "size", "solution_terms",
       "mse", "se",
-      "diff", "diff.se"
+      "diff", "diff_se"
     ))
 
     expect_output(out <- print(cvs_list[[1]][[1]],
@@ -716,7 +716,7 @@ if (require(rstanarm)) {
     expect_named(out$selection, c(
       "size", "solution_terms",
       paste0("mse.", tolower(out$cv_method)), "se",
-      "diff", "diff.se"
+      "diff", "diff_se"
       # "pct_solution_terms_cv"
     ))
   })

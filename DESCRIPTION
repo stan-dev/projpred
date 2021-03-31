@@ -39,6 +39,7 @@ Imports:
     gamm4,
     doFuture,
     doRNG,
+    doParallel,
     future.apply
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3

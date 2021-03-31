@@ -468,7 +468,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     dplyr::slice_head(n = length(object$solution_terms) + 1)
 
   if (deltas) {
-    type <- setdiff(type, c("diff", "diff.se"))
+    type <- setdiff(type, c("diff", "diff_se"))
   }
   ## these are the corresponding names for mean, se, upper and lower in the
   ## stats_table, and their suffices in the table to be returned

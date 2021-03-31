@@ -563,8 +563,8 @@ approximate_kfold.vselsearch <- function(object,
 #' @export
 diagnostic <- function(x, ...) {
   diff <- x$diff[NROW(x)]
-  diff.se <- x$diff.se[NROW(x)]
-  if (diff > diff.se) {
+  diff_se <- x$diff_se[NROW(x)]
+  if (diff > diff_se) {
     return(paste0(
       "The projections' ELPDs seems overoptimistic, we recommend ",
       "increasing `ndraws_pred`."
@@ -578,7 +578,7 @@ diagnostic <- function(x, ...) {
 
 #' @export
 summary.vselapproxcv <- function(object, stats = "elpd",
-                                 type = c("mean", "se", "diff", "diff.se"),
+                                 type = c("mean", "se", "diff", "diff_se"),
                                  alpha = 0.32, baseline = NULL, deltas = FALSE,
                                  digits = 1, ...) {
   search_path <- object$search_path
@@ -679,6 +679,7 @@ cv_loo.vselsearch <- function(object, ...) {
 
 #' @rdname workflow
 #' @importFrom doRNG %dorng%
+#' @importFrom doParallel %dopar%
 #' @export
 cv_loo.vselapproxcv <- function(object,
                                 method = NULL,
@@ -1225,7 +1226,7 @@ cv_kfold.vselapproxcv <- function(object,
 
 #' @export
 summary.vselcv <- function(object, stats = "elpd",
-                           type = c("mean", "se", "diff", "diff.se"),
+                           type = c("mean", "se", "diff", "diff_se"),
                            alpha = 0.32, baseline = NULL, deltas = FALSE,
                            digits = 1, ...) {
   search_path <- object$search_path
@@ -1416,7 +1417,7 @@ varsel_cv.vselapproxcv <- function(object,
 }
 
 summary_stats_table <- function(object, refmodel, stats = "elpd",
-                                type = c("mean", "se", "diff", "diff.se"),
+                                type = c("mean", "se", "diff", "diff_se"),
                                 alpha = 0.32, baseline = NULL, deltas = FALSE) {
   if (!inherits(object, "vselapproxcv") && !inherits(object, "vselcv")
       && !inherits(object, "vsel")) {
@@ -1436,17 +1437,17 @@ summary_stats_table <- function(object, refmodel, stats = "elpd",
     dplyr::slice_head(n = length(object$solution_terms) + 1)
 
   if (deltas) {
-    type <- setdiff(type, c("diff", "diff.se"))
+    type <- setdiff(type, c("diff", "diff_se"))
   }
   ## these are the corresponding names for mean, se, upper and lower in the
   ## stats_table, and their suffices in the table to be returned
   qty <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
-           diff = "diff", diff.se = "diff.se")
+           diff = "diff", diff_se = "diff_se")
   }))
   if (!is.null(object$cv_method)) {
     cv_suffix <- unname(switch(object$cv_method,
-      LOO = ".loo", kfold = ".kfold"
+      LOO = "_loo", kfold = "_kfold"
     ))
   } else {
     cv_suffix <- NULL
@@ -1457,8 +1458,8 @@ summary_stats_table <- function(object, refmodel, stats = "elpd",
       paste0(
         s,
         unname(sapply(type, function(t) {
-          switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-            se = ".se", diff = ".diff", diff.se = ".diff.se"
+          switch(t, mean = cv_suffix, upper = "_upper", lower = "_lower",
+            se = "_se", diff = "_diff", diff_se = "_diff_se"
           )
         }))
       )
@@ -1467,7 +1468,7 @@ summary_stats_table <- function(object, refmodel, stats = "elpd",
     suffix <- list(unname(sapply(type, function(t) {
       switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
         lower = "lower", se = "se",
-        diff = "diff", diff.se = "diff.se"
+        diff = "diff", diff_se = "diff_se"
       )
     })))
   }
