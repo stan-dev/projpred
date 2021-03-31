@@ -88,7 +88,7 @@
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
-      diff.se = NA
+      diff_se = NA
     )
     stat_tab <- rbind(stat_tab, row)
 
@@ -113,7 +113,7 @@
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = val, lq = lq, uq = uq, se = val.se,
-          diff = res_diff$value, diff.se = res_diff$se)
+          diff = res_diff$value, diff_se = res_diff$se)
       } else {
         ## normal case
         res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
@@ -126,7 +126,7 @@
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
-          se = res$se, diff = diff$value, diff.se = diff$se)
+          se = res$se, diff = diff$value, diff_se = diff$se)
       }
       stat_tab <- rbind(stat_tab, row)
     }

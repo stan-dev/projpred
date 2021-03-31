@@ -8,7 +8,7 @@
   object,
   nterms_max = NULL,
   stats = "elpd",
-  type = c("mean", "se", "diff", "diff.se"),
+  type = c("mean", "se", "diff", "diff_se"),
   deltas = FALSE,
   alpha = 0.32,
   baseline = NULL,

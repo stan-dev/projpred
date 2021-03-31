@@ -423,7 +423,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @method summary vsel
 #' @export
 summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
-                         type = c("mean", "se", "diff", "diff.se"),
+                         type = c("mean", "se", "diff", "diff_se"),
                          deltas = FALSE, alpha = 0.32, baseline = NULL,
                          digits = 1, ...) {
   .validate_vsel_object_stats(object, stats)
@@ -474,11 +474,11 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   ## stats_table, and their suffices in the table to be returned
   qty <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
-           diff = "diff", diff.se = "diff.se")
+           diff = "diff", diff_se = "diff_se")
   }))
   if (!is.null(object$cv_method)) {
     cv_suffix <- unname(switch(object$cv_method,
-      LOO = ".loo", kfold = ".kfold"
+      LOO = "_loo", kfold = "_kfold"
     ))
   } else {
     cv_suffix <- NULL
@@ -489,8 +489,8 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
       paste0(
         s,
         unname(sapply(type, function(t) {
-          switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-            se = ".se", diff = ".diff", diff.se = ".diff.se"
+          switch(t, mean = cv_suffix, upper = "_upper", lower = "_lower",
+            se = "_se", diff = "_diff", diff_se = "_diff_se"
           )
         }))
       )
@@ -499,7 +499,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
     suffix <- list(unname(sapply(type, function(t) {
       switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
         lower = "lower", se = "se",
-        diff = "diff", diff.se = "diff.se"
+        diff = "diff", diff_se = "diff_se"
       )
     })))
   }
@@ -951,7 +951,7 @@ solution_terms <- function(object) {
 #' @method summary projection
 #' @export
 summary.projection <- function(object, stats = "elpd",
-                               type = c("mean", "se", "diff", "diff.se"),
+                               type = c("mean", "se", "diff", "diff_se"),
                                deltas = FALSE, alpha = 0.32, baseline = NULL,
                                digits = 1, ...) {
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
@@ -981,13 +981,13 @@ summary.projection <- function(object, stats = "elpd",
       dplyr::group_by(statistic)
   }))
   if (deltas) {
-    type <- setdiff(type, c("diff", "diff.se"))
+    type <- setdiff(type, c("diff", "diff_se"))
   }
   ## these are the corresponding names for mean, se, upper and lower in the
   ## stats_table, and their suffices in the table to be returned
   qty <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
-      diff = "diff", diff.se = "diff.se"
+      diff = "diff", diff_se = "diff_se"
     )
   }))
 
@@ -996,8 +996,8 @@ summary.projection <- function(object, stats = "elpd",
       paste0(
         s,
         unname(sapply(type, function(t) {
-          switch(t, mean = "", upper = ".upper", lower = ".lower",
-            se = ".se", diff = ".diff", diff.se = ".diff.se"
+          switch(t, mean = "", upper = "_upper", lower = "_lower",
+            se = "_se", diff = "_diff", diff_se = "_diff_se"
           )
         }))
       )
@@ -1006,7 +1006,7 @@ summary.projection <- function(object, stats = "elpd",
     suffix <- list(unname(sapply(type, function(t) {
       switch(t, mean = stats, upper = "upper",
         lower = "lower", se = "se",
-        diff = "diff", diff.se = "diff.se"
+        diff = "diff", diff_se = "diff_se"
       )
     })))
   }
