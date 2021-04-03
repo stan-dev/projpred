@@ -52,6 +52,7 @@ remove_duplicates <- function(formula) {
       perl = TRUE
     )
   ))
+  additive <- unique(unlist(strsplit(paste0(additive, collapse = ","), ",")))
   dups <- linear[!is.na(match(linear, additive))]
   if (length(dups) > 0) {
     update(formula, as.formula(paste0(
@@ -270,6 +271,7 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
       perl = TRUE
     )
   ))
+  additive <- unique(unlist(strsplit(paste0(additive, collapse = ","), ",")))
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
     group_split <- unlist(lapply(group_terms, split_group_term,
