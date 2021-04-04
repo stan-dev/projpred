@@ -21,6 +21,7 @@
 * Fixed a bug in `cv_varsel()`, causing an error in case of `!validate_search && cv_method != "LOO"`. (GitHub: #95)
 * Fixed bugs related to the setting of the seed. (GitHub: commit 02cd50db76b0f2d835ce8f8f39cbe94353540d64)
 * Fixed a bug causing `proj_linpred()` to raise an error if argument `newdata` was `NULL`. (GitHub: #97)
+* Fixed a bug causing `varsel()`/`make_formula` to fail with multidimensional interaction terms. (GitHub: #102)
 
 ## projpred 2.0.4
 
