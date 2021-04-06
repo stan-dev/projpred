@@ -10,6 +10,8 @@
 
 * For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below). (GitHub: #82)
 * Internally, the seed is not fixed to a specific value when `NULL`. (GitHub: #84)
+* Minor documentation improvements.
+* Minor improvements of error messages.
 
 ### Bug fixes
 
@@ -21,6 +23,7 @@
 * Fixed a bug in `cv_varsel()`, causing an error in case of `!validate_search && cv_method != "LOO"`. (GitHub: #95)
 * Fixed bugs related to the setting of the seed. (GitHub: commit 02cd50db76b0f2d835ce8f8f39cbe94353540d64)
 * Fixed a bug causing `proj_linpred()` to raise an error if argument `newdata` was `NULL`. (GitHub: #97)
+* Minor documentation fixes.
 
 ## projpred 2.0.4
 
