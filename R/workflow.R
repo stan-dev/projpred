@@ -109,6 +109,9 @@ print.vselsearch <- function(x, digits = 1, ...) {
 
 #' @export
 print.vselsearchsummary <- function(x, digits = 1, ...) {
+  ndraws <- x$ndraws
+  ndraws_pred <- 400
+  K <- 5
   print(x$family)
   cat("Formula: ")
   print(x$formula)
@@ -128,31 +131,60 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
   ))
   cat(paste0("Number of submodels visited during search: ", x$nsubmodels, "\n"))
   cat(paste0("\nThe search took ", round(x$time, digits), " seconds.\n"))
-  if (x$method != "l1") {
-    one_proj <- round(x$time / x$nsubmodels / x$nclusters, digits)
-  } else {
-    one_proj <- round(x$time, digits)
-  }
-  cat(paste0("Projecting one draw takes roughly ", one_proj, " seconds\n"))
-  approx_cv <- length(x$solution_terms)
+
   cat(paste0(
-      "\nApproximate LOO would roughly take ndraws_pred * ", approx_cv *
-      one_proj, " + ", approx_cv, " times one LOO seconds\n"
+    "\nWith default settings:\n\tndraws: ", ndraws,
+    "\n\tndraws_pred: ", ndraws_pred,
+    "\n\tK: ", K, "\n\tCores: ", parallel::detectCores(), "\n"
+  ))
+  approx_loo <- ndraws_pred * x$time / x$nterms_max / ndraws + x$time
+  cat(paste0(
+    "\nApproximate LOO would roughly take ", round(approx_loo, digits),
+    " seconds\n"
+  ))
+  approx_kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) + approx_loo
+  cat(paste0(
+    "Approximate sequential KFold would roughly take ",
+    round(approx_kfold, digits),
+    " seconds\n"
+  ))
+  approx_kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) /
+    min(4, parallel::detectCores()) + approx_loo
+  cat(paste0(
+    "Approximate parallel KFold would roughly take ",
+    round(approx_kfold, digits),
+    " seconds\n"
+  ))
+
+  cat(paste0(
+    "\nFull sequential LOO would roughly take ", round(
+      x$nobs * approx_loo,
+      digits
+    ),
+    " seconds\n"
   ))
   cat(paste0(
-    "Approximate KFold would roughly take K * reference fit time",
-    " + ndraws_pred * ", approx_cv * one_proj, " + K * ", approx_cv,
-    " times one kfold seconds\n"
+    "Full parallel LOO would roughly take ", round(
+      x$nobs * approx_loo / parallel::detectCores(),
+      digits
+    ),
+    " seconds\n"
   ))
+
+  kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) +
+    K * (x$time + ndraws_pred * x$time / x$nterms_max / ndraws)
+
   cat(paste0(
-    "\nFull LOO would roughly take n * ", round(x$time, digits),
-    " + nloo * ndraws_pred * ",
-    approx_cv * one_proj, " seconds\n"
+    "Full sequential KFold would roughly take ", round(kfold, digits),
+    " seconds\n"
   ))
+
+  kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) /
+    min(4, parallel::detectCores()) + K * (x$time + ndraws_pred *
+      x$time / x$nterms_max / ndraws) / parallel::detectCores()
   cat(paste0(
-    "Full KFold would roughly take K * reference fit time + K * ",
-    round(x$time, digits), " + K * ndraws_pred * ",
-    approx_cv * one_proj, " seconds\n"
+    "Full parallel KFold would roughly take ", round(kfold, digits),
+    " seconds\n"
   ))
   return(invisible(x))
 }
