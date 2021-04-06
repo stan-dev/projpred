@@ -29,6 +29,32 @@ test_that(paste(
   expect_length(tt$response, 1)
 })
 
+test_that(paste(
+  "check that we recover the correct terms for a simple ",
+  "additive model without interactions"
+), {
+  formula <- y ~ x + s(z)
+  tt <- extract_terms_response(formula)
+  expect_length(tt$individual_terms, 1)
+  expect_length(tt$interaction_terms, 0)
+  expect_length(tt$additive_terms, 1)
+  expect_length(tt$group_terms, 0)
+  expect_length(tt$response, 1)
+})
+
+test_that(paste(
+  "check that we recover the correct terms for a simple ",
+  "additive model with multidimensional interactions"
+), {
+  formula <- y ~ t2(x, z)
+  tt <- extract_terms_response(formula)
+  expect_length(tt$individual_terms, 0)
+  expect_length(tt$interaction_terms, 0)
+  expect_length(tt$additive_terms, 1)
+  expect_length(tt$group_terms, 0)
+  expect_length(tt$response, 1)
+})
+
 test_that("check that we return the same formula for a single response", {
   formula <- y ~ x + z
   expect_equal(formula, validate_response_formula(formula))
