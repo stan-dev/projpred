@@ -80,12 +80,12 @@ up projecting a single draw from each cluster.}
 }
 \value{
 If the prediction is done for one submodel only (\code{nterms} has
-  length one or \code{solution_terms} is specified) and newdata is
+  length one or \code{solution_terms} is specified) and \code{newdata} is
   unspecified, a matrix or vector of predictions (depending on the value of
-  \code{integrated}). If \code{newdata} is specified, returns a list with
-  elements pred (predictions) and lpd (log predictive densities). If the
-  predictions are done for several submodel sizes, returns a list with one
-  element for each submodel.
+  \code{integrated}). If \code{newdata} is specified, \code{proj_linpred}
+  returns a list with elements \code{pred} (predictions) and \code{lpd} (log
+  predictive densities). If the predictions are done for several submodel
+  sizes, returns a list with one element for each submodel.
 }
 \description{
 \code{proj_linpred} extracts draws of the linear predictor and
