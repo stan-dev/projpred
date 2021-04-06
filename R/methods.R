@@ -575,7 +575,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat("\n")
   cat("Selection Summary:\n")
   print(x$selection %>% dplyr::mutate(dplyr::across(
-    where(is.numeric),
+    tidyselect::where(is.numeric),
     ~ round(., digits)
   )),
   row.names = FALSE
