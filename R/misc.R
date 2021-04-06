@@ -556,3 +556,8 @@ deparse_combine <- function(x, max_char = NULL) {
 #' @importFrom magrittr %>%
 #' @export
 magrittr::`%>%`
+
+# Function where() is not exported by package tidyselect, so redefine it here to
+# avoid a note in R CMD check which would occur for usage of
+# tidyselect:::where():
+where <- utils::getFromNamespace("where", "tidyselect")
