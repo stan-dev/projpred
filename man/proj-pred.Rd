@@ -64,8 +64,8 @@ suggested model size.}
 inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
 only.}
 
-\item{integrated}{If \code{TRUE}, the output is averaged over the parameters.
-Default is \code{FALSE}. For \code{proj_linpred} only.}
+\item{integrated}{If \code{TRUE}, the output is averaged over the projected
+posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.}
 
 \item{seed}{An optional seed to use for drawing from the projection. For
 \code{proj_predict} only.}

@@ -30,8 +30,8 @@
 #' @param transform Should the linear predictor be transformed using the
 #'   inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
 #'   only.
-#' @param integrated If \code{TRUE}, the output is averaged over the parameters.
-#'   Default is \code{FALSE}. For \code{proj_linpred} only.
+#' @param integrated If \code{TRUE}, the output is averaged over the projected
+#'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
 #' @param nterms Number of terms in the submodel (the variable combination is
 #'   taken from the variable selection information). If a vector with several
 #'   values, then results for all specified model sizes are returned. Ignored if
