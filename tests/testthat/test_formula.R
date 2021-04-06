@@ -143,6 +143,26 @@ test_that("check that we properly split a formula", {
     ),
     sp
   ), 0)
+
+  formula <- y ~ s(x) + s(z)
+  sp <- split_formula(formula)
+  expect_length(sp, 5)
+  expect_length(setdiff(
+    c(
+      "1", "s(x)", "s(z)", "x", "z"
+    ),
+    sp
+  ), 0)
+
+  formula <- y ~ t2(x, z)
+  sp <- split_formula(formula)
+  expect_length(sp, 4)
+  expect_length(setdiff(
+    c(
+      "1", "t2(x, z)", "x", "z"
+    ),
+    sp
+  ), 0)
 })
 
 test_that("check that we can identify formulas with group terms", {
