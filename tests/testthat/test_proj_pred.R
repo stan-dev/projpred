@@ -79,12 +79,14 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     expect_error(
       proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x),
                    solution_terms = 1:10000),
-      "number of columns in newdata does not match"
+      paste("^The number of solution terms is greater than the number of",
+            "columns in newdata\\.$")
     )
     expect_error(
       proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x)[, 1:2],
                    solution_terms = 1:3),
-      "number of columns in newdata does not match"
+      paste("^The number of solution terms is greater than the number of",
+            "columns in newdata\\.$")
     )
   })
 
@@ -338,14 +340,16 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     expect_error(
       proj_predict(proj_solution_terms_list, newdata = data.frame(x = x),
                    solution_terms = 1:1000),
-      "number of columns in newdata does not match"
+      paste("^The number of solution terms is greater than the number of",
+            "columns in newdata\\.$")
     )
     expect_error(
       proj_predict(proj_solution_terms_list,
         newdata = data.frame(x = x)[, 1:2],
         solution_terms = 1:3
       ),
-      "number of columns in newdata does not match"
+      paste("^The number of solution terms is greater than the number of",
+            "columns in newdata\\.$")
     )
   })
 
