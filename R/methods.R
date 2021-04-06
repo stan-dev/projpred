@@ -220,7 +220,6 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     target <- .get_standard_y(ynew, weights, proj$family)
     ynew <- target$y
     weights <- target$weights
-    ## if !transform then we are passing linkfun(mu)
     if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
