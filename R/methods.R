@@ -178,7 +178,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     predictions <- t(mu)
     if (!transform) predictions <- proj$family$linkfun(predictions)
     if (integrated) {
-      ## average over the parameters
+      ## average over the posterior draws
       pred <- as.vector(proj$weights %*% predictions)
     } else if (!is.null(dim(predictions)) && nrow(predictions) == 1) {
       ## return a vector if pred contains only one row
