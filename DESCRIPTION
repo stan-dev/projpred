@@ -36,7 +36,8 @@ Imports:
     MASS,
     magrittr,
     mgcv,
-    gamm4
+    gamm4,
+    rlang
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 LazyData: TRUE
