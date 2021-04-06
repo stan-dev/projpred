@@ -177,14 +177,16 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
-    pred <- t(mu)
-    if (!transform) pred <- proj$family$linkfun(pred)
+    predictions <- t(mu)
+    if (!transform) predictions <- proj$family$linkfun(predictions)
     if (integrated) {
       ## average over the parameters
-      pred <- as.vector(proj$weights %*% pred)
-    } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
+      pred <- as.vector(proj$weights %*% predictions)
+    } else if (!is.null(dim(predictions)) && nrow(predictions) == 1) {
       ## return a vector if pred contains only one row
-      pred <- as.vector(pred)
+      pred <- as.vector(predictions)
+    } else {
+      pred <- predictions
     }
 
     extract_model_data <- proj$extract_model_data
@@ -200,7 +202,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     }
 
     return(nlist(pred, lpd = compute_lpd(
-      ynew = ynew, pred = pred, proj = proj, weights = weights,
+      ynew = ynew, pred = predictions, proj = proj, weights = weights,
       integrated = integrated, transform = transform
     )))
   }
@@ -224,7 +226,7 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
-      lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
+      lpd <- as.vector(apply(lpd, 2, log_weighted_mean_exp, proj$weights))
     } else if (!is.null(dim(lpd))) {
       lpd <- t(lpd)
     }
