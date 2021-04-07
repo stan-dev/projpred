@@ -124,7 +124,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
     ))
   }
 
-  projs <- Filter(function(x) (length(x$solution_terms) + 1) %in% nterms, proj)
+  projs <- Filter(function(x) count_terms_chosen(x$solution_terms) %in% nterms, proj)
   names(projs) <- nterms
 
   solution_terms <- list(...)$solution_terms
