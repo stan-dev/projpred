@@ -251,6 +251,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       expect_equal(as.vector(proj_solution_terms_list[[i]]$weights %*%
                              plf$pred),
                    plt$pred, info = i_inf)
+      expect_length(plt$lpd, length(plt$pred))
     }
   })
 
