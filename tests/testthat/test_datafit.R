@@ -5,7 +5,7 @@ suppressWarnings(RNGversion("3.5.0"))
 # tests for data based estimates (no actual reference model)
 
 if (!requireNamespace("glmnet", quietly = TRUE)) {
-  stop("glmnet needed for this function to work. Please install it.",
+  stop("glmnet needed for this test to work. Please install it.",
     call. = FALSE
   )
 }

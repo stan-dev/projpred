@@ -3,7 +3,7 @@ context("elnet")
 # tests for glm_elnet
 
 if (!requireNamespace("glmnet", quietly = TRUE)) {
-  stop("glmnet needed for this function to work. Please install it.",
+  stop("glmnet needed for this test to work. Please install it.",
     call. = FALSE
   )
 }
