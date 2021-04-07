@@ -182,6 +182,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     if (integrated) {
       ## average over the parameters
       pred <- as.vector(proj$weights %*% predictions)
+      proj$dis <- proj$weights %*% proj$dis
     } else if (!is.null(dim(predictions)) && nrow(predictions) == 1) {
       ## return a vector if pred contains only one row
       pred <- as.vector(predictions)
@@ -202,7 +203,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     }
 
     return(nlist(pred, lpd = t(compute_lpd(
-      ynew = ynew, pred = predictions, proj = proj, weights = weights,
+      ynew = ynew, pred = pred, proj = proj, weights = weights,
       integrated = integrated, transform = transform
     ))))
   }
