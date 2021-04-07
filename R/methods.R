@@ -38,8 +38,8 @@
 #'   up projecting a single draw from each cluster.
 #' @param seed An optional seed to use for drawing from the projection. For
 #'   \code{proj_predict} only.
-#' @param ... Additional argument passed to \link{project} if \code{object} is
-#'   an object returned by \link{varsel} or \link{cv_varsel}.
+#' @param ... Additional arguments passed to \link{project} if \code{object} is
+#'   not already an object returned by \link{project}.
 #'
 #' @return If the prediction is done for one submodel only (\code{nterms} has
 #'   length one or \code{solution_terms} is specified) and \code{newdata} is

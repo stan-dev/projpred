@@ -62,8 +62,8 @@ posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.}
 \item{seed}{An optional seed to use for drawing from the projection. For
 \code{proj_predict} only.}
 
-\item{...}{Additional argument passed to \link{project} if \code{object} is
-an object returned by \link{varsel} or \link{cv_varsel}.}
+\item{...}{Additional arguments passed to \link{project} if \code{object} is
+not already an object returned by \link{project}.}
 
 \item{ndraws}{Number of draws to return from the predictive distribution of
 the projection. The default is 1000. For \code{proj_predict} only. We
