@@ -29,7 +29,7 @@ before_install:
   ')'))" >> ~/.Rprofile.site
 
 script:
-  - R CMD build . --no-build-vignettes
+  - travis_wait 60 R CMD build . --no-build-vignettes
   - travis_wait 120 R CMD check projpred*tar.gz --ignore-vignettes --no-examples
 
 after_success:
