@@ -7,10 +7,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   wobs <- validparams$wobs
   wsample <- validparams$wsample
 
-  form <- refmodel$formula
-
   subset <- subset_formula_and_data(
-    formula = form, terms_ = unique(unlist(solution_terms)),
+    formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
     data = refmodel$fetch_data(), y = p_ref$mu
   )
 
