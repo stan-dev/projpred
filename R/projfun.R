@@ -9,18 +9,18 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   form <- refmodel$formula
 
-  div_minimizer <- function(formula, data, weights) {
-    refmodel$div_minimizer(formula, data, weights = weights, family = family,
-                           regul = regul, var = p_ref$var)
-  }
-
   subset <- subset_formula_and_data(
     formula = form, terms_ = unique(unlist(solution_terms)),
     data = refmodel$fetch_data(), y = p_ref$mu
   )
 
-  sub_fit <- div_minimizer(flatten_formula(subset$formula), subset$data,
-    weights = refmodel$wobs
+  sub_fit <- refmodel$div_minimizer(
+    formula = flatten_formula(subset$formula),
+    data = subset$data,
+    weights = refmodel$wobs,
+    family = family,
+    regul = regul,
+    var = p_ref$var
   )
 
   return(.init_submodel(
