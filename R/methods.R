@@ -202,10 +202,10 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
       ynew <- NULL
     }
 
-    return(nlist(pred, lpd = drop(t(compute_lpd(
-      ynew = ynew, pred = pred, proj = proj, weights = weights,
+    return(nlist(pred, lpd = compute_lpd(
+      ynew = ynew, pred = t(pred), proj = proj, weights = weights,
       integrated = integrated, transform = transform
-    )))))
+    )))
   }
 
   ## proj_helper lapplies fun to each projection in object
@@ -229,7 +229,7 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     if (integrated && !is.null(dim(lpd))) {
       lpd <- as.vector(apply(lpd, 2, log_weighted_mean_exp, proj$weights))
     } else if (!is.null(dim(lpd))) {
-      lpd <- t(lpd)
+      lpd <- drop(t(lpd))
     }
     return(lpd)
   } else {
