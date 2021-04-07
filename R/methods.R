@@ -117,7 +117,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
       1
     }
   })
-  nterms <- list(...)$nterms %ORifNULL% projected_sizes
+  nterms <- nterms %ORifNULL% projected_sizes
 
   if (!all(nterms %in% projected_sizes)) {
     stop(paste0(
