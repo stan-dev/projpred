@@ -2,12 +2,41 @@
 
 # News
 
+## projpred 2.0.4.9000
+
+### Major changes
+
+### Minor changes
+
+* For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below). (GitHub: #82)
+* Internally, the seed is not fixed to a specific value when `NULL`. (GitHub: #84)
+
+### Bug fixes
+
+* Fixed a bug raising an error when not projecting from a `vsel` object. (GitHub: #79, #80)
+* Fixed a bug in the calculation of the Gaussian deviance. (GitHub: #81)
+* Fixed a bug in the calculation of the predictive statistics of the reference model on test data in `varsel()`. (GitHub #90)
+* In `init_refmodel()`: Raise an error if neither `cvfun` nor `cvfits` is provided (in cases where at least one of them necessary). (GitHub: #91)
+* Fixed a bug in an input check for argument `nloo` of `cv_varsel()`. (GitHub: #93)
+* Fixed a bug in `cv_varsel()`, causing an error in case of `!validate_search && cv_method != "LOO"`. (GitHub: #95)
+* Fixed bugs related to the setting of the seed. (GitHub: commit 02cd50db76b0f2d835ce8f8f39cbe94353540d64)
+* Fixed a bug causing `proj_linpred()` to raise an error if argument `newdata` was `NULL`. (GitHub: #97)
+* Fixed an incorrect usage of the dispersion parameter values when calculating output element `lpd` in `proj_linpred()` (for `integrated = TRUE` as well as for `integrated = FALSE`). (GitHub: #105)
+* Fixed bugs in `proj_linpred()`'s calculation of output element `lpd` (for `integrated = TRUE`). (GitHub: #106)
+* Fixed an inconsistency in the dimensions of `proj_linpred()`'s output elements `pred` and `lpd` (for `integrated = FALSE`): Now, they are both S x N matrices, with S denoting the number of (possibly clustered) posterior draws and N denoting the number of observations. (GitHub: #107)
+
 ## projpred 2.0.4
 
 * Added support for weighted LOO proportional-to-size subsampling based on Magnusson, M., Riis Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out  Cross-Validation for Large Data. In International Conference on Machine Learning. 
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
 * Fast approximate LOO computation for `validate_search = FALSE` calls in `cv_varsel(...)`.
 * Improved summary output with important details.
+* For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves. (GitHub: #75)
+* For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects. (GitHub: #74)
+
+### Bug fixes
+
+* Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix). (GitHub: #72, #73)
 
 ## projpred 2.0.3
 

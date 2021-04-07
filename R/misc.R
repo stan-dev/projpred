@@ -214,7 +214,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
 
 
-.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL) {
+.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
+                         thinning = TRUE) {
   #
   # Creates the reference distribution based on the refmodel-object, and the
   # desired number of clusters (nclusters) or number of subsamples (ndraws). If
@@ -232,10 +233,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   #   cl: cluster assignment for each posterior draw, that is, a vector that has
   #       length equal to the number of posterior draws and each value is an
   #       integer between 1 and s
-  if (is.null(seed)) {
-    seed <- 17249420
-  }
-
   # set random seed but ensure the old RNG state is restored on exit
   if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed
@@ -245,6 +242,10 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
   family <- refmodel$family
   S <- NCOL(refmodel$mu) # number of draws in the reference model
+
+  if (is.null(ndraws)) {
+    ndraws <- S
+  }
 
   if (!is.null(nclusters)) {
     # use clustering (ignore ndraws argument)
@@ -256,7 +257,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       )
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ndraws = nclusters))
+      return(.get_refdist(refmodel, ndraws = nclusters, seed = seed))
     } else {
       # several clusters
       if (nclusters > NCOL(refmodel$mu)) {
@@ -269,16 +270,19 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
         wobs = refmodel$wobs, nclusters = nclusters
       )
     }
-  } else if (!is.null(ndraws)) {
+  } else {
     # subsample from the reference model
-    # would it be safer to actually randomly draw the subsample?
     if (ndraws > NCOL(refmodel$mu)) {
       stop(
         "The number of draws ndraws cannot exceed the number of ",
         "columns in mu."
       )
     }
-    s_ind <- round(seq(1, S, length.out = ndraws))
+    if (thinning) {
+      s_ind <- round(seq(from = 1, to = S, length.out = ndraws))
+    } else {
+      s_ind <- sample(seq_len(S), size = ndraws)
+    }
     cl <- rep(NA, S)
     cl[s_ind] <- c(1:ndraws)
     predvar <- sapply(s_ind, function(j) {
@@ -288,15 +292,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
       dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws),
       cl = cl
-    )
-  } else {
-    # use all the draws from the reference model
-    predvar <- sapply(seq_len(S), function(j) {
-      family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
-    })
-    p_ref <- list(
-      mu = refmodel$mu, var = predvar, dis = refmodel$dis,
-      weights = refmodel$wsample, cl = c(1:S)
     )
   }
 

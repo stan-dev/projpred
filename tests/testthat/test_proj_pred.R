@@ -64,14 +64,14 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("proj_linpred: newdata is specified correctly", {
-    expect_error(
-      proj_linpred(proj_solution_terms_list),
-      'argument "newdata" is missing, with no default'
-    )
-    expect_error(
-      proj_linpred(proj_solution_terms_list, newdata = NULL),
-      "must be a data.frame or a matrix"
-    )
+    ## expect_error(
+    ##   proj_linpred(proj_solution_terms_list),
+    ##   'argument "newdata" is missing, with no default'
+    ## )
+    ## expect_error(
+    ##   proj_linpred(proj_solution_terms_list, newdata = NULL),
+    ##   "must be a data.frame or a matrix"
+    ## )
     expect_error(
       proj_linpred(proj_solution_terms_list, newdata = x[, 1]),
       "must be a data.frame or a matrix"
@@ -200,7 +200,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         )
         expect_named(plw, c("pred", "lpd"))
         expect_equal(ncol(plw$pred), n, info = i_inf)
-        expect_equal(nrow(plw$lpd), n, info = i_inf)
+        expect_equal(ncol(plw$lpd), n, info = i_inf)
         expect_false(all(plw$lpd == pl$lpd))
       }
     }
@@ -222,7 +222,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       )
       expect_named(plo, c("pred", "lpd"))
       expect_equal(ncol(plo$pred), n, info = i_inf)
-      expect_equal(nrow(plo$lpd), n, info = i_inf)
+      expect_equal(ncol(plo$lpd), n, info = i_inf)
       expect_equal(t(plo$pred) - offset, t(pl$pred), tol = 1e-8)
     }
   })
@@ -323,14 +323,14 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   context("proj_predict")
 
   test_that("proj_predict: newdata is specified correctly", {
-    expect_error(
-      proj_predict(proj_solution_terms_list),
-      'argument "newdata" is missing, with no default'
-    )
-    expect_error(
-      proj_predict(proj_solution_terms_list, newdata = NULL),
-      "must be a data.frame or a matrix"
-    )
+    ## expect_error(
+    ##   proj_predict(proj_solution_terms_list),
+    ##   'argument "newdata" is missing, with no default'
+    ## )
+    ## expect_error(
+    ##   proj_predict(proj_solution_terms_list, newdata = NULL),
+    ##   "must be a data.frame or a matrix"
+    ## )
     expect_error(
       proj_predict(proj_solution_terms_list, newdata = x[, 1]),
       "must be a data.frame or a matrix"

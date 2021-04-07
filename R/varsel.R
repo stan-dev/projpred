@@ -24,20 +24,22 @@
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws used in the variable selection.
 #'   Cannot be larger than the number of draws in the reference model. Ignored
-#'   if nclusters is set. Default is 10.
-#' @param nclusters Number of clusters to use in the clustered projection.
-#'   Overrides the \code{ndraws} argument. Default is 10.
+#'   if nclusters is set. Default is 10. In other words, we project a single
+#'   draw from each cluster.
+#' @param nclusters Number of clusters used for selection. Defaults to 10 and
+#'   ignored if method='L1' (L1-search uses always one cluster). If nclusters is
+#'   null we use as many clusters as draws to project.
 #' @param ndraws_pred Number of projected draws used for prediction (after
 #'   selection). Ignored if nclusters_pred is given. Note that setting less
 #'   draws or clusters than posterior draws in the reference model may result in
 #'   slightly inaccurate projection performance, although increasing this
 #'   argument linearly affects the computation time. Default is 400.
 #' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 400.
+#'   selection). Default is 400. If nclusters_pred is null, we use as many
+#'   clusters for prediction as ndraws_pred.
 #' @param nterms_max Maximum number of varibles until which the selection is
 #'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 #'   observations and D the number of variables.
-#' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
 #' @param penalty Vector determining the relative penalties or costs for the
 #'   variables. Zero means that those variables have no cost and will therefore
 #'   be selected first, whereas Inf means those variables will never be
@@ -60,6 +62,8 @@
 #' @param search_terms A custom list of terms to evaluate for variable
 #'   selection. By default considers all the terms in the reference model's
 #'   formula.
+#' @param seed Random seed used in the subsampling LOO. By default uses a fixed
+#'   seed.
 #' @param ... Additional arguments to be passed to the
 #'   \code{get_refmodel}-function.
 #'
@@ -101,14 +105,16 @@ varsel.default <- function(object, ...) {
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
                             nclusters_pred = NULL, cv_search = TRUE,
-                            nterms_max = NULL, intercept = TRUE, verbose = TRUE,
+                            nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL, ...) {
+                            search_terms = NULL, seed = NULL, ...) {
   refmodel <- object
   family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
+  ## use the intercept as indicated by the refmodel
+  intercept <- NULL
   args <- parse_args_varsel(
     refmodel, method, cv_search, intercept, nterms_max,
     nclusters, ndraws, nclusters_pred, ndraws_pred, search_terms
@@ -142,8 +148,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   }
 
   ## reference distributions for selection and prediction after selection
-  p_sel <- .get_refdist(refmodel, ndraws, nclusters)
-  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
+  p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
+  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
 
   ## perform the selection
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)

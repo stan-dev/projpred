@@ -11,6 +11,8 @@
 \item{x}{An object of class vselsummary.}
 
 \item{digits}{Number of decimal places to be reported (1 by default).}
+
+\item{...}{Currently ignored.}
 }
 \value{
 Returns invisibly the output produced by

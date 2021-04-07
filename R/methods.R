@@ -38,7 +38,9 @@
 #'   \code{solution_terms} is specified. By default use the automatically
 #'   suggested model size.
 #' @param ndraws Number of draws to return from the predictive distribution of
-#'   the projection. The default is 1000. For \code{proj_predict} only.
+#'   the projection. The default is 1000. For \code{proj_predict} only. We
+#'   compute as many clusters from the reference posterior as draws, so we end
+#'   up projecting a single draw from each cluster.
 #' @param seed An optional seed to use for drawing from the projection. For
 #'   \code{proj_predict} only.
 #' @param ... Additional argument passed to \link{project} if \code{object} is
@@ -61,10 +63,10 @@
 #'   x <- matrix(rnorm(n*d), nrow=n)
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
-#'   
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
-#'   vs <- varsel(fit)
-#'   
+#'
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+#'   data=data, chains=2, iter=500) vs <- varsel(fit)
+#'
 #'   # compute predictions with 4 variables at the training points
 #'   pred <- proj_linpred(vs, newdata = data, nv = 4)
 #'   pred <- proj_predict(vs, newdata = data, nv = 4)
@@ -81,18 +83,12 @@ NULL
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
                         proj_predict, ...) {
-  if (is.null(newdata) ||
-    !(inherits(newdata, "data.frame") ||
-      inherits(newdata, "matrix"))) {
-    stop("newdata must be a data.frame or a matrix")
-  }
-
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     proj <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
-    proj <- project(object = object, nterms = nterms, ...)
+    proj <- project(object = object, nterms = nterms, seed = seed, ...)
   }
 
   if (!.is_proj_list(proj)) {
@@ -105,6 +101,13 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
         " varsel, cv_varsel or project"
       ))
     }
+  }
+
+  if (is.null(newdata)) {
+    ## pick first projection's function
+    newdata <- proj[[1]]$refmodel$fetch_data()
+  } else if (!any(inherits(newdata, c("matrix", "data.frame"), TRUE))) {
+    stop("newdata must be a data.frame or a matrix")
   }
 
   projected_sizes <- sapply(proj, function(x) {
@@ -133,7 +136,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
       length(solution_terms) > NCOL(newdata)) {
     stop(paste(
       "The number of columns in newdata does not match with the given",
-      "number of terms indices (solution_terms)."
+      "number of solution terms."
     ))
   }
   ## set random seed but ensure the old RNG state is restored on exit
@@ -168,20 +171,23 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 
 #' @rdname proj-pred
 #' @export
-proj_linpred <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
-                         nterms = NULL, transform = FALSE, integrated = FALSE,
-                         seed = NULL, ...) {
+proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, nterms = NULL, transform = FALSE,
+                         integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
-    pred <- t(mu)
-    if (!transform) pred <- proj$family$linkfun(pred)
+    predictions <- t(mu)
+    if (!transform) predictions <- proj$family$linkfun(predictions)
     if (integrated) {
       ## average over the parameters
-      pred <- as.vector(proj$weights %*% pred)
-    } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
+      pred <- as.vector(proj$weights %*% predictions)
+      proj$dis <- as.numeric(proj$weights %*% proj$dis)
+    } else if (!is.null(dim(predictions)) && nrow(predictions) == 1) {
       ## return a vector if pred contains only one row
-      pred <- as.vector(pred)
+      pred <- as.vector(predictions)
+    } else {
+      pred <- predictions
     }
 
     extract_model_data <- proj$extract_model_data
@@ -197,7 +203,7 @@ proj_linpred <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
     }
 
     return(nlist(pred, lpd = compute_lpd(
-      ynew = ynew, pred = pred, proj = proj, weights = weights,
+      ynew = ynew, pred = t(pred), proj = proj, weights = weights,
       integrated = integrated, transform = transform
     )))
   }
@@ -221,9 +227,9 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
-      lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
+      lpd <- as.vector(apply(lpd, 2, log_weighted_mean_exp, proj$weights))
     } else if (!is.null(dim(lpd))) {
-      lpd <- t(lpd)
+      lpd <- drop(t(lpd))
     }
     return(lpd)
   } else {
@@ -233,8 +239,9 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 
 #' @rdname proj-pred
 #' @export
-proj_predict <- function(object, newdata, offsetnew = NULL, weightsnew = NULL,
-                         nterms = NULL, ndraws = 1000, seed = NULL, ...) {
+proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, nterms = NULL, ndraws = 1000,
+                         seed = NULL, ...) {
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
@@ -399,6 +406,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
 #'   reference model or the best submodel found. Default is 'ref' when the
 #'   reference model exists, and 'best' otherwise.
+#' @param digits Number of decimal places to be reported (1 by default).
 #' @param ... Currently ignored.
 #'
 #' @examples
@@ -410,11 +418,11 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   x <- matrix(rnorm(n*d), nrow=n)
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
-#'   
+#'
 #'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
 #'   plot(vs)
-#'   
+#'
 #'   # print out some stats
 #'   summary(vs, stats=c('mse'), type = c('mean','se'))
 #' }
@@ -540,6 +548,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #'
 #' @param x An object of class vselsummary.
 #' @param digits Number of decimal places to be reported (1 by default).
+#' @param ... Currently ignored.
 #'
 #' @return Returns invisibly the output produced by
 #'   \code{\link{summary.vsel}}.
@@ -569,7 +578,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat("\n")
   cat("Selection Summary:\n")
   print(x$selection %>% dplyr::mutate(dplyr::across(
-    where(is.numeric),
+    tidyselect:::where(is.numeric),
     ~ round(., digits)
   )),
   row.names = FALSE
@@ -607,7 +616,7 @@ suggest_size <- function(object, ...) {
     UseMethod("suggest_size")
 }
 
-#' Suggest model size 
+#' Suggest model size
 #'
 #' This function can be used for suggesting an appropriate model size
 #' based on a certain default rule. Notice that the decision rules are heuristic
@@ -637,7 +646,7 @@ suggest_size <- function(object, ...) {
 #'   mainly for internal use. Default is TRUE, and usually there is no reason to
 #'   set to FALSE.
 #' @param ... Currently ignored.
-#' 
+#'
 #' @details The suggested model size is the smallest model for which either the
 #'   lower or upper (depending on argument \code{type}) credible bound of the
 #'   submodel utility \eqn{u_k} with significance level \code{alpha} falls above
@@ -647,7 +656,7 @@ suggest_size <- function(object, ...) {
 #'   best submodel found (see argument \code{baseline}). The lower and upper
 #'   bounds are defined to contain the submodel utility with probability 1-alpha
 #'   (each tail has mass alpha/2).
-#' 
+#'
 #' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
 #'   means that we select the smallest model for which the upper tail exceeds
 #'   the baseline model level, that is, which is better than the baseline model
@@ -655,7 +664,7 @@ suggest_size <- function(object, ...) {
 #'   other words, the estimated difference between the baseline model and
 #'   submodel utilities is at most one standard error away from zero, so the two
 #'   utilities are considered to be close.
-#' 
+#'
 #' NOTE: Loss statistics like RMSE and MSE are converted to utilities by
 #'   multiplying them by -1, so call such as \code{suggest_size(object,
 #'   stat='rmse', type='upper')} should be interpreted as finding the smallest
@@ -663,7 +672,7 @@ suggest_size <- function(object, ...) {
 #'   cutoff level (or equivalently has the lower credible bound of RMSE below
 #'   the cutoff level). This is done to make the interpretation of the argument
 #'   \code{type} the same regardless of argument \code{stat}.
-#' 
+#'
 #' @examples
 #' \donttest{
 #' if (requireNamespace('rstanarm', quietly=TRUE)) {
@@ -679,7 +688,7 @@ suggest_size <- function(object, ...) {
 #'   suggest_size(vs)
 #' }
 #' }
-#' 
+#'
 #' @export
 suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
                               type = "upper", baseline = NULL, warnings = TRUE,
@@ -737,6 +746,21 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
   return(suggested_size)
 }
 
+replace_intercept_name <- function(names) {
+  return(gsub(
+    "\\(Intercept\\)",
+    "Intercept",
+    names
+  ))
+}
+
+replace_population_names <- function(population_effects) {
+  # Use brms's naming convention:
+  names(population_effects) <- replace_intercept_name(names(population_effects))
+  names(population_effects) <- paste0("b_", names(population_effects))
+  return(population_effects)
+}
+
 #' @method coef subfit
 coef.subfit <- function(x, ...) {
   variables <- colnames(x$x)
@@ -745,32 +769,143 @@ coef.subfit <- function(x, ...) {
   return(named_coefs)
 }
 
+#' @method as.matrix lm
+as.matrix.lm <- function(x, ...) {
+  return(coef(x) %>%
+         replace_population_names())
+}
+
 #' @method as.matrix ridgelm
 as.matrix.ridgelm <- function(x, ...) {
-  return(coef(x))
+  return(as.matrix.lm(x))
 }
 
 #' @method as.matrix subfit
 as.matrix.subfit <- function(x, ...) {
-  return(coef(x))
-}
-
-#' @method as.matrix lm
-as.matrix.lm <- function(x, ...) {
-  return(coef(x))
+  return(as.matrix.lm(x))
 }
 
 #' @method as.matrix glm
 as.matrix.glm <- function(x, ...) {
-  return(coef(x))
+  return(as.matrix.lm(x))
 }
 
 #' @method as.matrix lmerMod
 as.matrix.lmerMod <- function(x, ...) {
-  population_effects <- lme4::fixef(x)
-  group_effects <- lme4::ranef(x)
-  group_effects <- unlist(lapply(group_effects, function(ge) apply(ge, 2, sd)))
-  return(c(population_effects, group_effects))
+  population_effects <- lme4::fixef(x) %>%
+    replace_population_names()
+
+  # Extract variance components:
+  group_vc_raw <- lme4::VarCorr(x)
+  group_vc <- unlist(lapply(group_vc_raw, function(vc_obj) {
+    # The vector of standard deviations:
+    vc_out <- c("sd" = attr(vc_obj, "stddev"))
+    # The correlation matrix:
+    cor_mat <- attr(vc_obj, "correlation")
+    if (!is.null(cor_mat)) {
+      # Auxiliary object: A matrix of the same dimension as cor_mat, but
+      # containing the paste()-d dimnames:
+      cor_mat_nms <- matrix(apply(expand.grid(
+        rownames(cor_mat),
+        colnames(cor_mat)
+      ),
+      1, paste,
+      collapse = "."
+      ),
+      nrow = nrow(cor_mat), ncol = ncol(cor_mat)
+      )
+      # Note: With upper.tri() (and also with lower.tri()), the indexed matrix
+      # is coerced to a vector in column-major order:
+      vc_out <- c(
+        vc_out,
+        "cor" = setNames(
+          cor_mat[upper.tri(cor_mat)],
+          cor_mat_nms[upper.tri(cor_mat_nms)]
+        )
+      )
+    }
+    return(vc_out)
+  }))
+
+  # Use brms's naming convention:
+  names(group_vc) <- replace_intercept_name(names(group_vc))
+
+  # We will have to move the substrings "sd\\." and "cor\\." up front (i.e. in
+  # front of the group name), so make sure that they don't occur in the group
+  # names:
+  stopifnot(!any(grepl("sd\\.|cor\\.", names(group_vc_raw))))
+  # Move the substrings "sd\\." and "cor\\." up front and replace the dot
+  # following the group name by double underscores:
+  names(group_vc) <- sub(
+    paste0(
+      "(",
+      paste(
+        gsub("\\.", "\\\\.", names(group_vc_raw)),
+        collapse = "|"
+      ),
+      ")\\.(sd|cor)\\."
+    ),
+    "\\2_\\1__",
+    names(group_vc)
+  )
+  # Replace dots between coefficient names by double underscores:
+  coef_nms <- lapply(group_vc_raw, rownames)
+  for (coef_nms_i in coef_nms) {
+    coef_nms_i <- replace_intercept_name(coef_nms_i)
+    names(group_vc) <- gsub(
+      paste0(
+        "(",
+        paste(
+          gsub("\\.", "\\\\.", coef_nms_i),
+          collapse = "|"
+        ),
+        ")\\."
+      ),
+      "\\1__",
+      names(group_vc)
+    )
+  }
+
+  # Extract the group-level effects themselves:
+  group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df) {
+    ranef_mat <- as.matrix(ranef_df)
+    setNames(
+      as.vector(ranef_mat),
+      apply(
+        expand.grid(rownames(ranef_mat), colnames(ranef_mat)),
+        1, function(row_col_nm) {
+          paste(rev(row_col_nm), collapse = ".")
+        }
+      )
+    )
+  }))
+
+  # Use brms's naming convention:
+  names(group_ef) <- replace_intercept_name(names(group_ef))
+  names(group_ef) <- paste0("r_", names(group_ef))
+  for (coef_nms_idx in seq_along(coef_nms)) {
+    group_nm_i <- names(coef_nms)[coef_nms_idx]
+    coef_nms_i <- coef_nms[[coef_nms_idx]]
+    coef_nms_i <- replace_intercept_name(coef_nms_i)
+    # Put the part following the group name in square brackets, reorder its two
+    # subparts (coefficient name and group level) and separate them by comma:
+    names(group_ef) <- sub(
+      paste0(
+        "(",
+        gsub("\\.", "\\\\.", group_nm_i),
+        ")\\.(",
+        paste(
+          gsub("\\.", "\\\\.", coef_nms_i),
+          collapse = "|"
+        ),
+        ")\\.(.*)$"
+      ),
+      "\\1[\\3,\\2]",
+      names(group_ef)
+    )
+  }
+
+  return(c(population_effects, group_vc, group_ef))
 }
 
 #' @method as.matrix noquote
@@ -814,7 +949,7 @@ as.matrix.projection <- function(x, ...) {
   }
   if (inherits(x$sub_fit, "list")) {
     if ("lmerMod" %in% class(x$sub_fit[[1]]) ||
-        "glmerMod" %in% class(x$sub_fit[[1]])) {
+      "glmerMod" %in% class(x$sub_fit[[1]])) {
       res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
     } else {
       if (inherits(x$sub_fit[[1]], "subfit")) {
@@ -826,15 +961,7 @@ as.matrix.projection <- function(x, ...) {
   } else {
     res <- t(as.matrix.lm(x$sub_fit))
   }
-  if (x$intercept) {
-    if ("1" %in% x$solution_terms) {
-      colnames(res) <- gsub("^1", "Intercept", x$solution_terms)
-    } else if ("alpha" %in% colnames(res)) {
-      colnames(res) <- gsub("^alpha", "Intercept", colnames(res))
-    } else {
-      colnames(res) <- c("Intercept", x$solution_terms)
-    }
-  }
+  colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }

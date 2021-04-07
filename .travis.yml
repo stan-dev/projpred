@@ -23,10 +23,14 @@ before_install:
   - if [[ $CXX = "clang++" ]] ;  then export CLANG_EXTRA_ARG=" -Qunused-arguments -fcolor-diagnostics " ; fi
   - sed -i.bak "s/ g++/ ${CXX}${CLANG_EXTRA_ARG}/" ~/.R/Makevars
   - sed -i.bak "s/O[0-3]/O$CXX_OLEVEL/" ~/.R/Makevars
+  - echo "options(repos = c(CRAN = 'https://packagemanager.rstudio.com/all/__linux__/xenial/latest'))" >> ~/.Rprofile.site
+  - echo "options(HTTPUserAgent = paste0('R/', getRversion(), ' R (',
+  paste(getRversion(), R.version['platform'], R.version['arch'], R.version['os']),
+  ')'))" >> ~/.Rprofile.site
 
 script:
-  - R CMD build . --no-build-vignettes
-  - travis_wait 45 R CMD check projpred*tar.gz --ignore-vignettes --no-examples
+  - travis_wait 60 R CMD build . --no-build-vignettes
+  - travis_wait 120 R CMD check projpred*tar.gz --ignore-vignettes --no-examples
 
 after_success:
-- travis_wait 45 Rscript -e 'covr::codecov()'
+- travis_wait 120 Rscript -e 'covr::codecov()'

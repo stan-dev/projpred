@@ -53,6 +53,8 @@ mass within the intervals, that is, one standard error intervals.}
 reference model or the best submodel found. Default is 'ref' when the
 reference model exists, and 'best' otherwise.}
 
+\item{digits}{Number of decimal places to be reported (1 by default).}
+
 \item{...}{Currently ignored.}
 }
 \description{
@@ -67,11 +69,11 @@ if (requireNamespace('rstanarm', quietly=TRUE)) {
   x <- matrix(rnorm(n*d), nrow=n)
   y <- x[,1] + 0.5*rnorm(n)
   data <- data.frame(x,y)
-  
+
   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
   vs <- cv_varsel(fit)
   plot(vs)
-  
+
   # print out some stats
   summary(vs, stats=c('mse'), type = c('mean','se'))
 }

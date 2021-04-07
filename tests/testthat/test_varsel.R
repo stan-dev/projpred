@@ -400,11 +400,11 @@ if (require(rstanarm)) {
       SW({
         expect_equal(
           cv_varsel(fit_gauss,
-            cv_method = "LOO", nterms_max = nterms,
+            cv_method = "LOO", nterms_max = nterms, seed = seed,
             nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred
           ),
           cv_varsel(fit_gauss,
-            cv_method = "LOO", nterms_max = nterms,
+            cv_method = "LOO", nterms_max = nterms, seed = seed,
             nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred
           )
         )

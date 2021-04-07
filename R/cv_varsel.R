@@ -15,17 +15,21 @@
 #'   \code{'L1'} for L1-search and \code{'forward'} for forward selection.
 #'   Default is 'forward' if the number of variables in the full data is at most
 #'   20,' and \code{'L1'} otherwise.
-#' @param ndraws Number of posterior draws used for selection. Ignored if
-#'   nclusters is provided or if method='L1'. Default is 10.
+#' @param ndraws Number of posterior draws used in the variable selection.
+#'   Cannot be larger than the number of draws in the reference model. Ignored
+#'   if nclusters is set. Default is 10. In other words, we project a single
+#'   draw from each cluster.
 #' @param nclusters Number of clusters used for selection. Defaults to 10 and
-#'   ignored if method='L1' (L1-search uses always one cluster).
+#'   ignored if method='L1' (L1-search uses always one cluster). If nclusters is
+#'   null we use as many clusters as draws to project.
 #' @param ndraws_pred Number of projected draws used for prediction (after
 #'   selection). Ignored if nclusters_pred is given. Note that setting less
 #'   draws or clusters than posterior draws in the reference model may result in
 #'   slightly inaccurate projection performance, although increasing this
 #'   argument linearly affects the computation time. Default is 400.
 #' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 400.
+#'   selection). Default is 400. If nclusters_pred is null, we use as many
+#'   clusters for prediction as ndraws_pred.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
 #'   are computed without any penalization (or using only the regularization
 #'   determined by \code{regul}). If FALSE, then the coefficients are the
@@ -35,7 +39,6 @@
 #' @param nterms_max Maximum number of varibles until which the selection is
 #'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
 #'   observations and D the number of variables.
-#' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
 #' @param penalty Vector determining the relative penalties or costs for the
 #'   variables. Zero means that those variables have no cost and will therefore
 #'   be selected first, whereas Inf means those variables will never be
@@ -120,7 +123,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
                                ndraws = NULL, nclusters = NULL,
                                ndraws_pred = NULL, nclusters_pred = NULL,
                                cv_search = TRUE, nterms_max = NULL,
-                               intercept = NULL, penalty = NULL, verbose = TRUE,
+                               penalty = NULL, verbose = TRUE,
                                nloo = NULL, K = NULL, lambda_min_ratio = 1e-5,
                                nlambda = 150, thresh = 1e-6, regul = 1e-4,
                                validate_search = TRUE, seed = NULL,
@@ -129,7 +132,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,
-    intercept = intercept, nterms_max = nterms_max, nclusters = nclusters,
+    intercept = NULL, nterms_max = nterms_max, nclusters = nclusters,
     ndraws = ndraws, nclusters_pred = nclusters_pred,
     ndraws_pred = ndraws_pred, search_terms = search_terms
   )
@@ -181,7 +184,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
     stop(sprintf("Unknown cross-validation method: %s.", method))
   }
 
-  if (validate_search || cv_search == "kfold") {
+  if (validate_search || cv_method == "kfold") {
     ## run the selection using the full dataset
     if (verbose) {
       print(paste("Performing the selection using all the data.."))
@@ -192,7 +195,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
       cv_search = cv_search, nterms_max = nterms_max - 1,
       intercept = intercept, penalty = penalty, verbose = verbose,
       lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
-      search_terms = search_terms
+      search_terms = search_terms, seed = seed
     )
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
@@ -339,14 +342,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel,
     ndraws = ndraws,
-    nclusters = nclusters
+    nclusters = nclusters,
+    seed = seed
   )
   cl_sel <- p_sel$cl # clustering information
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel,
     ndraws = ndraws_pred,
-    nclusters = nclusters_pred
+    nclusters = nclusters_pred,
+    seed = seed
   )
   cl_pred <- p_pred$cl
 
@@ -370,7 +375,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## by default use all observations
   nloo <- min(nloo, n)
 
-  if (nloo < 0) {
+  if (nloo < 1) {
     stop("nloo must be at least 1")
   }
 
@@ -604,8 +609,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       refmodel$nclusters_pred,
       nclusters_pred
     )
-    p_sel <- .get_refdist(refmodel, ndraws, nclusters)
-    p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
+    p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
+    p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
     newdata <- d_test$newdata
     pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata)
     pred <- matrix(
@@ -753,7 +758,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (approximate) {
         nobs <- NROW(refmodel$y)
         folds <- cvfolds(nobs, K = K, seed = seed)
-        cvfits <- lapply(seq_long(K), function(k) {
+        cvfits <- lapply(seq_len(K), function(k) {
           ## add the 'omitted' indices for the cvfits
           cvfit <- refmodel$fit
           cvfit$omitted <- which(folds == k)

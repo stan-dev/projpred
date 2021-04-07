@@ -23,9 +23,10 @@
 #'   L1-search was used. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws to be projected. Ignored if
-#'   \code{nclusters} is specified. Default is 400.
-#' @param nclusters Number of clusters in the clustered projection.
-#' @param intercept Whether to use intercept. Default is \code{TRUE}.
+#'   \code{nclusters} is specified. Default is 400. We project a single draw
+#'   from each cluster.
+#' @param nclusters Number of clusters in the clustered projection. By default
+#'   we use as many clusters as draws to project.
 #' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
 #'   be used to ensure same results every time. @param regul Amount of
 #'   regularization in the projection. Usually there is no need for
@@ -123,14 +124,14 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       ), "1")
     }
 
-    if (max(solution_terms) > length(vars)) {
+    if (length(solution_terms) > length(vars)) {
       stop(
-        "solution_terms contains an index larger than the number of ",
-        "variables in the model."
+        "Argument 'solution_terms' contains more terms than the number of ",
+        "terms in the model."
       )
     }
 
-    solution_terms <- c(vars[solution_terms])
+    solution_terms <- intersect(solution_terms, vars)
     nterms <- length(solution_terms)
   } else {
     ## by default take the variable ordering from the selection
@@ -184,10 +185,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     )
   }
 
-  if (is.null(intercept)) {
-    intercept <- refmodel$intercept
-  }
-
+  intercept <- refmodel$intercept
   family <- refmodel$family
 
   ## get the clustering or subsample

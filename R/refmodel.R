@@ -479,7 +479,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         return(fits)
       }
     } else {
-      cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+      if (!proper_model) {
+        cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+      } else if (is.null(cvfits)) {
+        stop("Please provide either 'cvfun' or 'cvfits'.")
+      }
     }
   }
 
