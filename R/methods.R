@@ -179,7 +179,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     if (integrated) {
       ## average over the posterior draws
       pred <- as.vector(proj$weights %*% predictions)
-      proj$dis <- as.numeric(proj$weights %*% proj$dis)
+      proj$dis <- as.vector(proj$weights %*% proj$dis)
     } else if (!is.null(dim(predictions)) && nrow(predictions) == 1) {
       ## return a vector if pred contains only one row
       pred <- as.vector(predictions)
