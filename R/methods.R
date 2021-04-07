@@ -143,8 +143,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
   set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
-    extract_model_data <- proj$extract_model_data
-    w_o <- extract_model_data(proj$refmodel$fit,
+    w_o <- proj$extract_model_data(proj$refmodel$fit,
       newdata = newdata, weightsnew,
       offsetnew, extract_y = FALSE
     )
@@ -187,8 +186,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
       pred <- predictions
     }
 
-    extract_model_data <- proj$extract_model_data
-    w_o <- extract_model_data(proj$refmodel$fit,
+    w_o <- proj$extract_model_data(proj$refmodel$fit,
       newdata = newdata, weightsnew,
       offsetnew, extract_y = TRUE
     )
