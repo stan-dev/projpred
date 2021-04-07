@@ -200,7 +200,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         )
         expect_named(plw, c("pred", "lpd"))
         expect_equal(ncol(plw$pred), n, info = i_inf)
-        expect_equal(nrow(plw$lpd), n, info = i_inf)
+        expect_equal(ncol(plw$lpd), n, info = i_inf)
         expect_false(all(plw$lpd == pl$lpd))
       }
     }
@@ -222,7 +222,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       )
       expect_named(plo, c("pred", "lpd"))
       expect_equal(ncol(plo$pred), n, info = i_inf)
-      expect_equal(nrow(plo$lpd), n, info = i_inf)
+      expect_equal(ncol(plo$lpd), n, info = i_inf)
       expect_equal(t(plo$pred) - offset, t(pl$pred), tol = 1e-8)
     }
   })
