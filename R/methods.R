@@ -80,33 +80,32 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
                         proj_predict_local, ...) {
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
-    proj <- object
+    projs <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
-    proj <- project(object = object, seed = seed, ...)
+    projs <- project(object = object, seed = seed, ...)
   }
 
-  if (!.is_proj_list(proj)) {
-    proj <- list(proj)
+  if (!.is_proj_list(projs)) {
+    projs <- list(projs)
   } else {
-    ## proj is some other object, not containing an element called "family" (so
+    ## projs is some other object, not containing an element called "family" (so
     ## it could be a `proj_list` but must not necessarily)
-    if (any(sapply(proj, function(x) !("family" %in% names(x))))) {
+    if (any(sapply(projs, function(x) !("family" %in% names(x))))) {
       stop("Invalid object supplied to argument `object`.")
     }
   }
 
   if (is.null(newdata)) {
     ## pick first projection's function
-    newdata <- proj[[1]]$refmodel$fetch_data()
+    newdata <- projs[[1]]$refmodel$fetch_data()
   } else if (!any(inherits(newdata, c("matrix", "data.frame"), TRUE))) {
     stop("newdata must be a data.frame or a matrix")
   }
 
-  projs <- proj
-  names(projs) <- sapply(proj, function(x) {
-    if (length(x$solution_terms) > 1) {
-      count_terms_chosen(x$solution_terms)
+  names(projs) <- sapply(projs, function(proj) {
+    if (length(proj$solution_terms) > 1) {
+      count_terms_chosen(proj$solution_terms)
     } else {
       1
     }
