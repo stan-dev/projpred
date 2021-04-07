@@ -42,12 +42,20 @@
 #'   not already an object returned by \link{project}.
 #'
 #' @return If the prediction is done for one submodel only (\code{nterms} has
-#'   length one or \code{solution_terms} is specified) and \code{newdata} is
-#'   unspecified, a matrix or vector of predictions (depending on the value of
-#'   \code{integrated}). If \code{newdata} is specified, \code{proj_linpred}
-#'   returns a list with elements \code{pred} (predictions) and \code{lpd} (log
-#'   predictive densities). If the predictions are done for several submodel
-#'   sizes, returns a list with one element for each submodel.
+#'   length one or \code{solution_terms} is specified):
+#'   \itemize{
+#'     \item \code{proj_linpred} returns a list with elements \code{pred}
+#'     (predictions) and \code{lpd} (log predictive densities). Both elements
+#'     are either a S x N matrix or a length-N vector (depending on the value of
+#'     \code{integrated}), with S denoting the number of (possibly clustered)
+#'     posterior draws and N denoting the number of observations.
+#'     \item \code{proj_predict} returns a S x N matrix of predictions, with S
+#'     denoting the number of (possibly clustered) posterior draws and N
+#'     denoting the number of observations.
+#'   }
+#'   If the predictions are done for several submodel sizes, the output from
+#'   above is returned for each submodel (giving a list of length equal to the
+#'   number of submodels).
 #'
 #' @examples
 #' \donttest{
