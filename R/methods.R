@@ -174,17 +174,15 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
-    predictions <- t(mu)
-    if (!transform) predictions <- proj$family$linkfun(predictions)
+    pred <- t(mu)
+    if (!transform) pred <- proj$family$linkfun(pred)
     if (integrated) {
       ## average over the posterior draws
-      pred <- as.vector(proj$weights %*% predictions)
+      pred <- as.vector(proj$weights %*% pred)
       proj$dis <- as.vector(proj$weights %*% proj$dis)
-    } else if (!is.null(dim(predictions)) && nrow(predictions) == 1) {
+    } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
       ## return a vector if pred contains only one row
-      pred <- as.vector(predictions)
-    } else {
-      pred <- predictions
+      pred <- as.vector(pred)
     }
 
     w_o <- proj$extract_model_data(proj$refmodel$fit,
