@@ -192,12 +192,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
       newdata = newdata, weightsnew,
       offsetnew, extract_y = TRUE
     )
-
-    if (!is.null(w_o$y)) {
-      ynew <- w_o$y
-    } else {
-      ynew <- NULL
-    }
+    ynew <- w_o$y
 
     return(nlist(pred = t(pred), lpd = t(compute_lpd(
       ynew = ynew, pred = predictions, proj = proj, weights = weights,
