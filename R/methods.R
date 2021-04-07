@@ -64,8 +64,8 @@
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
-#'   vs <- varsel(fit)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+#'   data=data, chains=2, iter=500) vs <- varsel(fit)
 #'
 #'   # compute predictions with 4 variables at the training points
 #'   pred <- proj_linpred(vs, newdata = data, nv = 4)
@@ -177,14 +177,17 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 
   ## function to perform to each projected submodel
   proj_predict <- function(proj, mu, weights) {
-    pred <- t(mu)
-    if (!transform) pred <- proj$family$linkfun(pred)
+    predictions <- t(mu)
+    if (!transform) predictions <- proj$family$linkfun(predictions)
     if (integrated) {
       ## average over the parameters
-      pred <- as.vector(proj$weights %*% pred)
-    } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
+      pred <- as.vector(proj$weights %*% predictions)
+      proj$dis <- as.numeric(proj$weights %*% proj$dis)
+    } else if (!is.null(dim(predictions)) && nrow(predictions) == 1) {
       ## return a vector if pred contains only one row
-      pred <- as.vector(pred)
+      pred <- as.vector(predictions)
+    } else {
+      pred <- predictions
     }
 
     extract_model_data <- proj$extract_model_data
@@ -200,7 +203,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     }
 
     return(nlist(pred, lpd = compute_lpd(
-      ynew = ynew, pred = pred, proj = proj, weights = weights,
+      ynew = ynew, pred = t(pred), proj = proj, weights = weights,
       integrated = integrated, transform = transform
     )))
   }
@@ -224,9 +227,9 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
-      lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
+      lpd <- as.vector(apply(lpd, 2, log_weighted_mean_exp, proj$weights))
     } else if (!is.null(dim(lpd))) {
-      lpd <- t(lpd)
+      lpd <- drop(t(lpd))
     }
     return(lpd)
   } else {
@@ -575,7 +578,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat("\n")
   cat("Selection Summary:\n")
   print(x$selection %>% dplyr::mutate(dplyr::across(
-    where(is.numeric),
+    tidyselect:::where(is.numeric),
     ~ round(., digits)
   )),
   row.names = FALSE
