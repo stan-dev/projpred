@@ -77,7 +77,7 @@ NULL
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
-                        proj_predict, ...) {
+                        proj_predict_local, ...) {
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     proj <- object
@@ -155,7 +155,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
       weights = weightsnew
     )
 
-    proj_predict(proj, mu, weightsnew)
+    proj_predict_local(proj, mu, weightsnew)
   })
 
   return(.unlist_proj(preds))
@@ -168,7 +168,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
-  proj_predict <- function(proj, mu, weights) {
+  proj_predict_local <- function(proj, mu, weights) {
     pred <- t(mu)
     if (!transform) pred <- proj$family$linkfun(pred)
     if (integrated) {
@@ -196,7 +196,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
     weightsnew = weightsnew, seed = seed,
-    proj_predict = proj_predict, ...
+    proj_predict_local = proj_predict_local, ...
   )
 }
 
@@ -227,7 +227,7 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          seed = NULL, ...) {
 
   ## function to perform to each projected submodel
-  proj_predict <- function(proj, mu, weights) {
+  proj_predict_local <- function(proj, mu, weights) {
     draw_inds <- sample(
       x = seq_along(proj$weights), size = ndraws,
       replace = TRUE, prob = proj$weights
@@ -242,7 +242,7 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
     weightsnew = weightsnew, seed = seed,
-    proj_predict = proj_predict, ...
+    proj_predict_local = proj_predict_local, ...
   )
 }
 
