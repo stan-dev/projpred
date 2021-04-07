@@ -32,11 +32,6 @@
 #'   only.
 #' @param integrated If \code{TRUE}, the output is averaged over the projected
 #'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param nterms Number of terms in the submodel (the variable combination is
-#'   taken from the variable selection information). If a vector with several
-#'   values, then results for all specified model sizes are returned. Ignored if
-#'   \code{solution_terms} is specified. By default use the automatically
-#'   suggested model size.
 #' @param ndraws Number of draws to return from the predictive distribution of
 #'   the projection. The default is 1000. For \code{proj_predict} only. We
 #'   compute as many clusters from the reference posterior as draws, so we end
@@ -81,14 +76,14 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
+proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
                         proj_predict, ...) {
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     proj <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
-    proj <- project(object = object, nterms = nterms, seed = seed, ...)
+    proj <- project(object = object, seed = seed, ...)
   }
 
   if (!.is_proj_list(proj)) {
@@ -169,7 +164,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 #' @rdname proj-pred
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
-                         weightsnew = NULL, nterms = NULL, transform = FALSE,
+                         weightsnew = NULL, transform = FALSE,
                          integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
@@ -200,7 +195,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew, nterms = nterms, seed = seed,
+    weightsnew = weightsnew, seed = seed,
     proj_predict = proj_predict, ...
   )
 }
@@ -228,7 +223,7 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 #' @rdname proj-pred
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
-                         weightsnew = NULL, nterms = NULL, ndraws = 1000,
+                         weightsnew = NULL, ndraws = 1000,
                          seed = NULL, ...) {
 
   ## function to perform to each projected submodel
@@ -246,7 +241,7 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew, nterms = nterms, seed = seed,
+    weightsnew = weightsnew, seed = seed,
     proj_predict = proj_predict, ...
   )
 }

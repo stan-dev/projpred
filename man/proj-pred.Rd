@@ -12,7 +12,6 @@ proj_linpred(
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
-  nterms = NULL,
   transform = FALSE,
   integrated = FALSE,
   seed = NULL,
@@ -24,7 +23,6 @@ proj_predict(
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
-  nterms = NULL,
   ndraws = 1000,
   seed = NULL,
   ...
@@ -53,12 +51,6 @@ corresponds to the number trials per observation. For \code{proj_linpred},
 this argument matters only if \code{newdata} is specified. By default we
 take the weights from newdata as in the original model. Either NULL or
 right hand side formula.}
-
-\item{nterms}{Number of terms in the submodel (the variable combination is
-taken from the variable selection information). If a vector with several
-values, then results for all specified model sizes are returned. Ignored if
-\code{solution_terms} is specified. By default use the automatically
-suggested model size.}
 
 \item{transform}{Should the linear predictor be transformed using the
 inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
