@@ -758,7 +758,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (approximate) {
         nobs <- NROW(refmodel$y)
         folds <- cvfolds(nobs, K = K, seed = seed)
-        cvfits <- lapply(seq_long(K), function(k) {
+        cvfits <- lapply(seq_len(K), function(k) {
           ## add the 'omitted' indices for the cvfits
           cvfit <- refmodel$fit
           cvfit$omitted <- which(folds == k)
