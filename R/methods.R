@@ -201,7 +201,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
       ynew <- NULL
     }
 
-    return(nlist(pred = t(pred), lpd = t(compute_lpd(
+    return(nlist(pred, lpd = t(compute_lpd(
       ynew = ynew, pred = predictions, proj = proj, weights = weights,
       integrated = integrated, transform = transform
     ))))
