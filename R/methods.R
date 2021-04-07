@@ -119,10 +119,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 
   if (!all(nterms %in% projected_sizes)) {
     stop(paste0(
-      "Linear prediction requested for nterms = ",
+      "Linear prediction requested for `nterms = c(",
       paste(nterms, collapse = ", "),
-      ", but projection performed only for nterms = ",
-      paste(projected_sizes, collapse = ", "), "."
+      ")`, but projection performed only for `nterms = c(",
+      paste(projected_sizes, collapse = ", "), ")`."
     ))
   }
 
