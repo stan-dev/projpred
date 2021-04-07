@@ -202,10 +202,10 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
       ynew <- NULL
     }
 
-    return(nlist(pred, lpd = t(compute_lpd(
+    return(nlist(pred, lpd = drop(t(compute_lpd(
       ynew = ynew, pred = pred, proj = proj, weights = weights,
       integrated = integrated, transform = transform
-    ))))
+    )))))
   }
 
   ## proj_helper lapplies fun to each projection in object
