@@ -459,7 +459,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that("proj_predict: specifying seed_sam has an expected effect", {
+  test_that(paste("proj_predict: specifying seed and seed_sub has an expected",
+                  "effect"), {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl1 <- proj_predict(proj_solution_terms_list[[i]],
