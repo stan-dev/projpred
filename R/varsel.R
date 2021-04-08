@@ -60,9 +60,9 @@
 #'   need for regularization, but sometimes for some models the projection can
 #'   be ill-behaved and we need to add some regularization to avoid numerical
 #'   problems.
-#' @param search_terms A custom list of terms to evaluate for variable
-#'   selection. By default considers all the terms in the reference model's
-#'   formula.
+#' @param search_terms A custom character vector of terms to consider for
+#'   selection. The intercept (\code{"1"}) needs to be included explicitly. The
+#'   default considers all the terms in the reference model's formula.
 #' @param seed Random seed used when clustering the posterior draws.
 #' @param ... Additional arguments to be passed to the \code{get_refmodel}
 #'   function.

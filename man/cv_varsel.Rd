@@ -131,7 +131,9 @@ introduced by the selectin process).}
 \item{seed}{Random seed used in the subsampling LOO. By default uses a fixed
 seed.}
 
-\item{search_terms}{User defined list of terms to consider for selection.}
+\item{search_terms}{A custom character vector of terms to consider for
+selection. The intercept (\code{"1"}) needs to be included explicitly. The
+default considers all the terms in the reference model's formula.}
 }
 \value{
 An object of type \code{vsel} that contains information about the

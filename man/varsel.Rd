@@ -106,9 +106,9 @@ will therefore be selected first, whereas \code{Inf} means those variables
 will never be selected. Currently works only if \code{method = 'L1'}. By
 default \code{1} for each variable.}
 
-\item{search_terms}{A custom list of terms to evaluate for variable
-selection. By default considers all the terms in the reference model's
-formula.}
+\item{search_terms}{A custom character vector of terms to consider for
+selection. The intercept (\code{"1"}) needs to be included explicitly. The
+default considers all the terms in the reference model's formula.}
 
 \item{seed}{Random seed used when clustering the posterior draws.}
 }

@@ -80,7 +80,9 @@
 #'   introduced by the selectin process).
 #' @param seed Random seed used in the subsampling LOO. By default uses a fixed
 #'   seed.
-#' @param search_terms User defined list of terms to consider for selection.
+#' @param search_terms A custom character vector of terms to consider for
+#'   selection. The intercept (\code{"1"}) needs to be included explicitly. The
+#'   default considers all the terms in the reference model's formula.
 #' @param ... Additional arguments to be passed to the
 #'   \code{get_refmodel}-function.
 #'
