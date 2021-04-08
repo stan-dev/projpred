@@ -156,37 +156,36 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
   return(.unlist_proj(preds))
 }
 
+## function applied to each projected submodel in case of proj_linpred()
+proj_linpred_aux <- function(proj, mu, weights) {
+  pred <- t(mu)
+  if (!transform) pred <- proj$family$linkfun(pred)
+  if (integrated) {
+    ## average over the posterior draws
+    pred <- as.vector(proj$weights %*% pred)
+    proj$dis <- as.vector(proj$weights %*% proj$dis)
+  } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
+    ## return a vector if pred contains only one row
+    pred <- as.vector(pred)
+  }
+
+  w_o <- proj$extract_model_data(proj$refmodel$fit,
+                                 newdata = newdata, weightsnew,
+                                 offsetnew, extract_y = TRUE
+  )
+  ynew <- w_o$y
+
+  return(nlist(pred, lpd = compute_lpd(
+    ynew = ynew, pred = t(pred), proj = proj, weights = weights,
+    integrated = integrated, transform = transform
+  )))
+}
+
 #' @rdname proj-pred
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, transform = FALSE,
                          integrated = FALSE, seed = NULL, ...) {
-
-  ## function to perform to each projected submodel
-  proj_linpred_aux <- function(proj, mu, weights) {
-    pred <- t(mu)
-    if (!transform) pred <- proj$family$linkfun(pred)
-    if (integrated) {
-      ## average over the posterior draws
-      pred <- as.vector(proj$weights %*% pred)
-      proj$dis <- as.vector(proj$weights %*% proj$dis)
-    } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
-      ## return a vector if pred contains only one row
-      pred <- as.vector(pred)
-    }
-
-    w_o <- proj$extract_model_data(proj$refmodel$fit,
-      newdata = newdata, weightsnew,
-      offsetnew, extract_y = TRUE
-    )
-    ynew <- w_o$y
-
-    return(nlist(pred, lpd = compute_lpd(
-      ynew = ynew, pred = t(pred), proj = proj, weights = weights,
-      integrated = integrated, transform = transform
-    )))
-  }
-
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
@@ -215,24 +214,23 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
   }
 }
 
+## function applied to each projected submodel in case of proj_predict()
+proj_predict_aux <- function(proj, mu, weights) {
+  draw_inds <- sample(
+    x = seq_along(proj$weights), size = ndraws,
+    replace = TRUE, prob = proj$weights
+  )
+
+  t(sapply(draw_inds, function(i) {
+    proj$family$ppd(mu[, i], proj$dis[i], weights)
+  }))
+}
+
 #' @rdname proj-pred
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, ndraws = 1000,
                          seed = NULL, ...) {
-
-  ## function to perform to each projected submodel
-  proj_predict_aux <- function(proj, mu, weights) {
-    draw_inds <- sample(
-      x = seq_along(proj$weights), size = ndraws,
-      replace = TRUE, prob = proj$weights
-    )
-
-    t(sapply(draw_inds, function(i) {
-      proj$family$ppd(mu[, i], proj$dis[i], weights)
-    }))
-  }
-
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
