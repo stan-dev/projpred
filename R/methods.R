@@ -128,10 +128,6 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
       "newdata."
     ))
   }
-  ## set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- rngtools::RNGseed()
-  on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
     w_o <- proj$extract_model_data(proj$refmodel$fit,
@@ -237,6 +233,11 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, ndraws = 1000,
                          seed = NULL, ...) {
+  ## set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
+  set.seed(seed)
+
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
