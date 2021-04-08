@@ -545,7 +545,9 @@ approximate_kfold.vselsearch <- function(object,
   }
 
   ## fit fold projections in parallel
-  p_sub <- future.apply::future_lapply(list_cv, get_submodels_cv)
+  p_sub <- future.apply::future_lapply(list_cv, get_submodels_cv,
+    future.seed = TRUE
+  )
   ## p_sub <- .get_submodels(
   ##     search_path = object, nterms = c(0, seq_along(solution_terms)),
   ##     family = family, p_ref = p_pred, refmodel = refmodel,
@@ -576,7 +578,7 @@ approximate_kfold.vselsearch <- function(object,
   ## compute fold summaries in parallel
   sub_cv_summaries <- future.apply::future_mapply(
     get_summaries_submodel_cv,
-    list_cv, p_sub
+    list_cv, p_sub, future.seed = TRUE
   )
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
@@ -1177,7 +1179,8 @@ cv_kfold.vselapproxcv <- function(object,
         utils::setTxtProgressBar(pb, fold_index)
       }
       out
-    }
+    },
+    future.seed = TRUE
   )
 
   solution_terms_cv <- t(sapply(search_path_cv, function(e) e$solution_terms))
