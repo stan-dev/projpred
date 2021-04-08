@@ -27,6 +27,7 @@ varsel(object, ...)
   regul = 1e-04,
   penalty = NULL,
   search_terms = NULL,
+  seed = NULL,
   ...
 )
 }
@@ -107,6 +108,9 @@ variable.}
 \item{search_terms}{A custom list of terms to evaluate for variable
 selection. By default considers all the terms in the reference model's
 formula.}
+
+\item{seed}{Random seed used in the subsampling LOO. By default uses a fixed
+seed.}
 }
 \value{
 An object of type \code{vsel} that contains information about the

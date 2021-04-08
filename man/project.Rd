@@ -11,6 +11,7 @@ project(
   cv_search = TRUE,
   ndraws = 400,
   nclusters = NULL,
+  intercept = NULL,
   seed = NULL,
   regul = 1e-04,
   ...

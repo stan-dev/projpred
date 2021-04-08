@@ -130,7 +130,7 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters, " clusters\n"
     ))
   } else {
@@ -705,7 +705,7 @@ print.vselapproxcvsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters, " clusters\n"
     ))
   } else {
@@ -718,7 +718,7 @@ print.vselapproxcvsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters_pred)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters_pred, " clusters\n"
     ))
   } else {
@@ -764,7 +764,7 @@ cv_loo.vselsearch <- function(object, ...) {
 
 #' @rdname workflow
 #' @importFrom doRNG %dorng%
-#' @importFrom doParallel %dopar%
+#' @importFrom foreach %dopar%
 #' @export
 cv_loo.vselapproxcv <- function(object,
                                 method = NULL,
@@ -1377,7 +1377,7 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters, " clusters\n"
     ))
   } else {
@@ -1390,7 +1390,7 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters_pred)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters_pred, " clusters\n"
     ))
   } else {

@@ -40,6 +40,7 @@ Imports:
     doFuture,
     doRNG,
     doParallel,
+    foreach,
     future.apply
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
