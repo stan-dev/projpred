@@ -496,7 +496,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, dis, y, fit_elapsed_time,
+    fit = object, fit_elapsed_time, formula, div_minimizer, family, mu, dis, y,
     loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
     wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
   )
