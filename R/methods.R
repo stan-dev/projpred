@@ -85,7 +85,7 @@ NULL
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
-                        proj_predict_local, ...) {
+                        onesub_fun, ...) {
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     projs <- object
@@ -150,7 +150,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
       weights = weightsnew
     )
 
-    proj_predict_local(proj, mu, weightsnew)
+    onesub_fun(proj, mu, weightsnew)
   })
 
   return(.unlist_proj(preds))
@@ -190,7 +190,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
     weightsnew = weightsnew, seed = seed,
-    proj_predict_local = proj_linpred_aux, ...
+    onesub_fun = proj_linpred_aux, ...
   )
 }
 
@@ -235,7 +235,7 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
     weightsnew = weightsnew, seed = seed,
-    proj_predict_local = proj_predict_aux, ...
+    onesub_fun = proj_predict_aux, ...
   )
 }
 
