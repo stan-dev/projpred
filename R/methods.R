@@ -32,12 +32,17 @@
 #'   only.
 #' @param integrated If \code{TRUE}, the output is averaged over the projected
 #'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param ndraws Number of draws to return from the predictive distribution of
-#'   the projection. The default is 1000. For \code{proj_predict} only. We
-#'   compute as many clusters from the reference posterior as draws, so we end
-#'   up projecting a single draw from each cluster.
-#' @param seed An optional seed to use for drawing from the projection. For
-#'   \code{proj_predict} only.
+#' @param size_sub For \code{proj_predict} only: Number of draws to return from
+#'   the predictive distribution of the projection. Not to be confused with
+#'   arguments \code{ndraws} and \code{nclusters} of \link{project}:
+#'   \code{size_sub} gives a \emph{subset} of the (possibly clustered) posterior
+#'   draws after projection (as determined by arguments \code{ndraws} and
+#'   \code{nclusters} of \link{project}). The default for \code{size_sub} is
+#'   1000. We compute as many clusters from the reference posterior as draws, so
+#'   we end up projecting a single draw from each cluster.
+#' @param seed_sub For \code{proj_predict} only: An optional seed for subsetting
+#'   the (possibly clustered) posterior draws after projection (see argument
+#'   \code{size_sub}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
 #'   not already an object returned by \link{project}.
 #'
@@ -84,15 +89,15 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
+proj_helper <- function(object, newdata, offsetnew, weightsnew,
                         onesub_fun, integrated = NULL, transform = NULL,
-                        ndraws = NULL, ...) {
+                        size_sub = NULL, ...) {
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     projs <- object
   } else {
     ## reference model or varsel object obtained, so run the projection
-    projs <- project(object = object, seed = seed, ...)
+    projs <- project(object = object, ...)
   }
 
   if (!.is_proj_list(projs)) {
@@ -149,7 +154,8 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
 
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
-               integrated = integrated, transform = transform, ndraws = ndraws)
+               integrated = integrated, transform = transform,
+               size_sub = size_sub)
   })
 
   return(.unlist_proj(preds))
@@ -185,11 +191,11 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, transform = FALSE,
-                         integrated = FALSE, seed = NULL, ...) {
+                         integrated = FALSE, ...) {
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew, seed = seed,
+    weightsnew = weightsnew,
     onesub_fun = proj_linpred_aux,
     integrated = integrated, transform = transform, ...
   )
@@ -219,7 +225,7 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 proj_predict_aux <- function(proj, mu, weights, ...) {
   dot_args <- list(...)
   draw_inds <- sample(
-    x = seq_along(proj$weights), size = dot_args$ndraws,
+    x = seq_along(proj$weights), size = dot_args$size_sub,
     replace = TRUE, prob = proj$weights
   )
 
@@ -231,19 +237,19 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #' @rdname proj-pred
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
-                         weightsnew = NULL, ndraws = 1000,
-                         seed = NULL, ...) {
+                         weightsnew = NULL, size_sub = 1000,
+                         seed_sub = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(seed)
+  set.seed(seed_sub)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew, seed = seed,
+    weightsnew = weightsnew,
     onesub_fun = proj_predict_aux,
-    ndraws = ndraws, ...
+    size_sub = size_sub, ...
   )
 }
 

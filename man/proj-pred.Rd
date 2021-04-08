@@ -14,7 +14,6 @@ proj_linpred(
   weightsnew = NULL,
   transform = FALSE,
   integrated = FALSE,
-  seed = NULL,
   ...
 )
 
@@ -23,8 +22,8 @@ proj_predict(
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
-  ndraws = 1000,
-  seed = NULL,
+  size_sub = 1000,
+  seed_sub = NULL,
   ...
 )
 }
@@ -59,16 +58,21 @@ only.}
 \item{integrated}{If \code{TRUE}, the output is averaged over the projected
 posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.}
 
-\item{seed}{An optional seed to use for drawing from the projection. For
-\code{proj_predict} only.}
-
 \item{...}{Additional arguments passed to \link{project} if \code{object} is
 not already an object returned by \link{project}.}
 
-\item{ndraws}{Number of draws to return from the predictive distribution of
-the projection. The default is 1000. For \code{proj_predict} only. We
-compute as many clusters from the reference posterior as draws, so we end
-up projecting a single draw from each cluster.}
+\item{size_sub}{For \code{proj_predict} only: Number of draws to return from
+the predictive distribution of the projection. Not to be confused with
+arguments \code{ndraws} and \code{nclusters} of \link{project}:
+\code{size_sub} gives a \emph{subset} of the (possibly clustered) posterior
+draws after projection (as determined by arguments \code{ndraws} and
+\code{nclusters} of \link{project}). The default for \code{size_sub} is
+1000. We compute as many clusters from the reference posterior as draws, so
+we end up projecting a single draw from each cluster.}
+
+\item{seed_sub}{For \code{proj_predict} only: An optional seed for subsetting
+the (possibly clustered) posterior draws after projection (see argument
+\code{size_sub}).}
 }
 \value{
 If the prediction is done for one submodel only (\code{nterms} has
