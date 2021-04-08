@@ -82,6 +82,7 @@ approximate_kfold(object, ...)
   penalty = NULL,
   refit_proj = TRUE,
   seed = NULL,
+  cores = parallel::detectCores(),
   ...
 )
 

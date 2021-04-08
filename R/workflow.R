@@ -547,7 +547,9 @@ approximate_kfold.vselsearch <- function(object,
   }
 
   ## fit fold projections in parallel
-  p_sub <- future.apply::future_lapply(list_cv, get_submodels_cv)
+  p_sub <- future.apply::future_lapply(list_cv, get_submodels_cv,
+    future.seed = TRUE
+  )
   ## p_sub <- .get_submodels(
   ##     search_path = object, nterms = c(0, seq_along(solution_terms)),
   ##     family = family, p_ref = p_pred, refmodel = refmodel,
@@ -578,7 +580,7 @@ approximate_kfold.vselsearch <- function(object,
   ## compute fold summaries in parallel
   sub_cv_summaries <- future.apply::future_mapply(
     get_summaries_submodel_cv,
-    list_cv, p_sub
+    list_cv, p_sub, future.seed = TRUE
   )
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
@@ -705,7 +707,7 @@ print.vselapproxcvsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters, " clusters\n"
     ))
   } else {
@@ -718,7 +720,7 @@ print.vselapproxcvsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters_pred)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters_pred, " clusters\n"
     ))
   } else {
@@ -764,7 +766,7 @@ cv_loo.vselsearch <- function(object, ...) {
 
 #' @rdname workflow
 #' @importFrom doRNG %dorng%
-#' @importFrom doParallel %dopar%
+#' @importFrom foreach %dopar%
 #' @export
 cv_loo.vselapproxcv <- function(object,
                                 method = NULL,
@@ -1179,7 +1181,8 @@ cv_kfold.vselapproxcv <- function(object,
         utils::setTxtProgressBar(pb, fold_index)
       }
       out
-    }
+    },
+    future.seed = TRUE
   )
 
   solution_terms_cv <- t(sapply(search_path_cv, function(e) e$solution_terms))
@@ -1376,7 +1379,7 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters, " clusters\n"
     ))
   } else {
@@ -1389,7 +1392,7 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters_pred)) {
     cat(paste0(
-      , ", in ",
+      ", in ",
       x$nclusters_pred, " clusters\n"
     ))
   } else {
