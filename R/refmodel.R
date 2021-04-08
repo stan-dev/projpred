@@ -459,6 +459,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   target <- .get_standard_y(y, weights, family)
   y <- target$y
 
+  if (inherits(object, "brmsfit")) {
+    fit_elapsed_time <- rstan::get_elapsed_time(object$fit)
+  } else {
+    fit_elapsed_time <- rstan::get_elapsed_time(object$stanfit)
+  }
+
   if (proper_model) {
     loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
   } else {
@@ -490,7 +496,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, dis, y,
+    fit = object, formula, div_minimizer, family, mu, dis, y, fit_elapsed_time,
     loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
     wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
   )
