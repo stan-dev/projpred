@@ -213,7 +213,10 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     if (integrated && !is.null(dim(lpd))) {
       lpd <- as.vector(apply(lpd, 2, log_weighted_mean_exp, proj$weights))
     } else if (!is.null(dim(lpd))) {
-      lpd <- drop(t(lpd))
+      lpd <- t(lpd)
+      if (nrow(lpd) == 1) {
+        lpd <- drop(lpd)
+      }
     }
     return(lpd)
   } else {
@@ -229,7 +232,7 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
     replace = TRUE, prob = proj$weights
   )
 
-  t(sapply(draw_inds, function(i) {
+  do.call(rbind, lapply(draw_inds, function(i) {
     proj$family$ppd(mu[, i], proj$dis[i], weights)
   }))
 }
