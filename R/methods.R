@@ -163,7 +163,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          integrated = FALSE, seed = NULL, ...) {
 
   ## function to perform to each projected submodel
-  proj_predict_local <- function(proj, mu, weights) {
+  proj_linpred_aux <- function(proj, mu, weights) {
     pred <- t(mu)
     if (!transform) pred <- proj$family$linkfun(pred)
     if (integrated) {
@@ -191,7 +191,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
     weightsnew = weightsnew, seed = seed,
-    proj_predict_local = proj_predict_local, ...
+    proj_predict_local = proj_linpred_aux, ...
   )
 }
 
@@ -222,7 +222,7 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          seed = NULL, ...) {
 
   ## function to perform to each projected submodel
-  proj_predict_local <- function(proj, mu, weights) {
+  proj_predict_aux <- function(proj, mu, weights) {
     draw_inds <- sample(
       x = seq_along(proj$weights), size = ndraws,
       replace = TRUE, prob = proj$weights
@@ -237,7 +237,7 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
     weightsnew = weightsnew, seed = seed,
-    proj_predict_local = proj_predict_local, ...
+    proj_predict_local = proj_predict_aux, ...
   )
 }
 
