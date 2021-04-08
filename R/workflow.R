@@ -126,9 +126,16 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
       "\n"
   ))
   cat(paste0(
-    "Draws used for selection: ", x$ndraws, ", in ",
-    x$nclusters, " clusters\n"
-  ))
+    "Draws used for selection: ", x$ndraws))
+
+  if (!is.null(x$nclusters)) {
+    cat(paste0(
+      , ", in ",
+      x$nclusters, " clusters\n"
+    ))
+  } else {
+    cat("\n")
+  }
   cat(paste0("Number of submodels visited during search: ", x$nsubmodels, "\n"))
   cat(paste0("\nThe search took ", round(x$time, digits), " seconds.\n"))
 
@@ -230,7 +237,6 @@ approximate_loo.vselsearch <- function(object,
   family <- refmodel$family
   nterms_max <- object$control$nterms_max
 
-  browser()
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
     refmodel, NULL, NULL, NULL, NULL,
@@ -699,13 +705,30 @@ print.vselapproxcvsummary <- function(x, digits = 1, ...) {
   }
   nterms_max <- max(x$stats_table$size)
   cat(paste0(
-    "Draws used for selection: ", x$ndraws, ", in ",
-    x$nclusters, " clusters\n"
+    "Draws used for selection: ", x$ndraws
   ))
+
+  if (!is.null(x$nclusters)) {
+    cat(paste0(
+      , ", in ",
+      x$nclusters, " clusters\n"
+    ))
+  } else {
+    cat("\n")
+  }
+
   cat(paste0(
-    "Draws used for prediction: ", x$ndraws_pred, ", in ",
-    x$nclusters_pred, " clusters\n"
+    "Draws used for prediction: ", x$ndraws_pred
   ))
+
+  if (!is.null(x$nclusters_pred)) {
+    cat(paste0(
+      , ", in ",
+      x$nclusters_pred, " clusters\n"
+    ))
+  } else {
+    cat("\n")
+  }
   cat(paste0("\nDiagnostics:\n", x$diagnostic, "\n"))
   cat("\nSelection Summary:\n")
   print(x$stats_table %>% dplyr::mutate(dplyr::across(
@@ -1353,13 +1376,31 @@ print.vselcvsummary <- function(x, digits = 1, ...) {
   }
   nterms_max <- max(x$stats_table$size)
   cat(paste0(
-    "Draws used for selection: ", x$ndraws, ", in ",
-    x$nclusters, " clusters\n"
+    "Draws used for selection: ", x$ndraws
   ))
+
+  if (!is.null(x$nclusters)) {
+    cat(paste0(
+      , ", in ",
+      x$nclusters, " clusters\n"
+    ))
+  } else {
+    cat("\n")
+  }
+
   cat(paste0(
-    "Draws used for prediction: ", x$ndraws_pred, ", in ",
-    x$nclusters_pred, " clusters\n"
+    "Draws used for prediction: ", x$ndraws_pred
   ))
+
+  if (!is.null(x$nclusters_pred)) {
+    cat(paste0(
+      , ", in ",
+      x$nclusters_pred, " clusters\n"
+    ))
+  } else {
+    cat("\n")
+  }
+
   cat(paste0("\nDiagnostics:\n", x$diagnostic, "\n"))
   cat("\nSelection Summary:\n")
   print(x$stats_table %>% dplyr::mutate(dplyr::across(
