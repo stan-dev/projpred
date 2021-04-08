@@ -142,14 +142,15 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
     "\nApproximate LOO would roughly take ", round(approx_loo, digits),
     " seconds\n"
   ))
-  approx_kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) + approx_loo
+  approx_kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) +
+    K * approx_loo
   cat(paste0(
     "Approximate sequential KFold would roughly take ",
     round(approx_kfold, digits),
     " seconds\n"
   ))
   approx_kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) /
-    min(4, parallel::detectCores()) + approx_loo
+    min(4, parallel::detectCores()) + K * approx_loo / parallel::detectCores()
   cat(paste0(
     "Approximate parallel KFold would roughly take ",
     round(approx_kfold, digits),
@@ -222,10 +223,11 @@ approximate_loo.vselsearch <- function(object,
   family <- refmodel$family
   nterms_max <- object$control$nterms_max
 
+  browser()
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
     refmodel, NULL, NULL, NULL, NULL,
-    NULL, NULL, ndraws_pred, nclusters_pred, NULL
+    NULL, NULL, nclusters_pred, ndraws_pred, NULL
   )
   nclusters_pred <- args$nclusters_pred
   ndraws_pred <- args$ndraws_pred
@@ -294,10 +296,6 @@ approximate_loo.vselsearch <- function(object,
     family = family, p_ref = p_pred, refmodel = refmodel,
     intercept = TRUE, regul = object$control$opt$regul, cv_search = refit_proj
   )
-  summaries_sub <- .get_sub_summaries(
-    submodels = submodels, test_points = seq_len(n),
-    refmodel = refmodel, family = family
-  )
 
   if (verbose) {
     print(msg)
@@ -309,7 +307,7 @@ approximate_loo.vselsearch <- function(object,
 
   ## compute approximate LOO with PSIS weights
   y <- matrix(refmodel$y, nrow = n)
-  for (k in seq_along(summaries_sub)) {
+  for (k in seq_along(submodels)) {
     mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
         obs = inds,
         offset = refmodel$offset,
@@ -327,9 +325,10 @@ approximate_loo.vselsearch <- function(object,
         loo::weights.importance_sampling(sub_psisloo)
     )
     loo_sub[inds, k] <- apply(
-        log_lik_sub[, ] + lw_sub[, ], 2,
+        log_lik_sub + lw_sub, 2,
         log_sum_exp
     )
+
     for (i in seq_along(inds)) {
         mu_sub[inds[i], k] <- mu_k[i, ] %*% exp(lw_sub[, i])
     }
@@ -430,6 +429,7 @@ approximate_kfold.vselsearch <- function(object,
                                          penalty = NULL,
                                          refit_proj = TRUE,
                                          seed = NULL,
+                                         cores = parallel::detectCores(),
                                          ...) {
   refmodel <- object$refmodel
   family <- refmodel$family
@@ -438,10 +438,17 @@ approximate_kfold.vselsearch <- function(object,
   solution_terms <- object$solution_terms
   p_sel <- object$p_sel
 
+  doFuture::registerDoFuture()
+  if (cores > 1) {
+    future::plan(future::multicore, workers = cores)
+  } else {
+    future::plan(future::sequential, workers = cores)
+  }
+
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-      refmodel, NULL, NULL, NULL, NULL,
-      NULL, NULL, ndraws_pred, nclusters_pred, NULL
+    refmodel, NULL, NULL, NULL, NULL,
+    NULL, NULL, nclusters_pred, ndraws_pred, NULL
   )
   nclusters_pred <- args$nclusters_pred
   ndraws_pred <- args$ndraws_pred
@@ -483,22 +490,24 @@ approximate_kfold.vselsearch <- function(object,
   ## List of K elements, each containing d_train, p_pred, etc. corresponding
   ## to each fold.
   make_list_cv <- function(refmodel, d_test, msg, K) {
-      nclusters_pred <- min(
-          refmodel$nclusters_pred,
-          nclusters_pred
-      )
-      newdata <- d_test$newdata
-      pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata)
-      pred <- matrix(
-          as.numeric(pred),
-          nrow = NROW(pred), ncol = NCOL(pred)
-      )
-      mu_test <- family$linkinv(pred)
-      nlist(refmodel, mu_test,
-          dis = refmodel$dis,
-          w_test = refmodel$wsample, d_test, msg,
-          fold_index = K
-      )
+    nclusters_pred <- min(
+      refmodel$nclusters_pred,
+      nclusters_pred
+    )
+    p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
+    newdata <- d_test$newdata
+    pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata)
+    pred <- matrix(
+      as.numeric(pred),
+      nrow = NROW(pred), ncol = NCOL(pred)
+    )
+    mu_test <- family$linkinv(pred)
+    nlist(refmodel, mu_test,
+      dis = refmodel$dis,
+      w_test = refmodel$wsample, d_test, msg,
+      fold_index = K,
+      p_pred
+    )
   }
 
   msgs <- paste0(object$method, " search for fold ", seq_len(K), "/", K, ".")
@@ -518,11 +527,25 @@ approximate_kfold.vselsearch <- function(object,
       )
   }
 
-  p_sub <- .get_submodels(
+  get_submodels_cv <- function(fold) {
+    p_sub <- .get_submodels(
       search_path = object, nterms = c(0, seq_along(solution_terms)),
-      family = family, p_ref = p_pred, refmodel = refmodel,
-      intercept = TRUE, regul = object$control$opt$regul, cv_search = refit_proj
-  )
+      family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
+      intercept = TRUE, regul = object$control$opt$regul,
+      cv_search = refit_proj
+    )
+
+    return(p_sub)
+  }
+
+  ## fit fold projections in parallel
+  p_sub <- future.apply::future_lapply(list_cv, get_submodels_cv)
+  ## p_sub <- .get_submodels(
+  ##     search_path = object, nterms = c(0, seq_along(solution_terms)),
+  ##     family = family, p_ref = p_pred, refmodel = refmodel,
+  ##     intercept = TRUE, regul = object$control$opt$regul,
+  ##     cv_search = refit_proj
+  ## )
 
   ## Helper function extract and combine mu and lppd from K lists with each
   ## n/K of the elements to one list with n elements
@@ -531,19 +554,24 @@ approximate_kfold.vselsearch <- function(object,
   ## Apply some magic to manipulate the structure of the list so that instead
   ## of list with K sub_summaries each containing n/K mu:s and lppd:s, we have
   ## only one sub_summary-list that contains with all n mu:s and lppd:s.
-  get_summaries_submodel_cv <- function(fold) {
-      omitted <- fold$d_test$omitted
-      fold_summaries <- .get_sub_summaries(
-          submodels = p_sub, test_points = omitted, refmodel = refmodel,
-          family = family
-      )
-      summ <- lapply(fold_summaries, data.frame)
-      if (verbose) {
-          utils::setTxtProgressBar(pb, fold$fold_index)
-      }
-      return(summ)
+  get_summaries_submodel_cv <- function(fold, p_sub) {
+    omitted <- fold$d_test$omitted
+    fold_summaries <- .get_sub_summaries(
+      submodels = p_sub, test_points = omitted, refmodel = fold$refmodel,
+      family = family
+    )
+    summ <- lapply(fold_summaries, data.frame)
+    if (verbose) {
+      utils::setTxtProgressBar(pb, fold$fold_index)
+    }
+    return(summ)
   }
-  sub_cv_summaries <- mapply(get_summaries_submodel_cv, list_cv)
+
+  ## compute fold summaries in parallel
+  sub_cv_summaries <- future.apply::future_mapply(
+    get_summaries_submodel_cv,
+    list_cv, p_sub
+  )
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
       summ$w <- rep(1, length(summ$mu))
@@ -552,24 +580,24 @@ approximate_kfold.vselsearch <- function(object,
   })
 
   if (verbose) {
-      close(pb)
+    close(pb)
   }
 
   ref <- hf(lapply(list_cv, function(fold) {
-      data.frame(.weighted_summary_means(
-          y_test = fold$d_test, family = family,
-          wsample = fold$refmodel$wsample,
-          mu = fold$mu_test, dis = fold$refmodel$dis
-      ))
+    data.frame(.weighted_summary_means(
+      y_test = fold$d_test, family = family,
+      wsample = fold$refmodel$wsample,
+      mu = fold$mu_test, dis = fold$refmodel$dis
+    ))
   }))
 
   ## Combine also the K separate test data sets into one list
   ## with n y's and weights's.
   d_cv <- hf(lapply(d_test_cv, function(fold) {
-      data.frame(
-          y = fold$y, weights = fold$weights,
-          test_points = fold$omitted
-      )
+    data.frame(
+      y = fold$y, weights = fold$weights,
+      test_points = fold$omitted
+    )
   }))
 
   end <- Sys.time()
