@@ -93,6 +93,7 @@ summary.vselsearch <- function(object, ...) {
   out <- list(
     formula = object$refmodel$formula,
     fit = object$refmodel$fit,
+    fit_elapsed_time = object$refmodel$fit_elapsed_time,
     family = object$refmodel$family,
     nobs = NROW(object$refmodel$fetch_data()),
     method = object$control$method,
@@ -157,14 +158,15 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
     "\nApproximate LOO would roughly take ", round(approx_loo, digits),
     " seconds\n"
   ))
-  approx_kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) +
+
+  approx_kfold <- K * sum(x$fit_elapsed_time) +
     K * approx_loo
   cat(paste0(
     "Approximate sequential KFold would roughly take ",
     round(approx_kfold, digits),
     " seconds\n"
   ))
-  approx_kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) /
+  approx_kfold <- K * sum(x$fit_elapsed_time) /
     min(4, parallel::detectCores()) + K * approx_loo / parallel::detectCores()
   cat(paste0(
     "Approximate parallel KFold would roughly take ",
@@ -187,7 +189,7 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
     " seconds\n"
   ))
 
-  kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) +
+  kfold <- K * sum(x$fit_elapsed_time) +
     K * (x$time + ndraws_pred * x$time / x$nterms_max / ndraws)
 
   cat(paste0(
@@ -195,7 +197,7 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
     " seconds\n"
   ))
 
-  kfold <- K * sum(rstan::get_elapsed_time(x$fit$stanfit)) /
+  kfold <- K * sum(x$fit_elapsed_time) /
     min(4, parallel::detectCores()) + K * (x$time + ndraws_pred *
       x$time / x$nterms_max / ndraws) / parallel::detectCores()
   cat(paste0(
