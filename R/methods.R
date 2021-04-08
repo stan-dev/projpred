@@ -85,7 +85,8 @@ NULL
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
-                        onesub_fun, integrated = NULL, transform = NULL, ...) {
+                        onesub_fun, integrated = NULL, transform = NULL,
+                        ndraws = NULL, ...) {
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     projs <- object
@@ -152,7 +153,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, seed,
 
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
-               integrated = integrated, transform = transform)
+               integrated = integrated, transform = transform, ndraws = ndraws)
   })
 
   return(.unlist_proj(preds))
@@ -220,8 +221,9 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, mu, weights, ...) {
+  dot_args <- list(...)
   draw_inds <- sample(
-    x = seq_along(proj$weights), size = ndraws,
+    x = seq_along(proj$weights), size = dot_args$ndraws,
     replace = TRUE, prob = proj$weights
   )
 
@@ -239,7 +241,8 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
   proj_helper(
     object = object, newdata = newdata, offsetnew = offsetnew,
     weightsnew = weightsnew, seed = seed,
-    onesub_fun = proj_predict_aux, ...
+    onesub_fun = proj_predict_aux,
+    ndraws = ndraws, ...
   )
 }
 
