@@ -131,7 +131,7 @@ print.vselsearchsummary <- function(x, digits = 1, ...) {
 
   if (!is.null(x$nclusters)) {
     cat(paste0(
-      , ", in ",
+      "\tin ",
       x$nclusters, " clusters\n"
     ))
   } else {
