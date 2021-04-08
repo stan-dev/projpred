@@ -17,7 +17,7 @@ if (require(rstanarm)) {
   offset <- rnorm(n)
   chains <- 2
   iter <- 500
-  source(file.path("helpers", "SW.R"))
+  source(testthat::test_path("helpers", "SW.R"))
 
   f_gauss <- gaussian()
   df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
