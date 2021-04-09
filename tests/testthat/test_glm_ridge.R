@@ -25,7 +25,7 @@ extra_thresh <- 1e-10
 
 test_that(paste(
   "glmfun: gradients should give the same results as finite",
-                "differences"
+  "differences"
 ), {
   fdiffu <- function(f, x, h = 1e-3, order = 1) {
     ## function for computing derivative of univariate function f at x using
@@ -98,12 +98,12 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0", {
 
   glmfit <- glm(y ~ x_tr, family = fam, weights = weights, offset = offset)
   ridgefit <- glm_ridge(x_tr, y,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = TRUE
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = TRUE
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
-    tolerance = tol
+               tolerance = tol
   )
 })
 
@@ -114,8 +114,8 @@ test_that("glm_ridge: gaussian, id-link, no intercept, lambda = 0", {
 
   glmfit <- glm(y ~ x_tr - 1, family = fam, weights = weights, offset = offset)
   ridgefit <- glm_ridge(x_tr, y,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = FALSE
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = FALSE
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta), tolerance = tol)
@@ -127,8 +127,8 @@ test_that("glm_ridge: gaussian, id-link, intercept, lambda = 0.5", {
   lambda <- 0.5
 
   ridgefit <- glm_ridge(x_tr, y,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = TRUE
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = TRUE
   )
   # analytic solution, no penalty on the intercept term
   penalty <- 0.5 * diag(c(0, rep(lambda, nterms_fit)))
@@ -148,13 +148,13 @@ test_that("glm_ridge: gaussian, log-link, intercept, lambda = 0", {
 
   glmfit <- glm(y ~ x_tr, family = fam, weights = weights, offset = offset)
   ridgefit <- glm_ridge(x_tr, y,
-    family = fam, lambda = lambda, weights = weights,
-    offset = offset, intercept = TRUE,
-    thresh = extra_thresh
+                        family = fam, lambda = lambda, weights = weights,
+                        offset = offset, intercept = TRUE,
+                        thresh = extra_thresh
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
-    tolerance = tol
+               tolerance = tol
   )
 })
 
@@ -165,12 +165,12 @@ test_that("glm_ridge: binomial, logit-link, intercept, lambda = 0", {
 
   glmfit <- glm(cbind(y, weights - y) ~ x_tr, family = fam, offset = offset)
   ridgefit <- glm_ridge(x_tr, y / weights,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = TRUE
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = TRUE
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
-    tolerance = tol
+               tolerance = tol
   )
 })
 
@@ -181,8 +181,8 @@ test_that("glm_ridge: binomial, logit-link, no intercept, lambda = 0", {
 
   glmfit <- glm(cbind(y, weights - y) ~ x_tr - 1, family = fam, offset = offset)
   ridgefit <- glm_ridge(x_tr, y / weights,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = FALSE
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = FALSE
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta), tolerance = tol)
@@ -195,13 +195,13 @@ test_that("glm_ridge: binomial, probit-link, intercept, lambda = 0", {
 
   glmfit <- glm(cbind(y, weights - y) ~ x_tr, family = fam, offset = offset)
   ridgefit <- glm_ridge(x_tr, y / weights,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = TRUE,
-    thresh = extra_thresh
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = TRUE,
+                        thresh = extra_thresh
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
-    tolerance = tol
+               tolerance = tol
   )
 })
 
@@ -212,13 +212,13 @@ test_that("glm_ridge: binomial, cauchit-link, intercept, lambda = 0", {
 
   glmfit <- glm(cbind(y, weights - y) ~ x_tr, family = fam, offset = offset)
   ridgefit <- glm_ridge(x_tr, y / weights,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = TRUE,
-    thresh = extra_thresh
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = TRUE,
+                        thresh = extra_thresh
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
-    tolerance = tol
+               tolerance = tol
   )
 })
 
@@ -229,12 +229,12 @@ test_that("glm_ridge: poisson, log-link, intercept, lambda = 0", {
 
   glmfit <- glm(y ~ x_tr, family = fam, weights = weights, offset = offset)
   ridgefit <- glm_ridge(x_tr, y,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = TRUE
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = TRUE
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
-    tolerance = tol
+               tolerance = tol
   )
 })
 
@@ -245,8 +245,8 @@ test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
 
   glmfit <- glm(y ~ x_tr - 1, family = fam, weights = weights, offset = offset)
   ridgefit <- glm_ridge(x_tr, y,
-    family = fam, lambda = lambda,
-    weights = weights, offset = offset, intercept = FALSE
+                        family = fam, lambda = lambda,
+                        weights = weights, offset = offset, intercept = FALSE
   )
 
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta), tolerance = tol)

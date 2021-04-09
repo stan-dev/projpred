@@ -68,7 +68,7 @@ test_that("check that we return a list of formulas for multiple responses", {
 
 test_that("check that we properly flatten a formula with duplicated terms", {
   formula <- (y ~ x + z + x:z + (1 | g) + (x | g) + (z | g) + (x + z | g) +
-    (x + z + x:z | g))
+                (x + z + x:z | g))
   flat <- projpred:::flatten_formula(formula)
   # don't check 'flat' directly as sorting of terms is OS specific
   terms <- attr(terms(flat), "term.labels")

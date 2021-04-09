@@ -6,7 +6,7 @@ suppressWarnings(RNGversion("3.5.0"))
 
 if (!requireNamespace("glmnet", quietly = TRUE)) {
   stop("glmnet needed for this test to work. Please install it.",
-    call. = FALSE
+       call. = FALSE
   )
 }
 
@@ -85,14 +85,14 @@ SW({
 
   # cv_varsel
   cvvsd_list <- lapply(dref_list, cv_varsel,
-    nterms_max = nterms + 1, ndraws = ndraws,
-    ndraws_pred = ndraws_pred, verbose = FALSE
+                       nterms_max = nterms + 1, ndraws = ndraws,
+                       ndraws_pred = ndraws_pred, verbose = FALSE
   )
 
   predd_list <- lapply(vsd_list, proj_linpred,
-    newdata = data.frame(x = x, weights = weights, offset = offset),
-    offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
-    seed = seed
+                       newdata = data.frame(x = x, weights = weights, offset = offset),
+                       offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
+                       seed = seed
   )
 })
 
@@ -138,7 +138,7 @@ test_that(paste(
 
     # kl decreasing
     expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl),
-      tolerance = 15e-2
+                 tolerance = 15e-2
     )
 
     # summaries seems legit
@@ -205,19 +205,19 @@ test_that(paste(
 
     # length of output of project is legit
     pred <- proj_linpred(vsd_list[[i]],
-      newdata = data.frame(x = x, weights = weights, offset = offset),
-      seed = seed, offsetnew = ~offset, weightsnew = ~weights, nterms = 3
+                         newdata = data.frame(x = x, weights = weights, offset = offset),
+                         seed = seed, offsetnew = ~offset, weightsnew = ~weights, nterms = 3
     )
     expect_equal(length(pred$pred), nrow(x))
 
     ynew <- dref_list[[i]]$y
     pred <- proj_linpred(vsd_list[[i]],
-      newdata = data.frame(
-        y = ynew, x = x,
-        weights = weights, offset = offset
-      ),
-      seed = seed, offsetnew = ~offset,
-      weightsnew = ~weights, nterms = 3
+                         newdata = data.frame(
+                           y = ynew, x = x,
+                           weights = weights, offset = offset
+                         ),
+                         seed = seed, offsetnew = ~offset,
+                         weightsnew = ~weights, nterms = 3
     )
 
     expect_equal(length(pred$pred), nrow(x))
@@ -333,19 +333,19 @@ test_that(paste(
     )
     SW({
       vs <- varsel(ref,
-        method = "l1", lambda_min_ratio = lambda_min_ratio,
-        nlambda = nlambda, thresh = 1e-12
+                   method = "l1", lambda_min_ratio = lambda_min_ratio,
+                   nlambda = nlambda, thresh = 1e-12
       )
     })
     pred1 <- proj_linpred(vs,
-      newdata = data.frame(x = x, offset = offset, weights = weights),
-      nterms = 0:nterms, transform = FALSE, offsetnew = ~offset,
+                          newdata = data.frame(x = x, offset = offset, weights = weights),
+                          nterms = 0:nterms, transform = FALSE, offsetnew = ~offset,
     )
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
-      family = fam$family, weights = weights, offset = offset,
-      lambda.min.ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12
+                            family = fam$family, weights = weights, offset = offset,
+                            lambda.min.ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12
     )
     solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
     nselected <- sapply(solution_terms, function(e) length(e))

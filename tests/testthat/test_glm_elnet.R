@@ -4,7 +4,7 @@ context("elnet")
 
 if (!requireNamespace("glmnet", quietly = TRUE)) {
   stop("glmnet needed for this test to work. Please install it.",
-    call. = FALSE
+       call. = FALSE
   )
 }
 
@@ -29,7 +29,7 @@ extra_thresh <- 1e-10
 
 test_that(paste(
   "glm_elnet: various families and setups, glm_elnet and glmnet",
-                "should give same result"
+  "should give same result"
 ), {
   fams <- list(gaussian(), binomial(), poisson())
   x_list <- lapply(fams, function(fam) x_tr)
@@ -79,16 +79,16 @@ test_that(paste(
 
               # compute the whole solution paths
               fit1 <- glm_elnet(x, y, fam,
-                alpha = alpha,
-                lambda_min_ratio = 0.1 * lambda_min_ratio, nlambda = nlam,
-                weights = w, offset = os,
-                normalize = normalize, thresh = 1e-12, intercept = intercept
+                                alpha = alpha,
+                                lambda_min_ratio = 0.1 * lambda_min_ratio, nlambda = nlam,
+                                weights = w, offset = os,
+                                normalize = normalize, thresh = 1e-12, intercept = intercept
               )
               fit2 <- glmnet::glmnet(x, y_glmnet,
-                family = fam$family, alpha = alpha,
-                lambda.min.ratio = lambda_min_ratio, nlambda = nlam,
-                weights = w, offset = os, standardize = normalize,
-                thresh = 1e-12, intercept = intercept
+                                     family = fam$family, alpha = alpha,
+                                     lambda.min.ratio = lambda_min_ratio, nlambda = nlam,
+                                     weights = w, offset = os, standardize = normalize,
+                                     thresh = 1e-12, intercept = intercept
               )
               ## check that with a given L1-norm, the coefficient values are the
               ## same (need to check it this way since the lambda values are not
@@ -131,26 +131,26 @@ test_that(paste(
 
 test_that(paste(
   "glm_elnet: poisson, log-link, normalization should not affect",
-                "the maximum likelihood solution"
+  "the maximum likelihood solution"
 ), {
   fam <- extend_family(poisson(link = "log"))
   y <- rpois(n, fam$linkinv(x %*% b))
 
   nlam <- 100
   elnetfit1 <- glm_elnet(x_tr, y,
-    family = fam, nlambda = nlam, lambda_min_ratio = 1e-7,
-    offset = offset, weights = weights_norm,
-    intercept = TRUE, normalize = FALSE
+                         family = fam, nlambda = nlam, lambda_min_ratio = 1e-7,
+                         offset = offset, weights = weights_norm,
+                         intercept = TRUE, normalize = FALSE
   )
   elnetfit2 <- glm_elnet(x_tr, y,
-    family = fam, nlambda = nlam, lambda_min_ratio = 1e-7,
-    offset = offset, weights = weights_norm,
-    intercept = TRUE, normalize = TRUE
+                         family = fam, nlambda = nlam, lambda_min_ratio = 1e-7,
+                         offset = offset, weights = weights_norm,
+                         intercept = TRUE, normalize = TRUE
   )
 
   expect_equal(c(elnetfit1$beta0[nlam], elnetfit1$beta[, nlam]),
-    c(elnetfit2$beta0[nlam], elnetfit2$beta[, nlam]),
-    tolerance = tol
+               c(elnetfit2$beta0[nlam], elnetfit2$beta[, nlam]),
+               tolerance = tol
   )
 })
 
@@ -172,9 +172,9 @@ test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
 
         # compute the L2-path with glm_elnet
         elnetfit <- glm_elnet(x_tr, y,
-          family = fam, nlambda = 50, alpha = 0,
-          offset = offset, weights = weights, penalty = penalty,
-          intercept = intercept, normalize = normalize, thresh = 1e-15
+                              family = fam, nlambda = 50, alpha = 0,
+                              offset = offset, weights = weights, penalty = penalty,
+                              intercept = intercept, normalize = normalize, thresh = 1e-15
         )
         b1 <- rbind(elnetfit$beta0, elnetfit$beta)
 
@@ -183,9 +183,9 @@ test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
         for (j in seq_along(elnetfit$lambda)) {
           lam <- elnetfit$lambda[j]
           ridgefit <- glm_ridge(x_tr, y,
-            family = fam, lambda = lam,
-            offset = offset, weights = weights, penalty = penalty,
-            intercept = intercept, normalize = normalize, thresh = 1e-15
+                                family = fam, lambda = lam,
+                                offset = offset, weights = weights, penalty = penalty,
+                                intercept = intercept, normalize = normalize, thresh = 1e-15
           )
           b2[1, j] <- ridgefit$beta0
           b2[2:nrow(b2), j] <- ridgefit$beta

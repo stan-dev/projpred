@@ -29,24 +29,24 @@ if (require(rstanarm)) {
 
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_gauss, data = df_gauss, QR = TRUE,
-      weights = weights, offset = offset,
-      chains = chains, seed = seed, iter = iter
+                          family = f_gauss, data = df_gauss, QR = TRUE,
+                          weights = weights, offset = offset,
+                          chains = chains, seed = seed, iter = iter
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom, weights = weights,
-      data = df_binom, chains = chains, seed = seed, iter = iter
+                          family = f_binom, weights = weights,
+                          data = df_binom, chains = chains, seed = seed, iter = iter
     )
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_poiss, data = df_poiss,
-      chains = chains, seed = seed, iter = iter
+                          family = f_poiss, data = df_poiss,
+                          chains = chains, seed = seed, iter = iter
     )
     fit_list <- list( # fit_gauss,
       fit_binom, fit_poiss
     )
     vs_list <- lapply(fit_list, varsel,
-      nterms_max = nterms + 1,
-      verbose = FALSE
+                      nterms_max = nterms + 1,
+                      verbose = FALSE
     )
   })
 
@@ -74,7 +74,7 @@ if (require(rstanarm)) {
         expect_length(p[[j]]$solution_terms, max(j - 1, 1))
         # family kl
         expect_equal(p[[j]]$family, vs_list[[i]]$family,
-          info = i_inf
+                     info = i_inf
         )
       }
       # kl should be non-increasing on training data
@@ -90,7 +90,7 @@ if (require(rstanarm)) {
 
   test_that(paste(
     "project: error when varsel has not been performed for the",
-                  "object"
+    "object"
   ), {
     expect_error(
       project(1, newdata = x),
@@ -246,7 +246,7 @@ if (require(rstanarm)) {
 
   test_that(paste(
     "project: setting ndraws or nclusters to too",
-                  "big throws an error"
+    "big throws an error"
   ), {
     expect_error(
       project(vs_list[[1]], ndraws = 400000, nterms = nterms),
@@ -274,7 +274,7 @@ if (require(rstanarm)) {
 
   test_that(paste(
     "project: projecting full model onto itself does not change",
-                  "results"
+    "results"
   ), {
     tol <- 1e-3
 
@@ -286,8 +286,8 @@ if (require(rstanarm)) {
       S <- nrow(draws)
       SW(vs <- varsel(fit))
       proj <- project(vs,
-        solution_terms = vs$solution_terms[1:nterms],
-        seed = seed, ndraws = S
+                      solution_terms = vs$solution_terms[1:nterms],
+                      seed = seed, ndraws = S
       )
 
       # test alpha and beta
@@ -296,7 +296,7 @@ if (require(rstanarm)) {
       order <- match(colnames(fit_list[[i]]$data), proj$solution_terms)
       order <- order[!is.na(order)]
       dbeta <- max(abs(colMeans(coefs[, -1, drop = FALSE][, order])
-      - colMeans(beta_ref)))
+                       - colMeans(beta_ref)))
       expect_lt(dalpha, tol)
       expect_lt(dbeta, tol)
     }
@@ -305,8 +305,8 @@ if (require(rstanarm)) {
   test_that("project: works as expected from a vsel object", {
     SW({
       cvs <- cv_varsel(fit_binom,
-        nterms_max = 3, verbose = FALSE, ndraws = ndraws,
-        ndraws_pred = ndraws_pred
+                       nterms_max = 3, verbose = FALSE, ndraws = ndraws,
+                       ndraws_pred = ndraws_pred
       )
       p <- project(cvs, nterms = 3)
     })

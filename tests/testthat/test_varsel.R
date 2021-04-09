@@ -28,20 +28,20 @@ if (require(rstanarm)) {
 
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_gauss, data = df_gauss,
-      chains = chains, seed = seed, iter = iter
+                          family = f_gauss, data = df_gauss,
+                          chains = chains, seed = seed, iter = iter
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom, weights = weights,
-      data = df_binom, chains = chains, seed = seed, iter = iter
+                          family = f_binom, weights = weights,
+                          data = df_binom, chains = chains, seed = seed, iter = iter
     )
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_poiss, data = df_poiss,
-      chains = chains, seed = seed, iter = iter
+                          family = f_poiss, data = df_poiss,
+                          chains = chains, seed = seed, iter = iter
     )
     fit_glmer <- stan_glmer(mpg ~ wt + (1 | cyl),
-      data = mtcars,
-      chains = chains, seed = seed, iter = iter
+                            data = mtcars,
+                            chains = chains, seed = seed, iter = iter
     )
     fit_list <- list(
       gauss = fit_gauss, binom = fit_binom, poiss = fit_poiss
@@ -50,8 +50,8 @@ if (require(rstanarm)) {
     formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
     vsf <- function(x, m)
       varsel(x,
-        method = m, nterms_max = nterms + 1, verbose = FALSE,
-        ndraws = ndraws, ndraws_pred = ndraws_pred
+             method = m, nterms_max = nterms + 1, verbose = FALSE,
+             ndraws = ndraws, ndraws_pred = ndraws_pred
       )
     vs_list <- list(
       l1 = lapply(fit_list, vsf, "L1"),
@@ -128,33 +128,33 @@ if (require(rstanarm)) {
         expect_length(vs_list[[i]][[j]]$kl, nterms + 1)
         # decreasing
         expect_equal(vs_list[[i]][[j]]$kl,
-          cummin(vs_list[[i]][[j]]$kl),
-          tolerance = 2e-2,
-          info = paste(i_inf, j_inf)
+                     cummin(vs_list[[i]][[j]]$kl),
+                     tolerance = 2e-2,
+                     info = paste(i_inf, j_inf)
         )
         # summaries seems legit
         expect_named(vs_list[[i]][[j]]$summaries, c("sub", "ref"),
-          info = paste(i_inf, j_inf)
+                     info = paste(i_inf, j_inf)
         )
         expect_length(vs_list[[i]][[j]]$summaries$sub, nterms + 1)
         expect_named(vs_list[[i]][[j]]$summaries$sub[[1]], c("mu", "lppd"),
-          info = paste(i_inf, j_inf)
+                     info = paste(i_inf, j_inf)
         )
         expect_named(vs_list[[i]][[j]]$summaries$ref, c("mu", "lppd"),
-          info = paste(i_inf, j_inf)
+                     info = paste(i_inf, j_inf)
         )
         # family seems legit
         expect_equal(vs_list[[i]][[j]]$family$family,
-          vs_list[[i]][[j]]$family$family,
-          info = paste(i_inf, j_inf)
+                     vs_list[[i]][[j]]$family$family,
+                     info = paste(i_inf, j_inf)
         )
         expect_equal(vs_list[[i]][[j]]$family$link,
-          vs_list[[i]][[j]]$family$link,
-          info = paste(i_inf, j_inf)
+                     vs_list[[i]][[j]]$family$link,
+                     info = paste(i_inf, j_inf)
         )
         expect_true(length(vs_list[[i]][[j]]$family) >=
-          length(vs_list[[i]][[j]]$family$family),
-        info = paste(i_inf, j_inf)
+                      length(vs_list[[i]][[j]]$family$family),
+                    info = paste(i_inf, j_inf)
         )
       }
     }
@@ -175,13 +175,13 @@ if (require(rstanarm)) {
 
   test_that("nterms_max has an effect on varsel for non-gaussian models", {
     SW(vs1 <- varsel(fit_binom, method = "forward", nterms_max = 3,
-                  verbose = FALSE))
+                     verbose = FALSE))
     expect_length(vs1$solution_terms, 3)
   })
 
   test_that("specifying the number of clusters has an expected effect", {
     SW(vs <- varsel(fit_binom, method = "forward", nterms_max = 3,
-                 nclusters = 10))
+                    nclusters = 10))
     expect_length(vs$solution_terms, 3)
   })
 
@@ -225,9 +225,9 @@ if (require(rstanarm)) {
   test_that("varsel: length of the penalty vector is checked", {
     vsf <- function(obj, penalty) {
       varsel(obj,
-        method = "L1", nterms_max = nterms + 1,
-        verbose = FALSE, penalty = penalty,
-        ndraws = ndraws, ndraws_pred = ndraws_pred
+             method = "L1", nterms_max = nterms + 1,
+             verbose = FALSE, penalty = penalty,
+             ndraws = ndraws, ndraws_pred = ndraws_pred
       )
     }
     expect_error(vsf(fit_list$gauss, rep(1, nterms + 10)))
@@ -236,7 +236,7 @@ if (require(rstanarm)) {
 
   test_that(paste(
     "varsel: specifying penalties for variables has an expected",
-                  "effect"
+    "effect"
   ), {
     penalty <- rep(1, nterms)
     ind_zeropen <- c(3, 5) # a few variables without cost
@@ -245,8 +245,8 @@ if (require(rstanarm)) {
     penalty[ind_infpen] <- Inf
     vsf <- function(obj)
       varsel(obj,
-        method = "L1", nterms_max = nterms, verbose = FALSE,
-        penalty = penalty, ndraws = ndraws, ndraws_pred = ndraws_pred
+             method = "L1", nterms_max = nterms, verbose = FALSE,
+             penalty = penalty, ndraws = ndraws, ndraws_pred = ndraws_pred
       )
     SW(vs_list_pen <- lapply(fit_list, vsf))
     for (i in seq_along(vs_list_pen)) {
@@ -284,12 +284,12 @@ if (require(rstanarm)) {
       # refmodel$cvfun() they may not be found in the evaluation frame of the
       # calling function, causing the test to fail
       glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-        family = poisson(), data = df_poiss,
-        chains = 2, seed = 1235, iter = 400
+                           family = poisson(), data = df_poiss,
+                           chains = 2, seed = 1235, iter = 400
       )
       lm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-        data = df_gauss, family = gaussian(),
-        chains = 2, seed = 1235, iter = 400
+                          data = df_gauss, family = gaussian(),
+                          chains = 2, seed = 1235, iter = 400
       )
       simp_list <- list(glm = lm_simp)
 
@@ -313,65 +313,65 @@ if (require(rstanarm)) {
       }
     })
 
-  test_that("object returned by cv_varsel contains the relevant fields", {
-    for (i in seq_len(length(cvs_list))) {
-      i_inf <- names(cvs_list)[i]
-      for (j in seq_len(length(cvs_list[[i]]))) {
-        j_inf <- names(cvs_list[[i]])[j]
-        # refmodel seems legit
-        expect_s3_class(cvs_list[[i]][[j]]$refmodel, "refmodel")
-        # solution_terms seems legit
-        expect_length(cvs_list[[i]][[j]]$solution_terms, nterms)
-        expect_true(all(!is.na(match(
-          colnames(fit_gauss$data[, -1]),
-          cvs_list[[i]][[j]]$solution_terms
-        ))),
-        info = paste(i_inf, j_inf)
-        )
-        # kl seems legit
-        expect_length(cvs_list[[i]][[j]]$kl, nterms + 1)
-        # decreasing
-        expect_equal(cvs_list[[i]][[j]]$kl,
-          cummin(cvs_list[[i]][[j]]$kl),
-          tolerance = 23e-2,
+    test_that("object returned by cv_varsel contains the relevant fields", {
+      for (i in seq_len(length(cvs_list))) {
+        i_inf <- names(cvs_list)[i]
+        for (j in seq_len(length(cvs_list[[i]]))) {
+          j_inf <- names(cvs_list[[i]])[j]
+          # refmodel seems legit
+          expect_s3_class(cvs_list[[i]][[j]]$refmodel, "refmodel")
+          # solution_terms seems legit
+          expect_length(cvs_list[[i]][[j]]$solution_terms, nterms)
+          expect_true(all(!is.na(match(
+            colnames(fit_gauss$data[, -1]),
+            cvs_list[[i]][[j]]$solution_terms
+          ))),
           info = paste(i_inf, j_inf)
-        )
-        # summaries seems legit
-        expect_named(cvs_list[[i]][[j]]$summaries, c("sub", "ref"),
-          info = paste(i_inf, j_inf)
-        )
-        expect_length(cvs_list[[i]][[j]]$summaries$sub, nterms + 1)
-        expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]],
-          c("lppd", "mu", "w"),
-          info = paste(i_inf, j_inf)
-        )
-        expect_named(cvs_list[[i]][[j]]$summaries$ref, c("lppd", "mu"),
-          info = paste(i_inf, j_inf)
-        )
-        # family seems legit
-        expect_equal(cvs_list[[i]][[j]]$family$family,
-          cvs_list[[i]][[j]]$family$family,
-          info = paste(i_inf, j_inf)
-        )
-        expect_equal(cvs_list[[i]][[j]]$family$link,
-          cvs_list[[i]][[j]]$family$link,
-          info = paste(i_inf, j_inf)
-        )
-        expect_true(length(cvs_list[[i]][[j]]$family) >=
-          length(cvs_list[[i]][[j]]$family$family),
-        info = paste(i_inf, j_inf)
-        )
+          )
+          # kl seems legit
+          expect_length(cvs_list[[i]][[j]]$kl, nterms + 1)
+          # decreasing
+          expect_equal(cvs_list[[i]][[j]]$kl,
+                       cummin(cvs_list[[i]][[j]]$kl),
+                       tolerance = 23e-2,
+                       info = paste(i_inf, j_inf)
+          )
+          # summaries seems legit
+          expect_named(cvs_list[[i]][[j]]$summaries, c("sub", "ref"),
+                       info = paste(i_inf, j_inf)
+          )
+          expect_length(cvs_list[[i]][[j]]$summaries$sub, nterms + 1)
+          expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]],
+                       c("lppd", "mu", "w"),
+                       info = paste(i_inf, j_inf)
+          )
+          expect_named(cvs_list[[i]][[j]]$summaries$ref, c("lppd", "mu"),
+                       info = paste(i_inf, j_inf)
+          )
+          # family seems legit
+          expect_equal(cvs_list[[i]][[j]]$family$family,
+                       cvs_list[[i]][[j]]$family$family,
+                       info = paste(i_inf, j_inf)
+          )
+          expect_equal(cvs_list[[i]][[j]]$family$link,
+                       cvs_list[[i]][[j]]$family$link,
+                       info = paste(i_inf, j_inf)
+          )
+          expect_true(length(cvs_list[[i]][[j]]$family) >=
+                        length(cvs_list[[i]][[j]]$family$family),
+                      info = paste(i_inf, j_inf)
+          )
+        }
       }
-    }
-  })
+    })
 
     test_that("nterms_max has an effect on cv_varsel for gaussian models", {
       suppressWarnings(
         vs1 <- cv_varsel(fit_gauss,
-          method = "forward", nterms_max = 3,
-          verbose = FALSE, ndraws = ndraws,
-          ndraws_pred = ndraws_pred,
-          validate_search = FALSE
+                         method = "forward", nterms_max = 3,
+                         verbose = FALSE, ndraws = ndraws,
+                         ndraws_pred = ndraws_pred,
+                         validate_search = FALSE
         )
       )
       expect_length(vs1$solution_terms, 3)
@@ -380,10 +380,10 @@ if (require(rstanarm)) {
     test_that("nterms_max has an effect on cv_varsel for non-gaussian models", {
       suppressWarnings(
         vs1 <- cv_varsel(fit_binom,
-          method = "forward", nterms_max = 3,
-          verbose = FALSE, ndraws = ndraws,
-          ndraws_pred = ndraws_pred,
-          validate_search = FALSE
+                         method = "forward", nterms_max = 3,
+                         verbose = FALSE, ndraws = ndraws,
+                         ndraws_pred = ndraws_pred,
+                         validate_search = FALSE
         )
       )
       expect_length(vs1$solution_terms, 3)
@@ -393,8 +393,8 @@ if (require(rstanarm)) {
       expect_error(
         SW(
           cv_varsel(fit_gauss,
-            cv_method = "LOO", nloo = -1, ndraws = ndraws,
-            ndraws_pred = ndraws_pred, validate_search = FALSE
+                    cv_method = "LOO", nloo = -1, ndraws = ndraws,
+                    ndraws_pred = ndraws_pred, validate_search = FALSE
           )
         ),
         "must be at least 1"
@@ -402,19 +402,19 @@ if (require(rstanarm)) {
       SW({
         expect_equal(
           cv_varsel(fit_gauss,
-            cv_method = "LOO", nterms_max = nterms, seed = seed,
-            nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred
+                    cv_method = "LOO", nterms_max = nterms, seed = seed,
+                    nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred
           ),
           cv_varsel(fit_gauss,
-            cv_method = "LOO", nterms_max = nterms, seed = seed,
-            nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred
+                    cv_method = "LOO", nterms_max = nterms, seed = seed,
+                    nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred
           )
         )
 
         # nloo less than number of observations
         out <- cv_varsel(fit_gauss,
-          cv_method = "LOO", nloo = 20, verbose = FALSE,
-          ndraws = ndraws, ndraws_pred = ndraws_pred
+                         cv_method = "LOO", nloo = 20, verbose = FALSE,
+                         ndraws = ndraws, ndraws_pred = ndraws_pred
         )
         expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
       })
@@ -423,21 +423,21 @@ if (require(rstanarm)) {
     test_that("the validate_search option works as expected", {
       SW({
         vs1 <- cv_varsel(fit_gauss,
-          validate_search = FALSE,
-          ndraws = ndraws, ndraws_pred = ndraws_pred
+                         validate_search = FALSE,
+                         ndraws = ndraws, ndraws_pred = ndraws_pred
         )
         vs2 <- cv_varsel(fit_gauss,
-          validate_search = TRUE,
-          ndraws = ndraws, ndraws_pred = ndraws_pred
+                         validate_search = TRUE,
+                         ndraws = ndraws, ndraws_pred = ndraws_pred
         )
       })
       expect_true(all(summary(vs1)$selection$elpd >=
-        summary(vs2)$selection$elpd))
+                        summary(vs2)$selection$elpd))
     })
 
     test_that("Having something else than stan_glm as the fit throws an error", {
       expect_error(cv_varsel(rnorm(5), verbose = FALSE),
-        regexp = "no applicable method"
+                   regexp = "no applicable method"
       )
     })
 
@@ -462,51 +462,51 @@ if (require(rstanarm)) {
 
           # decreasing
           expect_equal(cv_kf_list[[i]][[j]]$kl[-1],
-            cummin(cv_kf_list[[i]][[j]]$kl[-1]),
-            info = paste(i_inf, j_inf),
-            tolerance = 24e-2
+                       cummin(cv_kf_list[[i]][[j]]$kl[-1]),
+                       info = paste(i_inf, j_inf),
+                       tolerance = 24e-2
           )
 
           # summaries seems legit
           expect_named(cv_kf_list[[i]][[j]]$summaries, c("sub", "ref"),
-            info = paste(i_inf, j_inf)
+                       info = paste(i_inf, j_inf)
           )
           expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nterms + 1)
           expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]],
-                      c("mu", "lppd", "w"),
-            ignore.order = TRUE, info = paste(i_inf, j_inf)
+                       c("mu", "lppd", "w"),
+                       ignore.order = TRUE, info = paste(i_inf, j_inf)
           )
           expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c("mu", "lppd"),
-            ignore.order = TRUE, info = paste(i_inf, j_inf)
+                       ignore.order = TRUE, info = paste(i_inf, j_inf)
           )
           # family seems legit
           expect_equal(cv_kf_list[[i]][[j]]$family$family,
-            cv_kf_list[[i]][[j]]$family$family,
-            info = paste(i_inf, j_inf)
+                       cv_kf_list[[i]][[j]]$family$family,
+                       info = paste(i_inf, j_inf)
           )
           expect_equal(cv_kf_list[[i]][[j]]$family$link,
-            cv_kf_list[[i]][[j]]$family$link,
-            info = paste(i_inf, j_inf)
+                       cv_kf_list[[i]][[j]]$family$link,
+                       info = paste(i_inf, j_inf)
           )
           expect_true(length(cv_kf_list[[i]][[j]]$family) >=
-            length(cv_kf_list[[i]][[j]]$family$family),
-          info = paste(i_inf, j_inf)
+                        length(cv_kf_list[[i]][[j]]$family$family),
+                      info = paste(i_inf, j_inf)
           )
           # pct_solution_terms_cv seems legit
           expect_equal(dim(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
-                      c(nterms, nterms + 1),
-            info = paste(i_inf, j_inf)
+                       c(nterms, nterms + 1),
+                       info = paste(i_inf, j_inf)
           )
           expect_true(all(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
-            cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0),
-          info = paste(i_inf, j_inf)
+                            cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0),
+                      info = paste(i_inf, j_inf)
           )
           expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1], 1:nterms,
-            info = paste(i_inf, j_inf)
+                       info = paste(i_inf, j_inf)
           )
           expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
-            c("size", cv_kf_list[[i]][[j]]$solution_terms),
-            info = paste(i_inf, j_inf)
+                       c("size", cv_kf_list[[i]][[j]]$solution_terms),
+                       info = paste(i_inf, j_inf)
           )
         }
       }
@@ -551,9 +551,9 @@ if (require(rstanarm)) {
         }
         attr(k_fold, "folds") <- folds
         fit_cv <- cv_varsel(glm_simp,
-          cv_method = "kfold", cvfits = k_fold,
-          ndraws = ndraws, ndraws_pred = ndraws_pred,
-          verbose = FALSE
+                            cv_method = "kfold", cvfits = k_fold,
+                            ndraws = ndraws, ndraws_pred = ndraws_pred,
+                            verbose = FALSE
         )
       })
       expect_false(any(grepl("k_fold not provided", out)))
@@ -569,10 +569,10 @@ if (require(rstanarm)) {
       expect_named(fit_cv$summaries, c("sub", "ref"))
       expect_length(fit_cv$summaries$sub, nterms + 1)
       expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd", "w"),
-        ignore.order = TRUE
+                   ignore.order = TRUE
       )
       expect_named(fit_cv$summaries$ref, c("mu", "lppd"),
-        ignore.order = TRUE
+                   ignore.order = TRUE
       )
       # family seems legit
       expect_equal(
@@ -584,7 +584,7 @@ if (require(rstanarm)) {
       # pct_solution_terms_cv seems legit
       expect_equal(dim(fit_cv$pct_solution_terms_cv), c(nterms, nterms + 1))
       expect_true(all(fit_cv$pct_solution_terms_cv[, -1] <= 1 &
-        fit_cv$pct_solution_terms_cv[, -1] >= 0))
+                        fit_cv$pct_solution_terms_cv[, -1] >= 0))
 
       expect_equal(fit_cv$pct_solution_terms_cv[, 1], 1:nterms)
       expect_equal(
@@ -647,18 +647,18 @@ if (require(rstanarm)) {
         }
         cv_method <- cvs_list[[i]][[j]]$cv_method
         stats <- summary(cvs,
-          stats = stats_str,
-          type = c("mean", "lower", "upper", "se")
+                         stats = stats_str,
+                         type = c("mean", "lower", "upper", "se")
         )$selection
         expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
-         "size", "solution_terms", paste0(stats_str, ".", tolower(cv_method)),
+          "size", "solution_terms", paste0(stats_str, ".", tolower(cv_method)),
           paste0(stats_str, ".", c("se", "upper", "lower"))
         ) %in% names(stats)))
         expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] >
-                        stats[, "mlpd.lower"]))
+                          stats[, "mlpd.lower"]))
         expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] <
-                        stats[, "mlpd.upper"]))
+                          stats[, "mlpd.upper"]))
       }
     }
   })
@@ -684,26 +684,26 @@ if (require(rstanarm)) {
     # default rounding
     expect_output(out <- print(vs_list[[1]][[1]]))
     expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
-      tolerance = 1e-3
+                 tolerance = 1e-3
     )
     expect_output(out <- print(cvs_list[[1]][[1]]))
     expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
-      tolerance = 1e-3
+                 tolerance = 1e-3
     )
 
     # rounding to 4 decimal places
     expect_output(out <- print(vs_list[[1]][[1]], digits = 4))
     expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
-      tolerance = 1e-3
+                 tolerance = 1e-3
     )
     expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
     expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
-      tolerance = 1e-3
+                 tolerance = 1e-3
     )
     # options to summary
     expect_output(out <- print(vs_list[[1]][[1]],
-      nterms_max = 3,
-      stats = "mse"
+                               nterms_max = 3,
+                               stats = "mse"
     ))
     expect_equal(nrow(out$selection) - 1, 3)
     expect_named(out$selection, c(
@@ -713,8 +713,8 @@ if (require(rstanarm)) {
     ))
 
     expect_output(out <- print(cvs_list[[1]][[1]],
-      nterms_max = 3,
-      stats = "mse"
+                               nterms_max = 3,
+                               stats = "mse"
     ))
     expect_equal(nrow(out$selection) - 1, 3)
     expect_named(out$selection, c(
