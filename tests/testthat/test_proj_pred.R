@@ -310,8 +310,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     )
     vs_form <- varsel(fit_form)
     p1 <- proj_linpred(vs_form, newdata = mtcars, nterms = 3, seed = 2)
-    x <- get_x(fit_form)[, -1]
-    newdata <- data.frame(mpg = get_y(fit_form), x)
+    x <- rstanarm::get_x(fit_form)[, -1]
+    newdata <- data.frame(mpg = rstanarm::get_y(fit_form), x)
     p2 <- proj_linpred(vs_form,
       newdata = newdata, nterms = 3,
       seed = 2
