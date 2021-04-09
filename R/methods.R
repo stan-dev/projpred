@@ -25,7 +25,7 @@
 #'   as in the original data or a matrix with the same columns at the same
 #'   positions as in the original data.
 #' @param offsetnew Offsets for the new observations. By default a vector of
-#'   zeros. By default we take the weights from newdata as in the original
+#'   zeros. By default we take the offsets from newdata as in the original
 #'   model. Either NULL or right hand side formula.
 #' @param weightsnew Weights for the new observations. For binomial model,
 #'   corresponds to the number trials per observation. For \code{proj_linpred},
