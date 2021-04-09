@@ -197,11 +197,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         i_inf <- names(proj_solution_terms_list)[i]
         weightsnew <- sample(1:4, n, replace = TRUE)
         plw <- proj_linpred(proj_solution_terms_list[[i]],
-                            newdata = data.frame(y = ys[[i]], x = x, weights = weightsnew),
+                            newdata = data.frame(y = ys[[i]], x = x,
+                                                 weights = weightsnew),
                             weightsnew = ~weights
         )
         pl <- proj_linpred(proj_solution_terms_list[[i]],
-                           newdata = data.frame(y = ys[[i]], x = x, weights = weights),
+                           newdata = data.frame(y = ys[[i]], x = x,
+                                                weights = weights),
                            weightsnew = ~weights
         )
         expect_named(plw, c("pred", "lpd"))
@@ -223,7 +225,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                           weightsnew = ~weights, offsetnew = ~offset
       )
       pl <- proj_linpred(proj_solution_terms_list[[i]],
-                         newdata = data.frame(y = ys[[i]], x = x, weights = weights),
+                         newdata = data.frame(y = ys[[i]], x = x,
+                                              weights = weights),
                          weightsnew = ~weights
       )
       expect_named(plo, c("pred", "lpd"))
@@ -251,9 +254,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       i_inf <- names(proj_solution_terms_list)[i]
       y <- proj_solution_terms_list[[i]]$refmodel$y
       plt <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(y = y, x = x), integrated = TRUE)
+                          newdata = data.frame(y = y, x = x),
+                          integrated = TRUE)
       plf <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(y = y, x = x), integrated = FALSE)
+                          newdata = data.frame(y = y, x = x),
+                          integrated = FALSE)
       expect_equal(as.vector(proj_solution_terms_list[[i]]$weights %*%
                                plf$pred),
                    plt$pred, info = i_inf)
@@ -269,7 +274,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       for (j in 1:length(regul)) {
         y <- vs_list[[i]]$refmodel$y
         pred <- proj_linpred(vs_list[[i]],
-                             newdata = data.frame(y = y, x = x), nterms = 2, transform = FALSE,
+                             newdata = data.frame(y = y, x = x), nterms = 2,
+                             transform = FALSE,
                              integrated = TRUE, regul = regul[j]
         )
         norms[j] <- sum(pred$pred^2)
@@ -291,8 +297,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       ))
       prl1 <- proj_linpred(pr, newdata = data.frame(y = y, x = x))
       SW(prl2 <- proj_linpred(vs_list[[i]],
-                              newdata = data.frame(y = y, x = x), nterms = c(2, 4), nclusters = 2,
-                              ndraws = 20, intercept = FALSE, regul = 1e-8, seed = 12
+                              newdata = data.frame(y = y, x = x),
+                              nterms = c(2, 4), nclusters = 2,
+                              ndraws = 20, intercept = FALSE, regul = 1e-8,
+                              seed = 12
       ))
       expect_equal(prl1$pred, prl2$pred, info = i_inf)
     }
@@ -452,7 +460,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                          seed = seed, seed_sub = seed
       )
       plo <- proj_predict(proj_solution_terms_list[[i]],
-                          newdata = data.frame(x = x, offset = offset), size_sub = iter,
+                          newdata = data.frame(x = x, offset = offset),
+                          size_sub = iter,
                           seed = seed, seed_sub = seed, offsetnew = ~offset
       )
       expect_true(sum(pl != plo) > 0, info = i_inf)
@@ -489,7 +498,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       i_inf <- names(vs_list)[i]
       prp1 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x), size_sub = 100,
-                           seed = 12, seed_sub = 12, nterms = c(2, 4), nclusters = 2,
+                           seed = 12, seed_sub = 12, nterms = c(2, 4),
+                           nclusters = 2,
                            regul = 1e-08
       )
       prp2 <- proj_predict(vs_list[[i]],
@@ -499,7 +509,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       )
       prp3 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x), size_sub = 100,
-                           seed = 120, seed_sub = 120, nterms = c(2, 4), nclusters = 2,
+                           seed = 120, seed_sub = 120, nterms = c(2, 4),
+                           nclusters = 2,
                            regul = 1e-08
       )
       expect_equal(prp1, prp2, info = i_inf)

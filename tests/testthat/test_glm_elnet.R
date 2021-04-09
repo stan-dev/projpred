@@ -80,14 +80,18 @@ test_that(paste(
               # compute the whole solution paths
               fit1 <- glm_elnet(x, y, fam,
                                 alpha = alpha,
-                                lambda_min_ratio = 0.1 * lambda_min_ratio, nlambda = nlam,
+                                lambda_min_ratio = 0.1 * lambda_min_ratio,
+                                nlambda = nlam,
                                 weights = w, offset = os,
-                                normalize = normalize, thresh = 1e-12, intercept = intercept
+                                normalize = normalize, thresh = 1e-12,
+                                intercept = intercept
               )
               fit2 <- glmnet::glmnet(x, y_glmnet,
                                      family = fam$family, alpha = alpha,
-                                     lambda.min.ratio = lambda_min_ratio, nlambda = nlam,
-                                     weights = w, offset = os, standardize = normalize,
+                                     lambda.min.ratio = lambda_min_ratio,
+                                     nlambda = nlam,
+                                     weights = w, offset = os,
+                                     standardize = normalize,
                                      thresh = 1e-12, intercept = intercept
               )
               ## check that with a given L1-norm, the coefficient values are the
@@ -173,8 +177,10 @@ test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
         # compute the L2-path with glm_elnet
         elnetfit <- glm_elnet(x_tr, y,
                               family = fam, nlambda = 50, alpha = 0,
-                              offset = offset, weights = weights, penalty = penalty,
-                              intercept = intercept, normalize = normalize, thresh = 1e-15
+                              offset = offset, weights = weights,
+                              penalty = penalty,
+                              intercept = intercept, normalize = normalize,
+                              thresh = 1e-15
         )
         b1 <- rbind(elnetfit$beta0, elnetfit$beta)
 
@@ -184,8 +190,10 @@ test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
           lam <- elnetfit$lambda[j]
           ridgefit <- glm_ridge(x_tr, y,
                                 family = fam, lambda = lam,
-                                offset = offset, weights = weights, penalty = penalty,
-                                intercept = intercept, normalize = normalize, thresh = 1e-15
+                                offset = offset, weights = weights,
+                                penalty = penalty,
+                                intercept = intercept, normalize = normalize,
+                                thresh = 1e-15
           )
           b2[1, j] <- ridgefit$beta0
           b2[2:nrow(b2), j] <- ridgefit$beta

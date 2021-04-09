@@ -31,7 +31,8 @@ if (require(rstanarm)) {
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_binom, weights = weights,
-                          data = df_binom, chains = chains, seed = seed, iter = iter
+                          data = df_binom, chains = chains, seed = seed,
+                          iter = iter
     )
 
     vs_gauss <- varsel(fit_gauss, ndraws = 1, ndraws_pred = 5)
@@ -84,7 +85,8 @@ if (require(rstanarm)) {
 
   test_that("as.matrix.projection works with clustering", {
     nclusters <- 3
-    p_clust <- project(vs_gauss, solution_terms = vs_gauss$solution_terms[solution_terms],
+    p_clust <- project(vs_gauss,
+                       solution_terms = vs_gauss$solution_terms[solution_terms],
                        nclusters = nclusters)
     m <- as.matrix(p_clust)
     expect_length(

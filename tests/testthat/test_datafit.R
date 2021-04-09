@@ -81,7 +81,8 @@ dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
 
 SW({
   # varsel
-  vsd_list <- lapply(dref_list, varsel, nterms_max = nterms + 1, verbose = FALSE)
+  vsd_list <- lapply(dref_list, varsel, nterms_max = nterms + 1,
+                     verbose = FALSE)
 
   # cv_varsel
   cvvsd_list <- lapply(dref_list, cv_varsel,
@@ -90,7 +91,8 @@ SW({
   )
 
   predd_list <- lapply(vsd_list, proj_linpred,
-                       newdata = data.frame(x = x, weights = weights, offset = offset),
+                       newdata = data.frame(x = x, weights = weights,
+                                            offset = offset),
                        offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
                        seed = seed
   )
@@ -205,8 +207,10 @@ test_that(paste(
 
     # length of output of project is legit
     pred <- proj_linpred(vsd_list[[i]],
-                         newdata = data.frame(x = x, weights = weights, offset = offset),
-                         seed = seed, offsetnew = ~offset, weightsnew = ~weights, nterms = 3
+                         newdata = data.frame(x = x, weights = weights,
+                                              offset = offset),
+                         seed = seed,
+                         offsetnew = ~offset, weightsnew = ~weights, nterms = 3
     )
     expect_equal(length(pred$pred), nrow(x))
 
@@ -338,14 +342,18 @@ test_that(paste(
       )
     })
     pred1 <- proj_linpred(vs,
-                          newdata = data.frame(x = x, offset = offset, weights = weights),
-                          nterms = 0:nterms, transform = FALSE, offsetnew = ~offset,
+                          newdata = data.frame(x = x, offset = offset,
+                                               weights = weights),
+                          nterms = 0:nterms, transform = FALSE,
+                          offsetnew = ~offset,
     )
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
-                            family = fam$family, weights = weights, offset = offset,
-                            lambda.min.ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12
+                            family = fam$family, weights = weights,
+                            offset = offset,
+                            lambda.min.ratio = lambda_min_ratio,
+                            nlambda = nlambda, thresh = 1e-12
     )
     solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
     nselected <- sapply(solution_terms, function(e) length(e))

@@ -33,7 +33,8 @@ if (require(rstanarm)) {
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_binom, weights = weights,
-                          data = df_binom, chains = chains, seed = seed, iter = iter
+                          data = df_binom, chains = chains, seed = seed,
+                          iter = iter
     )
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_poiss, data = df_poiss,
@@ -435,7 +436,9 @@ if (require(rstanarm)) {
                         summary(vs2)$selection$elpd))
     })
 
-    test_that("Having something else than stan_glm as the fit throws an error", {
+    test_that(paste(
+      "Having something else than stan_glm as the fit throws an error"
+    ), {
       expect_error(cv_varsel(rnorm(5), verbose = FALSE),
                    regexp = "no applicable method"
       )
@@ -497,11 +500,14 @@ if (require(rstanarm)) {
                        c(nterms, nterms + 1),
                        info = paste(i_inf, j_inf)
           )
-          expect_true(all(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
-                            cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0),
-                      info = paste(i_inf, j_inf)
+          expect_true(all(
+            cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
+              cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0
+          ),
+          info = paste(i_inf, j_inf)
           )
-          expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1], 1:nterms,
+          expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1],
+                       1:nterms,
                        info = paste(i_inf, j_inf)
           )
           expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
@@ -615,8 +621,10 @@ if (require(rstanarm)) {
   ##   for (fun in vs_funs) {
   ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = NULL),
   ##                  "specified as NULL")
-  ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = NA), "not recognized")
-  ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = "zzz"), "not recognized")
+  ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = NA),
+  ##                  "not recognized")
+  ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = "zzz"),
+  ##                  "not recognized")
   ##     expect_error(fun(vs_list[[1]][["gauss"]], stat = "acc"),
   ##                  "available only for the binomial family")
   ##     expect_error(

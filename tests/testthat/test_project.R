@@ -35,7 +35,8 @@ if (require(rstanarm)) {
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_binom, weights = weights,
-                          data = df_binom, chains = chains, seed = seed, iter = iter
+                          data = df_binom, chains = chains, seed = seed,
+                          iter = iter
     )
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_poiss, data = df_poiss,
@@ -163,7 +164,8 @@ if (require(rstanarm)) {
   test_that("project: setting solution_terms to 4 has an expected effect", {
     for (i in 1:length(vs_list)) {
       solution_terms <- 4
-      p <- project(vs_list[[i]], solution_terms = vs_list[[i]]$solution_terms[solution_terms])
+      p <- project(vs_list[[i]],
+                   solution_terms = vs_list[[i]]$solution_terms[solution_terms])
       expect_equivalent(p$solution_terms,
                         vs_list[[i]]$solution_terms[solution_terms])
     }
@@ -185,7 +187,8 @@ if (require(rstanarm)) {
   ## ), {
   ##   # variable selection objects
   ##   expect_error(
-  ##     project(vs_list[[1]], solution_terms = vs_list[[1]]$solution_terms[1:10]),
+  ##     project(vs_list[[1]],
+  ##             solution_terms = vs_list[[1]]$solution_terms[1:10]),
   ##     "solution_terms contains an index larger than"
   ##   )
   ##
@@ -250,11 +253,13 @@ if (require(rstanarm)) {
   ), {
     expect_error(
       project(vs_list[[1]], ndraws = 400000, nterms = nterms),
-      "Number of posterior draws exceeds the number of columns in the reference model's posterior."
+      paste("Number of posterior draws exceeds the number of columns in the",
+            "reference model's posterior.")
     )
     expect_error(
       project(vs_list[[1]], nclusters = 400000, nterms = nterms),
-      "Number of clusters exceeds the number of columns in the reference model's posterior."
+      paste("Number of clusters exceeds the number of columns in the",
+            "reference model's posterior.")
     )
   })
 

@@ -30,7 +30,8 @@ if (require(rstanarm)) {
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_binom,
-                          data = df_binom, chains = chains, seed = seed, iter = iter
+                          data = df_binom, chains = chains, seed = seed,
+                          iter = iter
     )
     ref_gauss <- get_refmodel(fit_gauss)
     ref_binom <- get_refmodel(fit_binom)

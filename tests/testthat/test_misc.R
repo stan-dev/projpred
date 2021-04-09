@@ -130,11 +130,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
         SW({
           foo <- proj_predict(fit, frame,
-                              solution_terms = solution_terms, seed = seed, seed_sub = seed
+                              solution_terms = solution_terms,
+                              seed = seed, seed_sub = seed
           )
           r1 <- rnorm(s)
           foo <- proj_predict(fit, frame,
-                              solution_terms = solution_terms, seed = seed, seed_sub = seed
+                              solution_terms = solution_terms,
+                              seed = seed, seed_sub = seed
           )
           r2 <- rnorm(s)
         })
