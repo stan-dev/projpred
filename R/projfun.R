@@ -50,7 +50,6 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   ## contains the parameter values.
 
   varorder <- search_path$solution_terms
-  p_sel <- search_path$p_sel
 
   if (!cv_search) {
     ## simply fetch the already computed quantities for each submodel size
@@ -58,7 +57,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       solution_terms <- utils::head(varorder, nterms)
 
       validparams <- .validate_wobs_wsample(
-        refmodel$wobs, p_sel$weights, p_sel$mu
+        refmodel$wobs, search_path$p_sel$weights, search_path$p_sel$mu
       )
       wobs <- validparams$wobs
       wsample <- validparams$wsample
@@ -67,7 +66,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       sub_refit <- search_path$sub_fits[[nterms + 1]]
 
       return(.init_submodel(
-        sub_fit = sub_refit, p_ref = p_sel, refmodel = refmodel,
+        sub_fit = sub_refit, p_ref = search_path$p_sel, refmodel = refmodel,
         family = family, solution_terms = solution_terms,
         wobs = wobs, wsample = wsample
       ))
