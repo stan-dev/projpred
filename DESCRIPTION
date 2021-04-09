@@ -9,7 +9,8 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"), email = "juho.t.piirone
              person("Jonah", "Gabry", role = "ctb"),
              person("Marco", "Colombo", role = "ctb"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
-             person("Hamada S.", "Badr", role = "ctb"))
+             person("Hamada S.", "Badr", role = "ctb"),
+             person("Frank", "Weber", role = "ctb"))
 Maintainer:
     Alejandro Catalina <alecatfel@gmail.com>
 Description:
