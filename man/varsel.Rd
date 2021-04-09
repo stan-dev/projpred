@@ -51,7 +51,7 @@ Default is 'forward' if the number of variables in the full data is at most
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
 Cannot be larger than the number of draws in the reference model.
-\strong{Caution:} For \code{ndraws <= 20}, the value for \code{ndraws} is
+\strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is
 passed to \code{nclusters} (so that clustering is used). Ignored if
 \code{nclusters} is not \code{NULL} or if \code{method = "L1"} (L1 search
 uses always one cluster). See also section "Details" below.}
