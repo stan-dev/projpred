@@ -23,8 +23,10 @@ tol <- 3e-03
 # (gaussian-log, binomial-cauchit, Gamma-log)
 extra_thresh <- 1e-10
 
-test_that(paste("glmfun: gradients should give the same results as finite",
-                "differences"), {
+test_that(paste(
+  "glmfun: gradients should give the same results as finite",
+                "differences"
+), {
   fdiffu <- function(f, x, h = 1e-3, order = 1) {
     ## function for computing derivative of univariate function f at x using
     ## finite difference.

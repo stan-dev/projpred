@@ -48,8 +48,10 @@ if (require(rstanarm)) {
     )
   })
 
-  test_that(paste("as.matrix.projection returns the relevant variables for",
-                  "gaussian"), {
+  test_that(paste(
+    "as.matrix.projection returns the relevant variables for",
+                  "gaussian"
+  ), {
     m <- as.matrix(p_gauss)
     expect_length(setdiff(
       colnames(m),
@@ -61,8 +63,10 @@ if (require(rstanarm)) {
     expect_equal(dim(m), c(ndraws, length(solution_terms) + 2))
   })
 
-  test_that(paste("as.matrix.projection returns the relevant variables for",
-                  "binomial"), {
+  test_that(paste(
+    "as.matrix.projection returns the relevant variables for",
+                  "binomial"
+  ), {
     m <- as.matrix(p_binom)
     expect_length(setdiff(colnames(m),
                           c("Intercept",

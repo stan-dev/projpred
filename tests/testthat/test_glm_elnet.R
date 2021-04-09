@@ -27,8 +27,10 @@ penalty <- penalty / sum(penalty) * ncol(x_tr)
 tol <- 1e-04
 extra_thresh <- 1e-10
 
-test_that(paste("glm_elnet: various families and setups, glm_elnet and glmnet",
-                "should give same result"), {
+test_that(paste(
+  "glm_elnet: various families and setups, glm_elnet and glmnet",
+                "should give same result"
+), {
   fams <- list(gaussian(), binomial(), poisson())
   x_list <- lapply(fams, function(fam) x_tr)
   y_list <- lapply(fams, function(fam) {
@@ -127,8 +129,10 @@ test_that(paste("glm_elnet: various families and setups, glm_elnet and glmnet",
   }
 })
 
-test_that(paste("glm_elnet: poisson, log-link, normalization should not affect",
-                "the maximum likelihood solution"), {
+test_that(paste(
+  "glm_elnet: poisson, log-link, normalization should not affect",
+                "the maximum likelihood solution"
+), {
   fam <- extend_family(poisson(link = "log"))
   y <- rpois(n, fam$linkinv(x %*% b))
 

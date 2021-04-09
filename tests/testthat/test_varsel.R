@@ -234,8 +234,10 @@ if (require(rstanarm)) {
     expect_error(vsf(fit_list$gauss, 1))
   })
 
-  test_that(paste("varsel: specifying penalties for variables has an expected",
-                  "effect"), {
+  test_that(paste(
+    "varsel: specifying penalties for variables has an expected",
+                  "effect"
+  ), {
     penalty <- rep(1, nterms)
     ind_zeropen <- c(3, 5) # a few variables without cost
     ind_infpen <- c(2) # one variable with infinite penalty
@@ -439,8 +441,10 @@ if (require(rstanarm)) {
       )
     })
 
-    test_that(paste("object returned by cv_varsel, kfold contains the relevant",
-                    "fields"), {
+    test_that(paste(
+      "object returned by cv_varsel, kfold contains the relevant",
+      "fields"
+    ), {
       for (i in seq_len(length(cv_kf_list))) {
         i_inf <- names(cv_kf_list)[i]
         for (j in seq_len(length(cv_kf_list[[i]]))) {

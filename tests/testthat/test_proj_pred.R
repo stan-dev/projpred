@@ -118,8 +118,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that(paste("proj_linpred: error when varsel has not been performed on",
-                  "the object (and `solution_terms` is provided neither)"), {
+  test_that(paste(
+    "proj_linpred: error when varsel has not been performed on",
+                  "the object (and `solution_terms` is provided neither)"
+  ), {
     expect_error(
       proj_linpred(1, newdata = data.frame(x = x)),
       "is not a variable selection -object"
@@ -176,8 +178,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ##   }
   ## })
 
-  ## test_that(paste("proj_linpred: specifying ynew as a factor works in a",
-  ##                 "binomial model"), {
+  ## test_that(paste(
+  ##   "proj_linpred: specifying ynew as a factor works in a",
+  ##   "binomial model"
+  ## ), {
   ##   yfactor <- factor(rbinom(n, 1, 0.5))
   ##   pl <- proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
   ##                      ynew = yfactor)
@@ -384,8 +388,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that(paste("proj_predict: error when varsel has not been performed on",
-                  "the object (and `solution_terms` is provided neither)"), {
+  test_that(paste(
+    "proj_predict: error when varsel has not been performed on",
+                  "the object (and `solution_terms` is provided neither)"
+  ), {
     expect_error(
       proj_predict(1, newdata = data.frame(x = x)),
       "is not a variable selection -object"
@@ -413,8 +419,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ##   }
   ## })
 
-  ## test_that(paste("proj_predict: specifying ynew as a factor works in a",
-  ##                 "binomial model"), {
+  ## test_that(paste(
+  ##   "proj_predict: specifying ynew as a factor works in a",
+  ##   "binomial model"
+  ## ), {
   ##   yfactor <- factor(rbinom(n, 1, 0.5))
   ##   pl <- proj_predict(vs_list[["binom"]], newdata = data.frame(x = x),
   ##                      ynew = yfactor)
@@ -459,8 +467,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that(paste("proj_predict: specifying seed and seed_sub has an expected",
-                  "effect"), {
+  test_that(paste(
+    "proj_predict: specifying seed and seed_sub has an expected",
+                  "effect"
+  ), {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl1 <- proj_predict(proj_solution_terms_list[[i]],

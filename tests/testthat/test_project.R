@@ -88,8 +88,10 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that(paste("project: error when varsel has not been performed for the",
-                  "object"), {
+  test_that(paste(
+    "project: error when varsel has not been performed for the",
+                  "object"
+  ), {
     expect_error(
       project(1, newdata = x),
       "is not a variable selection -object"
@@ -177,14 +179,16 @@ if (require(rstanarm)) {
     }
   })
 
-  ## test_that(paste("project: setting solution_terms to something nonsensical",
-  ##                 "returns an error"), {
+  ## test_that(paste(
+  ##   "project: setting solution_terms to something nonsensical",
+  ##   "returns an error"
+  ## ), {
   ##   # variable selection objects
   ##   expect_error(
   ##     project(vs_list[[1]], solution_terms = vs_list[[1]]$solution_terms[1:10]),
   ##     "solution_terms contains an index larger than"
   ##   )
-
+  ##
   ##   # fit objects
   ##   expect_error(
   ##     SW(project(fit_list[[1]], solution_terms = 1:10)),
@@ -240,8 +244,10 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that(paste("project: setting ndraws or nclusters to too",
-                  "big throws an error"), {
+  test_that(paste(
+    "project: setting ndraws or nclusters to too",
+                  "big throws an error"
+  ), {
     expect_error(
       project(vs_list[[1]], ndraws = 400000, nterms = nterms),
       "Number of posterior draws exceeds the number of columns in the reference model's posterior."
@@ -266,8 +272,10 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that(paste("project: projecting full model onto itself does not change",
-                  "results"), {
+  test_that(paste(
+    "project: projecting full model onto itself does not change",
+                  "results"
+  ), {
     tol <- 1e-3
 
     for (i in 1:length(fit_list)) {

@@ -175,7 +175,8 @@ test_that("check that we can identify formulas with group terms", {
 
 test_that(paste(
   "check that we can subset a formula and update the data",
-  "columns properly"), {
+  "columns properly"
+), {
   data <- data.frame(y = rnorm(20), x = matrix(rnorm(40), 20, 4))
   fake_y <- matrix(rnorm(20), 20, 1)
   formula <- y ~ x.1 + x.2 + x.3 + x.4
