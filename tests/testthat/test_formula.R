@@ -29,6 +29,32 @@ test_that(paste(
   expect_length(tt$response, 1)
 })
 
+test_that(paste(
+  "check that we recover the correct terms for a simple ",
+  "additive model without interactions"
+), {
+  formula <- y ~ x + s(z)
+  tt <- extract_terms_response(formula)
+  expect_length(tt$individual_terms, 1)
+  expect_length(tt$interaction_terms, 0)
+  expect_length(tt$additive_terms, 1)
+  expect_length(tt$group_terms, 0)
+  expect_length(tt$response, 1)
+})
+
+test_that(paste(
+  "check that we recover the correct terms for a simple ",
+  "additive model with multidimensional interactions"
+), {
+  formula <- y ~ t2(x, z)
+  tt <- extract_terms_response(formula)
+  expect_length(tt$individual_terms, 0)
+  expect_length(tt$interaction_terms, 0)
+  expect_length(tt$additive_terms, 1)
+  expect_length(tt$group_terms, 0)
+  expect_length(tt$response, 1)
+})
+
 test_that("check that we return the same formula for a single response", {
   formula <- y ~ x + z
   expect_equal(formula, validate_response_formula(formula))
@@ -114,6 +140,26 @@ test_that("check that we properly split a formula", {
   expect_length(setdiff(
     c(
       "x + 0", "z + 0", "x + z + x:z + 0"
+    ),
+    sp
+  ), 0)
+
+  formula <- y ~ s(x) + s(z)
+  sp <- split_formula(formula)
+  expect_length(sp, 5)
+  expect_length(setdiff(
+    c(
+      "1", "s(x)", "s(z)", "x", "z"
+    ),
+    sp
+  ), 0)
+
+  formula <- y ~ t2(x, z)
+  sp <- split_formula(formula)
+  expect_length(sp, 4)
+  expect_length(setdiff(
+    c(
+      "1", "t2(x, z)", "x", "z"
     ),
     sp
   ), 0)
