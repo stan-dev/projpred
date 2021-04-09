@@ -4,6 +4,14 @@
 
 ## projpred 2.0.5.9000
 
+### Major changes
+
+* The behavior of arguments `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` in `varsel()`, `cv_varsel()`, and `project()` has been changed: Now, `ndraws` and `ndraws_pred` have non-`NULL` defaults and for `ndraws <= 20` or `ndraws_pred <= 20`, the value of `ndraws` or `ndraws_pred` is passed to `nclusters` or `nclusters_pred`, respectively (so that clustering is used). (GitHub: commits babe031db7732e0d81dd2591938551d02dcf374d, 4ef95d3b4ab85eaaa5177c4d40f33b2943bff37c, and ce7d1e001fd76830c4379cbbe0dfe730cba8d9e5)
+
+## Minor changes
+
+* For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2ff6f981ab0e4be06b9aaf694dcaa27afa8)
+
 ### Bug fixes
 
 * Fixed a bug when using weights or offsets e.g. in `proj_linpred()`. (GitHub: #114)
@@ -48,6 +56,7 @@
 
 ### Bug fixes
 
+* Fixed a bug in the handling of arguments `ndraws` and `nclusters` in `varsel()` and `cv_varsel()`. (GitHub: commit bbd0f0ad8041cc938e57b2064773fac7d0d2ce9b)
 * Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix). (GitHub: #72, #73)
 
 ## projpred 2.0.3
@@ -55,6 +64,7 @@
 * Minor fixes for stability, no new features.
 * The (internally set) default for argument `nclusters` of `varsel()` and `cv_varsel()` was increased from 1 to 10.
 * The (internally set) default for argument `nclusters_pred` of `varsel()` and `cv_varsel()` was increased from 5 to 400.
+* In `varsel()` and `cv_varsel()`, always perform clustering of the posterior draws (argument `ndraws` is effectively ignored). (GitHub: starting with commit 80b10dca483ad90edd7d3a1aa8b881351b9673ac)
 
 ## projpred 2.0.2
 
