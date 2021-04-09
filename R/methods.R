@@ -110,26 +110,9 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
     stop("newdata must be a data.frame or a matrix")
   }
 
-  projected_sizes <- sapply(proj, function(x) {
+  names(projs) <- sapply(proj, function(x) {
     count_terms_chosen(x$solution_terms)
   })
-  if (!is.null(nterms)) {
-    nterms <- nterms + 1
-  } else {
-    nterms <- projected_sizes
-  }
-
-  if (!all(nterms %in% projected_sizes)) {
-    stop(paste0(
-      "Linear prediction requested for nterms = ",
-      paste(nterms, collapse = ", "),
-      ", but projection performed only for nterms = ",
-      paste(projected_sizes, collapse = ", "), "."
-    ))
-  }
-
-  projs <- Filter(function(x) count_terms_chosen(x$solution_terms) %in% nterms, proj)
-  names(projs) <- nterms
 
   solution_terms <- list(...)$solution_terms
   if (!is.null(solution_terms) &&
