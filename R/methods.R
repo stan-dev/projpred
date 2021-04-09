@@ -11,6 +11,11 @@
 #' @param object Either an object returned by \link[=project]{project} or
 #'   alternatively any object that can be passed to argument \code{object} of
 #'   \link[=project]{project}.
+#' @param nterms_filter Only applies if \code{object} is an object returned by
+#'   \link[=project]{project}. In that case, \code{nterms_filter} can be used to
+#'   filter \code{object} for only those elements (submodels) with a number of
+#'   solution terms in \code{nterms_filter}. Therefore, needs to be a numeric
+#'   vector or \code{NULL}. If \code{NULL}, use all submodels.
 #' @param newdata The predictor values used in the prediction. If
 #'   \code{solution_terms} is specified, then \code{newdata} should either be a
 #'   dataframe containing column names that correspond to \code{solution_terms}
@@ -89,12 +94,19 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata, offsetnew, weightsnew,
+proj_helper <- function(object, nterms_filter = NULL, newdata,
+                        offsetnew, weightsnew,
                         onesub_fun, integrated = NULL, transform = NULL,
                         size_sub = NULL, ...) {
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
-    projs <- object
+    if (!is.null(nterms_filter)) {
+      projs <- Filter(function(x) {
+        count_terms_chosen(x$solution_terms) %in% (nterms_filter + 1)
+      }, object)
+    } else {
+      projs <- object
+    }
   } else {
     ## reference model or varsel object obtained, so run the projection
     projs <- project(object = object, ...)
@@ -159,13 +171,13 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew,
 
 #' @rdname proj-pred
 #' @export
-proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
-                         weightsnew = NULL, transform = FALSE,
+proj_linpred <- function(object, nterms_filter = NULL, newdata = NULL,
+                         offsetnew = NULL, weightsnew = NULL, transform = FALSE,
                          integrated = FALSE, ...) {
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
-    object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew,
+    object = object, nterms_filter = nterms_filter, newdata = newdata,
+    offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_linpred_aux,
     integrated = integrated, transform = transform, ...
   )
@@ -222,8 +234,8 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 
 #' @rdname proj-pred
 #' @export
-proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
-                         weightsnew = NULL, size_sub = 1000,
+proj_predict <- function(object, nterms_filter = NULL, newdata = NULL,
+                         offsetnew = NULL, weightsnew = NULL, size_sub = 1000,
                          seed_sub = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
@@ -232,8 +244,8 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
-    object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew,
+    object = object, nterms_filter = nterms_filter, newdata = newdata,
+    offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_predict_aux,
     size_sub = size_sub, ...
   )

@@ -9,6 +9,7 @@ distribution of the projected submodel}
 \usage{
 proj_linpred(
   object,
+  nterms_filter = NULL,
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
@@ -19,6 +20,7 @@ proj_linpred(
 
 proj_predict(
   object,
+  nterms_filter = NULL,
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
@@ -31,6 +33,12 @@ proj_predict(
 \item{object}{Either an object returned by \link[=project]{project} or
 alternatively any object that can be passed to argument \code{object} of
 \link[=project]{project}.}
+
+\item{nterms_filter}{Only applies if \code{object} is an object returned by
+\link[=project]{project}. In that case, \code{nterms_filter} can be used to
+filter \code{object} for only those elements (submodels) with a number of
+solution terms in \code{nterms_filter}. Therefore, needs to be a numeric
+vector or \code{NULL}. If \code{NULL}, use all submodels.}
 
 \item{newdata}{The predictor values used in the prediction. If
 \code{solution_terms} is specified, then \code{newdata} should either be a
