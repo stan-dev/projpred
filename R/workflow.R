@@ -448,7 +448,7 @@ approximate_kfold.vselsearch <- function(object,
   if (cores > 1) {
     future::plan(future::multicore, workers = cores)
   } else {
-    future::plan(future::sequential, workers = cores)
+    future::plan(future::sequential)
   }
 
   ## fetch the default arguments or replace them by the user defined values
@@ -473,9 +473,8 @@ approximate_kfold.vselsearch <- function(object,
 
   start <- Sys.time()
   ## fetch the k_fold list (or compute it now if not already computed)
-  k_fold <- .get_kfold(refmodel, K, verbose, seed, approximate = TRUE)
+  k_fold <- .get_kfold(refmodel, K, verbose, seed)
 
-  K <- length(k_fold)
   family <- refmodel$family
 
   ## extract variables from each fit-object (samples, x, y, etc.)
@@ -496,11 +495,7 @@ approximate_kfold.vselsearch <- function(object,
   ## List of K elements, each containing d_train, p_pred, etc. corresponding
   ## to each fold.
   make_list_cv <- function(refmodel, d_test, msg, K) {
-    nclusters_pred <- min(
-      refmodel$nclusters_pred,
-      nclusters_pred
-    )
-    p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
+    p_pred <- .get_refdist(refmodel, ndraws_pred, seed = seed)
     newdata <- d_test$newdata
     pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata)
     pred <- matrix(
@@ -536,9 +531,9 @@ approximate_kfold.vselsearch <- function(object,
   get_submodels_cv <- function(fold) {
     p_sub <- .get_submodels(
       search_path = object, nterms = c(0, seq_along(solution_terms)),
-      family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
-      intercept = TRUE, regul = object$control$opt$regul,
-      cv_search = refit_proj
+      family = fold$refmodel$family, p_ref = fold$p_pred,
+      refmodel = fold$refmodel, intercept = TRUE,
+      regul = object$control$opt$regul, cv_search = refit_proj
     )
 
     return(p_sub)
@@ -562,10 +557,10 @@ approximate_kfold.vselsearch <- function(object,
   ## Apply some magic to manipulate the structure of the list so that instead
   ## of list with K sub_summaries each containing n/K mu:s and lppd:s, we have
   ## only one sub_summary-list that contains with all n mu:s and lppd:s.
-  get_summaries_submodel_cv <- function(fold, p_sub) {
+  get_summaries_submodel_cv <- function(fold, sub) {
     omitted <- fold$d_test$omitted
     fold_summaries <- .get_sub_summaries(
-      submodels = p_sub, test_points = omitted, refmodel = fold$refmodel,
+      submodels = sub, test_points = omitted, refmodel = refmodel,
       family = family
     )
     summ <- lapply(fold_summaries, data.frame)
@@ -854,7 +849,7 @@ cv_loo.vselapproxcv <- function(object,
   if (cores > 1) {
     future::plan(future::multicore, workers = cores)
   } else {
-    future::plan(future::sequential, workers = cores)
+    future::plan(future::sequential)
   }
 
   if (verbose) {
@@ -1152,10 +1147,11 @@ cv_kfold.vselapproxcv <- function(object,
       SIMPLIFY = FALSE
   )
 
+  doFuture::registerDoFuture()
   if (cores > 1) {
     future::plan(future::multicore, workers = cores)
   } else {
-    future::plan(future::sequential, workers = cores)
+    future::plan(future::sequential)
   }
 
   ## Perform the selection for each of the K folds
@@ -1195,18 +1191,18 @@ cv_kfold.vselapproxcv <- function(object,
   }
 
   get_submodels_cv <- function(search_path, fold_index) {
-      fold <- list_cv[[fold_index]]
-      family <- fold$refmodel$family
-      solution_terms <- search_path$solution_terms
-      p_sub <- .get_submodels(
-          search_path = search_path, nterms = c(0, seq_along(solution_terms)),
-          family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
-          intercept = TRUE, regul = opt$regul, cv_search = TRUE
-      )
-      if (verbose) {
-          utils::setTxtProgressBar(pb, fold_index)
-      }
-      return(p_sub)
+    fold <- list_cv[[fold_index]]
+    family <- fold$refmodel$family
+    solution_terms <- search_path$solution_terms
+    p_sub <- .get_submodels(
+      search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+      family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
+      intercept = TRUE, regul = opt$regul, cv_search = TRUE
+    )
+    if (verbose) {
+      utils::setTxtProgressBar(pb, fold_index)
+    }
+    return(p_sub)
   }
 
   p_sub_cv <- future.apply::future_mapply(get_submodels_cv,
