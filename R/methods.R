@@ -113,7 +113,11 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
   projected_sizes <- sapply(proj, function(x) {
     count_terms_chosen(x$solution_terms)
   })
-  nterms <- nterms %ORifNULL% projected_sizes
+  if (!is.null(nterms)) {
+    nterms <- nterms + 1
+  } else {
+    nterms <- projected_sizes
+  }
 
   if (!all(nterms %in% projected_sizes)) {
     stop(paste0(
