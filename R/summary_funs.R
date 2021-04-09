@@ -9,9 +9,9 @@
     sub_fit <- model$sub_fit
     weights <- refmodel$wobs[test_points]
     mu <- family$mu_fun(sub_fit,
-      obs = test_points,
-      offset = refmodel$offset[test_points],
-      weights = weights
+                        obs = test_points,
+                        offset = refmodel$offset[test_points],
+                        weights = weights
     )
 
     y <- refmodel$y[test_points]
@@ -83,7 +83,7 @@
     ## reference model statistics
     summ <- summ_ref
     res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-      mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
+                    mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
     )
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
@@ -117,11 +117,11 @@
       } else {
         ## normal case
         res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-          mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
+                        mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
         )
         diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-          mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd, weights = summ$w,
-          alpha = alpha
+                         mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd, weights = summ$w,
+                         alpha = alpha
         )
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
@@ -199,7 +199,7 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
       mu.bs[is.na(mu)] <- NA
       mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
       value <- (sqrt(mean(weights * (mu - y)^2, na.rm = TRUE))
-        - sqrt(mean(weights * (mu.bs - y)^2, na.rm = TRUE)))
+                - sqrt(mean(weights * (mu.bs - y)^2, na.rm = TRUE)))
       value.bootstrap1 <- bootstrap((mu - y)^2, function(resid2)
         sqrt(mean(weights * resid2, na.rm = TRUE)), b = B, seed = seed)
       value.bootstrap2 <- bootstrap((mu.bs - y)^2, function(resid2)

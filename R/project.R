@@ -102,7 +102,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
 
   if (!is.null(solution_terms) &&
-    any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
+      any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
     ## search path not found, or the given variable combination
     ## not in the search path, then we need to project the
     ## required variables
@@ -117,7 +117,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     } else {
       ## project only the given model on a fit object
       vars <- setdiff(split_formula(refmodel$formula,
-        data = refmodel$fetch_data()
+                                    data = refmodel$fetch_data()
       ), "1")
     }
 
@@ -175,19 +175,19 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   if (is.null(nclusters)) {
     nclusters <- 1
   } else
-  if (nclusters > NCOL(refmodel$mu)) {
-    stop(
-      "Number of clusters exceeds the number of columns in the reference ",
-      "model's posterior."
-    )
-  }
+    if (nclusters > NCOL(refmodel$mu)) {
+      stop(
+        "Number of clusters exceeds the number of columns in the reference ",
+        "model's posterior."
+      )
+    }
 
   intercept <- refmodel$intercept
   family <- refmodel$family
 
   ## get the clustering or subsample
   p_ref <- .get_refdist(refmodel,
-    ndraws = ndraws, nclusters = nclusters, seed = seed
+                        ndraws = ndraws, nclusters = nclusters, seed = seed
   )
 
   ## project onto the submodels

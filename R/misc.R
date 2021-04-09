@@ -253,7 +253,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       # special case, only one cluster
       cl <- rep(1, S)
       p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
-        wobs = refmodel$wobs, cl = cl
+                            wobs = refmodel$wobs, cl = cl
       )
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
@@ -267,7 +267,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
         )
       }
       p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
-        wobs = refmodel$wobs, nclusters = nclusters
+                            wobs = refmodel$wobs, nclusters = nclusters
       )
     }
   } else {

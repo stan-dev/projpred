@@ -90,14 +90,14 @@
 #'
 #' @export
 varsel <- function(object, ...) {
-    UseMethod("varsel")
+  UseMethod("varsel")
 }
 
 #' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
-    refmodel <- get_refmodel(object, ...)
-    return(varsel(refmodel, ...))
+  refmodel <- get_refmodel(object, ...)
+  return(varsel(refmodel, ...))
 }
 
 #' @rdname varsel
@@ -162,8 +162,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   ## statistics for the selected submodels
   p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
-    family = family, p_ref = p_pred, refmodel = refmodel, intercept = intercept,
-    regul = regul, cv_search = cv_search
+                          family = family, p_ref = p_pred, refmodel = refmodel, intercept = intercept,
+                          regul = regul, cv_search = cv_search
   )
   sub <- .get_sub_summaries(
     submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
@@ -183,7 +183,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       mu_test <- refmodel$mu
     } else {
       mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
-        newdata = d_test$data
+                                                     newdata = d_test$data
       ))
     }
     ref <- .weighted_summary_means(
@@ -195,11 +195,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## warn the user if the projection performance does not match the reference
   ## model's.
   ref_elpd <- get_stat(ref$mu, ref$lppd, d_test, family, "elpd",
-    weights = ref$w
+                       weights = ref$w
   )
   summ <- sub[[length(sub)]]
   proj_elpd <- get_stat(summ$mu, summ$lppd, d_test, family, "elpd",
-    weights = summ$w
+                        weights = summ$w
   )
 
   ## store the relevant fields into the object to be returned
@@ -224,7 +224,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## suggest model size
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs,
-    warnings = FALSE
+                                    warnings = FALSE
   )
   summary <- summary(vs)
   vs$summary <- summary$selection
@@ -256,8 +256,8 @@ select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
     return(search_path)
   } else if (method == "forward") {
     search_path <- search_forward(p_sel, refmodel, family,
-      intercept, nterms_max, verbose, opt,
-      search_terms = search_terms
+                                  intercept, nterms_max, verbose, opt,
+                                  search_terms = search_terms
     )
     search_path$p_sel <- p_sel
     return(search_path)
@@ -277,7 +277,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   ##
   if (is.null(search_terms)) {
     search_terms <- split_formula(refmodel$formula,
-      data = refmodel$fetch_data()
+                                  data = refmodel$fetch_data()
     )
   }
   has_group_features <- formula_contains_group_terms(refmodel$formula)

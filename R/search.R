@@ -64,10 +64,10 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   ## carried until all the way down to the least regularization also for model
   ## size nterms_max)
   search <- glm_elnet(d_train$x, mu, family,
-    lambda_min_ratio = opt$lambda_min_ratio, nlambda = opt$nlambda,
-    pmax = nterms_max + 1, pmax_strict = FALSE, offset = d_train$offset,
-    weights = d_train$weights, intercept = intercept, obsvar = v,
-    penalty = penalty, thresh = opt$thresh)
+                      lambda_min_ratio = opt$lambda_min_ratio, nlambda = opt$nlambda,
+                      pmax = nterms_max + 1, pmax_strict = FALSE, offset = d_train$offset,
+                      weights = d_train$weights, intercept = intercept, obsvar = v,
+                      penalty = penalty, thresh = opt$thresh)
 
   ## sort the variables according to the order in which they enter the model in
   ## the L1-path
@@ -140,8 +140,8 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
     refmodel$fetch_data()
   )
   x <- model.matrix(delete.intercept(refmodel$formula),
-    data = frame,
-    contrasts.arg = contrasts_arg
+                    data = frame,
+                    contrasts.arg = contrasts_arg
   )
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
@@ -170,8 +170,8 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
             refmodel$fetch_data()
           )
           return(colnames(model.matrix(form,
-            data = refmodel$fetch_data(),
-            contrasts.arg = contrasts_arg
+                                       data = refmodel$fetch_data(),
+                                       contrasts.arg = contrasts_arg
           )))
         }
       ))

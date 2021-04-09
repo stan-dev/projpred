@@ -192,20 +192,20 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
       print(paste("Performing the selection using all the data.."))
     }
     sel <- varsel(refmodel,
-      method = method, ndraws = ndraws, nclusters = nclusters,
-      ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
-      cv_search = cv_search, nterms_max = nterms_max - 1,
-      intercept = intercept, penalty = penalty, verbose = verbose,
-      lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
-      search_terms = search_terms, seed = seed
+                  method = method, ndraws = ndraws, nclusters = nclusters,
+                  ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
+                  cv_search = cv_search, nterms_max = nterms_max - 1,
+                  intercept = intercept, penalty = penalty, verbose = verbose,
+                  lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
+                  search_terms = search_terms, seed = seed
     )
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
   }
 
   candidate_terms <- split_formula(refmodel$formula,
-    data = refmodel$fetch_data(),
-    add_main_effects = FALSE
+                                   data = refmodel$fetch_data(),
+                                   add_main_effects = FALSE
   )
   ## find out how many of cross-validated iterations select
   ## the same variables as the selection with all the data.
@@ -221,7 +221,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   )
   ## make sure it's always a matrix
   solution_terms_cv_ch <- matrix(solution_terms_cv_ch,
-    ncol = length(solution_terms)
+                                 ncol = length(solution_terms)
   )
 
   ## these weights might be non-constant in case of subsampling LOO
@@ -237,7 +237,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
         size = size,
         sapply(vars, function(var) {
           sum((solution_terms_cv_ch[seq_len(size), , drop = FALSE] == var) * w,
-            na.rm = TRUE
+              na.rm = TRUE
           )
         })
       )
@@ -246,22 +246,22 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
 
   ## create the object to be returned
   vs <- nlist(refmodel,
-    search_path = sel$search_path,
-    d_test = sel_cv$d_test,
-    summaries = sel_cv$summaries,
-    family = refmodel$family,
-    kl = sel$kl,
-    solution_terms = sel$solution_terms,
-    pct_solution_terms_cv,
-    nterms_all = count_terms_in_formula(refmodel$formula),
-    nterms_max,
-    method,
-    cv_method,
-    validate_search,
-    nclusters,
-    nclusters_pred,
-    ndraws,
-    ndraws_pred
+              search_path = sel$search_path,
+              d_test = sel_cv$d_test,
+              summaries = sel_cv$summaries,
+              family = refmodel$family,
+              kl = sel$kl,
+              solution_terms = sel$solution_terms,
+              pct_solution_terms_cv,
+              nterms_all = count_terms_in_formula(refmodel$formula),
+              nterms_max,
+              method,
+              cv_method,
+              validate_search,
+              nclusters,
+              nclusters_pred,
+              ndraws,
+              ndraws_pred
   )
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
@@ -347,17 +347,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel,
-    ndraws = ndraws,
-    nclusters = nclusters,
-    seed = seed
+                        ndraws = ndraws,
+                        nclusters = nclusters,
+                        seed = seed
   )
   cl_sel <- p_sel$cl # clustering information
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel,
-    ndraws = ndraws_pred,
-    nclusters = nclusters_pred,
-    seed = seed
+                         ndraws = ndraws_pred,
+                         nclusters = nclusters_pred,
+                         seed = seed
   )
   cl_pred <- p_pred$cl
 
@@ -447,17 +447,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     y <- matrix(refmodel$y, nrow = n)
     for (k in seq_along(summaries_sub)) {
       mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
-        obs = inds,
-        offset = refmodel$offset,
-        weights = 1
+                            obs = inds,
+                            offset = refmodel$offset,
+                            weights = 1
       )
       log_lik_sub <- t(family$ll_fun(
         mu_k, submodels[[k]]$dis,
         y[inds], refmodel$wobs
       ))
       sub_psisloo <- suppressWarnings(loo::psis(-log_lik_sub,
-        cores = 1,
-        r_eff = rep(1, ncol(log_lik_sub))
+                                                cores = 1,
+                                                r_eff = rep(1, ncol(log_lik_sub))
       ))
       lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
       loo_sub[inds, k] <- apply(
@@ -474,8 +474,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     candidate_terms <- split_formula(refmodel$formula,
-      data = refmodel$fetch_data(),
-      add_main_effects = FALSE
+                                     data = refmodel$fetch_data(),
+                                     add_main_effects = FALSE
     )
     ## with `match` we get the indices of the variables as they enter the
     ## solution path in solution_terms
@@ -533,8 +533,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
 
       candidate_terms <- split_formula(refmodel$formula,
-        data = refmodel$fetch_data(),
-        add_main_effects = FALSE
+                                       data = refmodel$fetch_data(),
+                                       add_main_effects = FALSE
       )
       ## with `match` we get the indices of the variables as they enter the
       ## solution path in solution_terms
@@ -624,13 +624,13 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
     mu_test <- family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test,
-      dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg
+          dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg
     )
   }
 
   msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
   list_cv <- mapply(make_list_cv, refmodels_cv, d_test_cv, msgs,
-    SIMPLIFY = FALSE
+                    SIMPLIFY = FALSE
   )
 
   ## Perform the selection for each of the K folds
@@ -680,7 +680,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   p_sub_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
-    SIMPLIFY = FALSE
+                     SIMPLIFY = FALSE
   )
   if (verbose && cv_search) {
     close(pb)
@@ -727,8 +727,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }))
 
   return(nlist(solution_terms_cv,
-    summaries = list(sub = sub, ref = ref),
-    d_test = c(d_cv, type = "kfold")
+               summaries = list(sub = sub, ref = ref),
+               d_test = c(d_cv, type = "kfold")
   ))
 }
 

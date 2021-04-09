@@ -195,7 +195,7 @@ extend_family_student_t <- function(family) {
   } #- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
   dis_student_t <- function(pref, psub, wobs = 1) {
     s2 <- colSums(psub$w / sum(wobs) *
-                  (pref$var + (pref$mu - psub$mu)^2)) # CHECK THIS
+                    (pref$var + (pref$mu - psub$mu)^2)) # CHECK THIS
     sqrt(s2)
     ## stop('Projection of dispersion not yet implemented for student-t')
   }
@@ -222,7 +222,7 @@ extend_family_student_t <- function(family) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
     }
     (-2 * weights * (-0.5 * (family$nu + 1)
-      * log(1 + 1 / family$nu * ((y - mu) / dis)^2) - log(dis)))
+                     * log(1 + 1 / family$nu * ((y - mu) / dis)^2) - log(dis)))
   }
   ppd_student_t <- function(mu, dis, weights = 1)
     rt(length(mu), family$nu) * dis + mu

@@ -97,8 +97,8 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty,
   # and those covariates that have penalty=0 (those which are always included,
   # if such exist)
   init <- glm_ridge(x[, penalty == 0, drop = FALSE], y,
-    family = family, lambda = 0, weights = weights,
-    offset = offset, obsvar = obsvar, intercept = intercept
+                    family = family, lambda = 0, weights = weights,
+                    offset = offset, obsvar = obsvar, intercept = intercept
   )
   f0 <- init$beta0 * rep(1, n)
   if (length(init$beta) > 0) {
@@ -124,7 +124,7 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty,
 glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
                       lambda_min_ratio = 1e-3, lambda = NULL, alpha = 1.0,
                       qa_updates_max = ifelse(family$family == "gaussian" &&
-                                              family$link == "identity",
+                                                family$link == "identity",
                                               1, 100),
                       pmax = dim(as.matrix(x))[2] + 1, pmax_strict = FALSE,
                       weights = NULL, offset = NULL, obsvar = 0,
@@ -166,8 +166,8 @@ glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
   # default lambda-sequence, including optimal start point
   if (is.null(lambda)) {
     temp <- lambda_grid(x, y, family, offset, weights, intercept, penalty,
-      alpha = alpha, obsvar = obsvar, nlam = nlambda,
-      lambda_min_ratio = lambda_min_ratio
+                        alpha = alpha, obsvar = obsvar, nlam = nlambda,
+                        lambda_min_ratio = lambda_min_ratio
     )
     lambda <- temp$lambda
     w0 <- temp$w0
@@ -300,7 +300,7 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
   beta0_orig <- beta0 - sum(transf$shift * beta_orig)
 
   out <- nlist(beta = beta_orig, beta0 = beta0_orig, w,
-              qa_updates = out[[5]])
+               qa_updates = out[[5]])
   return(out)
 }
 

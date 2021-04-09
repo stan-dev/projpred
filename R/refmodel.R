@@ -57,12 +57,12 @@
 #'   fit <- rstanarm::stan_glm(y ~ x, family = gaussian(), data = dat)
 #'   ref <- get_refmodel(fit)
 #'   print(class(ref))
-#' 
+#'
 #'   # variable selection, use the already constructed reference model
-#'   vs <- varsel(ref) 
-#'   # this will first construct the reference model and then execute 
+#'   vs <- varsel(ref)
+#'   # this will first construct the reference model and then execute
 #'   # exactly the same way as the previous command (the result is identical)
-#'   vs <- varsel(fit) 
+#'   vs <- varsel(fit)
 #' }
 #' }
 #'
@@ -119,8 +119,8 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
   }
 
   w_o <- object$extract_model_data(object$fit,
-    newdata = newdata, weightsnew,
-    offsetnew
+                                   newdata = newdata, weightsnew,
+                                   offsetnew
   )
 
   weightsnew <- w_o$weights
@@ -231,8 +231,8 @@ get_refmodel.default <- function(object, data, formula, ref_predfun,
   }
 
   refmodel <- init_refmodel(object, data, formula, family, ref_predfun,
-    div_minimizer, proj_predfun, extract_model_data = extract_model_data,
-    cvfits = cvfits, folds = folds, cvfun = cvfun, dis = dis
+                            div_minimizer, proj_predfun, extract_model_data = extract_model_data,
+                            cvfits = cvfits, folds = folds, cvfun = cvfun, dis = dis
   )
   return(refmodel)
 }
@@ -285,13 +285,13 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     }
 
     if (is.null(wrhs) && !is.null(object) &&
-      !is.null(object$weights) && length(object$weights) != 0) {
+        !is.null(object$weights) && length(object$weights) != 0) {
       wrhs <- ~weights
       newdata <- cbind(newdata, weights = object$weights)
     }
 
     if (is.null(orhs) && !is.null(object) &&
-      !is.null(object$offset) && length(object$offset) != 0) {
+        !is.null(object$offset) && length(object$offset) != 0) {
       orhs <- ~offset
       newdata <- cbind(newdata, offset = object$offset)
     }
@@ -312,8 +312,8 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 
   cvfun <- function(folds) {
     cvres <- rstanarm::kfold(object,
-      K = max(folds), save_fits = TRUE,
-      folds = folds
+                             K = max(folds), save_fits = TRUE,
+                             folds = folds
     )
     fits <- cvres$fits[, "fit"]
     return(fits)
@@ -401,8 +401,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
     newdata <- fetch_data_wrapper(obs = obs, newdata = newdata)
     suppressWarnings(family$linkinv(proj_predfun(fit,
-      newdata = newdata,
-      weights = weights
+                                                 newdata = newdata,
+                                                 weights = weights
     ) + offset))
   }
 

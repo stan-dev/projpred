@@ -100,7 +100,7 @@ proj_helper <- function(object, filter_nterms = NULL, newdata,
                         onesub_fun, integrated = NULL, transform = NULL,
                         size_sub = NULL, ...) {
   if (inherits(object, "projection") ||
-    (length(object) > 0 && inherits(object[[1]], "projection"))) {
+      (length(object) > 0 && inherits(object[[1]], "projection"))) {
     if (!is.null(filter_nterms)) {
       if (!.is_proj_list(object)) {
         object <- list(object)
@@ -148,8 +148,8 @@ proj_helper <- function(object, filter_nterms = NULL, newdata,
 
   preds <- lapply(projs, function(proj) {
     w_o <- proj$extract_model_data(proj$refmodel$fit,
-      newdata = newdata, weightsnew,
-      offsetnew, extract_y = FALSE
+                                   newdata = newdata, weightsnew,
+                                   offsetnew, extract_y = FALSE
     )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
@@ -160,8 +160,8 @@ proj_helper <- function(object, filter_nterms = NULL, newdata,
       offsetnew <- rep(0, NROW(newdata))
     }
     mu <- proj$family$mu_fun(proj$sub_fit,
-      newdata = newdata, offset = offsetnew,
-      weights = weightsnew
+                             newdata = newdata, offset = offsetnew,
+                             weights = weightsnew
     )
 
     onesub_fun(proj, mu, weightsnew,
@@ -304,8 +304,8 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
   tab <- rbind(
     .tabulate_stats(object, stats,
-      alpha = alpha,
-      nfeat_baseline = nfeat_baseline
+                    alpha = alpha,
+                    nfeat_baseline = nfeat_baseline
     ),
     .tabulate_stats(object, stats, alpha = alpha)
   )
@@ -358,15 +358,15 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
-      data = stats_ref,
-      color = "darkred", linetype = 2
+                          data = stats_ref,
+                          color = "darkred", linetype = 2
     )
   }
   if (baseline != "ref") {
     # add the baseline result (if different from the reference model)
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
-      data = stats_bs,
-      color = "black", linetype = 3
+                          data = stats_bs,
+                          color = "black", linetype = 3
     )
   }
   pp <- pp +
@@ -471,7 +471,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
     tab <- .tabulate_stats(object, stats,
-      alpha = alpha, nfeat_baseline = nfeat_baseline
+                           alpha = alpha, nfeat_baseline = nfeat_baseline
     )
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
@@ -491,7 +491,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   }))
   if (!is.null(object$cv_method)) {
     cv_suffix <- unname(switch(object$cv_method,
-      LOO = ".loo", kfold = ".kfold"
+                               LOO = ".loo", kfold = ".kfold"
     ))
   } else {
     cv_suffix <- NULL
@@ -503,7 +503,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
         s,
         unname(sapply(type, function(t) {
           switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-            se = ".se", diff = ".diff", diff.se = ".diff.se"
+                 se = ".se", diff = ".diff", diff.se = ".diff.se"
           )
         }))
       )
@@ -511,8 +511,8 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   } else {
     suffix <- list(unname(sapply(type, function(t) {
       switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
-        lower = "lower", se = "se",
-        diff = "diff", diff.se = "diff.se"
+             lower = "lower", se = "se",
+             diff = "diff", diff.se = "diff.se"
       )
     })))
   }
@@ -618,7 +618,7 @@ print.vsel <- function(x, digits = 1, ...) {
 #' @rdname suggest_size.vsel
 #' @export
 suggest_size <- function(object, ...) {
-    UseMethod("suggest_size")
+  UseMethod("suggest_size")
 }
 
 #' Suggest model size
@@ -720,8 +720,8 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
   }
   bound <- type
   stats <- summary.vsel(object,
-    stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
-    baseline = baseline, deltas = TRUE
+                        stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
+                        baseline = baseline, deltas = TRUE
   )$selection
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
@@ -777,7 +777,7 @@ coef.subfit <- function(x, ...) {
 #' @method as.matrix lm
 as.matrix.lm <- function(x, ...) {
   return(coef(x) %>%
-         replace_population_names())
+           replace_population_names())
 }
 
 #' @method as.matrix ridgelm
@@ -954,7 +954,7 @@ as.matrix.projection <- function(x, ...) {
   }
   if (inherits(x$sub_fit, "list")) {
     if ("lmerMod" %in% class(x$sub_fit[[1]]) ||
-      "glmerMod" %in% class(x$sub_fit[[1]])) {
+        "glmerMod" %in% class(x$sub_fit[[1]])) {
       res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
     } else {
       if (inherits(x$sub_fit[[1]], "subfit")) {
