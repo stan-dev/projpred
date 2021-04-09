@@ -302,11 +302,11 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if (is.null(ndraws) && is.null(nclusters)) {
-    ndraws <- nclusters <- min(NCOL(refmodel$mu), 20)
-  } else if (is.null(ndraws)) {
-    ndraws <- nclusters <- min(NCOL(refmodel$mu), nclusters)
-  } else if (is.null(nclusters)) {
+  if (is.null(ndraws)) {
+    ndraws <- min(NCOL(refmodel$mu), 20)
+  }
+
+  if (is.null(nclusters) && ndraws <= 20) {
     nclusters <- ndraws <- min(NCOL(refmodel$mu), ndraws)
   }
 
@@ -314,13 +314,12 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     ndraws <- nclusters <- 1
   }
 
-  if (is.null(ndraws_pred) && is.null(nclusters_pred)) {
-    ## use 400 clusters for prediction by default
-    ndraws_pred <- nclusters_pred <- min(NCOL(refmodel$mu), 400)
-  } else if (is.null(nclusters_pred)) {
+  if (is.null(ndraws_pred)) {
+    ndraws_pred <- min(NCOL(refmodel$mu), 400)
+  }
+
+  if (is.null(nclusters_pred) && ndraws_pred <= 20) {
     nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
-  } else if (is.null(ndraws_pred)) {
-    nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
   max_nv_possible <- count_terms_in_formula(refmodel$formula)
