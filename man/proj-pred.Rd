@@ -96,8 +96,9 @@ If the prediction is done for one submodel only (\code{nterms} has
     denoting the number of observations.
   }
   If the predictions are done for several submodel sizes, the output from
-  above is returned for each submodel (giving a list of length equal to the
-  number of submodels).
+  above is returned for each submodel, giving a named list with one element
+  for each submodel (the names of this list being the numbers of solutions
+  terms of the submodels when taking the intercept into account).
 }
 \description{
 \code{proj_linpred} extracts draws of the linear predictor and
