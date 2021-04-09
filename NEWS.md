@@ -10,6 +10,7 @@
 * Fixed a bug causing `varsel()`/`make_formula` to fail with multidimensional interaction terms. (GitHub: #102, #103)
 * Fixed an indexing bug in `cv_varsel()` for models with a single predictor. (GitHub: #115)
 * Fixed bugs for argument `nterms` of `proj_linpred()` and `proj_predict()`. (GitHub: #110)
+* Fixed an inconsistency for some intercept-only submodels. (GitHub: #119)
 
 ## projpred 2.0.5
 
