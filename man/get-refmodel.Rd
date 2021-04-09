@@ -135,10 +135,10 @@ if (requireNamespace('rstanarm', quietly=TRUE)) {
   print(class(ref))
 
   # variable selection, use the already constructed reference model
-  vs <- varsel(ref) 
-  # this will first construct the reference model and then execute 
+  vs <- varsel(ref)
+  # this will first construct the reference model and then execute
   # exactly the same way as the previous command (the result is identical)
-  vs <- varsel(fit) 
+  vs <- varsel(fit)
 }
 }
 
