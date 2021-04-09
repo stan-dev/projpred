@@ -110,7 +110,8 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
     stop("newdata must be a data.frame or a matrix")
   }
 
-  names(projs) <- sapply(proj, function(x) {
+  projs <- proj
+  names(projs) <- sapply(projs, function(x) {
     count_terms_chosen(x$solution_terms)
   })
 
