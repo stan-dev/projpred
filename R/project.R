@@ -93,7 +93,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   refmodel <- get_refmodel(object, ...)
 
   if (cv_search) {
-    ## use non-cv_searched solution for datafits by default
+    ## use non-cv_searched solution for datafits
     cv_search <- !inherits(refmodel, "datafit")
   }
 
