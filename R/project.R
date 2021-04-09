@@ -22,11 +22,16 @@
 #'   solution from the L1-penalized projection. This option is relevant only if
 #'   L1-search was used. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param ndraws Number of posterior draws to be projected. Ignored if
-#'   \code{nclusters} is specified. Default is 400. We project a single draw
-#'   from each cluster.
-#' @param nclusters Number of clusters in the clustered projection. By default
-#'   we use as many clusters as draws to project.
+#' @param ndraws Number of posterior draws to be projected. Cannot be larger
+#'   than the number of draws in the reference model. \strong{Caution:} For
+#'   \code{ndraws <= 20}, the value of \code{ndraws} is passed to
+#'   \code{nclusters} (so that clustering is used). Ignored if \code{nclusters}
+#'   is not \code{NULL} or if the reference model is of class \code{"datafit"}
+#'   (in which case one cluster is used). See also section "Details" below.
+#' @param nclusters Number of clusters of posterior draws to be projected.
+#'   Ignored if the reference model is of class \code{"datafit"} (in which case
+#'   one cluster is used). For the meaning of \code{NULL}, see argument
+#'   \code{ndraws}. See also section "Details" below.
 #' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
 #'   be used to ensure same results every time.
 #' @param regul Amount of ridge regularization when fitting the models in the
@@ -34,6 +39,11 @@
 #'   some models the projection can be ill-behaved and we need to add some
 #'   regularization to avoid numerical problems.
 #' @param ... Currently ignored.
+#'
+#' @details Using less draws or clusters in \code{ndraws} or \code{nclusters}
+#'   than posterior draws in the reference model may result in slightly
+#'   inaccurate projection performance. Increasing these arguments linearly
+#'   affects the computation time.
 #'
 #' @return A list of submodels (or a single submodel if projection was
 #'   performed onto a single variable combination), each of which contains the
@@ -98,10 +108,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if (inherits(refmodel, "datafit")) {
-    ndraws <- nclusters <- 1
-  }
-
   if (!is.null(solution_terms) &&
       any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
     ## search path not found, or the given variable combination
@@ -159,29 +165,19 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     }
   }
 
-  if (is.null(ndraws)) {
-    ndraws <- min(ndraws, NCOL(refmodel$mu))
-  } else {
-    if (ndraws > NCOL(refmodel$mu)) {
-      stop(
-        "Number of posterior draws exceeds the number of columns in the ",
-        "reference model's posterior."
-      )
-    }
-    if (is.null(nclusters)) {
-      nclusters <- ndraws
-    }
+  stopifnot(!is.null(ndraws))
+  ndraws <- min(NCOL(refmodel$mu), ndraws)
+
+  if (is.null(nclusters) && ndraws <= 20) {
+    nclusters <- ndraws
+  }
+  if (!is.null(nclusters)) {
+    nclusters <- min(NCOL(refmodel$mu), nclusters)
   }
 
-  if (is.null(nclusters)) {
+  if (inherits(refmodel, "datafit")) {
     nclusters <- 1
-  } else
-    if (nclusters > NCOL(refmodel$mu)) {
-      stop(
-        "Number of clusters exceeds the number of columns in the reference ",
-        "model's posterior."
-      )
-    }
+  }
 
   intercept <- refmodel$intercept
   family <- refmodel$family
