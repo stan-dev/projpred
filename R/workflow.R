@@ -592,9 +592,6 @@ approximate_kfold.vselsearch <- function(object,
       family = family
     )
     summ <- lapply(fold_summaries, data.frame)
-    if (verbose && cores == 1) {
-      utils::setTxtProgressBar(pb, fold$fold_index)
-    }
     return(summ)
   }
   sub <- apply(sub_cv_summaries, 1, hf)

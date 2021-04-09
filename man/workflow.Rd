@@ -82,7 +82,7 @@ approximate_kfold(object, ...)
   penalty = NULL,
   refit_proj = TRUE,
   seed = NULL,
-  cores = parallel::detectCores(),
+  cores = NULL,
   ...
 )
 
@@ -110,7 +110,7 @@ cv_loo(object, ...)
   thresh = 1e-06,
   regul = 1e-04,
   seed = NULL,
-  cores = parallel::detectCores(),
+  cores = NULL,
   search_terms = NULL,
   ...
 )
