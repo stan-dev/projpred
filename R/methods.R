@@ -161,6 +161,20 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew,
   return(.unlist_proj(preds))
 }
 
+#' @rdname proj-pred
+#' @export
+proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, transform = FALSE,
+                         integrated = FALSE, ...) {
+  ## proj_helper lapplies fun to each projection in object
+  proj_helper(
+    object = object, newdata = newdata, offsetnew = offsetnew,
+    weightsnew = weightsnew,
+    onesub_fun = proj_linpred_aux,
+    integrated = integrated, transform = transform, ...
+  )
+}
+
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, mu, weights, ...) {
   dot_args <- list(...)
@@ -187,20 +201,6 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   )))
 }
 
-#' @rdname proj-pred
-#' @export
-proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
-                         weightsnew = NULL, transform = FALSE,
-                         integrated = FALSE, ...) {
-  ## proj_helper lapplies fun to each projection in object
-  proj_helper(
-    object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew,
-    onesub_fun = proj_linpred_aux,
-    integrated = integrated, transform = transform, ...
-  )
-}
-
 compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
                         transform = FALSE) {
   if (!is.null(ynew)) {
@@ -224,19 +224,6 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
   }
 }
 
-## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, mu, weights, ...) {
-  dot_args <- list(...)
-  draw_inds <- sample(
-    x = seq_along(proj$weights), size = dot_args$size_sub,
-    replace = TRUE, prob = proj$weights
-  )
-
-  do.call(rbind, lapply(draw_inds, function(i) {
-    proj$family$ppd(mu[, i], proj$dis[i], weights)
-  }))
-}
-
 #' @rdname proj-pred
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
@@ -254,6 +241,19 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
     onesub_fun = proj_predict_aux,
     size_sub = size_sub, ...
   )
+}
+
+## function applied to each projected submodel in case of proj_predict()
+proj_predict_aux <- function(proj, mu, weights, ...) {
+  dot_args <- list(...)
+  draw_inds <- sample(
+    x = seq_along(proj$weights), size = dot_args$size_sub,
+    replace = TRUE, prob = proj$weights
+  )
+
+  do.call(rbind, lapply(draw_inds, function(i) {
+    proj$family$ppd(mu[, i], proj$dis[i], weights)
+  }))
 }
 
 #' Plot summary statistics related to variable selection
