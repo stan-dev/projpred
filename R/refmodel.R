@@ -324,10 +324,10 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     dis <- NULL
   }
 
-  cvfun <- function(folds) {
+  cvfun <- function(folds, ...) {
     cvres <- rstanarm::kfold(object,
       K = max(folds), save_fits = TRUE,
-      folds = folds
+      folds = folds, ...
     )
     fits <- cvres$fits[, "fit"]
     return(fits)
@@ -469,18 +469,18 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # cross-validation for datafit reference; see cv_varsel and get_kfold
   if (is.null(cvfun)) {
     if (inherits(object, "brmsfit")) {
-      cvfun <- function(folds) {
+      cvfun <- function(folds, ...) {
         cvres <- brms::kfold(
-          object,
-          K = max(folds),
-          save_fits = TRUE, folds = folds
+          object, K = max(folds),
+          save_fits = TRUE, folds = folds,
+          ...
         )
         fits <- cvres$fits[, "fit"]
         return(fits)
       }
     } else {
       if (!proper_model) {
-        cvfun <- function(folds) lapply(1:max(folds), function(k) list())
+        cvfun <- function(folds, ...) lapply(1:max(folds), function(k) list())
       } else if (is.null(cvfits)) {
         stop("Please provide either 'cvfun' or 'cvfits'.")
       }
