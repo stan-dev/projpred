@@ -101,6 +101,9 @@ proj_helper <- function(object, nterms_filter = NULL, newdata,
   if (inherits(object, "projection") ||
     (length(object) > 0 && inherits(object[[1]], "projection"))) {
     if (!is.null(nterms_filter)) {
+      if (!.is_proj_list(object)) {
+        object <- list(object)
+      }
       projs <- Filter(function(x) {
         count_terms_chosen(x$solution_terms) %in% (nterms_filter + 1)
       }, object)
