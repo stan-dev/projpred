@@ -159,8 +159,10 @@ test_that("summary.vsel stops if baseline = 'ref' and deltas = TRUE", {
   )
 })
 
-test_that(paste("output of project is sensible with only data provided as" <
-  "reference model"), {
+test_that(paste(
+  "output of project is sensible with only data provided as",
+  "reference model"
+), {
   for (i in 1:length(vsd_list)) {
 
     # length of output of project is legit
