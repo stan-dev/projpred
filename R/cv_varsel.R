@@ -196,8 +196,8 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
                   ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
                   cv_search = cv_search, nterms_max = nterms_max - 1,
                   intercept = intercept, penalty = penalty, verbose = verbose,
-                  lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
-                  search_terms = search_terms, seed = seed
+                  lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
+                  regul = regul, search_terms = search_terms, seed = seed
     )
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
@@ -455,10 +455,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_k, submodels[[k]]$dis,
         y[inds], refmodel$wobs
       ))
-      sub_psisloo <- suppressWarnings(loo::psis(-log_lik_sub,
-                                                cores = 1,
-                                                r_eff = rep(1, ncol(log_lik_sub))
-      ))
+      sub_psisloo <- suppressWarnings(
+        loo::psis(-log_lik_sub,
+                  cores = 1,
+                  r_eff = rep(1, ncol(log_lik_sub)))
+      )
       lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
       loo_sub[inds, k] <- apply(
         log_lik_sub[,] + lw_sub[,], 2,

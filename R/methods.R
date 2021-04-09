@@ -78,7 +78,8 @@
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+#'                             data=data, chains=2, iter=500)
 #'   vs <- varsel(fit)
 #'
 #'   # compute predictions with 4 variables at the training points
@@ -424,7 +425,8 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+#'                             data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
 #'   plot(vs)
 #'
@@ -720,7 +722,8 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
   }
   bound <- type
   stats <- summary.vsel(object,
-                        stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
+                        stats = stat, alpha = alpha,
+                        type = c("mean", "upper", "lower"),
                         baseline = baseline, deltas = TRUE
   )$selection
   util_null <- sgn * unlist(unname(subset(

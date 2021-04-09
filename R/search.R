@@ -64,10 +64,12 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   ## carried until all the way down to the least regularization also for model
   ## size nterms_max)
   search <- glm_elnet(d_train$x, mu, family,
-                      lambda_min_ratio = opt$lambda_min_ratio, nlambda = opt$nlambda,
-                      pmax = nterms_max + 1, pmax_strict = FALSE, offset = d_train$offset,
-                      weights = d_train$weights, intercept = intercept, obsvar = v,
-                      penalty = penalty, thresh = opt$thresh)
+                      lambda_min_ratio = opt$lambda_min_ratio,
+                      nlambda = opt$nlambda,
+                      pmax = nterms_max + 1, pmax_strict = FALSE,
+                      offset = d_train$offset, weights = d_train$weights,
+                      intercept = intercept, obsvar = v, penalty = penalty,
+                      thresh = opt$thresh)
 
   ## sort the variables according to the order in which they enter the model in
   ## the L1-path

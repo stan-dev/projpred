@@ -52,7 +52,9 @@ remove_duplicates <- function(formula) {
              perl = TRUE
     )
   ))
-  additive <- trimws(unique(unlist(strsplit(paste0(additive, collapse = ","), ","))))
+  additive <- trimws(unique(unlist(
+    strsplit(paste0(additive, collapse = ","), ",")
+  )))
   dups <- linear[!is.na(match(linear, additive))]
   if (length(dups) > 0) {
     update(formula, as.formula(paste0(
@@ -271,7 +273,9 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
              perl = TRUE
     )
   ))
-  additive <- trimws(unique(unlist(strsplit(paste0(additive, collapse = ","), ","))))
+  additive <- trimws(unique(unlist(
+    strsplit(paste0(additive, collapse = ","), ",")
+  )))
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
     group_split <- unlist(lapply(group_terms, split_group_term,
@@ -481,9 +485,9 @@ split_group_term <- function(term, add_main_effects = TRUE) {
     group_terms <- c(group_terms, lapply(int_v, function(v) {
       paste0(
         split_interaction_term(v, add_main_effects = add_main_effects),
-        " + ", "(0 + ", split_interaction_term(v,
-                                               add_main_effects = add_main_effects
-        ), " | ", group, ")"
+        " + ", "(0 + ",
+        split_interaction_term(v, add_main_effects = add_main_effects),
+        " | ", group, ")"
       )
     }))
   }

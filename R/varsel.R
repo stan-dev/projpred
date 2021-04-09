@@ -162,7 +162,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   ## statistics for the selected submodels
   p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
-                          family = family, p_ref = p_pred, refmodel = refmodel, intercept = intercept,
+                          family = family, p_ref = p_pred, refmodel = refmodel,
+                          intercept = intercept,
                           regul = regul, cv_search = cv_search
   )
   sub <- .get_sub_summaries(

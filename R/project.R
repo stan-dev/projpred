@@ -70,7 +70,8 @@
 #'   # project onto the best model with 4 variables
 #'   proj4 <- project(vs, nterms = 4)
 #'
-#'   # project onto an arbitrary variable combination (variable indices 1, 3 and 5)
+#'   # project onto an arbitrary variable combination (variable indices 1, 3
+#'   # and 5)
 #'   proj <- project(fit, solution_terms = c(1, 3, 5))
 #' }
 #' }

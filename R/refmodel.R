@@ -231,8 +231,10 @@ get_refmodel.default <- function(object, data, formula, ref_predfun,
   }
 
   refmodel <- init_refmodel(object, data, formula, family, ref_predfun,
-                            div_minimizer, proj_predfun, extract_model_data = extract_model_data,
-                            cvfits = cvfits, folds = folds, cvfun = cvfun, dis = dis
+                            div_minimizer, proj_predfun,
+                            extract_model_data = extract_model_data,
+                            cvfits = cvfits, folds = folds, cvfun = cvfun,
+                            dis = dis
   )
   return(refmodel)
 }

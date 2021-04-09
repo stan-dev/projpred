@@ -119,12 +119,12 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       scaled_data <- preprocess_data(data, formula)
-      fit_gamm_callback(formula, random = random,
-                        data = scaled_data, weights = weights, family = family,
-                        control = control_callback(family,
-                                                   optimizer = "optimx",
-                                                   optCtrl = list(method = "nlminb")
-                        )
+      fit_gamm_callback(
+        formula, random = random,
+        data = scaled_data, weights = weights, family = family,
+        control = control_callback(family,
+                                   optimizer = "optimx",
+                                   optCtrl = list(method = "nlminb"))
       )
     } else {
       stop(e)
@@ -175,12 +175,12 @@ fit_glmer_callback <- function(formula, data, family, weights,
                                     weights = weights, ...
       ))
     } else if (grepl("not positive definite", as.character(e))) {
-      return(fit_glmer_callback(formula,
-                                data = data, weights = weights, family = family,
-                                control = control_callback(family,
-                                                           optimizer = "optimx",
-                                                           optCtrl = list(method = "nlminb")
-                                )
+      return(fit_glmer_callback(
+        formula,
+        data = data, weights = weights, family = family,
+        control = control_callback(family,
+                                   optimizer = "optimx",
+                                   optCtrl = list(method = "nlminb"))
       ))
     } else if (grepl("PIRLS step-halvings", as.character(e))) {
       data <- preprocess_data(data, formula)

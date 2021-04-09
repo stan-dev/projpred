@@ -83,7 +83,8 @@
     ## reference model statistics
     summ <- summ_ref
     res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-                    mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
+                    mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w,
+                    alpha = alpha
     )
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
@@ -117,11 +118,12 @@
       } else {
         ## normal case
         res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-                        mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w, alpha = alpha
+                        mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w,
+                        alpha = alpha
         )
         diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-                         mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd, weights = summ$w,
-                         alpha = alpha
+                         mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
+                         weights = summ$w, alpha = alpha
         )
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
