@@ -23,21 +23,24 @@
 #'   genuine reference models and \code{FALSE} if \code{object} is datafit (see
 #'   \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws used in the variable selection.
-#'   Cannot be larger than the number of draws in the reference model. Ignored
-#'   if \code{nclusters} is set. Default is 20. In other words, we project a
-#'   single draw from each cluster.
-#' @param nclusters Number of clusters used for selection. Defaults to 20 and
-#'   ignored if \code{method = "L1"} (L1-search uses always one cluster). If
-#'   \code{nclusters} is \code{NULL} we use as many clusters as draws to
-#'   project.
-#' @param ndraws_pred Number of projected draws used for prediction (after
-#'   selection). Ignored if \code{nclusters_pred} is given. Note that setting
-#'   less draws or clusters than posterior draws in the reference model may
-#'   result in slightly inaccurate projection performance, although increasing
-#'   this argument linearly affects the computation time.
-#' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 400. If \code{NULL}, we use as many clusters for
-#'   prediction as ndraws_pred.
+#'   Cannot be larger than the number of draws in the reference model.
+#'   \strong{Caution:} For \code{ndraws <= 20}, the value for \code{ndraws} is
+#'   passed to \code{nclusters} (so that clustering is used). Ignored if
+#'   \code{nclusters} is not \code{NULL} or if \code{method = "L1"} (L1 search
+#'   uses always one cluster). See also section "Details" below.
+#' @param nclusters Number of clusters of posterior draws used in the variable
+#'   selection. Ignored if \code{method = "L1"} (L1 search uses always one
+#'   cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
+#'   also section "Details" below.
+#' @param ndraws_pred Number of posterior draws used for prediction (after
+#'   selection). Cannot be larger than the number of draws in the reference
+#'   model. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
+#'   \code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering
+#'   is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
+#'   section "Details" below.
+#' @param nclusters_pred Number of clusters of posterior draws used for
+#'   prediction (after selection). For the meaning of \code{NULL}, see argument
+#'   \code{ndraws_pred}. See also section "Details" below.
 #' @param nterms_max Maximum number of variables until which the selection is
 #'   continued. Defaults to \code{min(20, D, floor(0.4 * n))} where \code{n} is
 #'   the number of observations and \code{D} the number of variables.
@@ -66,6 +69,11 @@
 #' @param seed Random seed used when clustering the posterior draws.
 #' @param ... Additional arguments to be passed to the \code{get_refmodel}
 #'   function.
+#'
+#' @details Using less draws or clusters in \code{ndraws}, \code{nclusters},
+#'   \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
+#'   reference model may result in slightly inaccurate projection performance.
+#'   Increasing these arguments linearly affects the computation time.
 #'
 #' @return An object of type \code{vsel} that contains information about the
 #'   feature selection. The fields are not meant to be accessed directly by the
@@ -103,7 +111,7 @@ varsel.default <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
-                            ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
+                            ndraws = 20, nclusters = NULL, ndraws_pred = 400,
                             nclusters_pred = NULL, cv_search = TRUE,
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
@@ -302,9 +310,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if (is.null(ndraws)) {
-    ndraws <- 20
-  }
+  stopifnot(!is.null(ndraws))
   ndraws <- min(NCOL(refmodel$mu), ndraws)
 
   if (is.null(nclusters) && ndraws <= 20) {
@@ -318,9 +324,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters <- 1
   }
 
-  if (is.null(ndraws_pred)) {
-    ndraws_pred <- 400
-  }
+  stopifnot(!is.null(ndraws_pred))
   ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
 
   if (is.null(nclusters_pred) && ndraws_pred <= 20) {

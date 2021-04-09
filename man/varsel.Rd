@@ -14,9 +14,9 @@ varsel(object, ...)
   object,
   d_test = NULL,
   method = NULL,
-  ndraws = NULL,
+  ndraws = 20,
   nclusters = NULL,
-  ndraws_pred = NULL,
+  ndraws_pred = 400,
   nclusters_pred = NULL,
   cv_search = TRUE,
   nterms_max = NULL,
@@ -50,24 +50,27 @@ Default is 'forward' if the number of variables in the full data is at most
 20, and \code{'L1'} otherwise.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
-Cannot be larger than the number of draws in the reference model. Ignored
-if \code{nclusters} is set. Default is 20. In other words, we project a
-single draw from each cluster.}
+Cannot be larger than the number of draws in the reference model.
+\strong{Caution:} For \code{ndraws <= 20}, the value for \code{ndraws} is
+passed to \code{nclusters} (so that clustering is used). Ignored if
+\code{nclusters} is not \code{NULL} or if \code{method = "L1"} (L1 search
+uses always one cluster). See also section "Details" below.}
 
-\item{nclusters}{Number of clusters used for selection. Defaults to 20 and
-ignored if \code{method = "L1"} (L1-search uses always one cluster). If
-\code{nclusters} is \code{NULL} we use as many clusters as draws to
-project.}
+\item{nclusters}{Number of clusters of posterior draws used in the variable
+selection. Ignored if \code{method = "L1"} (L1 search uses always one
+cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
+also section "Details" below.}
 
-\item{ndraws_pred}{Number of projected draws used for prediction (after
-selection). Ignored if \code{nclusters_pred} is given. Note that setting
-less draws or clusters than posterior draws in the reference model may
-result in slightly inaccurate projection performance, although increasing
-this argument linearly affects the computation time.}
+\item{ndraws_pred}{Number of posterior draws used for prediction (after
+selection). Cannot be larger than the number of draws in the reference
+model. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
+\code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering
+is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
+section "Details" below.}
 
-\item{nclusters_pred}{Number of clusters used for prediction (after
-selection). Default is 400. If \code{NULL}, we use as many clusters for
-prediction as ndraws_pred.}
+\item{nclusters_pred}{Number of clusters of posterior draws used for
+prediction (after selection). For the meaning of \code{NULL}, see argument
+\code{ndraws_pred}. See also section "Details" below.}
 
 \item{cv_search}{If \code{TRUE}, then the projected coefficients after
 L1-selection are computed without any penalization (or using only the
@@ -122,6 +125,12 @@ An object of type \code{vsel} that contains information about the
 Perform the projection predictive variable selection for generalized linear
 models, generalized linear and additive multilevel models using generic
 reference models.
+}
+\details{
+Using less draws or clusters in \code{ndraws}, \code{nclusters},
+  \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
+  reference model may result in slightly inaccurate projection performance.
+  Increasing these arguments linearly affects the computation time.
 }
 \examples{
 \donttest{
