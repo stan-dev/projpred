@@ -118,11 +118,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew,
   }
 
   names(projs) <- sapply(projs, function(proj) {
-    if (length(proj$solution_terms) > 1) {
-      count_terms_chosen(proj$solution_terms)
-    } else {
-      1
-    }
+    count_terms_chosen(proj$solution_terms)
   })
 
   solution_terms <- list(...)$solution_terms
