@@ -8,6 +8,7 @@
 
 * Fixed a bug when using weights or offsets e.g. in `proj_linpred()`. (GitHub: #114)
 * Fixed a bug causing `varsel()`/`make_formula` to fail with multidimensional interaction terms. (GitHub: #102, #103)
+* Fixed an indexing bug in `cv_varsel()` for models with a single predictor.
 
 ## projpred 2.0.5
 
