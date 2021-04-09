@@ -580,7 +580,10 @@ approximate_kfold.vselsearch <- function(object,
   }
 
   ## compute fold summaries in parallel
-  sub_cv_summaries <- foreach::foreach(i = seq_along(list_cv)) %dorng% {
+  sub_cv_summaries <- foreach::foreach(
+    i = seq_along(list_cv),
+    .combine = "cbind"
+  ) %dorng% {
     fold <- list_cv[[i]]
     sub <- p_sub[[i]]
     omitted <- fold$d_test$omitted
@@ -589,19 +592,17 @@ approximate_kfold.vselsearch <- function(object,
       family = family
     )
     summ <- lapply(fold_summaries, data.frame)
-    ## shut verbose down for parallelization?
-    ## if (verbose) {
-    ##   utils::setTxtProgressBar(pb, fold$fold_index)
-    ## }
+    if (verbose && cores == 1) {
+      utils::setTxtProgressBar(pb, fold$fold_index)
+    }
     return(summ)
   }
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
-      summ$w <- rep(1, length(summ$mu))
-      summ$w <- summ$w / sum(summ$w)
-      summ
+    summ$w <- rep(1, length(summ$mu))
+    summ$w <- summ$w / sum(summ$w)
+    summ
   })
-
   if (verbose && cores == 1) {
     close(pb)
   }
