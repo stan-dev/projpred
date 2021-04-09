@@ -39,8 +39,7 @@ Imports:
     gamm4,
     doFuture,
     doRNG,
-    foreach,
-    future.apply
+    foreach
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 LazyData: TRUE

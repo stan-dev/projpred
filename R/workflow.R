@@ -1198,24 +1198,20 @@ cv_kfold.vselapproxcv <- function(object,
     }
   }
 
-  search_path_cv <- future.apply::future_lapply(
-    seq_along(list_cv),
-    function(fold_index) {
-      fold <- list_cv[[fold_index]]
-      family <- fold$refmodel$family
-      out <- select(
-        method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
-        family = family, intercept = TRUE, nterms_max = nterms_max,
-        penalty = penalty, verbose = FALSE, opt = opt,
-        search_terms = search_terms
-      )
-      if (verbose && cores == 1) {
-        utils::setTxtProgressBar(pb, fold_index)
-      }
-      out
-    },
-    future.seed = TRUE
-  )
+  search_path_cv <- foreach::foreach(i = seq_along(list_cv)) %dorng% {
+    fold <- list_cv[[i]]
+    family <- fold$refmodel$family
+    out <- select(
+      method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
+      family = family, intercept = TRUE, nterms_max = nterms_max,
+      penalty = penalty, verbose = FALSE, opt = opt,
+      search_terms = search_terms
+    )
+    if (verbose && cores == 1) {
+      utils::setTxtProgressBar(pb, fold$fold_index)
+    }
+    return(out)
+  }
 
   solution_terms_cv <- t(sapply(search_path_cv, function(e) e$solution_terms))
   if (verbose && cores == 1) {
@@ -1236,27 +1232,21 @@ cv_kfold.vselapproxcv <- function(object,
     }
   }
 
-  get_submodels_cv <- function(search_path, fold_index) {
-    fold <- list_cv[[fold_index]]
-    family <- fold$refmodel$family
-    solution_terms <- search_path$solution_terms
+  p_sub <- foreach::foreach(i = seq_along(list_cv)) %dorng% {
+    fold <- list_cv[[i]]
+    search_path <- search_path_cv[[i]]
     p_sub <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
-      family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
-      intercept = TRUE, regul = opt$regul, cv_search = TRUE
+      family = fold$refmodel$family, p_ref = fold$p_pred,
+      refmodel = fold$refmodel, intercept = TRUE,
+      regul = object$search_path$control$opt$regul, cv_search = TRUE
     )
     if (verbose && cores == 1) {
-      utils::setTxtProgressBar(pb, fold_index)
+      utils::setTxtProgressBar(pb, fold$fold_index)
     }
     return(p_sub)
   }
 
-  p_sub_cv <- future.apply::future_mapply(get_submodels_cv,
-    search_path_cv,
-    seq_along(list_cv),
-    future.seed = seed,
-    SIMPLIFY = FALSE
-  )
   if (verbose && cores == 1) {
     close(pb)
   }
@@ -1268,19 +1258,20 @@ cv_kfold.vselapproxcv <- function(object,
   ## Apply some magic to manipulate the structure of the list so that instead of
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
-  get_summaries_submodel_cv <- function(p_sub, fold) {
+  sub_cv_summaries <- foreach::foreach(
+    i = seq_along(list_cv),
+    .combine = "cbind"
+  ) %dorng% {
+    fold <- list_cv[[i]]
+    sub <- p_sub[[i]]
     omitted <- fold$d_test$omitted
     fold_summaries <- .get_sub_summaries(
-      submodels = p_sub, test_points = omitted, refmodel = refmodel,
+      submodels = sub, test_points = omitted, refmodel = refmodel,
       family = family
     )
     summ <- lapply(fold_summaries, data.frame)
     return(summ)
   }
-  sub_cv_summaries <- future.apply::future_mapply(
-    get_summaries_submodel_cv,
-    p_sub_cv, list_cv
-  )
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
     summ$w <- rep(1, length(summ$mu))
