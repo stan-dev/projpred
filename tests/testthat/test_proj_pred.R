@@ -298,8 +298,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that("proj_linpred: providing newdata as a data frame works as expected",
-  {
+  test_that(paste(
+    "proj_linpred: providing newdata as a data frame works as expected"
+  ), {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       y <- proj_solution_terms_list[[i]]$refmodel$y
