@@ -303,23 +303,31 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   }
 
   if (is.null(ndraws)) {
-    ndraws <- min(NCOL(refmodel$mu), 20)
+    ndraws <- 20
   }
+  ndraws <- min(NCOL(refmodel$mu), ndraws)
 
   if (is.null(nclusters) && ndraws <= 20) {
-    nclusters <- ndraws <- min(NCOL(refmodel$mu), ndraws)
+    nclusters <- ndraws
+  }
+  if (!is.null(nclusters)) {
+    nclusters <- min(NCOL(refmodel$mu), nclusters)
   }
 
   if (method == "l1") {
-    ndraws <- nclusters <- 1
+    nclusters <- 1
   }
 
   if (is.null(ndraws_pred)) {
-    ndraws_pred <- min(NCOL(refmodel$mu), 400)
+    ndraws_pred <- 400
   }
+  ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
 
   if (is.null(nclusters_pred) && ndraws_pred <= 20) {
-    nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
+    nclusters_pred <- ndraws_pred
+  }
+  if (!is.null(nclusters_pred)) {
+    nclusters_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
   max_nv_possible <- count_terms_in_formula(refmodel$formula)
