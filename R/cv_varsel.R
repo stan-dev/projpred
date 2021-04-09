@@ -219,6 +219,10 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
       }
     }
   )
+  ## make sure it's always a matrix
+  solution_terms_cv_ch <- matrix(solution_terms_cv_ch,
+    ncol = length(solution_terms)
+  )
 
   ## these weights might be non-constant in case of subsampling LOO
   sel_solution_terms <- sel$solution_terms
