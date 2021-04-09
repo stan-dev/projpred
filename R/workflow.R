@@ -527,25 +527,24 @@ approximate_kfold.vselsearch <- function(object,
 
   ## Construct submodel projections for each fold
   if (verbose) {
-    print(paste0(
+    verbose_msg <- paste0(
       "Computing kfold for ", K, " folds for ",
-      length(solution_terms), " models."
-    ))
-    pb <- utils::txtProgressBar(
-      min = 0, max = K,
-      style = 3, initial = 0
+      length(solution_terms), " models"
     )
-  }
-
-  get_submodels_cv <- function(fold) {
-    p_sub <- .get_submodels(
-      search_path = object, nterms = c(0, seq_along(solution_terms)),
-      family = fold$refmodel$family, p_ref = fold$p_pred,
-      refmodel = fold$refmodel, intercept = TRUE,
-      regul = object$control$opt$regul, cv_search = refit_proj
-    )
-
-    return(p_sub)
+    if (cores > 1) {
+      verbose_msg <- paste0(verbose_msg,
+      " distributed over ", cores, " cores."
+      )
+    } else {
+      verbose_msg <- paste0(verbose_msg, ".")
+    }
+    print(verbose_msg)
+    if (cores == 1) {
+      pb <- utils::txtProgressBar(
+        min = 0, max = K,
+        style = 3, initial = 0
+      )
+    }
   }
 
   ## fit fold projections in parallel
@@ -557,6 +556,9 @@ approximate_kfold.vselsearch <- function(object,
       refmodel = fold$refmodel, intercept = TRUE,
       regul = object$control$opt$regul, cv_search = refit_proj
     )
+    if (verbose && cores == 1) {
+      utils::setTxtProgressBar(pb, fold$fold_index)
+    }
     return(p_sub)
   }
 
@@ -574,9 +576,6 @@ approximate_kfold.vselsearch <- function(object,
       family = family
     )
     summ <- lapply(fold_summaries, data.frame)
-    if (verbose) {
-      utils::setTxtProgressBar(pb, fold$fold_index)
-    }
     return(summ)
   }
 
@@ -603,7 +602,7 @@ approximate_kfold.vselsearch <- function(object,
       summ
   })
 
-  if (verbose) {
+  if (verbose && cores == 1) {
     close(pb)
   }
 
@@ -876,9 +875,16 @@ cv_loo.vselapproxcv <- function(object,
   }
 
   if (verbose) {
-    msg <- paste("Repeating", method, "search for", nloo, "LOO folds...")
+    msg <- paste("Repeating", method, "search for", nloo, "LOO folds")
+    if (cores > 1) {
+      msg <- paste0(msg, " distributed over ", cores, " cores.")
+    } else {
+      msg <- paste0(msg, ".")
+    }
     print(msg)
-    pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+    if (cores == 1) {
+      pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+    }
   }
 
   start <- Sys.time()
@@ -969,7 +975,7 @@ cv_loo.vselapproxcv <- function(object,
       solution_terms_cv[not_in_solution] <- NA
     }
 
-    if (verbose) {
+    if (verbose && cores == 1) {
       utils::setTxtProgressBar(pb, run_index)
     }
     return(nlist(i, mu_sub, loo_sub, solution_terms_cv))
@@ -980,7 +986,7 @@ cv_loo.vselapproxcv <- function(object,
   loo_sub <- r$loo_sub
   solution_terms_cv <- r$solution_terms_cv
 
-  if (verbose) {
+  if (verbose && cores == 1) {
     ## close the progress bar object
     close(pb)
   }
@@ -1182,9 +1188,18 @@ cv_kfold.vselapproxcv <- function(object,
   ## Perform the selection for each of the K folds
   start <- Sys.time()
   if (verbose) {
-      print(paste0("Repeating ", method, " search for ", K, " folds.."))
+    msg <- paste0("Repeating ", method, " search for ", K, " folds")
+    if (cores > 1) {
+      msg <- paste0(msg, " distributed over ", cores, " cores.")
+    } else {
+      msg <- paste0(msg, ".")
+    }
+    print(msg)
+    if (cores == 1) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
+    }
   }
+
   search_path_cv <- future.apply::future_lapply(
     seq_along(list_cv),
     function(fold_index) {
@@ -1196,7 +1211,7 @@ cv_kfold.vselapproxcv <- function(object,
         penalty = penalty, verbose = FALSE, opt = opt,
         search_terms = search_terms
       )
-      if (verbose) {
+      if (verbose && cores == 1) {
         utils::setTxtProgressBar(pb, fold_index)
       }
       out
@@ -1205,14 +1220,22 @@ cv_kfold.vselapproxcv <- function(object,
   )
 
   solution_terms_cv <- t(sapply(search_path_cv, function(e) e$solution_terms))
-  if (verbose) {
-      close(pb)
+  if (verbose && cores == 1) {
+    close(pb)
   }
 
   ## Construct submodel projections for each fold
   if (verbose) {
-      print("Computing projections..")
+    msg <- "Computing projections"
+    if (cores > 1) {
+      msg <- paste0(msg, " distributed over ", cores, " cores.")
+    } else {
+      msg <- paste0(msg, ".")
+    }
+    print(msg)
+    if (cores == 1) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
+    }
   }
 
   get_submodels_cv <- function(search_path, fold_index) {
@@ -1224,7 +1247,7 @@ cv_kfold.vselapproxcv <- function(object,
       family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
       intercept = TRUE, regul = opt$regul, cv_search = TRUE
     )
-    if (verbose) {
+    if (verbose && cores == 1) {
       utils::setTxtProgressBar(pb, fold_index)
     }
     return(p_sub)
@@ -1236,7 +1259,7 @@ cv_kfold.vselapproxcv <- function(object,
     future.seed = seed,
     SIMPLIFY = FALSE
   )
-  if (verbose) {
+  if (verbose && cores == 1) {
     close(pb)
   }
 
@@ -1248,13 +1271,13 @@ cv_kfold.vselapproxcv <- function(object,
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
   get_summaries_submodel_cv <- function(p_sub, fold) {
-      omitted <- fold$d_test$omitted
-      fold_summaries <- .get_sub_summaries(
-          submodels = p_sub, test_points = omitted, refmodel = refmodel,
-          family = family
-      )
-      summ <- lapply(fold_summaries, data.frame)
-      return(summ)
+    omitted <- fold$d_test$omitted
+    fold_summaries <- .get_sub_summaries(
+      submodels = p_sub, test_points = omitted, refmodel = refmodel,
+      family = family
+    )
+    summ <- lapply(fold_summaries, data.frame)
+    return(summ)
   }
   sub_cv_summaries <- future.apply::future_mapply(
     get_summaries_submodel_cv,
@@ -1262,27 +1285,27 @@ cv_kfold.vselapproxcv <- function(object,
   )
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
-      summ$w <- rep(1, length(summ$mu))
-      summ$w <- summ$w / sum(summ$w)
-      summ
+    summ$w <- rep(1, length(summ$mu))
+    summ$w <- summ$w / sum(summ$w)
+    summ
   })
 
   ref <- hf(lapply(list_cv, function(fold) {
-      data.frame(.weighted_summary_means(
-          y_test = fold$d_test, family = family,
-          wsample = fold$refmodel$wsample,
-          mu = fold$mu_test, dis = fold$refmodel$dis
-      ))
+    data.frame(.weighted_summary_means(
+      y_test = fold$d_test, family = family,
+      wsample = fold$refmodel$wsample,
+      mu = fold$mu_test, dis = fold$refmodel$dis
+    ))
   }))
 
   end <- Sys.time()
   ## Combine also the K separate test data sets into one list
   ## with n y's and weights's.
   d_cv <- hf(lapply(d_test_cv, function(fold) {
-      data.frame(
-          y = fold$y, weights = fold$weights,
-          test_points = fold$omitted
-      )
+    data.frame(
+      y = fold$y, weights = fold$weights,
+      test_points = fold$omitted
+    )
   }))
 
   ## these weights might be non-constant in case of subsampling LOO
@@ -1292,19 +1315,19 @@ cv_kfold.vselapproxcv <- function(object,
   w <- w / sum(w)
   vars <- unlist(solution_terms)
   pct_solution_terms_cv <- t(sapply(
-      seq_along(solution_terms),
-      function(size) {
-          c(
-              size = size,
-              sapply(vars, function(var) {
-                  sum((sel_solution_terms[seq_len(size), ,
-                      drop = FALSE
-                  ] == var) * w,
-                  na.rm = TRUE
-                  )
-              })
-          )
-      }
+    seq_along(solution_terms),
+    function(size) {
+      c(
+        size = size,
+        sapply(vars, function(var) {
+          sum((sel_solution_terms[seq_len(size), ,
+                                  drop = FALSE
+                                  ] == var) * w,
+              na.rm = TRUE
+              )
+        })
+      )
+    }
   ))
 
   search_path$refmodel <- refmodel
@@ -1362,7 +1385,7 @@ summary.vselcv <- function(object, stats = "elpd",
   )
   out$stats_table <- stats_table
   out$diagnostic <- diagnostic(stats_table)
-  
+
   return(out)
 }
 
