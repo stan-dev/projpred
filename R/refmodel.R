@@ -165,12 +165,16 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     weights <- eval_rhs(wrhs, newdata)
   } else if (is.null(wrhs)) {
     weights <- rep(1, NROW(newdata))
+  } else {
+    weights <- wrhs
   }
 
   if (inherits(orhs, "formula")) {
     offset <- eval_rhs(orhs, newdata)
   } else if (is.null(orhs)) {
     offset <- rep(0, NROW(newdata))
+  } else {
+    offset <- orhs
   }
 
   if (inherits(resp_form, "formula")) {
