@@ -557,7 +557,7 @@ approximate_kfold.vselsearch <- function(object,
       regul = object$control$opt$regul, cv_search = refit_proj
     )
     if (verbose && cores == 1) {
-      utils::setTxtProgressBar(pb, fold$fold_index)
+      utils::setTxtProgressBar(pb, i)
     }
     return(p_sub)
   }
@@ -1208,7 +1208,7 @@ cv_kfold.vselapproxcv <- function(object,
       search_terms = search_terms
     )
     if (verbose && cores == 1) {
-      utils::setTxtProgressBar(pb, fold$fold_index)
+      utils::setTxtProgressBar(pb, i)
     }
     return(out)
   }
@@ -1242,7 +1242,7 @@ cv_kfold.vselapproxcv <- function(object,
       regul = object$search_path$control$opt$regul, cv_search = TRUE
     )
     if (verbose && cores == 1) {
-      utils::setTxtProgressBar(pb, fold$fold_index)
+      utils::setTxtProgressBar(pb, i)
     }
     return(p_sub)
   }
@@ -1488,6 +1488,7 @@ varsel_cv.vselapproxcv <- function(object,
                                    seed = NULL,
                                    search_terms = NULL,
                                    cv_search = TRUE,
+                                   cores = NULL,
                                    ...) {
   search_path <- object$search_path
   refmodel <- search_path$refmodel
@@ -1524,12 +1525,14 @@ varsel_cv.vselapproxcv <- function(object,
           ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
           nterms_max = nterms_max, nloo = nloo, penalty = penalty,
           lambda_min_ratio = lambda_min_ratio, thresh = thresh,
-          regul = regul, seed = seed, search_terms = search_terms
+          regul = regul, seed = seed, search_terms = search_terms,
+          cores = cores
       )
     } else {
       sel_cv <- approximate_loo(search_path,
           ndraws_pred = ndraws_pred, penalty = penalty,
-          nclusters_pred = nclusters_pred, nloo = nloo
+          nclusters_pred = nclusters_pred, nloo = nloo,
+          cores = cores
       )
     }
   } else if (tolower(cv_method) == "kfold") {
@@ -1540,12 +1543,13 @@ varsel_cv.vselapproxcv <- function(object,
           nterms_max = nterms_max, nloo = nloo, penalty = penalty,
           lambda_min_ratio = lambda_min_ratio, thresh = thresh,
           regul = regul, seed = seed, search_terms = search_terms,
-          K = K
+          K = K, cores = cores
       )
     } else {
       sel_cv <- approximate_kfold(search_path,
           ndraws_pred = ndraws_pred, penalty = penalty,
-          nclusters_pred = nclusters_pred, nloo = nloo, K = K
+          nclusters_pred = nclusters_pred, nloo = nloo, K = K,
+          cores = cores
       )
     }
   }
