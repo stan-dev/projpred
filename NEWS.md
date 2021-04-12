@@ -11,6 +11,8 @@
 
 ## Minor changes
 
+* Minor documentation improvements.
+* Minor improvements of error messages.
 * For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2ff6f981ab0e4be06b9aaf694dcaa27afa8)
 
 ### Bug fixes
@@ -20,6 +22,7 @@
 * Fixed an indexing bug in `cv_varsel()` for models with a single predictor. (GitHub: #115)
 * Fixed bugs for argument `nterms` of `proj_linpred()` and `proj_predict()`. (GitHub: #110)
 * Fixed an inconsistency for some intercept-only submodels. (GitHub: #119)
+* Minor documentation fixes.
 
 ## projpred 2.0.5
 
@@ -27,8 +30,6 @@
 
 * For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below). (GitHub: #82)
 * Internally, the seed is not fixed to a specific value when `NULL`. (GitHub: #84)
-* Minor documentation improvements.
-* Minor improvements of error messages.
 
 ### Bug fixes
 
@@ -40,7 +41,6 @@
 * Fixed a bug in `cv_varsel()`, causing an error in case of `!validate_search && cv_method != "LOO"`. (GitHub: #95)
 * Fixed bugs related to the setting of the seed. (GitHub: commit 02cd50db76b0f2d835ce8f8f39cbe94353540d64)
 * Fixed a bug causing `proj_linpred()` to raise an error if argument `newdata` was `NULL`. (GitHub: #97)
-* Minor documentation fixes.
 * Fixed an incorrect usage of the dispersion parameter values when calculating output element `lpd` in `proj_linpred()` (for `integrated = TRUE` as well as for `integrated = FALSE`). (GitHub: #105)
 * Fixed bugs in `proj_linpred()`'s calculation of output element `lpd` (for `integrated = TRUE`). (GitHub: #106, #112)
 * Fixed an inconsistency in the dimensions of `proj_linpred()`'s output elements `pred` and `lpd` (for `integrated = FALSE`): Now, they are both S x N matrices, with S denoting the number of (possibly clustered) posterior draws and N denoting the number of observations. (GitHub: #107, #112)
