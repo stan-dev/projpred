@@ -71,6 +71,10 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       ## reuse sub_fit as projected during search
       sub_refit <- search_path$sub_fits[[nterms + 1]]
 
+      if (length(solution_terms) == 0 && intercept) {
+        solution_terms <- "1"
+      }
+
       return(.init_submodel(
         sub_fit = sub_refit, p_ref = p_sel, refmodel = refmodel,
         family = family, solution_terms = solution_terms,

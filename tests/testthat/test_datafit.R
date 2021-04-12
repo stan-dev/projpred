@@ -181,7 +181,9 @@ test_that(paste("output of project is sensible with only data provided as" <
       }
       # j:th element should have j-1 variables
       expect_equal(length(which(p[[j]]$sub_fit$beta != 0)), j - 1)
-      expect_equal(length(p[[j]]$solution_terms), j - 1)
+      if (j > 1) {
+        expect_equal(length(p[[j]]$solution_terms), j - 1)
+      }
       # family kl
       expect_equal(p[[j]]$family, vsd_list[[i]]$family)
     }
