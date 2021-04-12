@@ -29,6 +29,32 @@ test_that(paste(
   expect_length(tt$response, 1)
 })
 
+test_that(paste(
+  "check that we recover the correct terms for a simple ",
+  "additive model without interactions"
+), {
+  formula <- y ~ x + s(z)
+  tt <- extract_terms_response(formula)
+  expect_length(tt$individual_terms, 1)
+  expect_length(tt$interaction_terms, 0)
+  expect_length(tt$additive_terms, 1)
+  expect_length(tt$group_terms, 0)
+  expect_length(tt$response, 1)
+})
+
+test_that(paste(
+  "check that we recover the correct terms for a simple ",
+  "additive model with multidimensional interactions"
+), {
+  formula <- y ~ t2(x, z)
+  tt <- extract_terms_response(formula)
+  expect_length(tt$individual_terms, 0)
+  expect_length(tt$interaction_terms, 0)
+  expect_length(tt$additive_terms, 1)
+  expect_length(tt$group_terms, 0)
+  expect_length(tt$response, 1)
+})
+
 test_that("check that we return the same formula for a single response", {
   formula <- y ~ x + z
   expect_equal(formula, validate_response_formula(formula))
@@ -42,7 +68,7 @@ test_that("check that we return a list of formulas for multiple responses", {
 
 test_that("check that we properly flatten a formula with duplicated terms", {
   formula <- (y ~ x + z + x:z + (1 | g) + (x | g) + (z | g) + (x + z | g) +
-    (x + z + x:z | g))
+                (x + z + x:z | g))
   flat <- projpred:::flatten_formula(formula)
   # don't check 'flat' directly as sorting of terms is OS specific
   terms <- attr(terms(flat), "term.labels")
@@ -117,6 +143,26 @@ test_that("check that we properly split a formula", {
     ),
     sp
   ), 0)
+
+  formula <- y ~ s(x) + s(z)
+  sp <- split_formula(formula)
+  expect_length(sp, 5)
+  expect_length(setdiff(
+    c(
+      "1", "s(x)", "s(z)", "x", "z"
+    ),
+    sp
+  ), 0)
+
+  formula <- y ~ t2(x, z)
+  sp <- split_formula(formula)
+  expect_length(sp, 4)
+  expect_length(setdiff(
+    c(
+      "1", "t2(x, z)", "x", "z"
+    ),
+    sp
+  ), 0)
 })
 
 test_that("check that we can identify formulas with group terms", {
@@ -129,7 +175,8 @@ test_that("check that we can identify formulas with group terms", {
 
 test_that(paste(
   "check that we can subset a formula and update the data",
-  "columns properly"), {
+  "columns properly"
+), {
   data <- data.frame(y = rnorm(20), x = matrix(rnorm(40), 20, 4))
   fake_y <- matrix(rnorm(20), 20, 1)
   formula <- y ~ x.1 + x.2 + x.3 + x.4

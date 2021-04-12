@@ -30,20 +30,20 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
   SW(
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_gauss, data = df_gauss,
-      chains = chains, seed = seed, iter = iter
+                          family = f_gauss, data = df_gauss,
+                          chains = chains, seed = seed, iter = iter
     )
   )
   SW(
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom, data = df_binom, weights = weights,
-      chains = chains, seed = seed, iter = iter
+                          family = f_binom, data = df_binom, weights = weights,
+                          chains = chains, seed = seed, iter = iter
     )
   )
   SW(
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_poiss, data = df_poiss,
-      chains = chains, seed = seed, iter = iter
+                          family = f_poiss, data = df_poiss,
+                          chains = chains, seed = seed, iter = iter
     )
   )
   fit_list <- list(
@@ -63,13 +63,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         # varsel
         SW({
           foo <- varsel(fit,
-            seed = seed, ndraws = ndraws,
-            ndraws_pred = ndraws_pred
+                        seed = seed, ndraws = ndraws,
+                        ndraws_pred = ndraws_pred
           )
           r1 <- rnorm(s)
           foo <- varsel(fit,
-            seed = seed, ndraws = ndraws,
-            ndraws_pred = ndraws_pred
+                        seed = seed, ndraws = ndraws,
+                        ndraws_pred = ndraws_pred
           )
           r2 <- rnorm(s)
         })
@@ -77,13 +77,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
         # cv_varsel
         SW(foo <- cv_varsel(fit,
-          seed = seed, ndraws = ndraws,
-          ndraws_pred = ndraws_pred
+                            seed = seed, ndraws = ndraws,
+                            ndraws_pred = ndraws_pred
         ))
         r1 <- rnorm(s)
         SW(foo <- cv_varsel(fit,
-          seed = seed, ndraws = ndraws,
-          ndraws_pred = ndraws_pred
+                            seed = seed, ndraws = ndraws,
+                            ndraws_pred = ndraws_pred
         ))
         r2 <- rnorm(s)
         expect_true(any(r1 != r2))
@@ -92,13 +92,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         solution_terms <- c(1, 2)
         SW({
           foo <- project(fit,
-            solution_terms = solution_terms,
-            ndraws = 100, seed = seed
+                         solution_terms = solution_terms,
+                         ndraws = 100, seed = seed
           )
           r1 <- rnorm(s)
           foo <- project(fit,
-            solution_terms = solution_terms,
-            ndraws = 100, seed = seed
+                         solution_terms = solution_terms,
+                         ndraws = 100, seed = seed
           )
           r2 <- rnorm(s)
         })
@@ -113,13 +113,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         )
         SW({
           foo <- proj_linpred(fit, frame,
-            solution_terms = solution_terms,
-            seed = seed, weightsnew = ~weights
+                              solution_terms = solution_terms,
+                              seed = seed, weightsnew = ~weights
           )
           r1 <- rnorm(s)
           foo <- proj_linpred(fit, frame,
-            solution_terms = solution_terms,
-            seed = seed, weightsnew = ~weights
+                              solution_terms = solution_terms,
+                              seed = seed, weightsnew = ~weights
           )
           r2 <- rnorm(s)
         })
@@ -130,11 +130,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
         SW({
           foo <- proj_predict(fit, frame,
-            solution_terms = solution_terms, seed = seed
+                              solution_terms = solution_terms,
+                              seed = seed, seed_sub = seed
           )
           r1 <- rnorm(s)
           foo <- proj_predict(fit, frame,
-            solution_terms = solution_terms, seed = seed
+                              solution_terms = solution_terms,
+                              seed = seed, seed_sub = seed
           )
           r2 <- rnorm(s)
         })
@@ -152,24 +154,24 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         # varsel
         SW({
           foo <- varsel(fit,
-            seed = seed, ndraws = ndraws,
-            ndraws_pred = ndraws_pred
+                        seed = seed, ndraws = ndraws,
+                        ndraws_pred = ndraws_pred
           )
           bar <- varsel(fit,
-            seed = seed, ndraws = ndraws,
-            ndraws_pred = ndraws_pred
+                        seed = seed, ndraws = ndraws,
+                        ndraws_pred = ndraws_pred
           )
         })
         expect_equal(foo, bar)
 
         # cv_varsel
         SW(foo <- cv_varsel(fit,
-          seed = seed, ndraws = ndraws,
-          ndraws_pred = ndraws_pred
+                            seed = seed, ndraws = ndraws,
+                            ndraws_pred = ndraws_pred
         ))
         SW(bar <- cv_varsel(fit,
-          seed = seed, ndraws = ndraws,
-          ndraws_pred = ndraws_pred
+                            seed = seed, ndraws = ndraws,
+                            ndraws_pred = ndraws_pred
         ))
         expect_equal(foo, bar)
 
@@ -177,12 +179,12 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         solution_terms <- c(1, 2)
         SW({
           foo <- project(fit,
-            solution_terms = solution_terms,
-            nclusters = 10, seed = seed
+                         solution_terms = solution_terms,
+                         nclusters = 10, seed = seed
           )
           bar <- project(fit,
-            solution_terms = solution_terms,
-            nclusters = 10, seed = seed
+                         solution_terms = solution_terms,
+                         nclusters = 10, seed = seed
           )
         })
         expect_equal(foo, bar)
@@ -197,12 +199,12 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         )
         SW({
           foo <- proj_linpred(fit, frame,
-            solution_terms = solution_terms,
-            seed = seed
+                              solution_terms = solution_terms,
+                              seed = seed
           )
           bar <- proj_linpred(fit, frame,
-            solution_terms = solution_terms,
-            seed = seed
+                              solution_terms = solution_terms,
+                              seed = seed
           )
         })
         expect_equal(foo, bar)
@@ -212,12 +214,12 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         frame <- cbind(data.frame(x = x)[, solution_terms], weights = weights)
         SW({
           foo <- proj_predict(fit, frame,
-            solution_terms = solution_terms,
-            seed = seed
+                              solution_terms = solution_terms,
+                              seed = seed, seed_sub = seed
           )
           bar <- proj_predict(fit, frame,
-            solution_terms = solution_terms,
-            seed = seed
+                              solution_terms = solution_terms,
+                              seed = seed, seed_sub = seed
           )
         })
         expect_equal(foo, bar)

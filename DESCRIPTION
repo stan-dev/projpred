@@ -1,14 +1,16 @@
 Encoding: UTF-8
 Package: projpred
 Title: Projection Predictive Feature Selection
-Version: 2.0.4.9000
+Version: 2.0.5.9000
 Authors@R: c(person("Juho", "Piironen", role = c("aut"), email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
              person("Alejandro", "Catalina", role = c("cre", "aut"), email="alecatfel@gmail.com"),
              person("Aki", "Vehtari", role = "aut"),
              person("Jonah", "Gabry", role = "ctb"),
              person("Marco", "Colombo", role = "ctb"),
-             person("Paul-Christian", "Bürkner", role = "ctb"))
+             person("Paul-Christian", "Bürkner", role = "ctb"),
+             person("Hamada S.", "Badr", role = "ctb"),
+             person("Frank", "Weber", role = "ctb"))
 Maintainer:
     Alejandro Catalina <alecatfel@gmail.com>
 Description:
@@ -28,18 +30,17 @@ Imports:
     loo (>= 2.0.0),
     rstantools (>= 2.0.0),
     lme4,
-    optimx,
     ggplot2,
     Rcpp,
     utils,
     rngtools (>= 1.2.4),
-    MASS,
     magrittr,
     mgcv,
     gamm4,
     doFuture,
     doRNG,
-    foreach
+    foreach,
+    rlang
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 LazyData: TRUE

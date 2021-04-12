@@ -1,7 +1,6 @@
 *~
 *.o
 *.so
-*.Rproj
 .Rhistory
 .DS_Store
 .Rproj.user
@@ -11,3 +10,4 @@
 vignettes/quickstart_cache
 *cache/
 *files/
+/src/projpred.dll

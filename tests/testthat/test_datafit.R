@@ -5,8 +5,8 @@ suppressWarnings(RNGversion("3.5.0"))
 # tests for data based estimates (no actual reference model)
 
 if (!requireNamespace("glmnet", quietly = TRUE)) {
-  stop("glmnet needed for this function to work. Please install it.",
-    call. = FALSE
+  stop("glmnet needed for this test to work. Please install it.",
+       call. = FALSE
   )
 }
 
@@ -21,7 +21,7 @@ offset <- rnorm(n)
 chains <- 2
 seed <- 1235
 iter <- 500
-source(file.path("helpers", "SW.R"))
+source(testthat::test_path("helpers", "SW.R"))
 ndraws <- 1
 ndraws_pred <- 5
 
@@ -81,18 +81,20 @@ dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
 
 SW({
   # varsel
-  vsd_list <- lapply(dref_list, varsel, nterms_max = nterms + 1, verbose = FALSE)
+  vsd_list <- lapply(dref_list, varsel, nterms_max = nterms + 1,
+                     verbose = FALSE)
 
   # cv_varsel
   cvvsd_list <- lapply(dref_list, cv_varsel,
-    nterms_max = nterms + 1, ndraws = ndraws,
-    ndraws_pred = ndraws_pred, verbose = FALSE
+                       nterms_max = nterms + 1, ndraws = ndraws,
+                       ndraws_pred = ndraws_pred, verbose = FALSE
   )
 
   predd_list <- lapply(vsd_list, proj_linpred,
-    newdata = data.frame(x = x, weights = weights, offset = offset),
-    offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
-    seed = seed
+                       newdata = data.frame(x = x, weights = weights,
+                                            offset = offset),
+                       offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
+                       seed = seed
   )
 })
 
@@ -138,7 +140,7 @@ test_that(paste(
 
     # kl decreasing
     expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl),
-      tolerance = 15e-2
+                 tolerance = 15e-2
     )
 
     # summaries seems legit
@@ -159,8 +161,10 @@ test_that("summary.vsel stops if baseline = 'ref' and deltas = TRUE", {
   )
 })
 
-test_that(paste("output of project is sensible with only data provided as" <
-  "reference model"), {
+test_that(paste(
+  "output of project is sensible with only data provided as",
+  "reference model"
+), {
   for (i in 1:length(vsd_list)) {
 
     # length of output of project is legit
@@ -181,7 +185,9 @@ test_that(paste("output of project is sensible with only data provided as" <
       }
       # j:th element should have j-1 variables
       expect_equal(length(which(p[[j]]$sub_fit$beta != 0)), j - 1)
-      expect_equal(length(p[[j]]$solution_terms), j - 1)
+      if (j > 1) {
+        expect_equal(length(p[[j]]$solution_terms), j - 1)
+      }
       # family kl
       expect_equal(p[[j]]$family, vsd_list[[i]]$family)
     }
@@ -203,19 +209,21 @@ test_that(paste(
 
     # length of output of project is legit
     pred <- proj_linpred(vsd_list[[i]],
-      newdata = data.frame(x = x, weights = weights, offset = offset),
-      seed = seed, offsetnew = ~offset, weightsnew = ~weights, nterms = 3
+                         newdata = data.frame(x = x, weights = weights,
+                                              offset = offset),
+                         seed = seed,
+                         offsetnew = ~offset, weightsnew = ~weights, nterms = 3
     )
     expect_equal(length(pred$pred), nrow(x))
 
     ynew <- dref_list[[i]]$y
     pred <- proj_linpred(vsd_list[[i]],
-      newdata = data.frame(
-        y = ynew, x = x,
-        weights = weights, offset = offset
-      ),
-      seed = seed, offsetnew = ~offset,
-      weightsnew = ~weights, nterms = 3
+                         newdata = data.frame(
+                           y = ynew, x = x,
+                           weights = weights, offset = offset
+                         ),
+                         seed = seed, offsetnew = ~offset,
+                         weightsnew = ~weights, nterms = 3
     )
 
     expect_equal(length(pred$pred), nrow(x))
@@ -238,7 +246,7 @@ dis <- runif(1, 0.3, 0.5)
 weights <- sample(1:4, n, replace = TRUE) #
 offset <- 0.1 * rnorm(n)
 seed <- 1235
-source(file.path("helpers", "SW.R"))
+source(testthat::test_path("helpers", "SW.R"))
 
 fams <- list(gaussian(), binomial(), poisson())
 x_list <- lapply(fams, function(fam) x)
@@ -331,19 +339,23 @@ test_that(paste(
     )
     SW({
       vs <- varsel(ref,
-        method = "l1", lambda_min_ratio = lambda_min_ratio,
-        nlambda = nlambda, thresh = 1e-12
+                   method = "l1", lambda_min_ratio = lambda_min_ratio,
+                   nlambda = nlambda, thresh = 1e-12
       )
     })
     pred1 <- proj_linpred(vs,
-      newdata = data.frame(x = x, offset = offset, weights = weights),
-      nterms = 0:nterms, transform = FALSE, offsetnew = ~offset,
+                          newdata = data.frame(x = x, offset = offset,
+                                               weights = weights),
+                          nterms = 0:nterms, transform = FALSE,
+                          offsetnew = ~offset,
     )
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
-      family = fam$family, weights = weights, offset = offset,
-      lambda.min.ratio = lambda_min_ratio, nlambda = nlambda, thresh = 1e-12
+                            family = fam$family, weights = weights,
+                            offset = offset,
+                            lambda.min.ratio = lambda_min_ratio,
+                            nlambda = nlambda, thresh = 1e-12
     )
     solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
     nselected <- sapply(solution_terms, function(e) length(e))

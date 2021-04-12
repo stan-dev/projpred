@@ -20,7 +20,7 @@ linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
   } else if (inherits(formula, "list")) {
     return(lapply(seq_along(formula), function(s) {
       fit_glm_ridge_callback(formula[[s]], data, family, weights,
-        regul = regul, var = var[, s, drop = FALSE]
+                             regul = regul, var = var[, s, drop = FALSE]
       )
     }))
   } else {
@@ -35,8 +35,8 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
   y <- model.response(fr)
   fit <- glm_ridge(x, y,
-    family = family, lambda = regul,
-    weights = weights, obsvar = var
+                   family = family, lambda = regul,
+                   weights = weights, obsvar = var
   )
   rownames(fit$beta) <- colnames(x)
   sub <- nlist(
@@ -50,22 +50,24 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
   return(sub)
 }
 
-# helper function of 'linear_mle'
-fit_glm_callback <- function(formula, data, family, weights, ...) {
-  # make sure correct 'weights' can be found
-  environment(formula) <- environment()
-  if (family$family == "gaussian" && family$link == "identity") {
-    return(suppressMessages(suppressWarnings(lm(formula,
-      data = data,
-      weights = weights
-    ))))
-  } else {
-    return(suppressMessages(suppressWarnings(glm(formula,
-      data = data, family = family,
-      weights = weights
-    ))))
-  }
-}
+### Not used:
+# # helper function of 'linear_mle'
+# fit_glm_callback <- function(formula, data, family, weights, ...) {
+#   # make sure correct 'weights' can be found
+#   environment(formula) <- environment()
+#   if (family$family == "gaussian" && family$link == "identity") {
+#     return(suppressMessages(suppressWarnings(lm(formula,
+#       data = data,
+#       weights = weights
+#     ))))
+#   } else {
+#     return(suppressMessages(suppressWarnings(glm(formula,
+#       data = data, family = family,
+#       weights = weights
+#     ))))
+#   }
+# }
+###
 
 # Use mgcv to fit the projection to the posterior draws for additive multilevel
 # models.
@@ -97,8 +99,8 @@ fit_gam_callback <- function(formula, data, family, weights, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
   return(suppressMessages(suppressWarnings(gam(formula,
-    data = data, family = family,
-    weights = weights
+                                               data = data, family = family,
+                                               weights = weights
   ))))
 }
 
@@ -110,19 +112,19 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
   environment(formula) <- environment()
   fit <- suppressMessages(suppressWarnings(tryCatch({
     gamm4(formula,
-      random = random, data = data,
-      family = family, weights = weights,
-      control = control
+          random = random, data = data,
+          family = family, weights = weights,
+          control = control
     )
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       scaled_data <- preprocess_data(data, formula)
-      fit_gamm_callback(formula, random = random,
+      fit_gamm_callback(
+        formula, random = random,
         data = scaled_data, weights = weights, family = family,
         control = control_callback(family,
-          optimizer = "optimx",
-          optCtrl = list(method = "nlminb")
-        )
+                                   optimizer = "optimx",
+                                   optCtrl = list(method = "nlminb"))
       )
     } else {
       stop(e)
@@ -154,41 +156,41 @@ fit_glmer_callback <- function(formula, data, family, weights,
   ## make sure correct 'weights' can be found
   environment(formula) <- environment()
   suppressMessages(suppressWarnings(tryCatch({
-      if (family$family == "gaussian" && family$link == "identity") {
-        return(lme4::lmer(formula,
-          data = data, weights = weights,
-          control = control
-        ))
-      } else {
-        return(lme4::glmer(formula,
-          data = data, family = family, weights = weights,
-          control = control
-        ))
-      }
-    },
-    error = function(e) {
-      if (grepl("No random effects", as.character(e))) {
-        return(fit_glm_ridge_callback(formula,
-          data = data, family = family,
-          weights = weights, ...
-        ))
-      } else if (grepl("not positive definite", as.character(e))) {
-        return(fit_glmer_callback(formula,
-          data = data, weights = weights, family = family,
-          control = control_callback(family,
-            optimizer = "optimx",
-            optCtrl = list(method = "nlminb")
-          )
-        ))
-      } else if (grepl("PIRLS step-halvings", as.character(e))) {
-        data <- preprocess_data(data, formula)
-        return(fit_glmer_callback(formula,
-          data = data, weights = weights, family = family
-        ))
-      } else {
-        stop(e)
-      }
+    if (family$family == "gaussian" && family$link == "identity") {
+      return(lme4::lmer(formula,
+                        data = data, weights = weights,
+                        control = control
+      ))
+    } else {
+      return(lme4::glmer(formula,
+                         data = data, family = family, weights = weights,
+                         control = control
+      ))
     }
+  },
+  error = function(e) {
+    if (grepl("No random effects", as.character(e))) {
+      return(fit_glm_ridge_callback(formula,
+                                    data = data, family = family,
+                                    weights = weights, ...
+      ))
+    } else if (grepl("not positive definite", as.character(e))) {
+      return(fit_glmer_callback(
+        formula,
+        data = data, weights = weights, family = family,
+        control = control_callback(family,
+                                   optimizer = "optimx",
+                                   optCtrl = list(method = "nlminb"))
+      ))
+    } else if (grepl("PIRLS step-halvings", as.character(e))) {
+      data <- preprocess_data(data, formula)
+      return(fit_glmer_callback(formula,
+                                data = data, weights = weights, family = family
+      ))
+    } else {
+      stop(e)
+    }
+  }
   )))
 }
 
@@ -217,8 +219,8 @@ control_callback <- function(family, ...) {
 predict_multilevel_callback <- function(fit, newdata = NULL, weights = NULL) {
   if (inherits(fit, "lmerMod")) {
     return(predict(fit,
-      newdata = newdata, allow.new.levels = TRUE,
-      weights = weights
+                   newdata = newdata, allow.new.levels = TRUE,
+                   weights = weights
     ))
   } else {
     return(predict(fit, newdata = newdata, weights = weights))
@@ -288,7 +290,7 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   } else {
     contrasts_arg <- get_contrasts_arg_list(subfit$formula, newdata)
     x <- model.matrix(delete.response(terms(subfit$formula)), newdata,
-      contrasts.arg = contrasts_arg
+                      contrasts.arg = contrasts_arg
     )
     ## x <- weights * x
     if (is.null(beta)) {
@@ -306,7 +308,7 @@ predict.gamm4 <- function(fit, newdata = NULL, weights = NULL) {
   formula <- fit$formula
   random <- fit$random
   gamm_struct <- model.matrix.gamm4(delete.response(terms(formula)),
-    random = random, data = newdata
+                                    random = random, data = newdata
   )
   ranef <- ranef(fit$mer)
   b <- gamm_struct$b
