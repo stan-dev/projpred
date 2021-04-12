@@ -14,7 +14,7 @@ if (require(rstanarm)) {
   chains <- 2
   seed <- 1235
   iter <- 500
-  source(file.path("helpers", "SW.R"))
+  source(testthat::test_path("helpers", "SW.R"))
 
   f_gauss <- gaussian()
   df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
@@ -26,12 +26,13 @@ if (require(rstanarm)) {
 
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_gauss, data = df_gauss,
-      chains = chains, seed = seed, iter = iter
+                          family = f_gauss, data = df_gauss,
+                          chains = chains, seed = seed, iter = iter
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom, weights = weights,
-      data = df_binom, chains = chains, seed = seed, iter = iter
+                          family = f_binom, weights = weights,
+                          data = df_binom, chains = chains, seed = seed,
+                          iter = iter
     )
 
     vs_gauss <- varsel(fit_gauss, ndraws = 1, ndraws_pred = 5)
@@ -39,17 +40,19 @@ if (require(rstanarm)) {
     solution_terms <- c(2, 3)
     ndraws <- 100
     p_gauss <- project(vs_gauss,
-      solution_terms = vs_gauss$solution_terms[solution_terms],
-      ndraws = ndraws
+                       solution_terms = vs_gauss$solution_terms[solution_terms],
+                       ndraws = ndraws
     )
     p_binom <- project(vs_binom,
-      solution_terms = vs_binom$solution_terms[solution_terms],
-      ndraws = ndraws
+                       solution_terms = vs_binom$solution_terms[solution_terms],
+                       ndraws = ndraws
     )
   })
 
-  test_that(paste("as.matrix.projection returns the relevant variables for",
-                  "gaussian"), {
+  test_that(paste(
+    "as.matrix.projection returns the relevant variables for",
+    "gaussian"
+  ), {
     m <- as.matrix(p_gauss)
     expect_length(setdiff(
       colnames(m),
@@ -61,8 +64,10 @@ if (require(rstanarm)) {
     expect_equal(dim(m), c(ndraws, length(solution_terms) + 2))
   })
 
-  test_that(paste("as.matrix.projection returns the relevant variables for",
-                  "binomial"), {
+  test_that(paste(
+    "as.matrix.projection returns the relevant variables for",
+    "binomial"
+  ), {
     m <- as.matrix(p_binom)
     expect_length(setdiff(colnames(m),
                           c("Intercept",
@@ -80,7 +85,8 @@ if (require(rstanarm)) {
 
   test_that("as.matrix.projection works with clustering", {
     nclusters <- 3
-    p_clust <- project(vs_gauss, solution_terms = vs_gauss$solution_terms[solution_terms],
+    p_clust <- project(vs_gauss,
+                       solution_terms = vs_gauss$solution_terms[solution_terms],
                        nclusters = nclusters)
     m <- as.matrix(p_clust)
     expect_length(

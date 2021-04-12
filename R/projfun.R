@@ -7,23 +7,18 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   wobs <- validparams$wobs
   wsample <- validparams$wsample
 
-  form <- refmodel$formula
-
-  div_minimizer <- function(formula, data, weights) {
-    refmodel$div_minimizer(formula, data, weights = weights, family = family,
-                           regul = regul, var = p_ref$var,
-                           intercept = intercept)
-  }
-
   subset <- subset_formula_and_data(
-    formula = form, terms_ = unique(unlist(solution_terms)),
+    formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
     data = refmodel$fetch_data(), y = p_ref$mu, intercept = intercept
   )
 
-  sub_fit <- div_minimizer(
-    flatten_formula(subset$formula, intercept = intercept),
-    subset$data,
-    weights = refmodel$wobs
+  sub_fit <- refmodel$div_minimizer(
+    formula = flatten_formula(subset$formula, intercept = intercept),
+    data = subset$data,
+    weights = refmodel$wobs,
+    family = family,
+    regul = regul,
+    var = p_ref$var
   )
 
   return(.init_submodel(
@@ -55,7 +50,6 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   ## contains the parameter values.
 
   varorder <- search_path$solution_terms
-  p_sel <- search_path$p_sel
 
   if (!cv_search) {
     ## simply fetch the already computed quantities for each submodel size
@@ -63,7 +57,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       solution_terms <- utils::head(varorder, nterms)
 
       validparams <- .validate_wobs_wsample(
-        refmodel$wobs, p_sel$weights, p_sel$mu
+        refmodel$wobs, search_path$p_sel$weights, search_path$p_sel$mu
       )
       wobs <- validparams$wobs
       wsample <- validparams$wsample
@@ -76,7 +70,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       }
 
       return(.init_submodel(
-        sub_fit = sub_refit, p_ref = p_sel, refmodel = refmodel,
+        sub_fit = sub_refit, p_ref = search_path$p_sel, refmodel = refmodel,
         family = family, solution_terms = solution_terms,
         wobs = wobs, wsample = wsample
       ))

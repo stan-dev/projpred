@@ -9,7 +9,7 @@ params:
 <!--
 %\VignetteEngine{knitr::rmarkdown}
 %\VignetteIndexEntry{projpred Quick Start}
-\usepackage[utf8](inputenc)
+\usepackage[utf8]{inputenc}
 -->
 ```{r, child="children/SETTINGS-knitr.txt"}
 ```

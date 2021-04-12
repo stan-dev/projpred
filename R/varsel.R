@@ -5,48 +5,52 @@
 #' reference models.
 #'
 #' @param object Either a \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
-#'   an object which can be converted to a reference model using
-#'   \link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
-#'   \code{varsel} or \code{cv_varsel}.
-#' @param d_test A test dataset, which is used to evaluate model performance. If
+#'   \link[=init_refmodel]{init_refmodel}, an object which can be converted to a
+#'   reference model using \link[=get_refmodel]{get_refmodel}, or a \code{vsel}
+#'   object resulting from \code{varsel} or \code{cv_varsel}.
+#' @param d_test A test dataset which is used to evaluate model performance. If
 #'   not provided, training data is used. Currently this argument is for
 #'   internal use only.
 #' @param method The method used in the variable selection. Possible options are
 #'   \code{'L1'} for L1-search and \code{'forward'} for forward selection.
 #'   Default is 'forward' if the number of variables in the full data is at most
-#'   20,' and \code{'L1'} otherwise.
-#' @param cv_search If TRUE, then the projected coefficients after L1-selection
-#'   are computed without any penalization (or using only the regularization
-#'   determined by \code{regul}). If FALSE, then the coefficients are the
-#'   solution from the' L1-penalized projection. This option is relevant only if
-#'   \code{method}='L1'. Default is TRUE for genuine reference models and FALSE
-#'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
+#'   20, and \code{'L1'} otherwise.
+#' @param cv_search If \code{TRUE}, then the projected coefficients after
+#'   L1-selection are computed without any penalization (or using only the
+#'   regularization determined by \code{regul}). If \code{FALSE}, then the
+#'   coefficients are the solution from the L1-penalized projection. This option
+#'   is relevant only if \code{method = 'L1'}. Default is \code{TRUE} for
+#'   genuine reference models and \code{FALSE} if \code{object} is datafit (see
+#'   \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws used in the variable selection.
-#'   Cannot be larger than the number of draws in the reference model. Ignored
-#'   if nclusters is set. Default is 10. In other words, we project a single
-#'   draw from each cluster.
-#' @param nclusters Number of clusters used for selection. Defaults to 10 and
-#'   ignored if method='L1' (L1-search uses always one cluster). If nclusters is
-#'   null we use as many clusters as draws to project.
-#' @param ndraws_pred Number of projected draws used for prediction (after
-#'   selection). Ignored if nclusters_pred is given. Note that setting less
-#'   draws or clusters than posterior draws in the reference model may result in
-#'   slightly inaccurate projection performance, although increasing this
-#'   argument linearly affects the computation time. Default is 400.
-#' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 400. If nclusters_pred is null, we use as many
-#'   clusters for prediction as ndraws_pred.
-#' @param nterms_max Maximum number of varibles until which the selection is
-#'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
-#'   observations and D the number of variables.
+#'   Cannot be larger than the number of draws in the reference model.
+#'   \strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is
+#'   passed to \code{nclusters} (so that clustering is used). Ignored if
+#'   \code{nclusters} is not \code{NULL} or if \code{method = "L1"} (L1 search
+#'   uses always one cluster). See also section "Details" below.
+#' @param nclusters Number of clusters of posterior draws used in the variable
+#'   selection. Ignored if \code{method = "L1"} (L1 search uses always one
+#'   cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
+#'   also section "Details" below.
+#' @param ndraws_pred Number of posterior draws used for prediction (after
+#'   selection). Cannot be larger than the number of draws in the reference
+#'   model. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
+#'   \code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering
+#'   is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
+#'   section "Details" below.
+#' @param nclusters_pred Number of clusters of posterior draws used for
+#'   prediction (after selection). For the meaning of \code{NULL}, see argument
+#'   \code{ndraws_pred}. See also section "Details" below.
+#' @param nterms_max Maximum number of variables until which the selection is
+#'   continued. Defaults to \code{min(20, D, floor(0.4 * n))} where \code{n} is
+#'   the number of observations and \code{D} the number of variables.
 #' @param penalty Vector determining the relative penalties or costs for the
-#'   variables. Zero means that those variables have no cost and will therefore
-#'   be selected first, whereas Inf means those variables will never be
-#'   selected. Currently works only if method == 'L1'. By default 1 for each
-#'   variable.
-#' @param verbose If TRUE, may print out some information during the selection.
-#'   Defaults to FALSE.
+#'   variables. A value of \code{0} means that those variables have no cost and
+#'   will therefore be selected first, whereas \code{Inf} means those variables
+#'   will never be selected. Currently works only if \code{method = 'L1'}. By
+#'   default \code{1} for each variable.
+#' @param verbose If \code{TRUE}, may print out some information during the
+#'   selection. Defaults to \code{FALSE}.
 #' @param lambda_min_ratio Ratio between the smallest and largest lambda in the
 #'   L1-penalized search. This parameter essentially determines how long the
 #'   search is carried out, i.e., how large submodels are explored. No need to
@@ -59,18 +63,22 @@
 #'   need for regularization, but sometimes for some models the projection can
 #'   be ill-behaved and we need to add some regularization to avoid numerical
 #'   problems.
-#' @param search_terms A custom list of terms to evaluate for variable
-#'   selection. By default considers all the terms in the reference model's
-#'   formula.
-#' @param seed Random seed used in the subsampling LOO. By default uses a fixed
-#'   seed.
-#' @param ... Additional arguments to be passed to the
-#'   \code{get_refmodel}-function.
+#' @param search_terms A custom character vector of terms to consider for
+#'   selection. The intercept (\code{"1"}) needs to be included explicitly. The
+#'   default considers all the terms in the reference model's formula.
+#' @param seed Random seed used when clustering the posterior draws.
+#' @param ... Additional arguments to be passed to the \code{get_refmodel}
+#'   function.
+#'
+#' @details Using less draws or clusters in \code{ndraws}, \code{nclusters},
+#'   \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
+#'   reference model may result in slightly inaccurate projection performance.
+#'   Increasing these arguments linearly affects the computation time.
 #'
 #' @return An object of type \code{vsel} that contains information about the
-#'   feature selection. The fields are not meant to be accessed directly by
-#'   the user but instead via the helper functions (see the vignettes or type
-#'   ?projpred to see the main functions in the package.)
+#'   feature selection. The fields are not meant to be accessed directly by the
+#'   user but instead via the helper functions (see the vignettes or type
+#'   \code{?projpred} to see the main functions in the package).
 #'
 #' @examples
 #' \donttest{
@@ -81,8 +89,8 @@
 #'   x <- matrix(rnorm(n*d), nrow=n)
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data,
-#'     chains=2, iter=500)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+#'                             data=data, chains=2, iter=500)
 #'   vs <- varsel(fit)
 #'   plot(vs)
 #' }
@@ -90,20 +98,20 @@
 #'
 #' @export
 varsel <- function(object, ...) {
-    UseMethod("varsel")
+  UseMethod("varsel")
 }
 
 #' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
-    refmodel <- get_refmodel(object, ...)
-    return(varsel(refmodel, ...))
+  refmodel <- get_refmodel(object, ...)
+  return(varsel(refmodel, ...))
 }
 
 #' @rdname varsel
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
-                            ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
+                            ndraws = 20, nclusters = NULL, ndraws_pred = 400,
                             nclusters_pred = NULL, cv_search = TRUE,
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
@@ -162,8 +170,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   ## statistics for the selected submodels
   p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
-    family = family, p_ref = p_pred, refmodel = refmodel, intercept = intercept,
-    regul = regul, cv_search = cv_search
+                          family = family, p_ref = p_pred, refmodel = refmodel,
+                          intercept = intercept,
+                          regul = regul, cv_search = cv_search
   )
   sub <- .get_sub_summaries(
     submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
@@ -183,7 +192,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       mu_test <- refmodel$mu
     } else {
       mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
-        newdata = d_test$data
+                                                     newdata = d_test$data
       ))
     }
     ref <- .weighted_summary_means(
@@ -195,11 +204,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## warn the user if the projection performance does not match the reference
   ## model's.
   ref_elpd <- get_stat(ref$mu, ref$lppd, d_test, family, "elpd",
-    weights = ref$w
+                       weights = ref$w
   )
   summ <- sub[[length(sub)]]
   proj_elpd <- get_stat(summ$mu, summ$lppd, d_test, family, "elpd",
-    weights = summ$w
+                        weights = summ$w
   )
 
   ## store the relevant fields into the object to be returned
@@ -224,7 +233,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## suggest model size
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs,
-    warnings = FALSE
+                                    warnings = FALSE
   )
   summary <- summary(vs)
   vs$summary <- summary$selection
@@ -256,8 +265,8 @@ select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
     return(search_path)
   } else if (method == "forward") {
     search_path <- search_forward(p_sel, refmodel, family,
-      intercept, nterms_max, verbose, opt,
-      search_terms = search_terms
+                                  intercept, nterms_max, verbose, opt,
+                                  search_terms = search_terms
     )
     search_path$p_sel <- p_sel
     return(search_path)
@@ -277,7 +286,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   ##
   if (is.null(search_terms)) {
     search_terms <- split_formula(refmodel$formula,
-      data = refmodel$fetch_data()
+                                  data = refmodel$fetch_data()
     )
   }
   has_group_features <- formula_contains_group_terms(refmodel$formula)
@@ -301,24 +310,28 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if (is.null(ndraws)) {
-    ndraws <- min(NCOL(refmodel$mu), 20)
-  }
+  stopifnot(!is.null(ndraws))
+  ndraws <- min(NCOL(refmodel$mu), ndraws)
 
   if (is.null(nclusters) && ndraws <= 20) {
-    nclusters <- ndraws <- min(NCOL(refmodel$mu), ndraws)
+    nclusters <- ndraws
+  }
+  if (!is.null(nclusters)) {
+    nclusters <- min(NCOL(refmodel$mu), nclusters)
   }
 
   if (method == "l1") {
-    ndraws <- nclusters <- 1
+    nclusters <- 1
   }
 
-  if (is.null(ndraws_pred)) {
-    ndraws_pred <- min(NCOL(refmodel$mu), 400)
-  }
+  stopifnot(!is.null(ndraws_pred))
+  ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
 
   if (is.null(nclusters_pred) && ndraws_pred <= 20) {
-    nclusters_pred <- ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
+    nclusters_pred <- ndraws_pred
+  }
+  if (!is.null(nclusters_pred)) {
+    nclusters_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
   if (is.null(intercept)) {

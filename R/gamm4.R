@@ -14,9 +14,9 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
   gam.setup <- `%:::%`("mgcv", "gam.setup")
 
   G <- gam.setup(formula, pterms,
-    data = data, knots = knots, sp = NULL, min.sp = NULL,
-    H = NULL, absorb.cons = TRUE, sparse.cons = 0,
-    gamm.call = TRUE
+                 data = data, knots = knots, sp = NULL, min.sp = NULL,
+                 H = NULL, absorb.cons = TRUE, sparse.cons = 0,
+                 gamm.call = TRUE
   )
   if (!is.null(G$L)) {
     stop(
@@ -134,7 +134,7 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   mf <- match.call(expand.dots = FALSE)
   mf$formula <- gp$fake.formula
   mf$REML <- mf$verbose <- mf$control <- mf$start <- mf$family <- mf$scale <-
-    mf$knots <- mf$random <- mf$... <- NULL ## mf$weights?
+    mf$knots <- mf$random <- NULL ## mf$weights?
   mf[[1]] <- as.name("model.frame")
   pmf <- mf
   gmf <- eval(mf, parent.frame())
@@ -142,9 +142,9 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
 
   if (length(random.vars)) {
     mf$formula <- as.formula(paste(paste(deparse(gp$fake.formula,
-      backtick = TRUE
+                                                 backtick = TRUE
     ), collapse = ""), "+", paste(random.vars,
-      collapse = "+"
+                                  collapse = "+"
     )))
     mf <- eval(mf, parent.frame())
   } else {
@@ -207,7 +207,7 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
     ## duplication
     for (i in 1:n.sr) {
       mf[[r.name[i]]] <- factor(rep(1:ncol(G$random[[i]]),
-        length = nrow(G$random[[i]])
+                                    length = nrow(G$random[[i]])
       ))
       lme4.formula <- paste(lme4.formula, "+ (1|", r.name[i], ")")
     }
@@ -216,7 +216,7 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
     lme4.formula <- paste(
       lme4.formula, "+",
       substring(paste(deparse(random, backtick = TRUE), collapse = ""),
-        first = 2
+                first = 2
       )
     )
   }
@@ -236,13 +236,13 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   ## NOTE: further arguments should be passed here...
   b <- if (linear) {
     lme4::lFormula(lme4.formula,
-      data = mf, weights = G$w, REML = TRUE,
-      control = control,
+                   data = mf, weights = G$w, REML = TRUE,
+                   control = control,
     )
   } else {
     lme4::glFormula(lme4.formula,
-      data = mf, family = family, weights = G$w,
-      control = control,
+                    data = mf, family = family, weights = G$w,
+                    control = control,
     )
   }
   if (n.sr) {

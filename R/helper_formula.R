@@ -88,7 +88,7 @@ break_up_matrix_term <- function(formula, data) {
   }
 
   tryCatch(model.matrix(formula, data = new_data),
-    error = function(e) print(e)
+           error = function(e) print(e)
   )
   list(formula = formula, data = new_data)
 }

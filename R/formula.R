@@ -48,11 +48,13 @@ remove_duplicates <- function(formula) {
   additive <- unlist(regmatches(
     terms$additive_terms,
     gregexpr("(?<=\\().*?(?=\\))",
-      terms$additive_terms,
-      perl = TRUE
+             terms$additive_terms,
+             perl = TRUE
     )
   ))
-  additive <- trimws(unique(unlist(strsplit(paste0(additive, collapse = ","), ","))))
+  additive <- trimws(unique(unlist(
+    strsplit(paste0(additive, collapse = ","), ",")
+  )))
   dups <- linear[!is.na(match(linear, additive))]
   if (length(dups) > 0) {
     update(formula, as.formula(paste0(
@@ -156,9 +158,9 @@ flatten_formula <- function(formula, duplicates = TRUE, intercept = TRUE) {
   additive_terms <- terms_$additive_terms
 
   if (length(individual_terms) > 0 ||
-    length(interaction_terms) > 0 ||
-    length(group_terms) > 0 ||
-    length(additive_terms) > 0) {
+      length(interaction_terms) > 0 ||
+      length(group_terms) > 0 ||
+      length(additive_terms) > 0) {
     full <- update(formula, paste(c(
       ". ~ ",
       icpt_term,
@@ -275,20 +277,22 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
   additive <- unlist(regmatches(
     additive_terms,
     gregexpr("(?<=\\().*?(?=\\))",
-      terms_$additive_terms,
-      perl = TRUE
+             terms_$additive_terms,
+             perl = TRUE
     )
   ))
-  additive <- trimws(unique(unlist(strsplit(paste0(additive, collapse = ","), ","))))
+  additive <- trimws(unique(unlist(
+    strsplit(paste0(additive, collapse = ","), ",")
+  )))
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
     group_split <- unlist(lapply(group_terms, split_group_term,
-      add_main_effects = add_main_effects
+                                 add_main_effects = add_main_effects
     ))
     allterms_ <- c(
       unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(interaction_terms, split_interaction_term,
-        add_main_effects = add_main_effects
+                    add_main_effects = add_main_effects
       ))
     )
     group_replace <- regmatches(
@@ -300,7 +304,7 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
       function(x) length(x) > 0
     ))]
     to_replace <- group_split[match(group_replace, additive) %>%
-      (function(x) !is.na(x))]
+                                (function(x) !is.na(x))]
     not_replace <- setdiff(group_split, to_replace)
 
     replacement <- gsub(
@@ -421,10 +425,10 @@ split_group_term <- function(term, add_main_effects = TRUE) {
           function(v) {
             paste0(
               split_interaction_term(v,
-                add_main_effects = add_main_effects
+                                     add_main_effects = add_main_effects
               ), " + ",
               "(", split_interaction_term(v,
-                add_main_effects = add_main_effects
+                                          add_main_effects = add_main_effects
               ),
               " | ", group, ")"
             )
@@ -449,7 +453,7 @@ split_group_term <- function(term, add_main_effects = TRUE) {
           function(v) {
             paste0(
               split_interaction_term(v,
-                add_main_effects = add_main_effects
+                                     add_main_effects = add_main_effects
               ),
               " + ",
               "(1 | ", group, ")"
@@ -474,7 +478,7 @@ split_group_term <- function(term, add_main_effects = TRUE) {
           function(v) {
             paste0(
               "(", split_interaction_term(v,
-                add_main_effects = add_main_effects
+                                          add_main_effects = add_main_effects
               ),
               " | ", group, ")"
             )
@@ -489,9 +493,9 @@ split_group_term <- function(term, add_main_effects = TRUE) {
     group_terms <- c(group_terms, lapply(int_v, function(v) {
       paste0(
         split_interaction_term(v, add_main_effects = add_main_effects),
-        " + ", "(0 + ", split_interaction_term(v,
-          add_main_effects = add_main_effects
-        ), " | ", group, ")"
+        " + ", "(0 + ",
+        split_interaction_term(v, add_main_effects = add_main_effects),
+        " | ", group, ")"
       )
     }))
   }
@@ -539,7 +543,7 @@ subset_formula_and_data <- function(formula, terms_, data, y = NULL,
     response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
     if (!split_formula) {
       response_vector <- paste0("cbind(", paste(response_cols,
-        collapse = ", "
+                                                collapse = ", "
       ), ")")
       formula <- update(formula, paste0(response_vector, " ~ ."))
     } else {
@@ -578,7 +582,7 @@ get_replace_response <- function(formula, terms_, split_formula = FALSE) {
       response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
       if (!split_formula) {
         response_vector <- paste0("cbind(", paste(response_cols,
-          collapse = ", "
+                                                  collapse = ", "
         ), ")")
       }
     }
@@ -699,8 +703,8 @@ select_possible_terms_size <- function(chosen, terms, size, intercept = TRUE) {
     additive <- unlist(regmatches(
       terms$additive_terms,
       gregexpr("(?<=\\().*?(?=\\))",
-        terms$additive_terms,
-        perl = TRUE
+               terms$additive_terms,
+               perl = TRUE
       )
     ))
     linear <- terms_new$individual_terms
@@ -708,8 +712,8 @@ select_possible_terms_size <- function(chosen, terms, size, intercept = TRUE) {
 
     ## if model is straight redundant
     not_redundant <- (count_terms_chosen(c(chosen, x),
-      duplicates = TRUE,
-      intercept = intercept
+                                         duplicates = TRUE
+                                         intercept = intercept
     ) - current - length(dups)) == increment
     ## if already_chosen is not NA it means we have already chosen the linear
     ## term
@@ -773,7 +777,7 @@ is_next_submodel_redundant <- function(current, new) {
   old_submodel <- current
   new_submodel <- c(current, new)
   if (count_terms_chosen(new_submodel) >
-    count_terms_chosen(old_submodel)) {
+      count_terms_chosen(old_submodel)) {
     FALSE
   } else {
     TRUE
@@ -881,12 +885,12 @@ get_contrasts_arg_list <- function(formula, data) {
   ## check categorical variables
   ## add contrasts for those
   frame <- model.frame(delete.response(terms(formula)),
-    data = data
+                       data = data
   )
   factors <- sapply(frame, is.factor)
   contrasts_arg <- lapply(names(factors)[as.logical(factors)], function(v) {
     stats::contrasts(frame[, v],
-      contrasts = FALSE
+                     contrasts = FALSE
     )
   })
   contrasts_arg <- setNames(contrasts_arg, names(factors)[as.logical(factors)])

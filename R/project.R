@@ -10,10 +10,10 @@
 #'   or an object which can be converted to a reference model using
 #'   \link[=get_refmodel]{get_refmodel}.
 #' @param nterms Number of terms in the submodel (the variable combination is
-#'   taken from the \code{varsel} information). If a list, then the projection
-#'   is performed for each model size. Default is the model size suggested by
-#'   the variable selection (see function \code{suggest_size}). Ignored if
-#'   \code{solution_terms} is specified.
+#'   taken from the \code{varsel} information). If a numeric vector, then the
+#'   projection is performed for each model size. Default is the model size
+#'   suggested by the variable selection (see function \code{suggest_size}).
+#'   Ignored if \code{solution_terms} is specified.
 #' @param solution_terms Variable indices onto which the projection is done. If
 #'   specified, \code{nterms} is ignored.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
@@ -22,19 +22,28 @@
 #'   solution from the L1-penalized projection. This option is relevant only if
 #'   L1-search was used. Default is TRUE for genuine reference models and FALSE
 #'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param ndraws Number of posterior draws to be projected. Ignored if
-#'   \code{nclusters} is specified. Default is 400. We project a single draw
-#'   from each cluster.
-#' @param nclusters Number of clusters in the clustered projection. By default
-#'   we use as many clusters as draws to project.
+#' @param ndraws Number of posterior draws to be projected. Cannot be larger
+#'   than the number of draws in the reference model. \strong{Caution:} For
+#'   \code{ndraws <= 20}, the value of \code{ndraws} is passed to
+#'   \code{nclusters} (so that clustering is used). Ignored if \code{nclusters}
+#'   is not \code{NULL} or if the reference model is of class \code{"datafit"}
+#'   (in which case one cluster is used). See also section "Details" below.
+#' @param nclusters Number of clusters of posterior draws to be projected.
+#'   Ignored if the reference model is of class \code{"datafit"} (in which case
+#'   one cluster is used). For the meaning of \code{NULL}, see argument
+#'   \code{ndraws}. See also section "Details" below.
 #' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
-#'   be used to ensure same results every time. @param regul Amount of
-#'   regularization in the projection. Usually there is no need for
-#'   regularization, but sometimes for some models the projection can be
-#'   ill-behaved and we need to add some regularization to avoid numerical
-#'   problems.
-#' @param regul Ridgre regularization constant to fit the projections.
+#'   be used to ensure same results every time.
+#' @param regul Amount of ridge regularization when fitting the models in the
+#'   projection. Usually there is no need for regularization, but sometimes for
+#'   some models the projection can be ill-behaved and we need to add some
+#'   regularization to avoid numerical problems.
 #' @param ... Currently ignored.
+#'
+#' @details Using less draws or clusters in \code{ndraws} or \code{nclusters}
+#'   than posterior draws in the reference model may result in slightly
+#'   inaccurate projection performance. Increasing these arguments linearly
+#'   affects the computation time.
 #'
 #' @return A list of submodels (or a single submodel if projection was
 #'   performed onto a single variable combination), each of which contains the
@@ -71,7 +80,8 @@
 #'   # project onto the best model with 4 variables
 #'   proj4 <- project(vs, nterms = 4)
 #'
-#'   # project onto an arbitrary variable combination (variable indices 1, 3 and 5)
+#'   # project onto an arbitrary variable combination (variable indices 1, 3
+#'   # and 5)
 #'   proj <- project(fit, solution_terms = c(1, 3, 5))
 #' }
 #' }
@@ -94,16 +104,12 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   refmodel <- get_refmodel(object, ...)
 
   if (cv_search) {
-    ## use non-cv_searched solution for datafits by default
+    ## use non-cv_searched solution for datafits
     cv_search <- !inherits(refmodel, "datafit")
   }
 
-  if (inherits(refmodel, "datafit")) {
-    ndraws <- nclusters <- 1
-  }
-
   if (!is.null(solution_terms) &&
-    any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
+      any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
     ## search path not found, or the given variable combination
     ## not in the search path, then we need to project the
     ## required variables
@@ -118,14 +124,14 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     } else {
       ## project only the given model on a fit object
       vars <- setdiff(split_formula(refmodel$formula,
-        data = refmodel$fetch_data()
+                                    data = refmodel$fetch_data()
       ), "1")
     }
 
     if (length(solution_terms) > length(vars)) {
       stop(
         "Argument 'solution_terms' contains more terms than the number of ",
-        "terms in the model."
+        "terms in the reference model."
       )
     }
 
@@ -162,28 +168,18 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     }
   }
 
-  if (is.null(ndraws)) {
-    ndraws <- min(ndraws, NCOL(refmodel$mu))
-  } else {
-    if (ndraws > NCOL(refmodel$mu)) {
-      stop(
-        "Number of posterior draws exceeds the number of columns in the ",
-        "reference model's posterior."
-      )
-    }
-    if (is.null(nclusters)) {
-      nclusters <- ndraws
-    }
+  stopifnot(!is.null(ndraws))
+  ndraws <- min(NCOL(refmodel$mu), ndraws)
+
+  if (is.null(nclusters) && ndraws <= 20) {
+    nclusters <- ndraws
+  }
+  if (!is.null(nclusters)) {
+    nclusters <- min(NCOL(refmodel$mu), nclusters)
   }
 
-  if (is.null(nclusters)) {
+  if (inherits(refmodel, "datafit")) {
     nclusters <- 1
-  } else
-  if (nclusters > NCOL(refmodel$mu)) {
-    stop(
-      "Number of clusters exceeds the number of columns in the reference ",
-      "model's posterior."
-    )
   }
 
   intercept <- refmodel$intercept
@@ -194,7 +190,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   ## get the clustering or subsample
   p_ref <- .get_refdist(refmodel,
-    ndraws = ndraws, nclusters = nclusters, seed = seed
+                        ndraws = ndraws, nclusters = nclusters, seed = seed
   )
 
   ## project onto the submodels

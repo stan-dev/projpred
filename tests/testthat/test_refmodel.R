@@ -15,7 +15,7 @@ if (require(rstanarm)) {
   chains <- 2
   iter <- 500
   offset <- rnorm(n)
-  source(file.path("helpers", "SW.R"))
+  source(testthat::test_path("helpers", "SW.R"))
 
   f_gauss <- gaussian()
   df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
@@ -25,12 +25,13 @@ if (require(rstanarm)) {
 
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_gauss, data = df_gauss,
-      chains = chains, seed = seed, iter = iter
+                          family = f_gauss, data = df_gauss,
+                          chains = chains, seed = seed, iter = iter
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom,
-      data = df_binom, chains = chains, seed = seed, iter = iter
+                          family = f_binom,
+                          data = df_binom, chains = chains, seed = seed,
+                          iter = iter
     )
     ref_gauss <- get_refmodel(fit_gauss)
     ref_binom <- get_refmodel(fit_binom)
