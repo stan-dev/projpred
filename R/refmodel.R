@@ -256,6 +256,10 @@ get_refmodel.default <- function(object, data, formula, ref_predfun,
 get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
                                  proj_predfun = NULL, div_minimizer = NULL,
                                  folds = NULL, ...) {
+  if (is.null(object$elapsed_time)) {
+    object$elapsed_time <- rstan::get_elapsed_time(object$stanfit)
+  }
+
   family <- family(object)
   family <- extend_family(family)
   if (inherits(object, "gamm4")) {
@@ -458,12 +462,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   target <- .get_standard_y(y, weights, family)
   y <- target$y
-
-  if (inherits(object, "brmsfit")) {
-    object$elapsed_time <- rstan::get_elapsed_time(object$fit)
-  } else {
-    object$elapsed_time <- rstan::get_elapsed_time(object$stanfit)
-  }
 
   if (proper_model) {
     loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
