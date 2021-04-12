@@ -9,31 +9,36 @@ distribution of the projected submodel}
 \usage{
 proj_linpred(
   object,
+  filter_nterms = NULL,
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
-  nterms = NULL,
   transform = FALSE,
   integrated = FALSE,
-  seed = NULL,
   ...
 )
 
 proj_predict(
   object,
+  filter_nterms = NULL,
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
-  nterms = NULL,
-  ndraws = 1000,
-  seed = NULL,
+  size_sub = 1000,
+  seed_sub = NULL,
   ...
 )
 }
 \arguments{
-\item{object}{Either an object returned by \link[=varsel]{varsel},
-\link[=cv_varsel]{cv_varsel} or \link[=init_refmodel]{init_refmodel}, or
-alternatively any object that can be converted to a reference model.}
+\item{object}{Either an object returned by \link[=project]{project} or
+alternatively any object that can be passed to argument \code{object} of
+\link[=project]{project}.}
+
+\item{filter_nterms}{Only applies if \code{object} is an object returned by
+\link[=project]{project}. In that case, \code{filter_nterms} can be used to
+filter \code{object} for only those elements (submodels) with a number of
+solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
+vector or \code{NULL}. If \code{NULL}, use all submodels.}
 
 \item{newdata}{The predictor values used in the prediction. If
 \code{solution_terms} is specified, then \code{newdata} should either be a
@@ -45,7 +50,7 @@ as in the original data or a matrix with the same columns at the same
 positions as in the original data.}
 
 \item{offsetnew}{Offsets for the new observations. By default a vector of
-zeros. By default we take the weights from newdata as in the original
+zeros. By default we take the offsets from newdata as in the original
 model. Either NULL or right hand side formula.}
 
 \item{weightsnew}{Weights for the new observations. For binomial model,
@@ -54,38 +59,46 @@ this argument matters only if \code{newdata} is specified. By default we
 take the weights from newdata as in the original model. Either NULL or
 right hand side formula.}
 
-\item{nterms}{Number of terms in the submodel (the variable combination is
-taken from the variable selection information). If a vector with several
-values, then results for all specified model sizes are returned. Ignored if
-\code{solution_terms} is specified. By default use the automatically
-suggested model size.}
-
 \item{transform}{Should the linear predictor be transformed using the
 inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
 only.}
 
-\item{integrated}{If \code{TRUE}, the output is averaged over the parameters.
-Default is \code{FALSE}. For \code{proj_linpred} only.}
+\item{integrated}{If \code{TRUE}, the output is averaged over the projected
+posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.}
 
-\item{seed}{An optional seed to use for drawing from the projection. For
-\code{proj_predict} only.}
+\item{...}{Additional arguments passed to \link{project} if \code{object} is
+not already an object returned by \link{project}.}
 
-\item{...}{Additional argument passed to \link{project} if \code{object} is
-an object returned by \link{varsel} or \link{cv_varsel}.}
+\item{size_sub}{For \code{proj_predict} only: Number of draws to return from
+the predictive distribution of the projection. Not to be confused with
+arguments \code{ndraws} and \code{nclusters} of \link{project}:
+\code{size_sub} gives a \emph{subset} of the (possibly clustered) posterior
+draws after projection (as determined by arguments \code{ndraws} and
+\code{nclusters} of \link{project}). The default for \code{size_sub} is
+1000. We compute as many clusters from the reference posterior as draws, so
+we end up projecting a single draw from each cluster.}
 
-\item{ndraws}{Number of draws to return from the predictive distribution of
-the projection. The default is 1000. For \code{proj_predict} only. We
-compute as many clusters from the reference posterior as draws, so we end
-up projecting a single draw from each cluster.}
+\item{seed_sub}{For \code{proj_predict} only: An optional seed for subsetting
+the (possibly clustered) posterior draws after projection (see argument
+\code{size_sub}).}
 }
 \value{
 If the prediction is done for one submodel only (\code{nterms} has
-  length one or \code{solution_terms} is specified) and newdata is
-  unspecified, a matrix or vector of predictions (depending on the value of
-  \code{integrated}). If \code{newdata} is specified, returns a list with
-  elements pred (predictions) and lpd (log predictive densities). If the
-  predictions are done for several submodel sizes, returns a list with one
-  element for each submodel.
+  length one or \code{solution_terms} is specified):
+  \itemize{
+    \item \code{proj_linpred} returns a list with elements \code{pred}
+    (predictions) and \code{lpd} (log predictive densities). Both elements
+    are either a S x N matrix or a length-N vector (depending on the value of
+    \code{integrated}), with S denoting the number of (possibly clustered)
+    posterior draws and N denoting the number of observations.
+    \item \code{proj_predict} returns a S x N matrix of predictions, with S
+    denoting the number of (possibly clustered) posterior draws and N
+    denoting the number of observations.
+  }
+  If the predictions are done for several submodel sizes, the output from
+  above is returned for each submodel, giving a named list with one element
+  for each submodel (the names of this list being the numbers of solutions
+  terms of the submodels when taking the intercept into account).
 }
 \description{
 \code{proj_linpred} extracts draws of the linear predictor and
@@ -103,7 +116,8 @@ if (requireNamespace('rstanarm', quietly=TRUE)) {
   y <- x[,1] + 0.5*rnorm(n)
   data <- data.frame(x,y)
 
-  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
+  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+                            data=data, chains=2, iter=500)
   vs <- varsel(fit)
 
   # compute predictions with 4 variables at the training points

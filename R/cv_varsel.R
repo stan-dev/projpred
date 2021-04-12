@@ -16,20 +16,24 @@
 #'   Default is 'forward' if the number of variables in the full data is at most
 #'   20,' and \code{'L1'} otherwise.
 #' @param ndraws Number of posterior draws used in the variable selection.
-#'   Cannot be larger than the number of draws in the reference model. Ignored
-#'   if nclusters is set. Default is 10. In other words, we project a single
-#'   draw from each cluster.
-#' @param nclusters Number of clusters used for selection. Defaults to 10 and
-#'   ignored if method='L1' (L1-search uses always one cluster). If nclusters is
-#'   null we use as many clusters as draws to project.
-#' @param ndraws_pred Number of projected draws used for prediction (after
-#'   selection). Ignored if nclusters_pred is given. Note that setting less
-#'   draws or clusters than posterior draws in the reference model may result in
-#'   slightly inaccurate projection performance, although increasing this
-#'   argument linearly affects the computation time. Default is 400.
-#' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 400. If nclusters_pred is null, we use as many
-#'   clusters for prediction as ndraws_pred.
+#'   Cannot be larger than the number of draws in the reference model.
+#'   \strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is
+#'   passed to \code{nclusters} (so that clustering is used). Ignored if
+#'   \code{nclusters} is not \code{NULL} or if \code{method = "L1"} (L1 search
+#'   uses always one cluster). See also section "Details" below.
+#' @param nclusters Number of clusters of posterior draws used in the variable
+#'   selection. Ignored if \code{method = "L1"} (L1 search uses always one
+#'   cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
+#'   also section "Details" below.
+#' @param ndraws_pred Number of posterior draws used for prediction (after
+#'   selection). Cannot be larger than the number of draws in the reference
+#'   model. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
+#'   \code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering
+#'   is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
+#'   section "Details" below.
+#' @param nclusters_pred Number of clusters of posterior draws used for
+#'   prediction (after selection). For the meaning of \code{NULL}, see argument
+#'   \code{ndraws_pred}. See also section "Details" below.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
 #'   are computed without any penalization (or using only the regularization
 #'   determined by \code{regul}). If FALSE, then the coefficients are the
@@ -80,9 +84,16 @@
 #'   introduced by the selectin process).
 #' @param seed Random seed used in the subsampling LOO. By default uses a fixed
 #'   seed.
-#' @param search_terms User defined list of terms to consider for selection.
+#' @param search_terms A custom character vector of terms to consider for
+#'   selection. The intercept (\code{"1"}) needs to be included explicitly. The
+#'   default considers all the terms in the reference model's formula.
 #' @param ... Additional arguments to be passed to the
 #'   \code{get_refmodel}-function.
+#'
+#' @details Using less draws or clusters in \code{ndraws}, \code{nclusters},
+#'   \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
+#'   reference model may result in slightly inaccurate projection performance.
+#'   Increasing these arguments linearly affects the computation time.
 #'
 #' @return An object of type \code{vsel} that contains information about the
 #'   feature selection. The fields are not meant to be accessed directly by the
@@ -120,8 +131,8 @@ cv_varsel.default <- function(object, ...) {
 #' @rdname cv_varsel
 #' @export
 cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
-                               ndraws = NULL, nclusters = NULL,
-                               ndraws_pred = NULL, nclusters_pred = NULL,
+                               ndraws = 20, nclusters = NULL,
+                               ndraws_pred = 400, nclusters_pred = NULL,
                                cv_search = TRUE, nterms_max = NULL,
                                penalty = NULL, verbose = TRUE,
                                nloo = NULL, K = NULL, lambda_min_ratio = 1e-5,
@@ -190,20 +201,20 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
       print(paste("Performing the selection using all the data.."))
     }
     sel <- varsel(refmodel,
-      method = method, ndraws = ndraws, nclusters = nclusters,
-      ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
-      cv_search = cv_search, nterms_max = nterms_max - 1,
-      intercept = intercept, penalty = penalty, verbose = verbose,
-      lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, regul = regul,
-      search_terms = search_terms, seed = seed
+                  method = method, ndraws = ndraws, nclusters = nclusters,
+                  ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
+                  cv_search = cv_search, nterms_max = nterms_max - 1,
+                  intercept = intercept, penalty = penalty, verbose = verbose,
+                  lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
+                  regul = regul, search_terms = search_terms, seed = seed
     )
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
   }
 
   candidate_terms <- split_formula(refmodel$formula,
-    data = refmodel$fetch_data(),
-    add_main_effects = FALSE
+                                   data = refmodel$fetch_data(),
+                                   add_main_effects = FALSE
   )
   ## find out how many of cross-validated iterations select
   ## the same variables as the selection with all the data.
@@ -219,7 +230,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   )
   ## make sure it's always a matrix
   solution_terms_cv_ch <- matrix(solution_terms_cv_ch,
-    ncol = length(solution_terms)
+                                 ncol = length(solution_terms)
   )
 
   ## these weights might be non-constant in case of subsampling LOO
@@ -235,7 +246,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
         size = size,
         sapply(vars, function(var) {
           sum((solution_terms_cv_ch[seq_len(size), , drop = FALSE] == var) * w,
-            na.rm = TRUE
+              na.rm = TRUE
           )
         })
       )
@@ -244,22 +255,22 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
 
   ## create the object to be returned
   vs <- nlist(refmodel,
-    search_path = sel$search_path,
-    d_test = sel_cv$d_test,
-    summaries = sel_cv$summaries,
-    family = refmodel$family,
-    kl = sel$kl,
-    solution_terms = sel$solution_terms,
-    pct_solution_terms_cv,
-    nterms_all = count_terms_in_formula(refmodel$formula),
-    nterms_max,
-    method,
-    cv_method,
-    validate_search,
-    nclusters,
-    nclusters_pred,
-    ndraws,
-    ndraws_pred
+              search_path = sel$search_path,
+              d_test = sel_cv$d_test,
+              summaries = sel_cv$summaries,
+              family = refmodel$family,
+              kl = sel$kl,
+              solution_terms = sel$solution_terms,
+              pct_solution_terms_cv,
+              nterms_all = count_terms_in_formula(refmodel$formula),
+              nterms_max,
+              method,
+              cv_method,
+              validate_search,
+              nclusters,
+              nclusters_pred,
+              ndraws,
+              ndraws_pred
   )
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
@@ -345,17 +356,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel,
-    ndraws = ndraws,
-    nclusters = nclusters,
-    seed = seed
+                        ndraws = ndraws,
+                        nclusters = nclusters,
+                        seed = seed
   )
   cl_sel <- p_sel$cl # clustering information
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel,
-    ndraws = ndraws_pred,
-    nclusters = nclusters_pred,
-    seed = seed
+                         ndraws = ndraws_pred,
+                         nclusters = nclusters_pred,
+                         seed = seed
   )
   cl_pred <- p_pred$cl
 
@@ -445,18 +456,19 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     y <- matrix(refmodel$y, nrow = n)
     for (k in seq_along(summaries_sub)) {
       mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
-        obs = inds,
-        offset = refmodel$offset,
-        weights = 1
+                            obs = inds,
+                            offset = refmodel$offset,
+                            weights = 1
       )
       log_lik_sub <- t(family$ll_fun(
         mu_k, submodels[[k]]$dis,
         y[inds], refmodel$wobs
       ))
-      sub_psisloo <- suppressWarnings(loo::psis(-log_lik_sub,
-        cores = 1,
-        r_eff = rep(1, ncol(log_lik_sub))
-      ))
+      sub_psisloo <- suppressWarnings(
+        loo::psis(-log_lik_sub,
+                  cores = 1,
+                  r_eff = rep(1, ncol(log_lik_sub)))
+      )
       lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
       loo_sub[inds, k] <- apply(
         log_lik_sub[,] + lw_sub[,], 2,
@@ -472,8 +484,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     candidate_terms <- split_formula(refmodel$formula,
-      data = refmodel$fetch_data(),
-      add_main_effects = FALSE
+                                     data = refmodel$fetch_data(),
+                                     add_main_effects = FALSE
     )
     ## with `match` we get the indices of the variables as they enter the
     ## solution path in solution_terms
@@ -531,8 +543,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
 
       candidate_terms <- split_formula(refmodel$formula,
-        data = refmodel$fetch_data(),
-        add_main_effects = FALSE
+                                       data = refmodel$fetch_data(),
+                                       add_main_effects = FALSE
       )
       ## with `match` we get the indices of the variables as they enter the
       ## solution path in solution_terms
@@ -622,13 +634,13 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
     mu_test <- family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test,
-      dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg
+          dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg
     )
   }
 
   msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
   list_cv <- mapply(make_list_cv, refmodels_cv, d_test_cv, msgs,
-    SIMPLIFY = FALSE
+                    SIMPLIFY = FALSE
   )
 
   ## Perform the selection for each of the K folds
@@ -678,7 +690,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   p_sub_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
-    SIMPLIFY = FALSE
+                     SIMPLIFY = FALSE
   )
   if (verbose && cv_search) {
     close(pb)
@@ -725,8 +737,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }))
 
   return(nlist(solution_terms_cv,
-    summaries = list(sub = sub, ref = ref),
-    d_test = c(d_cv, type = "kfold")
+               summaries = list(sub = sub, ref = ref),
+               d_test = c(d_cv, type = "kfold")
   ))
 }
 

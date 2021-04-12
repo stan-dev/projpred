@@ -8,9 +8,14 @@
 #'
 #' @name proj-pred
 #'
-#' @param object Either an object returned by \link[=varsel]{varsel},
-#'   \link[=cv_varsel]{cv_varsel} or \link[=init_refmodel]{init_refmodel}, or
-#'   alternatively any object that can be converted to a reference model.
+#' @param object Either an object returned by \link[=project]{project} or
+#'   alternatively any object that can be passed to argument \code{object} of
+#'   \link[=project]{project}.
+#' @param filter_nterms Only applies if \code{object} is an object returned by
+#'   \link[=project]{project}. In that case, \code{filter_nterms} can be used to
+#'   filter \code{object} for only those elements (submodels) with a number of
+#'   solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
+#'   vector or \code{NULL}. If \code{NULL}, use all submodels.
 #' @param newdata The predictor values used in the prediction. If
 #'   \code{solution_terms} is specified, then \code{newdata} should either be a
 #'   dataframe containing column names that correspond to \code{solution_terms}
@@ -20,7 +25,7 @@
 #'   as in the original data or a matrix with the same columns at the same
 #'   positions as in the original data.
 #' @param offsetnew Offsets for the new observations. By default a vector of
-#'   zeros. By default we take the weights from newdata as in the original
+#'   zeros. By default we take the offsets from newdata as in the original
 #'   model. Either NULL or right hand side formula.
 #' @param weightsnew Weights for the new observations. For binomial model,
 #'   corresponds to the number trials per observation. For \code{proj_linpred},
@@ -30,29 +35,38 @@
 #' @param transform Should the linear predictor be transformed using the
 #'   inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
 #'   only.
-#' @param integrated If \code{TRUE}, the output is averaged over the parameters.
-#'   Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param nterms Number of terms in the submodel (the variable combination is
-#'   taken from the variable selection information). If a vector with several
-#'   values, then results for all specified model sizes are returned. Ignored if
-#'   \code{solution_terms} is specified. By default use the automatically
-#'   suggested model size.
-#' @param ndraws Number of draws to return from the predictive distribution of
-#'   the projection. The default is 1000. For \code{proj_predict} only. We
-#'   compute as many clusters from the reference posterior as draws, so we end
-#'   up projecting a single draw from each cluster.
-#' @param seed An optional seed to use for drawing from the projection. For
-#'   \code{proj_predict} only.
-#' @param ... Additional argument passed to \link{project} if \code{object} is
-#'   an object returned by \link{varsel} or \link{cv_varsel}.
+#' @param integrated If \code{TRUE}, the output is averaged over the projected
+#'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
+#' @param size_sub For \code{proj_predict} only: Number of draws to return from
+#'   the predictive distribution of the projection. Not to be confused with
+#'   arguments \code{ndraws} and \code{nclusters} of \link{project}:
+#'   \code{size_sub} gives a \emph{subset} of the (possibly clustered) posterior
+#'   draws after projection (as determined by arguments \code{ndraws} and
+#'   \code{nclusters} of \link{project}). The default for \code{size_sub} is
+#'   1000. We compute as many clusters from the reference posterior as draws, so
+#'   we end up projecting a single draw from each cluster.
+#' @param seed_sub For \code{proj_predict} only: An optional seed for subsetting
+#'   the (possibly clustered) posterior draws after projection (see argument
+#'   \code{size_sub}).
+#' @param ... Additional arguments passed to \link{project} if \code{object} is
+#'   not already an object returned by \link{project}.
 #'
 #' @return If the prediction is done for one submodel only (\code{nterms} has
-#'   length one or \code{solution_terms} is specified) and newdata is
-#'   unspecified, a matrix or vector of predictions (depending on the value of
-#'   \code{integrated}). If \code{newdata} is specified, returns a list with
-#'   elements pred (predictions) and lpd (log predictive densities). If the
-#'   predictions are done for several submodel sizes, returns a list with one
-#'   element for each submodel.
+#'   length one or \code{solution_terms} is specified):
+#'   \itemize{
+#'     \item \code{proj_linpred} returns a list with elements \code{pred}
+#'     (predictions) and \code{lpd} (log predictive densities). Both elements
+#'     are either a S x N matrix or a length-N vector (depending on the value of
+#'     \code{integrated}), with S denoting the number of (possibly clustered)
+#'     posterior draws and N denoting the number of observations.
+#'     \item \code{proj_predict} returns a S x N matrix of predictions, with S
+#'     denoting the number of (possibly clustered) posterior draws and N
+#'     denoting the number of observations.
+#'   }
+#'   If the predictions are done for several submodel sizes, the output from
+#'   above is returned for each submodel, giving a named list with one element
+#'   for each submodel (the names of this list being the numbers of solutions
+#'   terms of the submodels when taking the intercept into account).
 #'
 #' @examples
 #' \donttest{
@@ -65,7 +79,8 @@
 #'   data <- data.frame(x,y)
 #'
 #'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'   data=data, chains=2, iter=500) vs <- varsel(fit)
+#'                             data=data, chains=2, iter=500)
+#'   vs <- varsel(fit)
 #'
 #'   # compute predictions with 4 variables at the training points
 #'   pred <- proj_linpred(vs, newdata = data, nv = 4)
@@ -81,58 +96,61 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
-                        proj_predict, ...) {
+proj_helper <- function(object, filter_nterms = NULL, newdata,
+                        offsetnew, weightsnew,
+                        onesub_fun, integrated = NULL, transform = NULL,
+                        size_sub = NULL, ...) {
   if (inherits(object, "projection") ||
-    (length(object) > 0 && inherits(object[[1]], "projection"))) {
-    proj <- object
+      (length(object) > 0 && inherits(object[[1]], "projection"))) {
+    if (!is.null(filter_nterms)) {
+      if (!.is_proj_list(object)) {
+        object <- list(object)
+      }
+      projs <- Filter(function(x) {
+        count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
+      }, object)
+    } else {
+      projs <- object
+    }
   } else {
     ## reference model or varsel object obtained, so run the projection
-    proj <- project(object = object, nterms = nterms, seed = seed, ...)
+    projs <- project(object = object, ...)
   }
 
-  if (!.is_proj_list(proj)) {
-    proj <- list(proj)
+  if (!.is_proj_list(projs)) {
+    projs <- list(projs)
   } else {
-    ## proj is not a projection object
-    if (any(sapply(proj, function(x) !("family" %in% names(x))))) {
-      stop(paste(
-        "proj_linpred only works with objects returned by",
-        " varsel, cv_varsel or project"
-      ))
+    ## projs is some other object, not containing an element called "family" (so
+    ## it could be a `proj_list` but must not necessarily)
+    if (any(sapply(projs, function(x) !("family" %in% names(x))))) {
+      stop("Invalid object supplied to argument `object`.")
     }
   }
 
   if (is.null(newdata)) {
     ## pick first projection's function
-    newdata <- proj[[1]]$refmodel$fetch_data()
+    newdata <- projs[[1]]$refmodel$fetch_data()
   } else if (!any(inherits(newdata, c("matrix", "data.frame"), TRUE))) {
     stop("newdata must be a data.frame or a matrix")
   }
 
-  projs <- proj
-  names(projs) <- sapply(projs, function(x) {
-    count_terms_chosen(x$solution_terms)
+  names(projs) <- sapply(projs, function(proj) {
+    count_terms_chosen(proj$solution_terms)
   })
 
   solution_terms <- list(...)$solution_terms
   if (!is.null(solution_terms) &&
       length(solution_terms) > NCOL(newdata)) {
     stop(paste(
-      "The number of columns in newdata does not match with the given",
-      "number of solution terms."
+      "The number of solution terms is greater than the number of columns in",
+      "newdata."
     ))
   }
-  ## set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- rngtools::RNGseed()
-  on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(seed)
 
   preds <- lapply(projs, function(proj) {
-    extract_model_data <- proj$extract_model_data
-    w_o <- extract_model_data(proj$refmodel$fit,
-      newdata = newdata, weightsnew,
-      offsetnew, extract_y = FALSE
+    w_o <- proj$extract_model_data(proj$refmodel$fit,
+                                   newdata = newdata, weightsnew,
+                                   offsetnew, extract_y = FALSE
     )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
@@ -143,11 +161,14 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
       offsetnew <- rep(0, NROW(newdata))
     }
     mu <- proj$family$mu_fun(proj$sub_fit,
-      newdata = newdata, offset = offsetnew,
-      weights = weightsnew
+                             newdata = newdata, offset = offsetnew,
+                             weights = weightsnew
     )
 
-    proj_predict(proj, mu, weightsnew)
+    onesub_fun(proj, mu, weightsnew,
+               offset = offsetnew, newdata = newdata,
+               integrated = integrated, transform = transform,
+               size_sub = size_sub)
   })
 
   return(.unlist_proj(preds))
@@ -155,49 +176,42 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, nterms, seed,
 
 #' @rdname proj-pred
 #' @export
-proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
-                         weightsnew = NULL, nterms = NULL, transform = FALSE,
-                         integrated = FALSE, seed = NULL, ...) {
-
-  ## function to perform to each projected submodel
-  proj_predict <- function(proj, mu, weights) {
-    predictions <- t(mu)
-    if (!transform) predictions <- proj$family$linkfun(predictions)
-    if (integrated) {
-      ## average over the parameters
-      pred <- as.vector(proj$weights %*% predictions)
-      proj$dis <- as.numeric(proj$weights %*% proj$dis)
-    } else if (!is.null(dim(predictions)) && nrow(predictions) == 1) {
-      ## return a vector if pred contains only one row
-      pred <- as.vector(predictions)
-    } else {
-      pred <- predictions
-    }
-
-    extract_model_data <- proj$extract_model_data
-    w_o <- extract_model_data(proj$refmodel$fit,
-      newdata = newdata, weightsnew,
-      offsetnew, extract_y = TRUE
-    )
-
-    if (!is.null(w_o$y)) {
-      ynew <- w_o$y
-    } else {
-      ynew <- NULL
-    }
-
-    return(nlist(pred, lpd = compute_lpd(
-      ynew = ynew, pred = t(pred), proj = proj, weights = weights,
-      integrated = integrated, transform = transform
-    )))
-  }
-
+proj_linpred <- function(object, filter_nterms = NULL, newdata = NULL,
+                         offsetnew = NULL, weightsnew = NULL, transform = FALSE,
+                         integrated = FALSE, ...) {
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
-    object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew, nterms = nterms, seed = seed,
-    proj_predict = proj_predict, ...
+    object = object, filter_nterms = filter_nterms, newdata = newdata,
+    offsetnew = offsetnew, weightsnew = weightsnew,
+    onesub_fun = proj_linpred_aux,
+    integrated = integrated, transform = transform, ...
   )
+}
+
+## function applied to each projected submodel in case of proj_linpred()
+proj_linpred_aux <- function(proj, mu, weights, ...) {
+  dot_args <- list(...)
+  pred <- t(mu)
+  if (!dot_args$transform) pred <- proj$family$linkfun(pred)
+  if (dot_args$integrated) {
+    ## average over the posterior draws
+    pred <- as.vector(proj$weights %*% pred)
+    proj$dis <- as.vector(proj$weights %*% proj$dis)
+  } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
+    ## return a vector if pred contains only one row
+    pred <- as.vector(pred)
+  }
+
+  w_o <- proj$extract_model_data(proj$refmodel$fit,
+                                 newdata = dot_args$newdata, wrhs = weights,
+                                 orhs = dot_args$offset, extract_y = TRUE
+  )
+  ynew <- w_o$y
+
+  return(nlist(pred, lpd = compute_lpd(
+    ynew = ynew, pred = t(pred), proj = proj, weights = weights,
+    integrated = dot_args$integrated, transform = dot_args$transform
+  )))
 }
 
 compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
@@ -207,7 +221,6 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     target <- .get_standard_y(ynew, weights, proj$family)
     ynew <- target$y
     weights <- target$weights
-    ## if !transform then we are passing linkfun(mu)
     if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
@@ -226,28 +239,34 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 
 #' @rdname proj-pred
 #' @export
-proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
-                         weightsnew = NULL, nterms = NULL, ndraws = 1000,
-                         seed = NULL, ...) {
-
-  ## function to perform to each projected submodel
-  proj_predict <- function(proj, mu, weights) {
-    draw_inds <- sample(
-      x = seq_along(proj$weights), size = ndraws,
-      replace = TRUE, prob = proj$weights
-    )
-
-    do.call(rbind, lapply(draw_inds, function(i) {
-      proj$family$ppd(mu[, i], proj$dis[i], weights)
-    }))
-  }
+proj_predict <- function(object, filter_nterms = NULL, newdata = NULL,
+                         offsetnew = NULL, weightsnew = NULL, size_sub = 1000,
+                         seed_sub = NULL, ...) {
+  ## set random seed but ensure the old RNG state is restored on exit
+  rng_state_old <- rngtools::RNGseed()
+  on.exit(rngtools::RNGseed(rng_state_old))
+  set.seed(seed_sub)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
-    object = object, newdata = newdata, offsetnew = offsetnew,
-    weightsnew = weightsnew, nterms = nterms, seed = seed,
-    proj_predict = proj_predict, ...
+    object = object, filter_nterms = filter_nterms, newdata = newdata,
+    offsetnew = offsetnew, weightsnew = weightsnew,
+    onesub_fun = proj_predict_aux,
+    size_sub = size_sub, ...
   )
+}
+
+## function applied to each projected submodel in case of proj_predict()
+proj_predict_aux <- function(proj, mu, weights, ...) {
+  dot_args <- list(...)
+  draw_inds <- sample(
+    x = seq_along(proj$weights), size = dot_args$size_sub,
+    replace = TRUE, prob = proj$weights
+  )
+
+  do.call(rbind, lapply(draw_inds, function(i) {
+    proj$family$ppd(mu[, i], proj$dis[i], weights)
+  }))
 }
 
 #' Plot summary statistics related to variable selection
@@ -286,8 +305,8 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
   tab <- rbind(
     .tabulate_stats(object, stats,
-      alpha = alpha,
-      nfeat_baseline = nfeat_baseline
+                    alpha = alpha,
+                    nfeat_baseline = nfeat_baseline
     ),
     .tabulate_stats(object, stats, alpha = alpha)
   )
@@ -340,15 +359,15 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
-      data = stats_ref,
-      color = "darkred", linetype = 2
+                          data = stats_ref,
+                          color = "darkred", linetype = 2
     )
   }
   if (baseline != "ref") {
     # add the baseline result (if different from the reference model)
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
-      data = stats_bs,
-      color = "black", linetype = 3
+                          data = stats_bs,
+                          color = "black", linetype = 3
     )
   }
   pp <- pp +
@@ -406,7 +425,8 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   y <- x[,1] + 0.5*rnorm(n)
 #'   data <- data.frame(x,y)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
+#'                             data=data, chains=2, iter=500)
 #'   vs <- cv_varsel(fit)
 #'   plot(vs)
 #'
@@ -453,13 +473,13 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
     tab <- .tabulate_stats(object, stats,
-      alpha = alpha, nfeat_baseline = nfeat_baseline
+                           alpha = alpha, nfeat_baseline = nfeat_baseline
     )
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
   stats_table <- subset(tab, tab$size != Inf) %>%
-    dplyr::group_by(statistic) %>%
+    dplyr::group_by(.data$statistic) %>%
     dplyr::slice_head(n = length(object$solution_terms) + 1)
 
   if (deltas) {
@@ -473,7 +493,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   }))
   if (!is.null(object$cv_method)) {
     cv_suffix <- unname(switch(object$cv_method,
-      LOO = ".loo", kfold = ".kfold"
+                               LOO = ".loo", kfold = ".kfold"
     ))
   } else {
     cv_suffix <- NULL
@@ -485,7 +505,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
         s,
         unname(sapply(type, function(t) {
           switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-            se = ".se", diff = ".diff", diff.se = ".diff.se"
+                 se = ".se", diff = ".diff", diff.se = ".diff.se"
           )
         }))
       )
@@ -493,8 +513,8 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   } else {
     suffix <- list(unname(sapply(type, function(t) {
       switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
-        lower = "lower", se = "se",
-        diff = "diff", diff.se = "diff.se"
+             lower = "lower", se = "se",
+             diff = "diff", diff.se = "diff.se"
       )
     })))
   }
@@ -565,7 +585,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat("\n")
   cat("Selection Summary:\n")
   print(x$selection %>% dplyr::mutate(dplyr::across(
-    tidyselect:::where(is.numeric),
+    where(is.numeric),
     ~ round(., digits)
   )),
   row.names = FALSE
@@ -600,7 +620,7 @@ print.vsel <- function(x, digits = 1, ...) {
 #' @rdname suggest_size.vsel
 #' @export
 suggest_size <- function(object, ...) {
-    UseMethod("suggest_size")
+  UseMethod("suggest_size")
 }
 
 #' Suggest model size
@@ -702,8 +722,9 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
   }
   bound <- type
   stats <- summary.vsel(object,
-    stats = stat, alpha = alpha, type = c("mean", "upper", "lower"),
-    baseline = baseline, deltas = TRUE
+                        stats = stat, alpha = alpha,
+                        type = c("mean", "upper", "lower"),
+                        baseline = baseline, deltas = TRUE
   )$selection
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
@@ -759,7 +780,7 @@ coef.subfit <- function(x, ...) {
 #' @method as.matrix lm
 as.matrix.lm <- function(x, ...) {
   return(coef(x) %>%
-         replace_population_names())
+           replace_population_names())
 }
 
 #' @method as.matrix ridgelm
@@ -936,7 +957,7 @@ as.matrix.projection <- function(x, ...) {
   }
   if (inherits(x$sub_fit, "list")) {
     if ("lmerMod" %in% class(x$sub_fit[[1]]) ||
-      "glmerMod" %in% class(x$sub_fit[[1]])) {
+        "glmerMod" %in% class(x$sub_fit[[1]])) {
       res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
     } else {
       if (inherits(x$sub_fit[[1]], "subfit")) {

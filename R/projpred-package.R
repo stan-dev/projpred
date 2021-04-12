@@ -9,6 +9,7 @@
 #' @import stats
 #' @import ggplot2
 #' @importFrom loo psis
+#' @importFrom rlang .data
 #' 
 #' 
 #' @description Description

@@ -68,7 +68,7 @@ test_that("check that we return a list of formulas for multiple responses", {
 
 test_that("check that we properly flatten a formula with duplicated terms", {
   formula <- (y ~ x + z + x:z + (1 | g) + (x | g) + (z | g) + (x + z | g) +
-    (x + z + x:z | g))
+                (x + z + x:z | g))
   flat <- projpred:::flatten_formula(formula)
   # don't check 'flat' directly as sorting of terms is OS specific
   terms <- attr(terms(flat), "term.labels")
@@ -175,7 +175,8 @@ test_that("check that we can identify formulas with group terms", {
 
 test_that(paste(
   "check that we can subset a formula and update the data",
-  "columns properly"), {
+  "columns properly"
+), {
   data <- data.frame(y = rnorm(20), x = matrix(rnorm(40), 20, 4))
   fake_y <- matrix(rnorm(20), 20, 1)
   formula <- y ~ x.1 + x.2 + x.3 + x.4

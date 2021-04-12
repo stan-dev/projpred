@@ -9,7 +9,7 @@ params:
 <!--
 %\VignetteEngine{knitr::rmarkdown}
 %\VignetteIndexEntry{projpred Performing variable selection on Generalized Linear Multilevel Models}
-\usepackage[utf8](inputenc)
+\usepackage[utf8]{inputenc}
 -->
 ```{r, child="children/SETTINGS-knitr.txt"}
 ```

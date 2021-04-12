@@ -13,19 +13,20 @@ if (require(rstanarm)) {
   # original inputs
   SW(
     fit <- stan_glm(log(LeafWt) ~ log(Diam1) + log(Diam2) + log(CanHt) +
-      log(TotHt) + log(Dens) + log(Diam1) * log(Diam2) + Group, data = mesquite,
-      refresh = 0, chain = 2
+                      log(TotHt) + log(Dens) + log(Diam1) * log(Diam2) + Group,
+                    data = mesquite,
+                    refresh = 0, chain = 2
     )
   )
   # selection
   SW({
     cvs <- cv_varsel(fit,
-      verbose = FALSE, ndraws = ndraws,
-      ndraws_pred = ndraws_pred
+                     verbose = FALSE, ndraws = ndraws,
+                     ndraws_pred = ndraws_pred
     )
     vs <- varsel(fit,
-      verbose = FALSE, ndraws = ndraws,
-      ndraws_pred = ndraws_pred
+                 verbose = FALSE, ndraws = ndraws,
+                 ndraws_pred = ndraws_pred
     )
   })
   suggested_size <- suggest_size(cvs)
