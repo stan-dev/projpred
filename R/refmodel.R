@@ -256,9 +256,7 @@ get_refmodel.default <- function(object, data, formula, ref_predfun,
 get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
                                  proj_predfun = NULL, div_minimizer = NULL,
                                  folds = NULL, ...) {
-  if (is.null(object$elapsed_time)) {
-    object$elapsed_time <- rstan::get_elapsed_time(object$stanfit)
-  }
+  fit_elapsed_time <- rstan::get_elapsed_time(object$stanfit)
 
   family <- family(object)
   family <- extend_family(family)
@@ -342,7 +340,7 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     ref_predfun = ref_predfun, div_minimizer = div_minimizer,
     proj_predfun = proj_predfun, folds = folds,
     extract_model_data = extract_model_data, dis = dis,
-    cvfun = cvfun, ...
+    fit_elapsed_time = fit_elapsed_time, cvfun = cvfun, ...
   )
   return(refmodel)
 }
@@ -353,7 +351,7 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, extract_model_data = NULL, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, ...) {
+                          fit_elapsed_time = NA, cvfits = NULL, dis = NULL, ...) {
   formula <- expand_formula(formula, data)
   terms <- extract_terms_response(formula)
   response_name <- terms$response
@@ -482,7 +480,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
   intercept <- as.logical(attr(terms(formula), "intercept"))
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, dis, y,
+    fit = object, fit_elapsed_time, formula, div_minimizer, family, mu, dis, y,
     loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
     wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
   )
