@@ -61,12 +61,10 @@ if (require(rstanarm)) {
       for (j in 1:length(p)) {
         expect_s3_class(p[[j]], "projection")
         expect_named(p[[j]], c(
-          "kl", "weights", "dis", "sub_fit", "solution_terms",
-          "p_type", "family", "intercept", "extract_model_data",
-          "refmodel"
-        ),
-        ignore.order = TRUE, info = i_inf
-        )
+          "kl", "weights", "dis", "solution_terms", "sub_fit", "p_type",
+          "family", "intercept", "extract_model_data", "refmodel", "summaries",
+          "d_test", "time"
+        ), ignore.order = TRUE)
         # number of ndraws should equal to the number of draw weights
         ndraws <- length(p[[j]]$weights)
         ## expect_equal(NROW(as.matrix(p[[j]])), ndraws)
@@ -270,7 +268,7 @@ if (require(rstanarm)) {
       expect_named(p, c(
         "kl", "weights", "dis", "sub_fit", "solution_terms",
         "p_type", "family", "intercept", "extract_model_data",
-        "refmodel"
+        "refmodel", "time", "summaries", "d_test"
       ),
       ignore.order = TRUE, info = i_inf
       )

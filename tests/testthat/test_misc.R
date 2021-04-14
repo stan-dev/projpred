@@ -187,6 +187,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                          nclusters = 10, seed = seed
           )
         })
+        foo$time <- bar$time
         expect_equal(foo, bar)
 
 

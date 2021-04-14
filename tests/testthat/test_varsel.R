@@ -138,10 +138,14 @@ if (require(rstanarm)) {
                      info = paste(i_inf, j_inf)
         )
         expect_length(vs_list[[i]][[j]]$summaries$sub, nterms + 1)
-        expect_named(vs_list[[i]][[j]]$summaries$sub[[1]], c("mu", "lppd"),
-                     info = paste(i_inf, j_inf)
+        expect_named(vs_list[[i]][[j]]$summaries$sub[[1]],
+                     c("mu", "lppd", "draws"),
+                    ignore.order = TRUE,
+                    info = paste(i_inf, j_inf)
         )
-        expect_named(vs_list[[i]][[j]]$summaries$ref, c("mu", "lppd"),
+        expect_named(vs_list[[i]][[j]]$summaries$ref,
+                     c("mu", "lppd", "draws"),
+                     ignore.order = TRUE,
                      info = paste(i_inf, j_inf)
         )
         # family seems legit
@@ -343,10 +347,10 @@ if (require(rstanarm)) {
           )
           expect_length(cvs_list[[i]][[j]]$summaries$sub, nterms + 1)
           expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]],
-                       c("lppd", "mu", "w"),
+                       c("lppd", "mu", "w", "draws"),
                        info = paste(i_inf, j_inf)
           )
-          expect_named(cvs_list[[i]][[j]]$summaries$ref, c("lppd", "mu"),
+          expect_named(cvs_list[[i]][[j]]$summaries$ref, c("lppd", "mu", "draws"),
                        info = paste(i_inf, j_inf)
           )
           # family seems legit
@@ -476,10 +480,10 @@ if (require(rstanarm)) {
           )
           expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nterms + 1)
           expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]],
-                       c("mu", "lppd", "w"),
+                       c("mu", "lppd", "w", "draws"),
                        ignore.order = TRUE, info = paste(i_inf, j_inf)
           )
-          expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c("mu", "lppd"),
+          expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c("mu", "lppd", "draws"),
                        ignore.order = TRUE, info = paste(i_inf, j_inf)
           )
           # family seems legit
@@ -574,10 +578,10 @@ if (require(rstanarm)) {
       # summaries seems legit
       expect_named(fit_cv$summaries, c("sub", "ref"))
       expect_length(fit_cv$summaries$sub, nterms + 1)
-      expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd", "w"),
+      expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd", "w", "draws"),
                    ignore.order = TRUE
       )
-      expect_named(fit_cv$summaries$ref, c("mu", "lppd"),
+      expect_named(fit_cv$summaries$ref, c("mu", "lppd", "draws"),
                    ignore.order = TRUE
       )
       # family seems legit
@@ -660,13 +664,13 @@ if (require(rstanarm)) {
         )$selection
         expect_true(nrow(stats) == nterms + 1)
         expect_true(all(c(
-          "size", "solution_terms", paste0(stats_str, ".", tolower(cv_method)),
-          paste0(stats_str, ".", c("se", "upper", "lower"))
+          "size", "solution_terms", paste0(stats_str, "_", tolower(cv_method)),
+          paste0(stats_str, "_", c("se", "upper", "lower"))
         ) %in% names(stats)))
-        expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] >
-                          stats[, "mlpd.lower"]))
-        expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] <
-                          stats[, "mlpd.upper"]))
+        expect_true(all(stats[, paste0("mlpd_", tolower(cv_method))] >
+                          stats[, "mlpd_lower"]))
+        expect_true(all(stats[, paste0("mlpd_", tolower(cv_method))] <
+                          stats[, "mlpd_upper"]))
       }
     }
   })

@@ -122,7 +122,8 @@ test_that(paste(
     # summaries seems legit
     expect_named(vsd_list[[i]]$summaries, c("sub", "ref"))
     expect_equal(length(vsd_list[[i]]$summaries$sub), nterms + 1)
-    expect_named(vsd_list[[i]]$summaries$sub[[1]], c("mu", "lppd"))
+    expect_named(vsd_list[[i]]$summaries$sub[[1]], c("mu", "lppd", "draws"),
+                 ignore.order = TRUE)
     expect_named(vsd_list[[i]]$summaries$ref, c("mu", "lppd"))
   }
 })
@@ -146,8 +147,10 @@ test_that(paste(
     # summaries seems legit
     expect_named(cvvsd_list[[i]]$summaries, c("sub", "ref"))
     expect_equal(length(cvvsd_list[[i]]$summaries$sub), nterms + 1)
-    expect_named(cvvsd_list[[i]]$summaries$sub[[1]], c("mu", "lppd", "w"))
-    expect_named(cvvsd_list[[i]]$summaries$ref, c("mu", "lppd"))
+    expect_named(cvvsd_list[[i]]$summaries$sub[[1]],
+                 c("mu", "lppd", "w", "draws"),
+                 ignore.order = TRUE)
+    expect_named(cvvsd_list[[i]]$summaries$ref, c("mu", "lppd", "draws"))
   }
 })
 
@@ -174,7 +177,8 @@ test_that(paste(
     for (j in 1:length(p)) {
       expect_named(p[[j]], c(
         "kl", "weights", "dis", "solution_terms", "sub_fit", "p_type",
-        "family", "intercept", "extract_model_data", "refmodel"
+        "family", "intercept", "extract_model_data", "refmodel", "summaries",
+        "d_test", "time"
       ), ignore.order = TRUE)
       # number of draws should equal to the number of draw weights
       ndraws <- length(p[[j]]$weights)
