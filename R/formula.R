@@ -712,7 +712,7 @@ select_possible_terms_size <- function(chosen, terms, size, intercept = TRUE) {
 
     ## if model is straight redundant
     not_redundant <- (count_terms_chosen(c(chosen, x),
-                                         duplicates = TRUE
+                                         duplicates = TRUE,
                                          intercept = intercept
     ) - current - length(dups)) == increment
     ## if already_chosen is not NA it means we have already chosen the linear
