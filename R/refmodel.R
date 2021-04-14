@@ -473,22 +473,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # this is a dummy definition for cvfun, but it will lead to standard
   # cross-validation for datafit reference; see cv_varsel and get_kfold
   if (is.null(cvfun)) {
-    if (inherits(object, "brmsfit")) {
-      cvfun <- function(folds, ...) {
-        cvres <- brms::kfold(
-          object, K = max(folds),
-          save_fits = TRUE, folds = folds,
-          ...
-        )
-        fits <- cvres$fits[, "fit"]
-        return(fits)
-      }
-    } else {
-      if (!proper_model) {
-        cvfun <- function(folds, ...) lapply(1:max(folds), function(k) list())
-      } else if (is.null(cvfits)) {
-        stop("Please provide either 'cvfun' or 'cvfits'.")
-      }
+    if (!proper_model) {
+      cvfun <- function(folds, ...) lapply(1:max(folds), function(k) list())
+    } else if (is.null(cvfits)) {
+      stop("Please provide either 'cvfun' or 'cvfits'.")
     }
   }
 
