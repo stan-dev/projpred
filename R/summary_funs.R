@@ -17,10 +17,12 @@
     y <- refmodel$y[test_points]
     y_test <- nlist(y, weights)
 
-    .weighted_summary_means(
+    summ <- .weighted_summary_means(
       y_test, family, model$weights,
       matrix(mu, NROW(y), NCOL(mu)), model$dis
     )
+    summ$draws <- mu
+    return(summ)
   })
 }
 

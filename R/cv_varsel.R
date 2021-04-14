@@ -410,6 +410,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1)
   loo_sub <- matrix(nrow = n, ncol = nterms_max)
   mu_sub <- matrix(nrow = n, ncol = nterms_max)
+  mu_draws_sub <- array(dim = c(n, nterms_max, ndraws_pred))
 
   if (verbose) {
     if (validate_search) {
@@ -474,6 +475,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         log_lik_sub[,] + lw_sub[,], 2,
         log_sum_exp
       )
+      mu_draws_sub[, k, ] <- mu_k
       for (i in seq_along(inds)) {
         mu_sub[inds[i], k] <- mu_k[i, ] %*% exp(lw_sub[, i])
       }
@@ -540,6 +542,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       for (k in seq_along(summaries_sub)) {
         loo_sub[i, k] <- summaries_sub[[k]]$lppd
         mu_sub[i, k] <- summaries_sub[[k]]$mu
+        mu_draws_sub[i, k, ] <- summaries_sub[[k]]$draws
       }
 
       candidate_terms <- split_formula(refmodel$formula,
@@ -568,9 +571,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w)
+    list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w,
+         draws = mu_draws_sub[, k, ])
   })
-  summ_ref <- list(lppd = loo_ref, mu = mu_ref)
+  summ_ref <- list(lppd = loo_ref, mu = mu_ref, draws = refmodel$mu)
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   d_test <- list(
@@ -621,10 +625,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## List of K elements, each containing d_train, p_pred, etc. corresponding
   ## to each fold.
   make_list_cv <- function(refmodel, d_test, msg) {
-    nclusters_pred <- min(
-      refmodel$nclusters_pred,
-      nclusters_pred
-    )
     p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
     p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
     newdata <- d_test$newdata
@@ -681,7 +681,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_sub <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
       family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
-      intercept = intercept, regul = opt$regul, cv_search = FALSE
+      intercept = intercept, regul = opt$regul, cv_search = cv_search
     )
     if (verbose && cv_search) {
       utils::setTxtProgressBar(pb, fold_index)
@@ -719,13 +719,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     summ$w <- summ$w / sum(summ$w)
     summ
   })
-
+  ## if we return the full predictive draws sub is a big mess now
+  ## think about a better way of doing this
+  sub <- lapply(sub, function(summ) {
+    df <- as.data.frame(summ)
+    draws <- df[, startsWith(colnames(df), "draws.")] %>% as.matrix()
+    nlist(mu = summ$mu, lppd = summ$lppd, draws, w = summ$w)
+  })
   ref <- hf(lapply(list_cv, function(fold) {
     data.frame(.weighted_summary_means(
       y_test = fold$d_test, family = family, wsample = fold$refmodel$wsample,
       mu = fold$mu_test, dis = fold$refmodel$dis
     ))
   }))
+  ref$draws <- refmodel$mu
 
   ## Combine also the K separate test data sets into one list
   ## with n y's and weights's.

@@ -199,6 +199,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       y_test = d_test, family = family, wsample = refmodel$wsample,
       mu = mu_test, dis = refmodel$dis
     )
+    ## keep full draws in summaries?
+    ref[["draws"]] <- refmodel$mu
   }
 
   ## store the relevant fields into the object to be returned
