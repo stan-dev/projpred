@@ -180,6 +180,9 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
 
   intercept <- refmodel$intercept
+  if (!intercept) {
+    stop("Reference models without an intercept are currently not supported.")
+  }
   family <- refmodel$family
 
   ## get the clustering or subsample
