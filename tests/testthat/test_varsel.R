@@ -731,7 +731,7 @@ if (require(rstanarm)) {
     expect_equal(nrow(out$selection) - 1, 3)
     expect_named(out$selection, c(
       "size", "solution_terms",
-      paste0("mse.", tolower(out$cv_method)), "se",
+      paste0("mse_", tolower(out$cv_method)), "se",
       "diff", "diff_se"
       # "pct_solution_terms_cv"
     ))
