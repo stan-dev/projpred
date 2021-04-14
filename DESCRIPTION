@@ -40,7 +40,9 @@ Imports:
     doFuture,
     doRNG,
     foreach,
-    rlang
+    rlang,
+    scoringRules,
+    bayesboot
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 LazyData: TRUE
