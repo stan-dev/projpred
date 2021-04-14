@@ -138,7 +138,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
   recognized_stats <- c(
     "elpd", "mlpd", "mse", "rmse", "acc",
-    "pctcorr", "auc"
+    "pctcorr", "auc", "r2", "crps"
   )
   binomial_only_stats <- c("acc", "pctcorr", "auc")
   family <- object$family$family

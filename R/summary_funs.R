@@ -167,7 +167,38 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
   weights <- n_notna * weights / sum(weights)
 
 
-  if (stat == "mlpd") {
+  if (stat == "r2") {
+    if (!is.null(mu.bs)) {
+      y <- mu.bs
+    } else {
+      y <- d_test$y
+    }
+    eloo <- mu - y
+    n <- length(y)
+    rd <- bayesboot::rudirichlet(4000, n)
+    vary <- (rowSums(sweep(rd, 2, y^2, FUN = "*")) -
+      rowSums(sweep(rd, 2, y, FUN = "*"))^2) * (n / (n - 1))
+    vareloo <- (rowSums(sweep(rd, 2, eloo^2, FUN = "*")) -
+      rowSums(sweep(rd, 2, eloo, FUN = "*")^2)) * (n / (n - 1))
+    looR2 <- 1 - vareloo / vary
+    looR2[looR2 < -1] <- -1
+    looR2[looR2 > 1] <- 1
+    value <- median(looR2)
+    value.se <- sd(looR2)
+  } else if (stat == "crps") {
+    y <- d_test$y
+    if (!is.null(draws)) {
+      mu <- draws
+      value <- sapply(seq_along(y), function(i) {
+        scoringRules::crps_sample(y[i], dat = mu[i, ])
+      })
+      value.se <- sd(value)
+      value <- median(value)
+    } else {
+      value <- NA
+      value.se <- NA
+    }
+  } else if (stat == "mlpd") {
     if (!is.null(lppd.bs)) {
       value <- mean((lppd - lppd.bs) * weights, na.rm = TRUE)
       value.se <- weighted.sd(lppd - lppd.bs, weights,
