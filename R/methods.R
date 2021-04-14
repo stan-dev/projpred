@@ -107,7 +107,9 @@ proj_helper <- function(object, filter_nterms = NULL, newdata,
         object <- list(object)
       }
       projs <- Filter(function(x) {
-        count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
+        count_terms_chosen(x$solution_terms,
+                           intercept = x$refmodel$intercept) %in%
+          (filter_nterms + as.numeric(x$refmodel$intercept))
       }, object)
     } else {
       projs <- object
