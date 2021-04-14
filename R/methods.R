@@ -574,13 +574,29 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              nterms_max, "\n"))
   cat(paste0(
-    "Draws used for selection: ", x$ndraws, ", in ",
-    x$nclusters, " clusters\n"
+    "Draws used for selection: ", x$ndraws
   ))
+
+  if (!is.null(x$nclusters)) {
+    cat(paste0(
+      ", in ",
+      x$nclusters, " clusters\n"
+    ))
+  } else {
+    cat("\n")
+  }
+
   cat(paste0(
-    "Draws used for prediction: ", x$ndraws_pred, ", in ",
-    x$nclusters_pred, " clusters\n"
+    "Draws used for prediction: ", x$ndraws_pred
   ))
+  if (!is.null(x$nclusters_pred)) {
+    cat(paste0(
+      ", in ",
+      x$nclusters_pred, " clusters\n"
+    ))
+  } else {
+    cat("\n")
+  }
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
@@ -716,7 +732,7 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
     }
   }
   if (!is.null(object$cv_method)) {
-    suffix <- paste0(".", tolower(object$cv_method))
+    suffix <- paste0("_", tolower(object$cv_method))
   } else {
     suffix <- ""
   }
