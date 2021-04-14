@@ -86,7 +86,7 @@
     summ <- summ_ref
     res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
                     mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w,
-                    alpha = alpha
+                    alpha = alpha, draws = summ$draws
     )
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
@@ -105,10 +105,12 @@
         ## scale
         res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$d_test,
                             varsel$family, stat, mu.bs = NULL, lppd.bs = NULL,
-                            weights = summ_ref$w, alpha = alpha)
+                            weights = summ_ref$w, alpha = alpha,
+                            draws = summ_ref$draws)
         res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family,
                              stat, mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                             weights = summ$w, alpha = alpha)
+                             weights = summ$w, alpha = alpha,
+                             draws = summ$draws)
         val <- res_ref$value + res_diff$value
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
@@ -121,11 +123,11 @@
         ## normal case
         res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
                         mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w,
-                        alpha = alpha
+                        alpha = alpha, draws = summ$draws
         )
         diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
                          mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                         weights = summ$w, alpha = alpha
+                         weights = summ$w, alpha = alpha, draws = summ_ref$draws
         )
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
@@ -141,7 +143,7 @@
 
 get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
                      lppd.bs = NULL, weights = NULL, alpha = 0.1,
-                     seed = 1208499, B = 2000) {
+                     seed = 1208499, B = 2000, draws = NULL) {
   ##
   ## Calculates given statistic stat with standard error and confidence bounds.
   ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
