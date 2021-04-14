@@ -191,6 +191,10 @@ proj_linpred <- function(object, filter_nterms = NULL, newdata = NULL,
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, mu, weights, ...) {
   dot_args <- list(...)
+  stopifnot(!is.null(dot_args$transform))
+  stopifnot(!is.null(dot_args$integrated))
+  stopifnot(!is.null(dot_args$newdata))
+  stopifnot(!is.null(dot_args$offset))
   pred <- t(mu)
   if (!dot_args$transform) pred <- proj$family$linkfun(pred)
   if (dot_args$integrated) {
@@ -259,6 +263,7 @@ proj_predict <- function(object, filter_nterms = NULL, newdata = NULL,
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, mu, weights, ...) {
   dot_args <- list(...)
+  stopifnot(!is.null(dot_args$size_sub))
   draw_inds <- sample(
     x = seq_along(proj$weights), size = dot_args$size_sub,
     replace = TRUE, prob = proj$weights
