@@ -218,16 +218,17 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   ## add family
   proj <- lapply(seq_along(subm), function(i) {
-    subm[[i]]$summaries <- list(ref = refsum, sub = list(subsum[[i]]))
-    subm[[i]]$family <- family
-    subm[[i]]$d_test <- d_test
-    subm[[i]]$p_type <- is.null(ndraws)
-    subm[[i]]$intercept <- intercept
-    subm[[i]]$extract_model_data <- refmodel$extract_model_data
-    subm[[i]]$refmodel <- refmodel
-    subm[[i]]$time <- difftime(Sys.time(), start, units = "secs")
-    class(subm) <- "projection"
-    return(subm)
+    sub <- subm[[i]]
+    sub$summaries <- list(ref = refsum, sub = list(subsum[[i]]))
+    sub$family <- family
+    sub$d_test <- d_test
+    sub$p_type <- is.null(ndraws)
+    sub$intercept <- intercept
+    sub$extract_model_data <- refmodel$extract_model_data
+    sub$refmodel <- refmodel
+    sub$time <- difftime(Sys.time(), start, units = "secs")
+    class(sub) <- "projection"
+    return(sub)
   })
 
   ## If only one model size, just return the proj instead of a list of projs
