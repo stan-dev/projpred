@@ -248,19 +248,17 @@ if (require(rstanarm)) {
   })
 
   test_that(paste(
-    "project: setting ndraws or nclusters to too",
-    "big throws an error"
+    "project: setting ndraws or nclusters too big causes them to be cut off at",
+    "the number of posterior draws in the reference model"
   ), {
-    expect_error(
-      project(vs_list[[1]], ndraws = 400000, nterms = nterms),
-      paste("Number of posterior draws exceeds the number of columns in the",
-            "reference model's posterior.")
-    )
-    expect_error(
-      project(vs_list[[1]], nclusters = 400000, nterms = nterms),
-      paste("Number of clusters exceeds the number of columns in the",
-            "reference model's posterior.")
-    )
+    p <- project(vs_list[[1]], ndraws = 400000, nterms = nterms)
+    expect_length(p$weights, nrow(as.matrix(fit_list[[1]])))
+    expect_length(p$sub_fit, nrow(as.matrix(fit_list[[1]])))
+    expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
+    p <- project(vs_list[[1]], nclusters = 400000, nterms = nterms)
+    expect_length(p$weights, nrow(as.matrix(fit_list[[1]])))
+    expect_length(p$sub_fit, nrow(as.matrix(fit_list[[1]])))
+    expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
   })
 
   test_that("project: specifying the seed does not cause errors", {
