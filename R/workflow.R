@@ -34,7 +34,7 @@ varsel_search.default <- function(object, ...) {
 #' @rdname workflow
 #' @export
 varsel_search.refmodel <- function(object, method = NULL,
-                                   ndraws = NULL, nclusters = NULL,
+                                   ndraws = 20, nclusters = NULL,
                                    nterms_max = NULL, verbose = TRUE,
                                    lambda_min_ratio = 1e-5, nlambda = 150,
                                    thresh = 1e-6, regul = 1e-4,
@@ -45,8 +45,9 @@ varsel_search.refmodel <- function(object, method = NULL,
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-    refmodel, method, NULL, TRUE, nterms_max,
-    nclusters, ndraws, NULL, NULL, search_terms
+    refmodel = refmodel, method = method, cv_search = NULL, intercept = NULL,
+    nterms_max = nterms_max, nclusters = nclusters, ndraws = ndraws,
+    nclusters_pred = NULL, ndraws_pred = 400, search_terms = search_terms
   )
   method <- args$method
   intercept <- args$intercept
@@ -213,19 +214,19 @@ approximate_loo <- function(object, ...) {
 #' @rdname workflow
 #' @export
 approximate_loo.default <- function(object, ...) {
-    return(approximate_loo(varsel_search(object, ...)))
+    return(approximate_loo(varsel_search(object, ...), ...))
 }
 
 #' @rdname workflow
 #' @export
 approximate_loo.refmodel <- function(object, ...) {
-    return(approximate_loo(varsel_search(object, ...)))
+    return(approximate_loo(varsel_search(object, ...), ...))
 }
 
 #' @rdname workflow
 #' @export
 approximate_loo.vselsearch <- function(object,
-                                       ndraws_pred = NULL,
+                                       ndraws_pred = 400,
                                        nclusters_pred = NULL,
                                        verbose = TRUE,
                                        penalty = NULL,
@@ -239,8 +240,10 @@ approximate_loo.vselsearch <- function(object,
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-    refmodel, NULL, NULL, NULL, NULL,
-    NULL, NULL, nclusters_pred, ndraws_pred, NULL
+    refmodel, method = NULL, cv_search = NULL, intercept = NULL,
+    nterms_max = NULL, nclusters = object$control$nclusters,
+    ndraws = object$control$ndraws, nclusters_pred = nclusters_pred,
+    ndraws_pred = ndraws_pred, search_terms = NULL
   )
   nclusters_pred <- args$nclusters_pred
   ndraws_pred <- args$ndraws_pred
@@ -295,6 +298,7 @@ approximate_loo.vselsearch <- function(object,
   solution_terms_cv <- matrix(nrow = n, ncol = nterms_max - 1)
   loo_sub <- matrix(nrow = n, ncol = nterms_max)
   mu_sub <- matrix(nrow = n, ncol = nterms_max)
+  mu_draws_sub <- array(dim = c(n, nterms_max, ndraws_pred))
 
   start <- Sys.time()
   if (verbose) {
@@ -342,6 +346,7 @@ approximate_loo.vselsearch <- function(object,
         log_sum_exp
     )
 
+    mu_draws_sub[, k, ] <- mu_k
     for (i in seq_along(inds)) {
         mu_sub[inds[i], k] <- mu_k[i, ] %*% exp(lw_sub[, i])
     }
@@ -384,9 +389,10 @@ approximate_loo.vselsearch <- function(object,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w)
+    list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w,
+         draws = mu_draws_sub[, k, ])
   })
-  summ_ref <- list(lppd = loo_ref, mu = mu_ref)
+  summ_ref <- list(lppd = loo_ref, mu = mu_ref, draws = refmodel$mu)
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   d_test <- list(
@@ -423,19 +429,19 @@ approximate_kfold <- function(object, ...) {
 #' @rdname workflow
 #' @export
 approximate_kfold.default <- function(object, ...) {
-    return(approximate_kfold(varsel_search(object, ...)))
+    return(approximate_kfold(varsel_search(object, ...), ...))
 }
 
 #' @rdname workflow
 #' @export
 approximate_kfold.refmodel <- function(object, ...) {
-    return(approximate_kfold(varsel_search(object, ...)))
+    return(approximate_kfold(varsel_search(object, ...), ...))
 }
 
 #' @rdname workflow
 #' @export
 approximate_kfold.vselsearch <- function(object,
-                                         ndraws_pred = NULL,
+                                         ndraws_pred = 400,
                                          nclusters_pred = NULL,
                                          K = NULL,
                                          verbose = TRUE,
@@ -462,15 +468,16 @@ approximate_kfold.vselsearch <- function(object,
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-    refmodel, NULL, NULL, NULL, NULL,
-    NULL, NULL, nclusters_pred, ndraws_pred, NULL
+    refmodel, method = NULL, cv_search = FALSE, intercept = NULL,
+    nterms_max = NULL, nclusters = object$control$nclusters,
+    ndraws = object$control$ndraws, nclusters_pred = nclusters_pred,
+    ndraws_pred = ndraws_pred, search_terms = NULL
   )
   nclusters_pred <- args$nclusters_pred
   ndraws_pred <- args$ndraws_pred
 
   args <- parse_args_cv_varsel(
-    refmodel, "kfold", K, NULL,
-    nclusters_pred
+    refmodel, cv_method = "kfold", K = K, nclusters_pred = nclusters_pred
   )
   K <- args$K
 
@@ -600,6 +607,14 @@ approximate_kfold.vselsearch <- function(object,
     summ$w <- summ$w / sum(summ$w)
     summ
   })
+  ## if we return the full predictive draws sub is a big mess now
+  ## think about a better way of doing this
+  sub <- lapply(sub, function(summ) {
+    df <- as.data.frame(summ)
+    draws <- df[, startsWith(colnames(df), "draws.")] %>% as.matrix()
+    nlist(mu = summ$mu, lppd = summ$lppd, draws, w = summ$w)
+  })
+
   if (verbose && cores == 1) {
     close(pb)
   }
@@ -611,6 +626,7 @@ approximate_kfold.vselsearch <- function(object,
       mu = fold$mu_test, dis = fold$refmodel$dis
     ))
   }))
+  ref$draws <- refmodel$mu
 
   ## Combine also the K separate test data sets into one list
   ## with n y's and weights's.
@@ -781,9 +797,9 @@ cv_loo.vselsearch <- function(object, ...) {
 #' @export
 cv_loo.vselapproxcv <- function(object,
                                 method = NULL,
-                                ndraws = NULL,
+                                ndraws = 20,
                                 nclusters = NULL,
-                                ndraws_pred = NULL,
+                                ndraws_pred = 400,
                                 nclusters_pred = NULL,
                                 nterms_max = NULL,
                                 penalty = NULL,
@@ -804,8 +820,8 @@ cv_loo.vselapproxcv <- function(object,
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-    refmodel, method, NULL, NULL, NULL,
-    ndraws, nclusters, ndraws_pred, nclusters_pred, NULL
+    refmodel, method, cv_search = TRUE, intercept = NULL, nterms_max,
+    nclusters, ndraws, nclusters_pred, ndraws_pred, search_terms
   )
   nclusters <- args$nclusters
   ndraws <- args$ndraws
@@ -813,6 +829,7 @@ cv_loo.vselapproxcv <- function(object,
   ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
   method <- args$method
+  cv_search <- args$cv_search
 
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   mu <- refmodel$mu
@@ -899,6 +916,7 @@ cv_loo.vselapproxcv <- function(object,
       r$mu_sub[i, ] <- pr$mu_sub
       r$loo_sub[i, ] <- pr$loo_sub
       r$solution_terms_cv[i, ] <- pr$solution_terms_cv
+      r$draws[i, , ] <- t(pr$mu_draws_sub)
     }
     return(r)
   }
@@ -915,6 +933,7 @@ cv_loo.vselapproxcv <- function(object,
     .multicombine = TRUE,
     .init = list(
       mu_sub = matrix(nrow = n, ncol = nterms_max),
+      draws = array(dim = c(n, nterms_max, ndraws_pred)),
       loo_sub = matrix(nrow = n, ncol = nterms_max),
       solution_terms_cv = matrix(nrow = n, ncol = nterms_max - 1)
     )
@@ -946,7 +965,7 @@ cv_loo.vselapproxcv <- function(object,
     submodels <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
       family = family, p_ref = p_pred, refmodel = refmodel,
-      intercept = TRUE, regul = opt$regul, cv_search = FALSE
+      intercept = TRUE, regul = opt$regul, cv_search = cv_search
     )
     summaries_sub <- .get_sub_summaries(
       submodels = submodels, test_points = c(i), refmodel = refmodel,
@@ -958,6 +977,9 @@ cv_loo.vselapproxcv <- function(object,
     })
     mu_sub <- sapply(seq_along(summaries_sub), function(k) {
       summaries_sub[[k]]$mu
+    })
+    mu_draws_sub <- sapply(seq_along(summaries_sub), function(k) {
+      summaries_sub[[k]]$draws
     })
 
     ## with `match` we get the indices of the variables as they enter the
@@ -976,12 +998,13 @@ cv_loo.vselapproxcv <- function(object,
     if (verbose && cores == 1) {
       utils::setTxtProgressBar(pb, run_index)
     }
-    return(nlist(i, mu_sub, loo_sub, solution_terms_cv))
+    return(nlist(i, mu_sub, loo_sub, solution_terms_cv, mu_draws_sub))
   }
   end <- Sys.time()
 
   mu_sub <- r$mu_sub
   loo_sub <- r$loo_sub
+  mu_draws_sub <- r$draws
   solution_terms_cv <- r$solution_terms_cv
 
   if (verbose && cores == 1) {
@@ -1027,9 +1050,10 @@ cv_loo.vselapproxcv <- function(object,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w)
+    list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w,
+         draws = mu_draws_sub[, k, ])
   })
-  summ_ref <- list(lppd = loo_ref, mu = mu_ref)
+  summ_ref <- list(lppd = loo_ref, mu = mu_ref, draws = refmodel$mu)
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   search_path_prev$refmodel <- refmodel
@@ -1090,10 +1114,10 @@ cv_kfold.vselsearch <- function(object, ...) {
 
 cv_kfold.vselapproxcv <- function(object,
                                   method = NULL,
-                                  ndraws = NULL,
+                                  ndraws = 20,
                                   nclusters = NULL,
                                   K = NULL,
-                                  ndraws_pred = NULL,
+                                  ndraws_pred = 400,
                                   nclusters_pred = NULL,
                                   nterms_max = NULL,
                                   penalty = NULL,
@@ -1115,8 +1139,8 @@ cv_kfold.vselapproxcv <- function(object,
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-      refmodel, method, NULL, NULL, NULL, ndraws,
-      nclusters, ndraws_pred, nclusters_pred, NULL
+    refmodel, method, cv_search = TRUE, intercept = TRUE, nterms_max,
+    nclusters, ndraws, nclusters_pred, ndraws_pred, search_terms
   )
   nclusters <- args$nclusters
   ndraws <- args$ndraws
@@ -1278,6 +1302,13 @@ cv_kfold.vselapproxcv <- function(object,
     summ$w <- summ$w / sum(summ$w)
     summ
   })
+  ## if we return the full predictive draws sub is a big mess now
+  ## think about a better way of doing this
+  sub <- lapply(sub, function(summ) {
+    df <- as.data.frame(summ)
+    draws <- df[, startsWith(colnames(df), "draws.")] %>% as.matrix()
+    nlist(mu = summ$mu, lppd = summ$lppd, draws, w = summ$w)
+  })
 
   ref <- hf(lapply(list_cv, function(fold) {
     data.frame(.weighted_summary_means(
@@ -1286,6 +1317,7 @@ cv_kfold.vselapproxcv <- function(object,
       mu = fold$mu_test, dis = fold$refmodel$dis
     ))
   }))
+  ref$draws <- refmodel$mu
 
   end <- Sys.time()
   ## Combine also the K separate test data sets into one list
@@ -1472,9 +1504,9 @@ varsel_cv.vselsearch <- function(object, ...) {
 varsel_cv.vselapproxcv <- function(object,
                                    method = NULL,
                                    cv_method = NULL,
-                                   ndraws = NULL,
+                                   ndraws = 20,
                                    nclusters = NULL,
-                                   ndraws_pred = NULL,
+                                   ndraws_pred = 400,
                                    nclusters_pred = NULL,
                                    nterms_max = NULL,
                                    K = NULL,
