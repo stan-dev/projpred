@@ -1,7 +1,7 @@
 .get_sub_summaries <- function(submodels, test_points, refmodel, family,
                                search_terms = NULL) {
   has_group_features <- !is.null(search_terms)
-  res <- lapply(submodels, function(model) {
+  lapply(submodels, function(model) {
     solution_terms <- model$solution_terms
     if (length(solution_terms) == 0) {
       solution_terms <- c("1")

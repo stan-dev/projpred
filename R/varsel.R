@@ -201,16 +201,6 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     )
   }
 
-  ## warn the user if the projection performance does not match the reference
-  ## model's.
-  ref_elpd <- get_stat(ref$mu, ref$lppd, d_test, family, "elpd",
-                       weights = ref$w
-  )
-  summ <- sub[[length(sub)]]
-  proj_elpd <- get_stat(summ$mu, summ$lppd, d_test, family, "elpd",
-                        weights = summ$w
-  )
-
   ## store the relevant fields into the object to be returned
   vs <- nlist(
     refmodel,
@@ -340,6 +330,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   }
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
+  }
+  if (!intercept) {
+    stop("Reference models without an intercept are currently not supported.")
   }
   if (is.null(nterms_max)) {
     nterms_max <- min(max_nv_possible, 20)

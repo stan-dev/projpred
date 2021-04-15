@@ -112,13 +112,12 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
 .init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
                            wobs, wsample) {
-  pobs <- pseudo_data(
-    f = 0, y = p_ref$mu, family = family, weights = wobs,
-    offset = refmodel$offset
-  )
-
   ## split b to alpha and beta, add it to submodel and return the result
   if (family$family == "gaussian") {
+    pobs <- pseudo_data(
+      f = 0, y = p_ref$mu, family = family, weights = wobs,
+      offset = refmodel$offset
+    )
     ref <- list(mu = pobs$z, var = p_ref$var, wobs = pobs$wobs)
   } else {
     ref <- p_ref
