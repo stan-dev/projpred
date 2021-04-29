@@ -271,7 +271,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       )
     }
   } else {
-    # subsample from the reference model
+    # Perform thinning or subsampling (depending on argument `thinning`) from
+    # the reference model.
     if (ndraws > NCOL(refmodel$mu)) {
       stop(
         "The number of draws ndraws cannot exceed the number of ",
