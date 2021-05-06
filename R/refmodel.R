@@ -256,6 +256,7 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     data <- object$data
   }
 
+  stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   terms <- extract_terms_response(formula)
   response_name <- terms$response
@@ -338,6 +339,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, extract_model_data = NULL, cvfun = NULL,
                           cvfits = NULL, dis = NULL, ...) {
+  stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   terms <- extract_terms_response(formula)
   response_name <- terms$response

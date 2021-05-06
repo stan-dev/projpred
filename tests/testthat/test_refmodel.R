@@ -24,6 +24,10 @@ if (require(rstanarm)) {
                          x = x, weights = weights)
 
   SW({
+    fit_gauss_formula <- stan_glm("y ~ x.1 + x.2 + x.3 + x.4 + x.5",
+                          family = f_gauss, data = df_gauss,
+                          chains = chains, seed = seed, iter = iter
+    )
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_gauss, data = df_gauss,
                           chains = chains, seed = seed, iter = iter
@@ -51,6 +55,12 @@ if (require(rstanarm)) {
   ##   expect_error(get_refmodel(fit_nodata),
   ##                'Model was fitted without a \'data\' argument')
   ## })
+
+  test_that("string formula fails", {
+    expect_error(
+      get_refmodel(fit_gauss_formula)
+    )
+  })
 
   test_that("predict checks the 'type' argument", {
     expect_error(
