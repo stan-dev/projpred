@@ -18,6 +18,9 @@ extend_family <- function(family) {
     return(family)
   }
   extend_family_specific <- paste0("extend_family_", tolower(family$family))
+  if (!exists(extend_family_specific, mode = "function")) {
+    stop("Family '", family$family, "' is not supported by projpred.")
+  }
   extend_family_specific <- get(extend_family_specific, mode = "function")
   extend_family_specific(family)
 }
