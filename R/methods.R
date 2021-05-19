@@ -1113,29 +1113,26 @@ summary.projection <- function(object, stats = "elpd",
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   out <- list(
-    formula = lapply(object, function(o)
-      update(o$refmodel$formula, make_formula(o$solution_terms))),
-    nterms = sapply(object, function(o) length(o$solution_terms)),
-    family = object[[1]]$family,
-    time = object[[1]]$time,
-    nobs = NROW(object[[1]]$refmodel$fetch_data()),
-    ndraws_pred = length(object[[1]]$sub_fit)
+    formula = update(object$refmodel$formula,
+                     make_formula(object$solution_terms)),
+    nterms = length(object$solution_terms),
+    family = object$family,
+    time = object$time,
+    nobs = NROW(object$refmodel$fetch_data()),
+    ndraws_pred = length(object$sub_fit)
   )
 
   class(out) <- "projectionsummary"
   ## fetch statistics
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-    tabs <- lapply(object, function(o) {
-      .tabulate_stats(o, stats, alpha = alpha, nfeat_baseline = nfeat_baseline)
-    })
+    tab <- .tabulate_stats(object, stats, alpha = alpha,
+                           nfeat_baseline = nfeat_baseline)
   } else {
-    tabs <- lapply(object, function(o) .tabulate_stats(o, stats, alpha = alpha))
+    tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
-  stats_table <- do.call(rbind, lapply(tabs, function(tab) {
-    subset(tab, tab$size != Inf) %>%
+  stats_table <- subset(tab, tab$size != Inf) %>%
       dplyr::group_by(statistic)
-  }))
   if (deltas) {
     type <- setdiff(type, c("diff", "diff_se"))
   }
