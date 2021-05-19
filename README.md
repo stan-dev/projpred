@@ -50,10 +50,14 @@ set.seed(1)
 data('df_gaussian', package = 'projpred')
 #data('df_binom', package = 'projpred')
 
+split_structure <- break_up_matrix_term(y ~ x, data = df_gaussian)
+df_gaussian <- split_structure$data
+formula <- split_structure$formula
+
 # fit the full model with a sparsifying prior
-fit <- stan_glm(y ~ x, family = gaussian(), data = df_gaussian,
+fit <- stan_glm(formula, family = gaussian(), data = df_gaussian,
                 prior = hs(df = 1, global_scale=0.01), iter = 500, seed = 1)
-#fit <- stan_glm(y ~ x, family = binomial(), data = df_binom
+#fit <- stan_glm(formula, family = binomial(), data = df_binom
 #                prior = hs(df = 1, global_scale=0.01), iter = 500, seed = 1)
 
 
