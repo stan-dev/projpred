@@ -995,11 +995,10 @@ as.matrix.projection <- function(x, ...) {
       "clustering and the clusters might have different weights."
     ))
   }
-  if (inherits(x$sub_fit, "list")) {
-    res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
-  } else {
-    res <- t(as.matrix(x$sub_fit))
+  if (!inherits(x$sub_fit, "list")) {
+    x$sub_fit <- list(x$sub_fit)
   }
+  res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
   colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
