@@ -785,6 +785,8 @@ replace_population_names <- function(population_effects) {
 }
 
 #' @method coef subfit
+#' @keywords internal
+#' @export
 coef.subfit <- function(x, ...) {
   variables <- colnames(x$x)
   coefs <- with(x, rbind(alpha, beta))
@@ -793,27 +795,37 @@ coef.subfit <- function(x, ...) {
 }
 
 #' @method as.matrix lm
+#' @keywords internal
+#' @export
 as.matrix.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names())
 }
 
 #' @method as.matrix ridgelm
+#' @keywords internal
+#' @export
 as.matrix.ridgelm <- function(x, ...) {
   return(as.matrix.lm(x))
 }
 
 #' @method as.matrix subfit
+#' @keywords internal
+#' @export
 as.matrix.subfit <- function(x, ...) {
   return(as.matrix.lm(x))
 }
 
 #' @method as.matrix glm
+#' @keywords internal
+#' @export
 as.matrix.glm <- function(x, ...) {
   return(as.matrix.lm(x))
 }
 
 #' @method as.matrix lmerMod
+#' @keywords internal
+#' @export
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names()
@@ -932,31 +944,43 @@ as.matrix.lmerMod <- function(x, ...) {
 }
 
 #' @method as.matrix noquote
+#' @keywords internal
+#' @export
 as.matrix.noquote <- function(x, ...) {
   return(coef(x))
 }
 
 #' @method as.matrix list
+#' @keywords internal
+#' @export
 as.matrix.list <- function(x, ...) {
   return(do.call(cbind, lapply(x, as.matrix.glm)))
 }
 
 #' @method t glm
+#' @keywords internal
+#' @export
 t.glm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
 #' @method t lm
+#' @keywords internal
+#' @export
 t.lm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
 #' @method t ridgelm
+#' @keywords internal
+#' @export
 t.ridgelm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
 #' @method t list
+#' @keywords internal
+#' @export
 t.list <- function(x, ...) {
   return(t(as.matrix.list(x)))
 }
