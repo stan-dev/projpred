@@ -5,7 +5,7 @@ knitr::opts_chunk$set(
     comment = NA,
     message = FALSE,
     warning = FALSE,
-    eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
+    eval = if (exists("params") && !is.null(params$EVAL)) params$EVAL else FALSE,
     dev = "png",
     dpi = 150,
     fig.align = "center"
