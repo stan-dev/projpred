@@ -228,6 +228,7 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
+      stop("This case should not occur. Please notify the package maintainer.")
       lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
     } else if (!is.null(dim(lpd))) {
       lpd <- t(lpd)
