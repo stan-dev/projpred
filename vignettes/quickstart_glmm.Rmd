@@ -111,9 +111,11 @@ projection affects the three most relevant variables.
 <!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
-# Visualise the projected three most relevant variables
+# Visualize the projection for the two most relevant variables (not counting the
+# intercept). For multilevel terms, take the hierarchical standard deviation.
 proj <- project(vs, nterms = 2)
-mcmc_areas(as.matrix(proj), pars = solution_terms(vs)[1:2])
+mcmc_areas(as.matrix(proj),
+           pars = c("b_Intercept", "sd_Subject__Intercept", "b_age"))
 ```
 
 We make predictions with the projected submodels. For point estimates we can use
@@ -216,7 +218,8 @@ projection affects the most relevant variables.
 <!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
-# Visualise the projected two most relevant variables
+# Visualize the projection for the two most relevant variables (not counting the
+# intercept). For multilevel terms, take the hierarchical standard deviation.
 proj <- project(vs, nterms = 2, nclusters = 10)
 mcmc_areas(as.matrix(proj),
            pars = c("b_Intercept", "b_cofactor", "sd_obs__Intercept"))
