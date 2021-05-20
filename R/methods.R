@@ -973,7 +973,7 @@ as.matrix.projection <- function(x, ...) {
   if (inherits(x$sub_fit, "list")) {
     res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
   } else {
-    res <- t(as.matrix.lm(x$sub_fit))
+    res <- t(as.matrix(x$sub_fit))
   }
   colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
