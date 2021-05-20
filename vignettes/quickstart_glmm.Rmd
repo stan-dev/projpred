@@ -217,7 +217,7 @@ projection affects the most relevant variables.
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
 # Visualise the projected two most relevant variables
-proj <- project(vs, nterms = 2, ndraws = 10)
+proj <- project(vs, nterms = 2, nclusters = 10)
 mcmc_areas(as.matrix(proj),
            pars = c("b_Intercept", "b_cofactor", "sd_obs__Intercept"))
 ```
@@ -340,7 +340,7 @@ log density at the training points using the 6 most relevant variables.
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
 pred <- proj_linpred(cv_vs_va, newdata = VerbAgg_subsample,
-                     nterms = 6, integrated = TRUE, ndraws = 10)
+                     nterms = 6, integrated = TRUE, nclusters = 10)
 ```
 
 We can also visualize the corresponding projected predictions.
