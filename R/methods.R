@@ -943,13 +943,6 @@ as.matrix.lmerMod <- function(x, ...) {
   return(c(population_effects, group_vc, group_ef))
 }
 
-#' @method as.matrix noquote
-#' @keywords internal
-#' @export
-as.matrix.noquote <- function(x, ...) {
-  return(coef(x))
-}
-
 #' @method as.matrix list
 #' @keywords internal
 #' @export
