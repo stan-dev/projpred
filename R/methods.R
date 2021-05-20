@@ -955,8 +955,8 @@ t.list <- function(x, ...) {
 #' @export
 as.matrix.projection <- function(x, ...) {
   if (x$p_type) {
-    warning(paste0(
-      "Note, that projection was performed using",
+    warning(paste(
+      "Note that projection was performed using",
       "clustering and the clusters might have different weights."
     ))
   }
