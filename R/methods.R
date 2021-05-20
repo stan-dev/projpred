@@ -578,7 +578,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   nterms_max <- max(x$selection$size)
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              nterms_max, "\n"))
-  if (!is.null(nclusters)) {
+  if (!is.null(x$nclusters)) {
     cat(paste0(
       "Number of clusters used for selection: ", x$nclusters, "\n"
     ))
@@ -587,7 +587,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
       "Number of draws used for selection: ", x$ndraws, "\n"
     ))
   }
-  if (!is.null(nclusters_pred)) {
+  if (!is.null(x$nclusters_pred)) {
     cat(paste0(
       "Number of clusters used for prediction: ", x$nclusters_pred, "\n"
     ))

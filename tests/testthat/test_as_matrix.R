@@ -88,7 +88,7 @@ if (require(rstanarm)) {
     p_clust <- project(vs_gauss,
                        solution_terms = vs_gauss$solution_terms[solution_terms],
                        nclusters = nclusters)
-    m <- as.matrix(p_clust)
+    SW(m <- as.matrix(p_clust))
     expect_length(
       setdiff(
         colnames(m),
