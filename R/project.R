@@ -38,7 +38,7 @@
 #'   projection. Usually there is no need for regularization, but sometimes for
 #'   some models the projection can be ill-behaved and we need to add some
 #'   regularization to avoid numerical problems.
-#' @param ... Currently ignored.
+#' @param ... Arguments passed to \link[=get_refmodel]{get_refmodel}.
 #'
 #' @details Using less draws or clusters in \code{ndraws} or \code{nclusters}
 #'   than posterior draws in the reference model may result in slightly

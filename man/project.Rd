@@ -58,7 +58,7 @@ projection. Usually there is no need for regularization, but sometimes for
 some models the projection can be ill-behaved and we need to add some
 regularization to avoid numerical problems.}
 
-\item{...}{Currently ignored.}
+\item{...}{Arguments passed to \link[=get_refmodel]{get_refmodel}.}
 }
 \value{
 A list of submodels (or a single submodel if projection was
