@@ -124,11 +124,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ), {
     expect_error(
       proj_linpred(1, newdata = data.frame(x = x)),
-      "is not a variable selection -object"
+      "is not an object of class \"vsel\""
     )
     expect_error(
       proj_linpred(fit_gauss, newdata = data.frame(x = x)),
-      "is not a variable selection -object"
+      "is not an object of class \"vsel\""
     )
     expect_error(
       proj_linpred(c(proj_solution_terms_list, list(x)), newdata = x),
@@ -403,11 +403,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ), {
     expect_error(
       proj_predict(1, newdata = data.frame(x = x)),
-      "is not a variable selection -object"
+      "is not an object of class \"vsel\""
     )
     expect_error(
       proj_predict(fit_gauss, newdata = data.frame(x = x)),
-      "is not a variable selection -object"
+      "is not an object of class \"vsel\""
     )
     expect_error(
       proj_predict(c(proj_solution_terms_list, list(x)),

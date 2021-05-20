@@ -95,9 +95,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
                     seed = NULL, regul = 1e-4, ...) {
   if (!("vsel" %in% class(object)) && is.null(solution_terms)) {
     stop(
-      "The given object is not a variable selection -object.",
-      "Run the variable selection first, or provide the variable ",
-      "indices (solution_terms)."
+      "The given object is not an object of class \"vsel\". ",
+      "Run the variable selection first, or provide argument `solution_terms`."
     )
   }
 
