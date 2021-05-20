@@ -112,7 +112,7 @@ projection affects the three most relevant variables.
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
 # Visualise the projected three most relevant variables
-proj <- project(vs, nterms = 2, ns = 500)
+proj <- project(vs, nterms = 2)
 mcmc_areas(as.matrix(proj), pars = solution_terms(vs)[1:2])
 ```
 
