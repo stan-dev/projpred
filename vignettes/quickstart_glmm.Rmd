@@ -95,7 +95,7 @@ model.
 plot(vs, stats = c('elpd', 'rmse'))
 ```
 
-From this plot, it is clearly visible that the first two terms are probaly
+From this plot, it is clearly visible that the first two terms are probably
 enough to achieve predictive performance comparable to the reference model. We
 perform the projection for a submodel of desired size using the function
 `project`. The projection can also be coerced to a matrix with draws of the
