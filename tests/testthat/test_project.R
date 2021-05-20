@@ -69,7 +69,8 @@ if (require(rstanarm)) {
         )
         # number of ndraws should equal to the number of draw weights
         ndraws <- length(p[[j]]$weights)
-        ## expect_equal(NROW(as.matrix(p[[j]])), ndraws)
+        ## SW(ndraws_prj <- NROW(as.matrix(p[[j]])))
+        ## expect_equal(ndraws_prj, ndraws)
         expect_length(p[[j]]$dis, ndraws)
         # j:th element should have j variables, including the intercept
         expect_length(p[[j]]$solution_terms, max(j - 1, 1))
@@ -210,7 +211,8 @@ if (require(rstanarm)) {
       p <- project(vs_list[[i]], ndraws = ndraws, nterms = nterms)
       # expected number of ndraws
       expect_length(p$weights, ndraws)
-      expect_equal(NROW(as.matrix(p)), ndraws)
+      SW(ndraws_prj <- NROW(as.matrix(p)))
+      expect_equal(ndraws_prj, ndraws)
       expect_equal(p$weights, 1, info = i_inf)
     }
   })
@@ -222,7 +224,8 @@ if (require(rstanarm)) {
       p <- project(vs_list[[i]], ndraws = ndraws, nterms = nterms)
       # expected number of ndraws
       expect_length(p$weights, ndraws)
-      ## expect_equal(NROW(as.matrix(p)), ndraws)
+      ## SW(ndraws_prj <- NROW(as.matrix(p)))
+      ## expect_equal(ndraws_prj, ndraws)
     }
   })
 
