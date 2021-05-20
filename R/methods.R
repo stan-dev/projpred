@@ -578,14 +578,24 @@ print.vselsummary <- function(x, digits = 1, ...) {
   nterms_max <- max(x$selection$size)
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              nterms_max, "\n"))
-  cat(paste0(
-    "Draws used for selection: ", x$ndraws, ", in ",
-    x$nclusters, " clusters\n"
-  ))
-  cat(paste0(
-    "Draws used for prediction: ", x$ndraws_pred, ", in ",
-    x$nclusters_pred, " clusters\n"
-  ))
+  if (!is.null(nclusters)) {
+    cat(paste0(
+      "Number of clusters used for selection: ", x$nclusters, "\n"
+    ))
+  } else {
+    cat(paste0(
+      "Number of draws used for selection: ", x$ndraws, "\n"
+    ))
+  }
+  if (!is.null(nclusters_pred)) {
+    cat(paste0(
+      "Number of clusters used for prediction: ", x$nclusters_pred, "\n"
+    ))
+  } else {
+    cat(paste0(
+      "Number of draws used for prediction: ", x$ndraws_pred, "\n"
+    ))
+  }
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
@@ -955,8 +965,8 @@ t.list <- function(x, ...) {
 #' @export
 as.matrix.projection <- function(x, ...) {
   if (x$p_type) {
-    warning(paste0(
-      "Note, that projection was performed using",
+    warning(paste(
+      "Note that projection was performed using",
       "clustering and the clusters might have different weights."
     ))
   }
