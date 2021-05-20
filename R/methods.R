@@ -787,9 +787,9 @@ replace_population_names <- function(population_effects) {
 #' @method coef subfit
 #' @keywords internal
 #' @export
-coef.subfit <- function(x, ...) {
-  variables <- colnames(x$x)
-  coefs <- with(x, rbind(alpha, beta))
+coef.subfit <- function(object, ...) {
+  variables <- colnames(object$x)
+  coefs <- with(object, rbind(alpha, beta))
   named_coefs <- setNames(coefs, variables)
   return(named_coefs)
 }
