@@ -962,6 +962,7 @@ t.list <- function(x, ...) {
 }
 
 #' @method as.matrix projection
+#' @keywords internal
 #' @export
 as.matrix.projection <- function(x, ...) {
   if (x$p_type) {
