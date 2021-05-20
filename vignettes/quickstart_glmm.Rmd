@@ -70,7 +70,9 @@ recommended to run a cross validated variable selection instead.
     
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 ref <- get_refmodel(fit)
-vs <- varsel(ref)
+# We'll use `nclusters_pred = 20` here in this vignette only for the sake of
+# speed. This is not recommended in general.
+vs <- varsel(ref, nclusters_pred = 20)
 ```
 
 Because our model includes group effects, the only available search method is
@@ -98,10 +100,13 @@ plot(vs, stats = c('elpd', 'rmse'))
 From this plot, it is clearly visible that the first two terms are probably
 enough to achieve predictive performance comparable to the reference model. We
 perform the projection for a submodel of desired size using the function
-`project`. The projection can also be coerced to a matrix with draws of the
-selected variables and sigma. The draws can be visualized with, for example, the
-`mcmc_areas` function in the `bayesplot` package. Below we compare how the
-projection affects the three most relevant variables.
+`project`. The resulting object can also be coerced to a matrix containing the
+projected draws. These draws can be visualized with, for example, the
+`mcmc_areas` function in the `bayesplot` package. Below, we'll do so for the two
+most relevant terms `(1 | Subject)` and `age`. For the multilevel term
+`(1 | Subject)`, we visualize its (hierarchical) standard deviation.
+
+<!-- Below, we compare how the projection affects the three most relevant variables. -->
 
 <!-- ```{r, fig.width=6, fig.height=2} -->
 <!--  # Visualise the three most relevant variables in the full model -\-> -->
@@ -111,9 +116,9 @@ projection affects the three most relevant variables.
 <!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
-# Visualize the projection for the two most relevant variables (not counting the
-# intercept). For multilevel terms, take the hierarchical standard deviation.
-proj <- project(vs, nterms = 2)
+# We'll use `nclusters = 20` here in this vignette only for the sake of
+# speed. This is not recommended in general.
+proj <- project(vs, nterms = 2, nclusters = 20)
 mcmc_areas(as.matrix(proj),
            pars = c("b_Intercept", "sd_Subject__Intercept", "b_age"))
 ```
@@ -180,7 +185,9 @@ As we did in the previous example, we can perform variable selection and look
 at the projection.
  
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
-vs <- varsel(fit)
+# We'll use `nclusters_pred = 20` here in this vignette only for the sake of
+# speed. This is not recommended in general.
+vs <- varsel(fit, nclusters_pred = 20)
 ```
 
 Because our model includes group effects, the only available search method is
@@ -206,10 +213,13 @@ plot(vs, stats = c('elpd', 'rmse'))
 ```
 
 We perform the projection for a submodel of desired size using the function
-`project`. The projection can also be coerced to a matrix with draws of the
-selected variables and sigma. The draws can be visualized with, for example, the
-`mcmc_areas` function in the `bayesplot` package. Below we compare how the
-projection affects the most relevant variables.
+`project`. The resulting object can also be coerced to a matrix containing the
+projected draws. These draws can be visualized with, for example, the
+`mcmc_areas` function in the `bayesplot` package. Below, we'll do so for the two
+most relevant terms `cofactor` and `(1 | obs)`. For the multilevel term
+`(1 | obs)`, we visualize its (hierarchical) standard deviation.
+
+<!-- Below, we compare how the projection affects the most relevant variables. -->
 
 <!-- ```{r, fig.width=6, fig.height=2} -->
 <!--  # Visualise the most relevant variable in the full model -\-> -->
@@ -218,9 +228,9 @@ projection affects the most relevant variables.
 <!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
-# Visualize the projection for the two most relevant variables (not counting the
-# intercept). For multilevel terms, take the hierarchical standard deviation.
-proj <- project(vs, nterms = 2, nclusters = 10)
+# We'll use `nclusters = 20` here in this vignette only for the sake of
+# speed. This is not recommended in general.
+proj <- project(vs, nterms = 2, nclusters = 20)
 mcmc_areas(as.matrix(proj),
            pars = c("b_Intercept", "b_cofactor", "sd_obs__Intercept"))
 ```
