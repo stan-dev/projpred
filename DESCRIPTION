@@ -26,7 +26,6 @@ Depends:
 Imports:
     methods,
     dplyr,
-    tidyselect,
     loo (>= 2.0.0),
     rstantools (>= 2.0.0),
     lme4,
