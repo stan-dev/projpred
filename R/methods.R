@@ -813,14 +813,14 @@ as.matrix.ridgelm <- function(x, ...) {
 #' @keywords internal
 #' @export
 as.matrix.subfit <- function(x, ...) {
-  return(as.matrix.lm(x))
+  return(as.matrix.lm(x, ...))
 }
 
 #' @method as.matrix glm
 #' @keywords internal
 #' @export
 as.matrix.glm <- function(x, ...) {
-  return(as.matrix.lm(x))
+  return(as.matrix.lm(x, ...))
 }
 
 #' @method as.matrix lmerMod
@@ -954,35 +954,35 @@ as.matrix.glmerMod <- function(x, ...) {
 #' @keywords internal
 #' @export
 as.matrix.list <- function(x, ...) {
-  return(do.call(cbind, lapply(x, as.matrix.glm)))
+  return(do.call(cbind, lapply(x, as.matrix.glm, ...)))
 }
 
 #' @method t glm
 #' @keywords internal
 #' @export
 t.glm <- function(x, ...) {
-  return(t(as.matrix(x)))
+  return(t(as.matrix(x), ...))
 }
 
 #' @method t lm
 #' @keywords internal
 #' @export
 t.lm <- function(x, ...) {
-  return(t(as.matrix(x)))
+  return(t(as.matrix(x), ...))
 }
 
 #' @method t ridgelm
 #' @keywords internal
 #' @export
 t.ridgelm <- function(x, ...) {
-  return(t(as.matrix(x)))
+  return(t(as.matrix(x), ...))
 }
 
 #' @method t list
 #' @keywords internal
 #' @export
 t.list <- function(x, ...) {
-  return(t(as.matrix.list(x)))
+  return(t(as.matrix.list(x), ...))
 }
 
 #' @method as.matrix projection
