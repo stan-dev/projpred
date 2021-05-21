@@ -557,6 +557,13 @@ deparse_combine <- function(x, max_char = NULL) {
 #' @export
 magrittr::`%>%`
 
+`%:::%` <- function(pkg, fun) {
+  # Note: `utils::getFromNamespace(fun, pkg)` could probably be used, too (but
+  # its documentation is unclear about the inheritance from parent
+  # environments).
+  get(fun, envir = asNamespace(pkg), inherits = FALSE)
+}
+
 # Function where() is not exported by package tidyselect, so redefine it here to
 # avoid a note in R CMD check which would occur for usage of
 # tidyselect:::where():

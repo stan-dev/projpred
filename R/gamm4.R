@@ -1,10 +1,3 @@
-`%:::%` <- function(pkg, fun) {
-  # Note: `utils::getFromNamespace(fun, pkg)` could probably be used, too (but
-  # its documentation is unclear about the inheritance from parent
-  # environments).
-  get(fun, envir = asNamespace(pkg), inherits = FALSE)
-}
-
 ## taken from gam4
 #' @noRd
 #' @importFrom methods as cbind2 is
