@@ -996,7 +996,7 @@ t.ridgelm <- function(x, ...) {
 #' @keywords internal
 #' @export
 t.list <- function(x, ...) {
-  return(t(as.matrix.list(x), ...))
+  return(t(as.matrix(x), ...))
 }
 
 #' @method as.matrix projection
