@@ -298,7 +298,9 @@ fit_va <- stan_glmer(
 As we did before, we can run the standard variable selection with
 
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
-vs_va <- varsel(fit_va)
+# We'll use `nclusters_pred = 20` here in this vignette only for the sake of
+# speed. This is not recommended in general.
+vs_va <- varsel(fit_va, nclusters_pred = 20)
 ```
 
 ```{r}
@@ -337,7 +339,9 @@ FALSE`. Note that in general it is recommended to run the full validation
 search.
 
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
-cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE)
+# We'll use `nclusters_pred = 20` here in this vignette only for the sake of
+# speed. This is not recommended in general.
+cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE, nclusters_pred = 20)
 ```
 
 ```{r, fig.height=4, fig.width=5}
