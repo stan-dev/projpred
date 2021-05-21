@@ -103,8 +103,9 @@ perform the projection for a submodel of desired size using the function
 `project`. The resulting object can also be coerced to a matrix containing the
 projected draws. These draws can be visualized with, for example, the
 `mcmc_areas` function in the `bayesplot` package. Below, we'll do so for the two
-most relevant terms `(1 | Subject)` and `age`. For the multilevel term
-`(1 | Subject)`, we visualize its (hierarchical) standard deviation.
+most relevant terms `(1 | Subject)` and `age` (as well as the intercept). For
+the multilevel term `(1 | Subject)`, we visualize its (hierarchical) standard
+deviation.
 
 <!-- Below, we compare how the projection affects the three most relevant variables. -->
 
@@ -216,8 +217,9 @@ We perform the projection for a submodel of desired size using the function
 `project`. The resulting object can also be coerced to a matrix containing the
 projected draws. These draws can be visualized with, for example, the
 `mcmc_areas` function in the `bayesplot` package. Below, we'll do so for the two
-most relevant terms `cofactor` and `(1 | obs)`. For the multilevel term
-`(1 | obs)`, we visualize its (hierarchical) standard deviation.
+most relevant terms `cofactor` and `(1 | obs)` (as well as the intercept). For
+the multilevel term `(1 | obs)`, we visualize its (hierarchical) standard
+deviation.
 
 <!-- Below, we compare how the projection affects the most relevant variables. -->
 
