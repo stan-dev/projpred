@@ -1018,7 +1018,6 @@ as.matrix.projection <- function(x, ...) {
     stop("This case should not occur. Please notify the package maintainer.")
   }
   res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
-  colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }
