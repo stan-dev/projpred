@@ -943,6 +943,13 @@ as.matrix.lmerMod <- function(x, ...) {
   return(c(population_effects, group_vc, group_ef))
 }
 
+#' @method as.matrix glmerMod
+#' @keywords internal
+#' @export
+as.matrix.glmerMod <- function(x, ...) {
+  return(as.matrix.lmerMod(x, ...))
+}
+
 #' @method as.matrix list
 #' @keywords internal
 #' @export
