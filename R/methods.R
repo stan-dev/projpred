@@ -950,6 +950,13 @@ as.matrix.glmerMod <- function(x, ...) {
   return(as.matrix.lmerMod(x, ...))
 }
 
+#' @method as.matrix gamm4
+#' @keywords internal
+#' @export
+as.matrix.gamm4 <- function(x, ...) {
+  return(as.matrix.lm(x, ...))
+}
+
 #' @method as.matrix list
 #' @keywords internal
 #' @export
