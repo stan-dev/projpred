@@ -998,6 +998,11 @@ as.matrix.projection <- function(x, ...) {
   if (!inherits(x$sub_fit, "list")) {
     x$sub_fit <- list(x$sub_fit)
   }
+  if (!inherits(x$sub_fit[[1]], get_as.matrix_cls_projpred())) {
+    # Throw an error because in this case, we probably need a new
+    # as.matrix.<class_name>() method.
+    stop("This case should not occur. Please notify the package maintainer.")
+  }
   res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
   colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
