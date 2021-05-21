@@ -24,6 +24,7 @@
 * Fixed bugs for argument `nterms` of `proj_linpred()` and `proj_predict()`. (GitHub: #110)
 * Fixed an inconsistency for some intercept-only submodels. (GitHub: #119)
 * Minor documentation fixes.
+* Fix a bug for `as.matrix.projection()` in case of 1 (clustered) draw after projection. (GitHub: #130)
 
 ## projpred 2.0.5
 
