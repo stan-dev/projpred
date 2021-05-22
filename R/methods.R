@@ -37,17 +37,15 @@
 #'   only.
 #' @param integrated If \code{TRUE}, the output is averaged over the projected
 #'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param size_sub For \code{proj_predict} only: Number of draws to return from
-#'   the predictive distribution of the projection. Not to be confused with
-#'   arguments \code{ndraws} and \code{nclusters} of \link{project}:
-#'   \code{size_sub} gives a \emph{subset} of the (possibly clustered) posterior
-#'   draws after projection (as determined by arguments \code{ndraws} and
-#'   \code{nclusters} of \link{project}). The default for \code{size_sub} is
-#'   1000. We compute as many clusters from the reference posterior as draws, so
-#'   we end up projecting a single draw from each cluster.
-#' @param seed_sub For \code{proj_predict} only: An optional seed for subsetting
-#'   the (possibly clustered) posterior draws after projection (see argument
-#'   \code{size_sub}).
+#' @param size_sub For \code{proj_predict} with clustered projection only:
+#'   Number of draws to return from the predictive distribution of the
+#'   projection. Not to be confused with argument \code{nclusters} of
+#'   \link{project}: \code{size_sub} gives the number of draws (\emph{with}
+#'   replacement) from the set of clustered posterior draws after projection (as
+#'   determined by argument \code{nclusters} of \link{project}).
+#' @param seed_sub For \code{proj_predict} only: An optional seed for drawing
+#'   from the set of clustered posterior draws after projection (if clustered
+#'   projection was performed; see argument \code{size_sub}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
 #'   not already an object returned by \link{project}.
 #'
@@ -798,27 +796,37 @@ coef.subfit <- function(x, ...) {
 }
 
 #' @method as.matrix lm
+#' @keywords internal
+#' @export
 as.matrix.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names())
 }
 
 #' @method as.matrix ridgelm
+#' @keywords internal
+#' @export
 as.matrix.ridgelm <- function(x, ...) {
   return(as.matrix.lm(x))
 }
 
 #' @method as.matrix subfit
+#' @keywords internal
+#' @export
 as.matrix.subfit <- function(x, ...) {
   return(as.matrix.lm(x))
 }
 
 #' @method as.matrix glm
+#' @keywords internal
+#' @export
 as.matrix.glm <- function(x, ...) {
   return(as.matrix.lm(x))
 }
 
 #' @method as.matrix lmerMod
+#' @keywords internal
+#' @export
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names()
@@ -942,31 +950,42 @@ as.matrix.noquote <- function(x, ...) {
 }
 
 #' @method as.matrix list
+#' @keywords internal
+#' @export
 as.matrix.list <- function(x, ...) {
   return(do.call(cbind, lapply(x, as.matrix.glm)))
 }
 
 #' @method t glm
+#' @keywords internal
+#' @export
 t.glm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
 #' @method t lm
+#' @keywords internal
+#' @export
 t.lm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
 #' @method t ridgelm
+#' @keywords internal
+#' @export
 t.ridgelm <- function(x, ...) {
   return(t(as.matrix(x)))
 }
 
 #' @method t list
+#' @keywords internal
+#' @export
 t.list <- function(x, ...) {
   return(t(as.matrix.list(x)))
 }
 
 #' @method as.matrix projection
+#' @keywords internal
 #' @export
 as.matrix.projection <- function(x, ...) {
   if (x$p_type) {
