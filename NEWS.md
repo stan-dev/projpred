@@ -24,7 +24,8 @@
 * Fixed bugs for argument `nterms` of `proj_linpred()` and `proj_predict()`. (GitHub: #110)
 * Fixed an inconsistency for some intercept-only submodels. (GitHub: #119)
 * Minor documentation fixes.
-* Argument `size_sub` of `proj_predict()` is now cut off at its maximum possible value. (GitHub: #134)
+* Argument `size_sub` of `proj_predict()` is now handled differently; see its documentation. (GitHub: #134)
+* Argument `seed_sub` of `proj_predict()` was renamed to `seed_ppd` and its documentation was fixed. (GitHub: #134)
 
 ## projpred 2.0.5
 
