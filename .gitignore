@@ -13,3 +13,4 @@ vignettes/quickstart_cache
 *files/
 tests/testthat/bfits
 tests/testthat/_snaps
+inst/doc
