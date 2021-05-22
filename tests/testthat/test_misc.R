@@ -131,12 +131,12 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         SW({
           foo <- proj_predict(fit, frame,
                               solution_terms = solution_terms,
-                              seed = seed, seed_sub = seed
+                              seed = seed, seed_ppd = seed
           )
           r1 <- rnorm(s)
           foo <- proj_predict(fit, frame,
                               solution_terms = solution_terms,
-                              seed = seed, seed_sub = seed
+                              seed = seed, seed_ppd = seed
           )
           r2 <- rnorm(s)
         })
@@ -215,11 +215,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         SW({
           foo <- proj_predict(fit, frame,
                               solution_terms = solution_terms,
-                              seed = seed, seed_sub = seed
+                              seed = seed, seed_ppd = seed
           )
           bar <- proj_predict(fit, frame,
                               solution_terms = solution_terms,
-                              seed = seed, seed_sub = seed
+                              seed = seed, seed_ppd = seed
           )
         })
         expect_equal(foo, bar)
