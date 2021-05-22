@@ -24,7 +24,7 @@
 * Fixed bugs for argument `nterms` of `proj_linpred()` and `proj_predict()`. (GitHub: #110)
 * Fixed an inconsistency for some intercept-only submodels. (GitHub: #119)
 * Minor documentation fixes.
-* For submodels of class `"subfit"`, make the column names of `as.matrix.projection()`'s output matrix consistent with other classes of submodels. (GitHub: #<INSERT_PR_NUMBER>)
+* For submodels of class `"subfit"`, make the column names of `as.matrix.projection()`'s output matrix consistent with other classes of submodels. (GitHub: #132)
 
 ## projpred 2.0.5
 
