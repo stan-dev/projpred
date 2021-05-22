@@ -263,12 +263,16 @@ proj_predict <- function(object, filter_nterms = NULL, newdata = NULL,
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, mu, weights, ...) {
   dot_args <- list(...)
-  stopifnot(!is.null(dot_args$size_sub))
-  dot_args$size_sub <- min(NCOL(mu), dot_args$size_sub)
-  draw_inds <- sample(
-    x = seq_along(proj$weights), size = dot_args$size_sub,
-    replace = TRUE, prob = proj$weights
-  )
+  if (proj$p_type) {
+    # In this case, the posterior draws have been clustered.
+    stopifnot(!is.null(dot_args$size_sub))
+    draw_inds <- sample(
+      x = seq_along(proj$weights), size = dot_args$size_sub,
+      replace = TRUE, prob = proj$weights
+    )
+  } else {
+    draw_inds <- seq_along(proj$weights)
+  }
 
   do.call(rbind, lapply(draw_inds, function(i) {
     proj$family$ppd(mu[, i], proj$dis[i], weights)
