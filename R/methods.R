@@ -43,9 +43,10 @@
 #'   \link{project}: \code{size_sub} gives the number of draws (\emph{with}
 #'   replacement) from the set of clustered posterior draws after projection (as
 #'   determined by argument \code{nclusters} of \link{project}).
-#' @param seed_sub For \code{proj_predict} only: An optional seed for drawing
-#'   from the set of clustered posterior draws after projection (if clustered
-#'   projection was performed; see argument \code{size_sub}).
+#' @param seed_ppd For \code{proj_predict} only: An optional seed for drawing
+#'   from the posterior predictive distribution. If a clustered projection was
+#'   performed, `seed_ppd` is also used for drawing from the set of clustered
+#'   posterior draws after projection (see argument \code{size_sub}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
 #'   not already an object returned by \link{project}.
 #'
@@ -243,11 +244,11 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 #' @export
 proj_predict <- function(object, filter_nterms = NULL, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL, size_sub = 1000,
-                         seed_sub = NULL, ...) {
+                         seed_ppd = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(seed_sub)
+  set.seed(seed_ppd)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
