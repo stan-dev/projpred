@@ -140,7 +140,7 @@ We perform the projection for a submodel of desired size using the function `pro
 
 ```{r, fig.width=6, fig.height=2}
 # Visualise the projected three most relevant variables
-proj <- project(vs, nterms = 3, ns = 500, nclusters = 10)
+proj <- project(vs, nterms = 3, nclusters = 10)
 mcmc_areas(as.matrix(proj)) +
   coord_cartesian(xlim = c(-2, 2))
 ```
