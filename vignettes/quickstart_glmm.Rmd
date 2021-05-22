@@ -1,8 +1,7 @@
 ---
 title: "projpred Performing variable selection on Generalized Linear Multilevel Models"
 date: "`r Sys.Date()`"
-output:
-  html_vignette
+output: rmarkdown::html_vignette
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
