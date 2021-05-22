@@ -107,7 +107,11 @@ The function `cv_varsel` runs a cross-validated variable selection, and returns 
 For a simple linear model (without multilevel structure), the fastest method is to use L1--search. 
 
 ```{r, results='hide', messages=FALSE, warnings=FALSE}
-vs <- cv_varsel(refmodel, method = "forward")
+# We'll use small values for `nclusters` and `nclusters_pred` here and later in
+# this vignette only to speed up the building of this vignette. This is not
+# recommended in general.
+vs <- cv_varsel(refmodel, method = "forward",
+                nclusters = 5, nclusters_pred = 10)
 ```
 
 ```{r, messages=FALSE, warnings=FALSE}
@@ -136,14 +140,15 @@ We perform the projection for a submodel of desired size using the function `pro
 
 ```{r, fig.width=6, fig.height=2}
 # Visualise the projected three most relevant variables
-proj <- project(vs, nterms = 3, ns = 500)
+proj <- project(vs, nterms = 3, ns = 500, nclusters = 10)
 mcmc_areas(as.matrix(proj)) +
   coord_cartesian(xlim = c(-2, 2))
 ```
 
 We make predictions with the projected submodels. For point estimates we can use method `proj_linpred`. Test inputs can be provided using the keyword `newdata`. If also the test targets `ynew` are provided in `newdata`, then the function evaluates the log predictive density at these points. For instance, the following computes the mean of the predictive distribution and evaluates the log density at the training points using the 6 most relevant variables.
 ```{r}
-pred <- proj_linpred(vs, newdata = df_gaussian, nterms = 6, integrated = TRUE)
+pred <- proj_linpred(vs, newdata = df_gaussian, nterms = 6, integrated = TRUE,
+                     nclusters = 10)
 ```
 
 Visualize the predictions
@@ -158,7 +163,8 @@ We also obtain draws from the projected predictive distribution. Here's an examp
 ```{r, fig.height=3, fig.width=5}
 subset <- df_gaussian %>% dplyr::sample_n(1)
 y_subset <- subset %>% dplyr::select(y)
-y1_rep <- proj_predict(vs, newdata = subset, nterms = 6, seed = 7560)
+y1_rep <- proj_predict(vs, newdata = subset, nterms = 6, seed = 7560,
+                       nclusters = 10)
 qplot(as.vector(y1_rep), bins = 25) +
   geom_vline(xintercept = as.numeric(y_subset), color = "red") +
   xlab("y1_rep")

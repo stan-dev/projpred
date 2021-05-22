@@ -70,9 +70,10 @@ recommended to run a cross validated variable selection instead.
     
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
 ref <- get_refmodel(fit)
-# We'll use `nclusters_pred = 20` here in this vignette only for the sake of
-# speed. This is not recommended in general.
-vs <- varsel(ref, nclusters_pred = 20)
+# We'll use small values for `nclusters` and `nclusters_pred` here and later in
+# this vignette only to speed up the building of this vignette. This is not
+# recommended in general.
+vs <- varsel(ref, nclusters = 5, nclusters_pred = 10)
 ```
 
 Because our model includes group effects, the only available search method is
@@ -117,9 +118,7 @@ deviation.
 <!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
-# We'll use `nclusters = 20` here in this vignette only for the sake of
-# speed. This is not recommended in general.
-proj <- project(vs, nterms = 2, nclusters = 20)
+proj <- project(vs, nterms = 2, nclusters = 10)
 mcmc_areas(as.matrix(proj),
            pars = c("b_Intercept", "sd_Subject__Intercept", "b_age"))
 ```
@@ -132,7 +131,8 @@ mean of the predictive distribution and evaluates the log density at the
 training points using the 5 most relevant variables.
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
-pred <- proj_linpred(vs, newdata = Orthodont, nterms = 5, integrated = TRUE)
+pred <- proj_linpred(vs, newdata = Orthodont, nterms = 5, integrated = TRUE,
+                     nclusters = 10)
 ```
 
 Visualize the predictions
@@ -150,7 +150,8 @@ value is marked by the red line).
 ```{r, fig.height=3, fig.width=5, message=FALSE, warning=FALSE}
 subset <- Orthodont %>% as_tibble() %>% dplyr::sample_n(1)
 y_subset <- subset %>% dplyr::select(distance) %>% as.data.frame()
-y1_rep <- proj_predict(vs, newdata = subset, nterms = 5, seed = 7560)
+y1_rep <- proj_predict(vs, newdata = subset, nterms = 5, seed = 7560,
+                       nclusters = 10)
 qplot(as.vector(y1_rep), bins = 25) +
   geom_vline(xintercept = as.numeric(y_subset), color = "red") +
   xlab("y1_rep")
@@ -186,9 +187,7 @@ As we did in the previous example, we can perform variable selection and look
 at the projection.
  
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
-# We'll use `nclusters_pred = 20` here in this vignette only for the sake of
-# speed. This is not recommended in general.
-vs <- varsel(fit, nclusters_pred = 20)
+vs <- varsel(fit, nclusters = 5, nclusters_pred = 10)
 ```
 
 Because our model includes group effects, the only available search method is
@@ -230,9 +229,7 @@ deviation.
 <!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
-# We'll use `nclusters = 20` here in this vignette only for the sake of
-# speed. This is not recommended in general.
-proj <- project(vs, nterms = 2, nclusters = 20)
+proj <- project(vs, nterms = 2, nclusters = 10)
 mcmc_areas(as.matrix(proj),
            pars = c("b_Intercept", "b_cofactor", "sd_obs__Intercept"))
 ```
@@ -243,7 +240,8 @@ evaluates the log density at the training points using the previously projected
 model.
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE}
-pred <- proj_linpred(proj, newdata = data_pois, integrated = TRUE)
+pred <- proj_linpred(proj, newdata = data_pois, integrated = TRUE,
+                     nclusters = 10)
 ```
 
 We can also visualize the corresponding projected predictions.
@@ -300,9 +298,7 @@ fit_va <- stan_glmer(
 As we did before, we can run the standard variable selection with
 
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
-# We'll use `nclusters_pred = 20` here in this vignette only for the sake of
-# speed. This is not recommended in general.
-vs_va <- varsel(fit_va, nclusters_pred = 20)
+vs_va <- varsel(fit_va, nclusters = 5, nclusters_pred = 10)
 ```
 
 ```{r}
@@ -341,9 +337,8 @@ FALSE`. Note that in general it is recommended to run the full validation
 search.
 
 ```{r, cache=TRUE, results="hide", message=FALSE, warning=FALSE}
-# We'll use `nclusters_pred = 20` here in this vignette only for the sake of
-# speed. This is not recommended in general.
-cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE, nclusters_pred = 20)
+cv_vs_va <- cv_varsel(fit_va, validate_search = FALSE,
+                      nclusters = 5, nclusters_pred = 10)
 ```
 
 ```{r, fig.height=4, fig.width=5}
