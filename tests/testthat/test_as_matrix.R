@@ -57,7 +57,7 @@ if (require(rstanarm)) {
     expect_length(setdiff(
       colnames(m),
       c(
-        "Intercept", vs_gauss$solution_terms[solution_terms],
+        paste0("b_", c("Intercept", vs_gauss$solution_terms[solution_terms])),
         "sigma"
       )
     ), 0)
@@ -70,8 +70,9 @@ if (require(rstanarm)) {
   ), {
     m <- as.matrix(p_binom)
     expect_length(setdiff(colnames(m),
-                          c("Intercept",
-                            vs_binom$solution_terms[solution_terms])),
+                          paste0("b_",
+                                 c("Intercept",
+                                   vs_binom$solution_terms[solution_terms]))),
                   0)
     expect_equal(dim(m), c(ndraws, length(solution_terms) + 1))
   })
@@ -79,7 +80,7 @@ if (require(rstanarm)) {
   test_that("as.matrix.projection works as expected with zero variables", {
     p_novars <- project(vs_gauss, nterms = 0, ndraws = ndraws)
     m <- as.matrix(p_novars)
-    expect_length(setdiff(colnames(m), c("Intercept", "sigma")), 0)
+    expect_length(setdiff(colnames(m), c("b_Intercept", "sigma")), 0)
     expect_equal(dim(m), c(ndraws, 2))
   })
 
@@ -93,7 +94,7 @@ if (require(rstanarm)) {
       setdiff(
         colnames(m),
         c(
-          "Intercept", vs_gauss$solution_terms[solution_terms],
+          paste0("b_", c("Intercept", vs_gauss$solution_terms[solution_terms])),
           "sigma"
         )
       ),
