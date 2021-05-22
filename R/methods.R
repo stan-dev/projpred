@@ -264,6 +264,7 @@ proj_predict <- function(object, filter_nterms = NULL, newdata = NULL,
 proj_predict_aux <- function(proj, mu, weights, ...) {
   dot_args <- list(...)
   stopifnot(!is.null(dot_args$size_sub))
+  dot_args$size_sub <- min(NCOL(mu), dot_args$size_sub)
   draw_inds <- sample(
     x = seq_along(proj$weights), size = dot_args$size_sub,
     replace = TRUE, prob = proj$weights
