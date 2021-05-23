@@ -268,14 +268,14 @@ data("VerbAgg", package = "lme4")
 
 The whole dataset consists of 7584 questionnaire answers from different
 subjects. Given that the full data could take a long time to fit, we will
-subsample 50 individuals (for which sampling still takes a bit). For this, we
+subsample 30 individuals (for which sampling still takes a bit). For this, we
 use the great `tidyverse` environment.
 
 ```{r}
-## subsample 50 participants
+## subsample 30 participants
 VerbAgg_subsample <- VerbAgg %>%
   tidyr::as_tibble() %>%
-  dplyr::filter(id %in% sample(id, 50)) %>%
+  dplyr::filter(id %in% sample(id, 30)) %>%
   dplyr::mutate(r2num = as.integer(r2) - 1) # binomial family needs numeric target
 ```
 
