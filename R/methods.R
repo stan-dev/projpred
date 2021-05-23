@@ -37,17 +37,15 @@
 #'   only.
 #' @param integrated If \code{TRUE}, the output is averaged over the projected
 #'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param size_sub For \code{proj_predict} only: Number of draws to return from
-#'   the predictive distribution of the projection. Not to be confused with
-#'   arguments \code{ndraws} and \code{nclusters} of \link{project}:
-#'   \code{size_sub} gives a \emph{subset} of the (possibly clustered) posterior
-#'   draws after projection (as determined by arguments \code{ndraws} and
-#'   \code{nclusters} of \link{project}). The default for \code{size_sub} is
-#'   1000. We compute as many clusters from the reference posterior as draws, so
-#'   we end up projecting a single draw from each cluster.
-#' @param seed_sub For \code{proj_predict} only: An optional seed for subsetting
-#'   the (possibly clustered) posterior draws after projection (see argument
-#'   \code{size_sub}).
+#' @param size_sub For \code{proj_predict} with clustered projection only:
+#'   Number of draws to return from the predictive distribution of the
+#'   projection. Not to be confused with argument \code{nclusters} of
+#'   \link{project}: \code{size_sub} gives the number of draws (\emph{with}
+#'   replacement) from the set of clustered posterior draws after projection (as
+#'   determined by argument \code{nclusters} of \link{project}).
+#' @param seed_sub For \code{proj_predict} only: An optional seed for drawing
+#'   from the set of clustered posterior draws after projection (if clustered
+#'   projection was performed; see argument \code{size_sub}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
 #'   not already an object returned by \link{project}.
 #'
