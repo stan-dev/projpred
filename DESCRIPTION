@@ -59,7 +59,8 @@ Suggests:
     future,
     future.callr,
     doFuture,
-    tidyr
+    tidyr,
+    nlme
 LinkingTo: Rcpp, RcppArmadillo
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
