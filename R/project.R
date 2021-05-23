@@ -134,6 +134,12 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       )
     }
 
+    if (!all(solution_terms %in% vars)) {
+      warning("At least one element of `solution_terms` could not be found ",
+              "among the terms in the reference model. This element (or these ",
+              "elements) is/are ignored.")
+    }
+
     solution_terms <- intersect(solution_terms, vars)
     nterms <- length(solution_terms)
   } else {
