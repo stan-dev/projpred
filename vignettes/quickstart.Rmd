@@ -106,11 +106,11 @@ The function `cv_varsel` runs a cross-validated variable selection, and returns 
 For a simple linear model (without multilevel structure), the fastest method is to use L1--search. 
 
 ```{r, results='hide', messages=FALSE, warnings=FALSE}
-# We'll use small values for `nclusters` and `nclusters_pred` here and later in
-# this vignette only to speed up the building of this vignette. This is not
-# recommended in general.
+# We'll use small values for `nterms_max`, `nclusters` and `nclusters_pred` here
+# and later in this vignette only to speed up the building of this vignette.
+# This is not recommended in general.
 vs <- cv_varsel(refmodel, method = "forward",
-                nclusters = 5, nclusters_pred = 10)
+                nterms_max = 10, nclusters = 5, nclusters_pred = 10)
 ```
 
 ```{r, messages=FALSE, warnings=FALSE}
