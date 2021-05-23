@@ -32,8 +32,8 @@
 #'   Ignored if the reference model is of class \code{"datafit"} (in which case
 #'   one cluster is used). For the meaning of \code{NULL}, see argument
 #'   \code{ndraws}. See also section "Details" below.
-#' @param seed A seed used in the clustering (if \code{nclusters!=ndraws}). Can
-#'   be used to ensure same results every time.
+#' @param seed A seed used in the clustering (if \code{!is.null(nclusters)}).
+#'   Can be used to ensure same results every time.
 #' @param regul Amount of ridge regularization when fitting the models in the
 #'   projection. Usually there is no need for regularization, but sometimes for
 #'   some models the projection can be ill-behaved and we need to add some
