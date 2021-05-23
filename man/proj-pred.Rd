@@ -24,7 +24,7 @@ proj_predict(
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
-  size_sub = 1000,
+  nclusters_resample = 1000,
   seed_ppd = NULL,
   ...
 )
@@ -69,17 +69,17 @@ posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.}
 \item{...}{Additional arguments passed to \link{project} if \code{object} is
 not already an object returned by \link{project}.}
 
-\item{size_sub}{For \code{proj_predict} with clustered projection only:
-Number of draws to return from the predictive distribution of the
+\item{nclusters_resample}{For \code{proj_predict} with clustered projection
+only: Number of draws to return from the predictive distribution of the
 projection. Not to be confused with argument \code{nclusters} of
-\link{project}: \code{size_sub} gives the number of draws (\emph{with}
-replacement) from the set of clustered posterior draws after projection (as
-determined by argument \code{nclusters} of \link{project}).}
+\link{project}: \code{nclusters_resample} gives the number of draws
+(\emph{with} replacement) from the set of clustered posterior draws after
+projection (as determined by argument \code{nclusters} of \link{project}).}
 
 \item{seed_ppd}{For \code{proj_predict} only: An optional seed for drawing
 from the posterior predictive distribution. If a clustered projection was
 performed, `seed_ppd` is also used for drawing from the set of clustered
-posterior draws after projection (see argument \code{size_sub}).}
+posterior draws after projection (see argument \code{nclusters_resample}).}
 }
 \value{
 If the prediction is done for one submodel only (\code{nterms} has

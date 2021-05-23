@@ -456,19 +456,21 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     for (i in seq_len(length(proj_solution_terms_list))) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(x = x), size_sub = iter,
+                         newdata = data.frame(x = x), nclusters_resample = iter,
                          seed = seed, seed_ppd = seed
       )
       plo <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x, offset = offset),
-                          size_sub = iter,
+                          nclusters_resample = iter,
                           seed = seed, seed_ppd = seed, offsetnew = ~offset
       )
       expect_true(sum(pl != plo) > 0, info = i_inf)
     }
   })
 
-  test_that("proj_predict: specifying size_sub has an expected effect", {
+  test_that(paste(
+    "proj_predict: specifying nclusters_resample has an expected effect"
+  ), {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl <- proj_predict(proj_solution_terms_list[[i]],
@@ -498,18 +500,21 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     for (i in 1:length(vs_list)) {
       i_inf <- names(vs_list)[i]
       prp1 <- proj_predict(vs_list[[i]],
-                           newdata = data.frame(x = x), size_sub = 100,
+                           newdata = data.frame(x = x),
+                           nclusters_resample = 100,
                            seed = 12, seed_ppd = 12, nterms = c(2, 4),
                            nclusters = 2,
                            regul = 1e-08
       )
       prp2 <- proj_predict(vs_list[[i]],
-                           newdata = data.frame(x = x), size_sub = 100,
+                           newdata = data.frame(x = x),
+                           nclusters_resample = 100,
                            nterms = c(2, 4), nclusters = 2, regul = 1e-8,
                            seed = 12, seed_ppd = 12
       )
       prp3 <- proj_predict(vs_list[[i]],
-                           newdata = data.frame(x = x), size_sub = 100,
+                           newdata = data.frame(x = x),
+                           nclusters_resample = 100,
                            seed = 120, seed_ppd = 120, nterms = c(2, 4),
                            nclusters = 2,
                            regul = 1e-08
