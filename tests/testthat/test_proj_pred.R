@@ -472,8 +472,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(x = x), size_sub = iter)
-      expect_equal(dim(pl), c(iter, n))
+                         newdata = data.frame(x = x))
+      # 400 is the default for project()'s argument `ndraws`:
+      expect_equal(dim(pl), c(400, n))
     }
   })
 
