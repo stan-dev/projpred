@@ -1,7 +1,6 @@
 context("as.matrix.projection")
 
-# tests for as_matrix
-
+# Gaussian and binomial reference models without multilevel or additive terms:
 if (require(rstanarm)) {
   set.seed(1235)
   n <- 40
@@ -26,27 +25,23 @@ if (require(rstanarm)) {
 
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                          family = f_gauss, data = df_gauss,
-                          chains = chains, seed = seed, iter = iter
-    )
+                          data = df_gauss, family = f_gauss,
+                          chains = chains, seed = seed, iter = iter)
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                          family = f_binom, weights = weights,
-                          data = df_binom, chains = chains, seed = seed,
-                          iter = iter
-    )
+                          data = df_binom, family = f_binom,
+                          weights = weights,
+                          chains = chains, seed = seed, iter = iter)
 
-    vs_gauss <- varsel(fit_gauss, ndraws = 1, ndraws_pred = 5)
-    vs_binom <- varsel(fit_binom, ndraws = 1, ndraws_pred = 5)
+    vs_gauss <- varsel(fit_gauss, nclusters = 1, nclusters_pred = 5)
+    vs_binom <- varsel(fit_binom, nclusters = 1, nclusters_pred = 5)
     solution_terms <- c(2, 3)
     ndraws <- 100
     p_gauss <- project(vs_gauss,
                        solution_terms = vs_gauss$solution_terms[solution_terms],
-                       ndraws = ndraws
-    )
+                       ndraws = ndraws)
     p_binom <- project(vs_binom,
                        solution_terms = vs_binom$solution_terms[solution_terms],
-                       ndraws = ndraws
-    )
+                       ndraws = ndraws)
   })
 
   test_that(paste(
