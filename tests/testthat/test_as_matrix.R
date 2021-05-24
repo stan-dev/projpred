@@ -34,15 +34,16 @@ if (require(rstanarm)) {
 
     vs_gauss <- varsel(fit_gauss, nclusters = 1, nclusters_pred = 5)
     vs_binom <- varsel(fit_binom, nclusters = 1, nclusters_pred = 5)
-    solution_terms <- c(2, 3)
-    ndraws <- 100
-    p_gauss <- project(vs_gauss,
-                       solution_terms = vs_gauss$solution_terms[solution_terms],
-                       ndraws = ndraws)
-    p_binom <- project(vs_binom,
-                       solution_terms = vs_binom$solution_terms[solution_terms],
-                       ndraws = ndraws)
   })
+
+  solution_terms <- c(2, 3)
+  ndraws <- 100
+  p_gauss <- project(vs_gauss,
+                     solution_terms = vs_gauss$solution_terms[solution_terms],
+                     ndraws = ndraws)
+  p_binom <- project(vs_binom,
+                     solution_terms = vs_binom$solution_terms[solution_terms],
+                     ndraws = ndraws)
 
   test_that(paste(
     "as.matrix.projection returns the relevant variables for",
