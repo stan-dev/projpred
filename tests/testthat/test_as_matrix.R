@@ -93,3 +93,151 @@ if (require(rstanarm)) {
     }
   }
 }
+
+# Gaussian and binomial reference models with multilevel but without additive
+# terms:
+if (require(rstanarm)) {
+  set.seed(1235)
+  n <- 40
+  nterms <- 7
+  nterms_pop <- nterms - 2 # -2 for the multilevel terms (intercepts and slopes)
+  x <- matrix(rnorm(n * nterms_pop, 0, 1), n, nterms_pop)
+  b <- runif(nterms_pop) - 0.5
+  dis <- runif(1, 1, 2)
+  weights <- sample(1:4, n, replace = TRUE)
+  offset <- rnorm(n)
+  icpt <- -0.42
+  ngr <- 8
+  xgr <- gl(n = ngr, k = floor(n / ngr), length = n,
+            labels = paste0("gr", seq_len(ngr)))
+  bgr_icpts <- rnorm(ngr, sd = 0.8)
+  bgr_x.1 <- rnorm(ngr, sd = 0.8)
+  eta <- icpt +
+    x %*% b +
+    bgr_icpts[xgr] +
+    bgr_x.1[xgr] * x[, 1] +
+    offset
+  chains <- 2
+  seed <- 1235
+  iter <- 500
+  source(testthat::test_path("helpers", "SW.R"))
+
+  f_gauss <- gaussian()
+  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(eta), dis),
+                         x = x, xgr = xgr, weights = weights, offset = offset)
+  f_binom <- binomial()
+  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(eta)),
+                         x = x, xgr = xgr, weights = weights, offset = offset)
+
+  SW({
+    fit_gauss <- stan_glmer(
+      y ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr),
+      data = df_gauss, family = f_gauss,
+      weights = weights, offset = offset,
+      chains = chains, seed = seed, iter = iter
+    )
+    fit_binom <- stan_glmer(
+      cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr),
+      data = df_binom, family = f_binom,
+      weights = weights, offset = offset,
+      chains = chains, seed = seed, iter = iter
+    )
+  })
+
+  settings_list <- list(
+    gauss = list(
+      fitobj = fit_gauss,
+      solution_terms_list = list(character(),
+                                 c("x.3", "x.5"),
+                                 c("x.3", "(1 | xgr)", "x.1 + (x.1 | xgr)")),
+      ndraws_list = list(25, 2, 1)
+    ),
+    binom = list(
+      fitobj = fit_binom,
+      solution_terms_list = list(c("x.3", "x.5")),
+      ndraws_list = list(25)
+    )
+  )
+
+  for (fam_type in settings_list) {
+    for (solution_terms in fam_type$solution_terms_list) {
+      for (ndraws in fam_type$ndraws_list) {
+        # Expected warning (more precisely: regexp which is matched against the
+        # warning; NA means no warning) for project() and family-specific
+        # parameters:
+        if (family(fam_type$fitobj)$family == "gaussian") {
+          warn_prj_expect <- NA
+          npars_fam <- "sigma"
+        } else if (family(fam_type$fitobj)$family == "binomial") {
+          # For the binomial family with > 1 trials, we expect a warning (see
+          # GitHub issue #136):
+          warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
+                                   "is a character vector of length > 1")
+          npars_fam <- character()
+        }
+
+        expect_warning(prj <- project(fam_type$fitobj,
+                                      solution_terms = solution_terms,
+                                      ndraws = ndraws),
+                       warn_prj_expect)
+
+        # Expected warning (more precisely: regexp which is matched against the
+        # warning; NA means no warning) for as.matrix.projection():
+        if (ndraws > 20) {
+          warn_prjmat_expect <- NA
+        } else {
+          # Clustered projection, so we expect a warning:
+          warn_prjmat_expect <- "the clusters might have different weights"
+        }
+
+        expect_warning(m <- as.matrix(prj), warn_prjmat_expect)
+
+        test_that("as.matrix.projection()'s output structure is correct", {
+          colnms_prjmat_expect <- c(
+            "Intercept",
+            grep("^x\\.[[:digit:]]$", solution_terms,
+                 value = TRUE)
+          )
+          if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
+            colnms_prjmat_expect <- c(colnms_prjmat_expect, "x.1")
+          }
+          colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
+          if ("(1 | xgr)" %in% solution_terms) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              "sd_xgr__Intercept"
+            )
+          }
+          if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              "sd_xgr__x.1"
+            )
+          }
+          if (all(c("(1 | xgr)", "x.1 + (x.1 | xgr)") %in% solution_terms)) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              "cor_xgr__Intercept__x.1"
+            )
+          }
+          if ("(1 | xgr)" %in% solution_terms) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              paste0("r_xgr[gr", seq_len(ngr), ",Intercept]")
+            )
+          }
+          if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              paste0("r_xgr[gr", seq_len(ngr), ",x.1]")
+            )
+          }
+          colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
+
+          expect_equal(dim(m), c(ndraws, length(colnms_prjmat_expect)))
+          expect_identical(colnames(m), colnms_prjmat_expect)
+        })
+      }
+    }
+  }
+}
