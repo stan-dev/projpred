@@ -33,60 +33,63 @@ if (require(rstanarm)) {
                           chains = chains, seed = seed, iter = iter)
   })
 
-  solution_terms <- c("x.3", "x.5")
-  ndraws <- 100
-  p_gauss <- project(fit_gauss,
-                     solution_terms = solution_terms,
-                     ndraws = ndraws)
-  SW(p_binom <- project(fit_binom,
-                        solution_terms = solution_terms,
-                        ndraws = ndraws))
-
-  test_that(paste(
-    "as.matrix.projection()'s output structure is correct (for the Gaussian",
-    "family)"
-  ), {
-    m <- as.matrix(p_gauss)
-    expect_equal(dim(m), c(ndraws, length(solution_terms) + 2))
-    expect_identical(
-      colnames(m),
-      c(paste0("b_", c("Intercept", solution_terms)),
-        "sigma")
+  settings_list <- list(
+    gauss = list(
+      fitobj = fit_gauss,
+      solution_terms_list = list(character(), c("x.3", "x.5")),
+      ndraws_list = list(100, 3)
+    ),
+    binom = list(
+      fitobj = fit_binom,
+      solution_terms_list = list(c("x.3", "x.5")),
+      ndraws_list = list(100)
     )
-  })
+  )
 
-  test_that(paste(
-    "as.matrix.projection()'s output structure is correct (for the binomial",
-    "family)"
-  ), {
-    m <- as.matrix(p_binom)
-    expect_equal(dim(m), c(ndraws, length(solution_terms) + 1))
-    expect_identical(
-      colnames(m),
-      paste0("b_", c("Intercept", solution_terms))
-    )
-  })
+  for (fam_type in settings_list) {
+    for (solution_terms in fam_type$solution_terms_list) {
+      for (ndraws in fam_type$ndraws_list) {
+        # Expected warning (more precisely: regexp which is matched against the
+        # warning; NA means no warning) for project() and family-specific
+        # parameters:
+        if (family(fam_type$fitobj)$family == "gaussian") {
+          warn_prj_expect <- NA
+          npars_fam <- "sigma"
+        } else if (family(fam_type$fitobj)$family == "binomial") {
+          # For the binomial family with > 1 trials, we expect a warning (see
+          # GitHub issue #136):
+          warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
+                                   "is a character vector of length > 1")
+          npars_fam <- character()
+        }
 
-  test_that("as.matrix.projection works as expected with zero solution terms", {
-    p_novars <- project(fit_gauss,
-                        solution_terms = character(),
-                        ndraws = ndraws)
-    m <- as.matrix(p_novars)
-    expect_equal(dim(m), c(ndraws, 2))
-    expect_identical(colnames(m), c("b_Intercept", "sigma"))
-  })
+        expect_warning(prj <- project(fam_type$fitobj,
+                                      solution_terms = solution_terms,
+                                      ndraws = ndraws),
+                       warn_prj_expect)
 
-  test_that("as.matrix.projection works with clustering", {
-    nclusters <- 3
-    p_clust <- project(fit_gauss,
-                       solution_terms = solution_terms,
-                       nclusters = nclusters)
-    SW(m <- as.matrix(p_clust))
-    expect_equal(dim(m), c(nclusters, length(solution_terms) + 2))
-    expect_identical(
-      colnames(m),
-      c(paste0("b_", c("Intercept", solution_terms)),
-        "sigma")
-    )
-  })
+        # Expected warning (more precisely: regexp which is matched against the
+        # warning; NA means no warning) for as.matrix.projection():
+        if (ndraws > 20) {
+          warn_prjmat_expect <- NA
+        } else {
+          # Clustered projection, so we expect a warning:
+          warn_prjmat_expect <- "the clusters might have different weights"
+        }
+
+        expect_warning(m <- as.matrix(prj), warn_prjmat_expect)
+
+        test_that("as.matrix.projection()'s output structure is correct", {
+          expect_equal(
+            dim(m),
+            c(ndraws, length(solution_terms) + 1 + length(npars_fam))
+          )
+          expect_identical(
+            colnames(m),
+            c(paste0("b_", c("Intercept", solution_terms)), npars_fam)
+          )
+        })
+      }
+    }
+  }
 }
