@@ -38,9 +38,9 @@ if (require(rstanarm)) {
   p_gauss <- project(fit_gauss,
                      solution_terms = solution_terms,
                      ndraws = ndraws)
-  p_binom <- project(fit_binom,
-                     solution_terms = solution_terms,
-                     ndraws = ndraws)
+  SW(p_binom <- project(fit_binom,
+                        solution_terms = solution_terms,
+                        ndraws = ndraws))
 
   test_that(paste(
     "as.matrix.projection returns the relevant variables for",
