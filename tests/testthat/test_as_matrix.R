@@ -43,40 +43,37 @@ if (require(rstanarm)) {
                         ndraws = ndraws))
 
   test_that(paste(
-    "as.matrix.projection returns the relevant variables for",
-    "gaussian"
+    "as.matrix.projection()'s output structure is correct (for the Gaussian",
+    "family)"
   ), {
     m <- as.matrix(p_gauss)
-    expect_length(setdiff(
-      colnames(m),
-      c(
-        paste0("b_", c("Intercept", solution_terms)),
-        "sigma"
-      )
-    ), 0)
     expect_equal(dim(m), c(ndraws, length(solution_terms) + 2))
+    expect_identical(
+      colnames(m),
+      c(paste0("b_", c("Intercept", solution_terms)),
+        "sigma")
+    )
   })
 
   test_that(paste(
-    "as.matrix.projection returns the relevant variables for",
-    "binomial"
+    "as.matrix.projection()'s output structure is correct (for the binomial",
+    "family)"
   ), {
     m <- as.matrix(p_binom)
-    expect_length(setdiff(colnames(m),
-                          paste0("b_",
-                                 c("Intercept",
-                                   solution_terms))),
-                  0)
     expect_equal(dim(m), c(ndraws, length(solution_terms) + 1))
+    expect_identical(
+      colnames(m),
+      paste0("b_", c("Intercept", solution_terms))
+    )
   })
 
-  test_that("as.matrix.projection works as expected with zero variables", {
+  test_that("as.matrix.projection works as expected with zero solution terms", {
     p_novars <- project(fit_gauss,
                         solution_terms = character(),
                         ndraws = ndraws)
     m <- as.matrix(p_novars)
-    expect_length(setdiff(colnames(m), c("b_Intercept", "sigma")), 0)
     expect_equal(dim(m), c(ndraws, 2))
+    expect_identical(colnames(m), c("b_Intercept", "sigma"))
   })
 
   test_that("as.matrix.projection works with clustering", {
@@ -85,16 +82,11 @@ if (require(rstanarm)) {
                        solution_terms = solution_terms,
                        nclusters = nclusters)
     SW(m <- as.matrix(p_clust))
-    expect_length(
-      setdiff(
-        colnames(m),
-        c(
-          paste0("b_", c("Intercept", solution_terms)),
-          "sigma"
-        )
-      ),
-      0
-    )
     expect_equal(dim(m), c(nclusters, length(solution_terms) + 2))
+    expect_identical(
+      colnames(m),
+      c(paste0("b_", c("Intercept", solution_terms)),
+        "sigma")
+    )
   })
 }
