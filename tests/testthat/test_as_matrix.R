@@ -31,18 +31,15 @@ if (require(rstanarm)) {
                           data = df_binom, family = f_binom,
                           weights = weights,
                           chains = chains, seed = seed, iter = iter)
-
-    vs_gauss <- varsel(fit_gauss, nclusters = 1, nclusters_pred = 5)
-    vs_binom <- varsel(fit_binom, nclusters = 1, nclusters_pred = 5)
   })
 
-  solution_terms <- c(2, 3)
+  solution_terms <- c("x.3", "x.5")
   ndraws <- 100
-  p_gauss <- project(vs_gauss,
-                     solution_terms = vs_gauss$solution_terms[solution_terms],
+  p_gauss <- project(fit_gauss,
+                     solution_terms = solution_terms,
                      ndraws = ndraws)
-  p_binom <- project(vs_binom,
-                     solution_terms = vs_binom$solution_terms[solution_terms],
+  p_binom <- project(fit_binom,
+                     solution_terms = solution_terms,
                      ndraws = ndraws)
 
   test_that(paste(
@@ -53,7 +50,7 @@ if (require(rstanarm)) {
     expect_length(setdiff(
       colnames(m),
       c(
-        paste0("b_", c("Intercept", vs_gauss$solution_terms[solution_terms])),
+        paste0("b_", c("Intercept", solution_terms)),
         "sigma"
       )
     ), 0)
@@ -68,13 +65,15 @@ if (require(rstanarm)) {
     expect_length(setdiff(colnames(m),
                           paste0("b_",
                                  c("Intercept",
-                                   vs_binom$solution_terms[solution_terms]))),
+                                   solution_terms))),
                   0)
     expect_equal(dim(m), c(ndraws, length(solution_terms) + 1))
   })
 
   test_that("as.matrix.projection works as expected with zero variables", {
-    p_novars <- project(vs_gauss, nterms = 0, ndraws = ndraws)
+    p_novars <- project(fit_gauss,
+                        solution_terms = character(),
+                        ndraws = ndraws)
     m <- as.matrix(p_novars)
     expect_length(setdiff(colnames(m), c("b_Intercept", "sigma")), 0)
     expect_equal(dim(m), c(ndraws, 2))
@@ -82,15 +81,15 @@ if (require(rstanarm)) {
 
   test_that("as.matrix.projection works with clustering", {
     nclusters <- 3
-    p_clust <- project(vs_gauss,
-                       solution_terms = vs_gauss$solution_terms[solution_terms],
+    p_clust <- project(fit_gauss,
+                       solution_terms = solution_terms,
                        nclusters = nclusters)
     SW(m <- as.matrix(p_clust))
     expect_length(
       setdiff(
         colnames(m),
         c(
-          paste0("b_", c("Intercept", vs_gauss$solution_terms[solution_terms])),
+          paste0("b_", c("Intercept", solution_terms)),
           "sigma"
         )
       ),
