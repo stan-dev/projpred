@@ -53,8 +53,12 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                       nterms_max = nterms + 1,
                       verbose = FALSE
     )
+    # Note: `c("x.3", "x.5")` are not the two most relevant terms for each
+    # reference model from `vs_list`. But instead of choosing different
+    # `solution_terms` for each reference model, simply take `c("x.3", "x.5")`
+    # for all reference models:
     proj_solution_terms_list <- lapply(vs_list, project,
-                                       solution_terms = c(2, 3),
+                                       solution_terms = c("x.3", "x.5"),
                                        seed = seed
     )
     proj_all_list <- lapply(vs_list, project,
@@ -78,13 +82,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     )
     expect_error(
       proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x),
-                   solution_terms = 1:10000),
+                   solution_terms = paste0("x.", 1:10000)),
       paste("^The number of solution terms is greater than the number of",
             "columns in newdata\\.$")
     )
     expect_error(
       proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x)[, 1:2],
-                   solution_terms = 1:3),
+                   solution_terms = paste0("x.", 1:3)),
       paste("^The number of solution terms is greater than the number of",
             "columns in newdata\\.$")
     )
@@ -353,14 +357,14 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     )
     expect_error(
       proj_predict(proj_solution_terms_list, newdata = data.frame(x = x),
-                   solution_terms = 1:1000),
+                   solution_terms = paste0("x.", 1:1000)),
       paste("^The number of solution terms is greater than the number of",
             "columns in newdata\\.$")
     )
     expect_error(
       proj_predict(proj_solution_terms_list,
                    newdata = data.frame(x = x)[, 1:2],
-                   solution_terms = 1:3
+                   solution_terms = paste0("x.", 1:3)
       ),
       paste("^The number of solution terms is greater than the number of",
             "columns in newdata\\.$")
