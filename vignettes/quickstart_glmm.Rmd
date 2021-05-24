@@ -161,15 +161,14 @@ as counts. This kind of data is relevant in evolutionary biology when data of
 many species are analyzed at the same time. The model we fit here is borrowed
 from *Modern Phylogenetic Comparative Methods and the application in
 Evolutionary Biology* (de Villemeruil & Nakagawa, 2014). The necessary data can
-also be downloaded from the corresponding website
-(http://www.mpcm-evolution.com/). The specific formula is taken from the
-*Estimating Phylogenetic Multilevel Models with brms* vignette of the brms
-package
-(https://cran.r-project.org/package=brms/vignettes/brms_phylogenetics.html).
+also be downloaded from the corresponding [website](http://www.mpcm-evolution.com/).
+The specific formula is modified from the
+[*Estimating Phylogenetic Multilevel Models with brms* vignette](https://cran.r-project.org/package=brms/vignettes/brms_phylogenetics.html)
+of the brms package.
 
 ```{r, cache=TRUE, message=FALSE, warning=FALSE, results="hide"}
 fit <- stan_glmer(
-  phen_pois ~ cofactor + (1 | phylo) + (1 | obs), data = data_pois,
+  phen_pois ~ cofactor + (1 | obs), data = data_pois,
   family = poisson("log"), chains = 2, iter = 2000,
   control = list(adapt_delta = 0.95)
 )
@@ -213,13 +212,14 @@ projection affects the most relevant variables.
 <!-- ```{r, fig.width=6, fig.height=2} -->
 <!--  # Visualise the most relevant variable in the full model -\-> -->
 <!--  mcmc_areas(as.matrix(vs$refmodel$fit), -->
-<!--             pars = c("b_Intercept", "b_cofactor", "sd_phylo__Intercept")) -->
+<!--             pars = c("b_Intercept", "b_cofactor", "sd_obs__Intercept")) -->
 <!-- ``` -->
 
 ```{r, cache=TRUE, fig.width=6, fig.height=2, message=FALSE, warning=FALSE}
 # Visualise the projected two most relevant variables
 proj <- project(vs, nterms = 2, ndraws = 10)
-mcmc_areas(as.matrix(proj), pars = solution_terms(vs)[1:2])
+mcmc_areas(as.matrix(proj),
+           pars = c("b_Intercept", "b_cofactor", "sd_obs__Intercept"))
 ```
 
 As we did in the Gaussian example, we make predictions with the projected
