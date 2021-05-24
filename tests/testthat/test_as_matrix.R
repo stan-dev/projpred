@@ -37,7 +37,7 @@ if (require(rstanarm)) {
     gauss = list(
       fitobj = fit_gauss,
       solution_terms_list = list(character(), c("x.3", "x.5")),
-      ndraws_list = list(100, 3)
+      ndraws_list = list(100, 3, 1)
     ),
     binom = list(
       fitobj = fit_binom,
