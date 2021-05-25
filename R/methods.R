@@ -790,11 +790,11 @@ replace_population_names <- function(population_effects) {
 }
 
 #' @method coef subfit
-coef.subfit <- function(x, ...) {
-  variables <- colnames(x$x)
-  coefs <- with(x, rbind(alpha, beta))
-  named_coefs <- setNames(coefs, variables)
-  return(named_coefs)
+coef.subfit <- function(object, ...) {
+  return(with(object, c(
+    "Intercept" = alpha,
+    setNames(beta, colnames(x))
+  )))
 }
 
 #' @method as.matrix lm
