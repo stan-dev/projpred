@@ -37,17 +37,16 @@
 #'   only.
 #' @param integrated If \code{TRUE}, the output is averaged over the projected
 #'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param size_sub For \code{proj_predict} only: Number of draws to return from
-#'   the predictive distribution of the projection. Not to be confused with
-#'   arguments \code{ndraws} and \code{nclusters} of \link{project}:
-#'   \code{size_sub} gives a \emph{subset} of the (possibly clustered) posterior
-#'   draws after projection (as determined by arguments \code{ndraws} and
-#'   \code{nclusters} of \link{project}). The default for \code{size_sub} is
-#'   1000. We compute as many clusters from the reference posterior as draws, so
-#'   we end up projecting a single draw from each cluster.
-#' @param seed_sub For \code{proj_predict} only: An optional seed for subsetting
-#'   the (possibly clustered) posterior draws after projection (see argument
-#'   \code{size_sub}).
+#' @param nclusters_resample For \code{proj_predict} with clustered projection
+#'   only: Number of draws to return from the predictive distribution of the
+#'   projection. Not to be confused with argument \code{nclusters} of
+#'   \link{project}: \code{nclusters_resample} gives the number of draws
+#'   (\emph{with} replacement) from the set of clustered posterior draws after
+#'   projection (as determined by argument \code{nclusters} of \link{project}).
+#' @param seed_ppd For \code{proj_predict} only: An optional seed for drawing
+#'   from the posterior predictive distribution. If a clustered projection was
+#'   performed, `seed_ppd` is also used for drawing from the set of clustered
+#'   posterior draws after projection (see argument \code{nclusters_resample}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
 #'   not already an object returned by \link{project}.
 #'
@@ -99,7 +98,7 @@ NULL
 proj_helper <- function(object, filter_nterms = NULL, newdata,
                         offsetnew, weightsnew,
                         onesub_fun, integrated = NULL, transform = NULL,
-                        size_sub = NULL, ...) {
+                        nclusters_resample = NULL, ...) {
   if (inherits(object, "projection") ||
       (length(object) > 0 && inherits(object[[1]], "projection"))) {
     if (!is.null(filter_nterms)) {
@@ -168,7 +167,7 @@ proj_helper <- function(object, filter_nterms = NULL, newdata,
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
                integrated = integrated, transform = transform,
-               size_sub = size_sub)
+               nclusters_resample = nclusters_resample)
   })
 
   return(.unlist_proj(preds))
@@ -244,30 +243,36 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 #' @rdname proj-pred
 #' @export
 proj_predict <- function(object, filter_nterms = NULL, newdata = NULL,
-                         offsetnew = NULL, weightsnew = NULL, size_sub = 1000,
-                         seed_sub = NULL, ...) {
+                         offsetnew = NULL, weightsnew = NULL,
+                         nclusters_resample = 1000,
+                         seed_ppd = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(seed_sub)
+  set.seed(seed_ppd)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, filter_nterms = filter_nterms, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_predict_aux,
-    size_sub = size_sub, ...
+    nclusters_resample = nclusters_resample, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, mu, weights, ...) {
   dot_args <- list(...)
-  stopifnot(!is.null(dot_args$size_sub))
-  draw_inds <- sample(
-    x = seq_along(proj$weights), size = dot_args$size_sub,
-    replace = TRUE, prob = proj$weights
-  )
+  if (proj$p_type) {
+    # In this case, the posterior draws have been clustered.
+    stopifnot(!is.null(dot_args$nclusters_resample))
+    draw_inds <- sample(
+      x = seq_along(proj$weights), size = dot_args$nclusters_resample,
+      replace = TRUE, prob = proj$weights
+    )
+  } else {
+    draw_inds <- seq_along(proj$weights)
+  }
 
   do.call(rbind, lapply(draw_inds, function(i) {
     proj$family$ppd(mu[, i], proj$dis[i], weights)
@@ -788,10 +793,10 @@ replace_population_names <- function(population_effects) {
 #' @keywords internal
 #' @export
 coef.subfit <- function(object, ...) {
-  variables <- colnames(object$x)
-  coefs <- with(object, rbind(alpha, beta))
-  named_coefs <- setNames(coefs, variables)
-  return(named_coefs)
+  return(with(object, c(
+    "Intercept" = alpha,
+    setNames(beta, colnames(x))
+  )))
 }
 
 #' @method as.matrix lm
