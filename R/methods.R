@@ -45,8 +45,9 @@
 #'   projection (as determined by argument \code{nclusters} of \link{project}).
 #' @param seed_ppd For \code{proj_predict} only: An optional seed for drawing
 #'   from the posterior predictive distribution. If a clustered projection was
-#'   performed, `seed_ppd` is also used for drawing from the set of clustered
-#'   posterior draws after projection (see argument \code{nclusters_resample}).
+#'   performed, \code{seed_ppd} is also used for drawing from the set of
+#'   clustered posterior draws after projection (see argument
+#'   \code{nclusters_resample}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
 #'   not already an object returned by \link{project}.
 #'
@@ -790,6 +791,8 @@ replace_population_names <- function(population_effects) {
 }
 
 #' @method coef subfit
+#' @keywords internal
+#' @export
 coef.subfit <- function(object, ...) {
   return(with(object, c(
     "Intercept" = alpha,
@@ -798,27 +801,37 @@ coef.subfit <- function(object, ...) {
 }
 
 #' @method as.matrix lm
+#' @keywords internal
+#' @export
 as.matrix.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names())
 }
 
 #' @method as.matrix ridgelm
+#' @keywords internal
+#' @export
 as.matrix.ridgelm <- function(x, ...) {
   return(as.matrix.lm(x))
 }
 
 #' @method as.matrix subfit
+#' @keywords internal
+#' @export
 as.matrix.subfit <- function(x, ...) {
-  return(as.matrix.lm(x))
+  return(as.matrix.lm(x, ...))
 }
 
 #' @method as.matrix glm
+#' @keywords internal
+#' @export
 as.matrix.glm <- function(x, ...) {
-  return(as.matrix.lm(x))
+  return(as.matrix.lm(x, ...))
 }
 
 #' @method as.matrix lmerMod
+#' @keywords internal
+#' @export
 as.matrix.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names()
@@ -936,37 +949,57 @@ as.matrix.lmerMod <- function(x, ...) {
   return(c(population_effects, group_vc, group_ef))
 }
 
-#' @method as.matrix noquote
-as.matrix.noquote <- function(x, ...) {
-  return(coef(x))
+#' @method as.matrix glmerMod
+#' @keywords internal
+#' @export
+as.matrix.glmerMod <- function(x, ...) {
+  return(as.matrix.lmerMod(x, ...))
+}
+
+#' @method as.matrix gamm4
+#' @keywords internal
+#' @export
+as.matrix.gamm4 <- function(x, ...) {
+  return(as.matrix.lm(x, ...))
 }
 
 #' @method as.matrix list
+#' @keywords internal
+#' @export
 as.matrix.list <- function(x, ...) {
-  return(do.call(cbind, lapply(x, as.matrix.glm)))
+  return(do.call(cbind, lapply(x, as.matrix.glm, ...)))
 }
 
 #' @method t glm
+#' @keywords internal
+#' @export
 t.glm <- function(x, ...) {
-  return(t(as.matrix(x)))
+  return(t(as.matrix(x), ...))
 }
 
 #' @method t lm
+#' @keywords internal
+#' @export
 t.lm <- function(x, ...) {
-  return(t(as.matrix(x)))
+  return(t(as.matrix(x), ...))
 }
 
 #' @method t ridgelm
+#' @keywords internal
+#' @export
 t.ridgelm <- function(x, ...) {
-  return(t(as.matrix(x)))
+  return(t(as.matrix(x), ...))
 }
 
 #' @method t list
+#' @keywords internal
+#' @export
 t.list <- function(x, ...) {
-  return(t(as.matrix.list(x)))
+  return(t(as.matrix.list(x), ...))
 }
 
 #' @method as.matrix projection
+#' @keywords internal
 #' @export
 as.matrix.projection <- function(x, ...) {
   if (x$p_type) {
@@ -975,20 +1008,15 @@ as.matrix.projection <- function(x, ...) {
       "clustering and the clusters might have different weights."
     ))
   }
-  if (inherits(x$sub_fit, "list")) {
-    if ("lmerMod" %in% class(x$sub_fit[[1]]) ||
-        "glmerMod" %in% class(x$sub_fit[[1]])) {
-      res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lmerMod)))
-    } else {
-      if (inherits(x$sub_fit[[1]], "subfit")) {
-        res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.subfit)))
-      } else {
-        res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix.lm)))
-      }
-    }
-  } else {
-    res <- t(as.matrix.lm(x$sub_fit))
+  if (!inherits(x$sub_fit, "list")) {
+    x$sub_fit <- list(x$sub_fit)
   }
+  if (!inherits(x$sub_fit[[1]], get_as.matrix_cls_projpred())) {
+    # Throw an error because in this case, we probably need a new
+    # as.matrix.<class_name>() method.
+    stop("This case should not occur. Please notify the package maintainer.")
+  }
+  res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
   colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)

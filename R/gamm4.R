@@ -1,7 +1,3 @@
-`%:::%` <- function(pkg, fun) {
-  get(fun, envir = asNamespace(pkg), inherits = FALSE)
-}
-
 ## taken from gam4
 #' @noRd
 #' @importFrom methods as cbind2 is

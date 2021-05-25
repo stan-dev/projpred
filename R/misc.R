@@ -557,7 +557,31 @@ deparse_combine <- function(x, max_char = NULL) {
 #' @export
 magrittr::`%>%`
 
+`%:::%` <- function(pkg, fun) {
+  # Note: `utils::getFromNamespace(fun, pkg)` could probably be used, too (but
+  # its documentation is unclear about the inheritance from parent
+  # environments).
+  get(fun, envir = asNamespace(pkg), inherits = FALSE)
+}
+
 # Function where() is not exported by package tidyselect, so redefine it here to
 # avoid a note in R CMD check which would occur for usage of
 # tidyselect:::where():
-where <- utils::getFromNamespace("where", "tidyselect")
+where <- `%:::%`("tidyselect", "where")
+
+get_as.matrix_cls_projpred <- function() {
+  ### Only works when projpred is loaded via devtools::load_all():
+  # as.matrix_meths_projpred <- methods("as.matrix")
+  # as.matrix_meths_projpred <- as.matrix_meths_projpred[
+  #   attr(as.matrix_meths_projpred, "info")$from == "projpred"
+  # ]
+  ###
+  as.matrix_meths_projpred <- grep(
+    "^as\\.matrix\\.",
+    ls(envir = asNamespace("projpred")),
+    value = TRUE
+  )
+  as.matrix_cls_projpred <- sub("^as\\.matrix\\.", "", as.matrix_meths_projpred)
+  return(as.matrix_cls_projpred)
+}
+
