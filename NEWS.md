@@ -15,6 +15,9 @@
 * Minor documentation improvements.
 * Minor improvements of error messages.
 * For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2ff6f981ab0e4be06b9aaf694dcaa27afa8)
+* Throw a proper error message for nonsupported families. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
+* Show the README also on the CRAN website. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
+* `project()`: Warn in case of `solution_terms` not being found in the reference model (and therefore getting ignored). (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
 
 ### Bug fixes
 
