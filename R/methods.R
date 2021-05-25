@@ -45,8 +45,9 @@
 #'   projection (as determined by argument \code{nclusters} of \link{project}).
 #' @param seed_ppd For \code{proj_predict} only: An optional seed for drawing
 #'   from the posterior predictive distribution. If a clustered projection was
-#'   performed, `seed_ppd` is also used for drawing from the set of clustered
-#'   posterior draws after projection (see argument \code{nclusters_resample}).
+#'   performed, \code{seed_ppd} is also used for drawing from the set of
+#'   clustered posterior draws after projection (see argument
+#'   \code{nclusters_resample}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
 #'   not already an object returned by \link{project}.
 #'
