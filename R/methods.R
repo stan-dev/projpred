@@ -398,7 +398,9 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @param object The object returned by \link[=varsel]{varsel} or
 #'   \link[=cv_varsel]{cv_varsel}.
 #' @param nterms_max Maximum submodel size for which the statistics are
-#'   calculated. For \code{plot.vsel} it must be at least 1.
+#'   calculated. Note that \code{nterms_max} does not count the intercept, so
+#'   use \code{nterms_max = 0} for the intercept-only model. For
+#'   \code{plot.vsel}, \code{nterms_max} must be at least 1.
 #' @param stats One or several strings determining which statistics to
 #'   calculate. Available statistics are:
 #' \itemize{

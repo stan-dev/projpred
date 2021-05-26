@@ -84,7 +84,9 @@ if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
 
 \item{nterms_max}{Maximum number of varibles until which the selection is
 continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
-observations and D the number of variables.}
+observations and D the number of variables. Note that \code{nterms_max}
+does not count the intercept, so use \code{nterms_max = 0} for the
+intercept-only model.}
 
 \item{penalty}{Vector determining the relative penalties or costs for the
 variables. Zero means that those variables have no cost and will therefore
