@@ -387,7 +387,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   ## add (transformed) response with new name
   if (is.null(data)) {
-    stop("Data was not provided.")
+    stop("Please provide argument `data`.")
   }
   if (is.null(extract_model_data)) {
     stop("Please provide argument `extract_model_data`.")
