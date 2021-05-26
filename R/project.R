@@ -13,7 +13,9 @@
 #'   taken from the \code{varsel} information). If a numeric vector, then the
 #'   projection is performed for each model size. Default is the model size
 #'   suggested by the variable selection (see function \code{suggest_size}).
-#'   Ignored if \code{solution_terms} is specified.
+#'   Ignored if \code{solution_terms} is specified. Note that \code{nterms} does
+#'   not count the intercept, so use \code{nterms = 0} for the intercept-only
+#'   model.
 #' @param solution_terms Variable indices onto which the projection is done. If
 #'   specified, \code{nterms} is ignored.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
