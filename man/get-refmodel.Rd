@@ -24,7 +24,6 @@ get_refmodel(object, ...)
   proj_predfun = NULL,
   div_minimizer = NULL,
   family = NULL,
-  wobs = NULL,
   folds = NULL,
   cvfits = NULL,
   cvfun = NULL,
@@ -90,9 +89,6 @@ projection. May be \code{NULL} for using an internal default.}
 
 \item{family}{A family object that represents the observation model for the
 reference model.}
-
-\item{wobs}{A weights vector for the observations in the data. The default is
-a vector of ones.}
 
 \item{folds}{Only used for K-fold variable selection. It is a vector of fold
 indices for each observation from \code{data}.}

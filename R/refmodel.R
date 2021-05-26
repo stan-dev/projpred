@@ -42,8 +42,6 @@
 #'   weights, and the offsets used in the reference model.
 #' @param family A family object that represents the observation model for the
 #'   reference model.
-#' @param wobs A weights vector for the observations in the data. The default is
-#'   a vector of ones.
 #' @param folds Only used for K-fold variable selection. It is a vector of fold
 #'   indices for each observation from \code{data}.
 #' @param cvfits Only used for K-fold variable selection. A list with one
@@ -232,7 +230,7 @@ get_refmodel.vsel <- function(object, ...) {
 #' @export
 get_refmodel.default <- function(object, data, formula, ref_predfun = NULL,
                                  proj_predfun = NULL, div_minimizer = NULL,
-                                 family = NULL, wobs = NULL, folds = NULL,
+                                 family = NULL, folds = NULL,
                                  cvfits = NULL, cvfun = NULL,
                                  dis = NULL, ...) {
   if (is.null(family)) {
