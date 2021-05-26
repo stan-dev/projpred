@@ -75,9 +75,10 @@ object of the corresponding class.}
 
 \item{data}{Data on which the reference model was fitted.}
 
-\item{formula}{Reference model's formula. For general information, see
-\code{\link[=formula]{formula()}}. For multilevel formulas, see also
-package \pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer()}} and
+\item{formula}{Reference model's formula. For general information on formulas
+in \R, see \code{\link[=formula]{formula()}}. For multilevel formulas, see
+also package \pkg{lme4}, in particular
+\code{\link[lme4:lmer]{lme4::lmer()}} and
 \code{\link[lme4:glmer]{lme4::glmer()}}.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
