@@ -79,9 +79,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   has_group_features <- formula_contains_group_terms(refmodel$formula)
 
   if (method == "l1" && has_group_features) {
-    stop(
-      "l1 search is not supported for multilevel models",
-    )
+    stop("L1 search is not supported for multilevel models.")
   }
 
   if (is.null(d_test)) {
