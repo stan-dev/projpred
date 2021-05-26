@@ -33,10 +33,10 @@
 #'   prediction (after selection). For the meaning of \code{NULL}, see argument
 #'   \code{ndraws_pred}. See also section "Details" below.
 #' @param nterms_max Maximum number of variables until which the selection is
-#'   continued. Defaults to \code{min(20, D, floor(0.4 * n))} where \code{n} is
-#'   the number of observations and \code{D} the number of variables. Note that
-#'   \code{nterms_max} does not count the intercept, so use \code{nterms_max =
-#'   0} for the intercept-only model.
+#'   continued. Defaults to \code{min(19, D)} where \code{D} is the number of
+#'   terms in the reference model (or in \code{search_terms}, if supplied). Note
+#'   that \code{nterms_max} does not count the intercept, so use
+#'   \code{nterms_max = 0} for the intercept-only model.
 #' @param penalty Vector determining the relative penalties or costs for the
 #'   variables. A value of \code{0} means that those variables have no cost and
 #'   will therefore be selected first, whereas \code{Inf} means those variables
