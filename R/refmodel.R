@@ -33,11 +33,12 @@
 #'   a vector of ones.
 #' @param folds Only used for K-fold variable selection. It is a vector of fold
 #'   indices for each data point in data.
-#' @param cvfits Only used for K-fold variable selection. A list of K-fold
-#'   fitted objects from which reference models are created. This list needs to
-#'   have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a
-#'   single integer giving the number of folds and \code{"folds"} has to be an
-#'   integer vector giving the fold indices (one fold index per observation).
+#' @param cvfits Only used for K-fold variable selection. A list with one
+#'   sublist called \code{"fits"} containing K-fold fitted objects from which
+#'   reference models are created. The \code{cvfits} list (i.e., the superlist)
+#'   needs to have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to
+#'   be a single integer giving the number of folds and \code{"folds"} has to be
+#'   an integer vector giving the fold indices (one fold index per observation).
 #'   Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
 #'   are provided, \code{cvfits} is used.
 #' @param cvfun Only used for K-fold variable selection. A function that, given
