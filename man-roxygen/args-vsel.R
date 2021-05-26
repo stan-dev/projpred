@@ -2,10 +2,11 @@
 #'   \link[=init_refmodel]{init_refmodel}, an object which can be converted to a
 #'   reference model using \link[=get_refmodel]{get_refmodel}, or a \code{vsel}
 #'   object resulting from \code{varsel} or \code{cv_varsel}.
-#' @param method The method used in the variable selection. Possible options are
-#'   \code{"L1"} for L1-search and \code{"forward"} for forward selection.
-#'   Default is \code{"forward"} if the reference model has multilevel or
-#'   additive terms and \code{"L1"} otherwise.
+#' @param method The search method, i.e. the method for finding a single
+#'   submodel per number of terms. Possible options are \code{"L1"} for L1
+#'   search and \code{"forward"} for forward search. Default is \code{"forward"}
+#'   if the reference model has multilevel or additive terms and \code{"L1"}
+#'   otherwise.
 #' @param cv_search If \code{TRUE}, then the projected coefficients after
 #'   L1-selection are computed without any penalization (or using only the
 #'   regularization determined by \code{regul}). If \code{FALSE}, then the

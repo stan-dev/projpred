@@ -44,10 +44,11 @@ function.}
 not provided, training data is used. Currently this argument is for
 internal use only.}
 
-\item{method}{The method used in the variable selection. Possible options are
-\code{"L1"} for L1-search and \code{"forward"} for forward selection.
-Default is \code{"forward"} if the reference model has multilevel or
-additive terms and \code{"L1"} otherwise.}
+\item{method}{The search method, i.e. the method for finding a single
+submodel per number of terms. Possible options are \code{"L1"} for L1
+search and \code{"forward"} for forward search. Default is \code{"forward"}
+if the reference model has multilevel or additive terms and \code{"L1"}
+otherwise.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
 Cannot be larger than the number of draws in the reference model.
