@@ -8,8 +8,6 @@
 #' @param d_test A test dataset which is used to evaluate model performance. If
 #'   not provided, training data is used. Currently this argument is for
 #'   internal use only.
-#' @param verbose If \code{TRUE}, may print out some information during the
-#'   selection. Defaults to \code{FALSE}.
 #' @param seed Random seed used when clustering the posterior draws.
 #'
 #' @details Using less draws or clusters in \code{ndraws}, \code{nclusters},

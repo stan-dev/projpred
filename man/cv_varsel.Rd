@@ -94,8 +94,8 @@ will therefore be selected first, whereas \code{Inf} means those variables
 will never be selected. Currently works only if \code{method = 'L1'}. By
 default \code{1} for each variable.}
 
-\item{verbose}{Whether to print out some information during the validation,
-Default is TRUE.}
+\item{verbose}{A single logical value indicating whether to print out
+additional information while running (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{nloo}{Number of observations used to compute the LOO validation
 (anything between 1 and the total number of observations). Smaller values

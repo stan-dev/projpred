@@ -7,8 +7,6 @@
 #' @name cv_varsel
 #'
 #' @template args-vsel
-#' @param verbose Whether to print out some information during the validation,
-#'   Default is TRUE.
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
 #'   Default is 'LOO'.
 #' @param nloo Number of observations used to compute the LOO validation

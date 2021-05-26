@@ -57,5 +57,7 @@
 #' @param search_terms A custom character vector of terms to consider for
 #'   selection. The intercept (\code{"1"}) needs to be included explicitly. The
 #'   default considers all the terms in the reference model's formula.
+#' @param verbose A single logical value indicating whether to print out
+#'   additional information while running (\code{TRUE}) or not (\code{FALSE}).
 #' @param ... Additional arguments to be passed to the \code{get_refmodel}
 #'   function.
