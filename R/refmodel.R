@@ -7,8 +7,15 @@
 #'
 #' @name get-refmodel
 #'
-#' @param object Object from which the reference model is created. See possible
-#'   types below.
+#' @param object Object from which the reference model is created. For
+#'   \code{init_refmodel}, an object on which the functions from arguments
+#'   \code{extract_model_data} and \code{ref_predfun} can be applied, with a
+#'   \code{NULL} object being treated specially (see section "Value" below). For
+#'   \code{get_refmodel.default}, an object on which function \code{family} can
+#'   be applied to retrieve the family (if argument \code{family} is
+#'   \code{NULL}), additionally to the properties required for
+#'   \code{init_refmodel}. For non-default methods of \code{get_refmodel}, an
+#'   object of the corresponding class.
 #' @param data Data on which the reference model was fitted.
 #' @param formula Reference model's lme4-like formula.
 #' @param ref_predfun Prediction function for the linear predictor of the
@@ -50,10 +57,13 @@
 #' @param dis A dispersion vector for each observation.
 #' @param ... Arguments passed to the methods.
 #'
-#' @return An object of class \code{"refmodel"} that can be passed to all the
-#'   functions that take the reference model fit as the first argument, such as
-#'   \link{varsel}, \link{cv_varsel}, \link{project},
-#'   \link[=proj-pred]{proj_predict}, and \link[=proj-pred]{proj_linpred}.
+#' @return An object that can be passed to all the functions that take the
+#'   reference model fit as the first argument, such as \link{varsel},
+#'   \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict}, and
+#'   \link[=proj-pred]{proj_linpred}. Usually, the returned object is of class
+#'   \code{"refmodel"}. However, if \code{object} is \code{NULL}, the returned
+#'   object is of class \code{c("datafit", "refmodel")} which is handled
+#'   differently at several places throughout this package.
 #'
 #' @examples
 #' \donttest{
