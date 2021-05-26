@@ -230,8 +230,8 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname get-refmodel
 #' @export
-get_refmodel.default <- function(object, data, formula, ref_predfun,
-                                 proj_predfun, div_minimizer,
+get_refmodel.default <- function(object, data, formula, ref_predfun = NULL,
+                                 proj_predfun = NULL, div_minimizer = NULL,
                                  family = NULL, wobs = NULL, folds = NULL,
                                  cvfits = NULL, cvfun = NULL,
                                  dis = NULL, ...) {
