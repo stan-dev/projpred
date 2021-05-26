@@ -190,8 +190,8 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
     class(sub) <- "subfit"
     return(sub)
   })
-  return(nlist(
-    solution_terms[seq_len(nterms_max)],
-    sub_fits[seq_len(nterms_max + 1)]
+  return(list(
+    solution_terms = solution_terms[seq_len(nterms_max)],
+    sub_fits = sub_fits[seq_len(nterms_max + 1)]
   ))
 }
