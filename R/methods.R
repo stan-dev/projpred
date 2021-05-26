@@ -339,9 +339,9 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
   } else {
     # don't exceed the maximum submodel size
     nterms_max <- min(nterms_max, max(stats_sub$size))
-    if (nterms_max < 1) {
-      stop("nterms_max must be at least 1")
-    }
+  }
+  if (nterms_max < 1) {
+    stop("nterms_max must be at least 1")
   }
   ylab <- if (deltas) "Difference to the baseline" else "Value"
 
