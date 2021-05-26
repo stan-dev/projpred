@@ -29,6 +29,7 @@
 * Minor documentation fixes.
 * Fix a bug for `as.matrix.projection()` in case of 1 (clustered) draw after projection. (GitHub: #130)
 * For submodels of class `"subfit"`, make the column names of `as.matrix.projection()`'s output matrix consistent with other classes of submodels. (GitHub: #132)
+* Fix the list names of element `search_path` in, e.g., `varsel()`'s output. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
 
 ## projpred 2.0.5
 
