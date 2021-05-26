@@ -29,15 +29,22 @@
 #' @param div_minimizer Maximum likelihood estimator for the underlying
 #'   projection. May be \code{NULL} for using an internal default.
 #' @param fetch_data Wrapper function for fetching the data without directly
-#'   accessing it. It should have a prototype fetch_data(data, data_points,
-#'   newdata = NULL), where data_points is a vector of data indices and newdata,
-#'   if not NULL, is a data frame with new data for testing.
-#' @param extract_model_data A function with prototype
-#'   extract_model_data(object, newdata, wrhs, orhs), where object is a
-#'   reference model fit, newdata is either NULL or a data frame with new
-#'   observations, wrhs is a right hand side formula to recover the weights from
-#'   the data frame and orhs is a right hand side formula to recover the offset
-#'   from the data frame.
+#'   accessing it. It should have a prototype \code{fetch_data(data,
+#'   data_points, newdata = NULL)}, where \code{data} is the dataset,
+#'   \code{data_points} is a vector of data indices, and \code{newdata} (if not
+#'   \code{NULL}) is a \code{data.frame} with new observations for testing.
+#' @param extract_model_data A function for fetching some variables (response,
+#'   observation weights, offsets) from the original dataset (i.e., the dataset
+#'   used for the reference model) or from a new dataset. This function needs to
+#'   have the prototype \code{extract_model_data(object, newdata, wrhs, orhs)},
+#'   where \code{object} is a reference model fit, \code{newdata} is either
+#'   \code{NULL} or a \code{data.frame} with new observations, \code{wrhs} is a
+#'   right-hand side formula consisting only of the variable containing the
+#'   weights, and \code{orhs} is a right-hand side formula consisting only of
+#'   the variable containing the offsets. The return value of this function
+#'   needs to be a list with elements \code{"y"}, \code{"weights"}, and
+#'   \code{"offset"}, containing the data for the response, the observation
+#'   weights, and the offsets used in the reference model.
 #' @param family A family object that represents the observation model for the
 #'   reference model.
 #' @param wobs A weights vector for the observations in the data. The default is
@@ -59,7 +66,8 @@
 #'   provided, \code{cvfits} is used.
 #' @param offset A vector of offsets per observation to add to the linear
 #'   predictor.
-#' @param dis A dispersion vector for each observation.
+#' @param dis A vector of posterior draws for the dispersion parameter (if such
+#'   a parameter exists; else \code{dis} may be \code{NULL}).
 #' @param ... Arguments passed to the methods.
 #'
 #' @return An object that can be passed to all the functions that take the
