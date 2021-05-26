@@ -46,8 +46,8 @@ internal use only.}
 
 \item{method}{The method used in the variable selection. Possible options are
 \code{"L1"} for L1-search and \code{"forward"} for forward selection.
-Default is \code{"forward"} if the number of variables in the full data is
-at most 20, and \code{"L1"} otherwise.}
+Default is \code{"forward"} if the reference model has multilevel or
+additive terms and \code{"L1"} otherwise.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
 Cannot be larger than the number of draws in the reference model.
