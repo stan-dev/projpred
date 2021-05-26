@@ -50,11 +50,10 @@
 #' @param dis A dispersion vector for each observation.
 #' @param ... Arguments passed to the methods.
 #'
-#' @return An object of type \code{refmodel} (the same type as returned by
-#'   \link{init_refmodel}) that can be passed to all the functions that take the
-#'   reference fit as the first argument, such as \link{varsel},
-#'   \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict} and
-#'   \link[=proj-pred]{proj_linpred}.
+#' @return An object of class \code{"refmodel"} that can be passed to all the
+#'   functions that take the reference model fit as the first argument, such as
+#'   \link{varsel}, \link{cv_varsel}, \link{project},
+#'   \link[=proj-pred]{proj_predict}, and \link[=proj-pred]{proj_linpred}.
 #'
 #' @examples
 #' \donttest{

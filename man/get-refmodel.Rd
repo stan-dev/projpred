@@ -120,11 +120,10 @@ the data frame and orhs is a right hand side formula to recover the offset
 from the data frame.}
 }
 \value{
-An object of type \code{refmodel} (the same type as returned by
-  \link{init_refmodel}) that can be passed to all the functions that take the
-  reference fit as the first argument, such as \link{varsel},
-  \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict} and
-  \link[=proj-pred]{proj_linpred}.
+An object of class \code{"refmodel"} that can be passed to all the
+  functions that take the reference model fit as the first argument, such as
+  \link{varsel}, \link{cv_varsel}, \link{project},
+  \link[=proj-pred]{proj_predict}, and \link[=proj-pred]{proj_linpred}.
 }
 \description{
 Generic function that can be used to create and fetch the reference model
