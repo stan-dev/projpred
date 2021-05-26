@@ -36,18 +36,17 @@ cv_varsel(object, ...)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by
-\link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
-an object which can be converted to a reference model using
-\link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
-\code{varsel} or \code{cv_varsel}.}
+\link[=init_refmodel]{init_refmodel}, an object which can be converted to a
+reference model using \link[=get_refmodel]{get_refmodel}, or a \code{vsel}
+object resulting from \code{varsel} or \code{cv_varsel}.}
 
-\item{...}{Additional arguments to be passed to the
-\code{get_refmodel}-function.}
+\item{...}{Additional arguments to be passed to the \code{get_refmodel}
+function.}
 
 \item{method}{The method used in the variable selection. Possible options are
 \code{'L1'} for L1-search and \code{'forward'} for forward selection.
 Default is 'forward' if the number of variables in the full data is at most
-20,' and \code{'L1'} otherwise.}
+20, and \code{'L1'} otherwise.}
 
 \item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'.
 Default is 'LOO'.}
@@ -75,24 +74,25 @@ section "Details" below.}
 prediction (after selection). For the meaning of \code{NULL}, see argument
 \code{ndraws_pred}. See also section "Details" below.}
 
-\item{cv_search}{If TRUE, then the projected coefficients after L1-selection
-are computed without any penalization (or using only the regularization
-determined by \code{regul}). If FALSE, then the coefficients are the
-solution from the' L1-penalized projection. This option is relevant only if
-\code{method}='L1'. Default is TRUE for genuine reference models and FALSE
-if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
+\item{cv_search}{If \code{TRUE}, then the projected coefficients after
+L1-selection are computed without any penalization (or using only the
+regularization determined by \code{regul}). If \code{FALSE}, then the
+coefficients are the solution from the L1-penalized projection. This option
+is relevant only if \code{method = 'L1'}. Default is \code{TRUE} for
+genuine reference models and \code{FALSE} if \code{object} is datafit (see
+\link[=init_refmodel]{init_refmodel}).}
 
-\item{nterms_max}{Maximum number of varibles until which the selection is
-continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
-observations and D the number of variables. Note that \code{nterms_max}
-does not count the intercept, so use \code{nterms_max = 0} for the
-intercept-only model.}
+\item{nterms_max}{Maximum number of variables until which the selection is
+continued. Defaults to \code{min(20, D, floor(0.4 * n))} where \code{n} is
+the number of observations and \code{D} the number of variables. Note that
+\code{nterms_max} does not count the intercept, so use \code{nterms_max =
+0} for the intercept-only model.}
 
 \item{penalty}{Vector determining the relative penalties or costs for the
-variables. Zero means that those variables have no cost and will therefore
-be selected first, whereas Inf means those variables will never be
-selected. Currently works only if method == 'L1'. By default 1 for each
-variable.}
+variables. A value of \code{0} means that those variables have no cost and
+will therefore be selected first, whereas \code{Inf} means those variables
+will never be selected. Currently works only if \code{method = 'L1'}. By
+default \code{1} for each variable.}
 
 \item{verbose}{Whether to print out some information during the validation,
 Default is TRUE.}
