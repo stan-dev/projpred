@@ -7,8 +7,8 @@
 #'   search and \code{"forward"} for forward search. Default is \code{"forward"}
 #'   if the reference model has multilevel or additive terms and \code{"L1"}
 #'   otherwise.
-#' @param cv_search If \code{TRUE}, then the projected coefficients after
-#'   L1-selection are computed without any penalization (or using only the
+#' @param cv_search If \code{TRUE}, then the projected coefficients after an L1
+#'   search are computed without any penalization (or using only the
 #'   regularization determined by \code{regul}). If \code{FALSE}, then the
 #'   coefficients are the solution from the L1-penalized projection. This option
 #'   is relevant only if \code{method = "L1"}. Default is \code{TRUE} for
@@ -49,8 +49,8 @@
 #'   change the default value unless the program gives a warning about this.
 #' @param nlambda Number of values in the lambda grid for L1-penalized search.
 #'   No need to change unless the program gives a warning about this.
-#' @param thresh Convergence threshold when computing L1-path. Usually no need
-#'   to change this.
+#' @param thresh Convergence threshold when computing the L1 path. Usually,
+#'   there is no need to change this.
 #' @param regul Amount of regularization in the projection. Usually there is no
 #'   need for regularization, but sometimes for some models the projection can
 #'   be ill-behaved and we need to add some regularization to avoid numerical
