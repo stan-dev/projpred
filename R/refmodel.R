@@ -389,6 +389,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (is.null(data)) {
     stop("Data was not provided.")
   }
+  if (is.null(extract_model_data)) {
+    stop("Please provide argument `extract_model_data`.")
+  }
   model_data <- extract_model_data(object, newdata = data)
   weights <- model_data$weights
   offset <- model_data$offset
