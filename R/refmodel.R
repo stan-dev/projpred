@@ -17,7 +17,10 @@
 #'   \code{init_refmodel}. For non-default methods of \code{get_refmodel}, an
 #'   object of the corresponding class.
 #' @param data Data on which the reference model was fitted.
-#' @param formula Reference model's lme4-like formula.
+#' @param formula Reference model's formula. For general information, see
+#'   \code{\link[=formula]{formula()}}. For multilevel formulas, see also
+#'   package \pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer()}} and
+#'   \code{\link[lme4:glmer]{lme4::glmer()}}.
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model.
 #' @param proj_predfun Prediction function for the linear predictor of the
