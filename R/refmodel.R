@@ -23,11 +23,11 @@
 #'   \code{\link[lme4:lmer]{lme4::lmer()}} and
 #'   \code{\link[lme4:glmer]{lme4::glmer()}}.
 #' @param ref_predfun Prediction function for the linear predictor of the
-#'   reference model.
+#'   reference model. May be \code{NULL} for using an internal default.
 #' @param proj_predfun Prediction function for the linear predictor of the
-#'   projections.
+#'   projections. May be \code{NULL} for using an internal default.
 #' @param div_minimizer Maximum likelihood estimator for the underlying
-#'   projection.
+#'   projection. May be \code{NULL} for using an internal default.
 #' @param fetch_data Wrapper function for fetching the data without directly
 #'   accessing it. It should have a prototype fetch_data(data, data_points,
 #'   newdata = NULL), where data_points is a vector of data indices and newdata,
@@ -43,7 +43,7 @@
 #' @param wobs A weights vector for the observations in the data. The default is
 #'   a vector of ones.
 #' @param folds Only used for K-fold variable selection. It is a vector of fold
-#'   indices for each data point in data.
+#'   indices for each observation from \code{data}.
 #' @param cvfits Only used for K-fold variable selection. A list with one
 #'   sublist called \code{"fits"} containing K-fold fitted objects from which
 #'   reference models are created. The \code{cvfits} list (i.e., the superlist)
@@ -54,8 +54,9 @@
 #'   are provided, \code{cvfits} is used.
 #' @param cvfun Only used for K-fold variable selection. A function that, given
 #'   a folds vector, fits a reference model per fold and returns the fitted
-#'   object. Note that \code{cvfits} takes precedence over \code{cvfun}, i.e.,
-#'   if both are provided, \code{cvfits} is used.
+#'   object. May be \code{NULL} if \code{object} is \code{NULL}. Note that
+#'   \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
+#'   provided, \code{cvfits} is used.
 #' @param offset A vector of offsets per observation to add to the linear
 #'   predictor.
 #' @param dis A dispersion vector for each observation.
