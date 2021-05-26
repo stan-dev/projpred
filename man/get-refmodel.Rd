@@ -27,7 +27,6 @@ get_refmodel(object, ...)
   wobs = NULL,
   folds = NULL,
   cvfits = NULL,
-  offset = NULL,
   cvfun = NULL,
   dis = NULL,
   ...
@@ -106,9 +105,6 @@ be a single integer giving the number of folds and \code{"folds"} has to be
 an integer vector giving the fold indices (one fold index per observation).
 Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
 are provided, \code{cvfits} is used.}
-
-\item{offset}{A vector of offsets per observation to add to the linear
-predictor.}
 
 \item{cvfun}{Only used for K-fold variable selection. A function that, given
 a folds vector, fits a reference model per fold and returns the fitted

@@ -59,8 +59,6 @@
 #'   object. May be \code{NULL} if \code{object} is \code{NULL}. Note that
 #'   \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
 #'   provided, \code{cvfits} is used.
-#' @param offset A vector of offsets per observation to add to the linear
-#'   predictor.
 #' @param dis A vector of posterior draws for the dispersion parameter (if such
 #'   a parameter exists; else \code{dis} may be \code{NULL}).
 #' @param ... Arguments passed to the methods.
@@ -235,7 +233,7 @@ get_refmodel.vsel <- function(object, ...) {
 get_refmodel.default <- function(object, data, formula, ref_predfun,
                                  proj_predfun, div_minimizer,
                                  family = NULL, wobs = NULL, folds = NULL,
-                                 cvfits = NULL, offset = NULL, cvfun = NULL,
+                                 cvfits = NULL, cvfun = NULL,
                                  dis = NULL, ...) {
   if (is.null(family)) {
     family <- extend_family(family(object))
