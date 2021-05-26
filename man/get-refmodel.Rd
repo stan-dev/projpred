@@ -61,7 +61,7 @@ init_refmodel(
 )
 }
 \arguments{
-\item{object}{Object on which the reference model is created. See possible
+\item{object}{Object from which the reference model is created. See possible
 types below.}
 
 \item{...}{Arguments passed to the methods.}
