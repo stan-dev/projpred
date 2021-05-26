@@ -94,9 +94,12 @@ a vector of ones.}
 indices for each data point in data.}
 
 \item{cvfits}{Only used for K-fold variable selection. A list of K-fold
-fitted objects on which reference models are created. Note that
-\code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
-provided, \code{cvfits} is used.}
+fitted objects from which reference models are created. This list needs to
+have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a
+single integer giving the number of folds and \code{"folds"} has to be an
+integer vector giving the fold indices (one fold index per observation).
+Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
+are provided, \code{cvfits} is used.}
 
 \item{offset}{A vector of offsets per observation to add to the linear
 predictor.}

@@ -34,9 +34,12 @@
 #' @param folds Only used for K-fold variable selection. It is a vector of fold
 #'   indices for each data point in data.
 #' @param cvfits Only used for K-fold variable selection. A list of K-fold
-#'   fitted objects on which reference models are created. Note that
-#'   \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
-#'   provided, \code{cvfits} is used.
+#'   fitted objects from which reference models are created. This list needs to
+#'   have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a
+#'   single integer giving the number of folds and \code{"folds"} has to be an
+#'   integer vector giving the fold indices (one fold index per observation).
+#'   Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
+#'   are provided, \code{cvfits} is used.
 #' @param cvfun Only used for K-fold variable selection. A function that, given
 #'   a folds vector, fits a reference model per fold and returns the fitted
 #'   object. Note that \code{cvfits} takes precedence over \code{cvfun}, i.e.,
