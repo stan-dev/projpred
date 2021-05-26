@@ -3,14 +3,14 @@
 #'   reference model using \link[=get_refmodel]{get_refmodel}, or a \code{vsel}
 #'   object resulting from \code{varsel} or \code{cv_varsel}.
 #' @param method The method used in the variable selection. Possible options are
-#'   \code{'L1'} for L1-search and \code{'forward'} for forward selection.
-#'   Default is 'forward' if the number of variables in the full data is at most
-#'   20, and \code{'L1'} otherwise.
+#'   \code{"L1"} for L1-search and \code{"forward"} for forward selection.
+#'   Default is \code{"forward"} if the number of variables in the full data is
+#'   at most 20, and \code{"L1"} otherwise.
 #' @param cv_search If \code{TRUE}, then the projected coefficients after
 #'   L1-selection are computed without any penalization (or using only the
 #'   regularization determined by \code{regul}). If \code{FALSE}, then the
 #'   coefficients are the solution from the L1-penalized projection. This option
-#'   is relevant only if \code{method = 'L1'}. Default is \code{TRUE} for
+#'   is relevant only if \code{method = "L1"}. Default is \code{TRUE} for
 #'   genuine reference models and \code{FALSE} if \code{object} is datafit (see
 #'   \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws used in the variable selection.
@@ -40,7 +40,7 @@
 #' @param penalty Vector determining the relative penalties or costs for the
 #'   variables. A value of \code{0} means that those variables have no cost and
 #'   will therefore be selected first, whereas \code{Inf} means those variables
-#'   will never be selected. Currently works only if \code{method = 'L1'}. By
+#'   will never be selected. Currently works only if \code{method = "L1"}. By
 #'   default \code{1} for each variable.
 #' @param lambda_min_ratio Ratio between the smallest and largest lambda in the
 #'   L1-penalized search. This parameter essentially determines how long the

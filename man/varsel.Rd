@@ -45,9 +45,9 @@ not provided, training data is used. Currently this argument is for
 internal use only.}
 
 \item{method}{The method used in the variable selection. Possible options are
-\code{'L1'} for L1-search and \code{'forward'} for forward selection.
-Default is 'forward' if the number of variables in the full data is at most
-20, and \code{'L1'} otherwise.}
+\code{"L1"} for L1-search and \code{"forward"} for forward selection.
+Default is \code{"forward"} if the number of variables in the full data is
+at most 20, and \code{"L1"} otherwise.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
 Cannot be larger than the number of draws in the reference model.
@@ -76,7 +76,7 @@ prediction (after selection). For the meaning of \code{NULL}, see argument
 L1-selection are computed without any penalization (or using only the
 regularization determined by \code{regul}). If \code{FALSE}, then the
 coefficients are the solution from the L1-penalized projection. This option
-is relevant only if \code{method = 'L1'}. Default is \code{TRUE} for
+is relevant only if \code{method = "L1"}. Default is \code{TRUE} for
 genuine reference models and \code{FALSE} if \code{object} is datafit (see
 \link[=init_refmodel]{init_refmodel}).}
 
@@ -108,7 +108,7 @@ problems.}
 \item{penalty}{Vector determining the relative penalties or costs for the
 variables. A value of \code{0} means that those variables have no cost and
 will therefore be selected first, whereas \code{Inf} means those variables
-will never be selected. Currently works only if \code{method = 'L1'}. By
+will never be selected. Currently works only if \code{method = "L1"}. By
 default \code{1} for each variable.}
 
 \item{search_terms}{A custom character vector of terms to consider for
