@@ -8,7 +8,7 @@
 \alias{get_refmodel.default}
 \alias{get_refmodel.stanreg}
 \alias{init_refmodel}
-\title{Get reference model structure}
+\title{Reference model structure}
 \usage{
 get_refmodel(object, ...)
 
@@ -140,10 +140,10 @@ An object that can be passed to all the functions that take the
   differently at several places throughout this package.
 }
 \description{
-Generic function that can be used to create and fetch the reference model
-structure for all those objects that have this method. All these
-implementations are wrappers to the \code{\link{init_refmodel}}-function so
-the returned object has the same type.
+Function \code{get_refmodel} is a generic function for creating and fetching
+the reference model structure from a specific \code{object}. The
+\code{get_refmodel} methods usually call \code{init_refmodel} which in turn
+creates the reference model structure.
 }
 \examples{
 \donttest{
