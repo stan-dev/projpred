@@ -17,20 +17,6 @@ weighted.sd <- function(x, w, na.rm = FALSE) {
   sqrt(n / (n - 1) * sum(w[ind] * (x[ind] - m)^2))
 }
 
-weighted.cov <- function(x, y, w, na.rm = FALSE) {
-  if (na.rm) {
-    ind <- !is.na(w) & !is.na(x) & !is.na(y)
-    n <- sum(ind)
-  } else {
-    n <- length(x)
-    ind <- rep(TRUE, n)
-  }
-  w <- w / sum(w[ind])
-  mx <- sum(x[ind] * w[ind])
-  my <- sum(y[ind] * w[ind])
-  n / (n - 1) * sum(w[ind] * (x[ind] - mx) * (x[ind] - my))
-}
-
 log_weighted_mean_exp <- function(x, w) {
   x <- x + log(w)
   max_x <- max(x)
@@ -101,14 +87,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   } else {
     return(bsstat)
   }
-}
-
-.bbweights <- function(N, B) {
-  # generate Bayesian bootstrap weights, N = original sample size,
-  # B = number of bootstrap samples
-  bbw <- matrix(rgamma(N * B, 1), ncol = N)
-  bbw <- bbw / rowSums(bbw)
-  return(bbw)
 }
 
 # from rstanarm
@@ -211,8 +189,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   }
   return(nlist(y, weights))
 }
-
-
 
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
                          thinning = TRUE) {
@@ -356,93 +332,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     cl = cl
   )
   return(p)
-}
-
-.get_traindata <- function(refmodel) {
-  #
-  # Returns the training data fetched from the reference model object.
-  return(list(
-    z = refmodel$z, x = refmodel$x, y = refmodel$y,
-    weights = refmodel$wobs, offset = refmodel$offset
-  ))
-}
-
-.check_data <- function(data) {
-  #
-  # Check that data object has the correct form for internal use. The object
-  # must be a list with with fields 'x', 'y', 'weights' and 'offset'. Raises
-  # error if x or y is missing, but fills weights and offset with default values
-  # if missing.
-  #
-  if (is.null(data$z)) {
-    stop(
-      "The data object must be a list with field z giving the reference ",
-      "model inputs."
-    )
-  }
-  if (is.null(data$x)) {
-    stop(
-      "The data object must be a list with field x giving the feature ",
-      "values."
-    )
-  }
-  if (is.null(data$y)) {
-    stop(
-      "The data object must be a list with field y giving the target ",
-      "values."
-    )
-  }
-  if (is.null(data$weights)) data$weights <- rep(1, nrow(data$x))
-  if (is.null(data$offset)) data$offset <- rep(0, nrow(data$x))
-  return(data)
-}
-
-
-.split_coef <- function(b, intercept) {
-  if (intercept) {
-    list(alpha = b[1, ], beta = b[-1, , drop = FALSE])
-  } else {
-    list(alpha = rep(0, NCOL(b)), beta = b)
-  }
-}
-
-.augmented_x <- function(x, intercept) {
-  if (intercept) {
-    return(cbind(1, x))
-  } else {
-    return(x)
-  }
-}
-
-.nonaugmented_x <- function(x, intercept) {
-  if (intercept) {
-    if (ncol(x) == 1) {
-      # there is only the column of ones in x, so return empty matrix
-      return(matrix(nrow = nrow(x), ncol = 0))
-    } else {
-      return(x[, 2:ncol(x), drop = FALSE])
-    }
-  } else {
-    return(x)
-  }
-}
-
-.varsel_errors <- function(e) {
-  if (grepl("computationally singular", e$message)) {
-    stop(paste(
-      "Numerical problems with inverting the covariance matrix. Possibly a",
-      "problem with the convergence of the Stan model?, If not, consider",
-      "stopping the selection early by setting the variable nterms_max",
-      "accordingly."
-    ))
-  } else {
-    stop(e$message)
-  }
-}
-
-.df_to_model_mat <- function(dfnew, var_names) {
-  f <- formula(paste("~", paste(c("0", var_names), collapse = " + ")))
-  model.matrix(terms(f, keep.order = TRUE), data = dfnew)
 }
 
 .is_proj_list <- function(proj) {
