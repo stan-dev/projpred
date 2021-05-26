@@ -28,11 +28,6 @@
 #'   projections. May be \code{NULL} for using an internal default.
 #' @param div_minimizer Maximum likelihood estimator for the underlying
 #'   projection. May be \code{NULL} for using an internal default.
-#' @param fetch_data Wrapper function for fetching the data without directly
-#'   accessing it. It should have a prototype \code{fetch_data(data,
-#'   data_points, newdata = NULL)}, where \code{data} is the dataset,
-#'   \code{data_points} is a vector of data indices, and \code{newdata} (if not
-#'   \code{NULL}) is a \code{data.frame} with new observations for testing.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
 #'   used for the reference model) or from a new dataset. This function needs to
@@ -238,14 +233,10 @@ get_refmodel.vsel <- function(object, ...) {
 #' @rdname get-refmodel
 #' @export
 get_refmodel.default <- function(object, data, formula, ref_predfun,
-                                 proj_predfun, div_minimizer, fetch_data,
+                                 proj_predfun, div_minimizer,
                                  family = NULL, wobs = NULL, folds = NULL,
                                  cvfits = NULL, offset = NULL, cvfun = NULL,
                                  dis = NULL, ...) {
-  fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
-    fetch_data(data, obs, newdata)
-  }
-
   if (is.null(family)) {
     family <- extend_family(family(object))
   } else {

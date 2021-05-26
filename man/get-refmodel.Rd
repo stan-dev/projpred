@@ -23,7 +23,6 @@ get_refmodel(object, ...)
   ref_predfun,
   proj_predfun,
   div_minimizer,
-  fetch_data,
   family = NULL,
   wobs = NULL,
   folds = NULL,
@@ -89,12 +88,6 @@ projections. May be \code{NULL} for using an internal default.}
 
 \item{div_minimizer}{Maximum likelihood estimator for the underlying
 projection. May be \code{NULL} for using an internal default.}
-
-\item{fetch_data}{Wrapper function for fetching the data without directly
-accessing it. It should have a prototype \code{fetch_data(data,
-data_points, newdata = NULL)}, where \code{data} is the dataset,
-\code{data_points} is a vector of data indices, and \code{newdata} (if not
-\code{NULL}) is a \code{data.frame} with new observations for testing.}
 
 \item{family}{A family object that represents the observation model for the
 reference model.}
