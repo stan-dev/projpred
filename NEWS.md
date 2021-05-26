@@ -15,11 +15,11 @@
 * Minor documentation improvements.
 * Minor improvements of error messages.
 * For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2ff6f981ab0e4be06b9aaf694dcaa27afa8)
-* Throw a proper error message for nonsupported families. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
-* Show the README also on the CRAN website. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
-* `project()`: Warn in case of `solution_terms` not being found in the reference model (and therefore getting ignored). (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
-* Set defaults for `get_refmodel.default()`'s arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
-* Explicitly throw an error if argument `extract_model_data` of `get_refmodel.default()` is `NULL`. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
+* Throw a proper error message for nonsupported families. (GitHub: #140)
+* Show the README also on the CRAN website. (GitHub: #140)
+* `project()`: Warn in case of `solution_terms` not being found in the reference model (and therefore getting ignored). (GitHub: #140)
+* Set defaults for `get_refmodel.default()`'s arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`. (GitHub: #140)
+* Explicitly throw an error if argument `extract_model_data` of `get_refmodel.default()` is `NULL`. (GitHub: #140)
 
 ### Bug fixes
 
@@ -31,9 +31,9 @@
 * Minor documentation fixes.
 * Fix a bug for `as.matrix.projection()` in case of 1 (clustered) draw after projection. (GitHub: #130)
 * For submodels of class `"subfit"`, make the column names of `as.matrix.projection()`'s output matrix consistent with other classes of submodels. (GitHub: #132)
-* Fix the list names of element `search_path` in, e.g., `varsel()`'s output. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
-* Fix a bug (error `unused argument`) when initializing the K reference models in a K-fold CV with CV fits not of class `"brmsfit"` or `"stanreg"`. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
-* In `get_refmodel.default()`, remove old defunct arguments `fetch_data`, `wobs`, and `offset`. (GitHub: #<INSERT_PR_NUMBER_FOR_MINOR_MODS>)
+* Fix the list names of element `search_path` in, e.g., `varsel()`'s output. (GitHub: #140)
+* Fix a bug (error `unused argument`) when initializing the K reference models in a K-fold CV with CV fits not of class `"brmsfit"` or `"stanreg"`. (GitHub: #140)
+* In `get_refmodel.default()`, remove old defunct arguments `fetch_data`, `wobs`, and `offset`. (GitHub: #140)
 
 ## projpred 2.0.5
 
