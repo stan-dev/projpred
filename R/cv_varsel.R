@@ -770,7 +770,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       formula = refmodel$formula, family = refmodel$family,
       ref_predfun = ref_predfun, div_minimizer = refmodel$div_minimizer,
       proj_predfun = proj_predfun, folds = seq_along(fold),
-      extract_model_data = extract_model_data,
+      extract_model_data = extract_model_data
     )
   } else {
     fit <- cvfit
