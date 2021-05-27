@@ -34,6 +34,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
   nclusters_tst <- 2L
   nclusters_pred_tst <- 3L
+  nresample_clusters_tst <- 100L
 
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
@@ -495,8 +496,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ), {
     for (i in fam_nms) {
       pl <- proj_predict(proj_solution_terms_list[[i]],
+                         nresample_clusters = nresample_clusters_tst,
                          newdata = data.frame(x = x))
-      expect_equal(dim(pl), c(nclusters_pred_tst, n))
+      expect_equal(dim(pl), c(nresample_clusters_tst, n))
     }
   })
 
@@ -519,19 +521,19 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     for (i in fam_nms) {
       prp1 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nresample_clusters = 100,
+                           nresample_clusters = nresample_clusters_tst,
                            seed = 12, ppd_seed = 12, nterms = c(2, 4),
                            nclusters = nclusters_pred_tst,
                            regul = 1e-08)
       prp2 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nresample_clusters = 100,
+                           nresample_clusters = nresample_clusters_tst,
                            nterms = c(2, 4),
                            nclusters = nclusters_pred_tst, regul = 1e-8,
                            seed = 12, ppd_seed = 12)
       prp3 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nresample_clusters = 100,
+                           nresample_clusters = nresample_clusters_tst,
                            seed = 120, ppd_seed = 120, nterms = c(2, 4),
                            nclusters = nclusters_pred_tst,
                            regul = 1e-08)
