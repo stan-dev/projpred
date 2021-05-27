@@ -97,6 +97,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       y <- refmod_list[[i]]$y
       pl <- proj_linpred(refmod_list[[i]], newdata = data.frame(y = y, x = x),
                          solution_terms = c("x.3", "x.5"))
+      expect_identical(names(pl), c("pred", "lpd"))
     }
   })
 
@@ -108,6 +109,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       pl <- proj_linpred(vs_list[[i]], newdata = data.frame(y = y, x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
+      expect_equivalent(
+        lapply(pl, names),
+        replicate(nterms + 1, c("pred", "lpd"), simplify = FALSE)
+      )
     }
   })
 
@@ -118,6 +123,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_linpred(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = y, x = x))
+      expect_identical(names(pl), c("pred", "lpd"))
     }
   })
 
@@ -130,6 +136,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       pl <- proj_linpred(proj_all_list[[i]],
                          newdata = data.frame(y = y, x = x))
       expect_length(pl, nterms + 1)
+      expect_equivalent(
+        lapply(pl, names),
+        replicate(nterms + 1, c("pred", "lpd"), simplify = FALSE)
+      )
     }
   })
 
