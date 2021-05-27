@@ -497,8 +497,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     for (i in fam_nms) {
       pl <- proj_predict(proj_solution_terms_list[[i]],
                          newdata = data.frame(x = x))
-      # 400 is the default for project()'s argument `ndraws`:
-      expect_equal(dim(pl), c(400, n))
+      expect_equal(dim(pl), c(nclusters_pred_tst, n))
     }
   })
 
