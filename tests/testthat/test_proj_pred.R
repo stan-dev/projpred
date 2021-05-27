@@ -47,6 +47,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       fit_binom,
       fit_poiss
     ), fam_nms)
+    refmod_list <- lapply(fit_list, get_refmodel)
     vs_list <- lapply(fit_list, varsel,
                       nterms_max = nterms + 1,
                       verbose = FALSE)
@@ -89,7 +90,19 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     )
   })
 
-  test_that("output of proj_linpred is sensible with fit-object as input", {
+  test_that(paste(
+    "output of proj_linpred is sensible with \"refmodel\" object as input"
+  ), {
+    for (i in seq_len(nfams)) {
+      y <- refmod_list[[i]]$y
+      pl <- proj_linpred(refmod_list[[i]], newdata = data.frame(y = y, x = x),
+                         solution_terms = c("x.3", "x.5"))
+    }
+  })
+
+  test_that(paste(
+    "output of proj_linpred is sensible with \"vsel\" object as input"
+  ), {
     for (i in seq_len(nfams)) {
       y <- vs_list[[i]]$refmodel$y
       pl <- proj_linpred(vs_list[[i]], newdata = data.frame(y = y, x = x),
@@ -98,12 +111,20 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that("output of proj_linpred is sensible with project-object as input", {
+  test_that(paste(
+    "output of proj_linpred is sensible with \"projection\" object as input"
+  ), {
     for (i in seq_len(nfams)) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_linpred(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = y, x = x))
     }
+  })
+
+  test_that(paste(
+    "output of proj_linpred is sensible with \"proj_list\" object (an informal",
+    "class) as input"
+  ), {
     for (i in seq_len(nfams)) {
       y <- proj_all_list[[i]][[1]]$refmodel$y
       pl <- proj_linpred(proj_all_list[[i]],
