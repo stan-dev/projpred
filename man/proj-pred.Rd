@@ -9,10 +9,10 @@ distribution of the projected submodel}
 \usage{
 proj_linpred(
   object,
-  filter_nterms = NULL,
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
+  filter_nterms = NULL,
   transform = FALSE,
   integrated = FALSE,
   ...
@@ -20,11 +20,11 @@ proj_linpred(
 
 proj_predict(
   object,
-  filter_nterms = NULL,
   newdata = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
-  nclusters_resample = 1000,
+  filter_nterms = NULL,
+  nresample_clusters = 1000,
   seed_ppd = NULL,
   ...
 )
@@ -33,12 +33,6 @@ proj_predict(
 \item{object}{Either an object returned by \link[=project]{project} or
 alternatively any object that can be passed to argument \code{object} of
 \link[=project]{project}.}
-
-\item{filter_nterms}{Only applies if \code{object} is an object returned by
-\link[=project]{project}. In that case, \code{filter_nterms} can be used to
-filter \code{object} for only those elements (submodels) with a number of
-solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
-vector or \code{NULL}. If \code{NULL}, use all submodels.}
 
 \item{newdata}{The predictor values used in the prediction. If
 \code{solution_terms} is specified, then \code{newdata} should either be a
@@ -59,6 +53,12 @@ this argument matters only if \code{newdata} is specified. By default we
 take the weights from newdata as in the original model. Either NULL or
 right hand side formula.}
 
+\item{filter_nterms}{Only applies if \code{object} is an object returned by
+\link[=project]{project}. In that case, \code{filter_nterms} can be used to
+filter \code{object} for only those elements (submodels) with a number of
+solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
+vector or \code{NULL}. If \code{NULL}, use all submodels.}
+
 \item{transform}{Should the linear predictor be transformed using the
 inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
 only.}
@@ -69,10 +69,10 @@ posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.}
 \item{...}{Additional arguments passed to \link{project} if \code{object} is
 not already an object returned by \link{project}.}
 
-\item{nclusters_resample}{For \code{proj_predict} with clustered projection
+\item{nresample_clusters}{For \code{proj_predict} with clustered projection
 only: Number of draws to return from the predictive distribution of the
 projection. Not to be confused with argument \code{nclusters} of
-\link{project}: \code{nclusters_resample} gives the number of draws
+\link{project}: \code{nresample_clusters} gives the number of draws
 (\emph{with} replacement) from the set of clustered posterior draws after
 projection (as determined by argument \code{nclusters} of \link{project}).}
 
@@ -80,7 +80,7 @@ projection (as determined by argument \code{nclusters} of \link{project}).}
 from the posterior predictive distribution. If a clustered projection was
 performed, \code{seed_ppd} is also used for drawing from the set of
 clustered posterior draws after projection (see argument
-\code{nclusters_resample}).}
+\code{nresample_clusters}).}
 }
 \value{
 If the prediction is done for one submodel only (\code{nterms} has

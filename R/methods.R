@@ -37,17 +37,17 @@
 #'   only.
 #' @param integrated If \code{TRUE}, the output is averaged over the projected
 #'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
-#' @param nclusters_resample For \code{proj_predict} with clustered projection
+#' @param nresample_clusters For \code{proj_predict} with clustered projection
 #'   only: Number of draws to return from the predictive distribution of the
 #'   projection. Not to be confused with argument \code{nclusters} of
-#'   \link{project}: \code{nclusters_resample} gives the number of draws
+#'   \link{project}: \code{nresample_clusters} gives the number of draws
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
 #'   projection (as determined by argument \code{nclusters} of \link{project}).
 #' @param seed_ppd For \code{proj_predict} only: An optional seed for drawing
 #'   from the posterior predictive distribution. If a clustered projection was
 #'   performed, \code{seed_ppd} is also used for drawing from the set of
 #'   clustered posterior draws after projection (see argument
-#'   \code{nclusters_resample}).
+#'   \code{nresample_clusters}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
 #'   not already an object returned by \link{project}.
 #'
@@ -100,7 +100,7 @@ proj_helper <- function(object, newdata,
                         offsetnew, weightsnew,
                         onesub_fun, filter_nterms = NULL,
                         integrated = NULL, transform = NULL,
-                        nclusters_resample = NULL, ...) {
+                        nresample_clusters = NULL, ...) {
   if (inherits(object, "projection") ||
       (length(object) > 0 && inherits(object[[1]], "projection"))) {
     if (!is.null(filter_nterms)) {
@@ -169,7 +169,7 @@ proj_helper <- function(object, newdata,
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
                integrated = integrated, transform = transform,
-               nclusters_resample = nclusters_resample)
+               nresample_clusters = nresample_clusters)
   })
 
   return(.unlist_proj(preds))
@@ -249,7 +249,7 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
                          filter_nterms = NULL,
-                         nclusters_resample = 1000, seed_ppd = NULL, ...) {
+                         nresample_clusters = 1000, seed_ppd = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
@@ -260,7 +260,7 @@ proj_predict <- function(object, newdata = NULL,
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_predict_aux, filter_nterms = filter_nterms,
-    nclusters_resample = nclusters_resample, ...
+    nresample_clusters = nresample_clusters, ...
   )
 }
 
@@ -269,9 +269,9 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
   dot_args <- list(...)
   if (proj$p_type) {
     # In this case, the posterior draws have been clustered.
-    stopifnot(!is.null(dot_args$nclusters_resample))
+    stopifnot(!is.null(dot_args$nresample_clusters))
     draw_inds <- sample(
-      x = seq_along(proj$weights), size = dot_args$nclusters_resample,
+      x = seq_along(proj$weights), size = dot_args$nresample_clusters,
       replace = TRUE, prob = proj$weights
     )
   } else {
