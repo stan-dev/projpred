@@ -62,7 +62,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   SW(vs_list <- lapply(fit_list, varsel,
                        nclusters = nclusters_tst,
                        nclusters_pred = nclusters_pred_tst,
-                       nterms_max = nterms + 1,
+                       nterms_max = nterms,
                        verbose = FALSE))
   # Note: `c("x.3", "x.5")` are not the two most relevant terms for each
   # reference model from `vs_list`. But instead of choosing different
