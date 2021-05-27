@@ -318,13 +318,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       y <- vs_list[[i]]$refmodel$y
       SW(pr <- project(vs_list[[i]],
                        nterms = c(2, 4), nclusters = nclusters_pred_tst,
-                       intercept = FALSE, regul = 1e-8, seed = 12))
+                       regul = 1e-8, seed = 12))
       prl1 <- proj_linpred(pr, newdata = data.frame(y = y, x = x))
       SW(prl2 <- proj_linpred(vs_list[[i]],
                               nclusters = nclusters_pred_tst,
                               newdata = data.frame(y = y, x = x),
                               nterms = c(2, 4),
-                              intercept = FALSE, regul = 1e-8,
+                              regul = 1e-8,
                               seed = 12))
       expect_equal(prl1$pred, prl2$pred, info = i)
     }
