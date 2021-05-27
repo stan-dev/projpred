@@ -87,15 +87,13 @@ SW({
   # cv_varsel
   cvvsd_list <- lapply(dref_list, cv_varsel,
                        nterms_max = nterms + 1, ndraws = ndraws,
-                       ndraws_pred = ndraws_pred, verbose = FALSE
-  )
+                       ndraws_pred = ndraws_pred, verbose = FALSE)
 
   predd_list <- lapply(vsd_list, proj_linpred,
                        newdata = data.frame(x = x, weights = weights,
                                             offset = offset),
                        offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
-                       seed = seed
-  )
+                       seed = seed)
 })
 
 test_that("predict fails for 'datafit' objects", {
@@ -212,8 +210,7 @@ test_that(paste(
                          newdata = data.frame(x = x, weights = weights,
                                               offset = offset),
                          seed = seed,
-                         offsetnew = ~offset, weightsnew = ~weights, nterms = 3
-    )
+                         offsetnew = ~offset, weightsnew = ~weights, nterms = 3)
     expect_equal(length(pred$pred), nrow(x))
 
     ynew <- dref_list[[i]]$y
@@ -223,8 +220,7 @@ test_that(paste(
                            weights = weights, offset = offset
                          ),
                          seed = seed, offsetnew = ~offset,
-                         weightsnew = ~weights, nterms = 3
-    )
+                         weightsnew = ~weights, nterms = 3)
 
     expect_equal(length(pred$pred), nrow(x))
     expect_equal(length(pred$lpd), nrow(x))
@@ -243,7 +239,7 @@ nterms <- 10
 x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
 b <- seq(0, 1, length.out = nterms)
 dis <- runif(1, 0.3, 0.5)
-weights <- sample(1:4, n, replace = TRUE) #
+weights <- sample(1:4, n, replace = TRUE)
 offset <- 0.1 * rnorm(n)
 seed <- 1235
 source(testthat::test_path("helpers", "SW.R"))
@@ -340,23 +336,20 @@ test_that(paste(
     SW({
       vs <- varsel(ref,
                    method = "l1", lambda_min_ratio = lambda_min_ratio,
-                   nlambda = nlambda, thresh = 1e-12
-      )
+                   nlambda = nlambda, thresh = 1e-12)
     })
     pred1 <- proj_linpred(vs,
                           newdata = data.frame(x = x, offset = offset,
                                                weights = weights),
                           nterms = 0:nterms, transform = FALSE,
-                          offsetnew = ~offset,
-    )
+                          offsetnew = ~offset)
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
                             family = fam$family, weights = weights,
                             offset = offset,
                             lambda.min.ratio = lambda_min_ratio,
-                            nlambda = nlambda, thresh = 1e-12
-    )
+                            nlambda = nlambda, thresh = 1e-12)
     solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
     nselected <- sapply(solution_terms, function(e) length(e))
     lambdainds <- sapply(unique(nselected), function(nterms) {
