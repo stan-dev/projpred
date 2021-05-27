@@ -43,9 +43,9 @@
 #'   \link{project}: \code{nresample_clusters} gives the number of draws
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
 #'   projection (as determined by argument \code{nclusters} of \link{project}).
-#' @param seed_ppd For \code{proj_predict} only: An optional seed for drawing
+#' @param ppd_seed For \code{proj_predict} only: An optional seed for drawing
 #'   from the posterior predictive distribution. If a clustered projection was
-#'   performed, \code{seed_ppd} is also used for drawing from the set of
+#'   performed, \code{ppd_seed} is also used for drawing from the set of
 #'   clustered posterior draws after projection (see argument
 #'   \code{nresample_clusters}).
 #' @param ... Additional arguments passed to \link{project} if \code{object} is
@@ -249,11 +249,11 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
                          filter_nterms = NULL,
-                         nresample_clusters = 1000, seed_ppd = NULL, ...) {
+                         nresample_clusters = 1000, ppd_seed = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(seed_ppd)
+  set.seed(ppd_seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(

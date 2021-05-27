@@ -25,7 +25,7 @@ proj_predict(
   weightsnew = NULL,
   filter_nterms = NULL,
   nresample_clusters = 1000,
-  seed_ppd = NULL,
+  ppd_seed = NULL,
   ...
 )
 }
@@ -76,9 +76,9 @@ projection. Not to be confused with argument \code{nclusters} of
 (\emph{with} replacement) from the set of clustered posterior draws after
 projection (as determined by argument \code{nclusters} of \link{project}).}
 
-\item{seed_ppd}{For \code{proj_predict} only: An optional seed for drawing
+\item{ppd_seed}{For \code{proj_predict} only: An optional seed for drawing
 from the posterior predictive distribution. If a clustered projection was
-performed, \code{seed_ppd} is also used for drawing from the set of
+performed, \code{ppd_seed} is also used for drawing from the set of
 clustered posterior draws after projection (see argument
 \code{nresample_clusters}).}
 }
