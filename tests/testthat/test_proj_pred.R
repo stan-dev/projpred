@@ -55,6 +55,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   nclusters_tst <- 2L
   nclusters_pred_tst <- 3L
   nresample_clusters_tst <- 100L
+  nresample_clusters_default <- 1000L # Adopt this if the default is changed.
 
   # For the binomial family with > 1 trials, we currently expect the warning
   # "Using formula(x) is deprecated when x is a character vector of length > 1",
@@ -396,7 +397,21 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     )
   })
 
-  test_that("output of proj_predict is sensible with fit-object as input", {
+  test_that(paste(
+    "output of proj_predict is sensible with \"refmodel\" object as input"
+  ), {
+    for (i in fam_nms) {
+      pl <- proj_predict(refmod_list[[i]],
+                         nclusters = nclusters_pred_tst,
+                         newdata = data.frame(x = x),
+                         solution_terms = c("x.3", "x.5"))
+      expect_identical(dim(pl), c(nresample_clusters_default, n), info = i)
+    }
+  })
+
+  test_that(paste(
+    "output of proj_predict is sensible with \"vsel\" object as input"
+  ), {
     for (i in fam_nms) {
       pl <- proj_predict(vs_list[[i]],
                          nclusters = nclusters_pred_tst,
@@ -409,13 +424,21 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that("output of proj_predict is sensible with project-object as input", {
+  test_that(paste(
+    "output of proj_predict is sensible with \"projection\" object as input"
+  ), {
     for (i in fam_nms) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_predict(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = y, x = x))
       expect_equal(ncol(pl), n, info = i)
     }
+  })
+
+  test_that(paste(
+    "output of proj_predict is sensible with \"proj_list\" object (an informal",
+    "class) as input"
+  ), {
     for (i in fam_nms) {
       pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
       expect_length(pl, nterms + 1)
