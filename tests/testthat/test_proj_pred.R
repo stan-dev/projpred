@@ -41,6 +41,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                           family = f_poiss, data = df_poiss,
                           chains = chains, seed = seed, iter = iter)
     fam_nms <- c("gauss", "binom", "poiss")
+    nfams <- length(fam_nms)
     fit_list <- setNames(list(
       fit_gauss,
       fit_binom,
@@ -89,7 +90,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("output of proj_linpred is sensible with fit-object as input", {
-    for (i in 1:length(vs_list)) {
+    for (i in seq_len(nfams)) {
       y <- vs_list[[i]]$refmodel$y
       pl <- proj_linpred(vs_list[[i]], newdata = data.frame(y = y, x = x),
                          nterms = 0:nterms)
@@ -98,12 +99,12 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("output of proj_linpred is sensible with project-object as input", {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_linpred(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = y, x = x))
     }
-    for (i in 1:length(proj_all_list)) {
+    for (i in seq_len(nfams)) {
       y <- proj_all_list[[i]][[1]]$refmodel$y
       pl <- proj_linpred(proj_all_list[[i]],
                          newdata = data.frame(y = y, x = x))
@@ -153,7 +154,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ## })
 
   ## test_that("proj_linpred: specifying ynew has an expected effect", {
-  ##   for (i in 1:length(vs_list)) {
+  ##   for (i in seq_len(nfams)) {
   ##     pl <- proj_linpred(vs_list[[i]],
   ##       newdata = df_binom, ynew = ys[[i]],
   ##       weightsnew = ~weights, nterms = 0:nterms
@@ -183,7 +184,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ## })
 
   test_that("proj_linpred: specifying weights has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       # for binomial models weights have to be specified
       if (proj_solution_terms_list[[i]]$family$family != "binomial") {
         weightsnew <- sample(1:4, n, replace = TRUE)
@@ -204,7 +205,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("proj_linpred: specifying offset has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       plo <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(
                             y = ys[[i]], x = x, weights = weights,
@@ -223,7 +224,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("proj_linpred: specifying transform has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       plt <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(y = y, x = x), transform = TRUE)
@@ -235,7 +236,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("proj_linpred: specifying integrated has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       plt <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(y = y, x = x),
@@ -254,7 +255,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
   test_that("proj_linpred: adding more regularization has an expected effect", {
     regul <- c(1e-6, 1e-1, 1e2)
-    for (i in 1:length(vs_list)) {
+    for (i in seq_len(nfams)) {
       norms <- rep(0, length(regul))
       for (j in 1:length(regul)) {
         y <- vs_list[[i]]$refmodel$y
@@ -272,7 +273,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
 
   test_that("proj_linpred: arguments passed to project work accordingly", {
-    for (i in 1:length(vs_list)) {
+    for (i in seq_len(nfams)) {
       y <- vs_list[[i]]$refmodel$y
       SW(pr <- project(vs_list[[i]],
                        nterms = c(2, 4), nclusters = 2, ndraws = 20,
@@ -290,7 +291,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   test_that(paste(
     "proj_linpred: providing newdata as a data frame works as expected"
   ), {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_predict(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = y, x = x))
@@ -344,7 +345,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("output of proj_predict is sensible with fit-object as input", {
-    for (i in 1:length(vs_list)) {
+    for (i in seq_len(nfams)) {
       pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
@@ -355,13 +356,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("output of proj_predict is sensible with project-object as input", {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_predict(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = y, x = x))
       expect_equal(ncol(pl), n, info = fam_nms[i])
     }
-    for (i in 1:length(proj_all_list)) {
+    for (i in seq_len(nfams)) {
       pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
       expect_length(pl, nterms + 1)
       for (j in 1:length(pl)) {
@@ -439,7 +440,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   test_that(paste(
     "proj_predict: specifying nresample_clusters has an expected effect"
   ), {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       pl <- proj_predict(proj_solution_terms_list[[i]],
                          newdata = data.frame(x = x))
       # 400 is the default for project()'s argument `ndraws`:
@@ -451,7 +452,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     "proj_predict: specifying seed and ppd_seed has an expected",
     "effect"
   ), {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in seq_len(nfams)) {
       pl1 <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x),
                           seed = seed, ppd_seed = seed)
@@ -463,7 +464,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that("proj_predict: arguments passed to project work accordingly", {
-    for (i in 1:length(vs_list)) {
+    for (i in seq_len(nfams)) {
       prp1 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
                            nresample_clusters = 100,
