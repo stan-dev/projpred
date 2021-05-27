@@ -32,6 +32,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     df_poiss$y
   ), fam_nms)
 
+  nclusters_tst <- 2L
+  nclusters_pred_tst <- 3L
+
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_gauss, data = df_gauss,
@@ -49,6 +52,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     ), fam_nms)
     refmod_list <- lapply(fit_list, get_refmodel)
     vs_list <- lapply(fit_list, varsel,
+                      nclusters = nclusters_tst,
+                      nclusters_pred = nclusters_pred_tst,
                       nterms_max = nterms + 1,
                       verbose = FALSE)
     # Note: `c("x.3", "x.5")` are not the two most relevant terms for each
@@ -56,9 +61,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     # `solution_terms` for each reference model, simply take `c("x.3", "x.5")`
     # for all reference models:
     proj_solution_terms_list <- lapply(vs_list, project,
+                                       nclusters = nclusters_pred_tst,
                                        solution_terms = c("x.3", "x.5"),
                                        seed = seed)
     proj_all_list <- lapply(vs_list, project,
+                            nclusters = nclusters_pred_tst,
                             seed = seed,
                             nterms = 0:nterms)
   })
@@ -95,7 +102,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ), {
     for (i in fam_nms) {
       y <- refmod_list[[i]]$y
-      pl <- proj_linpred(refmod_list[[i]], newdata = data.frame(y = y, x = x),
+      pl <- proj_linpred(refmod_list[[i]], nclusters = nclusters_pred_tst,
+                         newdata = data.frame(y = y, x = x),
                          solution_terms = c("x.3", "x.5"))
       expect_identical(names(pl), c("pred", "lpd"))
     }
@@ -106,7 +114,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ), {
     for (i in fam_nms) {
       y <- vs_list[[i]]$refmodel$y
-      pl <- proj_linpred(vs_list[[i]], newdata = data.frame(y = y, x = x),
+      pl <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
+                         newdata = data.frame(y = y, x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
       expect_equivalent(
@@ -186,11 +195,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
   ## test_that("proj_linpred: specifying ynew has an expected effect", {
   ##   for (i in fam_nms) {
-  ##     pl <- proj_linpred(vs_list[[i]],
+  ##     pl <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
   ##       newdata = df_binom, ynew = ys[[i]],
   ##       weightsnew = ~weights, nterms = 0:nterms
   ##     )
-  ##     pl2 <- proj_linpred(vs_list[[i]],
+  ##     pl2 <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
   ##       newdata = data.frame(x = x, weights = weights),
   ##       weightsnew = ~weights, nterms = 0:nterms
   ##     )
@@ -207,7 +216,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ##   "binomial model"
   ## ), {
   ##   yfactor <- factor(rbinom(n, 1, 0.5))
-  ##   pl <- proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
+  ##   pl <- proj_linpred(vs_list[["binom"]], nclusters = nclusters_pred_tst,
+  ##                      newdata = data.frame(x = x),
   ##                      ynew = yfactor)
   ##   expect_named(pl, c("pred", "lpd"))
   ##   expect_equal(ncol(pl$pred), n)
@@ -291,6 +301,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       for (j in 1:length(regul)) {
         y <- vs_list[[i]]$refmodel$y
         pred <- proj_linpred(vs_list[[i]],
+                             nclusters = nclusters_pred_tst,
                              newdata = data.frame(y = y, x = x), nterms = 2,
                              transform = FALSE,
                              integrated = TRUE, regul = regul[j])
@@ -307,13 +318,14 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     for (i in fam_nms) {
       y <- vs_list[[i]]$refmodel$y
       SW(pr <- project(vs_list[[i]],
-                       nterms = c(2, 4), nclusters = 2, ndraws = 20,
+                       nterms = c(2, 4), nclusters = nclusters_pred_tst,
                        intercept = FALSE, regul = 1e-8, seed = 12))
       prl1 <- proj_linpred(pr, newdata = data.frame(y = y, x = x))
       SW(prl2 <- proj_linpred(vs_list[[i]],
+                              nclusters = nclusters_pred_tst,
                               newdata = data.frame(y = y, x = x),
-                              nterms = c(2, 4), nclusters = 2,
-                              ndraws = 20, intercept = FALSE, regul = 1e-8,
+                              nterms = c(2, 4),
+                              intercept = FALSE, regul = 1e-8,
                               seed = 12))
       expect_equal(prl1$pred, prl2$pred, info = i)
     }
@@ -333,11 +345,14 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                            data = mtcars, QR = TRUE,
                            chains = chains, seed = seed, iter = iter)
     )
-    vs_form <- varsel(fit_form)
-    p1 <- proj_linpred(vs_form, newdata = mtcars, nterms = 3, seed = 2)
+    vs_form <- varsel(fit_form,
+                      nclusters = nclusters_tst,
+                      nclusters_pred = nclusters_pred_tst)
+    p1 <- proj_linpred(vs_form, nclusters = nclusters_pred_tst,
+                       newdata = mtcars, nterms = 3, seed = 2)
     x <- rstanarm::get_x(fit_form)[, -1]
     newdata <- data.frame(mpg = rstanarm::get_y(fit_form), x)
-    p2 <- proj_linpred(vs_form,
+    p2 <- proj_linpred(vs_form, nclusters = nclusters_pred_tst,
                        newdata = newdata, nterms = 3,
                        seed = 2)
     expect_equal(p1$pred, p2$pred)
@@ -377,7 +392,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
   test_that("output of proj_predict is sensible with fit-object as input", {
     for (i in fam_nms) {
-      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+      pl <- proj_predict(vs_list[[i]],
+                         nclusters = nclusters_pred_tst,
+                         newdata = data.frame(x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
       for (j in 1:length(pl)) {
@@ -423,9 +440,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
   ## test_that("proj_predict: specifying ynew has an expected effect", {
   ##   for (i in seq_along(vs_list)) {
-  ##     pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+  ##     pl <- proj_predict(vs_list[[i]],
+  ##                        nclusters = nclusters_pred_tst,
+  ##                        newdata = data.frame(x = x),
   ##                        ynew = ys[[i]], nterms = 0:3)
-  ##     pl2 <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+  ##     pl2 <- proj_predict(vs_list[[i]],
+  ##                         nclusters = nclusters_pred_tst,
+  ##                         newdata = data.frame(x = x),
   ##                         nterms = 0:3)
   ##     for (j in seq_len(length(pl))) {
   ##       expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
@@ -438,7 +459,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ##   "binomial model"
   ## ), {
   ##   yfactor <- factor(rbinom(n, 1, 0.5))
-  ##   pl <- proj_predict(vs_list[["binom"]], newdata = data.frame(x = x),
+  ##   pl <- proj_predict(vs_list[["binom"]],
+  ##                      nclusters = nclusters_pred_tst,
+  ##                      newdata = data.frame(x = x),
   ##                      ynew = yfactor)
   ##   expect_equal(ncol(pl), n)
   ##   expect_true(all(pl %in% c(0, 1)))
@@ -500,18 +523,19 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                            newdata = data.frame(x = x),
                            nresample_clusters = 100,
                            seed = 12, ppd_seed = 12, nterms = c(2, 4),
-                           nclusters = 2,
+                           nclusters = nclusters_pred_tst,
                            regul = 1e-08)
       prp2 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
                            nresample_clusters = 100,
-                           nterms = c(2, 4), nclusters = 2, regul = 1e-8,
+                           nterms = c(2, 4),
+                           nclusters = nclusters_pred_tst, regul = 1e-8,
                            seed = 12, ppd_seed = 12)
       prp3 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
                            nresample_clusters = 100,
                            seed = 120, ppd_seed = 120, nterms = c(2, 4),
-                           nclusters = 2,
+                           nclusters = nclusters_pred_tst,
                            regul = 1e-08)
       expect_equal(prp1, prp2, info = i)
       expect_false(all(unlist(lapply(seq_along(prp1), function(i) {
