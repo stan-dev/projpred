@@ -88,8 +88,7 @@ If the prediction is done for one submodel only (\code{nterms} has
   \itemize{
     \item \code{proj_linpred} returns a list with elements \code{pred}
     (predictions) and \code{lpd} (log predictive densities). Both elements
-    are either a S x N matrix or a length-N vector (depending on the value of
-    \code{integrated}), with S denoting the number of (possibly clustered)
+    are a S x N matrix, with S denoting the number of (possibly clustered)
     posterior draws and N denoting the number of observations.
     \item \code{proj_predict} returns a S x N matrix of predictions, with S
     denoting the number of (possibly clustered) posterior draws and N

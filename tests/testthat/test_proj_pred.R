@@ -294,7 +294,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                           newdata = data.frame(y = y, x = x),
                           integrated = FALSE)
       expect_equal(
-        as.vector(proj_solution_terms_list[[!!i]]$weights %*% plf$pred),
+        proj_solution_terms_list[[!!i]]$weights %*% plf$pred,
         plt$pred
       )
       expect_length(plt$lpd, length(plt$pred))

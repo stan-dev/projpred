@@ -56,8 +56,7 @@
 #'   \itemize{
 #'     \item \code{proj_linpred} returns a list with elements \code{pred}
 #'     (predictions) and \code{lpd} (log predictive densities). Both elements
-#'     are either a S x N matrix or a length-N vector (depending on the value of
-#'     \code{integrated}), with S denoting the number of (possibly clustered)
+#'     are a S x N matrix, with S denoting the number of (possibly clustered)
 #'     posterior draws and N denoting the number of observations.
 #'     \item \code{proj_predict} returns a S x N matrix of predictions, with S
 #'     denoting the number of (possibly clustered) posterior draws and N
@@ -201,19 +200,13 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   if (!dot_args$transform) pred <- proj$family$linkfun(pred)
   if (dot_args$integrated) {
     ## average over the posterior draws
-    pred <- as.vector(crossprod(proj$weights, pred))
-    proj$dis <- as.vector(crossprod(proj$weights, proj$dis))
-  } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
-    ## return a vector if pred contains only one row
-    pred <- as.vector(pred)
+    pred <- crossprod(proj$weights, pred)
+    proj$dis <- crossprod(proj$weights, proj$dis)
   }
-
   w_o <- proj$extract_model_data(proj$refmodel$fit,
                                  newdata = dot_args$newdata, wrhs = weights,
-                                 orhs = dot_args$offset, extract_y = TRUE
-  )
+                                 orhs = dot_args$offset, extract_y = TRUE)
   ynew <- w_o$y
-
   return(nlist(pred, lpd = compute_lpd(
     ynew = ynew, pred = t(pred), proj = proj, weights = weights,
     transform = dot_args$transform, integrated = dot_args$integrated
@@ -228,17 +221,7 @@ compute_lpd <- function(ynew, pred, proj, weights, transform = FALSE,
     ynew <- target$y
     weights <- target$weights
     if (!transform) pred <- proj$family$linkinv(pred)
-    lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
-    if (integrated && !is.null(dim(lpd))) {
-      stop("This case should not occur. Please notify the package maintainer.")
-      lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
-    } else if (!is.null(dim(lpd))) {
-      lpd <- t(lpd)
-      if (nrow(lpd) == 1) {
-        lpd <- drop(lpd)
-      }
-    }
-    return(lpd)
+    return(t(proj$family$ll_fun(pred, proj$dis, ynew, weights)))
   } else {
     return(NULL)
   }
