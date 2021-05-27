@@ -206,11 +206,7 @@ test_that(paste(
   for (i in 1:length(vsd_list)) {
 
     # length of output of project is legit
-    pred <- proj_linpred(vsd_list[[i]],
-                         newdata = data.frame(x = x, weights = weights,
-                                              offset = offset),
-                         seed = seed,
-                         offsetnew = ~offset, weightsnew = ~weights, nterms = 3)
+    pred <- predd_list[[i]]
     expect_equal(length(pred$pred), nrow(x))
 
     ynew <- dref_list[[i]]$y
