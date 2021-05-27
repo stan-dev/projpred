@@ -201,8 +201,8 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   if (!dot_args$transform) pred <- proj$family$linkfun(pred)
   if (dot_args$integrated) {
     ## average over the posterior draws
-    pred <- as.vector(proj$weights %*% pred)
-    proj$dis <- as.vector(proj$weights %*% proj$dis)
+    pred <- as.vector(crossprod(proj$weights, pred))
+    proj$dis <- as.vector(crossprod(proj$weights, proj$dis))
   } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
     ## return a vector if pred contains only one row
     pred <- as.vector(pred)
