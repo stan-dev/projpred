@@ -488,11 +488,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   test_that("proj_predict: specifying offsetnew has an expected effect", {
     for (i in seq_len(length(proj_solution_terms_list))) {
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(x = x), nresample_clusters = iter,
+                         newdata = data.frame(x = x),
                          seed = seed, ppd_seed = seed)
       plo <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x, offset = offset),
-                          nresample_clusters = iter,
                           seed = seed, ppd_seed = seed, offsetnew = ~offset)
       expect_true(sum(pl != plo) > 0, info = i)
     }
