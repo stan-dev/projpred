@@ -301,12 +301,15 @@ test_that(paste(
 
     resp_form <- NULL
     if (is.null(object)) {
-      if ("weights" %in% colnames(newdata))
+      if ("weights" %in% colnames(newdata)) {
         wrhs <- ~ weights
-      if ("offset" %in% colnames(newdata))
+      }
+      if ("offset" %in% colnames(newdata)) {
         orhs <- ~ offset
-      if ("y" %in% colnames(newdata))
+      }
+      if ("y" %in% colnames(newdata)) {
         resp_form <- ~ y
+      }
     }
 
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
