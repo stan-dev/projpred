@@ -46,30 +46,37 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_poiss, data = df_poiss,
                           chains = chains, seed = seed, iter = iter)
-    fit_list <- setNames(list(
-      fit_gauss,
-      fit_binom,
-      fit_poiss
-    ), fam_nms)
-    refmod_list <- lapply(fit_list, get_refmodel)
-    vs_list <- lapply(fit_list, varsel,
-                      nclusters = nclusters_tst,
-                      nclusters_pred = nclusters_pred_tst,
-                      nterms_max = nterms + 1,
-                      verbose = FALSE)
-    # Note: `c("x.3", "x.5")` are not the two most relevant terms for each
-    # reference model from `vs_list`. But instead of choosing different
-    # `solution_terms` for each reference model, simply take `c("x.3", "x.5")`
-    # for all reference models:
-    proj_solution_terms_list <- lapply(vs_list, project,
-                                       nclusters = nclusters_pred_tst,
-                                       solution_terms = c("x.3", "x.5"),
-                                       seed = seed)
-    proj_all_list <- lapply(vs_list, project,
-                            nclusters = nclusters_pred_tst,
-                            seed = seed,
-                            nterms = 0:nterms)
   })
+
+  fit_list <- setNames(list(
+    fit_gauss,
+    fit_binom,
+    fit_poiss
+  ), fam_nms)
+  # For the binomial family with > 1 trials, we currently expect the warning
+  # "Using formula(x) is deprecated when x is a character vector of length > 1",
+  # so temporarily wrap the following call in SW():
+  SW(refmod_list <- lapply(fit_list, get_refmodel))
+  # For the binomial family with > 1 trials, we currently expect the warning
+  # "Using formula(x) is deprecated when x is a character vector of length > 1",
+  # so temporarily wrap the following call in SW():
+  SW(vs_list <- lapply(fit_list, varsel,
+                       nclusters = nclusters_tst,
+                       nclusters_pred = nclusters_pred_tst,
+                       nterms_max = nterms + 1,
+                       verbose = FALSE))
+  # Note: `c("x.3", "x.5")` are not the two most relevant terms for each
+  # reference model from `vs_list`. But instead of choosing different
+  # `solution_terms` for each reference model, simply take `c("x.3", "x.5")`
+  # for all reference models:
+  proj_solution_terms_list <- lapply(vs_list, project,
+                                     nclusters = nclusters_pred_tst,
+                                     solution_terms = c("x.3", "x.5"),
+                                     seed = seed)
+  proj_all_list <- lapply(vs_list, project,
+                          nclusters = nclusters_pred_tst,
+                          seed = seed,
+                          nterms = 0:nterms)
 
   test_that("proj_linpred: newdata is specified correctly", {
     ## expect_error(
