@@ -205,8 +205,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ##     )
   ##     for (j in 1:length(pl)) {
   ##       expect_named(pl[[j]], c("pred", "lpd"))
-  ##       expect_equal(ncol(pl[[j]]$pred), n, info = i)
-  ##       expect_equal(nrow(pl[[j]]$lpd), n, info = i)
+  ##       expect_equal(ncol(pl[[!!j]]$pred), n, info = i)
+  ##       expect_equal(nrow(pl[[!!j]]$lpd), n, info = i)
   ##     }
   ##   }
   ## })
@@ -271,8 +271,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                           newdata = data.frame(y = y, x = x), transform = TRUE)
       plf <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(y = y, x = x), transform = FALSE)
-      expect_equal(proj_solution_terms_list[[i]]$family$linkinv(plf$pred),
-                   plt$pred, info = i)
+      expect_equal(proj_solution_terms_list[[!!i]]$family$linkinv(plf$pred),
+                   plt$pred)
     }
   })
 
@@ -286,9 +286,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                           newdata = data.frame(y = y, x = x),
                           integrated = FALSE)
       expect_equal(
-        as.vector(proj_solution_terms_list[[i]]$weights %*% plf$pred),
-        plt$pred,
-        info = i
+        as.vector(proj_solution_terms_list[[!!i]]$weights %*% plf$pred),
+        plt$pred
       )
       expect_length(plt$lpd, length(plt$pred))
     }
@@ -308,7 +307,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         norms[j] <- sum(pred$pred^2)
       }
       for (j in 1:(length(regul) - 1)) {
-        expect_true(all(norms[j] >= norms[j + 1]), info = i)
+        expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = i)
       }
     }
   })
@@ -398,7 +397,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
       for (j in 1:length(pl)) {
-        expect_equal(ncol(pl[[j]]), n, info = i)
+        expect_equal(ncol(pl[[!!j]]), n, info = i)
       }
     }
   })
@@ -414,7 +413,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
       expect_length(pl, nterms + 1)
       for (j in 1:length(pl)) {
-        expect_equal(ncol(pl[[j]]), n, info = i)
+        expect_equal(ncol(pl[[!!j]]), n, info = i)
       }
     }
   })
