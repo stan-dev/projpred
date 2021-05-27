@@ -83,17 +83,17 @@ clustered posterior draws after projection (see argument
 \code{nresample_clusters}).}
 }
 \value{
-If the prediction is done for one submodel only (\code{nterms} has
-  length one or \code{solution_terms} is specified):
+If the prediction is done for one submodel only (i.e., \code{nterms}
+  has length one or \code{solution_terms} is specified):
   \itemize{
     \item \code{proj_linpred} returns a list with elements \code{pred}
     (predictions) and \code{lpd} (log predictive densities). Both elements
-    are a S x N matrix, with S denoting the number of (possibly clustered)
-    posterior draws and N denoting the number of observations.
-    \item \code{proj_predict} returns a S x N matrix of predictions, with S
-    denoting the number of (possibly clustered) posterior draws and N
-    denoting the number of observations.
+    are a S x N matrix.
+    \item \code{proj_predict} returns a S x N matrix of predictions.
   }
+  Thereby, S denotes the number of (possibly clustered) projected posterior
+  draws and N denotes the number of observations.
+
   If the predictions are done for several submodel sizes, the output from
   above is returned for each submodel, giving a named list with one element
   for each submodel (the names of this list being the numbers of solutions
