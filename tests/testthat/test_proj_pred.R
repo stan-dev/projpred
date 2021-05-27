@@ -5,15 +5,15 @@ context("proj_linpred")
 if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   seed <- 1235
   set.seed(seed)
-  n <- 40
-  nterms <- 5
+  n <- 40L
+  nterms <- 5L
   x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
   b <- runif(nterms) - 0.5
-  dis <- runif(1, 1, 2)
+  dis <- runif(1L, 1, 2)
   weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
-  chains <- 2
-  iter <- 500
+  chains <- 2L
+  iter <- 500L
   source(testthat::test_path("helpers", "SW.R"))
 
   f_gauss <- gaussian()
