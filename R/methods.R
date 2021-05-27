@@ -96,9 +96,10 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, filter_nterms = NULL, newdata,
+proj_helper <- function(object, newdata,
                         offsetnew, weightsnew,
-                        onesub_fun, integrated = NULL, transform = NULL,
+                        onesub_fun, filter_nterms = NULL,
+                        integrated = NULL, transform = NULL,
                         nclusters_resample = NULL, ...) {
   if (inherits(object, "projection") ||
       (length(object) > 0 && inherits(object[[1]], "projection"))) {
@@ -176,14 +177,15 @@ proj_helper <- function(object, filter_nterms = NULL, newdata,
 
 #' @rdname proj-pred
 #' @export
-proj_linpred <- function(object, filter_nterms = NULL, newdata = NULL,
-                         offsetnew = NULL, weightsnew = NULL, transform = FALSE,
-                         integrated = FALSE, ...) {
+proj_linpred <- function(object, newdata = NULL,
+                         offsetnew = NULL, weightsnew = NULL,
+                         filter_nterms = NULL,
+                         transform = FALSE, integrated = FALSE, ...) {
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
-    object = object, filter_nterms = filter_nterms, newdata = newdata,
+    object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
-    onesub_fun = proj_linpred_aux,
+    onesub_fun = proj_linpred_aux, filter_nterms = filter_nterms,
     integrated = integrated, transform = transform, ...
   )
 }
@@ -244,10 +246,10 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 
 #' @rdname proj-pred
 #' @export
-proj_predict <- function(object, filter_nterms = NULL, newdata = NULL,
+proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
-                         nclusters_resample = 1000,
-                         seed_ppd = NULL, ...) {
+                         filter_nterms = NULL,
+                         nclusters_resample = 1000, seed_ppd = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
@@ -255,9 +257,9 @@ proj_predict <- function(object, filter_nterms = NULL, newdata = NULL,
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
-    object = object, filter_nterms = filter_nterms, newdata = newdata,
+    object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
-    onesub_fun = proj_predict_aux,
+    onesub_fun = proj_predict_aux, filter_nterms = filter_nterms,
     nclusters_resample = nclusters_resample, ...
   )
 }
