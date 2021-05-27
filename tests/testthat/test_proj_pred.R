@@ -31,11 +31,6 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     df_binom$y,
     df_poiss$y
   ), fam_nms)
-
-  nclusters_tst <- 2L
-  nclusters_pred_tst <- 3L
-  nresample_clusters_tst <- 100L
-
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_gauss, data = df_gauss,
@@ -47,7 +42,6 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                           family = f_poiss, data = df_poiss,
                           chains = chains, seed = seed, iter = iter)
   })
-
   fit_list <- setNames(list(
     fit_gauss,
     fit_binom,
@@ -57,6 +51,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   # "Using formula(x) is deprecated when x is a character vector of length > 1",
   # so temporarily wrap the following call in SW():
   SW(refmod_list <- lapply(fit_list, get_refmodel))
+
+  nclusters_tst <- 2L
+  nclusters_pred_tst <- 3L
+  nresample_clusters_tst <- 100L
+
   # For the binomial family with > 1 trials, we currently expect the warning
   # "Using formula(x) is deprecated when x is a character vector of length > 1",
   # so temporarily wrap the following call in SW():
