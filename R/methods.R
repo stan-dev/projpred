@@ -99,7 +99,7 @@ NULL
 proj_helper <- function(object, newdata,
                         offsetnew, weightsnew,
                         onesub_fun, filter_nterms = NULL,
-                        integrated = NULL, transform = NULL,
+                        transform = NULL, integrated = NULL,
                         nresample_clusters = NULL, ...) {
   if (inherits(object, "projection") ||
       (length(object) > 0 && inherits(object[[1]], "projection"))) {
@@ -168,7 +168,7 @@ proj_helper <- function(object, newdata,
 
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
-               integrated = integrated, transform = transform,
+               transform = transform, integrated = integrated,
                nresample_clusters = nresample_clusters)
   })
 
@@ -186,7 +186,7 @@ proj_linpred <- function(object, newdata = NULL,
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_linpred_aux, filter_nterms = filter_nterms,
-    integrated = integrated, transform = transform, ...
+    transform = transform, integrated = integrated, ...
   )
 }
 
@@ -216,12 +216,12 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
 
   return(nlist(pred, lpd = compute_lpd(
     ynew = ynew, pred = t(pred), proj = proj, weights = weights,
-    integrated = dot_args$integrated, transform = dot_args$transform
+    transform = dot_args$transform, integrated = dot_args$integrated
   )))
 }
 
-compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
-                        transform = FALSE) {
+compute_lpd <- function(ynew, pred, proj, weights, transform = FALSE,
+                        integrated = FALSE) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$family)
