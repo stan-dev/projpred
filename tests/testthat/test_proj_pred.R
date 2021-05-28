@@ -166,6 +166,33 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
+  test_that("proj_linpred's output structure is also correct in edge cases", {
+    for (i in fam_nms) {
+      y <- refmod_list[[i]]$y
+      for (n_tsttmp in c(1L, 12L)) {
+        for (nclusters_pred_tsttmp in c(1L, 4L)) {
+          for (integrated_tsttmp in c(FALSE, TRUE)) {
+            pl <- proj_linpred(
+              refmod_list[[i]], nclusters = nclusters_pred_tsttmp,
+              newdata = head(data.frame(y = y, x = x), n_tsttmp),
+              integrated = integrated_tsttmp,
+              solution_terms = c("x.3", "x.5")
+            )
+            tstsetup <- unlist(nlist(i, n_tsttmp, nclusters_pred_tsttmp,
+                                     integrated_tsttmp))
+            expect_identical(names(pl), c("pred", "lpd"), info = tstsetup)
+            nprjdraws_tsttmp <- ifelse(integrated_tsttmp,
+                                       1L, nclusters_pred_tsttmp)
+            expect_identical(dim(pl$pred), c(nprjdraws_tsttmp, n_tsttmp),
+                             info = tstsetup)
+            expect_identical(dim(pl$lpd), c(nprjdraws_tsttmp, n_tsttmp),
+                             info = tstsetup)
+          }
+        }
+      }
+    }
+  })
+
   test_that(paste(
     "proj_linpred: error when varsel has not been performed on",
     "the object (and `solution_terms` is provided neither)"
