@@ -113,7 +113,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       pl <- proj_linpred(refmod_list[[i]], nclusters = nclusters_pred_tst,
                          newdata = data.frame(y = y, x = x),
                          solution_terms = c("x.3", "x.5"))
-      expect_identical(names(pl), c("pred", "lpd"))
+      expect_identical(names(pl), c("pred", "lpd"), info = i)
+      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
+      expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n), info = i)
     }
   })
 
@@ -126,10 +128,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                          newdata = data.frame(y = y, x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
-      expect_equivalent(
-        lapply(pl, names),
-        replicate(nterms + 1, c("pred", "lpd"), simplify = FALSE)
-      )
+      for (j in seq_along(pl)) {
+        expect_identical(names(pl[[!!j]]), c("pred", "lpd"), info = i)
+        expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n), info = i)
+        expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n), info = i)
+      }
     }
   })
 
@@ -140,7 +143,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_linpred(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = y, x = x))
-      expect_identical(names(pl), c("pred", "lpd"))
+      expect_identical(names(pl), c("pred", "lpd"), info = i)
+      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
+      expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n), info = i)
     }
   })
 
@@ -153,10 +158,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       pl <- proj_linpred(proj_all_list[[i]],
                          newdata = data.frame(y = y, x = x))
       expect_length(pl, nterms + 1)
-      expect_equivalent(
-        lapply(pl, names),
-        replicate(nterms + 1, c("pred", "lpd"), simplify = FALSE)
-      )
+      for (j in seq_along(pl)) {
+        expect_identical(names(pl[[!!j]]), c("pred", "lpd"), info = i)
+        expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n), info = i)
+        expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n), info = i)
+      }
     }
   })
 
