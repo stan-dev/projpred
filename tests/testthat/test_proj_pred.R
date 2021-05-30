@@ -482,7 +482,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that("proj_predict: output structure is also correct in edge cases", {
+  test_that(paste(
+    "proj_predict: output structure is also correct in edge cases",
+    "(using `nclusters`)"
+  ), {
     for (i in fam_nms) {
       for (n_tsttmp in c(1L, 12L)) {
         for (nclusters_pred_tsttmp in c(1L, 4L, 24L)) {
@@ -497,6 +500,34 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
             tstsetup <- unlist(nlist(i, n_tsttmp, nclusters_pred_tsttmp,
                                      nresample_clusters_tsttmp))
             expect_identical(dim(pl), c(nresample_clusters_tsttmp, n_tsttmp),
+                             info = tstsetup)
+          }
+        }
+      }
+    }
+  })
+
+  test_that(paste(
+    "proj_predict: output structure is also correct in edge cases",
+    "(using `ndraws`)"
+  ), {
+    for (i in fam_nms) {
+      for (n_tsttmp in c(1L, 12L)) {
+        for (ndraws_pred_tsttmp in c(1L, 4L, 24L)) {
+          for (nresample_clusters_tsttmp in c(1L, 8L)) {
+            pl <- proj_predict(
+              refmod_list[[i]], ndraws = ndraws_pred_tsttmp,
+              newdata = head(data.frame(x = x), n_tsttmp),
+              nresample_clusters = nresample_clusters_tsttmp,
+              ppd_seed = seed + 1,
+              solution_terms = c("x.3", "x.5")
+            )
+            tstsetup <- unlist(nlist(i, n_tsttmp, ndraws_pred_tsttmp,
+                                     nresample_clusters_tsttmp))
+            nprjdraws_tsttmp <- ifelse(ndraws_pred_tsttmp <= 20,
+                                       nresample_clusters_tsttmp,
+                                       ndraws_pred_tsttmp)
+            expect_identical(dim(pl), c(nprjdraws_tsttmp, n_tsttmp),
                              info = tstsetup)
           }
         }
