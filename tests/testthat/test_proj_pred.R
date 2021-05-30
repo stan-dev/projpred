@@ -445,8 +445,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                          newdata = data.frame(x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
-      for (j in 1:length(pl)) {
-        expect_equal(ncol(pl[[!!j]]), n, info = i)
+      for (j in seq_along(pl)) {
+        expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n),
+                         info = i)
       }
     }
   })
@@ -458,7 +459,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_predict(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = y, x = x))
-      expect_equal(ncol(pl), n, info = i)
+      expect_identical(dim(pl), c(nresample_clusters_default, n), info = i)
     }
   })
 
@@ -469,8 +470,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     for (i in fam_nms) {
       pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
       expect_length(pl, nterms + 1)
-      for (j in 1:length(pl)) {
-        expect_equal(ncol(pl[[!!j]]), n, info = i)
+      for (j in seq_along(pl)) {
+        expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n),
+                         info = i)
       }
     }
   })
