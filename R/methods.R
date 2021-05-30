@@ -196,19 +196,19 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   stopifnot(!is.null(dot_args$integrated))
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
-  pred <- t(mu)
+  pred <- mu
   if (!dot_args$transform) pred <- proj$family$linkfun(pred)
   if (dot_args$integrated) {
     ## average over the posterior draws
-    pred <- crossprod(proj$weights, pred)
-    proj$dis <- crossprod(proj$weights, proj$dis)
+    pred <- pred %*% proj$weights
+    proj$dis <- crossprod(proj$dis, proj$weights)
   }
   w_o <- proj$extract_model_data(proj$refmodel$fit,
                                  newdata = dot_args$newdata, wrhs = weights,
                                  orhs = dot_args$offset, extract_y = TRUE)
   ynew <- w_o$y
-  return(nlist(pred, lpd = compute_lpd(
-    ynew = ynew, pred = t(pred), proj = proj, weights = weights,
+  return(nlist(pred = t(pred), lpd = compute_lpd(
+    ynew = ynew, pred = pred, proj = proj, weights = weights,
     transform = dot_args$transform, integrated = dot_args$integrated
   )))
 }
