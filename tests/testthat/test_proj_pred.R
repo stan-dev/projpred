@@ -483,6 +483,29 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
+  test_that("proj_predict: output structure is also correct in edge cases", {
+    for (i in fam_nms) {
+      y <- refmod_list[[i]]$y
+      for (n_tsttmp in c(1L, 12L)) {
+        for (nclusters_pred_tsttmp in c(1L, 4L, 24L)) {
+          for (nresample_clusters_tsttmp in c(1L, 8L)) {
+            pl <- proj_predict(
+              refmod_list[[i]], nclusters = nclusters_pred_tsttmp,
+              newdata = head(data.frame(y = y, x = x), n_tsttmp),
+              nresample_clusters = nresample_clusters_tsttmp,
+              ppd_seed = seed + 1,
+              solution_terms = c("x.3", "x.5")
+            )
+            tstsetup <- unlist(nlist(i, n_tsttmp, nclusters_pred_tsttmp,
+                                     nresample_clusters_tsttmp))
+            expect_identical(dim(pl), c(nresample_clusters_tsttmp, n_tsttmp),
+                             info = tstsetup)
+          }
+        }
+      }
+    }
+  })
+
   test_that(paste(
     "proj_predict: error when varsel has not been performed on",
     "the object (and `solution_terms` is provided neither)"
