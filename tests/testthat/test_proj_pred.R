@@ -106,7 +106,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "output of proj_linpred is sensible with \"refmodel\" object as input"
+    "proj_linpred: \"refmodel\" object as input leads to correct output",
+    "structure"
   ), {
     for (i in fam_nms) {
       y <- refmod_list[[i]]$y
@@ -120,7 +121,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "output of proj_linpred is sensible with \"vsel\" object as input"
+    "proj_linpred: \"vsel\" object as input leads to correct output",
+    "structure"
   ), {
     for (i in fam_nms) {
       y <- vs_list[[i]]$refmodel$y
@@ -137,7 +139,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "output of proj_linpred is sensible with \"projection\" object as input"
+    "proj_linpred: \"projection\" object as input leads to correct output",
+    "structure"
   ), {
     for (i in fam_nms) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
@@ -150,8 +153,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "output of proj_linpred is sensible with \"proj_list\" object (an informal",
-    "class) as input"
+    "proj_linpred: \"proj_list\" object (an informal class) as input leads to",
+    "correct output structure"
   ), {
     for (i in fam_nms) {
       y <- proj_all_list[[i]][[1]]$refmodel$y
@@ -166,7 +169,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     }
   })
 
-  test_that("proj_linpred's output structure is also correct in edge cases", {
+  test_that("proj_linpred: output structure is also correct in edge cases", {
     for (i in fam_nms) {
       y <- refmod_list[[i]]$y
       for (n_tsttmp in c(1L, 12L)) {
@@ -425,7 +428,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "output of proj_predict is sensible with \"refmodel\" object as input"
+    "proj_predict: \"refmodel\" object as input leads to correct output",
+    "structure"
   ), {
     for (i in fam_nms) {
       pl <- proj_predict(refmod_list[[i]],
@@ -437,7 +441,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "output of proj_predict is sensible with \"vsel\" object as input"
+    "proj_predict: \"vsel\" object as input leads to correct output",
+    "structure"
   ), {
     for (i in fam_nms) {
       pl <- proj_predict(vs_list[[i]],
@@ -453,7 +458,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "output of proj_predict is sensible with \"projection\" object as input"
+    "proj_predict: \"projection\" object as input leads to correct output",
+    "structure"
   ), {
     for (i in fam_nms) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
@@ -464,8 +470,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "output of proj_predict is sensible with \"proj_list\" object (an informal",
-    "class) as input"
+    "proj_predict: \"proj_list\" object (an informal class) as input leads to",
+    "correct output structure"
   ), {
     for (i in fam_nms) {
       pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
