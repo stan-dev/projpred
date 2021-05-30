@@ -374,12 +374,6 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   test_that(paste(
     "proj_linpred: providing newdata as a data frame works as expected"
   ), {
-    for (i in fam_nms) {
-      y <- proj_solution_terms_list[[i]]$refmodel$y
-      pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(y = y, x = x))
-      expect_equal(ncol(pl), n, info = i)
-    }
     SW(
       fit_form <- stan_glm(mpg ~ (drat + wt)^2,
                            data = mtcars, QR = TRUE,
