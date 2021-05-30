@@ -462,9 +462,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     "structure"
   ), {
     for (i in fam_nms) {
-      y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(y = y, x = x))
+                         newdata = data.frame(x = x))
       expect_identical(dim(pl), c(nresample_clusters_default, n), info = i)
     }
   })
@@ -485,13 +484,12 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
   test_that("proj_predict: output structure is also correct in edge cases", {
     for (i in fam_nms) {
-      y <- refmod_list[[i]]$y
       for (n_tsttmp in c(1L, 12L)) {
         for (nclusters_pred_tsttmp in c(1L, 4L, 24L)) {
           for (nresample_clusters_tsttmp in c(1L, 8L)) {
             pl <- proj_predict(
               refmod_list[[i]], nclusters = nclusters_pred_tsttmp,
-              newdata = head(data.frame(y = y, x = x), n_tsttmp),
+              newdata = head(data.frame(x = x), n_tsttmp),
               nresample_clusters = nresample_clusters_tsttmp,
               ppd_seed = seed + 1,
               solution_terms = c("x.3", "x.5")
