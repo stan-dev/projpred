@@ -26,7 +26,9 @@ or an object which can be converted to a reference model using
 taken from the \code{varsel} information). If a numeric vector, then the
 projection is performed for each model size. Default is the model size
 suggested by the variable selection (see function \code{suggest_size}).
-Ignored if \code{solution_terms} is specified.}
+Ignored if \code{solution_terms} is specified. Note that \code{nterms} does
+not count the intercept, so use \code{nterms = 0} for the intercept-only
+model.}
 
 \item{solution_terms}{Variable indices onto which the projection is done. If
 specified, \code{nterms} is ignored.}
@@ -50,15 +52,15 @@ Ignored if the reference model is of class \code{"datafit"} (in which case
 one cluster is used). For the meaning of \code{NULL}, see argument
 \code{ndraws}. See also section "Details" below.}
 
-\item{seed}{A seed used in the clustering (if \code{nclusters!=ndraws}). Can
-be used to ensure same results every time.}
+\item{seed}{A seed used in the clustering (if \code{!is.null(nclusters)}).
+Can be used to ensure same results every time.}
 
 \item{regul}{Amount of ridge regularization when fitting the models in the
 projection. Usually there is no need for regularization, but sometimes for
 some models the projection can be ill-behaved and we need to add some
 regularization to avoid numerical problems.}
 
-\item{...}{Currently ignored.}
+\item{...}{Arguments passed to \link[=get_refmodel]{get_refmodel}.}
 }
 \value{
 A list of submodels (or a single submodel if projection was
@@ -105,9 +107,8 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # project onto the best model with 4 variables
   proj4 <- project(vs, nterms = 4)
 
-  # project onto an arbitrary variable combination (variable indices 1, 3
-  # and 5)
-  proj <- project(fit, solution_terms = c(1, 3, 5))
+  # project onto an arbitrary variable combination
+  proj <- project(fit, solution_terms = c("X1", "X3", "X5"))
 }
 }
 

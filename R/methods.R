@@ -228,7 +228,8 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
     if (!transform) pred <- proj$family$linkinv(pred)
     lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
     if (integrated && !is.null(dim(lpd))) {
-      lpd <- as.vector(apply(lpd, 2, log_weighted_mean_exp, proj$weights))
+      stop("This case should not occur. Please notify the package maintainer.")
+      lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
     } else if (!is.null(dim(lpd))) {
       lpd <- t(lpd)
       if (nrow(lpd) == 1) {
@@ -402,7 +403,9 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @param object The object returned by \link[=varsel]{varsel} or
 #'   \link[=cv_varsel]{cv_varsel}.
 #' @param nterms_max Maximum submodel size for which the statistics are
-#'   calculated. For \code{plot.vsel} it must be at least 1.
+#'   calculated. Note that \code{nterms_max} does not count the intercept, so
+#'   use \code{nterms_max = 0} for the intercept-only model. For
+#'   \code{plot.vsel}, \code{nterms_max} must be at least 1.
 #' @param stats One or several strings determining which statistics to
 #'   calculate. Available statistics are:
 #' \itemize{
@@ -1000,7 +1003,7 @@ t.ridgelm <- function(x, ...) {
 #' @keywords internal
 #' @export
 t.list <- function(x, ...) {
-  return(t(as.matrix.list(x), ...))
+  return(t(as.matrix(x), ...))
 }
 
 #' @method as.matrix projection
@@ -1022,7 +1025,6 @@ as.matrix.projection <- function(x, ...) {
     stop("This case should not occur. Please notify the package maintainer.")
   }
   res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
-  colnames(res) <- gsub("^1|^alpha|\\(Intercept\\)", "Intercept", colnames(res))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }

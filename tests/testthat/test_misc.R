@@ -89,7 +89,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
         expect_true(any(r1 != r2))
 
         # project
-        solution_terms <- c(1, 2)
+        solution_terms <- c("x.3", "x.5")
         SW({
           foo <- project(fit,
                          solution_terms = solution_terms,

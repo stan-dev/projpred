@@ -44,10 +44,11 @@ function.}
 not provided, training data is used. Currently this argument is for
 internal use only.}
 
-\item{method}{The method used in the variable selection. Possible options are
-\code{'L1'} for L1-search and \code{'forward'} for forward selection.
-Default is 'forward' if the number of variables in the full data is at most
-20, and \code{'L1'} otherwise.}
+\item{method}{The search method, i.e. the method for finding a single
+submodel per number of terms. Possible options are \code{"L1"} for L1
+search and \code{"forward"} for forward search. Default is \code{"forward"}
+if the reference model has multilevel or additive terms and \code{"L1"}
+otherwise.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
 Cannot be larger than the number of draws in the reference model.
@@ -72,20 +73,22 @@ section "Details" below.}
 prediction (after selection). For the meaning of \code{NULL}, see argument
 \code{ndraws_pred}. See also section "Details" below.}
 
-\item{cv_search}{If \code{TRUE}, then the projected coefficients after
-L1-selection are computed without any penalization (or using only the
+\item{cv_search}{If \code{TRUE}, then the projected coefficients after an L1
+search are computed without any penalization (or using only the
 regularization determined by \code{regul}). If \code{FALSE}, then the
 coefficients are the solution from the L1-penalized projection. This option
-is relevant only if \code{method = 'L1'}. Default is \code{TRUE} for
+is relevant only if \code{method = "L1"}. Default is \code{TRUE} for
 genuine reference models and \code{FALSE} if \code{object} is datafit (see
 \link[=init_refmodel]{init_refmodel}).}
 
 \item{nterms_max}{Maximum number of variables until which the selection is
-continued. Defaults to \code{min(20, D, floor(0.4 * n))} where \code{n} is
-the number of observations and \code{D} the number of variables.}
+continued. Defaults to \code{min(19, D)} where \code{D} is the number of
+terms in the reference model (or in \code{search_terms}, if supplied). Note
+that \code{nterms_max} does not count the intercept, so use
+\code{nterms_max = 0} for the intercept-only model.}
 
-\item{verbose}{If \code{TRUE}, may print out some information during the
-selection. Defaults to \code{FALSE}.}
+\item{verbose}{A single logical value indicating whether to print out
+additional information while running (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{lambda_min_ratio}{Ratio between the smallest and largest lambda in the
 L1-penalized search. This parameter essentially determines how long the
@@ -95,8 +98,8 @@ change the default value unless the program gives a warning about this.}
 \item{nlambda}{Number of values in the lambda grid for L1-penalized search.
 No need to change unless the program gives a warning about this.}
 
-\item{thresh}{Convergence threshold when computing L1-path. Usually no need
-to change this.}
+\item{thresh}{Convergence threshold when computing the L1 path. Usually,
+there is no need to change this.}
 
 \item{regul}{Amount of regularization in the projection. Usually there is no
 need for regularization, but sometimes for some models the projection can
@@ -106,7 +109,7 @@ problems.}
 \item{penalty}{Vector determining the relative penalties or costs for the
 variables. A value of \code{0} means that those variables have no cost and
 will therefore be selected first, whereas \code{Inf} means those variables
-will never be selected. Currently works only if \code{method = 'L1'}. By
+will never be selected. Currently works only if \code{method = "L1"}. By
 default \code{1} for each variable.}
 
 \item{search_terms}{A custom character vector of terms to consider for

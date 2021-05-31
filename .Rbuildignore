@@ -1,7 +1,7 @@
 ^\.travis\.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$
-README.md
 ^\.github$
 ^vignettes/quickstart_glmm_cache$
 ^vignettes/quickstart_cache$
+^man-roxygen$

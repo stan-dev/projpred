@@ -15,6 +15,11 @@
 * Minor documentation improvements.
 * Minor improvements of error messages.
 * For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2ff6f981ab0e4be06b9aaf694dcaa27afa8)
+* Throw a proper error message for nonsupported families. (GitHub: #140)
+* Show the README also on the CRAN website. (GitHub: #140)
+* `project()`: Warn in case of `solution_terms` not being found in the reference model (and therefore getting ignored). (GitHub: #140)
+* Set defaults for `get_refmodel.default()`'s arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`. (GitHub: #140)
+* Explicitly throw an error if argument `extract_model_data` of `get_refmodel.default()` is `NULL`. (GitHub: #140)
 
 ### Bug fixes
 
@@ -28,6 +33,9 @@
 * For submodels of class `"subfit"`, make the column names of `as.matrix.projection()`'s output matrix consistent with other classes of submodels. (GitHub: #132)
 * Fix a bug for argument `nterms_max` of `plot.vsel()` if there is just the intercept-only submodel. (GitHub: #138)
 * Throw an appropriate error message when trying to apply an L1 search to an empty (i.e. intercept-only) reference model. (GitHub: #139)
+* Fix the list names of element `search_path` in, e.g., `varsel()`'s output. (GitHub: #140)
+* Fix a bug (error `unused argument`) when initializing the K reference models in a K-fold CV with CV fits not of class `"brmsfit"` or `"stanreg"`. (GitHub: #140)
+* In `get_refmodel.default()`, remove old defunct arguments `fetch_data`, `wobs`, and `offset`. (GitHub: #140)
 
 ## projpred 2.0.5
 

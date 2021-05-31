@@ -96,11 +96,11 @@ if (require(rstanarm)) {
   ), {
     expect_error(
       project(1, newdata = x),
-      "is not a variable selection -object"
+      "is not an object of class \"vsel\""
     )
     expect_error(
       project(fit_gauss, newdata = x),
-      "is not a variable selection -object"
+      "is not an object of class \"vsel\""
     )
   })
 
@@ -195,11 +195,13 @@ if (require(rstanarm)) {
   ##
   ##   # fit objects
   ##   expect_error(
-  ##     SW(project(fit_list[[1]], solution_terms = 1:10)),
+  ##     SW(project(fit_list[[1]],
+  ##                solution_terms = vs_list[[1]]$solution_terms[1:10])),
   ##     "solution_terms contains an index larger than"
   ##   )
   ##   expect_error(
-  ##     SW(project(fit_list[[1]], solution_terms = 17)),
+  ##     SW(project(fit_list[[1]],
+  ##                solution_terms = vs_list[[1]]$solution_terms[17])),
   ##     "solution_terms contains an index larger than"
   ##   )
   ## })

@@ -8,7 +8,7 @@
 \alias{get_refmodel.default}
 \alias{get_refmodel.stanreg}
 \alias{init_refmodel}
-\title{Get reference model structure}
+\title{Reference model structure}
 \usage{
 get_refmodel(object, ...)
 
@@ -20,15 +20,12 @@ get_refmodel(object, ...)
   object,
   data,
   formula,
-  ref_predfun,
-  proj_predfun,
-  div_minimizer,
-  fetch_data,
+  ref_predfun = NULL,
+  proj_predfun = NULL,
+  div_minimizer = NULL,
   family = NULL,
-  wobs = NULL,
   folds = NULL,
   cvfits = NULL,
-  offset = NULL,
   cvfun = NULL,
   dis = NULL,
   ...
@@ -61,69 +58,86 @@ init_refmodel(
 )
 }
 \arguments{
-\item{object}{Object on which the reference model is created. See possible
-types below.}
+\item{object}{Object from which the reference model is created. For
+\code{init_refmodel}, an object on which the functions from arguments
+\code{extract_model_data} and \code{ref_predfun} can be applied, with a
+\code{NULL} object being treated specially (see section "Value" below). For
+\code{get_refmodel.default}, an object on which function \code{family} can
+be applied to retrieve the family (if argument \code{family} is
+\code{NULL}), additionally to the properties required for
+\code{init_refmodel}. For non-default methods of \code{get_refmodel}, an
+object of the corresponding class.}
 
 \item{...}{Arguments passed to the methods.}
 
 \item{data}{Data on which the reference model was fitted.}
 
-\item{formula}{Reference model's lme4-like formula.}
+\item{formula}{Reference model's formula. For general information on formulas
+in \R, see \code{\link[=formula]{formula()}}. For multilevel formulas, see
+also package \pkg{lme4}, in particular
+\code{\link[lme4:lmer]{lme4::lmer()}} and
+\code{\link[lme4:glmer]{lme4::glmer()}}.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
-reference model.}
+reference model. May be \code{NULL} for using an internal default.}
 
 \item{proj_predfun}{Prediction function for the linear predictor of the
-projections.}
+projections. May be \code{NULL} for using an internal default.}
 
 \item{div_minimizer}{Maximum likelihood estimator for the underlying
-projection.}
-
-\item{fetch_data}{Wrapper function for fetching the data without directly
-accessing it. It should have a prototype fetch_data(data, data_points,
-newdata = NULL), where data_points is a vector of data indices and newdata,
-if not NULL, is a data frame with new data for testing.}
+projection. May be \code{NULL} for using an internal default.}
 
 \item{family}{A family object that represents the observation model for the
 reference model.}
 
-\item{wobs}{A weights vector for the observations in the data. The default is
-a vector of ones.}
-
 \item{folds}{Only used for K-fold variable selection. It is a vector of fold
-indices for each data point in data.}
+indices for each observation from \code{data}.}
 
-\item{cvfits}{Only used for K-fold variable selection. A list of K-fold
-fitted objects on which reference models are created.}
-
-\item{offset}{A vector of offsets per observation to add to the linear
-predictor.}
+\item{cvfits}{Only used for K-fold variable selection. A list with one
+sublist called \code{"fits"} containing K-fold fitted objects from which
+reference models are created. The \code{cvfits} list (i.e., the superlist)
+needs to have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to
+be a single integer giving the number of folds and \code{"folds"} has to be
+an integer vector giving the fold indices (one fold index per observation).
+Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
+are provided, \code{cvfits} is used.}
 
 \item{cvfun}{Only used for K-fold variable selection. A function that, given
 a folds vector, fits a reference model per fold and returns the fitted
-object.}
+object. May be \code{NULL} if \code{object} is \code{NULL}. Note that
+\code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
+provided, \code{cvfits} is used.}
 
-\item{dis}{A dispersion vector for each observation.}
+\item{dis}{A vector of posterior draws for the dispersion parameter (if such
+a parameter exists; else \code{dis} may be \code{NULL}).}
 
-\item{extract_model_data}{A function with prototype
-extract_model_data(object, newdata, wrhs, orhs), where object is a
-reference model fit, newdata is either NULL or a data frame with new
-observations, wrhs is a right hand side formula to recover the weights from
-the data frame and orhs is a right hand side formula to recover the offset
-from the data frame.}
+\item{extract_model_data}{A function for fetching some variables (response,
+observation weights, offsets) from the original dataset (i.e., the dataset
+used for the reference model) or from a new dataset. This function needs to
+have the prototype \code{extract_model_data(object, newdata, wrhs, orhs)},
+where \code{object} is a reference model fit, \code{newdata} is either
+\code{NULL} or a \code{data.frame} with new observations, \code{wrhs} is a
+right-hand side formula consisting only of the variable containing the
+weights, and \code{orhs} is a right-hand side formula consisting only of
+the variable containing the offsets. The return value of this function
+needs to be a list with elements \code{"y"}, \code{"weights"}, and
+\code{"offset"}, containing the data for the response, the observation
+weights, and the offsets used in the reference model.}
 }
 \value{
-An object of type \code{refmodel} (the same type as returned by
-  \link{init_refmodel}) that can be passed to all the functions that take the
-  reference fit as the first argument, such as \link{varsel},
-  \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict} and
-  \link[=proj-pred]{proj_linpred}.
+An object that can be passed to all the functions that take the
+  reference model fit as the first argument, such as \link{varsel},
+  \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict}, and
+  \link[=proj-pred]{proj_linpred}. Usually, the returned object is of class
+  \code{"refmodel"}. However, if \code{object} is \code{NULL}, the returned
+  object is of class \code{c("datafit", "refmodel")} which is handled
+  differently at several places throughout this package.
 }
 \description{
-Generic function that can be used to create and fetch the reference model
-structure for all those objects that have this method. All these
-implementations are wrappers to the \code{\link{init_refmodel}}-function so
-the returned object has the same type.
+Function \code{get_refmodel} is a generic function for creating and fetching
+the reference model structure from a specific \code{object}. The
+\code{get_refmodel} methods usually call \code{init_refmodel} which in turn
+creates the reference model structure.
 }
 \examples{
 \donttest{
