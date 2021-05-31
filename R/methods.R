@@ -56,11 +56,12 @@
 #'   \itemize{
 #'     \item \code{proj_linpred} returns a list with elements \code{pred}
 #'     (predictions) and \code{lpd} (log predictive densities). Both elements
-#'     are a S x N matrix.
-#'     \item \code{proj_predict} returns a S x N matrix of predictions.
+#'     are a \eqn{S \times N}{S x N} matrix.
+#'     \item \code{proj_predict} returns a \eqn{S \times N}{S x N} matrix of
+#'     predictions.
 #'   }
-#'   Thereby, S denotes the number of (possibly clustered) projected posterior
-#'   draws and N denotes the number of observations.
+#'   Thereby, \eqn{S} denotes the number of (possibly clustered) projected
+#'   posterior draws and \eqn{N} denotes the number of observations.
 #'
 #'   If the predictions are done for several submodel sizes, the output from
 #'   above is returned for each submodel, giving a named list with one element
