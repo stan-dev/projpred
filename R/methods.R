@@ -334,14 +334,19 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
     ))
   }
 
+  max_size <- max(stats_sub$size)
+  if (max_size == 0) {
+    stop("plot.vsel() cannot be used if there is just the intercept-only ",
+         "submodel.")
+  }
   if (is.null(nterms_max)) {
-    nterms_max <- max(stats_sub$size)
+    nterms_max <- max_size
   } else {
     # don't exceed the maximum submodel size
-    nterms_max <- min(nterms_max, max(stats_sub$size))
-    if (nterms_max < 1) {
-      stop("nterms_max must be at least 1")
-    }
+    nterms_max <- min(nterms_max, max_size)
+  }
+  if (nterms_max < 1) {
+    stop("nterms_max must be at least 1")
   }
   ylab <- if (deltas) "Difference to the baseline" else "Value"
 
