@@ -196,31 +196,34 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   stopifnot(!is.null(dot_args$integrated))
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
-  pred <- mu
-  if (!dot_args$transform) pred <- proj$family$linkfun(pred)
-  if (dot_args$integrated) {
-    ## average over the posterior draws
-    pred <- pred %*% proj$weights
-    proj$dis <- crossprod(proj$dis, proj$weights)
-  }
   w_o <- proj$extract_model_data(proj$refmodel$fit,
                                  newdata = dot_args$newdata, wrhs = weights,
                                  orhs = dot_args$offset, extract_y = TRUE)
   ynew <- w_o$y
-  return(nlist(pred = t(pred), lpd = compute_lpd(
-    ynew = ynew, pred = pred, proj = proj, weights = weights,
-    transform = dot_args$transform, integrated = dot_args$integrated
-  )))
+  lpd_out <- compute_lpd(
+    ynew = ynew, mu = mu, proj = proj, weights = weights
+  )
+  pred_out <- if (!dot_args$transform) {
+    proj$family$linkfun(mu)
+  } else {
+    mu
+  }
+  if (dot_args$integrated) {
+    ## average over the posterior draws
+    pred_out <- pred_out %*% proj$weights
+    lpd_out <- as.matrix(apply(lpd_out, 1, log_weighted_mean_exp, proj$weights))
+  }
+  return(nlist(pred = t(pred_out),
+               lpd = if(is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
-compute_lpd <- function(ynew, pred, proj, weights, transform = FALSE) {
+compute_lpd <- function(ynew, mu, proj, weights) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$family)
     ynew <- target$y
     weights <- target$weights
-    if (!transform) pred <- proj$family$linkinv(pred)
-    return(t(proj$family$ll_fun(pred, proj$dis, ynew, weights)))
+    return(as.matrix(proj$family$ll_fun(mu, proj$dis, ynew, weights)))
   } else {
     return(NULL)
   }
