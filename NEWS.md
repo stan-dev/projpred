@@ -36,6 +36,7 @@
 * Fix the list names of element `search_path` in, e.g., `varsel()`'s output. (GitHub: #140)
 * Fix a bug (error `unused argument`) when initializing the K reference models in a K-fold CV with CV fits not of class `"brmsfit"` or `"stanreg"`. (GitHub: #140)
 * In `get_refmodel.default()`, remove old defunct arguments `fetch_data`, `wobs`, and `offset`. (GitHub: #140)
+* Fix a bug in `get_refmodel.stanreg()`. (GitHub: #142)
 
 ## projpred 2.0.5
 
