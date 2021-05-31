@@ -213,8 +213,7 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   )))
 }
 
-compute_lpd <- function(ynew, pred, proj, weights, transform = FALSE,
-                        integrated = FALSE) {
+compute_lpd <- function(ynew, pred, proj, weights, transform = FALSE) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$family)
