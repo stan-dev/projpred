@@ -18,9 +18,7 @@ weighted.sd <- function(x, w, na.rm = FALSE) {
 }
 
 log_weighted_mean_exp <- function(x, w) {
-  x <- x + log(w)
-  max_x <- max(x)
-  max_x + log(sum(exp(x - max_x)))
+  log_sum_exp(x + log(w))
 }
 
 log_sum_exp <- function(x) {
