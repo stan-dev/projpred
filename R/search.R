@@ -136,6 +136,10 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
 
 search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
                       opt) {
+  if (nterms_max == 0) {
+    stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
+         "reference model.")
+  }
   frame <- model.frame(refmodel$formula, refmodel$fetch_data())
   contrasts_arg <- get_contrasts_arg_list(
     refmodel$formula,
