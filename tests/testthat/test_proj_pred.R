@@ -446,11 +446,11 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   test_that("proj_predict: specifying weightsnew has an expected effect", {
     pl <- proj_predict(proj_solution_terms_list[["binom"]],
                        newdata = data.frame(x = x, weights = rep(1, NROW(x))),
-                       seed = seed, seed_ppd = seed
+                       seed = seed, ppd_seed = seed
     )
     plw <- proj_predict(proj_solution_terms_list[["binom"]],
                         newdata = data.frame(x = x, weights = weights),
-                        seed = seed, seed_ppd = seed,
+                        seed = seed, ppd_seed = seed,
                         weightsnew = ~weights
     )
     expect_true(sum(pl != plw) > 0)
@@ -460,20 +460,20 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     for (i in seq_len(length(proj_solution_terms_list))) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(x = x), nclusters_resample = iter,
-                         seed = seed, seed_ppd = seed
+                         newdata = data.frame(x = x), nresample_clusters = iter,
+                         seed = seed, ppd_seed = seed
       )
       plo <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x, offset = offset),
-                          nclusters_resample = iter,
-                          seed = seed, seed_ppd = seed, offsetnew = ~offset
+                          nresample_clusters = iter,
+                          seed = seed, ppd_seed = seed, offsetnew = ~offset
       )
       expect_true(sum(pl != plo) > 0, info = i_inf)
     }
   })
 
   test_that(paste(
-    "proj_predict: specifying nclusters_resample has an expected effect"
+    "proj_predict: specifying nresample_clusters has an expected effect"
   ), {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
@@ -485,17 +485,17 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   })
 
   test_that(paste(
-    "proj_predict: specifying seed and seed_ppd has an expected",
+    "proj_predict: specifying seed and ppd_seed has an expected",
     "effect"
   ), {
     for (i in 1:length(proj_solution_terms_list)) {
       i_inf <- names(proj_solution_terms_list)[i]
       pl1 <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x),
-                          seed = seed, seed_ppd = seed)
+                          seed = seed, ppd_seed = seed)
       pl2 <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x),
-                          seed = seed, seed_ppd = seed)
+                          seed = seed, ppd_seed = seed)
       expect_equal(pl1, pl2, info = i_inf)
     }
   })
@@ -505,21 +505,21 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       i_inf <- names(vs_list)[i]
       prp1 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nclusters_resample = 100,
-                           seed = 12, seed_ppd = 12, nterms = c(2, 4),
+                           nresample_clusters = 100,
+                           seed = 12, ppd_seed = 12, nterms = c(2, 4),
                            nclusters = 2,
                            regul = 1e-08
       )
       prp2 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nclusters_resample = 100,
+                           nresample_clusters = 100,
                            nterms = c(2, 4), nclusters = 2, regul = 1e-8,
-                           seed = 12, seed_ppd = 12
+                           seed = 12, ppd_seed = 12
       )
       prp3 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nclusters_resample = 100,
-                           seed = 120, seed_ppd = 120, nterms = c(2, 4),
+                           nresample_clusters = 100,
+                           seed = 120, ppd_seed = 120, nterms = c(2, 4),
                            nclusters = 2,
                            regul = 1e-08
       )
