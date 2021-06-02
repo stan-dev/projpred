@@ -51,8 +51,8 @@
 #'   performed onto a single variable combination), each of which contains the
 #'   following elements:
 #' \describe{
-#'  \item{\code{kl}}{The KL divergence from the reference model to the
-#'   submodel.}
+#'  \item{\code{kl}}{The KL divergence from the submodel to the reference
+#'  model.}
 #'  \item{\code{weights}}{Weights for each draw of the projected
 #'   model.}
 #'  \item{\code{dis}}{Draws from the projected dispersion parameter.}
