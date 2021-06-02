@@ -4,8 +4,7 @@
 \alias{proj-pred}
 \alias{proj_linpred}
 \alias{proj_predict}
-\title{Extract draws of the linear predictor and draw from the predictive
-distribution of the projected submodel}
+\title{Predictions from a projected submodel}
 \usage{
 proj_linpred(
   object,
@@ -86,25 +85,28 @@ clustered posterior draws after projection (see argument
 If the prediction is done for one submodel only (i.e., \code{nterms}
   has length one or \code{solution_terms} is specified):
   \itemize{
-    \item \code{proj_linpred} returns a list with elements \code{pred}
-    (predictions) and \code{lpd} (log predictive densities). Both elements
-    are a \eqn{S \times N}{S x N} matrix.
+    \item \code{proj_linpred} returns a \code{list} with elements \code{pred}
+    (predictions) and \code{lpd} (log predictive densities). Each of these
+    two elements is a \eqn{S \times N}{S x N} matrix.
     \item \code{proj_predict} returns a \eqn{S \times N}{S x N} matrix of
     predictions.
   }
   Thereby, \eqn{S} denotes the number of (possibly clustered) projected
   posterior draws and \eqn{N} denotes the number of observations.
 
-  If the predictions are done for several submodel sizes, the output from
-  above is returned for each submodel, giving a named list with one element
-  for each submodel (the names of this list being the numbers of solutions
-  terms of the submodels when taking the intercept into account).
+  If the prediction is done for more than one submodel, the output from above
+  is returned for each submodel, giving a named \code{list} with one element
+  for each submodel (the names of this \code{list} being the numbers of
+  solutions terms of the submodels when counting the intercept, too).
 }
 \description{
-\code{proj_linpred} extracts draws of the linear predictor and
-\code{proj_predict} draws from the predictive distribution of the projected
-submodel or submodels. If the projection has not been performed, the
-functions also perform the projection.
+\code{proj_linpred} gives draws of the linear predictor (possibly transformed
+to response scale) of a projected submodel (i.e., a submodel resulting from
+projecting the reference model onto it). \code{proj_predict} draws from the
+predictive distribution of a projected submodel. If the projection has not
+been performed, both functions also perform the projection. Both functions
+can also handle multiple projected submodels at once (if the input object is
+of class \code{"vsel"}).
 }
 \examples{
 \donttest{
