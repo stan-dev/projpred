@@ -72,21 +72,26 @@
 #'
 #' @examples
 #' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
 #'   n <- 30
 #'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
+#'   x <- matrix(rnorm(n * d), nrow = n)
+#'   y <- x[, 1] + rnorm(n, sd = 0.5)
+#'   data <- data.frame(x, y)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'                             data=data, chains=2, iter=500)
+#'   # Reference model (here an object of class "stanreg"):
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(),
+#'                             data = data, chains = 2, iter = 500, seed = 1235)
+#'
+#'   # Variable selection (here without cross-validation, but only for the sake
+#'   # of speed in this demonstration):
 #'   vs <- varsel(fit)
 #'
-#'   # compute predictions with 4 variables at the training points
-#'   pred <- proj_linpred(vs, newdata = data, nterms = 4)
-#'   pred <- proj_predict(vs, newdata = data, nterms = 4)
+#'   # Predictions (at the training points) from the projected submodels
+#'   # corresponding to the first 4 selected predictor terms:
+#'   pred <- proj_linpred(vs, nterms = 4)
+#'   pred <- proj_predict(vs, nterms = 4)
 #' }
 #' }
 #'
