@@ -2,7 +2,7 @@
 % Please edit documentation in R/project.R
 \name{project}
 \alias{project}
-\title{Projection to submodels}
+\title{Projection onto submodel(s)}
 \usage{
 project(
   object,
@@ -63,10 +63,10 @@ regularization to avoid numerical problems.}
 \item{...}{Arguments passed to \link[=get_refmodel]{get_refmodel}.}
 }
 \value{
-If the projection is performed onto a single submodel (\code{nterms}
-  has length one or \code{solution_terms} is specified), an object of class
-  \code{"projection"} which is a \code{list} containing the following
-  elements:
+If the projection is performed onto a single submodel (i.e.,
+  \code{nterms} has length one or \code{solution_terms} is specified), an
+  object of class \code{"projection"} which is a \code{list} containing the
+  following elements:
   \describe{
     \item{\code{dis}}{Projected draws for the dispersion parameter.}
     \item{\code{kl}}{The KL divergence from the submodel to the reference
@@ -93,8 +93,9 @@ If the projection is performed onto a single submodel (\code{nterms}
   for each submodel.
 }
 \description{
-Perform projection onto submodels of selected sizes or a specified feature
-combination.
+Project the reference model onto a single submodel consisting of a specific
+combination of predictor terms or onto a single or multiple submodels of
+specific sizes.
 }
 \details{
 Using less draws or clusters in \code{ndraws} or \code{nclusters}

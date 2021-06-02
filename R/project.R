@@ -1,7 +1,8 @@
-#' Projection to submodels
+#' Projection onto submodel(s)
 #'
-#' Perform projection onto submodels of selected sizes or a specified feature
-#' combination.
+#' Project the reference model onto a single submodel consisting of a specific
+#' combination of predictor terms or onto a single or multiple submodels of
+#' specific sizes.
 #'
 #' @name project
 #'
@@ -47,10 +48,10 @@
 #'   inaccurate projection performance. Increasing these arguments linearly
 #'   affects the computation time.
 #'
-#' @return If the projection is performed onto a single submodel (\code{nterms}
-#'   has length one or \code{solution_terms} is specified), an object of class
-#'   \code{"projection"} which is a \code{list} containing the following
-#'   elements:
+#' @return If the projection is performed onto a single submodel (i.e.,
+#'   \code{nterms} has length one or \code{solution_terms} is specified), an
+#'   object of class \code{"projection"} which is a \code{list} containing the
+#'   following elements:
 #'   \describe{
 #'     \item{\code{dis}}{Projected draws for the dispersion parameter.}
 #'     \item{\code{kl}}{The KL divergence from the submodel to the reference
