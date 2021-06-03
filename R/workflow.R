@@ -1179,10 +1179,12 @@ cv_kfold.vselapproxcv <- function(object,
   ## List of K elements, each containing d_train, p_pred, etc. corresponding
   ## to each fold.
   make_list_cv <- function(refmodel, d_test, msg) {
-    nclusters_pred <- min(
-      refmodel$nclusters_pred,
-      nclusters_pred
-    )
+    if (!is.null(nclusters_pred) || !is.null(refmodel$nclusters_pred)) {
+      nclusters_pred <- min(
+        refmodel$nclusters_pred,
+        nclusters_pred
+      )
+    }
     p_sel <- .get_refdist(refmodel, ndraws, nclusters)
     p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
     newdata <- d_test$newdata
