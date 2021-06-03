@@ -10,11 +10,11 @@
 #'
 #' @name proj-pred
 #'
-#' @param object Either an object returned by \link[=project]{project} or
+#' @param object Either an object returned by \code{\link{project}} or
 #'   alternatively any object that can be passed to argument \code{object} of
-#'   \link[=project]{project}.
+#'   \code{\link{project}}.
 #' @param filter_nterms Only applies if \code{object} is an object returned by
-#'   \link[=project]{project}. In that case, \code{filter_nterms} can be used to
+#'   \code{\link{project}}. In that case, \code{filter_nterms} can be used to
 #'   filter \code{object} for only those elements (submodels) with a number of
 #'   solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 #'   vector or \code{NULL}. If \code{NULL}, use all submodels.
@@ -42,16 +42,17 @@
 #' @param nresample_clusters For \code{proj_predict} with clustered projection
 #'   only: Number of draws to return from the predictive distribution of the
 #'   projection. Not to be confused with argument \code{nclusters} of
-#'   \link{project}: \code{nresample_clusters} gives the number of draws
+#'   \code{\link{project}}: \code{nresample_clusters} gives the number of draws
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
-#'   projection (as determined by argument \code{nclusters} of \link{project}).
+#'   projection (as determined by argument \code{nclusters} of
+#'   \code{\link{project}}).
 #' @param ppd_seed For \code{proj_predict} only: An optional seed for drawing
 #'   from the posterior predictive distribution. If a clustered projection was
 #'   performed, \code{ppd_seed} is also used for drawing from the set of
 #'   clustered posterior draws after projection (see argument
 #'   \code{nresample_clusters}).
-#' @param ... Additional arguments passed to \link{project} if \code{object} is
-#'   not already an object returned by \link{project}.
+#' @param ... Additional arguments passed to \code{\link{project}} if
+#'   \code{object} is not already an object returned by \code{\link{project}}.
 #'
 #' @return If the prediction is done for one submodel only (i.e., \code{nterms}
 #'   has length one or \code{solution_terms} is specified):

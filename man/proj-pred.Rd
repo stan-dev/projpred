@@ -29,9 +29,9 @@ proj_predict(
 )
 }
 \arguments{
-\item{object}{Either an object returned by \link[=project]{project} or
+\item{object}{Either an object returned by \code{\link{project}} or
 alternatively any object that can be passed to argument \code{object} of
-\link[=project]{project}.}
+\code{\link{project}}.}
 
 \item{newdata}{The predictor values used in the prediction. If
 \code{solution_terms} is specified, then \code{newdata} should either be a
@@ -53,7 +53,7 @@ take the weights from newdata as in the original model. Either NULL or
 right hand side formula.}
 
 \item{filter_nterms}{Only applies if \code{object} is an object returned by
-\link[=project]{project}. In that case, \code{filter_nterms} can be used to
+\code{\link{project}}. In that case, \code{filter_nterms} can be used to
 filter \code{object} for only those elements (submodels) with a number of
 solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 vector or \code{NULL}. If \code{NULL}, use all submodels.}
@@ -65,15 +65,16 @@ only.}
 \item{integrated}{If \code{TRUE}, the output is averaged over the projected
 posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.}
 
-\item{...}{Additional arguments passed to \link{project} if \code{object} is
-not already an object returned by \link{project}.}
+\item{...}{Additional arguments passed to \code{\link{project}} if
+\code{object} is not already an object returned by \code{\link{project}}.}
 
 \item{nresample_clusters}{For \code{proj_predict} with clustered projection
 only: Number of draws to return from the predictive distribution of the
 projection. Not to be confused with argument \code{nclusters} of
-\link{project}: \code{nresample_clusters} gives the number of draws
+\code{\link{project}}: \code{nresample_clusters} gives the number of draws
 (\emph{with} replacement) from the set of clustered posterior draws after
-projection (as determined by argument \code{nclusters} of \link{project}).}
+projection (as determined by argument \code{nclusters} of
+\code{\link{project}}).}
 
 \item{ppd_seed}{For \code{proj_predict} only: An optional seed for drawing
 from the posterior predictive distribution. If a clustered projection was
