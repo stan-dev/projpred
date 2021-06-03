@@ -138,8 +138,34 @@ proj_helper <- function(object, newdata,
   if (is.null(newdata)) {
     ## pick first projection's function
     newdata <- projs[[1]]$refmodel$fetch_data()
-  } else if (!any(inherits(newdata, c("matrix", "data.frame"), TRUE))) {
-    stop("newdata must be a data.frame or a matrix")
+    extract_y_ind <- TRUE
+  } else {
+    if (!inherits(newdata, c("matrix", "data.frame"))) {
+      stop("newdata must be a data.frame or a matrix")
+    }
+    y_nm <- extract_terms_response(projs[[1]]$refmodel$formula)$response
+    # Note: At this point, even for the binomial family with > 1 trials, we
+    # expect only one response column name (the one for the successes), as
+    # handled by get_refmodel.stanreg(), for example. Therefore, perform the
+    # following check (needed for `extract_y_ind` later):
+    stopifnot(length(y_nm) == 1)
+    ### Might be helpful as a starting point in the future, but commented
+    ### because some prediction functions might require only those columns from
+    ### the original dataset which are needed for the corresponding submodel:
+    # newdata_dummy <- projs[[1]]$refmodel$fetch_data()
+    # if (is.data.frame(newdata) ||
+    #     (is.matrix(newdata) && !is.null(colnames(newdata)))) {
+    #   if (!setequal(setdiff(colnames(newdata), y_nm),
+    #                 setdiff(colnames(newdata_dummy), y_nm))) {
+    #     stop("`newdata` has to contain the same columns as the original ",
+    #          "dataset (apart from ", paste(y_nm, collapse = ", "), ").")
+    #   }
+    # } else {
+    #   warning("It seems like `newdata` is a matrix without column names. ",
+    #           "It is safer to provide column names.")
+    # }
+    ###
+    extract_y_ind <- ifelse(y_nm %in% colnames(newdata), TRUE, FALSE)
   }
 
   names(projs) <- sapply(projs, function(proj) {
@@ -158,8 +184,7 @@ proj_helper <- function(object, newdata,
   preds <- lapply(projs, function(proj) {
     w_o <- proj$extract_model_data(proj$refmodel$fit,
                                    newdata = newdata, weightsnew,
-                                   offsetnew, extract_y = FALSE
-    )
+                                   offsetnew, extract_y = FALSE)
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (is.null(weightsnew)) {
@@ -170,11 +195,11 @@ proj_helper <- function(object, newdata,
     }
     mu <- proj$family$mu_fun(proj$sub_fit,
                              newdata = newdata, offset = offsetnew,
-                             weights = weightsnew
-    )
+                             weights = weightsnew)
 
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
+               extract_y_ind = extract_y_ind,
                transform = transform, integrated = integrated,
                nresample_clusters = nresample_clusters)
   })
@@ -204,9 +229,11 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   stopifnot(!is.null(dot_args$integrated))
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
+  stopifnot(!is.null(dot_args$extract_y_ind))
   w_o <- proj$extract_model_data(proj$refmodel$fit,
                                  newdata = dot_args$newdata, wrhs = weights,
-                                 orhs = dot_args$offset, extract_y = TRUE)
+                                 orhs = dot_args$offset,
+                                 extract_y = dot_args$extract_y_ind)
   ynew <- w_o$y
   lpd_out <- compute_lpd(
     ynew = ynew, mu = mu, proj = proj, weights = weights

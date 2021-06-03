@@ -268,6 +268,24 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ##   expect_equal(nrow(pl$lpd), n)
   ## })
 
+  test_that(paste(
+    "proj_linpred: omitting the response causes output element `lpd` to be",
+    "`NULL`."
+  ), {
+    stopifnot(!exists("y"))
+    for (i in fam_nms) {
+      i_resampled <- sample.int(nrow(x))
+      stopifnot(identical(sort(i_resampled), seq_len(nrow(x))))
+      pl <- proj_linpred(proj_solution_terms_list[[i]],
+                         newdata = data.frame(
+                           x = x[i_resampled, , drop = FALSE]
+                         ))
+      expect_named(pl, c("pred", "lpd"), info = i)
+      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
+      expect_null(pl$lpd, info = i)
+    }
+  })
+
   test_that("proj_linpred: specifying weights has an expected effect", {
     for (i in fam_nms) {
       # for binomial models weights have to be specified
