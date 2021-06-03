@@ -301,18 +301,14 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 
     if (is.null(newdata)) {
       newdata <- object$data
-    }
-
-    if (is.null(wrhs) && !is.null(object) &&
-        !is.null(object$weights) && length(object$weights) != 0) {
-      wrhs <- ~weights
-      newdata <- cbind(newdata, weights = object$weights)
-    }
-
-    if (is.null(orhs) && !is.null(object) &&
-        !is.null(object$offset) && length(object$offset) != 0) {
-      orhs <- ~offset
-      newdata <- cbind(newdata, offset = object$offset)
+      if (is.null(wrhs) && length(object$weights) != 0) {
+        wrhs <- ~weights
+        newdata <- cbind(newdata, weights = object$weights)
+      }
+      if (is.null(orhs) && length(object$offset) != 0) {
+        orhs <- ~offset
+        newdata <- cbind(newdata, offset = object$offset)
+      }
     }
 
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
