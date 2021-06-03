@@ -240,8 +240,8 @@ get_refmodel.default <- function(object, data, formula, ref_predfun = NULL,
   }
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                 orhs = NULL) {
-    resp_form <- lhs(formula)
+                                 orhs = NULL, extract_y = TRUE) {
+    resp_form <- if (!extract_y) NULL else lhs(formula)
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do_call(.extract_model_data, args))
   }
