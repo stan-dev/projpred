@@ -42,11 +42,13 @@
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
 #'   projection (as determined by argument \code{nclusters} of
 #'   \code{\link{project}}).
-#' @param ppd_seed For \code{proj_predict} only: An optional seed for drawing
-#'   from the posterior predictive distribution. If a clustered projection was
-#'   performed, \code{ppd_seed} is also used for drawing from the set of
-#'   clustered posterior draws after projection (see argument
-#'   \code{nresample_clusters}).
+#' @param ppd_seed For \code{proj_predict} only: A seed for drawing from the
+#'   predictive distribution of the submodel(s) onto which the reference model
+#'   was (or is) projected. If a clustered projection was performed,
+#'   \code{ppd_seed} is also used for drawing from the set of the projected
+#'   clusters of posterior draws (see argument \code{nresample_clusters}). If
+#'   \code{NULL}, no seed is set and therefore, the results are not
+#'   reproducible. See \code{\link{set.seed}} for details.
 #' @param ... Additional arguments passed to \code{\link{project}} if
 #'   \code{object} is not already an object returned by \code{\link{project}}.
 #'
