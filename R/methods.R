@@ -27,8 +27,7 @@
 #'   Used to get the offsets for the new observations.
 #' @param weightsnew Passed to argument \code{wrhs} of the reference model's
 #'   \code{extract_model_data()} function (see \code{\link{init_refmodel}}).
-#'   Used to get the weights for the new observations. For \code{proj_linpred},
-#'   this argument is ignored if \code{newdata} is \code{NULL}.
+#'   Used to get the weights for the new observations.
 #' @param transform For \code{proj_linpred} only: A single logical value
 #'   indicating whether the linear predictor should be transformed using the
 #'   inverse-link function (\code{TRUE}) or not (\code{FALSE}).
