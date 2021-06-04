@@ -35,8 +35,10 @@
 #'   Ignored if the reference model is of class \code{"datafit"} (in which case
 #'   one cluster is used). For the meaning of \code{NULL}, see argument
 #'   \code{ndraws}. See also section "Details" below.
-#' @param seed A seed used in the clustering (if \code{!is.null(nclusters)}).
-#'   Can be used to ensure same results every time.
+#' @param seed A seed used for clustering the reference model's posterior draws
+#'   (if \code{!is.null(nclusters)}). Can be used to ensure reproducible
+#'   results. If \code{NULL}, no seed is set and therefore, the results are not
+#'   reproducible. See \code{\link{set.seed}} for details.
 #' @param regul Amount of ridge regularization when fitting the models in the
 #'   projection. Usually there is no need for regularization, but sometimes for
 #'   some models the projection can be ill-behaved and we need to add some
@@ -107,10 +109,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     seed = NULL, regul = 1e-4, ...) {
   if (!("vsel" %in% class(object)) && is.null(solution_terms)) {
-    stop(
-      "The given object is not an object of class \"vsel\". ",
-      "Run the variable selection first, or provide argument `solution_terms`."
-    )
+    stop("The given object is not an object of class \"vsel\". Run the ",
+         "variable selection first, or provide argument `solution_terms`.")
   }
 
   refmodel <- get_refmodel(object, ...)
@@ -136,8 +136,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     } else {
       ## project only the given model on a fit object
       vars <- setdiff(split_formula(refmodel$formula,
-                                    data = refmodel$fetch_data()
-      ), "1")
+                                    data = refmodel$fetch_data()),
+                      "1")
     }
 
     if (length(solution_terms) > length(vars)) {
@@ -205,8 +205,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   ## get the clustering or subsample
   p_ref <- .get_refdist(refmodel,
-                        ndraws = ndraws, nclusters = nclusters, seed = seed
-  )
+                        ndraws = ndraws, nclusters = nclusters, seed = seed)
 
   ## project onto the submodels
   subm <- .get_submodels(
