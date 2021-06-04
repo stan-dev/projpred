@@ -28,20 +28,20 @@
 #' @param weightsnew Passed to argument \code{wrhs} of the reference model's
 #'   \code{extract_model_data()} function (see \code{\link{init_refmodel}}).
 #'   Used to get the weights for the new observations.
-#' @param transform For \code{proj_linpred} only: A single logical value
+#' @param transform For \code{proj_linpred} only. A single logical value
 #'   indicating whether the linear predictor should be transformed using the
 #'   inverse-link function (\code{TRUE}) or not (\code{FALSE}).
-#' @param integrated For \code{proj_linpred} only: A single logical value
+#' @param integrated For \code{proj_linpred} only. A single logical value
 #'   indicating whether the output should be averaged over the projected
 #'   posterior draws (\code{TRUE}) or not (\code{FALSE}).
 #' @param nresample_clusters For \code{proj_predict} with clustered projection
-#'   only: Number of draws to return from the predictive distribution of the
+#'   only. Number of draws to return from the predictive distribution of the
 #'   projection. Not to be confused with argument \code{nclusters} of
 #'   \code{\link{project}}: \code{nresample_clusters} gives the number of draws
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
 #'   projection (as determined by argument \code{nclusters} of
 #'   \code{\link{project}}).
-#' @param ppd_seed For \code{proj_predict} only: A seed for drawing from the
+#' @param ppd_seed For \code{proj_predict} only. A seed for drawing from the
 #'   predictive distribution of the submodel(s) onto which the reference model
 #'   was (or is) projected. If a clustered projection was performed,
 #'   \code{ppd_seed} is also used for drawing from the set of the projected
