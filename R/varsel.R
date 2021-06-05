@@ -110,8 +110,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
                           family = family, p_ref = p_pred, refmodel = refmodel,
                           intercept = intercept,
-                          regul = regul, cv_search = cv_search
-  )
+                          regul = regul, cv_search = cv_search)
   sub <- .get_sub_summaries(
     submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
     family = family
@@ -130,8 +129,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       mu_test <- refmodel$mu
     } else {
       mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
-                                                     newdata = d_test$data
-      ))
+                                                     newdata = d_test$data))
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = family, wsample = refmodel$wsample,
@@ -194,8 +192,7 @@ select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
   } else if (method == "forward") {
     search_path <- search_forward(p_sel, refmodel, family,
                                   intercept, nterms_max, verbose, opt,
-                                  search_terms = search_terms
-    )
+                                  search_terms = search_terms)
     search_path$p_sel <- p_sel
     return(search_path)
   }
@@ -214,8 +211,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   ##
   if (is.null(search_terms)) {
     search_terms <- split_formula(refmodel$formula,
-                                  data = refmodel$fetch_data()
-    )
+                                  data = refmodel$fetch_data())
   }
   has_group_features <- formula_contains_group_terms(refmodel$formula)
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
