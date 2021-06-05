@@ -19,15 +19,15 @@
 #'   solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 #'   vector or \code{NULL}. If \code{NULL}, use all submodels.
 #' @param newdata Passed to argument \code{newdata} of the reference model's
-#'   \code{extract_model_data()} function (see \code{\link{init_refmodel}}).
+#'   \code{extract_model_data} function (see \code{\link{init_refmodel}}).
 #'   Provides the predictor (and possibly also the response) data for the new
 #'   observations.
 #' @param offsetnew Passed to argument \code{orhs} of the reference model's
-#'   \code{extract_model_data()} function (see \code{\link{init_refmodel}}).
-#'   Used to get the offsets for the new observations.
+#'   \code{extract_model_data} function (see \code{\link{init_refmodel}}).
+#'   Used to get the offsets for the (new) observations.
 #' @param weightsnew Passed to argument \code{wrhs} of the reference model's
-#'   \code{extract_model_data()} function (see \code{\link{init_refmodel}}).
-#'   Used to get the weights for the new observations.
+#'   \code{extract_model_data} function (see \code{\link{init_refmodel}}).
+#'   Used to get the weights for the (new) observations.
 #' @param transform For \code{proj_linpred} only. A single logical value
 #'   indicating whether the linear predictor should be transformed using the
 #'   inverse-link function (\code{TRUE}) or not (\code{FALSE}).
@@ -46,7 +46,7 @@
 #'   was (or is) projected. If a clustered projection was performed,
 #'   \code{ppd_seed} is also used for drawing from the set of the projected
 #'   clusters of posterior draws (see argument \code{nresample_clusters}). If
-#'   \code{NULL}, no seed is set and therefore, the results are not
+#'   \code{NULL}, no seed is set and therefore, the results are in general not
 #'   reproducible. See \code{\link{set.seed}} for details.
 #' @param ... Additional arguments passed to \code{\link{project}} if
 #'   \code{object} is not already an object returned by \code{\link{project}}.
