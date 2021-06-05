@@ -68,61 +68,143 @@ be applied to retrieve the family (if argument \code{family} is
 \code{init_refmodel}. For non-default methods of \code{get_refmodel}, an
 object of the corresponding class.}
 
-\item{...}{Arguments passed to the methods.}
+\item{...}{For \code{get_refmodel.default} and \code{get_refmodel.stanreg}:
+arguments passed to \code{init_refmodel}. For the \code{get_refmodel}
+generic: arguments passed to the appropriate method. Else: ignored.}
 
-\item{data}{Data on which the reference model was fitted.}
+\item{data}{Data used for fitting the reference model.}
 
 \item{formula}{Reference model's formula. For general information on formulas
-in \R, see \code{\link[=formula]{formula()}}. For multilevel formulas, see
-also package \pkg{lme4}, in particular
-\code{\link[lme4:lmer]{lme4::lmer()}} and
-\code{\link[lme4:glmer]{lme4::glmer()}}.}
+in \R, see \code{\link{formula}}. For multilevel formulas, see also package
+\pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer}} and
+\code{\link[lme4:glmer]{lme4::glmer}}.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
-reference model. May be \code{NULL} for using an internal default.}
+reference model. May be \code{NULL} for using an internal default.
+Otherwise, needs to have the prototype \code{ref_predfun(fit, newdata =
+NULL)} where:
+\itemize{
+  \item{\code{fit} accepts the reference model fit as given in argument
+  \code{object} (but possibly re-fitted to a subset of the observations, as
+  done in K-fold cross-validation);}
+  \item{\code{newdata} accepts either \code{NULL} (for using the original
+  dataset, typically stored in \code{fit}) or data for new observations (at
+  least in the form of a \code{data.frame}).}
+}
+Let \eqn{N} denote the number of observations in the original dataset (used
+for fitting the reference model) and \eqn{S} the number of posterior draws
+for the reference model's parameters. Then the return value of
+\code{ref_predfun} has to be a \eqn{N \times S}{N x S} matrix.}
 
-\item{proj_predfun}{Prediction function for the linear predictor of the
-projections. May be \code{NULL} for using an internal default.}
+\item{proj_predfun}{Prediction function for the linear predictor of a
+submodel onto which the reference model is projected. May be \code{NULL}
+for using an internal default. Otherwise, needs to have the prototype
+\code{proj_predfun(fit, newdata = NULL, weights = NULL)} where:
+\itemize{
+  \item{\code{fit} accepts fit(s) of a submodel as returned by
+  \code{\link{project}} in its output element \code{sub_fit} (which in turn
+  is the same as the return value of \code{div_minimizer}, except if
+  \code{\link{project}} was used with a \code{"vsel"} object from an L1
+  search as well as \code{cv_search = FALSE});}
+  \item{\code{newdata} accepts either \code{NULL} (for using the original
+  dataset, typically stored in \code{fit}) or data for new observations (at
+  least in the form of a \code{data.frame});}
+  \item{\code{weights} accepts either \code{NULL} (for using a vector of
+  ones) or weights for the new observations from \code{newdata} (at least
+  in the form of a numeric vector).}
+}
+Let \eqn{N} denote the number of observations and
+\eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws (corresponding to
+the number of fits in \code{fit}). Then the return value of
+\code{proj_predfun} has to be:
+\itemize{
+  \item{a vector or a 1-column matrix of length \eqn{N} if
+  \eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
+  \item{a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix if
+  \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
+}}
 
-\item{div_minimizer}{Maximum likelihood estimator for the underlying
-projection. May be \code{NULL} for using an internal default.}
+\item{div_minimizer}{A function for minimizing the Kullback-Leibler (KL)
+divergence from a submodel to the reference model (i.e., for performing the
+projection of the reference model onto a submodel). May be \code{NULL} for
+using an internal default. Otherwise, needs to have the prototype
+\code{div_minimizer(formula, data, family, weights = NULL, ...)} where
+(with \eqn{S_{\mbox{prj}}}{S_prj} denoting the number of resulting
+projected draws):
+\itemize{
+  \item{\code{formula} accepts either a standard formula with a single
+  response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
+  \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
+  \code{\link{cbind}}-ed on the left-hand side in which case the projection
+  has to be performed for each of the response variables separately;}
+  \item{\code{data} accepts a \code{data.frame} to be used for the
+  projection;}
+  \item{\code{family} accepts a \code{"family"} object (see argument
+  \code{family});}
+  \item{\code{weights} accepts either \code{NULL} (for using a vector of
+  ones as weights) or weights for the observations from \code{data} (at
+  least in the form of a numeric vector).}
+}
+The return value of \code{div_minimizer} has to be:
+\itemize{
+  \item{a fitted model object if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
+  \item{a list of \eqn{S_{\mbox{prj}}}{S_prj} fitted model objects if
+  \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
+}
+This output of \code{div_minimizer} is used, e.g., by \code{proj_predfun}'s
+argument \code{fit}.}
 
-\item{family}{A family object that represents the observation model for the
-reference model.}
+\item{family}{A \code{"family"} object representing the observational model
+(i.e., the distributional family for the response). For general information
+on \code{"family"} objects in \R, see \code{\link{family}}.}
 
-\item{folds}{Only used for K-fold variable selection. It is a vector of fold
-indices for each observation from \code{data}.}
+\item{folds}{For K-fold cross-validation only. A vector of fold indices for
+each observation from \code{data}.}
 
-\item{cvfits}{Only used for K-fold variable selection. A list with one
-sublist called \code{"fits"} containing K-fold fitted objects from which
-reference models are created. The \code{cvfits} list (i.e., the superlist)
-needs to have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to
-be a single integer giving the number of folds and \code{"folds"} has to be
-an integer vector giving the fold indices (one fold index per observation).
+\item{cvfits}{For K-fold cross-validation only. A list with one sublist
+called \code{"fits"} containing K-fold fitted objects from which reference
+models are created. The \code{cvfits} list (i.e., the superlist) needs to
+have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a
+single integer giving the number of folds and \code{"folds"} has to be an
+integer vector giving the fold indices (one fold index per observation).
 Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
 are provided, \code{cvfits} is used.}
 
-\item{cvfun}{Only used for K-fold variable selection. A function that, given
-a folds vector, fits a reference model per fold and returns the fitted
-object. May be \code{NULL} if \code{object} is \code{NULL}. Note that
-\code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
-provided, \code{cvfits} is used.}
+\item{cvfun}{For K-fold cross-validation only. A function that, given a folds
+vector, fits a reference model per fold and returns the fitted object. May
+be \code{NULL} if \code{object} is \code{NULL}. Note that \code{cvfits}
+takes precedence over \code{cvfun}, i.e., if both are provided,
+\code{cvfits} is used.}
 
 \item{dis}{A vector of posterior draws for the dispersion parameter (if such
 a parameter exists; else \code{dis} may be \code{NULL}).}
 
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (i.e., the dataset
-used for the reference model) or from a new dataset. This function needs to
-have the prototype \code{extract_model_data(object, newdata, wrhs, orhs)},
-where \code{object} is a reference model fit, \code{newdata} is either
-\code{NULL} or a \code{data.frame} with new observations, \code{wrhs} is a
-right-hand side formula consisting only of the variable containing the
-weights, and \code{orhs} is a right-hand side formula consisting only of
-the variable containing the offsets. The return value of this function
-needs to be a list with elements \code{"y"}, \code{"weights"}, and
-\code{"offset"}, containing the data for the response, the observation
-weights, and the offsets used in the reference model.}
+used for fitting the reference model) or from a new dataset. This function
+needs to have the prototype \code{extract_model_data(object, newdata,
+wrhs = NULL, orhs = NULL, extract_y = TRUE)}, where:
+\itemize{
+  \item{\code{object} accepts the reference model fit as given in argument
+  \code{object} (but possibly re-fitted to a subset of the observations, as
+  done in K-fold cross-validation);}
+  \item{\code{newdata} accepts data for new observations (at least in the
+  form of a \code{data.frame});}
+  \item{\code{wrhs} accepts at least either \code{NULL} (for using a vector
+  of ones) or a right-hand side formula consisting only of the variable in
+  \code{newdata} containing the weights;}
+  \item{\code{orhs} accepts at least either \code{NULL} (for using a vector
+  of zeros) or a right-hand side formula consisting only of the variable in
+  \code{newdata} containing the offsets;}
+  \item{\code{extract_y} accepts a single logical value indicating whether
+  output element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or
+  not (\code{FALSE}).}
+}
+The return value of \code{extract_model_data} needs to be a \code{list}
+with elements \code{y}, \code{weights}, and \code{offset}, each being a
+numeric vector containing the data for the response, the observation
+weights, and the offsets, respectively. An exception is that \code{y} may
+also be \code{NULL} (depending on argument \code{extract_y}).}
 }
 \value{
 An object that can be passed to all the functions that take the
@@ -134,10 +216,11 @@ An object that can be passed to all the functions that take the
   differently at several places throughout this package.
 }
 \description{
-Function \code{get_refmodel} is a generic function for creating and fetching
-the reference model structure from a specific \code{object}. The
-\code{get_refmodel} methods usually call \code{init_refmodel} which in turn
-creates the reference model structure.
+Function \code{get_refmodel} is a generic function for creating the reference
+model structure from a specific \code{object}. The \code{get_refmodel}
+methods usually call \code{init_refmodel} which is the underlying workhorse
+to create the reference model structure (and may also be used directly
+without using \code{get_refmodel}).
 }
 \examples{
 \donttest{
