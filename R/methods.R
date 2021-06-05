@@ -18,27 +18,23 @@
 #'   filter \code{object} for only those elements (submodels) with a number of
 #'   solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 #'   vector or \code{NULL}. If \code{NULL}, use all submodels.
-#' @param newdata The predictor values used in the prediction. If
-#'   \code{solution_terms} is specified, then \code{newdata} should either be a
-#'   dataframe containing column names that correspond to \code{solution_terms}
-#'   or a matrix with the number and order of columns corresponding to
-#'   \code{solution_terms}. If \code{solution_terms} is unspecified, then
-#'   \code{newdata} must either be a dataframe containing all the column names
-#'   as in the original data or a matrix with the same columns at the same
-#'   positions as in the original data.
-#' @param offsetnew Offsets for the new observations. By default a vector of
-#'   zeros. By default we take the offsets from newdata as in the original
-#'   model. Either NULL or right hand side formula.
-#' @param weightsnew Weights for the new observations. For binomial model,
-#'   corresponds to the number trials per observation. For \code{proj_linpred},
-#'   this argument matters only if \code{newdata} is specified. By default we
-#'   take the weights from newdata as in the original model. Either NULL or
-#'   right hand side formula.
-#' @param transform Should the linear predictor be transformed using the
-#'   inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
-#'   only.
-#' @param integrated If \code{TRUE}, the output is averaged over the projected
-#'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
+#' @param newdata Passed to argument \code{newdata} of the reference model's
+#'   \code{extract_model_data()} function (see \code{\link{init_refmodel}}).
+#'   Provides the predictor (and possibly also the response) data for the new
+#'   observations.
+#' @param offsetnew Passed to argument \code{orhs} of the reference model's
+#'   \code{extract_model_data()} function (see \code{\link{init_refmodel}}).
+#'   Used to get the offsets for the new observations.
+#' @param weightsnew Passed to argument \code{wrhs} of the reference model's
+#'   \code{extract_model_data()} function (see \code{\link{init_refmodel}}).
+#'   Used to get the weights for the new observations. For \code{proj_linpred},
+#'   this argument is ignored if \code{newdata} is \code{NULL}.
+#' @param transform For \code{proj_linpred} only: A single logical value
+#'   indicating whether the linear predictor should be transformed using the
+#'   inverse-link function (\code{TRUE}) or not (\code{FALSE}).
+#' @param integrated For \code{proj_linpred} only: A single logical value
+#'   indicating whether the output should be averaged over the projected
+#'   posterior draws (\code{TRUE}) or not (\code{FALSE}).
 #' @param nresample_clusters For \code{proj_predict} with clustered projection
 #'   only: Number of draws to return from the predictive distribution of the
 #'   projection. Not to be confused with argument \code{nclusters} of
