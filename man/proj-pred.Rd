@@ -33,24 +33,18 @@ proj_predict(
 alternatively any object that can be passed to argument \code{object} of
 \code{\link{project}}.}
 
-\item{newdata}{The predictor values used in the prediction. If
-\code{solution_terms} is specified, then \code{newdata} should either be a
-dataframe containing column names that correspond to \code{solution_terms}
-or a matrix with the number and order of columns corresponding to
-\code{solution_terms}. If \code{solution_terms} is unspecified, then
-\code{newdata} must either be a dataframe containing all the column names
-as in the original data or a matrix with the same columns at the same
-positions as in the original data.}
+\item{newdata}{Passed to argument \code{newdata} of the reference model's
+\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+Provides the predictor (and possibly also the response) data for the new
+observations.}
 
-\item{offsetnew}{Offsets for the new observations. By default a vector of
-zeros. By default we take the offsets from newdata as in the original
-model. Either NULL or right hand side formula.}
+\item{offsetnew}{Passed to argument \code{orhs} of the reference model's
+\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+Used to get the offsets for the (new) observations.}
 
-\item{weightsnew}{Weights for the new observations. For binomial model,
-corresponds to the number trials per observation. For \code{proj_linpred},
-this argument matters only if \code{newdata} is specified. By default we
-take the weights from newdata as in the original model. Either NULL or
-right hand side formula.}
+\item{weightsnew}{Passed to argument \code{wrhs} of the reference model's
+\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+Used to get the weights for the (new) observations.}
 
 \item{filter_nterms}{Only applies if \code{object} is an object returned by
 \code{\link{project}}. In that case, \code{filter_nterms} can be used to
@@ -58,29 +52,32 @@ filter \code{object} for only those elements (submodels) with a number of
 solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 vector or \code{NULL}. If \code{NULL}, use all submodels.}
 
-\item{transform}{Should the linear predictor be transformed using the
-inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
-only.}
+\item{transform}{For \code{proj_linpred} only. A single logical value
+indicating whether the linear predictor should be transformed using the
+inverse-link function (\code{TRUE}) or not (\code{FALSE}).}
 
-\item{integrated}{If \code{TRUE}, the output is averaged over the projected
-posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.}
+\item{integrated}{For \code{proj_linpred} only. A single logical value
+indicating whether the output should be averaged over the projected
+posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{...}{Additional arguments passed to \code{\link{project}} if
 \code{object} is not already an object returned by \code{\link{project}}.}
 
 \item{nresample_clusters}{For \code{proj_predict} with clustered projection
-only: Number of draws to return from the predictive distribution of the
+only. Number of draws to return from the predictive distribution of the
 projection. Not to be confused with argument \code{nclusters} of
 \code{\link{project}}: \code{nresample_clusters} gives the number of draws
 (\emph{with} replacement) from the set of clustered posterior draws after
 projection (as determined by argument \code{nclusters} of
 \code{\link{project}}).}
 
-\item{ppd_seed}{For \code{proj_predict} only: An optional seed for drawing
-from the posterior predictive distribution. If a clustered projection was
-performed, \code{ppd_seed} is also used for drawing from the set of
-clustered posterior draws after projection (see argument
-\code{nresample_clusters}).}
+\item{ppd_seed}{For \code{proj_predict} only. A seed for drawing from the
+predictive distribution of the submodel(s) onto which the reference model
+was (or is) projected. If a clustered projection was performed,
+\code{ppd_seed} is also used for drawing from the set of the projected
+clusters of posterior draws (see argument \code{nresample_clusters}). If
+\code{NULL}, no seed is set and therefore, the results are in general not
+reproducible. See \code{\link{set.seed}} for details.}
 }
 \value{
 If the prediction is done for one submodel only (i.e., \code{nterms}
