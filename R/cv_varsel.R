@@ -761,7 +761,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     refmodel$proj_predfun(fit, newdata = newdata, weights = weights)
   }
   extract_model_data <- function(object, newdata = fetch_fold(), ...) {
-    refmodel$extract_model_data(object = object, newdata = newdata)
+    refmodel$extract_model_data(object = object, newdata = newdata, ...)
   }
   if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg")) {
     fit <- NULL
