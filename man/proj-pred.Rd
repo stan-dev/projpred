@@ -24,7 +24,7 @@ proj_predict(
   weightsnew = NULL,
   filter_nterms = NULL,
   nresample_clusters = 1000,
-  ppd_seed = NULL,
+  .seed = NULL,
   ...
 )
 }
@@ -71,17 +71,13 @@ projection. Not to be confused with argument \code{nclusters} of
 projection (as determined by argument \code{nclusters} of
 \code{\link{project}}).}
 
-\item{ppd_seed}{For \code{proj_predict} only. A seed for drawing from the
-predictive distribution of a submodel onto which the reference model was
-(or is) projected. (This predictive distribution may be termed the
-\emph{projection's predictive distribution} and is therefore abbreviated by
-\emph{PPD} here in \code{ppd_seed}, but it should not to be confused with
-the reference model's \emph{posterior predictive distribution}.) If a
-clustered projection was performed, \code{ppd_seed} is also used for
-drawing from the set of the projected clusters of posterior draws (see
-argument \code{nresample_clusters}). If \code{NULL}, no seed is set and
-therefore, the results are in general not reproducible. See
-\code{\link{set.seed}} for details.}
+\item{.seed}{For \code{proj_predict} only. A seed for drawing from the
+predictive distribution of the submodel(s) onto which the reference model
+was (or is) projected. If a clustered projection was performed,
+\code{.seed} is also used for drawing from the set of the projected
+clusters of posterior draws (see argument \code{nresample_clusters}). If
+\code{NULL}, no seed is set and therefore, the results are in general not
+reproducible. See \code{\link{set.seed}} for details.}
 }
 \value{
 If the prediction is done for one submodel only (i.e., \code{nterms}

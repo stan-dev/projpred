@@ -41,17 +41,13 @@
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
 #'   projection (as determined by argument \code{nclusters} of
 #'   \code{\link{project}}).
-#' @param ppd_seed For \code{proj_predict} only. A seed for drawing from the
-#'   predictive distribution of a submodel onto which the reference model was
-#'   (or is) projected. (This predictive distribution may be termed the
-#'   \emph{projection's predictive distribution} and is therefore abbreviated by
-#'   \emph{PPD} here in \code{ppd_seed}, but it should not to be confused with
-#'   the reference model's \emph{posterior predictive distribution}.) If a
-#'   clustered projection was performed, \code{ppd_seed} is also used for
-#'   drawing from the set of the projected clusters of posterior draws (see
-#'   argument \code{nresample_clusters}). If \code{NULL}, no seed is set and
-#'   therefore, the results are in general not reproducible. See
-#'   \code{\link{set.seed}} for details.
+#' @param .seed For \code{proj_predict} only. A seed for drawing from the
+#'   predictive distribution of the submodel(s) onto which the reference model
+#'   was (or is) projected. If a clustered projection was performed,
+#'   \code{.seed} is also used for drawing from the set of the projected
+#'   clusters of posterior draws (see argument \code{nresample_clusters}). If
+#'   \code{NULL}, no seed is set and therefore, the results are in general not
+#'   reproducible. See \code{\link{set.seed}} for details.
 #' @param ... Additional arguments passed to \code{\link{project}} if
 #'   \code{object} is not already an object returned by \code{\link{project}}.
 #'
@@ -271,11 +267,11 @@ compute_lpd <- function(ynew, mu, proj, weights) {
 proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
                          filter_nterms = NULL,
-                         nresample_clusters = 1000, ppd_seed = NULL, ...) {
+                         nresample_clusters = 1000, .seed = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(ppd_seed)
+  set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
