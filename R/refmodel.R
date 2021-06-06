@@ -177,23 +177,18 @@ NULL
 #' expected value for the next observation, or evaluate the log-predictive
 #' density at a given point.
 #'
+#' @template args-newdata
 #' @param object The object of class \code{refmodel}.
-#' @param newdata Matrix of predictor values used in the prediction.
 #' @param ynew New (test) target variables. If given, then the log predictive
 #'   density for the new observations is computed.
-#' @param offsetnew Offsets for the new observations. By default a vector of
-#'   zeros. By default we take the weights from newdata as in the original
-#'   model. Either NULL or right hand side formulas.
-#' @param weightsnew Weights for the new observations. For binomial model,
-#'   corresponds to the number trials per observation. Has effect only if
-#'   \code{ynew} is specified. By default a vector of ones. By default we take
-#'   the weights from newdata as in the original model. Either NULL or right
-#'   hand side formulas.
 #' @param type Scale on which the predictions are returned. Either 'link' (the
 #'   latent function value, from -inf to inf) or 'response' (the scale on which
 #'   the target \code{y} is measured, obtained by taking the inverse-link from
 #'   the latent value).
 #' @param ... Currently ignored.
+#'
+#' @details Argument \code{weightsnew} is only relevant if
+#'   \code{!is.null(ynew)}.
 #'
 #' @return Returns either a vector of predictions, or vector of log predictive
 #'   densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
