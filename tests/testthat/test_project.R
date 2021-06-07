@@ -94,17 +94,11 @@ if (require(rstanarm)) {
   })
 
   test_that(paste(
-    "error when varsel has not been performed for the",
-    "object"
+    "an error is thrown if object is not of class \"vsel\" and",
+    "`solution_terms` is not specified"
   ), {
-    expect_error(
-      project(1, newdata = x),
-      "is not an object of class \"vsel\""
-    )
-    expect_error(
-      project(fit_gauss, newdata = x),
-      "is not an object of class \"vsel\""
-    )
+    expect_error(project(fit_gauss),
+                 "is not an object of class \"vsel\"")
   })
 
   test_that("nterms is checked", {
