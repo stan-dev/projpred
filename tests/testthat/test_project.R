@@ -1,22 +1,19 @@
 context("project")
 
-
 # tests for project
 
 if (require(rstanarm)) {
   seed <- 1235
   set.seed(seed)
-  n <- 40
-  nterms <- 5
-  ndraws <- 1
-  ndraws_pred <- 5
+  n <- 40L
+  nterms <- 5L
   x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
   b <- runif(nterms) - 0.5
-  dis <- runif(1, 1, 2)
+  dis <- runif(1L, 1, 2)
   weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
-  chains <- 2
-  iter <- 500
+  chains <- 2L
+  iter <- 500L
   source(testthat::test_path("helpers", "SW.R"))
 
   f_gauss <- gaussian()
@@ -26,7 +23,6 @@ if (require(rstanarm)) {
                          x = x, weights = weights)
   f_poiss <- poisson()
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
-
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_gauss, data = df_gauss, QR = TRUE,
@@ -40,7 +36,6 @@ if (require(rstanarm)) {
                           family = f_poiss, data = df_poiss,
                           chains = chains, seed = seed, iter = iter)
   })
-
   fam_nms <- setNames(nm = c("gauss", "binom", "poiss"))
   fit_list <- lapply(fam_nms, function(fam_nm) {
     get(paste0("fit_", fam_nm))
@@ -60,15 +55,16 @@ if (require(rstanarm)) {
 
   # For the binomial family with > 1 trials, we currently expect the warning
   # "Using formula(x) is deprecated when x is a character vector of length > 1"
-  # (see GitHub issue #136), so temporarily wrap the following calls in SW():
-  SW(vs_list <- lapply(fit_list, varsel,
-                       nclusters = nclusters_tst,
-                       nclusters_pred = nclusters_pred_tst,
-                       nterms_max = nterms, verbose = FALSE))
-  SW(cvs_list <- lapply(fit_list["binom"], cv_varsel,
-                        nclusters = nclusters_tst,
-                        nclusters_pred = nclusters_pred_tst,
-                        nterms_max = 3, verbose = FALSE))
+  # (see GitHub issue #136), so temporarily wrap the following call in SW():
+  SW(refmod_list <- lapply(fit_list, get_refmodel))
+  vs_list <- lapply(refmod_list, varsel,
+                    nclusters = nclusters_tst,
+                    nclusters_pred = nclusters_pred_tst,
+                    nterms_max = nterms, verbose = FALSE)
+  cvs_list <- lapply(refmod_list["binom"], cv_varsel,
+                     nclusters = nclusters_tst,
+                     nclusters_pred = nclusters_pred_tst,
+                     nterms_max = 3, verbose = FALSE)
 
   test_that(paste(
     "specifying an `object` which is not of class \"vsel\" and not specifying",
@@ -153,6 +149,25 @@ if (require(rstanarm)) {
   })
 
   test_that(paste(
+    "specifying an `object` of class \"refmodel\" leads to correct output",
+    "structure"
+  ), {
+    for (i in fam_nms) {
+      p <- project(refmod_list[[i]], solution_terms = solterms_tst,
+                   nclusters = nclusters_tst)
+      expect_s3_class(p, "projection")
+      expect_named(p, projection_nms, info = i)
+      expect_length(p$sub_fit, nclusters_tst)
+      expect_length(p$weights, nclusters_tst)
+      expect_length(p$dis, nclusters_tst)
+      SW(nprjdraws <- NROW(as.matrix(p)))
+      expect_identical(nprjdraws, nclusters_tst, info = i)
+      solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
+      expect_identical(p$solution_terms, solterms_out)
+    }
+  })
+
+  test_that(paste(
     "specifying a fitted model `object` leads to correct output structure"
   ), {
     for (i in fam_nms) {
@@ -178,13 +193,14 @@ if (require(rstanarm)) {
   })
 
   test_that("specifying `nterms` incorrectly leads to an error", {
-    expect_error(project(vs_list[[1]], nterms = 1000),
+    i <- "gauss"
+    expect_error(project(vs_list[[i]], nterms = 1000),
                  "Cannot perform the projection with 1000 variables")
-    expect_error(project(vs_list[[1]], nterms = -1),
+    expect_error(project(vs_list[[i]], nterms = -1),
                  "must contain non-negative values")
-    expect_error(project(vs_list[[1]], nterms = "a"),
+    expect_error(project(vs_list[[i]], nterms = "a"),
                  "must contain non-negative values")
-    expect_error(project(vs_list[[1]], nterms = df_gauss),
+    expect_error(project(vs_list[[i]], nterms = df_gauss),
                  "must contain non-negative values")
   })
 
@@ -237,13 +253,14 @@ if (require(rstanarm)) {
   test_that(paste(
     "specifying `solution_terms` incorrectly leads to a warning or an error"
   ), {
-    expect_error(project(fit_list[[1]], nclusters = nclusters_tst,
+    i <- "gauss"
+    expect_error(project(refmod_list[[i]], nclusters = nclusters_tst,
                          solution_terms = NULL),
                  "is not an object of class \"vsel\"")
     for (solterms_tsttmp in list(2, 1:3, "1", list(c("x.3", "x.5"),
                                                    c("x.2", "x.4")))) {
       expect_warning(
-        p <- project(fit_list[[1]], nclusters = nclusters_tst,
+        p <- project(refmod_list[[i]], nclusters = nclusters_tst,
                      solution_terms = solterms_tsttmp),
         paste("At least one element of `solution_terms` could not be found",
               "among the terms in the reference model"),
@@ -264,21 +281,9 @@ if (require(rstanarm)) {
     "specifying `solution_terms` correctly leads to correct output structure"
   ), {
     for (i in fam_nms) {
-      if (i == "binom") {
-        # For the binomial family with > 1 trials, we expect a warning (see
-        # GitHub issue #136):
-        warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
-                                 "is a character vector of length > 1")
-      } else {
-        warn_prj_expect <- NA
-      }
       for (solterms_tsttmp in list(character(), "x.3", c("x.2", "x.4"))) {
-        expect_warning(
-          p <- project(fit_list[[i]], nclusters = nclusters_tst,
-                       solution_terms = solterms_tsttmp),
-          warn_prj_expect,
-          info = c(i, as.character(solterms_tsttmp))
-        )
+        p <- project(refmod_list[[i]], nclusters = nclusters_tst,
+                     solution_terms = solterms_tsttmp)
         expect_s3_class(p, "projection")
         expect_named(p, projection_nms, info = i)
         expect_length(p$sub_fit, nclusters_tst)
@@ -298,7 +303,7 @@ if (require(rstanarm)) {
 
   test_that("specifying `ndraws` incorrectly leads to an error", {
     i <- "gauss"
-    expect_error(project(fit_list[[i]],
+    expect_error(project(refmod_list[[i]],
                          ndraws = NULL,
                          solution_terms = solterms_tst),
                  "^!is\\.null\\(ndraws\\) is not TRUE$", info = i)
@@ -313,7 +318,7 @@ if (require(rstanarm)) {
     for (ndraws_tsttmp in list(S + 1L)) {
       for (nclusters_tsttmp in list(NULL, S + 1L)) {
         tstsetup <- unlist(nlist(i, ndraws_tsttmp, nclusters_tsttmp))
-        p <- project(fit_list[[i]],
+        p <- project(refmod_list[[i]],
                      ndraws = ndraws_tsttmp,
                      nclusters = nclusters_tsttmp,
                      solution_terms = solterms_tst)
@@ -335,25 +340,13 @@ if (require(rstanarm)) {
     "structure"
   ), {
     for (i in fam_nms) {
-      if (i == "binom") {
-        # For the binomial family with > 1 trials, we expect a warning (see
-        # GitHub issue #136):
-        warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
-                                 "is a character vector of length > 1")
-      } else {
-        warn_prj_expect <- NA
-      }
       for (ndraws_tsttmp in list(1L, 20L, 21L)) {
         for (nclusters_tsttmp in list(NULL, 1L, 2L, 3L)) {
           tstsetup <- unlist(nlist(i, ndraws_tsttmp, nclusters_tsttmp))
-          expect_warning(
-            p <- project(fit_list[[i]],
-                         ndraws = ndraws_tsttmp,
-                         nclusters = nclusters_tsttmp,
-                         solution_terms = solterms_tst),
-            warn_prj_expect,
-            info = tstsetup
-          )
+          p <- project(refmod_list[[i]],
+                       ndraws = ndraws_tsttmp,
+                       nclusters = nclusters_tsttmp,
+                       solution_terms = solterms_tst)
           expect_s3_class(p, "projection")
           expect_named(p, projection_nms, info = tstsetup)
           nprjdraws_out <- if (!is.null(nclusters_tsttmp)) {
@@ -383,19 +376,19 @@ if (require(rstanarm)) {
 
   test_that("specifying `seed` correctly leads to reproducible results", {
     i <- "gauss"
-    p1 <- project(fit_list[[i]],
+    p1 <- project(refmod_list[[i]],
                   nclusters = nclusters_tst,
                   solution_terms = solterms_tst,
                   seed = seed_tst)
-    p2 <- project(fit_list[[i]],
+    p2 <- project(refmod_list[[i]],
                   nclusters = nclusters_tst,
                   solution_terms = solterms_tst,
                   seed = seed_tst + 1L)
-    p3 <- project(fit_list[[i]],
+    p3 <- project(refmod_list[[i]],
                   nclusters = nclusters_tst,
                   solution_terms = solterms_tst,
                   seed = seed_tst)
-    p4 <- project(fit_list[[i]],
+    p4 <- project(refmod_list[[i]],
                   nclusters = nclusters_tst,
                   solution_terms = solterms_tst)
 
@@ -424,7 +417,7 @@ if (require(rstanarm)) {
     # the fit" of the reference model, not to the observed response. The fact
     # that the tolerance for the Gaussian reference model needs to be
     # increased here (see below) might be an indicator for this inequality.
-    tol <- setNames(rep(1e-3, length(fit_list)), fam_nms)
+    tol <- setNames(rep(1e-3, length(fam_nms)), fam_nms)
     tol["gauss"] <- 0.25
 
     for (i in fam_nms) {
@@ -432,18 +425,9 @@ if (require(rstanarm)) {
       alpha_ref <- draws[, "(Intercept)"]
       beta_ref <- draws[, 1 + seq_len(nterms), drop = FALSE]
       S <- nrow(draws)
-      if (i == "binom") {
-        # For the binomial family with > 1 trials, we expect a warning (see
-        # GitHub issue #136):
-        warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
-                                 "is a character vector of length > 1")
-      } else {
-        warn_prj_expect <- NA
-      }
-      expect_warning(proj <- project(fit_list[[i]],
-                                     solution_terms = paste0("x.", 1:nterms),
-                                     ndraws = S),
-                     warn_prj_expect, info = i)
+      proj <- project(refmod_list[[i]],
+                      solution_terms = paste0("x.", 1:nterms),
+                      ndraws = S)
 
       # test alpha and beta
       coefs <- as.matrix(proj)
