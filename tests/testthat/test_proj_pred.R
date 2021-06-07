@@ -19,10 +19,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   f_gauss <- gaussian()
   df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
   f_binom <- binomial()
-  df_binom <- data.frame(
-    y = rbinom(n, weights, f_binom$linkinv(x %*% b)), x = x,
-    weights = weights
-  )
+  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x %*% b)),
+                         x = x, weights = weights)
   f_poiss <- poisson()
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
   fam_nms <- setNames(nm = c("gauss", "binom", "poiss"))
@@ -43,10 +41,6 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   fit_list <- lapply(fam_nms, function(fam_nm) {
     get(paste0("fit_", fam_nm))
   })
-  # For the binomial family with > 1 trials, we currently expect the warning
-  # "Using formula(x) is deprecated when x is a character vector of length > 1"
-  # (see GitHub issue #136), so temporarily wrap the following call in SW():
-  SW(refmod_list <- lapply(fit_list, get_refmodel))
 
   nclusters_tst <- 2L
   nclusters_pred_tst <- 3L
@@ -56,11 +50,12 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   # For the binomial family with > 1 trials, we currently expect the warning
   # "Using formula(x) is deprecated when x is a character vector of length > 1"
   # (see GitHub issue #136), so temporarily wrap the following call in SW():
-  SW(vs_list <- lapply(fit_list, varsel,
-                       nclusters = nclusters_tst,
-                       nclusters_pred = nclusters_pred_tst,
-                       nterms_max = nterms,
-                       verbose = FALSE))
+  SW(refmod_list <- lapply(fit_list, get_refmodel))
+  vs_list <- lapply(refmod_list, varsel,
+                    nclusters = nclusters_tst,
+                    nclusters_pred = nclusters_pred_tst,
+                    nterms_max = nterms,
+                    verbose = FALSE)
   # Note: `c("x.3", "x.5")` are not the two most relevant terms for each
   # reference model from `vs_list`. But instead of choosing different
   # `solution_terms` for each reference model, simply take `c("x.3", "x.5")`
