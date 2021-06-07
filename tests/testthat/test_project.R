@@ -231,17 +231,50 @@ if (require(rstanarm)) {
   })
 
   test_that(paste(
-    "setting ndraws or nclusters too big causes them to be cut off at",
-    "the number of posterior draws in the reference model"
+    "specifying `ndraws` and/or `nclusters` too big causes them to be cut off",
+    "at the number of posterior draws in the reference model"
   ), {
-    p <- project(vs_list[[1]], ndraws = 400000, nterms = nterms)
-    expect_length(p$weights, nrow(as.matrix(fit_list[[1]])))
-    expect_length(p$sub_fit, nrow(as.matrix(fit_list[[1]])))
-    expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
-    p <- project(vs_list[[1]], nclusters = 400000, nterms = nterms)
-    expect_length(p$weights, nrow(as.matrix(fit_list[[1]])))
-    expect_length(p$sub_fit, nrow(as.matrix(fit_list[[1]])))
-    expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
+    i <- "gauss"
+    if (i == "binom") {
+      # For the binomial family with > 1 trials, we expect a warning (see
+      # GitHub issue #136):
+      warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
+                               "is a character vector of length > 1")
+    } else {
+      warn_prj_expect <- NA
+    }
+    S <- nrow(as.matrix(fit_list[[i]]))
+    for (ndraws_tsttmp in list(S + 1L)) {
+      for (nclusters_tsttmp in list(NULL, S + 1L)) {
+        tstsetup <- unlist(nlist(i, ndraws_tsttmp, nclusters_tsttmp))
+        expect_warning(
+          p <- project(fit_list[[i]],
+                       ndraws = ndraws_tsttmp,
+                       nclusters = nclusters_tsttmp,
+                       solution_terms = solterms_tst),
+          warn_prj_expect,
+          info = tstsetup
+        )
+        expect_s3_class(p, "projection")
+        expect_named(p, projection_nms, info = tstsetup)
+        nprjdraws_out <- S
+        nprjdraws_sub_fit <- if (nprjdraws_out == 1) {
+          length(sub_fit_nms)
+        } else {
+          nprjdraws_out
+        }
+        expect_length(p$sub_fit, nprjdraws_sub_fit)
+        expect_length(p$weights, nprjdraws_out)
+        expect_length(p$dis, nprjdraws_out)
+        SW(nprjdraws <- NROW(as.matrix(p)))
+        expect_identical(nprjdraws, nprjdraws_out, info = tstsetup)
+        solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
+        expect_identical(p$solution_terms, solterms_out)
+        if (nprjdraws_out == 1) {
+          expect_identical(p$weights, 1, info = tstsetup)
+        }
+      }
+    }
   })
 
   test_that(paste(
