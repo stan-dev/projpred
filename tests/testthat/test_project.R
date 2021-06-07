@@ -47,8 +47,14 @@ if (require(rstanarm)) {
   })
 
   solterms_tst <- c("x.2", "x.4")
+  ndraws_default <- 400L # Adopt this if the default is changed.
   nclusters_tst <- 2L
   nclusters_pred_tst <- 3L
+  projection_nms <- c(
+    "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
+    "p_type", "intercept", "extract_model_data", "refmodel"
+  )
+  sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 
   # For the binomial family with > 1 trials, we currently expect the warning
   # "Using formula(x) is deprecated when x is a character vector of length > 1"
@@ -56,13 +62,6 @@ if (require(rstanarm)) {
   SW(vs_list <- lapply(fit_list, varsel,
                        nterms_max = nterms,
                        verbose = FALSE))
-
-  ndraws_default <- 400L # Adopt this if the default is changed.
-  projection_nms <- c(
-    "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
-    "p_type", "intercept", "extract_model_data", "refmodel"
-  )
-  sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 
   test_that("\"vsel\" object as input leads to correct output structure", {
     for (i in fam_nms) {
