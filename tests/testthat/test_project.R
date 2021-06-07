@@ -50,8 +50,8 @@ if (require(rstanarm)) {
   nclusters_pred_tst <- 3L
 
   # For the binomial family with > 1 trials, we currently expect the warning
-  # "Using formula(x) is deprecated when x is a character vector of length > 1",
-  # so temporarily wrap the following call in SW():
+  # "Using formula(x) is deprecated when x is a character vector of length > 1"
+  # (see GitHub issue #136), so temporarily wrap the following call in SW():
   SW(vs_list <- lapply(fit_list, varsel,
                        nterms_max = nterms,
                        verbose = FALSE))
