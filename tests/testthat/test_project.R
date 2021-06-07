@@ -65,6 +65,13 @@ if (require(rstanarm)) {
                        nterms_max = nterms,
                        verbose = FALSE))
 
+  test_that(paste(
+    "an error is thrown if object is not of class \"vsel\" and",
+    "`solution_terms` is not specified"
+  ), {
+    expect_error(project(fit_gauss), "is not an object of class \"vsel\"")
+  })
+
   test_that("\"vsel\" object as input leads to correct output structure", {
     for (i in fam_nms) {
       p <- project(vs_list[[i]], nterms = 0:nterms)
@@ -106,11 +113,14 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that(paste(
-    "an error is thrown if object is not of class \"vsel\" and",
-    "`solution_terms` is not specified"
-  ), {
-    expect_error(project(fit_gauss), "is not an object of class \"vsel\"")
+  test_that("project() works as expected from a vsel object", {
+    SW({
+      cvs <- cv_varsel(fit_binom,
+                       nterms_max = 3, verbose = FALSE, ndraws = ndraws,
+                       ndraws_pred = ndraws_pred)
+      p <- project(cvs, nterms = 3)
+    })
+    expect_length(p$solution_terms, 3)
   })
 
   test_that("specifying `nterms` incorrectly leads to an error", {
@@ -400,15 +410,5 @@ if (require(rstanarm)) {
       expect_lt(dalpha, tol[!!i])
       expect_lt(dbeta, tol[!!i])
     }
-  })
-
-  test_that("project() works as expected from a vsel object", {
-    SW({
-      cvs <- cv_varsel(fit_binom,
-                       nterms_max = 3, verbose = FALSE, ndraws = ndraws,
-                       ndraws_pred = ndraws_pred)
-      p <- project(cvs, nterms = 3)
-    })
-    expect_length(p$solution_terms, 3)
   })
 }
