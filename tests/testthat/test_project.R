@@ -86,7 +86,9 @@ if (require(rstanarm)) {
         # The j-th element should have j solution terms (usually excluding the
         # intercept, but counting it for `j == 1`):
         expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
-        expect_identical(p[[j]]$family, vs_list[[i]]$family, info = i)
+        # Same check, but using count_terms_chosen():
+        expect_equal(count_terms_chosen(p[[!!j]]$solution_terms), !!j, info = i)
+        expect_identical(p[[!!j]]$family, vs_list[[!!i]]$family, info = i)
         # All submodels should use the same clustering:
         expect_identical(p[[!!j]]$weights, prjdraw_weights, info = i)
       }
@@ -108,7 +110,7 @@ if (require(rstanarm)) {
     expect_error(project(fit_gauss), "is not an object of class \"vsel\"")
   })
 
-  test_that("nterms is checked correctly", {
+  test_that("specifying `nterms` incorrectly leads to an error", {
     expect_error(project(vs_list[[1]], nterms = 1000),
                  "Cannot perform the projection with 1000 variables")
     expect_error(project(vs_list[[1]], nterms = -1),
@@ -119,66 +121,49 @@ if (require(rstanarm)) {
                  "must contain non-negative values")
   })
 
-  test_that("setting `nterms = NULL` works correctly", {
+  test_that("specifying `nterms` correctly leads to correct output structure", {
     for (i in fam_nms) {
-      p <- project(vs_list[[i]], nclusters = nclusters_tst, nterms = NULL)
-      # If the reference model is projected onto a single submodel, we expect an
-      # object of class "projection":
-      sgg_size <- suggest_size(vs_list[[i]])
-      if (sgg_size == 1) {
-        expect_s3_class(p, "projection")
-        expect_named(p, projection_nms, info = i)
-        expect_length(p$sub_fit, nclusters_tst)
-        expect_length(p$weights, nclusters_tst)
-        expect_length(p$dis, nclusters_tst)
-        SW(nprjdraws <- NROW(as.matrix(p)))
-        expect_identical(nprjdraws, nclusters_tst, info = i)
-      } else {
-        expect_type(p, "list")
-        expect_length(p, sgg_size)
-        expect_true(.is_proj_list(p), info = i)
-
-        prjdraw_weights <- p[[1]]$weights
-        for (j in seq_along(p)) {
-          expect_s3_class(p[[!!j]], "projection")
-          expect_named(p[[!!j]], projection_nms, info = i)
-          expect_length(p[[!!j]]$sub_fit, nclusters_tst)
-          expect_length(p[[!!j]]$weights, nclusters_tst)
-          expect_length(p[[!!j]]$dis, nclusters_tst)
-          SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
+      for (nterms_tst in list(NULL, 0, 3, c(1, 3))) {
+        p <- project(vs_list[[i]], nclusters = nclusters_tst,
+                     nterms = nterms_tst)
+        out_size <- if (is.null(nterms_tst)) {
+          suggest_size(vs_list[[i]])
+        } else {
+          nterms_tst
+        }
+        if (length(out_size) == 1) {
+          expect_s3_class(p, "projection")
+          expect_named(p, projection_nms, info = i)
+          expect_length(p$sub_fit, nclusters_tst)
+          expect_length(p$weights, nclusters_tst)
+          expect_length(p$dis, nclusters_tst)
+          SW(nprjdraws <- NROW(as.matrix(p)))
           expect_identical(nprjdraws, nclusters_tst, info = i)
-          expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
-          expect_identical(p[[j]]$family, vs_list[[i]]$family, info = i)
-          # All submodels should use the same clustering:
-          expect_identical(p[[!!j]]$weights, prjdraw_weights, info = i)
+          expect_length(p$solution_terms, max(out_size, 1))
+          expect_equal(count_terms_chosen(p$solution_terms) - 1, out_size,
+                       info = i)
+        } else {
+          expect_type(p, "list")
+          expect_length(p, length(out_size))
+          expect_true(.is_proj_list(p), info = i)
+
+          prjdraw_weights <- p[[1]]$weights
+          for (j in seq_along(p)) {
+            expect_s3_class(p[[!!j]], "projection")
+            expect_named(p[[!!j]], projection_nms, info = i)
+            expect_length(p[[!!j]]$sub_fit, nclusters_tst)
+            expect_length(p[[!!j]]$weights, nclusters_tst)
+            expect_length(p[[!!j]]$dis, nclusters_tst)
+            SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
+            expect_identical(nprjdraws, nclusters_tst, info = i)
+            expect_length(p[[!!j]]$solution_terms, max(out_size[j], 1))
+            expect_equal(count_terms_chosen(p[[!!j]]$solution_terms) - 1,
+                         out_size[!!j], info = i)
+            expect_identical(p[[!!j]]$family, vs_list[[!!i]]$family, info = i)
+            expect_identical(p[[!!j]]$weights, prjdraw_weights, info = i)
+          }
         }
       }
-      expect_length(p$solution_terms, sgg_size)
-      # Same check, but using count_terms_chosen():
-      expect_equal(count_terms_chosen(p$solution_terms) - 1, sgg_size, info = i)
-    }
-  })
-
-  test_that("setting nterms = 0 has an expected effect", {
-    for (i in fam_nms) {
-      nterms <- 0
-      p <- project(vs_list[[i]], nterms = nterms)
-      # if only one model size is projected, do not return a list of length one
-      expect_true(length(p) >= 1, info = i)
-      # beta has the correct number of rows
-      expect_equal(count_terms_chosen(p$solution_terms) - 1, nterms, info = i)
-      expect_length(p$solution_terms, 1)
-    }
-  })
-
-  test_that("setting nterms = 3 has an expected effect", {
-    for (i in fam_nms) {
-      nterms <- 3
-      p <- project(vs_list[[i]], nterms = nterms)
-      # if only one model is projected, do not return a list of length one
-      expect_true(length(p) >= 1, info = i)
-      # beta has the correct number of rows
-      expect_length(p$solution_terms, nterms)
     }
   })
 
