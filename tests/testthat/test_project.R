@@ -319,22 +319,13 @@ if (require(rstanarm)) {
                      solution_terms = solterms_tst)
         expect_s3_class(p, "projection")
         expect_named(p, projection_nms, info = tstsetup)
-        nprjdraws_out <- S
-        nprjdraws_sub_fit <- if (nprjdraws_out == 1) {
-          length(sub_fit_nms)
-        } else {
-          nprjdraws_out
-        }
-        expect_length(p$sub_fit, nprjdraws_sub_fit)
-        expect_length(p$weights, nprjdraws_out)
-        expect_length(p$dis, nprjdraws_out)
+        expect_length(p$sub_fit, S)
+        expect_length(p$weights, S)
+        expect_length(p$dis, S)
         SW(nprjdraws <- NROW(as.matrix(p)))
-        expect_identical(nprjdraws, nprjdraws_out, info = tstsetup)
+        expect_identical(nprjdraws, S, info = tstsetup)
         solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
         expect_identical(p$solution_terms, solterms_out)
-        if (nprjdraws_out == 1) {
-          expect_identical(p$weights, 1, info = tstsetup)
-        }
       }
     }
   })
