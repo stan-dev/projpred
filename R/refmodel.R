@@ -518,7 +518,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           matrix(rep(NA, NROW(newdata)))
         }
       } else {
-        family$linkinv(ref_predfun(fit, newdata))
+        ref_predfun(fit, newdata)
       }
     }
   }
