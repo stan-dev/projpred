@@ -46,6 +46,7 @@ if (require(rstanarm)) {
     get(paste0("fit_", fam_nm))
   })
 
+  solterms_tst <- c("x.2", "x.4")
   nclusters_tst <- 2L
   nclusters_pred_tst <- 3L
 
@@ -173,21 +174,21 @@ if (require(rstanarm)) {
     expect_error(project(fit_list[[1]], nclusters = nclusters_tst,
                          solution_terms = NULL),
                  "is not an object of class \"vsel\"")
-    for (solterms_tst in list(2, 1:3, "1", list(c("x.3", "x.5"),
-                                                c("x.2", "x.4")))) {
+    for (solterms_tsttmp in list(2, 1:3, "1", list(c("x.3", "x.5"),
+                                                   c("x.2", "x.4")))) {
       expect_warning(
         p <- project(fit_list[[1]], nclusters = nclusters_tst,
-                     solution_terms = solterms_tst),
+                     solution_terms = solterms_tsttmp),
         paste("At least one element of `solution_terms` could not be found",
               "among the terms in the reference model")
       )
       expect_s3_class(p, "projection")
-      expect_named(p, projection_nms, info = solterms_tst)
+      expect_named(p, projection_nms, info = solterms_tsttmp)
       expect_length(p$sub_fit, nclusters_tst)
       expect_length(p$weights, nclusters_tst)
       expect_length(p$dis, nclusters_tst)
       SW(nprjdraws <- NROW(as.matrix(p)))
-      expect_identical(nprjdraws, nclusters_tst, info = solterms_tst)
+      expect_identical(nprjdraws, nclusters_tst, info = solterms_tsttmp)
       expect_identical(p$solution_terms, "1")
     }
   })
@@ -204,10 +205,10 @@ if (require(rstanarm)) {
       } else {
         warn_prj_expect <- NA
       }
-      for (solterms_tst in list(character(), "x.3", c("x.2", "x.4"))) {
+      for (solterms_tsttmp in list(character(), "x.3", c("x.2", "x.4"))) {
         expect_warning(
           p <- project(fit_list[[i]], nclusters = nclusters_tst,
-                       solution_terms = solterms_tst),
+                       solution_terms = solterms_tsttmp),
           warn_prj_expect
         )
         expect_s3_class(p, "projection")
@@ -217,7 +218,11 @@ if (require(rstanarm)) {
         expect_length(p$dis, nclusters_tst)
         SW(nprjdraws <- NROW(as.matrix(p)))
         expect_identical(nprjdraws, nclusters_tst, info = i)
-        solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
+        solterms_out <- if (length(solterms_tsttmp) == 0) {
+          "1"
+        } else {
+          solterms_tsttmp
+        }
         expect_identical(p$solution_terms, solterms_out)
       }
     }
