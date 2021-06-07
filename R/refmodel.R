@@ -518,7 +518,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           matrix(rep(NA, NROW(newdata)))
         }
       } else {
-        ref_predfun(fit, newdata)
+        stop("This case should not occur. Please notify the package maintainer.")
       }
     }
   }
