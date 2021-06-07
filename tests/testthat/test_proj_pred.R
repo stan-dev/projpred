@@ -44,8 +44,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     get(paste0("fit_", fam_nm))
   })
   # For the binomial family with > 1 trials, we currently expect the warning
-  # "Using formula(x) is deprecated when x is a character vector of length > 1",
-  # so temporarily wrap the following call in SW():
+  # "Using formula(x) is deprecated when x is a character vector of length > 1"
+  # (see GitHub issue #136), so temporarily wrap the following call in SW():
   SW(refmod_list <- lapply(fit_list, get_refmodel))
 
   nclusters_tst <- 2L
@@ -54,8 +54,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   nresample_clusters_default <- 1000L # Adopt this if the default is changed.
 
   # For the binomial family with > 1 trials, we currently expect the warning
-  # "Using formula(x) is deprecated when x is a character vector of length > 1",
-  # so temporarily wrap the following call in SW():
+  # "Using formula(x) is deprecated when x is a character vector of length > 1"
+  # (see GitHub issue #136), so temporarily wrap the following call in SW():
   SW(vs_list <- lapply(fit_list, varsel,
                        nclusters = nclusters_tst,
                        nclusters_pred = nclusters_pred_tst,
