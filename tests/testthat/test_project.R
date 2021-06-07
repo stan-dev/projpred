@@ -167,29 +167,30 @@ if (require(rstanarm)) {
     }
   })
 
-  ## test_that(paste(
-  ##   "setting solution_terms to something nonsensical",
-  ##   "returns an error"
-  ## ), {
-  ##   # variable selection objects
-  ##   expect_error(
-  ##     project(vs_list[[1]],
-  ##             solution_terms = vs_list[[1]]$solution_terms[1:10]),
-  ##     "solution_terms contains an index larger than"
-  ##   )
-  ##
-  ##   # fit objects
-  ##   expect_error(
-  ##     SW(project(fit_list[[1]],
-  ##                solution_terms = vs_list[[1]]$solution_terms[1:10])),
-  ##     "solution_terms contains an index larger than"
-  ##   )
-  ##   expect_error(
-  ##     SW(project(fit_list[[1]],
-  ##                solution_terms = vs_list[[1]]$solution_terms[17])),
-  ##     "solution_terms contains an index larger than"
-  ##   )
-  ## })
+  test_that(paste(
+    "specifying `solution_terms` incorrectly leads to a warning or an error"
+  ), {
+    expect_error(project(fit_list[[1]], nclusters = nclusters_tst,
+                         solution_terms = NULL),
+                 "is not an object of class \"vsel\"")
+    for (solterms_tst in list(2, 1:3, "1", list(c("x.3", "x.5"),
+                                                c("x.2", "x.4")))) {
+      expect_warning(
+        p <- project(fit_list[[1]], nclusters = nclusters_tst,
+                     solution_terms = solterms_tst),
+        paste("At least one element of `solution_terms` could not be found",
+              "among the terms in the reference model")
+      )
+      expect_s3_class(p, "projection")
+      expect_named(p, projection_nms, info = solterms_tst)
+      expect_length(p$sub_fit, nclusters_tst)
+      expect_length(p$weights, nclusters_tst)
+      expect_length(p$dis, nclusters_tst)
+      SW(nprjdraws <- NROW(as.matrix(p)))
+      expect_identical(nprjdraws, nclusters_tst, info = solterms_tst)
+      expect_identical(p$solution_terms, "1")
+    }
+  })
 
   test_that("setting solution_terms to 4 has an expected effect", {
     for (i in fam_nms) {
