@@ -12,7 +12,7 @@
 #'   \link[=get_refmodel]{get_refmodel}.
 #' @param nterms Number of terms in the submodel (the variable combination is
 #'   taken from the \code{varsel} information). If a numeric vector, then the
-#'   projection is performed for each model size. Default is the model size
+#'   projection is performed for each model size. If \code{NULL}, the model size
 #'   suggested by the variable selection (see function \code{suggest_size}).
 #'   Ignored if \code{solution_terms} is specified. Note that \code{nterms} does
 #'   not count the intercept, so use \code{nterms = 0} for the intercept-only
