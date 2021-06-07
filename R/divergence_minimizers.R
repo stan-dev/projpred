@@ -50,25 +50,6 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
   return(sub)
 }
 
-### Not used:
-# # helper function of 'linear_mle'
-# fit_glm_callback <- function(formula, data, family, weights, ...) {
-#   # make sure correct 'weights' can be found
-#   environment(formula) <- environment()
-#   if (family$family == "gaussian" && family$link == "identity") {
-#     return(suppressMessages(suppressWarnings(lm(formula,
-#       data = data,
-#       weights = weights
-#     ))))
-#   } else {
-#     return(suppressMessages(suppressWarnings(glm(formula,
-#       data = data, family = family,
-#       weights = weights
-#     ))))
-#   }
-# }
-###
-
 # Use mgcv to fit the projection to the posterior draws for additive multilevel
 # models.
 additive_mle <- function(formula, data, family, weights = NULL, ...) {
