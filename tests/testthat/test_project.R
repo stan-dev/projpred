@@ -373,15 +373,22 @@ if (require(rstanarm)) {
     tol["gauss"] <- 0.25
 
     for (i in fam_nms) {
-      fit <- fit_list[[i]]
-      draws <- as.data.frame(fit)
+      draws <- as.data.frame(fit_list[[i]])
       alpha_ref <- draws[, "(Intercept)"]
       beta_ref <- draws[, 1 + seq_len(nterms), drop = FALSE]
       S <- nrow(draws)
-      SW(vs <- varsel(fit))
-      proj <- project(vs,
-                      solution_terms = vs$solution_terms[1:nterms],
-                      seed = seed, ndraws = S)
+      if (i == "binom") {
+        # For the binomial family with > 1 trials, we expect a warning (see
+        # GitHub issue #136):
+        warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
+                                 "is a character vector of length > 1")
+      } else {
+        warn_prj_expect <- NA
+      }
+      expect_warning(proj <- project(fit_list[[i]],
+                                     solution_terms = paste0("x.", 1:nterms),
+                                     ndraws = S),
+                     warn_prj_expect, info = i)
 
       # test alpha and beta
       coefs <- as.matrix(proj)
