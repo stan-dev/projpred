@@ -60,19 +60,26 @@ if (require(rstanarm)) {
 
   # For the binomial family with > 1 trials, we currently expect the warning
   # "Using formula(x) is deprecated when x is a character vector of length > 1"
-  # (see GitHub issue #136), so temporarily wrap the following call in SW():
+  # (see GitHub issue #136), so temporarily wrap the following calls in SW():
   SW(vs_list <- lapply(fit_list, varsel,
                        nterms_max = nterms,
                        verbose = FALSE))
+  SW(cvs_list <- lapply(fit_list["binom"], cv_varsel,
+                        nclusters = nclusters_tst,
+                        nclusters_pred = nclusters_pred_tst,
+                        nterms_max = 3, verbose = FALSE))
 
   test_that(paste(
-    "an error is thrown if object is not of class \"vsel\" and",
-    "`solution_terms` is not specified"
+    "specifying an `object` which is not of class \"vsel\" and not specifying",
+    "`solution_terms` leads to an error"
   ), {
     expect_error(project(fit_gauss), "is not an object of class \"vsel\"")
   })
 
-  test_that("\"vsel\" object as input leads to correct output structure", {
+  test_that(paste(
+    "specifying an `object` of class \"vsel\" (created by varsel()) leads",
+    "to correct output structure"
+  ), {
     for (i in fam_nms) {
       p <- project(vs_list[[i]], nterms = 0:nterms)
       expect_type(p, "list")
@@ -113,14 +120,34 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project() works as expected from a vsel object", {
-    SW({
-      cvs <- cv_varsel(fit_binom,
-                       nterms_max = 3, verbose = FALSE, ndraws = ndraws,
-                       ndraws_pred = ndraws_pred)
-      p <- project(cvs, nterms = 3)
-    })
-    expect_length(p$solution_terms, 3)
+  test_that(paste(
+    "specifying an `object` of class \"vsel\" (created by cv_varsel()) leads",
+    "to correct output structure"
+  ), {
+    i <- "binom"
+    nterms_tst <- 0:2
+    p <- project(cvs_list[[i]], nterms = nterms_tst, nclusters = nclusters_tst)
+    expect_type(p, "list")
+    expect_length(p, max(nterms_tst) + 1)
+    expect_true(.is_proj_list(p), info = i)
+
+    prjdraw_weights <- p[[1]]$weights
+    for (j in seq_along(p)) {
+      expect_s3_class(p[[!!j]], "projection")
+      expect_named(p[[!!j]], projection_nms, info = i)
+      expect_length(p[[!!j]]$sub_fit, nclusters_tst)
+      expect_length(p[[!!j]]$weights, nclusters_tst)
+      expect_length(p[[!!j]]$dis, nclusters_tst)
+      SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
+      expect_identical(nprjdraws, nclusters_tst, info = i)
+      expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
+      expect_equal(count_terms_chosen(p[[!!j]]$solution_terms), !!j, info = i)
+      expect_identical(p[[!!j]]$family, cvs_list[[!!i]]$family, info = i)
+      expect_identical(p[[!!j]]$weights, prjdraw_weights, info = i)
+    }
+    klseq <- sapply(p, function(x) sum(x$kl))
+    klseq <- klseq[-1]
+    expect_identical(klseq, cummin(klseq), info = i)
   })
 
   test_that("specifying `nterms` incorrectly leads to an error", {
