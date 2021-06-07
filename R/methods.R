@@ -227,11 +227,7 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   lpd_out <- compute_lpd(
     ynew = ynew, mu = mu, proj = proj, weights = weights
   )
-  pred_out <- if (!dot_args$transform) {
-    proj$family$linkfun(mu)
-  } else {
-    mu
-  }
+  pred_out <- if (!dot_args$transform) proj$family$linkfun(mu) else mu
   if (dot_args$integrated) {
     ## average over the posterior draws
     pred_out <- pred_out %*% proj$weights
