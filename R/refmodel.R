@@ -150,7 +150,9 @@
 #'   \link[=proj-pred]{proj_linpred}. Usually, the returned object is of class
 #'   \code{"refmodel"}. However, if \code{object} is \code{NULL}, the returned
 #'   object is of class \code{c("datafit", "refmodel")} which is handled
-#'   differently at several places throughout this package.
+#'   differently at several places throughout this package. In particular, for a
+#'   \code{"datafit"}, argument \code{ref_predfun} is ignored and an internal
+#'   function is used instead which always returns \code{NA}.
 #'
 #' @examples
 #' \donttest{
