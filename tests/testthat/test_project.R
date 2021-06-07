@@ -192,23 +192,34 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("setting solution_terms to 4 has an expected effect", {
+  test_that(paste(
+    "specifying `solution_terms` correctly leads to correct output structure"
+  ), {
     for (i in fam_nms) {
-      solution_terms <- 4
-      p <- project(vs_list[[i]],
-                   solution_terms = vs_list[[i]]$solution_terms[solution_terms])
-      expect_equivalent(p$solution_terms,
-                        vs_list[[i]]$solution_terms[solution_terms])
-    }
-  })
-
-  test_that("setting solution_terms to 1:2 has an expected effect", {
-    for (i in fam_nms) {
-      solution_terms <- 1:2
-      p <- project(vs_list[[i]],
-                   solution_terms = vs_list[[i]]$solution_terms[solution_terms])
-      expect_equivalent(p$solution_terms,
-                        vs_list[[i]]$solution_terms[solution_terms])
+      if (i == "binom") {
+        # For the binomial family with > 1 trials, we expect a warning (see
+        # GitHub issue #136):
+        warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
+                                 "is a character vector of length > 1")
+      } else {
+        warn_prj_expect <- NA
+      }
+      for (solterms_tst in list(character(), "x.3", c("x.2", "x.4"))) {
+        expect_warning(
+          p <- project(fit_list[[i]], nclusters = nclusters_tst,
+                       solution_terms = solterms_tst),
+          warn_prj_expect
+        )
+        expect_s3_class(p, "projection")
+        expect_named(p, projection_nms, info = i)
+        expect_length(p$sub_fit, nclusters_tst)
+        expect_length(p$weights, nclusters_tst)
+        expect_length(p$dis, nclusters_tst)
+        SW(nprjdraws <- NROW(as.matrix(p)))
+        expect_identical(nprjdraws, nclusters_tst, info = i)
+        solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
+        expect_identical(p$solution_terms, solterms_out)
+      }
     }
   })
 
