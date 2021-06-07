@@ -511,14 +511,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   } else {
     mu <- matrix(y / weights, NROW(y), 1)
     ref_predfun_datafit <- function(fit = NULL, newdata = NULL, offset = 0) {
-      if (is.null(fit)) {
-        if (is.null(newdata)) {
-          matrix(rep(NA, NROW(y)))
-        } else {
-          matrix(rep(NA, NROW(newdata)))
-        }
+      stopifnot(is.null(fit))
+      if (is.null(newdata)) {
+        matrix(rep(NA, NROW(y)))
       } else {
-        stop("This case should not occur. Please notify the package maintainer.")
+        matrix(rep(NA, NROW(newdata)))
       }
     }
   }
