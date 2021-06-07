@@ -231,6 +231,20 @@ if (require(rstanarm)) {
   })
 
   test_that(paste(
+    "setting ndraws or nclusters too big causes them to be cut off at",
+    "the number of posterior draws in the reference model"
+  ), {
+    p <- project(vs_list[[1]], ndraws = 400000, nterms = nterms)
+    expect_length(p$weights, nrow(as.matrix(fit_list[[1]])))
+    expect_length(p$sub_fit, nrow(as.matrix(fit_list[[1]])))
+    expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
+    p <- project(vs_list[[1]], nclusters = 400000, nterms = nterms)
+    expect_length(p$weights, nrow(as.matrix(fit_list[[1]])))
+    expect_length(p$sub_fit, nrow(as.matrix(fit_list[[1]])))
+    expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
+  })
+
+  test_that(paste(
     "specifying `ndraws` and/or `nclusters` correctly leads to correct output",
     "structure"
   ), {
@@ -279,20 +293,6 @@ if (require(rstanarm)) {
         }
       }
     }
-  })
-
-  test_that(paste(
-    "setting ndraws or nclusters too big causes them to be cut off at",
-    "the number of posterior draws in the reference model"
-  ), {
-    p <- project(vs_list[[1]], ndraws = 400000, nterms = nterms)
-    expect_length(p$weights, nrow(as.matrix(fit_list[[1]])))
-    expect_length(p$sub_fit, nrow(as.matrix(fit_list[[1]])))
-    expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
-    p <- project(vs_list[[1]], nclusters = 400000, nterms = nterms)
-    expect_length(p$weights, nrow(as.matrix(fit_list[[1]])))
-    expect_length(p$sub_fit, nrow(as.matrix(fit_list[[1]])))
-    expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
   })
 
   test_that("specifying the seed does not cause errors", {
