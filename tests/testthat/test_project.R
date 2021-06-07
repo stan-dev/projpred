@@ -62,6 +62,7 @@ if (require(rstanarm)) {
     "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
     "p_type", "intercept", "extract_model_data", "refmodel"
   )
+  sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 
   test_that("\"vsel\" object as input leads to correct output structure", {
     for (i in fam_nms) {
@@ -228,45 +229,54 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("setting ndraws to 1 has an expected effect", {
+  test_that(paste(
+    "specifying `ndraws` and/or `nclusters` correctly leads to correct output",
+    "structure"
+  ), {
     for (i in fam_nms) {
-      ndraws <- 1
-      p <- project(vs_list[[i]], ndraws = ndraws, nterms = nterms)
-      # expected number of ndraws
-      expect_length(p$weights, ndraws)
-      SW(ndraws_prj <- NROW(as.matrix(p)))
-      expect_equal(ndraws_prj, ndraws)
-      expect_equal(p$weights, 1, info = i)
-    }
-  })
-
-  test_that("setting ndraws to 40 has an expected effect", {
-    for (i in fam_nms) {
-      ndraws <- 40
-      p <- project(vs_list[[i]], ndraws = ndraws, nterms = nterms)
-      # expected number of ndraws
-      expect_length(p$weights, ndraws)
-      ## SW(ndraws_prj <- NROW(as.matrix(p)))
-      ## expect_equal(ndraws_prj, ndraws)
-    }
-  })
-
-  test_that("setting nclusters to 1 has an expected effect", {
-    for (i in fam_nms) {
-      nclusters <- 1
-      p <- project(vs_list[[i]], nclusters = nclusters, nterms = nterms)
-      # expected number of clusters
-      expect_length(p$weights, nclusters)
-    }
-  })
-
-  test_that("setting nclusters to 20 has an expected effect", {
-    for (i in fam_nms) {
-      nclusters <- 20
-      p <- project(vs_list[[i]], nclusters = nclusters, nterms = nterms)
-      # expected number of ndraws
-      expect_length(p$weights, nclusters)
-      expect_length(p$sub_fit, nclusters)
+      if (i == "binom") {
+        # For the binomial family with > 1 trials, we expect a warning (see
+        # GitHub issue #136):
+        warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
+                                 "is a character vector of length > 1")
+      } else {
+        warn_prj_expect <- NA
+      }
+      for (ndraws_tsttmp in list(1L, 20L, 21L)) {
+        for (nclusters_tsttmp in list(NULL, 1L, 2L, 3L)) {
+          tstsetup <- unlist(nlist(i, ndraws_tsttmp, nclusters_tsttmp))
+          expect_warning(
+            p <- project(fit_list[[i]],
+                         ndraws = ndraws_tsttmp,
+                         nclusters = nclusters_tsttmp,
+                         solution_terms = solterms_tst),
+            warn_prj_expect,
+            info = tstsetup
+          )
+          expect_s3_class(p, "projection")
+          expect_named(p, projection_nms, info = tstsetup)
+          nprjdraws_out <- if (!is.null(nclusters_tsttmp)) {
+            nclusters_tsttmp
+          } else {
+            ndraws_tsttmp
+          }
+          nprjdraws_sub_fit <- if (nprjdraws_out == 1) {
+            length(sub_fit_nms)
+          } else {
+            nprjdraws_out
+          }
+          expect_length(p$sub_fit, nprjdraws_sub_fit)
+          expect_length(p$weights, nprjdraws_out)
+          expect_length(p$dis, nprjdraws_out)
+          SW(nprjdraws <- NROW(as.matrix(p)))
+          expect_identical(nprjdraws, nprjdraws_out, info = tstsetup)
+          solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
+          expect_identical(p$solution_terms, solterms_out)
+          if (nprjdraws_out == 1) {
+            expect_identical(p$weights, 1, info = tstsetup)
+          }
+        }
+      }
     }
   })
 
