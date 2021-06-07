@@ -52,39 +52,44 @@ if (require(rstanarm)) {
                        nterms_max = nterms,
                        verbose = FALSE))
 
-  test_that("object returned by project contains the relevant fields", {
+  ndraws_default <- 400L # Adopt this if the default is changed.
+
+  test_that("\"vsel\" object as input leads to correct output structure", {
     for (i in fam_nms) {
       p <- project(vs_list[[i]], nterms = 0:nterms)
       expect_type(p, "list")
       expect_length(p, nterms + 1)
+      expect_true(.is_proj_list(p), info = i)
 
-      for (j in 1:length(p)) {
-        expect_s3_class(p[[j]], "projection")
-        expect_named(p[[j]], c(
-          "kl", "weights", "dis", "sub_fit", "solution_terms",
-          "p_type", "family", "intercept", "extract_model_data",
-          "refmodel"
-        ),
-        ignore.order = TRUE, info = i
-        )
-        # number of ndraws should equal to the number of draw weights
-        ndraws <- length(p[[j]]$weights)
-        ## SW(ndraws_prj <- NROW(as.matrix(p[[j]])))
-        ## expect_equal(ndraws_prj, ndraws)
-        expect_length(p[[j]]$dis, ndraws)
-        # j:th element should have j variables, including the intercept
-        expect_length(p[[j]]$solution_terms, max(j - 1, 1))
-        # family kl
-        expect_equal(p[[j]]$family, vs_list[[i]]$family, info = i)
+      prjdraw_weights <- p[[1]]$weights
+      for (j in seq_along(p)) {
+        expect_s3_class(p[[!!j]], "projection")
+        # Check the names using `ignore.order = FALSE` because an incorrect
+        # order would mean that the documentation of project()'s return value
+        # would have to be updated:
+        expect_named(p[[!!j]], c(
+          "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
+          "p_type", "intercept", "extract_model_data", "refmodel"
+        ), info = i)
+        # Number of projected draws should be equal to the default of `ndraws`:
+        expect_identical(NROW(as.matrix(p[[!!j]])), ndraws_default, info = i)
+        expect_length(p[[!!j]]$weights, ndraws_default)
+        expect_length(p[[!!j]]$dis, ndraws_default)
+        # The j-th element should have j solution terms (usually excluding the
+        # intercept, but counting it for `j == 1`):
+        expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
+        expect_identical(p[[j]]$family, vs_list[[i]]$family, info = i)
+        # All submodels should use the same clustering:
+        expect_identical(p[[!!j]]$weights, prjdraw_weights, info = i)
       }
       # kl should be non-increasing on training data
       klseq <- sapply(p, function(x) sum(x$kl))
-      # remove intercept from the comparison
-      expect_true(all(diff(klseq)[-1] - 1e-1 < 0), info = i)
-      ## expect_equal(klseq, cummin(klseq), info = i)
-
-      # all submodels should use the same clustering
-      expect_equal(p[[1]]$weights, p[[nterms]]$weights, info = i)
+      # Remove intercept from the comparison:
+      klseq <- klseq[-1]
+      expect_identical(klseq, cummin(klseq), info = i)
+      ### Check with tolerance:
+      # expect_true(all(diff(klseq) - 1e-1 < 0), info = i)
+      ###
     }
   })
 
