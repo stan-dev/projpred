@@ -180,7 +180,8 @@ if (require(rstanarm)) {
         p <- project(fit_list[[1]], nclusters = nclusters_tst,
                      solution_terms = solterms_tsttmp),
         paste("At least one element of `solution_terms` could not be found",
-              "among the terms in the reference model")
+              "among the terms in the reference model"),
+        info = as.character(solterms_tsttmp)
       )
       expect_s3_class(p, "projection")
       expect_named(p, projection_nms, info = solterms_tsttmp)
@@ -209,7 +210,8 @@ if (require(rstanarm)) {
         expect_warning(
           p <- project(fit_list[[i]], nclusters = nclusters_tst,
                        solution_terms = solterms_tsttmp),
-          warn_prj_expect
+          warn_prj_expect,
+          info = c(i, as.character(solterms_tsttmp))
         )
         expect_s3_class(p, "projection")
         expect_named(p, projection_nms, info = i)
