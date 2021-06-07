@@ -235,26 +235,14 @@ if (require(rstanarm)) {
     "at the number of posterior draws in the reference model"
   ), {
     i <- "gauss"
-    if (i == "binom") {
-      # For the binomial family with > 1 trials, we expect a warning (see
-      # GitHub issue #136):
-      warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
-                               "is a character vector of length > 1")
-    } else {
-      warn_prj_expect <- NA
-    }
     S <- nrow(as.matrix(fit_list[[i]]))
     for (ndraws_tsttmp in list(S + 1L)) {
       for (nclusters_tsttmp in list(NULL, S + 1L)) {
         tstsetup <- unlist(nlist(i, ndraws_tsttmp, nclusters_tsttmp))
-        expect_warning(
-          p <- project(fit_list[[i]],
-                       ndraws = ndraws_tsttmp,
-                       nclusters = nclusters_tsttmp,
-                       solution_terms = solterms_tst),
-          warn_prj_expect,
-          info = tstsetup
-        )
+        p <- project(fit_list[[i]],
+                     ndraws = ndraws_tsttmp,
+                     nclusters = nclusters_tsttmp,
+                     solution_terms = solterms_tst)
         expect_s3_class(p, "projection")
         expect_named(p, projection_nms, info = tstsetup)
         nprjdraws_out <- S
