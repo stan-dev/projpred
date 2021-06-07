@@ -230,6 +230,14 @@ if (require(rstanarm)) {
     }
   })
 
+  test_that("specifying `ndraws` incorrectly leads to an error", {
+    i <- "gauss"
+    expect_error(project(fit_list[[i]],
+                         ndraws = NULL,
+                         solution_terms = solterms_tst),
+                 "^!is\\.null\\(ndraws\\) is not TRUE$", info = i)
+  })
+
   test_that(paste(
     "specifying `ndraws` and/or `nclusters` too big causes them to be cut off",
     "at the number of posterior draws in the reference model"
