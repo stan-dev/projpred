@@ -167,26 +167,6 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("setting solution_terms to 4 has an expected effect", {
-    for (i in fam_nms) {
-      solution_terms <- 4
-      p <- project(vs_list[[i]],
-                   solution_terms = vs_list[[i]]$solution_terms[solution_terms])
-      expect_equivalent(p$solution_terms,
-                        vs_list[[i]]$solution_terms[solution_terms])
-    }
-  })
-
-  test_that("setting solution_terms to 1:2 has an expected effect", {
-    for (i in fam_nms) {
-      solution_terms <- 1:2
-      p <- project(vs_list[[i]],
-                   solution_terms = vs_list[[i]]$solution_terms[solution_terms])
-      expect_equivalent(p$solution_terms,
-                        vs_list[[i]]$solution_terms[solution_terms])
-    }
-  })
-
   ## test_that(paste(
   ##   "setting solution_terms to something nonsensical",
   ##   "returns an error"
@@ -210,6 +190,26 @@ if (require(rstanarm)) {
   ##     "solution_terms contains an index larger than"
   ##   )
   ## })
+
+  test_that("setting solution_terms to 4 has an expected effect", {
+    for (i in fam_nms) {
+      solution_terms <- 4
+      p <- project(vs_list[[i]],
+                   solution_terms = vs_list[[i]]$solution_terms[solution_terms])
+      expect_equivalent(p$solution_terms,
+                        vs_list[[i]]$solution_terms[solution_terms])
+    }
+  })
+
+  test_that("setting solution_terms to 1:2 has an expected effect", {
+    for (i in fam_nms) {
+      solution_terms <- 1:2
+      p <- project(vs_list[[i]],
+                   solution_terms = vs_list[[i]]$solution_terms[solution_terms])
+      expect_equivalent(p$solution_terms,
+                        vs_list[[i]]$solution_terms[solution_terms])
+    }
+  })
 
   test_that("setting ndraws to 1 has an expected effect", {
     for (i in fam_nms) {
