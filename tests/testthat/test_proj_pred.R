@@ -25,12 +25,10 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   )
   f_poiss <- poisson()
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
-  fam_nms <- c("gauss", "binom", "poiss")
-  ys <- setNames(list(
-    df_gauss$y,
-    df_binom$y,
-    df_poiss$y
-  ), fam_nms)
+  fam_nms <- setNames(nm = c("gauss", "binom", "poiss"))
+  ys <- lapply(fam_nms, function(fam_nm) {
+    get(paste0("df_", fam_nm))$y
+  })
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_gauss, data = df_gauss,
@@ -42,11 +40,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                           family = f_poiss, data = df_poiss,
                           chains = chains, seed = seed, iter = iter)
   })
-  fit_list <- setNames(list(
-    fit_gauss,
-    fit_binom,
-    fit_poiss
-  ), fam_nms)
+  fit_list <- lapply(fam_nms, function(fam_nm) {
+    get(paste0("fit_", fam_nm))
+  })
   # For the binomial family with > 1 trials, we currently expect the warning
   # "Using formula(x) is deprecated when x is a character vector of length > 1",
   # so temporarily wrap the following call in SW():
