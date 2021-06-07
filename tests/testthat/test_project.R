@@ -315,8 +315,8 @@ if (require(rstanarm)) {
     # does not necessarily have to give results close to the reference model's
     # since in contrast to the reference model, the projection is "fitting to
     # the fit" of the reference model, not to the observed response. The fact
-    # that here, the tolerance for the Gaussian reference model needs to be
-    # increased (see below) might be an indicator for this inequality.
+    # that the tolerance for the Gaussian reference model needs to be
+    # increased here (see below) might be an indicator for this inequality.
     tol <- setNames(rep(1e-3, length(fit_list)), fam_nms)
     tol["gauss"] <- 0.25
 
