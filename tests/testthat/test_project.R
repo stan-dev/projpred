@@ -94,7 +94,7 @@ if (require(rstanarm)) {
   })
 
   test_that(paste(
-    "project: error when varsel has not been performed for the",
+    "error when varsel has not been performed for the",
     "object"
   ), {
     expect_error(
@@ -107,7 +107,7 @@ if (require(rstanarm)) {
     )
   })
 
-  test_that("project: nterms is checked", {
+  test_that("nterms is checked", {
     expect_error(
       project(vs_list[[1]], nterms = 1000),
       "Cannot perform the projection with 1000 variables"
@@ -126,7 +126,7 @@ if (require(rstanarm)) {
     )
   })
 
-  test_that("project: setting nterms = NULL has the expected effect", {
+  test_that("setting nterms = NULL has the expected effect", {
     for (i in fam_nms) {
       p <- project(vs_list[[i]], nterms = NULL)
       # if only one model size is projected, do not return a list of length one
@@ -138,7 +138,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: setting nterms = 0 has an expected effect", {
+  test_that("setting nterms = 0 has an expected effect", {
     for (i in fam_nms) {
       nterms <- 0
       p <- project(vs_list[[i]], nterms = nterms)
@@ -150,7 +150,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: setting nterms = 3 has an expected effect", {
+  test_that("setting nterms = 3 has an expected effect", {
     for (i in fam_nms) {
       nterms <- 3
       p <- project(vs_list[[i]], nterms = nterms)
@@ -161,7 +161,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: setting solution_terms to 4 has an expected effect", {
+  test_that("setting solution_terms to 4 has an expected effect", {
     for (i in fam_nms) {
       solution_terms <- 4
       p <- project(vs_list[[i]],
@@ -171,7 +171,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: setting solution_terms to 1:2 has an expected effect", {
+  test_that("setting solution_terms to 1:2 has an expected effect", {
     for (i in fam_nms) {
       solution_terms <- 1:2
       p <- project(vs_list[[i]],
@@ -182,7 +182,7 @@ if (require(rstanarm)) {
   })
 
   ## test_that(paste(
-  ##   "project: setting solution_terms to something nonsensical",
+  ##   "setting solution_terms to something nonsensical",
   ##   "returns an error"
   ## ), {
   ##   # variable selection objects
@@ -205,7 +205,7 @@ if (require(rstanarm)) {
   ##   )
   ## })
 
-  test_that("project: setting ndraws to 1 has an expected effect", {
+  test_that("setting ndraws to 1 has an expected effect", {
     for (i in fam_nms) {
       ndraws <- 1
       p <- project(vs_list[[i]], ndraws = ndraws, nterms = nterms)
@@ -217,7 +217,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: setting ndraws to 40 has an expected effect", {
+  test_that("setting ndraws to 40 has an expected effect", {
     for (i in fam_nms) {
       ndraws <- 40
       p <- project(vs_list[[i]], ndraws = ndraws, nterms = nterms)
@@ -228,7 +228,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: setting nclusters to 1 has an expected effect", {
+  test_that("setting nclusters to 1 has an expected effect", {
     for (i in fam_nms) {
       nclusters <- 1
       p <- project(vs_list[[i]], nclusters = nclusters, nterms = nterms)
@@ -237,7 +237,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: setting nclusters to 20 has an expected effect", {
+  test_that("setting nclusters to 20 has an expected effect", {
     for (i in fam_nms) {
       nclusters <- 20
       p <- project(vs_list[[i]], nclusters = nclusters, nterms = nterms)
@@ -248,7 +248,7 @@ if (require(rstanarm)) {
   })
 
   test_that(paste(
-    "project: setting ndraws or nclusters too big causes them to be cut off at",
+    "setting ndraws or nclusters too big causes them to be cut off at",
     "the number of posterior draws in the reference model"
   ), {
     p <- project(vs_list[[1]], ndraws = 400000, nterms = nterms)
@@ -261,7 +261,7 @@ if (require(rstanarm)) {
     expect_length(p$dis, nrow(as.matrix(fit_list[[1]])))
   })
 
-  test_that("project: specifying the seed does not cause errors", {
+  test_that("specifying the seed does not cause errors", {
     for (i in fam_nms) {
       p <- project(vs_list[[i]], nterms = nterms, seed = seed)
       expect_named(p, c(
@@ -273,7 +273,7 @@ if (require(rstanarm)) {
   })
 
   test_that(paste(
-    "project: projecting the reference model onto the full model (i.e.,",
+    "projecting the reference model onto the full model (i.e.,",
     "itself) does not change results on average (even though this is not",
     "guaranteed; see the comments)"
   ), {
@@ -309,7 +309,7 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("project: works as expected from a vsel object", {
+  test_that("project() works as expected from a vsel object", {
     SW({
       cvs <- cv_varsel(fit_binom,
                        nterms_max = 3, verbose = FALSE, ndraws = ndraws,
