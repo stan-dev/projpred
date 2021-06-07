@@ -50,6 +50,8 @@ if (require(rstanarm)) {
   ndraws_default <- 400L # Adopt this if the default is changed.
   nclusters_tst <- 2L
   nclusters_pred_tst <- 3L
+  seed_tst <- 866028
+
   projection_nms <- c(
     "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
     "p_type", "intercept", "extract_model_data", "refmodel"
@@ -324,15 +326,36 @@ if (require(rstanarm)) {
     }
   })
 
-  test_that("specifying the seed does not cause errors", {
-    for (i in fam_nms) {
-      p <- project(vs_list[[i]], nterms = nterms, seed = seed)
-      expect_named(p, c(
-        "kl", "weights", "dis", "sub_fit", "solution_terms",
-        "p_type", "family", "intercept", "extract_model_data",
-        "refmodel"
-      ), ignore.order = TRUE, info = i)
-    }
+  test_that("specifying `seed` correctly leads to reproducible results", {
+    i <- "gauss"
+    p1 <- project(fit_list[[i]],
+                  nclusters = nclusters_tst,
+                  solution_terms = solterms_tst,
+                  seed = seed_tst)
+    p2 <- project(fit_list[[i]],
+                  nclusters = nclusters_tst,
+                  solution_terms = solterms_tst,
+                  seed = seed_tst + 1L)
+    p3 <- project(fit_list[[i]],
+                  nclusters = nclusters_tst,
+                  solution_terms = solterms_tst,
+                  seed = seed_tst)
+    p4 <- project(fit_list[[i]],
+                  nclusters = nclusters_tst,
+                  solution_terms = solterms_tst)
+
+    # Expected equality:
+    expect_true(isTRUE(all.equal(p1, p3)), info = i)
+    # The resulting objects are even identical when ignoring the environments of
+    # functions:
+    expect_identical(p1, p3, info = i, ignore.environment = TRUE)
+
+    # Expected inequality:
+    expect_false(isTRUE(all.equal(p1, p2)), info = i)
+    expect_false(isTRUE(all.equal(p1, p4)), info = i)
+    expect_false(isTRUE(all.equal(p2, p3)), info = i)
+    expect_false(isTRUE(all.equal(p2, p4)), info = i)
+    expect_false(isTRUE(all.equal(p3, p4)), info = i)
   })
 
   test_that(paste(
