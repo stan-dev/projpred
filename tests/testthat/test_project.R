@@ -31,29 +31,29 @@ if (require(rstanarm)) {
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_gauss, data = df_gauss, QR = TRUE,
                           weights = weights, offset = offset,
-                          chains = chains, seed = seed, iter = iter
-    )
+                          chains = chains, seed = seed, iter = iter)
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_binom, weights = weights,
                           data = df_binom, chains = chains, seed = seed,
-                          iter = iter
-    )
+                          iter = iter)
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_poiss, data = df_poiss,
-                          chains = chains, seed = seed, iter = iter
-    )
-    fit_list <- list( # fit_gauss,
-      fit_binom, fit_poiss
-    )
-    vs_list <- lapply(fit_list, varsel,
-                      nterms_max = nterms + 1,
-                      verbose = FALSE
-    )
+                          chains = chains, seed = seed, iter = iter)
   })
 
+  fam_nms <- setNames(nm = c("gauss", "binom", "poiss"))
+  fit_list <- lapply(fam_nms, function(fam_nm) {
+    get(paste0("fit_", fam_nm))
+  })
+  # For the binomial family with > 1 trials, we currently expect the warning
+  # "Using formula(x) is deprecated when x is a character vector of length > 1",
+  # so temporarily wrap the following call in SW():
+  SW(vs_list <- lapply(fit_list, varsel,
+                       nterms_max = nterms,
+                       verbose = FALSE))
+
   test_that("object returned by project contains the relevant fields", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       p <- project(vs_list[[i]], nterms = 0:nterms)
       expect_type(p, "list")
       expect_length(p, nterms + 1)
@@ -65,7 +65,7 @@ if (require(rstanarm)) {
           "p_type", "family", "intercept", "extract_model_data",
           "refmodel"
         ),
-        ignore.order = TRUE, info = i_inf
+        ignore.order = TRUE, info = i
         )
         # number of ndraws should equal to the number of draw weights
         ndraws <- length(p[[j]]$weights)
@@ -75,18 +75,16 @@ if (require(rstanarm)) {
         # j:th element should have j variables, including the intercept
         expect_length(p[[j]]$solution_terms, max(j - 1, 1))
         # family kl
-        expect_equal(p[[j]]$family, vs_list[[i]]$family,
-                     info = i_inf
-        )
+        expect_equal(p[[j]]$family, vs_list[[i]]$family, info = i)
       }
       # kl should be non-increasing on training data
       klseq <- sapply(p, function(x) sum(x$kl))
       # remove intercept from the comparison
-      expect_true(all(diff(klseq)[-1] - 1e-1 < 0), info = i_inf)
-      ## expect_equal(klseq, cummin(klseq), info = i_inf)
+      expect_true(all(diff(klseq)[-1] - 1e-1 < 0), info = i)
+      ## expect_equal(klseq, cummin(klseq), info = i)
 
       # all submodels should use the same clustering
-      expect_equal(p[[1]]$weights, p[[nterms]]$weights, info = i_inf)
+      expect_equal(p[[1]]$weights, p[[nterms]]$weights, info = i)
     }
   })
 
@@ -124,46 +122,42 @@ if (require(rstanarm)) {
   })
 
   test_that("project: setting nterms = NULL has the expected effect", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       p <- project(vs_list[[i]], nterms = NULL)
       # if only one model size is projected, do not return a list of length one
-      expect_true(length(p) >= 1, info = i_inf)
+      expect_true(length(p) >= 1, info = i)
       # beta has the correct number of rows
       expect_equal(count_terms_chosen(p$solution_terms) - 1,
-                   vs_list[[i]]$suggested_size, info = i_inf)
+                   vs_list[[i]]$suggested_size, info = i)
       expect_length(p$solution_terms, vs_list[[i]]$suggested_size)
     }
   })
 
   test_that("project: setting nterms = 0 has an expected effect", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       nterms <- 0
       p <- project(vs_list[[i]], nterms = nterms)
       # if only one model size is projected, do not return a list of length one
-      expect_true(length(p) >= 1, info = i_inf)
+      expect_true(length(p) >= 1, info = i)
       # beta has the correct number of rows
-      expect_equal(count_terms_chosen(p$solution_terms) - 1, nterms,
-                   info = i_inf)
+      expect_equal(count_terms_chosen(p$solution_terms) - 1, nterms, info = i)
       expect_length(p$solution_terms, 1)
     }
   })
 
   test_that("project: setting nterms = 3 has an expected effect", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       nterms <- 3
       p <- project(vs_list[[i]], nterms = nterms)
       # if only one model is projected, do not return a list of length one
-      expect_true(length(p) >= 1, info = i_inf)
+      expect_true(length(p) >= 1, info = i)
       # beta has the correct number of rows
       expect_length(p$solution_terms, nterms)
     }
   })
 
   test_that("project: setting solution_terms to 4 has an expected effect", {
-    for (i in 1:length(vs_list)) {
+    for (i in fam_nms) {
       solution_terms <- 4
       p <- project(vs_list[[i]],
                    solution_terms = vs_list[[i]]$solution_terms[solution_terms])
@@ -173,7 +167,7 @@ if (require(rstanarm)) {
   })
 
   test_that("project: setting solution_terms to 1:2 has an expected effect", {
-    for (i in 1:length(vs_list)) {
+    for (i in fam_nms) {
       solution_terms <- 1:2
       p <- project(vs_list[[i]],
                    solution_terms = vs_list[[i]]$solution_terms[solution_terms])
@@ -207,21 +201,19 @@ if (require(rstanarm)) {
   ## })
 
   test_that("project: setting ndraws to 1 has an expected effect", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       ndraws <- 1
       p <- project(vs_list[[i]], ndraws = ndraws, nterms = nterms)
       # expected number of ndraws
       expect_length(p$weights, ndraws)
       SW(ndraws_prj <- NROW(as.matrix(p)))
       expect_equal(ndraws_prj, ndraws)
-      expect_equal(p$weights, 1, info = i_inf)
+      expect_equal(p$weights, 1, info = i)
     }
   })
 
   test_that("project: setting ndraws to 40 has an expected effect", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       ndraws <- 40
       p <- project(vs_list[[i]], ndraws = ndraws, nterms = nterms)
       # expected number of ndraws
@@ -232,8 +224,7 @@ if (require(rstanarm)) {
   })
 
   test_that("project: setting nclusters to 1 has an expected effect", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       nclusters <- 1
       p <- project(vs_list[[i]], nclusters = nclusters, nterms = nterms)
       # expected number of clusters
@@ -242,8 +233,7 @@ if (require(rstanarm)) {
   })
 
   test_that("project: setting nclusters to 20 has an expected effect", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       nclusters <- 20
       p <- project(vs_list[[i]], nclusters = nclusters, nterms = nterms)
       # expected number of ndraws
@@ -267,26 +257,31 @@ if (require(rstanarm)) {
   })
 
   test_that("project: specifying the seed does not cause errors", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       p <- project(vs_list[[i]], nterms = nterms, seed = seed)
       expect_named(p, c(
         "kl", "weights", "dis", "sub_fit", "solution_terms",
         "p_type", "family", "intercept", "extract_model_data",
         "refmodel"
-      ),
-      ignore.order = TRUE, info = i_inf
-      )
+      ), ignore.order = TRUE, info = i)
     }
   })
 
   test_that(paste(
-    "project: projecting full model onto itself does not change",
-    "results"
+    "project: projecting the reference model onto the full model (i.e.,",
+    "itself) does not change results on average (even though this is not",
+    "guaranteed; see the comments)"
   ), {
-    tol <- 1e-3
+    # NOTE: Projecting the reference model onto the full model (i.e., itself)
+    # does not necessarily have to give results close to the reference model's
+    # since in contrast to the reference model, the projection is "fitting to
+    # the fit" of the reference model, not to the observed response. The fact
+    # that here, the tolerance for the Gaussian reference model needs to be
+    # increased (see below) might be an indicator for this inequality.
+    tol <- setNames(rep(1e-3, length(fit_list)), fam_nms)
+    tol["gauss"] <- 0.25
 
-    for (i in 1:length(fit_list)) {
+    for (i in fam_nms) {
       fit <- fit_list[[i]]
       draws <- as.data.frame(fit)
       alpha_ref <- draws[, "(Intercept)"]
@@ -295,18 +290,17 @@ if (require(rstanarm)) {
       SW(vs <- varsel(fit))
       proj <- project(vs,
                       solution_terms = vs$solution_terms[1:nterms],
-                      seed = seed, ndraws = S
-      )
+                      seed = seed, ndraws = S)
 
       # test alpha and beta
       coefs <- as.matrix(proj)
       dalpha <- abs(mean(coefs[, 1]) - mean(alpha_ref))
       order <- match(colnames(fit_list[[i]]$data), proj$solution_terms)
       order <- order[!is.na(order)]
-      dbeta <- max(abs(colMeans(coefs[, -1, drop = FALSE][, order])
-                       - colMeans(beta_ref)))
-      expect_lt(dalpha, tol)
-      expect_lt(dbeta, tol)
+      dbeta <- max(abs(colMeans(coefs[, -1, drop = FALSE][, order]) -
+                         colMeans(beta_ref)))
+      expect_lt(dalpha, tol[!!i])
+      expect_lt(dbeta, tol[!!i])
     }
   })
 
@@ -314,8 +308,7 @@ if (require(rstanarm)) {
     SW({
       cvs <- cv_varsel(fit_binom,
                        nterms_max = 3, verbose = FALSE, ndraws = ndraws,
-                       ndraws_pred = ndraws_pred
-      )
+                       ndraws_pred = ndraws_pred)
       p <- project(cvs, nterms = 3)
     })
     expect_length(p$solution_terms, 3)
