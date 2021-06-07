@@ -62,8 +62,9 @@ if (require(rstanarm)) {
   # "Using formula(x) is deprecated when x is a character vector of length > 1"
   # (see GitHub issue #136), so temporarily wrap the following calls in SW():
   SW(vs_list <- lapply(fit_list, varsel,
-                       nterms_max = nterms,
-                       verbose = FALSE))
+                       nclusters = nclusters_tst,
+                       nclusters_pred = nclusters_pred_tst,
+                       nterms_max = nterms, verbose = FALSE))
   SW(cvs_list <- lapply(fit_list["binom"], cv_varsel,
                         nclusters = nclusters_tst,
                         nclusters_pred = nclusters_pred_tst,
@@ -81,7 +82,7 @@ if (require(rstanarm)) {
     "to correct output structure"
   ), {
     for (i in fam_nms) {
-      p <- project(vs_list[[i]], nterms = 0:nterms)
+      p <- project(vs_list[[i]], nterms = 0:nterms, nclusters = nclusters_tst)
       expect_type(p, "list")
       expect_length(p, nterms + 1)
       expect_true(.is_proj_list(p), info = i)
@@ -96,10 +97,11 @@ if (require(rstanarm)) {
         # Number of projected draws should be equal to the default of `ndraws`
         # (note that more extensive tests for as.matrix.projection() may be
         # found in "test_as_matrix.R"):
-        expect_length(p[[!!j]]$sub_fit, ndraws_default)
-        expect_length(p[[!!j]]$weights, ndraws_default)
-        expect_length(p[[!!j]]$dis, ndraws_default)
-        expect_identical(NROW(as.matrix(p[[!!j]])), ndraws_default, info = i)
+        expect_length(p[[!!j]]$sub_fit, nclusters_tst)
+        expect_length(p[[!!j]]$weights, nclusters_tst)
+        expect_length(p[[!!j]]$dis, nclusters_tst)
+        SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
+        expect_identical(nprjdraws, nclusters_tst, info = i)
         # The j-th element should have j solution terms (usually excluding the
         # intercept, but counting it for `j == 1`):
         expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
@@ -148,6 +150,31 @@ if (require(rstanarm)) {
     klseq <- sapply(p, function(x) sum(x$kl))
     klseq <- klseq[-1]
     expect_identical(klseq, cummin(klseq), info = i)
+  })
+
+  test_that(paste(
+    "specifying a fitted model `object` leads to correct output structure"
+  ), {
+    for (i in fam_nms) {
+      if (i == "binom") {
+        # For the binomial family with > 1 trials, we expect a warning (see
+        # GitHub issue #136):
+        warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
+                                 "is a character vector of length > 1")
+      } else {
+        warn_prj_expect <- NA
+      }
+      expect_warning(p <- project(fit_list[[i]], solution_terms = solterms_tst),
+                     warn_prj_expect, info = i)
+      expect_s3_class(p, "projection")
+      expect_named(p, projection_nms, info = i)
+      expect_length(p$sub_fit, ndraws_default)
+      expect_length(p$weights, ndraws_default)
+      expect_length(p$dis, ndraws_default)
+      expect_identical(NROW(as.matrix(p)), ndraws_default, info = i)
+      solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
+      expect_identical(p$solution_terms, solterms_out)
+    }
   })
 
   test_that("specifying `nterms` incorrectly leads to an error", {
