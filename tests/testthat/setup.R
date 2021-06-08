@@ -1,5 +1,3 @@
-library(rstanarm)
-
 seed <- 1235
 set.seed(seed)
 n <- 40L
@@ -23,14 +21,18 @@ ys <- lapply(fam_nms, function(fam_nm) {
   get(paste0("df_", fam_nm))$y
 })
 SW({
-  fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                        family = f_gauss, data = df_gauss,
-                        weights = weights, offset = offset,
-                        chains = chains, seed = seed, iter = iter, QR = TRUE)
-  fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                        family = f_binom, data = df_binom,
-                        weights = weights,
-                        chains = chains, seed = seed, iter = iter)
+  fit_gauss <- rstanarm::stan_glm(
+    y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+    family = f_gauss, data = df_gauss,
+    weights = weights, offset = offset,
+    chains = chains, seed = seed, iter = iter, QR = TRUE
+  )
+  fit_binom <- rstanarm::stan_glm(
+    cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
+    family = f_binom, data = df_binom,
+    offset = offset, # `weights` is not needed when using the cbind() syntax
+    chains = chains, seed = seed, iter = iter
+  )
 })
 fit_list <- lapply(fam_nms, function(fam_nm) {
   get(paste0("fit_", fam_nm))
