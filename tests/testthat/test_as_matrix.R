@@ -1,7 +1,7 @@
 context("as.matrix.projection")
 
 # Gaussian and binomial reference models without multilevel or additive terms:
-settings_list <- list(
+settings_list_glm <- list(
   gauss = list(
     refmod = refmods_glm$gauss,
     solterms_list = list(character(), solterms_tst),
@@ -14,7 +14,7 @@ settings_list <- list(
   )
 )
 
-for (settings_obj in settings_list) {
+for (settings_obj in settings_list_glm) {
   for (solterms_tsttmp in settings_obj$solterms_list) {
     for (ndraws_tsttmp in settings_obj$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
@@ -58,7 +58,7 @@ for (settings_obj in settings_list) {
 
 # GLMMs -------------------------------------------------------------------
 
-settings_list <- list(
+settings_list_glmm <- list(
   gauss = list(
     refmod = refmods_glmm$gauss,
     solterms_list = list(character(),
@@ -73,7 +73,7 @@ settings_list <- list(
   )
 )
 
-for (settings_obj in settings_list) {
+for (settings_obj in settings_list_glmm) {
   for (solterms_tsttmp in settings_obj$solterms_list) {
     for (ndraws_tsttmp in settings_obj$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
