@@ -4,24 +4,24 @@ context("as.matrix.projection")
 settings_list <- list(
   gauss = list(
     refmod = refmods_glm$gauss,
-    solution_terms_list = list(character(), solterms_tst),
+    solterms_list = list(character(), solterms_tst),
     ndraws_list = list(25L, 2L, 1L)
   ),
   binom = list(
     refmod = refmods_glm$binom,
-    solution_terms_list = list(solterms_tst),
+    solterms_list = list(solterms_tst),
     ndraws_list = list(25L)
   )
 )
 
 for (fam_type in settings_list) {
-  for (solution_terms in fam_type$solution_terms_list) {
+  for (solterms_tsttmp in fam_type$solterms_list) {
     for (ndraws in fam_type$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = fam_type$refmod$family$family,
-                               solution_terms,
+                               solterms_tsttmp,
                                ndraws))
       prj <- project(fam_type$refmod,
-                     solution_terms = solution_terms,
+                     solution_terms = solterms_tsttmp,
                      ndraws = ndraws)
 
       # Expected warning (more precisely: regexp which is matched against the
@@ -43,12 +43,12 @@ for (fam_type in settings_list) {
       test_that("as.matrix.projection()'s output structure is correct", {
         expect_equal(
           dim(m),
-          c(ndraws, length(solution_terms) + 1 + length(npars_fam)),
+          c(ndraws, length(solterms_tsttmp) + 1 + length(npars_fam)),
           info = tstsetup
         )
         expect_identical(
           colnames(m),
-          c(paste0("b_", c("Intercept", solution_terms)), npars_fam),
+          c(paste0("b_", c("Intercept", solterms_tsttmp)), npars_fam),
           info = tstsetup
         )
       })
@@ -61,26 +61,26 @@ for (fam_type in settings_list) {
 settings_list <- list(
   gauss = list(
     refmod = refmods_glmm$gauss,
-    solution_terms_list = list(character(),
-                               solterms_tst,
-                               c("x.3", "(1 | x.gr)", "x.1 + (x.1 | x.gr)")),
+    solterms_list = list(character(),
+                         solterms_tst,
+                         c("x.3", "(1 | x.gr)", "x.1 + (x.1 | x.gr)")),
     ndraws_list = list(25L, 2L, 1L)
   ),
   binom = list(
     refmod = refmods_glmm$binom,
-    solution_terms_list = list(solterms_tst),
+    solterms_list = list(solterms_tst),
     ndraws_list = list(25L)
   )
 )
 
 for (fam_type in settings_list) {
-  for (solution_terms in fam_type$solution_terms_list) {
+  for (solterms_tsttmp in fam_type$solterms_list) {
     for (ndraws in fam_type$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = fam_type$refmod$family$family,
-                               solution_terms,
+                               solterms_tsttmp,
                                ndraws))
       prj <- project(fam_type$refmod,
-                     solution_terms = solution_terms,
+                     solution_terms = solterms_tsttmp,
                      ndraws = ndraws)
 
       # Expected warning (more precisely: regexp which is matched against the
@@ -102,38 +102,38 @@ for (fam_type in settings_list) {
       test_that("as.matrix.projection()'s output structure is correct", {
         colnms_prjmat_expect <- c(
           "Intercept",
-          grep("^x\\.[[:digit:]]$", solution_terms,
+          grep("^x\\.[[:digit:]]$", solterms_tsttmp,
                value = TRUE)
         )
-        if ("x.1 + (x.1 | x.gr)" %in% solution_terms) {
+        if ("x.1 + (x.1 | x.gr)" %in% solterms_tsttmp) {
           colnms_prjmat_expect <- c(colnms_prjmat_expect, "x.1")
         }
         colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
-        if ("(1 | x.gr)" %in% solution_terms) {
+        if ("(1 | x.gr)" %in% solterms_tsttmp) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             "sd_x.gr__Intercept"
           )
         }
-        if ("x.1 + (x.1 | x.gr)" %in% solution_terms) {
+        if ("x.1 + (x.1 | x.gr)" %in% solterms_tsttmp) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             "sd_x.gr__x.1"
           )
         }
-        if (all(c("(1 | x.gr)", "x.1 + (x.1 | x.gr)") %in% solution_terms)) {
+        if (all(c("(1 | x.gr)", "x.1 + (x.1 | x.gr)") %in% solterms_tsttmp)) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             "cor_x.gr__Intercept__x.1"
           )
         }
-        if ("(1 | x.gr)" %in% solution_terms) {
+        if ("(1 | x.gr)" %in% solterms_tsttmp) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             paste0("r_x.gr[gr", seq_len(ngr), ",Intercept]")
           )
         }
-        if ("x.1 + (x.1 | x.gr)" %in% solution_terms) {
+        if ("x.1 + (x.1 | x.gr)" %in% solterms_tsttmp) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             paste0("r_x.gr[gr", seq_len(ngr), ",x.1]")
