@@ -63,7 +63,7 @@ settings_list <- list(
     refmod = refmods_glmm$gauss,
     solution_terms_list = list(character(),
                                solterms_tst,
-                               c("x.3", "(1 | xgr)", "x.1 + (x.1 | xgr)")),
+                               c("x.3", "(1 | x.gr)", "x.1 + (x.1 | x.gr)")),
     ndraws_list = list(25L, 2L, 1L)
   ),
   binom = list(
@@ -105,38 +105,38 @@ for (fam_type in settings_list) {
           grep("^x\\.[[:digit:]]$", solution_terms,
                value = TRUE)
         )
-        if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
+        if ("x.1 + (x.1 | x.gr)" %in% solution_terms) {
           colnms_prjmat_expect <- c(colnms_prjmat_expect, "x.1")
         }
         colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
-        if ("(1 | xgr)" %in% solution_terms) {
+        if ("(1 | x.gr)" %in% solution_terms) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
-            "sd_xgr__Intercept"
+            "sd_x.gr__Intercept"
           )
         }
-        if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
+        if ("x.1 + (x.1 | x.gr)" %in% solution_terms) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
-            "sd_xgr__x.1"
+            "sd_x.gr__x.1"
           )
         }
-        if (all(c("(1 | xgr)", "x.1 + (x.1 | xgr)") %in% solution_terms)) {
+        if (all(c("(1 | x.gr)", "x.1 + (x.1 | x.gr)") %in% solution_terms)) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
-            "cor_xgr__Intercept__x.1"
+            "cor_x.gr__Intercept__x.1"
           )
         }
-        if ("(1 | xgr)" %in% solution_terms) {
+        if ("(1 | x.gr)" %in% solution_terms) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
-            paste0("r_xgr[gr", seq_len(ngr), ",Intercept]")
+            paste0("r_x.gr[gr", seq_len(ngr), ",Intercept]")
           )
         }
-        if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
+        if ("x.1 + (x.1 | x.gr)" %in% solution_terms) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
-            paste0("r_xgr[gr", seq_len(ngr), ",x.1]")
+            paste0("r_x.gr[gr", seq_len(ngr), ",x.1]")
           )
         }
         colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
