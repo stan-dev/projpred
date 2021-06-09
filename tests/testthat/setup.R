@@ -28,9 +28,9 @@ solterms_tst <- c("x.2", "x.4")
 ## Data -------------------------------------------------------------------
 
 n_obs <- 40L
-nterms_pop <- 5L
-x_pop <- matrix(rnorm(n_obs * nterms_pop, 0, 1), n_obs, nterms_pop)
-b_pop <- runif(nterms_pop) - 0.5
+nterms_glm <- 5L
+x_pop <- matrix(rnorm(n_obs * nterms_glm, 0, 1), n_obs, nterms_glm)
+b_pop <- runif(nterms_glm) - 0.5
 icpt <- -0.42
 offs <- rnorm(n_obs)
 eta_glm <- icpt +
@@ -49,6 +49,9 @@ ys_glm <- lapply(fam_nms, function(fam_nm) {
 
 ## Fit --------------------------------------------------------------------
 
+# Notes:
+#   * Argument `weights` is not needed when using the cbind() syntax (for the
+#     binomial family with > 1 trials).
 SW({
   fit_gauss_glm <- rstanarm::stan_glm(
     y_gauss ~ x.1 + x.2 + x.3 + x.4 + x.5,
@@ -59,7 +62,7 @@ SW({
   fit_binom_glm <- rstanarm::stan_glm(
     cbind(y_binom, w_obs_col - y_binom) ~ x.1 + x.2 + x.3 + x.4 + x.5,
     family = f_binom, data = df_glm,
-    offset = offs, # `weights` is not needed when using the cbind() syntax
+    offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
 })
@@ -76,7 +79,7 @@ SW(refmods_glm <- lapply(fits_glm, get_refmodel))
 vss_glm <- lapply(refmods_glm, varsel,
                   nclusters = nclusters_tst,
                   nclusters_pred = nclusters_pred_tst,
-                  nterms_max = nterms_pop, verbose = FALSE)
+                  nterms_max = nterms_glm, verbose = FALSE)
 
 # GLMMs -------------------------------------------------------------------
 
@@ -101,10 +104,13 @@ ys_glmm <- lapply(fam_nms, function(fam_nm) {
 
 # Add the number of multilevel terms to the number of population-level terms to
 # obtain the total number of terms:
-nterms_all <- nterms_pop + length(c("(1 | x.gr)", "(x.1 | x.gr)"))
+nterms_glmm <- nterms_glm + length(c("(1 | x.gr)", "(x.1 | x.gr)"))
 
 ## Fit --------------------------------------------------------------------
 
+# Notes:
+#   * Argument `weights` is not needed when using the cbind() syntax (for the
+#     binomial family with > 1 trials).
 SW({
   fit_gauss_glmm <- rstanarm::stan_glmer(
     y_gauss ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | x.gr),
@@ -116,7 +122,7 @@ SW({
     cbind(y_binom, w_obs_col - y_binom) ~
       x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | x.gr),
     family = f_binom, data = df_glmm,
-    offset = offs, # `weights` is not needed when using the cbind() syntax
+    offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
 })
@@ -133,4 +139,88 @@ SW(refmods_glmm <- lapply(fits_glmm, get_refmodel))
 vss_glmm <- lapply(refmods_glmm, varsel,
                    nclusters = nclusters_tst,
                    nclusters_pred = nclusters_pred_tst,
-                   nterms_max = nterms_pop, verbose = FALSE)
+                   nterms_max = nterms_glmm, verbose = FALSE)
+
+# GAMs --------------------------------------------------------------------
+
+## Data -------------------------------------------------------------------
+## Note: An alternative to mgcv::gamSim() might be the example from
+## `?mgcv::concurvity` or deriving an own dataset based on the dataset for the
+## GLMs above.
+
+.Random.seed_gauss <- .Random.seed
+df_gam_gauss <- mgcv::gamSim(eg = 5, n = n_obs, dist = "normal", scale = disp,
+                             verbose = FALSE)
+.Random.seed_bu <- .Random.seed
+.Random.seed <- .Random.seed_gauss
+df_gam_binom <- mgcv::gamSim(eg = 5, n = n_obs, dist = "normal", scale = 0,
+                             verbose = FALSE)
+.Random.seed <- .Random.seed_bu
+rm(.Random.seed_gauss)
+rm(.Random.seed_bu)
+stopifnot(identical(
+  df_gam_gauss[, setdiff(names(df_gam_gauss), "y")],
+  df_gam_binom[, setdiff(names(df_gam_binom), "y")]
+))
+### Somehow mgcv::gamSim() always simulates 200 observations, not `n`:
+df_gam_gauss <- head(df_gam_gauss, n_obs)
+df_gam_binom <- head(df_gam_binom, n_obs)
+###
+df_gam_binom$y <- df_gam_binom$y - 4 * as.numeric(df_gam_binom$x0)
+df_gam_binom$y <- rbinom(n_obs, w_obs, f_binom$linkinv(df_gam_binom$y))
+df_gam <- data.frame(y_gauss = df_gam_gauss$y,
+                     y_binom = df_gam_binom$y,
+                     df_gam_gauss[, setdiff(names(df_gam_gauss), "y")],
+                     w_obs_col = w_obs, offs_col = offs)
+names(df_gam) <- sub("^x", "x.", names(df_gam))
+### For shifting the enumeration:
+# names(df_gam)[grep("^x", names(df_gam))] <- paste0(
+#   "x.",
+#   as.numeric(sub("^x", "", grep("^x", names(df_gam), value = TRUE))) + 1
+# )
+###
+ys_gam <- lapply(fam_nms, function(fam_nm) {
+  df_gam[[paste0("y_", fam_nm)]]
+})
+rm(df_gam_gauss)
+rm(df_gam_binom)
+
+nterms_gam <- length("x.0") + 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)"))
+
+## Fit --------------------------------------------------------------------
+
+# Notes:
+#   * Argument `weights` is not needed when using the cbind() syntax (for the
+#     binomial family with > 1 trials).
+#   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
+#     offset() in the formula.
+SW({
+  fit_gauss_gam <- rstanarm::stan_gamm4(
+    y_gauss ~ x.0 + s(x.1) + s(x.2) + s(x.3) + offset(offs_col),
+    random = NULL,
+    family = f_gauss, data = df_gam,
+    weights = w_obs,
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+  )
+  fit_binom_gam <- rstanarm::stan_gamm4(
+    cbind(y_binom, w_obs_col - y_binom) ~
+      x.0 + s(x.1) + s(x.2) + s(x.3) + offset(offs_col),
+    random = NULL,
+    family = f_binom, data = df_gam,
+    chains = chains_tst, seed = seed_tst, iter = iter_tst
+  )
+})
+fits_gam <- lapply(fam_nms, function(fam_nm) {
+  get(paste0("fit_", fam_nm, "_gam"))
+})
+
+## projpred ---------------------------------------------------------------
+
+# For the binomial family with > 1 trials, we currently expect the warning
+# "Using formula(x) is deprecated when x is a character vector of length > 1"
+# (see GitHub issue #136), so temporarily wrap the following call in SW():
+SW(refmods_gam <- lapply(fits_gam, get_refmodel))
+vss_gam <- lapply(refmods_gam, varsel,
+                  nclusters = nclusters_tst,
+                  nclusters_pred = nclusters_pred_tst,
+                  nterms_max = nterms_gam, verbose = FALSE)
