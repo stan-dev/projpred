@@ -17,6 +17,9 @@ settings_list <- list(
 for (fam_type in settings_list) {
   for (solution_terms in fam_type$solution_terms_list) {
     for (ndraws in fam_type$ndraws_list) {
+      tstsetup <- unlist(nlist(fam_nm = fam_type$refmod$family$family,
+                               solution_terms,
+                               ndraws))
       prj <- project(fam_type$refmod,
                      solution_terms = solution_terms,
                      ndraws = ndraws)
@@ -30,7 +33,7 @@ for (fam_type in settings_list) {
         warn_prjmat_expect <- "the clusters might have different weights"
       }
 
-      expect_warning(m <- as.matrix(prj), warn_prjmat_expect)
+      expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
 
       if (fam_type$refmod$family$family == "gaussian") {
         npars_fam <- "sigma"
@@ -40,11 +43,13 @@ for (fam_type in settings_list) {
       test_that("as.matrix.projection()'s output structure is correct", {
         expect_equal(
           dim(m),
-          c(ndraws, length(solution_terms) + 1 + length(npars_fam))
+          c(ndraws, length(solution_terms) + 1 + length(npars_fam)),
+          info = tstsetup
         )
         expect_identical(
           colnames(m),
-          c(paste0("b_", c("Intercept", solution_terms)), npars_fam)
+          c(paste0("b_", c("Intercept", solution_terms)), npars_fam),
+          info = tstsetup
         )
       })
     }
@@ -71,6 +76,9 @@ settings_list <- list(
 for (fam_type in settings_list) {
   for (solution_terms in fam_type$solution_terms_list) {
     for (ndraws in fam_type$ndraws_list) {
+      tstsetup <- unlist(nlist(fam_nm = fam_type$refmod$family$family,
+                               solution_terms,
+                               ndraws))
       prj <- project(fam_type$refmod,
                      solution_terms = solution_terms,
                      ndraws = ndraws)
@@ -84,7 +92,7 @@ for (fam_type in settings_list) {
         warn_prjmat_expect <- "the clusters might have different weights"
       }
 
-      expect_warning(m <- as.matrix(prj), warn_prjmat_expect)
+      expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
 
       if (fam_type$refmod$family$family == "gaussian") {
         npars_fam <- "sigma"
@@ -133,8 +141,9 @@ for (fam_type in settings_list) {
         }
         colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
 
-        expect_equal(dim(m), c(ndraws, length(colnms_prjmat_expect)))
-        expect_identical(colnames(m), colnms_prjmat_expect)
+        expect_equal(dim(m), c(ndraws, length(colnms_prjmat_expect)),
+                     info = tstsetup)
+        expect_identical(colnames(m), colnms_prjmat_expect, info = tstsetup)
       })
     }
   }
