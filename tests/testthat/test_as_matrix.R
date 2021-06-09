@@ -16,17 +16,17 @@ settings_list <- list(
 
 for (fam_type in settings_list) {
   for (solterms_tsttmp in fam_type$solterms_list) {
-    for (ndraws in fam_type$ndraws_list) {
+    for (ndraws_tsttmp in fam_type$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = fam_type$refmod$family$family,
                                solterms_tsttmp,
-                               ndraws))
+                               ndraws_tsttmp))
       prj <- project(fam_type$refmod,
                      solution_terms = solterms_tsttmp,
-                     ndraws = ndraws)
+                     ndraws = ndraws_tsttmp)
 
       # Expected warning (more precisely: regexp which is matched against the
       # warning; NA means no warning) for as.matrix.projection():
-      if (ndraws > 20) {
+      if (ndraws_tsttmp > 20) {
         warn_prjmat_expect <- NA
       } else {
         # Clustered projection, so we expect a warning:
@@ -41,9 +41,9 @@ for (fam_type in settings_list) {
         npars_fam <- character()
       }
       test_that("as.matrix.projection()'s output structure is correct", {
-        expect_equal(
+        expect_identical(
           dim(m),
-          c(ndraws, length(solterms_tsttmp) + 1 + length(npars_fam)),
+          c(ndraws_tsttmp, length(solterms_tsttmp) + 1L + length(npars_fam)),
           info = tstsetup
         )
         expect_identical(
@@ -75,17 +75,17 @@ settings_list <- list(
 
 for (fam_type in settings_list) {
   for (solterms_tsttmp in fam_type$solterms_list) {
-    for (ndraws in fam_type$ndraws_list) {
+    for (ndraws_tsttmp in fam_type$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = fam_type$refmod$family$family,
                                solterms_tsttmp,
-                               ndraws))
+                               ndraws_tsttmp))
       prj <- project(fam_type$refmod,
                      solution_terms = solterms_tsttmp,
-                     ndraws = ndraws)
+                     ndraws = ndraws_tsttmp)
 
       # Expected warning (more precisely: regexp which is matched against the
       # warning; NA means no warning) for as.matrix.projection():
-      if (ndraws > 20) {
+      if (ndraws_tsttmp > 20) {
         warn_prjmat_expect <- NA
       } else {
         # Clustered projection, so we expect a warning:
@@ -141,8 +141,8 @@ for (fam_type in settings_list) {
         }
         colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
 
-        expect_equal(dim(m), c(ndraws, length(colnms_prjmat_expect)),
-                     info = tstsetup)
+        expect_identical(dim(m), c(ndraws_tsttmp, length(colnms_prjmat_expect)),
+                         info = tstsetup)
         expect_identical(colnames(m), colnms_prjmat_expect, info = tstsetup)
       })
     }
