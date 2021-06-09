@@ -258,9 +258,10 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
-  max_nv_possible <- count_terms_in_formula(refmodel$formula)
   if (!is.null(search_terms)) {
     max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
+  } else {
+    max_nv_possible <- count_terms_in_formula(refmodel$formula)
   }
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
@@ -269,10 +270,9 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     stop("Reference models without an intercept are currently not supported.")
   }
   if (is.null(nterms_max)) {
-    nterms_max <- min(max_nv_possible, 20)
-  } else {
-    nterms_max <- min(max_nv_possible, nterms_max + 1)
+    nterms_max <- 19
   }
+  nterms_max <- min(max_nv_possible, nterms_max + 1)
 
   return(nlist(
     method, cv_search, intercept, nterms_max, nclusters,
