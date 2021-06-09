@@ -14,13 +14,13 @@ settings_list <- list(
   )
 )
 
-for (fam_type in settings_list) {
-  for (solterms_tsttmp in fam_type$solterms_list) {
-    for (ndraws_tsttmp in fam_type$ndraws_list) {
-      tstsetup <- unlist(nlist(fam_nm = fam_type$refmod$family$family,
+for (settings_obj in settings_list) {
+  for (solterms_tsttmp in settings_obj$solterms_list) {
+    for (ndraws_tsttmp in settings_obj$ndraws_list) {
+      tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
                                solterms_tsttmp,
                                ndraws_tsttmp))
-      prj <- project(fam_type$refmod,
+      prj <- project(settings_obj$refmod,
                      solution_terms = solterms_tsttmp,
                      ndraws = ndraws_tsttmp)
 
@@ -35,9 +35,9 @@ for (fam_type in settings_list) {
 
       expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
 
-      if (fam_type$refmod$family$family == "gaussian") {
+      if (settings_obj$refmod$family$family == "gaussian") {
         npars_fam <- "sigma"
-      } else if (fam_type$refmod$family$family == "binomial") {
+      } else if (settings_obj$refmod$family$family == "binomial") {
         npars_fam <- character()
       }
       test_that("as.matrix.projection()'s output structure is correct", {
@@ -73,13 +73,13 @@ settings_list <- list(
   )
 )
 
-for (fam_type in settings_list) {
-  for (solterms_tsttmp in fam_type$solterms_list) {
-    for (ndraws_tsttmp in fam_type$ndraws_list) {
-      tstsetup <- unlist(nlist(fam_nm = fam_type$refmod$family$family,
+for (settings_obj in settings_list) {
+  for (solterms_tsttmp in settings_obj$solterms_list) {
+    for (ndraws_tsttmp in settings_obj$ndraws_list) {
+      tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
                                solterms_tsttmp,
                                ndraws_tsttmp))
-      prj <- project(fam_type$refmod,
+      prj <- project(settings_obj$refmod,
                      solution_terms = solterms_tsttmp,
                      ndraws = ndraws_tsttmp)
 
@@ -94,9 +94,9 @@ for (fam_type in settings_list) {
 
       expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
 
-      if (fam_type$refmod$family$family == "gaussian") {
+      if (settings_obj$refmod$family$family == "gaussian") {
         npars_fam <- "sigma"
-      } else if (fam_type$refmod$family$family == "binomial") {
+      } else if (settings_obj$refmod$family$family == "binomial") {
         npars_fam <- character()
       }
       test_that("as.matrix.projection()'s output structure is correct", {
