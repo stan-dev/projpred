@@ -7,6 +7,7 @@
 seed_tst <- 1235
 set.seed(seed_tst)
 source(testthat::test_path("helpers", "SW.R"))
+mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
 fam_nms <- setNames(nm = c("gauss", "binom"))
 
 # rstanarm setup ----------------------------------------------------------
@@ -23,29 +24,84 @@ nresample_clusters_default <- 1000L # Adopt this if the default is changed.
 seed2_tst <- 866028
 solterms_tst <- c("x.2", "x.4")
 
-# GLMs --------------------------------------------------------------------
-
-## Data -------------------------------------------------------------------
+# Data --------------------------------------------------------------------
 
 n_obs <- 40L
-nterms_glm <- 5L
-x_pop <- matrix(rnorm(n_obs * nterms_glm, 0, 1), n_obs, nterms_glm)
-b_pop <- runif(nterms_glm) - 0.5
+
+## Nonpooled ("fixed") effects --------------------------------------------
+
+nterms_cont <- 5L
+x_cont <- matrix(rnorm(n_obs * nterms_cont), n_obs, nterms_cont)
+b_cont <- runif(nterms_cont, min = -0.5, max = 0.5)
+
+nlvl_fix <- c(3L, 2L)
+nterms_cate <- length(nlvl_fix)
+x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
+  x_cate <- gl(n = nlvl_fix_i, k = floor(n_obs / nlvl_fix_i), length = n_obs,
+               labels = paste0("lvlx", seq_len(nlvl_fix_i)))
+  b_cate <- runif(nlvl_fix_i, min = -0.5, max = 0.5)
+  ### Using a model.matrix() approach:
+  # x_cate_mat <- model.matrix(~ 0 + x_cate)
+  # eta_cate <- x_cate_mat %*% b_cate
+  ###
+  ### Using an indexing approach:
+  eta_cate <- b_cate[x_cate]
+  ###
+  return(nlist(x_cate, eta_cate, b_cate))
+})
+
 icpt <- -0.42
 offs <- rnorm(n_obs)
 eta_glm <- icpt +
-  x_pop %*% b_pop +
+  x_cont %*% b_cont +
+  do.call("+", lapply(x_cate_list, "[[", "eta_cate")) +
   offs
-disp <- runif(1L, 1, 2)
-w_obs <- sample(1:4, n_obs, replace = TRUE)
+
+nterms_glm <- nterms_cont + nterms_cate
+
+## Partially pooled ("random") effects ------------------------------------
+
+nlvl_ran <- c(8L)
+# Multiply by 2 because of random intercepts and random slopes for
+# `x_cont[, 1]`:
+nterms_z <- length(nlvl_ran) * 2L
+z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
+  z <- gl(n = nlvl_ran_i, k = floor(n_obs / nlvl_ran_i), length = n_obs,
+          labels = paste0("lvlz", seq_len(nlvl_ran_i)))
+  r_icpts <- rnorm(nlvl_ran_i, sd = 0.8)
+  r_xco1 <- rnorm(nlvl_ran_i, sd = 0.8)
+  eta_z <- r_icpts[z] + r_xco1[z] * x_cont[, 1]
+  return(nlist(z, eta_z, r_icpts, r_xco1))
+})
+eta_glmm <- eta_glm +
+  do.call("+", lapply(z_list, "[[", "eta_z"))
+
+## Responses and dataset --------------------------------------------------
+
 f_gauss <- gaussian()
 f_binom <- binomial()
-df_glm <- data.frame(y_gauss = rnorm(n_obs, f_gauss$linkinv(eta_glm), disp),
-                     y_binom = rbinom(n_obs, w_obs, f_binom$linkinv(eta_glm)),
-                     x = x_pop, w_obs_col = w_obs, offs_col = offs)
-ys_glm <- lapply(fam_nms, function(fam_nm) {
-  df_glm[[paste0("y_", fam_nm)]]
+disp <- runif(1L, 1, 2)
+w_obs <- sample(1:4, n_obs, replace = TRUE)
+data_tst <- data.frame(
+  y_gauss_glm = rnorm(n_obs, f_gauss$linkinv(eta_glm), disp),
+  y_binom_glm = rbinom(n_obs, w_obs, f_binom$linkinv(eta_glm)),
+  y_gauss_glmm = rnorm(n_obs, f_gauss$linkinv(eta_glmm), disp),
+  y_binom_glmm = rbinom(n_obs, w_obs, f_binom$linkinv(eta_glmm)),
+  xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
+  z = lapply(z_list, "[[", "z"),
+  w_obs_col = w_obs, offs_col = offs
+)
+ys <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    data_tst[[paste("y", fam_nm, mod_nm, sep = "_")]]
+  })
 })
+
+# Add the number of multilevel terms to the number of population-level terms to
+# obtain the total number of terms:
+nterms_glmm <- nterms_glm + nterms_z
+
+# GLMs --------------------------------------------------------------------
 
 ## Fit --------------------------------------------------------------------
 
@@ -55,13 +111,13 @@ ys_glm <- lapply(fam_nms, function(fam_nm) {
 SW({
   fit_gauss_glm <- rstanarm::stan_glm(
     y_gauss ~ x.1 + x.2 + x.3 + x.4 + x.5,
-    family = f_gauss, data = df_glm,
+    family = f_gauss, data = data_tst,
     weights = w_obs, offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_glm <- rstanarm::stan_glm(
     cbind(y_binom, w_obs_col - y_binom) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-    family = f_binom, data = df_glm,
+    family = f_binom, data = data_tst,
     offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
@@ -83,42 +139,19 @@ vss_glm <- lapply(refmods_glm, varsel,
 
 # GLMMs -------------------------------------------------------------------
 
-## Data -------------------------------------------------------------------
-
-ngr <- 8L
-xgr <- gl(n = ngr, k = floor(n_obs / ngr), length = n_obs,
-          labels = paste0("gr", seq_len(ngr)))
-bgr_icpts <- rnorm(ngr, sd = 0.8)
-bgr_x.1 <- rnorm(ngr, sd = 0.8)
-eta_glmm <- icpt +
-  x_pop %*% b_pop +
-  bgr_icpts[xgr] +
-  bgr_x.1[xgr] * x_pop[, 1] +
-  offs
-df_glmm <- data.frame(y_gauss = rnorm(n_obs, f_gauss$linkinv(eta_glmm), disp),
-                      y_binom = rbinom(n_obs, w_obs, f_binom$linkinv(eta_glmm)),
-                      x = x_pop, x.gr = xgr, w_obs_col = w_obs, offs_col = offs)
-ys_glmm <- lapply(fam_nms, function(fam_nm) {
-  df_glmm[[paste0("y_", fam_nm)]]
-})
-
-# Add the number of multilevel terms to the number of population-level terms to
-# obtain the total number of terms:
-nterms_glmm <- nterms_glm + length(c("(1 | x.gr)", "(x.1 | x.gr)"))
-
 ## Fit --------------------------------------------------------------------
 
 SW({
   fit_gauss_glmm <- rstanarm::stan_glmer(
     y_gauss ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | x.gr),
-    family = f_gauss, data = df_glmm,
+    family = f_gauss, data = data_tst,
     weights = w_obs, offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_glmm <- rstanarm::stan_glmer(
     cbind(y_binom, w_obs_col - y_binom) ~
       x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | x.gr),
-    family = f_binom, data = df_glmm,
+    family = f_binom, data = data_tst,
     offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
@@ -140,6 +173,7 @@ vss_glmm <- lapply(refmods_glmm, varsel,
 
 # GAMs --------------------------------------------------------------------
 
+### TODO:
 ## Data -------------------------------------------------------------------
 
 # Notes:
@@ -171,6 +205,7 @@ ys_gam <- lapply(fam_nms, function(fam_nm) {
 
 nterms_gam <- length("x.0") + 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)"))
 solterms_tst_gam <- c("s(x.1)")
+###
 
 ## Fit --------------------------------------------------------------------
 
