@@ -148,29 +148,15 @@ vss_glmm <- lapply(refmods_glmm, varsel,
 ## `?mgcv::concurvity` or deriving an own dataset based on the dataset for the
 ## GLMs above.
 
-.Random.seed_gauss <- .Random.seed
-df_gam_gauss <- mgcv::gamSim(eg = 5, n = n_obs, dist = "normal", scale = disp,
-                             verbose = FALSE)
-.Random.seed_bu <- .Random.seed
-.Random.seed <- .Random.seed_gauss
-df_gam_binom <- mgcv::gamSim(eg = 5, n = n_obs, dist = "normal", scale = 0,
-                             verbose = FALSE)
-.Random.seed <- .Random.seed_bu
-rm(.Random.seed_gauss)
-rm(.Random.seed_bu)
-stopifnot(identical(
-  df_gam_gauss[, setdiff(names(df_gam_gauss), "y")],
-  df_gam_binom[, setdiff(names(df_gam_binom), "y")]
-))
-### Somehow mgcv::gamSim() always simulates 200 observations, not `n`:
-df_gam_gauss <- head(df_gam_gauss, n_obs)
-df_gam_binom <- head(df_gam_binom, n_obs)
+df_gam <- mgcv::gamSim(eg = 5, n = n_obs, dist = "normal", scale = 0,
+                       verbose = FALSE)
+### Somehow mgcv::gamSim() always simulates 200 observations, not `n = n_obs`:
+df_gam <- head(df_gam, n_obs)
 ###
-df_gam_binom$y <- df_gam_binom$y - 4 * as.numeric(df_gam_binom$x0)
-df_gam_binom$y <- rbinom(n_obs, w_obs, f_binom$linkinv(df_gam_binom$y))
-df_gam <- data.frame(y_gauss = df_gam_gauss$y,
-                     y_binom = df_gam_binom$y,
-                     df_gam_gauss[, setdiff(names(df_gam_gauss), "y")],
+eta_gam <- df_gam$y - 4 * as.numeric(df_gam$x0)
+df_gam <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gam, sd = disp),
+                     y_binom = rbinom(n_obs, w_obs, f_binom$linkinv(eta_gam)),
+                     df_gam[, setdiff(names(df_gam), "y")],
                      w_obs_col = w_obs, offs_col = offs)
 names(df_gam) <- sub("^x", "x.", names(df_gam))
 ### For shifting the enumeration:
@@ -182,8 +168,6 @@ names(df_gam) <- sub("^x", "x.", names(df_gam))
 ys_gam <- lapply(fam_nms, function(fam_nm) {
   df_gam[[paste0("y_", fam_nm)]]
 })
-rm(df_gam_gauss)
-rm(df_gam_binom)
 
 nterms_gam <- length("x.0") + 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)"))
 
