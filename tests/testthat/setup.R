@@ -301,7 +301,6 @@ fits_gamm <- lapply(fam_nms, function(fam_nm) {
 SW(refmods_gamm <- lapply(fits_gamm, get_refmodel))
 ### To avoid the error
 ### `Error in ranef(fit$mer) : could not find function "ranef"`:
-# loadNamespace("lme4")
 library(lme4)
 ###
 vss_gamm <- lapply(refmods_gamm, varsel,
@@ -309,6 +308,5 @@ vss_gamm <- lapply(refmods_gamm, varsel,
                    nclusters_pred = nclusters_pred_tst,
                    nterms_max = nterms_gamm, verbose = FALSE)
 ### Clean up (belongs to the code "To avoid the error [...]" above):
-# unloadNamespace("lme4")
-detach("package:lme4") # , unload = TRUE
+detach("package:lme4")
 ###
