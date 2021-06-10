@@ -1,6 +1,7 @@
 context("as.matrix.projection")
 
-# Gaussian and binomial reference models without multilevel or additive terms:
+# GLMs --------------------------------------------------------------------
+
 settings_list_glm <- list(
   gauss = list(
     refmod = refmods_glm$gauss,
