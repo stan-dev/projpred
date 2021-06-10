@@ -299,7 +299,16 @@ fits_gamm <- lapply(fam_nms, function(fam_nm) {
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
 SW(refmods_gamm <- lapply(fits_gamm, get_refmodel))
+### To avoid the error
+### `Error in ranef(fit$mer) : could not find function "ranef"`:
+# loadNamespace("lme4")
+library(lme4)
+###
 vss_gamm <- lapply(refmods_gamm, varsel,
                    nclusters = nclusters_tst,
                    nclusters_pred = nclusters_pred_tst,
                    nterms_max = nterms_gamm, verbose = FALSE)
+### Clean up (belongs to the code "To avoid the error [...]" above):
+# unloadNamespace("lme4")
+detach("package:lme4") # , unload = TRUE
+###
