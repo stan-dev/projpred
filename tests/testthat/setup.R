@@ -232,10 +232,10 @@ df_gamm <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gamm, sd = disp),
                       y_binom = rbinom(n_obs, w_obs, f_binom$linkinv(eta_gamm)),
                       df_gamm[, setdiff(
                         names(df_gamm),
-                        c("y", "f", "x0", "x1", "x2", "f3")
+                        c("y", "f", grep("^x", names(df_gamm), value = TRUE),
+                          "f3")
                       )],
                       w_obs_col = w_obs, offs_col = offs)
-names(df_gamm)[names(df_gamm) == "x3"] <- "x.4"
 names(df_gamm)[names(df_gamm) == "fac"] <- "x.gr"
 names(df_gamm)[grep("^f", names(df_gamm))] <- paste0(
   "x.",
@@ -256,8 +256,8 @@ ys_gamm <- lapply(fam_nms, function(fam_nm) {
   df_gamm[[paste0("y_", fam_nm)]]
 })
 
-nterms_gamm <- length(c("x.4")) + 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)")) +
-  length(c("(1 | x.gr)", "(x.4 | x.gr)"))
+nterms_gamm <- 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)")) +
+  length(c("(1 | x.gr)", "(x.1 | x.gr)"))
 
 ## Fit --------------------------------------------------------------------
 
@@ -272,21 +272,18 @@ nterms_gamm <- length(c("x.4")) + 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)")) +
 #     rstanarm::stan_gamm4() seems to be unable to support the cbind() syntax
 #     (for the binomial family with > 1 trials). Therefore, use argument
 #     `weights` instead, together with `y_binom` transformed to a proportion.
-#   * According to, e.g., the example from `?gamm4::gamm4`, gamm4 doesn't expect
-#     terms with random slopes (here `x.4`) to be also mentioned among the
-#     fixed-effect terms.
 df_gamm$y_binom <- df_gamm$y_binom / w_obs
 SW({
   fit_gauss_gamm <- rstanarm::stan_gamm4(
     y_gauss ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
-    random = ~ (x.4 | x.gr),
+    random = ~ (x.1 | x.gr),
     family = f_gauss, data = df_gamm,
     weights = w_obs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst # , QR = TRUE
   )
   fit_binom_gamm <- rstanarm::stan_gamm4(
     y_binom ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
-    random = ~ (x.4 | x.gr),
+    random = ~ (x.1 | x.gr),
     family = f_binom, data = df_gamm,
     weights = w_obs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
