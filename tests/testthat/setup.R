@@ -302,15 +302,14 @@ SW(refmods_gamm <- lapply(fits_gamm, get_refmodel))
 ###_____________________________________________________________________________
 ### Currently throws the error
 ### `Error in str2lang(x) [...]: unexpected end of input`:
-# ### To avoid the error
-# ### `Error in ranef(fit$mer) : could not find function "ranef"`:
+# ### To avoid issue #144:
 # library(lme4)
 # ###
 # vss_gamm <- lapply(refmods_gamm, varsel,
 #                    nclusters = nclusters_tst,
 #                    nclusters_pred = nclusters_pred_tst,
 #                    nterms_max = nterms_gamm, verbose = FALSE)
-# ### Clean up (belongs to the code "To avoid the error [...]" above):
+# ### Clean up (belongs to the fix for issue #144 above):
 # detach("package:lme4")
 # ###
 ###_____________________________________________________________________________
