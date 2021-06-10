@@ -170,6 +170,7 @@ ys_gam <- lapply(fam_nms, function(fam_nm) {
 })
 
 nterms_gam <- length("x.0") + 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)"))
+solterms_tst_gam <- c("s(x.1)")
 
 ## Fit --------------------------------------------------------------------
 
