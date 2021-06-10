@@ -207,101 +207,100 @@ vss_gam <- lapply(refmods_gam, varsel,
                   nclusters_pred = nclusters_pred_tst,
                   nterms_max = nterms_gam, verbose = FALSE)
 
-# GAMMs -------------------------------------------------------------------
-
-## Data -------------------------------------------------------------------
-
-# Notes:
-#   * Have a look at the source code of mgcv::gamSim() for the underlying truth.
-#   * An alternative to mgcv::gamSim() might be the example from
-#     `?mgcv::concurvity` or deriving an own dataset based on the dataset for
-#     the GLMMs above.
-### For `eg = 6`, mgcv::gamSim() requires `n = n_obs` to be divisible by 4
-### (which is probably a bug):
-stopifnot(identical(n_obs %% 4L, 0L))
-###
-### A bug in mgcv::gamSim() causes `eg = 6` to not respect `verbose = FALSE`
-### properly, so we use `invisible(capture.output(<...>))`:
-invisible(capture.output(
-  df_gamm <- mgcv::gamSim(eg = 6, n = n_obs, dist = "normal", scale = 0,
-                          verbose = FALSE)
-))
-###
-eta_gamm <- df_gamm$y - 7 * as.numeric(df_gamm$fac)
-df_gamm <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gamm, sd = disp),
-                      y_binom = rbinom(n_obs, w_obs, f_binom$linkinv(eta_gamm)),
-                      df_gamm[, setdiff(
-                        names(df_gamm),
-                        c("y", "f", grep("^x", names(df_gamm), value = TRUE),
-                          "f3")
-                      )],
-                      w_obs_col = w_obs, offs_col = offs)
-names(df_gamm)[names(df_gamm) == "fac"] <- "x.gr"
-names(df_gamm)[grep("^f", names(df_gamm))] <- paste0(
-  "x.",
-  as.numeric(sub("^f", "", grep("^f", names(df_gamm), value = TRUE))) + 1
-)
-df_gamm_colsBegin <- c(grep("^y", names(df_gamm), value = TRUE),
-                       sort(grep("^x", names(df_gamm), value = TRUE)))
-df_gamm <- df_gamm[, c(df_gamm_colsBegin,
-                       setdiff(names(df_gamm), df_gamm_colsBegin))]
-rm(df_gamm_colsBegin)
-### For shifting the enumeration:
-# names(df_gamm)[grep("^x", names(df_gamm))] <- paste0(
-#   "x.",
-#   as.numeric(sub("^x", "", grep("^x", names(df_gamm), value = TRUE))) + 1
-# )
-###
-ys_gamm <- lapply(fam_nms, function(fam_nm) {
-  df_gamm[[paste0("y_", fam_nm)]]
-})
-
-nterms_gamm <- 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)")) +
-  length(c("(1 | x.gr)", "(x.1 | x.gr)"))
-
-## Fit --------------------------------------------------------------------
-
-# Notes:
-#   * In the presence of multilevel terms (argument `random`),
-#     rstanarm::stan_gamm4() seems to be unable to support an offset() in the
-#     formula. Therefore, omit the offset here.
-#   * In the presence of multilevel terms (argument `random`),
-#     rstanarm::stan_gamm4() seems to be unable to support `QR = TRUE`.
-#     Therefore, omit `QR = TRUE` here.
-#   * In the presence of multilevel terms (argument `random`),
-#     rstanarm::stan_gamm4() seems to be unable to support the cbind() syntax
-#     (for the binomial family with > 1 trials). Therefore, use argument
-#     `weights` instead, together with `y_binom` transformed to a proportion.
-df_gamm$y_binom <- df_gamm$y_binom / w_obs
-SW({
-  fit_gauss_gamm <- rstanarm::stan_gamm4(
-    y_gauss ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
-    random = ~ (x.1 | x.gr),
-    family = f_gauss, data = df_gamm,
-    weights = w_obs,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst # , QR = TRUE
-  )
-  fit_binom_gamm <- rstanarm::stan_gamm4(
-    y_binom ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
-    random = ~ (x.1 | x.gr),
-    family = f_binom, data = df_gamm,
-    weights = w_obs,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst
-  )
-})
-fits_gamm <- lapply(fam_nms, function(fam_nm) {
-  get(paste0("fit_", fam_nm, "_gamm"))
-})
-
-## projpred ---------------------------------------------------------------
-
-# For the binomial family with > 1 trials, we currently expect the warning
-# "Using formula(x) is deprecated when x is a character vector of length > 1"
-# (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(refmods_gamm <- lapply(fits_gamm, get_refmodel))
 ###_____________________________________________________________________________
-### Currently throws the error
-### `Error in str2lang(x) [...]: unexpected end of input`:
+### Currently deactivated because of issue #146:
+# # GAMMs -------------------------------------------------------------------
+#
+# ## Data -------------------------------------------------------------------
+#
+# # Notes:
+# #   * Have a look at the source code of mgcv::gamSim() for the underlying truth.
+# #   * An alternative to mgcv::gamSim() might be the example from
+# #     `?mgcv::concurvity` or deriving an own dataset based on the dataset for
+# #     the GLMMs above.
+# ### For `eg = 6`, mgcv::gamSim() requires `n = n_obs` to be divisible by 4
+# ### (which is probably a bug):
+# stopifnot(identical(n_obs %% 4L, 0L))
+# ###
+# ### A bug in mgcv::gamSim() causes `eg = 6` to not respect `verbose = FALSE`
+# ### properly, so we use `invisible(capture.output(<...>))`:
+# invisible(capture.output(
+#   df_gamm <- mgcv::gamSim(eg = 6, n = n_obs, dist = "normal", scale = 0,
+#                           verbose = FALSE)
+# ))
+# ###
+# eta_gamm <- df_gamm$y - 7 * as.numeric(df_gamm$fac)
+# df_gamm <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gamm, sd = disp),
+#                       y_binom = rbinom(n_obs, w_obs, f_binom$linkinv(eta_gamm)),
+#                       df_gamm[, setdiff(
+#                         names(df_gamm),
+#                         c("y", "f", grep("^x", names(df_gamm), value = TRUE),
+#                           "f3")
+#                       )],
+#                       w_obs_col = w_obs, offs_col = offs)
+# names(df_gamm)[names(df_gamm) == "fac"] <- "x.gr"
+# names(df_gamm)[grep("^f", names(df_gamm))] <- paste0(
+#   "x.",
+#   as.numeric(sub("^f", "", grep("^f", names(df_gamm), value = TRUE))) + 1
+# )
+# df_gamm_colsBegin <- c(grep("^y", names(df_gamm), value = TRUE),
+#                        sort(grep("^x", names(df_gamm), value = TRUE)))
+# df_gamm <- df_gamm[, c(df_gamm_colsBegin,
+#                        setdiff(names(df_gamm), df_gamm_colsBegin))]
+# rm(df_gamm_colsBegin)
+# ### For shifting the enumeration:
+# # names(df_gamm)[grep("^x", names(df_gamm))] <- paste0(
+# #   "x.",
+# #   as.numeric(sub("^x", "", grep("^x", names(df_gamm), value = TRUE))) + 1
+# # )
+# ###
+# ys_gamm <- lapply(fam_nms, function(fam_nm) {
+#   df_gamm[[paste0("y_", fam_nm)]]
+# })
+#
+# nterms_gamm <- 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)")) +
+#   length(c("(1 | x.gr)", "(x.1 | x.gr)"))
+#
+# ## Fit --------------------------------------------------------------------
+#
+# # Notes:
+# #   * In the presence of multilevel terms (argument `random`),
+# #     rstanarm::stan_gamm4() seems to be unable to support an offset() in the
+# #     formula. Therefore, omit the offset here.
+# #   * In the presence of multilevel terms (argument `random`),
+# #     rstanarm::stan_gamm4() seems to be unable to support `QR = TRUE`.
+# #     Therefore, omit `QR = TRUE` here.
+# #   * In the presence of multilevel terms (argument `random`),
+# #     rstanarm::stan_gamm4() seems to be unable to support the cbind() syntax
+# #     (for the binomial family with > 1 trials). Therefore, use argument
+# #     `weights` instead, together with `y_binom` transformed to a proportion.
+# df_gamm$y_binom <- df_gamm$y_binom / w_obs
+# SW({
+#   fit_gauss_gamm <- rstanarm::stan_gamm4(
+#     y_gauss ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
+#     random = ~ (x.1 | x.gr),
+#     family = f_gauss, data = df_gamm,
+#     weights = w_obs,
+#     chains = chains_tst, seed = seed_tst, iter = iter_tst # , QR = TRUE
+#   )
+#   fit_binom_gamm <- rstanarm::stan_gamm4(
+#     y_binom ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
+#     random = ~ (x.1 | x.gr),
+#     family = f_binom, data = df_gamm,
+#     weights = w_obs,
+#     chains = chains_tst, seed = seed_tst, iter = iter_tst
+#   )
+# })
+# fits_gamm <- lapply(fam_nms, function(fam_nm) {
+#   get(paste0("fit_", fam_nm, "_gamm"))
+# })
+#
+# ## projpred ---------------------------------------------------------------
+#
+# # For the binomial family with > 1 trials, we currently expect the warning
+# # "Using formula(x) is deprecated when x is a character vector of length > 1"
+# # (see GitHub issue #136), so temporarily wrap the following call in SW():
+# SW(refmods_gamm <- lapply(fits_gamm, get_refmodel))
 # ### To avoid issue #144:
 # library(lme4)
 # ###
