@@ -108,9 +108,6 @@ nterms_glmm <- nterms_glm + length(c("(1 | x.gr)", "(x.1 | x.gr)"))
 
 ## Fit --------------------------------------------------------------------
 
-# Notes:
-#   * Argument `weights` is not needed when using the cbind() syntax (for the
-#     binomial family with > 1 trials).
 SW({
   fit_gauss_glmm <- rstanarm::stan_glmer(
     y_gauss ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | x.gr),
@@ -177,8 +174,6 @@ nterms_gam <- length("x.0") + 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)"))
 ## Fit --------------------------------------------------------------------
 
 # Notes:
-#   * Argument `weights` is not needed when using the cbind() syntax (for the
-#     binomial family with > 1 trials).
 #   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
 #     offset() in the formula.
 SW({
@@ -267,16 +262,17 @@ nterms_gamm <- 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)")) +
 ## Fit --------------------------------------------------------------------
 
 # Notes:
-#   * Argument `weights` is not needed when using the cbind() syntax (for the
-#     binomial family with > 1 trials).
-#   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
-#     offset() in the formula.
 #   * In the presence of multilevel terms (argument `random`),
 #     rstanarm::stan_gamm4() seems to be unable to support an offset() in the
 #     formula. Therefore, omit the offset here.
 #   * In the presence of multilevel terms (argument `random`),
 #     rstanarm::stan_gamm4() seems to be unable to support `QR = TRUE`.
 #     Therefore, omit `QR = TRUE` here.
+#   * In the presence of multilevel terms (argument `random`),
+#     rstanarm::stan_gamm4() seems to be unable to support the cbind() syntax
+#     (for the binomial family with > 1 trials). Therefore, use argument
+#     `weights` instead, together with `y_binom` transformed to a proportion.
+df_gamm$y_binom <- df_gamm$y_binom / w_obs
 SW({
   fit_gauss_gamm <- rstanarm::stan_gamm4(
     y_gauss ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
@@ -286,10 +282,10 @@ SW({
     chains = chains_tst, seed = seed_tst, iter = iter_tst # , QR = TRUE
   )
   fit_binom_gamm <- rstanarm::stan_gamm4(
-    cbind(y_binom, w_obs_col - y_binom) ~
-      s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
+    y_binom ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
     random = ~ (x.1 | x.gr),
     family = f_binom, data = df_gamm,
+    weights = w_obs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
 })
