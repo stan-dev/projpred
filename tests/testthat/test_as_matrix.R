@@ -149,3 +149,59 @@ for (settings_obj in settings_list_glmm) {
     }
   }
 }
+
+# GAMs --------------------------------------------------------------------
+
+settings_list_gam <- list(
+  gauss = list(
+    refmod = refmods_gam$gauss,
+    solterms_list = list(character(),
+                         solterms_tst_gam,
+                         c(solterms_tst_gam, "s(x.2)")),
+    ndraws_list = list(25L, 2L, 1L)
+  ),
+  binom = list(
+    refmod = refmods_gam$binom,
+    solterms_list = list(solterms_tst_gam),
+    ndraws_list = list(25L)
+  )
+)
+
+for (settings_obj in settings_list_gam) {
+  for (solterms_tsttmp in settings_obj$solterms_list) {
+    for (ndraws_tsttmp in settings_obj$ndraws_list) {
+      tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
+                               solterms_tsttmp,
+                               ndraws_tsttmp))
+      prj <- project(settings_obj$refmod,
+                     solution_terms = solterms_tsttmp,
+                     ndraws = ndraws_tsttmp)
+
+      # Expected warning (more precisely: regexp which is matched against the
+      # warning; NA means no warning) for as.matrix.projection():
+      if (ndraws_tsttmp > 20) {
+        warn_prjmat_expect <- NA
+      } else {
+        # Clustered projection, so we expect a warning:
+        warn_prjmat_expect <- "the clusters might have different weights"
+      }
+
+      expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
+
+      if (settings_obj$refmod$family$family == "gaussian") {
+        npars_fam <- "sigma"
+      } else if (settings_obj$refmod$family$family == "binomial") {
+        npars_fam <- character()
+      }
+
+      par_nms_orig <- colnames(as.matrix(settings_obj$refmod$fit))
+      test_that("as.matrix.projection()'s output structure is correct", {
+        # TODO
+      })
+    }
+  }
+}
+
+# GAMMs -------------------------------------------------------------------
+
+# Currently deactivated (see `setup.R`).
