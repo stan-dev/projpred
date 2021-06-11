@@ -101,7 +101,9 @@ for (mod_nm in mod_nms) {
             )
           }
           if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
-            colnms_prjmat_expect <- c(colnms_prjmat_expect, "xco.1")
+            if (!"xco.1" %in% colnms_prjmat_expect) {
+              colnms_prjmat_expect <- c(colnms_prjmat_expect, "xco.1")
+            }
           }
           colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
           if ("(1 | z.1)" %in% solterms_crr) {
