@@ -55,11 +55,11 @@ x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
 })
 
 icpt <- -0.42
-offs <- rnorm(n_obs)
+offs_tst <- rnorm(n_obs)
 eta_glm <- icpt +
   x_cont %*% b_cont +
   do.call("+", lapply(x_cate_list, "[[", "eta_cate")) +
-  offs
+  offs_tst
 
 nterms_glm <- nterms_cont + nterms_cate
 
@@ -97,7 +97,7 @@ data_tst <- data.frame(
   y_binom_glmm = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_glmm)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
   z = lapply(z_list, "[[", "z"),
-  wobs_col = wobs_tst, offs_col = offs,
+  wobs_col = wobs_tst, offs_col = offs_tst,
   check.names = FALSE
 )
 ys <- lapply(mod_nms, function(mod_nm) {
@@ -121,14 +121,14 @@ SW({
   fit_gauss_glm <- rstanarm::stan_glm(
     y_gauss_glm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_gauss, data = data_tst,
-    weights = wobs_tst, offset = offs,
+    weights = wobs_tst, offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_glm <- rstanarm::stan_glm(
     cbind(y_binom_glm, wobs_col - y_binom_glm) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_binom, data = data_tst,
-    offset = offs,
+    offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
 })
@@ -155,14 +155,14 @@ SW({
   fit_gauss_glmm <- rstanarm::stan_glmer(
     y_gauss_glmm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_gauss, data = data_tst,
-    weights = wobs_tst, offset = offs,
+    weights = wobs_tst, offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_glmm <- rstanarm::stan_glmer(
     cbind(y_binom_glmm, wobs_col - y_binom_glmm) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_binom, data = data_tst,
-    offset = offs,
+    offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
 })
@@ -201,7 +201,7 @@ eta_gam <- df_gam$y - 4 * as.numeric(df_gam$x0)
 df_gam <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gam, sd = disp),
                      y_binom = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_gam)),
                      df_gam[, setdiff(names(df_gam), "y")],
-                     wobs_col = wobs_tst, offs_col = offs)
+                     wobs_col = wobs_tst, offs_col = offs_tst)
 names(df_gam) <- sub("^x", "x.", names(df_gam))
 ### For shifting the enumeration:
 # names(df_gam)[grep("^x", names(df_gam))] <- paste0(
@@ -283,7 +283,7 @@ vss_gam <- lapply(refmods_gam, varsel,
 #                         c("y", "f", grep("^x", names(df_gamm), value = TRUE),
 #                           "f3")
 #                       )],
-#                       wobs_col = wobs_tst, offs_col = offs)
+#                       wobs_col = wobs_tst, offs_col = offs_tst)
 # names(df_gamm)[names(df_gamm) == "fac"] <- "x.gr"
 # names(df_gamm)[grep("^f", names(df_gamm))] <- paste0(
 #   "x.",
