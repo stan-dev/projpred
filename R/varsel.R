@@ -258,16 +258,17 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
-  if (!is.null(search_terms)) {
-    max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
-  } else {
-    max_nv_possible <- count_terms_in_formula(refmodel$formula)
-  }
   if (is.null(intercept)) {
     intercept <- refmodel$intercept
   }
   if (!intercept) {
     stop("Reference models without an intercept are currently not supported.")
+  }
+
+  if (!is.null(search_terms)) {
+    max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
+  } else {
+    max_nv_possible <- count_terms_in_formula(refmodel$formula)
   }
   if (is.null(nterms_max)) {
     nterms_max <- 19
