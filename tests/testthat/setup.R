@@ -88,12 +88,12 @@ eta_glmm <- eta_glm +
 
 f_gauss <- gaussian()
 f_binom <- binomial()
-disp <- runif(1L, 1, 2)
+dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, n_obs, replace = TRUE)
 data_tst <- data.frame(
-  y_gauss_glm = rnorm(n_obs, f_gauss$linkinv(eta_glm), disp),
+  y_gauss_glm = rnorm(n_obs, f_gauss$linkinv(eta_glm), dis_tst),
   y_binom_glm = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_glm)),
-  y_gauss_glmm = rnorm(n_obs, f_gauss$linkinv(eta_glmm), disp),
+  y_gauss_glmm = rnorm(n_obs, f_gauss$linkinv(eta_glmm), dis_tst),
   y_binom_glmm = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_glmm)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
   z = lapply(z_list, "[[", "z"),
@@ -198,7 +198,7 @@ df_gam <- mgcv::gamSim(eg = 5, n = n_obs, dist = "normal", scale = 0,
 df_gam <- head(df_gam, n_obs)
 ###
 eta_gam <- df_gam$y - 4 * as.numeric(df_gam$x0)
-df_gam <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gam, sd = disp),
+df_gam <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gam, sd = dis_tst),
                      y_binom = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_gam)),
                      df_gam[, setdiff(names(df_gam), "y")],
                      wobs_col = wobs_tst, offs_col = offs_tst)
@@ -276,7 +276,7 @@ vss_gam <- lapply(refmods_gam, varsel,
 # ))
 # ###
 # eta_gamm <- df_gamm$y - 7 * as.numeric(df_gamm$fac)
-# df_gamm <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gamm, sd = disp),
+# df_gamm <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gamm, sd = dis_tst),
 #                       y_binom = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_gamm)),
 #                       df_gamm[, setdiff(
 #                         names(df_gamm),
