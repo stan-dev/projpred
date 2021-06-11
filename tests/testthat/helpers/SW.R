@@ -1,1 +1,1 @@
-SW <- function(expr) capture.output(suppressWarnings(expr))
+SW <- function(expr) invisible(capture.output(suppressWarnings(expr)))
