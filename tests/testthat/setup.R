@@ -8,6 +8,9 @@ seed_tst <- 1235
 set.seed(seed_tst)
 source(testthat::test_path("helpers", "SW.R"))
 mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
+### Exclude GAMs because of issue #150:
+mod_nms <- setNames(nm = setdiff(mod_nms, "gam"))
+###
 ### Exclude GAMMs because of issue #148:
 mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
 ###
@@ -207,22 +210,24 @@ SW({
 #   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
 #     offset() in the formula.
 
-SW({
-  fit_gam_gauss <- rstanarm::stan_gamm4(
-    y_gam_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-      s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-    family = f_gauss, data = dat,
-    weights = wobs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
-  fit_gam_binom <- rstanarm::stan_gamm4(
-    cbind(y_gam_binom, wobs_col - y_gam_binom) ~
-      xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-      s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-    family = f_binom, data = dat,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst
-  )
-})
+### Exclude GAMs because of issue #150:
+# SW({
+#   fit_gam_gauss <- rstanarm::stan_gamm4(
+#     y_gam_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+#       s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
+#     family = f_gauss, data = dat,
+#     weights = wobs_tst,
+#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+#   )
+#   fit_gam_binom <- rstanarm::stan_gamm4(
+#     cbind(y_gam_binom, wobs_col - y_gam_binom) ~
+#       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+#       s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
+#     family = f_binom, data = dat,
+#     chains = chains_tst, seed = seed_tst, iter = iter_tst
+#   )
+# })
+###
 
 ## GAMMs ------------------------------------------------------------------
 
