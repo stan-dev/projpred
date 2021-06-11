@@ -61,6 +61,7 @@ for (mod_nm in mod_nms) {
     for (solterms_crr in settings_crr$solterms_list) {
       for (ndraws_crr in settings_crr$ndraws_list) {
         tstsetup <- unlist(nlist(mod_nm, fam_nm, solterms_crr, ndraws_crr))
+
         prj <- project(refmod,
                        solution_terms = solterms_crr,
                        ndraws = ndraws_crr)
@@ -73,7 +74,6 @@ for (mod_nm in mod_nms) {
           # Clustered projection, so we expect a warning:
           warn_prjmat_expect <- "the clusters might have different weights"
         }
-
         expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
 
         if (fam_nm == "gauss") {
@@ -81,11 +81,11 @@ for (mod_nm in mod_nms) {
         } else if (fam_nm == "binom") {
           npars_fam <- character()
         }
+
         test_that("as.matrix.projection()'s output structure is correct", {
           colnms_prjmat_expect <- c(
             "Intercept",
-            grep("^x(co|ca)\\.[[:digit:]]$", solterms_crr,
-                 value = TRUE)
+            grep("^x(co|ca)\\.[[:digit:]]$", solterms_crr, value = TRUE)
           )
           xca_idxs <- as.integer(
             sub("^xca\\.", "",
@@ -102,10 +102,7 @@ for (mod_nm in mod_nms) {
           }
           colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
           if ("(1 | z.1)" %in% solterms_crr) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              "sd_z.1__Intercept"
-            )
+            colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__Intercept")
             colnms_prjmat_expect <- c(
               colnms_prjmat_expect,
               paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
@@ -115,20 +112,15 @@ for (mod_nm in mod_nms) {
             if (!"b_xco.1" %in% colnms_prjmat_expect) {
               colnms_prjmat_expect <- c(colnms_prjmat_expect, "b_xco.1")
             }
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              "sd_z.1__xco.1"
-            )
+            colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__xco.1")
             colnms_prjmat_expect <- c(
               colnms_prjmat_expect,
               paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
             )
           }
           if (all(c("(1 | z.1)", "xco.1 + (xco.1 | z.1)") %in% solterms_crr)) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              "cor_z.1__Intercept__xco.1"
-            )
+            colnms_prjmat_expect <- c(colnms_prjmat_expect,
+                                      "cor_z.1__Intercept__xco.1")
           }
           colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
 
