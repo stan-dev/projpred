@@ -7,7 +7,7 @@
 seed_tst <- 1235
 set.seed(seed_tst)
 source(testthat::test_path("helpers", "SW.R"))
-mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
+mod_nms <- setNames(nm = c("glm", "glmm", "gam")) # , "gamm"
 fam_nms <- setNames(nm = c("gauss", "binom"))
 
 # rstanarm setup ----------------------------------------------------------
@@ -70,8 +70,8 @@ nlvl_ran <- setNames(nlvl_ran, seq_along(nlvl_ran))
 if (length(nlvl_ran) <= 1) {
   names(nlvl_ran) <- paste0("z.", names(nlvl_ran))
 }
-# Multiply by 2 because of random intercepts and random slopes for
-# `x_cont[, 1]`:
+# Multiply by 2 because of the random intercept as well as the random slope (the
+# latter for `x_cont[, 1]`):
 nterms_z <- length(nlvl_ran) * 2L
 z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
   z <- gl(n = nlvl_ran_i, k = floor(n_tst / nlvl_ran_i), length = n_tst,
@@ -86,6 +86,21 @@ eta_glmm <- eta_glm +
 
 nterms_glmm <- nterms_glm + nterms_z
 
+## Nonlinear (smoothed) effects -------------------------------------------
+
+# For simplicity, always use the same nonlinear function (could be extended in
+# the future):
+s_mat <- apply(x_cont, 2, function(x, a = -3, b = 0.75, c = 0.5) {
+  b * (x - c)^2 + a
+})
+nterms_s <- ncol(s_mat)
+eta_gam <- eta_glm +
+  rowSums(s_mat)
+
+# Multiply by 2 because of the baseline linear term as well as the standard
+# deviation for the wiggliness around it:
+nterms_gam <- nterms_glm + 2L * nterms_s
+
 ## Responses and dataset --------------------------------------------------
 
 f_gauss <- gaussian()
@@ -97,8 +112,11 @@ data_tst <- data.frame(
   y_glm_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glm)),
   y_glmm_gauss = rnorm(n_tst, f_gauss$linkinv(eta_glmm), dis_tst),
   y_glmm_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glmm)),
+  y_gam_gauss = rnorm(n_tst, f_gauss$linkinv(eta_gam), dis_tst),
+  y_gam_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_gam)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
   z = lapply(z_list, "[[", "z"),
+  s = s_mat,
   wobs_col = wobs_tst, offs_col = offs_tst,
   check.names = FALSE
 )
@@ -111,8 +129,13 @@ ys_tst <- lapply(mod_nms, function(mod_nm) {
 # Fits --------------------------------------------------------------------
 
 # Notes:
+#   * In principle, one could also generalize the construction of the formulas.
+#     However, rstanarm seems to have problems with that (see
+#     <https://github.com/stan-dev/projpred/issues/65#issuecomment-765345522>).
 #   * Argument `weights` is not needed when using the cbind() syntax (for the
 #     binomial family with > 1 trials).
+#   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
+#     offset() in the formula.
 
 ## GLMs -------------------------------------------------------------------
 
@@ -150,6 +173,25 @@ SW({
   )
 })
 
+## GAMs -------------------------------------------------------------------
+
+SW({
+  fit_gam_gauss <- rstanarm::stan_gamm4(
+    y_gam_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+      s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
+    family = f_gauss, data = data_tst,
+    weights = wobs_tst,
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+  )
+  fit_gam_binom <- rstanarm::stan_gamm4(
+    cbind(y_gam_binom, wobs_col - y_gam_binom) ~
+      xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+      s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
+    family = f_binom, data = data_tst,
+    chains = chains_tst, seed = seed_tst, iter = iter_tst
+  )
+})
+
 ## List -------------------------------------------------------------------
 
 fits_tst <- lapply(mod_nms, function(mod_nm) {
@@ -177,78 +219,6 @@ SW(vss_tst <- lapply(mod_nms, function(mod_nm) {
            nterms_max = nterms_glm, verbose = FALSE)
   })
 }))
-
-# GAMs --------------------------------------------------------------------
-
-### TODO:
-## Data -------------------------------------------------------------------
-
-# Notes:
-#   * Have a look at the source code of mgcv::gamSim() for the underlying truth.
-#   * An alternative to mgcv::gamSim() might be the example from
-#     `?mgcv::concurvity` or deriving an own dataset based on the dataset for
-#     the GLMs above.
-df_gam <- mgcv::gamSim(eg = 5, n = n_tst, dist = "normal", scale = 0,
-                       verbose = FALSE)
-### A bug in mgcv::gamSim() causes `eg = 5` to always simulate 200 observations,
-### not `n = n_tst`:
-df_gam <- head(df_gam, n_tst)
-###
-eta_gam <- df_gam$y - 4 * as.numeric(df_gam$x0)
-df_gam <- data.frame(y_gauss = rnorm(n_tst, mean = eta_gam, sd = dis_tst),
-                     y_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_gam)),
-                     df_gam[, setdiff(names(df_gam), "y")],
-                     wobs_col = wobs_tst, offs_col = offs_tst)
-names(df_gam) <- sub("^x", "x.", names(df_gam))
-### For shifting the enumeration:
-# names(df_gam)[grep("^x", names(df_gam))] <- paste0(
-#   "x.",
-#   as.numeric(sub("^x", "", grep("^x", names(df_gam), value = TRUE))) + 1
-# )
-###
-ys_gam <- lapply(fam_nms, function(fam_nm) {
-  df_gam[[paste0("y_", fam_nm)]]
-})
-
-nterms_gam <- length("x.0") + 2L * length(c("s(x.1)", "s(x.2)", "s(x.3)"))
-solterms_tst_gam <- c("s(x.1)")
-###
-
-## Fit --------------------------------------------------------------------
-
-# Notes:
-#   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
-#     offset() in the formula.
-SW({
-  fit_gauss_gam <- rstanarm::stan_gamm4(
-    y_gauss ~ x.0 + s(x.1) + s(x.2) + s(x.3) + offset(offs_col),
-    random = NULL,
-    family = f_gauss, data = df_gam,
-    weights = wobs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
-  fit_binom_gam <- rstanarm::stan_gamm4(
-    cbind(y_binom, wobs_col - y_binom) ~
-      x.0 + s(x.1) + s(x.2) + s(x.3) + offset(offs_col),
-    random = NULL,
-    family = f_binom, data = df_gam,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst
-  )
-})
-fits_gam <- lapply(fam_nms, function(fam_nm) {
-  get(paste0("fit_", fam_nm, "_gam"))
-})
-
-## projpred ---------------------------------------------------------------
-
-# For the binomial family with > 1 trials, we currently expect the warning
-# "Using formula(x) is deprecated when x is a character vector of length > 1"
-# (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(refmods_gam <- lapply(fits_gam, get_refmodel))
-vss_gam <- lapply(refmods_gam, varsel,
-                  nclusters = nclusters_tst,
-                  nclusters_pred = nclusters_pred_tst,
-                  nterms_max = nterms_gam, verbose = FALSE)
 
 ###_____________________________________________________________________________
 ### Currently deactivated because of issue #146:
