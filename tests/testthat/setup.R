@@ -26,12 +26,12 @@ solterms_tst <- c("x.2", "x.4")
 
 # Data --------------------------------------------------------------------
 
-n_obs <- 45L
+n_tst <- 45L
 
 ## Nonpooled ("fixed") effects --------------------------------------------
 
 nterms_cont <- 3L
-x_cont <- matrix(rnorm(n_obs * nterms_cont), n_obs, nterms_cont)
+x_cont <- matrix(rnorm(n_tst * nterms_cont), n_tst, nterms_cont)
 b_cont <- runif(nterms_cont, min = -0.5, max = 0.5)
 
 nlvl_fix <- c(3L, 2L)
@@ -41,7 +41,7 @@ if (length(nlvl_fix) <= 1) {
 }
 nterms_cate <- length(nlvl_fix)
 x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
-  x_cate <- gl(n = nlvl_fix_i, k = floor(n_obs / nlvl_fix_i), length = n_obs,
+  x_cate <- gl(n = nlvl_fix_i, k = floor(n_tst / nlvl_fix_i), length = n_tst,
                labels = paste0("lvl", seq_len(nlvl_fix_i)))
   b_cate <- runif(nlvl_fix_i, min = -0.5, max = 0.5)
   ### Using a model.matrix() approach:
@@ -55,7 +55,7 @@ x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
 })
 
 icpt <- -0.42
-offs_tst <- rnorm(n_obs)
+offs_tst <- rnorm(n_tst)
 eta_glm <- icpt +
   x_cont %*% b_cont +
   do.call("+", lapply(x_cate_list, "[[", "eta_cate")) +
@@ -74,7 +74,7 @@ if (length(nlvl_ran) <= 1) {
 # `x_cont[, 1]`:
 nterms_z <- length(nlvl_ran) * 2L
 z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
-  z <- gl(n = nlvl_ran_i, k = floor(n_obs / nlvl_ran_i), length = n_obs,
+  z <- gl(n = nlvl_ran_i, k = floor(n_tst / nlvl_ran_i), length = n_tst,
           labels = paste0("lvl", seq_len(nlvl_ran_i)))
   r_icpts <- rnorm(nlvl_ran_i, sd = 0.8)
   r_xco1 <- rnorm(nlvl_ran_i, sd = 0.8)
@@ -89,12 +89,12 @@ eta_glmm <- eta_glm +
 f_gauss <- gaussian()
 f_binom <- binomial()
 dis_tst <- runif(1L, 1, 2)
-wobs_tst <- sample(1:4, n_obs, replace = TRUE)
+wobs_tst <- sample(1:4, n_tst, replace = TRUE)
 data_tst <- data.frame(
-  y_gauss_glm = rnorm(n_obs, f_gauss$linkinv(eta_glm), dis_tst),
-  y_binom_glm = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_glm)),
-  y_gauss_glmm = rnorm(n_obs, f_gauss$linkinv(eta_glmm), dis_tst),
-  y_binom_glmm = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_glmm)),
+  y_gauss_glm = rnorm(n_tst, f_gauss$linkinv(eta_glm), dis_tst),
+  y_binom_glm = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glm)),
+  y_gauss_glmm = rnorm(n_tst, f_gauss$linkinv(eta_glmm), dis_tst),
+  y_binom_glmm = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glmm)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
   z = lapply(z_list, "[[", "z"),
   wobs_col = wobs_tst, offs_col = offs_tst,
@@ -191,15 +191,15 @@ vss_glmm <- lapply(refmods_glmm, varsel,
 #   * An alternative to mgcv::gamSim() might be the example from
 #     `?mgcv::concurvity` or deriving an own dataset based on the dataset for
 #     the GLMs above.
-df_gam <- mgcv::gamSim(eg = 5, n = n_obs, dist = "normal", scale = 0,
+df_gam <- mgcv::gamSim(eg = 5, n = n_tst, dist = "normal", scale = 0,
                        verbose = FALSE)
 ### A bug in mgcv::gamSim() causes `eg = 5` to always simulate 200 observations,
-### not `n = n_obs`:
-df_gam <- head(df_gam, n_obs)
+### not `n = n_tst`:
+df_gam <- head(df_gam, n_tst)
 ###
 eta_gam <- df_gam$y - 4 * as.numeric(df_gam$x0)
-df_gam <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gam, sd = dis_tst),
-                     y_binom = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_gam)),
+df_gam <- data.frame(y_gauss = rnorm(n_tst, mean = eta_gam, sd = dis_tst),
+                     y_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_gam)),
                      df_gam[, setdiff(names(df_gam), "y")],
                      wobs_col = wobs_tst, offs_col = offs_tst)
 names(df_gam) <- sub("^x", "x.", names(df_gam))
@@ -264,20 +264,20 @@ vss_gam <- lapply(refmods_gam, varsel,
 # #   * An alternative to mgcv::gamSim() might be the example from
 # #     `?mgcv::concurvity` or deriving an own dataset based on the dataset for
 # #     the GLMMs above.
-# ### For `eg = 6`, mgcv::gamSim() requires `n = n_obs` to be divisible by 4
+# ### For `eg = 6`, mgcv::gamSim() requires `n = n_tst` to be divisible by 4
 # ### (which is probably a bug):
-# stopifnot(identical(n_obs %% 4L, 0L))
+# stopifnot(identical(n_tst %% 4L, 0L))
 # ###
 # ### A bug in mgcv::gamSim() causes `eg = 6` to not respect `verbose = FALSE`
 # ### properly, so we use `invisible(capture.output(<...>))`:
 # invisible(capture.output(
-#   df_gamm <- mgcv::gamSim(eg = 6, n = n_obs, dist = "normal", scale = 0,
+#   df_gamm <- mgcv::gamSim(eg = 6, n = n_tst, dist = "normal", scale = 0,
 #                           verbose = FALSE)
 # ))
 # ###
 # eta_gamm <- df_gamm$y - 7 * as.numeric(df_gamm$fac)
-# df_gamm <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gamm, sd = dis_tst),
-#                       y_binom = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_gamm)),
+# df_gamm <- data.frame(y_gauss = rnorm(n_tst, mean = eta_gamm, sd = dis_tst),
+#                       y_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_gamm)),
 #                       df_gamm[, setdiff(
 #                         names(df_gamm),
 #                         c("y", "f", grep("^x", names(df_gamm), value = TRUE),
