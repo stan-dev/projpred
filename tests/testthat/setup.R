@@ -26,11 +26,11 @@ solterms_tst <- c("x.2", "x.4")
 
 # Data --------------------------------------------------------------------
 
-n_obs <- 40L
+n_obs <- 45L
 
 ## Nonpooled ("fixed") effects --------------------------------------------
 
-nterms_cont <- 5L
+nterms_cont <- 3L
 x_cont <- matrix(rnorm(n_obs * nterms_cont), n_obs, nterms_cont)
 b_cont <- runif(nterms_cont, min = -0.5, max = 0.5)
 
@@ -119,13 +119,14 @@ nterms_glmm <- nterms_glm + nterms_z
 #     binomial family with > 1 trials).
 SW({
   fit_gauss_glm <- rstanarm::stan_glm(
-    y_gauss ~ x.1 + x.2 + x.3 + x.4 + x.5,
+    y_gauss_glm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_gauss, data = data_tst,
     weights = w_obs, offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_glm <- rstanarm::stan_glm(
-    cbind(y_binom, w_obs_col - y_binom) ~ x.1 + x.2 + x.3 + x.4 + x.5,
+    cbind(y_binom_glm, w_obs_col - y_binom_glm) ~
+      xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_binom, data = data_tst,
     offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
@@ -152,14 +153,14 @@ vss_glm <- lapply(refmods_glm, varsel,
 
 SW({
   fit_gauss_glmm <- rstanarm::stan_glmer(
-    y_gauss ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | x.gr),
+    y_gauss_glmm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_gauss, data = data_tst,
     weights = w_obs, offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_glmm <- rstanarm::stan_glmer(
-    cbind(y_binom, w_obs_col - y_binom) ~
-      x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | x.gr),
+    cbind(y_binom_glmm, w_obs_col - y_binom_glmm) ~
+      xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_binom, data = data_tst,
     offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
