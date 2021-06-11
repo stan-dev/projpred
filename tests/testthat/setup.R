@@ -22,7 +22,7 @@ nclusters_pred_tst <- 3L
 nresample_clusters_tst <- 100L
 nresample_clusters_default <- 1000L # Adopt this if the default is changed.
 seed2_tst <- 866028
-solterms_tst <- c("x.2", "x.4")
+solterms <- c("x.2", "x.4")
 
 # Data --------------------------------------------------------------------
 
@@ -107,7 +107,7 @@ f_gauss <- gaussian()
 f_binom <- binomial()
 dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, n_tst, replace = TRUE)
-data_tst <- data.frame(
+dat <- data.frame(
   y_glm_gauss = rnorm(n_tst, f_gauss$linkinv(eta_glm), dis_tst),
   y_glm_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glm)),
   y_glmm_gauss = rnorm(n_tst, f_gauss$linkinv(eta_glmm), dis_tst),
@@ -120,9 +120,9 @@ data_tst <- data.frame(
   wobs_col = wobs_tst, offs_col = offs_tst,
   check.names = FALSE
 )
-ys_tst <- lapply(mod_nms, function(mod_nm) {
+ys <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
-    data_tst[[paste("y", mod_nm, fam_nm, sep = "_")]]
+    dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
   })
 })
 
@@ -142,14 +142,14 @@ ys_tst <- lapply(mod_nms, function(mod_nm) {
 SW({
   fit_glm_gauss <- rstanarm::stan_glm(
     y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
-    family = f_gauss, data = data_tst,
+    family = f_gauss, data = dat,
     weights = wobs_tst, offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_glm_binom <- rstanarm::stan_glm(
     cbind(y_glm_binom, wobs_col - y_glm_binom) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
-    family = f_binom, data = data_tst,
+    family = f_binom, data = dat,
     offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
@@ -160,14 +160,14 @@ SW({
 SW({
   fit_glmm_gauss <- rstanarm::stan_glmer(
     y_glmm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
-    family = f_gauss, data = data_tst,
+    family = f_gauss, data = dat,
     weights = wobs_tst, offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_glmm_binom <- rstanarm::stan_glmer(
     cbind(y_glmm_binom, wobs_col - y_glmm_binom) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
-    family = f_binom, data = data_tst,
+    family = f_binom, data = dat,
     offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
@@ -179,7 +179,7 @@ SW({
   fit_gam_gauss <- rstanarm::stan_gamm4(
     y_gam_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
       s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-    family = f_gauss, data = data_tst,
+    family = f_gauss, data = dat,
     weights = wobs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
@@ -187,14 +187,14 @@ SW({
     cbind(y_gam_binom, wobs_col - y_gam_binom) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
       s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-    family = f_binom, data = data_tst,
+    family = f_binom, data = dat,
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
 })
 
 ## List -------------------------------------------------------------------
 
-fits_tst <- lapply(mod_nms, function(mod_nm) {
+fits <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     get(paste("fit", mod_nm, fam_nm, sep = "_"))
   })
@@ -206,14 +206,14 @@ rm(list = grep("^fit_", ls(), value = TRUE))
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(refmods_tst <- lapply(mod_nms, function(mod_nm) {
+SW(refmods <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
-    get_refmodel(fits_tst[[mod_nm]][[fam_nm]])
+    get_refmodel(fits[[mod_nm]][[fam_nm]])
   })
 }))
-SW(vss_tst <- lapply(mod_nms, function(mod_nm) {
+SW(vss <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
-    varsel(refmods_tst[[mod_nm]][[fam_nm]],
+    varsel(refmods[[mod_nm]][[fam_nm]],
            nclusters = nclusters_tst,
            nclusters_pred = nclusters_pred_tst,
            nterms_max = nterms_glm, verbose = FALSE)
