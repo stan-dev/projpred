@@ -108,13 +108,14 @@ ys_tst <- lapply(mod_nms, function(mod_nm) {
   })
 })
 
-# GLMs --------------------------------------------------------------------
-
-## Fit --------------------------------------------------------------------
+# Fits --------------------------------------------------------------------
 
 # Notes:
 #   * Argument `weights` is not needed when using the cbind() syntax (for the
 #     binomial family with > 1 trials).
+
+## GLMs -------------------------------------------------------------------
+
 SW({
   fit_gauss_glm <- rstanarm::stan_glm(
     y_gauss_glm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
@@ -130,24 +131,8 @@ SW({
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
 })
-fits_glm <- lapply(fam_nms, function(fam_nm) {
-  get(paste0("fit_", fam_nm, "_glm"))
-})
 
-## projpred ---------------------------------------------------------------
-
-# For the binomial family with > 1 trials, we currently expect the warning
-# "Using formula(x) is deprecated when x is a character vector of length > 1"
-# (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(refmods_glm <- lapply(fits_glm, get_refmodel))
-vss_glm <- lapply(refmods_glm, varsel,
-                  nclusters = nclusters_tst,
-                  nclusters_pred = nclusters_pred_tst,
-                  nterms_max = nterms_glm, verbose = FALSE)
-
-# GLMMs -------------------------------------------------------------------
-
-## Fit --------------------------------------------------------------------
+## GLMMs ------------------------------------------------------------------
 
 SW({
   fit_gauss_glmm <- rstanarm::stan_glmer(
@@ -164,20 +149,33 @@ SW({
     chains = chains_tst, seed = seed_tst, iter = iter_tst
   )
 })
-fits_glmm <- lapply(fam_nms, function(fam_nm) {
-  get(paste0("fit_", fam_nm, "_glmm"))
+
+## List -------------------------------------------------------------------
+
+fits_tst <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    get(paste("fit", fam_nm, mod_nm, sep = "_"))
+  })
 })
 
-## projpred ---------------------------------------------------------------
+# projpred ----------------------------------------------------------------
 
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(refmods_glmm <- lapply(fits_glmm, get_refmodel))
-vss_glmm <- lapply(refmods_glmm, varsel,
-                   nclusters = nclusters_tst,
-                   nclusters_pred = nclusters_pred_tst,
-                   nterms_max = nterms_glmm, verbose = FALSE)
+SW(refmods_tst <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    get_refmodel(fits_tst[[mod_nm]][[fam_nm]])
+  })
+}))
+SW(vss_tst <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    varsel(refmods_tst[[mod_nm]][[fam_nm]],
+           nclusters = nclusters_tst,
+           nclusters_pred = nclusters_pred_tst,
+           nterms_max = nterms_glm, verbose = FALSE)
+  })
+}))
 
 # GAMs --------------------------------------------------------------------
 
