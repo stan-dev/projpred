@@ -31,6 +31,11 @@ solterms_glmm <- c(
   list(somecomb_z = c(solterms_glm$somecomb_xco,
                       "(1 | z.1)", "xco.1 + (xco.1 | z.1)"))
 )
+solterms_gam <- c(
+  solterms_glm,
+  list(somecomb_s = c(solterms_glm$somecomb_xco,
+                      "s(s.1)", "s(s.2)"))
+)
 
 # Data --------------------------------------------------------------------
 

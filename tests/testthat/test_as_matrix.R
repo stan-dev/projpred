@@ -1,7 +1,7 @@
 context("as.matrix.projection")
 
 ### TODO:
-mod_nms <- setdiff(mod_nms, c("gam", "gamm"))
+mod_nms <- setdiff(mod_nms, c("gamm"))
 ###
 
 settings <- list(
@@ -24,20 +24,18 @@ settings <- list(
       solterms_list = solterms_glmm["somecomb_z"],
       ndraws_list = list(25L)
     )
+  ),
+  gam = list(
+    gauss = list(
+      solterms_list = solterms_gam,
+      ndraws_list = list(25L, 2L, 1L)
+    ),
+    binom = list(
+      solterms_list = solterms_gam["somecomb_s"],
+      ndraws_list = list(25L)
+    )
   )#,
   ### TODO:
-  # gam = list(
-  #   gauss = list(
-  #     solterms_list = list(character(),
-  #                          "s(s.1)",
-  #                          c("s(s.1)", "s(s.2)")),
-  #     ndraws_list = list(25L, 2L, 1L)
-  #   ),
-  #   binom = list(
-  #     solterms_list = list("s(s.1)"),
-  #     ndraws_list = list(25L)
-  #   )
-  # ),
   # gamm = list(
   #   gauss = list(
   #     solterms_list = list(character(),
@@ -55,7 +53,6 @@ settings <- list(
 
 for (mod_nm in mod_nms) {
   for (fam_nm in fam_nms) {
-    # par_nms_orig <- colnames(as.matrix(refmods[[mod_nm]][[fam_nm]]$fit))
     for (solterms_crr in settings[[mod_nm]][[fam_nm]]$solterms_list) {
       for (ndraws_crr in settings[[mod_nm]][[fam_nm]]$ndraws_list) {
         tstsetup <- unlist(nlist(mod_nm, fam_nm, solterms_crr, ndraws_crr))
@@ -119,6 +116,31 @@ for (mod_nm in mod_nms) {
           if (all(c("(1 | z.1)", "xco.1 + (xco.1 | z.1)") %in% solterms_crr)) {
             colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                       "cor_z.1__Intercept__xco.1")
+          }
+          s_nms <- sub("\\)$", "",
+                       sub("^s\\(", "",
+                           grep("^s\\(.*\\)$", solterms_crr, value = TRUE)))
+          if (length(s_nms) > 0) {
+            stopifnot(inherits(refmods[[mod_nm]][[fam_nm]]$fit, "stanreg"))
+            # Get the number of basis coefficients:
+            s_info <- refmods[[mod_nm]][[fam_nm]]$fit$jam$smooth
+            s_terms <- sapply(s_info, "[[", "term")
+            s_dfs <- setNames(sapply(s_info, "[[", "df"), s_terms)
+            ### Alternative:
+            # par_nms_orig <- colnames(
+            #   as.matrix(refmods[[mod_nm]][[fam_nm]]$fit)
+            # )
+            # s_dfs <- sapply(s_nms, function(s_nm) {
+            #   sum(grepl(paste0("^s\\(", s_nm, "\\)"), par_nms_orig))
+            # })
+            ###
+            # Construct the expected column names:
+            for (s_nm in s_nms) {
+              colnms_prjmat_expect <- c(
+                colnms_prjmat_expect,
+                paste0("b_s(", s_nm, ").", seq_len(s_dfs[s_nm]))
+              )
+            }
           }
           colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
 
