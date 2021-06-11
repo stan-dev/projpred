@@ -17,25 +17,25 @@ iter_tst <- 500L
 
 # projpred setup ----------------------------------------------------------
 
+ndraws_tstl <- list(noclust = 25L, clust = 2L, clust1 = 1L)
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 nresample_clusters_tst <- 100L
 nresample_clusters_default <- 1000L # Adopt this if the default is changed.
 seed2_tst <- 866028
 ### Since as.matrix.projection() seems to have a bug for categorical predictors:
-# solterms_glm <- list(empty = character(), somecomb_xco = c("xco.2", "xca.1"))
-solterms_glm <- list(empty = character(), somecomb_xco = c("xco.2", "xco.1"))
+# solterms_glm <- list(empty = character(), somecomb_x = c("xco.2", "xca.1"))
+solterms_glm <- list(empty = character(), somecomb_x = c("xco.2", "xco.1"))
 ###
-solterms_glmm <- c(
-  solterms_glm,
-  list(somecomb_z = c(solterms_glm$somecomb_xco,
-                      "(1 | z.1)", "xco.1 + (xco.1 | z.1)"))
-)
-solterms_gam <- c(
-  solterms_glm,
-  list(somecomb_s = c(solterms_glm$somecomb_xco,
-                      "s(s.1)", "s(s.2)"))
-)
+solterms_glmm_add <- list(somecomb_z = c(solterms_glm$somecomb_x,
+                                         "(1 | z.1)", "xco.1 + (xco.1 | z.1)"))
+solterms_glmm <- c(solterms_glm, solterms_glmm_add)
+solterms_gam_add <- list(somecomb_s = c(solterms_glm$somecomb_x,
+                                        "s(s.1)", "s(s.2)"))
+solterms_gam <- c(solterms_glm, solterms_gam_add)
+solterms_gamm_add <- list(somecomb_sz = unique(c(solterms_glmm$somecomb_z,
+                                                 solterms_gam$somecomb_s)))
+solterms_gamm <- c(solterms_glmm, solterms_gam_add, solterms_gamm_add)
 
 # Data --------------------------------------------------------------------
 
