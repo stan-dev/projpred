@@ -100,7 +100,7 @@ data_tst <- data.frame(
   wobs_col = wobs_tst, offs_col = offs_tst,
   check.names = FALSE
 )
-ys <- lapply(mod_nms, function(mod_nm) {
+ys_tst <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     data_tst[[paste("y", fam_nm, mod_nm, sep = "_")]]
   })
