@@ -89,15 +89,15 @@ eta_glmm <- eta_glm +
 f_gauss <- gaussian()
 f_binom <- binomial()
 disp <- runif(1L, 1, 2)
-w_obs <- sample(1:4, n_obs, replace = TRUE)
+wobs_tst <- sample(1:4, n_obs, replace = TRUE)
 data_tst <- data.frame(
   y_gauss_glm = rnorm(n_obs, f_gauss$linkinv(eta_glm), disp),
-  y_binom_glm = rbinom(n_obs, w_obs, f_binom$linkinv(eta_glm)),
+  y_binom_glm = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_glm)),
   y_gauss_glmm = rnorm(n_obs, f_gauss$linkinv(eta_glmm), disp),
-  y_binom_glmm = rbinom(n_obs, w_obs, f_binom$linkinv(eta_glmm)),
+  y_binom_glmm = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_glmm)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
   z = lapply(z_list, "[[", "z"),
-  w_obs_col = w_obs, offs_col = offs,
+  wobs_col = wobs_tst, offs_col = offs,
   check.names = FALSE
 )
 ys <- lapply(mod_nms, function(mod_nm) {
@@ -121,11 +121,11 @@ SW({
   fit_gauss_glm <- rstanarm::stan_glm(
     y_gauss_glm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_gauss, data = data_tst,
-    weights = w_obs, offset = offs,
+    weights = wobs_tst, offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_glm <- rstanarm::stan_glm(
-    cbind(y_binom_glm, w_obs_col - y_binom_glm) ~
+    cbind(y_binom_glm, wobs_col - y_binom_glm) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_binom, data = data_tst,
     offset = offs,
@@ -155,11 +155,11 @@ SW({
   fit_gauss_glmm <- rstanarm::stan_glmer(
     y_gauss_glmm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_gauss, data = data_tst,
-    weights = w_obs, offset = offs,
+    weights = wobs_tst, offset = offs,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_glmm <- rstanarm::stan_glmer(
-    cbind(y_binom_glmm, w_obs_col - y_binom_glmm) ~
+    cbind(y_binom_glmm, wobs_col - y_binom_glmm) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_binom, data = data_tst,
     offset = offs,
@@ -199,9 +199,9 @@ df_gam <- head(df_gam, n_obs)
 ###
 eta_gam <- df_gam$y - 4 * as.numeric(df_gam$x0)
 df_gam <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gam, sd = disp),
-                     y_binom = rbinom(n_obs, w_obs, f_binom$linkinv(eta_gam)),
+                     y_binom = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_gam)),
                      df_gam[, setdiff(names(df_gam), "y")],
-                     w_obs_col = w_obs, offs_col = offs)
+                     wobs_col = wobs_tst, offs_col = offs)
 names(df_gam) <- sub("^x", "x.", names(df_gam))
 ### For shifting the enumeration:
 # names(df_gam)[grep("^x", names(df_gam))] <- paste0(
@@ -227,11 +227,11 @@ SW({
     y_gauss ~ x.0 + s(x.1) + s(x.2) + s(x.3) + offset(offs_col),
     random = NULL,
     family = f_gauss, data = df_gam,
-    weights = w_obs,
+    weights = wobs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_binom_gam <- rstanarm::stan_gamm4(
-    cbind(y_binom, w_obs_col - y_binom) ~
+    cbind(y_binom, wobs_col - y_binom) ~
       x.0 + s(x.1) + s(x.2) + s(x.3) + offset(offs_col),
     random = NULL,
     family = f_binom, data = df_gam,
@@ -277,13 +277,13 @@ vss_gam <- lapply(refmods_gam, varsel,
 # ###
 # eta_gamm <- df_gamm$y - 7 * as.numeric(df_gamm$fac)
 # df_gamm <- data.frame(y_gauss = rnorm(n_obs, mean = eta_gamm, sd = disp),
-#                       y_binom = rbinom(n_obs, w_obs, f_binom$linkinv(eta_gamm)),
+#                       y_binom = rbinom(n_obs, wobs_tst, f_binom$linkinv(eta_gamm)),
 #                       df_gamm[, setdiff(
 #                         names(df_gamm),
 #                         c("y", "f", grep("^x", names(df_gamm), value = TRUE),
 #                           "f3")
 #                       )],
-#                       w_obs_col = w_obs, offs_col = offs)
+#                       wobs_col = wobs_tst, offs_col = offs)
 # names(df_gamm)[names(df_gamm) == "fac"] <- "x.gr"
 # names(df_gamm)[grep("^f", names(df_gamm))] <- paste0(
 #   "x.",
@@ -320,20 +320,20 @@ vss_gam <- lapply(refmods_gam, varsel,
 # #     rstanarm::stan_gamm4() seems to be unable to support the cbind() syntax
 # #     (for the binomial family with > 1 trials). Therefore, use argument
 # #     `weights` instead, together with `y_binom` transformed to a proportion.
-# df_gamm$y_binom <- df_gamm$y_binom / w_obs
+# df_gamm$y_binom <- df_gamm$y_binom / wobs_tst
 # SW({
 #   fit_gauss_gamm <- rstanarm::stan_gamm4(
 #     y_gauss ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
 #     random = ~ (x.1 | x.gr),
 #     family = f_gauss, data = df_gamm,
-#     weights = w_obs,
+#     weights = wobs_tst,
 #     chains = chains_tst, seed = seed_tst, iter = iter_tst # , QR = TRUE
 #   )
 #   fit_binom_gamm <- rstanarm::stan_gamm4(
 #     y_binom ~ s(x.1) + s(x.2) + s(x.3), # + offset(offs_col)
 #     random = ~ (x.1 | x.gr),
 #     family = f_binom, data = df_gamm,
-#     weights = w_obs,
+#     weights = wobs_tst,
 #     chains = chains_tst, seed = seed_tst, iter = iter_tst
 #   )
 # })
