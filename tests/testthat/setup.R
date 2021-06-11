@@ -84,6 +84,8 @@ z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
 eta_glmm <- eta_glm +
   do.call("+", lapply(z_list, "[[", "eta_z"))
 
+nterms_glmm <- nterms_glm + nterms_z
+
 ## Responses and dataset --------------------------------------------------
 
 f_gauss <- gaussian()
@@ -105,10 +107,6 @@ ys_tst <- lapply(mod_nms, function(mod_nm) {
     data_tst[[paste("y", fam_nm, mod_nm, sep = "_")]]
   })
 })
-
-# Add the number of multilevel terms to the number of population-level terms to
-# obtain the total number of terms:
-nterms_glmm <- nterms_glm + nterms_z
 
 # GLMs --------------------------------------------------------------------
 
