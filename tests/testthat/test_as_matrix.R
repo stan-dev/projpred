@@ -55,14 +55,12 @@ settings <- list(
 
 for (mod_nm in mod_nms) {
   for (fam_nm in fam_nms) {
-    refmod <- refmods[[mod_nm]][[fam_nm]]
-    # par_nms_orig <- colnames(as.matrix(refmod$fit))
-    settings_crr <- settings[[mod_nm]][[fam_nm]]
-    for (solterms_crr in settings_crr$solterms_list) {
-      for (ndraws_crr in settings_crr$ndraws_list) {
+    # par_nms_orig <- colnames(as.matrix(refmods[[mod_nm]][[fam_nm]]$fit))
+    for (solterms_crr in settings[[mod_nm]][[fam_nm]]$solterms_list) {
+      for (ndraws_crr in settings[[mod_nm]][[fam_nm]]$ndraws_list) {
         tstsetup <- unlist(nlist(mod_nm, fam_nm, solterms_crr, ndraws_crr))
 
-        prj <- project(refmod,
+        prj <- project(refmods[[mod_nm]][[fam_nm]],
                        solution_terms = solterms_crr,
                        ndraws = ndraws_crr)
 
