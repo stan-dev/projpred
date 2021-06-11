@@ -15,13 +15,13 @@ settings_list_glm <- list(
   )
 )
 
-for (settings_obj in settings_list_glm) {
-  for (solterms_crr in settings_obj$solterms_list) {
-    for (ndraws_crr in settings_obj$ndraws_list) {
-      tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
+for (settings_crr in settings_list_glm) {
+  for (solterms_crr in settings_crr$solterms_list) {
+    for (ndraws_crr in settings_crr$ndraws_list) {
+      tstsetup <- unlist(nlist(fam_nm = settings_crr$refmod$family$family,
                                solterms_crr,
                                ndraws_crr))
-      prj <- project(settings_obj$refmod,
+      prj <- project(settings_crr$refmod,
                      solution_terms = solterms_crr,
                      ndraws = ndraws_crr)
 
@@ -36,9 +36,9 @@ for (settings_obj in settings_list_glm) {
 
       expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
 
-      if (settings_obj$refmod$family$family == "gaussian") {
+      if (settings_crr$refmod$family$family == "gaussian") {
         npars_fam <- "sigma"
-      } else if (settings_obj$refmod$family$family == "binomial") {
+      } else if (settings_crr$refmod$family$family == "binomial") {
         npars_fam <- character()
       }
       test_that("as.matrix.projection()'s output structure is correct", {
@@ -74,13 +74,13 @@ settings_list_glmm <- list(
   )
 )
 
-for (settings_obj in settings_list_glmm) {
-  for (solterms_crr in settings_obj$solterms_list) {
-    for (ndraws_crr in settings_obj$ndraws_list) {
-      tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
+for (settings_crr in settings_list_glmm) {
+  for (solterms_crr in settings_crr$solterms_list) {
+    for (ndraws_crr in settings_crr$ndraws_list) {
+      tstsetup <- unlist(nlist(fam_nm = settings_crr$refmod$family$family,
                                solterms_crr,
                                ndraws_crr))
-      prj <- project(settings_obj$refmod,
+      prj <- project(settings_crr$refmod,
                      solution_terms = solterms_crr,
                      ndraws = ndraws_crr)
 
@@ -95,9 +95,9 @@ for (settings_obj in settings_list_glmm) {
 
       expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
 
-      if (settings_obj$refmod$family$family == "gaussian") {
+      if (settings_crr$refmod$family$family == "gaussian") {
         npars_fam <- "sigma"
-      } else if (settings_obj$refmod$family$family == "binomial") {
+      } else if (settings_crr$refmod$family$family == "binomial") {
         npars_fam <- character()
       }
       test_that("as.matrix.projection()'s output structure is correct", {
@@ -167,13 +167,13 @@ settings_list_gam <- list(
   )
 )
 
-for (settings_obj in settings_list_gam) {
-  for (solterms_crr in settings_obj$solterms_list) {
-    for (ndraws_crr in settings_obj$ndraws_list) {
-      tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
+for (settings_crr in settings_list_gam) {
+  for (solterms_crr in settings_crr$solterms_list) {
+    for (ndraws_crr in settings_crr$ndraws_list) {
+      tstsetup <- unlist(nlist(fam_nm = settings_crr$refmod$family$family,
                                solterms_crr,
                                ndraws_crr))
-      prj <- project(settings_obj$refmod,
+      prj <- project(settings_crr$refmod,
                      solution_terms = solterms_crr,
                      ndraws = ndraws_crr)
 
@@ -188,13 +188,13 @@ for (settings_obj in settings_list_gam) {
 
       expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
 
-      if (settings_obj$refmod$family$family == "gaussian") {
+      if (settings_crr$refmod$family$family == "gaussian") {
         npars_fam <- "sigma"
-      } else if (settings_obj$refmod$family$family == "binomial") {
+      } else if (settings_crr$refmod$family$family == "binomial") {
         npars_fam <- character()
       }
 
-      par_nms_orig <- colnames(as.matrix(settings_obj$refmod$fit))
+      par_nms_orig <- colnames(as.matrix(settings_crr$refmod$fit))
       test_that("as.matrix.projection()'s output structure is correct", {
         # TODO
       })
