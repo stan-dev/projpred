@@ -35,10 +35,14 @@ x_cont <- matrix(rnorm(n_obs * nterms_cont), n_obs, nterms_cont)
 b_cont <- runif(nterms_cont, min = -0.5, max = 0.5)
 
 nlvl_fix <- c(3L, 2L)
+nlvl_fix <- setNames(nlvl_fix, seq_along(nlvl_fix))
+if (length(nlvl_fix) <= 1) {
+  names(nlvl_fix) <- paste0("z.", names(nlvl_fix))
+}
 nterms_cate <- length(nlvl_fix)
 x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
   x_cate <- gl(n = nlvl_fix_i, k = floor(n_obs / nlvl_fix_i), length = n_obs,
-               labels = paste0("lvlx", seq_len(nlvl_fix_i)))
+               labels = paste0("lvl", seq_len(nlvl_fix_i)))
   b_cate <- runif(nlvl_fix_i, min = -0.5, max = 0.5)
   ### Using a model.matrix() approach:
   # x_cate_mat <- model.matrix(~ 0 + x_cate)
@@ -62,12 +66,16 @@ nterms_glm <- nterms_cont + nterms_cate
 ## Partially pooled ("random") effects ------------------------------------
 
 nlvl_ran <- c(8L)
+nlvl_ran <- setNames(nlvl_ran, seq_along(nlvl_ran))
+if (length(nlvl_ran) <= 1) {
+  names(nlvl_ran) <- paste0("z.", names(nlvl_ran))
+}
 # Multiply by 2 because of random intercepts and random slopes for
 # `x_cont[, 1]`:
 nterms_z <- length(nlvl_ran) * 2L
 z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
   z <- gl(n = nlvl_ran_i, k = floor(n_obs / nlvl_ran_i), length = n_obs,
-          labels = paste0("lvlz", seq_len(nlvl_ran_i)))
+          labels = paste0("lvl", seq_len(nlvl_ran_i)))
   r_icpts <- rnorm(nlvl_ran_i, sd = 0.8)
   r_xco1 <- rnorm(nlvl_ran_i, sd = 0.8)
   eta_z <- r_icpts[z] + r_xco1[z] * x_cont[, 1]
@@ -89,7 +97,8 @@ data_tst <- data.frame(
   y_binom_glmm = rbinom(n_obs, w_obs, f_binom$linkinv(eta_glmm)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
   z = lapply(z_list, "[[", "z"),
-  w_obs_col = w_obs, offs_col = offs
+  w_obs_col = w_obs, offs_col = offs,
+  check.names = FALSE
 )
 ys <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
