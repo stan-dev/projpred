@@ -1,6 +1,6 @@
 context("as.matrix.projection")
 
-### TODO:
+### Exclude GAMMs because of issue #131:
 mod_nms <- setdiff(mod_nms, c("gamm"))
 ###
 
@@ -8,47 +8,43 @@ settings <- list(
   glm = list(
     gauss = list(
       solterms_list = solterms_glm,
-      ndraws_list = list(25L, 2L, 1L)
+      ndraws_list = ndraws_tstl
     ),
     binom = list(
-      solterms_list = solterms_glm["somecomb_xco"],
-      ndraws_list = list(25L)
+      solterms_list = solterms_glm["somecomb_x"],
+      ndraws_list = ndraws_tstl["noclust"]
     )
   ),
   glmm = list(
     gauss = list(
       solterms_list = solterms_glmm,
-      ndraws_list = list(25L, 2L, 1L)
+      ndraws_list = ndraws_tstl
     ),
     binom = list(
       solterms_list = solterms_glmm["somecomb_z"],
-      ndraws_list = list(25L)
+      ndraws_list = ndraws_tstl["noclust"]
     )
   ),
   gam = list(
     gauss = list(
       solterms_list = solterms_gam,
-      ndraws_list = list(25L, 2L, 1L)
+      ndraws_list = ndraws_tstl
     ),
     binom = list(
       solterms_list = solterms_gam["somecomb_s"],
-      ndraws_list = list(25L)
+      ndraws_list = ndraws_tstl["noclust"]
     )
-  )#,
-  ### TODO:
-  # gamm = list(
-  #   gauss = list(
-  #     solterms_list = list(character(),
-  #                          "s(s.1)",
-  #                          c("s(s.1)", "s(s.2)")),
-  #     ndraws_list = list(25L, 2L, 1L)
-  #   ),
-  #   binom = list(
-  #     solterms_list = list("s(s.1)"),
-  #     ndraws_list = list(25L)
-  #   )
-  # )
-  ###
+  ),
+  gamm = list(
+    gauss = list(
+      solterms_list = solterms_gamm,
+      ndraws_list = ndraws_tstl
+    ),
+    binom = list(
+      solterms_list = solterms_gamm["somecomb_sz"],
+      ndraws_list = ndraws_tstl["noclust"]
+    )
+  )
 )
 
 for (mod_nm in mod_nms) {
