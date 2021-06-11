@@ -100,22 +100,28 @@ for (mod_nm in mod_nms) {
               paste0("xca.", xca_idx, "lvl", seq_len(nlvl_fix[xca_idx])[-1])
             )
           }
-          if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
-            if (!"xco.1" %in% colnms_prjmat_expect) {
-              colnms_prjmat_expect <- c(colnms_prjmat_expect, "xco.1")
-            }
-          }
           colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
           if ("(1 | z.1)" %in% solterms_crr) {
             colnms_prjmat_expect <- c(
               colnms_prjmat_expect,
               "sd_z.1__Intercept"
             )
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
+            )
           }
           if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
+            if (!"b_xco.1" %in% colnms_prjmat_expect) {
+              colnms_prjmat_expect <- c(colnms_prjmat_expect, "b_xco.1")
+            }
             colnms_prjmat_expect <- c(
               colnms_prjmat_expect,
               "sd_z.1__xco.1"
+            )
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
             )
           }
           if (all(c("(1 | z.1)", "xco.1 + (xco.1 | z.1)") %in% solterms_crr)) {
@@ -124,23 +130,15 @@ for (mod_nm in mod_nms) {
               "cor_z.1__Intercept__xco.1"
             )
           }
-          if ("(1 | z.1)" %in% solterms_crr) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
-            )
-          }
-          if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
-            )
-          }
           colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
 
           expect_identical(dim(m), c(ndraws_crr, length(colnms_prjmat_expect)),
                            info = tstsetup)
-          expect_identical(colnames(m), colnms_prjmat_expect, info = tstsetup)
+          ### expect_setequal() does not have argument `info`:
+          # expect_setequal(colnames(m), colnms_prjmat_expect)
+          expect_true(setequal(colnames(m), colnms_prjmat_expect),
+                      info = tstsetup)
+          ###
         })
       }
     }
