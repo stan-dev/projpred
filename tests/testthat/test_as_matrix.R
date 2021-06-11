@@ -56,6 +56,7 @@ settings <- list(
 for (mod_nm in mod_nms) {
   for (fam_nm in fam_nms) {
     refmod <- refmods[[mod_nm]][[fam_nm]]
+    # par_nms_orig <- colnames(as.matrix(refmod$fit))
     settings_crr <- settings[[mod_nm]][[fam_nm]]
     for (solterms_crr in settings_crr$solterms_list) {
       for (ndraws_crr in settings_crr$ndraws_list) {
@@ -86,6 +87,19 @@ for (mod_nm in mod_nms) {
             grep("^x(co|ca)\\.[[:digit:]]$", solterms_crr,
                  value = TRUE)
           )
+          xca_idxs <- as.integer(
+            sub("^xca\\.", "",
+                grep("^xca\\.", colnms_prjmat_expect, value = TRUE))
+          )
+          for (xca_idx in xca_idxs) {
+            colnms_prjmat_expect <- grep(paste0("^xca\\.", xca_idx, "$"),
+                                         colnms_prjmat_expect,
+                                         value = TRUE, invert = TRUE)
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              paste0("xca.", xca_idx, "lvl", seq_len(nlvl_fix[xca_idx])[-1])
+            )
+          }
           if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
             colnms_prjmat_expect <- c(colnms_prjmat_expect, "xco.1")
           }
