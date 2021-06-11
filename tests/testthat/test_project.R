@@ -258,7 +258,7 @@ if (require(rstanarm)) {
                          solution_terms = NULL),
                  "is not an object of class \"vsel\"")
     for (solterms_crr in list(2, 1:3, "1", list(c("x.3", "x.5"),
-                                                   c("x.2", "x.4")))) {
+                                                c("x.2", "x.4")))) {
       expect_warning(
         p <- project(refmod_list[[i]], nclusters = nclusters_tst,
                      solution_terms = solterms_crr),

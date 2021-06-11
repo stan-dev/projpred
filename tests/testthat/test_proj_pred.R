@@ -176,7 +176,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
                                      integrated_crr))
             expect_named(pl, c("pred", "lpd"), info = tstsetup)
             nprjdraws_crr <- ifelse(integrated_crr,
-                                       1L, nclusters_pred_crr)
+                                    1L, nclusters_pred_crr)
             expect_identical(dim(pl$pred), c(nprjdraws_crr, n_crr),
                              info = tstsetup)
             expect_identical(dim(pl$lpd), c(nprjdraws_crr, n_crr),
@@ -534,8 +534,8 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
             tstsetup <- unlist(nlist(i, n_crr, ndraws_pred_crr,
                                      nresample_clusters_crr))
             nprjdraws_crr <- ifelse(ndraws_pred_crr <= 20,
-                                       nresample_clusters_crr,
-                                       ndraws_pred_crr)
+                                    nresample_clusters_crr,
+                                    ndraws_pred_crr)
             expect_identical(dim(pl), c(nprjdraws_crr, n_crr),
                              info = tstsetup)
           }
