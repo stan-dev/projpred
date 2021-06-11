@@ -1,5 +1,11 @@
 context("as.matrix.projection")
 
+### Exclude GAMs because of issue #151 (note that for GAMs, the current
+### expectations below refer to a mixture of brms's and rstanarm's naming
+### scheme; as soon as issue #152 (not #151!) is solved, these expectations need
+### to be adopted):
+mod_nms <- setNames(nm = setdiff(mod_nms, "gam"))
+###
 ### Exclude GAMMs because of issue #131 (note that when including GAMMs in the
 ### future, the unit tests from below need to be adopted):
 mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
