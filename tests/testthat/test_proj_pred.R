@@ -163,23 +163,23 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   test_that("proj_linpred: output structure is also correct in edge cases", {
     for (i in fam_nms) {
       y <- refmod_list[[i]]$y
-      for (n_tsttmp in c(1L, 12L)) {
-        for (nclusters_pred_tsttmp in c(1L, 4L)) {
-          for (integrated_tsttmp in c(FALSE, TRUE)) {
+      for (n_crr in c(1L, 12L)) {
+        for (nclusters_pred_crr in c(1L, 4L)) {
+          for (integrated_crr in c(FALSE, TRUE)) {
             pl <- proj_linpred(
-              refmod_list[[i]], nclusters = nclusters_pred_tsttmp,
-              newdata = head(data.frame(y = y, x = x), n_tsttmp),
-              integrated = integrated_tsttmp,
+              refmod_list[[i]], nclusters = nclusters_pred_crr,
+              newdata = head(data.frame(y = y, x = x), n_crr),
+              integrated = integrated_crr,
               solution_terms = c("x.3", "x.5")
             )
-            tstsetup <- unlist(nlist(i, n_tsttmp, nclusters_pred_tsttmp,
-                                     integrated_tsttmp))
+            tstsetup <- unlist(nlist(i, n_crr, nclusters_pred_crr,
+                                     integrated_crr))
             expect_named(pl, c("pred", "lpd"), info = tstsetup)
-            nprjdraws_tsttmp <- ifelse(integrated_tsttmp,
-                                       1L, nclusters_pred_tsttmp)
-            expect_identical(dim(pl$pred), c(nprjdraws_tsttmp, n_tsttmp),
+            nprjdraws_crr <- ifelse(integrated_crr,
+                                       1L, nclusters_pred_crr)
+            expect_identical(dim(pl$pred), c(nprjdraws_crr, n_crr),
                              info = tstsetup)
-            expect_identical(dim(pl$lpd), c(nprjdraws_tsttmp, n_tsttmp),
+            expect_identical(dim(pl$lpd), c(nprjdraws_crr, n_crr),
                              info = tstsetup)
           }
         }
@@ -496,19 +496,19 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     "(using `nclusters`)"
   ), {
     for (i in fam_nms) {
-      for (n_tsttmp in c(1L, 12L)) {
-        for (nclusters_pred_tsttmp in c(1L, 4L, 24L)) {
-          for (nresample_clusters_tsttmp in c(1L, 8L)) {
+      for (n_crr in c(1L, 12L)) {
+        for (nclusters_pred_crr in c(1L, 4L, 24L)) {
+          for (nresample_clusters_crr in c(1L, 8L)) {
             pl <- proj_predict(
-              refmod_list[[i]], nclusters = nclusters_pred_tsttmp,
-              newdata = head(data.frame(x = x), n_tsttmp),
-              nresample_clusters = nresample_clusters_tsttmp,
+              refmod_list[[i]], nclusters = nclusters_pred_crr,
+              newdata = head(data.frame(x = x), n_crr),
+              nresample_clusters = nresample_clusters_crr,
               .seed = seed + 1,
               solution_terms = c("x.3", "x.5")
             )
-            tstsetup <- unlist(nlist(i, n_tsttmp, nclusters_pred_tsttmp,
-                                     nresample_clusters_tsttmp))
-            expect_identical(dim(pl), c(nresample_clusters_tsttmp, n_tsttmp),
+            tstsetup <- unlist(nlist(i, n_crr, nclusters_pred_crr,
+                                     nresample_clusters_crr))
+            expect_identical(dim(pl), c(nresample_clusters_crr, n_crr),
                              info = tstsetup)
           }
         }
@@ -521,22 +521,22 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     "(using `ndraws`)"
   ), {
     for (i in fam_nms) {
-      for (n_tsttmp in c(1L, 12L)) {
-        for (ndraws_pred_tsttmp in c(1L, 4L, 24L)) {
-          for (nresample_clusters_tsttmp in c(1L, 8L)) {
+      for (n_crr in c(1L, 12L)) {
+        for (ndraws_pred_crr in c(1L, 4L, 24L)) {
+          for (nresample_clusters_crr in c(1L, 8L)) {
             pl <- proj_predict(
-              refmod_list[[i]], ndraws = ndraws_pred_tsttmp,
-              newdata = head(data.frame(x = x), n_tsttmp),
-              nresample_clusters = nresample_clusters_tsttmp,
+              refmod_list[[i]], ndraws = ndraws_pred_crr,
+              newdata = head(data.frame(x = x), n_crr),
+              nresample_clusters = nresample_clusters_crr,
               .seed = seed + 1,
               solution_terms = c("x.3", "x.5")
             )
-            tstsetup <- unlist(nlist(i, n_tsttmp, ndraws_pred_tsttmp,
-                                     nresample_clusters_tsttmp))
-            nprjdraws_tsttmp <- ifelse(ndraws_pred_tsttmp <= 20,
-                                       nresample_clusters_tsttmp,
-                                       ndraws_pred_tsttmp)
-            expect_identical(dim(pl), c(nprjdraws_tsttmp, n_tsttmp),
+            tstsetup <- unlist(nlist(i, n_crr, ndraws_pred_crr,
+                                     nresample_clusters_crr))
+            nprjdraws_crr <- ifelse(ndraws_pred_crr <= 20,
+                                       nresample_clusters_crr,
+                                       ndraws_pred_crr)
+            expect_identical(dim(pl), c(nprjdraws_crr, n_crr),
                              info = tstsetup)
           }
         }

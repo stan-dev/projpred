@@ -16,18 +16,18 @@ settings_list_glm <- list(
 )
 
 for (settings_obj in settings_list_glm) {
-  for (solterms_tsttmp in settings_obj$solterms_list) {
-    for (ndraws_tsttmp in settings_obj$ndraws_list) {
+  for (solterms_crr in settings_obj$solterms_list) {
+    for (ndraws_crr in settings_obj$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
-                               solterms_tsttmp,
-                               ndraws_tsttmp))
+                               solterms_crr,
+                               ndraws_crr))
       prj <- project(settings_obj$refmod,
-                     solution_terms = solterms_tsttmp,
-                     ndraws = ndraws_tsttmp)
+                     solution_terms = solterms_crr,
+                     ndraws = ndraws_crr)
 
       # Expected warning (more precisely: regexp which is matched against the
       # warning; NA means no warning) for as.matrix.projection():
-      if (ndraws_tsttmp > 20) {
+      if (ndraws_crr > 20) {
         warn_prjmat_expect <- NA
       } else {
         # Clustered projection, so we expect a warning:
@@ -44,12 +44,12 @@ for (settings_obj in settings_list_glm) {
       test_that("as.matrix.projection()'s output structure is correct", {
         expect_identical(
           dim(m),
-          c(ndraws_tsttmp, length(solterms_tsttmp) + 1L + length(npars_fam)),
+          c(ndraws_crr, length(solterms_crr) + 1L + length(npars_fam)),
           info = tstsetup
         )
         expect_identical(
           colnames(m),
-          c(paste0("b_", c("Intercept", solterms_tsttmp)), npars_fam),
+          c(paste0("b_", c("Intercept", solterms_crr)), npars_fam),
           info = tstsetup
         )
       })
@@ -75,18 +75,18 @@ settings_list_glmm <- list(
 )
 
 for (settings_obj in settings_list_glmm) {
-  for (solterms_tsttmp in settings_obj$solterms_list) {
-    for (ndraws_tsttmp in settings_obj$ndraws_list) {
+  for (solterms_crr in settings_obj$solterms_list) {
+    for (ndraws_crr in settings_obj$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
-                               solterms_tsttmp,
-                               ndraws_tsttmp))
+                               solterms_crr,
+                               ndraws_crr))
       prj <- project(settings_obj$refmod,
-                     solution_terms = solterms_tsttmp,
-                     ndraws = ndraws_tsttmp)
+                     solution_terms = solterms_crr,
+                     ndraws = ndraws_crr)
 
       # Expected warning (more precisely: regexp which is matched against the
       # warning; NA means no warning) for as.matrix.projection():
-      if (ndraws_tsttmp > 20) {
+      if (ndraws_crr > 20) {
         warn_prjmat_expect <- NA
       } else {
         # Clustered projection, so we expect a warning:
@@ -103,38 +103,38 @@ for (settings_obj in settings_list_glmm) {
       test_that("as.matrix.projection()'s output structure is correct", {
         colnms_prjmat_expect <- c(
           "Intercept",
-          grep("^x\\.[[:digit:]]$", solterms_tsttmp,
+          grep("^x\\.[[:digit:]]$", solterms_crr,
                value = TRUE)
         )
-        if ("x.1 + (x.1 | x.gr)" %in% solterms_tsttmp) {
+        if ("x.1 + (x.1 | x.gr)" %in% solterms_crr) {
           colnms_prjmat_expect <- c(colnms_prjmat_expect, "x.1")
         }
         colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
-        if ("(1 | x.gr)" %in% solterms_tsttmp) {
+        if ("(1 | x.gr)" %in% solterms_crr) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             "sd_x.gr__Intercept"
           )
         }
-        if ("x.1 + (x.1 | x.gr)" %in% solterms_tsttmp) {
+        if ("x.1 + (x.1 | x.gr)" %in% solterms_crr) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             "sd_x.gr__x.1"
           )
         }
-        if (all(c("(1 | x.gr)", "x.1 + (x.1 | x.gr)") %in% solterms_tsttmp)) {
+        if (all(c("(1 | x.gr)", "x.1 + (x.1 | x.gr)") %in% solterms_crr)) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             "cor_x.gr__Intercept__x.1"
           )
         }
-        if ("(1 | x.gr)" %in% solterms_tsttmp) {
+        if ("(1 | x.gr)" %in% solterms_crr) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             paste0("r_x.gr[gr", seq_len(ngr), ",Intercept]")
           )
         }
-        if ("x.1 + (x.1 | x.gr)" %in% solterms_tsttmp) {
+        if ("x.1 + (x.1 | x.gr)" %in% solterms_crr) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             paste0("r_x.gr[gr", seq_len(ngr), ",x.1]")
@@ -142,7 +142,7 @@ for (settings_obj in settings_list_glmm) {
         }
         colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
 
-        expect_identical(dim(m), c(ndraws_tsttmp, length(colnms_prjmat_expect)),
+        expect_identical(dim(m), c(ndraws_crr, length(colnms_prjmat_expect)),
                          info = tstsetup)
         expect_identical(colnames(m), colnms_prjmat_expect, info = tstsetup)
       })
@@ -168,18 +168,18 @@ settings_list_gam <- list(
 )
 
 for (settings_obj in settings_list_gam) {
-  for (solterms_tsttmp in settings_obj$solterms_list) {
-    for (ndraws_tsttmp in settings_obj$ndraws_list) {
+  for (solterms_crr in settings_obj$solterms_list) {
+    for (ndraws_crr in settings_obj$ndraws_list) {
       tstsetup <- unlist(nlist(fam_nm = settings_obj$refmod$family$family,
-                               solterms_tsttmp,
-                               ndraws_tsttmp))
+                               solterms_crr,
+                               ndraws_crr))
       prj <- project(settings_obj$refmod,
-                     solution_terms = solterms_tsttmp,
-                     ndraws = ndraws_tsttmp)
+                     solution_terms = solterms_crr,
+                     ndraws = ndraws_crr)
 
       # Expected warning (more precisely: regexp which is matched against the
       # warning; NA means no warning) for as.matrix.projection():
-      if (ndraws_tsttmp > 20) {
+      if (ndraws_crr > 20) {
         warn_prjmat_expect <- NA
       } else {
         # Clustered projection, so we expect a warning:

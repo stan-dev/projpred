@@ -257,22 +257,22 @@ if (require(rstanarm)) {
     expect_error(project(refmod_list[[i]], nclusters = nclusters_tst,
                          solution_terms = NULL),
                  "is not an object of class \"vsel\"")
-    for (solterms_tsttmp in list(2, 1:3, "1", list(c("x.3", "x.5"),
+    for (solterms_crr in list(2, 1:3, "1", list(c("x.3", "x.5"),
                                                    c("x.2", "x.4")))) {
       expect_warning(
         p <- project(refmod_list[[i]], nclusters = nclusters_tst,
-                     solution_terms = solterms_tsttmp),
+                     solution_terms = solterms_crr),
         paste("At least one element of `solution_terms` could not be found",
               "among the terms in the reference model"),
-        info = as.character(solterms_tsttmp)
+        info = as.character(solterms_crr)
       )
       expect_s3_class(p, "projection")
-      expect_named(p, projection_nms, info = solterms_tsttmp)
+      expect_named(p, projection_nms, info = solterms_crr)
       expect_length(p$sub_fit, nclusters_tst)
       expect_length(p$weights, nclusters_tst)
       expect_length(p$dis, nclusters_tst)
       SW(nprjdraws <- NROW(as.matrix(p)))
-      expect_identical(nprjdraws, nclusters_tst, info = solterms_tsttmp)
+      expect_identical(nprjdraws, nclusters_tst, info = solterms_crr)
       expect_identical(p$solution_terms, "1")
     }
   })
@@ -281,9 +281,9 @@ if (require(rstanarm)) {
     "specifying `solution_terms` correctly leads to correct output structure"
   ), {
     for (i in fam_nms) {
-      for (solterms_tsttmp in list(character(), "x.3", c("x.2", "x.4"))) {
+      for (solterms_crr in list(character(), "x.3", c("x.2", "x.4"))) {
         p <- project(refmod_list[[i]], nclusters = nclusters_tst,
-                     solution_terms = solterms_tsttmp)
+                     solution_terms = solterms_crr)
         expect_s3_class(p, "projection")
         expect_named(p, projection_nms, info = i)
         expect_length(p$sub_fit, nclusters_tst)
@@ -291,10 +291,10 @@ if (require(rstanarm)) {
         expect_length(p$dis, nclusters_tst)
         SW(nprjdraws <- NROW(as.matrix(p)))
         expect_identical(nprjdraws, nclusters_tst, info = i)
-        solterms_out <- if (length(solterms_tsttmp) == 0) {
+        solterms_out <- if (length(solterms_crr) == 0) {
           "1"
         } else {
-          solterms_tsttmp
+          solterms_crr
         }
         expect_identical(p$solution_terms, solterms_out)
       }
@@ -315,12 +315,12 @@ if (require(rstanarm)) {
   ), {
     i <- "gauss"
     S <- nrow(as.matrix(fit_list[[i]]))
-    for (ndraws_tsttmp in list(S + 1L)) {
-      for (nclusters_tsttmp in list(NULL, S + 1L)) {
-        tstsetup <- unlist(nlist(i, ndraws_tsttmp, nclusters_tsttmp))
+    for (ndraws_crr in list(S + 1L)) {
+      for (nclusters_crr in list(NULL, S + 1L)) {
+        tstsetup <- unlist(nlist(i, ndraws_crr, nclusters_crr))
         p <- project(refmod_list[[i]],
-                     ndraws = ndraws_tsttmp,
-                     nclusters = nclusters_tsttmp,
+                     ndraws = ndraws_crr,
+                     nclusters = nclusters_crr,
                      solution_terms = solterms_tst)
         expect_s3_class(p, "projection")
         expect_named(p, projection_nms, info = tstsetup)
@@ -340,19 +340,19 @@ if (require(rstanarm)) {
     "structure"
   ), {
     for (i in fam_nms) {
-      for (ndraws_tsttmp in list(1L, 20L, 21L)) {
-        for (nclusters_tsttmp in list(NULL, 1L, 2L, 3L)) {
-          tstsetup <- unlist(nlist(i, ndraws_tsttmp, nclusters_tsttmp))
+      for (ndraws_crr in list(1L, 20L, 21L)) {
+        for (nclusters_crr in list(NULL, 1L, 2L, 3L)) {
+          tstsetup <- unlist(nlist(i, ndraws_crr, nclusters_crr))
           p <- project(refmod_list[[i]],
-                       ndraws = ndraws_tsttmp,
-                       nclusters = nclusters_tsttmp,
+                       ndraws = ndraws_crr,
+                       nclusters = nclusters_crr,
                        solution_terms = solterms_tst)
           expect_s3_class(p, "projection")
           expect_named(p, projection_nms, info = tstsetup)
-          nprjdraws_out <- if (!is.null(nclusters_tsttmp)) {
-            nclusters_tsttmp
+          nprjdraws_out <- if (!is.null(nclusters_crr)) {
+            nclusters_crr
           } else {
-            ndraws_tsttmp
+            ndraws_crr
           }
           nprjdraws_sub_fit <- if (nprjdraws_out == 1) {
             length(sub_fit_nms)
