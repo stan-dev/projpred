@@ -1,7 +1,8 @@
 context("as.matrix.projection")
 
-### Exclude GAMMs because of issue #131:
-mod_nms <- setdiff(mod_nms, c("gamm"))
+### Exclude GAMMs because of issue #131 (note that when including GAMMs in the
+### future, the unit tests from below need to be adopted):
+mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
 ###
 
 settings <- list(
