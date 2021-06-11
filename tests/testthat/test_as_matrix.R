@@ -1,207 +1,132 @@
 context("as.matrix.projection")
 
-# GLMs --------------------------------------------------------------------
+### TODO:
+mod_nms <- setdiff(mod_nms, c("gam", "gamm"))
+###
 
-settings_list_glm <- list(
-  gauss = list(
-    refmod = refmods_glm$gauss,
-    solterms_list = list(character(), solterms_tst),
-    ndraws_list = list(25L, 2L, 1L)
+settings <- list(
+  glm = list(
+    gauss = list(
+      solterms_list = solterms_glm,
+      ndraws_list = list(25L, 2L, 1L)
+    ),
+    binom = list(
+      solterms_list = solterms_glm["somecomb_xco"],
+      ndraws_list = list(25L)
+    )
   ),
-  binom = list(
-    refmod = refmods_glm$binom,
-    solterms_list = list(solterms_tst),
-    ndraws_list = list(25L)
-  )
+  glmm = list(
+    gauss = list(
+      solterms_list = solterms_glmm,
+      ndraws_list = list(25L, 2L, 1L)
+    ),
+    binom = list(
+      solterms_list = solterms_glmm["somecomb_z"],
+      ndraws_list = list(25L)
+    )
+  )#,
+  ### TODO:
+  # gam = list(
+  #   gauss = list(
+  #     solterms_list = list(character(),
+  #                          "s(s.1)",
+  #                          c("s(s.1)", "s(s.2)")),
+  #     ndraws_list = list(25L, 2L, 1L)
+  #   ),
+  #   binom = list(
+  #     solterms_list = list("s(s.1)"),
+  #     ndraws_list = list(25L)
+  #   )
+  # ),
+  # gamm = list(
+  #   gauss = list(
+  #     solterms_list = list(character(),
+  #                          "s(s.1)",
+  #                          c("s(s.1)", "s(s.2)")),
+  #     ndraws_list = list(25L, 2L, 1L)
+  #   ),
+  #   binom = list(
+  #     solterms_list = list("s(s.1)"),
+  #     ndraws_list = list(25L)
+  #   )
+  # )
+  ###
 )
 
-for (settings_crr in settings_list_glm) {
-  for (solterms_crr in settings_crr$solterms_list) {
-    for (ndraws_crr in settings_crr$ndraws_list) {
-      tstsetup <- unlist(nlist(fam_nm = settings_crr$refmod$family$family,
-                               solterms_crr,
-                               ndraws_crr))
-      prj <- project(settings_crr$refmod,
-                     solution_terms = solterms_crr,
-                     ndraws = ndraws_crr)
+for (mod_nm in mod_nms) {
+  for (fam_nm in fam_nms) {
+    refmod <- refmods[[mod_nm]][[fam_nm]]
+    settings_crr <- settings[[mod_nm]][[fam_nm]]
+    for (solterms_crr in settings_crr$solterms_list) {
+      for (ndraws_crr in settings_crr$ndraws_list) {
+        tstsetup <- unlist(nlist(mod_nm, fam_nm, solterms_crr, ndraws_crr))
+        prj <- project(refmod,
+                       solution_terms = solterms_crr,
+                       ndraws = ndraws_crr)
 
-      # Expected warning (more precisely: regexp which is matched against the
-      # warning; NA means no warning) for as.matrix.projection():
-      if (ndraws_crr > 20) {
-        warn_prjmat_expect <- NA
-      } else {
-        # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
+        # Expected warning (more precisely: regexp which is matched against the
+        # warning; NA means no warning) for as.matrix.projection():
+        if (ndraws_crr > 20) {
+          warn_prjmat_expect <- NA
+        } else {
+          # Clustered projection, so we expect a warning:
+          warn_prjmat_expect <- "the clusters might have different weights"
+        }
+
+        expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
+
+        if (fam_nm == "gauss") {
+          npars_fam <- "sigma"
+        } else if (fam_nm == "binom") {
+          npars_fam <- character()
+        }
+        test_that("as.matrix.projection()'s output structure is correct", {
+          colnms_prjmat_expect <- c(
+            "Intercept",
+            grep("^x(co|ca)\\.[[:digit:]]$", solterms_crr,
+                 value = TRUE)
+          )
+          if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
+            colnms_prjmat_expect <- c(colnms_prjmat_expect, "xco.1")
+          }
+          colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
+          if ("(1 | z.1)" %in% solterms_crr) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              "sd_z.1__Intercept"
+            )
+          }
+          if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              "sd_z.1__xco.1"
+            )
+          }
+          if (all(c("(1 | z.1)", "xco.1 + (xco.1 | z.1)") %in% solterms_crr)) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              "cor_z.1__Intercept__xco.1"
+            )
+          }
+          if ("(1 | z.1)" %in% solterms_crr) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
+            )
+          }
+          if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
+            colnms_prjmat_expect <- c(
+              colnms_prjmat_expect,
+              paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
+            )
+          }
+          colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
+
+          expect_identical(dim(m), c(ndraws_crr, length(colnms_prjmat_expect)),
+                           info = tstsetup)
+          expect_identical(colnames(m), colnms_prjmat_expect, info = tstsetup)
+        })
       }
-
-      expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
-
-      if (settings_crr$refmod$family$family == "gaussian") {
-        npars_fam <- "sigma"
-      } else if (settings_crr$refmod$family$family == "binomial") {
-        npars_fam <- character()
-      }
-      test_that("as.matrix.projection()'s output structure is correct", {
-        expect_identical(
-          dim(m),
-          c(ndraws_crr, length(solterms_crr) + 1L + length(npars_fam)),
-          info = tstsetup
-        )
-        expect_identical(
-          colnames(m),
-          c(paste0("b_", c("Intercept", solterms_crr)), npars_fam),
-          info = tstsetup
-        )
-      })
     }
   }
 }
-
-# GLMMs -------------------------------------------------------------------
-
-settings_list_glmm <- list(
-  gauss = list(
-    refmod = refmods_glmm$gauss,
-    solterms_list = list(character(),
-                         solterms_tst,
-                         c("x.3", "(1 | x.gr)", "x.1 + (x.1 | x.gr)")),
-    ndraws_list = list(25L, 2L, 1L)
-  ),
-  binom = list(
-    refmod = refmods_glmm$binom,
-    solterms_list = list(solterms_tst),
-    ndraws_list = list(25L)
-  )
-)
-
-for (settings_crr in settings_list_glmm) {
-  for (solterms_crr in settings_crr$solterms_list) {
-    for (ndraws_crr in settings_crr$ndraws_list) {
-      tstsetup <- unlist(nlist(fam_nm = settings_crr$refmod$family$family,
-                               solterms_crr,
-                               ndraws_crr))
-      prj <- project(settings_crr$refmod,
-                     solution_terms = solterms_crr,
-                     ndraws = ndraws_crr)
-
-      # Expected warning (more precisely: regexp which is matched against the
-      # warning; NA means no warning) for as.matrix.projection():
-      if (ndraws_crr > 20) {
-        warn_prjmat_expect <- NA
-      } else {
-        # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
-      }
-
-      expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
-
-      if (settings_crr$refmod$family$family == "gaussian") {
-        npars_fam <- "sigma"
-      } else if (settings_crr$refmod$family$family == "binomial") {
-        npars_fam <- character()
-      }
-      test_that("as.matrix.projection()'s output structure is correct", {
-        colnms_prjmat_expect <- c(
-          "Intercept",
-          grep("^x\\.[[:digit:]]$", solterms_crr,
-               value = TRUE)
-        )
-        if ("x.1 + (x.1 | x.gr)" %in% solterms_crr) {
-          colnms_prjmat_expect <- c(colnms_prjmat_expect, "x.1")
-        }
-        colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
-        if ("(1 | x.gr)" %in% solterms_crr) {
-          colnms_prjmat_expect <- c(
-            colnms_prjmat_expect,
-            "sd_x.gr__Intercept"
-          )
-        }
-        if ("x.1 + (x.1 | x.gr)" %in% solterms_crr) {
-          colnms_prjmat_expect <- c(
-            colnms_prjmat_expect,
-            "sd_x.gr__x.1"
-          )
-        }
-        if (all(c("(1 | x.gr)", "x.1 + (x.1 | x.gr)") %in% solterms_crr)) {
-          colnms_prjmat_expect <- c(
-            colnms_prjmat_expect,
-            "cor_x.gr__Intercept__x.1"
-          )
-        }
-        if ("(1 | x.gr)" %in% solterms_crr) {
-          colnms_prjmat_expect <- c(
-            colnms_prjmat_expect,
-            paste0("r_x.gr[gr", seq_len(ngr), ",Intercept]")
-          )
-        }
-        if ("x.1 + (x.1 | x.gr)" %in% solterms_crr) {
-          colnms_prjmat_expect <- c(
-            colnms_prjmat_expect,
-            paste0("r_x.gr[gr", seq_len(ngr), ",x.1]")
-          )
-        }
-        colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
-
-        expect_identical(dim(m), c(ndraws_crr, length(colnms_prjmat_expect)),
-                         info = tstsetup)
-        expect_identical(colnames(m), colnms_prjmat_expect, info = tstsetup)
-      })
-    }
-  }
-}
-
-# GAMs --------------------------------------------------------------------
-
-settings_list_gam <- list(
-  gauss = list(
-    refmod = refmods_gam$gauss,
-    solterms_list = list(character(),
-                         solterms_tst_gam,
-                         c(solterms_tst_gam, "s(x.2)")),
-    ndraws_list = list(25L, 2L, 1L)
-  ),
-  binom = list(
-    refmod = refmods_gam$binom,
-    solterms_list = list(solterms_tst_gam),
-    ndraws_list = list(25L)
-  )
-)
-
-for (settings_crr in settings_list_gam) {
-  for (solterms_crr in settings_crr$solterms_list) {
-    for (ndraws_crr in settings_crr$ndraws_list) {
-      tstsetup <- unlist(nlist(fam_nm = settings_crr$refmod$family$family,
-                               solterms_crr,
-                               ndraws_crr))
-      prj <- project(settings_crr$refmod,
-                     solution_terms = solterms_crr,
-                     ndraws = ndraws_crr)
-
-      # Expected warning (more precisely: regexp which is matched against the
-      # warning; NA means no warning) for as.matrix.projection():
-      if (ndraws_crr > 20) {
-        warn_prjmat_expect <- NA
-      } else {
-        # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
-      }
-
-      expect_warning(m <- as.matrix(prj), warn_prjmat_expect, info = tstsetup)
-
-      if (settings_crr$refmod$family$family == "gaussian") {
-        npars_fam <- "sigma"
-      } else if (settings_crr$refmod$family$family == "binomial") {
-        npars_fam <- character()
-      }
-
-      par_nms_orig <- colnames(as.matrix(settings_crr$refmod$fit))
-      test_that("as.matrix.projection()'s output structure is correct", {
-        # TODO
-      })
-    }
-  }
-}
-
-# GAMMs -------------------------------------------------------------------
-
-# Currently deactivated (see `setup.R`).
