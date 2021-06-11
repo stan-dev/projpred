@@ -7,7 +7,10 @@
 seed_tst <- 1235
 set.seed(seed_tst)
 source(testthat::test_path("helpers", "SW.R"))
-mod_nms <- setNames(nm = c("glm", "glmm", "gam")) # , "gamm"
+mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
+### Exclude GAMMs because of issue #148:
+mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
+###
 fam_nms <- setNames(nm = c("gauss", "binom"))
 
 # rstanarm setup ----------------------------------------------------------
@@ -228,24 +231,26 @@ SW({
 #     rstanarm::stan_gamm4() seems to be unable to support an offset() in the
 #     formula. Therefore, omit the offset here.
 
-SW({
-  fit_gamm_gauss <- rstanarm::stan_gamm4(
-    y_gamm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-      s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
-    random = ~ (xco.1 | z.1),
-    family = f_gauss, data = dat,
-    weights = wobs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
-  fit_gamm_binom <- rstanarm::stan_gamm4(
-    cbind(y_gamm_binom, wobs_col - y_gamm_binom) ~
-      xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-      s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
-    random = ~ (xco.1 | z.1),
-    family = f_binom, data = dat,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst
-  )
-})
+### Exclude GAMMs because of issue #148:
+# SW({
+#   fit_gamm_gauss <- rstanarm::stan_gamm4(
+#     y_gamm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+#       s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
+#     random = ~ (xco.1 | z.1),
+#     family = f_gauss, data = dat,
+#     weights = wobs_tst,
+#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+#   )
+#   fit_gamm_binom <- rstanarm::stan_gamm4(
+#     cbind(y_gamm_binom, wobs_col - y_gamm_binom) ~
+#       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+#       s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
+#     random = ~ (xco.1 | z.1),
+#     family = f_binom, data = dat,
+#     chains = chains_tst, seed = seed_tst, iter = iter_tst
+#   )
+# })
+###
 
 ## List -------------------------------------------------------------------
 
@@ -266,8 +271,10 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
     get_refmodel(fits[[mod_nm]][[fam_nm]])
   })
 }))
-### To avoid issue #144 (for GAMMs):
-library(lme4)
+### Exclude GAMMs because of issue #148:
+# ### To avoid issue #144 (for GAMMs):
+# # library(lme4)
+# ###
 ###
 SW(vss <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
@@ -277,6 +284,8 @@ SW(vss <- lapply(mod_nms, function(mod_nm) {
            nterms_max = nterms_glm, verbose = FALSE)
   })
 }))
-### Clean up (belongs to the fix for issue #144 above):
-detach("package:lme4")
+### Exclude GAMMs because of issue #148:
+# ### Clean up (belongs to the fix for issue #144 above):
+# # detach("package:lme4")
+# ###
 ###
