@@ -93,10 +93,10 @@ f_binom <- binomial()
 dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, n_tst, replace = TRUE)
 data_tst <- data.frame(
-  y_gauss_glm = rnorm(n_tst, f_gauss$linkinv(eta_glm), dis_tst),
-  y_binom_glm = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glm)),
-  y_gauss_glmm = rnorm(n_tst, f_gauss$linkinv(eta_glmm), dis_tst),
-  y_binom_glmm = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glmm)),
+  y_glm_gauss = rnorm(n_tst, f_gauss$linkinv(eta_glm), dis_tst),
+  y_glm_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glm)),
+  y_glmm_gauss = rnorm(n_tst, f_gauss$linkinv(eta_glmm), dis_tst),
+  y_glmm_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glmm)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
   z = lapply(z_list, "[[", "z"),
   wobs_col = wobs_tst, offs_col = offs_tst,
@@ -104,7 +104,7 @@ data_tst <- data.frame(
 )
 ys_tst <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
-    data_tst[[paste("y", fam_nm, mod_nm, sep = "_")]]
+    data_tst[[paste("y", mod_nm, fam_nm, sep = "_")]]
   })
 })
 
@@ -117,14 +117,14 @@ ys_tst <- lapply(mod_nms, function(mod_nm) {
 ## GLMs -------------------------------------------------------------------
 
 SW({
-  fit_gauss_glm <- rstanarm::stan_glm(
-    y_gauss_glm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
+  fit_glm_gauss <- rstanarm::stan_glm(
+    y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_gauss, data = data_tst,
     weights = wobs_tst, offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
-  fit_binom_glm <- rstanarm::stan_glm(
-    cbind(y_binom_glm, wobs_col - y_binom_glm) ~
+  fit_glm_binom <- rstanarm::stan_glm(
+    cbind(y_glm_binom, wobs_col - y_glm_binom) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_binom, data = data_tst,
     offset = offs_tst,
@@ -135,14 +135,14 @@ SW({
 ## GLMMs ------------------------------------------------------------------
 
 SW({
-  fit_gauss_glmm <- rstanarm::stan_glmer(
-    y_gauss_glmm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
+  fit_glmm_gauss <- rstanarm::stan_glmer(
+    y_glmm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_gauss, data = data_tst,
     weights = wobs_tst, offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
-  fit_binom_glmm <- rstanarm::stan_glmer(
-    cbind(y_binom_glmm, wobs_col - y_binom_glmm) ~
+  fit_glmm_binom <- rstanarm::stan_glmer(
+    cbind(y_glmm_binom, wobs_col - y_glmm_binom) ~
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_binom, data = data_tst,
     offset = offs_tst,
@@ -154,7 +154,7 @@ SW({
 
 fits_tst <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
-    get(paste("fit", fam_nm, mod_nm, sep = "_"))
+    get(paste("fit", mod_nm, fam_nm, sep = "_"))
   })
 })
 
