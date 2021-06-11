@@ -131,11 +131,24 @@ for (mod_nm in mod_nms) {
             #   sum(grepl(paste0("^s\\(", s_nm, "\\)"), par_nms_orig))
             # })
             ###
-            # Construct the expected column names:
+            # Construct the expected column names for the basis coefficients:
             for (s_nm in s_nms) {
               colnms_prjmat_expect <- c(
                 colnms_prjmat_expect,
                 paste0("b_s(", s_nm, ").", seq_len(s_dfs[s_nm]))
+              )
+            }
+            # Needed for the names of the `smooth_sd` parameters:
+            s_nsds <- setNames(
+              lapply(lapply(s_info, "[[", "sp"), names),
+              s_terms
+            )
+            # Construct the expected column names for the SDs of the smoothing
+            # terms:
+            for (s_nm in s_nms) {
+              colnms_prjmat_expect <- c(
+                colnms_prjmat_expect,
+                paste0("smooth_sd[", s_nsds[[s_nm]], "]")
               )
             }
           }
