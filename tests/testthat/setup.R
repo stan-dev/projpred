@@ -157,6 +157,7 @@ fits_tst <- lapply(mod_nms, function(mod_nm) {
     get(paste("fit", mod_nm, fam_nm, sep = "_"))
   })
 })
+rm(list = grep("^fit_", ls(), value = TRUE))
 
 # projpred ----------------------------------------------------------------
 
