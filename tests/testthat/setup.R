@@ -26,7 +26,7 @@ nclusters_pred_tst <- 3L
 nresample_clusters_tst <- 100L
 nresample_clusters_default <- 1000L # Adopt this if the default is changed.
 seed2_tst <- 866028
-### Since as.matrix.projection() seems to have a bug for categorical predictors:
+### Because of issue #149:
 # solterms_glm <- list(empty = character(), somecomb_x = c("xco.2", "xca.1"))
 solterms_glm <- list(empty = character(), somecomb_x = c("xco.2", "xco.1"))
 ###
