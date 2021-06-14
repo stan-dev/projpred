@@ -313,7 +313,8 @@ vss <- lapply(mod_nms, function(mod_nm) {
            nterms_max = nterms_max_tst, verbose = FALSE)
   })
 })
-cvvss <- lapply(mod_nms, function(mod_nm) {
+# Occasionally, we have warnings concerning Pareto k diagnostics:
+SW(cvvss <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     cv_varsel(refmods[[mod_nm]][[fam_nm]],
               nclusters = nclusters_tst,
@@ -321,7 +322,7 @@ cvvss <- lapply(mod_nms, function(mod_nm) {
               nterms_max = nterms_max_tst,
               verbose = FALSE)
   })
-})
+}))
 ### Exclude GAMMs because of issue #148:
 # ### Clean up (belongs to the fix for issue #144 above):
 # # detach("package:lme4")
