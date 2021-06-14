@@ -1,27 +1,21 @@
 context("proj_linpred")
 
-test_that("proj_linpred: newdata is specified correctly", {
-  ## expect_error(
-  ##   proj_linpred(proj_solution_terms_list),
-  ##   'argument "newdata" is missing, with no default'
-  ## )
-  ## expect_error(
-  ##   proj_linpred(proj_solution_terms_list, newdata = NULL),
-  ##   "must be a data.frame or a matrix"
-  ## )
+test_that("proj_linpred: `newdata` is checked correctly", {
   expect_error(
-    proj_linpred(proj_solution_terms_list, newdata = x[, 1]),
+    proj_linpred(prjs_solterms, newdata = dat[, 1]),
     "must be a data.frame or a matrix"
   )
   expect_error(
-    proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x),
+    proj_linpred(prjs_solterms,
                  solution_terms = paste0("x.", 1:10000)),
     paste("^The number of solution terms is greater than the number of",
           "columns in newdata\\.$")
   )
+  stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x)[, 1:2],
-                 solution_terms = paste0("x.", 1:3)),
+    proj_linpred(prjs_solterms$glm.gauss.solterms_x.clust,
+                 newdata = dat[, 1, drop = FALSE],
+                 solution_terms = solterms_x),
     paste("^The number of solution terms is greater than the number of",
           "columns in newdata\\.$")
   )
@@ -31,14 +25,18 @@ test_that(paste(
   "proj_linpred: \"refmodel\" object as input leads to correct output",
   "structure"
 ), {
-  for (i in fam_nms) {
-    y <- refmod_list[[i]]$y
-    pl <- proj_linpred(refmod_list[[i]], nclusters = nclusters_pred_tst,
-                       newdata = data.frame(y = y, x = x),
-                       solution_terms = c("x.3", "x.5"))
-    expect_named(pl, c("pred", "lpd"), info = i)
-    expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
-    expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n), info = i)
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      tstsetup <- unlist(nlist(mod_nm, fam_nm))
+      pl <- proj_linpred(refmods[[mod_nm]][[fam_nm]],
+                         solution_terms = solterms_x,
+                         nclusters = nclusters_pred_tst)
+      expect_named(pl, c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+    }
   }
 })
 
@@ -65,8 +63,8 @@ test_that(paste(
   "structure"
 ), {
   for (i in fam_nms) {
-    y <- proj_solution_terms_list[[i]]$refmodel$y
-    pl <- proj_linpred(proj_solution_terms_list[[i]],
+    y <- prjs_solterms[[i]]$refmodel$y
+    pl <- proj_linpred(prjs_solterms[[i]],
                        newdata = data.frame(y = y, x = x))
     expect_named(pl, c("pred", "lpd"), info = i)
     expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
@@ -131,7 +129,7 @@ test_that(paste(
     "is not an object of class \"vsel\""
   )
   expect_error(
-    proj_linpred(c(proj_solution_terms_list, list(x)), newdata = x),
+    proj_linpred(c(prjs_solterms, list(x)), newdata = x),
     "Invalid object supplied to argument `object`\\."
   )
 })
@@ -198,7 +196,7 @@ test_that(paste(
   for (i in fam_nms) {
     i_resampled <- sample.int(nrow(x))
     stopifnot(identical(sort(i_resampled), seq_len(nrow(x))))
-    pl <- proj_linpred(proj_solution_terms_list[[i]],
+    pl <- proj_linpred(prjs_solterms[[i]],
                        newdata = data.frame(
                          x = x[i_resampled, , drop = FALSE]
                        ))
@@ -211,13 +209,13 @@ test_that(paste(
 test_that("proj_linpred: specifying weights has an expected effect", {
   for (i in fam_nms) {
     # for binomial models weights have to be specified
-    if (proj_solution_terms_list[[i]]$family$family != "binomial") {
+    if (prjs_solterms[[i]]$family$family != "binomial") {
       weightsnew <- sample(1:4, n, replace = TRUE)
-      plw <- proj_linpred(proj_solution_terms_list[[i]],
+      plw <- proj_linpred(prjs_solterms[[i]],
                           newdata = data.frame(y = ys[[i]], x = x,
                                                weights = weightsnew),
                           weightsnew = ~weights)
-      pl <- proj_linpred(proj_solution_terms_list[[i]],
+      pl <- proj_linpred(prjs_solterms[[i]],
                          newdata = data.frame(y = ys[[i]], x = x,
                                               weights = weights),
                          weightsnew = ~weights)
@@ -231,13 +229,13 @@ test_that("proj_linpred: specifying weights has an expected effect", {
 
 test_that("proj_linpred: specifying offset has an expected effect", {
   for (i in fam_nms) {
-    plo <- proj_linpred(proj_solution_terms_list[[i]],
+    plo <- proj_linpred(prjs_solterms[[i]],
                         newdata = data.frame(
                           y = ys[[i]], x = x, weights = weights,
                           offset = offset
                         ),
                         weightsnew = ~weights, offsetnew = ~offset)
-    pl <- proj_linpred(proj_solution_terms_list[[i]],
+    pl <- proj_linpred(prjs_solterms[[i]],
                        newdata = data.frame(y = ys[[i]], x = x,
                                             weights = weights),
                        weightsnew = ~weights)
@@ -250,27 +248,27 @@ test_that("proj_linpred: specifying offset has an expected effect", {
 
 test_that("proj_linpred: specifying transform has an expected effect", {
   for (i in fam_nms) {
-    y <- proj_solution_terms_list[[i]]$refmodel$y
-    plt <- proj_linpred(proj_solution_terms_list[[i]],
+    y <- prjs_solterms[[i]]$refmodel$y
+    plt <- proj_linpred(prjs_solterms[[i]],
                         newdata = data.frame(y = y, x = x), transform = TRUE)
-    plf <- proj_linpred(proj_solution_terms_list[[i]],
+    plf <- proj_linpred(prjs_solterms[[i]],
                         newdata = data.frame(y = y, x = x), transform = FALSE)
-    expect_equal(proj_solution_terms_list[[!!i]]$family$linkinv(plf$pred),
+    expect_equal(prjs_solterms[[!!i]]$family$linkinv(plf$pred),
                  plt$pred)
   }
 })
 
 test_that("proj_linpred: specifying integrated has an expected effect", {
   for (i in fam_nms) {
-    y <- proj_solution_terms_list[[i]]$refmodel$y
-    plt <- proj_linpred(proj_solution_terms_list[[i]],
+    y <- prjs_solterms[[i]]$refmodel$y
+    plt <- proj_linpred(prjs_solterms[[i]],
                         newdata = data.frame(y = y, x = x),
                         integrated = TRUE)
-    plf <- proj_linpred(proj_solution_terms_list[[i]],
+    plf <- proj_linpred(prjs_solterms[[i]],
                         newdata = data.frame(y = y, x = x),
                         integrated = FALSE)
     expect_equal(
-      proj_solution_terms_list[[!!i]]$weights %*% plf$pred,
+      prjs_solterms[[!!i]]$weights %*% plf$pred,
       plt$pred
     )
     expect_length(plt$lpd, length(plt$pred))
@@ -341,25 +339,25 @@ context("proj_predict")
 
 test_that("proj_predict: newdata is specified correctly", {
   ## expect_error(
-  ##   proj_predict(proj_solution_terms_list),
+  ##   proj_predict(prjs_solterms),
   ##   'argument "newdata" is missing, with no default'
   ## )
   ## expect_error(
-  ##   proj_predict(proj_solution_terms_list, newdata = NULL),
+  ##   proj_predict(prjs_solterms, newdata = NULL),
   ##   "must be a data.frame or a matrix"
   ## )
   expect_error(
-    proj_predict(proj_solution_terms_list, newdata = x[, 1]),
+    proj_predict(prjs_solterms, newdata = x[, 1]),
     "must be a data.frame or a matrix"
   )
   expect_error(
-    proj_predict(proj_solution_terms_list, newdata = data.frame(x = x),
+    proj_predict(prjs_solterms, newdata = data.frame(x = x),
                  solution_terms = paste0("x.", 1:1000)),
     paste("^The number of solution terms is greater than the number of",
           "columns in newdata\\.$")
   )
   expect_error(
-    proj_predict(proj_solution_terms_list,
+    proj_predict(prjs_solterms,
                  newdata = data.frame(x = x)[, 1:2],
                  solution_terms = paste0("x.", 1:3)),
     paste("^The number of solution terms is greater than the number of",
@@ -402,7 +400,7 @@ test_that(paste(
   "structure"
 ), {
   for (i in fam_nms) {
-    pl <- proj_predict(proj_solution_terms_list[[i]],
+    pl <- proj_predict(prjs_solterms[[i]],
                        newdata = data.frame(x = x))
     expect_identical(dim(pl), c(nresample_clusters_default, n), info = i)
   }
@@ -488,7 +486,7 @@ test_that(paste(
     "is not an object of class \"vsel\""
   )
   expect_error(
-    proj_predict(c(proj_solution_terms_list, list(x)),
+    proj_predict(c(prjs_solterms, list(x)),
                  newdata = data.frame(x = x)),
     "Invalid object supplied to argument `object`\\."
   )
@@ -524,10 +522,10 @@ test_that(paste(
 ## })
 
 test_that("proj_predict: specifying weightsnew has an expected effect", {
-  pl <- proj_predict(proj_solution_terms_list[["binom"]],
+  pl <- proj_predict(prjs_solterms[["binom"]],
                      newdata = data.frame(x = x, weights = rep(1, NROW(x))),
                      seed = seed, .seed = seed)
-  plw <- proj_predict(proj_solution_terms_list[["binom"]],
+  plw <- proj_predict(prjs_solterms[["binom"]],
                       newdata = data.frame(x = x, weights = weights),
                       seed = seed, .seed = seed,
                       weightsnew = ~weights)
@@ -535,11 +533,11 @@ test_that("proj_predict: specifying weightsnew has an expected effect", {
 })
 
 test_that("proj_predict: specifying offsetnew has an expected effect", {
-  for (i in seq_len(length(proj_solution_terms_list))) {
-    pl <- proj_predict(proj_solution_terms_list[[i]],
+  for (i in seq_len(length(prjs_solterms))) {
+    pl <- proj_predict(prjs_solterms[[i]],
                        newdata = data.frame(x = x),
                        seed = seed, .seed = seed)
-    plo <- proj_predict(proj_solution_terms_list[[i]],
+    plo <- proj_predict(prjs_solterms[[i]],
                         newdata = data.frame(x = x, offset = offset),
                         seed = seed, .seed = seed, offsetnew = ~offset)
     expect_true(sum(pl != plo) > 0, info = i)
@@ -550,7 +548,7 @@ test_that(paste(
   "proj_predict: specifying nresample_clusters has an expected effect"
 ), {
   for (i in fam_nms) {
-    pl <- proj_predict(proj_solution_terms_list[[i]],
+    pl <- proj_predict(prjs_solterms[[i]],
                        nresample_clusters = nresample_clusters_tst,
                        newdata = data.frame(x = x))
     expect_equal(dim(pl), c(nresample_clusters_tst, n))
@@ -562,10 +560,10 @@ test_that(paste(
   "effect"
 ), {
   for (i in fam_nms) {
-    pl1 <- proj_predict(proj_solution_terms_list[[i]],
+    pl1 <- proj_predict(prjs_solterms[[i]],
                         newdata = data.frame(x = x),
                         seed = seed, .seed = seed)
-    pl2 <- proj_predict(proj_solution_terms_list[[i]],
+    pl2 <- proj_predict(prjs_solterms[[i]],
                         newdata = data.frame(x = x),
                         seed = seed, .seed = seed)
     expect_equal(pl1, pl2, info = i)
