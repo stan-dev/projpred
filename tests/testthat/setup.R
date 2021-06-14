@@ -27,7 +27,6 @@ ndraws_pred_tstl <- list(noclust = 25L, clust = 2L, clust1 = 1L)
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 nresample_clusters_tst <- 100L
-nresample_clusters_default <- 1000L # Adopt this if the default is changed.
 seed2_tst <- 866028
 ### Because of issue #149:
 # solterms_glm <- list(empty = character(), somecomb_x = c("xco.2", "xca.1"))
@@ -42,6 +41,16 @@ solterms_gam <- c(solterms_glm, solterms_gam_add)
 solterms_gamm_add <- list(somecomb_sz = unique(c(solterms_glmm$somecomb_z,
                                                  solterms_gam$somecomb_s)))
 solterms_gamm <- c(solterms_glmm, solterms_gam_add, solterms_gamm_add)
+
+## Defaults ---------------------------------------------------------------
+
+ndraws_default <- 400L # Adopt this if the default is changed.
+nresample_clusters_default <- 1000L # Adopt this if the default is changed.
+projection_nms <- c(
+  "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
+  "p_type", "intercept", "extract_model_data", "refmodel"
+)
+sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 
 # Data --------------------------------------------------------------------
 
@@ -132,7 +141,7 @@ eta_gamm <- eta_glmm +
 
 nterms_gamm <- nterms_glmm + 2L * nterms_s
 
-## Responses and combined dataset -----------------------------------------
+## Combined dataset -------------------------------------------------------
 
 f_gauss <- gaussian()
 f_binom <- binomial()
@@ -153,14 +162,21 @@ dat <- data.frame(
   wobs_col = wobs_tst, offs_col = offs_tst,
   check.names = FALSE
 )
+
+## Responses --------------------------------------------------------------
+
 ys <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
   })
 })
+
+## nterms_max -------------------------------------------------------------
+
 ntermss <- sapply(mod_nms, function(mod_nm) {
   get(paste("nterms", mod_nm, sep = "_"))
 })
+nterms_max_tst <- min(ntermss)
 
 # Fits --------------------------------------------------------------------
 
@@ -294,7 +310,16 @@ vss <- lapply(mod_nms, function(mod_nm) {
     varsel(refmods[[mod_nm]][[fam_nm]],
            nclusters = nclusters_tst,
            nclusters_pred = nclusters_pred_tst,
-           nterms_max = nterms_glm, verbose = FALSE)
+           nterms_max = nterms_max_tst, verbose = FALSE)
+  })
+})
+cvvss <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    cv_varsel(refmods[[mod_nm]][[fam_nm]],
+              nclusters = nclusters_tst,
+              nclusters_pred = nclusters_pred_tst,
+              nterms_max = nterms_max_tst,
+              verbose = FALSE)
   })
 })
 ### Exclude GAMMs because of issue #148:
@@ -302,3 +327,22 @@ vss <- lapply(mod_nms, function(mod_nm) {
 # # detach("package:lme4")
 # ###
 ###
+
+## Projection -------------------------------------------------------------
+
+prjs_solterms <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    project(refmods[[mod_nm]][[fam_nm]],
+            solution_terms = solterms_glm$somecomb_x,
+            nclusters = nclusters_pred_tst,
+            seed = seed_tst)
+  })
+})
+prjs_nterms <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    project(vss[[mod_nm]][[fam_nm]],
+            nterms = 0:nterms_max_tst,
+            nclusters = nclusters_pred_tst,
+            seed = seed_tst)
+  })
+})
