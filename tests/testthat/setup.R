@@ -4,6 +4,10 @@
 
 # General setup -----------------------------------------------------------
 
+# When debugging interactively without needing the "vsel" objects, this switch
+# may be set to `FALSE` to source() this script faster:
+run_vsel <- TRUE
+
 seed_tst <- 1235
 set.seed(seed_tst)
 source(testthat::test_path("helpers", "SW.R"))
@@ -15,6 +19,7 @@ mod_nms <- setNames(nm = setdiff(mod_nms, "gam"))
 mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
 ###
 fam_nms <- setNames(nm = c("gauss", "binom"))
+source(testthat::test_path("helpers", "unlist_cust.R"))
 
 # rstanarm setup ----------------------------------------------------------
 
@@ -22,25 +27,6 @@ chains_tst <- 2L
 iter_tst <- 500L
 
 # projpred setup ----------------------------------------------------------
-
-ndraws_pred_tstl <- list(noclust = 25L, clust = 2L, clust1 = 1L)
-nclusters_tst <- 2L
-nclusters_pred_tst <- 3L
-nresample_clusters_tst <- 100L
-seed2_tst <- 866028
-### Because of issue #149:
-# solterms_glm <- list(empty = character(), somecomb_x = c("xco.2", "xca.1"))
-solterms_glm <- list(empty = character(), somecomb_x = c("xco.2", "xco.1"))
-###
-solterms_glmm_add <- list(somecomb_z = c(solterms_glm$somecomb_x,
-                                         "(1 | z.1)", "xco.1 + (xco.1 | z.1)"))
-solterms_glmm <- c(solterms_glm, solterms_glmm_add)
-solterms_gam_add <- list(somecomb_s = c(solterms_glm$somecomb_x,
-                                        "s(s.1)", "s(s.2)"))
-solterms_gam <- c(solterms_glm, solterms_gam_add)
-solterms_gamm_add <- list(somecomb_sz = unique(c(solterms_glmm$somecomb_z,
-                                                 solterms_gam$somecomb_s)))
-solterms_gamm <- c(solterms_glmm, solterms_gam_add, solterms_gamm_add)
 
 ## Defaults ---------------------------------------------------------------
 
@@ -51,6 +37,13 @@ projection_nms <- c(
   "p_type", "intercept", "extract_model_data", "refmodel"
 )
 sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
+
+## Customized -------------------------------------------------------------
+
+nclusters_tst <- 2L
+nclusters_pred_tst <- 3L
+nresample_clusters_tst <- 100L
+seed2_tst <- 866028
 
 # Data --------------------------------------------------------------------
 
@@ -300,50 +293,101 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
 
 ## Variable selection -----------------------------------------------------
 
-### Exclude GAMMs because of issue #148:
-# ### To avoid issue #144 (for GAMMs):
-# # library(lme4)
-# ###
-###
-vss <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    varsel(refmods[[mod_nm]][[fam_nm]],
-           nclusters = nclusters_tst,
-           nclusters_pred = nclusters_pred_tst,
-           nterms_max = nterms_max_tst, verbose = FALSE)
+if (run_vsel) {
+  ### Exclude GAMMs because of issue #148:
+  # ### To avoid issue #144 (for GAMMs):
+  # # library(lme4)
+  # ###
+  ###
+  vss <- lapply(mod_nms, function(mod_nm) {
+    lapply(fam_nms, function(fam_nm) {
+      varsel(refmods[[mod_nm]][[fam_nm]],
+             nclusters = nclusters_tst,
+             nclusters_pred = nclusters_pred_tst,
+             nterms_max = nterms_max_tst, verbose = FALSE)
+    })
   })
-})
-# Occasionally, we have warnings concerning Pareto k diagnostics:
-SW(cvvss <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    cv_varsel(refmods[[mod_nm]][[fam_nm]],
-              nclusters = nclusters_tst,
-              nclusters_pred = nclusters_pred_tst,
-              nterms_max = nterms_max_tst,
-              verbose = FALSE)
-  })
-}))
-### Exclude GAMMs because of issue #148:
-# ### Clean up (belongs to the fix for issue #144 above):
-# # detach("package:lme4")
-# ###
-###
+  # Occasionally, we have warnings concerning Pareto k diagnostics:
+  SW(cvvss <- lapply(mod_nms, function(mod_nm) {
+    lapply(fam_nms, function(fam_nm) {
+      cv_varsel(refmods[[mod_nm]][[fam_nm]],
+                nclusters = nclusters_tst,
+                nclusters_pred = nclusters_pred_tst,
+                nterms_max = nterms_max_tst,
+                verbose = FALSE)
+    })
+  }))
+  ### Exclude GAMMs because of issue #148:
+  # ### Clean up (belongs to the fix for issue #144 above):
+  # # detach("package:lme4")
+  # ###
+  ###
+}
 
 ## Projection -------------------------------------------------------------
 
-prjs_solterms <- lapply(mod_nms, function(mod_nm) {
+### Because of issue #149:
+# solterms_x <- c("xco.2", "xca.1")
+solterms_x <- c("xco.2", "xco.1")
+###
+solterms_z <- c("(1 | z.1)", "xco.1 + (xco.1 | z.1)")
+solterms_s <- c("s(s.1)", "s(s.2)")
+ndr_ncl_pred_tst <- list(
+  noclust = list(ndraws = 25L),
+  clust = list(nclusters = nclusters_pred_tst),
+  clust_draws = list(ndraws = 3L),
+  clust1 = list(nclusters = 1L)
+)
+args_prj <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
-    project(refmods[[mod_nm]][[fam_nm]],
-            solution_terms = solterms_glm$somecomb_x,
-            nclusters = nclusters_pred_tst,
-            seed = seed_tst)
+    solterms <- nlist(empty = character(), solterms_x)
+    if (mod_nm %in% c("glmm", "gamm")) {
+      solterms <- c(solterms,
+                    nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
+    }
+    if (mod_nm %in% c("gam", "gamm")) {
+      solterms <- c(solterms,
+                    nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
+    }
+    if (mod_nm == "gamm") {
+      solterms <- c(solterms,
+                    nlist(solterms_sz = c(solterms_s, solterms_z),
+                          solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
+    }
+    if (fam_nm != "gauss") {
+      solterms <- tail(solterms, 1)
+    }
+    lapply(solterms, function(solterms_i) {
+      if (mod_nm == "glm" && fam_nm == "gauss") {
+        ndr_ncl_pred <- ndr_ncl_pred_tst
+      } else {
+        ndr_ncl_pred <- ndr_ncl_pred_tst["clust"]
+      }
+      lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
+        return(c(
+          nlist(mod_nm, fam_nm, solution_terms = solterms_i, seed = seed_tst),
+          ndr_ncl_pred_i
+        ))
+      })
+    })
   })
 })
-prjs_nterms <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    project(vss[[mod_nm]][[fam_nm]],
-            nterms = 0:nterms_max_tst,
-            nclusters = nclusters_pred_tst,
-            seed = seed_tst)
-  })
+args_prj <- unlist_cust(args_prj)
+
+prjs_solterms <- lapply(args_prj, function(args_prj_i) {
+  do.call(project, c(
+    list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
+    args_prj_i[setdiff(names(args_prj_i),
+                       c("mod_nm", "fam_nm"))]
+  ))
 })
+if (run_vsel) {
+  prjs_nterms <- lapply(args_prj, function(args_prj_i) {
+    do.call(project, c(
+      list(object = vss[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+           nterms = 0:nterms_max_tst),
+      args_prj_i[setdiff(names(args_prj_i),
+                         c("mod_nm", "fam_nm", "solution_terms"))]
+    ))
+  })
+}
