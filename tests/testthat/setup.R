@@ -268,6 +268,8 @@ rm(list = grep("^fit_", ls(), value = TRUE))
 
 # projpred ----------------------------------------------------------------
 
+## Reference model --------------------------------------------------------
+
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
@@ -276,19 +278,22 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
     get_refmodel(fits[[mod_nm]][[fam_nm]])
   })
 }))
+
+## Variable selection -----------------------------------------------------
+
 ### Exclude GAMMs because of issue #148:
 # ### To avoid issue #144 (for GAMMs):
 # # library(lme4)
 # ###
 ###
-SW(vss <- lapply(mod_nms, function(mod_nm) {
+vss <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     varsel(refmods[[mod_nm]][[fam_nm]],
            nclusters = nclusters_tst,
            nclusters_pred = nclusters_pred_tst,
            nterms_max = nterms_glm, verbose = FALSE)
   })
-}))
+})
 ### Exclude GAMMs because of issue #148:
 # ### Clean up (belongs to the fix for issue #144 above):
 # # detach("package:lme4")
