@@ -78,7 +78,7 @@ if (require(rstanarm)) {
     "to correct output structure"
   ), {
     for (i in fam_nms) {
-      p <- project(vs_list[[i]], nterms = 0:nterms, nclusters = nclusters_tst)
+      p <- project(vs_list[[i]], nterms = 0:nterms, nclusters = nclusters_pred_tst)
       expect_type(p, "list")
       expect_length(p, nterms + 1)
       expect_true(.is_proj_list(p), info = i)
@@ -93,11 +93,11 @@ if (require(rstanarm)) {
         # Number of projected draws should be equal to the default of `ndraws`
         # (note that more extensive tests for as.matrix.projection() may be
         # found in "test_as_matrix.R"):
-        expect_length(p[[!!j]]$sub_fit, nclusters_tst)
-        expect_length(p[[!!j]]$weights, nclusters_tst)
-        expect_length(p[[!!j]]$dis, nclusters_tst)
+        expect_length(p[[!!j]]$sub_fit, nclusters_pred_tst)
+        expect_length(p[[!!j]]$weights, nclusters_pred_tst)
+        expect_length(p[[!!j]]$dis, nclusters_pred_tst)
         SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
-        expect_identical(nprjdraws, nclusters_tst, info = i)
+        expect_identical(nprjdraws, nclusters_pred_tst, info = i)
         # The j-th element should have j solution terms (usually excluding the
         # intercept, but counting it for `j == 1`):
         expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
@@ -124,7 +124,7 @@ if (require(rstanarm)) {
   ), {
     i <- "binom"
     nterms_tst <- 0:2
-    p <- project(cvs_list[[i]], nterms = nterms_tst, nclusters = nclusters_tst)
+    p <- project(cvs_list[[i]], nterms = nterms_tst, nclusters = nclusters_pred_tst)
     expect_type(p, "list")
     expect_length(p, max(nterms_tst) + 1)
     expect_true(.is_proj_list(p), info = i)
@@ -133,11 +133,11 @@ if (require(rstanarm)) {
     for (j in seq_along(p)) {
       expect_s3_class(p[[!!j]], "projection")
       expect_named(p[[!!j]], projection_nms, info = i)
-      expect_length(p[[!!j]]$sub_fit, nclusters_tst)
-      expect_length(p[[!!j]]$weights, nclusters_tst)
-      expect_length(p[[!!j]]$dis, nclusters_tst)
+      expect_length(p[[!!j]]$sub_fit, nclusters_pred_tst)
+      expect_length(p[[!!j]]$weights, nclusters_pred_tst)
+      expect_length(p[[!!j]]$dis, nclusters_pred_tst)
       SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
-      expect_identical(nprjdraws, nclusters_tst, info = i)
+      expect_identical(nprjdraws, nclusters_pred_tst, info = i)
       expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
       expect_equal(count_terms_chosen(p[[!!j]]$solution_terms), !!j, info = i)
       expect_identical(p[[!!j]]$family, cvs_list[[!!i]]$family, info = i)
@@ -154,14 +154,14 @@ if (require(rstanarm)) {
   ), {
     for (i in fam_nms) {
       p <- project(refmod_list[[i]], solution_terms = solterms_tst,
-                   nclusters = nclusters_tst)
+                   nclusters = nclusters_pred_tst)
       expect_s3_class(p, "projection")
       expect_named(p, projection_nms, info = i)
-      expect_length(p$sub_fit, nclusters_tst)
-      expect_length(p$weights, nclusters_tst)
-      expect_length(p$dis, nclusters_tst)
+      expect_length(p$sub_fit, nclusters_pred_tst)
+      expect_length(p$weights, nclusters_pred_tst)
+      expect_length(p$dis, nclusters_pred_tst)
       SW(nprjdraws <- NROW(as.matrix(p)))
-      expect_identical(nprjdraws, nclusters_tst, info = i)
+      expect_identical(nprjdraws, nclusters_pred_tst, info = i)
       solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
       expect_identical(p$solution_terms, solterms_out)
     }
@@ -207,7 +207,7 @@ if (require(rstanarm)) {
   test_that("specifying `nterms` correctly leads to correct output structure", {
     for (i in fam_nms) {
       for (nterms_tst in list(NULL, 0, 3, c(1, 3))) {
-        p <- project(vs_list[[i]], nclusters = nclusters_tst,
+        p <- project(vs_list[[i]], nclusters = nclusters_pred_tst,
                      nterms = nterms_tst)
         out_size <- if (is.null(nterms_tst)) {
           suggest_size(vs_list[[i]])
@@ -217,11 +217,11 @@ if (require(rstanarm)) {
         if (length(out_size) == 1) {
           expect_s3_class(p, "projection")
           expect_named(p, projection_nms, info = i)
-          expect_length(p$sub_fit, nclusters_tst)
-          expect_length(p$weights, nclusters_tst)
-          expect_length(p$dis, nclusters_tst)
+          expect_length(p$sub_fit, nclusters_pred_tst)
+          expect_length(p$weights, nclusters_pred_tst)
+          expect_length(p$dis, nclusters_pred_tst)
           SW(nprjdraws <- NROW(as.matrix(p)))
-          expect_identical(nprjdraws, nclusters_tst, info = i)
+          expect_identical(nprjdraws, nclusters_pred_tst, info = i)
           expect_length(p$solution_terms, max(out_size, 1))
           expect_equal(count_terms_chosen(p$solution_terms) - 1, out_size,
                        info = i)
@@ -234,11 +234,11 @@ if (require(rstanarm)) {
           for (j in seq_along(p)) {
             expect_s3_class(p[[!!j]], "projection")
             expect_named(p[[!!j]], projection_nms, info = i)
-            expect_length(p[[!!j]]$sub_fit, nclusters_tst)
-            expect_length(p[[!!j]]$weights, nclusters_tst)
-            expect_length(p[[!!j]]$dis, nclusters_tst)
+            expect_length(p[[!!j]]$sub_fit, nclusters_pred_tst)
+            expect_length(p[[!!j]]$weights, nclusters_pred_tst)
+            expect_length(p[[!!j]]$dis, nclusters_pred_tst)
             SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
-            expect_identical(nprjdraws, nclusters_tst, info = i)
+            expect_identical(nprjdraws, nclusters_pred_tst, info = i)
             expect_length(p[[!!j]]$solution_terms, max(out_size[j], 1))
             expect_equal(count_terms_chosen(p[[!!j]]$solution_terms) - 1,
                          out_size[!!j], info = i)
@@ -254,13 +254,13 @@ if (require(rstanarm)) {
     "specifying `solution_terms` incorrectly leads to a warning or an error"
   ), {
     i <- "gauss"
-    expect_error(project(refmod_list[[i]], nclusters = nclusters_tst,
+    expect_error(project(refmod_list[[i]], nclusters = nclusters_pred_tst,
                          solution_terms = NULL),
                  "is not an object of class \"vsel\"")
     for (solterms_crr in list(2, 1:3, "1", list(c("x.3", "x.5"),
                                                 c("x.2", "x.4")))) {
       expect_warning(
-        p <- project(refmod_list[[i]], nclusters = nclusters_tst,
+        p <- project(refmod_list[[i]], nclusters = nclusters_pred_tst,
                      solution_terms = solterms_crr),
         paste("At least one element of `solution_terms` could not be found",
               "among the terms in the reference model"),
@@ -268,11 +268,11 @@ if (require(rstanarm)) {
       )
       expect_s3_class(p, "projection")
       expect_named(p, projection_nms, info = solterms_crr)
-      expect_length(p$sub_fit, nclusters_tst)
-      expect_length(p$weights, nclusters_tst)
-      expect_length(p$dis, nclusters_tst)
+      expect_length(p$sub_fit, nclusters_pred_tst)
+      expect_length(p$weights, nclusters_pred_tst)
+      expect_length(p$dis, nclusters_pred_tst)
       SW(nprjdraws <- NROW(as.matrix(p)))
-      expect_identical(nprjdraws, nclusters_tst, info = solterms_crr)
+      expect_identical(nprjdraws, nclusters_pred_tst, info = solterms_crr)
       expect_identical(p$solution_terms, "1")
     }
   })
@@ -282,15 +282,15 @@ if (require(rstanarm)) {
   ), {
     for (i in fam_nms) {
       for (solterms_crr in list(character(), "x.3", c("x.2", "x.4"))) {
-        p <- project(refmod_list[[i]], nclusters = nclusters_tst,
+        p <- project(refmod_list[[i]], nclusters = nclusters_pred_tst,
                      solution_terms = solterms_crr)
         expect_s3_class(p, "projection")
         expect_named(p, projection_nms, info = i)
-        expect_length(p$sub_fit, nclusters_tst)
-        expect_length(p$weights, nclusters_tst)
-        expect_length(p$dis, nclusters_tst)
+        expect_length(p$sub_fit, nclusters_pred_tst)
+        expect_length(p$weights, nclusters_pred_tst)
+        expect_length(p$dis, nclusters_pred_tst)
         SW(nprjdraws <- NROW(as.matrix(p)))
-        expect_identical(nprjdraws, nclusters_tst, info = i)
+        expect_identical(nprjdraws, nclusters_pred_tst, info = i)
         solterms_out <- if (length(solterms_crr) == 0) {
           "1"
         } else {
@@ -377,19 +377,19 @@ if (require(rstanarm)) {
   test_that("specifying `seed` correctly leads to reproducible results", {
     i <- "gauss"
     p1 <- project(refmod_list[[i]],
-                  nclusters = nclusters_tst,
+                  nclusters = nclusters_pred_tst,
                   solution_terms = solterms_tst,
                   seed = seed_tst)
     p2 <- project(refmod_list[[i]],
-                  nclusters = nclusters_tst,
+                  nclusters = nclusters_pred_tst,
                   solution_terms = solterms_tst,
                   seed = seed_tst + 1L)
     p3 <- project(refmod_list[[i]],
-                  nclusters = nclusters_tst,
+                  nclusters = nclusters_pred_tst,
                   solution_terms = solterms_tst,
                   seed = seed_tst)
     p4 <- project(refmod_list[[i]],
-                  nclusters = nclusters_tst,
+                  nclusters = nclusters_pred_tst,
                   solution_terms = solterms_tst)
 
     # Expected equality:
