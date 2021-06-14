@@ -23,7 +23,7 @@ iter_tst <- 500L
 
 # projpred setup ----------------------------------------------------------
 
-ndraws_tstl <- list(noclust = 25L, clust = 2L, clust1 = 1L)
+ndraws_pred_tstl <- list(noclust = 25L, clust = 2L, clust1 = 1L)
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 nresample_clusters_tst <- 100L
@@ -157,6 +157,9 @@ ys <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
   })
+})
+ntermss <- sapply(mod_nms, function(mod_nm) {
+  get(paste("nterms", mod_nm, sep = "_"))
 })
 
 # Fits --------------------------------------------------------------------

@@ -15,41 +15,41 @@ settings <- list(
   glm = list(
     gauss = list(
       solterms_list = solterms_glm,
-      ndraws_list = ndraws_tstl
+      ndraws_list = ndraws_pred_tstl
     ),
     binom = list(
       solterms_list = solterms_glm["somecomb_x"],
-      ndraws_list = ndraws_tstl["noclust"]
+      ndraws_list = ndraws_pred_tstl["noclust"]
     )
   ),
   glmm = list(
     gauss = list(
       solterms_list = solterms_glmm,
-      ndraws_list = ndraws_tstl
+      ndraws_list = ndraws_pred_tstl
     ),
     binom = list(
       solterms_list = solterms_glmm["somecomb_z"],
-      ndraws_list = ndraws_tstl["noclust"]
+      ndraws_list = ndraws_pred_tstl["noclust"]
     )
   ),
   gam = list(
     gauss = list(
       solterms_list = solterms_gam,
-      ndraws_list = ndraws_tstl
+      ndraws_list = ndraws_pred_tstl
     ),
     binom = list(
       solterms_list = solterms_gam["somecomb_s"],
-      ndraws_list = ndraws_tstl["noclust"]
+      ndraws_list = ndraws_pred_tstl["noclust"]
     )
   ),
   gamm = list(
     gauss = list(
       solterms_list = solterms_gamm,
-      ndraws_list = ndraws_tstl
+      ndraws_list = ndraws_pred_tstl
     ),
     binom = list(
       solterms_list = solterms_gamm["somecomb_sz"],
-      ndraws_list = ndraws_tstl["noclust"]
+      ndraws_list = ndraws_pred_tstl["noclust"]
     )
   )
 )
