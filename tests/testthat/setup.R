@@ -314,13 +314,22 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
 # ###
 ###
 if (run_vs) {
-  vss <- lapply(mod_nms, function(mod_nm) {
+  args_vs <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
-      varsel(refmods[[mod_nm]][[fam_nm]],
-             nclusters = nclusters_tst,
-             nclusters_pred = nclusters_pred_tst,
-             nterms_max = nterms_max_tst, verbose = FALSE)
+      return(nlist(
+        mod_nm, fam_nm, nclusters = nclusters_tst,
+        nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
+        verbose = FALSE, seed = seed_tst
+      ))
     })
+  })
+  args_vs <- unlist_cust(args_vs)
+
+  vss <- lapply(args_vs, function(args_vs_i) {
+    do.call(varsel, c(
+      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
+      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+    ))
   })
 }
 if (run_cvvs) {
@@ -389,7 +398,7 @@ prjs_solterms <- lapply(args_prj, function(args_prj_i) {
   ))
 })
 if (run_vs) {
-  prj_nterms <- project(object = vss$glm$gauss,
+  prj_nterms <- project(object = vss$glm.gauss,
                         nterms = 0:nterms_max_tst,
                         nclusters = nclusters_pred_tst,
                         seed = seed_tst)
