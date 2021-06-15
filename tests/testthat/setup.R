@@ -41,10 +41,22 @@ sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 
 ## Customized -------------------------------------------------------------
 
+seed2_tst <- 866028
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 nresample_clusters_tst <- 100L
-seed2_tst <- 866028
+ndr_ncl_pred_tst <- list(
+  noclust = list(ndraws = 25L),
+  clust = list(nclusters = nclusters_pred_tst),
+  clust_draws = list(ndraws = 3L),
+  clust1 = list(nclusters = 1L)
+)
+### Because of issue #149:
+# solterms_x <- c("xco.2", "xca.1")
+solterms_x <- c("xco.2", "xco.1")
+###
+solterms_z <- c("(1 | z.1)", "xco.1 + (xco.1 | z.1)")
+solterms_s <- c("s(s.1)", "s(s.2)")
 
 # Data --------------------------------------------------------------------
 
@@ -333,18 +345,6 @@ if (run_cvvs) {
 
 ## Projection -------------------------------------------------------------
 
-### Because of issue #149:
-# solterms_x <- c("xco.2", "xca.1")
-solterms_x <- c("xco.2", "xco.1")
-###
-solterms_z <- c("(1 | z.1)", "xco.1 + (xco.1 | z.1)")
-solterms_s <- c("s(s.1)", "s(s.2)")
-ndr_ncl_pred_tst <- list(
-  noclust = list(ndraws = 25L),
-  clust = list(nclusters = nclusters_pred_tst),
-  clust_draws = list(ndraws = 3L),
-  clust1 = list(nclusters = 1L)
-)
 args_prj <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     solterms <- nlist(empty = character(), solterms_x)
