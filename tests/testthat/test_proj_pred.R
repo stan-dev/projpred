@@ -93,28 +93,25 @@ test_that(paste(
   }
 })
 
-test_that("proj_linpred: output structure is also correct in edge cases", {
-  for (i in fam_nms) {
-    y <- refmod_list[[i]]$y
+test_that(paste(
+  "proj_linpred: arguments `newdata` and `integrated` lead to",
+  "correct output structure (even in edge cases)"
+), {
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
     for (n_crr in c(1L, 12L)) {
-      for (nclusters_pred_crr in c(1L, 4L)) {
-        for (integrated_crr in c(FALSE, TRUE)) {
-          pl <- proj_linpred(
-            refmod_list[[i]], nclusters = nclusters_pred_crr,
-            newdata = head(dat, n_crr),
-            integrated = integrated_crr,
-            solution_terms = c("x.3", "x.5")
-          )
-          tstsetup <- unlist(nlist(i, n_crr, nclusters_pred_crr,
-                                   integrated_crr))
-          expect_named(pl, c("pred", "lpd"), info = tstsetup)
-          nprjdraws_crr <- ifelse(integrated_crr,
-                                  1L, nclusters_pred_crr)
-          expect_identical(dim(pl$pred), c(nprjdraws_crr, n_crr),
-                           info = tstsetup)
-          expect_identical(dim(pl$lpd), c(nprjdraws_crr, n_crr),
-                           info = tstsetup)
-        }
+      for (integrated_crr in c(FALSE, TRUE)) {
+        tstsetup_ext <- unlist(nlist(tstsetup, n_crr, integrated_crr))
+        pl <- proj_linpred(prjs_solterms[[tstsetup]],
+                           newdata = head(dat, n_crr),
+                           integrated = integrated_crr)
+        expect_named(pl, c("pred", "lpd"), info = tstsetup_ext)
+        nprjdraws <- ifelse(integrated_crr, 1L, nprjdraws)
+        expect_identical(dim(pl$pred), c(nprjdraws, n_crr), info = tstsetup_ext)
+        expect_identical(dim(pl$lpd), c(nprjdraws, n_crr), info = tstsetup_ext)
       }
     }
   }
