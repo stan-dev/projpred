@@ -20,8 +20,7 @@ for (tstsetup in names(prjs_solterms)) {
   mod_crr <- args_prj[[tstsetup]]$mod_nm
   fam_crr <- args_prj[[tstsetup]]$fam_nm
   solterms <- args_prj[[tstsetup]]$solution_terms
-  ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                          c("ndraws", "nclusters"))
+  ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]), c("ndraws", "nclusters"))
   stopifnot(length(ndr_ncl_nm) == 1)
   nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
 
