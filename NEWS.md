@@ -15,7 +15,7 @@
 
 ## Minor changes
 
-* Minor documentation improvements.
+* Improved documentation.
 * Minor improvements of error messages.
 * For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2f)
 * Throw a proper error message for nonsupported families. (GitHub: #140)
@@ -23,6 +23,7 @@
 * `project()`: Warn in case of `solution_terms` not being found in the reference model (and therefore getting ignored). (GitHub: #140)
 * Set defaults for `get_refmodel.default()`'s arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`. (GitHub: #140)
 * Explicitly throw an error if argument `extract_model_data` of `get_refmodel.default()` is `NULL`. (GitHub: #140)
+* `get_refmodel.default()` now passes arguments via the ellipsis (`...`) to `init_refmodel()`. (GitHub: #153, commit dd3716e)
 
 ### Bug fixes
 
@@ -40,6 +41,8 @@
 * Fix a bug (error `unused argument`) when initializing the K reference models in a K-fold CV with CV fits not of class `"brmsfit"` or `"stanreg"`. (GitHub: #140)
 * In `get_refmodel.default()`, remove old defunct arguments `fetch_data`, `wobs`, and `offset`. (GitHub: #140)
 * Fix a bug in `get_refmodel.stanreg()`. (GitHub: #142)
+* Fix a possible bug related to `extract_model_data()`'s argument `extract_y` in `get_refmodel.default()`. (GitHub: #153, commit 39fece8)
+* Fix a possible bug related to `extract_model_data()` in K-fold CV. (GitHub: #153, commit 4f32195)
 
 ## projpred 2.0.5
 
