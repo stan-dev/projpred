@@ -134,16 +134,19 @@ test_that(paste(
   "proj_linpred: omitting the response causes output element `lpd` to be",
   "`NULL`."
 ), {
-  stopifnot(!exists("y"))
-  for (i in fam_nms) {
-    i_resampled <- sample.int(nrow(x))
-    stopifnot(identical(sort(i_resampled), seq_len(nrow(x))))
-    pl <- proj_linpred(prjs_solterms[[i]],
-                       newdata = data.frame(
-                         x = x[i_resampled, , drop = FALSE]
-                       ))
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    resp_nm <- extract_terms_response(
+      prjs_solterms[[tstsetup]]$refmodel$formula
+    )$response
+    stopifnot(!exists(resp_nm))
+    pl <- proj_linpred(prjs_solterms[[tstsetup]],
+                       newdata = dat[, setdiff(names(dat), resp_nm)])
     expect_named(pl, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl$pred), c(nclusters_pred_tst, n_tst), info = tstsetup)
+    expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
     expect_null(pl$lpd, info = tstsetup)
   }
 })
