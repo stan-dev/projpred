@@ -45,22 +45,18 @@ test_that(paste(
   "proj_linpred: \"vsel\" object as input leads to correct output",
   "structure"
 ), {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      tstsetup <- unlist(nlist(mod_nm, fam_nm))
-      pl <- proj_linpred(vss[[mod_nm]][[fam_nm]],
-                         nterms = 0:nterms,
-                         nclusters = nclusters_pred_tst,
-                         seed = seed_tst)
-      expect_length(pl, nterms + 1)
-      for (j in seq_along(pl)) {
-        expect_named(pl[[!!j]], c("pred", "lpd"),
-                     info = tstsetup)
-        expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n),
-                         info = tstsetup)
-        expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n),
-                         info = tstsetup)
-      }
+  for (tstsetup in names(vss)) {
+    pl <- proj_linpred(vss[[tstsetup]],
+                       nterms = 0:nterms_max_tst,
+                       nclusters = nclusters_pred_tst,
+                       seed = seed_tst)
+    expect_length(pl, nterms_max_tst + 1)
+    for (j in seq_along(pl)) {
+      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
     }
   }
 })
@@ -69,13 +65,15 @@ test_that(paste(
   "proj_linpred: \"projection\" object as input leads to correct output",
   "structure"
 ), {
-  for (i in fam_nms) {
-    y <- prjs_solterms[[i]]$refmodel$y
-    pl <- proj_linpred(prjs_solterms[[i]],
-                       newdata = data.frame(y = y, x = x))
-    expect_named(pl, c("pred", "lpd"), info = i)
-    expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
-    expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n), info = i)
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    pl <- proj_linpred(prjs_solterms[[tstsetup]])
+    expect_named(pl, c("pred", "lpd"), info = tstsetup)
+    expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl$lpd), c(nprjdraws, n_tst), info = tstsetup)
   }
 })
 
@@ -83,16 +81,14 @@ test_that(paste(
   "proj_linpred: \"proj_list\" object (an informal class) as input leads to",
   "correct output structure"
 ), {
-  for (i in fam_nms) {
-    y <- proj_all_list[[i]][[1]]$refmodel$y
-    pl <- proj_linpred(proj_all_list[[i]],
-                       newdata = data.frame(y = y, x = x))
-    expect_length(pl, nterms + 1)
-    for (j in seq_along(pl)) {
-      expect_named(pl[[!!j]], c("pred", "lpd"), info = i)
-      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n), info = i)
-      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n), info = i)
-    }
+  pl <- proj_linpred(prj_nterms)
+  expect_length(pl, nterms_max_tst + 1)
+  for (j in seq_along(pl)) {
+    expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
+    expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                     info = tstsetup)
+    expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                     info = tstsetup)
   }
 })
 
@@ -176,8 +172,8 @@ test_that(paste(
 ##     )
 ##     for (j in 1:length(pl)) {
 ##       expect_named(pl[[j]], c("pred", "lpd"))
-##       expect_equal(ncol(pl[[!!j]]$pred), n, info = i)
-##       expect_equal(nrow(pl[[!!j]]$lpd), n, info = i)
+##       expect_equal(ncol(pl[[!!j]]$pred), n, info = tstsetup)
+##       expect_equal(nrow(pl[[!!j]]$lpd), n, info = tstsetup)
 ##     }
 ##   }
 ## })
@@ -191,8 +187,8 @@ test_that(paste(
 ##                      newdata = data.frame(x = x),
 ##                      ynew = yfactor)
 ##   expect_named(pl, c("pred", "lpd"))
-##   expect_equal(ncol(pl$pred), n)
-##   expect_equal(nrow(pl$lpd), n)
+##   expect_equal(ncol(pl$pred), n_tst)
+##   expect_equal(nrow(pl$lpd), n_tst)
 ## })
 
 test_that(paste(
@@ -207,9 +203,9 @@ test_that(paste(
                        newdata = data.frame(
                          x = x[i_resampled, , drop = FALSE]
                        ))
-    expect_named(pl, c("pred", "lpd"), info = i)
-    expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
-    expect_null(pl$lpd, info = i)
+    expect_named(pl, c("pred", "lpd"), info = tstsetup)
+    expect_identical(dim(pl$pred), c(nclusters_pred_tst, n_tst), info = tstsetup)
+    expect_null(pl$lpd, info = tstsetup)
   }
 })
 
@@ -227,8 +223,8 @@ test_that("proj_linpred: specifying weights has an expected effect", {
                                               weights = weights),
                          weightsnew = ~weights)
       expect_named(plw, c("pred", "lpd"))
-      expect_equal(ncol(plw$pred), n, info = i)
-      expect_equal(ncol(plw$lpd), n, info = i)
+      expect_equal(ncol(plw$pred), n, info = tstsetup)
+      expect_equal(ncol(plw$lpd), n, info = tstsetup)
       expect_false(all(plw$lpd == pl$lpd))
     }
   }
@@ -247,8 +243,8 @@ test_that("proj_linpred: specifying offset has an expected effect", {
                                             weights = weights),
                        weightsnew = ~weights)
     expect_named(plo, c("pred", "lpd"))
-    expect_equal(ncol(plo$pred), n, info = i)
-    expect_equal(ncol(plo$lpd), n, info = i)
+    expect_equal(ncol(plo$pred), n, info = tstsetup)
+    expect_equal(ncol(plo$lpd), n, info = tstsetup)
     expect_equal(t(plo$pred) - offset, t(pl$pred), tol = 1e-8)
   }
 })
@@ -296,7 +292,7 @@ test_that("proj_linpred: adding more regularization has an expected effect", {
       norms[j] <- sum(pred$pred^2)
     }
     for (j in 1:(length(regul) - 1)) {
-      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = i)
+      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
     }
   }
 })
@@ -315,7 +311,7 @@ test_that("proj_linpred: arguments passed to project work accordingly", {
                             nterms = c(2, 4),
                             regul = 1e-8,
                             seed = 12))
-    expect_equal(prl1$pred, prl2$pred, info = i)
+    expect_equal(prl1$pred, prl2$pred, info = tstsetup)
   }
 })
 
@@ -381,7 +377,7 @@ test_that(paste(
                        nclusters = nclusters_pred_tst,
                        newdata = data.frame(x = x),
                        solution_terms = c("x.3", "x.5"))
-    expect_identical(dim(pl), c(nresample_clusters_default, n), info = i)
+    expect_identical(dim(pl), c(nresample_clusters_default, n_tst), info = tstsetup)
   }
 })
 
@@ -396,7 +392,7 @@ test_that(paste(
                        nterms = 0:nterms)
     expect_length(pl, nterms + 1)
     for (j in seq_along(pl)) {
-      expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n),
+      expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n_tst),
                        info = i)
     }
   }
@@ -409,7 +405,7 @@ test_that(paste(
   for (i in fam_nms) {
     pl <- proj_predict(prjs_solterms[[i]],
                        newdata = data.frame(x = x))
-    expect_identical(dim(pl), c(nresample_clusters_default, n), info = i)
+    expect_identical(dim(pl), c(nresample_clusters_default, n_tst), info = tstsetup)
   }
 })
 
@@ -421,7 +417,7 @@ test_that(paste(
     pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
     expect_length(pl, nterms + 1)
     for (j in seq_along(pl)) {
-      expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n),
+      expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n_tst),
                        info = i)
     }
   }
@@ -524,7 +520,7 @@ test_that(paste(
 ##                      nclusters = nclusters_pred_tst,
 ##                      newdata = data.frame(x = x),
 ##                      ynew = yfactor)
-##   expect_equal(ncol(pl), n)
+##   expect_equal(ncol(pl), n_tst)
 ##   expect_true(all(pl %in% c(0, 1)))
 ## })
 
@@ -547,7 +543,7 @@ test_that("proj_predict: specifying offsetnew has an expected effect", {
     plo <- proj_predict(prjs_solterms[[i]],
                         newdata = data.frame(x = x, offset = offset),
                         seed = seed, .seed = seed, offsetnew = ~offset)
-    expect_true(sum(pl != plo) > 0, info = i)
+    expect_true(sum(pl != plo) > 0, info = tstsetup)
   }
 })
 
@@ -558,7 +554,7 @@ test_that(paste(
     pl <- proj_predict(prjs_solterms[[i]],
                        nresample_clusters = nresample_clusters_tst,
                        newdata = data.frame(x = x))
-    expect_equal(dim(pl), c(nresample_clusters_tst, n))
+    expect_equal(dim(pl), c(nresample_clusters_tst, n_tst))
   }
 })
 
@@ -573,7 +569,7 @@ test_that(paste(
     pl2 <- proj_predict(prjs_solterms[[i]],
                         newdata = data.frame(x = x),
                         seed = seed, .seed = seed)
-    expect_equal(pl1, pl2, info = i)
+    expect_equal(pl1, pl2, info = tstsetup)
   }
 })
 
@@ -597,7 +593,7 @@ test_that("proj_predict: arguments passed to project work accordingly", {
                          seed = 120, .seed = 120, nterms = c(2, 4),
                          nclusters = nclusters_pred_tst,
                          regul = 1e-08)
-    expect_equal(prp1, prp2, info = i)
+    expect_equal(prp1, prp2, info = tstsetup)
     expect_false(all(unlist(lapply(seq_along(prp1), function(i) {
       all(prp1[[i]] == prp3[[i]])
     }))),
