@@ -46,11 +46,12 @@ test_that(paste(
   "structure"
 ), {
   for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
+    nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
     pl <- proj_linpred(vss[[tstsetup]],
-                       nterms = 0:nterms_max_tst,
+                       nterms = 0:nterms_max_crr,
                        nclusters = nclusters_pred_tst,
                        seed = seed_tst)
-    expect_length(pl, nterms_max_tst + 1)
+    expect_length(pl, nterms_max_crr + 1)
     for (j in seq_along(pl)) {
       expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
       expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
