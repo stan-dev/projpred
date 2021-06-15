@@ -123,18 +123,11 @@ test_that(paste(
   "proj_linpred: error when varsel has not been performed on",
   "the object (and `solution_terms` is provided neither)"
 ), {
-  expect_error(
-    proj_linpred(1, newdata = data.frame(x = x)),
-    "is not an object of class \"vsel\""
-  )
-  expect_error(
-    proj_linpred(fit_gauss, newdata = data.frame(x = x)),
-    "is not an object of class \"vsel\""
-  )
-  expect_error(
-    proj_linpred(c(prjs_solterms, list(x)), newdata = x),
-    "Invalid object supplied to argument `object`\\."
-  )
+  expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
+  expect_error(proj_linpred(fits$glm$gauss),
+               "is not an object of class \"vsel\"")
+  expect_error(proj_linpred(c(prjs_solterms, list(dat))),
+               "Invalid object supplied to argument `object`\\.")
 })
 
 ## test_that("proj_linpred: specifying ynew incorrectly produces an error", {
