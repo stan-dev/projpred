@@ -13,7 +13,7 @@ test_that("proj_linpred: `newdata` is checked correctly", {
   )
   stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_linpred(prjs_solterms$glm.gauss.solterms_x.clust,
+    proj_linpred(prjs_solterms[[grep("^glm\\.gauss", names(prjs_solterms))[1]]],
                  newdata = dat[, 1, drop = FALSE],
                  solution_terms = solterms_x),
     paste("^The number of solution terms is greater than the number of",
