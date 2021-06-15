@@ -19,7 +19,7 @@ if (length(args_gamm)) {
 for (tstsetup in names(prjs_solterms)) {
   mod_crr <- args_prj[[tstsetup]]$mod_nm
   fam_crr <- args_prj[[tstsetup]]$fam_nm
-  solterms_crr <- args_prj[[tstsetup]]$solution_terms
+  solterms <- args_prj[[tstsetup]]$solution_terms
   ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                           c("ndraws", "nclusters"))
   stopifnot(length(ndr_ncl_nm) == 1)
@@ -45,7 +45,7 @@ for (tstsetup in names(prjs_solterms)) {
   test_that("as.matrix.projection()'s output structure is correct", {
     colnms_prjmat_expect <- c(
       "Intercept",
-      grep("^x(co|ca)\\.[[:digit:]]$", solterms_crr, value = TRUE)
+      grep("^x(co|ca)\\.[[:digit:]]$", solterms, value = TRUE)
     )
     xca_idxs <- as.integer(
       sub("^xca\\.", "",
@@ -61,14 +61,14 @@ for (tstsetup in names(prjs_solterms)) {
       )
     }
     colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
-    if ("(1 | z.1)" %in% solterms_crr) {
+    if ("(1 | z.1)" %in% solterms) {
       colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__Intercept")
       colnms_prjmat_expect <- c(
         colnms_prjmat_expect,
         paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
       )
     }
-    if ("xco.1 + (xco.1 | z.1)" %in% solterms_crr) {
+    if ("xco.1 + (xco.1 | z.1)" %in% solterms) {
       if (!"b_xco.1" %in% colnms_prjmat_expect) {
         colnms_prjmat_expect <- c(colnms_prjmat_expect, "b_xco.1")
       }
@@ -78,13 +78,13 @@ for (tstsetup in names(prjs_solterms)) {
         paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
       )
     }
-    if (all(c("(1 | z.1)", "xco.1 + (xco.1 | z.1)") %in% solterms_crr)) {
+    if (all(c("(1 | z.1)", "xco.1 + (xco.1 | z.1)") %in% solterms)) {
       colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                 "cor_z.1__Intercept__xco.1")
     }
     s_nms <- sub("\\)$", "",
                  sub("^s\\(", "",
-                     grep("^s\\(.*\\)$", solterms_crr, value = TRUE)))
+                     grep("^s\\(.*\\)$", solterms, value = TRUE)))
     if (length(s_nms) > 0) {
       stopifnot(inherits(refmods[[mod_crr]][[fam_crr]]$fit, "stanreg"))
       # Get the number of basis coefficients:
