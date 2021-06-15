@@ -45,7 +45,7 @@ test_that(paste(
   "proj_linpred: \"vsel\" object as input leads to correct output",
   "structure"
 ), {
-  for (tstsetup in names(vss)) {
+  for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
     pl <- proj_linpred(vss[[tstsetup]],
                        nterms = 0:nterms_max_tst,
                        nclusters = nclusters_pred_tst,
