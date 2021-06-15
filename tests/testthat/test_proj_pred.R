@@ -109,9 +109,11 @@ test_that(paste(
                            newdata = head(dat, n_crr),
                            integrated = integrated_crr)
         expect_named(pl, c("pred", "lpd"), info = tstsetup_ext)
-        nprjdraws <- ifelse(integrated_crr, 1L, nprjdraws)
-        expect_identical(dim(pl$pred), c(nprjdraws, n_crr), info = tstsetup_ext)
-        expect_identical(dim(pl$lpd), c(nprjdraws, n_crr), info = tstsetup_ext)
+        nprjdraws_crr <- ifelse(integrated_crr, 1L, nprjdraws)
+        expect_identical(dim(pl$pred), c(nprjdraws_crr, n_crr),
+                         info = tstsetup_ext)
+        expect_identical(dim(pl$lpd), c(nprjdraws_crr, n_crr),
+                         info = tstsetup_ext)
       }
     }
   }
