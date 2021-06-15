@@ -16,8 +16,7 @@ if (length(args_gamm)) {
   args_prj <- args_prj[-args_gamm]
 }
 
-for (tstidx in seq_along(prjs_solterms)) {
-  tstsetup <- names(prjs_solterms[tstidx])
+for (tstsetup in names(prjs_solterms)) {
   mod_crr <- args_prj[[tstsetup]]$mod_nm
   fam_crr <- args_prj[[tstsetup]]$fam_nm
   solterms_crr <- args_prj[[tstsetup]]$solution_terms
