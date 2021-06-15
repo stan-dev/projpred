@@ -2,7 +2,7 @@
 % Please edit documentation in R/project.R
 \name{project}
 \alias{project}
-\title{Projection to submodels}
+\title{Projection onto submodel(s)}
 \usage{
 project(
   object,
@@ -24,7 +24,7 @@ or an object which can be converted to a reference model using
 
 \item{nterms}{Number of terms in the submodel (the variable combination is
 taken from the \code{varsel} information). If a numeric vector, then the
-projection is performed for each model size. Default is the model size
+projection is performed for each model size. If \code{NULL}, the model size
 suggested by the variable selection (see function \code{suggest_size}).
 Ignored if \code{solution_terms} is specified. Note that \code{nterms} does
 not count the intercept, so use \code{nterms = 0} for the intercept-only
@@ -52,8 +52,10 @@ Ignored if the reference model is of class \code{"datafit"} (in which case
 one cluster is used). For the meaning of \code{NULL}, see argument
 \code{ndraws}. See also section "Details" below.}
 
-\item{seed}{A seed used in the clustering (if \code{!is.null(nclusters)}).
-Can be used to ensure same results every time.}
+\item{seed}{A seed used for clustering the reference model's posterior draws
+(if \code{!is.null(nclusters)}). Can be used to ensure reproducible
+results. If \code{NULL}, no seed is set and therefore, the results are not
+reproducible. See \code{\link{set.seed}} for details.}
 
 \item{regul}{Amount of ridge regularization when fitting the models in the
 projection. Usually there is no need for regularization, but sometimes for
@@ -63,26 +65,39 @@ regularization to avoid numerical problems.}
 \item{...}{Arguments passed to \link[=get_refmodel]{get_refmodel}.}
 }
 \value{
-A list of submodels (or a single submodel if projection was
-  performed onto a single variable combination), each of which contains the
+If the projection is performed onto a single submodel (i.e.,
+  \code{nterms} has length one or \code{solution_terms} is specified), an
+  object of class \code{"projection"} which is a \code{list} containing the
   following elements:
-\describe{
- \item{\code{kl}}{The KL divergence from the reference model to the
-  submodel.} \item{\code{weights}}{Weights for each draw of the projected
-  model.}
- \item{\code{dis}}{Draws from the projected dispersion parameter.}
- \item{\code{alpha}}{Draws from the projected intercept.}
- \item{\code{beta}}{Draws from the projected weight vector.}
- \item{\code{solution_terms}}{The order in which the variables were added to
-  the submodel.}
-  \item{\code{intercept}}{Whether or not the model contains an
-  intercept.}
- \item{\code{family}}{A modified \code{\link{family}}-object.}
-}
+  \describe{
+    \item{\code{dis}}{Projected draws for the dispersion parameter.}
+    \item{\code{kl}}{The KL divergence from the submodel to the reference
+    model.}
+    \item{\code{weights}}{Weights for the projected draws.}
+    \item{\code{solution_terms}}{A character vector of the submodel's
+    predictor terms, ordered the way in which the terms were added to the
+    submodel.}
+    \item{\code{sub_fit}}{The submodel's fitted model object.}
+    \item{\code{family}}{A modified \code{\link{family}}-object.}
+    \item{\code{p_type}}{A single logical value indicating whether the
+    reference model's posterior draws have been clustered for the projection
+    (\code{TRUE}) or not (\code{FALSE}).}
+    \item{\code{intercept}}{A single logical value indicating whether the
+    reference model (as well as the submodel) contains an intercept
+    (\code{TRUE}) or not (\code{FALSE}).}
+    \item{\code{extract_model_data}}{The \code{extract_model_data()} function
+    from the reference model (see \code{\link{init_refmodel}}).}
+    \item{\code{refmodel}}{The reference model object (see
+    \code{\link{init_refmodel}}).}
+  }
+  If the projection is performed onto more than one submodel, the output from
+  above is returned for each submodel, giving a \code{list} with one element
+  for each submodel.
 }
 \description{
-Perform projection onto submodels of selected sizes or a specified feature
-combination.
+Project the reference model onto a single submodel consisting of a specific
+combination of predictor terms or onto a single or multiple submodels of
+specific sizes.
 }
 \details{
 Using less draws or clusters in \code{ndraws} or \code{nclusters}

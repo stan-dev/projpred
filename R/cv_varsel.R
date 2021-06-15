@@ -146,16 +146,14 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
                   cv_search = cv_search, nterms_max = nterms_max - 1,
                   intercept = intercept, penalty = penalty, verbose = verbose,
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
-                  regul = regul, search_terms = search_terms, seed = seed
-    )
+                  regul = regul, search_terms = search_terms, seed = seed)
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
   }
 
   candidate_terms <- split_formula(refmodel$formula,
                                    data = refmodel$fetch_data(),
-                                   add_main_effects = FALSE
-  )
+                                   add_main_effects = FALSE)
   ## find out how many of cross-validated iterations select
   ## the same variables as the selection with all the data.
   solution_terms_cv_ch <- sapply(
@@ -170,8 +168,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   )
   ## make sure it's always a matrix
   solution_terms_cv_ch <- matrix(solution_terms_cv_ch,
-                                 ncol = length(solution_terms)
-  )
+                                 ncol = length(solution_terms))
 
   ## these weights might be non-constant in case of subsampling LOO
   sel_solution_terms <- sel$solution_terms
@@ -186,8 +183,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
         size = size,
         sapply(vars, function(var) {
           sum((solution_terms_cv_ch[seq_len(size), , drop = FALSE] == var) * w,
-              na.rm = TRUE
-          )
+              na.rm = TRUE)
         })
       )
     }
@@ -210,8 +206,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
               nclusters,
               nclusters_pred,
               ndraws,
-              ndraws_pred
-  )
+              ndraws_pred)
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
   summary <- summary(vs)
@@ -298,26 +293,22 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   p_sel <- .get_refdist(refmodel,
                         ndraws = ndraws,
                         nclusters = nclusters,
-                        seed = seed
-  )
+                        seed = seed)
   cl_sel <- p_sel$cl # clustering information
 
   ## the clustering/subsampling used for prediction
   p_pred <- .get_refdist(refmodel,
                          ndraws = ndraws_pred,
                          nclusters = nclusters_pred,
-                         seed = seed
-  )
+                         seed = seed)
   cl_pred <- p_pred$cl
 
   ## fetch the log-likelihood for the reference model to obtain the LOO weights
   if (is.null(refmodel$loglik)) {
     ## case where log-likelihood not available, i.e., the reference model is not
     ## a genuine model => cannot compute LOO
-    stop(
-      "LOO can be performed only if the reference model is a genuine ",
-      "probabilistic model for which the log-likelihood can be evaluated."
-    )
+    stop("LOO can be performed only if the reference model is a genuine ",
+         "probabilistic model for which the log-likelihood can be evaluated.")
   } else {
     ## log-likelihood available
     loglik <- refmodel$loglik
@@ -398,8 +389,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
                             obs = inds,
                             offset = refmodel$offset,
-                            weights = 1
-      )
+                            weights = 1)
       log_lik_sub <- t(family$ll_fun(
         mu_k, submodels[[k]]$dis,
         y[inds], refmodel$wobs
@@ -425,8 +415,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     candidate_terms <- split_formula(refmodel$formula,
                                      data = refmodel$fetch_data(),
-                                     add_main_effects = FALSE
-    )
+                                     add_main_effects = FALSE)
     ## with `match` we get the indices of the variables as they enter the
     ## solution path in solution_terms
     solution <- match(solution_terms, candidate_terms[-1])
@@ -484,8 +473,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       candidate_terms <- split_formula(refmodel$formula,
                                        data = refmodel$fetch_data(),
-                                       add_main_effects = FALSE
-      )
+                                       add_main_effects = FALSE)
       ## with `match` we get the indices of the variables as they enter the
       ## solution path in solution_terms
       solution <- match(solution_terms, candidate_terms[-1])
@@ -574,14 +562,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
     mu_test <- family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test,
-          dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg
-    )
+          dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg)
   }
 
   msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
   list_cv <- mapply(make_list_cv, refmodels_cv, d_test_cv, msgs,
-                    SIMPLIFY = FALSE
-  )
+                    SIMPLIFY = FALSE)
 
   ## Perform the selection for each of the K folds
   if (verbose) {
@@ -630,8 +616,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   p_sub_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
-                     SIMPLIFY = FALSE
-  )
+                     SIMPLIFY = FALSE)
   if (verbose && cv_search) {
     close(pb)
   }
@@ -678,8 +663,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   return(nlist(solution_terms_cv,
                summaries = list(sub = sub, ref = ref),
-               d_test = c(d_cv, type = "kfold")
-  ))
+               d_test = c(d_cv, type = "kfold")))
 }
 
 
@@ -761,7 +745,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     refmodel$proj_predfun(fit, newdata = newdata, weights = weights)
   }
   extract_model_data <- function(object, newdata = fetch_fold(), ...) {
-    refmodel$extract_model_data(object = object, newdata = newdata)
+    refmodel$extract_model_data(object = object, newdata = newdata, ...)
   }
   if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg")) {
     fit <- NULL

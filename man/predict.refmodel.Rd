@@ -17,20 +17,21 @@
 \arguments{
 \item{object}{The object of class \code{refmodel}.}
 
-\item{newdata}{Matrix of predictor values used in the prediction.}
+\item{newdata}{Passed to argument \code{newdata} of the reference model's
+\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+Provides the predictor (and possibly also the response) data for the new
+observations.}
 
 \item{ynew}{New (test) target variables. If given, then the log predictive
 density for the new observations is computed.}
 
-\item{offsetnew}{Offsets for the new observations. By default a vector of
-zeros. By default we take the weights from newdata as in the original
-model. Either NULL or right hand side formulas.}
+\item{offsetnew}{Passed to argument \code{orhs} of the reference model's
+\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+Used to get the offsets for the (new) observations.}
 
-\item{weightsnew}{Weights for the new observations. For binomial model,
-corresponds to the number trials per observation. Has effect only if
-\code{ynew} is specified. By default a vector of ones. By default we take
-the weights from newdata as in the original model. Either NULL or right
-hand side formulas.}
+\item{weightsnew}{Passed to argument \code{wrhs} of the reference model's
+\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+Used to get the weights for the (new) observations.}
 
 \item{type}{Scale on which the predictions are returned. Either 'link' (the
 latent function value, from -inf to inf) or 'response' (the scale on which
@@ -47,4 +48,8 @@ Returns either a vector of predictions, or vector of log predictive
 Compute the predictions using the reference model, that is, compute the
 expected value for the next observation, or evaluate the log-predictive
 density at a given point.
+}
+\details{
+Argument \code{weightsnew} is only relevant if
+  \code{!is.null(ynew)}.
 }
