@@ -100,7 +100,7 @@ test_that("proj_linpred: output structure is also correct in edge cases", {
         for (integrated_crr in c(FALSE, TRUE)) {
           pl <- proj_linpred(
             refmod_list[[i]], nclusters = nclusters_pred_crr,
-            newdata = head(data.frame(y = y, x = x), n_crr),
+            newdata = head(dat, n_crr),
             integrated = integrated_crr,
             solution_terms = c("x.3", "x.5")
           )
@@ -253,9 +253,9 @@ test_that("proj_linpred: specifying transform has an expected effect", {
   for (i in fam_nms) {
     y <- prjs_solterms[[i]]$refmodel$y
     plt <- proj_linpred(prjs_solterms[[i]],
-                        newdata = data.frame(y = y, x = x), transform = TRUE)
+                        newdata = dat, transform = TRUE)
     plf <- proj_linpred(prjs_solterms[[i]],
-                        newdata = data.frame(y = y, x = x), transform = FALSE)
+                        newdata = dat, transform = FALSE)
     expect_equal(prjs_solterms[[!!i]]$family$linkinv(plf$pred),
                  plt$pred)
   }
@@ -265,10 +265,10 @@ test_that("proj_linpred: specifying integrated has an expected effect", {
   for (i in fam_nms) {
     y <- prjs_solterms[[i]]$refmodel$y
     plt <- proj_linpred(prjs_solterms[[i]],
-                        newdata = data.frame(y = y, x = x),
+                        newdata = dat,
                         integrated = TRUE)
     plf <- proj_linpred(prjs_solterms[[i]],
-                        newdata = data.frame(y = y, x = x),
+                        newdata = dat,
                         integrated = FALSE)
     expect_equal(
       prjs_solterms[[!!i]]$weights %*% plf$pred,
@@ -286,7 +286,7 @@ test_that("proj_linpred: adding more regularization has an expected effect", {
       y <- vs_list[[i]]$refmodel$y
       pred <- proj_linpred(vs_list[[i]],
                            nclusters = nclusters_pred_tst,
-                           newdata = data.frame(y = y, x = x), nterms = 2,
+                           newdata = dat, nterms = 2,
                            transform = FALSE,
                            integrated = TRUE, regul = regul[j])
       norms[j] <- sum(pred$pred^2)
@@ -304,10 +304,10 @@ test_that("proj_linpred: arguments passed to project work accordingly", {
     SW(pr <- project(vs_list[[i]],
                      nterms = c(2, 4), nclusters = nclusters_pred_tst,
                      regul = 1e-8, seed = 12))
-    prl1 <- proj_linpred(pr, newdata = data.frame(y = y, x = x))
+    prl1 <- proj_linpred(pr, newdata = dat)
     SW(prl2 <- proj_linpred(vs_list[[i]],
                             nclusters = nclusters_pred_tst,
-                            newdata = data.frame(y = y, x = x),
+                            newdata = dat,
                             nterms = c(2, 4),
                             regul = 1e-8,
                             seed = 12))
