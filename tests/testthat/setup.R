@@ -4,9 +4,10 @@
 
 # General setup -----------------------------------------------------------
 
-# When debugging interactively without needing the "vsel" objects, this switch
-# may be set to `FALSE` to source() this script faster:
-run_vsel <- TRUE
+# When debugging interactively without needing the "vsel" objects, these
+# switches may be set to `FALSE` to source() this script faster:
+run_vs <- TRUE
+run_cvvs <- ifelse(!run_vs, FALSE, TRUE)
 
 seed_tst <- 1235
 set.seed(seed_tst)
@@ -293,12 +294,14 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
 
 ## Variable selection -----------------------------------------------------
 
-if (run_vsel) {
-  ### Exclude GAMMs because of issue #148:
-  # ### To avoid issue #144 (for GAMMs):
-  # # library(lme4)
-  # ###
-  ###
+### Exclude GAMMs because of issue #148:
+# ### To avoid issue #144 (for GAMMs):
+# if (run_vs || run_cvvs) {
+#   library(lme4)
+# }
+# ###
+###
+if (run_vs) {
   vss <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
       varsel(refmods[[mod_nm]][[fam_nm]],
@@ -307,6 +310,8 @@ if (run_vsel) {
              nterms_max = nterms_max_tst, verbose = FALSE)
     })
   })
+}
+if (run_cvvs) {
   # Occasionally, we have warnings concerning Pareto k diagnostics:
   SW(cvvss <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
@@ -317,12 +322,14 @@ if (run_vsel) {
                 verbose = FALSE)
     })
   }))
-  ### Exclude GAMMs because of issue #148:
-  # ### Clean up (belongs to the fix for issue #144 above):
-  # # detach("package:lme4")
-  # ###
-  ###
 }
+### Exclude GAMMs because of issue #148:
+# ### Clean up (belongs to the fix for issue #144 above):
+# if (run_vs || run_cvvs) {
+#   detach("package:lme4")
+# }
+# ###
+###
 
 ## Projection -------------------------------------------------------------
 
@@ -381,7 +388,7 @@ prjs_solterms <- lapply(args_prj, function(args_prj_i) {
                        c("mod_nm", "fam_nm"))]
   ))
 })
-if (run_vsel) {
+if (run_vs) {
   prjs_nterms <- lapply(args_prj, function(args_prj_i) {
     do.call(project, c(
       list(object = vss[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
