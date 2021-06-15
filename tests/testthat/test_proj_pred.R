@@ -30,7 +30,8 @@ test_that(paste(
       tstsetup <- unlist(nlist(mod_nm, fam_nm))
       pl <- proj_linpred(refmods[[mod_nm]][[fam_nm]],
                          solution_terms = solterms_x,
-                         nclusters = nclusters_pred_tst)
+                         nclusters = nclusters_pred_tst,
+                         seed = seed_tst)
       expect_named(pl, c("pred", "lpd"), info = tstsetup)
       expect_identical(dim(pl$pred), c(nclusters_pred_tst, n_tst),
                        info = tstsetup)
@@ -44,16 +45,22 @@ test_that(paste(
   "proj_linpred: \"vsel\" object as input leads to correct output",
   "structure"
 ), {
-  for (i in fam_nms) {
-    y <- vs_list[[i]]$refmodel$y
-    pl <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
-                       newdata = data.frame(y = y, x = x),
-                       nterms = 0:nterms)
-    expect_length(pl, nterms + 1)
-    for (j in seq_along(pl)) {
-      expect_named(pl[[!!j]], c("pred", "lpd"), info = i)
-      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n), info = i)
-      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n), info = i)
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      tstsetup <- unlist(nlist(mod_nm, fam_nm))
+      pl <- proj_linpred(vss[[mod_nm]][[fam_nm]],
+                         nterms = 0:nterms,
+                         nclusters = nclusters_pred_tst,
+                         seed = seed_tst)
+      expect_length(pl, nterms + 1)
+      for (j in seq_along(pl)) {
+        expect_named(pl[[!!j]], c("pred", "lpd"),
+                     info = tstsetup)
+        expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n),
+                         info = tstsetup)
+        expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n),
+                         info = tstsetup)
+      }
     }
   }
 })
