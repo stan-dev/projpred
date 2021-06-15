@@ -262,57 +262,42 @@ test_that("proj_linpred: specifying offset has an expected effect", {
 })
 
 test_that("proj_linpred: specifying transform has an expected effect", {
-  for (i in fam_nms) {
-    y <- prjs_solterms[[i]]$refmodel$y
-    plt <- proj_linpred(prjs_solterms[[i]],
-                        newdata = dat, transform = TRUE)
-    plf <- proj_linpred(prjs_solterms[[i]],
-                        newdata = dat, transform = FALSE)
-    expect_equal(prjs_solterms[[!!i]]$family$linkinv(plf$pred),
-                 plt$pred)
+  for (tstsetup in names(prjs_solterms)) {
+    plt <- proj_linpred(prjs_solterms[[tstsetup]], transform = TRUE)
+    plf <- proj_linpred(prjs_solterms[[tstsetup]], transform = FALSE)
+    expect_equal(prjs_solterms[[!!tstsetup]]$family$linkinv(plf$pred), plt$pred)
   }
 })
 
 test_that("proj_linpred: specifying integrated has an expected effect", {
-  for (i in fam_nms) {
-    y <- prjs_solterms[[i]]$refmodel$y
-    plt <- proj_linpred(prjs_solterms[[i]],
-                        newdata = dat,
-                        integrated = TRUE)
-    plf <- proj_linpred(prjs_solterms[[i]],
-                        newdata = dat,
-                        integrated = FALSE)
-    expect_equal(
-      prjs_solterms[[!!i]]$weights %*% plf$pred,
-      plt$pred
-    )
-    expect_length(plt$lpd, length(plt$pred))
+  for (tstsetup in names(prjs_solterms)) {
+    plt <- proj_linpred(prjs_solterms[[tstsetup]], integrated = TRUE)
+    plf <- proj_linpred(prjs_solterms[[tstsetup]], integrated = FALSE)
+    expect_equal(prjs_solterms[[!!tstsetup]]$weights %*% plf$pred, plt$pred)
   }
 })
 
 test_that("proj_linpred: adding more regularization has an expected effect", {
   regul <- c(1e-6, 1e-1, 1e2)
-  for (i in fam_nms) {
-    norms <- rep(0, length(regul))
-    for (j in 1:length(regul)) {
-      y <- vs_list[[i]]$refmodel$y
-      pred <- proj_linpred(vs_list[[i]],
-                           nclusters = nclusters_pred_tst,
-                           newdata = dat, nterms = 2,
-                           transform = FALSE,
-                           integrated = TRUE, regul = regul[j])
-      norms[j] <- sum(pred$pred^2)
-    }
-    for (j in 1:(length(regul) - 1)) {
+  for (tstsetup in names(vss)) {
+    nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
+    stopifnot(nterms_max_crr >= 2)
+    norms <- sapply(regul, function(regul_j) {
+      pl <- proj_linpred(vss[[tstsetup]],
+                         integrated = TRUE, regul = regul_j,
+                         nterms = 2,
+                         nclusters = nclusters_pred_tst,
+                         seed = seed_tst)
+      return(sum(pl$pred^2))
+    })
+    for (j in head(seq_along(regul), -1)) {
       expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
     }
   }
 })
 
-
-test_that("proj_linpred: arguments passed to project work accordingly", {
+test_that("proj_linpred: passing arguments to project() works correctly", {
   for (i in fam_nms) {
-    y <- vs_list[[i]]$refmodel$y
     SW(pr <- project(vs_list[[i]],
                      nterms = c(2, 4), nclusters = nclusters_pred_tst,
                      regul = 1e-8, seed = 12))
