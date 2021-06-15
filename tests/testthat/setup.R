@@ -389,12 +389,8 @@ prjs_solterms <- lapply(args_prj, function(args_prj_i) {
   ))
 })
 if (run_vs) {
-  prjs_nterms <- lapply(args_prj, function(args_prj_i) {
-    do.call(project, c(
-      list(object = vss[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
-           nterms = 0:nterms_max_tst),
-      args_prj_i[setdiff(names(args_prj_i),
-                         c("mod_nm", "fam_nm", "solution_terms"))]
-    ))
-  })
+  prj_nterms <- project(object = vss$glm$gauss,
+                        nterms = 0:nterms_max_tst,
+                        nclusters = nclusters_pred_tst,
+                        seed = seed_tst)
 }
