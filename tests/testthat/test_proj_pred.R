@@ -130,60 +130,6 @@ test_that(paste(
                "Invalid object supplied to argument `object`\\.")
 })
 
-## test_that("proj_linpred: specifying ynew incorrectly produces an error", {
-##   expect_error(
-##     proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
-##                  ynew = x[, 1:3]),
-##     "y cannot have more than two columns"
-##   )
-##   expect_error(
-##     proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
-##                  ynew = factor(ys[[1]])),
-##     "cannot be a factor"
-##   )
-##   expect_error(
-##     proj_linpred(vs_list[["poiss"]], newdata = data.frame(x = x),
-##                  ynew = factor(ys[[3]])),
-##     "cannot be a factor"
-##   )
-##   expect_error(
-##     proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
-##                  ynew = factor(ys[[1]])),
-##     "y cannot contain more than two classes"
-##   )
-## })
-
-## test_that("proj_linpred: specifying ynew has an expected effect", {
-##   for (i in fam_nms) {
-##     pl <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
-##       newdata = df_binom, ynew = ys[[i]],
-##       weightsnew = ~weights, nterms = 0:nterms
-##     )
-##     pl2 <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
-##       newdata = data.frame(x = x, weights = weights),
-##       weightsnew = ~weights, nterms = 0:nterms
-##     )
-##     for (j in 1:length(pl)) {
-##       expect_named(pl[[j]], c("pred", "lpd"))
-##       expect_equal(ncol(pl[[!!j]]$pred), n, info = tstsetup)
-##       expect_equal(nrow(pl[[!!j]]$lpd), n, info = tstsetup)
-##     }
-##   }
-## })
-
-## test_that(paste(
-##   "proj_linpred: specifying ynew as a factor works in a",
-##   "binomial model"
-## ), {
-##   yfactor <- factor(rbinom(n, 1, 0.5))
-##   pl <- proj_linpred(vs_list[["binom"]], nclusters = nclusters_pred_tst,
-##                      newdata = data.frame(x = x),
-##                      ynew = yfactor)
-##   expect_named(pl, c("pred", "lpd"))
-##   expect_equal(ncol(pl$pred), n_tst)
-##   expect_equal(nrow(pl$lpd), n_tst)
-## })
-
 test_that(paste(
   "proj_linpred: omitting the response causes output element `lpd` to be",
   "`NULL`."
