@@ -1,20 +1,19 @@
 context("proj_linpred")
 
-
 # tests for proj_linpred and proj_predict
 
 if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   seed <- 1235
   set.seed(seed)
-  n <- 40
-  nterms <- 5
+  n <- 40L
+  nterms <- 5L
   x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
   b <- runif(nterms) - 0.5
-  dis <- runif(1, 1, 2)
+  dis <- runif(1L, 1, 2)
   weights <- sample(1:4, n, replace = TRUE)
   offset <- rnorm(n)
-  chains <- 2
-  iter <- 500
+  chains <- 2L
+  iter <- 500L
   source(testthat::test_path("helpers", "SW.R"))
 
   f_gauss <- gaussian()
@@ -26,46 +25,58 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   )
   f_poiss <- poisson()
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
-  ys <- list()
-  ys[[1]] <- df_gauss$y
-  ys[[2]] <- df_binom$y
-  ys[[3]] <- df_poiss$y
-
+  fam_nms <- c("gauss", "binom", "poiss")
+  ys <- setNames(list(
+    df_gauss$y,
+    df_binom$y,
+    df_poiss$y
+  ), fam_nms)
   SW({
     fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_gauss, data = df_gauss,
-                          chains = chains, seed = seed, iter = iter
-    )
+                          chains = chains, seed = seed, iter = iter)
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_binom, data = df_binom, weights = weights,
-                          chains = chains, seed = seed, iter = iter
-    )
+                          chains = chains, seed = seed, iter = iter)
     fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           family = f_poiss, data = df_poiss,
-                          chains = chains, seed = seed, iter = iter
-    )
-    fit_list <- list(
-      gauss = fit_gauss,
-      binom = fit_binom,
-      poiss = fit_poiss
-    )
-    vs_list <- lapply(fit_list, varsel,
-                      nterms_max = nterms + 1,
-                      verbose = FALSE
-    )
-    # Note: `c("x.3", "x.5")` are not the two most relevant terms for each
-    # reference model from `vs_list`. But instead of choosing different
-    # `solution_terms` for each reference model, simply take `c("x.3", "x.5")`
-    # for all reference models:
-    proj_solution_terms_list <- lapply(vs_list, project,
-                                       solution_terms = c("x.3", "x.5"),
-                                       seed = seed
-    )
-    proj_all_list <- lapply(vs_list, project,
-                            seed = seed,
-                            nterms = 0:nterms
-    )
+                          chains = chains, seed = seed, iter = iter)
   })
+  fit_list <- setNames(list(
+    fit_gauss,
+    fit_binom,
+    fit_poiss
+  ), fam_nms)
+  # For the binomial family with > 1 trials, we currently expect the warning
+  # "Using formula(x) is deprecated when x is a character vector of length > 1",
+  # so temporarily wrap the following call in SW():
+  SW(refmod_list <- lapply(fit_list, get_refmodel))
+
+  nclusters_tst <- 2L
+  nclusters_pred_tst <- 3L
+  nresample_clusters_tst <- 100L
+  nresample_clusters_default <- 1000L # Adopt this if the default is changed.
+
+  # For the binomial family with > 1 trials, we currently expect the warning
+  # "Using formula(x) is deprecated when x is a character vector of length > 1",
+  # so temporarily wrap the following call in SW():
+  SW(vs_list <- lapply(fit_list, varsel,
+                       nclusters = nclusters_tst,
+                       nclusters_pred = nclusters_pred_tst,
+                       nterms_max = nterms,
+                       verbose = FALSE))
+  # Note: `c("x.3", "x.5")` are not the two most relevant terms for each
+  # reference model from `vs_list`. But instead of choosing different
+  # `solution_terms` for each reference model, simply take `c("x.3", "x.5")`
+  # for all reference models:
+  proj_solution_terms_list <- lapply(vs_list, project,
+                                     nclusters = nclusters_pred_tst,
+                                     solution_terms = c("x.3", "x.5"),
+                                     seed = seed)
+  proj_all_list <- lapply(vs_list, project,
+                          nclusters = nclusters_pred_tst,
+                          seed = seed,
+                          nterms = 0:nterms)
 
   test_that("proj_linpred: newdata is specified correctly", {
     ## expect_error(
@@ -94,31 +105,94 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     )
   })
 
-  test_that("output of proj_linpred is sensible with fit-object as input", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
-      y <- vs_list[[i]]$refmodel$y
-      pl <- proj_linpred(vs_list[[i]], newdata = data.frame(y = y, x = x),
-                         nterms = 0:nterms)
-      expect_length(pl, nterms + 1)
+  test_that(paste(
+    "proj_linpred: \"refmodel\" object as input leads to correct output",
+    "structure"
+  ), {
+    for (i in fam_nms) {
+      y <- refmod_list[[i]]$y
+      pl <- proj_linpred(refmod_list[[i]], nclusters = nclusters_pred_tst,
+                         newdata = data.frame(y = y, x = x),
+                         solution_terms = c("x.3", "x.5"))
+      expect_named(pl, c("pred", "lpd"), info = i)
+      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
+      expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n), info = i)
     }
   })
 
-  test_that("output of proj_linpred is sensible with project-object as input", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
+  test_that(paste(
+    "proj_linpred: \"vsel\" object as input leads to correct output",
+    "structure"
+  ), {
+    for (i in fam_nms) {
+      y <- vs_list[[i]]$refmodel$y
+      pl <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
+                         newdata = data.frame(y = y, x = x),
+                         nterms = 0:nterms)
+      expect_length(pl, nterms + 1)
+      for (j in seq_along(pl)) {
+        expect_named(pl[[!!j]], c("pred", "lpd"), info = i)
+        expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n), info = i)
+        expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n), info = i)
+      }
+    }
+  })
+
+  test_that(paste(
+    "proj_linpred: \"projection\" object as input leads to correct output",
+    "structure"
+  ), {
+    for (i in fam_nms) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       pl <- proj_linpred(proj_solution_terms_list[[i]],
-                         newdata = data.frame(y = y, x = x)
-      )
+                         newdata = data.frame(y = y, x = x))
+      expect_named(pl, c("pred", "lpd"), info = i)
+      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
+      expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n), info = i)
     }
-    for (i in 1:length(proj_all_list)) {
-      i_inf <- names(proj_all_list)[i]
+  })
+
+  test_that(paste(
+    "proj_linpred: \"proj_list\" object (an informal class) as input leads to",
+    "correct output structure"
+  ), {
+    for (i in fam_nms) {
       y <- proj_all_list[[i]][[1]]$refmodel$y
       pl <- proj_linpred(proj_all_list[[i]],
-                         newdata = data.frame(y = y, x = x)
-      )
+                         newdata = data.frame(y = y, x = x))
       expect_length(pl, nterms + 1)
+      for (j in seq_along(pl)) {
+        expect_named(pl[[!!j]], c("pred", "lpd"), info = i)
+        expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n), info = i)
+        expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n), info = i)
+      }
+    }
+  })
+
+  test_that("proj_linpred: output structure is also correct in edge cases", {
+    for (i in fam_nms) {
+      y <- refmod_list[[i]]$y
+      for (n_tsttmp in c(1L, 12L)) {
+        for (nclusters_pred_tsttmp in c(1L, 4L)) {
+          for (integrated_tsttmp in c(FALSE, TRUE)) {
+            pl <- proj_linpred(
+              refmod_list[[i]], nclusters = nclusters_pred_tsttmp,
+              newdata = head(data.frame(y = y, x = x), n_tsttmp),
+              integrated = integrated_tsttmp,
+              solution_terms = c("x.3", "x.5")
+            )
+            tstsetup <- unlist(nlist(i, n_tsttmp, nclusters_pred_tsttmp,
+                                     integrated_tsttmp))
+            expect_named(pl, c("pred", "lpd"), info = tstsetup)
+            nprjdraws_tsttmp <- ifelse(integrated_tsttmp,
+                                       1L, nclusters_pred_tsttmp)
+            expect_identical(dim(pl$pred), c(nprjdraws_tsttmp, n_tsttmp),
+                             info = tstsetup)
+            expect_identical(dim(pl$lpd), c(nprjdraws_tsttmp, n_tsttmp),
+                             info = tstsetup)
+          }
+        }
+      }
     }
   })
 
@@ -164,20 +238,19 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ## })
 
   ## test_that("proj_linpred: specifying ynew has an expected effect", {
-  ##   for (i in 1:length(vs_list)) {
-  ##     i_inf <- names(vs_list)[i]
-  ##     pl <- proj_linpred(vs_list[[i]],
+  ##   for (i in fam_nms) {
+  ##     pl <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
   ##       newdata = df_binom, ynew = ys[[i]],
   ##       weightsnew = ~weights, nterms = 0:nterms
   ##     )
-  ##     pl2 <- proj_linpred(vs_list[[i]],
+  ##     pl2 <- proj_linpred(vs_list[[i]], nclusters = nclusters_pred_tst,
   ##       newdata = data.frame(x = x, weights = weights),
   ##       weightsnew = ~weights, nterms = 0:nterms
   ##     )
   ##     for (j in 1:length(pl)) {
   ##       expect_named(pl[[j]], c("pred", "lpd"))
-  ##       expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
-  ##       expect_equal(nrow(pl[[j]]$lpd), n, info = i_inf)
+  ##       expect_equal(ncol(pl[[!!j]]$pred), n, info = i)
+  ##       expect_equal(nrow(pl[[!!j]]$lpd), n, info = i)
   ##     }
   ##   }
   ## })
@@ -187,75 +260,86 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ##   "binomial model"
   ## ), {
   ##   yfactor <- factor(rbinom(n, 1, 0.5))
-  ##   pl <- proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
+  ##   pl <- proj_linpred(vs_list[["binom"]], nclusters = nclusters_pred_tst,
+  ##                      newdata = data.frame(x = x),
   ##                      ynew = yfactor)
   ##   expect_named(pl, c("pred", "lpd"))
   ##   expect_equal(ncol(pl$pred), n)
   ##   expect_equal(nrow(pl$lpd), n)
   ## })
 
+  test_that(paste(
+    "proj_linpred: omitting the response causes output element `lpd` to be",
+    "`NULL`."
+  ), {
+    stopifnot(!exists("y"))
+    for (i in fam_nms) {
+      i_resampled <- sample.int(nrow(x))
+      stopifnot(identical(sort(i_resampled), seq_len(nrow(x))))
+      pl <- proj_linpred(proj_solution_terms_list[[i]],
+                         newdata = data.frame(
+                           x = x[i_resampled, , drop = FALSE]
+                         ))
+      expect_named(pl, c("pred", "lpd"), info = i)
+      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n), info = i)
+      expect_null(pl$lpd, info = i)
+    }
+  })
+
   test_that("proj_linpred: specifying weights has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
+    for (i in fam_nms) {
       # for binomial models weights have to be specified
       if (proj_solution_terms_list[[i]]$family$family != "binomial") {
-        i_inf <- names(proj_solution_terms_list)[i]
         weightsnew <- sample(1:4, n, replace = TRUE)
         plw <- proj_linpred(proj_solution_terms_list[[i]],
                             newdata = data.frame(y = ys[[i]], x = x,
                                                  weights = weightsnew),
-                            weightsnew = ~weights
-        )
+                            weightsnew = ~weights)
         pl <- proj_linpred(proj_solution_terms_list[[i]],
                            newdata = data.frame(y = ys[[i]], x = x,
                                                 weights = weights),
-                           weightsnew = ~weights
-        )
+                           weightsnew = ~weights)
         expect_named(plw, c("pred", "lpd"))
-        expect_equal(ncol(plw$pred), n, info = i_inf)
-        expect_equal(ncol(plw$lpd), n, info = i_inf)
+        expect_equal(ncol(plw$pred), n, info = i)
+        expect_equal(ncol(plw$lpd), n, info = i)
         expect_false(all(plw$lpd == pl$lpd))
       }
     }
   })
 
   test_that("proj_linpred: specifying offset has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
+    for (i in fam_nms) {
       plo <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(
                             y = ys[[i]], x = x, weights = weights,
                             offset = offset
                           ),
-                          weightsnew = ~weights, offsetnew = ~offset
-      )
+                          weightsnew = ~weights, offsetnew = ~offset)
       pl <- proj_linpred(proj_solution_terms_list[[i]],
                          newdata = data.frame(y = ys[[i]], x = x,
                                               weights = weights),
-                         weightsnew = ~weights
-      )
+                         weightsnew = ~weights)
       expect_named(plo, c("pred", "lpd"))
-      expect_equal(ncol(plo$pred), n, info = i_inf)
-      expect_equal(ncol(plo$lpd), n, info = i_inf)
+      expect_equal(ncol(plo$pred), n, info = i)
+      expect_equal(ncol(plo$lpd), n, info = i)
       expect_equal(t(plo$pred) - offset, t(pl$pred), tol = 1e-8)
     }
   })
 
   test_that("proj_linpred: specifying transform has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
+    for (i in fam_nms) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       plt <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(y = y, x = x), transform = TRUE)
       plf <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(y = y, x = x), transform = FALSE)
-      expect_equal(proj_solution_terms_list[[i]]$family$linkinv(plf$pred),
-                   plt$pred, info = i_inf)
+      expect_equal(proj_solution_terms_list[[!!i]]$family$linkinv(plf$pred),
+                   plt$pred)
     }
   })
 
   test_that("proj_linpred: specifying integrated has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
+    for (i in fam_nms) {
       y <- proj_solution_terms_list[[i]]$refmodel$y
       plt <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(y = y, x = x),
@@ -263,78 +347,69 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
       plf <- proj_linpred(proj_solution_terms_list[[i]],
                           newdata = data.frame(y = y, x = x),
                           integrated = FALSE)
-      expect_equal(as.vector(proj_solution_terms_list[[i]]$weights %*%
-                               plf$pred),
-                   plt$pred, info = i_inf)
+      expect_equal(
+        proj_solution_terms_list[[!!i]]$weights %*% plf$pred,
+        plt$pred
+      )
       expect_length(plt$lpd, length(plt$pred))
     }
   })
 
   test_that("proj_linpred: adding more regularization has an expected effect", {
     regul <- c(1e-6, 1e-1, 1e2)
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       norms <- rep(0, length(regul))
       for (j in 1:length(regul)) {
         y <- vs_list[[i]]$refmodel$y
         pred <- proj_linpred(vs_list[[i]],
+                             nclusters = nclusters_pred_tst,
                              newdata = data.frame(y = y, x = x), nterms = 2,
                              transform = FALSE,
-                             integrated = TRUE, regul = regul[j]
-        )
+                             integrated = TRUE, regul = regul[j])
         norms[j] <- sum(pred$pred^2)
       }
       for (j in 1:(length(regul) - 1)) {
-        expect_true(all(norms[j] >= norms[j + 1]), info = i_inf)
+        expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = i)
       }
     }
   })
 
 
   test_that("proj_linpred: arguments passed to project work accordingly", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       y <- vs_list[[i]]$refmodel$y
       SW(pr <- project(vs_list[[i]],
-                       nterms = c(2, 4), nclusters = 2, ndraws = 20,
-                       intercept = FALSE, regul = 1e-8, seed = 12
-      ))
+                       nterms = c(2, 4), nclusters = nclusters_pred_tst,
+                       regul = 1e-8, seed = 12))
       prl1 <- proj_linpred(pr, newdata = data.frame(y = y, x = x))
       SW(prl2 <- proj_linpred(vs_list[[i]],
+                              nclusters = nclusters_pred_tst,
                               newdata = data.frame(y = y, x = x),
-                              nterms = c(2, 4), nclusters = 2,
-                              ndraws = 20, intercept = FALSE, regul = 1e-8,
-                              seed = 12
-      ))
-      expect_equal(prl1$pred, prl2$pred, info = i_inf)
+                              nterms = c(2, 4),
+                              regul = 1e-8,
+                              seed = 12))
+      expect_equal(prl1$pred, prl2$pred, info = i)
     }
   })
 
   test_that(paste(
     "proj_linpred: providing newdata as a data frame works as expected"
   ), {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      y <- proj_solution_terms_list[[i]]$refmodel$y
-      pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(y = y, x = x)
-      )
-      expect_equal(ncol(pl), n, info = i_inf)
-    }
     SW(
       fit_form <- stan_glm(mpg ~ (drat + wt)^2,
                            data = mtcars, QR = TRUE,
-                           chains = chains, seed = seed, iter = iter
-      )
+                           chains = chains, seed = seed, iter = iter)
     )
-    vs_form <- varsel(fit_form)
-    p1 <- proj_linpred(vs_form, newdata = mtcars, nterms = 3, seed = 2)
+    vs_form <- varsel(fit_form,
+                      nclusters = nclusters_tst,
+                      nclusters_pred = nclusters_pred_tst)
+    p1 <- proj_linpred(vs_form, nclusters = nclusters_pred_tst,
+                       newdata = mtcars, nterms = 3, seed = 2)
     x <- rstanarm::get_x(fit_form)[, -1]
     newdata <- data.frame(mpg = rstanarm::get_y(fit_form), x)
-    p2 <- proj_linpred(vs_form,
+    p2 <- proj_linpred(vs_form, nclusters = nclusters_pred_tst,
                        newdata = newdata, nterms = 3,
-                       seed = 2
-    )
+                       seed = 2)
     expect_equal(p1$pred, p2$pred)
   })
 
@@ -364,39 +439,116 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
     expect_error(
       proj_predict(proj_solution_terms_list,
                    newdata = data.frame(x = x)[, 1:2],
-                   solution_terms = paste0("x.", 1:3)
-      ),
+                   solution_terms = paste0("x.", 1:3)),
       paste("^The number of solution terms is greater than the number of",
             "columns in newdata\\.$")
     )
   })
 
-  test_that("output of proj_predict is sensible with fit-object as input", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
-      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+  test_that(paste(
+    "proj_predict: \"refmodel\" object as input leads to correct output",
+    "structure"
+  ), {
+    for (i in fam_nms) {
+      pl <- proj_predict(refmod_list[[i]],
+                         nclusters = nclusters_pred_tst,
+                         newdata = data.frame(x = x),
+                         solution_terms = c("x.3", "x.5"))
+      expect_identical(dim(pl), c(nresample_clusters_default, n), info = i)
+    }
+  })
+
+  test_that(paste(
+    "proj_predict: \"vsel\" object as input leads to correct output",
+    "structure"
+  ), {
+    for (i in fam_nms) {
+      pl <- proj_predict(vs_list[[i]],
+                         nclusters = nclusters_pred_tst,
+                         newdata = data.frame(x = x),
                          nterms = 0:nterms)
       expect_length(pl, nterms + 1)
-      for (j in 1:length(pl)) {
-        expect_equal(ncol(pl[[j]]), n, info = i_inf)
+      for (j in seq_along(pl)) {
+        expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n),
+                         info = i)
       }
     }
   })
 
-  test_that("output of proj_predict is sensible with project-object as input", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      y <- proj_solution_terms_list[[i]]$refmodel$y
+  test_that(paste(
+    "proj_predict: \"projection\" object as input leads to correct output",
+    "structure"
+  ), {
+    for (i in fam_nms) {
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(y = y, x = x))
-      expect_equal(ncol(pl), n, info = i_inf)
+                         newdata = data.frame(x = x))
+      expect_identical(dim(pl), c(nresample_clusters_default, n), info = i)
     }
-    for (i in 1:length(proj_all_list)) {
-      i_inf <- names(proj_all_list)[i]
+  })
+
+  test_that(paste(
+    "proj_predict: \"proj_list\" object (an informal class) as input leads to",
+    "correct output structure"
+  ), {
+    for (i in fam_nms) {
       pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
       expect_length(pl, nterms + 1)
-      for (j in 1:length(pl)) {
-        expect_equal(ncol(pl[[j]]), n, info = i_inf)
+      for (j in seq_along(pl)) {
+        expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n),
+                         info = i)
+      }
+    }
+  })
+
+  test_that(paste(
+    "proj_predict: output structure is also correct in edge cases",
+    "(using `nclusters`)"
+  ), {
+    for (i in fam_nms) {
+      for (n_tsttmp in c(1L, 12L)) {
+        for (nclusters_pred_tsttmp in c(1L, 4L, 24L)) {
+          for (nresample_clusters_tsttmp in c(1L, 8L)) {
+            pl <- proj_predict(
+              refmod_list[[i]], nclusters = nclusters_pred_tsttmp,
+              newdata = head(data.frame(x = x), n_tsttmp),
+              nresample_clusters = nresample_clusters_tsttmp,
+              .seed = seed + 1,
+              solution_terms = c("x.3", "x.5")
+            )
+            tstsetup <- unlist(nlist(i, n_tsttmp, nclusters_pred_tsttmp,
+                                     nresample_clusters_tsttmp))
+            expect_identical(dim(pl), c(nresample_clusters_tsttmp, n_tsttmp),
+                             info = tstsetup)
+          }
+        }
+      }
+    }
+  })
+
+  test_that(paste(
+    "proj_predict: output structure is also correct in edge cases",
+    "(using `ndraws`)"
+  ), {
+    for (i in fam_nms) {
+      for (n_tsttmp in c(1L, 12L)) {
+        for (ndraws_pred_tsttmp in c(1L, 4L, 24L)) {
+          for (nresample_clusters_tsttmp in c(1L, 8L)) {
+            pl <- proj_predict(
+              refmod_list[[i]], ndraws = ndraws_pred_tsttmp,
+              newdata = head(data.frame(x = x), n_tsttmp),
+              nresample_clusters = nresample_clusters_tsttmp,
+              .seed = seed + 1,
+              solution_terms = c("x.3", "x.5")
+            )
+            tstsetup <- unlist(nlist(i, n_tsttmp, ndraws_pred_tsttmp,
+                                     nresample_clusters_tsttmp))
+            nprjdraws_tsttmp <- ifelse(ndraws_pred_tsttmp <= 20,
+                                       nresample_clusters_tsttmp,
+                                       ndraws_pred_tsttmp)
+            expect_identical(dim(pl), c(nprjdraws_tsttmp, n_tsttmp),
+                             info = tstsetup)
+          }
+        }
       }
     }
   })
@@ -422,9 +574,13 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
 
   ## test_that("proj_predict: specifying ynew has an expected effect", {
   ##   for (i in seq_along(vs_list)) {
-  ##     pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+  ##     pl <- proj_predict(vs_list[[i]],
+  ##                        nclusters = nclusters_pred_tst,
+  ##                        newdata = data.frame(x = x),
   ##                        ynew = ys[[i]], nterms = 0:3)
-  ##     pl2 <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
+  ##     pl2 <- proj_predict(vs_list[[i]],
+  ##                         nclusters = nclusters_pred_tst,
+  ##                         newdata = data.frame(x = x),
   ##                         nterms = 0:3)
   ##     for (j in seq_len(length(pl))) {
   ##       expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
@@ -437,7 +593,9 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   ##   "binomial model"
   ## ), {
   ##   yfactor <- factor(rbinom(n, 1, 0.5))
-  ##   pl <- proj_predict(vs_list[["binom"]], newdata = data.frame(x = x),
+  ##   pl <- proj_predict(vs_list[["binom"]],
+  ##                      nclusters = nclusters_pred_tst,
+  ##                      newdata = data.frame(x = x),
   ##                      ynew = yfactor)
   ##   expect_equal(ncol(pl), n)
   ##   expect_true(all(pl %in% c(0, 1)))
@@ -446,88 +604,77 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   test_that("proj_predict: specifying weightsnew has an expected effect", {
     pl <- proj_predict(proj_solution_terms_list[["binom"]],
                        newdata = data.frame(x = x, weights = rep(1, NROW(x))),
-                       seed = seed, ppd_seed = seed
-    )
+                       seed = seed, .seed = seed)
     plw <- proj_predict(proj_solution_terms_list[["binom"]],
                         newdata = data.frame(x = x, weights = weights),
-                        seed = seed, ppd_seed = seed,
-                        weightsnew = ~weights
-    )
+                        seed = seed, .seed = seed,
+                        weightsnew = ~weights)
     expect_true(sum(pl != plw) > 0)
   })
 
   test_that("proj_predict: specifying offsetnew has an expected effect", {
     for (i in seq_len(length(proj_solution_terms_list))) {
-      i_inf <- names(proj_solution_terms_list)[i]
       pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(x = x), nresample_clusters = iter,
-                         seed = seed, ppd_seed = seed
-      )
+                         newdata = data.frame(x = x),
+                         seed = seed, .seed = seed)
       plo <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x, offset = offset),
-                          nresample_clusters = iter,
-                          seed = seed, ppd_seed = seed, offsetnew = ~offset
-      )
-      expect_true(sum(pl != plo) > 0, info = i_inf)
+                          seed = seed, .seed = seed, offsetnew = ~offset)
+      expect_true(sum(pl != plo) > 0, info = i)
     }
   })
 
   test_that(paste(
     "proj_predict: specifying nresample_clusters has an expected effect"
   ), {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
+    for (i in fam_nms) {
       pl <- proj_predict(proj_solution_terms_list[[i]],
+                         nresample_clusters = nresample_clusters_tst,
                          newdata = data.frame(x = x))
-      # 400 is the default for project()'s argument `ndraws`:
-      expect_equal(dim(pl), c(400, n))
+      expect_equal(dim(pl), c(nresample_clusters_tst, n))
     }
   })
 
   test_that(paste(
-    "proj_predict: specifying seed and ppd_seed has an expected",
+    "proj_predict: specifying seed and .seed has an expected",
     "effect"
   ), {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
+    for (i in fam_nms) {
       pl1 <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x),
-                          seed = seed, ppd_seed = seed)
+                          seed = seed, .seed = seed)
       pl2 <- proj_predict(proj_solution_terms_list[[i]],
                           newdata = data.frame(x = x),
-                          seed = seed, ppd_seed = seed)
-      expect_equal(pl1, pl2, info = i_inf)
+                          seed = seed, .seed = seed)
+      expect_equal(pl1, pl2, info = i)
     }
   })
 
   test_that("proj_predict: arguments passed to project work accordingly", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
+    for (i in fam_nms) {
       prp1 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nresample_clusters = 100,
-                           seed = 12, ppd_seed = 12, nterms = c(2, 4),
-                           nclusters = 2,
-                           regul = 1e-08
-      )
+                           nresample_clusters = nresample_clusters_tst,
+                           seed = 12, .seed = 12, nterms = c(2, 4),
+                           nclusters = nclusters_pred_tst,
+                           regul = 1e-08)
       prp2 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nresample_clusters = 100,
-                           nterms = c(2, 4), nclusters = 2, regul = 1e-8,
-                           seed = 12, ppd_seed = 12
-      )
+                           nresample_clusters = nresample_clusters_tst,
+                           nterms = c(2, 4),
+                           nclusters = nclusters_pred_tst, regul = 1e-8,
+                           seed = 12, .seed = 12)
       prp3 <- proj_predict(vs_list[[i]],
                            newdata = data.frame(x = x),
-                           nresample_clusters = 100,
-                           seed = 120, ppd_seed = 120, nterms = c(2, 4),
-                           nclusters = 2,
-                           regul = 1e-08
-      )
-      expect_equal(prp1, prp2, info = i_inf)
+                           nresample_clusters = nresample_clusters_tst,
+                           seed = 120, .seed = 120, nterms = c(2, 4),
+                           nclusters = nclusters_pred_tst,
+                           regul = 1e-08)
+      expect_equal(prp1, prp2, info = i)
       expect_false(all(unlist(lapply(seq_along(prp1), function(i) {
         all(prp1[[i]] == prp3[[i]])
       }))),
-      info = i_inf
+      info = i
       )
     }
   })

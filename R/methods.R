@@ -1,90 +1,95 @@
-#' Extract draws of the linear predictor and draw from the predictive
-#' distribution of the projected submodel
+#' Predictions from a projected submodel
 #'
-#' \code{proj_linpred} extracts draws of the linear predictor and
-#' \code{proj_predict} draws from the predictive distribution of the projected
-#' submodel or submodels. If the projection has not been performed, the
-#' functions also perform the projection.
+#' \code{proj_linpred} gives draws of the linear predictor (possibly transformed
+#' to response scale) of a projected submodel (i.e., a submodel resulting from
+#' projecting the reference model onto it). \code{proj_predict} draws from the
+#' predictive distribution of a projected submodel. If the projection has not
+#' been performed, both functions also perform the projection. Both functions
+#' can also handle multiple projected submodels at once (if the input object is
+#' of class \code{"vsel"}).
 #'
 #' @name proj-pred
 #'
-#' @param object Either an object returned by \link[=project]{project} or
+#' @param object Either an object returned by \code{\link{project}} or
 #'   alternatively any object that can be passed to argument \code{object} of
-#'   \link[=project]{project}.
+#'   \code{\link{project}}.
 #' @param filter_nterms Only applies if \code{object} is an object returned by
-#'   \link[=project]{project}. In that case, \code{filter_nterms} can be used to
+#'   \code{\link{project}}. In that case, \code{filter_nterms} can be used to
 #'   filter \code{object} for only those elements (submodels) with a number of
 #'   solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 #'   vector or \code{NULL}. If \code{NULL}, use all submodels.
-#' @param newdata The predictor values used in the prediction. If
-#'   \code{solution_terms} is specified, then \code{newdata} should either be a
-#'   dataframe containing column names that correspond to \code{solution_terms}
-#'   or a matrix with the number and order of columns corresponding to
-#'   \code{solution_terms}. If \code{solution_terms} is unspecified, then
-#'   \code{newdata} must either be a dataframe containing all the column names
-#'   as in the original data or a matrix with the same columns at the same
-#'   positions as in the original data.
-#' @param offsetnew Offsets for the new observations. By default a vector of
-#'   zeros. By default we take the offsets from newdata as in the original
-#'   model. Either NULL or right hand side formula.
-#' @param weightsnew Weights for the new observations. For binomial model,
-#'   corresponds to the number trials per observation. For \code{proj_linpred},
-#'   this argument matters only if \code{newdata} is specified. By default we
-#'   take the weights from newdata as in the original model. Either NULL or
-#'   right hand side formula.
-#' @param transform Should the linear predictor be transformed using the
-#'   inverse-link function? Default is \code{FALSE}. For \code{proj_linpred}
-#'   only.
-#' @param integrated If \code{TRUE}, the output is averaged over the projected
-#'   posterior draws. Default is \code{FALSE}. For \code{proj_linpred} only.
+#' @param newdata Passed to argument \code{newdata} of the reference model's
+#'   \code{extract_model_data} function (see \code{\link{init_refmodel}}).
+#'   Provides the predictor (and possibly also the response) data for the new
+#'   observations.
+#' @param offsetnew Passed to argument \code{orhs} of the reference model's
+#'   \code{extract_model_data} function (see \code{\link{init_refmodel}}).
+#'   Used to get the offsets for the (new) observations.
+#' @param weightsnew Passed to argument \code{wrhs} of the reference model's
+#'   \code{extract_model_data} function (see \code{\link{init_refmodel}}).
+#'   Used to get the weights for the (new) observations.
+#' @param transform For \code{proj_linpred} only. A single logical value
+#'   indicating whether the linear predictor should be transformed using the
+#'   inverse-link function (\code{TRUE}) or not (\code{FALSE}).
+#' @param integrated For \code{proj_linpred} only. A single logical value
+#'   indicating whether the output should be averaged over the projected
+#'   posterior draws (\code{TRUE}) or not (\code{FALSE}).
 #' @param nresample_clusters For \code{proj_predict} with clustered projection
-#'   only: Number of draws to return from the predictive distribution of the
+#'   only. Number of draws to return from the predictive distribution of the
 #'   projection. Not to be confused with argument \code{nclusters} of
-#'   \link{project}: \code{nresample_clusters} gives the number of draws
+#'   \code{\link{project}}: \code{nresample_clusters} gives the number of draws
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
-#'   projection (as determined by argument \code{nclusters} of \link{project}).
-#' @param ppd_seed For \code{proj_predict} only: An optional seed for drawing
-#'   from the posterior predictive distribution. If a clustered projection was
-#'   performed, \code{ppd_seed} is also used for drawing from the set of
-#'   clustered posterior draws after projection (see argument
-#'   \code{nresample_clusters}).
-#' @param ... Additional arguments passed to \link{project} if \code{object} is
-#'   not already an object returned by \link{project}.
+#'   projection (as determined by argument \code{nclusters} of
+#'   \code{\link{project}}).
+#' @param .seed For \code{proj_predict} only. A seed for drawing from the
+#'   predictive distribution of the submodel(s) onto which the reference model
+#'   was (or is) projected. If a clustered projection was performed,
+#'   \code{.seed} is also used for drawing from the set of the projected
+#'   clusters of posterior draws (see argument \code{nresample_clusters}). If
+#'   \code{NULL}, no seed is set and therefore, the results are in general not
+#'   reproducible. See \code{\link{set.seed}} for details.
+#' @param ... Additional arguments passed to \code{\link{project}} if
+#'   \code{object} is not already an object returned by \code{\link{project}}.
 #'
-#' @return If the prediction is done for one submodel only (\code{nterms} has
-#'   length one or \code{solution_terms} is specified):
+#' @return If the prediction is done for one submodel only (i.e., \code{nterms}
+#'   has length one or \code{solution_terms} is specified):
 #'   \itemize{
-#'     \item \code{proj_linpred} returns a list with elements \code{pred}
-#'     (predictions) and \code{lpd} (log predictive densities). Both elements
-#'     are either a S x N matrix or a length-N vector (depending on the value of
-#'     \code{integrated}), with S denoting the number of (possibly clustered)
-#'     posterior draws and N denoting the number of observations.
-#'     \item \code{proj_predict} returns a S x N matrix of predictions, with S
-#'     denoting the number of (possibly clustered) posterior draws and N
-#'     denoting the number of observations.
+#'     \item \code{proj_linpred} returns a \code{list} with elements \code{pred}
+#'     (predictions) and \code{lpd} (log predictive densities). Each of these
+#'     two elements is a \eqn{S \times N}{S x N} matrix.
+#'     \item \code{proj_predict} returns a \eqn{S \times N}{S x N} matrix of
+#'     predictions.
 #'   }
-#'   If the predictions are done for several submodel sizes, the output from
-#'   above is returned for each submodel, giving a named list with one element
-#'   for each submodel (the names of this list being the numbers of solutions
-#'   terms of the submodels when taking the intercept into account).
+#'   Thereby, \eqn{S} denotes the number of (possibly clustered) projected
+#'   posterior draws and \eqn{N} denotes the number of observations.
+#'
+#'   If the prediction is done for more than one submodel, the output from above
+#'   is returned for each submodel, giving a named \code{list} with one element
+#'   for each submodel (the names of this \code{list} being the numbers of
+#'   solutions terms of the submodels when counting the intercept, too).
 #'
 #' @examples
 #' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
 #'   n <- 30
 #'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
+#'   x <- matrix(rnorm(n * d), nrow = n)
+#'   y <- x[, 1] + rnorm(n, sd = 0.5)
+#'   data <- data.frame(x, y)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'                             data=data, chains=2, iter=500)
+#'   # Reference model (here an object of class "stanreg"):
+#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(),
+#'                             data = data, chains = 2, iter = 500, seed = 1235)
+#'
+#'   # Variable selection (here without cross-validation, but only for the sake
+#'   # of speed in this demonstration):
 #'   vs <- varsel(fit)
 #'
-#'   # compute predictions with 4 variables at the training points
-#'   pred <- proj_linpred(vs, newdata = data, nv = 4)
-#'   pred <- proj_predict(vs, newdata = data, nv = 4)
+#'   # Predictions (at the training points) from the projected submodels
+#'   # corresponding to the first 4 selected predictor terms:
+#'   pred <- proj_linpred(vs, nterms = 4)
+#'   pred <- proj_predict(vs, nterms = 4)
 #' }
 #' }
 #'
@@ -99,7 +104,7 @@ NULL
 proj_helper <- function(object, newdata,
                         offsetnew, weightsnew,
                         onesub_fun, filter_nterms = NULL,
-                        integrated = NULL, transform = NULL,
+                        transform = NULL, integrated = NULL,
                         nresample_clusters = NULL, ...) {
   if (inherits(object, "projection") ||
       (length(object) > 0 && inherits(object[[1]], "projection"))) {
@@ -131,8 +136,34 @@ proj_helper <- function(object, newdata,
   if (is.null(newdata)) {
     ## pick first projection's function
     newdata <- projs[[1]]$refmodel$fetch_data()
-  } else if (!any(inherits(newdata, c("matrix", "data.frame"), TRUE))) {
-    stop("newdata must be a data.frame or a matrix")
+    extract_y_ind <- TRUE
+  } else {
+    if (!inherits(newdata, c("matrix", "data.frame"))) {
+      stop("newdata must be a data.frame or a matrix")
+    }
+    y_nm <- extract_terms_response(projs[[1]]$refmodel$formula)$response
+    # Note: At this point, even for the binomial family with > 1 trials, we
+    # expect only one response column name (the one for the successes), as
+    # handled by get_refmodel.stanreg(), for example. Therefore, perform the
+    # following check (needed for `extract_y_ind` later):
+    stopifnot(length(y_nm) == 1)
+    ### Might be helpful as a starting point in the future, but commented
+    ### because some prediction functions might require only those columns from
+    ### the original dataset which are needed for the corresponding submodel:
+    # newdata_dummy <- projs[[1]]$refmodel$fetch_data()
+    # if (is.data.frame(newdata) ||
+    #     (is.matrix(newdata) && !is.null(colnames(newdata)))) {
+    #   if (!setequal(setdiff(colnames(newdata), y_nm),
+    #                 setdiff(colnames(newdata_dummy), y_nm))) {
+    #     stop("`newdata` has to contain the same columns as the original ",
+    #          "dataset (apart from ", paste(y_nm, collapse = ", "), ").")
+    #   }
+    # } else {
+    #   warning("It seems like `newdata` is a matrix without column names. ",
+    #           "It is safer to provide column names.")
+    # }
+    ###
+    extract_y_ind <- ifelse(y_nm %in% colnames(newdata), TRUE, FALSE)
   }
 
   names(projs) <- sapply(projs, function(proj) {
@@ -151,8 +182,7 @@ proj_helper <- function(object, newdata,
   preds <- lapply(projs, function(proj) {
     w_o <- proj$extract_model_data(proj$refmodel$fit,
                                    newdata = newdata, weightsnew,
-                                   offsetnew, extract_y = FALSE
-    )
+                                   offsetnew, extract_y = FALSE)
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (is.null(weightsnew)) {
@@ -163,12 +193,12 @@ proj_helper <- function(object, newdata,
     }
     mu <- proj$family$mu_fun(proj$sub_fit,
                              newdata = newdata, offset = offsetnew,
-                             weights = weightsnew
-    )
+                             weights = weightsnew)
 
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
-               integrated = integrated, transform = transform,
+               extract_y_ind = extract_y_ind,
+               transform = transform, integrated = integrated,
                nresample_clusters = nresample_clusters)
   })
 
@@ -186,7 +216,7 @@ proj_linpred <- function(object, newdata = NULL,
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_linpred_aux, filter_nterms = filter_nterms,
-    integrated = integrated, transform = transform, ...
+    transform = transform, integrated = integrated, ...
   )
 }
 
@@ -197,48 +227,36 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   stopifnot(!is.null(dot_args$integrated))
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
-  pred <- t(mu)
-  if (!dot_args$transform) pred <- proj$family$linkfun(pred)
-  if (dot_args$integrated) {
-    ## average over the posterior draws
-    pred <- as.vector(proj$weights %*% pred)
-    proj$dis <- as.vector(proj$weights %*% proj$dis)
-  } else if (!is.null(dim(pred)) && nrow(pred) == 1) {
-    ## return a vector if pred contains only one row
-    pred <- as.vector(pred)
-  }
-
+  stopifnot(!is.null(dot_args$extract_y_ind))
   w_o <- proj$extract_model_data(proj$refmodel$fit,
                                  newdata = dot_args$newdata, wrhs = weights,
-                                 orhs = dot_args$offset, extract_y = TRUE
-  )
+                                 orhs = dot_args$offset,
+                                 extract_y = dot_args$extract_y_ind)
   ynew <- w_o$y
-
-  return(nlist(pred, lpd = compute_lpd(
-    ynew = ynew, pred = t(pred), proj = proj, weights = weights,
-    integrated = dot_args$integrated, transform = dot_args$transform
-  )))
+  lpd_out <- compute_lpd(
+    ynew = ynew, mu = mu, proj = proj, weights = weights
+  )
+  pred_out <- if (!dot_args$transform) {
+    proj$family$linkfun(mu)
+  } else {
+    mu
+  }
+  if (dot_args$integrated) {
+    ## average over the posterior draws
+    pred_out <- pred_out %*% proj$weights
+    lpd_out <- as.matrix(apply(lpd_out, 1, log_weighted_mean_exp, proj$weights))
+  }
+  return(nlist(pred = t(pred_out),
+               lpd = if(is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
-compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
-                        transform = FALSE) {
+compute_lpd <- function(ynew, mu, proj, weights) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$family)
     ynew <- target$y
     weights <- target$weights
-    if (!transform) pred <- proj$family$linkinv(pred)
-    lpd <- proj$family$ll_fun(pred, proj$dis, ynew, weights)
-    if (integrated && !is.null(dim(lpd))) {
-      stop("This case should not occur. Please notify the package maintainer.")
-      lpd <- as.vector(apply(lpd, 1, log_weighted_mean_exp, proj$weights))
-    } else if (!is.null(dim(lpd))) {
-      lpd <- t(lpd)
-      if (nrow(lpd) == 1) {
-        lpd <- drop(lpd)
-      }
-    }
-    return(lpd)
+    return(as.matrix(proj$family$ll_fun(mu, proj$dis, ynew, weights)))
   } else {
     return(NULL)
   }
@@ -249,11 +267,11 @@ compute_lpd <- function(ynew, pred, proj, weights, integrated = FALSE,
 proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
                          filter_nterms = NULL,
-                         nresample_clusters = 1000, ppd_seed = NULL, ...) {
+                         nresample_clusters = 1000, .seed = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
   rng_state_old <- rngtools::RNGseed()
   on.exit(rngtools::RNGseed(rng_state_old))
-  set.seed(ppd_seed)
+  set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
