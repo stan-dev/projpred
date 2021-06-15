@@ -152,23 +152,57 @@ test_that(paste(
 })
 
 test_that("proj_linpred: specifying weights has an expected effect", {
-  for (i in fam_nms) {
-    # for binomial models weights have to be specified
-    if (prjs_solterms[[i]]$family$family != "binomial") {
-      weightsnew <- sample(1:4, n, replace = TRUE)
-      plw <- proj_linpred(prjs_solterms[[i]],
-                          newdata = data.frame(y = ys[[i]], x = x,
-                                               weights = weightsnew),
-                          weightsnew = ~weights)
-      pl <- proj_linpred(prjs_solterms[[i]],
-                         newdata = data.frame(y = ys[[i]], x = x,
-                                              weights = weights),
-                         weightsnew = ~weights)
-      expect_named(plw, c("pred", "lpd"))
-      expect_equal(ncol(plw$pred), n, info = tstsetup)
-      expect_equal(ncol(plw$lpd), n, info = tstsetup)
-      expect_false(all(plw$lpd == pl$lpd))
-    }
+  dat_ones <- within(dat, {
+    wobs_col <- NULL
+    wobs_col_ones <- rep_len(1, length.out = n_tst)
+  })
+  dat_new <- within(dat, {
+    wobs_col <- NULL
+    wobs_col_new <- rep_len(2:5, length.out = n_tst)
+  })
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+
+    pl_orig <- proj_linpred(prjs_solterms[[tstsetup]])
+    expect_named(pl_orig, c("pred", "lpd"), info = tstsetup)
+    expect_identical(dim(pl_orig$pred), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl_orig$lpd), c(nprjdraws, n_tst), info = tstsetup)
+
+    pl_ones <- proj_linpred(prjs_solterms[[tstsetup]],
+                            newdata = dat_ones,
+                            weightsnew = ~ wobs_col_ones)
+    expect_named(pl_ones, c("pred", "lpd"), info = tstsetup)
+    expect_identical(dim(pl_ones$pred), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl_ones$lpd), c(nprjdraws, n_tst), info = tstsetup)
+
+    pl <- proj_linpred(prjs_solterms[[tstsetup]],
+                       newdata = dat,
+                       weightsnew = ~ wobs_col)
+    expect_named(pl, c("pred", "lpd"), info = tstsetup)
+    expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl$lpd), c(nprjdraws, n_tst), info = tstsetup)
+
+    plw <- proj_linpred(prjs_solterms[[tstsetup]],
+                        newdata = dat_new,
+                        weightsnew = ~ wobs_col_new)
+    expect_named(plw, c("pred", "lpd"), info = tstsetup)
+    expect_identical(dim(plw$pred), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(plw$lpd), c(nprjdraws, n_tst), info = tstsetup)
+
+    expect_equal(pl_orig$pred, pl_ones$pred, info = tstsetup)
+    expect_equal(pl_orig$pred, pl$pred, info = tstsetup)
+    expect_equal(pl_orig$pred, plw$pred, info = tstsetup)
+    ### Note: This equivalence might in fact be undesired:
+    expect_equal(pl_orig$lpd, pl_ones$lpd, info = tstsetup)
+    ###
+    ### Note: This inequality might in fact be undesired:
+    expect_false(isTRUE(all.equal(pl_orig$lpd, pl$lpd)), info = tstsetup)
+    ###
+    expect_false(isTRUE(all.equal(pl_orig$lpd, plw$lpd)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pl$lpd, plw$lpd)), info = tstsetup)
   }
 })
 
