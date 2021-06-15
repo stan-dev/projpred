@@ -104,16 +104,16 @@ test_that(paste(
     nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
     for (n_crr in c(1L, 12L)) {
       for (integrated_crr in c(FALSE, TRUE)) {
-        tstsetup_ext <- unlist(nlist(tstsetup, n_crr, integrated_crr))
+        tstsetup_crr <- unlist(nlist(tstsetup, n_crr, integrated_crr))
         pl <- proj_linpred(prjs_solterms[[tstsetup]],
                            newdata = head(dat, n_crr),
                            integrated = integrated_crr)
-        expect_named(pl, c("pred", "lpd"), info = tstsetup_ext)
+        expect_named(pl, c("pred", "lpd"), info = tstsetup_crr)
         nprjdraws_crr <- ifelse(integrated_crr, 1L, nprjdraws)
         expect_identical(dim(pl$pred), c(nprjdraws_crr, n_crr),
-                         info = tstsetup_ext)
+                         info = tstsetup_crr)
         expect_identical(dim(pl$lpd), c(nprjdraws_crr, n_crr),
-                         info = tstsetup_ext)
+                         info = tstsetup_crr)
       }
     }
   }
