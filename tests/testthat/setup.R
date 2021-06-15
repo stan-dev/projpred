@@ -333,15 +333,23 @@ if (run_vs) {
   })
 }
 if (run_cvvs) {
-  # Occasionally, we have warnings concerning Pareto k diagnostics:
-  SW(cvvss <- lapply(mod_nms, function(mod_nm) {
+  args_cvvs <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
-      cv_varsel(refmods[[mod_nm]][[fam_nm]],
-                nclusters = nclusters_tst,
-                nclusters_pred = nclusters_pred_tst,
-                nterms_max = nterms_max_tst,
-                verbose = FALSE)
+      return(nlist(
+        mod_nm, fam_nm, nclusters = nclusters_tst,
+        nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
+        verbose = FALSE, seed = seed_tst
+      ))
     })
+  })
+  args_cvvs <- unlist_cust(args_cvvs)
+
+  # Use SW() because of occasional warnings concerning Pareto k diagnostics:
+  SW(cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
+    do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+    ))
   }))
 }
 ### Exclude GAMMs because of issue #148:
