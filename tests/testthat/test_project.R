@@ -27,18 +27,15 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"refmodel\" leads to correct output structure"
 ), {
-  for (i in fam_nms) {
-    p <- project(refmods[[mod_nm]][[fam_nm]], solution_terms = solterms_tst,
-                 nclusters = nclusters_pred_tst)
-    expect_s3_class(p, "projection")
-    expect_named(p, projection_nms, info = tstsetup)
-    expect_length(p$sub_fit, nclusters_pred_tst)
-    expect_length(p$weights, nclusters_pred_tst)
-    expect_length(p$dis, nclusters_pred_tst)
-    SW(nprjdraws <- NROW(as.matrix(p)))
-    expect_identical(nprjdraws, nclusters_pred_tst, info = tstsetup)
-    solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
-    expect_identical(p$solution_terms, solterms_out)
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    prj_refmodel_str_tester(
+      prjs_solterms[[tstsetup]],
+      solterms_expected = args_prj[[tstsetup]]$solution_terms,
+      nprjdraws_expected = args_prj[[tstsetup]][[ndr_ncl_nm]]
+    )
   }
 })
 
