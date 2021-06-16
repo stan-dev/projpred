@@ -362,7 +362,7 @@ test_that(paste(
     c(nterms_max_tst %/% 2L, nterms_max_tst + 130L)
   )
   for (filter_nterms_crr in filter_nterms_avail) {
-    tstsetup <- unlist(nlist(filter_nterms_crr))
+    tstsetup <- paste(filter_nterms_crr, collapse = ", ")
     pl_crr <- proj_linpred(prj_nterms,
                            filter_nterms = filter_nterms_crr)
     nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
@@ -739,7 +739,7 @@ test_that(paste(
     c(nterms_max_tst %/% 2L, nterms_max_tst + 130L)
   )
   for (filter_nterms_crr in filter_nterms_avail) {
-    tstsetup <- unlist(nlist(filter_nterms_crr))
+    tstsetup <- paste(filter_nterms_crr, collapse = ", ")
     pp_crr <- proj_predict(prj_nterms,
                            filter_nterms = filter_nterms_crr,
                            .seed = seed2_tst)
