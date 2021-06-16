@@ -12,7 +12,7 @@ test_that(paste(
   "to correct output structure"
 ), {
   for (i in fam_nms) {
-    p <- project(vs_list[[i]], nterms = 0:nterms, nclusters = nclusters_pred_tst)
+    p <- project(vss[[tstsetup]], nterms = 0:nterms, nclusters = nclusters_pred_tst)
     expect_type(p, "list")
     expect_length(p, nterms + 1)
     expect_true(.is_proj_list(p), info = i)
@@ -58,7 +58,7 @@ test_that(paste(
 ), {
   i <- "binom"
   nterms_tst <- 0:2
-  p <- project(cvs_list[[i]], nterms = nterms_tst, nclusters = nclusters_pred_tst)
+  p <- project(cvss[[tstsetup]], nterms = nterms_tst, nclusters = nclusters_pred_tst)
   expect_type(p, "list")
   expect_length(p, max(nterms_tst) + 1)
   expect_true(.is_proj_list(p), info = i)
@@ -128,23 +128,23 @@ test_that(paste(
 
 test_that("specifying `nterms` incorrectly leads to an error", {
   i <- "gauss"
-  expect_error(project(vs_list[[i]], nterms = 1000),
+  expect_error(project(vss[[tstsetup]], nterms = 1000),
                "Cannot perform the projection with 1000 variables")
-  expect_error(project(vs_list[[i]], nterms = -1),
+  expect_error(project(vss[[tstsetup]], nterms = -1),
                "must contain non-negative values")
-  expect_error(project(vs_list[[i]], nterms = "a"),
+  expect_error(project(vss[[tstsetup]], nterms = "a"),
                "must contain non-negative values")
-  expect_error(project(vs_list[[i]], nterms = df_gauss),
+  expect_error(project(vss[[tstsetup]], nterms = df_gauss),
                "must contain non-negative values")
 })
 
 test_that("specifying `nterms` correctly leads to correct output structure", {
   for (i in fam_nms) {
     for (nterms_tst in list(NULL, 0, 3, c(1, 3))) {
-      p <- project(vs_list[[i]], nclusters = nclusters_pred_tst,
+      p <- project(vss[[tstsetup]], nclusters = nclusters_pred_tst,
                    nterms = nterms_tst)
       out_size <- if (is.null(nterms_tst)) {
-        suggest_size(vs_list[[i]])
+        suggest_size(vss[[tstsetup]])
       } else {
         nterms_tst
       }
