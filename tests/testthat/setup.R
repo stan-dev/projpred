@@ -11,7 +11,11 @@ run_cvvs <- run_vs
 
 seed_tst <- 1235
 set.seed(seed_tst)
+
 source(testthat::test_path("helpers", "SW.R"))
+source(testthat::test_path("helpers", "unlist_cust.R"))
+source(testthat::test_path("helpers", "testers.R"))
+
 mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
 ### Exclude GAMs because of issue #150:
 mod_nms <- setNames(nm = setdiff(mod_nms, "gam"))
@@ -20,7 +24,6 @@ mod_nms <- setNames(nm = setdiff(mod_nms, "gam"))
 mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
 ###
 fam_nms <- setNames(nm = c("gauss", "binom", "poiss"))
-source(testthat::test_path("helpers", "unlist_cust.R"))
 
 # rstanarm setup ----------------------------------------------------------
 
