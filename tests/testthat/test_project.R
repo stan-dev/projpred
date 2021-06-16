@@ -12,7 +12,7 @@ test_that(paste(
   "structure"
 ), {
   skip_if_not(exists("prj_nterms_vs"))
-  prj_vsel_str_tester(prj_nterms_vs, fam_expected = prj_nterms_vs[[1]]$family)
+  proj_list_tester(prj_nterms_vs, fam_expected = prj_nterms_vs[[1]]$family)
 })
 
 test_that(paste(
@@ -20,8 +20,8 @@ test_that(paste(
   "structure"
 ), {
   skip_if_not(exists("prj_nterms_cvvs"))
-  prj_vsel_str_tester(prj_nterms_cvvs,
-                      fam_expected = prj_nterms_cvvs[[1]]$family)
+  proj_list_tester(prj_nterms_cvvs,
+                   fam_expected = prj_nterms_cvvs[[1]]$family)
 })
 
 test_that(paste(

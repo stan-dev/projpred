@@ -8,7 +8,7 @@
 #
 # @return `TRUE` (invisible).
 #
-prj_vsel_str_tester <- function(p, fam_expected, info_str = "") {
+proj_list_tester <- function(p, fam_expected, info_str = "") {
   expect_type(p, "list")
   expect_length(p, nterms_max_tst + 1)
   expect_true(.is_proj_list(p), info = info_str)
