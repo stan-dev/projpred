@@ -43,26 +43,11 @@ test_that(paste(
   "a fitted model `object` leads to correct output structure and the default",
   "`ndraws` is as expected"
 ), {
-  for (i in fam_nms) {
-    if (i == "binom") {
-      # For the binomial family with > 1 trials, we expect a warning (see
-      # GitHub issue #136):
-      warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
-                               "is a character vector of length > 1")
-    } else {
-      warn_prj_expect <- NA
-    }
-    expect_warning(p <- project(fits$glm$gauss, solution_terms = solterms_tst),
-                   warn_prj_expect, info = tstsetup)
-    expect_s3_class(p, "projection")
-    expect_named(p, projection_nms, info = tstsetup)
-    expect_length(p$sub_fit, ndraws_default)
-    expect_length(p$weights, ndraws_default)
-    expect_length(p$dis, ndraws_default)
-    expect_identical(NROW(as.matrix(p)), ndraws_default, info = tstsetup)
-    solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
-    expect_identical(p$solution_terms, solterms_out)
-  }
+  prj_refmodel_str_tester(
+    project(fits$glm$gauss, solution_terms = solterms_x),
+    solterms_expected = solterms_x,
+    nprjdraws_expected = ndraws_default
+  )
 })
 
 test_that("specifying `nterms` incorrectly leads to an error", {
