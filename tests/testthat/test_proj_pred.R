@@ -145,6 +145,16 @@ test_that(paste(
 })
 
 test_that(paste(
+  "proj_linpred(): `newdata` set to the original dataset doesn't change results"
+), {
+  for (tstsetup in names(prjs_solterms)) {
+    pl_orig <- proj_linpred(prjs_solterms[[tstsetup]])
+    pl_newdata <- proj_linpred(prjs_solterms[[tstsetup]], newdata = dat)
+    expect_equal(pl_orig, pl_newdata, info = tstsetup)
+  }
+})
+
+test_that(paste(
   "proj_linpred(): omitting the response in `newdata` causes output element",
   "`lpd` to be `NULL`"
 ), {
