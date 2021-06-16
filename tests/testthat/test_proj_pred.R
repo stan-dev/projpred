@@ -297,18 +297,14 @@ test_that("proj_linpred: `regul` has an expected effect", {
 })
 
 test_that("proj_linpred: passing arguments to project() works correctly", {
-  for (i in fam_nms) {
-    SW(pr <- project(vs_list[[i]],
-                     nterms = c(2, 4), nclusters = nclusters_pred_tst,
-                     regul = 1e-8, seed = 12))
-    prl1 <- proj_linpred(pr, newdata = dat)
-    SW(prl2 <- proj_linpred(vs_list[[i]],
-                            nclusters = nclusters_pred_tst,
-                            newdata = dat,
-                            nterms = c(2, 4),
-                            regul = 1e-8,
-                            seed = 12))
-    expect_equal(prl1$pred, prl2$pred, info = tstsetup)
+  for (tstsetup in names(prjs_solterms)) {
+    pl_from_prj <- proj_linpred(prjs_solterms[[tstsetup]])
+    args_prj_i <- args_prj[[tstsetup]]
+    pl_direct <- do.call(proj_linpred, c(
+      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
+      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+    ))
+    expect_equal(pl_from_prj, pl_direct, info = tstsetup)
   }
 })
 
