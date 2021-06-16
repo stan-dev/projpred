@@ -38,6 +38,7 @@ test_that(paste(
   "proj_linpred(): `object` of class \"vsel\" leads to correct output",
   "structure"
 ), {
+  skip_if_not(exists("vss"))
   for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
     nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
     pl <- proj_linpred(vss[[tstsetup]],
@@ -75,6 +76,7 @@ test_that(paste(
   "proj_linpred(): `object` of (informal) class \"proj_list\" leads to correct",
   "output structure"
 ), {
+  skip_if_not(exists("prj_nterms"))
   pl <- proj_linpred(prj_nterms)
   expect_length(pl, nterms_max_tst + 1)
   for (j in seq_along(pl)) {
@@ -345,6 +347,7 @@ test_that(paste(
   "proj_linpred(): `filter_nterms` works correctly (for an `object` of",
   "(informal) class \"proj_list\")"
 ), {
+  skip_if_not(exists("prj_nterms"))
   # Unavailable number(s) of terms:
   filter_nterms_unavail <- list(nterms_max_tst + 130L,
                                 c(nterms_max_tst + 130L, nterms_max_tst + 290L))
@@ -438,6 +441,7 @@ test_that(paste(
   "proj_predict(): `object` of class \"vsel\" leads to correct output",
   "structure"
 ), {
+  skip_if_not(exists("vss"))
   for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
     nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
     pp <- proj_predict(vss[[tstsetup]],
@@ -476,6 +480,7 @@ test_that(paste(
   "proj_predict(): `object` of (informal) class \"proj_list\" leads to correct",
   "output structure"
 ), {
+  skip_if_not(exists("prj_nterms"))
   pp <- proj_predict(prj_nterms, .seed = seed2_tst)
   expect_length(pp, nterms_max_tst + 1)
   for (j in seq_along(pp)) {
@@ -721,6 +726,7 @@ test_that(paste(
   "proj_predict(): `filter_nterms` works correctly (for an `object` of",
   "(informal) class \"proj_list\")"
 ), {
+  skip_if_not(exists("prj_nterms"))
   # Unavailable number(s) of terms:
   filter_nterms_unavail <- list(nterms_max_tst + 130L,
                                 c(nterms_max_tst + 130L, nterms_max_tst + 290L))
