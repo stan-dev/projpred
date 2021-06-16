@@ -44,7 +44,6 @@ sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 seed2_tst <- 866028
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
-nresample_clusters_tst <- 100L
 ndr_ncl_pred_tst <- list(
   noclust = list(ndraws = 25L),
   clust = list(nclusters = nclusters_pred_tst),
