@@ -433,3 +433,9 @@ if (run_vs) {
                            nclusters = nclusters_pred_tst,
                            seed = seed_tst)
 }
+if (run_cvvs) {
+  prj_nterms_cvvs <- project(object = cvvss$glm.gauss,
+                             nterms = 0:nterms_max_tst,
+                             nclusters = nclusters_pred_tst,
+                             seed = seed_tst)
+}

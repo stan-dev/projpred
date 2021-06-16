@@ -35,13 +35,35 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of class \"vsel\" leads to correct output",
-  "structure"
+  "proj_linpred(): `object` of class \"vsel\" (created by varsel()) leads",
+  "to correct output structure"
 ), {
   skip_if_not(exists("vss"))
   for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
     nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
     pl <- proj_linpred(vss[[tstsetup]],
+                       nterms = 0:nterms_max_crr,
+                       nclusters = nclusters_pred_tst,
+                       seed = seed_tst)
+    expect_length(pl, nterms_max_crr + 1)
+    for (j in seq_along(pl)) {
+      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+    }
+  }
+})
+
+test_that(paste(
+  "proj_linpred(): `object` of class \"vsel\" (created by cv_varsel()) leads",
+  "to correct output structure"
+), {
+  skip_if_not(exists("cvvss"))
+  for (tstsetup in grep("^glm\\.gauss", names(cvvss), value = TRUE)) {
+    nterms_max_crr <- args_cvvs[[tstsetup]]$nterms_max
+    pl <- proj_linpred(cvvss[[tstsetup]],
                        nterms = 0:nterms_max_crr,
                        nclusters = nclusters_pred_tst,
                        seed = seed_tst)
@@ -73,11 +95,27 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of (informal) class \"proj_list\" leads to correct",
-  "output structure"
+  "proj_linpred(): `object` of (informal) class \"proj_list\" (created by",
+  "varsel()) leads to correct output structure"
 ), {
   skip_if_not(exists("prj_nterms_vs"))
   pl <- proj_linpred(prj_nterms_vs)
+  expect_length(pl, nterms_max_tst + 1)
+  for (j in seq_along(pl)) {
+    expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
+    expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                     info = tstsetup)
+    expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                     info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "proj_linpred(): `object` of (informal) class \"proj_list\" (created by",
+  "cv_varsel()) leads to correct output structure"
+), {
+  skip_if_not(exists("prj_nterms_cvvs"))
+  pl <- proj_linpred(prj_nterms_cvvs)
   expect_length(pl, nterms_max_tst + 1)
   for (j in seq_along(pl)) {
     expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
@@ -438,13 +476,33 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of class \"vsel\" leads to correct output",
-  "structure"
+  "proj_predict(): `object` of class \"vsel\" (created by varsel()) leads",
+  "to correct output structure"
 ), {
   skip_if_not(exists("vss"))
   for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
     nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
     pp <- proj_predict(vss[[tstsetup]],
+                       .seed = seed2_tst,
+                       nterms = 0:nterms_max_crr,
+                       nclusters = nclusters_pred_tst,
+                       seed = seed_tst)
+    expect_length(pp, nterms_max_crr + 1)
+    for (j in seq_along(pp)) {
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+                       info = tstsetup)
+    }
+  }
+})
+
+test_that(paste(
+  "proj_predict(): `object` of class \"vsel\" (created by cv_varsel()) leads",
+  "to correct output structure"
+), {
+  skip_if_not(exists("cvvss"))
+  for (tstsetup in grep("^glm\\.gauss", names(cvvss), value = TRUE)) {
+    nterms_max_crr <- args_cvvs[[tstsetup]]$nterms_max
+    pp <- proj_predict(cvvss[[tstsetup]],
                        .seed = seed2_tst,
                        nterms = 0:nterms_max_crr,
                        nclusters = nclusters_pred_tst,
@@ -477,11 +535,24 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of (informal) class \"proj_list\" leads to correct",
-  "output structure"
+  "proj_predict(): `object` of (informal) class \"proj_list\" (created by",
+  "varsel()) leads to correct output structure"
 ), {
   skip_if_not(exists("prj_nterms_vs"))
   pp <- proj_predict(prj_nterms_vs, .seed = seed2_tst)
+  expect_length(pp, nterms_max_tst + 1)
+  for (j in seq_along(pp)) {
+    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+                     info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "proj_predict(): `object` of (informal) class \"proj_list\" (created by",
+  "cv_varsel()) leads to correct output structure"
+), {
+  skip_if_not(exists("prj_nterms_cvvs"))
+  pp <- proj_predict(prj_nterms_cvvs, .seed = seed2_tst)
   expect_length(pp, nterms_max_tst + 1)
   for (j in seq_along(pp)) {
     expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
