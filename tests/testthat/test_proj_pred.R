@@ -278,20 +278,20 @@ test_that("proj_linpred: specifying integrated has an expected effect", {
 })
 
 test_that("proj_linpred: adding more regularization has an expected effect", {
-  regul <- c(1e-6, 1e-1, 1e2)
-  stopifnot(identical(regul, sort(regul)))
+  regul_tst <- c(1e-6, 1e-1, 1e2)
+  stopifnot(identical(regul_tst, sort(regul_tst)))
   for (tstsetup in names(vss)) {
     nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
     stopifnot(nterms_max_crr >= 2)
-    norms <- sapply(regul, function(regul_j) {
+    norms <- sapply(regul_tst, function(regul_crr) {
       pl <- proj_linpred(vss[[tstsetup]],
-                         integrated = TRUE, regul = regul_j,
+                         integrated = TRUE, regul = regul_crr,
                          nterms = 2,
                          nclusters = nclusters_pred_tst,
                          seed = seed_tst)
       return(sum(pl$pred^2))
     })
-    for (j in head(seq_along(regul), -1)) {
+    for (j in head(seq_along(regul_tst), -1)) {
       expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
     }
   }
