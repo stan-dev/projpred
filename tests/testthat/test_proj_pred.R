@@ -279,6 +279,7 @@ test_that("proj_linpred: specifying integrated has an expected effect", {
 
 test_that("proj_linpred: adding more regularization has an expected effect", {
   regul <- c(1e-6, 1e-1, 1e2)
+  stopifnot(identical(regul, sort(regul)))
   for (tstsetup in names(vss)) {
     nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
     stopifnot(nterms_max_crr >= 2)
