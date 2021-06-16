@@ -87,7 +87,7 @@ test_that(paste(
   "structure"
 ), {
   for (i in fam_nms) {
-    p <- project(refmod_list[[i]], solution_terms = solterms_tst,
+    p <- project(refmods[[mod_nm]][[fam_nm]], solution_terms = solterms_tst,
                  nclusters = nclusters_pred_tst)
     expect_s3_class(p, "projection")
     expect_named(p, projection_nms, info = i)
@@ -188,13 +188,13 @@ test_that(paste(
   "specifying `solution_terms` incorrectly leads to a warning or an error"
 ), {
   i <- "gauss"
-  expect_error(project(refmod_list[[i]], nclusters = nclusters_pred_tst,
+  expect_error(project(refmods[[mod_nm]][[fam_nm]], nclusters = nclusters_pred_tst,
                        solution_terms = NULL),
                "is not an object of class \"vsel\"")
   for (solterms_crr in list(2, 1:3, "1", list(c("x.3", "x.5"),
                                               c("x.2", "x.4")))) {
     expect_warning(
-      p <- project(refmod_list[[i]], nclusters = nclusters_pred_tst,
+      p <- project(refmods[[mod_nm]][[fam_nm]], nclusters = nclusters_pred_tst,
                    solution_terms = solterms_crr),
       paste("At least one element of `solution_terms` could not be found",
             "among the terms in the reference model"),
@@ -216,7 +216,7 @@ test_that(paste(
 ), {
   for (i in fam_nms) {
     for (solterms_crr in list(character(), "x.3", c("x.2", "x.4"))) {
-      p <- project(refmod_list[[i]], nclusters = nclusters_pred_tst,
+      p <- project(refmods[[mod_nm]][[fam_nm]], nclusters = nclusters_pred_tst,
                    solution_terms = solterms_crr)
       expect_s3_class(p, "projection")
       expect_named(p, projection_nms, info = i)
@@ -237,7 +237,7 @@ test_that(paste(
 
 test_that("specifying `ndraws` incorrectly leads to an error", {
   i <- "gauss"
-  expect_error(project(refmod_list[[i]],
+  expect_error(project(refmods[[mod_nm]][[fam_nm]],
                        ndraws = NULL,
                        solution_terms = solterms_tst),
                "^!is\\.null\\(ndraws\\) is not TRUE$", info = i)
@@ -252,7 +252,7 @@ test_that(paste(
   for (ndraws_crr in list(S + 1L)) {
     for (nclusters_crr in list(NULL, S + 1L)) {
       tstsetup <- unlist(nlist(i, ndraws_crr, nclusters_crr))
-      p <- project(refmod_list[[i]],
+      p <- project(refmods[[mod_nm]][[fam_nm]],
                    ndraws = ndraws_crr,
                    nclusters = nclusters_crr,
                    solution_terms = solterms_tst)
@@ -277,7 +277,7 @@ test_that(paste(
     for (ndraws_crr in list(1L, 20L, 21L)) {
       for (nclusters_crr in list(NULL, 1L, 2L, 3L)) {
         tstsetup <- unlist(nlist(i, ndraws_crr, nclusters_crr))
-        p <- project(refmod_list[[i]],
+        p <- project(refmods[[mod_nm]][[fam_nm]],
                      ndraws = ndraws_crr,
                      nclusters = nclusters_crr,
                      solution_terms = solterms_tst)
@@ -310,19 +310,19 @@ test_that(paste(
 
 test_that("specifying `seed` correctly leads to reproducible results", {
   i <- "gauss"
-  p1 <- project(refmod_list[[i]],
+  p1 <- project(refmods[[mod_nm]][[fam_nm]],
                 nclusters = nclusters_pred_tst,
                 solution_terms = solterms_tst,
                 seed = seed_tst)
-  p2 <- project(refmod_list[[i]],
+  p2 <- project(refmods[[mod_nm]][[fam_nm]],
                 nclusters = nclusters_pred_tst,
                 solution_terms = solterms_tst,
                 seed = seed_tst + 1L)
-  p3 <- project(refmod_list[[i]],
+  p3 <- project(refmods[[mod_nm]][[fam_nm]],
                 nclusters = nclusters_pred_tst,
                 solution_terms = solterms_tst,
                 seed = seed_tst)
-  p4 <- project(refmod_list[[i]],
+  p4 <- project(refmods[[mod_nm]][[fam_nm]],
                 nclusters = nclusters_pred_tst,
                 solution_terms = solterms_tst)
 
@@ -359,7 +359,7 @@ test_that(paste(
     alpha_ref <- draws[, "(Intercept)"]
     beta_ref <- draws[, 1 + seq_len(nterms), drop = FALSE]
     S <- nrow(draws)
-    proj <- project(refmod_list[[i]],
+    proj <- project(refmods[[mod_nm]][[fam_nm]],
                     solution_terms = paste0("x.", 1:nterms),
                     ndraws = S)
 
