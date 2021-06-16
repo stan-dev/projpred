@@ -58,8 +58,8 @@ prj_vsel_str_tester <- function(p, fam_expected, info_str = "") {
 #
 # @return `TRUE` (invisible).
 #
-prj_refmodel_str_tester <- function(p, solterms_expected, nprjdraws_expected,
-                                    info_str = "") {
+projection_tester <- function(p, solterms_expected, nprjdraws_expected,
+                              info_str = "") {
   expect_s3_class(p, "projection")
   expect_named(p, projection_nms, info = info_str)
   if (nprjdraws_expected == 1) {

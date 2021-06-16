@@ -31,7 +31,7 @@ test_that(paste(
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
     stopifnot(length(ndr_ncl_nm) == 1)
-    prj_refmodel_str_tester(
+    projection_tester(
       prjs_solterms[[tstsetup]],
       solterms_expected = args_prj[[tstsetup]]$solution_terms,
       nprjdraws_expected = args_prj[[tstsetup]][[ndr_ncl_nm]]
@@ -43,7 +43,7 @@ test_that(paste(
   "a fitted model `object` leads to correct output structure and the default",
   "`ndraws` is as expected"
 ), {
-  prj_refmodel_str_tester(
+  projection_tester(
     project(fits$glm$gauss, solution_terms = solterms_x),
     solterms_expected = solterms_x,
     nprjdraws_expected = ndraws_default
