@@ -1,3 +1,5 @@
+# proj_linpred() ----------------------------------------------------------
+
 context("proj_linpred()")
 
 test_that("proj_linpred(): passing arguments to project() works correctly", {
@@ -327,8 +329,8 @@ test_that("proj_linpred(): `newdata` of class \"data.frame\" works correctly", {
   expect_equal(p1$pred, p2$pred)
 })
 
+# proj_predict() ----------------------------------------------------------
 
-# -------------------------------------------------------------
 context("proj_predict()")
 
 test_that("proj_predict(): `newdata` is checked correctly", {
