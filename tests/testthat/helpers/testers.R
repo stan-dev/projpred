@@ -48,3 +48,31 @@ prj_vsel_str_tester <- function(p, fam_expected, info_str = "") {
   ###
   return(invisible(TRUE))
 }
+
+# A helper function for testing the output structure from project() applied to
+# a "refmodel" object
+#
+# @param p An object returned by project().
+# @param info_str A single character string giving info to be printed in case of
+#   failure.
+#
+# @return `TRUE` (invisible).
+#
+prj_refmodel_str_tester <- function(p, solterms_expected, nprjdraws_expected,
+                                    info_str = "") {
+  expect_s3_class(p, "projection")
+  expect_named(p, projection_nms, info = info_str)
+  if (nprjdraws_expected == 1) {
+    nprjdraws_sub_fit <- length(sub_fit_nms)
+  } else {
+    nprjdraws_sub_fit <- nprjdraws_expected
+  }
+  expect_length(p$sub_fit, nprjdraws_sub_fit)
+  expect_length(p$weights, nprjdraws_expected)
+  expect_length(p$dis, nprjdraws_expected)
+  SW(nprjdraws <- NROW(as.matrix(p)))
+  expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
+  solterms_out <- if (length(solterms_expected) == 0) "1" else solterms_expected
+  expect_identical(p$solution_terms, solterms_out, info = info_str)
+  return(invisible(TRUE))
+}
