@@ -26,11 +26,11 @@ for (tstsetup in names(prjs_solterms)) {
 
   # Expected warning (more precisely: regexp which is matched against the
   # warning; NA means no warning) for as.matrix.projection():
-  if (nprjdraws > 20) {
-    warn_prjmat_expect <- NA
-  } else {
+  if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
     # Clustered projection, so we expect a warning:
     warn_prjmat_expect <- "the clusters might have different weights"
+  } else {
+    warn_prjmat_expect <- NA
   }
   expect_warning(m <- as.matrix(prjs_solterms[[tstsetup]]),
                  warn_prjmat_expect, info = tstsetup)
