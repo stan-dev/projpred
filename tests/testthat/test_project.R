@@ -19,30 +19,9 @@ test_that(paste(
   "`object` of class \"vsel\" (created by cv_varsel()) leads to correct output",
   "structure"
 ), {
-  i <- "binom"
-  nterms_tst <- 0:2
-  p <- project(cvss[[tstsetup]], nterms = nterms_tst, nclusters = nclusters_pred_tst)
-  expect_type(p, "list")
-  expect_length(p, max(nterms_tst) + 1)
-  expect_true(.is_proj_list(p), info = tstsetup)
-
-  prjdraw_weights <- p[[1]]$weights
-  for (j in seq_along(p)) {
-    expect_s3_class(p[[!!j]], "projection")
-    expect_named(p[[!!j]], projection_nms, info = tstsetup)
-    expect_length(p[[!!j]]$sub_fit, nclusters_pred_tst)
-    expect_length(p[[!!j]]$weights, nclusters_pred_tst)
-    expect_length(p[[!!j]]$dis, nclusters_pred_tst)
-    SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
-    expect_identical(nprjdraws, nclusters_pred_tst, info = tstsetup)
-    expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
-    expect_equal(count_terms_chosen(p[[!!j]]$solution_terms), !!j, info = tstsetup)
-    expect_identical(p[[!!j]]$family, cvvss[[!!tstsetup]]$family, info = tstsetup)
-    expect_identical(p[[!!j]]$weights, prjdraw_weights, info = tstsetup)
-  }
-  klseq <- sapply(p, function(x) sum(x$kl))
-  klseq <- klseq[-1]
-  expect_identical(klseq, cummin(klseq), info = tstsetup)
+  skip_if_not(exists("prj_nterms_cvvs"))
+  prj_vsel_str_tester(prj_nterms_cvvs,
+                      fam_expected = prj_nterms_cvvs[[1]]$family)
 })
 
 test_that(paste(
