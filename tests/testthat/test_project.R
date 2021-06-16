@@ -74,7 +74,7 @@ test_that(paste(
     expect_identical(nprjdraws, nclusters_pred_tst, info = tstsetup)
     expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
     expect_equal(count_terms_chosen(p[[!!j]]$solution_terms), !!j, info = tstsetup)
-    expect_identical(p[[!!j]]$family, cvs_list[[!!i]]$family, info = tstsetup)
+    expect_identical(p[[!!j]]$family, cvvss[[!!tstsetup]]$family, info = tstsetup)
     expect_identical(p[[!!j]]$weights, prjdraw_weights, info = tstsetup)
   }
   klseq <- sapply(p, function(x) sum(x$kl))
@@ -113,7 +113,7 @@ test_that(paste(
     } else {
       warn_prj_expect <- NA
     }
-    expect_warning(p <- project(fit_list[[i]], solution_terms = solterms_tst),
+    expect_warning(p <- project(fits$glm$gauss, solution_terms = solterms_tst),
                    warn_prj_expect, info = tstsetup)
     expect_s3_class(p, "projection")
     expect_named(p, projection_nms, info = tstsetup)
@@ -176,7 +176,7 @@ test_that("specifying `nterms` correctly leads to correct output structure", {
           expect_length(p[[!!j]]$solution_terms, max(out_size[j], 1))
           expect_equal(count_terms_chosen(p[[!!j]]$solution_terms) - 1,
                        out_size[!!j], info = tstsetup)
-          expect_identical(p[[!!j]]$family, vs_list[[!!i]]$family, info = tstsetup)
+          expect_identical(p[[!!j]]$family, vss[[!!tstsetup]]$family, info = tstsetup)
           expect_identical(p[[!!j]]$weights, prjdraw_weights, info = tstsetup)
         }
       }
