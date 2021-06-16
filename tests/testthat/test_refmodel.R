@@ -62,6 +62,11 @@ if (require(rstanarm)) {
     )
   })
 
+  test_that("get_refmodel() is idempotent", {
+    expect_identical(get_refmodel(ref_gauss), ref_gauss)
+    expect_identical(get_refmodel(ref_binom), ref_binom)
+  })
+
   test_that("predict checks the 'type' argument", {
     expect_error(
       predict(ref_gauss, df_gauss, type = "zzz"),
