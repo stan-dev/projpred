@@ -362,7 +362,7 @@ test_that(paste(
     c(nterms_max_tst %/% 2L, nterms_max_tst + 130L)
   )
   for (filter_nterms_crr in filter_nterms_avail) {
-    tstsetup <- paste(filter_nterms_crr, collapse = ", ")
+    tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
     pl_crr <- proj_linpred(prj_nterms,
                            filter_nterms = filter_nterms_crr)
     nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
@@ -371,11 +371,11 @@ test_that(paste(
     }
     expect_length(pl_crr, nhits_nterms)
     for (j in seq_along(pl_crr)) {
-      expect_named(pl_crr[[!!j]], c("pred", "lpd"), info = tstsetup)
+      expect_named(pl_crr[[!!j]], c("pred", "lpd"), info = tstsetup_crr)
       expect_identical(dim(pl_crr[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
+                       info = tstsetup_crr)
       expect_identical(dim(pl_crr[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
+                       info = tstsetup_crr)
     }
   }
 
@@ -739,7 +739,7 @@ test_that(paste(
     c(nterms_max_tst %/% 2L, nterms_max_tst + 130L)
   )
   for (filter_nterms_crr in filter_nterms_avail) {
-    tstsetup <- paste(filter_nterms_crr, collapse = ", ")
+    tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
     pp_crr <- proj_predict(prj_nterms,
                            filter_nterms = filter_nterms_crr,
                            .seed = seed2_tst)
@@ -750,7 +750,7 @@ test_that(paste(
     expect_length(pp_crr, nhits_nterms)
     for (j in seq_along(pp_crr)) {
       expect_identical(dim(pp_crr[[!!j]]), c(nresample_clusters_default, n_tst),
-                       info = tstsetup)
+                       info = tstsetup_crr)
     }
   }
 
