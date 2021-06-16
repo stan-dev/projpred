@@ -6,8 +6,8 @@
 
 # When debugging interactively without needing the "vsel" objects, these
 # switches may be set to `FALSE` to source() this script faster:
-run_vs <- TRUE
-run_cvvs <- ifelse(!run_vs, FALSE, TRUE)
+run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
+run_cvvs <- run_vs
 
 seed_tst <- 1235
 set.seed(seed_tst)
