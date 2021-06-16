@@ -428,8 +428,8 @@ prjs_solterms <- lapply(args_prj, function(args_prj_i) {
   ))
 })
 if (run_vs) {
-  prj_nterms <- project(object = vss$glm.gauss,
-                        nterms = 0:nterms_max_tst,
-                        nclusters = nclusters_pred_tst,
-                        seed = seed_tst)
+  prj_nterms_vs <- project(object = vss$glm.gauss,
+                           nterms = 0:nterms_max_tst,
+                           nclusters = nclusters_pred_tst,
+                           seed = seed_tst)
 }
