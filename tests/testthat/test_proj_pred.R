@@ -146,7 +146,7 @@ test_that(paste(
 
 test_that(paste(
   "proj_linpred(): omitting the response in `newdata` causes output element",
-  "`lpd` to be `NULL`."
+  "`lpd` to be `NULL`"
 ), {
   for (tstsetup in names(prjs_solterms)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
