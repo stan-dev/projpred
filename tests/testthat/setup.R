@@ -168,14 +168,6 @@ dat <- data.frame(
   check.names = FALSE
 )
 
-## Responses --------------------------------------------------------------
-
-ys <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
-  })
-})
-
 ## nterms_max -------------------------------------------------------------
 
 ntermss <- sapply(mod_nms, function(mod_nm) {
