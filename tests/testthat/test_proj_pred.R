@@ -310,25 +310,6 @@ test_that("proj_linpred(): `regul` has an expected effect", {
   }
 })
 
-test_that("proj_linpred(): `newdata` of class \"data.frame\" works correctly", {
-  SW(
-    fit_form <- stan_glm(mpg ~ (drat + wt)^2,
-                         data = mtcars, QR = TRUE,
-                         chains = chains, seed = seed, iter = iter)
-  )
-  vs_form <- varsel(fit_form,
-                    nclusters = nclusters_tst,
-                    nclusters_pred = nclusters_pred_tst)
-  p1 <- proj_linpred(vs_form, nclusters = nclusters_pred_tst,
-                     newdata = mtcars, nterms = 3, seed = 2)
-  x <- rstanarm::get_x(fit_form)[, -1]
-  newdata <- data.frame(mpg = rstanarm::get_y(fit_form), x)
-  p2 <- proj_linpred(vs_form, nclusters = nclusters_pred_tst,
-                     newdata = newdata, nterms = 3,
-                     seed = 2)
-  expect_equal(p1$pred, p2$pred)
-})
-
 # proj_predict() ----------------------------------------------------------
 
 context("proj_predict()")
