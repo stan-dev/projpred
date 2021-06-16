@@ -291,7 +291,8 @@ test_that("proj_linpred(): `transform` has an expected effect", {
   for (tstsetup in names(prjs_solterms)) {
     plt <- proj_linpred(prjs_solterms[[tstsetup]], transform = TRUE)
     plf <- proj_linpred(prjs_solterms[[tstsetup]], transform = FALSE)
-    expect_equal(prjs_solterms[[!!tstsetup]]$family$linkinv(plf$pred), plt$pred)
+    expect_equal(prjs_solterms[[!!tstsetup]]$family$linkinv(plf$pred), plt$pred,
+                 info = tstsetup)
   }
 })
 
@@ -299,7 +300,8 @@ test_that("proj_linpred(): `integrated` has an expected effect", {
   for (tstsetup in names(prjs_solterms)) {
     plt <- proj_linpred(prjs_solterms[[tstsetup]], integrated = TRUE)
     plf <- proj_linpred(prjs_solterms[[tstsetup]], integrated = FALSE)
-    expect_equal(prjs_solterms[[!!tstsetup]]$weights %*% plf$pred, plt$pred)
+    expect_equal(prjs_solterms[[!!tstsetup]]$weights %*% plf$pred, plt$pred,
+                 info = tstsetup)
   }
 })
 
