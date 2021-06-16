@@ -319,7 +319,7 @@ test_that("proj_linpred(): `regul` has an expected effect", {
       return(sum(pl$pred^2))
     })
     for (j in head(seq_along(regul_tst), -1)) {
-      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
+      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = fam_nm)
     }
   }
 })
