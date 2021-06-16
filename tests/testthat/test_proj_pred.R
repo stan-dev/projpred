@@ -104,7 +104,7 @@ test_that("proj_linpred(): `newdata` is checked correctly", {
   )
   expect_error(
     proj_linpred(prjs_solterms,
-                 solution_terms = paste0("x.", 1:10000)),
+                 solution_terms = rep_len(solterms_x, length.out = 1e4)),
     paste("^The number of solution terms is greater than the number of",
           "columns in newdata\\.$")
   )
@@ -277,8 +277,10 @@ test_that("proj_linpred(): `offsetnew` has an expected effect", {
     ### Note: This inequality might in fact be undesired:
     expect_false(isTRUE(all.equal(pl_orig, pl)), info = tstsetup)
     ###
-    expect_equal(t(pl_orig$pred), t(pl$pred) - dat$offs_col)
-    expect_equal(t(pl_orig$pred), t(plo$pred) - dat_new$offs_col_new)
+    expect_equal(t(pl_orig$pred), t(pl$pred) - dat$offs_col,
+                 info = tstsetup)
+    expect_equal(t(pl_orig$pred), t(plo$pred) - dat_new$offs_col_new,
+                 info = tstsetup)
     expect_false(isTRUE(all.equal(pl_orig$lpd, pl$lpd)), info = tstsetup)
     expect_false(isTRUE(all.equal(pl_orig$lpd, plo$lpd)), info = tstsetup)
     expect_false(isTRUE(all.equal(pl$lpd, plo$lpd)), info = tstsetup)
