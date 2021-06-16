@@ -127,8 +127,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): error if `object` is not of class \"vsel\" (and",
-  "`solution_terms` is provided neither)"
+  "proj_linpred(): error if `object` is not of class \"vsel\" and",
+  "`solution_terms` is provided neither"
 ), {
   expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
   expect_error(proj_linpred(fits$glm$gauss),
@@ -561,8 +561,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): error if `object` is not of class \"vsel\" (and",
-  "`solution_terms` is provided neither)"
+  "proj_predict(): error if `object` is not of class \"vsel\" and",
+  "`solution_terms` is provided neither"
 ), {
   expect_error(proj_predict(1, .seed = seed2_tst),
                "is not an object of class \"vsel\"")
