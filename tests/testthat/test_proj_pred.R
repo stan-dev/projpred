@@ -326,44 +326,47 @@ test_that("proj_linpred(): `regul` has an expected effect", {
 
 context("proj_predict()")
 
-test_that("proj_predict(): `newdata` is checked correctly", {
-  ## expect_error(
-  ##   proj_predict(prjs_solterms),
-  ##   'argument "newdata" is missing, with no default'
-  ## )
-  ## expect_error(
-  ##   proj_predict(prjs_solterms, newdata = NULL),
-  ##   "must be a data.frame or a matrix"
-  ## )
-  expect_error(
-    proj_predict(prjs_solterms, newdata = x[, 1]),
-    "must be a data.frame or a matrix"
-  )
-  expect_error(
-    proj_predict(prjs_solterms, newdata = data.frame(x = x),
-                 solution_terms = paste0("x.", 1:1000)),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
-  )
-  expect_error(
-    proj_predict(prjs_solterms,
-                 newdata = data.frame(x = x)[, 1:2],
-                 solution_terms = paste0("x.", 1:3)),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
-  )
+test_that("proj_predict(): `.seed` has an expected effect", {
+  for (tstsetup in names(prjs_solterms)) {
+    pp1 <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst)
+    pp2 <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst)
+    pp3 <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst + 1L)
+    pp4 <- proj_predict(prjs_solterms[[tstsetup]])
+    expect_equal(pp1, pp2, info = tstsetup)
+    expect_false(isTRUE(all.equal(pp1, pp3)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pp1, pp4)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pp3, pp4)), info = tstsetup)
+  }
+})
+
+test_that("proj_predict(): passing arguments to project() works correctly", {
+  for (tstsetup in names(prjs_solterms)) {
+    pp_from_prj <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst)
+    args_prj_i <- args_prj[[tstsetup]]
+    pp_direct <- do.call(proj_predict, c(
+      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+           .seed = seed2_tst),
+      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+    ))
+    expect_equal(pp_from_prj, pp_direct, info = tstsetup)
+  }
 })
 
 test_that(paste(
   "proj_predict(): `object` of class \"refmodel\" leads to correct output",
   "structure"
 ), {
-  for (i in fam_nms) {
-    pl <- proj_predict(refmod_list[[i]],
-                       nclusters = nclusters_pred_tst,
-                       newdata = data.frame(x = x),
-                       solution_terms = c("x.3", "x.5"))
-    expect_identical(dim(pl), c(nresample_clusters_default, n_tst), info = tstsetup)
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      tstsetup <- unlist(nlist(mod_nm, fam_nm))
+      pp <- proj_predict(refmods[[mod_nm]][[fam_nm]],
+                         .seed = seed2_tst,
+                         solution_terms = solterms_x,
+                         nclusters = nclusters_pred_tst,
+                         seed = seed_tst)
+      expect_identical(dim(pp), c(nresample_clusters_default, n_tst),
+                       info = tstsetup)
+    }
   }
 })
 
@@ -371,15 +374,17 @@ test_that(paste(
   "proj_predict(): `object` of class \"vsel\" leads to correct output",
   "structure"
 ), {
-  for (i in fam_nms) {
-    pl <- proj_predict(vs_list[[i]],
+  for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
+    nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
+    pp <- proj_predict(vss[[tstsetup]],
+                       .seed = seed2_tst,
+                       nterms = 0:nterms_max_crr,
                        nclusters = nclusters_pred_tst,
-                       newdata = data.frame(x = x),
-                       nterms = 0:nterms)
-    expect_length(pl, nterms + 1)
-    for (j in seq_along(pl)) {
-      expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n_tst),
-                       info = i)
+                       seed = seed_tst)
+    expect_length(pp, nterms_max_crr + 1)
+    for (j in seq_along(pp)) {
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+                       info = tstsetup)
     }
   }
 })
@@ -388,10 +393,18 @@ test_that(paste(
   "proj_predict(): `object` of class \"projection\" leads to correct output",
   "structure"
 ), {
-  for (i in fam_nms) {
-    pl <- proj_predict(prjs_solterms[[i]],
-                       newdata = data.frame(x = x))
-    expect_identical(dim(pl), c(nresample_clusters_default, n_tst), info = tstsetup)
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
+      nprjdraws_out <- nresample_clusters_default
+    } else {
+      nprjdraws_out <- nprjdraws
+    }
+    pp <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst)
+    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup)
   }
 })
 
@@ -399,68 +412,11 @@ test_that(paste(
   "proj_predict(): `object` of (informal) class \"proj_list\" leads to correct",
   "output structure"
 ), {
-  for (i in fam_nms) {
-    pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
-    expect_length(pl, nterms + 1)
-    for (j in seq_along(pl)) {
-      expect_identical(dim(pl[[!!j]]), c(nresample_clusters_default, n_tst),
-                       info = i)
-    }
-  }
-})
-
-test_that(paste(
-  "proj_predict(): `newdata` and `nresample_clusters` lead to correct output",
-  "structure (even in edge cases)",
-  "(using `nclusters`)"
-), {
-  for (i in fam_nms) {
-    for (n_crr in c(1L, 12L)) {
-      for (nclusters_pred_crr in c(1L, 4L, 24L)) {
-        for (nresample_clusters_crr in c(1L, 8L)) {
-          pl <- proj_predict(
-            refmod_list[[i]], nclusters = nclusters_pred_crr,
-            newdata = head(data.frame(x = x), n_crr),
-            nresample_clusters = nresample_clusters_crr,
-            .seed = seed + 1,
-            solution_terms = c("x.3", "x.5")
-          )
-          tstsetup <- unlist(nlist(i, n_crr, nclusters_pred_crr,
-                                   nresample_clusters_crr))
-          expect_identical(dim(pl), c(nresample_clusters_crr, n_crr),
-                           info = tstsetup)
-        }
-      }
-    }
-  }
-})
-
-test_that(paste(
-  "proj_predict(): `newdata` and `nresample_clusters` lead to correct output",
-  "structure (even in edge cases)",
-  "(using `ndraws`)"
-), {
-  for (i in fam_nms) {
-    for (n_crr in c(1L, 12L)) {
-      for (ndraws_pred_crr in c(1L, 4L, 24L)) {
-        for (nresample_clusters_crr in c(1L, 8L)) {
-          pl <- proj_predict(
-            refmod_list[[i]], ndraws = ndraws_pred_crr,
-            newdata = head(data.frame(x = x), n_crr),
-            nresample_clusters = nresample_clusters_crr,
-            .seed = seed + 1,
-            solution_terms = c("x.3", "x.5")
-          )
-          tstsetup <- unlist(nlist(i, n_crr, ndraws_pred_crr,
-                                   nresample_clusters_crr))
-          nprjdraws_crr <- ifelse(ndraws_pred_crr <= 20,
-                                  nresample_clusters_crr,
-                                  ndraws_pred_crr)
-          expect_identical(dim(pl), c(nprjdraws_crr, n_crr),
-                           info = tstsetup)
-        }
-      }
-    }
+  pp <- proj_predict(prj_nterms, .seed = seed2_tst)
+  expect_length(pp, nterms_max_tst + 1)
+  for (j in seq_along(pp)) {
+    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+                     info = tstsetup)
   }
 })
 
@@ -468,119 +424,211 @@ test_that(paste(
   "proj_predict(): error if `object` is not of class \"vsel\" (and",
   "`solution_terms` is provided neither)"
 ), {
+  expect_error(proj_predict(1, .seed = seed2_tst),
+               "is not an object of class \"vsel\"")
+  expect_error(proj_predict(fits$glm$gauss, .seed = seed2_tst),
+               "is not an object of class \"vsel\"")
+  expect_error(proj_predict(c(prjs_solterms, list(dat)), .seed = seed2_tst),
+               "Invalid object supplied to argument `object`\\.")
+})
+
+test_that("proj_predict(): `newdata` is checked correctly", {
   expect_error(
-    proj_predict(1, newdata = data.frame(x = x)),
-    "is not an object of class \"vsel\""
+    proj_predict(prjs_solterms, newdata = dat[, 1], .seed = seed2_tst),
+    "must be a data.frame or a matrix"
   )
   expect_error(
-    proj_predict(fit_gauss, newdata = data.frame(x = x)),
-    "is not an object of class \"vsel\""
+    proj_predict(prjs_solterms,
+                 .seed = seed2_tst,
+                 solution_terms = rep_len(solterms_x, length.out = 1e4)),
+    paste("^The number of solution terms is greater than the number of",
+          "columns in newdata\\.$")
   )
+  stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_predict(c(prjs_solterms, list(x)),
-                 newdata = data.frame(x = x)),
-    "Invalid object supplied to argument `object`\\."
+    proj_predict(prjs_solterms[[grep("^glm\\.gauss", names(prjs_solterms))[1]]],
+                 newdata = dat[, 1, drop = FALSE],
+                 .seed = seed2_tst,
+                 solution_terms = solterms_x),
+    paste("^The number of solution terms is greater than the number of",
+          "columns in newdata\\.$")
   )
 })
 
-## test_that("proj_predict(): specifying ynew has an expected effect", {
-##   for (i in seq_along(vs_list)) {
-##     pl <- proj_predict(vs_list[[i]],
-##                        nclusters = nclusters_pred_tst,
-##                        newdata = data.frame(x = x),
-##                        ynew = ys[[i]], nterms = 0:3)
-##     pl2 <- proj_predict(vs_list[[i]],
-##                         nclusters = nclusters_pred_tst,
-##                         newdata = data.frame(x = x),
-##                         nterms = 0:3)
-##     for (j in seq_len(length(pl))) {
-##       expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
-##     }
-##   }
-## })
+test_that(paste(
+  "proj_predict(): `newdata` and `nresample_clusters` lead to correct output",
+  "structure (even in edge cases)"
+), {
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    for (n_crr in c(1L, 12L)) {
+      for (nresample_clusters_crr in c(1L, 100L)) {
+        tstsetup_crr <- unlist(nlist(tstsetup, n_crr, nresample_clusters_crr))
+        pp <- proj_predict(prjs_solterms[[tstsetup]],
+                           newdata = head(dat, n_crr),
+                           nresample_clusters = nresample_clusters_crr,
+                           .seed = seed2_tst)
+        if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
+          nprjdraws_crr <- nresample_clusters_crr
+        } else {
+          nprjdraws_crr <- nprjdraws
+        }
+        expect_identical(dim(pp), c(nprjdraws_crr, n_crr), info = tstsetup_crr)
+      }
+    }
+  }
+})
 
-## test_that(paste(
-##   "proj_predict(): specifying ynew as a factor works in a",
-##   "binomial model"
-## ), {
-##   yfactor <- factor(rbinom(n, 1, 0.5))
-##   pl <- proj_predict(vs_list[["binom"]],
-##                      nclusters = nclusters_pred_tst,
-##                      newdata = data.frame(x = x),
-##                      ynew = yfactor)
-##   expect_equal(ncol(pl), n_tst)
-##   expect_true(all(pl %in% c(0, 1)))
-## })
+test_that(paste(
+  "proj_predict(): `newdata` set to the original dataset doesn't change results"
+), {
+  for (tstsetup in names(prjs_solterms)) {
+    pp_orig <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst)
+    pp_newdata <- proj_predict(prjs_solterms[[tstsetup]],
+                               newdata = dat,
+                               .seed = seed2_tst)
+    expect_equal(pp_orig, pp_newdata, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "proj_predict(): omitting the response in `newdata` doesn't change results"
+), {
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    pp_orig <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst)
+    resp_nm <- extract_terms_response(
+      prjs_solterms[[tstsetup]]$refmodel$formula
+    )$response
+    stopifnot(!exists(resp_nm))
+    pp_noresp <- proj_predict(prjs_solterms[[tstsetup]],
+                              newdata = dat[, setdiff(names(dat), resp_nm)],
+                              .seed = seed2_tst)
+    expect_equal(pp_orig, pp_noresp, info = tstsetup)
+  }
+})
 
 test_that("proj_predict(): `weightsnew` has an expected effect", {
-  pl <- proj_predict(prjs_solterms[["binom"]],
-                     newdata = data.frame(x = x, weights = rep(1, NROW(x))),
-                     seed = seed, .seed = seed)
-  plw <- proj_predict(prjs_solterms[["binom"]],
-                      newdata = data.frame(x = x, weights = weights),
-                      seed = seed, .seed = seed,
-                      weightsnew = ~weights)
-  expect_true(sum(pl != plw) > 0)
+  dat_ones <- within(dat, {
+    wobs_col <- NULL
+    wobs_col_ones <- rep_len(1, length.out = n_tst)
+  })
+  dat_new <- within(dat, {
+    wobs_col <- NULL
+    wobs_col_new <- rep_len(2:5, length.out = n_tst)
+  })
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
+      nprjdraws_out <- nresample_clusters_default
+    } else {
+      nprjdraws_out <- nprjdraws
+    }
+
+    pp_orig <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst)
+    expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+
+    pp_ones <- proj_predict(prjs_solterms[[tstsetup]],
+                            newdata = dat_ones,
+                            weightsnew = ~ wobs_col_ones,
+                            .seed = seed2_tst)
+    expect_identical(dim(pp_ones), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+
+    pp <- proj_predict(prjs_solterms[[tstsetup]],
+                       newdata = dat,
+                       weightsnew = ~ wobs_col,
+                       .seed = seed2_tst)
+    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+
+    ppw <- proj_predict(prjs_solterms[[tstsetup]],
+                        newdata = dat_new,
+                        weightsnew = ~ wobs_col_new,
+                        .seed = seed2_tst)
+    expect_identical(dim(ppw), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+
+    # Weights are only relevant for the binomial() family:
+    if (args_prj[[tstsetup]]$fam_nm != "binom") {
+      expect_equal(pp_orig, pp_ones, info = tstsetup)
+      expect_equal(pp_orig, pp, info = tstsetup)
+      expect_equal(pp_orig, ppw, info = tstsetup)
+    } else {
+      ### Note: This equivalence might in fact be undesired:
+      expect_equal(pp_orig, pp_ones, info = tstsetup)
+      ###
+      ### Note: This inequality might in fact be undesired:
+      expect_false(isTRUE(all.equal(pp_orig, pp)), info = tstsetup)
+      ###
+      expect_false(isTRUE(all.equal(pp_orig, ppw)), info = tstsetup)
+      expect_false(isTRUE(all.equal(pp, ppw)), info = tstsetup)
+    }
+  }
 })
 
 test_that("proj_predict(): `offsetnew` has an expected effect", {
-  for (i in seq_len(length(prjs_solterms))) {
-    pl <- proj_predict(prjs_solterms[[i]],
-                       newdata = data.frame(x = x),
-                       seed = seed, .seed = seed)
-    plo <- proj_predict(prjs_solterms[[i]],
-                        newdata = data.frame(x = x, offset = offset),
-                        seed = seed, .seed = seed, offsetnew = ~offset)
-    expect_true(sum(pl != plo) > 0, info = tstsetup)
-  }
-})
+  dat_zeros <- within(dat, {
+    offs_col <- NULL
+    offs_col_zeros <- rep_len(0, length.out = n_tst)
+  })
+  dat_new <- within(dat, {
+    offs_col <- NULL
+    offs_col_new <- seq(-2, 2, length.out = n_tst)
+  })
+  for (tstsetup in names(prjs_solterms)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
+      nprjdraws_out <- nresample_clusters_default
+    } else {
+      nprjdraws_out <- nprjdraws
+    }
 
-test_that("proj_predict(): `nresample_clusters` has an expected effect", {
-  for (i in fam_nms) {
-    pl <- proj_predict(prjs_solterms[[i]],
-                       nresample_clusters = nresample_clusters_tst,
-                       newdata = data.frame(x = x))
-    expect_equal(dim(pl), c(nresample_clusters_tst, n_tst))
-  }
-})
+    pp_orig <- proj_predict(prjs_solterms[[tstsetup]], .seed = seed2_tst)
+    expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup_crr)
 
-test_that("proj_predict(): `seed` and `.seed` have an expected effect", {
-  for (i in fam_nms) {
-    pl1 <- proj_predict(prjs_solterms[[i]],
-                        newdata = data.frame(x = x),
-                        seed = seed, .seed = seed)
-    pl2 <- proj_predict(prjs_solterms[[i]],
-                        newdata = data.frame(x = x),
-                        seed = seed, .seed = seed)
-    expect_equal(pl1, pl2, info = tstsetup)
-  }
-})
+    pp_zeros <- proj_predict(prjs_solterms[[tstsetup]],
+                             newdata = dat_zeros,
+                             offsetnew = ~ offs_col_zeros,
+                             .seed = seed2_tst)
+    expect_identical(dim(pp_zeros), c(nprjdraws_out, n_tst),
+                     info = tstsetup_crr)
 
-test_that("proj_predict(): passing arguments to project() works correctly", {
-  for (i in fam_nms) {
-    prp1 <- proj_predict(vs_list[[i]],
-                         newdata = data.frame(x = x),
-                         nresample_clusters = nresample_clusters_tst,
-                         seed = 12, .seed = 12, nterms = c(2, 4),
-                         nclusters = nclusters_pred_tst,
-                         regul = 1e-08)
-    prp2 <- proj_predict(vs_list[[i]],
-                         newdata = data.frame(x = x),
-                         nresample_clusters = nresample_clusters_tst,
-                         nterms = c(2, 4),
-                         nclusters = nclusters_pred_tst, regul = 1e-8,
-                         seed = 12, .seed = 12)
-    prp3 <- proj_predict(vs_list[[i]],
-                         newdata = data.frame(x = x),
-                         nresample_clusters = nresample_clusters_tst,
-                         seed = 120, .seed = 120, nterms = c(2, 4),
-                         nclusters = nclusters_pred_tst,
-                         regul = 1e-08)
-    expect_equal(prp1, prp2, info = tstsetup)
-    expect_false(all(unlist(lapply(seq_along(prp1), function(i) {
-      all(prp1[[i]] == prp3[[i]])
-    }))),
-    info = i
-    )
+    pp <- proj_predict(prjs_solterms[[tstsetup]],
+                       newdata = dat,
+                       offsetnew = ~ offs_col,
+                       .seed = seed2_tst)
+    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+
+    ppo <- proj_predict(prjs_solterms[[tstsetup]],
+                        newdata = dat_new,
+                        offsetnew = ~ offs_col_new,
+                        .seed = seed2_tst)
+    expect_identical(dim(ppo), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+
+    ### Note: This equivalence might in fact be undesired:
+    expect_equal(pp_orig, pp_zeros, info = tstsetup)
+    ###
+    ### Note: This inequality might in fact be undesired:
+    expect_false(isTRUE(all.equal(pp_orig, pp)), info = tstsetup)
+    ###
+    # For the gaussian() family, we can perform an easy check (because of the
+    # identity link):
+    if (args_prj[[tstsetup]]$fam_nm == "gauss") {
+      expect_equal(t(pp_orig), t(pp) - dat$offs_col, info = tstsetup)
+      expect_equal(t(pp_orig), t(ppo) - dat_new$offs_col_new, info = tstsetup)
+    } else {
+      expect_false(isTRUE(all.equal(pp_orig, ppo)), info = tstsetup)
+      expect_false(isTRUE(all.equal(pp, ppo)), info = tstsetup)
+    }
   }
 })
