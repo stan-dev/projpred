@@ -8,8 +8,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "specifying an `object` of class \"vsel\" (created by varsel()) leads",
-  "to correct output structure"
+  "`object` of class \"vsel\" (created by varsel()) leads to correct output",
+  "structure"
 ), {
   for (i in fam_nms) {
     p <- project(vss[[tstsetup]], nterms = 0:nterms, nclusters = nclusters_pred_tst)
@@ -53,8 +53,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "specifying an `object` of class \"vsel\" (created by cv_varsel()) leads",
-  "to correct output structure"
+  "`object` of class \"vsel\" (created by cv_varsel()) leads to correct output",
+  "structure"
 ), {
   i <- "binom"
   nterms_tst <- 0:2
@@ -83,8 +83,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "specifying an `object` of class \"refmodel\" leads to correct output",
-  "structure"
+  "`object` of class \"refmodel\" leads to correct output structure"
 ), {
   for (i in fam_nms) {
     p <- project(refmods[[mod_nm]][[fam_nm]], solution_terms = solterms_tst,
@@ -102,7 +101,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "specifying a fitted model `object` leads to correct output structure"
+  "a fitted model `object` leads to correct output structure and the default",
+  "`ndraws` is as expected"
 ), {
   for (i in fam_nms) {
     if (i == "binom") {
