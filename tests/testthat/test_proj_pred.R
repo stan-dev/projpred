@@ -1,6 +1,6 @@
-context("proj_linpred")
+context("proj_linpred()")
 
-test_that("proj_linpred: passing arguments to project() works correctly", {
+test_that("proj_linpred(): passing arguments to project() works correctly", {
   for (tstsetup in names(prjs_solterms)) {
     pl_from_prj <- proj_linpred(prjs_solterms[[tstsetup]])
     args_prj_i <- args_prj[[tstsetup]]
@@ -13,7 +13,7 @@ test_that("proj_linpred: passing arguments to project() works correctly", {
 })
 
 test_that(paste(
-  "proj_linpred: `object` of class \"refmodel\" leads to correct output",
+  "proj_linpred(): `object` of class \"refmodel\" leads to correct output",
   "structure"
 ), {
   for (mod_nm in mod_nms) {
@@ -33,7 +33,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred: `object` of class \"vsel\" leads to correct output",
+  "proj_linpred(): `object` of class \"vsel\" leads to correct output",
   "structure"
 ), {
   for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
@@ -54,7 +54,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred: `object` of class \"projection\" leads to correct output",
+  "proj_linpred(): `object` of class \"projection\" leads to correct output",
   "structure"
 ), {
   for (tstsetup in names(prjs_solterms)) {
@@ -70,7 +70,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred: `object` of (informal) class \"proj_list\" leads to correct",
+  "proj_linpred(): `object` of (informal) class \"proj_list\" leads to correct",
   "output structure"
 ), {
   pl <- proj_linpred(prj_nterms)
@@ -85,7 +85,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred: error if `object` is not of class \"vsel\" (and",
+  "proj_linpred(): error if `object` is not of class \"vsel\" (and",
   "`solution_terms` is provided neither)"
 ), {
   expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
@@ -95,7 +95,7 @@ test_that(paste(
                "Invalid object supplied to argument `object`\\.")
 })
 
-test_that("proj_linpred: `newdata` is checked correctly", {
+test_that("proj_linpred(): `newdata` is checked correctly", {
   expect_error(
     proj_linpred(prjs_solterms, newdata = dat[, 1]),
     "must be a data.frame or a matrix"
@@ -117,7 +117,7 @@ test_that("proj_linpred: `newdata` is checked correctly", {
 })
 
 test_that(paste(
-  "proj_linpred: `newdata` and `integrated` lead to correct output structure",
+  "proj_linpred(): `newdata` and `integrated` lead to correct output structure",
   "(even in edge cases)"
 ), {
   for (tstsetup in names(prjs_solterms)) {
@@ -143,7 +143,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred: omitting the response in `newdata` causes output element",
+  "proj_linpred(): omitting the response in `newdata` causes output element",
   "`lpd` to be `NULL`."
 ), {
   for (tstsetup in names(prjs_solterms)) {
@@ -163,7 +163,7 @@ test_that(paste(
   }
 })
 
-test_that("proj_linpred: `weightsnew` has an expected effect", {
+test_that("proj_linpred(): `weightsnew` has an expected effect", {
   dat_ones <- within(dat, {
     wobs_col <- NULL
     wobs_col_ones <- rep_len(1, length.out = n_tst)
@@ -218,7 +218,7 @@ test_that("proj_linpred: `weightsnew` has an expected effect", {
   }
 })
 
-test_that("proj_linpred: `offsetnew` has an expected effect", {
+test_that("proj_linpred(): `offsetnew` has an expected effect", {
   dat_zeros <- within(dat, {
     offs_col <- NULL
     offs_col_zeros <- rep_len(0, length.out = n_tst)
@@ -273,7 +273,7 @@ test_that("proj_linpred: `offsetnew` has an expected effect", {
   }
 })
 
-test_that("proj_linpred: `transform` has an expected effect", {
+test_that("proj_linpred(): `transform` has an expected effect", {
   for (tstsetup in names(prjs_solterms)) {
     plt <- proj_linpred(prjs_solterms[[tstsetup]], transform = TRUE)
     plf <- proj_linpred(prjs_solterms[[tstsetup]], transform = FALSE)
@@ -281,7 +281,7 @@ test_that("proj_linpred: `transform` has an expected effect", {
   }
 })
 
-test_that("proj_linpred: `integrated` has an expected effect", {
+test_that("proj_linpred(): `integrated` has an expected effect", {
   for (tstsetup in names(prjs_solterms)) {
     plt <- proj_linpred(prjs_solterms[[tstsetup]], integrated = TRUE)
     plf <- proj_linpred(prjs_solterms[[tstsetup]], integrated = FALSE)
@@ -289,7 +289,7 @@ test_that("proj_linpred: `integrated` has an expected effect", {
   }
 })
 
-test_that("proj_linpred: `regul` has an expected effect", {
+test_that("proj_linpred(): `regul` has an expected effect", {
   regul_tst <- c(1e-6, 1e-1, 1e2)
   stopifnot(identical(regul_tst, sort(regul_tst)))
   for (fam_nm in fam_nms) {
@@ -308,7 +308,7 @@ test_that("proj_linpred: `regul` has an expected effect", {
   }
 })
 
-test_that("proj_linpred: `newdata` of class \"data.frame\" works correctly", {
+test_that("proj_linpred(): `newdata` of class \"data.frame\" works correctly", {
   SW(
     fit_form <- stan_glm(mpg ~ (drat + wt)^2,
                          data = mtcars, QR = TRUE,
@@ -329,9 +329,9 @@ test_that("proj_linpred: `newdata` of class \"data.frame\" works correctly", {
 
 
 # -------------------------------------------------------------
-context("proj_predict")
+context("proj_predict()")
 
-test_that("proj_predict: `newdata` is checked correctly", {
+test_that("proj_predict(): `newdata` is checked correctly", {
   ## expect_error(
   ##   proj_predict(prjs_solterms),
   ##   'argument "newdata" is missing, with no default'
@@ -360,7 +360,7 @@ test_that("proj_predict: `newdata` is checked correctly", {
 })
 
 test_that(paste(
-  "proj_predict: `object` of class \"refmodel\" leads to correct output",
+  "proj_predict(): `object` of class \"refmodel\" leads to correct output",
   "structure"
 ), {
   for (i in fam_nms) {
@@ -373,7 +373,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict: `object` of class \"vsel\" leads to correct output",
+  "proj_predict(): `object` of class \"vsel\" leads to correct output",
   "structure"
 ), {
   for (i in fam_nms) {
@@ -390,7 +390,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict: `object` of class \"projection\" leads to correct output",
+  "proj_predict(): `object` of class \"projection\" leads to correct output",
   "structure"
 ), {
   for (i in fam_nms) {
@@ -401,7 +401,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict: `object` of (informal) class \"proj_list\" leads to correct",
+  "proj_predict(): `object` of (informal) class \"proj_list\" leads to correct",
   "output structure"
 ), {
   for (i in fam_nms) {
@@ -415,7 +415,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict: `newdata` and `nresample_clusters` lead to correct output",
+  "proj_predict(): `newdata` and `nresample_clusters` lead to correct output",
   "structure (even in edge cases)",
   "(using `nclusters`)"
 ), {
@@ -441,7 +441,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict: `newdata` and `nresample_clusters` lead to correct output",
+  "proj_predict(): `newdata` and `nresample_clusters` lead to correct output",
   "structure (even in edge cases)",
   "(using `ndraws`)"
 ), {
@@ -470,7 +470,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict: error if `object` is not of class \"vsel\" (and",
+  "proj_predict(): error if `object` is not of class \"vsel\" (and",
   "`solution_terms` is provided neither)"
 ), {
   expect_error(
@@ -488,7 +488,7 @@ test_that(paste(
   )
 })
 
-## test_that("proj_predict: specifying ynew has an expected effect", {
+## test_that("proj_predict(): specifying ynew has an expected effect", {
 ##   for (i in seq_along(vs_list)) {
 ##     pl <- proj_predict(vs_list[[i]],
 ##                        nclusters = nclusters_pred_tst,
@@ -505,7 +505,7 @@ test_that(paste(
 ## })
 
 ## test_that(paste(
-##   "proj_predict: specifying ynew as a factor works in a",
+##   "proj_predict(): specifying ynew as a factor works in a",
 ##   "binomial model"
 ## ), {
 ##   yfactor <- factor(rbinom(n, 1, 0.5))
@@ -517,7 +517,7 @@ test_that(paste(
 ##   expect_true(all(pl %in% c(0, 1)))
 ## })
 
-test_that("proj_predict: `weightsnew` has an expected effect", {
+test_that("proj_predict(): `weightsnew` has an expected effect", {
   pl <- proj_predict(prjs_solterms[["binom"]],
                      newdata = data.frame(x = x, weights = rep(1, NROW(x))),
                      seed = seed, .seed = seed)
@@ -528,7 +528,7 @@ test_that("proj_predict: `weightsnew` has an expected effect", {
   expect_true(sum(pl != plw) > 0)
 })
 
-test_that("proj_predict: `offsetnew` has an expected effect", {
+test_that("proj_predict(): `offsetnew` has an expected effect", {
   for (i in seq_len(length(prjs_solterms))) {
     pl <- proj_predict(prjs_solterms[[i]],
                        newdata = data.frame(x = x),
@@ -540,7 +540,7 @@ test_that("proj_predict: `offsetnew` has an expected effect", {
   }
 })
 
-test_that("proj_predict: `nresample_clusters` has an expected effect", {
+test_that("proj_predict(): `nresample_clusters` has an expected effect", {
   for (i in fam_nms) {
     pl <- proj_predict(prjs_solterms[[i]],
                        nresample_clusters = nresample_clusters_tst,
@@ -549,7 +549,7 @@ test_that("proj_predict: `nresample_clusters` has an expected effect", {
   }
 })
 
-test_that("proj_predict: `seed` and `.seed` have an expected effect", {
+test_that("proj_predict(): `seed` and `.seed` have an expected effect", {
   for (i in fam_nms) {
     pl1 <- proj_predict(prjs_solterms[[i]],
                         newdata = data.frame(x = x),
@@ -561,7 +561,7 @@ test_that("proj_predict: `seed` and `.seed` have an expected effect", {
   }
 })
 
-test_that("proj_predict: passing arguments to project() works correctly", {
+test_that("proj_predict(): passing arguments to project() works correctly", {
   for (i in fam_nms) {
     prp1 <- proj_predict(vs_list[[i]],
                          newdata = data.frame(x = x),
