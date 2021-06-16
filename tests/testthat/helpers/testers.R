@@ -1,10 +1,9 @@
-# A helper function for testing the output structure from project() applied to
-# a "vsel" object
+# A helper function for testing the structure of an expected "proj_list" object
 #
-# @param p An object returned by project().
+# @param p An object of (informal) class "proj_list" (at least expected so).
 # @param fam_expected The expected "family" object.
-# @param info_str A single character string giving info to be printed in case of
-#   failure.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
 #
 # @return `TRUE` (invisible).
 #
@@ -49,12 +48,11 @@ proj_list_tester <- function(p, fam_expected, info_str = "") {
   return(invisible(TRUE))
 }
 
-# A helper function for testing the output structure from project() applied to
-# a "refmodel" object
+# A helper function for testing the structure of an expected "projection" object
 #
-# @param p An object returned by project().
-# @param info_str A single character string giving info to be printed in case of
-#   failure.
+# @param p An object of class "projection" (at least expected so).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
 #
 # @return `TRUE` (invisible).
 #
