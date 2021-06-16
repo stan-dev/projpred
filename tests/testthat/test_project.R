@@ -1,10 +1,10 @@
 context("project")
 
 test_that(paste(
-  "specifying an `object` which is not of class \"vsel\" and not specifying",
-  "`solution_terms` leads to an error"
+  "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
+  "neither"
 ), {
-  expect_error(project(fit_gauss), "is not an object of class \"vsel\"")
+  expect_error(project(fits$glm$gauss), "is not an object of class \"vsel\"")
 })
 
 test_that(paste(
