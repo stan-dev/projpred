@@ -1,24 +1,15 @@
 context("proj_linpred")
 
-test_that("proj_linpred: `newdata` is checked correctly", {
-  expect_error(
-    proj_linpred(prjs_solterms, newdata = dat[, 1]),
-    "must be a data.frame or a matrix"
-  )
-  expect_error(
-    proj_linpred(prjs_solterms,
-                 solution_terms = paste0("x.", 1:10000)),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
-  )
-  stopifnot(length(solterms_x) > 1)
-  expect_error(
-    proj_linpred(prjs_solterms[[grep("^glm\\.gauss", names(prjs_solterms))[1]]],
-                 newdata = dat[, 1, drop = FALSE],
-                 solution_terms = solterms_x),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
-  )
+test_that("proj_linpred: passing arguments to project() works correctly", {
+  for (tstsetup in names(prjs_solterms)) {
+    pl_from_prj <- proj_linpred(prjs_solterms[[tstsetup]])
+    args_prj_i <- args_prj[[tstsetup]]
+    pl_direct <- do.call(proj_linpred, c(
+      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
+      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+    ))
+    expect_equal(pl_from_prj, pl_direct, info = tstsetup)
+  }
 })
 
 test_that(paste(
@@ -94,6 +85,38 @@ test_that(paste(
 })
 
 test_that(paste(
+  "proj_linpred: error if `object` is not of class \"vsel\" (and",
+  "`solution_terms` is provided neither)"
+), {
+  expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
+  expect_error(proj_linpred(fits$glm$gauss),
+               "is not an object of class \"vsel\"")
+  expect_error(proj_linpred(c(prjs_solterms, list(dat))),
+               "Invalid object supplied to argument `object`\\.")
+})
+
+test_that("proj_linpred: `newdata` is checked correctly", {
+  expect_error(
+    proj_linpred(prjs_solterms, newdata = dat[, 1]),
+    "must be a data.frame or a matrix"
+  )
+  expect_error(
+    proj_linpred(prjs_solterms,
+                 solution_terms = paste0("x.", 1:10000)),
+    paste("^The number of solution terms is greater than the number of",
+          "columns in newdata\\.$")
+  )
+  stopifnot(length(solterms_x) > 1)
+  expect_error(
+    proj_linpred(prjs_solterms[[grep("^glm\\.gauss", names(prjs_solterms))[1]]],
+                 newdata = dat[, 1, drop = FALSE],
+                 solution_terms = solterms_x),
+    paste("^The number of solution terms is greater than the number of",
+          "columns in newdata\\.$")
+  )
+})
+
+test_that(paste(
   "proj_linpred: `newdata` and `integrated` lead to correct output structure",
   "(even in edge cases)"
 ), {
@@ -117,17 +140,6 @@ test_that(paste(
       }
     }
   }
-})
-
-test_that(paste(
-  "proj_linpred: error if `object` is not of class \"vsel\" (and",
-  "`solution_terms` is provided neither)"
-), {
-  expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
-  expect_error(proj_linpred(fits$glm$gauss),
-               "is not an object of class \"vsel\"")
-  expect_error(proj_linpred(c(prjs_solterms, list(dat))),
-               "Invalid object supplied to argument `object`\\.")
 })
 
 test_that(paste(
@@ -293,18 +305,6 @@ test_that("proj_linpred: `regul` has an expected effect", {
     for (j in head(seq_along(regul_tst), -1)) {
       expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
     }
-  }
-})
-
-test_that("proj_linpred: passing arguments to project() works correctly", {
-  for (tstsetup in names(prjs_solterms)) {
-    pl_from_prj <- proj_linpred(prjs_solterms[[tstsetup]])
-    args_prj_i <- args_prj[[tstsetup]]
-    pl_direct <- do.call(proj_linpred, c(
-      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
-    ))
-    expect_equal(pl_from_prj, pl_direct, info = tstsetup)
   }
 })
 
