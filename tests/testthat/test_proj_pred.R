@@ -324,7 +324,10 @@ test_that("proj_linpred(): `regul` has an expected effect", {
   }
 })
 
-test_that("proj_linpred(): `filter_nterms` works correctly", {
+test_that(paste(
+  "proj_linpred(): `filter_nterms` works correctly (for an `object` of class",
+  "\"projection\")"
+), {
   filter_nterms_unavail <- c(0L, 3L)
   stopifnot(!length(solterms_x) %in% filter_nterms_unavail)
   for (filter_nterms_crr in filter_nterms_unavail) {
@@ -335,6 +338,51 @@ test_that("proj_linpred(): `filter_nterms` works correctly", {
   pl_orig <- proj_linpred(prjs_solterms$glm.gauss.solterms_x.clust)
   pl <- proj_linpred(prjs_solterms$glm.gauss.solterms_x.clust,
                      filter_nterms = length(solterms_x))
+  expect_equal(pl_orig, pl)
+})
+
+test_that(paste(
+  "proj_linpred(): `filter_nterms` works correctly (for an `object` of",
+  "(informal) class \"proj_list\")"
+), {
+  # Unavailable number(s) of terms:
+  filter_nterms_unavail <- list(nterms_max_tst + 130L,
+                                c(nterms_max_tst + 130L, nterms_max_tst + 290L))
+  for (filter_nterms_crr in filter_nterms_unavail) {
+    expect_error(proj_linpred(prj_nterms,
+                              filter_nterms = !!filter_nterms_crr),
+                 "subscript out of bounds")
+  }
+
+  # Available number(s) of terms:
+  filter_nterms_avail <- list(
+    0L,
+    nterms_max_tst %/% 2L,
+    as.integer(round(seq(0, nterms_max_tst, length.out = 3))),
+    c(nterms_max_tst %/% 2L, nterms_max_tst + 130L)
+  )
+  for (filter_nterms_crr in filter_nterms_avail) {
+    tstsetup <- unlist(nlist(filter_nterms_crr))
+    pl_crr <- proj_linpred(prj_nterms,
+                           filter_nterms = filter_nterms_crr)
+    nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
+    if (nhits_nterms == 1) {
+      pl_crr <- list(pl_crr)
+    }
+    expect_length(pl_crr, nhits_nterms)
+    for (j in seq_along(pl_crr)) {
+      expect_named(pl_crr[[!!j]], c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl_crr[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl_crr[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+    }
+  }
+
+  # The special case of all possible numbers of terms:
+  pl_orig <- proj_linpred(prj_nterms)
+  pl <- proj_linpred(prj_nterms,
+                     filter_nterms = 0:nterms_max_tst)
   expect_equal(pl_orig, pl)
 })
 
