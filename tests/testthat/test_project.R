@@ -34,7 +34,8 @@ test_that(paste(
     projection_tester(
       prjs_solterms[[tstsetup]],
       solterms_expected = args_prj[[tstsetup]]$solution_terms,
-      nprjdraws_expected = args_prj[[tstsetup]][[ndr_ncl_nm]]
+      nprjdraws_expected = args_prj[[tstsetup]][[ndr_ncl_nm]],
+      info_str = tstsetup
     )
   }
 })
