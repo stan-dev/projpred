@@ -1,3 +1,11 @@
+# A helper function for testing the output structure from project() applied to
+# a "vsel" object
+#
+# @param p An object returned by project().
+# @param fam_expected The expected "family" object.
+#
+# @return `TRUE` (invisible).
+#
 prj_vsel_str_tester <- function(p, fam_expected) {
   expect_type(p, "list")
   expect_length(p, nterms_max_tst + 1)
