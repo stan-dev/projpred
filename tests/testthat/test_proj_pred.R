@@ -324,6 +324,20 @@ test_that("proj_linpred(): `regul` has an expected effect", {
   }
 })
 
+test_that("proj_linpred(): `filter_nterms` works correctly", {
+  filter_nterms_unavail <- c(0L, 3L)
+  stopifnot(!length(solterms_x) %in% filter_nterms_unavail)
+  for (filter_nterms_crr in filter_nterms_unavail) {
+    expect_error(proj_linpred(prjs_solterms$glm.gauss.solterms_x.clust,
+                              filter_nterms = !!filter_nterms_crr),
+                 "subscript out of bounds")
+  }
+  pl_orig <- proj_linpred(prjs_solterms$glm.gauss.solterms_x.clust)
+  pl <- proj_linpred(prjs_solterms$glm.gauss.solterms_x.clust,
+                     filter_nterms = length(solterms_x))
+  expect_equal(pl_orig, pl)
+})
+
 # proj_predict() ----------------------------------------------------------
 
 context("proj_predict()")
