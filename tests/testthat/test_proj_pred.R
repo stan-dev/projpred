@@ -648,3 +648,20 @@ test_that("proj_predict(): `offsetnew` has an expected effect", {
     }
   }
 })
+
+test_that("proj_predict(): `filter_nterms` works correctly", {
+  filter_nterms_unavail <- c(0L, 3L)
+  stopifnot(!length(solterms_x) %in% filter_nterms_unavail)
+  for (filter_nterms_crr in filter_nterms_unavail) {
+    expect_error(proj_predict(prjs_solterms$glm.gauss.solterms_x.clust,
+                              filter_nterms = !!filter_nterms_crr,
+                              .seed = seed2_tst),
+                 "subscript out of bounds")
+  }
+  pp_orig <- proj_predict(prjs_solterms$glm.gauss.solterms_x.clust,
+                          .seed = seed2_tst)
+  pp <- proj_predict(prjs_solterms$glm.gauss.solterms_x.clust,
+                     filter_nterms = length(solterms_x),
+                     .seed = seed2_tst)
+  expect_equal(pp_orig, pp)
+})
