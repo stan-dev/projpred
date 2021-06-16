@@ -203,7 +203,7 @@ SW({
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_binom, data = dat,
     offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_glm_poiss <- rstanarm::stan_glm(
     y_glm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
@@ -227,7 +227,7 @@ SW({
       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
     family = f_binom, data = dat,
     offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
   fit_glmm_poiss <- rstanarm::stan_glmer(
     y_glmm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
@@ -257,7 +257,7 @@ SW({
 #       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
 #       s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
 #     family = f_binom, data = dat,
-#     chains = chains_tst, seed = seed_tst, iter = iter_tst
+#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
 #   )
 #   fit_gam_poiss <- rstanarm::stan_gamm4(
 #     y_gam_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
@@ -292,7 +292,7 @@ SW({
 #       s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
 #     random = ~ (xco.1 | z.1),
 #     family = f_binom, data = dat,
-#     chains = chains_tst, seed = seed_tst, iter = iter_tst
+#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
 #   )
 #   fit_gamm_poiss <- rstanarm::stan_gamm4(
 #     y_gamm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
