@@ -26,11 +26,16 @@ test_that(paste(
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
     }
     if (length(nterms_crr) == 1) {
+      if (nterms_crr > 0) {
+        solterms_expected_crr <- vss[[tstsetup_vs]]$solution_terms[
+          seq_len(nterms_crr)
+        ]
+      } else {
+        solterms_expected_crr <- "1"
+      }
       projection_tester(
         prjs_vs[[tstsetup]],
-        solterms_expected = vss[[tstsetup_vs]]$solution_terms[
-          seq_len(nterms_crr)
-        ],
+        solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
         info_str = tstsetup
       )
