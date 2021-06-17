@@ -58,7 +58,7 @@ test_that(paste(
       expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
                        info = tstsetup)
     }
-    expect_equal(pl, proj_linpred(prjs_vs$glm.gauss.subvec))
+    expect_equal(pl, proj_linpred(prjs_vs$glm.gauss.subvec), info = tstsetup)
   }
 })
 
@@ -83,7 +83,7 @@ test_that(paste(
       expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
                        info = tstsetup)
     }
-    expect_equal(pl, proj_linpred(prjs_cvvs$glm.gauss.subvec))
+    expect_equal(pl, proj_linpred(prjs_cvvs$glm.gauss.subvec), info = tstsetup)
   }
 })
 
@@ -559,7 +559,8 @@ test_that(paste(
       expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
                        info = tstsetup)
     }
-    expect_equal(pp, proj_predict(prjs_vs$glm.gauss.subvec, .seed = seed2_tst))
+    expect_equal(pp, proj_predict(prjs_vs$glm.gauss.subvec, .seed = seed2_tst),
+                 info = tstsetup)
   }
 })
 
@@ -582,7 +583,9 @@ test_that(paste(
       expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
                        info = tstsetup)
     }
-    expect_equal(pp, proj_predict(prjs_cvvs$glm.gauss.subvec, .seed = seed2_tst))
+    expect_equal(pp,
+                 proj_predict(prjs_cvvs$glm.gauss.subvec, .seed = seed2_tst),
+                 info = tstsetup)
   }
 })
 
