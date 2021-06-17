@@ -3,7 +3,10 @@
 context("proj_linpred()")
 
 test_that("proj_linpred(): passing arguments to project() works correctly", {
-  for (tstsetup in names(prjs)) {
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+                    value = TRUE)[1]
+  stopifnot(length(tstsetups) == 1)
+  for (tstsetup in tstsetups) {
     pl_from_prj <- proj_linpred(prjs[[tstsetup]])
     args_prj_i <- args_prj[[tstsetup]]
     pl_direct <- do.call(proj_linpred, c(
@@ -18,8 +21,8 @@ test_that(paste(
   "proj_linpred(): `object` of class \"refmodel\" leads to correct output",
   "structure"
 ), {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
       tstsetup <- unlist(nlist(mod_nm, fam_nm))
       pl <- proj_linpred(refmods[[mod_nm]][[fam_nm]],
                          solution_terms = solterms_x,
@@ -504,7 +507,10 @@ test_that("proj_predict(): `.seed` has an expected effect", {
 })
 
 test_that("proj_predict(): passing arguments to project() works correctly", {
-  for (tstsetup in names(prjs)) {
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+                    value = TRUE)[1]
+  stopifnot(length(tstsetups) == 1)
+  for (tstsetup in tstsetups) {
     pp_from_prj <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
     args_prj_i <- args_prj[[tstsetup]]
     pp_direct <- do.call(proj_predict, c(
@@ -520,8 +526,8 @@ test_that(paste(
   "proj_predict(): `object` of class \"refmodel\" leads to correct output",
   "structure"
 ), {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
       tstsetup <- unlist(nlist(mod_nm, fam_nm))
       pp <- proj_predict(refmods[[mod_nm]][[fam_nm]],
                          .seed = seed2_tst,
