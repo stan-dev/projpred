@@ -141,11 +141,9 @@ test_that(paste(
   pl <- proj_linpred(prjs_cvvs)
   expect_length(pl, nterms_max_tst + 1)
   for (j in seq_along(pl)) {
-    expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                     info = tstsetup)
-    expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                     info = tstsetup)
+    expect_named(pl[[!!j]], c("pred", "lpd"))
+    expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst))
+    expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst))
   }
 })
 
@@ -612,8 +610,7 @@ test_that(paste(
   pp <- proj_predict(prjs_cvvs, .seed = seed2_tst)
   expect_length(pp, nterms_max_tst + 1)
   for (j in seq_along(pp)) {
-    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
-                     info = tstsetup)
+    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst))
   }
 })
 
@@ -744,25 +741,25 @@ test_that("proj_predict(): `weightsnew` has an expected effect", {
     }
 
     pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
-    expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+    expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup)
 
     pp_ones <- proj_predict(prjs[[tstsetup]],
                             newdata = dat_ones,
                             weightsnew = ~ wobs_col_ones,
                             .seed = seed2_tst)
-    expect_identical(dim(pp_ones), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+    expect_identical(dim(pp_ones), c(nprjdraws_out, n_tst), info = tstsetup)
 
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        weightsnew = ~ wobs_col,
                        .seed = seed2_tst)
-    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup)
 
     ppw <- proj_predict(prjs[[tstsetup]],
                         newdata = dat_new,
                         weightsnew = ~ wobs_col_new,
                         .seed = seed2_tst)
-    expect_identical(dim(ppw), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+    expect_identical(dim(ppw), c(nprjdraws_out, n_tst), info = tstsetup)
 
     # Weights are only relevant for the binomial() family:
     if (args_prj[[tstsetup]]$fam_nm != "binom") {
@@ -807,26 +804,26 @@ test_that("proj_predict(): `offsetnew` has an expected effect", {
     }
 
     pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
-    expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+    expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup)
 
     pp_zeros <- proj_predict(prjs[[tstsetup]],
                              newdata = dat_zeros,
                              offsetnew = ~ offs_col_zeros,
                              .seed = seed2_tst)
     expect_identical(dim(pp_zeros), c(nprjdraws_out, n_tst),
-                     info = tstsetup_crr)
+                     info = tstsetup)
 
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        offsetnew = ~ offs_col,
                        .seed = seed2_tst)
-    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup)
 
     ppo <- proj_predict(prjs[[tstsetup]],
                         newdata = dat_new,
                         offsetnew = ~ offs_col_new,
                         .seed = seed2_tst)
-    expect_identical(dim(ppo), c(nprjdraws_out, n_tst), info = tstsetup_crr)
+    expect_identical(dim(ppo), c(nprjdraws_out, n_tst), info = tstsetup)
 
     ### Note: This equivalence might in fact be undesired:
     expect_equal(pp_orig, pp_zeros, info = tstsetup)
