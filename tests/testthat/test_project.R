@@ -54,8 +54,41 @@ test_that(paste(
   "structure"
 ), {
   skip_if_not(exists("prjs_cvvs"))
-  proj_list_tester(prjs_cvvs,
-                   fam_expected = prjs_cvvs[[1]]$family)
+  for (tstsetup in names(prjs_cvvs)) {
+    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
+    tstsetup_cvvs <- grep(
+      paste0("^", args_prj_cvvs[[tstsetup]]$mod_nm,
+             "\\.", args_prj_cvvs[[tstsetup]]$fam_nm),
+      names(cvvss),
+      value = TRUE
+    )
+    stopifnot(length(tstsetup_cvvs) == 1)
+    if (is.null(nterms_crr)) {
+      # Subtract 1L for the intercept:
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
+    }
+    if (length(nterms_crr) == 1) {
+      if (nterms_crr > 0) {
+        solterms_expected_crr <- cvvss[[tstsetup_cvvs]]$solution_terms[
+          seq_len(nterms_crr)
+        ]
+      } else {
+        solterms_expected_crr <- "1"
+      }
+      projection_tester(
+        prjs_cvvs[[tstsetup]],
+        solterms_expected = solterms_expected_crr,
+        nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
+        info_str = tstsetup
+      )
+    } else {
+      proj_list_tester(prjs_cvvs[[tstsetup]],
+                       fam_expected = prjs_cvvs[[tstsetup]][[1]]$family,
+                       len_expected = length(nterms_crr),
+                       is_seq = all(diff(nterms_crr) == 1),
+                       info_str = tstsetup)
+    }
+  }
 })
 
 test_that(paste(
