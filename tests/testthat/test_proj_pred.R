@@ -594,6 +594,7 @@ test_that(paste(
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
     if (length(ndr_ncl_nm) == 0) {
+      ndr_ncl_nm <- "ndraws"
       nprjdraws <- ndraws_default
     } else {
       stopifnot(length(ndr_ncl_nm) == 1)
@@ -716,6 +717,7 @@ test_that(paste(
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
     if (length(ndr_ncl_nm) == 0) {
+      ndr_ncl_nm <- "ndraws"
       nprjdraws <- ndraws_default
     } else {
       stopifnot(length(ndr_ncl_nm) == 1)
@@ -788,6 +790,7 @@ test_that("proj_predict(): `weightsnew` has an expected effect", {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
     if (length(ndr_ncl_nm) == 0) {
+      ndr_ncl_nm <- "ndraws"
       nprjdraws <- ndraws_default
     } else {
       stopifnot(length(ndr_ncl_nm) == 1)
@@ -851,6 +854,7 @@ test_that("proj_predict(): `offsetnew` has an expected effect", {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
     if (length(ndr_ncl_nm) == 0) {
+      ndr_ncl_nm <- "ndraws"
       nprjdraws <- ndraws_default
     } else {
       stopifnot(length(ndr_ncl_nm) == 1)
