@@ -8,6 +8,27 @@ test_that(paste(
 })
 
 test_that(paste(
+  "`object` of class \"refmodel\" leads to correct output structure"
+), {
+  for (tstsetup in names(prjs)) {
+    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
+                            c("ndraws", "nclusters"))
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
+    projection_tester(
+      prjs[[tstsetup]],
+      solterms_expected = args_prj[[tstsetup]]$solution_terms,
+      nprjdraws_expected = nprjdraws,
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
   "`object` of class \"vsel\" (created by varsel()) leads to correct output",
   "structure"
 ), {
@@ -96,27 +117,6 @@ test_that(paste(
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$weights
       )
     }
-  }
-})
-
-test_that(paste(
-  "`object` of class \"refmodel\" leads to correct output structure"
-), {
-  for (tstsetup in names(prjs)) {
-    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                            c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      nprjdraws <- ndraws_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-    }
-    projection_tester(
-      prjs[[tstsetup]],
-      solterms_expected = args_prj[[tstsetup]]$solution_terms,
-      nprjdraws_expected = nprjdraws,
-      info_str = tstsetup
-    )
   }
 })
 
