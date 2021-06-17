@@ -63,13 +63,13 @@ test_that("specifying `nterms` incorrectly leads to an error", {
 
 test_that("specifying `nterms` correctly leads to correct output structure", {
   for (i in fam_nms) {
-    for (nterms_tst in list(NULL, 0, 3, c(1, 3))) {
+    for (nterms_crr in list(NULL, 0, 3, c(1, 3))) {
       p <- project(vss[[tstsetup]], nclusters = nclusters_pred_tst,
-                   nterms = nterms_tst)
-      out_size <- if (is.null(nterms_tst)) {
+                   nterms = nterms_crr)
+      out_size <- if (is.null(nterms_crr)) {
         suggest_size(vss[[tstsetup]])
       } else {
-        nterms_tst
+        nterms_crr
       }
       if (length(out_size) == 1) {
         expect_s3_class(p, "projection")

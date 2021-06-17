@@ -177,12 +177,21 @@ dat <- data.frame(
   check.names = FALSE
 )
 
-## nterms_max -------------------------------------------------------------
+## nterms -----------------------------------------------------------------
 
 ntermss <- sapply(mod_nms, function(mod_nm) {
   get(paste("nterms", mod_nm, sep = "_"))
 })
 nterms_max_tst <- min(ntermss)
+
+nterms_tst <- nlist(
+  default = NULL,
+  empty = 0L,
+  single = nterms_max_tst %/% 2L,
+  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 3))),
+  partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L),
+  full = 0:nterms_max_tst
+)
 
 # Fits --------------------------------------------------------------------
 
