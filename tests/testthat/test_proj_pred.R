@@ -33,6 +33,10 @@ test_that(paste(
                        info = tstsetup)
       expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n_tst),
                        info = tstsetup)
+      pl_from_prj <- proj_linpred(prjs[[
+        paste(mod_nm, fam_nm, "solterms_x", "clust", sep = ".")
+      ]])
+      expect_equal(pl, pl_from_prj, info = tstsetup)
     }
   }
 })
@@ -536,6 +540,11 @@ test_that(paste(
                          seed = seed_tst)
       expect_identical(dim(pp), c(nresample_clusters_default, n_tst),
                        info = tstsetup)
+      pp_from_prj <- proj_predict(
+        prjs[[paste(mod_nm, fam_nm, "solterms_x", "clust", sep = ".")]],
+        .seed = seed2_tst
+      )
+      expect_equal(pp, pp_from_prj, info = tstsetup)
     }
   }
 })
