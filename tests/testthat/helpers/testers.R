@@ -7,8 +7,10 @@
 #
 # @return `TRUE` (invisible).
 #
-proj_list_tester <- function(p, fam_expected,
+proj_list_tester <- function(p,
+                             fam_expected,
                              len_expected = nterms_max_tst + 1L,
+                             is_seq = TRUE,
                              info_str = "") {
   expect_type(p, "list")
   expect_length(p, len_expected)
@@ -29,15 +31,17 @@ proj_list_tester <- function(p, fam_expected,
     expect_length(p[[!!j]]$dis, nclusters_pred_tst)
     SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
     expect_identical(nprjdraws, nclusters_pred_tst, info = info_str)
-    # The j-th element should have j solution terms (usually excluding the
-    # intercept, but counting it for `j == 1`):
-    expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
-    # Same check, but using count_terms_chosen():
-    expect_equal(count_terms_chosen(p[[!!j]]$solution_terms), !!j,
-                 info = info_str)
     expect_identical(p[[!!j]]$family, fam_expected, info = info_str)
     # All submodels should use the same clustering:
     expect_identical(p[[!!j]]$weights, prjdraw_weights, info = info_str)
+    if (is_seq) {
+      # The j-th element should have j solution terms (usually excluding the
+      # intercept, but counting it for `j == 1`):
+      expect_length(p[[!!j]]$solution_terms, max(j - 1, 1))
+      # Same check, but using count_terms_chosen():
+      expect_equal(count_terms_chosen(p[[!!j]]$solution_terms), !!j,
+                   info = info_str)
+    }
   }
   # kl should be non-increasing on training data
   klseq <- sapply(p, function(x) sum(x$kl))
@@ -58,7 +62,9 @@ proj_list_tester <- function(p, fam_expected,
 #
 # @return `TRUE` (invisible).
 #
-projection_tester <- function(p, solterms_expected, nprjdraws_expected,
+projection_tester <- function(p,
+                              solterms_expected,
+                              nprjdraws_expected,
                               info_str = "") {
   expect_s3_class(p, "projection")
   expect_named(p, projection_nms, info = info_str)
