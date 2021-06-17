@@ -16,7 +16,7 @@ if (length(args_gamm)) {
   args_prj <- args_prj[-args_gamm]
 }
 
-for (tstsetup in names(prjs_solterms)) {
+for (tstsetup in names(prjs)) {
   mod_crr <- args_prj[[tstsetup]]$mod_nm
   fam_crr <- args_prj[[tstsetup]]$fam_nm
   solterms <- args_prj[[tstsetup]]$solution_terms
@@ -32,7 +32,7 @@ for (tstsetup in names(prjs_solterms)) {
   } else {
     warn_prjmat_expect <- NA
   }
-  expect_warning(m <- as.matrix(prjs_solterms[[tstsetup]]),
+  expect_warning(m <- as.matrix(prjs[[tstsetup]]),
                  warn_prjmat_expect, info = tstsetup)
 
   if (fam_crr == "gauss") {

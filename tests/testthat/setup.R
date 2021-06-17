@@ -424,7 +424,7 @@ args_prj <- lapply(mod_nms, function(mod_nm) {
 })
 args_prj <- unlist_cust(args_prj)
 
-prjs_solterms <- lapply(args_prj, function(args_prj_i) {
+prjs <- lapply(args_prj, function(args_prj_i) {
   do.call(project, c(
     list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
     args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]

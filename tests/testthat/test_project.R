@@ -27,12 +27,12 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"refmodel\" leads to correct output structure"
 ), {
-  for (tstsetup in names(prjs_solterms)) {
+  for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
     stopifnot(length(ndr_ncl_nm) == 1)
     projection_tester(
-      prjs_solterms[[tstsetup]],
+      prjs[[tstsetup]],
       solterms_expected = args_prj[[tstsetup]]$solution_terms,
       nprjdraws_expected = args_prj[[tstsetup]][[ndr_ncl_nm]],
       info_str = tstsetup
