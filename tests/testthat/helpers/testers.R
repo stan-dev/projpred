@@ -21,7 +21,6 @@ proj_list_tester <- function(p,
   expect_length(p, len_expected)
   expect_true(.is_proj_list(p), info = info_str)
 
-  prjdraw_weights <- p[[1]]$weights
   for (j in seq_along(p)) {
     if (is_seq) {
       # The j-th element should have j solution terms (not counting the
@@ -59,6 +58,8 @@ proj_list_tester <- function(p,
 #   projected draws.
 # @param fam_expected The expected "family" object or `NULL` for not testing the
 #   family object at all.
+# @param prjdraw_weights_expected The expected weights for the projected draws
+#   or `NULL` for not testing these weights at all.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -68,6 +69,7 @@ projection_tester <- function(p,
                               solterms_expected,
                               nprjdraws_expected,
                               fam_expected = NULL,
+                              prjdraw_weights_expected = NULL,
                               info_str = "") {
   expect_s3_class(p, "projection")
   # Check the names using `ignore.order = FALSE` because an incorrect
@@ -90,8 +92,9 @@ projection_tester <- function(p,
   if (!is.null(fam_expected)) {
     expect_identical(p$family, fam_expected, info = info_str)
   }
-  # All submodels should use the same clustering:
-  expect_identical(p$weights, prjdraw_weights, info = info_str)
+  if (!is.null(prjdraw_weights_expected)) {
+    expect_identical(p$weights, prjdraw_weights_expected, info = info_str)
+  }
   if (is.numeric(solterms_expected)) {
     # Do not count the intercept, except for the intercept-only model:
     expect_length(p$solution_terms, max(solterms_expected, 1))
