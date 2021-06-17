@@ -41,10 +41,11 @@ test_that(paste(
       )
     } else {
       proj_list_tester(prjs_vs[[tstsetup]],
-                       fam_expected = prjs_vs[[tstsetup]][[1]]$family,
                        len_expected = length(nterms_crr),
                        is_seq = all(diff(nterms_crr) == 1),
-                       info_str = tstsetup)
+                       info_str = tstsetup,
+                       nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
+                       fam_expected = prjs_vs[[tstsetup]][[1]]$family)
     }
   }
 })
@@ -83,10 +84,11 @@ test_that(paste(
       )
     } else {
       proj_list_tester(prjs_cvvs[[tstsetup]],
-                       fam_expected = prjs_cvvs[[tstsetup]][[1]]$family,
                        len_expected = length(nterms_crr),
                        is_seq = all(diff(nterms_crr) == 1),
-                       info_str = tstsetup)
+                       info_str = tstsetup,
+                       nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
+                       fam_expected = prjs_cvvs[[tstsetup]][[1]]$family)
     }
   }
 })
