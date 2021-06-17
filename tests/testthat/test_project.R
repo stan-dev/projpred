@@ -12,7 +12,36 @@ test_that(paste(
   "structure"
 ), {
   skip_if_not(exists("prjs_vs"))
-  proj_list_tester(prjs_vs, fam_expected = prjs_vs[[1]]$family)
+  for (tstsetup in names(prjs_vs)) {
+    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
+    tstsetup_vs <- grep(
+      paste0("^", args_prj_vs[[tstsetup]]$mod_nm,
+             "\\.", args_prj_vs[[tstsetup]]$fam_nm),
+      names(vss),
+      value = TRUE
+    )
+    stopifnot(length(tstsetup_vs) == 1)
+    if (is.null(nterms_crr)) {
+      # Subtract 1L for the intercept:
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
+    }
+    if (length(nterms_crr) == 1) {
+      projection_tester(
+        prjs_vs[[tstsetup]],
+        solterms_expected = vss[[tstsetup_vs]]$solution_terms[
+          seq_len(nterms_crr)
+        ],
+        nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
+        info_str = tstsetup
+      )
+    } else {
+      proj_list_tester(prjs_vs[[tstsetup]],
+                       fam_expected = prjs_vs[[tstsetup]][[1]]$family,
+                       len_expected = length(nterms_crr),
+                       is_seq = all(diff(nterms_crr) == 1),
+                       info_str = tstsetup)
+    }
+  }
 })
 
 test_that(paste(
