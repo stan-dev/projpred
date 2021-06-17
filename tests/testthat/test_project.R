@@ -22,8 +22,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()) leads to correct output",
-  "structure"
+  "`object` of class \"vsel\" (created by varsel()) and correctly specified",
+  "`nterms` lead to correct output structure"
 ), {
   skip_if_not(exists("prjs_vs"))
   for (tstsetup in names(prjs_vs)) {
@@ -68,8 +68,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()) leads to correct output",
-  "structure"
+  "`object` of class \"vsel\" (created by cv_varsel()) and correctly specified",
+  "`nterms` lead to correct output structure"
 ), {
   skip_if_not(exists("prjs_cvvs"))
   for (tstsetup in names(prjs_cvvs)) {
@@ -133,52 +133,6 @@ test_that("specifying `nterms` incorrectly leads to an error", {
                  "must contain non-negative values")
     expect_error(project(vss[[tstsetup]], nterms = dat),
                  "must contain non-negative values")
-  }
-})
-
-test_that("specifying `nterms` correctly leads to correct output structure", {
-  for (i in fam_nms) {
-    for (nterms_crr in list(NULL, 0, 3, c(1, 3))) {
-      p <- project(vss[[tstsetup]], nclusters = nclusters_pred_tst,
-                   nterms = nterms_crr)
-      out_size <- if (is.null(nterms_crr)) {
-        suggest_size(vss[[tstsetup]])
-      } else {
-        nterms_crr
-      }
-      if (length(out_size) == 1) {
-        expect_s3_class(p, "projection")
-        expect_named(p, projection_nms, info = tstsetup)
-        expect_length(p$sub_fit, nclusters_pred_tst)
-        expect_length(p$weights, nclusters_pred_tst)
-        expect_length(p$dis, nclusters_pred_tst)
-        SW(nprjdraws <- NROW(as.matrix(p)))
-        expect_identical(nprjdraws, nclusters_pred_tst, info = tstsetup)
-        expect_length(p$solution_terms, max(out_size, 1))
-        expect_equal(count_terms_chosen(p$solution_terms) - 1, out_size,
-                     info = i)
-      } else {
-        expect_type(p, "list")
-        expect_length(p, length(out_size))
-        expect_true(.is_proj_list(p), info = tstsetup)
-
-        prjdraw_weights <- p[[1]]$weights
-        for (j in seq_along(p)) {
-          expect_s3_class(p[[!!j]], "projection")
-          expect_named(p[[!!j]], projection_nms, info = tstsetup)
-          expect_length(p[[!!j]]$sub_fit, nclusters_pred_tst)
-          expect_length(p[[!!j]]$weights, nclusters_pred_tst)
-          expect_length(p[[!!j]]$dis, nclusters_pred_tst)
-          SW(nprjdraws <- NROW(as.matrix(p[[!!j]])))
-          expect_identical(nprjdraws, nclusters_pred_tst, info = tstsetup)
-          expect_length(p[[!!j]]$solution_terms, max(out_size[j], 1))
-          expect_equal(count_terms_chosen(p[[!!j]]$solution_terms) - 1,
-                       out_size[!!j], info = tstsetup)
-          expect_identical(p[[!!j]]$family, vss[[!!tstsetup]]$family, info = tstsetup)
-          expect_identical(p[[!!j]]$weights, prjdraw_weights, info = tstsetup)
-        }
-      }
-    }
   }
 })
 
