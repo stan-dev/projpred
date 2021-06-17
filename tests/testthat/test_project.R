@@ -52,15 +52,19 @@ test_that(paste(
 })
 
 test_that("specifying `nterms` incorrectly leads to an error", {
-  i <- "gauss"
-  expect_error(project(vss[[tstsetup]], nterms = 1000),
-               "Cannot perform the projection with 1000 variables")
-  expect_error(project(vss[[tstsetup]], nterms = -1),
-               "must contain non-negative values")
-  expect_error(project(vss[[tstsetup]], nterms = "a"),
-               "must contain non-negative values")
-  expect_error(project(vss[[tstsetup]], nterms = df_gauss),
-               "must contain non-negative values")
+  skip_if_not(exists("vss"))
+  for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
+    nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
+    expect_error(project(vss[[tstsetup]], nterms = nterms_max_crr + 130L),
+                 paste("Cannot perform the projection with",
+                       nterms_max_crr + 130L, "variables"))
+    expect_error(project(vss[[tstsetup]], nterms = -1),
+                 "must contain non-negative values")
+    expect_error(project(vss[[tstsetup]], nterms = "a"),
+                 "must contain non-negative values")
+    expect_error(project(vss[[tstsetup]], nterms = dat),
+                 "must contain non-negative values")
+  }
 })
 
 test_that("specifying `nterms` correctly leads to correct output structure", {
