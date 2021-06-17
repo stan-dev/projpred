@@ -57,7 +57,8 @@ proj_list_tester <- function(p,
 #   terms, or `NULL` for not testing the solution terms at all.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
-# @param fam_expected The expected "family" object.
+# @param fam_expected The expected "family" object or `NULL` for not testing the
+#   family object at all.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -66,7 +67,7 @@ proj_list_tester <- function(p,
 projection_tester <- function(p,
                               solterms_expected,
                               nprjdraws_expected,
-                              fam_expected,
+                              fam_expected = NULL,
                               info_str = "") {
   expect_s3_class(p, "projection")
   # Check the names using `ignore.order = FALSE` because an incorrect
@@ -86,7 +87,9 @@ projection_tester <- function(p,
   # "test_as_matrix.R"):
   SW(nprjdraws <- NROW(as.matrix(p)))
   expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
-  expect_identical(p$family, fam_expected, info = info_str)
+  if (!is.null(fam_expected)) {
+    expect_identical(p$family, fam_expected, info = info_str)
+  }
   # All submodels should use the same clustering:
   expect_identical(p$weights, prjdraw_weights, info = info_str)
   if (is.numeric(solterms_expected)) {
