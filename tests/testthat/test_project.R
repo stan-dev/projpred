@@ -122,17 +122,16 @@ test_that(paste(
 
 test_that("specifying `nterms` incorrectly leads to an error", {
   skip_if_not(exists("vss"))
-  for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
-    nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
-    expect_error(project(vss[[tstsetup]], nterms = nterms_max_crr + 130L),
-                 paste("Cannot perform the projection with",
-                       nterms_max_crr + 130L, "variables"))
-    expect_error(project(vss[[tstsetup]], nterms = -1),
-                 "must contain non-negative values")
-    expect_error(project(vss[[tstsetup]], nterms = "a"),
-                 "must contain non-negative values")
-    expect_error(project(vss[[tstsetup]], nterms = dat),
-                 "must contain non-negative values")
+  for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)[1]) {
+    for (nterms_crr in nterms_unavail) {
+      expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
+                   paste("Cannot perform the projection with", max(nterms_crr),
+                         "variables"))
+    }
+    for (nterms_crr in list(neg = -1, char = "a", dafr = dat)) {
+      expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
+                   "must contain non-negative values")
+    }
   }
 })
 
