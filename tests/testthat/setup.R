@@ -184,6 +184,10 @@ ntermss <- sapply(mod_nms, function(mod_nm) {
 })
 nterms_max_tst <- min(ntermss)
 
+nterms_unavail <- list(
+  single = nterms_max_tst + 130L,
+  vec = c(nterms_max_tst + 130L, nterms_max_tst + 290L)
+)
 nterms_avail <- nlist(
   default = NULL,
   empty = 0L,
