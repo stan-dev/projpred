@@ -188,7 +188,7 @@ nterms_unavail <- list(
   single = nterms_max_tst + 130L,
   vec = c(nterms_max_tst + 130L, nterms_max_tst + 290L)
 )
-nterms_avail <- nlist(
+nterms_avail <- list(
   default = NULL,
   empty = 0L,
   single = nterms_max_tst %/% 2L,
