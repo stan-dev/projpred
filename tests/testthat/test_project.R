@@ -23,6 +23,34 @@ test_that(paste(
 })
 
 test_that(paste(
+  "specifying `solution_terms` incorrectly leads to a warning or an error"
+), {
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
+      expect_error(project(refmods[[mod_nm]][[fam_nm]],
+                           solution_terms = NULL),
+                   "is not an object of class \"vsel\"")
+      for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
+        tstsetup_crr <- paste(solterms_crr, collapse = ", ")
+        expect_warning(
+          p <- project(refmods[[mod_nm]][[fam_nm]],
+                       nclusters = nclusters_pred_tst,
+                       solution_terms = solterms_crr,
+                       seed = seed_tst),
+          paste("At least one element of `solution_terms` could not be found",
+                "among the terms in the reference model"),
+          info = tstsetup_crr
+        )
+        projection_tester(p,
+                          solterms_expected = character(),
+                          nprjdraws_expected = nclusters_pred_tst,
+                          info_str = tstsetup_crr)
+      }
+    }
+  }
+})
+
+test_that(paste(
   "`object` of class \"vsel\" (created by varsel()) and correctly specified",
   "`nterms` lead to correct output structure"
 ), {
@@ -132,34 +160,6 @@ test_that("specifying `nterms` incorrectly leads to an error", {
     for (nterms_crr in list(neg = -1, char = "a", dafr = dat)) {
       expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
                    "must contain non-negative values")
-    }
-  }
-})
-
-test_that(paste(
-  "specifying `solution_terms` incorrectly leads to a warning or an error"
-), {
-  for (mod_nm in mod_nms["glm"]) {
-    for (fam_nm in fam_nms["gauss"]) {
-      expect_error(project(refmods[[mod_nm]][[fam_nm]],
-                           solution_terms = NULL),
-                   "is not an object of class \"vsel\"")
-      for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
-        tstsetup_crr <- paste(solterms_crr, collapse = ", ")
-        expect_warning(
-          p <- project(refmods[[mod_nm]][[fam_nm]],
-                       nclusters = nclusters_pred_tst,
-                       solution_terms = solterms_crr,
-                       seed = seed_tst),
-          paste("At least one element of `solution_terms` could not be found",
-                "among the terms in the reference model"),
-          info = tstsetup_crr
-        )
-        projection_tester(p,
-                          solterms_expected = character(),
-                          nprjdraws_expected = nclusters_pred_tst,
-                          info_str = tstsetup_crr)
-      }
     }
   }
 })
