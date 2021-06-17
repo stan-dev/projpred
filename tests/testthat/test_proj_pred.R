@@ -85,8 +85,12 @@ test_that(paste(
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     pl <- proj_linpred(prjs[[tstsetup]])
     expect_named(pl, c("pred", "lpd"), info = tstsetup)
     expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
@@ -165,8 +169,12 @@ test_that(paste(
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     for (n_crr in c(1L, 12L)) {
       for (integrated_crr in c(FALSE, TRUE)) {
         tstsetup_crr <- unlist(nlist(tstsetup, n_crr, integrated_crr))
@@ -201,8 +209,12 @@ test_that(paste(
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
     )$response
@@ -227,8 +239,12 @@ test_that("proj_linpred(): `weightsnew` has an expected effect", {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
 
     pl_orig <- proj_linpred(prjs[[tstsetup]])
     expect_named(pl_orig, c("pred", "lpd"), info = tstsetup)
@@ -282,8 +298,12 @@ test_that("proj_linpred(): `offsetnew` has an expected effect", {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
 
     pl_orig <- proj_linpred(prjs[[tstsetup]])
     expect_named(pl_orig, c("pred", "lpd"), info = tstsetup)
@@ -522,8 +542,12 @@ test_that(paste(
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
       nprjdraws_out <- nresample_clusters_default
     } else {
@@ -602,8 +626,12 @@ test_that(paste(
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     for (n_crr in c(1L, 12L)) {
       for (nresample_clusters_crr in c(1L, 100L)) {
         tstsetup_crr <- unlist(nlist(tstsetup, n_crr, nresample_clusters_crr))
@@ -640,8 +668,12 @@ test_that(paste(
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
@@ -666,8 +698,12 @@ test_that("proj_predict(): `weightsnew` has an expected effect", {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
       nprjdraws_out <- nresample_clusters_default
     } else {
@@ -725,8 +761,12 @@ test_that("proj_predict(): `offsetnew` has an expected effect", {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
       nprjdraws_out <- nresample_clusters_default
     } else {

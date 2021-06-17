@@ -21,8 +21,12 @@ for (tstsetup in names(prjs)) {
   fam_crr <- args_prj[[tstsetup]]$fam_nm
   solterms <- args_prj[[tstsetup]]$solution_terms
   ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]), c("ndraws", "nclusters"))
-  stopifnot(length(ndr_ncl_nm) == 1)
-  nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+  if (length(ndr_ncl_nm) == 0) {
+    nprjdraws <- ndraws_default
+  } else {
+    stopifnot(length(ndr_ncl_nm) == 1)
+    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+  }
 
   # Expected warning (more precisely: regexp which is matched against the
   # warning; NA means no warning) for as.matrix.projection():

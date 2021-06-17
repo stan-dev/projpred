@@ -30,25 +30,19 @@ test_that(paste(
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
-    stopifnot(length(ndr_ncl_nm) == 1)
+    if (length(ndr_ncl_nm) == 0) {
+      nprjdraws <- ndraws_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
+    }
     projection_tester(
       prjs[[tstsetup]],
       solterms_expected = args_prj[[tstsetup]]$solution_terms,
-      nprjdraws_expected = args_prj[[tstsetup]][[ndr_ncl_nm]],
+      nprjdraws_expected = nprjdraws,
       info_str = tstsetup
     )
   }
-})
-
-test_that(paste(
-  "a fitted model `object` leads to correct output structure and the default",
-  "`ndraws` is as expected"
-), {
-  projection_tester(
-    project(fits$glm$gauss, solution_terms = solterms_x),
-    solterms_expected = solterms_x,
-    nprjdraws_expected = ndraws_default
-  )
 })
 
 test_that("specifying `nterms` incorrectly leads to an error", {

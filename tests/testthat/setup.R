@@ -48,6 +48,7 @@ seed2_tst <- 866028
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 ndr_ncl_pred_tst <- list(
+  default = list(),
   noclust = list(ndraws = 25L),
   clust = list(nclusters = nclusters_pred_tst),
   clust_draws = list(ndraws = 3L),
