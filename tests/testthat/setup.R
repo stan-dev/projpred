@@ -401,6 +401,8 @@ if (run_cvvs) {
 
 ## Projection -------------------------------------------------------------
 
+### From "refmodel" -------------------------------------------------------
+
 args_prj <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     solterms <- nlist(empty = character(), solterms_x)
@@ -443,15 +445,51 @@ prjs <- lapply(args_prj, function(args_prj_i) {
     args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
   ))
 })
+
+### From "vsel" -----------------------------------------------------------
+
+args_prj_vs <- lapply(mod_nms["glm"], function(mod_nm) {
+  lapply(fam_nms["gauss"], function(fam_nm) {
+    lapply(nterms_avail, function(nterms_crr) {
+      args_out <- nlist(mod_nm, fam_nm,
+                        nclusters = nclusters_pred_tst, seed = seed_tst)
+      if (!is.null(nterms_crr)) {
+        args_out <- c(args_out, list(nterms = nterms_crr))
+      }
+      return(args_out)
+    })
+  })
+})
+args_prj_vs <- unlist_cust(args_prj_vs)
+
 if (run_vs) {
-  prjs_vs <- project(object = vss$glm.gauss,
-                     nterms = 0:nterms_max_tst,
-                     nclusters = nclusters_pred_tst,
-                     seed = seed_tst)
+  prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
+    tstsetup <- grep(
+      paste0("^", args_prj_vs_i$mod_nm, "\\.", args_prj_vs_i$fam_nm),
+      names(vss),
+      value = TRUE
+    )
+    stopifnot(length(tstsetup) == 1)
+    do.call(project, c(
+      list(object = vss[[tstsetup]]),
+      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("mod_nm", "fam_nm"))]
+    ))
+  })
 }
+
+args_prj_cvvs <- args_prj_vs
+
 if (run_cvvs) {
-  prjs_cvvs <- project(object = cvvss$glm.gauss,
-                       nterms = 0:nterms_max_tst,
-                       nclusters = nclusters_pred_tst,
-                       seed = seed_tst)
+  prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
+    tstsetup <- grep(
+      paste0("^", args_prj_cvvs_i$mod_nm, "\\.", args_prj_cvvs_i$fam_nm),
+      names(cvvss),
+      value = TRUE
+    )
+    stopifnot(length(tstsetup) == 1)
+    do.call(project, c(
+      list(object = cvvss[[tstsetup]]),
+      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("mod_nm", "fam_nm"))]
+    ))
+  })
 }
