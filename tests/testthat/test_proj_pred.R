@@ -18,6 +18,29 @@ test_that("proj_linpred(): passing arguments to project() works correctly", {
 })
 
 test_that(paste(
+  "proj_linpred(): a fitted model `object` leads to correct output structure"
+), {
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
+      tstsetup <- unlist(nlist(mod_nm, fam_nm))
+      pl <- proj_linpred(fits[[mod_nm]][[fam_nm]],
+                         solution_terms = solterms_x,
+                         nclusters = nclusters_pred_tst,
+                         seed = seed_tst)
+      expect_named(pl, c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      pl_from_prj <- proj_linpred(prjs[[
+        paste(mod_nm, fam_nm, "solterms_x", "clust", sep = ".")
+      ]])
+      expect_equal(pl, pl_from_prj, info = tstsetup)
+    }
+  }
+})
+
+test_that(paste(
   "proj_linpred(): `object` of class \"refmodel\" leads to correct output",
   "structure"
 ), {
@@ -523,6 +546,28 @@ test_that("proj_predict(): passing arguments to project() works correctly", {
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
     expect_equal(pp_from_prj, pp_direct, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "proj_predict(): a fitted model `object` leads to correct output structure"
+), {
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
+      tstsetup <- unlist(nlist(mod_nm, fam_nm))
+      pp <- proj_predict(fits[[mod_nm]][[fam_nm]],
+                         .seed = seed2_tst,
+                         solution_terms = solterms_x,
+                         nclusters = nclusters_pred_tst,
+                         seed = seed_tst)
+      expect_identical(dim(pp), c(nresample_clusters_default, n_tst),
+                       info = tstsetup)
+      pp_from_prj <- proj_predict(
+        prjs[[paste(mod_nm, fam_nm, "solterms_x", "clust", sep = ".")]],
+        .seed = seed2_tst
+      )
+      expect_equal(pp, pp_from_prj, info = tstsetup)
+    }
   }
 })
 
