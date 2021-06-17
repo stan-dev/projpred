@@ -7,9 +7,11 @@
 #
 # @return `TRUE` (invisible).
 #
-proj_list_tester <- function(p, fam_expected, info_str = "") {
+proj_list_tester <- function(p, fam_expected,
+                             len_expected = nterms_max_tst + 1L,
+                             info_str = "") {
   expect_type(p, "list")
-  expect_length(p, nterms_max_tst + 1)
+  expect_length(p, len_expected)
   expect_true(.is_proj_list(p), info = info_str)
 
   prjdraw_weights <- p[[1]]$weights
