@@ -416,7 +416,11 @@ test_that(paste(
                  "subscript out of bounds")
   }
   # Available number(s) of terms:
-  for (filter_nterms_crr in nterms_avail) {
+  nterms_avail_filter <- c(
+    nterms_avail,
+    list(partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L))
+  )
+  for (filter_nterms_crr in nterms_avail_filter) {
     tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
     pl_crr <- proj_linpred(prjs_vs,
                            filter_nterms = filter_nterms_crr)
@@ -839,7 +843,11 @@ test_that(paste(
                  "subscript out of bounds")
   }
   # Available number(s) of terms:
-  for (filter_nterms_crr in nterms_avail) {
+  nterms_avail_filter <- c(
+    nterms_avail,
+    list(partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L))
+  )
+  for (filter_nterms_crr in nterms_avail_filter) {
     tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
     pp_crr <- proj_predict(prjs_vs,
                            filter_nterms = filter_nterms_crr,
