@@ -41,8 +41,8 @@ test_that(paste(
   skip_if_not(exists("vss"))
   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)
   stopifnot(length(tstsetups) == 1)
+  nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
-    nterms_crr <- nterms_avail$subvec
     pl <- proj_linpred(vss[[tstsetup]],
                        nterms = nterms_crr,
                        nclusters = nclusters_pred_tst,
@@ -66,8 +66,8 @@ test_that(paste(
   skip_if_not(exists("cvvss"))
   tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)
   stopifnot(length(tstsetups) == 1)
+  nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
-    nterms_crr <- nterms_avail$subvec
     pl <- proj_linpred(cvvss[[tstsetup]],
                        nterms = nterms_crr,
                        nclusters = nclusters_pred_tst,
@@ -541,8 +541,8 @@ test_that(paste(
   skip_if_not(exists("vss"))
   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)
   stopifnot(length(tstsetups) == 1)
+  nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
-    nterms_crr <- nterms_avail$subvec
     pp <- proj_predict(vss[[tstsetup]],
                        .seed = seed2_tst,
                        nterms = nterms_crr,
@@ -564,8 +564,8 @@ test_that(paste(
   skip_if_not(exists("cvvss"))
   tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)
   stopifnot(length(tstsetups) == 1)
+  nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
-    nterms_crr <- nterms_avail$subvec
     pp <- proj_predict(cvvss[[tstsetup]],
                        .seed = seed2_tst,
                        nterms = nterms_crr,
