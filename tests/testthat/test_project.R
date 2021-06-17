@@ -1,13 +1,6 @@
 context("project")
 
 test_that(paste(
-  "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
-  "neither"
-), {
-  expect_error(project(fits$glm$gauss), "is not an object of class \"vsel\"")
-})
-
-test_that(paste(
   "`object` of class \"refmodel\" leads to correct output structure"
 ), {
   for (tstsetup in names(prjs)) {
@@ -118,6 +111,13 @@ test_that(paste(
       )
     }
   }
+})
+
+test_that(paste(
+  "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
+  "neither"
+), {
+  expect_error(project(fits$glm$gauss), "is not an object of class \"vsel\"")
 })
 
 test_that("specifying `nterms` incorrectly leads to an error", {
