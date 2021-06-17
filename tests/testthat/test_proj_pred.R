@@ -103,14 +103,33 @@ test_that(paste(
   "varsel()) leads to correct output structure"
 ), {
   skip_if_not(exists("prjs_vs"))
-  pl <- proj_linpred(prjs_vs)
-  expect_length(pl, nterms_max_tst + 1)
-  for (j in seq_along(pl)) {
-    expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                     info = tstsetup)
-    expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                     info = tstsetup)
+  for (tstsetup in names(prjs_vs)) {
+    pl <- proj_linpred(prjs_vs[[tstsetup]])
+    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      tstsetup_vs <- grep(
+        paste0("^", args_prj_vs[[tstsetup]]$mod_nm,
+               "\\.", args_prj_vs[[tstsetup]]$fam_nm),
+        names(vss),
+        value = TRUE
+      )
+      stopifnot(length(tstsetup_vs) == 1)
+      # Subtract 1L for the intercept:
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
+    }
+    if (length(nterms_crr) == 1) {
+      # In fact, we don't have a "proj_list" object in this case, but since
+      # incorporating this case is so easy, we create one:
+      pl <- list(pl)
+    }
+    expect_length(pl, length(nterms_crr))
+    for (j in seq_along(pl)) {
+      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+    }
   }
 })
 
@@ -407,11 +426,12 @@ test_that(paste(
   "(informal) class \"proj_list\")"
 ), {
   skip_if_not(exists("prjs_vs"))
+  prjs_vs_crr <- prjs_vs$glm.gauss.full
   # The special case of all possible numbers of terms:
-  pl_orig <- proj_linpred(prjs_vs)
+  pl_orig <- proj_linpred(prjs_vs_crr)
   # Unavailable number(s) of terms:
   for (filter_nterms_crr in nterms_unavail) {
-    expect_error(proj_linpred(prjs_vs,
+    expect_error(proj_linpred(prjs_vs_crr,
                               filter_nterms = !!filter_nterms_crr),
                  "subscript out of bounds")
   }
@@ -422,7 +442,7 @@ test_that(paste(
   )
   for (filter_nterms_crr in nterms_avail_filter) {
     tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
-    pl_crr <- proj_linpred(prjs_vs,
+    pl_crr <- proj_linpred(prjs_vs_crr,
                            filter_nterms = filter_nterms_crr)
     if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
     nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
@@ -557,11 +577,30 @@ test_that(paste(
   "varsel()) leads to correct output structure"
 ), {
   skip_if_not(exists("prjs_vs"))
-  pp <- proj_predict(prjs_vs, .seed = seed2_tst)
-  expect_length(pp, nterms_max_tst + 1)
-  for (j in seq_along(pp)) {
-    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
-                     info = tstsetup)
+  for (tstsetup in names(prjs_vs)) {
+    pp <- proj_predict(prjs_vs[[tstsetup]], .seed = seed2_tst)
+    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      tstsetup_vs <- grep(
+        paste0("^", args_prj_vs[[tstsetup]]$mod_nm,
+               "\\.", args_prj_vs[[tstsetup]]$fam_nm),
+        names(vss),
+        value = TRUE
+      )
+      stopifnot(length(tstsetup_vs) == 1)
+      # Subtract 1L for the intercept:
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
+    }
+    if (length(nterms_crr) == 1) {
+      # In fact, we don't have a "proj_list" object in this case, but since
+      # incorporating this case is so easy, we create one:
+      pp <- list(pp)
+    }
+    expect_length(pp, length(nterms_crr))
+    for (j in seq_along(pp)) {
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+                       info = tstsetup)
+    }
   }
 })
 
@@ -833,11 +872,12 @@ test_that(paste(
   "(informal) class \"proj_list\")"
 ), {
   skip_if_not(exists("prjs_vs"))
+  prjs_vs_crr <- prjs_vs$glm.gauss.full
   # The special case of all possible numbers of terms:
-  pp_orig <- proj_predict(prjs_vs, .seed = seed2_tst)
+  pp_orig <- proj_predict(prjs_vs_crr, .seed = seed2_tst)
   # Unavailable number(s) of terms:
   for (filter_nterms_crr in nterms_unavail) {
-    expect_error(proj_predict(prjs_vs,
+    expect_error(proj_predict(prjs_vs_crr,
                               filter_nterms = !!filter_nterms_crr,
                               .seed = seed2_tst),
                  "subscript out of bounds")
@@ -849,7 +889,7 @@ test_that(paste(
   )
   for (filter_nterms_crr in nterms_avail_filter) {
     tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
-    pp_crr <- proj_predict(prjs_vs,
+    pp_crr <- proj_predict(prjs_vs_crr,
                            filter_nterms = filter_nterms_crr,
                            .seed = seed2_tst)
     if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
