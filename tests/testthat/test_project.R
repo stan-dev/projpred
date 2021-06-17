@@ -27,11 +27,14 @@ test_that(paste(
 ), {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
-      expect_error(project(refmods[[mod_nm]][[fam_nm]],
+      expect_error(project(refmods[[!!mod_nm]][[!!fam_nm]],
                            solution_terms = NULL),
                    "is not an object of class \"vsel\"")
       for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
-        tstsetup_crr <- paste(solterms_crr, collapse = ", ")
+        tstsetup_crr <- paste(
+          c(mod_nm, fam_nm, paste(solterms_crr, collapse = ", ")),
+          collapse = "."
+        )
         expect_warning(
           p <- project(refmods[[mod_nm]][[fam_nm]],
                        nclusters = nclusters_pred_tst,
@@ -165,11 +168,14 @@ test_that("specifying `nterms` incorrectly leads to an error", {
 })
 
 test_that("specifying `ndraws` incorrectly leads to an error", {
-  i <- "gauss"
-  expect_error(project(refmods[[mod_nm]][[fam_nm]],
-                       ndraws = NULL,
-                       solution_terms = solterms_tst),
-               "^!is\\.null\\(ndraws\\) is not TRUE$", info = tstsetup)
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
+      expect_error(project(refmods[[!!mod_nm]][[!!fam_nm]],
+                           ndraws = NULL,
+                           solution_terms = solterms_x),
+                   "^!is\\.null\\(ndraws\\) is not TRUE$")
+    }
+  }
 })
 
 test_that(paste(
