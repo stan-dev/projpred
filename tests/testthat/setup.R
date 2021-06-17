@@ -431,13 +431,13 @@ prjs <- lapply(args_prj, function(args_prj_i) {
   ))
 })
 if (run_vs) {
-  prj_nterms_vs <- project(object = vss$glm.gauss,
+  prjs_vs <- project(object = vss$glm.gauss,
                            nterms = 0:nterms_max_tst,
                            nclusters = nclusters_pred_tst,
                            seed = seed_tst)
 }
 if (run_cvvs) {
-  prj_nterms_cvvs <- project(object = cvvss$glm.gauss,
+  prjs_cvvs <- project(object = cvvss$glm.gauss,
                              nterms = 0:nterms_max_tst,
                              nclusters = nclusters_pred_tst,
                              seed = seed_tst)

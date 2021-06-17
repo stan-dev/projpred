@@ -11,17 +11,17 @@ test_that(paste(
   "`object` of class \"vsel\" (created by varsel()) leads to correct output",
   "structure"
 ), {
-  skip_if_not(exists("prj_nterms_vs"))
-  proj_list_tester(prj_nterms_vs, fam_expected = prj_nterms_vs[[1]]$family)
+  skip_if_not(exists("prjs_vs"))
+  proj_list_tester(prjs_vs, fam_expected = prjs_vs[[1]]$family)
 })
 
 test_that(paste(
   "`object` of class \"vsel\" (created by cv_varsel()) leads to correct output",
   "structure"
 ), {
-  skip_if_not(exists("prj_nterms_cvvs"))
-  proj_list_tester(prj_nterms_cvvs,
-                   fam_expected = prj_nterms_cvvs[[1]]$family)
+  skip_if_not(exists("prjs_cvvs"))
+  proj_list_tester(prjs_cvvs,
+                   fam_expected = prjs_cvvs[[1]]$family)
 })
 
 test_that(paste(
