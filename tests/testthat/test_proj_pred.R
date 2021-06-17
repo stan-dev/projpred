@@ -39,13 +39,15 @@ test_that(paste(
   "to correct output structure"
 ), {
   skip_if_not(exists("vss"))
-  for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
-    nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
+  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)
+  stopifnot(length(tstsetups) == 1)
+  for (tstsetup in tstsetups) {
+    nterms_crr <- nterms_avail$subvec
     pl <- proj_linpred(vss[[tstsetup]],
-                       nterms = 0:nterms_max_crr,
+                       nterms = nterms_crr,
                        nclusters = nclusters_pred_tst,
                        seed = seed_tst)
-    expect_length(pl, nterms_max_crr + 1)
+    expect_length(pl, length(nterms_crr))
     for (j in seq_along(pl)) {
       expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
       expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
@@ -53,6 +55,7 @@ test_that(paste(
       expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
                        info = tstsetup)
     }
+    expect_equal(pl, proj_linpred(prjs_vs$glm.gauss.subvec))
   }
 })
 
@@ -61,13 +64,15 @@ test_that(paste(
   "to correct output structure"
 ), {
   skip_if_not(exists("cvvss"))
-  for (tstsetup in grep("^glm\\.gauss", names(cvvss), value = TRUE)) {
-    nterms_max_crr <- args_cvvs[[tstsetup]]$nterms_max
+  tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)
+  stopifnot(length(tstsetups) == 1)
+  for (tstsetup in tstsetups) {
+    nterms_crr <- nterms_avail$subvec
     pl <- proj_linpred(cvvss[[tstsetup]],
-                       nterms = 0:nterms_max_crr,
+                       nterms = nterms_crr,
                        nclusters = nclusters_pred_tst,
                        seed = seed_tst)
-    expect_length(pl, nterms_max_crr + 1)
+    expect_length(pl, length(nterms_crr))
     for (j in seq_along(pl)) {
       expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
       expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
@@ -75,6 +80,7 @@ test_that(paste(
       expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
                        info = tstsetup)
     }
+    expect_equal(pl, proj_linpred(prjs_cvvs$glm.gauss.subvec))
   }
 })
 
