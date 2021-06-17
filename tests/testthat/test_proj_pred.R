@@ -539,18 +539,21 @@ test_that(paste(
   "to correct output structure"
 ), {
   skip_if_not(exists("vss"))
-  for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)) {
-    nterms_max_crr <- args_vs[[tstsetup]]$nterms_max
+  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)
+  stopifnot(length(tstsetups) == 1)
+  for (tstsetup in tstsetups) {
+    nterms_crr <- nterms_avail$subvec
     pp <- proj_predict(vss[[tstsetup]],
                        .seed = seed2_tst,
-                       nterms = 0:nterms_max_crr,
+                       nterms = nterms_crr,
                        nclusters = nclusters_pred_tst,
                        seed = seed_tst)
-    expect_length(pp, nterms_max_crr + 1)
+    expect_length(pp, length(nterms_crr))
     for (j in seq_along(pp)) {
       expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
                        info = tstsetup)
     }
+    expect_equal(pp, proj_predict(prjs_vs$glm.gauss.subvec, .seed = seed2_tst))
   }
 })
 
@@ -559,18 +562,21 @@ test_that(paste(
   "to correct output structure"
 ), {
   skip_if_not(exists("cvvss"))
-  for (tstsetup in grep("^glm\\.gauss", names(cvvss), value = TRUE)) {
-    nterms_max_crr <- args_cvvs[[tstsetup]]$nterms_max
+  tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)
+  stopifnot(length(tstsetups) == 1)
+  for (tstsetup in tstsetups) {
+    nterms_crr <- nterms_avail$subvec
     pp <- proj_predict(cvvss[[tstsetup]],
                        .seed = seed2_tst,
-                       nterms = 0:nterms_max_crr,
+                       nterms = nterms_crr,
                        nclusters = nclusters_pred_tst,
                        seed = seed_tst)
-    expect_length(pp, nterms_max_crr + 1)
+    expect_length(pp, length(nterms_crr))
     for (j in seq_along(pp)) {
       expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
                        info = tstsetup)
     }
+    expect_equal(pp, proj_predict(prjs_cvvs$glm.gauss.subvec, .seed = seed2_tst))
   }
 })
 
