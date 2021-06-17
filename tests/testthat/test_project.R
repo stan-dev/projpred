@@ -1,7 +1,8 @@
 context("project")
 
 test_that(paste(
-  "`object` of class \"refmodel\" leads to correct output structure"
+  "`object` of class \"refmodel\" and correctly specified `solution_terms`",
+  "lead to correct output structure"
 ), {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
@@ -138,50 +139,27 @@ test_that("specifying `nterms` incorrectly leads to an error", {
 test_that(paste(
   "specifying `solution_terms` incorrectly leads to a warning or an error"
 ), {
-  i <- "gauss"
-  expect_error(project(refmods[[mod_nm]][[fam_nm]], nclusters = nclusters_pred_tst,
-                       solution_terms = NULL),
-               "is not an object of class \"vsel\"")
-  for (solterms_crr in list(2, 1:3, "1", list(c("x.3", "x.5"),
-                                              c("x.2", "x.4")))) {
-    expect_warning(
-      p <- project(refmods[[mod_nm]][[fam_nm]], nclusters = nclusters_pred_tst,
-                   solution_terms = solterms_crr),
-      paste("At least one element of `solution_terms` could not be found",
-            "among the terms in the reference model"),
-      info = as.character(solterms_crr)
-    )
-    expect_s3_class(p, "projection")
-    expect_named(p, projection_nms, info = solterms_crr)
-    expect_length(p$sub_fit, nclusters_pred_tst)
-    expect_length(p$weights, nclusters_pred_tst)
-    expect_length(p$dis, nclusters_pred_tst)
-    SW(nprjdraws <- NROW(as.matrix(p)))
-    expect_identical(nprjdraws, nclusters_pred_tst, info = solterms_crr)
-    expect_identical(p$solution_terms, "1")
-  }
-})
-
-test_that(paste(
-  "specifying `solution_terms` correctly leads to correct output structure"
-), {
-  for (i in fam_nms) {
-    for (solterms_crr in list(character(), "x.3", c("x.2", "x.4"))) {
-      p <- project(refmods[[mod_nm]][[fam_nm]], nclusters = nclusters_pred_tst,
-                   solution_terms = solterms_crr)
-      expect_s3_class(p, "projection")
-      expect_named(p, projection_nms, info = tstsetup)
-      expect_length(p$sub_fit, nclusters_pred_tst)
-      expect_length(p$weights, nclusters_pred_tst)
-      expect_length(p$dis, nclusters_pred_tst)
-      SW(nprjdraws <- NROW(as.matrix(p)))
-      expect_identical(nprjdraws, nclusters_pred_tst, info = tstsetup)
-      solterms_out <- if (length(solterms_crr) == 0) {
-        "1"
-      } else {
-        solterms_crr
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
+      expect_error(project(refmods[[mod_nm]][[fam_nm]],
+                           solution_terms = NULL),
+                   "is not an object of class \"vsel\"")
+      for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
+        tstsetup_crr <- paste(solterms_crr, collapse = ", ")
+        expect_warning(
+          p <- project(refmods[[mod_nm]][[fam_nm]],
+                       nclusters = nclusters_pred_tst,
+                       solution_terms = solterms_crr,
+                       seed = seed_tst),
+          paste("At least one element of `solution_terms` could not be found",
+                "among the terms in the reference model"),
+          info = tstsetup_crr
+        )
+        projection_tester(p,
+                          solterms_expected = character(),
+                          nprjdraws_expected = nclusters_pred_tst,
+                          info_str = tstsetup_crr)
       }
-      expect_identical(p$solution_terms, solterms_out)
     }
   }
 })
