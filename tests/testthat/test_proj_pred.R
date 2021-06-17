@@ -205,6 +205,21 @@ test_that(paste(
 })
 
 test_that(paste(
+  "proj_linpred(): `object` of (informal) class \"proj_list\" (created",
+  "manually) leads to correct output structure"
+), {
+  tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
+  stopifnot(length(tstsetups) > 1)
+  pl <- proj_linpred(prjs[tstsetups])
+  expect_length(pl, length(tstsetups))
+  for (j in seq_along(pl)) {
+    expect_named(pl[[!!j]], c("pred", "lpd"))
+    expect_identical(dim(pl[[!!j]]$pred), c(1L, n_tst))
+    expect_identical(dim(pl[[!!j]]$lpd), c(1L, n_tst))
+  }
+})
+
+test_that(paste(
   "proj_linpred(): error if `object` is not of class \"vsel\" and",
   "`solution_terms` is provided neither"
 ), {
@@ -728,6 +743,19 @@ test_that(paste(
       expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
                        info = tstsetup)
     }
+  }
+})
+
+test_that(paste(
+  "proj_predict(): `object` of (informal) class \"proj_list\" (created",
+  "manually) leads to correct output structure"
+), {
+  tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
+  stopifnot(length(tstsetups) > 1)
+  pp <- proj_predict(prjs[tstsetups], .seed = seed2_tst)
+  expect_length(pp, length(tstsetups))
+  for (j in seq_along(pp)) {
+    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst))
   }
 })
 
