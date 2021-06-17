@@ -138,12 +138,33 @@ test_that(paste(
   "cv_varsel()) leads to correct output structure"
 ), {
   skip_if_not(exists("prjs_cvvs"))
-  pl <- proj_linpred(prjs_cvvs)
-  expect_length(pl, nterms_max_tst + 1)
-  for (j in seq_along(pl)) {
-    expect_named(pl[[!!j]], c("pred", "lpd"))
-    expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst))
-    expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst))
+  for (tstsetup in names(prjs_cvvs)) {
+    pl <- proj_linpred(prjs_cvvs[[tstsetup]])
+    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      tstsetup_cvvs <- grep(
+        paste0("^", args_prj_cvvs[[tstsetup]]$mod_nm,
+               "\\.", args_prj_cvvs[[tstsetup]]$fam_nm),
+        names(cvvss),
+        value = TRUE
+      )
+      stopifnot(length(tstsetup_cvvs) == 1)
+      # Subtract 1L for the intercept:
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
+    }
+    if (length(nterms_crr) == 1) {
+      # In fact, we don't have a "proj_list" object in this case, but since
+      # incorporating this case is so easy, we create one:
+      pl <- list(pl)
+    }
+    expect_length(pl, length(nterms_crr))
+    for (j in seq_along(pl)) {
+      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+    }
   }
 })
 
@@ -607,10 +628,30 @@ test_that(paste(
   "cv_varsel()) leads to correct output structure"
 ), {
   skip_if_not(exists("prjs_cvvs"))
-  pp <- proj_predict(prjs_cvvs, .seed = seed2_tst)
-  expect_length(pp, nterms_max_tst + 1)
-  for (j in seq_along(pp)) {
-    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst))
+  for (tstsetup in names(prjs_cvvs)) {
+    pp <- proj_predict(prjs_cvvs[[tstsetup]], .seed = seed2_tst)
+    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      tstsetup_cvvs <- grep(
+        paste0("^", args_prj_cvvs[[tstsetup]]$mod_nm,
+               "\\.", args_prj_cvvs[[tstsetup]]$fam_nm),
+        names(cvvss),
+        value = TRUE
+      )
+      stopifnot(length(tstsetup_cvvs) == 1)
+      # Subtract 1L for the intercept:
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
+    }
+    if (length(nterms_crr) == 1) {
+      # In fact, we don't have a "proj_list" object in this case, but since
+      # incorporating this case is so easy, we create one:
+      pp <- list(pp)
+    }
+    expect_length(pp, length(nterms_crr))
+    for (j in seq_along(pp)) {
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+                       info = tstsetup)
+    }
   }
 })
 
