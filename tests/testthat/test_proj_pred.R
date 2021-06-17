@@ -388,16 +388,17 @@ test_that(paste(
   "proj_linpred(): `filter_nterms` works correctly (for an `object` of class",
   "\"projection\")"
 ), {
-  filter_nterms_unavail <- c(0L, 3L)
-  stopifnot(!length(solterms_x) %in% filter_nterms_unavail)
-  for (filter_nterms_crr in filter_nterms_unavail) {
+  pl_orig <- proj_linpred(prjs$glm.gauss.solterms_x.clust)
+  nterms_avail_x <- length(solterms_x)
+  nterms_unavail_x <- c(0L, nterms_avail_x + 130L)
+  stopifnot(!nterms_avail_x %in% nterms_unavail_x)
+  for (filter_nterms_crr in nterms_unavail_x) {
     expect_error(proj_linpred(prjs$glm.gauss.solterms_x.clust,
                               filter_nterms = !!filter_nterms_crr),
                  "subscript out of bounds")
   }
-  pl_orig <- proj_linpred(prjs$glm.gauss.solterms_x.clust)
   pl <- proj_linpred(prjs$glm.gauss.solterms_x.clust,
-                     filter_nterms = length(solterms_x))
+                     filter_nterms = nterms_avail_x)
   expect_equal(pl_orig, pl)
 })
 
@@ -406,30 +407,22 @@ test_that(paste(
   "(informal) class \"proj_list\")"
 ), {
   skip_if_not(exists("prjs_vs"))
+  # The special case of all possible numbers of terms:
+  pl_orig <- proj_linpred(prjs_vs)
   # Unavailable number(s) of terms:
-  filter_nterms_unavail <- list(nterms_max_tst + 130L,
-                                c(nterms_max_tst + 130L, nterms_max_tst + 290L))
-  for (filter_nterms_crr in filter_nterms_unavail) {
+  for (filter_nterms_crr in nterms_unavail) {
     expect_error(proj_linpred(prjs_vs,
                               filter_nterms = !!filter_nterms_crr),
                  "subscript out of bounds")
   }
-
   # Available number(s) of terms:
-  filter_nterms_avail <- list(
-    0L,
-    nterms_max_tst %/% 2L,
-    as.integer(round(seq(0, nterms_max_tst, length.out = 3))),
-    c(nterms_max_tst %/% 2L, nterms_max_tst + 130L)
-  )
-  for (filter_nterms_crr in filter_nterms_avail) {
+  for (filter_nterms_crr in nterms_avail) {
     tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
     pl_crr <- proj_linpred(prjs_vs,
                            filter_nterms = filter_nterms_crr)
+    if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
     nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
-    if (nhits_nterms == 1) {
-      pl_crr <- list(pl_crr)
-    }
+    if (nhits_nterms == 1) pl_crr <- list(pl_crr)
     expect_length(pl_crr, nhits_nterms)
     for (j in seq_along(pl_crr)) {
       expect_named(pl_crr[[!!j]], c("pred", "lpd"), info = tstsetup_crr)
@@ -438,13 +431,10 @@ test_that(paste(
       expect_identical(dim(pl_crr[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
                        info = tstsetup_crr)
     }
+    if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
+      expect_equal(pl_orig, pl_crr)
+    }
   }
-
-  # The special case of all possible numbers of terms:
-  pl_orig <- proj_linpred(prjs_vs)
-  pl <- proj_linpred(prjs_vs,
-                     filter_nterms = 0:nterms_max_tst)
-  expect_equal(pl_orig, pl)
 })
 
 # proj_predict() ----------------------------------------------------------
@@ -817,18 +807,19 @@ test_that(paste(
   "proj_predict(): `filter_nterms` works correctly (for an `object` of class",
   "\"projection\")"
 ), {
-  filter_nterms_unavail <- c(0L, 3L)
-  stopifnot(!length(solterms_x) %in% filter_nterms_unavail)
-  for (filter_nterms_crr in filter_nterms_unavail) {
+  pp_orig <- proj_predict(prjs$glm.gauss.solterms_x.clust,
+                          .seed = seed2_tst)
+  nterms_avail_x <- length(solterms_x)
+  nterms_unavail_x <- c(0L, nterms_avail_x + 130L)
+  stopifnot(!nterms_avail_x %in% nterms_unavail_x)
+  for (filter_nterms_crr in nterms_unavail_x) {
     expect_error(proj_predict(prjs$glm.gauss.solterms_x.clust,
                               filter_nterms = !!filter_nterms_crr,
                               .seed = seed2_tst),
                  "subscript out of bounds")
   }
-  pp_orig <- proj_predict(prjs$glm.gauss.solterms_x.clust,
-                          .seed = seed2_tst)
   pp <- proj_predict(prjs$glm.gauss.solterms_x.clust,
-                     filter_nterms = length(solterms_x),
+                     filter_nterms = nterms_avail_x,
                      .seed = seed2_tst)
   expect_equal(pp_orig, pp)
 })
@@ -838,43 +829,31 @@ test_that(paste(
   "(informal) class \"proj_list\")"
 ), {
   skip_if_not(exists("prjs_vs"))
+  # The special case of all possible numbers of terms:
+  pp_orig <- proj_predict(prjs_vs, .seed = seed2_tst)
   # Unavailable number(s) of terms:
-  filter_nterms_unavail <- list(nterms_max_tst + 130L,
-                                c(nterms_max_tst + 130L, nterms_max_tst + 290L))
-  for (filter_nterms_crr in filter_nterms_unavail) {
+  for (filter_nterms_crr in nterms_unavail) {
     expect_error(proj_predict(prjs_vs,
                               filter_nterms = !!filter_nterms_crr,
                               .seed = seed2_tst),
                  "subscript out of bounds")
   }
-
   # Available number(s) of terms:
-  filter_nterms_avail <- list(
-    0L,
-    nterms_max_tst %/% 2L,
-    as.integer(round(seq(0, nterms_max_tst, length.out = 3))),
-    c(nterms_max_tst %/% 2L, nterms_max_tst + 130L)
-  )
-  for (filter_nterms_crr in filter_nterms_avail) {
+  for (filter_nterms_crr in nterms_avail) {
     tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
     pp_crr <- proj_predict(prjs_vs,
                            filter_nterms = filter_nterms_crr,
                            .seed = seed2_tst)
+    if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
     nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
-    if (nhits_nterms == 1) {
-      pp_crr <- list(pp_crr)
-    }
+    if (nhits_nterms == 1) pp_crr <- list(pp_crr)
     expect_length(pp_crr, nhits_nterms)
     for (j in seq_along(pp_crr)) {
       expect_identical(dim(pp_crr[[!!j]]), c(nresample_clusters_default, n_tst),
                        info = tstsetup_crr)
     }
+    if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
+      expect_equal(pp_orig, pp_crr)
+    }
   }
-
-  # The special case of all possible numbers of terms:
-  pp_orig <- proj_predict(prjs_vs, .seed = seed2_tst)
-  pp <- proj_predict(prjs_vs,
-                     filter_nterms = 0:nterms_max_tst,
-                     .seed = seed2_tst)
-  expect_equal(pp_orig, pp)
 })
