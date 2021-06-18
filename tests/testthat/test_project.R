@@ -216,10 +216,7 @@ test_that("specifying `seed` correctly leads to reproducible results", {
       ndr_ncl_nm <- intersect(names(args_prj[[tstsetup_prj]]),
                               c("ndraws", "nclusters"))
       stopifnot(identical(ndr_ncl_nm, "nclusters"))
-      p1 <- project(refmods[[mod_nm]][[fam_nm]],
-                    nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
-                    solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
-                    seed = args_prj[[tstsetup_prj]]$seed)
+      p_orig <- prjs[[tstsetup_prj]]
       p2 <- project(refmods[[mod_nm]][[fam_nm]],
                     nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
                     solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
@@ -232,10 +229,10 @@ test_that("specifying `seed` correctly leads to reproducible results", {
                     nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
                     solution_terms = args_prj[[tstsetup_prj]]$solution_terms)
       # Expected equality:
-      expect_equal(p1, p3, info = tstsetup)
+      expect_equal(p_orig, p3, info = tstsetup)
       # Expected inequality:
-      expect_false(isTRUE(all.equal(p1, p2)), info = tstsetup)
-      expect_false(isTRUE(all.equal(p1, p4)), info = tstsetup)
+      expect_false(isTRUE(all.equal(p_orig, p2)), info = tstsetup)
+      expect_false(isTRUE(all.equal(p_orig, p4)), info = tstsetup)
       expect_false(isTRUE(all.equal(p2, p4)), info = tstsetup)
     }
   }
