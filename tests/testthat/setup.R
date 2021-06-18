@@ -9,8 +9,7 @@
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
 run_cvvs <- run_vs
 
-seed_tst <- 1235
-set.seed(seed_tst)
+set.seed(8541351)
 
 source(testthat::test_path("helpers", "SW.R"))
 source(testthat::test_path("helpers", "unlist_cust.R"))
@@ -24,6 +23,8 @@ mod_nms <- setNames(nm = setdiff(mod_nms, "gam"))
 mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
 ###
 fam_nms <- setNames(nm = c("gauss", "binom", "poiss"))
+
+seed_tst <- 1235
 
 # rstanarm setup ----------------------------------------------------------
 
