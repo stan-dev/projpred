@@ -24,7 +24,7 @@ mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
 ###
 fam_nms <- setNames(nm = c("gauss", "binom", "poiss"))
 
-seed_tst <- 1235
+seed_tst <- 74345
 
 # rstanarm setup ----------------------------------------------------------
 
