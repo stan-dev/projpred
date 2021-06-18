@@ -542,14 +542,14 @@ context("proj_predict()")
 
 test_that("proj_predict(): `.seed` has an expected effect", {
   for (tstsetup in names(prjs)) {
-    pp1 <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
-    pp2 <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
-    pp3 <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst + 1L)
-    pp4 <- proj_predict(prjs[[tstsetup]])
-    expect_equal(pp1, pp2, info = tstsetup)
-    expect_false(isTRUE(all.equal(pp1, pp3)), info = tstsetup)
-    expect_false(isTRUE(all.equal(pp1, pp4)), info = tstsetup)
-    expect_false(isTRUE(all.equal(pp3, pp4)), info = tstsetup)
+    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp_new <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst + 1L)
+    pp_repr <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp_null <- proj_predict(prjs[[tstsetup]])
+    expect_equal(pp_orig, pp_repr, info = tstsetup)
+    expect_false(isTRUE(all.equal(pp_orig, pp_new)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pp_orig, pp_null)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pp_new, pp_null)), info = tstsetup)
   }
 })
 
