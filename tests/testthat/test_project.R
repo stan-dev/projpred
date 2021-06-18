@@ -236,38 +236,3 @@ test_that("specifying `seed` correctly leads to reproducible results", {
     }
   }
 })
-
-test_that(paste(
-  "projecting the reference model onto the full model (i.e.,",
-  "itself) does not change results on average (even though this is not",
-  "guaranteed; see the comments)"
-), {
-  # NOTE: Projecting the reference model onto the full model (i.e., itself)
-  # does not necessarily have to give results close to the reference model's
-  # since in contrast to the reference model, the projection is "fitting to
-  # the fit" of the reference model, not to the observed response. The fact
-  # that the tolerance for the Gaussian reference model needs to be
-  # increased here (see below) might be an indicator for this inequality.
-  tol <- setNames(rep(1e-3, length(fam_nms)), fam_nms)
-  tol["gauss"] <- 0.25
-
-  for (i in fam_nms) {
-    draws <- as.data.frame(fit_list[[i]])
-    alpha_ref <- draws[, "(Intercept)"]
-    beta_ref <- draws[, 1 + seq_len(nterms), drop = FALSE]
-    S <- nrow(draws)
-    proj <- project(refmods[[mod_nm]][[fam_nm]],
-                    solution_terms = paste0("x.", 1:nterms),
-                    ndraws = S)
-
-    # test alpha and beta
-    coefs <- as.matrix(proj)
-    dalpha <- abs(mean(coefs[, 1]) - mean(alpha_ref))
-    order <- match(colnames(fit_list[[i]]$data), proj$solution_terms)
-    order <- order[!is.na(order)]
-    dbeta <- max(abs(colMeans(coefs[, -1, drop = FALSE][, order]) -
-                       colMeans(beta_ref)))
-    expect_lt(dalpha, tol[!!i])
-    expect_lt(dbeta, tol[!!i])
-  }
-})
