@@ -205,37 +205,38 @@ test_that(paste(
 })
 
 test_that("specifying `seed` correctly leads to reproducible results", {
-  for (mod_nm in mod_nms["glm"]) {
-    for (fam_nm in fam_nms["gauss"]) {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
       tstsetup <- paste(c(mod_nm, fam_nm), collapse = ".")
+      tstsetup_prj <- tail(
+        grep(paste0("^", mod_nm, "\\.", fam_nm, ".*", "\\.clust$"),
+             names(args_prj), value = TRUE),
+        1
+      )
+      ndr_ncl_nm <- intersect(names(args_prj[[tstsetup_prj]]),
+                              c("ndraws", "nclusters"))
+      stopifnot(identical(ndr_ncl_nm, "nclusters"))
       p1 <- project(refmods[[mod_nm]][[fam_nm]],
-                    nclusters = nclusters_pred_tst,
-                    solution_terms = solterms_x,
-                    seed = seed_tst)
+                    nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
+                    solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
+                    seed = args_prj[[tstsetup_prj]]$seed)
       p2 <- project(refmods[[mod_nm]][[fam_nm]],
-                    nclusters = nclusters_pred_tst,
-                    solution_terms = solterms_x,
-                    seed = seed_tst + 1L)
+                    nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
+                    solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
+                    seed = args_prj[[tstsetup_prj]]$seed + 1L)
       p3 <- project(refmods[[mod_nm]][[fam_nm]],
-                    nclusters = nclusters_pred_tst,
-                    solution_terms = solterms_x,
-                    seed = seed_tst)
+                    nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
+                    solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
+                    seed = args_prj[[tstsetup_prj]]$seed)
       p4 <- project(refmods[[mod_nm]][[fam_nm]],
-                    nclusters = nclusters_pred_tst,
-                    solution_terms = solterms_x)
-
+                    nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
+                    solution_terms = args_prj[[tstsetup_prj]]$solution_terms)
       # Expected equality:
-      expect_true(isTRUE(all.equal(p1, p3)), info = tstsetup)
-      # The resulting objects are even identical when ignoring the environments of
-      # functions:
-      expect_identical(p1, p3, info = tstsetup, ignore.environment = TRUE)
-
+      expect_equal(p1, p3, info = tstsetup)
       # Expected inequality:
       expect_false(isTRUE(all.equal(p1, p2)), info = tstsetup)
       expect_false(isTRUE(all.equal(p1, p4)), info = tstsetup)
-      expect_false(isTRUE(all.equal(p2, p3)), info = tstsetup)
       expect_false(isTRUE(all.equal(p2, p4)), info = tstsetup)
-      expect_false(isTRUE(all.equal(p3, p4)), info = tstsetup)
     }
   }
 })
