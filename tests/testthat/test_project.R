@@ -66,7 +66,7 @@ test_that("a fitted model `object` leads to correct output structure", {
       list(object = fits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
-    expect_identical(prjs[[tstsetup]], p_fit, ignore.environment = TRUE,
+    expect_identical(p_fit, prjs[[tstsetup]], ignore.environment = TRUE,
                      info = tstsetup)
   }
 })
@@ -285,9 +285,9 @@ test_that("specifying `seed` correctly leads to reproducible results", {
         seed = args_prj[[tstsetup_prj]]$seed
       )
       # Expected equality:
-      expect_equal(p_orig, p_repr, info = tstsetup)
+      expect_equal(p_repr, p_orig, info = tstsetup)
       # Expected inequality:
-      expect_false(isTRUE(all.equal(p_orig, p_new)), info = tstsetup)
+      expect_false(isTRUE(all.equal(p_new, p_orig)), info = tstsetup)
     }
   }
 })
@@ -300,6 +300,6 @@ test_that("for non-GLMs, `regul` has no effect", {
            regul = 1e-1),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
-    expect_equal(prjs[[tstsetup]], p_regul, info = tstsetup)
+    expect_equal(p_regul, prjs[[tstsetup]], info = tstsetup)
   }
 })
