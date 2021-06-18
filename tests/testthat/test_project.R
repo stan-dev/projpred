@@ -18,6 +18,7 @@ test_that(paste(
       prjs[[tstsetup]],
       solterms_expected = args_prj[[tstsetup]]$solution_terms,
       nprjdraws_expected = nprjdraws,
+      p_type_expected = (ndr_ncl_nm == "nclusters" || nprjdraws <= 20),
       info_str = tstsetup
     )
   }
@@ -48,6 +49,7 @@ test_that(paste(
         projection_tester(p,
                           solterms_expected = character(),
                           nprjdraws_expected = nclusters_pred_tst,
+                          p_type_expected = TRUE,
                           info_str = tstsetup_crr)
       }
     }
@@ -84,6 +86,7 @@ test_that(paste(
         prjs_vs[[tstsetup]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
+        p_type_expected = TRUE,
         info_str = tstsetup
       )
     } else {
@@ -93,6 +96,7 @@ test_that(paste(
         is_seq = all(diff(nterms_crr) == 1),
         info_str = tstsetup,
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
+        p_type_expected = TRUE,
         fam_expected = prjs_vs[[tstsetup]][[1]]$family,
         prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$weights
       )
@@ -130,6 +134,7 @@ test_that(paste(
         prjs_cvvs[[tstsetup]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
+        p_type_expected = TRUE,
         info_str = tstsetup
       )
     } else {
@@ -139,6 +144,7 @@ test_that(paste(
         is_seq = all(diff(nterms_crr) == 1),
         info_str = tstsetup,
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
+        p_type_expected = TRUE,
         fam_expected = prjs_cvvs[[tstsetup]][[1]]$family,
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$weights
       )
@@ -198,6 +204,7 @@ test_that(paste(
           projection_tester(p,
                             solterms_expected = solterms_x,
                             nprjdraws_expected = S,
+                            p_type_expected = !is.null(nclusters_crr),
                             info_str = tstsetup)
         }
       }
