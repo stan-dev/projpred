@@ -104,6 +104,22 @@ test_that(paste(
         p_type_expected = TRUE,
         info_str = tstsetup
       )
+      tstsetup_tries <- grep(
+        paste0("^", args_prj_vs[[tstsetup]]$mod_nm,
+               ".", args_prj_vs[[tstsetup]]$fam_nm, ".*\\.clust$"),
+        names(prjs), value = TRUE
+      )
+      match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
+        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
+      })
+      tstsetup_match_prj <- tstsetup_tries[match_prj]
+      if (length(tstsetup_match_prj) == 1) {
+        # cat("Found match:", tstsetup, "and", tstsetup_match_prj, "\n")
+        expect_equal(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
+                     info = tstsetup)
+      } else if (length(tstsetup_match_prj) > 1) {
+        stop("Unexpected number of matches.")
+      }
     } else {
       proj_list_tester(
         prjs_vs[[tstsetup]],
@@ -152,6 +168,22 @@ test_that(paste(
         p_type_expected = TRUE,
         info_str = tstsetup
       )
+      tstsetup_tries <- grep(
+        paste0("^", args_prj_cvvs[[tstsetup]]$mod_nm,
+               ".", args_prj_cvvs[[tstsetup]]$fam_nm, ".*\\.clust$"),
+        names(prjs), value = TRUE
+      )
+      match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
+        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
+      })
+      tstsetup_match_prj <- tstsetup_tries[match_prj]
+      if (length(tstsetup_match_prj) == 1) {
+        # cat("Found match:", tstsetup, "and", tstsetup_match_prj, "\n")
+        expect_equal(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
+                     info = tstsetup)
+      } else if (length(tstsetup_match_prj) > 1) {
+        stop("Unexpected number of matches.")
+      }
     } else {
       proj_list_tester(
         prjs_cvvs[[tstsetup]],
