@@ -7,13 +7,13 @@ test_that("proj_linpred(): passing arguments to project() works correctly", {
                     value = TRUE)[1]
   stopifnot(length(tstsetups) == 1)
   for (tstsetup in tstsetups) {
-    pl_from_prj <- proj_linpred(prjs[[tstsetup]])
     args_prj_i <- args_prj[[tstsetup]]
     pl_direct <- do.call(proj_linpred, c(
       list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
-    expect_equal(pl_from_prj, pl_direct, info = tstsetup)
+    pl_from_prj <- proj_linpred(prjs[[tstsetup]])
+    expect_equal(pl_direct, pl_from_prj, info = tstsetup)
   }
 })
 
@@ -287,9 +287,9 @@ test_that(paste(
   "proj_linpred(): `newdata` set to the original dataset doesn't change results"
 ), {
   for (tstsetup in names(prjs)) {
-    pl_orig <- proj_linpred(prjs[[tstsetup]])
     pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat)
-    expect_equal(pl_orig, pl_newdata, info = tstsetup)
+    pl_orig <- proj_linpred(prjs[[tstsetup]])
+    expect_equal(pl_newdata, pl_orig, info = tstsetup)
   }
 })
 
@@ -365,17 +365,17 @@ test_that("proj_linpred(): `weightsnew` has an expected effect", {
     expect_identical(dim(plw$pred), c(nprjdraws, n_tst), info = tstsetup)
     expect_identical(dim(plw$lpd), c(nprjdraws, n_tst), info = tstsetup)
 
-    expect_equal(pl_orig$pred, pl_ones$pred, info = tstsetup)
-    expect_equal(pl_orig$pred, pl$pred, info = tstsetup)
-    expect_equal(pl_orig$pred, plw$pred, info = tstsetup)
+    expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
+    expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
+    expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
     ### Note: This equivalence might in fact be undesired:
-    expect_equal(pl_orig$lpd, pl_ones$lpd, info = tstsetup)
+    expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
     ###
     ### Note: This inequality might in fact be undesired:
-    expect_false(isTRUE(all.equal(pl_orig$lpd, pl$lpd)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
     ###
-    expect_false(isTRUE(all.equal(pl_orig$lpd, plw$lpd)), info = tstsetup)
-    expect_false(isTRUE(all.equal(pl$lpd, plw$lpd)), info = tstsetup)
+    expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
+    expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
   }
 })
 
@@ -426,18 +426,18 @@ test_that("proj_linpred(): `offsetnew` has an expected effect", {
     expect_identical(dim(plo$lpd), c(nprjdraws, n_tst), info = tstsetup)
 
     ### Note: This equivalence might in fact be undesired:
-    expect_equal(pl_orig, pl_zeros, info = tstsetup)
+    expect_equal(pl_zeros, pl_orig, info = tstsetup)
     ###
     ### Note: This inequality might in fact be undesired:
-    expect_false(isTRUE(all.equal(pl_orig, pl)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
     ###
-    expect_equal(t(pl_orig$pred), t(pl$pred) - dat$offs_col,
+    expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
                  info = tstsetup)
-    expect_equal(t(pl_orig$pred), t(plo$pred) - dat_new$offs_col_new,
+    expect_equal(t(plo$pred) - dat_new$offs_col_new, t(pl_orig$pred),
                  info = tstsetup)
-    expect_false(isTRUE(all.equal(pl_orig$lpd, pl$lpd)), info = tstsetup)
-    expect_false(isTRUE(all.equal(pl_orig$lpd, plo$lpd)), info = tstsetup)
-    expect_false(isTRUE(all.equal(pl$lpd, plo$lpd)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+    expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
+    expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
   }
 })
 
@@ -493,7 +493,7 @@ test_that(paste(
   }
   pl <- proj_linpred(prjs$glm.gauss.solterms_x.clust,
                      filter_nterms = nterms_avail_x)
-  expect_equal(pl_orig, pl)
+  expect_equal(pl, pl_orig)
 })
 
 test_that(paste(
@@ -502,8 +502,6 @@ test_that(paste(
 ), {
   skip_if_not(exists("prjs_vs"))
   prjs_vs_crr <- prjs_vs$glm.gauss.full
-  # The special case of all possible numbers of terms:
-  pl_orig <- proj_linpred(prjs_vs_crr)
   # Unavailable number(s) of terms:
   for (filter_nterms_crr in nterms_unavail) {
     expect_error(proj_linpred(prjs_vs_crr,
@@ -531,7 +529,9 @@ test_that(paste(
                        info = tstsetup_crr)
     }
     if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
-      expect_equal(pl_orig, pl_crr)
+      # The special case of all possible numbers of terms:
+      pl_orig <- proj_linpred(prjs_vs_crr)
+      expect_equal(pl_crr, pl_orig)
     }
   }
 })
@@ -558,14 +558,14 @@ test_that("proj_predict(): passing arguments to project() works correctly", {
                     value = TRUE)[1]
   stopifnot(length(tstsetups) == 1)
   for (tstsetup in tstsetups) {
-    pp_from_prj <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
     args_prj_i <- args_prj[[tstsetup]]
     pp_direct <- do.call(proj_predict, c(
       list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
            .seed = seed2_tst),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
-    expect_equal(pp_from_prj, pp_direct, info = tstsetup)
+    pp_from_prj <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    expect_equal(pp_direct, pp_from_prj, info = tstsetup)
   }
 })
 
@@ -835,11 +835,11 @@ test_that(paste(
   "proj_predict(): `newdata` set to the original dataset doesn't change results"
 ), {
   for (tstsetup in names(prjs)) {
-    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
     pp_newdata <- proj_predict(prjs[[tstsetup]],
                                newdata = dat,
                                .seed = seed2_tst)
-    expect_equal(pp_orig, pp_newdata, info = tstsetup)
+    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    expect_equal(pp_newdata, pp_orig, info = tstsetup)
   }
 })
 
@@ -856,7 +856,6 @@ test_that(paste(
       stopifnot(length(ndr_ncl_nm) == 1)
       nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
     }
-    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
     )$response
@@ -864,7 +863,8 @@ test_that(paste(
     pp_noresp <- proj_predict(prjs[[tstsetup]],
                               newdata = dat[, setdiff(names(dat), resp_nm)],
                               .seed = seed2_tst)
-    expect_equal(pp_orig, pp_noresp, info = tstsetup)
+    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    expect_equal(pp_noresp, pp_orig, info = tstsetup)
   }
 })
 
@@ -916,18 +916,18 @@ test_that("proj_predict(): `weightsnew` has an expected effect", {
 
     # Weights are only relevant for the binomial() family:
     if (args_prj[[tstsetup]]$fam_nm != "binom") {
-      expect_equal(pp_orig, pp_ones, info = tstsetup)
-      expect_equal(pp_orig, pp, info = tstsetup)
-      expect_equal(pp_orig, ppw, info = tstsetup)
+      expect_equal(pp_ones, pp_orig, info = tstsetup)
+      expect_equal(pp, pp_orig, info = tstsetup)
+      expect_equal(ppw, pp_orig, info = tstsetup)
     } else {
       ### Note: This equivalence might in fact be undesired:
-      expect_equal(pp_orig, pp_ones, info = tstsetup)
+      expect_equal(pp_ones, pp_orig, info = tstsetup)
       ###
       ### Note: This inequality might in fact be undesired:
-      expect_false(isTRUE(all.equal(pp_orig, pp)), info = tstsetup)
+      expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
       ###
-      expect_false(isTRUE(all.equal(pp_orig, ppw)), info = tstsetup)
-      expect_false(isTRUE(all.equal(pp, ppw)), info = tstsetup)
+      expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
+      expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
     }
   }
 })
@@ -980,19 +980,19 @@ test_that("proj_predict(): `offsetnew` has an expected effect", {
     expect_identical(dim(ppo), c(nprjdraws_out, n_tst), info = tstsetup)
 
     ### Note: This equivalence might in fact be undesired:
-    expect_equal(pp_orig, pp_zeros, info = tstsetup)
+    expect_equal(pp_zeros, pp_orig, info = tstsetup)
     ###
     ### Note: This inequality might in fact be undesired:
-    expect_false(isTRUE(all.equal(pp_orig, pp)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
     ###
     # For the gaussian() family, we can perform an easy check (because of the
     # identity link):
     if (args_prj[[tstsetup]]$fam_nm == "gauss") {
-      expect_equal(t(pp_orig), t(pp) - dat$offs_col, info = tstsetup)
-      expect_equal(t(pp_orig), t(ppo) - dat_new$offs_col_new, info = tstsetup)
+      expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
+      expect_equal(t(ppo) - dat_new$offs_col_new, t(pp_orig), info = tstsetup)
     } else {
-      expect_false(isTRUE(all.equal(pp_orig, ppo)), info = tstsetup)
-      expect_false(isTRUE(all.equal(pp, ppo)), info = tstsetup)
+      expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
+      expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
     }
   }
 })
@@ -1001,8 +1001,6 @@ test_that(paste(
   "proj_predict(): `filter_nterms` works correctly (for an `object` of class",
   "\"projection\")"
 ), {
-  pp_orig <- proj_predict(prjs$glm.gauss.solterms_x.clust,
-                          .seed = seed2_tst)
   nterms_avail_x <- length(solterms_x)
   nterms_unavail_x <- c(0L, nterms_avail_x + 130L)
   stopifnot(!nterms_avail_x %in% nterms_unavail_x)
@@ -1015,7 +1013,9 @@ test_that(paste(
   pp <- proj_predict(prjs$glm.gauss.solterms_x.clust,
                      filter_nterms = nterms_avail_x,
                      .seed = seed2_tst)
-  expect_equal(pp_orig, pp)
+  pp_orig <- proj_predict(prjs$glm.gauss.solterms_x.clust,
+                          .seed = seed2_tst)
+  expect_equal(pp, pp_orig)
 })
 
 test_that(paste(
@@ -1024,8 +1024,6 @@ test_that(paste(
 ), {
   skip_if_not(exists("prjs_vs"))
   prjs_vs_crr <- prjs_vs$glm.gauss.full
-  # The special case of all possible numbers of terms:
-  pp_orig <- proj_predict(prjs_vs_crr, .seed = seed2_tst)
   # Unavailable number(s) of terms:
   for (filter_nterms_crr in nterms_unavail) {
     expect_error(proj_predict(prjs_vs_crr,
@@ -1052,7 +1050,9 @@ test_that(paste(
                        info = tstsetup_crr)
     }
     if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
-      expect_equal(pp_orig, pp_crr)
+      # The special case of all possible numbers of terms:
+      pp_orig <- proj_predict(prjs_vs_crr, .seed = seed2_tst)
+      expect_equal(pp_crr, pp_orig)
     }
   }
 })
