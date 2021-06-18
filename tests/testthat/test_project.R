@@ -187,7 +187,7 @@ test_that(paste(
       S <- nrow(as.matrix(fits[[mod_nm]][[fam_nm]]))
       for (ndraws_crr in list(S + 1L)) {
         for (nclusters_crr in list(NULL, S + 1L)) {
-          tstsetup <- paste(mod_nm, fam_nm, ndraws_crr, nclusters_crr,
+          tstsetup <- paste(c(mod_nm, fam_nm, ndraws_crr, nclusters_crr),
                             collapse = ".")
           p <- project(refmods[[mod_nm]][[fam_nm]],
                        ndraws = ndraws_crr,
@@ -205,35 +205,39 @@ test_that(paste(
 })
 
 test_that("specifying `seed` correctly leads to reproducible results", {
-  i <- "gauss"
-  p1 <- project(refmods[[mod_nm]][[fam_nm]],
-                nclusters = nclusters_pred_tst,
-                solution_terms = solterms_tst,
-                seed = seed_tst)
-  p2 <- project(refmods[[mod_nm]][[fam_nm]],
-                nclusters = nclusters_pred_tst,
-                solution_terms = solterms_tst,
-                seed = seed_tst + 1L)
-  p3 <- project(refmods[[mod_nm]][[fam_nm]],
-                nclusters = nclusters_pred_tst,
-                solution_terms = solterms_tst,
-                seed = seed_tst)
-  p4 <- project(refmods[[mod_nm]][[fam_nm]],
-                nclusters = nclusters_pred_tst,
-                solution_terms = solterms_tst)
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
+      tstsetup <- paste(c(mod_nm, fam_nm), collapse = ".")
+      p1 <- project(refmods[[mod_nm]][[fam_nm]],
+                    nclusters = nclusters_pred_tst,
+                    solution_terms = solterms_x,
+                    seed = seed_tst)
+      p2 <- project(refmods[[mod_nm]][[fam_nm]],
+                    nclusters = nclusters_pred_tst,
+                    solution_terms = solterms_x,
+                    seed = seed_tst + 1L)
+      p3 <- project(refmods[[mod_nm]][[fam_nm]],
+                    nclusters = nclusters_pred_tst,
+                    solution_terms = solterms_x,
+                    seed = seed_tst)
+      p4 <- project(refmods[[mod_nm]][[fam_nm]],
+                    nclusters = nclusters_pred_tst,
+                    solution_terms = solterms_x)
 
-  # Expected equality:
-  expect_true(isTRUE(all.equal(p1, p3)), info = tstsetup)
-  # The resulting objects are even identical when ignoring the environments of
-  # functions:
-  expect_identical(p1, p3, info = tstsetup, ignore.environment = TRUE)
+      # Expected equality:
+      expect_true(isTRUE(all.equal(p1, p3)), info = tstsetup)
+      # The resulting objects are even identical when ignoring the environments of
+      # functions:
+      expect_identical(p1, p3, info = tstsetup, ignore.environment = TRUE)
 
-  # Expected inequality:
-  expect_false(isTRUE(all.equal(p1, p2)), info = tstsetup)
-  expect_false(isTRUE(all.equal(p1, p4)), info = tstsetup)
-  expect_false(isTRUE(all.equal(p2, p3)), info = tstsetup)
-  expect_false(isTRUE(all.equal(p2, p4)), info = tstsetup)
-  expect_false(isTRUE(all.equal(p3, p4)), info = tstsetup)
+      # Expected inequality:
+      expect_false(isTRUE(all.equal(p1, p2)), info = tstsetup)
+      expect_false(isTRUE(all.equal(p1, p4)), info = tstsetup)
+      expect_false(isTRUE(all.equal(p2, p3)), info = tstsetup)
+      expect_false(isTRUE(all.equal(p2, p4)), info = tstsetup)
+      expect_false(isTRUE(all.equal(p3, p4)), info = tstsetup)
+    }
+  }
 })
 
 test_that(paste(
