@@ -56,6 +56,8 @@ proj_list_tester <- function(p,
 #   terms, or `NULL` for not testing the solution terms at all.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
+# @param p_type_expected A single logical value giving the expected value for
+#   `p$p_type`.
 # @param fam_expected The expected "family" object or `NULL` for not testing the
 #   family object at all.
 # @param prjdraw_weights_expected The expected weights for the projected draws
@@ -68,6 +70,7 @@ proj_list_tester <- function(p,
 projection_tester <- function(p,
                               solterms_expected,
                               nprjdraws_expected,
+                              p_type_expected,
                               fam_expected = NULL,
                               prjdraw_weights_expected = NULL,
                               info_str = "") {
@@ -89,6 +92,7 @@ projection_tester <- function(p,
   # "test_as_matrix.R"):
   SW(nprjdraws <- NROW(as.matrix(p)))
   expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
+  expect_identical(p$p_type, p_type_expected, info = info_str)
   if (!is.null(fam_expected)) {
     expect_identical(p$family, fam_expected, info = info_str)
   }
