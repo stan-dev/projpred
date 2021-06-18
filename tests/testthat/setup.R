@@ -481,7 +481,8 @@ if (run_vs) {
 args_prj_cvvs <- args_prj_vs
 
 if (run_cvvs) {
-  prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
+  # Use SW() because of occasional pwrssUpdate() warnings:
+  SW(prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
     tstsetup <- grep(
       paste0("^", args_prj_cvvs_i$mod_nm, "\\.", args_prj_cvvs_i$fam_nm),
       names(cvvss),
@@ -492,5 +493,5 @@ if (run_cvvs) {
       list(object = cvvss[[tstsetup]]),
       args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("mod_nm", "fam_nm"))]
     ))
-  })
+  }))
 }
