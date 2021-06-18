@@ -56,6 +56,21 @@ test_that(paste(
   }
 })
 
+test_that("a fitted model `object` leads to correct output structure", {
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+                    value = TRUE)[1]
+  stopifnot(length(tstsetups) == 1)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    p_fit <- do.call(project, c(
+      list(object = fits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
+      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+    ))
+    expect_identical(prjs[[tstsetup]], p_fit, ignore.environment = TRUE,
+                     info = tstsetup)
+  }
+})
+
 test_that(paste(
   "`object` of class \"vsel\" (created by varsel()) and correctly specified",
   "`nterms` lead to correct output structure"
