@@ -8,6 +8,7 @@ test_that(paste(
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
     if (length(ndr_ncl_nm) == 0) {
+      ndr_ncl_nm <- "ndraws"
       nprjdraws <- ndraws_default
     } else {
       stopifnot(length(ndr_ncl_nm) == 1)
