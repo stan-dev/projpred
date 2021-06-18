@@ -225,15 +225,10 @@ test_that("specifying `seed` correctly leads to reproducible results", {
                     nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
                     solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
                     seed = args_prj[[tstsetup_prj]]$seed)
-      p4 <- project(refmods[[mod_nm]][[fam_nm]],
-                    nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
-                    solution_terms = args_prj[[tstsetup_prj]]$solution_terms)
       # Expected equality:
       expect_equal(p_orig, p3, info = tstsetup)
       # Expected inequality:
       expect_false(isTRUE(all.equal(p_orig, p2)), info = tstsetup)
-      expect_false(isTRUE(all.equal(p_orig, p4)), info = tstsetup)
-      expect_false(isTRUE(all.equal(p2, p4)), info = tstsetup)
     }
   }
 })
