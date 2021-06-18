@@ -1,8 +1,8 @@
 context("project")
 
 test_that(paste(
-  "`object` of class \"refmodel\" and correctly specified `solution_terms`",
-  "lead to correct output structure"
+  "`object` of class \"refmodel\", correctly specified `solution_terms`, and",
+  "correctly specified `ndraws` or `nclusters` lead to correct output structure"
 ), {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
@@ -198,45 +198,6 @@ test_that(paste(
                             solterms_expected = solterms_x,
                             nprjdraws_expected = S,
                             info_str = tstsetup)
-        }
-      }
-    }
-  }
-})
-
-test_that(paste(
-  "specifying `ndraws` and/or `nclusters` correctly leads to correct output",
-  "structure"
-), {
-  for (i in fam_nms) {
-    for (ndraws_crr in list(1L, 20L, 21L)) {
-      for (nclusters_crr in list(NULL, 1L, 2L, 3L)) {
-        tstsetup <- unlist(nlist(i, ndraws_crr, nclusters_crr))
-        p <- project(refmods[[mod_nm]][[fam_nm]],
-                     ndraws = ndraws_crr,
-                     nclusters = nclusters_crr,
-                     solution_terms = solterms_tst)
-        expect_s3_class(p, "projection")
-        expect_named(p, projection_nms, info = tstsetup)
-        nprjdraws_out <- if (!is.null(nclusters_crr)) {
-          nclusters_crr
-        } else {
-          ndraws_crr
-        }
-        nprjdraws_sub_fit <- if (nprjdraws_out == 1) {
-          length(sub_fit_nms)
-        } else {
-          nprjdraws_out
-        }
-        expect_length(p$sub_fit, nprjdraws_sub_fit)
-        expect_length(p$weights, nprjdraws_out)
-        expect_length(p$dis, nprjdraws_out)
-        SW(nprjdraws <- NROW(as.matrix(p)))
-        expect_identical(nprjdraws, nprjdraws_out, info = tstsetup)
-        solterms_out <- if (length(solterms_tst) == 0) "1" else solterms_tst
-        expect_identical(p$solution_terms, solterms_out)
-        if (nprjdraws_out == 1) {
-          expect_identical(p$weights, 1, info = tstsetup)
         }
       }
     }
