@@ -109,5 +109,8 @@ projection_tester <- function(p,
     }
     expect_identical(p$solution_terms, solterms_out, info = info_str)
   }
+  if (nprjdraws_expected == 1) {
+    expect_identical(p$weights, 1, info = info_str)
+  }
   return(invisible(TRUE))
 }
