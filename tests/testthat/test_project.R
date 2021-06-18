@@ -115,8 +115,8 @@ test_that(paste(
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
         # cat("Found match:", tstsetup, "and", tstsetup_match_prj, "\n")
-        expect_equal(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
-                     info = tstsetup)
+        expect_identical(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
+                         ignore.environment = TRUE, info = tstsetup)
       } else if (length(tstsetup_match_prj) > 1) {
         stop("Unexpected number of matches.")
       }
@@ -179,8 +179,8 @@ test_that(paste(
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
         # cat("Found match:", tstsetup, "and", tstsetup_match_prj, "\n")
-        expect_equal(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
-                     info = tstsetup)
+        expect_identical(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
+                         ignore.environment = TRUE, info = tstsetup)
       } else if (length(tstsetup_match_prj) > 1) {
         stop("Unexpected number of matches.")
       }
