@@ -1131,18 +1131,27 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
   return(cv)
 }
 
-is.vsel <- function(object) {
-  inherits(object, "vsel")
+#' Recover solution path from an object
+#'
+#' @param object The object from which to extract the solution terms, for
+#'   example an object of class \code{"vsel"} (returned by
+#'   \link[=varsel]{varsel} or \link[=cv_varsel]{cv_varsel}).
+#' @param ... Arguments passed from the \code{solution_terms} generic to its
+#'   methods.
+#' @return A character vector of solution terms.
+#' @export
+solution_terms <- function(object, ...) {
+  UseMethod("solution_terms")
 }
 
-#' Recovers solution path from a variable selection object.
-#'
-#' @param object A vsel object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
-#' @return Variable selection solution path
+#' @rdname solution_terms
 #' @export
-solution_terms <- function(object) {
-  stopifnot(is.vsel(object))
+solution_terms.vsel <- function(object, ...) {
+  return(object$solution_terms)
+}
 
+#' @rdname solution_terms
+#' @export
+solution_terms.projection <- function(object, ...) {
   return(object$solution_terms)
 }
