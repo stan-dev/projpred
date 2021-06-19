@@ -109,26 +109,30 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     seed = NULL, regul = 1e-4, ...) {
   if (!inherits(object, "vsel") && is.null(solution_terms)) {
-    stop("The given object is not an object of class \"vsel\". Run the ",
-         "variable selection first, or provide argument `solution_terms`.")
+    stop("Please provide an `object` of class \"vsel\" or use argument ",
+         "`solution_terms`.")
   }
   if (!inherits(object, "vsel") && !cv_search) {
-    stop("The given object is not an object of class \"vsel\". Run the ",
-         "variable selection first, or provide argument `cv_search = TRUE`.")
+    stop("Please provide an `object` of class \"vsel\" or use ",
+         "`cv_search = TRUE`.")
   }
 
   refmodel <- get_refmodel(object, ...)
 
-  if (inherits(refmodel, "datafit")) {
-    ## use non-cv_searched solution for datafits
+  if (cv_search && inherits(refmodel, "datafit")) {
+    warning("Automatically setting `cv_search` to `FALSE` since the reference ",
+            "model is of class \"datafit\".")
     cv_search <- FALSE
   }
 
-  if (!is.null(solution_terms) &&
-      any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
-    ## search path not found, or the given variable combination
-    ## not in the search path, then we need to project the
-    ## required variables
+  if (!cv_search &&
+      !is.null(solution_terms) &&
+      any(
+        solution_terms(object)[seq_along(solution_terms)] != solution_terms
+      )) {
+    warning("The given `solution_terms` are not part of the search path (from ",
+            "`solution_terms(object)`), so `cv_search` is automatically set ",
+            "to `TRUE`.")
     cv_search <- TRUE
   }
 
@@ -141,9 +145,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       ## project only the given model on a fit object
       vars <- setdiff(
         split_formula(refmodel$formula,
-          data = refmodel$fetch_data(),
-          add_main_effects = FALSE
-        ),
+                      data = refmodel$fetch_data(),
+                      add_main_effects = FALSE),
         "1"
       )
     }
