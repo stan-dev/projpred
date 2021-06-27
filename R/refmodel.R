@@ -226,13 +226,13 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
   offsetnew <- w_o$offset
 
   ## ref_predfun returns link(mu)
-  mu <- object$ref_predfun(object$fit, newdata)
+  mu <- object$ref_predfun(object$fit, newdata) + offsetnew
 
   if (is.null(ynew)) {
     if (type == "link") {
       pred <- mu
     } else {
-      pred <- object$family$linkinv(mu + offsetnew)
+      pred <- object$family$linkinv(mu)
     }
 
     ## integrate over the samples
