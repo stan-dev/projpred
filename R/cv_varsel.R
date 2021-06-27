@@ -719,7 +719,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     folds <- attr(cvfits, "folds")
     cvfits <- lapply(seq_len(K), function(k) {
       cvfit <- cvfits$fits[[k]]
-      cvfit$omitted <- which(folds != k)
+      cvfit$omitted <- which(folds == k)
       cvfit
     })
   }
