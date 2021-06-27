@@ -66,7 +66,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       sub_refit <- search_path$sub_fits[[nterms + 1]]
 
       if (length(solution_terms) == 0 && intercept) {
-        solution_terms <- "1"
+        solution_terms <- c()
       }
 
       return(.init_submodel(
@@ -81,7 +81,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     fetch_submodel <- function(nterms) {
       if (nterms == 0 && intercept) {
         ## empty
-        solution_terms <- c("1")
+        solution_terms <- c()
       } else {
         solution_terms <- varorder[seq_len(nterms)]
       }
