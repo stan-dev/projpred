@@ -695,6 +695,9 @@ select_possible_terms_size <- function(chosen, terms, size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
         x <- setdiff(attr(tt, "term.labels"), chosen)
+        if (grepl("|", x) && !grepl("[()]", x)) {
+          x <- paste0("(", x, ")")
+        }
       }
       x
     } else {
