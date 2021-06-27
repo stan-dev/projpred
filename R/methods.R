@@ -784,10 +784,10 @@ suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
       }
     }
   } else {
-    suggested_size <- max(min(res), 1) # always include intercept
+    suggested_size <- min(res) + 1
   }
 
-  return(suggested_size)
+  return(suggested_size - 1) ## substract the intercept
 }
 
 replace_intercept_name <- function(names) {
