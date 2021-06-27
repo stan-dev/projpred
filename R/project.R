@@ -112,6 +112,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     stop("The given object is not an object of class \"vsel\". Run the ",
          "variable selection first, or provide argument `solution_terms`.")
   }
+  if (!("vsel" %in% class(object)) && !cv_search) {
+    stop("The given object is not an object of class \"vsel\". Run the ",
+         "variable selection first, or provide argument `cv_search = TRUE`.")
+  }
 
   refmodel <- get_refmodel(object, ...)
 
