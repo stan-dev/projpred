@@ -104,7 +104,11 @@ proj_helper <- function(object, newdata,
         object <- list(object)
       }
       projs <- Filter(function(x) {
-        count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
+        solterms_tocount <- x$solution_terms
+        if (length(solterms_tocount) == 0) {
+          solterms_tocount <- "1"
+        }
+        count_terms_chosen(solterms_tocount) %in% (filter_nterms + 1)
       }, object)
     } else {
       projs <- object
