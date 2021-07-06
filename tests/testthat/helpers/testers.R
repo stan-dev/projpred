@@ -37,8 +37,6 @@ proj_list_tester <- function(p,
   if (is_seq) {
     # kl should be non-increasing on training data
     klseq <- sapply(p, function(x) sum(x$kl))
-    # Remove intercept from the comparison:
-    klseq <- klseq[-1]
     expect_identical(klseq, cummin(klseq), info = info_str)
     ### Check with tolerance:
     # expect_true(all(diff(klseq) - 1e-1 < 0), info = info_str)
