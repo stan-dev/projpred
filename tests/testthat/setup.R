@@ -43,6 +43,10 @@ projection_nms <- c(
   "p_type", "intercept", "extract_model_data", "refmodel"
 )
 sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
+searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
+psel_nms <- c("mu", "var", "weights", "cl")
+dtest_nms <- c("y", "test_points", "data", "weights", "type")
+vsel_smmry_nms <- c("size", "solution_terms", "elpd", "se", "diff", "diff.se")
 
 ## Customized -------------------------------------------------------------
 

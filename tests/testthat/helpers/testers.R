@@ -39,7 +39,7 @@ proj_list_tester <- function(p,
     klseq <- sapply(p, function(x) sum(x$kl))
     expect_identical(klseq, cummin(klseq), info = info_str)
     ### Check with tolerance:
-    # expect_true(all(diff(klseq) - 1e-1 < 0), info = info_str)
+    # expect_true(all(diff(klseq) < 1e-1), info = info_str)
     ###
   }
   return(invisible(TRUE))
@@ -108,5 +108,161 @@ projection_tester <- function(p,
   if (nprjdraws_expected == 1) {
     expect_identical(p$weights, 1, info = info_str)
   }
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of an expected "vsel" object
+#
+# @param vs An object of class "vsel" (at least expected so).
+# @param refmod_expected The expected "refmodel" object.
+# @param solterms_len_expected A single numeric value giving the expected number
+#   of solution terms (not counting the intercept, even for the intercept-only
+#   model).
+# @param method_expected The expected `vs$method` object.
+# @param cv_method_expected The expected `vs$cv_method` object.
+# @param valsearch_expected The expected `vs$validate_search` object.
+# @param ndraws_expected The expected `vs$ndraws` object.
+# @param ndraws_pred_expected The expected `vs$ndraws_pred` object.
+# @param nclusters_expected The expected `vs$nclusters` object (not adopted for
+#   L1 search).
+# @param nclusters_pred_expected The expected `vs$nclusters_pred` object.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+#
+vsel_tester <- function(vs,
+                        refmod_expected,
+                        solterms_len_expected,
+                        method_expected,
+                        cv_method_expected,
+                        valsearch_expected,
+                        ndraws_expected = ndraws_default,
+                        ndraws_pred_expected = ndraws_pred_default,
+                        nclusters_expected = NULL,
+                        nclusters_pred_expected = NULL,
+                        info_str = "") {
+  if (method_expected == "l1") {
+    nclusters_expected <- 1
+  }
+
+  expect_s3_class(vs, "vsel")
+
+  # refmodel
+  expect_s3_class(vs$refmodel, "refmodel")
+  expect_identical(vs$refmodel, refmod_expected, info = info_str)
+
+  # search_path
+  expect_type(vs$search_path, "list")
+  expect_named(vs$search_path, searchpth_nms, info = info_str)
+  expect_identical(vs$search_path$solution_terms, vs$solution_terms,
+                   info = info_str)
+  expect_type(vs$search_path$sub_fits, "list")
+  expect_length(vs$search_path$sub_fits, solterms_len_expected + 1)
+  for (j in seq_along(vs$search_path$sub_fits)) {
+    expect_s3_class(vs$search_path$sub_fits[[!!j]],
+                    get_as.matrix_cls_projpred())
+  }
+  expect_type(vs$search_path$p_sel, "list")
+  expect_named(vs$search_path$p_sel, psel_nms, info = info_str)
+  expect_true(is.matrix(vs$search_path$p_sel$mu))
+  expect_equal(dim(vs$search_path$p_sel$mu), c(n_tst, nclusters_expected),
+               info = info_str)
+  expect_true(is.matrix(vs$search_path$p_sel$var))
+  expect_equal(dim(vs$search_path$p_sel$var), c(n_tst, nclusters_expected),
+               info = info_str)
+  expect_type(vs$search_path$p_sel$weights, "double")
+  expect_length(vs$search_path$p_sel$weights, nclusters_expected)
+  expect_type(vs$search_path$p_sel$cl, "double")
+  expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
+
+  # d_test
+  expect_type(vs$d_test, "list")
+  expect_named(vs$d_test, dtest_nms, info = info_str)
+  expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
+  expect_identical(vs$d_test$test_points, seq_len(n_tst), info = info_str)
+  expect_null(vs$d_test$data, info = info_str)
+  expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
+  expect_identical(vs$d_test$type, "train", info = info_str)
+
+  # summaries
+  expect_type(vs$summaries, "list")
+  expect_named(vs$summaries, c("sub", "ref"), info = info_str)
+  expect_length(vs$summaries$sub, solterms_len_expected + 1)
+  for (j in seq_along(vs$summaries$sub)) {
+    expect_named(vs$summaries$sub[[!!j]], c("mu", "lppd"), info = info_str)
+    expect_type(vs$summaries$sub[[!!j]]$mu, "double")
+    expect_length(vs$summaries$sub[[!!j]]$mu, n_tst)
+    expect_type(vs$summaries$sub[[!!j]]$lppd, "double")
+    expect_length(vs$summaries$sub[[!!j]]$lppd, n_tst)
+  }
+  expect_named(vs$summaries$ref, c("mu", "lppd"), info = info_str)
+  expect_length(vs$summaries$ref$mu, n_tst)
+  expect_length(vs$summaries$ref$lppd, n_tst)
+
+  # family
+  expect_s3_class(vs$family, "family")
+  expect_identical(vs$family, refmod_expected$family, info = info_str)
+
+  # solution_terms
+  expect_type(vs$solution_terms, "character")
+  expect_length(vs$solution_terms, solterms_len_expected)
+  expect_true(all(vs$solution_terms %in% labels(terms(vs$refmodel$formula))),
+              info = info_str)
+
+  # kl
+  expect_type(vs$kl, "double")
+  expect_length(vs$kl, solterms_len_expected + 1)
+  expect_true(all(vs$kl >= 0), info = info_str)
+  # Expected to be decreasing:
+  expect_identical(vs$kl, cummin(vs$kl), info = info_str)
+  ### Check with tolerance:
+  # expect_true(all(diff(vs$kl) < 1e-1), info = info_str)
+  ###
+
+  # nterms_max
+  expect_identical(vs$nterms_max, solterms_len_expected + 1, info = info_str)
+
+  # nterms_all
+  expect_identical(vs$nterms_all, count_terms_in_formula(vs$refmodel$formula),
+                   info = info_str)
+
+  # method
+  expect_identical(vs$method, method_expected, info = info_str)
+
+  # cv_method
+  expect_identical(vs$cv_method, cv_method_expected, info = info_str)
+
+  # validate_search
+  expect_identical(vs$validate_search, valsearch_expected, info = info_str)
+
+  # ndraws
+  expect_equal(vs$ndraws, ndraws_expected, info = info_str)
+
+  # ndraws_pred
+  expect_equal(vs$ndraws_pred, ndraws_pred_expected, info = info_str)
+
+  # nclusters
+  expect_equal(vs$nclusters, nclusters_expected, info = info_str)
+
+  # nclusters_pred
+  expect_equal(vs$nclusters_pred, nclusters_pred_expected, info = info_str)
+
+  # suggested_size
+  expect_type(vs$suggested_size, "double")
+  expect_length(vs$suggested_size, 1)
+
+  # summary
+  expect_s3_class(vs$summary, "data.frame")
+  expect_named(vs$summary, vsel_smmry_nms, info = info_str)
+  expect_identical(nrow(vs$summary), solterms_len_expected + 1L,
+                   info = info_str)
+  expect_identical(vs$summary$size, seq_len(nrow(vs$summary)) - 1,
+                   info = info_str)
+  expect_identical(vs$summary$solution_terms,
+                   c(NA_character_, vs$solution_terms),
+                   info = info_str)
+  expect_equal(diff(vs$summary$elpd), diff(vs$summary$diff), info = info_str)
+
   return(invisible(TRUE))
 }
