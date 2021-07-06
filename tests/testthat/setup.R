@@ -59,7 +59,7 @@ ndr_ncl_pred_tst <- list(
 # solterms_x <- c("xco.2", "xca.1")
 solterms_x <- c("xco.2", "xco.1")
 ###
-solterms_z <- c("(1 | z.1)", "xco.1 + (xco.1 | z.1)")
+solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
 solterms_s <- c("s(s.1)", "s(s.2)")
 
 # Data --------------------------------------------------------------------
