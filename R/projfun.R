@@ -75,7 +75,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     ## need to project again for each submodel size
     projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept)
     fetch_submodel <- function(nterms) {
-      solution_terms <- varorder[seq_len(nterms)]
+      solution_terms <- utils::head(varorder, nterms)
       return(projfun(solution_terms))
     }
   }
