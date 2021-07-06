@@ -72,17 +72,14 @@ for (tstsetup in names(prjs)) {
         paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
       )
     }
-    if ("xco.1 + (xco.1 | z.1)" %in% solterms) {
-      if (!"b_xco.1" %in% colnms_prjmat_expect) {
-        colnms_prjmat_expect <- c(colnms_prjmat_expect, "b_xco.1")
-      }
+    if ("(xco.1 | z.1)" %in% solterms) {
       colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__xco.1")
       colnms_prjmat_expect <- c(
         colnms_prjmat_expect,
         paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
       )
     }
-    if (all(c("(1 | z.1)", "xco.1 + (xco.1 | z.1)") %in% solterms)) {
+    if (all(c("(1 | z.1)", "(xco.1 | z.1)") %in% solterms)) {
       colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                 "cor_z.1__Intercept__xco.1")
     }
