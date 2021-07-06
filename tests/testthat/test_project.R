@@ -86,17 +86,12 @@ test_that(paste(
     )
     stopifnot(length(tstsetup_vs) == 1)
     if (is.null(nterms_crr)) {
-      # Subtract 1L for the intercept:
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
     }
     if (length(nterms_crr) == 1) {
-      if (nterms_crr > 0) {
-        solterms_expected_crr <- vss[[tstsetup_vs]]$solution_terms[
-          seq_len(nterms_crr)
-        ]
-      } else {
-        solterms_expected_crr <- "1"
-      }
+      solterms_expected_crr <- vss[[tstsetup_vs]]$solution_terms[
+        seq_len(nterms_crr)
+      ]
       projection_tester(
         prjs_vs[[tstsetup]],
         solterms_expected = solterms_expected_crr,
@@ -150,17 +145,12 @@ test_that(paste(
     )
     stopifnot(length(tstsetup_cvvs) == 1)
     if (is.null(nterms_crr)) {
-      # Subtract 1L for the intercept:
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
     }
     if (length(nterms_crr) == 1) {
-      if (nterms_crr > 0) {
-        solterms_expected_crr <- cvvss[[tstsetup_cvvs]]$solution_terms[
-          seq_len(nterms_crr)
-        ]
-      } else {
-        solterms_expected_crr <- "1"
-      }
+      solterms_expected_crr <- cvvss[[tstsetup_cvvs]]$solution_terms[
+        seq_len(nterms_crr)
+      ]
       projection_tester(
         prjs_cvvs[[tstsetup]],
         solterms_expected = solterms_expected_crr,
