@@ -100,18 +100,12 @@ projection_tester <- function(p,
     expect_identical(p$weights, prjdraw_weights_expected, info = info_str)
   }
   if (is.numeric(solterms_expected)) {
-    # Do not count the intercept, except for the intercept-only model:
-    expect_length(p$solution_terms, max(solterms_expected, 1))
-    # Same check, but using count_terms_chosen() which counts the intercept:
-    expect_equal(count_terms_chosen(p$solution_terms), solterms_expected + 1,
-                 info = info_str)
+    expect_length(p$solution_terms, solterms_expected)
+    # Same check, but using count_terms_chosen():
+    expect_equal(count_terms_chosen(p$solution_terms, add_icpt = TRUE),
+                 solterms_expected + 1, info = info_str)
   } else if (is.character(solterms_expected)) {
-    if (length(solterms_expected) == 0) {
-      solterms_out <- "1"
-    } else {
-      solterms_out <- solterms_expected
-    }
-    expect_identical(p$solution_terms, solterms_out, info = info_str)
+    expect_identical(p$solution_terms, solterms_expected, info = info_str)
   }
   if (nprjdraws_expected == 1) {
     expect_identical(p$weights, 1, info = info_str)
