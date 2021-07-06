@@ -104,7 +104,8 @@ proj_helper <- function(object, newdata,
         object <- list(object)
       }
       projs <- Filter(function(x) {
-        count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
+        count_terms_chosen(x$solution_terms, add_icpt = TRUE) %in%
+          (filter_nterms + 1)
       }, object)
     } else {
       projs <- object
@@ -158,7 +159,7 @@ proj_helper <- function(object, newdata,
   }
 
   names(projs) <- sapply(projs, function(proj) {
-    count_terms_chosen(proj$solution_terms)
+    count_terms_chosen(proj$solution_terms, add_icpt = TRUE)
   })
 
   solution_terms <- list(...)$solution_terms

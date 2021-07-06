@@ -65,10 +65,6 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       ## reuse sub_fit as projected during search
       sub_refit <- search_path$sub_fits[[nterms + 1]]
 
-      if (length(solution_terms) == 0 && intercept) {
-        solution_terms <- c()
-      }
-
       return(.init_submodel(
         sub_fit = sub_refit, p_ref = search_path$p_sel, refmodel = refmodel,
         family = family, solution_terms = solution_terms,
@@ -79,12 +75,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     ## need to project again for each submodel size
     projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept)
     fetch_submodel <- function(nterms) {
-      if (nterms == 0 && intercept) {
-        ## empty
-        solution_terms <- c()
-      } else {
-        solution_terms <- varorder[seq_len(nterms)]
-      }
+      solution_terms <- utils::head(varorder, nterms)
       return(projfun(solution_terms))
     }
   }
