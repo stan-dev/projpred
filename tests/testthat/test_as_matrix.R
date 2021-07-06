@@ -23,7 +23,7 @@ for (tstsetup in names(prjs)) {
   ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]), c("ndraws", "nclusters"))
   if (length(ndr_ncl_nm) == 0) {
     ndr_ncl_nm <- "ndraws"
-    nprjdraws <- ndraws_default
+    nprjdraws <- ndraws_pred_default
   } else {
     stopifnot(length(ndr_ncl_nm) == 1)
     nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]

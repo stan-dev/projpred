@@ -35,7 +35,7 @@ iter_tst <- 500L
 
 ## Defaults ---------------------------------------------------------------
 
-ndraws_default <- 400L # Adopt this if the default is changed.
+ndraws_pred_default <- 400L # Adopt this if the default is changed.
 nresample_clusters_default <- 1000L # Adopt this if the default is changed.
 projection_nms <- c(
   "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
