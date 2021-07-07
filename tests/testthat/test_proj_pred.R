@@ -142,14 +142,12 @@ test_that(paste(
   skip_if_not(exists("prjs_vs"))
   for (tstsetup in names(prjs_vs)) {
     pl <- proj_linpred(prjs_vs[[tstsetup]])
+    mod_crr <- args_prj_vs[[tstsetup]]$mod_nm
+    fam_crr <- args_prj_vs[[tstsetup]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      tstsetup_vs <- grep(
-        paste0("^", args_prj_vs[[tstsetup]]$mod_nm,
-               "\\.", args_prj_vs[[tstsetup]]$fam_nm),
-        names(vss),
-        value = TRUE
-      )
+      tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
+                          value = TRUE)
       stopifnot(length(tstsetup_vs) == 1)
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
@@ -694,14 +692,12 @@ test_that(paste(
   skip_if_not(exists("prjs_vs"))
   for (tstsetup in names(prjs_vs)) {
     pp <- proj_predict(prjs_vs[[tstsetup]], .seed = seed2_tst)
+    mod_crr <- args_prj_vs[[tstsetup]]$mod_nm
+    fam_crr <- args_prj_vs[[tstsetup]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      tstsetup_vs <- grep(
-        paste0("^", args_prj_vs[[tstsetup]]$mod_nm,
-               "\\.", args_prj_vs[[tstsetup]]$fam_nm),
-        names(vss),
-        value = TRUE
-      )
+      tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
+                          value = TRUE)
       stopifnot(length(tstsetup_vs) == 1)
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
