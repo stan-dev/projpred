@@ -3,7 +3,7 @@
 context("varsel")
 
 test_that(paste(
-  "`object` of class \"refmodel\", correctly specified `nterms_max`, `method`,",
+  "`object` of class \"refmodel\", correctly specified `method`, `nterms_max`,",
   "`nclusters`, and `nclusters_pred` lead to correct output structure"
 ), {
   for (tstsetup in names(vss)) {
@@ -27,31 +27,16 @@ test_that(paste(
   }
 })
 
-test_that("search method is valid", {
-  expect_error(
-    varsel(fit_gauss, method = "k-fold"),
-    "Unknown search method"
-  )
+test_that("specifying `method` incorrectly leads to an error", {
+  for (mod_nm in mod_nms["glm"]) {
+    for (fam_nm in fam_nms["gauss"]) {
+      expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "k-fold"),
+                   "Unknown search method")
+    }
+  }
 })
 
-test_that("nterms_max has an effect on varsel for gaussian models", {
-  vs1 <- varsel(fit_gauss, method = "forward", nterms_max = 3,
-                verbose = FALSE)
-  expect_length(vs1$solution_terms, 3)
-})
-
-test_that("nterms_max has an effect on varsel for non-gaussian models", {
-  SW(vs1 <- varsel(fit_binom, method = "forward", nterms_max = 3,
-                   verbose = FALSE))
-  expect_length(vs1$solution_terms, 3)
-})
-
-test_that("specifying the number of clusters has an expected effect", {
-  SW(vs <- varsel(fit_binom, method = "forward", nterms_max = 3,
-                  nclusters = 10))
-  expect_length(vs$solution_terms, 3)
-})
-
+### TODO:
 test_that("specifying d_test has the expected effect", {
   refmodel_ <- vs_list[[1]][[1]]$refmodel
   d_test <- list(
@@ -63,13 +48,14 @@ test_that("specifying d_test has the expected effect", {
   vs <- varsel(fit_gauss, d_test = d_test, nterms_max = 3)
   expect_length(vs$solution_terms, 3)
 })
+###
 
 test_that("Having something else than stan_glm as the fit throws an error", {
   expect_error(varsel(rnorm(5), verbose = FALSE),
-               regexp = "no applicable method")
+               "no applicable method")
 })
 
-
+### TODO:
 test_that("varsel: adding more regularization has an expected effect", {
   regul <- c(1e-6, 1e-3, 1e-1, 1e1, 1e4)
   for (i in 1:length(fit_list)) {
