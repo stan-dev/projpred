@@ -142,6 +142,7 @@ vsel_tester <- function(vs,
                         nclusters_expected = NULL,
                         nclusters_pred_expected = NULL,
                         info_str = "") {
+  method_expected <- tolower(method_expected)
   if (method_expected == "l1") {
     nclusters_expected <- 1
   }
