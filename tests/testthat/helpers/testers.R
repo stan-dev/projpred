@@ -166,15 +166,20 @@ vsel_tester <- function(vs,
   }
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel, psel_nms, info = info_str)
-  expect_true(is.matrix(vs$search_path$p_sel$mu))
+  expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_equal(dim(vs$search_path$p_sel$mu), c(n_tst, nclusters_expected),
                info = info_str)
-  expect_true(is.matrix(vs$search_path$p_sel$var))
-  expect_equal(dim(vs$search_path$p_sel$var), c(n_tst, nclusters_expected),
-               info = info_str)
+  if (vs$family$family == "gaussian") {
+    expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
+    expect_equal(dim(vs$search_path$p_sel$var), c(n_tst, nclusters_expected),
+                 info = info_str)
+  } else {
+    expect_type(vs$search_path$p_sel$var, "double")
+    expect_length(vs$search_path$p_sel$var, 1)
+  }
   expect_type(vs$search_path$p_sel$weights, "double")
   expect_length(vs$search_path$p_sel$weights, nclusters_expected)
-  expect_type(vs$search_path$p_sel$cl, "double")
+  expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)
   expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
 
   # d_test
