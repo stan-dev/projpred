@@ -222,8 +222,11 @@ vsel_tester <- function(vs,
   # solution_terms
   expect_type(vs$solution_terms, "character")
   expect_length(vs$solution_terms, solterms_len_expected)
-  expect_true(all(vs$solution_terms %in% labels(terms(vs$refmodel$formula))),
-              info = info_str)
+  expect_true(
+    all(vs$solution_terms %in% split_formula(vs$refmodel$formula,
+                                             add_main_effects = FALSE)),
+    info = info_str
+  )
 
   # kl
   expect_type(vs$kl, "double")
