@@ -3,18 +3,21 @@
 context("varsel")
 
 test_that(paste(
-  "`object` of class \"refmodel\", correctly specified `nterms_max`, and",
-  "correctly specified `nclusters` and `nclusters_pred` lead to correct output",
-  "structure"
+  "`object` of class \"refmodel\", correctly specified `nterms_max`, `method`,",
+  "`nclusters`, and `nclusters_pred` lead to correct output structure"
 ), {
   for (tstsetup in names(vss)) {
     mod_crr <- args_vs[[tstsetup]]$mod
     fam_crr <- args_vs[[tstsetup]]$fam
+    meth_exp_crr <- args_vs[[tstsetup]]$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
     vsel_tester(
       vss[[tstsetup]],
       refmod_expected = refmods[[mod_crr]][[fam_crr]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
-      method_expected = tolower(ifelse(mod_crr == "glm", "L1", "forward")),
+      method_expected = meth_exp_crr,
       cv_method_expected = NULL,
       valsearch_expected = NULL,
       nclusters_expected = args_vs[[tstsetup]]$nclusters,

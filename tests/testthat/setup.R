@@ -66,6 +66,11 @@ solterms_x <- c("xco.2", "xco.1")
 ###
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
 solterms_s <- c("s(s.1)", "s(s.2)")
+meth_tst <- list(
+  default = list(),
+  L1 = list(method = "L1"),
+  forward = list(method = "forward")
+)
 
 # Data --------------------------------------------------------------------
 
@@ -361,11 +366,21 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
 if (run_vs) {
   args_vs <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
-      return(nlist(
-        mod_nm, fam_nm, nclusters = nclusters_tst,
-        nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
-        verbose = FALSE, seed = seed_tst
-      ))
+      if (mod_nm == "glm" && fam_nm == "gauss") {
+        meth <- meth_tst[setdiff(names(meth_tst), "L1")]
+      } else {
+        meth <- meth_tst["default"]
+      }
+      lapply(meth, function(meth_i) {
+        return(c(
+          nlist(
+            mod_nm, fam_nm, nclusters = nclusters_tst,
+            nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
+            verbose = FALSE, seed = seed_tst
+          ),
+          meth_i
+        ))
+      })
     })
   })
   args_vs <- unlist_cust(args_vs)
@@ -470,11 +485,10 @@ args_prj_vs <- unlist_cust(args_prj_vs)
 
 if (run_vs) {
   prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
-    tstsetup <- grep(
-      paste0("^", args_prj_vs_i$mod_nm, "\\.", args_prj_vs_i$fam_nm),
-      names(vss),
-      value = TRUE
-    )
+    mod_i <- args_prj_vs_i$mod_nm
+    fam_i <- args_prj_vs_i$fam_nm
+    tstsetup <- grep(paste0("^", mod_i, "\\.", fam_i), names(vss),
+                     value = TRUE)[1]
     stopifnot(length(tstsetup) == 1)
     do.call(project, c(
       list(object = vss[[tstsetup]]),
