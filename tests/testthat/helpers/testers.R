@@ -160,9 +160,18 @@ vsel_tester <- function(vs,
                    info = info_str)
   expect_type(vs$search_path$sub_fits, "list")
   expect_length(vs$search_path$sub_fits, solterms_len_expected + 1)
-  for (j in seq_along(vs$search_path$sub_fits)) {
-    expect_s3_class(vs$search_path$sub_fits[[!!j]],
-                    get_as.matrix_cls_projpred())
+  for (i in seq_along(vs$search_path$sub_fits)) {
+    if (!is.null(nclusters_expected) && nclusters_expected == 1) {
+      sub_fits_totest <- list(vs$search_path$sub_fits[[i]])
+    } else {
+      expect_length(vs$search_path$sub_fits[[!!i]], nclusters_expected)
+      sub_fits_totest <- vs$search_path$sub_fits[[i]]
+    }
+    for (j in seq_along(sub_fits_totest)) {
+      expect_true(inherits(sub_fits_totest[[!!j]],
+                           get_as.matrix_cls_projpred()),
+                  info = paste(info_str, i, sep = "_"))
+    }
   }
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel, psel_nms, info = info_str)
