@@ -184,7 +184,7 @@ vsel_tester <- function(vs,
                  info = info_str)
   } else {
     expect_type(vs$search_path$p_sel$var, "double")
-    expect_length(vs$search_path$p_sel$var, 1)
+    expect_length(vs$search_path$p_sel$var, nclusters_expected)
   }
   expect_type(vs$search_path$p_sel$weights, "double")
   expect_length(vs$search_path$p_sel$weights, nclusters_expected)
