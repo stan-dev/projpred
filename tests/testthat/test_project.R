@@ -77,13 +77,11 @@ test_that(paste(
 ), {
   skip_if_not(exists("prjs_vs"))
   for (tstsetup in names(prjs_vs)) {
+    mod_crr <- args_prj_vs[[tstsetup]]$mod_nm
+    fam_crr <- args_prj_vs[[tstsetup]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
-    tstsetup_vs <- grep(
-      paste0("^", args_prj_vs[[tstsetup]]$mod_nm,
-             "\\.", args_prj_vs[[tstsetup]]$fam_nm),
-      names(vss),
-      value = TRUE
-    )
+    tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
+                        value = TRUE)
     stopifnot(length(tstsetup_vs) == 1)
     if (is.null(nterms_crr)) {
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size
@@ -99,11 +97,8 @@ test_that(paste(
         p_type_expected = TRUE,
         info_str = tstsetup
       )
-      tstsetup_tries <- grep(
-        paste0("^", args_prj_vs[[tstsetup]]$mod_nm,
-               ".", args_prj_vs[[tstsetup]]$fam_nm, ".*\\.clust$"),
-        names(prjs), value = TRUE
-      )
+      tstsetup_tries <- grep(paste0("^", mod_crr, ".", fam_crr, ".*\\.clust$"),
+                             names(prjs), value = TRUE)
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
         setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
       })
@@ -136,13 +131,11 @@ test_that(paste(
 ), {
   skip_if_not(exists("prjs_cvvs"))
   for (tstsetup in names(prjs_cvvs)) {
+    mod_crr <- args_prj_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_prj_cvvs[[tstsetup]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
-    tstsetup_cvvs <- grep(
-      paste0("^", args_prj_cvvs[[tstsetup]]$mod_nm,
-             "\\.", args_prj_cvvs[[tstsetup]]$fam_nm),
-      names(cvvss),
-      value = TRUE
-    )
+    tstsetup_cvvs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(cvvss),
+                          value = TRUE)
     stopifnot(length(tstsetup_cvvs) == 1)
     if (is.null(nterms_crr)) {
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
@@ -158,11 +151,8 @@ test_that(paste(
         p_type_expected = TRUE,
         info_str = tstsetup
       )
-      tstsetup_tries <- grep(
-        paste0("^", args_prj_cvvs[[tstsetup]]$mod_nm,
-               ".", args_prj_cvvs[[tstsetup]]$fam_nm, ".*\\.clust$"),
-        names(prjs), value = TRUE
-      )
+      tstsetup_tries <- grep(paste0("^", mod_crr, ".", fam_crr, ".*\\.clust$"),
+                             names(prjs), value = TRUE)
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
         setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
       })
