@@ -81,7 +81,7 @@ test_that(paste(
     fam_crr <- args_prj_vs[[tstsetup]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
-                        value = TRUE)
+                        value = TRUE)[1]
     stopifnot(length(tstsetup_vs) == 1)
     if (is.null(nterms_crr)) {
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size
