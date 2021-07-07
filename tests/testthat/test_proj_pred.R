@@ -69,7 +69,7 @@ test_that(paste(
   "to correct output structure"
 ), {
   skip_if_not(exists("vss"))
-  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)
+  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
   stopifnot(length(tstsetups) == 1)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
@@ -94,7 +94,7 @@ test_that(paste(
   "to correct output structure"
 ), {
   skip_if_not(exists("cvvss"))
-  tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)
+  tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)[1]
   stopifnot(length(tstsetups) == 1)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
@@ -147,7 +147,7 @@ test_that(paste(
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
-                          value = TRUE)
+                          value = TRUE)[1]
       stopifnot(length(tstsetup_vs) == 1)
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
@@ -617,7 +617,7 @@ test_that(paste(
   "to correct output structure"
 ), {
   skip_if_not(exists("vss"))
-  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)
+  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
   stopifnot(length(tstsetups) == 1)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
@@ -641,7 +641,7 @@ test_that(paste(
   "to correct output structure"
 ), {
   skip_if_not(exists("cvvss"))
-  tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)
+  tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)[1]
   stopifnot(length(tstsetups) == 1)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
@@ -697,7 +697,7 @@ test_that(paste(
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
-                          value = TRUE)
+                          value = TRUE)[1]
       stopifnot(length(tstsetup_vs) == 1)
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
