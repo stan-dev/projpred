@@ -148,6 +148,7 @@ vsel_tester <- function(vs,
   }
 
   expect_s3_class(vs, "vsel")
+  expect_named(vs, vsel_nms, info = info_str)
 
   # refmodel
   expect_s3_class(vs$refmodel, "refmodel")
