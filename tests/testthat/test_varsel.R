@@ -70,8 +70,25 @@ test_that("specifying `object` incorrectly leads to an error", {
 })
 
 ### TODO:
+test_that("for non-GLMs, `regul` has no effect", {
+  for (mod_crr in setdiff(mod_nms, "glm")) {
+    tstsetups <- grep(paste0("^", mod_crr, "\\.gauss"), names(vss),
+                      value = TRUE)[1]
+    stopifnot(length(tstsetups) > 0)
+    for (tstsetup in tstsetups) {
+      args_vs_i <- args_vs[[tstsetup]]
+      vs_regul <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+             regul = 1e-1),
+        args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+      ))
+      expect_equal(vs_regul, vss[[tstsetup]], info = tstsetup)
+    }
+  }
+})
+
 test_that("varsel: adding more regularization has an expected effect", {
-  regul <- c(1e-6, 1e-3, 1e-1, 1e1, 1e4)
+  regul_tst <- c(1e-6, 1e-1, 1e2)
   for (i in 1:length(fit_list)) {
     nonzeros <- rep(0, length(regul))
     msize <- 3
