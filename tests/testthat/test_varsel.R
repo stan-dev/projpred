@@ -64,7 +64,7 @@ test_that("specifying `method` incorrectly leads to an error", {
 # })
 ###
 
-test_that("Having something else than stan_glm as the fit throws an error", {
+test_that("specifying `object` incorrectly leads to an error", {
   expect_error(varsel(rnorm(5), verbose = FALSE),
                "no applicable method")
 })
