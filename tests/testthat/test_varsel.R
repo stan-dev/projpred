@@ -87,21 +87,23 @@ test_that("for non-GLMs, `regul` has no effect", {
   }
 })
 
-test_that("varsel: adding more regularization has an expected effect", {
+test_that("for GLMs, `regul` has an expected effect", {
   regul_tst <- c(1e-6, 1e-1, 1e2)
-  for (i in 1:length(fit_list)) {
-    nonzeros <- rep(0, length(regul))
-    msize <- 3
-    for (j in 1:length(regul)) {
-      SW(
-        vsel <- varsel(fit_list[[i]], regul = regul[j], nterms_max = 6)
-      )
-      x <- vsel$search_path$sub_fits[[6]]
-      sol <- rbind(x$alpha, x$beta)
-      nonzeros[j] <- length(which(sol != 0))
+  tstsetups <- grep(paste0("^glm\\."), names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    nonzeros <- numeric(length(regul_tst))
+    args_vs_i <- args_vs[[tstsetup]]
+    for (j in seq_along(regul_tst)) {
+      vs_regul <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+             regul = regul_tst[j]),
+        args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+      ))
+      x <- vs_regul$search_path$sub_fits[[args_vs_i$nterms_max]]
+      nonzeros[j] <- sum(rbind(x$alpha, x$beta) != 0)
     }
-    for (j in 1:(length(regul) - 1)) {
-      expect_gte(nonzeros[j], nonzeros[j + 1])
+    for (j in head(seq_along(regul_tst), -1)) {
+      expect_gte(nonzeros[!!j], nonzeros[j + 1])
     }
   }
 })
