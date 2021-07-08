@@ -38,10 +38,22 @@ iter_tst <- 500L
 ndraws_default <- 20L # Adopt this if the default is changed.
 ndraws_pred_default <- 400L # Adopt this if the default is changed.
 nresample_clusters_default <- 1000L # Adopt this if the default is changed.
+regul_default <- 1e-4 # Adopt this if the default is changed.
+
+## Output names -----------------------------------------------------------
+
 projection_nms <- c(
   "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
   "p_type", "intercept", "extract_model_data", "refmodel"
 )
+vsel_nms <- c(
+  "refmodel", "search_path", "d_test", "summaries", "family", "solution_terms",
+  "kl", "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
+  "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "suggested_size",
+  "summary"
+)
+compos_pred <- c("summaries", "summary", "kl")
+compos_nonpred <- setdiff(vsel_nms, compos_pred)
 sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
 psel_nms <- c("mu", "var", "weights", "cl")
