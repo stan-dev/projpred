@@ -39,7 +39,7 @@ test_that("specifying `method` incorrectly leads to an error", {
 ### Excluded because of issue #167:
 # test_that("specifying d_test has the expected effect", {
 #   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
-#   stopifnot(length(tstsetups) == 1)
+#   stopifnot(length(tstsetups) > 0)
 #   for (tstsetup in tstsetups) {
 #     mod_crr <- args_vs[[tstsetup]]$mod_nm
 #     fam_crr <- args_vs[[tstsetup]]$fam_nm

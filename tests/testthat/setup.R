@@ -489,7 +489,7 @@ if (run_vs) {
     fam_i <- args_prj_vs_i$fam_nm
     tstsetup <- grep(paste0("^", mod_i, "\\.", fam_i), names(vss),
                      value = TRUE)[1]
-    stopifnot(length(tstsetup) == 1)
+    stopifnot(length(tstsetup) > 0)
     do.call(project, c(
       list(object = vss[[tstsetup]]),
       args_prj_vs_i[setdiff(names(args_prj_vs_i), c("mod_nm", "fam_nm"))]
@@ -502,12 +502,11 @@ args_prj_cvvs <- args_prj_vs
 if (run_cvvs) {
   # Use SW() because of occasional pwrssUpdate() warnings:
   SW(prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
-    tstsetup <- grep(
-      paste0("^", args_prj_cvvs_i$mod_nm, "\\.", args_prj_cvvs_i$fam_nm),
-      names(cvvss),
-      value = TRUE
-    )
-    stopifnot(length(tstsetup) == 1)
+    mod_i <- args_prj_cvvs_i$mod_nm
+    fam_i <- args_prj_cvvs_i$fam_nm
+    tstsetup <- grep(paste0("^", mod_i, "\\.", fam_i), names(cvvss),
+                     value = TRUE)[1]
+    stopifnot(length(tstsetup) > 0)
     do.call(project, c(
       list(object = cvvss[[tstsetup]]),
       args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("mod_nm", "fam_nm"))]

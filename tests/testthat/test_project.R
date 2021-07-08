@@ -59,7 +59,7 @@ test_that(paste(
 test_that("a fitted model `object` leads to correct output structure", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
-  stopifnot(length(tstsetups) == 1)
+  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_fit <- do.call(project, c(
@@ -82,7 +82,7 @@ test_that(paste(
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
                         value = TRUE)[1]
-    stopifnot(length(tstsetup_vs) == 1)
+    stopifnot(length(tstsetup_vs) > 0)
     if (is.null(nterms_crr)) {
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size
     }
@@ -134,8 +134,8 @@ test_that(paste(
     fam_crr <- args_prj_cvvs[[tstsetup]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     tstsetup_cvvs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(cvvss),
-                          value = TRUE)
-    stopifnot(length(tstsetup_cvvs) == 1)
+                          value = TRUE)[1]
+    stopifnot(length(tstsetup_cvvs) > 0)
     if (is.null(nterms_crr)) {
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
     }

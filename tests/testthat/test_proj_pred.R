@@ -5,7 +5,7 @@ context("proj_linpred()")
 test_that("proj_linpred(): passing arguments to project() works correctly", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
-  stopifnot(length(tstsetups) == 1)
+  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_direct <- do.call(proj_linpred, c(
@@ -70,7 +70,7 @@ test_that(paste(
 ), {
   skip_if_not(exists("vss"))
   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
-  stopifnot(length(tstsetups) == 1)
+  stopifnot(length(tstsetups) > 0)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
     pl <- proj_linpred(vss[[tstsetup]],
@@ -95,7 +95,7 @@ test_that(paste(
 ), {
   skip_if_not(exists("cvvss"))
   tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)[1]
-  stopifnot(length(tstsetups) == 1)
+  stopifnot(length(tstsetups) > 0)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
     pl <- proj_linpred(cvvss[[tstsetup]],
@@ -148,7 +148,7 @@ test_that(paste(
     if (is.null(nterms_crr)) {
       tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
                           value = TRUE)[1]
-      stopifnot(length(tstsetup_vs) == 1)
+      stopifnot(length(tstsetup_vs) > 0)
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
     }
@@ -175,15 +175,13 @@ test_that(paste(
   skip_if_not(exists("prjs_cvvs"))
   for (tstsetup in names(prjs_cvvs)) {
     pl <- proj_linpred(prjs_cvvs[[tstsetup]])
+    mod_crr <- args_prj_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_prj_cvvs[[tstsetup]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      tstsetup_cvvs <- grep(
-        paste0("^", args_prj_cvvs[[tstsetup]]$mod_nm,
-               "\\.", args_prj_cvvs[[tstsetup]]$fam_nm),
-        names(cvvss),
-        value = TRUE
-      )
-      stopifnot(length(tstsetup_cvvs) == 1)
+      tstsetup_cvvs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(cvvss),
+                            value = TRUE)[1]
+      stopifnot(length(tstsetup_cvvs) > 0)
       # Subtract 1L for the intercept:
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
     }
@@ -554,7 +552,7 @@ test_that("proj_predict(): `.seed` has an expected effect", {
 test_that("proj_predict(): passing arguments to project() works correctly", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
-  stopifnot(length(tstsetups) == 1)
+  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_direct <- do.call(proj_predict, c(
@@ -618,7 +616,7 @@ test_that(paste(
 ), {
   skip_if_not(exists("vss"))
   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
-  stopifnot(length(tstsetups) == 1)
+  stopifnot(length(tstsetups) > 0)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
     pp <- proj_predict(vss[[tstsetup]],
@@ -642,7 +640,7 @@ test_that(paste(
 ), {
   skip_if_not(exists("cvvss"))
   tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)[1]
-  stopifnot(length(tstsetups) == 1)
+  stopifnot(length(tstsetups) > 0)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
     pp <- proj_predict(cvvss[[tstsetup]],
@@ -698,7 +696,7 @@ test_that(paste(
     if (is.null(nterms_crr)) {
       tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
                           value = TRUE)[1]
-      stopifnot(length(tstsetup_vs) == 1)
+      stopifnot(length(tstsetup_vs) > 0)
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
     }
@@ -722,15 +720,13 @@ test_that(paste(
   skip_if_not(exists("prjs_cvvs"))
   for (tstsetup in names(prjs_cvvs)) {
     pp <- proj_predict(prjs_cvvs[[tstsetup]], .seed = seed2_tst)
+    mod_crr <- args_prj_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_prj_cvvs[[tstsetup]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      tstsetup_cvvs <- grep(
-        paste0("^", args_prj_cvvs[[tstsetup]]$mod_nm,
-               "\\.", args_prj_cvvs[[tstsetup]]$fam_nm),
-        names(cvvss),
-        value = TRUE
-      )
-      stopifnot(length(tstsetup_cvvs) == 1)
+      tstsetup_cvvs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(cvvss),
+                            value = TRUE)[1]
+      stopifnot(length(tstsetup_cvvs) > 0)
       # Subtract 1L for the intercept:
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
     }
