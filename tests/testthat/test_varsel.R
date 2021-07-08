@@ -36,18 +36,32 @@ test_that("specifying `method` incorrectly leads to an error", {
   }
 })
 
-### TODO:
-test_that("specifying d_test has the expected effect", {
-  refmodel_ <- vs_list[[1]][[1]]$refmodel
-  d_test <- list(
-    data = fit_gauss$data, y = refmodel_$y,
-    test_points = seq_along(refmodel_$y),
-    weights = refmodel_$wobs,
-    type = "test"
-  )
-  vs <- varsel(fit_gauss, d_test = d_test, nterms_max = 3)
-  expect_length(vs$solution_terms, 3)
-})
+### Excluded because of issue #167:
+# test_that("specifying d_test has the expected effect", {
+#   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
+#   stopifnot(length(tstsetups) == 1)
+#   for (tstsetup in tstsetups) {
+#     mod_crr <- args_vs[[tstsetup]]$mod_nm
+#     fam_crr <- args_vs[[tstsetup]]$fam_nm
+#     refmod_crr <- refmods[[mod_crr]][[fam_crr]]
+#     d_test_crr <- list(
+#       y = refmod_crr$y,
+#       test_points = seq_along(refmod_crr$y),
+#       data = refmod_crr$fit$data,
+#       weights = refmod_crr$wobs,
+#       type = "test"
+#     )
+#     vs_repr <- do.call(varsel, c(
+#       list(object = refmod_crr, d_test = d_test_crr),
+#       args_vs[[tstsetup]][setdiff(names(args_vs[[tstsetup]]),
+#                                   c("mod_nm", "fam_nm"))]
+#     ))
+#     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
+#     expect_identical(vs_repr[setdiff(names(vs_repr), "d_test")],
+#                      vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
+#                      info = tstsetup)
+#   }
+# })
 ###
 
 test_that("Having something else than stan_glm as the fit throws an error", {
