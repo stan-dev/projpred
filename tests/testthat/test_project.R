@@ -271,13 +271,18 @@ test_that("specifying `seed` correctly leads to reproducible results", {
 })
 
 test_that("for non-GLMs, `regul` has no effect", {
-  for (tstsetup in grep("^glm\\.", names(prjs), value = TRUE, invert = TRUE)) {
-    args_prj_i <- args_prj[[tstsetup]]
-    p_regul <- do.call(project, c(
-      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
-           regul = 1e-1),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
-    ))
-    expect_equal(p_regul, prjs[[tstsetup]], info = tstsetup)
+  for (mod_crr in setdiff(mod_nms, "glm")) {
+    tstsetups <- grep(paste0("^", mod_crr, "\\.gauss\\.solterms_x\\.clust"),
+                      names(prjs), value = TRUE)[1]
+    stopifnot(length(tstsetups) > 0)
+    for (tstsetup in tstsetups) {
+      args_prj_i <- args_prj[[tstsetup]]
+      p_regul <- do.call(project, c(
+        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+             regul = 1e-1),
+        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      ))
+      expect_equal(p_regul, prjs[[tstsetup]], info = tstsetup)
+    }
   }
 })
