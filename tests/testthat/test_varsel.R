@@ -69,7 +69,6 @@ test_that("specifying `object` incorrectly leads to an error", {
                "no applicable method")
 })
 
-### TODO:
 test_that("for non-GLMs, `regul` has no effect", {
   for (mod_crr in setdiff(mod_nms, "glm")) {
     tstsetups <- grep(paste0("^", mod_crr, "\\.gauss"), names(vss),
@@ -89,25 +88,46 @@ test_that("for non-GLMs, `regul` has no effect", {
 
 test_that("for GLMs, `regul` has an expected effect", {
   regul_tst <- c(1e-6, 1e-1, 1e2)
+  tol_tst <- sqrt(.Machine$double.eps)
   tstsetups <- grep(paste0("^glm\\."), names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    nonzeros <- numeric(length(regul_tst))
     args_vs_i <- args_vs[[tstsetup]]
+    m_max <- args_vs_i$nterms_max + 1L
+    if (identical(args_vs_i$method, "forward")) {
+      ncl_crr <- args_vs_i$nclusters
+    } else {
+      ncl_crr <- 1L
+    }
+    nonzeros <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     for (j in seq_along(regul_tst)) {
       vs_regul <- do.call(varsel, c(
         list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
              regul = regul_tst[j]),
         args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
       ))
-      x <- vs_regul$search_path$sub_fits[[args_vs_i$nterms_max]]
-      nonzeros[j] <- sum(rbind(x$alpha, x$beta) != 0)
+      for (m in seq_len(m_max)) {
+        x <- vs_regul$search_path$sub_fits[[m]]
+        if (ncl_crr == 1) {
+          x <- list(x)
+        }
+        for (nn in seq_along(x)) {
+          nonzeros[j, m, nn] <- sum(
+            abs(rbind(x[[nn]]$alpha, x[[nn]]$beta)) >= tol_tst
+          )
+        }
+      }
     }
-    for (j in head(seq_along(regul_tst), -1)) {
-      expect_gte(nonzeros[!!j], nonzeros[j + 1])
+    for (j in seq_len(dim(nonzeros)[1] - 1L)) {
+      for (m in seq_len(dim(nonzeros)[2])) {
+        for (nn in seq_len(dim(nonzeros)[3])) {
+          expect_gte(nonzeros[!!j, !!m, !!nn], nonzeros[j + 1, m, nn])
+        }
+      }
     }
   }
 })
 
+### TODO:
 test_that("varsel: length of the penalty vector is checked", {
   vsf <- function(obj, penalty) {
     varsel(obj,
