@@ -27,6 +27,11 @@ test_that(paste(
   }
 })
 
+test_that("specifying `object` incorrectly leads to an error", {
+  expect_error(varsel(rnorm(5), verbose = FALSE),
+               "no applicable method")
+})
+
 test_that("specifying `method` incorrectly leads to an error", {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
@@ -63,11 +68,6 @@ test_that("specifying `method` incorrectly leads to an error", {
 #   }
 # })
 ###
-
-test_that("specifying `object` incorrectly leads to an error", {
-  expect_error(varsel(rnorm(5), verbose = FALSE),
-               "no applicable method")
-})
 
 ## Regularization ---------------------------------------------------------
 
