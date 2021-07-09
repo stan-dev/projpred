@@ -278,6 +278,23 @@ test_that("`penalty` of incorrect length causes an error", {
   }
 })
 
+test_that("for forward search, `penalty` has no effect", {
+  penal_tst <- 2
+  tstsetups <- union(grep("\\.forward", names(vss), value = TRUE),
+                     grep("^glm\\.", names(vss), value = TRUE, invert = TRUE))
+  tstsetups <- tstsetups[1] # For the sake of speed.
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    vs_penal <- do.call(varsel, c(
+      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+           penalty = penal_tst),
+      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+    ))
+    expect_equal(vs_penal, vss[[tstsetup]], info = tstsetup)
+  }
+})
+
 test_that(paste(
   "varsel: specifying penalties for variables has an expected",
   "effect"
