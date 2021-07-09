@@ -96,91 +96,122 @@ test_that(paste(
   "for GLMs with L1 search, `regul` only has an effect on prediction, not on",
   "selection"
 ), {
-  regul_tst <- 1e-1
+  regul_tst <- c(regul_default, 1e-1, 1e2)
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    vs_regul <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
-           regul = regul_tst),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
-    ))
-    # Expect equality for all components not related to prediction:
-    expect_equal(vs_regul[compos_nonpred], vss[[tstsetup]][compos_nonpred],
-                 info = tstsetup)
-    # Expect inequality for all components related to prediction:
-    expect_false(isTRUE(all.equal(vs_regul[compos_pred],
-                                  vss[[tstsetup]][compos_pred])),
-                 info = tstsetup)
-    # Check the inequality for the prediction components more precisely: Expect
-    # a reduction of the sum of the squared coefficients:
     m_max <- args_vs_i$nterms_max + 1L
     if (identical(args_vs_i$method, "forward")) {
       ncl_crr <- args_vs_i$nclusters
     } else {
       ncl_crr <- 1L
     }
-    for (m in seq_len(m_max)) {
-      subfits_m <- vss[[tstsetup]]$search_path$sub_fits[[m]]
-      subfits_m_regul <- vs_regul$search_path$sub_fits[[m]]
-      if (ncl_crr == 1) {
-        subfits_m <- list(subfits_m)
-        subfits_m_regul <- list(subfits_m_regul)
+    for (j in seq_along(regul_tst)) {
+      if (regul_tst[j] == regul_default) {
+        vs_regul <- vss[[tstsetup]]
+      } else {
+        vs_regul <- do.call(varsel, c(
+          list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+               regul = regul_tst[j]),
+          args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+        ))
+        # Expect equality for all components not related to prediction:
+        expect_equal(vs_regul[compos_nonpred],
+                     vss[[tstsetup]][compos_nonpred],
+                     info = paste(tstsetup, j, sep = "_"))
+        # Expect inequality for all components related to prediction:
+        expect_false(isTRUE(all.equal(vs_regul[compos_pred],
+                                      vss[[tstsetup]][compos_pred])),
+                     info = paste(tstsetup, j, sep = "_"))
       }
-      for (nn in seq_along(subfits_m_regul)) {
-        ssq <- sum(rbind(subfits_m[[nn]]$alpha, subfits_m[[nn]]$beta)^2)
-        ssq_regul <- sum(rbind(subfits_m_regul[[nn]]$alpha,
-                               subfits_m_regul[[nn]]$beta)^2)
-        stopifnot(regul_default < regul_tst)
-        expect_gt(ssq, ssq_regul)
+      # Check the prediction components in detail: Expect a reduction of the sum
+      # of the squared coefficients (excluding the intercept) for increasing
+      # `regul`:
+      for (m in seq_len(m_max)) {
+        # Since varsel() doesn't output object `p_sub`, use the linear predictor
+        # `$summaries$sub[[m]]$mu` here (instead of the coefficients themselves,
+        # which would only be accessible from `p_sub`):
+        mu_m <- vss[[tstsetup]]$summaries$sub[[m]]$mu
+        mu_m_regul <- vs_regul$summaries$sub[[m]]$mu
+        if (ncl_crr == 1) {
+          mu_m <- list(mu_m)
+          mu_m_regul <- list(mu_m_regul)
+        }
+        for (nn in seq_along(mu_m)) {
+          # In fact, `sum((mu - intercept)^2)` would make more sense than
+          # `var(mu) = sum((mu - mean(mu))^2)` but since varsel() doesn't output
+          # object `p_sub`, the intercept from the prediction is not accessible
+          # here.
+          ssq <- var(mu_m[[nn]])
+          ssq_regul <- var(mu_m_regul[[nn]])
+          if (m == 1) {
+            # For the intercept-only model, the linear predictor consists only
+            # of the intercept, so we expect no variation in `mu_m[[nn]]` or
+            # `mu_m_regul[[nn]]`:
+            expect_equal(ssq, 0,
+                         info = paste(tstsetup, j, m, nn, sep = "_"))
+            expect_equal(ssq_regul, 0,
+                         info = paste(tstsetup, j, m, nn, sep = "_"))
+          } else {
+            if (regul_tst[j] > regul_default) {
+              expect_lt(ssq_regul, ssq)
+            } else if (regul_tst[j] == regul_default) {
+              expect_equal(ssq_regul, ssq,
+                           info = paste(tstsetup, j, m, nn, sep = "_"))
+            } else if (regul_tst[j] < regul_default) {
+              expect_gt(ssq_regul, ssq)
+            }
+          }
+        }
       }
     }
   }
 })
 
+### TODO: Update this:
 test_that(paste(
   "for GLMs with forward search, `regul` has an effect on selection as well as",
-  "prediction"
+  "on prediction"
 ), {
   regul_tst <- c(regul_default, 1e-1, 1e2)
-  tstsetups <- grep("^glm\\.", names(vss), value = TRUE)
+  tstsetups <- grep("^glm\\..*\\.forward", names(vss), value = TRUE)
+  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    # Exclude L1 search (as explained above):
-    if (is.null(args_vs_i$method) || args_vs_i$method == "L1") next
     m_max <- args_vs_i$nterms_max + 1L
     if (identical(args_vs_i$method, "forward")) {
       ncl_crr <- args_vs_i$nclusters
     } else {
       ncl_crr <- 1L
     }
-    ssq <- array(dim = c(length(regul_tst), m_max, ncl_crr))
+    ssq_regul <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     for (j in seq_along(regul_tst)) {
       if (regul_tst[j] == regul_default) {
-        vss_regul[[tstsetup]] <- vss[[tstsetup]]
+        vs_regul <- vss[[tstsetup]]
       } else {
-        vss_regul[[tstsetup]] <- do.call(varsel, c(
+        vs_regul <- do.call(varsel, c(
           list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
                regul = regul_tst[j]),
           args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
         ))
       }
       for (m in seq_len(m_max)) {
-        x <- vss_regul[[tstsetup]]$search_path$sub_fits[[m]]
+        subfits_m_regul <- vs_regul$search_path$sub_fits[[m]]
         if (ncl_crr == 1) {
-          x <- list(x)
+          subfits_m_regul <- list(subfits_m_regul)
         }
-        for (nn in seq_along(x)) {
-          ssq[j, m, nn] <- sum(rbind(x[[nn]]$alpha, x[[nn]]$beta)^2)
+        for (nn in seq_along(subfits_m_regul)) {
+          ssq_regul[j, m, nn] <- sum(rbind(subfits_m_regul[[nn]]$alpha,
+                                           subfits_m_regul[[nn]]$beta)^2)
         }
       }
     }
-    for (j in seq_len(dim(ssq)[1] - 1L)) {
-      for (m in seq_len(dim(ssq)[2])) {
-        for (nn in seq_len(dim(ssq)[3])) {
-          expect_gt(ssq[!!j, !!m, !!nn], ssq[j + 1, m, nn])
+    for (j in seq_len(dim(ssq_regul)[1] - 1L)) {
+      for (m in seq_len(dim(ssq_regul)[2])) {
+        for (nn in seq_len(dim(ssq_regul)[3])) {
+          expect_gt(ssq_regul[!!j, !!m, !!nn], ssq_regul[j + 1, m, nn])
         }
       }
     }
