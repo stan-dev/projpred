@@ -255,17 +255,27 @@ test_that(paste(
   }
 })
 
-### TODO:
-test_that("varsel: length of the penalty vector is checked", {
-  vsf <- function(obj, penalty) {
-    varsel(obj,
-           method = "L1", nterms_max = nterms + 1,
-           verbose = FALSE, penalty = penalty,
-           ndraws = ndraws, ndraws_pred = ndraws_pred
-    )
+## Penalty ----------------------------------------------------------------
+
+test_that("`penalty` of incorrect length causes an error", {
+  tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
+                       grep("^glm\\..*\\.forward", names(vss), value = TRUE))
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    penal_tst <- list(rep(1, args_vs_i$nterms_max + 10),
+                      1)
+    for (penal_crr in penal_tst) {
+      expect_error(
+        do.call(varsel, c(
+          list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+               penalty = penal_crr),
+          args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+        )),
+        "^Incorrect length of penalty vector \\(should be [[:digit:]]+\\)\\.$"
+      )
+    }
   }
-  expect_error(vsf(fit_list$gauss, rep(1, nterms + 10)))
-  expect_error(vsf(fit_list$gauss, 1))
 })
 
 test_that(paste(
