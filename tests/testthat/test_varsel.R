@@ -100,6 +100,8 @@ test_that(paste(
   "selection"
 ), {
   regul_tst <- c(regul_default, 1e-1, 1e2)
+  stopifnot(regul_tst[1] == regul_default)
+  stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
   stopifnot(length(tstsetups) > 0)
@@ -111,6 +113,7 @@ test_that(paste(
     } else {
       ncl_crr <- 1L
     }
+    ssq_regul <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     for (j in seq_along(regul_tst)) {
       if (regul_tst[j] == regul_default) {
         vs_regul <- vss[[tstsetup]]
@@ -136,37 +139,28 @@ test_that(paste(
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
         # `$summaries$sub[[m]]$mu` here (instead of the coefficients themselves,
         # which would only be accessible from `p_sub`):
-        mu_m <- vss[[tstsetup]]$summaries$sub[[m]]$mu
-        mu_m_regul <- vs_regul$summaries$sub[[m]]$mu
+        mu_jm_regul <- vs_regul$summaries$sub[[m]]$mu
         if (ncl_crr == 1) {
-          mu_m <- list(mu_m)
-          mu_m_regul <- list(mu_m_regul)
+          mu_jm_regul <- list(mu_jm_regul)
+        } else {
+          stopifnot(identical(ncl_crr, length(mu_jm_regul)))
         }
-        for (nn in seq_along(mu_m)) {
+        for (nn in seq_len(ncl_crr)) {
           # In fact, `sum((mu - intercept)^2)` would make more sense than
           # `var(mu) = sum((mu - mean(mu))^2)` but since varsel() doesn't output
           # object `p_sub`, the intercept from the prediction is not accessible
           # here.
-          ssq <- var(mu_m[[nn]])
-          ssq_regul <- var(mu_m_regul[[nn]])
-          if (m == 1) {
-            # For the intercept-only model, the linear predictor consists only
-            # of the intercept, so we expect no variation in `mu_m[[nn]]` or
-            # `mu_m_regul[[nn]]`:
-            expect_equal(ssq, 0,
-                         info = paste(tstsetup, j, m, nn, sep = "_"))
-            expect_equal(ssq_regul, 0,
-                         info = paste(tstsetup, j, m, nn, sep = "_"))
-          } else {
-            if (regul_tst[j] > regul_default) {
-              expect_lt(ssq_regul, ssq)
-            } else if (regul_tst[j] == regul_default) {
-              expect_equal(ssq_regul, ssq,
-                           info = paste(tstsetup, j, m, nn, sep = "_"))
-            } else if (regul_tst[j] < regul_default) {
-              expect_gt(ssq_regul, ssq)
-            }
-          }
+          ssq_regul[j, m, nn] <- var(mu_jm_regul[[nn]])
+        }
+      }
+    }
+    # For the intercept-only model, the linear predictor consists only
+    # of the intercept, so we expect no variation in `mu_jm_regul[[nn]]`:
+    expect_true(all(ssq_regul[, 1, ] == 0), info = tstsetup)
+    for (j in seq_len(dim(ssq_regul)[1])[-1]) {
+      for (m in seq_len(dim(ssq_regul)[2])[-1]) {
+        for (nn in seq_len(dim(ssq_regul)[3])) {
+          expect_lt(ssq_regul[!!j, !!m, !!nn], ssq_regul[j - 1, m, nn])
         }
       }
     }
