@@ -1,6 +1,6 @@
 # varsel() ----------------------------------------------------------------
 
-context("varsel")
+context("varsel()")
 
 test_that(paste(
   "`object` of class \"refmodel\", correctly specified `method`, `nterms_max`,",
@@ -69,11 +69,14 @@ test_that("specifying `object` incorrectly leads to an error", {
                "no applicable method")
 })
 
+## Regularization ---------------------------------------------------------
+
 # In fact, `regul` is already checked in `test_project.R`, so the `regul` tests
 # could be omitted here since varsel() and cv_varsel() also pass `regul` to
 # project_submodel() (usually via .get_submodels(), just like project()). This
 # doesn't hold for L1 search, though. So for L1 search, the `regul` tests are
 # still needed.
+
 test_that("for non-GLMs, `regul` has no effect", {
   regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
@@ -257,7 +260,7 @@ test_that(paste(
 
 # cv_varsel() -------------------------------------------------------------
 
-context("cv_varsel")
+context("cv_varsel()")
 
 cvsf <- function(x, m, cvm, K = NULL, ...) {
   cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K,
@@ -596,8 +599,9 @@ if (Sys.getenv("NOT_CRAN") == "true") {
   })
 }
 
-# -------------------------------------------------------------
-context("summary")
+# summary() ---------------------------------------------------------------
+
+context("summary()")
 
 valid_stats_all <- c("elpd", "mlpd")
 valid_stats_gauss_only <- c("mse", "rmse")
@@ -682,7 +686,11 @@ test_that("summary works with reference models", {
   }
 })
 
-test_that("print works as expected", {
+# print() -----------------------------------------------------------------
+
+context("print()")
+
+test_that("print() works as expected", {
 
   skip_on_cran()
   # default rounding
@@ -729,9 +737,9 @@ test_that("print works as expected", {
   ))
 })
 
+# plot() ------------------------------------------------------------------
 
-# -------------------------------------------------------------
-context("plots")
+context("plot()")
 
 test_that("plotting works", {
   expect_s3_class(plot(vs_list[[1]][[1]]), "ggplot")
@@ -759,16 +767,16 @@ test_that("the value of nterms_max is valid", {
 ##   )
 ## })
 
+# suggest_size() ----------------------------------------------------------
 
-# -------------------------------------------------------------
-context("suggest_size")
+context("suggest_size()")
 
-test_that("suggest_size checks the length of stat", {
+test_that("suggest_size() checks the length of stat", {
   expect_error(suggest_size(vs_list[[1]][["gauss"]], stat = valid_stats_all),
                "Only one statistic")
 })
 
-test_that("suggest_size works on all stats", {
+test_that("suggest_size() works on all stats", {
   for (stat in valid_stats_gauss) {
     suggested_size <- suggest_size(vs_list[[1]][["gauss"]], stat = stat)
     expect_true(!is.na(suggested_size))
