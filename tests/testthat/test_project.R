@@ -246,24 +246,22 @@ test_that("specifying `seed` correctly leads to reproducible results", {
              names(args_prj), value = TRUE),
         1
       )
-      ndr_ncl_nm <- intersect(names(args_prj[[tstsetup_prj]]),
-                              c("ndraws", "nclusters"))
+      args_prj_i <- args_prj[[tstsetup_prj]]
+      ndr_ncl_nm <- intersect(names(args_prj_i), c("ndraws", "nclusters"))
       stopifnot(identical(ndr_ncl_nm, "nclusters"))
       p_orig <- prjs[[tstsetup_prj]]
       runif(1) # Just to advance `.Random.seed[2]`.
-      p_new <- project(
-        refmods[[mod_nm]][[fam_nm]],
-        nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
-        solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
-        seed = args_prj[[tstsetup_prj]]$seed + 1L
-      )
+      p_new <- do.call(project, c(
+        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+             seed = args_prj_i$seed + 1L),
+        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm", "seed"))]
+      ))
       runif(1) # Just to advance `.Random.seed[2]`.
-      p_repr <- project(
-        refmods[[mod_nm]][[fam_nm]],
-        nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
-        solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
-        seed = args_prj[[tstsetup_prj]]$seed
-      )
+      p_repr <- do.call(project, c(
+        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+             seed = args_prj_i$seed),
+        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm", "seed"))]
+      ))
       # Expected equality:
       expect_equal(p_repr, p_orig, info = tstsetup)
       # Expected inequality:
