@@ -52,7 +52,8 @@ vsel_nms <- c(
   "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "suggested_size",
   "summary"
 )
-compos_pred <- c("summaries", "summary", "kl")
+compos_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
+                 "summary")
 compos_nonpred <- setdiff(vsel_nms, compos_pred)
 sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
