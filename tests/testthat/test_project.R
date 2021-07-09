@@ -250,12 +250,14 @@ test_that("specifying `seed` correctly leads to reproducible results", {
                               c("ndraws", "nclusters"))
       stopifnot(identical(ndr_ncl_nm, "nclusters"))
       p_orig <- prjs[[tstsetup_prj]]
+      runif(1) # Just to advance `.Random.seed[2]`.
       p_new <- project(
         refmods[[mod_nm]][[fam_nm]],
         nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
         solution_terms = args_prj[[tstsetup_prj]]$solution_terms,
         seed = args_prj[[tstsetup_prj]]$seed + 1L
       )
+      runif(1) # Just to advance `.Random.seed[2]`.
       p_repr <- project(
         refmods[[mod_nm]][[fam_nm]],
         nclusters = args_prj[[tstsetup_prj]][[ndr_ncl_nm]],
