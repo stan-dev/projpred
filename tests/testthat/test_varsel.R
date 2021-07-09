@@ -41,6 +41,29 @@ test_that("specifying `method` incorrectly leads to an error", {
   }
 })
 
+test_that("specifying `seed` correctly leads to reproducible results", {
+  for (tstsetup in names(vss)) {
+    args_vs_i <- args_vs[[tstsetup]]
+    vs_orig <- vss[[tstsetup]]
+    runif(1) # Just to advance `.Random.seed[2]`.
+    vs_new <- do.call(varsel, c(
+      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+           seed = args_vs_i$seed + 1L),
+      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm", "seed"))]
+    ))
+    runif(1) # Just to advance `.Random.seed[2]`.
+    vs_repr <- do.call(varsel, c(
+      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+           seed = args_vs_i$seed),
+      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm", "seed"))]
+    ))
+    # Expected equality:
+    expect_equal(vs_repr, vs_orig, info = tstsetup)
+    # Expected inequality:
+    expect_false(isTRUE(all.equal(vs_new, vs_orig)), info = tstsetup)
+  }
+})
+
 ### Excluded because of issue #167:
 # test_that("specifying d_test has an expected effect", {
 #   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
