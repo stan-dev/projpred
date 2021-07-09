@@ -179,7 +179,8 @@ test_that(paste(
     } else {
       ncl_crr <- 1L
     }
-    ssq_regul_sel <- array(dim = c(length(regul_tst), m_max, ncl_crr))
+    ssq_regul_sel_alpha <- array(dim = c(length(regul_tst), m_max, ncl_crr))
+    ssq_regul_sel_beta <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_prd <- array(dim = c(length(regul_tst), m_max))
     for (j in seq_along(regul_tst)) {
       if (regul_tst[j] == regul_default) {
@@ -200,8 +201,11 @@ test_that(paste(
           stopifnot(identical(ncl_crr, length(subfits_jm_regul)))
         }
         for (nn in seq_len(ncl_crr)) {
-          ssq_regul_sel[j, m, nn] <- sum(rbind(subfits_jm_regul[[nn]]$alpha,
-                                               subfits_jm_regul[[nn]]$beta)^2)
+          stopifnot(length(subfits_jm_regul[[nn]]$alpha) == 1)
+          ssq_regul_sel_alpha[j, m, nn] <- subfits_jm_regul[[nn]]$alpha^2
+          if (length(subfits_jm_regul[[nn]]$beta) > 0) {
+            ssq_regul_sel_beta[j, m, nn] <- sum(subfits_jm_regul[[nn]]$beta^2)
+          }
         }
         # Prediction:
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
@@ -216,10 +220,25 @@ test_that(paste(
       }
     }
     # Selection:
-    for (j in seq_len(dim(ssq_regul_sel)[1])[-1]) {
-      for (m in seq_len(dim(ssq_regul_sel)[2])) {
-        for (nn in seq_len(dim(ssq_regul_sel)[3])) {
-          expect_lt(ssq_regul_sel[!!j, !!m, !!nn], ssq_regul_sel[j - 1, m, nn])
+    ### Excluded because of issue #169:
+    # for (j in seq_len(dim(ssq_regul_sel_alpha)[1])[-1]) {
+    #   for (m in seq_len(dim(ssq_regul_sel_alpha)[2])) {
+    #     for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
+    #       expect_equal(ssq_regul_sel_alpha[!!j, !!m, !!nn],
+    #                    ssq_regul_sel_alpha[j - 1, m, nn],
+    #                    tolerance = 1e-2)
+    #     }
+    #   }
+    # }
+    ###
+    # For the intercept-only model:
+    expect_true(all(is.na(ssq_regul_sel_beta[, 1, ])), info = tstsetup)
+    # All other (i.e., not intercept-only) models:
+    for (j in seq_len(dim(ssq_regul_sel_beta)[1])[-1]) {
+      for (m in seq_len(dim(ssq_regul_sel_beta)[2])[-1]) {
+        for (nn in seq_len(dim(ssq_regul_sel_beta)[3])) {
+          expect_lt(ssq_regul_sel_beta[!!j, !!m, !!nn],
+                    ssq_regul_sel_beta[j - 1, m, nn])
         }
       }
     }
@@ -227,6 +246,7 @@ test_that(paste(
     # For the intercept-only model, the linear predictor consists only
     # of the intercept, so we expect no variation in `mu_jm_regul`:
     expect_true(all(ssq_regul_prd[, 1] == 0), info = tstsetup)
+    # All other (i.e., not intercept-only) models:
     for (j in seq_len(dim(ssq_regul_prd)[1])[-1]) {
       for (m in seq_len(dim(ssq_regul_prd)[2])[-1]) {
         expect_lt(ssq_regul_prd[!!j, !!m], ssq_regul_prd[j - 1, m])
