@@ -42,7 +42,7 @@ test_that("specifying `method` incorrectly leads to an error", {
 })
 
 ### Excluded because of issue #167:
-# test_that("specifying d_test has the expected effect", {
+# test_that("specifying d_test has an expected effect", {
 #   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
 #   stopifnot(length(tstsetups) > 0)
 #   for (tstsetup in tstsetups) {
@@ -158,8 +158,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "for GLMs with forward search, `regul` has an effect on selection as well as",
-  "on prediction"
+  "for GLMs with forward search, `regul` has an expected effect on selection",
+  "as well as on prediction"
 ), {
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
