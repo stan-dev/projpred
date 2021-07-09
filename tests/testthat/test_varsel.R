@@ -108,11 +108,6 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
-    if (identical(args_vs_i$method, "forward")) {
-      ncl_crr <- args_vs_i$nclusters
-    } else {
-      ncl_crr <- 1L
-    }
     ssq_regul_prd <- array(dim = c(length(regul_tst), m_max))
     for (j in seq_along(regul_tst)) {
       if (regul_tst[j] == regul_default) {
@@ -261,6 +256,10 @@ test_that("`penalty` of incorrect length causes an error", {
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
   stopifnot(length(tstsetups) > 0)
+  # Note: As mentioned in issue #149, the reference level of a categorical
+  # predictor actually should not have its own coefficient:
+  len_penal <- sum(grepl("^xco\\.", names(dat))) +
+    sum(sapply(dat[, grep("^xca\\.", names(dat))], nlevels))
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     penal_tst <- list(rep(1, args_vs_i$nterms_max + 10),
@@ -272,7 +271,8 @@ test_that("`penalty` of incorrect length causes an error", {
                penalty = penal_crr),
           args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
         )),
-        "^Incorrect length of penalty vector \\(should be [[:digit:]]+\\)\\.$"
+        paste0("^Incorrect length of penalty vector \\(should be ",
+               len_penal, "\\)\\.$")
       )
     }
   }
@@ -295,27 +295,43 @@ test_that("for forward search, `penalty` has no effect", {
   }
 })
 
-test_that(paste(
-  "varsel: specifying penalties for variables has an expected",
-  "effect"
-), {
-  penalty <- rep(1, nterms)
-  ind_zeropen <- c(3, 5) # a few variables without cost
-  ind_infpen <- c(2) # one variable with infinite penalty
-  penalty[ind_zeropen] <- 0
-  penalty[ind_infpen] <- Inf
-  vsf <- function(obj)
-    varsel(obj,
-           method = "L1", nterms_max = nterms, verbose = FALSE,
-           penalty = penalty, ndraws = ndraws, ndraws_pred = ndraws_pred
-    )
-  SW(vs_list_pen <- lapply(fit_list, vsf))
-  for (i in seq_along(vs_list_pen)) {
-    # check that the variables with no cost are selected first and the ones
-    # with inf penalty last
-    sub_fits <- vs_list_pen[[i]]$search_path$sub_fits
-    sdiff <- length(which(sub_fits[[nterms + 1]]$beta == 0))
-    expect_gte(sdiff, 1)
+test_that("for L1 search, `penalty` has an expected effect", {
+  tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
+                       grep("^glm\\..*\\.forward", names(vss), value = TRUE))
+  stopifnot(length(tstsetups) > 0)
+  # Note: As mentioned in issue #149, the reference level of a categorical
+  # predictor actually should not have its own coefficient:
+  len_penal <- sum(grepl("^xco\\.", names(dat))) +
+    sum(sapply(dat[, grep("^xca\\.", names(dat))], nlevels))
+  penal_crr <- rep(1, len_penal)
+  stopifnot(len_penal >= 5)
+  idx_penal_0 <- c(1, 2) # A few variables without cost.
+  idx_penal_Inf <- c(3) # One variable with infinite penalty.
+  penal_crr[idx_penal_0] <- 0
+  penal_crr[idx_penal_Inf] <- Inf
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    vs_penal <- do.call(varsel, c(
+      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+           penalty = penal_crr),
+      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+    ))
+    # Check that the variables with no cost are selected first and the ones
+    # with infinite penalty last:
+    formula_crr <- refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]$formula
+    solterms_orig <- setdiff(split_formula(formula_crr), "1")
+    solterms_penal <- vs_penal$solution_terms
+    # Note: This test probably needs to be adopted properly to categorical
+    # predictors.
+    stopifnot(all(grep("^xca\\.", solterms_orig) >= max(c(idx_penal_0,
+                                                          idx_penal_Inf))))
+    solterms_0 <- solterms_orig[which(penal_crr == 0)]
+    solterms_Inf <- solterms_orig[which(is.infinite(penal_crr))]
+    expect_identical(solterms_penal, c(
+      solterms_0,
+      setdiff(solterms_orig, c(solterms_0, solterms_Inf)),
+      solterms_Inf
+    ), info = tstsetup)
   }
 })
 
