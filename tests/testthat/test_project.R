@@ -241,6 +241,8 @@ test_that(paste(
   "specifying `seed` correctly leads to reproducible results (and restores the",
   "RNG state afterwards)"
 ), {
+  # Note: Extensive tests for reproducibility may be found among the tests for
+  # .get_refdist().
   for (mod_nm in mod_nms[1]) {
     for (fam_nm in fam_nms[1]) {
       tstsetup <- paste(c(mod_nm, fam_nm), collapse = ".")

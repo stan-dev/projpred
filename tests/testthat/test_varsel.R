@@ -46,6 +46,8 @@ test_that(paste(
   "specifying `seed` correctly leads to reproducible results (and restores the",
   "RNG state afterwards)"
 ), {
+  # Note: Extensive tests for reproducibility may be found among the tests for
+  # .get_refdist().
   skip_if_not(exists("vss"))
   for (tstsetup in names(vss)[1]) {
     args_vs_i <- args_vs[[tstsetup]]
