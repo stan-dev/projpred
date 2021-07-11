@@ -6,6 +6,7 @@ test_that(paste(
   "`object` of class \"refmodel\", correctly specified `method`, `nterms_max`,",
   "`nclusters`, and `nclusters_pred` lead to correct output structure"
 ), {
+  skip_if_not(exists("vss"))
   for (tstsetup in names(vss)) {
     mod_crr <- args_vs[[tstsetup]]$mod
     fam_crr <- args_vs[[tstsetup]]$fam
@@ -45,6 +46,7 @@ test_that(paste(
   "specifying `seed` correctly leads to reproducible results (and restores the",
   "RNG state afterwards)"
 ), {
+  skip_if_not(exists("vss"))
   for (tstsetup in names(vss)[1]) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- vss[[tstsetup]]
@@ -77,6 +79,7 @@ test_that(paste(
 
 ### Excluded because of issue #167:
 # test_that("specifying d_test has an expected effect", {
+#   skip_if_not(exists("vss"))
 #   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
 #   stopifnot(length(tstsetups) > 0)
 #   for (tstsetup in tstsetups) {
@@ -112,6 +115,7 @@ test_that(paste(
 # still needed.
 
 test_that("for non-GLMs, `regul` has no effect", {
+  skip_if_not(exists("vss"))
   regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
     tstsetups <- grep(paste0("^", mod_crr, "\\.gauss"), names(vss),
@@ -133,6 +137,7 @@ test_that(paste(
   "for GLMs with L1 search, `regul` only has an effect on prediction, not on",
   "selection"
 ), {
+  skip_if_not(exists("vss"))
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
@@ -195,6 +200,7 @@ test_that(paste(
   "for GLMs with forward search, `regul` has an expected effect on selection",
   "as well as on prediction"
 ), {
+  skip_if_not(exists("vss"))
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
@@ -287,8 +293,11 @@ test_that(paste(
 ## Penalty ----------------------------------------------------------------
 
 test_that("`penalty` of incorrect length causes an error", {
-  tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
-                       grep("^glm\\..*\\.forward", names(vss), value = TRUE))
+  skip_if_not(exists("args_vs"))
+  tstsetups <- setdiff(
+    grep("^glm\\.", names(args_vs), value = TRUE),
+    grep("^glm\\..*\\.forward", names(args_vs), value = TRUE)
+  )
   stopifnot(length(tstsetups) > 0)
   # Note: As mentioned in issue #149, the reference level of a categorical
   # predictor actually should not have its own coefficient:
@@ -313,6 +322,7 @@ test_that("`penalty` of incorrect length causes an error", {
 })
 
 test_that("for forward search, `penalty` has no effect", {
+  skip_if_not(exists("vss"))
   penal_tst <- 2
   tstsetups <- union(grep("\\.forward", names(vss), value = TRUE),
                      grep("^glm\\.", names(vss), value = TRUE, invert = TRUE))
@@ -330,6 +340,7 @@ test_that("for forward search, `penalty` has no effect", {
 })
 
 test_that("for L1 search, `penalty` has an expected effect", {
+  skip_if_not(exists("vss"))
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
   stopifnot(length(tstsetups) > 0)
