@@ -426,13 +426,12 @@ test_that("for L1 search, `penalty` has an expected effect", {
     # predictors.
     stopifnot(all(grep("^xca\\.", solterms_orig) >= max(c(idx_penal_0,
                                                           idx_penal_Inf))))
-    solterms_0 <- solterms_orig[which(penal_crr == 0)]
-    solterms_Inf <- solterms_orig[which(is.infinite(penal_crr))]
-    expect_identical(solterms_penal, c(
-      solterms_0,
-      setdiff(solterms_orig, c(solterms_0, solterms_Inf)),
-      solterms_Inf
-    ), info = tstsetup)
+    expect_identical(solterms_penal[seq_along(idx_penal_0)],
+                     solterms_orig[idx_penal_0],
+                     info = tstsetup)
+    expect_identical(rev(solterms_penal)[seq_along(idx_penal_Inf)],
+                     rev(solterms_orig[idx_penal_Inf]),
+                     info = tstsetup)
   }
 })
 
