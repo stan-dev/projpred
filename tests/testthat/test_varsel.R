@@ -41,25 +41,37 @@ test_that("specifying `method` incorrectly leads to an error", {
   }
 })
 
-test_that("specifying `seed` correctly leads to reproducible results", {
+test_that(paste(
+  "specifying `seed` correctly leads to reproducible results (and restores the",
+  "RNG state)"
+), {
   for (tstsetup in names(vss)) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- vss[[tstsetup]]
-    runif(1) # Just to advance `.Random.seed[2]`.
+    rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_new1 <- .Random.seed
     vs_new <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
            seed = args_vs_i$seed + 1L),
       args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm", "seed"))]
     ))
-    runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_new2 <- .Random.seed
+    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_repr1 <- .Random.seed
     vs_repr <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
       args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
     ))
+    .Random.seed_repr2 <- .Random.seed
     # Expected equality:
     expect_equal(vs_repr, vs_orig, info = tstsetup)
+    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
+    expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     # Expected inequality:
     expect_false(isTRUE(all.equal(vs_new, vs_orig)), info = tstsetup)
+    expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
+    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
+                 info = tstsetup)
   }
 })
 
