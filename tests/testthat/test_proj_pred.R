@@ -538,14 +538,41 @@ context("proj_predict()")
 
 test_that("proj_predict(): `.seed` has an expected effect", {
   for (tstsetup in names(prjs)) {
+    .Random.seed_orig1 <- .Random.seed
     pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    .Random.seed_orig2 <- .Random.seed
+    rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_new1 <- .Random.seed
     pp_new <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst + 1L)
+    .Random.seed_new2 <- .Random.seed
+    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_repr1 <- .Random.seed
     pp_repr <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    .Random.seed_repr2 <- .Random.seed
+    rand_repr <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_null1 <- .Random.seed
     pp_null <- proj_predict(prjs[[tstsetup]])
+    .Random.seed_null2 <- .Random.seed
+
     expect_equal(pp_orig, pp_repr, info = tstsetup)
     expect_false(isTRUE(all.equal(pp_orig, pp_new)), info = tstsetup)
     expect_false(isTRUE(all.equal(pp_orig, pp_null)), info = tstsetup)
     expect_false(isTRUE(all.equal(pp_new, pp_null)), info = tstsetup)
+
+    expect_equal(.Random.seed_orig2, .Random.seed_orig1, info = tstsetup)
+    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
+    expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
+    expect_equal(.Random.seed_null2, .Random.seed_null1, info = tstsetup)
+
+    expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
+    expect_false(isTRUE(all.equal(rand_repr, rand_orig)), info = tstsetup)
+    expect_false(isTRUE(all.equal(rand_repr, rand_new)), info = tstsetup)
+    expect_false(isTRUE(all.equal(.Random.seed_new2, .Random.seed_orig2)),
+                 info = tstsetup)
+    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_orig2)),
+                 info = tstsetup)
+    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
+                 info = tstsetup)
   }
 })
 
