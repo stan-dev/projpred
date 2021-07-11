@@ -258,9 +258,8 @@ test_that("specifying `seed` correctly leads to reproducible results", {
       ))
       runif(1) # Just to advance `.Random.seed[2]`.
       p_repr <- do.call(project, c(
-        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
-             seed = args_prj_i$seed),
-        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm", "seed"))]
+        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
+        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
       ))
       # Expected equality:
       expect_equal(p_repr, p_orig, info = tstsetup)
