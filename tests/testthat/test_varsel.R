@@ -85,8 +85,9 @@ test_that(paste(
 #   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
 #   stopifnot(length(tstsetups) > 0)
 #   for (tstsetup in tstsetups) {
-#     mod_crr <- args_vs[[tstsetup]]$mod_nm
-#     fam_crr <- args_vs[[tstsetup]]$fam_nm
+#     args_vs_i <- args_vs[[tstsetup]]
+#     mod_crr <- args_vs_i$mod_nm
+#     fam_crr <- args_vs_i$fam_nm
 #     refmod_crr <- refmods[[mod_crr]][[fam_crr]]
 #     d_test_crr <- list(
 #       y = refmod_crr$y,
@@ -97,9 +98,24 @@ test_that(paste(
 #     )
 #     vs_repr <- do.call(varsel, c(
 #       list(object = refmod_crr, d_test = d_test_crr),
-#       args_vs[[tstsetup]][setdiff(names(args_vs[[tstsetup]]),
-#                                   c("mod_nm", "fam_nm"))]
+#       args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
 #     ))
+#     meth_exp_crr <- args_vs_i$method
+#     if (is.null(meth_exp_crr)) {
+#       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+#     }
+#     vsel_tester(
+#       vs_repr,
+#       refmod_expected = refmod_crr,
+#       dtest_expected = d_test_crr,
+#       solterms_len_expected = args_vs_i$nterms_max,
+#       method_expected = meth_exp_crr,
+#       cv_method_expected = NULL,
+#       valsearch_expected = NULL,
+#       nclusters_expected = args_vs_i$nclusters,
+#       nclusters_pred_expected = args_vs_i$nclusters_pred,
+#       info_str = tstsetup
+#     )
 #     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
 #     expect_identical(vs_repr[setdiff(names(vs_repr), "d_test")],
 #                      vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
@@ -159,6 +175,17 @@ test_that(paste(
                regul = regul_tst[j]),
           args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
         ))
+        vsel_tester(
+          vs_regul,
+          refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+          solterms_len_expected = args_vs_i$nterms_max,
+          method_expected = "L1",
+          cv_method_expected = NULL,
+          valsearch_expected = NULL,
+          nclusters_expected = args_vs_i$nclusters,
+          nclusters_pred_expected = args_vs_i$nclusters_pred,
+          info_str = tstsetup
+        )
         # Expect equality for all components not related to prediction:
         expect_equal(vs_regul[compos_nonpred],
                      vss[[tstsetup]][compos_nonpred],
@@ -228,6 +255,17 @@ test_that(paste(
                regul = regul_tst[j]),
           args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
         ))
+        vsel_tester(
+          vs_regul,
+          refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+          solterms_len_expected = args_vs_i$nterms_max,
+          method_expected = "forward",
+          cv_method_expected = NULL,
+          valsearch_expected = NULL,
+          nclusters_expected = args_vs_i$nclusters,
+          nclusters_pred_expected = args_vs_i$nclusters_pred,
+          info_str = tstsetup
+        )
       }
       for (m in seq_len(m_max)) {
         # Selection:
@@ -368,6 +406,17 @@ test_that("for L1 search, `penalty` has an expected effect", {
            penalty = penal_crr),
       args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
     ))
+    vsel_tester(
+      vs_penal,
+      refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+      solterms_len_expected = args_vs_i$nterms_max,
+      method_expected = "L1",
+      cv_method_expected = NULL,
+      valsearch_expected = NULL,
+      nclusters_expected = args_vs_i$nclusters,
+      nclusters_pred_expected = args_vs_i$nclusters_pred,
+      info_str = tstsetup
+    )
     # Check that the variables with no cost are selected first and the ones
     # with infinite penalty last:
     formula_crr <- refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]$formula
