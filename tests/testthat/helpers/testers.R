@@ -114,7 +114,8 @@ projection_tester <- function(p,
 # A helper function for testing the structure of an expected "vsel" object
 #
 # @param vs An object of class "vsel" (at least expected so).
-# @param refmod_expected The expected "refmodel" object.
+# @param refmod_expected The expected `vs$refmodel` object.
+# @param dtest_expected The expected `vs$d_test` object.
 # @param solterms_len_expected A single numeric value giving the expected number
 #   of solution terms (not counting the intercept, even for the intercept-only
 #   model).
@@ -133,6 +134,7 @@ projection_tester <- function(p,
 #
 vsel_tester <- function(vs,
                         refmod_expected,
+                        dtest_expected = NULL,
                         solterms_len_expected,
                         method_expected,
                         cv_method_expected,
@@ -193,13 +195,17 @@ vsel_tester <- function(vs,
   expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
 
   # d_test
-  expect_type(vs$d_test, "list")
-  expect_named(vs$d_test, dtest_nms, info = info_str)
-  expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
-  expect_identical(vs$d_test$test_points, seq_len(n_tst), info = info_str)
-  expect_null(vs$d_test$data, info = info_str)
-  expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
-  expect_identical(vs$d_test$type, "train", info = info_str)
+  if (is.null(dtest_expected)) {
+    expect_type(vs$d_test, "list")
+    expect_named(vs$d_test, dtest_nms, info = info_str)
+    expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
+    expect_identical(vs$d_test$test_points, seq_len(n_tst), info = info_str)
+    expect_null(vs$d_test$data, info = info_str)
+    expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
+    expect_identical(vs$d_test$type, "train", info = info_str)
+  } else {
+    expect_identical(vs$d_test, dtest_expected, info = info_str)
+  }
 
   # summaries
   expect_type(vs$summaries, "list")
