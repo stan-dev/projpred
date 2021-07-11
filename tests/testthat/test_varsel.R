@@ -53,9 +53,8 @@ test_that("specifying `seed` correctly leads to reproducible results", {
     ))
     runif(1) # Just to advance `.Random.seed[2]`.
     vs_repr <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
-           seed = args_vs_i$seed),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm", "seed"))]
+      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
+      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
     ))
     # Expected equality:
     expect_equal(vs_repr, vs_orig, info = tstsetup)
