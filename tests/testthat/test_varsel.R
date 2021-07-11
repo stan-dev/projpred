@@ -256,8 +256,13 @@ test_that(paste(
     }
     # Selection:
     ### Excluded because of issue #169:
+    # # For the intercept-only model:
+    # for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
+    #   expect_length(unique(ssq_regul_sel_alpha[, 1, !!n]), 1)
+    # }
+    # # All other (i.e., not intercept-only) models:
     # for (j in seq_len(dim(ssq_regul_sel_alpha)[1])[-1]) {
-    #   for (m in seq_len(dim(ssq_regul_sel_alpha)[2])) {
+    #   for (m in seq_len(dim(ssq_regul_sel_alpha)[2])[-1]) {
     #     for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
     #       expect_equal(ssq_regul_sel_alpha[!!j, !!m, !!nn],
     #                    ssq_regul_sel_alpha[j - 1, m, nn],
