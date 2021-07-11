@@ -237,7 +237,10 @@ test_that(paste(
   }
 })
 
-test_that("specifying `seed` correctly leads to reproducible results", {
+test_that(paste(
+  "specifying `seed` correctly leads to reproducible results (and restores the",
+  "RNG state)"
+), {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       tstsetup <- paste(c(mod_nm, fam_nm), collapse = ".")
@@ -250,21 +253,30 @@ test_that("specifying `seed` correctly leads to reproducible results", {
       ndr_ncl_nm <- intersect(names(args_prj_i), c("ndraws", "nclusters"))
       stopifnot(identical(ndr_ncl_nm, "nclusters"))
       p_orig <- prjs[[tstsetup_prj]]
-      runif(1) # Just to advance `.Random.seed[2]`.
+      rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
+      .Random.seed_new1 <- .Random.seed
       p_new <- do.call(project, c(
         list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
              seed = args_prj_i$seed + 1L),
         args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm", "seed"))]
       ))
-      runif(1) # Just to advance `.Random.seed[2]`.
+      .Random.seed_new2 <- .Random.seed
+      rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
+      .Random.seed_repr1 <- .Random.seed
       p_repr <- do.call(project, c(
         list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
         args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
       ))
+      .Random.seed_repr2 <- .Random.seed
       # Expected equality:
       expect_equal(p_repr, p_orig, info = tstsetup)
+      expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
+      expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
       # Expected inequality:
       expect_false(isTRUE(all.equal(p_new, p_orig)), info = tstsetup)
+      expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
+      expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
+                   info = tstsetup)
     }
   }
 })
