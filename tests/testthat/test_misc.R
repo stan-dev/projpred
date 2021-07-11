@@ -31,6 +31,8 @@ test_that(paste(
       expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
       expect_false(isTRUE(all.equal(.Random.seed_new2, .Random.seed_orig2)),
                    info = tstsetup)
+      expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_orig2)),
+                   info = tstsetup)
       expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
                    info = tstsetup)
     }
