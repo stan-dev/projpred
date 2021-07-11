@@ -239,10 +239,10 @@ test_that(paste(
 
 test_that(paste(
   "specifying `seed` correctly leads to reproducible results (and restores the",
-  "RNG state)"
+  "RNG state afterwards)"
 ), {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
+  for (mod_nm in mod_nms[1]) {
+    for (fam_nm in fam_nms[1]) {
       tstsetup <- paste(c(mod_nm, fam_nm), collapse = ".")
       tstsetup_prj <- tail(
         grep(paste0("^", mod_nm, "\\.", fam_nm, ".*", "\\.clust$"),

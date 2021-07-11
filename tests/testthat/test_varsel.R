@@ -43,9 +43,9 @@ test_that("specifying `method` incorrectly leads to an error", {
 
 test_that(paste(
   "specifying `seed` correctly leads to reproducible results (and restores the",
-  "RNG state)"
+  "RNG state afterwards)"
 ), {
-  for (tstsetup in names(vss)) {
+  for (tstsetup in names(vss)[1]) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- vss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
