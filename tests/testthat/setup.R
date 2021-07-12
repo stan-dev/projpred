@@ -492,47 +492,37 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 
 ### From "vsel" -----------------------------------------------------------
 
-args_prj_vs <- lapply(mod_nms["glm"], function(mod_nm) {
-  lapply(fam_nms["gauss"], function(fam_nm) {
-    lapply(nterms_avail, function(nterms_crr) {
-      args_out <- nlist(mod_nm, fam_nm,
-                        nclusters = nclusters_pred_tst, seed = seed_tst)
-      if (!is.null(nterms_crr)) {
-        args_out <- c(args_out, list(nterms = nterms_crr))
-      }
-      return(args_out)
-    })
+tstsetups_prj_vs <- grep("^glm\\.gauss\\.default", names(vss), value = TRUE)
+stopifnot(length(tstsetups_prj_vs) > 0)
+args_prj_vs <- lapply(tstsetups_prj_vs, function(tstsetup) {
+  lapply(nterms_avail, function(nterms_crr) {
+    args_out <- nlist(tstsetup, nclusters = nclusters_pred_tst, seed = seed_tst)
+    if (!is.null(nterms_crr)) {
+      args_out <- c(args_out, list(nterms = nterms_crr))
+    }
+    return(args_out)
   })
 })
-args_prj_vs <- unlist_cust(args_prj_vs)
+args_prj_vs <- unlist_cust(args_prj_vs, nm_stop = "tstsetup")
 
 if (run_vs) {
   prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
-    mod_i <- args_prj_vs_i$mod_nm
-    fam_i <- args_prj_vs_i$fam_nm
-    tstsetup <- grep(paste0("^", mod_i, "\\.", fam_i), names(vss),
-                     value = TRUE)[1]
-    stopifnot(length(tstsetup) > 0)
     do.call(project, c(
-      list(object = vss[[tstsetup]]),
-      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("mod_nm", "fam_nm"))]
+      list(object = vss[[args_prj_vs_i$tstsetup]]),
+      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup"))]
     ))
   })
 }
 
+stopifnot(identical(names(vss), names(cvvss)))
 args_prj_cvvs <- args_prj_vs
 
 if (run_cvvs) {
   # Use SW() because of occasional pwrssUpdate() warnings:
   SW(prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
-    mod_i <- args_prj_cvvs_i$mod_nm
-    fam_i <- args_prj_cvvs_i$fam_nm
-    tstsetup <- grep(paste0("^", mod_i, "\\.", fam_i), names(cvvss),
-                     value = TRUE)[1]
-    stopifnot(length(tstsetup) > 0)
     do.call(project, c(
-      list(object = cvvss[[tstsetup]]),
-      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("mod_nm", "fam_nm"))]
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup]]),
+      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup"))]
     ))
   }))
 }
