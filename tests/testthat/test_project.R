@@ -284,6 +284,7 @@ test_that(paste(
 })
 
 test_that("for non-GLMs, `regul` has no effect", {
+  regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
     tstsetups <- grep(paste0("^", mod_crr, "\\.gauss\\.solterms_x\\.clust"),
                       names(prjs), value = TRUE)[1]
@@ -292,10 +293,89 @@ test_that("for non-GLMs, `regul` has no effect", {
       args_prj_i <- args_prj[[tstsetup]]
       p_regul <- do.call(project, c(
         list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
-             regul = 1e-1),
+             regul = regul_tst),
         args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
       ))
       expect_equal(p_regul, prjs[[tstsetup]], info = tstsetup)
+    }
+  }
+})
+
+test_that("for GLMs, `regul` has an expected effect", {
+  regul_tst <- c(regul_default, 1e-1, 1e2)
+  stopifnot(regul_tst[1] == regul_default)
+  stopifnot(all(diff(regul_tst) > 0))
+  tstsetups <- grep("^glm\\..*\\.clust$", names(prjs), value = TRUE)
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    ndr_ncl_nm <- intersect(names(args_prj_i), c("ndraws", "nclusters"))
+    if (length(ndr_ncl_nm) == 0) {
+      ndr_ncl_nm <- "ndraws"
+      nprjdraws <- ndraws_pred_default
+    } else {
+      stopifnot(length(ndr_ncl_nm) == 1)
+      nprjdraws <- args_prj_i[[ndr_ncl_nm]]
+    }
+    ssq_regul_alpha <- rep(NA, length(regul_tst))
+    ssq_regul_beta <- rep(NA, length(regul_tst))
+    for (j in seq_along(regul_tst)) {
+      # Run project() if necessary:
+      if (regul_tst[j] == regul_default) {
+        prj_regul <- prjs[[tstsetup]]
+      } else {
+        prj_regul <- do.call(project, c(
+          list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+               regul = regul_tst[j]),
+          args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+        ))
+        projection_tester(
+          prj_regul,
+          solterms_expected = args_prj_i$solution_terms,
+          nprjdraws_expected = nprjdraws,
+          p_type_expected = (ndr_ncl_nm == "nclusters" || nprjdraws <= 20),
+          info_str = tstsetup
+        )
+      }
+
+      # Run as.matrix.projection():
+      if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
+        # Clustered projection, so we expect a warning:
+        warn_prjmat_expect <- "the clusters might have different weights"
+      } else {
+        warn_prjmat_expect <- NA
+      }
+      expect_warning(prjmat <- as.matrix(prj_regul),
+                     warn_prjmat_expect, info = tstsetup)
+
+      # Reduce to only those columns which are necessary here:
+      prjmat <- prjmat[, grep("^b_", colnames(prjmat)), drop = FALSE]
+
+      # Posterior means:
+      prjmat_mean <- colMeans(prjmat)
+
+      # Calculate the Euclidean norm for intercept and coefficients:
+      ssq_regul_alpha[j] <- prjmat_mean["b_Intercept"]^2
+      coef_colnms <- setdiff(names(prjmat_mean), "b_Intercept")
+      if (length(coef_colnms) > 0) {
+        ssq_regul_beta[j] <- sum(prjmat_mean[coef_colnms]^2)
+      }
+    }
+    if (length(args_prj_i$solution_terms) == 0) {
+      # For an intercept-only model:
+      ### Excluded because of issue #169:
+      # expect_length(unique(ssq_regul_alpha), 1)
+      ###
+      stopifnot(all(is.na(ssq_regul_beta)))
+    } else {
+      # All other (i.e., not intercept-only) models:
+      for (j in seq_along(ssq_regul_alpha)[-1]) {
+        expect_equal(ssq_regul_alpha[!!j], ssq_regul_alpha[j - 1],
+                     tolerance = 1e-1, info = tstsetup)
+      }
+      for (j in seq_along(ssq_regul_beta)[-1]) {
+        expect_lt(ssq_regul_beta[!!j], ssq_regul_beta[j - 1])
+      }
     }
   }
 })
