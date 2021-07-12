@@ -413,6 +413,12 @@ if (run_cvvs) {
         meth <- meth_tst["default"]
       }
       lapply(meth, function(meth_i) {
+        if ((length(meth_i) == 0 && mod_nm != "glm") ||
+            meth_i$method == "forward") {
+          # In this case, we have forward search. And to save time, we use
+          # `validate_search = FALSE`.
+          meth_i <- c(meth_i, list(validate_search = FALSE))
+        }
         return(c(
           nlist(
             mod_nm, fam_nm, nclusters = nclusters_tst,
