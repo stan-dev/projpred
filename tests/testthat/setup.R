@@ -144,8 +144,7 @@ z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
   eta_z <- r_icpts[z] + r_xco1[z] * x_cont[, 1]
   return(nlist(z, eta_z, r_icpts, r_xco1))
 })
-eta_glmm <- eta_glm +
-  do.call("+", lapply(z_list, "[[", "eta_z"))
+eta_glmm <- eta_glm + do.call("+", lapply(z_list, "[[", "eta_z"))
 
 nterms_glmm <- nterms_glm + nterms_z
 
@@ -159,8 +158,7 @@ s_mat <- apply(x_cont, 2, function(x, a = -3, b = 0.75, c = 0.5) {
 })
 s_sum <- rowSums(s_mat)
 nterms_s <- ncol(s_mat)
-eta_gam <- eta_glm +
-  s_sum
+eta_gam <- eta_glm + s_sum
 
 # Multiply by 2 because of the baseline linear term as well as the standard
 # deviation for the wiggliness around it:
@@ -169,8 +167,7 @@ nterms_gam <- nterms_glm + 2L * nterms_s
 ## GAMMs ------------------------------------------------------------------
 ## Add nonlinear (smoothed) effects to the GLMMs
 
-eta_gamm <- eta_glmm +
-  s_sum
+eta_gamm <- eta_glmm + s_sum
 
 nterms_gamm <- nterms_glmm + 2L * nterms_s
 
