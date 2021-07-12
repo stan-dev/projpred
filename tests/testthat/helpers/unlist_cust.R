@@ -14,6 +14,6 @@ unlist_cust <- function(x, nm_stop = "mod_nm") {
   if (is.null(names(x[[1]])) || nm_stop %in% names(x[[1]])) {
     return(x)
   } else {
-    return(unlist_cust(unlist(x, recursive = FALSE)))
+    return(unlist_cust(unlist(x, recursive = FALSE), nm_stop = nm_stop))
   }
 }
