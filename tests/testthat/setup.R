@@ -373,6 +373,7 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
 # }
 # ###
 ###
+
 if (run_vs) {
   args_vs <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
@@ -402,6 +403,7 @@ if (run_vs) {
     ))
   })
 }
+
 if (run_cvvs) {
   args_cvvs <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
@@ -422,6 +424,7 @@ if (run_cvvs) {
     ))
   }))
 }
+
 ### Exclude GAMMs because of issue #148:
 # ### Clean up (belongs to the fix for issue #144 above):
 # if (run_vs || run_cvvs) {
