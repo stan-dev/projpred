@@ -34,10 +34,20 @@ test_that("specifying `object` incorrectly leads to an error", {
 })
 
 test_that("specifying `method` incorrectly leads to an error", {
-  for (mod_nm in mod_nms["glm"]) {
-    for (fam_nm in fam_nms["gauss"]) {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
       expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "k-fold"),
                    "Unknown search method")
+      if (mod_nm == "glmm") {
+        expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
+                     "^L1 search is not supported for multilevel models\\.$")
+      } else if (!mod_nm %in% c("glm", "glmm")) {
+        ### TODO:
+        stop("Still to-do.")
+        # expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
+        #              "ENTER EXPECTED TEXT HERE")
+        ###
+      }
     }
   }
 })
