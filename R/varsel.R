@@ -87,7 +87,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     test_points <- seq_len(NROW(refmodel$y))
     d_test <- nlist(
       y = refmodel$y, test_points, data = NULL, weights = refmodel$wobs,
-      type = d_type
+      type = d_type, offset = refmodel$offset
     )
   } else {
     d_type <- d_test$type
@@ -129,7 +129,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       mu_test <- refmodel$mu
     } else {
       mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
-                                                     newdata = d_test$data))
+                                                     newdata = d_test$data)) +
+        d_test$offset
+      mu_test <- unname(mu_test)
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = family, wsample = refmodel$wsample,
