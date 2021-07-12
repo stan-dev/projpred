@@ -450,342 +450,306 @@ test_that("for L1 search, `penalty` has an expected effect", {
 
 context("cv_varsel()")
 
-cvsf <- function(x, m, cvm, K = NULL, ...) {
-  cv_varsel(x, method = m, cv_method = cvm, nterms_max = nterms, K = K,
-            ndraws = ndraws, ndraws_pred = ndraws_pred, verbose = FALSE,
-            ...)
-}
+test_that('cv_varsel returns an object of type "vsel"', {
+  for (i in seq_len(length(cvs_list))) {
+    for (j in seq_len(length(cvs_list[[i]]))) {
+      expect_s3_class(cvs_list[[i]][[j]], "vsel")
+    }
+  }
+})
 
-if (Sys.getenv("NOT_CRAN") == "true") {
+test_that("object returned by cv_varsel contains the relevant fields", {
+  for (i in seq_len(length(cvs_list))) {
+    i_inf <- names(cvs_list)[i]
+    for (j in seq_len(length(cvs_list[[i]]))) {
+      j_inf <- names(cvs_list[[i]])[j]
+      # refmodel seems legit
+      expect_s3_class(cvs_list[[i]][[j]]$refmodel, "refmodel")
+      # solution_terms seems legit
+      expect_length(cvs_list[[i]][[j]]$solution_terms, nterms)
+      expect_true(all(!is.na(match(
+        colnames(fit_gauss$data[, -1]),
+        cvs_list[[i]][[j]]$solution_terms
+      ))),
+      info = paste(i_inf, j_inf)
+      )
+      # kl seems legit
+      expect_length(cvs_list[[i]][[j]]$kl, nterms + 1)
+      # decreasing
+      expect_equal(cvs_list[[i]][[j]]$kl,
+                   cummin(cvs_list[[i]][[j]]$kl),
+                   tolerance = 23e-2,
+                   info = paste(i_inf, j_inf)
+      )
+      # summaries seems legit
+      expect_named(cvs_list[[i]][[j]]$summaries, c("sub", "ref"),
+                   info = paste(i_inf, j_inf)
+      )
+      expect_length(cvs_list[[i]][[j]]$summaries$sub, nterms + 1)
+      expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]],
+                   c("lppd", "mu", "w"),
+                   info = paste(i_inf, j_inf)
+      )
+      expect_named(cvs_list[[i]][[j]]$summaries$ref, c("lppd", "mu"),
+                   info = paste(i_inf, j_inf)
+      )
+      # family seems legit
+      expect_equal(cvs_list[[i]][[j]]$family$family,
+                   cvs_list[[i]][[j]]$family$family,
+                   info = paste(i_inf, j_inf)
+      )
+      expect_equal(cvs_list[[i]][[j]]$family$link,
+                   cvs_list[[i]][[j]]$family$link,
+                   info = paste(i_inf, j_inf)
+      )
+      expect_true(length(cvs_list[[i]][[j]]$family) >=
+                    length(cvs_list[[i]][[j]]$family$family),
+                  info = paste(i_inf, j_inf)
+      )
+    }
+  }
+})
+
+test_that("nterms_max has an effect on cv_varsel for gaussian models", {
+  suppressWarnings(
+    vs1 <- cv_varsel(fit_gauss,
+                     method = "forward", nterms_max = 3,
+                     verbose = FALSE, ndraws = ndraws,
+                     ndraws_pred = ndraws_pred,
+                     validate_search = FALSE
+    )
+  )
+  expect_length(vs1$solution_terms, 3)
+})
+
+test_that("nterms_max has an effect on cv_varsel for non-gaussian models", {
+  suppressWarnings(
+    vs1 <- cv_varsel(fit_binom,
+                     method = "forward", nterms_max = 3,
+                     verbose = FALSE, ndraws = ndraws,
+                     ndraws_pred = ndraws_pred,
+                     validate_search = FALSE
+    )
+  )
+  expect_length(vs1$solution_terms, 3)
+})
+
+test_that("nloo works as expected", {
+  expect_error(
+    SW(
+      cv_varsel(fit_gauss,
+                cv_method = "LOO", nloo = -1, ndraws = ndraws,
+                ndraws_pred = ndraws_pred, validate_search = FALSE
+      )
+    ),
+    "must be at least 1"
+  )
   SW({
-    cvs_list <- list(
-      l1 = lapply(fit_list, cvsf, "L1", "LOO"),
-      fs = lapply(fit_list, cvsf, "forward", "LOO", validate_search = FALSE)
-    )
-
-    # without weights/offset because kfold does not support them currently
-    # test only with one family to make the tests faster
-
-    # the chains, seed and iter arguments to the rstanarm functions here must
-    # be specified directly rather than through a variable (eg, seed = 1235
-    # instead of seed = seed), otherwise when the calls are evaluated in
-    # refmodel$cvfun() they may not be found in the evaluation frame of the
-    # calling function, causing the test to fail
-    glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                         family = poisson(), data = df_poiss,
-                         chains = 2, seed = 1235, iter = 400
-    )
-    lm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                        data = df_gauss, family = gaussian(),
-                        chains = 2, seed = 1235, iter = 400
-    )
-    simp_list <- list(glm = lm_simp)
-
-    cv_kf_list <- list(
-      l1 = lapply(simp_list, cvsf, "L1", "kfold", K = 2),
-      fs = lapply(simp_list, cvsf, "forward", "kfold", K = 2)
-    )
-
-    # LOO cannot be performed without a genuine probabilistic model
-    cvsref_list <- list(
-      l1 = lapply(ref_list, cvsf, "L1", "kfold"),
-      fs = lapply(ref_list, cvsf, "forward", "kfold")
-    )
-  })
-
-  test_that('cv_varsel returns an object of type "vsel"', {
-    for (i in seq_len(length(cvs_list))) {
-      for (j in seq_len(length(cvs_list[[i]]))) {
-        expect_s3_class(cvs_list[[i]][[j]], "vsel")
-      }
-    }
-  })
-
-  test_that("object returned by cv_varsel contains the relevant fields", {
-    for (i in seq_len(length(cvs_list))) {
-      i_inf <- names(cvs_list)[i]
-      for (j in seq_len(length(cvs_list[[i]]))) {
-        j_inf <- names(cvs_list[[i]])[j]
-        # refmodel seems legit
-        expect_s3_class(cvs_list[[i]][[j]]$refmodel, "refmodel")
-        # solution_terms seems legit
-        expect_length(cvs_list[[i]][[j]]$solution_terms, nterms)
-        expect_true(all(!is.na(match(
-          colnames(fit_gauss$data[, -1]),
-          cvs_list[[i]][[j]]$solution_terms
-        ))),
-        info = paste(i_inf, j_inf)
-        )
-        # kl seems legit
-        expect_length(cvs_list[[i]][[j]]$kl, nterms + 1)
-        # decreasing
-        expect_equal(cvs_list[[i]][[j]]$kl,
-                     cummin(cvs_list[[i]][[j]]$kl),
-                     tolerance = 23e-2,
-                     info = paste(i_inf, j_inf)
-        )
-        # summaries seems legit
-        expect_named(cvs_list[[i]][[j]]$summaries, c("sub", "ref"),
-                     info = paste(i_inf, j_inf)
-        )
-        expect_length(cvs_list[[i]][[j]]$summaries$sub, nterms + 1)
-        expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]],
-                     c("lppd", "mu", "w"),
-                     info = paste(i_inf, j_inf)
-        )
-        expect_named(cvs_list[[i]][[j]]$summaries$ref, c("lppd", "mu"),
-                     info = paste(i_inf, j_inf)
-        )
-        # family seems legit
-        expect_equal(cvs_list[[i]][[j]]$family$family,
-                     cvs_list[[i]][[j]]$family$family,
-                     info = paste(i_inf, j_inf)
-        )
-        expect_equal(cvs_list[[i]][[j]]$family$link,
-                     cvs_list[[i]][[j]]$family$link,
-                     info = paste(i_inf, j_inf)
-        )
-        expect_true(length(cvs_list[[i]][[j]]$family) >=
-                      length(cvs_list[[i]][[j]]$family$family),
-                    info = paste(i_inf, j_inf)
-        )
-      }
-    }
-  })
-
-  test_that("nterms_max has an effect on cv_varsel for gaussian models", {
-    suppressWarnings(
-      vs1 <- cv_varsel(fit_gauss,
-                       method = "forward", nterms_max = 3,
-                       verbose = FALSE, ndraws = ndraws,
-                       ndraws_pred = ndraws_pred,
-                       validate_search = FALSE
-      )
-    )
-    expect_length(vs1$solution_terms, 3)
-  })
-
-  test_that("nterms_max has an effect on cv_varsel for non-gaussian models", {
-    suppressWarnings(
-      vs1 <- cv_varsel(fit_binom,
-                       method = "forward", nterms_max = 3,
-                       verbose = FALSE, ndraws = ndraws,
-                       ndraws_pred = ndraws_pred,
-                       validate_search = FALSE
-      )
-    )
-    expect_length(vs1$solution_terms, 3)
-  })
-
-  test_that("nloo works as expected", {
-    expect_error(
-      SW(
-        cv_varsel(fit_gauss,
-                  cv_method = "LOO", nloo = -1, ndraws = ndraws,
-                  ndraws_pred = ndraws_pred, validate_search = FALSE
-        )
+    expect_equal(
+      cv_varsel(fit_gauss,
+                cv_method = "LOO", nterms_max = nterms, seed = seed,
+                nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred
       ),
-      "must be at least 1"
+      cv_varsel(fit_gauss,
+                cv_method = "LOO", nterms_max = nterms, seed = seed,
+                nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred
+      )
     )
-    SW({
-      expect_equal(
-        cv_varsel(fit_gauss,
-                  cv_method = "LOO", nterms_max = nterms, seed = seed,
-                  nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred
-        ),
-        cv_varsel(fit_gauss,
-                  cv_method = "LOO", nterms_max = nterms, seed = seed,
-                  nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred
-        )
-      )
 
-      # nloo less than number of observations
-      out <- cv_varsel(fit_gauss,
-                       cv_method = "LOO", nloo = 20, verbose = FALSE,
-                       ndraws = ndraws, ndraws_pred = ndraws_pred
-      )
-      expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
-    })
+    # nloo less than number of observations
+    out <- cv_varsel(fit_gauss,
+                     cv_method = "LOO", nloo = 20, verbose = FALSE,
+                     ndraws = ndraws, ndraws_pred = ndraws_pred
+    )
+    expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
   })
+})
 
-  test_that("the validate_search option works as expected", {
-    SW({
-      vs1 <- cv_varsel(fit_gauss,
-                       validate_search = FALSE,
-                       ndraws = ndraws, ndraws_pred = ndraws_pred
-      )
-      vs2 <- cv_varsel(fit_gauss,
-                       validate_search = TRUE,
-                       ndraws = ndraws, ndraws_pred = ndraws_pred
-      )
-    })
-    expect_true(all(summary(vs1)$selection$elpd >=
-                      summary(vs2)$selection$elpd))
-  })
-
-  test_that(paste(
-    "Having something else than stan_glm as the fit throws an error"
-  ), {
-    expect_error(cv_varsel(rnorm(5), verbose = FALSE),
-                 regexp = "no applicable method"
+test_that("the validate_search option works as expected", {
+  SW({
+    vs1 <- cv_varsel(fit_gauss,
+                     validate_search = FALSE,
+                     ndraws = ndraws, ndraws_pred = ndraws_pred
+    )
+    vs2 <- cv_varsel(fit_gauss,
+                     validate_search = TRUE,
+                     ndraws = ndraws, ndraws_pred = ndraws_pred
     )
   })
+  expect_true(all(summary(vs1)$selection$elpd >=
+                    summary(vs2)$selection$elpd))
+})
 
-  test_that(paste(
-    "object returned by cv_varsel, kfold contains the relevant",
-    "fields"
-  ), {
-    for (i in seq_len(length(cv_kf_list))) {
-      i_inf <- names(cv_kf_list)[i]
-      for (j in seq_len(length(cv_kf_list[[i]]))) {
-        j_inf <- names(cv_kf_list[[i]])[j]
-        # solution_terms seems legit
-        expect_length(cv_kf_list[[i]][[j]]$solution_terms, nterms)
-        expect_true(all(!is.na(match(
-          colnames(fit_gauss$data[, -1]),
-          cv_kf_list[[i]][[j]]$solution_terms
-        ))),
-        info = paste(i_inf, j_inf)
-        )
-        # kl seems legit
-        expect_length(cv_kf_list[[i]][[j]]$kl, nterms + 1)
+test_that(paste(
+  "Having something else than stan_glm as the fit throws an error"
+), {
+  expect_error(cv_varsel(rnorm(5), verbose = FALSE),
+               regexp = "no applicable method"
+  )
+})
 
-        # decreasing
-        expect_equal(cv_kf_list[[i]][[j]]$kl[-1],
-                     cummin(cv_kf_list[[i]][[j]]$kl[-1]),
-                     info = paste(i_inf, j_inf),
-                     tolerance = 24e-2
-        )
+test_that(paste(
+  "object returned by cv_varsel, kfold contains the relevant",
+  "fields"
+), {
+  for (i in seq_len(length(cv_kf_list))) {
+    i_inf <- names(cv_kf_list)[i]
+    for (j in seq_len(length(cv_kf_list[[i]]))) {
+      j_inf <- names(cv_kf_list[[i]])[j]
+      # solution_terms seems legit
+      expect_length(cv_kf_list[[i]][[j]]$solution_terms, nterms)
+      expect_true(all(!is.na(match(
+        colnames(fit_gauss$data[, -1]),
+        cv_kf_list[[i]][[j]]$solution_terms
+      ))),
+      info = paste(i_inf, j_inf)
+      )
+      # kl seems legit
+      expect_length(cv_kf_list[[i]][[j]]$kl, nterms + 1)
 
-        # summaries seems legit
-        expect_named(cv_kf_list[[i]][[j]]$summaries, c("sub", "ref"),
-                     info = paste(i_inf, j_inf)
-        )
-        expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nterms + 1)
-        expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]],
-                     c("mu", "lppd", "w"),
-                     ignore.order = TRUE, info = paste(i_inf, j_inf)
-        )
-        expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c("mu", "lppd"),
-                     ignore.order = TRUE, info = paste(i_inf, j_inf)
-        )
-        # family seems legit
-        expect_equal(cv_kf_list[[i]][[j]]$family$family,
-                     cv_kf_list[[i]][[j]]$family$family,
-                     info = paste(i_inf, j_inf)
-        )
-        expect_equal(cv_kf_list[[i]][[j]]$family$link,
-                     cv_kf_list[[i]][[j]]$family$link,
-                     info = paste(i_inf, j_inf)
-        )
-        expect_true(length(cv_kf_list[[i]][[j]]$family) >=
-                      length(cv_kf_list[[i]][[j]]$family$family),
-                    info = paste(i_inf, j_inf)
-        )
-        # pct_solution_terms_cv seems legit
-        expect_equal(dim(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
-                     c(nterms, nterms + 1),
-                     info = paste(i_inf, j_inf)
-        )
-        expect_true(all(
-          cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
-            cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0
-        ),
-        info = paste(i_inf, j_inf)
-        )
-        expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1],
-                     1:nterms,
-                     info = paste(i_inf, j_inf)
-        )
-        expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
-                     c("size", cv_kf_list[[i]][[j]]$solution_terms),
-                     info = paste(i_inf, j_inf)
-        )
-      }
+      # decreasing
+      expect_equal(cv_kf_list[[i]][[j]]$kl[-1],
+                   cummin(cv_kf_list[[i]][[j]]$kl[-1]),
+                   info = paste(i_inf, j_inf),
+                   tolerance = 24e-2
+      )
+
+      # summaries seems legit
+      expect_named(cv_kf_list[[i]][[j]]$summaries, c("sub", "ref"),
+                   info = paste(i_inf, j_inf)
+      )
+      expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nterms + 1)
+      expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]],
+                   c("mu", "lppd", "w"),
+                   ignore.order = TRUE, info = paste(i_inf, j_inf)
+      )
+      expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c("mu", "lppd"),
+                   ignore.order = TRUE, info = paste(i_inf, j_inf)
+      )
+      # family seems legit
+      expect_equal(cv_kf_list[[i]][[j]]$family$family,
+                   cv_kf_list[[i]][[j]]$family$family,
+                   info = paste(i_inf, j_inf)
+      )
+      expect_equal(cv_kf_list[[i]][[j]]$family$link,
+                   cv_kf_list[[i]][[j]]$family$link,
+                   info = paste(i_inf, j_inf)
+      )
+      expect_true(length(cv_kf_list[[i]][[j]]$family) >=
+                    length(cv_kf_list[[i]][[j]]$family$family),
+                  info = paste(i_inf, j_inf)
+      )
+      # pct_solution_terms_cv seems legit
+      expect_equal(dim(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
+                   c(nterms, nterms + 1),
+                   info = paste(i_inf, j_inf)
+      )
+      expect_true(all(
+        cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
+          cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0
+      ),
+      info = paste(i_inf, j_inf)
+      )
+      expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1],
+                   1:nterms,
+                   info = paste(i_inf, j_inf)
+      )
+      expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
+                   c("size", cv_kf_list[[i]][[j]]$solution_terms),
+                   info = paste(i_inf, j_inf)
+      )
     }
+  }
+})
+
+test_that("cross-validation method is valid", {
+  expect_error(
+    cv_varsel(fit_gauss, cv_method = "k-fold"),
+    "Unknown cross-validation method"
+  )
+})
+
+test_that("K is valid for cv_method='kfold'", {
+  # the chains, seed and iter arguments to the rstanarm functions here must
+  # be specified directly rather than through a variable (eg, seed = 1235
+  # instead of seed = seed), otherwise when the calls are evaluated in
+  # refmodel$cvfun() they may not be found in the evaluation frame of the
+  # calling function, causing the test to fail
+  glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+                       family = poisson(), data = df_poiss,
+                       chains = 2, seed = 1235, iter = 400)
+
+  expect_error(
+    cv_varsel(glm_simp, cv_method = "kfold", K = 1),
+    "must be at least 2"
+  )
+  expect_error(
+    cv_varsel(glm_simp, cv_method = "kfold", K = 1000),
+    "cannot exceed n"
+  )
+  expect_error(
+    cv_varsel(glm_simp, cv_method = "kfold", K = c(4, 9)),
+    "a single integer value"
+  )
+  expect_error(
+    cv_varsel(glm_simp, cv_method = "kfold", K = "a"),
+    "a single integer value"
+  )
+  expect_error(
+    cv_varsel(glm_simp, cv_method = "kfold", K = df_poiss),
+    "a single integer value"
+  )
+})
+
+test_that("providing `cvfits` works", {
+  out <- SW({
+    k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
+    folds <- seq_len(nrow(glm_simp$data))
+    for (K in seq_len(2)) {
+      folds[as.numeric(rownames(k_fold$fit[[K]]$data))] <- K
+    }
+    attr(k_fold, "folds") <- folds
+    fit_cv <- cv_varsel(glm_simp,
+                        cv_method = "kfold", cvfits = k_fold,
+                        ndraws = ndraws, ndraws_pred = ndraws_pred,
+                        verbose = FALSE)
   })
+  expect_false(any(grepl("k_fold not provided", out)))
+  expect_length(fit_cv$solution_terms, nterms)
 
-  test_that("cross-validation method is valid", {
-    expect_error(
-      cv_varsel(fit_gauss, cv_method = "k-fold"),
-      "Unknown cross-validation method"
-    )
-  })
+  # kl seems legit
+  expect_length(fit_cv$kl, nterms + 1)
 
-  test_that("K is valid for cv_method='kfold'", {
-    expect_error(
-      cv_varsel(glm_simp, cv_method = "kfold", K = 1),
-      "must be at least 2"
-    )
-    expect_error(
-      cv_varsel(glm_simp, cv_method = "kfold", K = 1000),
-      "cannot exceed n"
-    )
-    expect_error(
-      cv_varsel(glm_simp, cv_method = "kfold", K = c(4, 9)),
-      "a single integer value"
-    )
-    expect_error(
-      cv_varsel(glm_simp, cv_method = "kfold", K = "a"),
-      "a single integer value"
-    )
-    expect_error(
-      cv_varsel(glm_simp, cv_method = "kfold", K = df_poiss),
-      "a single integer value"
-    )
-  })
+  # decreasing
+  expect_equal(fit_cv$kl, cummin(fit_cv$kl), tolerance = 1e-3)
 
-  test_that("providing k_fold works", {
-    out <- SW({
-      k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
-      folds <- seq_len(nrow(glm_simp$data))
-      for (K in seq_len(2)) {
-        folds[as.numeric(rownames(k_fold$fit[[K]]$data))] <- K
-      }
-      attr(k_fold, "folds") <- folds
-      fit_cv <- cv_varsel(glm_simp,
-                          cv_method = "kfold", cvfits = k_fold,
-                          ndraws = ndraws, ndraws_pred = ndraws_pred,
-                          verbose = FALSE
-      )
-    })
-    expect_false(any(grepl("k_fold not provided", out)))
-    expect_length(fit_cv$solution_terms, nterms)
+  # summaries seems legit
+  expect_named(fit_cv$summaries, c("sub", "ref"))
+  expect_length(fit_cv$summaries$sub, nterms + 1)
+  expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd", "w"),
+               ignore.order = TRUE
+  )
+  expect_named(fit_cv$summaries$ref, c("mu", "lppd"),
+               ignore.order = TRUE
+  )
+  # family seems legit
+  expect_equal(
+    fit_cv$family$family,
+    fit_cv$family$family
+  )
+  expect_equal(fit_cv$family$link, fit_cv$family$link)
+  expect_true(length(fit_cv$family) >= length(fit_cv$family$family))
+  # pct_solution_terms_cv seems legit
+  expect_equal(dim(fit_cv$pct_solution_terms_cv), c(nterms, nterms + 1))
+  expect_true(all(fit_cv$pct_solution_terms_cv[, -1] <= 1 &
+                    fit_cv$pct_solution_terms_cv[, -1] >= 0))
 
-    # kl seems legit
-    expect_length(fit_cv$kl, nterms + 1)
-
-    # decreasing
-    expect_equal(fit_cv$kl, cummin(fit_cv$kl), tolerance = 1e-3)
-
-    # summaries seems legit
-    expect_named(fit_cv$summaries, c("sub", "ref"))
-    expect_length(fit_cv$summaries$sub, nterms + 1)
-    expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd", "w"),
-                 ignore.order = TRUE
-    )
-    expect_named(fit_cv$summaries$ref, c("mu", "lppd"),
-                 ignore.order = TRUE
-    )
-    # family seems legit
-    expect_equal(
-      fit_cv$family$family,
-      fit_cv$family$family
-    )
-    expect_equal(fit_cv$family$link, fit_cv$family$link)
-    expect_true(length(fit_cv$family) >= length(fit_cv$family$family))
-    # pct_solution_terms_cv seems legit
-    expect_equal(dim(fit_cv$pct_solution_terms_cv), c(nterms, nterms + 1))
-    expect_true(all(fit_cv$pct_solution_terms_cv[, -1] <= 1 &
-                      fit_cv$pct_solution_terms_cv[, -1] >= 0))
-
-    expect_equal(fit_cv$pct_solution_terms_cv[, 1], 1:nterms)
-    expect_equal(
-      colnames(fit_cv$pct_solution_terms_cv),
-      c("size", fit_cv$solution_terms)
-    )
-  })
-}
+  expect_equal(fit_cv$pct_solution_terms_cv[, 1], 1:nterms)
+  expect_equal(
+    colnames(fit_cv$pct_solution_terms_cv),
+    c("size", fit_cv$solution_terms)
+  )
+})
 
 # summary() ---------------------------------------------------------------
 
