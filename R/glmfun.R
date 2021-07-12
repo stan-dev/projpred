@@ -255,7 +255,7 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
       pseudo_obs <- function(f, wprev)
         pseudo_data(f, y, family, offset = offset, weights = weights,
                     obsvar = obsvar, wprev = wprev)
-      out <- glm_ridge_c(x, pseudo_obs, lambda, FALSE, 1, beta_start, w0,
+      out <- glm_ridge_c(x, pseudo_obs, lambda, FALSE, 0, beta_start, w0,
                          thresh, qa_updates_max, ls_iter_max)
       return(list(beta = matrix(integer(length = 0)),
                   beta0 = as.vector(out[[1]]), w = out[[3]], loss = out[[4]],
