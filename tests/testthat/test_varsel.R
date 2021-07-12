@@ -217,6 +217,7 @@ test_that(paste(
     # For the intercept-only model, the linear predictor consists only
     # of the intercept, so we expect no variation in `mu_jm_regul`:
     expect_true(all(ssq_regul_prd[, 1] == 0), info = tstsetup)
+    # All other (i.e., not intercept-only) models:
     for (j in seq_len(dim(ssq_regul_prd)[1])[-1]) {
       for (m in seq_len(dim(ssq_regul_prd)[2])[-1]) {
         expect_lt(ssq_regul_prd[!!j, !!m], ssq_regul_prd[j - 1, m])
