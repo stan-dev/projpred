@@ -1,164 +1,59 @@
 context("datafit")
-suppressWarnings(RNGversion("3.5.0"))
 
-
-# tests for data based estimates (no actual reference model)
+# Setup -------------------------------------------------------------------
 
 if (!requireNamespace("glmnet", quietly = TRUE)) {
-  stop("glmnet needed for this test to work. Please install it.",
-       call. = FALSE
-  )
+  stop("Package \"glmnet\" needed for this test to work. Please install it.",
+       call. = FALSE)
 }
 
-set.seed(1235)
-n <- 40
-nterms <- 5
-x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
-b <- runif(nterms) - 0.5
-dis <- runif(1, 1, 2)
-weights <- sample(1:4, n, replace = TRUE)
-offset <- rnorm(n)
-chains <- 2
-seed <- 1235
-iter <- 500
-source(testthat::test_path("helpers", "SW.R"))
-ndraws <- 1
-ndraws_pred <- 5
+# For the binomial family with > 1 trials, we currently expect the warning
+# "Using formula(x) is deprecated when x is a character vector of length > 1"
+# (see GitHub issue #136), so temporarily wrap the following call in SW():
+SW(datafits <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    formul_crr <- fits[[mod_nm]][[fam_nm]]$formula
+    extrmoddat <- function(object, newdata = NULL, wrhs = NULL, orhs = NULL,
+                           extract_y = TRUE) {
+      resp_form <- if (!extract_y) NULL else lhs(formul_crr)
+      if (is.null(newdata)) {
+        newdata <- dat
+      }
+      args <- nlist(object, newdata, wrhs, orhs, resp_form)
+      return(do.call(.extract_model_data, args))
+    }
+    return(init_refmodel(
+      object = NULL,
+      data = dat,
+      formula = formul_crr,
+      family = get(paste0("f_", fam_nm)),
+      extract_model_data = extrmoddat
+    ))
+  })
+}))
 
-f_gauss <- gaussian()
-df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
-f_binom <- binomial()
-df_binom <- data.frame(
-  y = rbinom(n, weights, f_binom$linkinv(x %*% b)),
-  x = x, weights = weights
-)
-f_poiss <- poisson()
-df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
-
-formula <- y ~ x.1 + x.2 + x.3 + x.4 + x.5
-extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                               orhs = NULL, extract_y = FALSE) {
-  if (!is.null(object)) {
-    formula <- formula(object)
-    tt <- extract_terms_response(formula)
-    response_name <- tt$response
-  } else {
-    response_name <- NULL
-  }
-
-  if (is.null(newdata)) {
-    newdata <- object$data
-  }
-
-  resp_form <- NULL
-  if (is.null(object)) {
-    if ("weights" %in% colnames(newdata))
-      wrhs <- ~ weights
-    if ("offset" %in% colnames(newdata))
-      orhs <- ~ offset
-    if ("y" %in% colnames(newdata))
-      resp_form <- ~ y
-  }
-
-  args <- nlist(object, newdata, wrhs, orhs, resp_form)
-  return(do_call(.extract_model_data, args))
-}
-
-dref_gauss <- init_refmodel(
-  object = NULL, df_gauss, formula, f_gauss,
-  extract_model_data = extract_model_data
-)
-dref_binom <- init_refmodel(
-  object = NULL, df_binom, formula, f_binom,
-  extract_model_data = extract_model_data
-)
-dref_poiss <- init_refmodel(
-  object = NULL, df_poiss, formula, f_poiss,
-  extract_model_data = extract_model_data
-)
-
-dref_list <- list(gauss = dref_gauss, binom = dref_binom, poiss = dref_poiss)
-
-SW({
-  # varsel
-  vsd_list <- lapply(dref_list, varsel, nterms_max = nterms + 1,
-                     verbose = FALSE)
-
-  # cv_varsel
-  cvvsd_list <- lapply(dref_list, cv_varsel,
-                       nterms_max = nterms + 1, ndraws = ndraws,
-                       ndraws_pred = ndraws_pred, verbose = FALSE)
-
-  predd_list <- lapply(vsd_list, proj_linpred,
-                       newdata = data.frame(x = x, weights = weights,
-                                            offset = offset),
-                       offsetnew = ~offset, weightsnew = ~weights, nterms = 3,
-                       seed = seed)
+# TODO: Throws a lot of warnings and also an error:
+vss_datafit <- lapply(args_vs, function(args_vs_i) {
+  do.call(varsel, c(
+    list(object = datafits[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
+    args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+  ))
 })
 
-test_that("predict fails for 'datafit' objects", {
-  expect_error(
-    predict(dref_gauss, df_gauss),
-    "Cannot make predictions with data reference only"
-  )
-})
+# TODO: cv_varsel(). Note that `cv_method = "kfold"` is needed here for datafits.
 
-test_that(paste(
-  "output of varsel is sensible with only data provided as",
-  "reference model"
-), {
-  for (i in seq_along(vsd_list)) {
-    # solution_terms seems legit
-    expect_equal(length(vsd_list[[i]]$solution_terms), nterms)
+# Tests (projpred only) ---------------------------------------------------
 
-    # kl seems legit
-    expect_equal(length(vsd_list[[i]]$kl), nterms + 1)
-
-    # kl decreasing
-    expect_equal(vsd_list[[i]]$kl, cummin(vsd_list[[i]]$kl), tolerance = 15e-2)
-
-    # summaries seems legit
-    expect_named(vsd_list[[i]]$summaries, c("sub", "ref"))
-    expect_equal(length(vsd_list[[i]]$summaries$sub), nterms + 1)
-    expect_named(vsd_list[[i]]$summaries$sub[[1]], c("mu", "lppd"))
-    expect_named(vsd_list[[i]]$summaries$ref, c("mu", "lppd"))
+test_that("predict.refmodel() fails for \"datafit\" objects", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      expect_error(predict(datafits[[mod_nm]][[fam_nm]], newdata = dat),
+                   "^Cannot make predictions with data reference only\\.$")
+    }
   }
 })
 
-test_that(paste(
-  "output of cv_varsel is sensible with only data provided as",
-  "reference model"
-), {
-  for (i in seq_along(cvvsd_list)) {
-    # solution_terms seems legit
-    expect_equal(length(cvvsd_list[[i]]$solution_terms), nterms)
-
-    # kl seems legit
-    expect_equal(length(cvvsd_list[[i]]$kl), nterms + 1)
-
-    # kl decreasing
-    expect_equal(cvvsd_list[[i]]$kl, cummin(cvvsd_list[[i]]$kl),
-                 tolerance = 15e-2
-    )
-
-    # summaries seems legit
-    expect_named(cvvsd_list[[i]]$summaries, c("sub", "ref"))
-    expect_equal(length(cvvsd_list[[i]]$summaries$sub), nterms + 1)
-    expect_named(cvvsd_list[[i]]$summaries$sub[[1]], c("mu", "lppd", "w"))
-    expect_named(cvvsd_list[[i]]$summaries$ref, c("mu", "lppd"))
-  }
-})
-
-test_that("summary.vsel stops if baseline = 'ref' and deltas = TRUE", {
-  expect_error(
-    summary(vsd_list[[1]], baseline = "ref", deltas = TRUE),
-    paste(
-      "Cannot use deltas = TRUE and baseline = 'ref' when there is no",
-      "reference model"
-    )
-  )
-})
-
+### TODO:
 test_that(paste(
   "output of project is sensible with only data provided as",
   "reference model"
@@ -198,7 +93,6 @@ test_that(paste(
   }
 })
 
-
 test_that(paste(
   "output of proj_linpred is sensible with only data provided as",
   "reference model"
@@ -222,7 +116,45 @@ test_that(paste(
     expect_equal(length(pred$lpd), nrow(x))
   }
 })
+###
 
+# TODO: Add tests for as.matrix.projection() and proj_predict().
+
+test_that(paste(
+  "varsel(): `object` of class \"datafit\", correctly specified `method`,",
+  "`nterms_max`, `nclusters`, and `nclusters_pred` lead to correct output",
+  "structure"
+), {
+  for (tstsetup in names(vss_datafit)) {
+    vsel_tester(
+      # TODO
+    )
+  }
+})
+
+test_that(paste(
+  "cv_varsel(): `object` of class \"datafit\", correctly specified `method`,",
+  "`nterms_max`, `nclusters`, and `nclusters_pred` lead to correct output",
+  "structure"
+), {
+  for (tstsetup in names(cvvss_datafit)) {
+    vsel_tester(
+      # TODO
+    )
+  }
+})
+
+test_that("summary.vsel() fails if `baseline = \"ref\"` and `deltas = TRUE`", {
+  for (tstsetup in names(vss_datafit)[1]) {
+    expect_error(
+      summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
+      paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
+            "reference model\\.$")
+    )
+  }
+})
+
+# Comparison with glmnet --------------------------------------------------
 
 # below are some tests that check Lasso solution computed with varsel is the
 # same as that of glmnet. (notice that glm_ridge and glm_elnet are already
