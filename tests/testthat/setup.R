@@ -153,7 +153,7 @@ nterms_glmm <- nterms_glm + nterms_z
 
 # For simplicity, always use the same nonlinear function (could be extended in
 # the future):
-s_mat <- apply(x_cont, 2, function(x, a = -3, b = 0.75, c = 0.5) {
+s_mat <- apply(x_cont, 2, function(x, a = -0.125, b = 0.25, c = 0.5) {
   b * (x - c)^2 + a
 })
 s_sum <- rowSums(s_mat)
