@@ -69,7 +69,7 @@ seed2_tst <- 866028
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 ndr_ncl_pred_tst <- list(
-  default = list(),
+  default_ndr_ncl = list(),
   noclust = list(ndraws = 25L),
   clust = list(nclusters = nclusters_pred_tst),
   clust_draws = list(ndraws = 3L),
@@ -82,7 +82,7 @@ solterms_x <- c("xco.2", "xco.1")
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
 solterms_s <- c("s(s.1)", "s(s.2)")
 meth_tst <- list(
-  default = list(),
+  default_meth = list(),
   L1 = list(method = "L1"),
   forward = list(method = "forward")
 )
@@ -212,7 +212,7 @@ nterms_unavail <- list(
   vec = c(nterms_max_tst + 130L, nterms_max_tst + 290L)
 )
 nterms_avail <- list(
-  default = NULL,
+  default_nterms = NULL,
   empty = 0L,
   single = nterms_max_tst %/% 2L,
   subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 3))),
@@ -382,7 +382,7 @@ if (run_vs) {
       if (mod_nm == "glm" && fam_nm == "gauss") {
         meth <- meth_tst[setdiff(names(meth_tst), "L1")]
       } else {
-        meth <- meth_tst["default"]
+        meth <- meth_tst["default_meth"]
       }
       lapply(meth, function(meth_i) {
         return(c(
@@ -412,7 +412,7 @@ if (run_cvvs) {
       if (mod_nm == "glm" && fam_nm == "gauss") {
         meth <- meth_tst[setdiff(names(meth_tst), "L1")]
       } else {
-        meth <- meth_tst["default"]
+        meth <- meth_tst["default_meth"]
       }
       lapply(meth, function(meth_i) {
         if ((length(meth_i) == 0 && mod_nm != "glm") ||
@@ -492,7 +492,8 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 
 ### From "vsel" -----------------------------------------------------------
 
-tstsetups_prj_vs <- grep("^glm\\.gauss\\.default", names(vss), value = TRUE)
+tstsetups_prj_vs <- grep("^glm\\.gauss\\.default_meth", names(vss),
+                         value = TRUE)
 stopifnot(length(tstsetups_prj_vs) > 0)
 args_prj_vs <- lapply(tstsetups_prj_vs, function(tstsetup) {
   lapply(nterms_avail, function(nterms_crr) {
