@@ -197,14 +197,14 @@ test_that(paste(
         # Expect equality for all components not related to prediction:
         expect_equal(vs_regul[compos_nonpred],
                      vss[[tstsetup]][compos_nonpred],
-                     info = paste(tstsetup, j, sep = "_"))
+                     info = paste(tstsetup, j, sep = "__"))
         ### Excluded for the sake of speed (and because the inequality of the
         ### prediction components is checked below in detail):
         # # Expect inequality when taking only the components related to
         # # prediction:
         # expect_false(isTRUE(all.equal(vs_regul[compos_pred],
         #                               vss[[tstsetup]][compos_pred])),
-        #              info = paste(tstsetup, j, sep = "_"))
+        #              info = paste(tstsetup, j, sep = "__"))
         ###
       }
       # Check the inequality of the prediction components in detail: Expect a

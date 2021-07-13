@@ -31,7 +31,7 @@ proj_list_tester <- function(p,
     }
     projection_tester(p[[j]],
                       solterms_expected = solterms_expected_crr,
-                      info_str = paste(info_str, j, sep = "_"),
+                      info_str = paste(info_str, j, sep = "__"),
                       ...)
   }
   if (is_seq) {
@@ -174,7 +174,7 @@ vsel_tester <- function(vs,
     for (j in seq_along(sub_fits_totest)) {
       expect_true(inherits(sub_fits_totest[[!!j]],
                            get_as.matrix_cls_projpred()),
-                  info = paste(info_str, i, sep = "_"))
+                  info = paste(info_str, i, sep = "__"))
     }
   }
   expect_type(vs$search_path$p_sel, "list")
