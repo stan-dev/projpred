@@ -48,6 +48,12 @@ vsel_nms <- c(
   "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "suggested_size",
   "summary"
 )
+vsel_nms_cv <- c(
+  "refmodel", "search_path", "d_test", "summaries", "family", "kl",
+  "solution_terms", "pct_solution_terms_cv", "nterms_all", "nterms_max",
+  "method", "cv_method", "validate_search", "nclusters", "nclusters_pred",
+  "ndraws", "ndraws_pred", "suggested_size", "summary"
+)
 compos_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
                  "summary")
 compos_nonpred <- setdiff(vsel_nms, compos_pred)

@@ -133,6 +133,7 @@ projection_tester <- function(p,
 # @return `TRUE` (invisible).
 #
 vsel_tester <- function(vs,
+                        vsel_nms_expected = vsel_nms,
                         refmod_expected,
                         dtest_expected = NULL,
                         solterms_len_expected,
@@ -150,7 +151,7 @@ vsel_tester <- function(vs,
   }
 
   expect_s3_class(vs, "vsel")
-  expect_named(vs, vsel_nms, info = info_str)
+  expect_named(vs, vsel_nms_expected, info = info_str)
 
   # refmodel
   expect_s3_class(vs$refmodel, "refmodel")
