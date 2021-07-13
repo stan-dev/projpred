@@ -492,8 +492,8 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 
 ### From "vsel" -----------------------------------------------------------
 
-tstsetups_prj_vs <- grep("^glm\\.gauss\\.default_meth", names(vss),
-                         value = TRUE)
+tstsetups_prj_vs <- setNames(nm = grep("^glm\\.gauss\\.default_meth",
+                                       names(vss), value = TRUE))
 stopifnot(length(tstsetups_prj_vs) > 0)
 args_prj_vs <- lapply(tstsetups_prj_vs, function(tstsetup) {
   lapply(nterms_avail, function(nterms_crr) {
