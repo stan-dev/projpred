@@ -77,12 +77,11 @@ test_that(paste(
 ), {
   skip_if_not(exists("prjs_vs"))
   for (tstsetup in names(prjs_vs)) {
-    mod_crr <- args_prj_vs[[tstsetup]]$mod_nm
-    fam_crr <- args_prj_vs[[tstsetup]]$fam_nm
-    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
-    tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
-                        value = TRUE)[1]
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
     stopifnot(length(tstsetup_vs) > 0)
+    mod_crr <- args_vs[[tstsetup_vs]]$mod_nm
+    fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
+    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size
     }
@@ -97,6 +96,9 @@ test_that(paste(
         p_type_expected = TRUE,
         info_str = tstsetup
       )
+      # Check that projecting from the "vsel" object onto a single submodel
+      # gives the same output as projecting the reference model onto that
+      # submodel directly:
       tstsetup_tries <- grep(paste0("^", mod_crr, ".", fam_crr, ".*\\.clust$"),
                              names(prjs), value = TRUE)
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
@@ -130,12 +132,11 @@ test_that(paste(
 ), {
   skip_if_not(exists("prjs_cvvs"))
   for (tstsetup in names(prjs_cvvs)) {
-    mod_crr <- args_prj_cvvs[[tstsetup]]$mod_nm
-    fam_crr <- args_prj_cvvs[[tstsetup]]$fam_nm
-    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
-    tstsetup_cvvs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(cvvss),
-                          value = TRUE)[1]
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
     stopifnot(length(tstsetup_cvvs) > 0)
+    mod_crr <- args_cvvs[[tstsetup_cvvs]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
+    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
     }
@@ -150,6 +151,9 @@ test_that(paste(
         p_type_expected = TRUE,
         info_str = tstsetup
       )
+      # Check that projecting from the "vsel" object onto a single submodel
+      # gives the same output as projecting the reference model onto that
+      # submodel directly:
       tstsetup_tries <- grep(paste0("^", mod_crr, ".", fam_crr, ".*\\.clust$"),
                              names(prjs), value = TRUE)
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
