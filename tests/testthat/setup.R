@@ -5,7 +5,7 @@
 # General setup -----------------------------------------------------------
 
 # When debugging interactively without needing the "vsel" objects, these
-# switches may be set to `FALSE` to source() this script faster:
+# switches may be set to `FALSE` to save time:
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
 run_cvvs <- run_vs
 
@@ -15,14 +15,10 @@ source(testthat::test_path("helpers", "SW.R"))
 source(testthat::test_path("helpers", "unlist_cust.R"))
 source(testthat::test_path("helpers", "testers.R"))
 
-mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
-### Exclude GAMs because of issue #150:
-mod_nms <- setNames(nm = setdiff(mod_nms, "gam"))
-###
-### Exclude GAMMs because of issue #148:
-mod_nms <- setNames(nm = setdiff(mod_nms, "gamm"))
-###
-fam_nms <- setNames(nm = c("gauss", "binom", "poiss"))
+# Exclude GAMs because of issue #150; exclude GAMMs because of issue #148:
+mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
+# Exclude "poiss" to save time:
+fam_nms <- setNames(nm = c("gauss", "binom")) # , "poiss"
 
 seed_tst <- 74345
 
@@ -242,12 +238,14 @@ SW({
     offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
-  fit_glm_poiss <- rstanarm::stan_glm(
-    y_glm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
-    family = f_poiss, data = dat,
-    weights = wobs_tst, offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
+  if ("poiss" %in% fam_nms) {
+    fit_glm_poiss <- rstanarm::stan_glm(
+      y_glm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
+      family = f_poiss, data = dat,
+      weights = wobs_tst, offset = offs_tst,
+      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    )
+  }
 })
 
 ## GLMMs ------------------------------------------------------------------
@@ -266,12 +264,14 @@ SW({
     offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   )
-  fit_glmm_poiss <- rstanarm::stan_glmer(
-    y_glmm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
-    family = f_poiss, data = dat,
-    weights = wobs_tst, offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
+  if ("poiss" %in% fam_nms) {
+    fit_glmm_poiss <- rstanarm::stan_glmer(
+      y_glmm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
+      family = f_poiss, data = dat,
+      weights = wobs_tst, offset = offs_tst,
+      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    )
+  }
 })
 
 ## GAMs -------------------------------------------------------------------
@@ -280,31 +280,33 @@ SW({
 #   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
 #     offset() in the formula.
 
-### Exclude GAMs because of issue #150:
-# SW({
-#   fit_gam_gauss <- rstanarm::stan_gamm4(
-#     y_gam_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-#       s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-#     family = f_gauss, data = dat,
-#     weights = wobs_tst,
-#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-#   )
-#   fit_gam_binom <- rstanarm::stan_gamm4(
-#     cbind(y_gam_binom, wobs_col - y_gam_binom) ~
-#       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-#       s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-#     family = f_binom, data = dat,
-#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-#   )
-#   fit_gam_poiss <- rstanarm::stan_gamm4(
-#     y_gam_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-#       s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-#     family = f_poiss, data = dat,
-#     weights = wobs_tst,
-#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-#   )
-# })
-###
+if ("gam" %in% mod_nms) {
+  SW({
+    fit_gam_gauss <- rstanarm::stan_gamm4(
+      y_gam_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+        s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
+      family = f_gauss, data = dat,
+      weights = wobs_tst,
+      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    )
+    fit_gam_binom <- rstanarm::stan_gamm4(
+      cbind(y_gam_binom, wobs_col - y_gam_binom) ~
+        xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+        s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
+      family = f_binom, data = dat,
+      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    )
+    if ("poiss" %in% fam_nms) {
+      fit_gam_poiss <- rstanarm::stan_gamm4(
+        y_gam_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+          s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
+        family = f_poiss, data = dat,
+        weights = wobs_tst,
+        chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+      )
+    }
+  })
+}
 
 ## GAMMs ------------------------------------------------------------------
 
@@ -313,34 +315,36 @@ SW({
 #     rstanarm::stan_gamm4() seems to be unable to support an offset() in the
 #     formula. Therefore, omit the offset here.
 
-### Exclude GAMMs because of issue #148:
-# SW({
-#   fit_gamm_gauss <- rstanarm::stan_gamm4(
-#     y_gamm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-#       s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
-#     random = ~ (xco.1 | z.1),
-#     family = f_gauss, data = dat,
-#     weights = wobs_tst,
-#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-#   )
-#   fit_gamm_binom <- rstanarm::stan_gamm4(
-#     cbind(y_gamm_binom, wobs_col - y_gamm_binom) ~
-#       xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-#       s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
-#     random = ~ (xco.1 | z.1),
-#     family = f_binom, data = dat,
-#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-#   )
-#   fit_gamm_poiss <- rstanarm::stan_gamm4(
-#     y_gamm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-#       s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
-#     random = ~ (xco.1 | z.1),
-#     family = f_poiss, data = dat,
-#     weights = wobs_tst,
-#     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-#   )
-# })
-###
+if ("gamm" %in% mod_nms) {
+  SW({
+    fit_gamm_gauss <- rstanarm::stan_gamm4(
+      y_gamm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+        s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
+      random = ~ (xco.1 | z.1),
+      family = f_gauss, data = dat,
+      weights = wobs_tst,
+      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    )
+    fit_gamm_binom <- rstanarm::stan_gamm4(
+      cbind(y_gamm_binom, wobs_col - y_gamm_binom) ~
+        xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+        s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
+      random = ~ (xco.1 | z.1),
+      family = f_binom, data = dat,
+      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    )
+    if ("poiss" %in% fam_nms) {
+      fit_gamm_poiss <- rstanarm::stan_gamm4(
+        y_gamm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
+          s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
+        random = ~ (xco.1 | z.1),
+        family = f_poiss, data = dat,
+        weights = wobs_tst,
+        chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+      )
+    }
+  })
+}
 
 ## List -------------------------------------------------------------------
 
