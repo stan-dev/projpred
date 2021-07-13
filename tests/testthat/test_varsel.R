@@ -448,13 +448,34 @@ test_that("for L1 search, `penalty` has an expected effect", {
 
 context("cv_varsel()")
 
-test_that('cv_varsel returns an object of type "vsel"', {
-  for (i in seq_len(length(cvs_list))) {
-    for (j in seq_len(length(cvs_list[[i]]))) {
-      expect_s3_class(cvs_list[[i]][[j]], "vsel")
+test_that(paste(
+  "`object` of class \"refmodel\", correctly specified `method`, `nterms_max`,",
+  "`nclusters`, and `nclusters_pred` lead to correct output structure"
+), {
+  skip_if_not(exists("cvvss"))
+  for (tstsetup in names(cvvss)) {
+    mod_crr <- args_cvvs[[tstsetup]]$mod
+    fam_crr <- args_cvvs[[tstsetup]]$fam
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
+    vsel_tester(
+      cvvss[[tstsetup]],
+      vsel_nms_expected = vsel_nms_cv,
+      refmod_expected = refmods[[mod_crr]][[fam_crr]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "LOO",
+      valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
+      nclusters_expected = args_cvvs[[tstsetup]]$nclusters,
+      nclusters_pred_expected = args_cvvs[[tstsetup]]$nclusters_pred,
+      info_str = tstsetup
+    )
   }
 })
+
+
 
 test_that("object returned by cv_varsel contains the relevant fields", {
   for (i in seq_len(length(cvs_list))) {
