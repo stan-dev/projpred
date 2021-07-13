@@ -89,50 +89,48 @@ test_that(paste(
   }
 })
 
-### Excluded because of issue #167:
-# test_that("specifying d_test has an expected effect", {
-#   skip_if_not(exists("vss"))
-#   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
-#   stopifnot(length(tstsetups) > 0)
-#   for (tstsetup in tstsetups) {
-#     args_vs_i <- args_vs[[tstsetup]]
-#     mod_crr <- args_vs_i$mod_nm
-#     fam_crr <- args_vs_i$fam_nm
-#     refmod_crr <- refmods[[mod_crr]][[fam_crr]]
-#     d_test_crr <- list(
-#       y = refmod_crr$y,
-#       test_points = seq_along(refmod_crr$y),
-#       data = refmod_crr$fit$data,
-#       weights = refmod_crr$wobs,
-#       type = "test"
-#     )
-#     vs_repr <- do.call(varsel, c(
-#       list(object = refmod_crr, d_test = d_test_crr),
-#       args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
-#     ))
-#     meth_exp_crr <- args_vs_i$method
-#     if (is.null(meth_exp_crr)) {
-#       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
-#     }
-#     vsel_tester(
-#       vs_repr,
-#       refmod_expected = refmod_crr,
-#       dtest_expected = d_test_crr,
-#       solterms_len_expected = args_vs_i$nterms_max,
-#       method_expected = meth_exp_crr,
-#       cv_method_expected = NULL,
-#       valsearch_expected = NULL,
-#       nclusters_expected = args_vs_i$nclusters,
-#       nclusters_pred_expected = args_vs_i$nclusters_pred,
-#       info_str = tstsetup
-#     )
-#     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
-#     expect_identical(vs_repr[setdiff(names(vs_repr), "d_test")],
-#                      vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
-#                      info = tstsetup)
-#   }
-# })
-###
+test_that("specifying d_test has an expected effect", {
+  skip_if_not(exists("vss"))
+  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    mod_crr <- args_vs_i$mod_nm
+    fam_crr <- args_vs_i$fam_nm
+    refmod_crr <- refmods[[mod_crr]][[fam_crr]]
+    d_test_crr <- list(
+      y = refmod_crr$y,
+      test_points = seq_along(refmod_crr$y),
+      data = refmod_crr$fit$data,
+      weights = refmod_crr$wobs,
+      type = "test"
+    )
+    vs_repr <- do.call(varsel, c(
+      list(object = refmod_crr, d_test = d_test_crr),
+      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+    ))
+    meth_exp_crr <- args_vs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
+    vsel_tester(
+      vs_repr,
+      refmod_expected = refmod_crr,
+      dtest_expected = d_test_crr,
+      solterms_len_expected = args_vs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = NULL,
+      valsearch_expected = NULL,
+      nclusters_expected = args_vs_i$nclusters,
+      nclusters_pred_expected = args_vs_i$nclusters_pred,
+      info_str = tstsetup
+    )
+    expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
+    expect_identical(vs_repr[setdiff(names(vs_repr), "d_test")],
+                     vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
+                     info = tstsetup)
+  }
+})
 
 ## Regularization ---------------------------------------------------------
 
