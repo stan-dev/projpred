@@ -144,8 +144,6 @@ test_that(paste(
     pl <- proj_linpred(prjs_vs[[tstsetup]])
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
     stopifnot(length(tstsetup_vs) > 0)
-    mod_crr <- args_vs[[tstsetup_vs]]$mod_nm
-    fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       # Subtract 1L for the intercept:
@@ -176,8 +174,6 @@ test_that(paste(
     pl <- proj_linpred(prjs_cvvs[[tstsetup]])
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
     stopifnot(length(tstsetup_cvvs) > 0)
-    mod_crr <- args_cvvs[[tstsetup_cvvs]]$mod_nm
-    fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       # Subtract 1L for the intercept:
@@ -717,8 +713,6 @@ test_that(paste(
     pp <- proj_predict(prjs_vs[[tstsetup]], .seed = seed2_tst)
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
     stopifnot(length(tstsetup_vs) > 0)
-    mod_crr <- args_vs[[tstsetup_vs]]$mod_nm
-    fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       # Subtract 1L for the intercept:
@@ -746,8 +740,6 @@ test_that(paste(
     pp <- proj_predict(prjs_cvvs[[tstsetup]], .seed = seed2_tst)
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
     stopifnot(length(tstsetup_cvvs) > 0)
-    mod_crr <- args_cvvs[[tstsetup_cvvs]]$mod_nm
-    fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       # Subtract 1L for the intercept:
