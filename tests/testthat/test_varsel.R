@@ -192,7 +192,8 @@ if (require(rstanarm)) {
       data = fit_gauss$data, y = refmodel_$y,
       test_points = seq_along(refmodel_$y),
       weights = refmodel_$wobs,
-      type = "test"
+      type = "test",
+      offset = refmodel_$offset
     )
     vs <- varsel(fit_gauss, d_test = d_test, nterms_max = 3)
     expect_length(vs$solution_terms, 3)
