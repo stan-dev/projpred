@@ -366,14 +366,6 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
 
 ## Variable selection -----------------------------------------------------
 
-### Exclude GAMMs because of issue #148:
-# ### To avoid issue #144 (for GAMMs):
-# if (run_vs || run_cvvs) {
-#   library(lme4)
-# }
-# ###
-###
-
 if (run_vs) {
   args_vs <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
@@ -440,14 +432,6 @@ if (run_cvvs) {
     ))
   }))
 }
-
-### Exclude GAMMs because of issue #148:
-# ### Clean up (belongs to the fix for issue #144 above):
-# if (run_vs || run_cvvs) {
-#   detach("package:lme4")
-# }
-# ###
-###
 
 ## Projection -------------------------------------------------------------
 
