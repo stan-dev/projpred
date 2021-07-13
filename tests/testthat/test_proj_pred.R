@@ -142,13 +142,12 @@ test_that(paste(
   skip_if_not(exists("prjs_vs"))
   for (tstsetup in names(prjs_vs)) {
     pl <- proj_linpred(prjs_vs[[tstsetup]])
-    mod_crr <- args_prj_vs[[tstsetup]]$mod_nm
-    fam_crr <- args_prj_vs[[tstsetup]]$fam_nm
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
+    stopifnot(length(tstsetup_vs) > 0)
+    mod_crr <- args_vs[[tstsetup_vs]]$mod_nm
+    fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
-                          value = TRUE)[1]
-      stopifnot(length(tstsetup_vs) > 0)
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
     }
@@ -175,13 +174,12 @@ test_that(paste(
   skip_if_not(exists("prjs_cvvs"))
   for (tstsetup in names(prjs_cvvs)) {
     pl <- proj_linpred(prjs_cvvs[[tstsetup]])
-    mod_crr <- args_prj_cvvs[[tstsetup]]$mod_nm
-    fam_crr <- args_prj_cvvs[[tstsetup]]$fam_nm
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
+    stopifnot(length(tstsetup_cvvs) > 0)
+    mod_crr <- args_cvvs[[tstsetup_cvvs]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      tstsetup_cvvs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(cvvss),
-                            value = TRUE)[1]
-      stopifnot(length(tstsetup_cvvs) > 0)
       # Subtract 1L for the intercept:
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
     }
@@ -717,13 +715,12 @@ test_that(paste(
   skip_if_not(exists("prjs_vs"))
   for (tstsetup in names(prjs_vs)) {
     pp <- proj_predict(prjs_vs[[tstsetup]], .seed = seed2_tst)
-    mod_crr <- args_prj_vs[[tstsetup]]$mod_nm
-    fam_crr <- args_prj_vs[[tstsetup]]$fam_nm
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
+    stopifnot(length(tstsetup_vs) > 0)
+    mod_crr <- args_vs[[tstsetup_vs]]$mod_nm
+    fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      tstsetup_vs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(vss),
-                          value = TRUE)[1]
-      stopifnot(length(tstsetup_vs) > 0)
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
     }
@@ -747,13 +744,12 @@ test_that(paste(
   skip_if_not(exists("prjs_cvvs"))
   for (tstsetup in names(prjs_cvvs)) {
     pp <- proj_predict(prjs_cvvs[[tstsetup]], .seed = seed2_tst)
-    mod_crr <- args_prj_cvvs[[tstsetup]]$mod_nm
-    fam_crr <- args_prj_cvvs[[tstsetup]]$fam_nm
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
+    stopifnot(length(tstsetup_cvvs) > 0)
+    mod_crr <- args_cvvs[[tstsetup_cvvs]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      tstsetup_cvvs <- grep(paste0("^", mod_crr, "\\.", fam_crr), names(cvvss),
-                            value = TRUE)[1]
-      stopifnot(length(tstsetup_cvvs) > 0)
       # Subtract 1L for the intercept:
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
     }
