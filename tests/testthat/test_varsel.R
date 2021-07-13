@@ -103,12 +103,19 @@ test_that("specifying d_test has an expected effect", {
       test_points = seq_along(refmod_crr$y),
       data = refmod_crr$fit$data,
       weights = refmod_crr$wobs,
-      type = "test"
+      type = "test",
+      offset = refmod_crr$offset
     )
-    vs_repr <- do.call(varsel, c(
-      list(object = refmod_crr, d_test = d_test_crr),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
-    ))
+    # We expect a warning which in fact should be suppressed, though (see
+    # issue #162):
+    expect_warning(
+      vs_repr <- do.call(varsel, c(
+        list(object = refmod_crr, d_test = d_test_crr),
+        args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+      )),
+      paste("^'offset' argument is NULL but it looks like you estimated the",
+            "model using an offset term\\.$")
+    )
     meth_exp_crr <- args_vs_i$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
@@ -126,9 +133,10 @@ test_that("specifying d_test has an expected effect", {
       info_str = tstsetup
     )
     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
-    expect_identical(vs_repr[setdiff(names(vs_repr), "d_test")],
-                     vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
-                     info = tstsetup)
+    expect_equal(vs_repr[setdiff(names(vs_repr), compos_dtest)],
+                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
+                                         compos_dtest)],
+                 info = tstsetup)
   }
 })
 
