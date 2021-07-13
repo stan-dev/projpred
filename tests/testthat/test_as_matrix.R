@@ -149,7 +149,7 @@ if (require(rstanarm)) {
       fitobj = fit_gauss,
       solution_terms_list = list(character(),
                                  c("x.3", "x.5"),
-                                 c("x.3", "(1 | xgr)", "x.1 + (x.1 | xgr)")),
+                                 c("x.3", "(1 | xgr)", "(x.1 | xgr)")),
       ndraws_list = list(25, 2, 1)
     ),
     binom = list(
@@ -198,9 +198,6 @@ if (require(rstanarm)) {
             grep("^x\\.[[:digit:]]$", solution_terms,
                  value = TRUE)
           )
-          if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
-            colnms_prjmat_expect <- c(colnms_prjmat_expect, "x.1")
-          }
           colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
           if ("(1 | xgr)" %in% solution_terms) {
             colnms_prjmat_expect <- c(
@@ -208,13 +205,13 @@ if (require(rstanarm)) {
               "sd_xgr__Intercept"
             )
           }
-          if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
+          if ("(x.1 | xgr)" %in% solution_terms) {
             colnms_prjmat_expect <- c(
               colnms_prjmat_expect,
               "sd_xgr__x.1"
             )
           }
-          if (all(c("(1 | xgr)", "x.1 + (x.1 | xgr)") %in% solution_terms)) {
+          if (all(c("(1 | xgr)", "(x.1 | xgr)") %in% solution_terms)) {
             colnms_prjmat_expect <- c(
               colnms_prjmat_expect,
               "cor_xgr__Intercept__x.1"
@@ -226,7 +223,7 @@ if (require(rstanarm)) {
               paste0("r_xgr[gr", seq_len(ngr), ",Intercept]")
             )
           }
-          if ("x.1 + (x.1 | xgr)" %in% solution_terms) {
+          if ("(x.1 | xgr)" %in% solution_terms) {
             colnms_prjmat_expect <- c(
               colnms_prjmat_expect,
               paste0("r_xgr[gr", seq_len(ngr), ",x.1]")
