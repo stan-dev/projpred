@@ -255,6 +255,9 @@ vsel_tester <- function(vs,
       if (expect_const_obs_w) {
         expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / n_tst, n_tst),
                      info = info_str)
+      } else {
+        expect_true(any(vs$summaries$sub[[!!j]]$w != rep(1 / n_tst, n_tst)),
+                    info = info_str)
       }
     }
   }
