@@ -29,13 +29,6 @@ iter_tst <- 500L
 
 # projpred setup ----------------------------------------------------------
 
-## Defaults ---------------------------------------------------------------
-
-ndraws_default <- 20L # Adopt this if the default is changed.
-ndraws_pred_default <- 400L # Adopt this if the default is changed.
-nresample_clusters_default <- 1000L # Adopt this if the default is changed.
-regul_default <- 1e-4 # Adopt this if the default is changed.
-
 ## Output names -----------------------------------------------------------
 
 projection_nms <- c(
@@ -63,6 +56,13 @@ searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
 psel_nms <- c("mu", "var", "weights", "cl")
 dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
 vsel_smmry_nms <- c("size", "solution_terms", "elpd", "se", "diff", "diff.se")
+
+## Defaults ---------------------------------------------------------------
+
+ndraws_default <- 20L # Adopt this if the default is changed.
+ndraws_pred_default <- 400L # Adopt this if the default is changed.
+nresample_clusters_default <- 1000L # Adopt this if the default is changed.
+regul_default <- 1e-4 # Adopt this if the default is changed.
 
 ## Customized -------------------------------------------------------------
 
