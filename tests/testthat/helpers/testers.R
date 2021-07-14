@@ -77,12 +77,9 @@ projection_tester <- function(p,
   # order would mean that the documentation of project()'s return value
   # would have to be updated:
   expect_named(p, projection_nms, info = info_str)
-  if (nprjdraws_expected == 1) {
-    nprjdraws_sub_fit <- length(sub_fit_nms)
-  } else {
-    nprjdraws_sub_fit <- nprjdraws_expected
+  if (nprjdraws_expected > 1) {
+    expect_length(p$sub_fit, nprjdraws_expected)
   }
-  expect_length(p$sub_fit, nprjdraws_sub_fit)
   expect_length(p$weights, nprjdraws_expected)
   expect_length(p$dis, nprjdraws_expected)
   # Number of projected draws in as.matrix.projection() (note that more
