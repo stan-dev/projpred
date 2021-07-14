@@ -51,7 +51,7 @@ vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
                    "summary")
 vsel_nms_nonpred <- setdiff(vsel_nms, vsel_nms_pred)
 vsel_nms_dtest <- c("d_test", setdiff(vsel_nms_pred, c("solution_terms", "kl")))
-sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
+# sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
 psel_nms <- c("mu", "var", "weights", "cl")
 dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
