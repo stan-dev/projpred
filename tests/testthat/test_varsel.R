@@ -561,12 +561,16 @@ test_that(paste(
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
-    # TODO (warning):
-    cvvs_nloo <- do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
-           nloo = nloo_tst),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup"))]
-    ))
+    # Expect a warning (see issue #172):
+    expect_warning(
+      cvvs_nloo <- do.call(cv_varsel, c(
+        list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+             nloo = nloo_tst),
+        args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup"))]
+      )),
+      "longer object length is not a multiple of shorter object length",
+      info = tstsetup
+    )
     vsel_tester(
       cvvs_nloo,
       with_cv = TRUE,
