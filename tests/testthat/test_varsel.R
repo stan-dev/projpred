@@ -585,8 +585,8 @@ test_that(paste(
       info_str = tstsetup
     )
     # Expected equality for some components:
-    vsel_nms_nloo <- c("d_test", "summaries", "pct_solution_terms_cv",
-                       "suggested_size", "summary")
+    vsel_nms_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
+                       "summary")
     if (isFALSE(args_cvvs_i$validate_search)) {
       vsel_nms_nloo <- c(vsel_nms_nloo, "search_path", "solution_terms", "kl")
     }
@@ -597,7 +597,6 @@ test_that(paste(
     expect_false(isTRUE(all.equal(cvvs_nloo[vsel_nms_nloo],
                                   cvvss[[tstsetup]][vsel_nms_nloo])),
                  info = tstsetup)
-    # TODO (add `d_test`):
     for (j in seq_along(cvvs_nloo$summaries$sub)) {
       expect_identical(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$lppd)),
                        nloo_tst, info = tstsetup)
