@@ -377,6 +377,8 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
 
 ## Variable selection -----------------------------------------------------
 
+### varsel() --------------------------------------------------------------
+
 if (run_vs) {
   args_vs <- lapply(mod_nms, function(mod_nm) {
     lapply(fam_nms, function(fam_nm) {
@@ -406,6 +408,8 @@ if (run_vs) {
     ))
   })
 }
+
+### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
   args_cvvs <- lapply(mod_nms, function(mod_nm) {
@@ -495,6 +499,8 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 
 ### From "vsel" -----------------------------------------------------------
 
+#### varsel() -------------------------------------------------------------
+
 tstsetups_prj_vs <- setNames(nm = grep("^glm\\.gauss\\.default_meth",
                                        names(vss), value = TRUE))
 stopifnot(length(tstsetups_prj_vs) > 0)
@@ -517,6 +523,8 @@ if (run_vs) {
     ))
   })
 }
+
+#### cv_varsel() ----------------------------------------------------------
 
 stopifnot(identical(names(vss), names(cvvss)))
 args_prj_cvvs <- args_prj_vs
