@@ -294,6 +294,15 @@ vsel_tester <- function(vs,
     expect_identical(vs$pct_solution_terms_cv[, "size"],
                      as.numeric(seq_len(solterms_len_expected)),
                      info = info_str)
+    if (isFALSE(vs$validate_search)) {
+      expect_true(
+        all(vs$pct_solution_terms_cv[
+          ,
+          -grep("size", colnames(vs$pct_solution_terms_cv))
+        ] %in% c(0, 1)),
+        info = info_str
+      )
+    }
   }
 
   # nterms_max
