@@ -129,9 +129,9 @@ test_that("specifying d_test has an expected effect", {
       info_str = tstsetup
     )
     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
-    expect_equal(vs_repr[setdiff(names(vs_repr), compos_dtest)],
+    expect_equal(vs_repr[setdiff(names(vs_repr), vsel_nms_dtest)],
                  vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
-                                         compos_dtest)],
+                                         vsel_nms_dtest)],
                  info = tstsetup)
   }
 })
@@ -197,15 +197,15 @@ test_that(paste(
           info_str = tstsetup
         )
         # Expect equality for all components not related to prediction:
-        expect_equal(vs_regul[compos_nonpred],
-                     vss[[tstsetup]][compos_nonpred],
+        expect_equal(vs_regul[vsel_nms_nonpred],
+                     vss[[tstsetup]][vsel_nms_nonpred],
                      info = paste(tstsetup, j, sep = "__"))
         ### Excluded for the sake of speed (and because the inequality of the
         ### prediction components is checked below in detail):
         # # Expect inequality when taking only the components related to
         # # prediction:
-        # expect_false(isTRUE(all.equal(vs_regul[compos_pred],
-        #                               vss[[tstsetup]][compos_pred])),
+        # expect_false(isTRUE(all.equal(vs_regul[vsel_nms_pred],
+        #                               vss[[tstsetup]][vsel_nms_pred])),
         #              info = paste(tstsetup, j, sep = "__"))
         ###
       }
