@@ -474,8 +474,8 @@ test_that(paste(
 })
 
 test_that("specifying `object` incorrectly leads to an error", {
-  expect_error(cv_varsel(rnorm(5), verbose = FALSE),
-               "no applicable method")
+  expect_error(cv_varsel(rnorm(5)),
+               "^no applicable method for")
 })
 
 test_that("specifying `method` incorrectly leads to an error", {
@@ -483,7 +483,7 @@ test_that("specifying `method` incorrectly leads to an error", {
     for (fam_nm in fam_nms) {
       expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
                              method = "k-fold"),
-                   "Unknown search method")
+                   "^Unknown search method$")
       if (mod_nm == "glmm") {
         ### Excluded because of issue #171:
         # expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
@@ -496,6 +496,16 @@ test_that("specifying `method` incorrectly leads to an error", {
         #              "ENTER EXPECTED TEXT HERE")
         ###
       }
+    }
+  }
+})
+
+test_that("specifying `cv_method` incorrectly leads to an error", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
+                             cv_method = "k-fold"),
+                   "^Unknown cross-validation method$")
     }
   }
 })
@@ -623,14 +633,6 @@ test_that("`validate_search` works", {
 
 # TODO:
 test_that(paste(
-  "Having something else than stan_glm as the fit throws an error"
-), {
-  expect_error(cv_varsel(rnorm(5), verbose = FALSE),
-               regexp = "no applicable method"
-  )
-})
-
-test_that(paste(
   "object returned by cv_varsel, kfold contains the relevant",
   "fields"
 ), {
@@ -702,13 +704,6 @@ test_that(paste(
       )
     }
   }
-})
-
-test_that("cross-validation method is valid", {
-  expect_error(
-    cv_varsel(fit_gauss, cv_method = "k-fold"),
-    "Unknown cross-validation method"
-  )
 })
 
 test_that("K is valid for cv_method='kfold'", {
