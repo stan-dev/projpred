@@ -144,7 +144,32 @@ vsel_tester <- function(vs,
                         nclusters_expected = NULL,
                         nclusters_pred_expected = NULL,
                         info_str = "") {
-  vsel_nms_expected <- if (with_cv) vsel_nms_cv else vsel_nms
+  vsel_nms_expected <- vsel_nms
+  dtest_type <- "train"
+  vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
+  if (with_cv) {
+    vsel_nms_expected <- vsel_nms_cv
+
+    # Note: As mentioned in issue #167, component `"offset"` should in fact be
+    # added here, too:
+    dtest_nms <- setdiff(dtest_nms, "offset")
+    # Need to re-order:
+    dtest_nms <- dtest_nms[c(1, 5, 2, 4, 3)]
+
+    vsel_smmrs_sub_nms <- c("lppd", "mu", "w")
+    vsel_smmrs_ref_nms <- c("lppd", "mu")
+
+    if (is.null(valsearch_expected)) {
+      valsearch_expected <- TRUE
+    }
+
+    if (identical(cv_method_expected, "LOO")) {
+      dtest_type <- "LOO"
+      vsel_smmry_nms <- sub("^elpd$", "elpd.loo", vsel_smmry_nms)
+    } else {
+      stop("Probably need to adopt this.")
+    }
+  }
   method_expected <- tolower(method_expected)
   if (method_expected == "l1") {
     nclusters_expected <- 1
@@ -180,10 +205,12 @@ vsel_tester <- function(vs,
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel, psel_nms, info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
+  expect_type(vs$search_path$p_sel$mu, "double")
   expect_equal(dim(vs$search_path$p_sel$mu), c(n_tst, nclusters_expected),
                info = info_str)
   if (vs$family$family == "gaussian") {
     expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
+    expect_type(vs$search_path$p_sel$var, "double")
     expect_equal(dim(vs$search_path$p_sel$var), c(n_tst, nclusters_expected),
                  info = info_str)
   } else {
@@ -203,7 +230,7 @@ vsel_tester <- function(vs,
     expect_identical(vs$d_test$test_points, seq_len(n_tst), info = info_str)
     expect_null(vs$d_test$data, info = info_str)
     expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
-    expect_identical(vs$d_test$type, "train", info = info_str)
+    expect_identical(vs$d_test$type, dtest_type, info = info_str)
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)
   }
@@ -211,15 +238,23 @@ vsel_tester <- function(vs,
   # summaries
   expect_type(vs$summaries, "list")
   expect_named(vs$summaries, c("sub", "ref"), info = info_str)
+  expect_type(vs$summaries$sub, "list")
   expect_length(vs$summaries$sub, solterms_len_expected + 1)
   for (j in seq_along(vs$summaries$sub)) {
-    expect_named(vs$summaries$sub[[!!j]], c("mu", "lppd"), info = info_str)
+    expect_named(vs$summaries$sub[[!!j]], vsel_smmrs_sub_nms, info = info_str)
     expect_type(vs$summaries$sub[[!!j]]$mu, "double")
     expect_length(vs$summaries$sub[[!!j]]$mu, n_tst)
     expect_type(vs$summaries$sub[[!!j]]$lppd, "double")
     expect_length(vs$summaries$sub[[!!j]]$lppd, n_tst)
+    if (with_cv) {
+      expect_type(vs$summaries$sub[[!!j]]$w, "double")
+      expect_length(vs$summaries$sub[[!!j]]$w, n_tst)
+      expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / n_tst, n_tst),
+                   info = info_str)
+    }
   }
-  expect_named(vs$summaries$ref, c("mu", "lppd"), info = info_str)
+  expect_type(vs$summaries$ref, "list")
+  expect_named(vs$summaries$ref, vsel_smmrs_ref_nms, info = info_str)
   expect_length(vs$summaries$ref$mu, n_tst)
   expect_length(vs$summaries$ref$lppd, n_tst)
 
@@ -245,6 +280,18 @@ vsel_tester <- function(vs,
   ### Check with tolerance:
   # expect_true(all(diff(vs$kl) < 1e-1), info = info_str)
   ###
+
+  # pct_solution_terms_cv
+  if (with_cv) {
+    expect_true(is.matrix(vs$pct_solution_terms_cv), info = info_str)
+    expect_type(vs$pct_solution_terms_cv, "double")
+    expect_identical(dim(vs$pct_solution_terms_cv),
+                     c(solterms_len_expected, 1L + solterms_len_expected),
+                     info = info_str)
+    expect_identical(vs$pct_solution_terms_cv[, "size"],
+                     as.numeric(seq_len(solterms_len_expected)),
+                     info = info_str)
+  }
 
   # nterms_max
   expect_identical(vs$nterms_max, solterms_len_expected + 1, info = info_str)
@@ -288,7 +335,8 @@ vsel_tester <- function(vs,
   expect_identical(vs$summary$solution_terms,
                    c(NA_character_, vs$solution_terms),
                    info = info_str)
-  expect_equal(diff(vs$summary$elpd), diff(vs$summary$diff), info = info_str)
+  expect_equal(diff(vs$summary[, grep("^elpd", vsel_smmry_nms, value = TRUE)]),
+               diff(vs$summary$diff), info = info_str)
 
   return(invisible(TRUE))
 }
