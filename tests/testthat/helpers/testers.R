@@ -114,6 +114,8 @@ projection_tester <- function(p,
 # A helper function for testing the structure of an expected "vsel" object
 #
 # @param vs An object of class "vsel" (at least expected so).
+# @param with_cv A single logical value indicating whether `vs` was created by
+#   cv_varsel() (`TRUE`) or not (`FALSE`).
 # @param refmod_expected The expected `vs$refmodel` object.
 # @param dtest_expected The expected `vs$d_test` object.
 # @param solterms_len_expected A single numeric value giving the expected number
@@ -133,18 +135,19 @@ projection_tester <- function(p,
 # @return `TRUE` (invisible).
 #
 vsel_tester <- function(vs,
-                        vsel_nms_expected = vsel_nms,
+                        with_cv = FALSE,
                         refmod_expected,
                         dtest_expected = NULL,
                         solterms_len_expected,
                         method_expected,
-                        cv_method_expected,
-                        valsearch_expected,
+                        cv_method_expected = NULL,
+                        valsearch_expected = NULL,
                         ndraws_expected = ndraws_default,
                         ndraws_pred_expected = ndraws_pred_default,
                         nclusters_expected = NULL,
                         nclusters_pred_expected = NULL,
                         info_str = "") {
+  vsel_nms_expected <- if (with_cv) vsel_nms_cv else vsel_nms
   method_expected <- tolower(method_expected)
   if (method_expected == "l1") {
     nclusters_expected <- 1

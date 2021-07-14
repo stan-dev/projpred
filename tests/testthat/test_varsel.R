@@ -19,8 +19,6 @@ test_that(paste(
       refmod_expected = refmods[[mod_crr]][[fam_crr]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      cv_method_expected = NULL,
-      valsearch_expected = NULL,
       nclusters_expected = args_vs[[tstsetup]]$nclusters,
       nclusters_pred_expected = args_vs[[tstsetup]]$nclusters_pred,
       info_str = tstsetup
@@ -126,8 +124,6 @@ test_that("specifying d_test has an expected effect", {
       dtest_expected = d_test_crr,
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
-      cv_method_expected = NULL,
-      valsearch_expected = NULL,
       nclusters_expected = args_vs_i$nclusters,
       nclusters_pred_expected = args_vs_i$nclusters_pred,
       info_str = tstsetup
@@ -196,8 +192,6 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "L1",
-          cv_method_expected = NULL,
-          valsearch_expected = NULL,
           nclusters_expected = args_vs_i$nclusters,
           nclusters_pred_expected = args_vs_i$nclusters_pred,
           info_str = tstsetup
@@ -277,8 +271,6 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "forward",
-          cv_method_expected = NULL,
-          valsearch_expected = NULL,
           nclusters_expected = args_vs_i$nclusters,
           nclusters_pred_expected = args_vs_i$nclusters_pred,
           info_str = tstsetup
@@ -428,8 +420,6 @@ test_that("for L1 search, `penalty` has an expected effect", {
       refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = "L1",
-      cv_method_expected = NULL,
-      valsearch_expected = NULL,
       nclusters_expected = args_vs_i$nclusters,
       nclusters_pred_expected = args_vs_i$nclusters_pred,
       info_str = tstsetup
@@ -470,7 +460,7 @@ test_that(paste(
     }
     vsel_tester(
       cvvss[[tstsetup]],
-      vsel_nms_expected = vsel_nms_cv,
+      with_cv = TRUE,
       refmod_expected = refmods[[mod_crr]][[fam_crr]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
