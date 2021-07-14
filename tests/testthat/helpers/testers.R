@@ -126,10 +126,8 @@ projection_tester <- function(p,
 # @param nclusters_expected The expected `vs$nclusters` object (not adopted for
 #   L1 search).
 # @param nclusters_pred_expected The expected `vs$nclusters_pred` object.
-# @param nloo_expected The value which was used for argument `nloo` of
-#   cv_varsel(). Leave empty (missing) to use the number of observations in the
-#   original dataset (which is also the way to handle this argument for
-#   `!with_cv`).
+# @param nloo_expected Only relevant if `with_cv` is `TRUE`. The value which was
+#   used for argument `nloo` of cv_varsel().
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -147,7 +145,7 @@ vsel_tester <- function(vs,
                         ndraws_pred_expected = ndraws_pred_default,
                         nclusters_expected = NULL,
                         nclusters_pred_expected = NULL,
-                        nloo_expected,
+                        nloo_expected = NULL,
                         info_str = "") {
   dtest_type <- "train"
   if (with_cv) {
@@ -243,22 +241,30 @@ vsel_tester <- function(vs,
   expect_named(vs$summaries, c("sub", "ref"), info = info_str)
   expect_type(vs$summaries$sub, "list")
   expect_length(vs$summaries$sub, solterms_len_expected + 1)
-  nobsv <- nrow(vs$refmodel$fetch_data())
-  if (missing(nloo_expected) ||
-      is.null(nloo_expected) ||
-      nloo_expected > nobsv) {
-    nloo_expected <- nobsv
+  if (with_cv) {
+    nobsv <- nrow(vs$refmodel$fetch_data())
+    if (is.null(nloo_expected) || nloo_expected > nobsv) {
+      nloo_expected <- nobsv
+    }
   }
   for (j in seq_along(vs$summaries$sub)) {
     expect_named(vs$summaries$sub[[!!j]], vsel_smmrs_sub_nms, info = info_str)
     expect_type(vs$summaries$sub[[!!j]]$mu, "double")
     expect_length(vs$summaries$sub[[!!j]]$mu, n_tst)
-    expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$mu)),
-                     nloo_expected, info = info_str)
+    if (with_cv) {
+      expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$mu)),
+                       nloo_expected, info = info_str)
+    } else {
+      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$mu)), info = info_str)
+    }
     expect_type(vs$summaries$sub[[!!j]]$lppd, "double")
     expect_length(vs$summaries$sub[[!!j]]$lppd, n_tst)
-    expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$lppd)),
-                     nloo_expected, info = info_str)
+    if (with_cv) {
+      expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$lppd)),
+                       nloo_expected, info = info_str)
+    } else {
+      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$lppd)), info = info_str)
+    }
     if (with_cv) {
       expect_type(vs$summaries$sub[[!!j]]$w, "double")
       expect_length(vs$summaries$sub[[!!j]]$w, n_tst)
