@@ -485,8 +485,10 @@ test_that("specifying `method` incorrectly leads to an error", {
                              method = "k-fold"),
                    "Unknown search method")
       if (mod_nm == "glmm") {
-        expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
-                     "^L1 search is not supported for multilevel models\\.$")
+        ### Excluded because of issue #171:
+        # expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
+        #              "^L1 search is not supported for multilevel models\\.$")
+        ###
       } else if (!mod_nm %in% c("glm", "glmm")) {
         ### TODO:
         stop("Still to-do.")
