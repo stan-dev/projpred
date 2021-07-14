@@ -126,6 +126,8 @@ projection_tester <- function(p,
 # @param nclusters_expected The expected `vs$nclusters` object (not adopted for
 #   L1 search).
 # @param nclusters_pred_expected The expected `vs$nclusters_pred` object.
+# @param expect_const_obs_w A single logical value indicating whether constant
+#   observation weights are expected (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -143,6 +145,7 @@ vsel_tester <- function(vs,
                         ndraws_pred_expected = ndraws_pred_default,
                         nclusters_expected = NULL,
                         nclusters_pred_expected = NULL,
+                        expect_const_obs_w = TRUE,
                         info_str = "") {
   vsel_nms_expected <- vsel_nms
   dtest_type <- "train"
@@ -249,8 +252,10 @@ vsel_tester <- function(vs,
     if (with_cv) {
       expect_type(vs$summaries$sub[[!!j]]$w, "double")
       expect_length(vs$summaries$sub[[!!j]]$w, n_tst)
-      expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / n_tst, n_tst),
-                   info = info_str)
+      if (expect_const_obs_w) {
+        expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / n_tst, n_tst),
+                     info = info_str)
+      }
     }
   }
   expect_type(vs$summaries$ref, "list")
