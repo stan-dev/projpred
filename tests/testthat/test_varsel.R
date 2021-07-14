@@ -584,16 +584,13 @@ test_that(paste(
       nloo_expected = nloo_tst,
       info_str = tstsetup
     )
-    # Expected equality for some components:
+    # Expected equality for most components with a few exceptions:
     vsel_nms_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
                        "summary")
-    if (isFALSE(args_cvvs_i$validate_search)) {
-      vsel_nms_nloo <- c(vsel_nms_nloo, "search_path", "solution_terms", "kl")
-    }
     expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo)],
                  info = tstsetup)
-    # Expected inequality for some components:
+    # Expected inequality for the exceptions:
     expect_false(isTRUE(all.equal(cvvs_nloo[vsel_nms_nloo],
                                   cvvss[[tstsetup]][vsel_nms_nloo])),
                  info = tstsetup)
@@ -632,9 +629,18 @@ test_that("`validate_search` works", {
       nclusters_pred_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
-    expect_false(isTRUE(all.equal(cvvs_valsearch, cvvss[[tstsetup]])),
+    # Expected equality for most components with a few exceptions:
+    vsel_nms_valsearch <- c("summaries", "pct_solution_terms_cv",
+                            "suggested_size", "summary") # , "search_path", "solution_terms", "kl"
+    expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
+                 info = tstsetup)
+    # Expected inequality for the exceptions:
+    expect_false(isTRUE(all.equal(cvvs_valsearch[vsel_nms_valsearch],
+                                  cvvss[[tstsetup]][vsel_nms_valsearch])),
                  info = tstsetup)
     # TODO (extend):
+    # Check the expected inequality more specifically:
     expect_true(all(summary(cvvs_valsearch)$selection$elpd.loo >=
                       summary(cvvss[[tstsetup]])$selection$elpd.loo),
                 info = tstsetup)
