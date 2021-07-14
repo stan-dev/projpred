@@ -126,8 +126,10 @@ projection_tester <- function(p,
 # @param nclusters_expected The expected `vs$nclusters` object (not adopted for
 #   L1 search).
 # @param nclusters_pred_expected The expected `vs$nclusters_pred` object.
-# @param expect_const_obs_w A single logical value indicating whether constant
-#   observation weights are expected (`TRUE`) or not (`FALSE`).
+# @param expect_const_obs_w A single logical value indicating whether for each
+#   `j`, constant observation weights are expected in `vs$summaries$sub[[j]]$w`
+#   (`TRUE`) or not (`FALSE`). Only if `nloo < nrow(vs$refmodel$fetch_data())`,
+#   this should have to be set to `FALSE`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
