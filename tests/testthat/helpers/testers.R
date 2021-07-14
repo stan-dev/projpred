@@ -147,11 +147,9 @@ vsel_tester <- function(vs,
                         nclusters_pred_expected = NULL,
                         expect_const_obs_w = TRUE,
                         info_str = "") {
-  vsel_nms_expected <- vsel_nms
   dtest_type <- "train"
-  vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
   if (with_cv) {
-    vsel_nms_expected <- vsel_nms_cv
+    vsel_nms <- vsel_nms_cv
 
     # Note: As mentioned in issue #167, component `"offset"` should in fact be
     # added here, too:
@@ -179,7 +177,7 @@ vsel_tester <- function(vs,
   }
 
   expect_s3_class(vs, "vsel")
-  expect_named(vs, vsel_nms_expected, info = info_str)
+  expect_named(vs, vsel_nms, info = info_str)
 
   # refmodel
   expect_s3_class(vs$refmodel, "refmodel")

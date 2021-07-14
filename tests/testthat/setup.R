@@ -55,6 +55,7 @@ vsel_nms_dtest <- c("d_test", setdiff(vsel_nms_pred, c("solution_terms", "kl")))
 searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
 psel_nms <- c("mu", "var", "weights", "cl")
 dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
+vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 vsel_smmry_nms <- c("size", "solution_terms", "elpd", "se", "diff", "diff.se")
 
 ## Defaults ---------------------------------------------------------------
