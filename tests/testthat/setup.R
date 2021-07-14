@@ -470,6 +470,8 @@ args_prj <- lapply(mod_nms, function(mod_nm) {
     lapply(solterms, function(solterms_i) {
       if (mod_nm == "glm" && fam_nm == "gauss") {
         ndr_ncl_pred <- ndr_ncl_pred_tst
+      } else if (mod_nm == "glmm" && fam_nm == "binom") {
+        ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust", "clust1")]
       } else {
         ndr_ncl_pred <- ndr_ncl_pred_tst["clust"]
       }
