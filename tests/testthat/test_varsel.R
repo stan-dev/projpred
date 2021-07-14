@@ -551,6 +551,7 @@ test_that(paste(
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
+    # TODO (warning):
     cvvs_nloo <- do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
            nloo = nloo_tst),
@@ -571,6 +572,7 @@ test_that(paste(
     )
     expect_false(isTRUE(all.equal(cvvs_nloo, cvvss[[tstsetup]])),
                  info = tstsetup)
+    # TODO (extend):
     for (j in seq_along(cvvs_nloo$summaries$sub)) {
       expect_equal(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$lppd)), nloo_tst,
                    info = tstsetup)
@@ -578,22 +580,48 @@ test_that(paste(
   }
 })
 
-# TODO:
-test_that("the validate_search option works as expected", {
-  SW({
-    vs1 <- cv_varsel(fit_gauss,
-                     validate_search = FALSE,
-                     ndraws = ndraws, ndraws_pred = ndraws_pred
+test_that("`validate_search` works", {
+  skip_if_not(exists("cvvss"))
+  tstsetups <- grep("^glm\\..*\\.default_meth", names(cvvss), value = TRUE)
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    stopifnot(is.null(args_cvvs_i$validate_search) ||
+                isTRUE(args_cvvs_i$validate_search))
+    mod_crr <- args_cvvs_i$mod
+    fam_crr <- args_cvvs_i$fam
+    meth_exp_crr <- args_cvvs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
+    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
+    SW(cvvs_valsearch <- do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+           validate_search = FALSE),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup"))]
+    )))
+    vsel_tester(
+      cvvs_valsearch,
+      with_cv = TRUE,
+      refmod_expected = refmods[[mod_crr]][[fam_crr]],
+      solterms_len_expected = args_cvvs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "LOO",
+      valsearch_expected = FALSE,
+      nclusters_expected = args_cvvs_i$nclusters,
+      nclusters_pred_expected = args_cvvs_i$nclusters_pred,
+      info_str = tstsetup
     )
-    vs2 <- cv_varsel(fit_gauss,
-                     validate_search = TRUE,
-                     ndraws = ndraws, ndraws_pred = ndraws_pred
-    )
-  })
-  expect_true(all(summary(vs1)$selection$elpd >=
-                    summary(vs2)$selection$elpd))
+    expect_false(isTRUE(all.equal(cvvs_valsearch, cvvss[[tstsetup]])),
+                 info = tstsetup)
+    # TODO (extend):
+    expect_true(all(summary(cvvs_valsearch)$selection$elpd.loo >=
+                      summary(cvvss[[tstsetup]])$selection$elpd.loo),
+                info = tstsetup)
+  }
 })
 
+# TODO:
 test_that(paste(
   "Having something else than stan_glm as the fit throws an error"
 ), {
