@@ -473,84 +473,33 @@ test_that(paste(
   }
 })
 
+test_that("specifying `object` incorrectly leads to an error", {
+  expect_error(cv_varsel(rnorm(5), verbose = FALSE),
+               "no applicable method")
+})
 
-
-test_that("object returned by cv_varsel contains the relevant fields", {
-  for (i in seq_len(length(cvs_list))) {
-    i_inf <- names(cvs_list)[i]
-    for (j in seq_len(length(cvs_list[[i]]))) {
-      j_inf <- names(cvs_list[[i]])[j]
-      # refmodel seems legit
-      expect_s3_class(cvs_list[[i]][[j]]$refmodel, "refmodel")
-      # solution_terms seems legit
-      expect_length(cvs_list[[i]][[j]]$solution_terms, nterms)
-      expect_true(all(!is.na(match(
-        colnames(fit_gauss$data[, -1]),
-        cvs_list[[i]][[j]]$solution_terms
-      ))),
-      info = paste(i_inf, j_inf)
-      )
-      # kl seems legit
-      expect_length(cvs_list[[i]][[j]]$kl, nterms + 1)
-      # decreasing
-      expect_equal(cvs_list[[i]][[j]]$kl,
-                   cummin(cvs_list[[i]][[j]]$kl),
-                   tolerance = 23e-2,
-                   info = paste(i_inf, j_inf)
-      )
-      # summaries seems legit
-      expect_named(cvs_list[[i]][[j]]$summaries, c("sub", "ref"),
-                   info = paste(i_inf, j_inf)
-      )
-      expect_length(cvs_list[[i]][[j]]$summaries$sub, nterms + 1)
-      expect_named(cvs_list[[i]][[j]]$summaries$sub[[1]],
-                   c("lppd", "mu", "w"),
-                   info = paste(i_inf, j_inf)
-      )
-      expect_named(cvs_list[[i]][[j]]$summaries$ref, c("lppd", "mu"),
-                   info = paste(i_inf, j_inf)
-      )
-      # family seems legit
-      expect_equal(cvs_list[[i]][[j]]$family$family,
-                   cvs_list[[i]][[j]]$family$family,
-                   info = paste(i_inf, j_inf)
-      )
-      expect_equal(cvs_list[[i]][[j]]$family$link,
-                   cvs_list[[i]][[j]]$family$link,
-                   info = paste(i_inf, j_inf)
-      )
-      expect_true(length(cvs_list[[i]][[j]]$family) >=
-                    length(cvs_list[[i]][[j]]$family$family),
-                  info = paste(i_inf, j_inf)
-      )
+test_that("specifying `method` incorrectly leads to an error", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
+                             method = "k-fold"),
+                   "Unknown search method")
+      if (mod_nm == "glmm") {
+        expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
+                     "^L1 search is not supported for multilevel models\\.$")
+      } else if (!mod_nm %in% c("glm", "glmm")) {
+        ### TODO:
+        stop("Still to-do.")
+        # expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
+        #              "ENTER EXPECTED TEXT HERE")
+        ###
+      }
     }
   }
 })
 
-test_that("nterms_max has an effect on cv_varsel for gaussian models", {
-  suppressWarnings(
-    vs1 <- cv_varsel(fit_gauss,
-                     method = "forward", nterms_max = 3,
-                     verbose = FALSE, ndraws = ndraws,
-                     ndraws_pred = ndraws_pred,
-                     validate_search = FALSE
-    )
-  )
-  expect_length(vs1$solution_terms, 3)
-})
 
-test_that("nterms_max has an effect on cv_varsel for non-gaussian models", {
-  suppressWarnings(
-    vs1 <- cv_varsel(fit_binom,
-                     method = "forward", nterms_max = 3,
-                     verbose = FALSE, ndraws = ndraws,
-                     ndraws_pred = ndraws_pred,
-                     validate_search = FALSE
-    )
-  )
-  expect_length(vs1$solution_terms, 3)
-})
-
+# TODO:
 test_that("nloo works as expected", {
   expect_error(
     SW(
