@@ -630,8 +630,9 @@ test_that("`validate_search` works", {
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    vsel_nms_valsearch <- c("summaries", "pct_solution_terms_cv",
-                            "suggested_size", "summary") # , "search_path", "solution_terms", "kl"
+    vsel_nms_valsearch <- c("validate_search", "summaries",
+                            "pct_solution_terms_cv", "suggested_size",
+                            "summary") # , "search_path", "solution_terms", "kl"
     expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
                  info = tstsetup)
