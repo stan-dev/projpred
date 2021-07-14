@@ -584,9 +584,20 @@ test_that(paste(
       expect_const_obs_w = FALSE,
       info_str = tstsetup
     )
-    expect_false(isTRUE(all.equal(cvvs_nloo, cvvss[[tstsetup]])),
+    # Expected equality for some components:
+    vsel_nms_nloo <- c("d_test", "summaries", "pct_solution_terms_cv",
+                       "suggested_size", "summary")
+    if (isFALSE(args_cvvs_i$validate_search)) {
+      vsel_nms_nloo <- c(vsel_nms_nloo, "search_path", "solution_terms", "kl")
+    }
+    expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo)],
                  info = tstsetup)
-    # TODO (extend):
+    # Expected inequality for some components:
+    expect_false(isTRUE(all.equal(cvvs_nloo[vsel_nms_nloo],
+                                  cvvss[[tstsetup]][vsel_nms_nloo])),
+                 info = tstsetup)
+    # TODO (extend `summaries` and add `d_test`):
     for (j in seq_along(cvvs_nloo$summaries$sub)) {
       expect_equal(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$lppd)), nloo_tst,
                    info = tstsetup)
