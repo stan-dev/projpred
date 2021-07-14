@@ -597,10 +597,12 @@ test_that(paste(
     expect_false(isTRUE(all.equal(cvvs_nloo[vsel_nms_nloo],
                                   cvvss[[tstsetup]][vsel_nms_nloo])),
                  info = tstsetup)
-    # TODO (extend `summaries` and add `d_test`):
+    # TODO (add `d_test`):
     for (j in seq_along(cvvs_nloo$summaries$sub)) {
-      expect_equal(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$lppd)), nloo_tst,
-                   info = tstsetup)
+      expect_identical(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$lppd)),
+                       nloo_tst, info = tstsetup)
+      expect_identical(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$mu)),
+                       nloo_tst, info = tstsetup)
     }
   }
 })
