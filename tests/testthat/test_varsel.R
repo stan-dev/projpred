@@ -581,7 +581,7 @@ test_that(paste(
       valsearch_expected = args_cvvs_i$validate_search,
       nclusters_expected = args_cvvs_i$nclusters,
       nclusters_pred_expected = args_cvvs_i$nclusters_pred,
-      expect_const_obs_w = FALSE,
+      nloo_expected = nloo_tst,
       info_str = tstsetup
     )
     # Expected equality for some components:
@@ -597,12 +597,6 @@ test_that(paste(
     expect_false(isTRUE(all.equal(cvvs_nloo[vsel_nms_nloo],
                                   cvvss[[tstsetup]][vsel_nms_nloo])),
                  info = tstsetup)
-    for (j in seq_along(cvvs_nloo$summaries$sub)) {
-      expect_identical(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$lppd)),
-                       nloo_tst, info = tstsetup)
-      expect_identical(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$mu)),
-                       nloo_tst, info = tstsetup)
-    }
   }
 })
 
