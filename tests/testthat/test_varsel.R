@@ -500,39 +500,85 @@ test_that("specifying `method` incorrectly leads to an error", {
   }
 })
 
-
-# TODO:
-test_that("nloo works as expected", {
-  expect_error(
-    SW(
-      cv_varsel(fit_gauss,
-                cv_method = "LOO", nloo = -1, ndraws = ndraws,
-                ndraws_pred = ndraws_pred, validate_search = FALSE
-      )
-    ),
-    "must be at least 1"
-  )
-  SW({
-    expect_equal(
-      cv_varsel(fit_gauss,
-                cv_method = "LOO", nterms_max = nterms, seed = seed,
-                nloo = NULL, ndraws = ndraws, ndraws_pred = ndraws_pred
-      ),
-      cv_varsel(fit_gauss,
-                cv_method = "LOO", nterms_max = nterms, seed = seed,
-                nloo = 1000, ndraws = ndraws, ndraws_pred = ndraws_pred
-      )
-    )
-
-    # nloo less than number of observations
-    out <- cv_varsel(fit_gauss,
-                     cv_method = "LOO", nloo = 20, verbose = FALSE,
-                     ndraws = ndraws, ndraws_pred = ndraws_pred
-    )
-    expect_equal(sum(!is.na(out$summaries$sub[[1]]$lppd)), 20)
-  })
+test_that("specifying `nloo` incorrectly leads to an error", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      # Use SW() because of occasional warnings concerning Pareto k diagnostics:
+      expect_error(SW(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
+                                nloo = -1)),
+                   "^nloo must be at least 1$",
+                   info = paste(mod_nm, fam_nm, sep = "__"))
+    }
+  }
 })
 
+test_that(paste(
+  "setting `nloo` at least as large as the number of observations doesn't",
+  "change results"
+), {
+  skip_if_not(exists("cvvss"))
+  nloo_tst <- n_tst + 1L
+  # To save time: Pick only a single scenario with a GLM and a forward search
+  # (the latter because of `validate_search = FALSE`):
+  tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    cvvs_nloo <- do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+           nloo = nloo_tst),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup"))]
+    ))
+    expect_equal(cvvs_nloo, cvvss[[tstsetup]], info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "setting `nloo` smaller than the number of observations leads to correct",
+  "output structure"
+), {
+  skip_if_not(exists("cvvss"))
+  nloo_tst <- n_tst - 1L
+  # To save time: Pick only a single scenario with a GLM and a forward search
+  # (the latter because of `validate_search = FALSE`):
+  tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    mod_crr <- args_cvvs_i$mod
+    fam_crr <- args_cvvs_i$fam
+    meth_exp_crr <- args_cvvs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
+    cvvs_nloo <- do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+           nloo = nloo_tst),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup"))]
+    ))
+    vsel_tester(
+      cvvs_nloo,
+      with_cv = TRUE,
+      refmod_expected = refmods[[mod_crr]][[fam_crr]],
+      solterms_len_expected = args_cvvs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "LOO",
+      valsearch_expected = args_cvvs_i$validate_search,
+      nclusters_expected = args_cvvs_i$nclusters,
+      nclusters_pred_expected = args_cvvs_i$nclusters_pred,
+      expect_const_obs_w = FALSE,
+      info_str = tstsetup
+    )
+    expect_false(isTRUE(all.equal(cvvs_nloo, cvvss[[tstsetup]])),
+                 info = tstsetup)
+    for (j in seq_along(cvvs_nloo$summaries$sub)) {
+      expect_equal(sum(!is.na(cvvs_nloo$summaries$sub[[!!j]]$lppd)), nloo_tst,
+                   info = tstsetup)
+    }
+  }
+})
+
+# TODO:
 test_that("the validate_search option works as expected", {
   SW({
     vs1 <- cv_varsel(fit_gauss,
