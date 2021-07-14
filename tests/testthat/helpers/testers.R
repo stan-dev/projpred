@@ -252,6 +252,7 @@ vsel_tester <- function(vs,
     if (with_cv) {
       expect_type(vs$summaries$sub[[!!j]]$w, "double")
       expect_length(vs$summaries$sub[[!!j]]$w, n_tst)
+      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$w)), info = info_str)
       if (expect_const_obs_w) {
         expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / n_tst, n_tst),
                      info = info_str)
@@ -264,7 +265,9 @@ vsel_tester <- function(vs,
   expect_type(vs$summaries$ref, "list")
   expect_named(vs$summaries$ref, vsel_smmrs_ref_nms, info = info_str)
   expect_length(vs$summaries$ref$mu, n_tst)
+  expect_true(all(!is.na(vs$summaries$ref$mu)), info = info_str)
   expect_length(vs$summaries$ref$lppd, n_tst)
+  expect_true(all(!is.na(vs$summaries$ref$lppd)), info = info_str)
 
   # family
   expect_s3_class(vs$family, "family")
