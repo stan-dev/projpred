@@ -637,6 +637,9 @@ test_that("`validate_search` works", {
     expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
                  info = tstsetup)
+    expect_identical(cvvs_valsearch$summaries$ref,
+                     cvvss[[tstsetup]]$summaries$ref,
+                     info = tstsetup)
     # Expected inequality for the exceptions:
     for (vsel_nm in setdiff(vsel_nms_valsearch, "suggested_size")) {
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
@@ -653,9 +656,6 @@ test_that("`validate_search` works", {
                         cvvss[[tstsetup]]$summaries$sub[[j]]$lppd - tol_tst),
                   info = paste(tstsetup, j, sep = "__"))
     }
-    expect_identical(cvvs_valsearch$summaries$ref,
-                     cvvss[[tstsetup]]$summaries$ref,
-                     info = tstsetup)
     expect_true(all(cvvs_valsearch$summary$elpd.loo >=
                       cvvss[[tstsetup]]$summary$elpd.loo),
                 info = tstsetup)
