@@ -52,6 +52,8 @@ test_that(paste(
   "specifying `seed` correctly leads to reproducible results (and restores the",
   "RNG state afterwards)"
 ), {
+  # Note: Extensive tests for reproducibility may be found among the tests for
+  # .get_refdist().
   skip_if_not(exists("vss"))
   # To save time:
   tstsetups <- grep("^glm\\.gauss\\.", names(vss), value = TRUE)
@@ -520,6 +522,8 @@ test_that(paste(
   "specifying `seed` correctly leads to reproducible results (and restores the",
   "RNG state afterwards)"
 ), {
+  # Note: Extensive tests for reproducibility may be found among the tests for
+  # .get_refdist().
   skip_if_not(exists("cvvss"))
   # To save time:
   tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
@@ -725,66 +729,47 @@ test_that("specifying `K` incorrectly leads to an error", {
                "^K must be a single integer value$")
 })
 
-# TODO:
 test_that("providing `cvfits` works", {
-  # the chains, seed and iter arguments to the rstanarm functions here must
-  # be specified directly rather than through a variable (eg, seed = 1235
-  # instead of seed = seed), otherwise when the calls are evaluated in
-  # refmodel$cvfun() they may not be found in the evaluation frame of the
-  # calling function, causing the test to fail
-  glm_simp <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                       family = poisson(), data = df_poiss,
-                       chains = 2, seed = 1235, iter = 400)
-
-  out <- SW({
-    k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
-    folds <- seq_len(nrow(glm_simp$data))
-    for (K in seq_len(2)) {
-      folds[as.numeric(rownames(k_fold$fit[[K]]$data))] <- K
-    }
-    attr(k_fold, "folds") <- folds
-    fit_cv <- cv_varsel(glm_simp,
-                        cv_method = "kfold", cvfits = k_fold,
-                        ndraws = ndraws, ndraws_pred = ndraws_pred,
-                        verbose = FALSE)
-  })
-  expect_false(any(grepl("k_fold not provided", out)))
-  expect_length(fit_cv$solution_terms, nterms)
-
-  # kl seems legit
-  expect_length(fit_cv$kl, nterms + 1)
-
-  # decreasing
-  expect_equal(fit_cv$kl, cummin(fit_cv$kl), tolerance = 1e-3)
-
-  # summaries seems legit
-  expect_named(fit_cv$summaries, c("sub", "ref"))
-  expect_length(fit_cv$summaries$sub, nterms + 1)
-  expect_named(fit_cv$summaries$sub[[1]], c("mu", "lppd", "w"),
-               ignore.order = TRUE
+  glm_simp <- fits$kfold$glm$gauss
+  # One could also use suppressMessages() here:
+  SW(kfold_obj <- rstanarm::kfold(glm_simp, K = 2, save_fits = TRUE))
+  folds_vec <- rep(NA, n_tst)
+  K_crr <- 2L
+  for (k_crr in seq_len(K_crr)) {
+    idcs_fold <- kfold_obj$fits[, "omitted"][[k_crr]]
+    stopifnot(identical(
+      idcs_fold,
+      setdiff(seq_len(n_tst),
+              as.integer(rownames(kfold_obj$fits[, "fit"][[k_crr]]$data)))
+    ))
+    folds_vec[idcs_fold] <- k_crr
+  }
+  stopifnot(all(!is.na(folds_vec)))
+  attr(kfold_obj, "folds") <- folds_vec
+  expect_warning(
+    cvvs_cvfits <- cv_varsel(
+      glm_simp, cv_method = "kfold", cvfits = kfold_obj, # , K = 2
+      nterms_max = nterms_max_tst,
+      nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+      verbose = FALSE, seed = seed_tst
+    ),
+    paste("^'offset' argument is NULL but it looks like you estimated the",
+          "model using an offset term\\.$")
   )
-  expect_named(fit_cv$summaries$ref, c("mu", "lppd"),
-               ignore.order = TRUE
-  )
-  # family seems legit
-  expect_equal(
-    fit_cv$family$family,
-    fit_cv$family$family
-  )
-  expect_equal(fit_cv$family$link, fit_cv$family$link)
-  expect_true(length(fit_cv$family) >= length(fit_cv$family$family))
-  # pct_solution_terms_cv seems legit
-  expect_equal(dim(fit_cv$pct_solution_terms_cv), c(nterms, nterms + 1))
-  expect_true(all(fit_cv$pct_solution_terms_cv[, -1] <= 1 &
-                    fit_cv$pct_solution_terms_cv[, -1] >= 0))
-
-  expect_equal(fit_cv$pct_solution_terms_cv[, 1], 1:nterms)
-  expect_equal(
-    colnames(fit_cv$pct_solution_terms_cv),
-    c("size", fit_cv$solution_terms)
+  vsel_tester(
+    cvvs_cvfits,
+    with_cv = TRUE,
+    refmod_expected = cvvs_cvfits$refmodel,
+    solterms_len_expected = 5L,
+    method_expected = "L1",
+    cv_method_expected = "kfold",
+    nclusters_expected = nclusters_tst,
+    nclusters_pred_expected = nclusters_pred_tst,
+    info_str = "glm_simp__cvfits"
   )
 })
 
+# TODO:
 # summary() ---------------------------------------------------------------
 
 context("summary()")
