@@ -390,7 +390,7 @@ if (run_cvvs_kfold) {
   fits <- c(
     fits,
     list(
-      kfold = list(glm = list(gauss = get_refmodel(fit_glm_gauss_kfold)))
+      kfold = list(glm = list(gauss = fit_glm_gauss_kfold))
     )
   )
 }
