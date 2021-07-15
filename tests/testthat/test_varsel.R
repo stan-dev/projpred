@@ -197,8 +197,8 @@ test_that(paste(
           info_str = tstsetup
         )
         # Expect equality for all components not related to prediction:
-        expect_equal(vs_regul[vsel_nms_nonpred],
-                     vss[[tstsetup]][vsel_nms_nonpred],
+        expect_equal(vs_regul[setdiff(vsel_nms, vsel_nms_pred)],
+                     vss[[tstsetup]][setdiff(vsel_nms, vsel_nms_pred)],
                      info = paste(tstsetup, j, sep = "__"))
         # Expect inequality for the components related to prediction (but note
         # that the components from `vsel_nms_pred_opt` can be, but don't need to
