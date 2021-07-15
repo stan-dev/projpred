@@ -453,17 +453,26 @@ test_that(paste(
   for (tstsetup in names(cvvss)) {
     mod_crr <- args_cvvs[[tstsetup]]$mod
     fam_crr <- args_cvvs[[tstsetup]]$fam
+    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      refmods_crr <- refmods$kfold
+    } else {
+      refmods_crr <- refmods
+    }
     meth_exp_crr <- args_cvvs[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
+    cvmeth_exp_crr <- args_cvvs[[tstsetup]]$cv_method
+    if (is.null(cvmeth_exp_crr)) {
+      cvmeth_exp_crr <- "LOO"
+    }
     vsel_tester(
       cvvss[[tstsetup]],
       with_cv = TRUE,
-      refmod_expected = refmods[[mod_crr]][[fam_crr]],
+      refmod_expected = refmods_crr[[mod_crr]][[fam_crr]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      cv_method_expected = "LOO",
+      cv_method_expected = cvmeth_exp_crr,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
       nclusters_expected = args_cvvs[[tstsetup]]$nclusters,
       nclusters_pred_expected = args_cvvs[[tstsetup]]$nclusters_pred,
@@ -513,7 +522,8 @@ test_that(paste(
 ), {
   skip_if_not(exists("cvvss"))
   # To save time:
-  tstsetups <- grep("^glm\\.gauss\\.", names(cvvss), value = TRUE)
+  tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
+                    value = TRUE)
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
@@ -637,7 +647,8 @@ test_that(paste(
 
 test_that("`validate_search` works", {
   skip_if_not(exists("cvvss"))
-  tstsetups <- grep("^glm\\..*\\.default_meth", names(cvvss), value = TRUE)
+  tstsetups <- grep("^glm\\..*\\.default_meth\\.default_cvmeth", names(cvvss),
+                    value = TRUE)
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
@@ -701,80 +712,6 @@ test_that("`validate_search` works", {
 })
 
 # TODO:
-test_that(paste(
-  "object returned by cv_varsel, kfold contains the relevant",
-  "fields"
-), {
-  for (i in seq_len(length(cv_kf_list))) {
-    i_inf <- names(cv_kf_list)[i]
-    for (j in seq_len(length(cv_kf_list[[i]]))) {
-      j_inf <- names(cv_kf_list[[i]])[j]
-      # solution_terms seems legit
-      expect_length(cv_kf_list[[i]][[j]]$solution_terms, nterms)
-      expect_true(all(!is.na(match(
-        colnames(fit_gauss$data[, -1]),
-        cv_kf_list[[i]][[j]]$solution_terms
-      ))),
-      info = paste(i_inf, j_inf)
-      )
-      # kl seems legit
-      expect_length(cv_kf_list[[i]][[j]]$kl, nterms + 1)
-
-      # decreasing
-      expect_equal(cv_kf_list[[i]][[j]]$kl[-1],
-                   cummin(cv_kf_list[[i]][[j]]$kl[-1]),
-                   info = paste(i_inf, j_inf),
-                   tolerance = 24e-2
-      )
-
-      # summaries seems legit
-      expect_named(cv_kf_list[[i]][[j]]$summaries, c("sub", "ref"),
-                   info = paste(i_inf, j_inf)
-      )
-      expect_length(cv_kf_list[[i]][[j]]$summaries$sub, nterms + 1)
-      expect_named(cv_kf_list[[i]][[j]]$summaries$sub[[1]],
-                   c("mu", "lppd", "w"),
-                   ignore.order = TRUE, info = paste(i_inf, j_inf)
-      )
-      expect_named(cv_kf_list[[i]][[j]]$summaries$ref, c("mu", "lppd"),
-                   ignore.order = TRUE, info = paste(i_inf, j_inf)
-      )
-      # family seems legit
-      expect_equal(cv_kf_list[[i]][[j]]$family$family,
-                   cv_kf_list[[i]][[j]]$family$family,
-                   info = paste(i_inf, j_inf)
-      )
-      expect_equal(cv_kf_list[[i]][[j]]$family$link,
-                   cv_kf_list[[i]][[j]]$family$link,
-                   info = paste(i_inf, j_inf)
-      )
-      expect_true(length(cv_kf_list[[i]][[j]]$family) >=
-                    length(cv_kf_list[[i]][[j]]$family$family),
-                  info = paste(i_inf, j_inf)
-      )
-      # pct_solution_terms_cv seems legit
-      expect_equal(dim(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
-                   c(nterms, nterms + 1),
-                   info = paste(i_inf, j_inf)
-      )
-      expect_true(all(
-        cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] <= 1 &
-          cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, -1] >= 0
-      ),
-      info = paste(i_inf, j_inf)
-      )
-      expect_equal(cv_kf_list[[i]][[j]]$pct_solution_terms_cv[, 1],
-                   1:nterms,
-                   info = paste(i_inf, j_inf)
-      )
-      expect_equal(colnames(cv_kf_list[[i]][[j]]$pct_solution_terms_cv),
-                   c("size", cv_kf_list[[i]][[j]]$solution_terms),
-                   info = paste(i_inf, j_inf)
-      )
-    }
-  }
-})
-
 test_that("K is valid for cv_method='kfold'", {
   # the chains, seed and iter arguments to the rstanarm functions here must
   # be specified directly rather than through a variable (eg, seed = 1235

@@ -8,6 +8,7 @@
 # switches may be set to `FALSE` to save time:
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
 run_cvvs <- run_vs
+run_cvvs_kfold <- run_cvvs
 
 set.seed(8541351)
 
@@ -97,9 +98,12 @@ meth_tst <- list(
 )
 cvmeth_tst <- list(
   default_cvmeth = list(),
-  LOO = list(cv_method = "LOO"),
-  kfold = list(cv_method = "kfold")
+  LOO = list(cv_method = "LOO")
 )
+if (run_cvvs_kfold) {
+  cvmeth_tst <- c(cvmeth_tst,
+                  list(kfold = list(cv_method = "kfold", K = 2)))
+}
 
 # Data --------------------------------------------------------------------
 
@@ -266,6 +270,15 @@ SW({
       chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
     )
   }
+  if (run_cvvs_kfold) {
+    # rstanarm:::kfold.stanreg() does not support weights:
+    fit_glm_gauss_kfold <- rstanarm::stan_glm(
+      y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
+      family = f_gauss, data = dat,
+      offset = offs_tst,
+      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    )
+  }
 })
 
 ## GLMMs ------------------------------------------------------------------
@@ -373,6 +386,14 @@ fits <- lapply(mod_nms, function(mod_nm) {
     get(paste("fit", mod_nm, fam_nm, sep = "_"))
   })
 })
+if (run_cvvs_kfold) {
+  fits <- c(
+    fits,
+    list(
+      kfold = list(glm = list(gauss = get_refmodel(fit_glm_gauss_kfold)))
+    )
+  )
+}
 rm(list = grep("^fit_", ls(), value = TRUE))
 
 # projpred ----------------------------------------------------------------
@@ -387,6 +408,14 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
     get_refmodel(fits[[mod_nm]][[fam_nm]])
   })
 }))
+if (run_cvvs_kfold) {
+  refmods <- c(
+    refmods,
+    list(
+      kfold = list(glm = list(gauss = get_refmodel(fits$kfold$glm$gauss)))
+    )
+  )
+}
 
 ## Variable selection -----------------------------------------------------
 
@@ -458,8 +487,13 @@ if (run_cvvs) {
 
   # Use SW() because of occasional warnings concerning Pareto k diagnostics:
   SW(cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
+    if (identical(args_cvvs_i$cv_method, "kfold")) {
+      refmods_crr <- refmods$kfold
+    } else {
+      refmods_crr <- refmods
+    }
     do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
+      list(object = refmods_crr[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
       args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
     ))
   }))
@@ -518,18 +552,21 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 
 #### varsel() -------------------------------------------------------------
 
+cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
+  lapply(tstsetups_prj_vsel, function(tstsetup) {
+    lapply(nterms_avail, function(nterms_crr) {
+      args_out <- nlist(tstsetup, nclusters = nclusters_pred_tst, seed = seed_tst)
+      if (!is.null(nterms_crr)) {
+        args_out <- c(args_out, list(nterms = nterms_crr))
+      }
+      return(args_out)
+    })
+  })
+}
 tstsetups_prj_vs <- setNames(nm = grep("^glm\\.gauss\\.default_meth",
                                        names(vss), value = TRUE))
 stopifnot(length(tstsetups_prj_vs) > 0)
-args_prj_vs <- lapply(tstsetups_prj_vs, function(tstsetup) {
-  lapply(nterms_avail, function(nterms_crr) {
-    args_out <- nlist(tstsetup, nclusters = nclusters_pred_tst, seed = seed_tst)
-    if (!is.null(nterms_crr)) {
-      args_out <- c(args_out, list(nterms = nterms_crr))
-    }
-    return(args_out)
-  })
-})
+args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
 args_prj_vs <- unlist_cust(args_prj_vs, nm_stop = "tstsetup")
 
 if (run_vs) {
@@ -543,8 +580,13 @@ if (run_vs) {
 
 #### cv_varsel() ----------------------------------------------------------
 
-stopifnot(identical(names(vss), names(cvvss)))
-args_prj_cvvs <- args_prj_vs
+tstsetups_prj_cvvs <- setNames(
+  nm = grep("^glm\\.gauss\\.default_meth\\.default_cvmeth", names(cvvss),
+            value = TRUE)
+)
+stopifnot(length(tstsetups_prj_cvvs) > 0)
+args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
+args_prj_cvvs <- unlist_cust(args_prj_cvvs, nm_stop = "tstsetup")
 
 if (run_cvvs) {
   # Use SW() because of occasional pwrssUpdate() warnings:

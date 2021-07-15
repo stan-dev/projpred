@@ -167,6 +167,12 @@ vsel_tester <- function(vs,
     if (identical(cv_method_expected, "LOO")) {
       dtest_type <- "LOO"
       vsel_smmry_nms <- sub("^elpd$", "elpd.loo", vsel_smmry_nms)
+    } else if (identical(cv_method_expected, "kfold")) {
+      vsel_smmrs_sub_nms[1:2] <- vsel_smmrs_sub_nms[2:1]
+      vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
+      dtest_nms <- dtest_nms[c(1, 4, 3, 2)]
+      dtest_type <- "kfold"
+      vsel_smmry_nms <- sub("^elpd$", "elpd.kfold", vsel_smmry_nms)
     } else {
       stop("Probably need to adopt this.")
     }
@@ -227,8 +233,15 @@ vsel_tester <- function(vs,
   if (is.null(dtest_expected)) {
     expect_type(vs$d_test, "list")
     expect_named(vs$d_test, dtest_nms, info = info_str)
-    expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
-    expect_identical(vs$d_test$test_points, seq_len(n_tst), info = info_str)
+    if (identical(cv_method_expected, "kfold")) {
+      expect_identical(vs$d_test$y[order(vs$d_test$test_points)],
+                       vs$refmodel$y, info = info_str)
+      expect_identical(vs$d_test$test_points[order(vs$d_test$test_points)],
+                       seq_len(n_tst), info = info_str)
+    } else {
+      expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
+      expect_identical(vs$d_test$test_points, seq_len(n_tst), info = info_str)
+    }
     expect_null(vs$d_test$data, info = info_str)
     expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
     expect_identical(vs$d_test$type, dtest_type, info = info_str)
