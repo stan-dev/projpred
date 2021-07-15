@@ -534,11 +534,12 @@ test_that(paste(
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    cvvs_nloo <- do.call(cv_varsel, c(
+    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
+    SW(cvvs_nloo <- do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
            nloo = nloo_tst),
       args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
-    ))
+    )))
     expect_equal(cvvs_nloo, cvvss[[tstsetup]], info = tstsetup)
   }
 })
