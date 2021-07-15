@@ -95,6 +95,11 @@ meth_tst <- list(
   L1 = list(method = "L1"),
   forward = list(method = "forward")
 )
+cvmeth_tst <- list(
+  default_cvmeth = list(),
+  LOO = list(cv_method = "LOO"),
+  kfold = list(cv_method = "kfold")
+)
 
 # Data --------------------------------------------------------------------
 
@@ -424,8 +429,10 @@ if (run_cvvs) {
     lapply(fam_nms, function(fam_nm) {
       if (mod_nm == "glm" && fam_nm == "gauss") {
         meth <- meth_tst[setdiff(names(meth_tst), "L1")]
+        cvmeth <- cvmeth_tst[setdiff(names(cvmeth_tst), "LOO")]
       } else {
         meth <- meth_tst["default_meth"]
+        cvmeth <- cvmeth_tst["default_cvmeth"]
       }
       lapply(meth, function(meth_i) {
         if ((length(meth_i) == 0 && mod_nm != "glm") ||
@@ -434,14 +441,16 @@ if (run_cvvs) {
           # `validate_search = FALSE`.
           meth_i <- c(meth_i, list(validate_search = FALSE))
         }
-        return(c(
-          nlist(
-            mod_nm, fam_nm, nclusters = nclusters_tst,
-            nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
-            verbose = FALSE, seed = seed_tst
-          ),
-          meth_i
-        ))
+        lapply(cvmeth, function(cvmeth_i) {
+          return(c(
+            nlist(
+              mod_nm, fam_nm, nclusters = nclusters_tst,
+              nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
+              verbose = FALSE, seed = seed_tst
+            ),
+            meth_i, cvmeth_i
+          ))
+        })
       })
     })
   })
