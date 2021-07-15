@@ -638,14 +638,30 @@ test_that("`validate_search` works", {
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
                  info = tstsetup)
     # Expected inequality for the exceptions:
-    expect_false(isTRUE(all.equal(cvvs_valsearch[vsel_nms_valsearch],
-                                  cvvss[[tstsetup]][vsel_nms_valsearch])),
-                 info = tstsetup)
-    # TODO (extend):
-    # Check the expected inequality more specifically:
-    expect_true(all(summary(cvvs_valsearch)$selection$elpd.loo >=
-                      summary(cvvss[[tstsetup]])$selection$elpd.loo),
+    for (vsel_nm in setdiff(vsel_nms_valsearch, "suggested_size")) {
+      expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
+                                    cvvss[[tstsetup]][[vsel_nm]])),
+                   info = tstsetup)
+    }
+    # Check the expected inequalities more specifically:
+    # Without a validated search, we expect increased LPPDs (and consequently
+    # also an increased ELPD) in the submodels (since the hold-out fold was
+    # included in the dataset for fitting the submodels):
+    tol_tst <- 5e-2
+    for (j in seq_along(cvvs_valsearch$summaries$sub)) {
+      expect_true(all(cvvs_valsearch$summaries$sub[[j]]$lppd >=
+                        cvvss[[tstsetup]]$summaries$sub[[j]]$lppd - tol_tst),
+                  info = paste(tstsetup, j, sep = "__"))
+    }
+    expect_identical(cvvs_valsearch$summaries$ref,
+                     cvvss[[tstsetup]]$summaries$ref,
+                     info = tstsetup)
+    expect_true(all(cvvs_valsearch$summary$elpd.loo >=
+                      cvvss[[tstsetup]]$summary$elpd.loo),
                 info = tstsetup)
+    # Without a validated search, we expect overfitting in the suggested model
+    # size:
+    expect_gte(cvvs_valsearch$suggested_size, cvvss[[tstsetup]]$suggested_size)
   }
 })
 
