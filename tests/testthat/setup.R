@@ -91,7 +91,7 @@ meth_tst <- list(
 
 # Data --------------------------------------------------------------------
 
-n_tst <- 31L
+n_tst <- 33L
 
 ## GLMs --------------------------------------------------------------------
 ## Add nonpooled ("fixed") effects to the intercept-(and-offset-)only model
