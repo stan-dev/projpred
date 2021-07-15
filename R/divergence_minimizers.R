@@ -209,7 +209,7 @@ linear_multilevel_proj_predfun <- function(fit, newdata = NULL,
       predict_multilevel_callback(fit, newdata, weights)
     })))
   } else {
-    return(predict_multilevel_callback(fit, newdata, weights))
+    return(as.matrix(predict_multilevel_callback(fit, newdata, weights)))
   }
 }
 
