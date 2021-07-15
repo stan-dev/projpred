@@ -318,10 +318,11 @@ vsel_tester <- function(vs,
     expect_identical(vs$pct_solution_terms_cv[, "size"],
                      as.numeric(seq_len(solterms_len_expected)),
                      info = info_str)
+    pct_nonsize_nms <- setdiff(colnames(vs$pct_solution_terms_cv), "size")
+    pct_solterms <- vs$pct_solution_terms_cv[, pct_nonsize_nms, drop = FALSE]
+    expect_true(all(pct_solterms >= 0 & pct_solterms <= 1), info = info_str)
     ### Excluded because of issue #173:
     # if (isFALSE(vs$validate_search)) {
-    #   pct_nonsize_nms <- setdiff(colnames(vs$pct_solution_terms_cv), "size")
-    #   pct_solterms <- vs$pct_solution_terms_cv[, pct_nonsize_nms, drop = FALSE]
     #   expect_true(all(pct_solterms %in% c(0, 1)), info = info_str)
     #   # More specifically:
     #   pct_solterms_ch <- matrix(0, nrow = nrow(pct_solterms),
