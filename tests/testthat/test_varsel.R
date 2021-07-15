@@ -200,14 +200,14 @@ test_that(paste(
         expect_equal(vs_regul[vsel_nms_nonpred],
                      vss[[tstsetup]][vsel_nms_nonpred],
                      info = paste(tstsetup, j, sep = "__"))
-        ### Excluded for the sake of speed (and because the inequality of the
-        ### prediction components is checked below in detail):
-        # # Expect inequality when taking only the components related to
-        # # prediction:
-        # expect_false(isTRUE(all.equal(vs_regul[vsel_nms_pred],
-        #                               vss[[tstsetup]][vsel_nms_pred])),
-        #              info = paste(tstsetup, j, sep = "__"))
-        ###
+        # Expect inequality for the components related to prediction (but note
+        # that the components from `vsel_nms_pred_opt` can be, but don't need to
+        # be differing):
+        for (vsel_nm in setdiff(vsel_nms_pred, vsel_nms_pred_opt)) {
+          expect_false(isTRUE(all.equal(vs_regul[[vsel_nm]],
+                                        vss[[tstsetup]][[vsel_nm]])),
+                       info = paste(tstsetup, j, vsel_nm, sep = "__"))
+        }
       }
       # Check the inequality of the prediction components in detail: Expect a
       # reduction of the sum of the squared coefficients (excluding the
@@ -586,15 +586,16 @@ test_that(paste(
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    vsel_nms_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
-                       "summary")
     expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo)],
                  info = tstsetup)
-    # Expected inequality for the exceptions:
-    expect_false(isTRUE(all.equal(cvvs_nloo[vsel_nms_nloo],
-                                  cvvss[[tstsetup]][vsel_nms_nloo])),
-                 info = tstsetup)
+    # Expected inequality for the exceptions (but note that the components from
+    # `vsel_nms_nloo_opt` can be, but don't need to be differing):
+    for (vsel_nm in setdiff(vsel_nms_nloo, vsel_nms_nloo_opt)) {
+      expect_false(isTRUE(all.equal(cvvs_nloo[[vsel_nm]],
+                                    cvvss[[tstsetup]][[vsel_nm]])),
+                   info = paste(tstsetup, vsel_nm, sep = "__"))
+    }
   }
 })
 
@@ -631,20 +632,18 @@ test_that("`validate_search` works", {
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    vsel_nms_valsearch <- c("validate_search", "summaries",
-                            "pct_solution_terms_cv", "suggested_size",
-                            "summary") # , "search_path", "solution_terms", "kl"
     expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
                  info = tstsetup)
     expect_identical(cvvs_valsearch$summaries$ref,
                      cvvss[[tstsetup]]$summaries$ref,
                      info = tstsetup)
-    # Expected inequality for the exceptions:
-    for (vsel_nm in setdiff(vsel_nms_valsearch, "suggested_size")) {
+    # Expected inequality for the exceptions (but note that the components from
+    # `vsel_nms_valsearch_opt` can be, but don't need to be differing):
+    for (vsel_nm in setdiff(vsel_nms_valsearch, vsel_nms_valsearch_opt)) {
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
-                   info = tstsetup)
+                   info = paste(tstsetup, vsel_nm, sep = "__"))
     }
     # Check the expected inequalities more specifically:
     # Without a validated search, we expect increased LPPDs (and consequently

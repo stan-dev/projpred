@@ -49,8 +49,16 @@ vsel_nms_cv <- c(
 )
 vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
                    "summary")
+vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
 vsel_nms_nonpred <- setdiff(vsel_nms, vsel_nms_pred)
 vsel_nms_dtest <- c("d_test", setdiff(vsel_nms_pred, c("solution_terms", "kl")))
+vsel_nms_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
+                   "summary")
+vsel_nms_nloo_opt <- c("pct_solution_terms_cv", "suggested_size")
+vsel_nms_valsearch <- c("validate_search", "summaries",
+                        "pct_solution_terms_cv", "suggested_size",
+                        "summary")
+vsel_nms_valsearch_opt <- c("suggested_size")
 # sub_fit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
 searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
 psel_nms <- c("mu", "var", "weights", "cl")
