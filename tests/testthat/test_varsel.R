@@ -537,7 +537,7 @@ test_that(paste(
     cvvs_nloo <- do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
            nloo = nloo_tst),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup"))]
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
     ))
     expect_equal(cvvs_nloo, cvvss[[tstsetup]], info = tstsetup)
   }
@@ -566,7 +566,7 @@ test_that(paste(
       cvvs_nloo <- do.call(cv_varsel, c(
         list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
              nloo = nloo_tst),
-        args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup"))]
+        args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
       )),
       "longer object length is not a multiple of shorter object length",
       info = tstsetup
@@ -615,7 +615,7 @@ test_that("`validate_search` works", {
     SW(cvvs_valsearch <- do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
            validate_search = FALSE),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup"))]
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
     )))
     vsel_tester(
       cvvs_valsearch,
