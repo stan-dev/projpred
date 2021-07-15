@@ -40,11 +40,9 @@ test_that("specifying `method` incorrectly leads to an error", {
         expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
                      "^L1 search is not supported for multilevel models\\.$")
       } else if (!mod_nm %in% c("glm", "glmm")) {
-        ### TODO:
         stop("Still to-do.")
         # expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
         #              "ENTER EXPECTED TEXT HERE")
-        ###
       }
     }
   }
@@ -491,11 +489,9 @@ test_that("specifying `method` incorrectly leads to an error", {
         #              "^L1 search is not supported for multilevel models\\.$")
         ###
       } else if (!mod_nm %in% c("glm", "glmm")) {
-        ### TODO:
         stop("Still to-do.")
         # expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
         #              "ENTER EXPECTED TEXT HERE")
-        ###
       }
     }
   }
