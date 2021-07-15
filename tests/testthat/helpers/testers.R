@@ -315,6 +315,9 @@ vsel_tester <- function(vs,
     expect_identical(dim(vs$pct_solution_terms_cv),
                      c(solterms_len_expected, 1L + solterms_len_expected),
                      info = info_str)
+    expect_identical(colnames(vs$pct_solution_terms_cv),
+                     c("size", vs$solution_terms),
+                     info = info_str)
     expect_identical(vs$pct_solution_terms_cv[, "size"],
                      as.numeric(seq_len(solterms_len_expected)),
                      info = info_str)
