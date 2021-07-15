@@ -241,7 +241,7 @@ additive_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
   if (!is.null(newdata)) {
     newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
   }
-  return(as.matrix(linear_multilevel_proj_predfun(fit, newdata, weights)))
+  return(linear_multilevel_proj_predfun(fit, newdata, weights))
 }
 
 ## FIXME: find a way that allows us to remove this
