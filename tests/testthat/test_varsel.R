@@ -54,10 +54,11 @@ test_that(paste(
   "specifying `seed` correctly leads to reproducible results (and restores the",
   "RNG state afterwards)"
 ), {
-  # Note: Extensive tests for reproducibility may be found among the tests for
-  # .get_refdist().
   skip_if_not(exists("vss"))
-  for (tstsetup in names(vss)[1]) {
+  # To save time:
+  tstsetups <- grep("^glm\\.gauss\\.", names(vss), value = TRUE)
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- vss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
@@ -507,6 +508,45 @@ test_that("specifying `cv_method` incorrectly leads to an error", {
                              cv_method = "k-fold"),
                    "^Unknown cross-validation method$")
     }
+  }
+})
+
+test_that(paste(
+  "specifying `seed` correctly leads to reproducible results (and restores the",
+  "RNG state afterwards)"
+), {
+  skip_if_not(exists("cvvss"))
+  # To save time:
+  tstsetups <- grep("^glm\\.gauss\\.", names(cvvss), value = TRUE)
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    cvvs_orig <- cvvss[[tstsetup]]
+    rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_new1 <- .Random.seed
+    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
+    SW(cvvs_new <- do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+           seed = args_cvvs_i$seed + 1L),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm", "seed"))]
+    )))
+    .Random.seed_new2 <- .Random.seed
+    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_repr1 <- .Random.seed
+    SW(cvvs_repr <- do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+    )))
+    .Random.seed_repr2 <- .Random.seed
+    # Expected equality:
+    expect_equal(cvvs_repr, cvvs_orig, info = tstsetup)
+    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
+    expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
+    # Expected inequality:
+    expect_false(isTRUE(all.equal(cvvs_new, cvvs_orig)), info = tstsetup)
+    expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
+    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
+                 info = tstsetup)
   }
 })
 
