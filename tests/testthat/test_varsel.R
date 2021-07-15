@@ -711,8 +711,22 @@ test_that("`validate_search` works", {
   }
 })
 
+test_that("specifying `K` incorrectly leads to an error", {
+  refmod_crr <- refmods$kfold$glm$gauss
+  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = 1),
+               "^K must be at least 2$")
+  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = 1000),
+               "^K cannot exceed n$")
+  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = c(4, 9)),
+               "^K must be a single integer value$")
+  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = "a"),
+               "^K must be a single integer value$")
+  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = dat),
+               "^K must be a single integer value$")
+})
+
 # TODO:
-test_that("K is valid for cv_method='kfold'", {
+test_that("providing `cvfits` works", {
   # the chains, seed and iter arguments to the rstanarm functions here must
   # be specified directly rather than through a variable (eg, seed = 1235
   # instead of seed = seed), otherwise when the calls are evaluated in
@@ -722,29 +736,6 @@ test_that("K is valid for cv_method='kfold'", {
                        family = poisson(), data = df_poiss,
                        chains = 2, seed = 1235, iter = 400)
 
-  expect_error(
-    cv_varsel(glm_simp, cv_method = "kfold", K = 1),
-    "must be at least 2"
-  )
-  expect_error(
-    cv_varsel(glm_simp, cv_method = "kfold", K = 1000),
-    "cannot exceed n"
-  )
-  expect_error(
-    cv_varsel(glm_simp, cv_method = "kfold", K = c(4, 9)),
-    "a single integer value"
-  )
-  expect_error(
-    cv_varsel(glm_simp, cv_method = "kfold", K = "a"),
-    "a single integer value"
-  )
-  expect_error(
-    cv_varsel(glm_simp, cv_method = "kfold", K = df_poiss),
-    "a single integer value"
-  )
-})
-
-test_that("providing `cvfits` works", {
   out <- SW({
     k_fold <- kfold(glm_simp, K = 2, save_fits = TRUE)
     folds <- seq_len(nrow(glm_simp$data))
