@@ -767,7 +767,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
       cvvs_cvfits,
       with_cv = TRUE,
       refmod_expected = refmod_crr,
-      solterms_len_expected = 5L,
+      solterms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
