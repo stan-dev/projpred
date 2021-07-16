@@ -749,19 +749,24 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     stopifnot(all(!is.na(folds_vec)))
     attr(kfold_obj, "folds") <- folds_vec
 
+    # Create `"refmodel"` object with `cvfits`:
+    refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
+
     # Run cv_varsel():
     expect_warning(
       cvvs_cvfits <- do.call(cv_varsel, c(
-        list(object = fit_crr, cvfits = kfold_obj),
+        list(object = refmod_crr),
         args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm", "K"))]
       )),
       paste("^'offset' argument is NULL but it looks like you estimated the",
             "model using an offset term\\.$")
     )
+
+    # Check:
     vsel_tester(
       cvvs_cvfits,
       with_cv = TRUE,
-      refmod_expected = cvvs_cvfits$refmodel,
+      refmod_expected = refmod_crr,
       solterms_len_expected = 5L,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
