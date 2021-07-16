@@ -342,7 +342,7 @@ test_that(paste(
 ## Penalty ----------------------------------------------------------------
 
 test_that("`penalty` of incorrect length causes an error", {
-  skip_if_not(exists("args_vs"))
+  skip_if_not(run_vs)
   tstsetups <- setdiff(
     grep("^glm\\.", names(args_vs), value = TRUE),
     grep("^glm\\..*\\.forward", names(args_vs), value = TRUE)
