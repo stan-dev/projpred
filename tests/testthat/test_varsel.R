@@ -450,7 +450,7 @@ test_that(paste(
     mod_crr <- args_cvvs[[tstsetup]]$mod
     fam_crr <- args_cvvs[[tstsetup]]$fam
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
-      refmods_crr <- refmods$kfold
+      refmods_crr <- refmods_kfold
     } else {
       refmods_crr <- refmods
     }
@@ -697,7 +697,7 @@ test_that("`validate_search` works", {
 
 test_that("specifying `K` incorrectly leads to an error", {
   skip_if_not(run_cvvs_kfold)
-  refmod_crr <- refmods$kfold$glm$gauss
+  refmod_crr <- refmods_kfold$glm$gauss
   expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = 1),
                "^K must be at least 2$")
   expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = 1000),
@@ -722,7 +722,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
-    fit_crr <- fits$kfold[[mod_crr]][[fam_crr]]
+    fit_crr <- fits_kfold[[mod_crr]][[fam_crr]]
     K_crr <- args_cvvs_i$K
 
     # Refit `K_crr` times:

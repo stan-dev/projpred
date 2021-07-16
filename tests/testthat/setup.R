@@ -396,12 +396,7 @@ fits <- lapply(mod_nms, function(mod_nm) {
   })
 })
 if (run_cvvs_kfold) {
-  fits <- c(
-    fits,
-    list(
-      kfold = list(glm = list(gauss = fit_glm_gauss_kfold))
-    )
-  )
+  fits_kfold = list(glm = list(gauss = fit_glm_gauss_kfold))
 }
 rm(list = grep("^fit_", ls(), value = TRUE))
 
@@ -418,12 +413,7 @@ SW(refmods <- lapply(mod_nms, function(mod_nm) {
   })
 }))
 if (run_cvvs_kfold) {
-  refmods <- c(
-    refmods,
-    list(
-      kfold = list(glm = list(gauss = get_refmodel(fits$kfold$glm$gauss)))
-    )
-  )
+  refmods_kfold = list(glm = list(gauss = get_refmodel(fits_kfold$glm$gauss)))
 }
 
 ## Variable selection -----------------------------------------------------
@@ -499,7 +489,7 @@ if (run_cvvs) {
   # refits in K-fold CV):
   SW(cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
     if (identical(args_cvvs_i$cv_method, "kfold")) {
-      refmods_crr <- refmods$kfold
+      refmods_crr <- refmods_kfold
     } else {
       refmods_crr <- refmods
     }
