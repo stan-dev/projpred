@@ -6,7 +6,7 @@ test_that(paste(
   "`object` of class \"refmodel\", correctly specified `method`, `nterms_max`,",
   "`nclusters`, and `nclusters_pred` lead to correct output structure"
 ), {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   for (tstsetup in names(vss)) {
     mod_crr <- args_vs[[tstsetup]]$mod
     fam_crr <- args_vs[[tstsetup]]$fam
@@ -50,7 +50,7 @@ test_that(paste(
 ), {
   # Note: Extensive tests for reproducibility may be found among the tests for
   # .get_refdist().
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   # To save time:
   tstsetups <- grep("^glm\\.gauss\\.", names(vss), value = TRUE)
   stopifnot(length(tstsetups) > 0)
@@ -85,7 +85,7 @@ test_that(paste(
 })
 
 test_that("specifying d_test has an expected effect", {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
@@ -142,7 +142,7 @@ test_that("specifying d_test has an expected effect", {
 # still needed.
 
 test_that("for non-GLMs, `regul` has no effect", {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
     tstsetups <- grep(paste0("^", mod_crr, "\\.gauss"), names(vss),
@@ -164,7 +164,7 @@ test_that(paste(
   "for GLMs with L1 search, `regul` only has an effect on prediction, not on",
   "selection"
 ), {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
@@ -237,7 +237,7 @@ test_that(paste(
   "for GLMs with forward search, `regul` has an expected effect on selection",
   "as well as on prediction"
 ), {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
@@ -371,7 +371,7 @@ test_that("`penalty` of incorrect length causes an error", {
 })
 
 test_that("for forward search, `penalty` has no effect", {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   penal_tst <- 2
   tstsetups <- union(grep("\\.forward", names(vss), value = TRUE),
                      grep("^glm\\.", names(vss), value = TRUE, invert = TRUE))
@@ -389,7 +389,7 @@ test_that("for forward search, `penalty` has no effect", {
 })
 
 test_that("for L1 search, `penalty` has an expected effect", {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
   stopifnot(length(tstsetups) > 0)

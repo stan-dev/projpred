@@ -68,7 +68,7 @@ test_that(paste(
   "proj_linpred(): `object` of class \"vsel\" (created by varsel()) leads",
   "to correct output structure"
 ), {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
   nterms_crr <- nterms_avail$subvec
@@ -640,7 +640,7 @@ test_that(paste(
   "proj_predict(): `object` of class \"vsel\" (created by varsel()) leads",
   "to correct output structure"
 ), {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
   nterms_crr <- nterms_avail$subvec

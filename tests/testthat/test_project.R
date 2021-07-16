@@ -189,7 +189,7 @@ test_that(paste(
 })
 
 test_that("specifying `nterms` incorrectly leads to an error", {
-  skip_if_not(exists("vss"))
+  skip_if_not(run_vs)
   for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)[1]) {
     for (nterms_crr in nterms_unavail) {
       expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
