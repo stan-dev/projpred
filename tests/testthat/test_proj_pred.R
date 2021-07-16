@@ -144,7 +144,7 @@ test_that(paste(
   "proj_linpred(): `object` of (informal) class \"proj_list\" (created by",
   "varsel()) leads to correct output structure"
 ), {
-  skip_if_not(exists("prjs_vs"))
+  skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
     pl <- proj_linpred(prjs_vs[[tstsetup]])
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
@@ -495,7 +495,7 @@ test_that(paste(
   "proj_linpred(): `filter_nterms` works correctly (for an `object` of",
   "(informal) class \"proj_list\")"
 ), {
-  skip_if_not(exists("prjs_vs"))
+  skip_if_not(run_vs)
   prjs_vs_crr <- prjs_vs$glm.gauss.default_meth.full
   # Unavailable number(s) of terms:
   for (filter_nterms_crr in nterms_unavail) {
@@ -718,7 +718,7 @@ test_that(paste(
   "proj_predict(): `object` of (informal) class \"proj_list\" (created by",
   "varsel()) leads to correct output structure"
 ), {
-  skip_if_not(exists("prjs_vs"))
+  skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
     pp <- proj_predict(prjs_vs[[tstsetup]], .seed = seed2_tst)
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
@@ -1039,7 +1039,7 @@ test_that(paste(
   "proj_predict(): `filter_nterms` works correctly (for an `object` of",
   "(informal) class \"proj_list\")"
 ), {
-  skip_if_not(exists("prjs_vs"))
+  skip_if_not(run_vs)
   prjs_vs_crr <- prjs_vs$glm.gauss.default_meth.full
   # Unavailable number(s) of terms:
   for (filter_nterms_crr in nterms_unavail) {

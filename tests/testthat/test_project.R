@@ -75,7 +75,7 @@ test_that(paste(
   "`object` of class \"vsel\" (created by varsel()) and correctly specified",
   "`nterms` lead to correct output structure"
 ), {
-  skip_if_not(exists("prjs_vs"))
+  skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
     stopifnot(length(tstsetup_vs) > 0)
