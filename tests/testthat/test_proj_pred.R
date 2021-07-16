@@ -2,7 +2,7 @@
 
 context("proj_linpred()")
 
-test_that("passing arguments to project() works correctly", {
+test_that("passing arguments to project() works", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
@@ -216,8 +216,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "error if `object` is not of class \"vsel\" and",
-  "`solution_terms` is provided neither"
+  "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
+  "neither"
 ), {
   expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
   expect_error(proj_linpred(fits$glm$gauss),
@@ -226,7 +226,7 @@ test_that(paste(
                "Invalid object supplied to argument `object`\\.")
 })
 
-test_that("`newdata` is checked correctly", {
+test_that("incorrect `newdata` fails", {
   expect_error(
     proj_linpred(prjs, newdata = dat[, 1]),
     "must be a data.frame or a matrix"
@@ -575,7 +575,7 @@ test_that("`.seed` works", {
   }
 })
 
-test_that("passing arguments to project() works correctly", {
+test_that("passing arguments to project() works", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
@@ -782,8 +782,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "error if `object` is not of class \"vsel\" and",
-  "`solution_terms` is provided neither"
+  "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
+  "neither"
 ), {
   expect_error(proj_predict(1, .seed = seed2_tst),
                "is not an object of class \"vsel\"")
@@ -793,7 +793,7 @@ test_that(paste(
                "Invalid object supplied to argument `object`\\.")
 })
 
-test_that("`newdata` is checked correctly", {
+test_that("incorrect `newdata` fails", {
   expect_error(
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data.frame or a matrix"
