@@ -716,11 +716,11 @@ test_that("specifying `K` incorrectly leads to an error", {
 
 test_that("`cvfits` (actually passed to init_refmodel()) works", {
   skip_if_not(run_cvvs_kfold)
-  glm_simp <- fits$kfold$glm$gauss
+  fit_crr <- fits$kfold$glm$gauss
   # rstanarm::kfold() lacks an argument for setting the seed:
   set.seed(seed2_tst)
   # One could also use suppressMessages() here:
-  SW(kfold_obj <- rstanarm::kfold(glm_simp, K = K_tst, save_fits = TRUE))
+  SW(kfold_obj <- rstanarm::kfold(fit_crr, K = K_tst, save_fits = TRUE))
   folds_vec <- rep(NA, n_tst)
   for (k_crr in seq_len(K_tst)) {
     idcs_fold <- kfold_obj$fits[, "omitted"][[k_crr]]
@@ -735,7 +735,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
   attr(kfold_obj, "folds") <- folds_vec
   expect_warning(
     cvvs_cvfits <- cv_varsel(
-      glm_simp, cv_method = "kfold", cvfits = kfold_obj,
+      fit_crr, cv_method = "kfold", cvfits = kfold_obj,
       nterms_max = nterms_max_tst,
       nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
       verbose = FALSE, seed = seed_tst
@@ -752,7 +752,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     cv_method_expected = "kfold",
     nclusters_expected = nclusters_tst,
     nclusters_pred_expected = nclusters_pred_tst,
-    info_str = "glm_simp__cvfits"
+    info_str = "fit_crr__cvfits"
   )
 })
 
