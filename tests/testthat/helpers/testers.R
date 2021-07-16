@@ -151,12 +151,6 @@ vsel_tester <- function(vs,
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
 
-    # Note: As mentioned in issue #167, component `"offset"` should in fact be
-    # added here, too:
-    dtest_nms <- setdiff(dtest_nms, "offset")
-    # Need to re-order:
-    dtest_nms <- dtest_nms[c(1, 5, 2, 4, 3)]
-
     vsel_smmrs_sub_nms <- c("lppd", "mu", "w")
     vsel_smmrs_ref_nms <- c("lppd", "mu")
 
@@ -165,12 +159,17 @@ vsel_tester <- function(vs,
     }
 
     if (identical(cv_method_expected, "LOO")) {
+      # Need to re-order:
+      dtest_nms <- dtest_nms[c(1, 5, 2, 4, 3, 6)]
+      # Other adaptations:
       dtest_type <- "LOO"
       vsel_smmry_nms <- sub("^elpd$", "elpd.loo", vsel_smmry_nms)
     } else if (identical(cv_method_expected, "kfold")) {
       vsel_smmrs_sub_nms[1:2] <- vsel_smmrs_sub_nms[2:1]
       vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
-      dtest_nms <- dtest_nms[c(1, 4, 3, 2)]
+      # Need to re-order and remove `"data"`:
+      dtest_nms <- dtest_nms[c(1, 4, 2, 6, 5)]
+      # Other adaptations:
       dtest_type <- "kfold"
       vsel_smmry_nms <- sub("^elpd$", "elpd.kfold", vsel_smmry_nms)
     } else {
