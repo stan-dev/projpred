@@ -101,8 +101,9 @@ cvmeth_tst <- list(
   LOO = list(cv_method = "LOO")
 )
 if (run_cvvs_kfold) {
+  K_tst <- 2L
   cvmeth_tst <- c(cvmeth_tst,
-                  list(kfold = list(cv_method = "kfold", K = 2)))
+                  list(kfold = list(cv_method = "kfold", K = K_tst)))
 }
 
 # Data --------------------------------------------------------------------
