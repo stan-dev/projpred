@@ -73,7 +73,7 @@ if (require(rstanarm)) {
         ## expect_equal(ndraws_prj, ndraws)
         expect_length(p[[j]]$dis, ndraws)
         # j:th element should have j variables, including the intercept
-        expect_length(p[[j]]$solution_terms, max(j - 1, 1))
+        expect_length(p[[j]]$solution_terms, j - 1)
         # family kl
         expect_equal(p[[j]]$family, vs_list[[i]]$family,
                      info = i_inf
@@ -130,7 +130,7 @@ if (require(rstanarm)) {
       # if only one model size is projected, do not return a list of length one
       expect_true(length(p) >= 1, info = i_inf)
       # beta has the correct number of rows
-      expect_equal(count_terms_chosen(p$solution_terms) - 1,
+      expect_equal(count_terms_chosen(p$solution_terms) - ifelse(vs_list[[i]]$suggested_size == 0, 0, 1),
                    vs_list[[i]]$suggested_size, info = i_inf)
       expect_length(p$solution_terms, vs_list[[i]]$suggested_size)
     }
@@ -144,9 +144,9 @@ if (require(rstanarm)) {
       # if only one model size is projected, do not return a list of length one
       expect_true(length(p) >= 1, info = i_inf)
       # beta has the correct number of rows
-      expect_equal(count_terms_chosen(p$solution_terms) - 1, nterms,
+      expect_equal(count_terms_chosen(p$solution_terms), nterms,
                    info = i_inf)
-      expect_length(p$solution_terms, 1)
+      expect_length(p$solution_terms, 0)
     }
   })
 
