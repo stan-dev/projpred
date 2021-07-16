@@ -96,6 +96,12 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   nclusters_pred <- args$nclusters_pred
   ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
+  has_group_features <- formula_contains_group_terms(refmodel$formula)
+  has_additive_features <- formula_contains_additive_terms(refmodel$formula)
+
+  if (method == "l1" && (has_group_features || has_additive_features)) {
+    stop("L1 search is only supported for GLMs.")
+  }
 
   ## arguments specific to this function
   args <- parse_args_cv_varsel(
@@ -392,7 +398,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                             weights = 1)
       log_lik_sub <- t(family$ll_fun(
         mu_k, submodels[[k]]$dis,
-        y[inds], refmodel$wobs
+        y[inds], refmodel$wobs[inds]
       ))
       sub_psisloo <- suppressWarnings(
         loo::psis(-log_lik_sub,
@@ -505,7 +511,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     y = refmodel$y, type = "LOO",
     test_points = seq_along(refmodel$y),
     weights = refmodel$wobs,
-    data = NULL
+    data = NULL, offset = refmodel$offset
   )
 
   if (!validate_search) {
@@ -558,7 +564,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
     p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
     newdata <- d_test$newdata
-    pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata)
+    pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata) +
+      d_test$offset
     pred <- matrix(
       as.numeric(pred), nrow = NROW(pred), ncol = NCOL(pred)
     )
@@ -659,7 +666,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   d_cv <- hf(lapply(d_test_cv, function(fold) {
     data.frame(
       y = fold$y, weights = fold$weights,
-      test_points = fold$omitted
+      test_points = fold$omitted,
+      offset = fold$offset
     )
   }))
 

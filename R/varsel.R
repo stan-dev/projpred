@@ -77,9 +77,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
   has_group_features <- formula_contains_group_terms(refmodel$formula)
+  has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
-  if (method == "l1" && has_group_features) {
-    stop("L1 search is not supported for multilevel models.")
+  if (method == "l1" && (has_group_features || has_additive_features)) {
+    stop("L1 search is only supported for GLMs.")
   }
 
   if (is.null(d_test)) {
