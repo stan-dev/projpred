@@ -94,7 +94,7 @@ test_that(paste(
   "proj_linpred(): `object` of class \"vsel\" (created by cv_varsel()) leads",
   "to correct output structure"
 ), {
-  skip_if_not(exists("cvvss"))
+  skip_if_not(run_cvvs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth",
                     names(cvvss), value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
@@ -665,7 +665,7 @@ test_that(paste(
   "proj_predict(): `object` of class \"vsel\" (created by cv_varsel()) leads",
   "to correct output structure"
 ), {
-  skip_if_not(exists("cvvss"))
+  skip_if_not(run_cvvs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth",
                     names(cvvss), value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)

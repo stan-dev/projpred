@@ -445,7 +445,7 @@ test_that(paste(
   "`object` of class \"refmodel\", correctly specified `method`, `nterms_max`,",
   "`nclusters`, and `nclusters_pred` lead to correct output structure"
 ), {
-  skip_if_not(exists("cvvss"))
+  skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss)) {
     mod_crr <- args_cvvs[[tstsetup]]$mod
     fam_crr <- args_cvvs[[tstsetup]]$fam
@@ -508,7 +508,7 @@ test_that(paste(
 ), {
   # Note: Extensive tests for reproducibility may be found among the tests for
   # .get_refdist().
-  skip_if_not(exists("cvvss"))
+  skip_if_not(run_cvvs)
   # To save time:
   tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
                     value = TRUE)
@@ -560,7 +560,7 @@ test_that(paste(
   "setting `nloo` at least as large as the number of observations doesn't",
   "change results"
 ), {
-  skip_if_not(exists("cvvss"))
+  skip_if_not(run_cvvs)
   nloo_tst <- n_tst + 1L
   # To save time: Pick only a single scenario with a GLM and a forward search
   # (the latter because of `validate_search = FALSE`):
@@ -582,7 +582,7 @@ test_that(paste(
   "setting `nloo` smaller than the number of observations leads to correct",
   "output structure"
 ), {
-  skip_if_not(exists("cvvss"))
+  skip_if_not(run_cvvs)
   nloo_tst <- n_tst - 1L
   # To save time: Pick only a single scenario with a GLM and a forward search
   # (the latter because of `validate_search = FALSE`):
@@ -630,7 +630,7 @@ test_that(paste(
 })
 
 test_that("`validate_search` works", {
-  skip_if_not(exists("cvvss"))
+  skip_if_not(run_cvvs)
   tstsetups <- grep("^glm\\..*\\.default_meth\\.default_cvmeth", names(cvvss),
                     value = TRUE)
   stopifnot(length(tstsetups) > 0)
