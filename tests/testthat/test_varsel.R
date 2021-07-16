@@ -458,17 +458,13 @@ test_that(paste(
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
-    cvmeth_exp_crr <- args_cvvs[[tstsetup]]$cv_method
-    if (is.null(cvmeth_exp_crr)) {
-      cvmeth_exp_crr <- "LOO"
-    }
     vsel_tester(
       cvvss[[tstsetup]],
       with_cv = TRUE,
       refmod_expected = refmods_crr[[mod_crr]][[fam_crr]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      cv_method_expected = cvmeth_exp_crr,
+      cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
       nclusters_expected = args_cvvs[[tstsetup]]$nclusters,
       nclusters_pred_expected = args_cvvs[[tstsetup]]$nclusters_pred,

@@ -150,30 +150,29 @@ vsel_tester <- function(vs,
   dtest_type <- "train"
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
-
     vsel_smmrs_sub_nms <- c("lppd", "mu", "w")
     vsel_smmrs_ref_nms <- c("lppd", "mu")
 
+    if (is.null(cv_method_expected)) {
+      cv_method_expected <- "LOO"
+    }
     if (is.null(valsearch_expected)) {
       valsearch_expected <- TRUE
     }
 
-    if (identical(cv_method_expected, "LOO")) {
-      # Need to re-order:
+    dtest_type <- cv_method_expected
+    vsel_smmry_nms <- sub(
+      "^elpd$", paste0("elpd.", tolower(cv_method_expected)), vsel_smmry_nms
+    )
+    if (cv_method_expected == "LOO") {
+      # Re-order:
       dtest_nms <- dtest_nms[c(1, 5, 2, 4, 3, 6)]
-      # Other adaptations:
-      dtest_type <- "LOO"
-      vsel_smmry_nms <- sub("^elpd$", "elpd.loo", vsel_smmry_nms)
-    } else if (identical(cv_method_expected, "kfold")) {
+    } else if (cv_method_expected == "kfold") {
+      # Re-order and remove `"data"`:
+      dtest_nms <- dtest_nms[c(1, 4, 2, 6, 5)]
+      # Re-order:
       vsel_smmrs_sub_nms[1:2] <- vsel_smmrs_sub_nms[2:1]
       vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
-      # Need to re-order and remove `"data"`:
-      dtest_nms <- dtest_nms[c(1, 4, 2, 6, 5)]
-      # Other adaptations:
-      dtest_type <- "kfold"
-      vsel_smmry_nms <- sub("^elpd$", "elpd.kfold", vsel_smmry_nms)
-    } else {
-      stop("Probably need to adopt this.")
     }
   }
   method_expected <- tolower(method_expected)
