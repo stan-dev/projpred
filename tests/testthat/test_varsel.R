@@ -620,12 +620,12 @@ test_that(paste(
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo)],
+    expect_equal(cvvs_nloo[setdiff(vsel_nms_cv, vsel_nms_cv_nloo)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_nloo)],
                  info = tstsetup)
     # Expected inequality for the exceptions (but note that the components from
-    # `vsel_nms_nloo_opt` can be, but don't need to be differing):
-    for (vsel_nm in setdiff(vsel_nms_nloo, vsel_nms_nloo_opt)) {
+    # `vsel_nms_cv_nloo_opt` can be, but don't need to be differing):
+    for (vsel_nm in setdiff(vsel_nms_cv_nloo, vsel_nms_cv_nloo_opt)) {
       expect_false(isTRUE(all.equal(cvvs_nloo[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
@@ -667,15 +667,15 @@ test_that("`validate_search` works", {
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
+    expect_equal(cvvs_valsearch[setdiff(vsel_nms_cv, vsel_nms_cv_valsearch)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_valsearch)],
                  info = tstsetup)
     expect_identical(cvvs_valsearch$summaries$ref,
                      cvvss[[tstsetup]]$summaries$ref,
                      info = tstsetup)
     # Expected inequality for the exceptions (but note that the components from
-    # `vsel_nms_valsearch_opt` can be, but don't need to be differing):
-    for (vsel_nm in setdiff(vsel_nms_valsearch, vsel_nms_valsearch_opt)) {
+    # `vsel_nms_cv_valsearch_opt` can be, but don't need to be differing):
+    for (vsel_nm in setdiff(vsel_nms_cv_valsearch, vsel_nms_cv_valsearch_opt)) {
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
@@ -762,7 +762,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
             "model using an offset term\\.$")
     )
 
-    # Check:
+    # Checks:
     vsel_tester(
       cvvs_cvfits,
       with_cv = TRUE,
@@ -775,6 +775,22 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
       nclusters_pred_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
+    # Note: Unfortunately, it is currently not possible to always ensure exactly
+    # the same seed when performing K-fold CV with `cvfits` or without `cvfits`.
+    # Therefore, the following checks for equality/inequality are quite
+    # restricted.
+    # Expected equality for some components:
+    expect_equal(cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+                 info = tstsetup)
+    # Expected inequality for the remaining components (but note that the
+    # components from `vsel_nms_cv_cvfits_opt` can be, but don't need to be
+    # differing):
+    for (vsel_nm in setdiff(vsel_nms_cv_cvfits, vsel_nms_cv_cvfits_opt)) {
+      expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
+                                    cvvss[[tstsetup]][[vsel_nm]])),
+                   info = paste(tstsetup, vsel_nm, sep = "__"))
+    }
   }
 })
 
