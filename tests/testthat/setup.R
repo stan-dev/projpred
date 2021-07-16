@@ -487,6 +487,8 @@ if (run_cvvs) {
   args_cvvs <- unlist_cust(args_cvvs)
 
   # Use SW() because of occasional warnings concerning Pareto k diagnostics:
+  # Additionally to SW(), suppressMessages() could be used here (because of the
+  # refits in K-fold CV):
   SW(cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
     if (identical(args_cvvs_i$cv_method, "kfold")) {
       refmods_crr <- refmods$kfold
