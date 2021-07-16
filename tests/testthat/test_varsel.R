@@ -718,7 +718,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
   skip_if_not(run_cvvs_kfold)
   fit_crr <- fits$kfold$glm$gauss
   # rstanarm::kfold() lacks an argument for setting the seed:
-  set.seed(seed2_tst)
+  set.seed(seed_tst)
   # One could also use suppressMessages() here:
   SW(kfold_obj <- rstanarm::kfold(fit_crr, K = K_tst, save_fits = TRUE))
   folds_vec <- rep(NA, n_tst)
