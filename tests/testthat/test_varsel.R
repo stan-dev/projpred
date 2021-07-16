@@ -600,16 +600,12 @@ test_that(paste(
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
-    # Expect a warning (see issue #172):
-    expect_warning(
-      cvvs_nloo <- do.call(cv_varsel, c(
-        list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
-             nloo = nloo_tst),
-        args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
-      )),
-      "longer object length is not a multiple of shorter object length",
-      info = tstsetup
-    )
+    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
+    SW(cvvs_nloo <- do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+           nloo = nloo_tst),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+    )))
     vsel_tester(
       cvvs_nloo,
       with_cv = TRUE,
