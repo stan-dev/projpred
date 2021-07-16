@@ -2,7 +2,7 @@
 
 context("proj_linpred()")
 
-test_that("proj_linpred(): passing arguments to project() works correctly", {
+test_that("passing arguments to project() works correctly", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
@@ -18,7 +18,7 @@ test_that("proj_linpred(): passing arguments to project() works correctly", {
 })
 
 test_that(paste(
-  "proj_linpred(): a fitted model `object` leads to correct output structure"
+  "a fitted model `object` leads to correct output structure"
 ), {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
@@ -41,7 +41,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of class \"refmodel\" leads to correct output",
+  "`object` of class \"refmodel\" leads to correct output",
   "structure"
 ), {
   for (mod_nm in mod_nms["glm"]) {
@@ -65,7 +65,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of class \"vsel\" (created by varsel()) leads",
+  "`object` of class \"vsel\" (created by varsel()) leads",
   "to correct output structure"
 ), {
   skip_if_not(run_vs)
@@ -91,7 +91,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of class \"vsel\" (created by cv_varsel()) leads",
+  "`object` of class \"vsel\" (created by cv_varsel()) leads",
   "to correct output structure"
 ), {
   skip_if_not(run_cvvs)
@@ -120,7 +120,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of class \"projection\" leads to correct output",
+  "`object` of class \"projection\" leads to correct output",
   "structure"
 ), {
   for (tstsetup in names(prjs)) {
@@ -141,7 +141,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of (informal) class \"proj_list\" (created by",
+  "`object` of (informal) class \"proj_list\" (created by",
   "varsel()) leads to correct output structure"
 ), {
   skip_if_not(run_vs)
@@ -171,7 +171,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of (informal) class \"proj_list\" (created by",
+  "`object` of (informal) class \"proj_list\" (created by",
   "cv_varsel()) leads to correct output structure"
 ), {
   skip_if_not(run_cvvs)
@@ -201,7 +201,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `object` of (informal) class \"proj_list\" (created",
+  "`object` of (informal) class \"proj_list\" (created",
   "manually) leads to correct output structure"
 ), {
   tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
@@ -216,7 +216,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): error if `object` is not of class \"vsel\" and",
+  "error if `object` is not of class \"vsel\" and",
   "`solution_terms` is provided neither"
 ), {
   expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
@@ -226,7 +226,7 @@ test_that(paste(
                "Invalid object supplied to argument `object`\\.")
 })
 
-test_that("proj_linpred(): `newdata` is checked correctly", {
+test_that("`newdata` is checked correctly", {
   expect_error(
     proj_linpred(prjs, newdata = dat[, 1]),
     "must be a data.frame or a matrix"
@@ -248,7 +248,7 @@ test_that("proj_linpred(): `newdata` is checked correctly", {
 })
 
 test_that(paste(
-  "proj_linpred(): `newdata` and `integrated` lead to correct output structure",
+  "`newdata` and `integrated` lead to correct output structure",
   "(even in edge cases)"
 ), {
   for (tstsetup in names(prjs)) {
@@ -279,7 +279,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `newdata` set to the original dataset doesn't change results"
+  "`newdata` set to the original dataset doesn't change results"
 ), {
   for (tstsetup in names(prjs)) {
     pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat)
@@ -289,7 +289,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): omitting the response in `newdata` causes output element",
+  "omitting the response in `newdata` causes output element",
   "`lpd` to be `NULL`"
 ), {
   for (tstsetup in names(prjs)) {
@@ -314,7 +314,7 @@ test_that(paste(
   }
 })
 
-test_that("proj_linpred(): `weightsnew` has an expected effect", {
+test_that("`weightsnew` has an expected effect", {
   dat_ones <- within(dat, {
     wobs_col <- NULL
     wobs_col_ones <- rep_len(1, length.out = n_tst)
@@ -374,7 +374,7 @@ test_that("proj_linpred(): `weightsnew` has an expected effect", {
   }
 })
 
-test_that("proj_linpred(): `offsetnew` has an expected effect", {
+test_that("`offsetnew` has an expected effect", {
   dat_zeros <- within(dat, {
     offs_col <- NULL
     offs_col_zeros <- rep_len(0, length.out = n_tst)
@@ -436,7 +436,7 @@ test_that("proj_linpred(): `offsetnew` has an expected effect", {
   }
 })
 
-test_that("proj_linpred(): `transform` has an expected effect", {
+test_that("`transform` has an expected effect", {
   for (tstsetup in names(prjs)) {
     plt <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
     plf <- proj_linpred(prjs[[tstsetup]], transform = FALSE)
@@ -445,7 +445,7 @@ test_that("proj_linpred(): `transform` has an expected effect", {
   }
 })
 
-test_that("proj_linpred(): `integrated` has an expected effect", {
+test_that("`integrated` has an expected effect", {
   for (tstsetup in names(prjs)) {
     plt <- proj_linpred(prjs[[tstsetup]], integrated = TRUE)
     plf <- proj_linpred(prjs[[tstsetup]], integrated = FALSE)
@@ -454,7 +454,7 @@ test_that("proj_linpred(): `integrated` has an expected effect", {
   }
 })
 
-test_that("proj_linpred(): `regul` has an expected effect", {
+test_that("`regul` has an expected effect", {
   regul_tst <- c(1e-6, 1e-1, 1e2)
   stopifnot(identical(regul_tst, sort(regul_tst)))
   for (fam_nm in fam_nms) {
@@ -474,7 +474,7 @@ test_that("proj_linpred(): `regul` has an expected effect", {
 })
 
 test_that(paste(
-  "proj_linpred(): `filter_nterms` works correctly (for an `object` of class",
+  "`filter_nterms` works correctly (for an `object` of class",
   "\"projection\")"
 ), {
   pl_orig <- proj_linpred(prjs$glm.gauss.solterms_x.clust)
@@ -492,7 +492,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_linpred(): `filter_nterms` works correctly (for an `object` of",
+  "`filter_nterms` works correctly (for an `object` of",
   "(informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
@@ -535,7 +535,7 @@ test_that(paste(
 
 context("proj_predict()")
 
-test_that("proj_predict(): `.seed` has an expected effect", {
+test_that("`.seed` has an expected effect", {
   for (tstsetup in names(prjs)) {
     .Random.seed_orig1 <- .Random.seed
     pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
@@ -575,7 +575,7 @@ test_that("proj_predict(): `.seed` has an expected effect", {
   }
 })
 
-test_that("proj_predict(): passing arguments to project() works correctly", {
+test_that("passing arguments to project() works correctly", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
@@ -592,7 +592,7 @@ test_that("proj_predict(): passing arguments to project() works correctly", {
 })
 
 test_that(paste(
-  "proj_predict(): a fitted model `object` leads to correct output structure"
+  "a fitted model `object` leads to correct output structure"
 ), {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
@@ -614,7 +614,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of class \"refmodel\" leads to correct output",
+  "`object` of class \"refmodel\" leads to correct output",
   "structure"
 ), {
   for (mod_nm in mod_nms["glm"]) {
@@ -637,7 +637,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of class \"vsel\" (created by varsel()) leads",
+  "`object` of class \"vsel\" (created by varsel()) leads",
   "to correct output structure"
 ), {
   skip_if_not(run_vs)
@@ -662,7 +662,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of class \"vsel\" (created by cv_varsel()) leads",
+  "`object` of class \"vsel\" (created by cv_varsel()) leads",
   "to correct output structure"
 ), {
   skip_if_not(run_cvvs)
@@ -691,7 +691,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of class \"projection\" leads to correct output",
+  "`object` of class \"projection\" leads to correct output",
   "structure"
 ), {
   for (tstsetup in names(prjs)) {
@@ -715,7 +715,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of (informal) class \"proj_list\" (created by",
+  "`object` of (informal) class \"proj_list\" (created by",
   "varsel()) leads to correct output structure"
 ), {
   skip_if_not(run_vs)
@@ -742,7 +742,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of (informal) class \"proj_list\" (created by",
+  "`object` of (informal) class \"proj_list\" (created by",
   "cv_varsel()) leads to correct output structure"
 ), {
   skip_if_not(run_cvvs)
@@ -769,7 +769,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of (informal) class \"proj_list\" (created",
+  "`object` of (informal) class \"proj_list\" (created",
   "manually) leads to correct output structure"
 ), {
   tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
@@ -782,7 +782,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): error if `object` is not of class \"vsel\" and",
+  "error if `object` is not of class \"vsel\" and",
   "`solution_terms` is provided neither"
 ), {
   expect_error(proj_predict(1, .seed = seed2_tst),
@@ -793,7 +793,7 @@ test_that(paste(
                "Invalid object supplied to argument `object`\\.")
 })
 
-test_that("proj_predict(): `newdata` is checked correctly", {
+test_that("`newdata` is checked correctly", {
   expect_error(
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data.frame or a matrix"
@@ -817,7 +817,7 @@ test_that("proj_predict(): `newdata` is checked correctly", {
 })
 
 test_that(paste(
-  "proj_predict(): `newdata` and `nresample_clusters` lead to correct output",
+  "`newdata` and `nresample_clusters` lead to correct output",
   "structure (even in edge cases)"
 ), {
   for (tstsetup in names(prjs)) {
@@ -849,7 +849,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `newdata` set to the original dataset doesn't change results"
+  "`newdata` set to the original dataset doesn't change results"
 ), {
   for (tstsetup in names(prjs)) {
     pp_newdata <- proj_predict(prjs[[tstsetup]],
@@ -861,7 +861,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): omitting the response in `newdata` doesn't change results"
+  "omitting the response in `newdata` doesn't change results"
 ), {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
@@ -885,7 +885,7 @@ test_that(paste(
   }
 })
 
-test_that("proj_predict(): `weightsnew` has an expected effect", {
+test_that("`weightsnew` has an expected effect", {
   dat_ones <- within(dat, {
     wobs_col <- NULL
     wobs_col_ones <- rep_len(1, length.out = n_tst)
@@ -949,7 +949,7 @@ test_that("proj_predict(): `weightsnew` has an expected effect", {
   }
 })
 
-test_that("proj_predict(): `offsetnew` has an expected effect", {
+test_that("`offsetnew` has an expected effect", {
   dat_zeros <- within(dat, {
     offs_col <- NULL
     offs_col_zeros <- rep_len(0, length.out = n_tst)
@@ -1015,7 +1015,7 @@ test_that("proj_predict(): `offsetnew` has an expected effect", {
 })
 
 test_that(paste(
-  "proj_predict(): `filter_nterms` works correctly (for an `object` of class",
+  "`filter_nterms` works correctly (for an `object` of class",
   "\"projection\")"
 ), {
   nterms_avail_x <- length(solterms_x)
@@ -1036,7 +1036,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `filter_nterms` works correctly (for an `object` of",
+  "`filter_nterms` works correctly (for an `object` of",
   "(informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
