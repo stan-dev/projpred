@@ -716,44 +716,61 @@ test_that("specifying `K` incorrectly leads to an error", {
 
 test_that("`cvfits` (actually passed to init_refmodel()) works", {
   skip_if_not(run_cvvs_kfold)
-  fit_crr <- fits$kfold$glm$gauss
-  # rstanarm::kfold() lacks an argument for setting the seed:
-  set.seed(seed_tst)
-  # One could also use suppressMessages() here:
-  SW(kfold_obj <- rstanarm::kfold(fit_crr, K = K_tst, save_fits = TRUE))
-  folds_vec <- rep(NA, n_tst)
-  for (k_crr in seq_len(K_tst)) {
-    idcs_fold <- kfold_obj$fits[, "omitted"][[k_crr]]
-    stopifnot(identical(
-      idcs_fold,
-      setdiff(seq_len(n_tst),
-              as.integer(rownames(kfold_obj$fits[, "fit"][[k_crr]]$data)))
-    ))
-    folds_vec[idcs_fold] <- k_crr
+  tstsetups <- grep("kfold", names(cvvss), value = TRUE)
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    mod_crr <- args_cvvs_i$mod_nm
+    fam_crr <- args_cvvs_i$fam_nm
+    meth_exp_crr <- args_cvvs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
+    fit_crr <- fits$kfold[[mod_crr]][[fam_crr]]
+    K_crr <- args_cvvs_i$K
+
+    # Refit `K_crr` times:
+    # rstanarm::kfold() lacks an argument for setting the seed:
+    set.seed(seed_tst)
+    # Additionally to SW(), suppressMessages() could be used here:
+    SW(kfold_obj <- rstanarm::kfold(fit_crr, K = K_crr, save_fits = TRUE))
+
+    # Create the folds vector:
+    folds_vec <- rep(NA, n_tst)
+    for (k_crr in seq_len(K_crr)) {
+      idcs_fold <- kfold_obj$fits[, "omitted"][[k_crr]]
+      stopifnot(identical(
+        idcs_fold,
+        setdiff(seq_len(n_tst),
+                as.integer(rownames(kfold_obj$fits[, "fit"][[k_crr]]$data)))
+      ))
+      folds_vec[idcs_fold] <- k_crr
+    }
+    stopifnot(all(!is.na(folds_vec)))
+    attr(kfold_obj, "folds") <- folds_vec
+
+    # Run cv_varsel():
+    expect_warning(
+      cvvs_cvfits <- do.call(cv_varsel, c(
+        list(object = fit_crr, cvfits = kfold_obj),
+        args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm", "K"))]
+      )),
+      paste("^'offset' argument is NULL but it looks like you estimated the",
+            "model using an offset term\\.$")
+    )
+    vsel_tester(
+      cvvs_cvfits,
+      with_cv = TRUE,
+      refmod_expected = cvvs_cvfits$refmodel,
+      solterms_len_expected = 5L,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "kfold",
+      valsearch_expected = args_cvvs_i$validate_search,
+      nclusters_expected = args_cvvs_i$nclusters,
+      nclusters_pred_expected = args_cvvs_i$nclusters_pred,
+      info_str = tstsetup
+    )
   }
-  stopifnot(all(!is.na(folds_vec)))
-  attr(kfold_obj, "folds") <- folds_vec
-  expect_warning(
-    cvvs_cvfits <- cv_varsel(
-      fit_crr, cv_method = "kfold", cvfits = kfold_obj,
-      nterms_max = nterms_max_tst,
-      nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
-      verbose = FALSE, seed = seed_tst
-    ),
-    paste("^'offset' argument is NULL but it looks like you estimated the",
-          "model using an offset term\\.$")
-  )
-  vsel_tester(
-    cvvs_cvfits,
-    with_cv = TRUE,
-    refmod_expected = cvvs_cvfits$refmodel,
-    solterms_len_expected = 5L,
-    method_expected = "L1",
-    cv_method_expected = "kfold",
-    nclusters_expected = nclusters_tst,
-    nclusters_pred_expected = nclusters_pred_tst,
-    info_str = "fit_crr__cvfits"
-  )
 })
 
 # TODO:
