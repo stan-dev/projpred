@@ -174,7 +174,7 @@ test_that(paste(
   "proj_linpred(): `object` of (informal) class \"proj_list\" (created by",
   "cv_varsel()) leads to correct output structure"
 ), {
-  skip_if_not(exists("prjs_cvvs"))
+  skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
     pl <- proj_linpred(prjs_cvvs[[tstsetup]])
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
@@ -745,7 +745,7 @@ test_that(paste(
   "proj_predict(): `object` of (informal) class \"proj_list\" (created by",
   "cv_varsel()) leads to correct output structure"
 ), {
-  skip_if_not(exists("prjs_cvvs"))
+  skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
     pp <- proj_predict(prjs_cvvs[[tstsetup]], .seed = seed2_tst)
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup

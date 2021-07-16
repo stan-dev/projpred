@@ -130,7 +130,7 @@ test_that(paste(
   "`object` of class \"vsel\" (created by cv_varsel()) and correctly specified",
   "`nterms` lead to correct output structure"
 ), {
-  skip_if_not(exists("prjs_cvvs"))
+  skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
     stopifnot(length(tstsetup_cvvs) > 0)
