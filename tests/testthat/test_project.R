@@ -367,9 +367,7 @@ test_that("for GLMs, `regul` has an expected effect", {
     }
     if (length(args_prj_i$solution_terms) == 0) {
       # For an intercept-only model:
-      ### Excluded because of issue #169:
-      # expect_length(unique(ssq_regul_alpha), 1)
-      ###
+      expect_length(unique(ssq_regul_alpha), 1)
       stopifnot(all(is.na(ssq_regul_beta)))
     } else {
       # All other (i.e., not intercept-only) models:
