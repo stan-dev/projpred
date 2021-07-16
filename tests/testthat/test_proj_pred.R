@@ -314,7 +314,7 @@ test_that(paste(
   }
 })
 
-test_that("`weightsnew` has an expected effect", {
+test_that("`weightsnew` works", {
   dat_ones <- within(dat, {
     wobs_col <- NULL
     wobs_col_ones <- rep_len(1, length.out = n_tst)
@@ -374,7 +374,7 @@ test_that("`weightsnew` has an expected effect", {
   }
 })
 
-test_that("`offsetnew` has an expected effect", {
+test_that("`offsetnew` works", {
   dat_zeros <- within(dat, {
     offs_col <- NULL
     offs_col_zeros <- rep_len(0, length.out = n_tst)
@@ -436,7 +436,7 @@ test_that("`offsetnew` has an expected effect", {
   }
 })
 
-test_that("`transform` has an expected effect", {
+test_that("`transform` works", {
   for (tstsetup in names(prjs)) {
     plt <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
     plf <- proj_linpred(prjs[[tstsetup]], transform = FALSE)
@@ -445,7 +445,7 @@ test_that("`transform` has an expected effect", {
   }
 })
 
-test_that("`integrated` has an expected effect", {
+test_that("`integrated` works", {
   for (tstsetup in names(prjs)) {
     plt <- proj_linpred(prjs[[tstsetup]], integrated = TRUE)
     plf <- proj_linpred(prjs[[tstsetup]], integrated = FALSE)
@@ -454,7 +454,7 @@ test_that("`integrated` has an expected effect", {
   }
 })
 
-test_that("`regul` has an expected effect", {
+test_that("`regul` works", {
   regul_tst <- c(1e-6, 1e-1, 1e2)
   stopifnot(identical(regul_tst, sort(regul_tst)))
   for (fam_nm in fam_nms) {
@@ -535,7 +535,7 @@ test_that(paste(
 
 context("proj_predict()")
 
-test_that("`.seed` has an expected effect", {
+test_that("`.seed` works", {
   for (tstsetup in names(prjs)) {
     .Random.seed_orig1 <- .Random.seed
     pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
@@ -885,7 +885,7 @@ test_that(paste(
   }
 })
 
-test_that("`weightsnew` has an expected effect", {
+test_that("`weightsnew` works", {
   dat_ones <- within(dat, {
     wobs_col <- NULL
     wobs_col_ones <- rep_len(1, length.out = n_tst)
@@ -949,7 +949,7 @@ test_that("`weightsnew` has an expected effect", {
   }
 })
 
-test_that("`offsetnew` has an expected effect", {
+test_that("`offsetnew` works", {
   dat_zeros <- within(dat, {
     offs_col <- NULL
     offs_col_zeros <- rep_len(0, length.out = n_tst)

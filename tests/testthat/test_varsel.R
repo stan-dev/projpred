@@ -84,7 +84,7 @@ test_that(paste(
   }
 })
 
-test_that("specifying d_test has an expected effect", {
+test_that("`d_test` works", {
   skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
