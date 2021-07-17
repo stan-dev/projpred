@@ -20,8 +20,7 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      # Subtract 1L for the intercept:
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
     }
     pl_tester(
       pls_vs[[tstsetup]],
@@ -42,8 +41,7 @@ test_that(paste(
     stopifnot(length(tstsetup_cvvs) > 0)
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      # Subtract 1L for the intercept:
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
     }
     if (length(nterms_crr) == 1) {
       # In fact, we don't have a "proj_list" object in this case, but since
@@ -674,8 +672,7 @@ test_that(paste(
     stopifnot(length(tstsetup_vs) > 0)
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      # Subtract 1L for the intercept:
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
     }
     if (length(nterms_crr) == 1) {
       # In fact, we don't have a "proj_list" object in this case, but since
@@ -701,8 +698,7 @@ test_that(paste(
     stopifnot(length(tstsetup_cvvs) > 0)
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      # Subtract 1L for the intercept:
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size - 1L
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
     }
     if (length(nterms_crr) == 1) {
       # In fact, we don't have a "proj_list" object in this case, but since
