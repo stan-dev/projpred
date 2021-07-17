@@ -53,7 +53,6 @@ test_that(paste(
   skip_if_not(run_vs)
   # To save time:
   tstsetups <- grep("^glm\\.gauss\\.", names(vss), value = TRUE)
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- vss[[tstsetup]]
@@ -87,7 +86,6 @@ test_that(paste(
 test_that("`d_test` works", {
   skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     mod_crr <- args_vs_i$mod_nm
@@ -147,7 +145,6 @@ test_that("for non-GLMs, `regul` has no effect", {
   for (mod_crr in setdiff(mod_nms, "glm")) {
     tstsetups <- grep(paste0("^", mod_crr, "\\.gauss"), names(vss),
                       value = TRUE)[1]
-    stopifnot(length(tstsetups) > 0)
     for (tstsetup in tstsetups) {
       args_vs_i <- args_vs[[tstsetup]]
       vs_regul <- do.call(varsel, c(
@@ -170,7 +167,6 @@ test_that(paste(
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -242,7 +238,6 @@ test_that(paste(
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- grep("^glm\\..*\\.forward", names(vss), value = TRUE)
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -347,7 +342,6 @@ test_that("`penalty` of incorrect length causes an error", {
     grep("^glm\\.", names(args_vs), value = TRUE),
     grep("^glm\\..*\\.forward", names(args_vs), value = TRUE)
   )
-  stopifnot(length(tstsetups) > 0)
   # Note: As mentioned in issue #149, the reference level of a categorical
   # predictor actually should not have its own coefficient:
   len_penal <- sum(grepl("^xco\\.", names(dat))) +
@@ -375,8 +369,8 @@ test_that("for forward search, `penalty` has no effect", {
   penal_tst <- 2
   tstsetups <- union(grep("\\.forward", names(vss), value = TRUE),
                      grep("^glm\\.", names(vss), value = TRUE, invert = TRUE))
-  tstsetups <- tstsetups[1] # For the sake of speed.
-  stopifnot(length(tstsetups) > 0)
+  # To save time:
+  tstsetups <- tstsetups[1]
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_penal <- do.call(varsel, c(
@@ -392,7 +386,6 @@ test_that("for L1 search, `penalty` has an expected effect", {
   skip_if_not(run_vs)
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
-  stopifnot(length(tstsetups) > 0)
   # Note: As mentioned in issue #149, the reference level of a categorical
   # predictor actually should not have its own coefficient:
   len_penal <- sum(grepl("^xco\\.", names(dat))) +
@@ -512,7 +505,6 @@ test_that(paste(
   # To save time:
   tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
                     value = TRUE)
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     cvvs_orig <- cvvss[[tstsetup]]
@@ -565,7 +557,6 @@ test_that(paste(
   # To save time: Pick only a single scenario with a GLM and a forward search
   # (the latter because of `validate_search = FALSE`):
   tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use SW() because of occasional warnings concerning Pareto k diagnostics:
@@ -587,7 +578,6 @@ test_that(paste(
   # To save time: Pick only a single scenario with a GLM and a forward search
   # (the latter because of `validate_search = FALSE`):
   tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     mod_crr <- args_cvvs_i$mod
@@ -633,7 +623,6 @@ test_that("`validate_search` works", {
   skip_if_not(run_cvvs)
   tstsetups <- grep("^glm\\..*\\.default_meth\\.default_cvmeth", names(cvvss),
                     value = TRUE)
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     stopifnot(is.null(args_cvvs_i$validate_search) ||
@@ -713,7 +702,6 @@ test_that("specifying `K` incorrectly leads to an error", {
 test_that("`cvfits` (actually passed to init_refmodel()) works", {
   skip_if_not(run_cvvs_kfold)
   tstsetups <- grep("kfold", names(cvvss), value = TRUE)
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     mod_crr <- args_cvvs_i$mod_nm

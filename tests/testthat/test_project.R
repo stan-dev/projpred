@@ -52,7 +52,6 @@ test_that(paste(
 test_that("a fitted model `object` leads to correct output structure", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_fit <- do.call(project, c(
@@ -285,7 +284,6 @@ test_that("for non-GLMs, `regul` has no effect", {
   for (mod_crr in setdiff(mod_nms, "glm")) {
     tstsetups <- grep(paste0("^", mod_crr, "\\.gauss\\.solterms_x\\.clust"),
                       names(prjs), value = TRUE)[1]
-    stopifnot(length(tstsetups) > 0)
     for (tstsetup in tstsetups) {
       args_prj_i <- args_prj[[tstsetup]]
       p_regul <- do.call(project, c(
@@ -303,7 +301,6 @@ test_that("for GLMs, `regul` has an expected effect", {
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- grep("^glm\\..*\\.clust$", names(prjs), value = TRUE)
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl_nm <- intersect(names(args_prj_i), c("ndraws", "nclusters"))
