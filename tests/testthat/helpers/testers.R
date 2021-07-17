@@ -1,49 +1,3 @@
-# A helper function for testing the structure of an expected "proj_list" object
-#
-# @param p An object of (informal) class "proj_list" (at least expected so).
-# @param len_expected The expected length of `p`.
-# @param is_seq A single logical value indicating whether `p` is expected to be
-#   sequential (i.e., the number of solution terms increases by 1 from one
-#   element of `p` to the next).
-# @param info_str A single character string giving information to be printed in
-#   case of failure.
-# @param ... Arguments passed to projection_tester(), apart from
-#   projection_tester()'s arguments `p`, `solterms_expected`, and `info_str`.
-#
-# @return `TRUE` (invisible).
-proj_list_tester <- function(p,
-                             len_expected = nterms_max_tst + 1L,
-                             is_seq = TRUE,
-                             info_str = "",
-                             ...) {
-  expect_type(p, "list")
-  expect_length(p, len_expected)
-  expect_true(.is_proj_list(p), info = info_str)
-
-  for (j in seq_along(p)) {
-    if (is_seq) {
-      # The j-th element should have j solution terms (not counting the
-      # intercept, even for the intercept-only model):
-      solterms_expected_crr <- j - 1
-    } else {
-      solterms_expected_crr <- NULL
-    }
-    projection_tester(p[[j]],
-                      solterms_expected = solterms_expected_crr,
-                      info_str = paste(info_str, j, sep = "__"),
-                      ...)
-  }
-  if (is_seq) {
-    # kl should be non-increasing on training data
-    klseq <- sapply(p, function(x) sum(x$kl))
-    expect_identical(klseq, cummin(klseq), info = info_str)
-    ### Check with tolerance:
-    # expect_true(all(diff(klseq) < 1e-1), info = info_str)
-    ###
-  }
-  return(invisible(TRUE))
-}
-
 # A helper function for testing the structure of an expected "projection" object
 #
 # @param p An object of class "projection" (at least expected so).
@@ -102,6 +56,51 @@ projection_tester <- function(p,
   }
   if (nprjdraws_expected == 1) {
     expect_identical(p$weights, 1, info = info_str)
+  }
+  return(invisible(TRUE))
+}
+# A helper function for testing the structure of an expected "proj_list" object
+#
+# @param p An object of (informal) class "proj_list" (at least expected so).
+# @param len_expected The expected length of `p`.
+# @param is_seq A single logical value indicating whether `p` is expected to be
+#   sequential (i.e., the number of solution terms increases by 1 from one
+#   element of `p` to the next).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+# @param ... Arguments passed to projection_tester(), apart from
+#   projection_tester()'s arguments `p`, `solterms_expected`, and `info_str`.
+#
+# @return `TRUE` (invisible).
+proj_list_tester <- function(p,
+                             len_expected = nterms_max_tst + 1L,
+                             is_seq = TRUE,
+                             info_str = "",
+                             ...) {
+  expect_type(p, "list")
+  expect_length(p, len_expected)
+  expect_true(.is_proj_list(p), info = info_str)
+
+  for (j in seq_along(p)) {
+    if (is_seq) {
+      # The j-th element should have j solution terms (not counting the
+      # intercept, even for the intercept-only model):
+      solterms_expected_crr <- j - 1
+    } else {
+      solterms_expected_crr <- NULL
+    }
+    projection_tester(p[[j]],
+                      solterms_expected = solterms_expected_crr,
+                      info_str = paste(info_str, j, sep = "__"),
+                      ...)
+  }
+  if (is_seq) {
+    # kl should be non-increasing on training data
+    klseq <- sapply(p, function(x) sum(x$kl))
+    expect_identical(klseq, cummin(klseq), info = info_str)
+    ### Check with tolerance:
+    # expect_true(all(diff(klseq) < 1e-1), info = info_str)
+    ###
   }
   return(invisible(TRUE))
 }
