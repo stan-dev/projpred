@@ -556,7 +556,8 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
   lapply(tstsetups_prj_vsel, function(tstsetup) {
     lapply(nterms_avail, function(nterms_crr) {
-      args_out <- nlist(tstsetup, nclusters = nclusters_pred_tst, seed = seed_tst)
+      args_out <- nlist(tstsetup, nclusters = nclusters_pred_tst,
+                        seed = seed_tst)
       if (!is.null(nterms_crr)) {
         args_out <- c(args_out, list(nterms = nterms_crr))
       }
