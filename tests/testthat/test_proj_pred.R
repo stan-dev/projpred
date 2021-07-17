@@ -12,7 +12,7 @@ test_that("passing arguments to project() works", {
       list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
-    pl_from_prj <- proj_linpred(prjs[[tstsetup]])
+    pl_from_prj <- pls[[tstsetup]]
     expect_equal(pl_direct, pl_from_prj, info = tstsetup)
   }
 })
@@ -133,7 +133,7 @@ test_that(paste(
       stopifnot(length(ndr_ncl_nm) == 1)
       nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
     }
-    pl <- proj_linpred(prjs[[tstsetup]])
+    pl <- pls[[tstsetup]]
     expect_named(pl, c("pred", "lpd"), info = tstsetup)
     expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
     expect_identical(dim(pl$lpd), c(nprjdraws, n_tst), info = tstsetup)
@@ -283,7 +283,7 @@ test_that(paste(
 ), {
   for (tstsetup in names(prjs)) {
     pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat)
-    pl_orig <- proj_linpred(prjs[[tstsetup]])
+    pl_orig <- pls[[tstsetup]]
     expect_equal(pl_newdata, pl_orig, info = tstsetup)
   }
 })
@@ -334,7 +334,7 @@ test_that("`weightsnew` works", {
       nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
     }
 
-    pl_orig <- proj_linpred(prjs[[tstsetup]])
+    pl_orig <- pls[[tstsetup]]
     expect_named(pl_orig, c("pred", "lpd"), info = tstsetup)
     expect_identical(dim(pl_orig$pred), c(nprjdraws, n_tst), info = tstsetup)
     expect_identical(dim(pl_orig$lpd), c(nprjdraws, n_tst), info = tstsetup)
@@ -394,7 +394,7 @@ test_that("`offsetnew` works", {
       nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
     }
 
-    pl_orig <- proj_linpred(prjs[[tstsetup]])
+    pl_orig <- pls[[tstsetup]]
     expect_named(pl_orig, c("pred", "lpd"), info = tstsetup)
     expect_identical(dim(pl_orig$pred), c(nprjdraws, n_tst), info = tstsetup)
     expect_identical(dim(pl_orig$lpd), c(nprjdraws, n_tst), info = tstsetup)
@@ -538,7 +538,7 @@ context("proj_predict()")
 test_that("`.seed` works", {
   for (tstsetup in names(prjs)) {
     .Random.seed_orig1 <- .Random.seed
-    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
     .Random.seed_orig2 <- .Random.seed
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_new1 <- .Random.seed
@@ -586,7 +586,7 @@ test_that("passing arguments to project() works", {
            .seed = seed2_tst),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
-    pp_from_prj <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp_from_prj <- pps[[tstsetup]]
     expect_equal(pp_direct, pp_from_prj, info = tstsetup)
   }
 })
@@ -709,7 +709,7 @@ test_that(paste(
     } else {
       nprjdraws_out <- nprjdraws
     }
-    pp <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp <- pps[[tstsetup]]
     expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup)
   }
 })
@@ -855,7 +855,7 @@ test_that(paste(
     pp_newdata <- proj_predict(prjs[[tstsetup]],
                                newdata = dat,
                                .seed = seed2_tst)
-    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
     expect_equal(pp_newdata, pp_orig, info = tstsetup)
   }
 })
@@ -880,7 +880,7 @@ test_that(paste(
     pp_noresp <- proj_predict(prjs[[tstsetup]],
                               newdata = dat[, setdiff(names(dat), resp_nm)],
                               .seed = seed2_tst)
-    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
     expect_equal(pp_noresp, pp_orig, info = tstsetup)
   }
 })
@@ -910,7 +910,7 @@ test_that("`weightsnew` works", {
       nprjdraws_out <- nprjdraws
     }
 
-    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
     expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup)
 
     pp_ones <- proj_predict(prjs[[tstsetup]],
@@ -974,7 +974,7 @@ test_that("`offsetnew` works", {
       nprjdraws_out <- nprjdraws
     }
 
-    pp_orig <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
     expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup)
 
     pp_zeros <- proj_predict(prjs[[tstsetup]],

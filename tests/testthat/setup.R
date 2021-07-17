@@ -598,3 +598,10 @@ if (run_cvvs) {
     ))
   }))
 }
+
+## Prediction -------------------------------------------------------------
+
+### From "projection" -----------------------------------------------------
+
+pls <- lapply(prjs, proj_linpred)
+pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
