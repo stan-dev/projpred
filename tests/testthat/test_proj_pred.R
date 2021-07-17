@@ -2,6 +2,8 @@
 
 context("proj_linpred()")
 
+## object -----------------------------------------------------------------
+
 test_that("`object` of class \"projection\" works", {
   for (tstsetup in names(prjs)) {
     pl_tester(
@@ -137,9 +139,13 @@ test_that(paste(
   expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
   expect_error(proj_linpred(fits$glm$gauss),
                "is not an object of class \"vsel\"")
+  expect_error(proj_linpred(refmods$glm$gauss),
+               "is not an object of class \"vsel\"")
   expect_error(proj_linpred(c(prjs, list(dat))),
                "Invalid object supplied to argument `object`\\.")
 })
+
+## newdata and integrated -------------------------------------------------
 
 test_that("incorrect `newdata` fails", {
   expect_error(
