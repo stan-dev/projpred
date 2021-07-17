@@ -2,7 +2,19 @@
 
 context("proj_linpred()")
 
-test_that("passing arguments to project() works", {
+test_that("`object` of class \"projection\" works", {
+  for (tstsetup in names(prjs)) {
+    pl_tester(
+      pls[[tstsetup]],
+      nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
+  "`object` of class \"refmodel\" and passing arguments to project() works"
+), {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   stopifnot(length(tstsetups) > 0)
@@ -18,36 +30,12 @@ test_that("passing arguments to project() works", {
 })
 
 test_that(paste(
-  "a fitted model `object` leads to correct output structure"
+  "`object` of class \"stanreg\" and passing arguments to project() works"
 ), {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
       tstsetup <- unlist(nlist(mod_nm, fam_nm))
       pl <- proj_linpred(fits[[mod_nm]][[fam_nm]],
-                         solution_terms = solterms_x,
-                         nclusters = nclusters_pred_tst,
-                         seed = seed_tst)
-      expect_named(pl, c("pred", "lpd"), info = tstsetup)
-      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      pl_from_prj <- proj_linpred(prjs[[
-        paste(mod_nm, fam_nm, "solterms_x", "clust", sep = ".")
-      ]])
-      expect_equal(pl, pl_from_prj, info = tstsetup)
-    }
-  }
-})
-
-test_that(paste(
-  "`object` of class \"refmodel\" leads to correct output",
-  "structure"
-), {
-  for (mod_nm in mod_nms["glm"]) {
-    for (fam_nm in fam_nms["gauss"]) {
-      tstsetup <- unlist(nlist(mod_nm, fam_nm))
-      pl <- proj_linpred(refmods[[mod_nm]][[fam_nm]],
                          solution_terms = solterms_x,
                          nclusters = nclusters_pred_tst,
                          seed = seed_tst)

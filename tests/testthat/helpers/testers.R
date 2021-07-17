@@ -11,7 +11,6 @@
 #   projection_tester()'s arguments `p`, `solterms_expected`, and `info_str`.
 #
 # @return `TRUE` (invisible).
-#
 proj_list_tester <- function(p,
                              len_expected = nterms_max_tst + 1L,
                              is_seq = TRUE,
@@ -64,7 +63,6 @@ proj_list_tester <- function(p,
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-#
 projection_tester <- function(p,
                               solterms_expected,
                               nprjdraws_expected,
@@ -108,6 +106,28 @@ projection_tester <- function(p,
   return(invisible(TRUE))
 }
 
+# A helper function for testing the structure of an object returned by
+# proj_linpred().
+#
+# @param pl An object resulting from a call to proj_linpred().
+# @param nprjdraws_expected The expected number of projected draws in `pl`.
+# @param n_expected The expected number of observations in `pl`.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+pl_tester <- function(pl,
+                      nprjdraws_expected = nclusters_pred_tst,
+                      n_expected = n_tst,
+                      info_str) {
+  expect_named(pl, c("pred", "lpd"), info = info_str)
+  expect_identical(dim(pl$pred), c(nprjdraws_expected, n_expected),
+                   info = info_str)
+  expect_identical(dim(pl$lpd), c(nprjdraws_expected, n_expected),
+                   info = info_str)
+  return(invisible(TRUE))
+}
+
 # A helper function for testing the structure of an expected "vsel" object
 #
 # @param vs An object of class "vsel" (at least expected so).
@@ -132,7 +152,6 @@ projection_tester <- function(p,
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-#
 vsel_tester <- function(vs,
                         with_cv = FALSE,
                         refmod_expected,
