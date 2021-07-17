@@ -67,7 +67,6 @@ test_that(paste(
 ), {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_refmod <- do.call(proj_linpred, c(
@@ -84,7 +83,6 @@ test_that(paste(
 ), {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_fit <- do.call(proj_linpred, c(
@@ -97,56 +95,38 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()) and passing arguments to",
-  "project() works"
+  "`object` of class \"vsel\" (created by varsel()) and passing arguments",
+  "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
-  nterms_crr <- nterms_avail$subvec
+  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.subvec", names(prjs_vs),
+                    value = TRUE)[1]
   for (tstsetup in tstsetups) {
-    pl <- proj_linpred(vss[[tstsetup]],
-                       nterms = nterms_crr,
-                       nclusters = nclusters_pred_tst,
-                       seed = seed_tst)
-    expect_length(pl, length(nterms_crr))
-    for (j in seq_along(pl)) {
-      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-    }
-    expect_equal(pl, pls_vs$glm.gauss.default_meth.subvec, info = tstsetup)
+    args_prj_vs_i <- args_prj_vs[[tstsetup]]
+    pl_from_vsel <- do.call(proj_linpred, c(
+      list(object = vss[[args_prj_vs_i$tstsetup]]),
+      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup"))]
+    ))
+    pl_from_prj <- pls_vs[[tstsetup]]
+    expect_equal(pl_from_vsel, pl_from_prj, info = tstsetup)
   }
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()) leads",
-  "to correct output structure"
+  "`object` of class \"vsel\" (created by cv_varsel()) and passing arguments",
+  "to project() works"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth",
-                    names(cvvss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
-  nterms_crr <- nterms_avail$subvec
+  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth\\.subvec",
+                    names(prjs_cvvs), value = TRUE)[1]
   for (tstsetup in tstsetups) {
-    pl <- proj_linpred(cvvss[[tstsetup]],
-                       nterms = nterms_crr,
-                       nclusters = nclusters_pred_tst,
-                       seed = seed_tst)
-    expect_length(pl, length(nterms_crr))
-    for (j in seq_along(pl)) {
-      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-    }
-    expect_equal(
-      pl, proj_linpred(prjs_cvvs$glm.gauss.default_meth.default_cvmeth.subvec),
-      info = tstsetup
-    )
+    args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
+    pl_from_vsel <- do.call(proj_linpred, c(
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup]]),
+      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup"))]
+    ))
+    pl_from_prj <- pls_cvvs[[tstsetup]]
+    expect_equal(pl_from_vsel, pl_from_prj, info = tstsetup)
   }
 })
 
@@ -513,7 +493,6 @@ test_that("`.seed` works", {
 test_that("passing arguments to project() works", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_refmod <- do.call(proj_predict, c(
@@ -577,7 +556,6 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
     pp <- proj_predict(vss[[tstsetup]],
@@ -603,7 +581,6 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth",
                     names(cvvss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
   nterms_crr <- nterms_avail$subvec
   for (tstsetup in tstsetups) {
     pp <- proj_predict(cvvss[[tstsetup]],
