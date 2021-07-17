@@ -31,31 +31,20 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created by",
-  "cv_varsel()) leads to correct output structure"
+  "`object` of (informal) class \"proj_list\" (created by cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
-    pl <- proj_linpred(prjs_cvvs[[tstsetup]])
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
-    stopifnot(length(tstsetup_cvvs) > 0)
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
     }
-    if (length(nterms_crr) == 1) {
-      # In fact, we don't have a "proj_list" object in this case, but since
-      # incorporating this case is so easy, we create one:
-      pl <- list(pl)
-    }
-    expect_length(pl, length(nterms_crr))
-    for (j in seq_along(pl)) {
-      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-    }
+    pl_tester(
+      pls_cvvs[[tstsetup]],
+      len_expected = length(nterms_crr),
+      info_str = tstsetup
+    )
   }
 })
 
@@ -99,12 +88,12 @@ test_that(paste(
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    pl_from_refmod <- do.call(proj_linpred, c(
+    pl_from_fit <- do.call(proj_linpred, c(
       list(object = fits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
     pl_from_prj <- pls[[tstsetup]]
-    expect_equal(pl_from_refmod, pl_from_prj, info = tstsetup)
+    expect_equal(pl_from_fit, pl_from_prj, info = tstsetup)
   }
 })
 

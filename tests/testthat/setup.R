@@ -15,6 +15,7 @@ set.seed(8541351)
 source(testthat::test_path("helpers", "SW.R"))
 source(testthat::test_path("helpers", "unlist_cust.R"))
 source(testthat::test_path("helpers", "testers.R"))
+source(testthat::test_path("helpers", "args.R"))
 
 # Exclude GAMs because of issue #150; exclude GAMMs because of issue #148:
 mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
@@ -613,3 +614,8 @@ pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
 
 pls_vs <- lapply(prjs_vs, proj_linpred)
 pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
+
+#### cv_varsel() ----------------------------------------------------------
+
+pls_cvvs <- lapply(prjs_cvvs, proj_linpred)
+pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
