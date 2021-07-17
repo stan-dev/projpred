@@ -13,148 +13,21 @@ test_that("`object` of class \"projection\" works", {
 })
 
 test_that(paste(
-  "`object` of class \"refmodel\" and passing arguments to project() works"
-), {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
-                    value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
-  for (tstsetup in tstsetups) {
-    args_prj_i <- args_prj[[tstsetup]]
-    pl_from_refmod <- do.call(proj_linpred, c(
-      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
-    ))
-    pl_from_prj <- pls[[tstsetup]]
-    expect_equal(pl_from_refmod, pl_from_prj, info = tstsetup)
-  }
-})
-
-test_that(paste(
-  "`object` of class \"stanreg\" and passing arguments to project() works"
-), {
-  for (mod_nm in mod_nms["glm"]) {
-    for (fam_nm in fam_nms["gauss"]) {
-      tstsetup <- unlist(nlist(mod_nm, fam_nm))
-      pl <- proj_linpred(fits[[mod_nm]][[fam_nm]],
-                         solution_terms = solterms_x,
-                         nclusters = nclusters_pred_tst,
-                         seed = seed_tst)
-      expect_named(pl, c("pred", "lpd"), info = tstsetup)
-      expect_identical(dim(pl$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      expect_identical(dim(pl$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      pl_from_prj <- proj_linpred(prjs[[
-        paste(mod_nm, fam_nm, "solterms_x", "clust", sep = ".")
-      ]])
-      expect_equal(pl, pl_from_prj, info = tstsetup)
-    }
-  }
-})
-
-test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()) leads",
-  "to correct output structure"
-), {
-  skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
-  nterms_crr <- nterms_avail$subvec
-  for (tstsetup in tstsetups) {
-    pl <- proj_linpred(vss[[tstsetup]],
-                       nterms = nterms_crr,
-                       nclusters = nclusters_pred_tst,
-                       seed = seed_tst)
-    expect_length(pl, length(nterms_crr))
-    for (j in seq_along(pl)) {
-      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-    }
-    expect_equal(pl, proj_linpred(prjs_vs$glm.gauss.default_meth.subvec),
-                 info = tstsetup)
-  }
-})
-
-test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()) leads",
-  "to correct output structure"
-), {
-  skip_if_not(run_cvvs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth",
-                    names(cvvss), value = TRUE)[1]
-  stopifnot(length(tstsetups) > 0)
-  nterms_crr <- nterms_avail$subvec
-  for (tstsetup in tstsetups) {
-    pl <- proj_linpred(cvvss[[tstsetup]],
-                       nterms = nterms_crr,
-                       nclusters = nclusters_pred_tst,
-                       seed = seed_tst)
-    expect_length(pl, length(nterms_crr))
-    for (j in seq_along(pl)) {
-      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-    }
-    expect_equal(
-      pl, proj_linpred(prjs_cvvs$glm.gauss.default_meth.default_cvmeth.subvec),
-      info = tstsetup
-    )
-  }
-})
-
-test_that(paste(
-  "`object` of class \"projection\" leads to correct output",
-  "structure"
-), {
-  for (tstsetup in names(prjs)) {
-    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                            c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      ndr_ncl_nm <- "ndraws"
-      nprjdraws <- ndraws_pred_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-    }
-    pl <- pls[[tstsetup]]
-    expect_named(pl, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(pl$lpd), c(nprjdraws, n_tst), info = tstsetup)
-  }
-})
-
-test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created by",
-  "varsel()) leads to correct output structure"
+  "`object` of (informal) class \"proj_list\" (created by varsel()) works"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
-    pl <- proj_linpred(prjs_vs[[tstsetup]])
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
-    stopifnot(length(tstsetup_vs) > 0)
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       # Subtract 1L for the intercept:
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size - 1L
     }
-    if (length(nterms_crr) == 1) {
-      # In fact, we don't have a "proj_list" object in this case, but since
-      # incorporating this case is so easy, we create one:
-      pl <- list(pl)
-    }
-    expect_length(pl, length(nterms_crr))
-    for (j in seq_along(pl)) {
-      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
-                       info = tstsetup)
-    }
+    pl_tester(
+      pls_vs[[tstsetup]],
+      len_expected = length(nterms_crr),
+      info_str = tstsetup
+    )
   }
 })
 
@@ -200,6 +73,94 @@ test_that(paste(
     expect_named(pl[[!!j]], c("pred", "lpd"))
     expect_identical(dim(pl[[!!j]]$pred), c(1L, n_tst))
     expect_identical(dim(pl[[!!j]]$lpd), c(1L, n_tst))
+  }
+})
+
+test_that(paste(
+  "`object` of class \"refmodel\" and passing arguments to project() works"
+), {
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+                    value = TRUE)[1]
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    pl_from_refmod <- do.call(proj_linpred, c(
+      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
+      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+    ))
+    pl_from_prj <- pls[[tstsetup]]
+    expect_equal(pl_from_refmod, pl_from_prj, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"stanreg\" and passing arguments to project() works"
+), {
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+                    value = TRUE)[1]
+  stopifnot(length(tstsetups) > 0)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    pl_from_refmod <- do.call(proj_linpred, c(
+      list(object = fits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
+      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+    ))
+    pl_from_prj <- pls[[tstsetup]]
+    expect_equal(pl_from_refmod, pl_from_prj, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"vsel\" (created by varsel()) and passing arguments to",
+  "project() works"
+), {
+  skip_if_not(run_vs)
+  tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
+  stopifnot(length(tstsetups) > 0)
+  nterms_crr <- nterms_avail$subvec
+  for (tstsetup in tstsetups) {
+    pl <- proj_linpred(vss[[tstsetup]],
+                       nterms = nterms_crr,
+                       nclusters = nclusters_pred_tst,
+                       seed = seed_tst)
+    expect_length(pl, length(nterms_crr))
+    for (j in seq_along(pl)) {
+      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+    }
+    expect_equal(pl, pls_vs$glm.gauss.default_meth.subvec, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"vsel\" (created by cv_varsel()) leads",
+  "to correct output structure"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth",
+                    names(cvvss), value = TRUE)[1]
+  stopifnot(length(tstsetups) > 0)
+  nterms_crr <- nterms_avail$subvec
+  for (tstsetup in tstsetups) {
+    pl <- proj_linpred(cvvss[[tstsetup]],
+                       nterms = nterms_crr,
+                       nclusters = nclusters_pred_tst,
+                       seed = seed_tst)
+    expect_length(pl, length(nterms_crr))
+    for (j in seq_along(pl)) {
+      expect_named(pl[[!!j]], c("pred", "lpd"), info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+      expect_identical(dim(pl[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+                       info = tstsetup)
+    }
+    expect_equal(
+      pl, proj_linpred(prjs_cvvs$glm.gauss.default_meth.default_cvmeth.subvec),
+      info = tstsetup
+    )
   }
 })
 
@@ -513,7 +474,7 @@ test_that(paste(
     }
     if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
       # The special case of all possible numbers of terms:
-      pl_orig <- proj_linpred(prjs_vs_crr)
+      pl_orig <- pls_vs$glm.gauss.default_meth.full
       expect_equal(pl_crr, pl_orig)
     }
   }
