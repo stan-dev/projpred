@@ -5,25 +5,18 @@ test_that(paste(
   "correctly specified `ndraws` or `nclusters` lead to correct output structure"
 ), {
   for (tstsetup in names(prjs)) {
-    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                            c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      ndr_ncl_nm <- "ndraws"
-      nprjdraws <- ndraws_pred_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-    }
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     projection_tester(
       prjs[[tstsetup]],
       solterms_expected = args_prj[[tstsetup]]$solution_terms,
-      nprjdraws_expected = nprjdraws,
-      p_type_expected = (ndr_ncl_nm == "nclusters" || nprjdraws <= 20),
+      nprjdraws_expected = ndr_ncl$nprjdraws,
+      p_type_expected = ndr_ncl$p_type,
       info_str = tstsetup
     )
   }
 })
 
+# TODO:
 test_that(paste(
   "specifying `solution_terms` incorrectly leads to a warning or an error"
 ), {
