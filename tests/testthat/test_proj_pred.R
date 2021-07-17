@@ -150,7 +150,7 @@ test_that(paste(
 test_that("incorrect `newdata` fails", {
   expect_error(
     proj_linpred(prjs, newdata = dat[, 1]),
-    "must be a data.frame or a matrix"
+    "must be a data\\.frame or a matrix"
   )
   expect_error(
     proj_linpred(prjs,
@@ -168,10 +168,17 @@ test_that("incorrect `newdata` fails", {
   )
 })
 
-test_that(paste(
-  "`newdata` and `integrated` lead to correct output structure",
-  "(even in edge cases)"
-), {
+# TODO: Merge with the next test.
+test_that("`integrated` works", {
+  for (tstsetup in names(prjs)) {
+    plt <- proj_linpred(prjs[[tstsetup]], integrated = TRUE)
+    plf <- proj_linpred(prjs[[tstsetup]], integrated = FALSE)
+    expect_equal(prjs[[!!tstsetup]]$weights %*% plf$pred, plt$pred,
+                 info = tstsetup)
+  }
+})
+
+test_that("`newdata` and `integrated` work (even in edge cases)", {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
                             c("ndraws", "nclusters"))
@@ -199,9 +206,7 @@ test_that(paste(
   }
 })
 
-test_that(paste(
-  "`newdata` set to the original dataset doesn't change results"
-), {
+test_that("`newdata` set to the original dataset doesn't change results", {
   for (tstsetup in names(prjs)) {
     pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat)
     pl_orig <- pls[[tstsetup]]
@@ -210,8 +215,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "omitting the response in `newdata` causes output element",
-  "`lpd` to be `NULL`"
+  "omitting the response in `newdata` causes output element `lpd` to be `NULL`"
 ), {
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
@@ -234,6 +238,8 @@ test_that(paste(
     expect_null(pl$lpd, info = tstsetup)
   }
 })
+
+## weightsnew -------------------------------------------------------------
 
 test_that("`weightsnew` works", {
   dat_ones <- within(dat, {
@@ -294,6 +300,8 @@ test_that("`weightsnew` works", {
     expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
   }
 })
+
+## offsetnew --------------------------------------------------------------
 
 test_that("`offsetnew` works", {
   dat_zeros <- within(dat, {
@@ -357,6 +365,8 @@ test_that("`offsetnew` works", {
   }
 })
 
+## transform --------------------------------------------------------------
+
 test_that("`transform` works", {
   for (tstsetup in names(prjs)) {
     plt <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
@@ -366,14 +376,7 @@ test_that("`transform` works", {
   }
 })
 
-test_that("`integrated` works", {
-  for (tstsetup in names(prjs)) {
-    plt <- proj_linpred(prjs[[tstsetup]], integrated = TRUE)
-    plf <- proj_linpred(prjs[[tstsetup]], integrated = FALSE)
-    expect_equal(prjs[[!!tstsetup]]$weights %*% plf$pred, plt$pred,
-                 info = tstsetup)
-  }
-})
+## regul ------------------------------------------------------------------
 
 test_that("`regul` works", {
   regul_tst <- c(1e-6, 1e-1, 1e2)
@@ -394,9 +397,10 @@ test_that("`regul` works", {
   }
 })
 
+## filter_nterms ----------------------------------------------------------
+
 test_that(paste(
-  "`filter_nterms` works correctly (for an `object` of class",
-  "\"projection\")"
+  "`filter_nterms` works correctly (for an `object` of class \"projection\")"
 ), {
   pl_orig <- proj_linpred(prjs$glm.gauss.solterms_x.clust)
   nterms_avail_x <- length(solterms_x)
@@ -413,8 +417,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`filter_nterms` works correctly (for an `object` of",
-  "(informal) class \"proj_list\")"
+  "`filter_nterms` works correctly (for an `object` of (informal) class",
+  "\"proj_list\")"
 ), {
   skip_if_not(run_vs)
   prjs_vs_crr <- prjs_vs$glm.gauss.default_meth.full
