@@ -109,6 +109,7 @@ proj_list_tester <- function(p,
 # proj_linpred().
 #
 # @param pl An object resulting from a call to proj_linpred().
+# @param len_expected The number of `"projection"` objects used for `pl`.
 # @param nprjdraws_expected The expected number of projected draws in `pl`.
 # @param n_expected The expected number of observations in `pl`.
 # @param info_str A single character string giving information to be printed in
@@ -116,14 +117,23 @@ proj_list_tester <- function(p,
 #
 # @return `TRUE` (invisible).
 pl_tester <- function(pl,
+                      len_expected = 1,
                       nprjdraws_expected = nclusters_pred_tst,
                       n_expected = n_tst,
                       info_str) {
-  expect_named(pl, c("pred", "lpd"), info = info_str)
-  expect_identical(dim(pl$pred), c(nprjdraws_expected, n_expected),
-                   info = info_str)
-  expect_identical(dim(pl$lpd), c(nprjdraws_expected, n_expected),
-                   info = info_str)
+  if (len_expected == 1) {
+    pl <- list(pl)
+  } else {
+    expect_type(pl, "list")
+    expect_length(pl, len_expected)
+  }
+  for (j in seq_along(pl)) {
+    expect_named(pl[[!!j]], c("pred", "lpd"), info = info_str)
+    expect_identical(dim(pl[[!!j]]$pred), c(nprjdraws_expected, n_expected),
+                     info = info_str)
+    expect_identical(dim(pl[[!!j]]$lpd), c(nprjdraws_expected, n_expected),
+                     info = info_str)
+  }
   return(invisible(TRUE))
 }
 
