@@ -8,12 +8,12 @@ test_that("passing arguments to project() works", {
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    pl_direct <- do.call(proj_linpred, c(
+    pl_from_refmod <- do.call(proj_linpred, c(
       list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
     pl_from_prj <- pls[[tstsetup]]
-    expect_equal(pl_direct, pl_from_prj, info = tstsetup)
+    expect_equal(pl_from_refmod, pl_from_prj, info = tstsetup)
   }
 })
 
@@ -581,13 +581,13 @@ test_that("passing arguments to project() works", {
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    pp_direct <- do.call(proj_predict, c(
+    pp_from_refmod <- do.call(proj_predict, c(
       list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
            .seed = seed2_tst),
       args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
     ))
     pp_from_prj <- pps[[tstsetup]]
-    expect_equal(pp_direct, pp_from_prj, info = tstsetup)
+    expect_equal(pp_from_refmod, pp_from_prj, info = tstsetup)
   }
 })
 
