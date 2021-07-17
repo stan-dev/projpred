@@ -49,18 +49,17 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created",
-  "manually) leads to correct output structure"
+  "`object` of (informal) class \"proj_list\" (created manually) works"
 ), {
   tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
   stopifnot(length(tstsetups) > 1)
   pl <- proj_linpred(prjs[tstsetups])
-  expect_length(pl, length(tstsetups))
-  for (j in seq_along(pl)) {
-    expect_named(pl[[!!j]], c("pred", "lpd"))
-    expect_identical(dim(pl[[!!j]]$pred), c(1L, n_tst))
-    expect_identical(dim(pl[[!!j]]$lpd), c(1L, n_tst))
-  }
+  pl_tester(
+    pl,
+    len_expected = length(tstsetups),
+    nprjdraws_expected = 1L,
+    info_str = paste(tstsetups, collapse = ", ")
+  )
 })
 
 test_that(paste(
