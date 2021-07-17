@@ -606,3 +606,10 @@ if (run_cvvs) {
 
 pls <- lapply(prjs, proj_linpred)
 pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
+
+### From "proj_list" ------------------------------------------------------
+
+#### varsel() -------------------------------------------------------------
+
+pls_vs <- lapply(prjs_vs, proj_linpred)
+pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
