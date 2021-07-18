@@ -281,9 +281,8 @@ vsel_tester <- function(vs,
   expect_type(vs$summaries$sub, "list")
   expect_length(vs$summaries$sub, solterms_len_expected + 1)
   if (with_cv) {
-    nobsv_crr <- nrow(vs$refmodel$fetch_data())
-    if (is.null(nloo_expected) || nloo_expected > nobsv_crr) {
-      nloo_expected <- nobsv_crr
+    if (is.null(nloo_expected) || nloo_expected > n_tst) {
+      nloo_expected <- n_tst
     }
   }
   for (j in seq_along(vs$summaries$sub)) {
@@ -308,7 +307,7 @@ vsel_tester <- function(vs,
       expect_type(vs$summaries$sub[[!!j]]$w, "double")
       expect_length(vs$summaries$sub[[!!j]]$w, n_tst)
       expect_true(all(!is.na(vs$summaries$sub[[!!j]]$w)), info = info_str)
-      if (nloo_expected == nobsv_crr) {
+      if (nloo_expected == n_tst) {
         expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / n_tst, n_tst),
                      info = info_str)
       } else {
