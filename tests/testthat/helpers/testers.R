@@ -112,6 +112,8 @@ proj_list_tester <- function(p,
 # @param len_expected The number of `"projection"` objects used for `pl`.
 # @param nprjdraws_expected The expected number of projected draws in `pl`.
 # @param nobsv_expected The expected number of observations in `pl`.
+# @param lpd_null_expected A single logical value indicating whether output
+#   element `lpd` is expected to be `NULL` (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -120,6 +122,7 @@ pl_tester <- function(pl,
                       len_expected = 1,
                       nprjdraws_expected = nclusters_pred_tst,
                       nobsv_expected = nobsv,
+                      lpd_null_expected = FALSE,
                       info_str) {
   if (len_expected == 1) {
     pl <- list(pl)
@@ -129,10 +132,16 @@ pl_tester <- function(pl,
   }
   for (j in seq_along(pl)) {
     expect_named(pl[[!!j]], c("pred", "lpd"), info = info_str)
-    expect_identical(dim(pl[[!!j]]$pred), c(nprjdraws_expected, nobsv_expected),
+    expect_identical(dim(pl[[!!j]]$pred),
+                     c(nprjdraws_expected, nobsv_expected),
                      info = info_str)
-    expect_identical(dim(pl[[!!j]]$lpd), c(nprjdraws_expected, nobsv_expected),
-                     info = info_str)
+    if (!lpd_null_expected) {
+      expect_identical(dim(pl[[!!j]]$lpd),
+                       c(nprjdraws_expected, nobsv_expected),
+                       info = info_str)
+    } else {
+      expect_null(pl[[!!j]]$lpd, info = info_str)
+    }
   }
   return(invisible(TRUE))
 }

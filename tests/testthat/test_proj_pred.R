@@ -176,7 +176,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
                                newdata = head(dat, nobsv_crr))
       pl_tester(
         pl_false,
-        nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
+        nprjdraws_expected = ndr_ncl$nprjdraws,
         nobsv_expected = nobsv_crr,
         info_str = paste(tstsetup, nobsv_crr, sep = "__")
       )
@@ -207,24 +207,19 @@ test_that(paste(
   "omitting the response in `newdata` causes output element `lpd` to be `NULL`"
 ), {
   for (tstsetup in names(prjs)) {
-    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                            c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      ndr_ncl_nm <- "ndraws"
-      nprjdraws <- ndraws_pred_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-    }
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
     )$response
     stopifnot(!exists(resp_nm))
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = dat[, setdiff(names(dat), resp_nm)])
-    expect_named(pl, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl$pred), c(nprjdraws, nobsv), info = tstsetup)
-    expect_null(pl$lpd, info = tstsetup)
+    pl_tester(
+      pl,
+      nprjdraws_expected = ndr_ncl$nprjdraws,
+      lpd_null_expected = TRUE,
+      info_str = tstsetup
+    )
   }
 })
 
