@@ -193,7 +193,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
         pl_tester(
           pl,
           nprjdraws_expected = nprjdraws_crr,
-          n_expected = nobsv_crr,
+          nobsv_expected = nobsv_crr,
           info_str = tstsetup_crr
         )
       }
