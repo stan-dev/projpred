@@ -509,7 +509,7 @@ test_that(paste(
 ), {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
-      tstsetup <- unlist(nlist(mod_nm, fam_nm))
+      tstsetup <- paste(mod_nm, fam_nm, sep = "__")
       pp <- proj_predict(fits[[mod_nm]][[fam_nm]],
                          .seed = seed2_tst,
                          solution_terms = solterms_x,
@@ -532,7 +532,7 @@ test_that(paste(
 ), {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
-      tstsetup <- unlist(nlist(mod_nm, fam_nm))
+      tstsetup <- paste(mod_nm, fam_nm, sep = "__")
       pp <- proj_predict(refmods[[mod_nm]][[fam_nm]],
                          .seed = seed2_tst,
                          solution_terms = solterms_x,
