@@ -739,12 +739,12 @@ test_that(paste(
       stopifnot(length(ndr_ncl_nm) == 1)
       nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
     }
-    for (n_crr in c(1L, 12L)) {
-      for (nresample_clusters_crr in c(1L, 100L)) {
-        tstsetup_crr <- paste(tstsetup, n_crr,
+    for (nobsv_crr in nobsv_tst) {
+      for (nresample_clusters_crr in nresample_clusters_tst) {
+        tstsetup_crr <- paste(tstsetup, nobsv_crr,
                               nresample_clusters_crr, sep = "__")
         pp <- proj_predict(prjs[[tstsetup]],
-                           newdata = head(dat, n_crr),
+                           newdata = head(dat, nobsv_crr),
                            nresample_clusters = nresample_clusters_crr,
                            .seed = seed2_tst)
         if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
@@ -752,7 +752,7 @@ test_that(paste(
         } else {
           nprjdraws_crr <- nprjdraws
         }
-        expect_identical(dim(pp), c(nprjdraws_crr, n_crr), info = tstsetup_crr)
+        expect_identical(dim(pp), c(nprjdraws_crr, nobsv_crr), info = tstsetup_crr)
       }
     }
   }

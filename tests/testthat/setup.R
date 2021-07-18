@@ -95,6 +95,7 @@ ndr_ncl_pred_tst <- list(
   clust_draws = list(ndraws = 3L),
   clust1 = list(nclusters = 1L)
 )
+nresample_clusters_tst <- c(1L, 100L)
 ### Because of issue #149:
 # solterms_x <- c("xco.2", "xca.1")
 solterms_x <- c("xco.2", "xco.1")
