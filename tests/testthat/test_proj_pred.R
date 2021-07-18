@@ -180,15 +180,7 @@ test_that("`integrated` works", {
 
 test_that("`newdata` and `integrated` work (even in edge cases)", {
   for (tstsetup in names(prjs)) {
-    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                            c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      ndr_ncl_nm <- "ndraws"
-      nprjdraws <- ndraws_pred_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-    }
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     for (n_crr in c(1L, 12L)) {
       for (integrated_crr in c(FALSE, TRUE)) {
         tstsetup_crr <- unlist(nlist(tstsetup, n_crr, integrated_crr))
