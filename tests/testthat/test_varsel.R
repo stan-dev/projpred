@@ -553,7 +553,7 @@ test_that(paste(
   "change results"
 ), {
   skip_if_not(run_cvvs)
-  nloo_tst <- n_tst + 1L
+  nloo_tst <- nobsv + 1L
   # To save time: Pick only a single scenario with a GLM and a forward search
   # (the latter because of `validate_search = FALSE`):
   tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
@@ -574,7 +574,7 @@ test_that(paste(
   "output structure"
 ), {
   skip_if_not(run_cvvs)
-  nloo_tst <- n_tst - 1L
+  nloo_tst <- nobsv - 1L
   # To save time: Pick only a single scenario with a GLM and a forward search
   # (the latter because of `validate_search = FALSE`):
   tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
@@ -720,12 +720,12 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     SW(kfold_obj <- rstanarm::kfold(fit_crr, K = K_crr, save_fits = TRUE))
 
     # Create the folds vector:
-    folds_vec <- rep(NA, n_tst)
+    folds_vec <- rep(NA, nobsv)
     for (k_crr in seq_len(K_crr)) {
       idcs_fold <- kfold_obj$fits[, "omitted"][[k_crr]]
       stopifnot(identical(
         idcs_fold,
-        setdiff(seq_len(n_tst),
+        setdiff(seq_len(nobsv),
                 as.integer(rownames(kfold_obj$fits[, "fit"][[k_crr]]$data)))
       ))
       folds_vec[idcs_fold] <- k_crr

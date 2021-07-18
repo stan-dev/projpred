@@ -117,13 +117,13 @@ if (run_cvvs_kfold) {
 
 # Data --------------------------------------------------------------------
 
-n_tst <- 33L
+nobsv <- 33L
 
 ## GLMs --------------------------------------------------------------------
 ## Add nonpooled ("fixed") effects to the intercept-(and-offset-)only model
 
 nterms_cont <- 3L
-x_cont <- matrix(rnorm(n_tst * nterms_cont), n_tst, nterms_cont)
+x_cont <- matrix(rnorm(nobsv * nterms_cont), nobsv, nterms_cont)
 b_cont <- runif(nterms_cont, min = -0.5, max = 0.5)
 
 nlvl_fix <- c(3L, 2L)
@@ -133,7 +133,7 @@ if (length(nlvl_fix) <= 1) {
 }
 nterms_cate <- length(nlvl_fix)
 x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
-  x_cate <- gl(n = nlvl_fix_i, k = floor(n_tst / nlvl_fix_i), length = n_tst,
+  x_cate <- gl(n = nlvl_fix_i, k = floor(nobsv / nlvl_fix_i), length = nobsv,
                labels = paste0("lvl", seq_len(nlvl_fix_i)))
   b_cate <- runif(nlvl_fix_i, min = -0.5, max = 0.5)
   ### Using a model.matrix() approach:
@@ -147,7 +147,7 @@ x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
 })
 
 icpt <- -0.42
-offs_tst <- rnorm(n_tst)
+offs_tst <- rnorm(nobsv)
 eta_glm <- icpt +
   x_cont %*% b_cont +
   do.call("+", lapply(x_cate_list, "[[", "eta_cate")) +
@@ -167,7 +167,7 @@ if (length(nlvl_ran) <= 1) {
 # latter for `x_cont[, 1]`):
 nterms_z <- length(nlvl_ran) * 2L
 z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
-  z <- gl(n = nlvl_ran_i, k = floor(n_tst / nlvl_ran_i), length = n_tst,
+  z <- gl(n = nlvl_ran_i, k = floor(nobsv / nlvl_ran_i), length = nobsv,
           labels = paste0("lvl", seq_len(nlvl_ran_i)))
   r_icpts <- rnorm(nlvl_ran_i, sd = 0.8)
   r_xco1 <- rnorm(nlvl_ran_i, sd = 0.8)
@@ -207,20 +207,20 @@ f_gauss <- gaussian()
 f_binom <- binomial()
 f_poiss <- poisson()
 dis_tst <- runif(1L, 1, 2)
-wobs_tst <- sample(1:4, n_tst, replace = TRUE)
+wobs_tst <- sample(1:4, nobsv, replace = TRUE)
 dat <- data.frame(
-  y_glm_gauss = rnorm(n_tst, f_gauss$linkinv(eta_glm), dis_tst),
-  y_glm_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glm)),
-  y_glm_poiss = rpois(n_tst, f_poiss$linkinv(eta_glm)),
-  y_glmm_gauss = rnorm(n_tst, f_gauss$linkinv(eta_glmm), dis_tst),
-  y_glmm_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_glmm)),
-  y_glmm_poiss = rpois(n_tst, f_poiss$linkinv(eta_glmm)),
-  y_gam_gauss = rnorm(n_tst, f_gauss$linkinv(eta_gam), dis_tst),
-  y_gam_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_gam)),
-  y_gam_poiss = rpois(n_tst, f_poiss$linkinv(eta_gam)),
-  y_gamm_gauss = rnorm(n_tst, f_gauss$linkinv(eta_gamm), dis_tst),
-  y_gamm_binom = rbinom(n_tst, wobs_tst, f_binom$linkinv(eta_gamm)),
-  y_gamm_poiss = rpois(n_tst, f_poiss$linkinv(eta_gamm)),
+  y_glm_gauss = rnorm(nobsv, f_gauss$linkinv(eta_glm), dis_tst),
+  y_glm_binom = rbinom(nobsv, wobs_tst, f_binom$linkinv(eta_glm)),
+  y_glm_poiss = rpois(nobsv, f_poiss$linkinv(eta_glm)),
+  y_glmm_gauss = rnorm(nobsv, f_gauss$linkinv(eta_glmm), dis_tst),
+  y_glmm_binom = rbinom(nobsv, wobs_tst, f_binom$linkinv(eta_glmm)),
+  y_glmm_poiss = rpois(nobsv, f_poiss$linkinv(eta_glmm)),
+  y_gam_gauss = rnorm(nobsv, f_gauss$linkinv(eta_gam), dis_tst),
+  y_gam_binom = rbinom(nobsv, wobs_tst, f_binom$linkinv(eta_gam)),
+  y_gam_poiss = rpois(nobsv, f_poiss$linkinv(eta_gam)),
+  y_gamm_gauss = rnorm(nobsv, f_gauss$linkinv(eta_gamm), dis_tst),
+  y_gamm_binom = rbinom(nobsv, wobs_tst, f_binom$linkinv(eta_gamm)),
+  y_gamm_poiss = rpois(nobsv, f_poiss$linkinv(eta_gamm)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
   z = lapply(z_list, "[[", "z"),
   s = s_mat,

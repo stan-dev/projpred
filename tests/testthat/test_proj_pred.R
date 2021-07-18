@@ -226,7 +226,7 @@ test_that(paste(
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = dat[, setdiff(names(dat), resp_nm)])
     expect_named(pl, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl$pred), c(nprjdraws, nobsv), info = tstsetup)
     expect_null(pl$lpd, info = tstsetup)
   }
 })
@@ -236,11 +236,11 @@ test_that(paste(
 test_that("`weightsnew` works", {
   dat_ones <- within(dat, {
     wobs_col <- NULL
-    wobs_col_ones <- rep_len(1, length.out = n_tst)
+    wobs_col_ones <- rep_len(1, length.out = nobsv)
   })
   dat_new <- within(dat, {
     wobs_col <- NULL
-    wobs_col_new <- rep_len(2:5, length.out = n_tst)
+    wobs_col_new <- rep_len(2:5, length.out = nobsv)
   })
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
@@ -255,29 +255,29 @@ test_that("`weightsnew` works", {
 
     pl_orig <- pls[[tstsetup]]
     expect_named(pl_orig, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl_orig$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(pl_orig$lpd), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl_orig$pred), c(nprjdraws, nobsv), info = tstsetup)
+    expect_identical(dim(pl_orig$lpd), c(nprjdraws, nobsv), info = tstsetup)
 
     pl_ones <- proj_linpred(prjs[[tstsetup]],
                             newdata = dat_ones,
                             weightsnew = ~ wobs_col_ones)
     expect_named(pl_ones, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl_ones$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(pl_ones$lpd), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl_ones$pred), c(nprjdraws, nobsv), info = tstsetup)
+    expect_identical(dim(pl_ones$lpd), c(nprjdraws, nobsv), info = tstsetup)
 
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = dat,
                        weightsnew = ~ wobs_col)
     expect_named(pl, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(pl$lpd), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl$pred), c(nprjdraws, nobsv), info = tstsetup)
+    expect_identical(dim(pl$lpd), c(nprjdraws, nobsv), info = tstsetup)
 
     plw <- proj_linpred(prjs[[tstsetup]],
                         newdata = dat_new,
                         weightsnew = ~ wobs_col_new)
     expect_named(plw, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(plw$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(plw$lpd), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(plw$pred), c(nprjdraws, nobsv), info = tstsetup)
+    expect_identical(dim(plw$lpd), c(nprjdraws, nobsv), info = tstsetup)
 
     expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
     expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
@@ -298,11 +298,11 @@ test_that("`weightsnew` works", {
 test_that("`offsetnew` works", {
   dat_zeros <- within(dat, {
     offs_col <- NULL
-    offs_col_zeros <- rep_len(0, length.out = n_tst)
+    offs_col_zeros <- rep_len(0, length.out = nobsv)
   })
   dat_new <- within(dat, {
     offs_col <- NULL
-    offs_col_new <- seq(-2, 2, length.out = n_tst)
+    offs_col_new <- seq(-2, 2, length.out = nobsv)
   })
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
@@ -317,29 +317,29 @@ test_that("`offsetnew` works", {
 
     pl_orig <- pls[[tstsetup]]
     expect_named(pl_orig, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl_orig$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(pl_orig$lpd), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl_orig$pred), c(nprjdraws, nobsv), info = tstsetup)
+    expect_identical(dim(pl_orig$lpd), c(nprjdraws, nobsv), info = tstsetup)
 
     pl_zeros <- proj_linpred(prjs[[tstsetup]],
                              newdata = dat_zeros,
                              offsetnew = ~ offs_col_zeros)
     expect_named(pl_zeros, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl_zeros$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(pl_zeros$lpd), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl_zeros$pred), c(nprjdraws, nobsv), info = tstsetup)
+    expect_identical(dim(pl_zeros$lpd), c(nprjdraws, nobsv), info = tstsetup)
 
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = dat,
                        offsetnew = ~ offs_col)
     expect_named(pl, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(pl$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(pl$lpd), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(pl$pred), c(nprjdraws, nobsv), info = tstsetup)
+    expect_identical(dim(pl$lpd), c(nprjdraws, nobsv), info = tstsetup)
 
     plo <- proj_linpred(prjs[[tstsetup]],
                         newdata = dat_new,
                         offsetnew = ~ offs_col_new)
     expect_named(plo, c("pred", "lpd"), info = tstsetup)
-    expect_identical(dim(plo$pred), c(nprjdraws, n_tst), info = tstsetup)
-    expect_identical(dim(plo$lpd), c(nprjdraws, n_tst), info = tstsetup)
+    expect_identical(dim(plo$pred), c(nprjdraws, nobsv), info = tstsetup)
+    expect_identical(dim(plo$lpd), c(nprjdraws, nobsv), info = tstsetup)
 
     ### Note: This equivalence might in fact be undesired:
     expect_equal(pl_zeros, pl_orig, info = tstsetup)
@@ -435,9 +435,9 @@ test_that(paste(
     expect_length(pl_crr, nhits_nterms)
     for (j in seq_along(pl_crr)) {
       expect_named(pl_crr[[!!j]], c("pred", "lpd"), info = tstsetup_crr)
-      expect_identical(dim(pl_crr[[!!j]]$pred), c(nclusters_pred_tst, n_tst),
+      expect_identical(dim(pl_crr[[!!j]]$pred), c(nclusters_pred_tst, nobsv),
                        info = tstsetup_crr)
-      expect_identical(dim(pl_crr[[!!j]]$lpd), c(nclusters_pred_tst, n_tst),
+      expect_identical(dim(pl_crr[[!!j]]$lpd), c(nclusters_pred_tst, nobsv),
                        info = tstsetup_crr)
     }
     if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
@@ -518,7 +518,7 @@ test_that(paste(
                          solution_terms = solterms_x,
                          nclusters = nclusters_pred_tst,
                          seed = seed_tst)
-      expect_identical(dim(pp), c(nresample_clusters_default, n_tst),
+      expect_identical(dim(pp), c(nresample_clusters_default, nobsv),
                        info = tstsetup)
       pp_from_prj <- proj_predict(
         prjs[[paste(mod_nm, fam_nm, "solterms_x", "clust", sep = ".")]],
@@ -541,7 +541,7 @@ test_that(paste(
                          solution_terms = solterms_x,
                          nclusters = nclusters_pred_tst,
                          seed = seed_tst)
-      expect_identical(dim(pp), c(nresample_clusters_default, n_tst),
+      expect_identical(dim(pp), c(nresample_clusters_default, nobsv),
                        info = tstsetup)
       pp_from_prj <- proj_predict(
         prjs[[paste(mod_nm, fam_nm, "solterms_x", "clust", sep = ".")]],
@@ -567,7 +567,7 @@ test_that(paste(
                        seed = seed_tst)
     expect_length(pp, length(nterms_crr))
     for (j in seq_along(pp)) {
-      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv),
                        info = tstsetup)
     }
     expect_equal(pp, proj_predict(prjs_vs$glm.gauss.default_meth.subvec,
@@ -592,7 +592,7 @@ test_that(paste(
                        seed = seed_tst)
     expect_length(pp, length(nterms_crr))
     for (j in seq_along(pp)) {
-      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv),
                        info = tstsetup)
     }
     expect_equal(
@@ -624,7 +624,7 @@ test_that(paste(
       nprjdraws_out <- nprjdraws
     }
     pp <- pps[[tstsetup]]
-    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup)
+    expect_identical(dim(pp), c(nprjdraws_out, nobsv), info = tstsetup)
   }
 })
 
@@ -648,7 +648,7 @@ test_that(paste(
     }
     expect_length(pp, length(nterms_crr))
     for (j in seq_along(pp)) {
-      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv),
                        info = tstsetup)
     }
   }
@@ -674,7 +674,7 @@ test_that(paste(
     }
     expect_length(pp, length(nterms_crr))
     for (j in seq_along(pp)) {
-      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst),
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv),
                        info = tstsetup)
     }
   }
@@ -689,7 +689,7 @@ test_that(paste(
   pp <- proj_predict(prjs[tstsetups], .seed = seed2_tst)
   expect_length(pp, length(tstsetups))
   for (j in seq_along(pp)) {
-    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, n_tst))
+    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv))
   }
 })
 
@@ -800,11 +800,11 @@ test_that(paste(
 test_that("`weightsnew` works", {
   dat_ones <- within(dat, {
     wobs_col <- NULL
-    wobs_col_ones <- rep_len(1, length.out = n_tst)
+    wobs_col_ones <- rep_len(1, length.out = nobsv)
   })
   dat_new <- within(dat, {
     wobs_col <- NULL
-    wobs_col_new <- rep_len(2:5, length.out = n_tst)
+    wobs_col_new <- rep_len(2:5, length.out = nobsv)
   })
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
@@ -823,25 +823,25 @@ test_that("`weightsnew` works", {
     }
 
     pp_orig <- pps[[tstsetup]]
-    expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup)
+    expect_identical(dim(pp_orig), c(nprjdraws_out, nobsv), info = tstsetup)
 
     pp_ones <- proj_predict(prjs[[tstsetup]],
                             newdata = dat_ones,
                             weightsnew = ~ wobs_col_ones,
                             .seed = seed2_tst)
-    expect_identical(dim(pp_ones), c(nprjdraws_out, n_tst), info = tstsetup)
+    expect_identical(dim(pp_ones), c(nprjdraws_out, nobsv), info = tstsetup)
 
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        weightsnew = ~ wobs_col,
                        .seed = seed2_tst)
-    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup)
+    expect_identical(dim(pp), c(nprjdraws_out, nobsv), info = tstsetup)
 
     ppw <- proj_predict(prjs[[tstsetup]],
                         newdata = dat_new,
                         weightsnew = ~ wobs_col_new,
                         .seed = seed2_tst)
-    expect_identical(dim(ppw), c(nprjdraws_out, n_tst), info = tstsetup)
+    expect_identical(dim(ppw), c(nprjdraws_out, nobsv), info = tstsetup)
 
     # Weights are only relevant for the binomial() family:
     if (args_prj[[tstsetup]]$fam_nm != "binom") {
@@ -864,11 +864,11 @@ test_that("`weightsnew` works", {
 test_that("`offsetnew` works", {
   dat_zeros <- within(dat, {
     offs_col <- NULL
-    offs_col_zeros <- rep_len(0, length.out = n_tst)
+    offs_col_zeros <- rep_len(0, length.out = nobsv)
   })
   dat_new <- within(dat, {
     offs_col <- NULL
-    offs_col_new <- seq(-2, 2, length.out = n_tst)
+    offs_col_new <- seq(-2, 2, length.out = nobsv)
   })
   for (tstsetup in names(prjs)) {
     ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
@@ -887,26 +887,26 @@ test_that("`offsetnew` works", {
     }
 
     pp_orig <- pps[[tstsetup]]
-    expect_identical(dim(pp_orig), c(nprjdraws_out, n_tst), info = tstsetup)
+    expect_identical(dim(pp_orig), c(nprjdraws_out, nobsv), info = tstsetup)
 
     pp_zeros <- proj_predict(prjs[[tstsetup]],
                              newdata = dat_zeros,
                              offsetnew = ~ offs_col_zeros,
                              .seed = seed2_tst)
-    expect_identical(dim(pp_zeros), c(nprjdraws_out, n_tst),
+    expect_identical(dim(pp_zeros), c(nprjdraws_out, nobsv),
                      info = tstsetup)
 
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        offsetnew = ~ offs_col,
                        .seed = seed2_tst)
-    expect_identical(dim(pp), c(nprjdraws_out, n_tst), info = tstsetup)
+    expect_identical(dim(pp), c(nprjdraws_out, nobsv), info = tstsetup)
 
     ppo <- proj_predict(prjs[[tstsetup]],
                         newdata = dat_new,
                         offsetnew = ~ offs_col_new,
                         .seed = seed2_tst)
-    expect_identical(dim(ppo), c(nprjdraws_out, n_tst), info = tstsetup)
+    expect_identical(dim(ppo), c(nprjdraws_out, nobsv), info = tstsetup)
 
     ### Note: This equivalence might in fact be undesired:
     expect_equal(pp_zeros, pp_orig, info = tstsetup)
@@ -975,7 +975,7 @@ test_that(paste(
     if (nhits_nterms == 1) pp_crr <- list(pp_crr)
     expect_length(pp_crr, nhits_nterms)
     for (j in seq_along(pp_crr)) {
-      expect_identical(dim(pp_crr[[!!j]]), c(nresample_clusters_default, n_tst),
+      expect_identical(dim(pp_crr[[!!j]]), c(nresample_clusters_default, nobsv),
                        info = tstsetup_crr)
     }
     if (identical(filter_nterms_crr, 0:nterms_max_tst)) {

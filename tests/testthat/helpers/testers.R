@@ -119,7 +119,7 @@ proj_list_tester <- function(p,
 pl_tester <- function(pl,
                       len_expected = 1,
                       nprjdraws_expected = nclusters_pred_tst,
-                      n_expected = n_tst,
+                      n_expected = nobsv,
                       info_str) {
   if (len_expected == 1) {
     pl <- list(pl)
@@ -239,12 +239,12 @@ vsel_tester <- function(vs,
   expect_named(vs$search_path$p_sel, psel_nms, info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_type(vs$search_path$p_sel$mu, "double")
-  expect_equal(dim(vs$search_path$p_sel$mu), c(n_tst, nclusters_expected),
+  expect_equal(dim(vs$search_path$p_sel$mu), c(nobsv, nclusters_expected),
                info = info_str)
   if (vs$family$family == "gaussian") {
     expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
     expect_type(vs$search_path$p_sel$var, "double")
-    expect_equal(dim(vs$search_path$p_sel$var), c(n_tst, nclusters_expected),
+    expect_equal(dim(vs$search_path$p_sel$var), c(nobsv, nclusters_expected),
                  info = info_str)
   } else {
     expect_type(vs$search_path$p_sel$var, "double")
@@ -263,10 +263,10 @@ vsel_tester <- function(vs,
       expect_identical(vs$d_test$y[order(vs$d_test$test_points)],
                        vs$refmodel$y, info = info_str)
       expect_identical(vs$d_test$test_points[order(vs$d_test$test_points)],
-                       seq_len(n_tst), info = info_str)
+                       seq_len(nobsv), info = info_str)
     } else {
       expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
-      expect_identical(vs$d_test$test_points, seq_len(n_tst), info = info_str)
+      expect_identical(vs$d_test$test_points, seq_len(nobsv), info = info_str)
     }
     expect_null(vs$d_test$data, info = info_str)
     expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
@@ -281,14 +281,14 @@ vsel_tester <- function(vs,
   expect_type(vs$summaries$sub, "list")
   expect_length(vs$summaries$sub, solterms_len_expected + 1)
   if (with_cv) {
-    if (is.null(nloo_expected) || nloo_expected > n_tst) {
-      nloo_expected <- n_tst
+    if (is.null(nloo_expected) || nloo_expected > nobsv) {
+      nloo_expected <- nobsv
     }
   }
   for (j in seq_along(vs$summaries$sub)) {
     expect_named(vs$summaries$sub[[!!j]], vsel_smmrs_sub_nms, info = info_str)
     expect_type(vs$summaries$sub[[!!j]]$mu, "double")
-    expect_length(vs$summaries$sub[[!!j]]$mu, n_tst)
+    expect_length(vs$summaries$sub[[!!j]]$mu, nobsv)
     if (with_cv) {
       expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$mu)),
                        nloo_expected, info = info_str)
@@ -296,7 +296,7 @@ vsel_tester <- function(vs,
       expect_true(all(!is.na(vs$summaries$sub[[!!j]]$mu)), info = info_str)
     }
     expect_type(vs$summaries$sub[[!!j]]$lppd, "double")
-    expect_length(vs$summaries$sub[[!!j]]$lppd, n_tst)
+    expect_length(vs$summaries$sub[[!!j]]$lppd, nobsv)
     if (with_cv) {
       expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$lppd)),
                        nloo_expected, info = info_str)
@@ -305,22 +305,22 @@ vsel_tester <- function(vs,
     }
     if (with_cv) {
       expect_type(vs$summaries$sub[[!!j]]$w, "double")
-      expect_length(vs$summaries$sub[[!!j]]$w, n_tst)
+      expect_length(vs$summaries$sub[[!!j]]$w, nobsv)
       expect_true(all(!is.na(vs$summaries$sub[[!!j]]$w)), info = info_str)
-      if (nloo_expected == n_tst) {
-        expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / n_tst, n_tst),
+      if (nloo_expected == nobsv) {
+        expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / nobsv, nobsv),
                      info = info_str)
       } else {
-        expect_true(any(vs$summaries$sub[[!!j]]$w != rep(1 / n_tst, n_tst)),
+        expect_true(any(vs$summaries$sub[[!!j]]$w != rep(1 / nobsv, nobsv)),
                     info = info_str)
       }
     }
   }
   expect_type(vs$summaries$ref, "list")
   expect_named(vs$summaries$ref, vsel_smmrs_ref_nms, info = info_str)
-  expect_length(vs$summaries$ref$mu, n_tst)
+  expect_length(vs$summaries$ref$mu, nobsv)
   expect_true(all(!is.na(vs$summaries$ref$mu)), info = info_str)
-  expect_length(vs$summaries$ref$lppd, n_tst)
+  expect_length(vs$summaries$ref$lppd, nobsv)
   expect_true(all(!is.na(vs$summaries$ref$lppd)), info = info_str)
 
   # family
