@@ -364,18 +364,23 @@ test_that("`regul` works", {
 test_that(paste(
   "`filter_nterms` works correctly (for an `object` of class \"projection\")"
 ), {
-  pl_orig <- proj_linpred(prjs$glm.gauss.solterms_x.clust)
-  nterms_avail_x <- length(solterms_x)
-  nterms_unavail_x <- c(0L, nterms_avail_x + 130L)
-  stopifnot(!nterms_avail_x %in% nterms_unavail_x)
-  for (filter_nterms_crr in nterms_unavail_x) {
-    expect_error(proj_linpred(prjs$glm.gauss.solterms_x.clust,
-                              filter_nterms = !!filter_nterms_crr),
-                 "subscript out of bounds")
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+                    value = TRUE)[1]
+  for (tstsetup in tstsetups) {
+    nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
+    nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
+    stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
+    for (filter_nterms_crr in nterms_unavail_crr) {
+      expect_error(proj_linpred(prjs[[tstsetup]],
+                                filter_nterms = filter_nterms_crr),
+                   "subscript out of bounds",
+                   info = paste(tstsetup, filter_nterms_crr, sep = "__"))
+    }
+    pl <- proj_linpred(prjs[[tstsetup]],
+                       filter_nterms = nterms_avail_crr)
+    pl_orig <- pls[[tstsetup]]
+    expect_equal(pl, pl_orig, info = tstsetup)
   }
-  pl <- proj_linpred(prjs$glm.gauss.solterms_x.clust,
-                     filter_nterms = nterms_avail_x)
-  expect_equal(pl, pl_orig)
 })
 
 test_that(paste(
@@ -869,17 +874,17 @@ test_that(paste(
   "`filter_nterms` works correctly (for an `object` of class",
   "\"projection\")"
 ), {
-  nterms_avail_x <- length(solterms_x)
-  nterms_unavail_x <- c(0L, nterms_avail_x + 130L)
-  stopifnot(!nterms_avail_x %in% nterms_unavail_x)
-  for (filter_nterms_crr in nterms_unavail_x) {
+  nterms_avail_crr <- length(solterms_x)
+  nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
+  stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
+  for (filter_nterms_crr in nterms_unavail_crr) {
     expect_error(proj_predict(prjs$glm.gauss.solterms_x.clust,
                               filter_nterms = !!filter_nterms_crr,
                               .seed = seed2_tst),
                  "subscript out of bounds")
   }
   pp <- proj_predict(prjs$glm.gauss.solterms_x.clust,
-                     filter_nterms = nterms_avail_x,
+                     filter_nterms = nterms_avail_crr,
                      .seed = seed2_tst)
   pp_orig <- proj_predict(prjs$glm.gauss.solterms_x.clust,
                           .seed = seed2_tst)
