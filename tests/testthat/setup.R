@@ -85,6 +85,7 @@ regul_default <- 1e-4 # Adopt this if the default is changed.
 ## Customized -------------------------------------------------------------
 
 seed2_tst <- 866028
+nobsv_tst <- c(1L, 12L)
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 ndr_ncl_pred_tst <- list(

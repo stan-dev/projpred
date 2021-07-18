@@ -168,35 +168,29 @@ test_that("incorrect `newdata` fails", {
   )
 })
 
-# TODO: Merge with the next test.
-test_that("`integrated` works", {
-  for (tstsetup in names(prjs)) {
-    plt <- proj_linpred(prjs[[tstsetup]], integrated = TRUE)
-    plf <- proj_linpred(prjs[[tstsetup]], integrated = FALSE)
-    expect_equal(prjs[[!!tstsetup]]$weights %*% plf$pred, plt$pred,
-                 info = tstsetup)
-  }
-})
-
 test_that("`newdata` and `integrated` work (even in edge cases)", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    for (nobsv_crr in c(1L, 12L)) {
-      for (integrated_crr in c(FALSE, TRUE)) {
-        tstsetup_crr <- unlist(nlist(tstsetup, nobsv_crr, integrated_crr))
-        pl <- proj_linpred(prjs[[tstsetup]],
-                           newdata = head(dat, nobsv_crr),
-                           integrated = integrated_crr)
-        nprjdraws_crr <- ifelse(integrated_crr,
-                                1L,
-                                ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws)
-        pl_tester(
-          pl,
-          nprjdraws_expected = nprjdraws_crr,
-          nobsv_expected = nobsv_crr,
-          info_str = tstsetup_crr
-        )
-      }
+    for (nobsv_crr in nobsv_tst) {
+      pl_false <- proj_linpred(prjs[[tstsetup]],
+                               newdata = head(dat, nobsv_crr))
+      pl_tester(
+        pl_false,
+        nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
+        nobsv_expected = nobsv_crr,
+        info_str = paste(tstsetup, nobsv_crr, sep = "__")
+      )
+      pl_true <- proj_linpred(prjs[[tstsetup]],
+                              newdata = head(dat, nobsv_crr),
+                              integrated = TRUE)
+      pl_tester(
+        pl_true,
+        nprjdraws_expected = 1L,
+        nobsv_expected = nobsv_crr,
+        info_str = paste(tstsetup, nobsv_crr, "integrated", sep = "__")
+      )
+      expect_equal(prjs[[!!tstsetup]]$weights %*% pl_false$pred, pl_true$pred,
+                   info = nobsv_crr)
     }
   }
 })
@@ -747,7 +741,8 @@ test_that(paste(
     }
     for (n_crr in c(1L, 12L)) {
       for (nresample_clusters_crr in c(1L, 100L)) {
-        tstsetup_crr <- unlist(nlist(tstsetup, n_crr, nresample_clusters_crr))
+        tstsetup_crr <- paste(tstsetup, n_crr,
+                              nresample_clusters_crr, sep = "__")
         pp <- proj_predict(prjs[[tstsetup]],
                            newdata = head(dat, n_crr),
                            nresample_clusters = nresample_clusters_crr,
