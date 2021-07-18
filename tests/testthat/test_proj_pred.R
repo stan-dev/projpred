@@ -6,11 +6,9 @@ context("proj_linpred()")
 
 test_that("`object` of class \"projection\" works", {
   for (tstsetup in names(prjs)) {
-    pl_tester(
-      pls[[tstsetup]],
-      nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
-      info_str = tstsetup
-    )
+    pl_tester(pls[[tstsetup]],
+              nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
+              info_str = tstsetup)
   }
 })
 
@@ -24,11 +22,9 @@ test_that(paste(
     if (is.null(nterms_crr)) {
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size
     }
-    pl_tester(
-      pls_vs[[tstsetup]],
-      len_expected = length(nterms_crr),
-      info_str = tstsetup
-    )
+    pl_tester(pls_vs[[tstsetup]],
+              len_expected = length(nterms_crr),
+              info_str = tstsetup)
   }
 })
 
@@ -42,11 +38,9 @@ test_that(paste(
     if (is.null(nterms_crr)) {
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
     }
-    pl_tester(
-      pls_cvvs[[tstsetup]],
-      len_expected = length(nterms_crr),
-      info_str = tstsetup
-    )
+    pl_tester(pls_cvvs[[tstsetup]],
+              len_expected = length(nterms_crr),
+              info_str = tstsetup)
   }
 })
 
@@ -56,12 +50,10 @@ test_that(paste(
   tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
   stopifnot(length(tstsetups) > 1)
   pl <- proj_linpred(prjs[tstsetups])
-  pl_tester(
-    pl,
-    len_expected = length(tstsetups),
-    nprjdraws_expected = 1L,
-    info_str = paste(tstsetups, collapse = ",")
-  )
+  pl_tester(pl,
+            len_expected = length(tstsetups),
+            nprjdraws_expected = 1L,
+            info_str = paste(tstsetups, collapse = ","))
 })
 
 test_that(paste(
@@ -174,21 +166,17 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
     for (nobsv_crr in nobsv_tst) {
       pl_false <- proj_linpred(prjs[[tstsetup]],
                                newdata = head(dat, nobsv_crr))
-      pl_tester(
-        pl_false,
-        nprjdraws_expected = ndr_ncl$nprjdraws,
-        nobsv_expected = nobsv_crr,
-        info_str = paste(tstsetup, nobsv_crr, sep = "__")
-      )
+      pl_tester(pl_false,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                nobsv_expected = nobsv_crr,
+                info_str = paste(tstsetup, nobsv_crr, sep = "__"))
       pl_true <- proj_linpred(prjs[[tstsetup]],
                               newdata = head(dat, nobsv_crr),
                               integrated = TRUE)
-      pl_tester(
-        pl_true,
-        nprjdraws_expected = 1L,
-        nobsv_expected = nobsv_crr,
-        info_str = paste(tstsetup, nobsv_crr, "integrated", sep = "__")
-      )
+      pl_tester(pl_true,
+                nprjdraws_expected = 1L,
+                nobsv_expected = nobsv_crr,
+                info_str = paste(tstsetup, nobsv_crr, "integrated", sep = "__"))
       expect_equal(prjs[[!!tstsetup]]$weights %*% pl_false$pred, pl_true$pred,
                    info = nobsv_crr)
     }
@@ -214,12 +202,10 @@ test_that(paste(
     stopifnot(!exists(resp_nm))
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = dat[, setdiff(names(dat), resp_nm)])
-    pl_tester(
-      pl,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      lpd_null_expected = TRUE,
-      info_str = tstsetup
-    )
+    pl_tester(pl,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              lpd_null_expected = TRUE,
+              info_str = tstsetup)
   }
 })
 
@@ -232,27 +218,21 @@ test_that("`weightsnew` works", {
     pl_ones <- proj_linpred(prjs[[tstsetup]],
                             newdata = dat_wobs_ones,
                             weightsnew = ~ wobs_col_ones)
-    pl_tester(
-      pl_ones,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      info_str = tstsetup
-    )
+    pl_tester(pl_ones,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = dat,
                        weightsnew = ~ wobs_col)
-    pl_tester(
-      pl,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      info_str = tstsetup
-    )
+    pl_tester(pl,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
     plw <- proj_linpred(prjs[[tstsetup]],
                         newdata = dat_wobs_new,
                         weightsnew = ~ wobs_col_new)
-    pl_tester(
-      plw,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      info_str = tstsetup
-    )
+    pl_tester(plw,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
     expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
     expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
     expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
@@ -276,27 +256,21 @@ test_that("`offsetnew` works", {
     pl_zeros <- proj_linpred(prjs[[tstsetup]],
                              newdata = dat_offs_zeros,
                              offsetnew = ~ offs_col_zeros)
-    pl_tester(
-      pl_zeros,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      info_str = tstsetup
-    )
+    pl_tester(pl_zeros,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = dat,
                        offsetnew = ~ offs_col)
-    pl_tester(
-      pl,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      info_str = tstsetup
-    )
+    pl_tester(pl,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
     plo <- proj_linpred(prjs[[tstsetup]],
                         newdata = dat_offs_new,
                         offsetnew = ~ offs_col_new)
-    pl_tester(
-      plo,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      info_str = tstsetup
-    )
+    pl_tester(plo,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
     ### Note: This equivalence might in fact be undesired:
     expect_equal(pl_zeros, pl_orig, info = tstsetup)
     ###
@@ -320,11 +294,9 @@ test_that("`transform` works", {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pl_false <- pls[[tstsetup]]
     pl_true <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
-    pl_tester(
-      pl_true,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      info_str = tstsetup
-    )
+    pl_tester(pl_true,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
     expect_equal(prjs[[!!tstsetup]]$family$linkinv(pl_false$pred), pl_true$pred,
                  info = tstsetup)
   }
@@ -346,11 +318,9 @@ test_that("`regul` works", {
              regul = regul_crr),
         args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
       ))
-      pl_tester(
-        pl,
-        nprjdraws_expected = 1L,
-        info_str = tstsetup
-      )
+      pl_tester(pl,
+                nprjdraws_expected = 1L,
+                info_str = tstsetup)
       return(sum(pl$pred^2))
     })
     for (j in head(seq_along(regul_tst), -1)) {
@@ -410,13 +380,11 @@ test_that(paste(
                              filter_nterms = filter_nterms_crr)
       if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
       nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
-      pl_tester(
-        pl_crr,
-        len_expected = nhits_nterms,
-        info_str = paste(tstsetup,
-                         paste(filter_nterms_crr, collapse = ","),
-                         sep = "__")
-      )
+      pl_tester(pl_crr,
+                len_expected = nhits_nterms,
+                info_str = paste(tstsetup,
+                                 paste(filter_nterms_crr, collapse = ","),
+                                 sep = "__"))
       if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
         # The special case of all possible numbers of terms:
         pl_orig <- pls_vs[[tstsetup]]
