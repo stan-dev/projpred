@@ -335,18 +335,26 @@ test_that("`transform` works", {
 test_that("`regul` works", {
   regul_tst <- c(1e-6, 1e-1, 1e2)
   stopifnot(identical(regul_tst, sort(regul_tst)))
-  for (fam_nm in fam_nms) {
+  tstsetups <- grep("^glm\\..*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
     norms <- sapply(regul_tst, function(regul_crr) {
-      pl <- proj_linpred(refmods$glm[[fam_nm]],
-                         integrated = TRUE,
-                         solution_terms = solterms_x,
-                         nclusters = nclusters_pred_tst,
-                         seed = seed_tst,
-                         regul = regul_crr)
+      pl <- do.call(proj_linpred, c(
+        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+             integrated = TRUE,
+             regul = regul_crr),
+        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      ))
+      pl_tester(
+        pl,
+        nprjdraws_expected = 1L,
+        info_str = tstsetup
+      )
       return(sum(pl$pred^2))
     })
     for (j in head(seq_along(regul_tst), -1)) {
-      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = fam_nm)
+      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
     }
   }
 })
