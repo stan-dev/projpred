@@ -317,9 +317,15 @@ test_that("`offsetnew` works", {
 
 test_that("`transform` works", {
   for (tstsetup in names(prjs)) {
-    plt <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
-    plf <- proj_linpred(prjs[[tstsetup]], transform = FALSE)
-    expect_equal(prjs[[!!tstsetup]]$family$linkinv(plf$pred), plt$pred,
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    pl_false <- pls[[tstsetup]]
+    pl_true <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
+    pl_tester(
+      pl_true,
+      nprjdraws_expected = ndr_ncl$nprjdraws,
+      info_str = tstsetup
+    )
+    expect_equal(prjs[[!!tstsetup]]$family$linkinv(pl_false$pred), pl_true$pred,
                  info = tstsetup)
   }
 })
