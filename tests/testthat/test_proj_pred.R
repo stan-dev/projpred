@@ -60,7 +60,7 @@ test_that(paste(
     pl,
     len_expected = length(tstsetups),
     nprjdraws_expected = 1L,
-    info_str = paste(tstsetups, collapse = ", ")
+    info_str = paste(tstsetups, collapse = ",")
   )
 })
 
@@ -388,37 +388,40 @@ test_that(paste(
   "\"proj_list\")"
 ), {
   skip_if_not(run_vs)
-  prjs_vs_crr <- prjs_vs$glm.gauss.default_meth.full
-  # Unavailable number(s) of terms:
-  for (filter_nterms_crr in nterms_unavail) {
-    expect_error(proj_linpred(prjs_vs_crr,
-                              filter_nterms = !!filter_nterms_crr),
-                 "subscript out of bounds")
-  }
-  # Available number(s) of terms:
-  nterms_avail_filter <- c(
-    nterms_avail,
-    list(partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L))
-  )
-  for (filter_nterms_crr in nterms_avail_filter) {
-    tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
-    pl_crr <- proj_linpred(prjs_vs_crr,
-                           filter_nterms = filter_nterms_crr)
-    if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
-    nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
-    if (nhits_nterms == 1) pl_crr <- list(pl_crr)
-    expect_length(pl_crr, nhits_nterms)
-    for (j in seq_along(pl_crr)) {
-      expect_named(pl_crr[[!!j]], c("pred", "lpd"), info = tstsetup_crr)
-      expect_identical(dim(pl_crr[[!!j]]$pred), c(nclusters_pred_tst, nobsv),
-                       info = tstsetup_crr)
-      expect_identical(dim(pl_crr[[!!j]]$lpd), c(nclusters_pred_tst, nobsv),
-                       info = tstsetup_crr)
+  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.full$", names(prjs_vs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    # Unavailable number(s) of terms:
+    for (filter_nterms_crr in nterms_unavail) {
+      expect_error(proj_linpred(prjs_vs[[tstsetup]],
+                                filter_nterms = filter_nterms_crr),
+                   "subscript out of bounds",
+                   info = paste(tstsetup,
+                                paste(filter_nterms_crr, collapse = ","),
+                                sep = "__"))
     }
-    if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
-      # The special case of all possible numbers of terms:
-      pl_orig <- pls_vs$glm.gauss.default_meth.full
-      expect_equal(pl_crr, pl_orig)
+    # Available number(s) of terms:
+    nterms_avail_filter <- c(
+      nterms_avail,
+      list(partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L))
+    )
+    for (filter_nterms_crr in nterms_avail_filter) {
+      pl_crr <- proj_linpred(prjs_vs[[tstsetup]],
+                             filter_nterms = filter_nterms_crr)
+      if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
+      nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
+      pl_tester(
+        pl_crr,
+        len_expected = nhits_nterms,
+        info_str = paste(tstsetup,
+                         paste(filter_nterms_crr, collapse = ","),
+                         sep = "__")
+      )
+      if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
+        # The special case of all possible numbers of terms:
+        pl_orig <- pls_vs[[tstsetup]]
+        expect_equal(pl_crr, pl_orig, info = tstsetup)
+      }
     }
   }
 })
