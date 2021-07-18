@@ -181,18 +181,21 @@ test_that("`integrated` works", {
 test_that("`newdata` and `integrated` work (even in edge cases)", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    for (n_crr in c(1L, 12L)) {
+    for (nobsv_crr in c(1L, 12L)) {
       for (integrated_crr in c(FALSE, TRUE)) {
-        tstsetup_crr <- unlist(nlist(tstsetup, n_crr, integrated_crr))
+        tstsetup_crr <- unlist(nlist(tstsetup, nobsv_crr, integrated_crr))
         pl <- proj_linpred(prjs[[tstsetup]],
-                           newdata = head(dat, n_crr),
+                           newdata = head(dat, nobsv_crr),
                            integrated = integrated_crr)
-        expect_named(pl, c("pred", "lpd"), info = tstsetup_crr)
-        nprjdraws_crr <- ifelse(integrated_crr, 1L, nprjdraws)
-        expect_identical(dim(pl$pred), c(nprjdraws_crr, n_crr),
-                         info = tstsetup_crr)
-        expect_identical(dim(pl$lpd), c(nprjdraws_crr, n_crr),
-                         info = tstsetup_crr)
+        nprjdraws_crr <- ifelse(integrated_crr,
+                                1L,
+                                ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws)
+        pl_tester(
+          pl,
+          nprjdraws_expected = nprjdraws_crr,
+          n_expected = nobsv_crr,
+          info_str = tstsetup_crr
+        )
       }
     }
   }
