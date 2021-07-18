@@ -249,6 +249,26 @@ nterms_avail <- list(
   full = 0:nterms_max_tst
 )
 
+## Modified datasets ------------------------------------------------------
+
+dat_wobs_ones <- within(dat, {
+  wobs_col <- NULL
+  wobs_col_ones <- rep_len(1, length.out = nobsv)
+})
+dat_wobs_new <- within(dat, {
+  wobs_col <- NULL
+  wobs_col_new <- rep_len(2:5, length.out = nobsv)
+})
+
+dat_offs_zeros <- within(dat, {
+  offs_col <- NULL
+  offs_col_zeros <- rep_len(0, length.out = nobsv)
+})
+dat_offs_new <- within(dat, {
+  offs_col <- NULL
+  offs_col_new <- seq(-2, 2, length.out = nobsv)
+})
+
 # Fits --------------------------------------------------------------------
 
 # Notes:
