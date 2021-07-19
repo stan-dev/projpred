@@ -38,6 +38,8 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
   return(nlist(y, weights, offset))
 }
 
+## datafit ----------------------------------------------------------------
+
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
@@ -63,12 +65,18 @@ SW(datafits <- lapply(mod_nms, function(mod_nm) {
   })
 }))
 
-vss_datafit <- lapply(args_vs, function(args_vs_i) {
+## varsel() ---------------------------------------------------------------
+
+args_vs_datafit <- args_vs
+
+vss_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
   do.call(varsel, c(
     list(object = datafits[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
     args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
   ))
 })
+
+## cv_varsel() ------------------------------------------------------------
 
 # (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
 args_cvvs_datafit <- args_cvvs[
@@ -78,6 +86,7 @@ args_cvvs_datafit <- lapply(args_cvvs_datafit, "c",
                             list(cv_method = "kfold", K = 2))
 names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                  names(args_cvvs_datafit))
+
 cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
   do.call(cv_varsel, c(
     list(object = datafits[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
@@ -87,7 +96,7 @@ cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
 
 # Tests (projpred only) ---------------------------------------------------
 
-test_that("predict.refmodel() fails for \"datafit\" objects", {
+test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       expect_error(predict(datafits[[mod_nm]][[fam_nm]], newdata = dat),
@@ -96,10 +105,26 @@ test_that("predict.refmodel() fails for \"datafit\" objects", {
   }
 })
 
+test_that("project(): error if `object` is of class \"datafit\"", {
+  tstsetups <- grep("\\.solterms_x.*\\.clust$", names(args_prj), value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    expect_error(
+      do.call(project, c(
+        list(object = datafits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
+        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      )),
+      paste("^no applicable method for 'predict' applied to an object of class",
+            "\"NULL\"$"),
+      info = tstsetup
+    )
+  }
+})
+
 ### TODO:
 test_that(paste(
-  "output of project is sensible with only data provided as",
-  "reference model"
+  "project(): `object` of class \"vsel\" (created by varsel() applied to an",
+  "`object` of class \"datafit\"), " # TODO: "`solution_terms`, and `ndraws` (or `nclusters`) work"
 ), {
   for (i in 1:length(vsd_list)) {
 
@@ -175,8 +200,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cv_varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
-  "`nclusters`, and `nclusters_pred` work"
+  "cv_varsel(): `object` of class \"datafit\", `method`, `cv_method`,",
+  "`nterms_max`, `nclusters`, and `nclusters_pred` work"
 ), {
   for (tstsetup in names(cvvss_datafit)) {
     vsel_tester(
