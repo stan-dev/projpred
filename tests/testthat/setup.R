@@ -527,6 +527,7 @@ if (run_cvvs) {
 
 ### From "refmodel" -------------------------------------------------------
 
+# A list of lists of arguments for project():
 args_prj <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     solterms <- nlist(empty = character(), solterms_x)
@@ -576,6 +577,8 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 
 #### varsel() -------------------------------------------------------------
 
+# A helper function to create the list of lists of arguments for project() for a
+# given character vector of test setups (referring to either `vss` or `cvvss`):
 cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
   lapply(tstsetups_prj_vsel, function(tstsetup_vsel) {
     lapply(nterms_avail, function(nterms_crr) {
