@@ -69,7 +69,8 @@ test_that("`object` of class \"stanreg\" works", {
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()) and `nterms` work"
+  "`object` of class \"vsel\" (created by varsel()), `nclusters`, and",
+  "`nterms` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -123,7 +124,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()) and `nterms` work"
+  "`object` of class \"vsel\" (created by cv_varsel()), `nclusters`, and",
+  "`nterms` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
