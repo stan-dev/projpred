@@ -151,7 +151,9 @@ pl_tester <- function(pl,
 #
 # @param pp An object resulting from a call to proj_predict().
 # @param len_expected The number of `"projection"` objects used for `pp`.
-# @param nprjdraws_expected The expected number of projected draws in `pp`.
+# @param nprjdraws_out_expected The expected number of projected draws in `pp`.
+#   In contrast to argument `nprjdraws_expected` of pl_tester(), this also needs
+#   to take proj_predict()'s argument `nresample_clusters` into account.
 # @param nobsv_expected The expected number of observations in `pp`.
 # @param lpd_null_expected A single logical value indicating whether output
 #   element `lpd` is expected to be `NULL` (`TRUE`) or not (`FALSE`).
@@ -161,7 +163,7 @@ pl_tester <- function(pl,
 # @return `TRUE` (invisible).
 pp_tester <- function(pp,
                       len_expected = 1,
-                      nprjdraws_expected = nclusters_pred_tst,
+                      nprjdraws_out_expected = nresample_clusters_default,
                       nobsv_expected = nobsv,
                       info_str) {
   if (len_expected == 1) {
@@ -172,7 +174,7 @@ pp_tester <- function(pp,
   }
   for (j in seq_along(pp)) {
     expect_identical(dim(pp[[!!j]]),
-                     c(nprjdraws_expected, nobsv_expected),
+                     c(nprjdraws_out_expected, nobsv_expected),
                      info = info_str)
   }
   return(invisible(TRUE))
