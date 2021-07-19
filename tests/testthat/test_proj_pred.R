@@ -444,9 +444,11 @@ test_that("`.seed` works", {
 
 test_that("`object` of class \"projection\" works", {
   for (tstsetup in names(prjs)) {
-    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    pp <- pps[[tstsetup]]
-    expect_identical(dim(pp), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
+    pp_tester(
+      pps[[tstsetup]],
+      nprjdraws_out_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws_out,
+      info_str = tstsetup
+    )
   }
 })
 
