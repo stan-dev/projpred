@@ -16,37 +16,30 @@ if (length(args_gamm)) {
   args_prj <- args_prj[-args_gamm]
 }
 
-for (tstsetup in names(prjs)) {
-  mod_crr <- args_prj[[tstsetup]]$mod_nm
-  fam_crr <- args_prj[[tstsetup]]$fam_nm
-  solterms <- args_prj[[tstsetup]]$solution_terms
-  ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]), c("ndraws", "nclusters"))
-  if (length(ndr_ncl_nm) == 0) {
-    ndr_ncl_nm <- "ndraws"
-    nprjdraws <- ndraws_pred_default
-  } else {
-    stopifnot(length(ndr_ncl_nm) == 1)
-    nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-  }
+test_that("as.matrix.projection() works", {
+  for (tstsetup in names(prjs)) {
+    mod_crr <- args_prj[[tstsetup]]$mod_nm
+    fam_crr <- args_prj[[tstsetup]]$fam_nm
+    solterms <- args_prj[[tstsetup]]$solution_terms
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
-  # Expected warning (more precisely: regexp which is matched against the
-  # warning; NA means no warning) for as.matrix.projection():
-  if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
-    # Clustered projection, so we expect a warning:
-    warn_prjmat_expect <- "the clusters might have different weights"
-  } else {
-    warn_prjmat_expect <- NA
-  }
-  expect_warning(m <- as.matrix(prjs[[tstsetup]]),
-                 warn_prjmat_expect, info = tstsetup)
+    # Expected warning (more precisely: regexp which is matched against the
+    # warning; NA means no warning) for as.matrix.projection():
+    if (ndr_ncl$clust_used) {
+      # Clustered projection, so we expect a warning:
+      warn_prjmat_expect <- "the clusters might have different weights"
+    } else {
+      warn_prjmat_expect <- NA
+    }
+    expect_warning(m <- as.matrix(prjs[[tstsetup]]),
+                   warn_prjmat_expect, info = tstsetup)
 
-  if (fam_crr == "gauss") {
-    npars_fam <- "sigma"
-  } else if (fam_crr == "binom") {
-    npars_fam <- character()
-  }
+    if (fam_crr == "gauss") {
+      npars_fam <- "sigma"
+    } else if (fam_crr == "binom") {
+      npars_fam <- character()
+    }
 
-  test_that("as.matrix.projection() works", {
     colnms_prjmat_expect <- c(
       "Intercept",
       grep("^x(co|ca)\\.[[:digit:]]$", solterms, value = TRUE)
@@ -123,12 +116,12 @@ for (tstsetup in names(prjs)) {
     }
     colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
 
-    expect_identical(dim(m), c(nprjdraws, length(colnms_prjmat_expect)),
+    expect_identical(dim(m), c(ndr_ncl$nprjdraws, length(colnms_prjmat_expect)),
                      info = tstsetup)
     ### expect_setequal() does not have argument `info`:
     # expect_setequal(colnames(m), colnms_prjmat_expect)
     expect_true(setequal(colnames(m), colnms_prjmat_expect),
                 info = tstsetup)
     ###
-  })
-}
+  }
+})
