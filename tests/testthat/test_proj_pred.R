@@ -338,9 +338,7 @@ test_that("`regul` works", {
 
 ## filter_nterms ----------------------------------------------------------
 
-test_that(paste(
-  "`filter_nterms` works (for an `object` of class \"projection\")"
-), {
+test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
@@ -704,6 +702,8 @@ test_that("`weightsnew` works", {
   }
 })
 
+## offsetnew --------------------------------------------------------------
+
 test_that("`offsetnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
@@ -749,9 +749,7 @@ test_that("`offsetnew` works", {
 
 ## filter_nterms ----------------------------------------------------------
 
-test_that(paste(
-  "`filter_nterms` works (for an `object` of class \"projection\")"
-), {
+test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
