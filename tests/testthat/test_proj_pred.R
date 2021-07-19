@@ -751,61 +751,68 @@ test_that("`offsetnew` works", {
 ## filter_nterms ----------------------------------------------------------
 
 test_that(paste(
-  "`filter_nterms` works correctly (for an `object` of class",
-  "\"projection\")"
+  "`filter_nterms` works correctly (for an `object` of class \"projection\")"
 ), {
-  nterms_avail_crr <- length(solterms_x)
-  nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
-  stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
-  for (filter_nterms_crr in nterms_unavail_crr) {
-    expect_error(proj_predict(prjs$glm.gauss.solterms_x.clust,
-                              filter_nterms = !!filter_nterms_crr,
-                              .seed = seed2_tst),
-                 "subscript out of bounds")
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+                    value = TRUE)[1]
+  for (tstsetup in tstsetups) {
+    nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
+    nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
+    stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
+    for (filter_nterms_crr in nterms_unavail_crr) {
+      expect_error(proj_predict(prjs[[tstsetup]],
+                                filter_nterms = filter_nterms_crr,
+                                .seed = seed2_tst),
+                   "subscript out of bounds",
+                   info = paste(tstsetup, filter_nterms_crr, sep = "__"))
+    }
+    pp <- proj_predict(prjs[[tstsetup]],
+                       filter_nterms = nterms_avail_crr,
+                       .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
+    expect_equal(pp, pp_orig, info = tstsetup)
   }
-  pp <- proj_predict(prjs$glm.gauss.solterms_x.clust,
-                     filter_nterms = nterms_avail_crr,
-                     .seed = seed2_tst)
-  pp_orig <- proj_predict(prjs$glm.gauss.solterms_x.clust,
-                          .seed = seed2_tst)
-  expect_equal(pp, pp_orig)
 })
 
 test_that(paste(
-  "`filter_nterms` works correctly (for an `object` of",
-  "(informal) class \"proj_list\")"
+  "`filter_nterms` works correctly (for an `object` of (informal) class",
+  "\"proj_list\")"
 ), {
   skip_if_not(run_vs)
-  prjs_vs_crr <- prjs_vs$glm.gauss.default_meth.full
-  # Unavailable number(s) of terms:
-  for (filter_nterms_crr in nterms_unavail) {
-    expect_error(proj_predict(prjs_vs_crr,
-                              filter_nterms = !!filter_nterms_crr,
-                              .seed = seed2_tst),
-                 "subscript out of bounds")
-  }
-  # Available number(s) of terms:
-  nterms_avail_filter <- c(
-    nterms_avail,
-    list(partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L))
-  )
-  for (filter_nterms_crr in nterms_avail_filter) {
-    tstsetup_crr <- paste(filter_nterms_crr, collapse = ", ")
-    pp_crr <- proj_predict(prjs_vs_crr,
-                           filter_nterms = filter_nterms_crr,
-                           .seed = seed2_tst)
-    if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
-    nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
-    if (nhits_nterms == 1) pp_crr <- list(pp_crr)
-    expect_length(pp_crr, nhits_nterms)
-    for (j in seq_along(pp_crr)) {
-      expect_identical(dim(pp_crr[[!!j]]), c(nresample_clusters_default, nobsv),
-                       info = tstsetup_crr)
+  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.full$", names(prjs_vs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    # Unavailable number(s) of terms:
+    for (filter_nterms_crr in nterms_unavail) {
+      expect_error(proj_predict(prjs_vs[[tstsetup]],
+                                filter_nterms = filter_nterms_crr,
+                                .seed = seed2_tst),
+                   "subscript out of bounds",
+                   info = paste(tstsetup,
+                                paste(filter_nterms_crr, collapse = ","),
+                                sep = "__"))
     }
-    if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
-      # The special case of all possible numbers of terms:
-      pp_orig <- proj_predict(prjs_vs_crr, .seed = seed2_tst)
-      expect_equal(pp_crr, pp_orig)
+    # Available number(s) of terms:
+    nterms_avail_filter <- c(
+      nterms_avail,
+      list(partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L))
+    )
+    for (filter_nterms_crr in nterms_avail_filter) {
+      pp_crr <- proj_predict(prjs_vs[[tstsetup]],
+                             filter_nterms = filter_nterms_crr,
+                             .seed = seed2_tst)
+      if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
+      nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
+      pp_tester(pp_crr,
+                len_expected = nhits_nterms,
+                info_str = paste(tstsetup,
+                                 paste(filter_nterms_crr, collapse = ","),
+                                 sep = "__"))
+      if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
+        # The special case of all possible numbers of terms:
+        pp_orig <- pps_vs[[tstsetup]]
+        expect_equal(pp_crr, pp_orig, info = tstsetup)
+      }
     }
   }
 })
