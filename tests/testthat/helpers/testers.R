@@ -29,6 +29,12 @@ projection_tester <- function(p,
   # order would mean that the documentation of project()'s return value
   # would have to be updated:
   expect_named(p, projection_nms, info = info_str)
+
+  from_datafit <- inherits(p$refmodel, "datafit")
+  if (from_datafit) {
+    subfit_nms <- setdiff(subfit_nms, "y")
+  }
+
   if (nprjdraws_expected > 1) {
     expect_length(p$sub_fit, nprjdraws_expected)
     sub_fit_totest <- p$sub_fit
