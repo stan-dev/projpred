@@ -3,8 +3,8 @@
 context("varsel()")
 
 test_that(paste(
-  "`object` of class \"refmodel\", correctly specified `method`, `nterms_max`,",
-  "`nclusters`, and `nclusters_pred` lead to correct output structure"
+  "`object` of class \"refmodel\", `method`, `nterms_max`, `nclusters`, and",
+  "`nclusters_pred` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(vss)) {
@@ -26,12 +26,12 @@ test_that(paste(
   }
 })
 
-test_that("specifying `object` incorrectly leads to an error", {
+test_that("error if `object` is incorrect", {
   expect_error(varsel(rnorm(5), verbose = FALSE),
                "no applicable method")
 })
 
-test_that("specifying `method` incorrectly leads to an error", {
+test_that("error if `method` is incorrect", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "k-fold"),
@@ -44,10 +44,7 @@ test_that("specifying `method` incorrectly leads to an error", {
   }
 })
 
-test_that(paste(
-  "specifying `seed` correctly leads to reproducible results (and restores the",
-  "RNG state afterwards)"
-), {
+test_that("`seed` works (and restores the RNG state afterwards)", {
   # Note: Extensive tests for reproducibility may be found among the tests for
   # .get_refdist().
   skip_if_not(run_vs)
@@ -336,7 +333,7 @@ test_that(paste(
 
 ## Penalty ----------------------------------------------------------------
 
-test_that("`penalty` of incorrect length causes an error", {
+test_that("error if `penalty` is of incorrect length", {
   skip_if_not(run_vs)
   tstsetups <- setdiff(
     grep("^glm\\.", names(args_vs), value = TRUE),
@@ -435,8 +432,8 @@ test_that("for L1 search, `penalty` has an expected effect", {
 context("cv_varsel()")
 
 test_that(paste(
-  "`object` of class \"refmodel\", correctly specified `method`, `nterms_max`,",
-  "`nclusters`, and `nclusters_pred` lead to correct output structure"
+  "`object` of class \"refmodel\", `method`, `cv_method`, `nterms_max`,",
+  "`nclusters`, and `nclusters_pred` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss)) {
@@ -466,12 +463,12 @@ test_that(paste(
   }
 })
 
-test_that("specifying `object` incorrectly leads to an error", {
+test_that("error if `object` is incorrect", {
   expect_error(cv_varsel(rnorm(5)),
                "^no applicable method for")
 })
 
-test_that("specifying `method` incorrectly leads to an error", {
+test_that("error if `method` is incorrect", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
@@ -485,7 +482,7 @@ test_that("specifying `method` incorrectly leads to an error", {
   }
 })
 
-test_that("specifying `cv_method` incorrectly leads to an error", {
+test_that("error if `cv_method` is incorrect", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
@@ -495,10 +492,7 @@ test_that("specifying `cv_method` incorrectly leads to an error", {
   }
 })
 
-test_that(paste(
-  "specifying `seed` correctly leads to reproducible results (and restores the",
-  "RNG state afterwards)"
-), {
+test_that("`seed` works (and restores the RNG state afterwards)", {
   # Note: Extensive tests for reproducibility may be found among the tests for
   # .get_refdist().
   skip_if_not(run_cvvs)
@@ -536,7 +530,7 @@ test_that(paste(
   }
 })
 
-test_that("specifying `nloo` incorrectly leads to an error", {
+test_that("error if `nloo` is incorrect", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       # Use SW() because of occasional warnings concerning Pareto k diagnostics:
@@ -569,10 +563,7 @@ test_that(paste(
   }
 })
 
-test_that(paste(
-  "setting `nloo` smaller than the number of observations leads to correct",
-  "output structure"
-), {
+test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv - 1L
   # To save time: Pick only a single scenario with a GLM and a forward search
@@ -684,7 +675,7 @@ test_that("`validate_search` works", {
   }
 })
 
-test_that("specifying `K` incorrectly leads to an error", {
+test_that("error if `K` is incorrect", {
   skip_if_not(run_cvvs_kfold)
   refmod_crr <- refmods_kfold$glm$gauss
   expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = 1),

@@ -121,9 +121,8 @@ test_that(paste(
 # TODO: Add tests for as.matrix.projection() and proj_predict().
 
 test_that(paste(
-  "varsel(): `object` of class \"datafit\", correctly specified `method`,",
-  "`nterms_max`, `nclusters`, and `nclusters_pred` lead to correct output",
-  "structure"
+  "varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
+  "`nclusters`, and `nclusters_pred` work"
 ), {
   for (tstsetup in names(vss_datafit)) {
     vsel_tester(
@@ -133,9 +132,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cv_varsel(): `object` of class \"datafit\", correctly specified `method`,",
-  "`nterms_max`, `nclusters`, and `nclusters_pred` lead to correct output",
-  "structure"
+  "cv_varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
+  "`nclusters`, and `nclusters_pred` work"
 ), {
   for (tstsetup in names(cvvss_datafit)) {
     vsel_tester(

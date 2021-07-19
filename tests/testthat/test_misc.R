@@ -1,8 +1,7 @@
 context("miscellaneous")
 
 test_that(paste(
-  "specifying `seed` for .get_refdist() correctly leads to reproducible",
-  "results (and restores the RNG state afterwards)"
+  ".get_refdist(): `seed` works (and restores the RNG state afterwards)"
 ), {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {

@@ -46,7 +46,7 @@ for (tstsetup in names(prjs)) {
     npars_fam <- character()
   }
 
-  test_that("as.matrix.projection()'s output structure is correct", {
+  test_that("as.matrix.projection() works", {
     colnms_prjmat_expect <- c(
       "Intercept",
       grep("^x(co|ca)\\.[[:digit:]]$", solterms, value = TRUE)
