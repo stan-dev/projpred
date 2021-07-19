@@ -143,7 +143,7 @@ test_that(paste(
 
 ## newdata and integrated -------------------------------------------------
 
-test_that("incorrect `newdata` fails", {
+test_that("error if `newdata` is incorrect", {
   expect_error(
     proj_linpred(prjs, newdata = dat[, 1]),
     "must be a data\\.frame or a matrix"
@@ -339,7 +339,7 @@ test_that("`regul` works", {
 ## filter_nterms ----------------------------------------------------------
 
 test_that(paste(
-  "`filter_nterms` works correctly (for an `object` of class \"projection\")"
+  "`filter_nterms` works (for an `object` of class \"projection\")"
 ), {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
@@ -361,8 +361,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`filter_nterms` works correctly (for an `object` of (informal) class",
-  "\"proj_list\")"
+  "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth\\.full$", names(prjs_vs),
@@ -593,7 +592,7 @@ test_that(paste(
 
 ## newdata and nresample_clusters -----------------------------------------
 
-test_that("incorrect `newdata` fails", {
+test_that("error if `newdata` is incorrect", {
   expect_error(
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
@@ -751,7 +750,7 @@ test_that("`offsetnew` works", {
 ## filter_nterms ----------------------------------------------------------
 
 test_that(paste(
-  "`filter_nterms` works correctly (for an `object` of class \"projection\")"
+  "`filter_nterms` works (for an `object` of class \"projection\")"
 ), {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
@@ -775,8 +774,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`filter_nterms` works correctly (for an `object` of (informal) class",
-  "\"proj_list\")"
+  "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth\\.full$", names(prjs_vs),
