@@ -16,33 +16,40 @@ test_that(paste(
   }
 })
 
-# TODO:
 test_that("warn or error if `solution_terms` is incorrect", {
-  for (mod_nm in mod_nms["glm"]) {
-    for (fam_nm in fam_nms["gauss"]) {
-      expect_error(project(refmods[[!!mod_nm]][[!!fam_nm]],
-                           solution_terms = NULL),
-                   "is not an object of class \"vsel\"")
-      for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
-        tstsetup_crr <- paste(
-          c(mod_nm, fam_nm, paste(solterms_crr, collapse = ", ")),
-          collapse = "."
-        )
-        expect_warning(
-          p <- project(refmods[[mod_nm]][[fam_nm]],
-                       nclusters = nclusters_pred_tst,
-                       solution_terms = solterms_crr,
-                       seed = seed_tst),
-          paste("At least one element of `solution_terms` could not be found",
-                "among the terms in the reference model"),
-          info = tstsetup_crr
-        )
-        projection_tester(p,
-                          solterms_expected = character(),
-                          nprjdraws_expected = nclusters_pred_tst,
-                          p_type_expected = TRUE,
-                          info_str = tstsetup_crr)
-      }
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    expect_error(
+      do.call(project, c(
+        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+             solution_terms = NULL),
+        args_prj_i[setdiff(names(args_prj_i),
+                           c("mod_nm", "fam_nm", "solution_terms"))]
+      )),
+      "is not an object of class \"vsel\"",
+      info = tstsetup
+    )
+    for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
+      tstsetup_crr <- paste(tstsetup, paste(solterms_crr, collapse = ","),
+                            sep = "__")
+      expect_warning(
+        p <- do.call(project, c(
+          list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+               solution_terms = solterms_crr),
+          args_prj_i[setdiff(names(args_prj_i),
+                             c("mod_nm", "fam_nm", "solution_terms"))]
+        )),
+        paste("At least one element of `solution_terms` could not be found",
+              "among the terms in the reference model"),
+        info = tstsetup_crr
+      )
+      projection_tester(p,
+                        solterms_expected = character(),
+                        nprjdraws_expected = nclusters_pred_tst,
+                        p_type_expected = TRUE,
+                        info_str = tstsetup_crr)
     }
   }
 })
