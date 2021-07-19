@@ -31,6 +31,22 @@ projection_tester <- function(p,
   expect_named(p, projection_nms, info = info_str)
   if (nprjdraws_expected > 1) {
     expect_length(p$sub_fit, nprjdraws_expected)
+    sub_fit_totest <- p$sub_fit
+  } else {
+    sub_fit_totest <- list(p$sub_fit)
+  }
+  has_grp <- formula_contains_group_terms(p$refmodel$formula)
+  has_add <- formula_contains_additive_terms(p$refmodel$formula)
+  for (j in seq_along(sub_fit_totest)) {
+    if (!has_grp && !has_add) {
+      expect_s3_class(sub_fit_totest[[!!j]], "subfit")
+      expect_type(sub_fit_totest[[!!j]], "list")
+      expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
+    } else if (has_grp && !has_add) {
+      inherits(sub_fit_totest[[!!j]], c("lmerMod", "glmerMod"))
+    } else if (has_add) {
+      stop("Still to-do.")
+    }
   }
   expect_length(p$weights, nprjdraws_expected)
   expect_length(p$dis, nprjdraws_expected)
