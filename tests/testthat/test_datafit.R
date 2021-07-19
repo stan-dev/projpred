@@ -7,42 +7,43 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
        call. = FALSE)
 }
 
+.extrmoddat <- function(object, newdata = NULL, wrhs = NULL,
+                        orhs = NULL, resp_form = NULL) {
+  if (is.null(newdata)) {
+    newdata <- object$data
+  }
+
+  if (inherits(wrhs, "formula")) {
+    weights <- eval_rhs(wrhs, newdata)
+  } else if (is.null(wrhs)) {
+    weights <- newdata$wobs_col
+  } else {
+    weights <- wrhs
+  }
+
+  if (inherits(orhs, "formula")) {
+    offset <- eval_rhs(orhs, newdata)
+  } else if (is.null(orhs)) {
+    offset <- newdata$offs_col
+  } else {
+    offset <- orhs
+  }
+
+  if (inherits(resp_form, "formula")) {
+    y <- eval_rhs(resp_form, newdata)
+  } else {
+    y <- NULL
+  }
+
+  return(nlist(y, weights, offset))
+}
+
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
 SW(datafits <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     formul_crr <- fits[[mod_nm]][[fam_nm]]$formula
-    .extrmoddat <- function(object, newdata = NULL, wrhs = NULL,
-                            orhs = NULL, resp_form = NULL) {
-      if (is.null(newdata)) {
-        newdata <- object$data
-      }
-
-      if (inherits(wrhs, "formula")) {
-        weights <- eval_rhs(wrhs, newdata)
-      } else if (is.null(wrhs)) {
-        weights <- newdata$wobs_col
-      } else {
-        weights <- wrhs
-      }
-
-      if (inherits(orhs, "formula")) {
-        offset <- eval_rhs(orhs, newdata)
-      } else if (is.null(orhs)) {
-        offset <- newdata$offs_col
-      } else {
-        offset <- orhs
-      }
-
-      if (inherits(resp_form, "formula")) {
-        y <- eval_rhs(resp_form, newdata)
-      } else {
-        y <- NULL
-      }
-
-      return(nlist(y, weights, offset))
-    }
     extrmoddat <- function(object, newdata = NULL, wrhs = NULL, orhs = NULL,
                            extract_y = TRUE) {
       resp_form <- if (!extract_y) NULL else lhs(formul_crr)
