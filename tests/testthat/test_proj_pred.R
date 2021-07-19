@@ -24,6 +24,8 @@ test_that(paste(
     }
     pl_tester(pls_vs[[tstsetup]],
               len_expected = length(nterms_crr),
+              nprjdraws_expected =
+                ndr_ncl_dtls(args_prj_vs[[tstsetup]])$nprjdraws,
               info_str = tstsetup)
   }
 })
@@ -40,6 +42,8 @@ test_that(paste(
     }
     pl_tester(pls_cvvs[[tstsetup]],
               len_expected = length(nterms_crr),
+              nprjdraws_expected =
+                ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])$nprjdraws,
               info_str = tstsetup)
   }
 })
@@ -496,7 +500,7 @@ test_that(paste(
   pp <- proj_predict(prjs[tstsetups], .seed = seed2_tst)
   pp_tester(pp,
             len_expected = length(tstsetups),
-            info_str = tstsetup)
+            info_str = paste(tstsetups, collapse = ","))
 })
 
 test_that(paste(
