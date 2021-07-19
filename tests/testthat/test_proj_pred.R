@@ -448,11 +448,10 @@ test_that("`.seed` works", {
 
 test_that("`object` of class \"projection\" works", {
   for (tstsetup in names(prjs)) {
-    pp_tester(
-      pps[[tstsetup]],
-      nprjdraws_out_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws_out,
-      info_str = tstsetup
-    )
+    pp_tester(pps[[tstsetup]],
+              nprjdraws_out_expected =
+                ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws_out,
+              info_str = tstsetup)
   }
 })
 
@@ -589,12 +588,12 @@ test_that(paste(
                "Invalid object supplied to argument `object`\\.")
 })
 
-## newdata ----------------------------------------------------------------
+## newdata and nresample_clusters -----------------------------------------
 
 test_that("incorrect `newdata` fails", {
   expect_error(
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
-    "must be a data.frame or a matrix"
+    "must be a data\\.frame or a matrix"
   )
   expect_error(
     proj_predict(prjs,
@@ -614,42 +613,27 @@ test_that("incorrect `newdata` fails", {
   )
 })
 
-test_that(paste(
-  "`newdata` and `nresample_clusters` lead to correct output",
-  "structure (even in edge cases)"
-), {
+test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
   for (tstsetup in names(prjs)) {
-    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                            c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      ndr_ncl_nm <- "ndraws"
-      nprjdraws <- ndraws_pred_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-    }
     for (nobsv_crr in nobsv_tst) {
       for (nresample_clusters_crr in nresample_clusters_tst) {
-        tstsetup_crr <- paste(tstsetup, nobsv_crr,
-                              nresample_clusters_crr, sep = "__")
         pp <- proj_predict(prjs[[tstsetup]],
                            newdata = head(dat, nobsv_crr),
                            nresample_clusters = nresample_clusters_crr,
                            .seed = seed2_tst)
-        if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
-          nprjdraws_crr <- nresample_clusters_crr
-        } else {
-          nprjdraws_crr <- nprjdraws
-        }
-        expect_identical(dim(pp), c(nprjdraws_crr, nobsv_crr), info = tstsetup_crr)
+        ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]],
+                                nresample_clusters_crr = nresample_clusters_crr)
+        pp_tester(pp,
+                  nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                  nobsv_expected = nobsv_crr,
+                  info_str = paste(tstsetup, nobsv_crr, nresample_clusters_crr,
+                                   sep = "__"))
       }
     }
   }
 })
 
-test_that(paste(
-  "`newdata` set to the original dataset doesn't change results"
-), {
+test_that("`newdata` set to the original dataset doesn't change results", {
   for (tstsetup in names(prjs)) {
     pp_newdata <- proj_predict(prjs[[tstsetup]],
                                newdata = dat,
@@ -659,19 +643,8 @@ test_that(paste(
   }
 })
 
-test_that(paste(
-  "omitting the response in `newdata` doesn't change results"
-), {
+test_that("omitting the response in `newdata` doesn't change results", {
   for (tstsetup in names(prjs)) {
-    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                            c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      ndr_ncl_nm <- "ndraws"
-      nprjdraws <- ndraws_pred_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-    }
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
     )$response
@@ -683,6 +656,8 @@ test_that(paste(
     expect_equal(pp_noresp, pp_orig, info = tstsetup)
   }
 })
+
+## weightsnew -------------------------------------------------------------
 
 test_that("`weightsnew` works", {
   for (tstsetup in names(prjs)) {
