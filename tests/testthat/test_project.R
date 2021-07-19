@@ -10,7 +10,7 @@ test_that(paste(
       prjs[[tstsetup]],
       solterms_expected = args_prj[[tstsetup]]$solution_terms,
       nprjdraws_expected = ndr_ncl$nprjdraws,
-      p_type_expected = ndr_ncl$p_type,
+      p_type_expected = ndr_ncl$clust_used,
       info_str = tstsetup
     )
   }

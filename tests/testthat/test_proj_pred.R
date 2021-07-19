@@ -398,6 +398,8 @@ test_that(paste(
 
 context("proj_predict()")
 
+## seed -------------------------------------------------------------------
+
 test_that("`.seed` works", {
   for (tstsetup in names(prjs)) {
     .Random.seed_orig1 <- .Random.seed
@@ -435,6 +437,78 @@ test_that("`.seed` works", {
                  info = tstsetup)
     expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
                  info = tstsetup)
+  }
+})
+
+## object -----------------------------------------------------------------
+
+test_that("`object` of class \"projection\" works", {
+  for (tstsetup in names(prjs)) {
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    pp <- pps[[tstsetup]]
+    expect_identical(dim(pp), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of (informal) class \"proj_list\" (created by varsel()) works"
+), {
+  skip_if_not(run_vs)
+  for (tstsetup in names(prjs_vs)) {
+    pp <- proj_predict(prjs_vs[[tstsetup]], .seed = seed2_tst)
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
+    stopifnot(length(tstsetup_vs) > 0)
+    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
+    }
+    if (length(nterms_crr) == 1) {
+      # In fact, we don't have a "proj_list" object in this case, but since
+      # incorporating this case is so easy, we create one:
+      pp <- list(pp)
+    }
+    expect_length(pp, length(nterms_crr))
+    for (j in seq_along(pp)) {
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv),
+                       info = tstsetup)
+    }
+  }
+})
+
+test_that(paste(
+  "`object` of (informal) class \"proj_list\" (created by cv_varsel()) works"
+), {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(prjs_cvvs)) {
+    pp <- proj_predict(prjs_cvvs[[tstsetup]], .seed = seed2_tst)
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
+    stopifnot(length(tstsetup_cvvs) > 0)
+    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
+    }
+    if (length(nterms_crr) == 1) {
+      # In fact, we don't have a "proj_list" object in this case, but since
+      # incorporating this case is so easy, we create one:
+      pp <- list(pp)
+    }
+    expect_length(pp, length(nterms_crr))
+    for (j in seq_along(pp)) {
+      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv),
+                       info = tstsetup)
+    }
+  }
+})
+
+test_that(paste(
+  "`object` of (informal) class \"proj_list\" (created manually) works"
+), {
+  tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
+  stopifnot(length(tstsetups) > 1)
+  pp <- proj_predict(prjs[tstsetups], .seed = seed2_tst)
+  expect_length(pp, length(tstsetups))
+  for (j in seq_along(pp)) {
+    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv))
   }
 })
 
@@ -551,95 +625,6 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"projection\" leads to correct output",
-  "structure"
-), {
-  for (tstsetup in names(prjs)) {
-    ndr_ncl_nm <- intersect(names(args_prj[[tstsetup]]),
-                            c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      ndr_ncl_nm <- "ndraws"
-      nprjdraws <- ndraws_pred_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj[[tstsetup]][[ndr_ncl_nm]]
-    }
-    if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
-      nprjdraws_out <- nresample_clusters_default
-    } else {
-      nprjdraws_out <- nprjdraws
-    }
-    pp <- pps[[tstsetup]]
-    expect_identical(dim(pp), c(nprjdraws_out, nobsv), info = tstsetup)
-  }
-})
-
-test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created by",
-  "varsel()) leads to correct output structure"
-), {
-  skip_if_not(run_vs)
-  for (tstsetup in names(prjs_vs)) {
-    pp <- proj_predict(prjs_vs[[tstsetup]], .seed = seed2_tst)
-    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
-    stopifnot(length(tstsetup_vs) > 0)
-    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
-    if (is.null(nterms_crr)) {
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
-    }
-    if (length(nterms_crr) == 1) {
-      # In fact, we don't have a "proj_list" object in this case, but since
-      # incorporating this case is so easy, we create one:
-      pp <- list(pp)
-    }
-    expect_length(pp, length(nterms_crr))
-    for (j in seq_along(pp)) {
-      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv),
-                       info = tstsetup)
-    }
-  }
-})
-
-test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created by",
-  "cv_varsel()) leads to correct output structure"
-), {
-  skip_if_not(run_cvvs)
-  for (tstsetup in names(prjs_cvvs)) {
-    pp <- proj_predict(prjs_cvvs[[tstsetup]], .seed = seed2_tst)
-    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
-    stopifnot(length(tstsetup_cvvs) > 0)
-    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
-    if (is.null(nterms_crr)) {
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
-    }
-    if (length(nterms_crr) == 1) {
-      # In fact, we don't have a "proj_list" object in this case, but since
-      # incorporating this case is so easy, we create one:
-      pp <- list(pp)
-    }
-    expect_length(pp, length(nterms_crr))
-    for (j in seq_along(pp)) {
-      expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv),
-                       info = tstsetup)
-    }
-  }
-})
-
-test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created",
-  "manually) leads to correct output structure"
-), {
-  tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
-  stopifnot(length(tstsetups) > 1)
-  pp <- proj_predict(prjs[tstsetups], .seed = seed2_tst)
-  expect_length(pp, length(tstsetups))
-  for (j in seq_along(pp)) {
-    expect_identical(dim(pp[[!!j]]), c(nresample_clusters_default, nobsv))
-  }
-})
-
-test_that(paste(
   "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
   "neither"
 ), {
@@ -747,32 +732,29 @@ test_that(paste(
 test_that("`weightsnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    if (ndr_ncl$p_type) {
-      nprjdraws_out <- nresample_clusters_default
-    } else {
-      nprjdraws_out <- ndr_ncl$nprjdraws
-    }
 
     pp_orig <- pps[[tstsetup]]
-    expect_identical(dim(pp_orig), c(nprjdraws_out, nobsv), info = tstsetup)
+    expect_identical(dim(pp_orig), c(ndr_ncl$nprjdraws_out, nobsv),
+                     info = tstsetup)
 
     pp_ones <- proj_predict(prjs[[tstsetup]],
                             newdata = dat_wobs_ones,
                             weightsnew = ~ wobs_col_ones,
                             .seed = seed2_tst)
-    expect_identical(dim(pp_ones), c(nprjdraws_out, nobsv), info = tstsetup)
+    expect_identical(dim(pp_ones), c(ndr_ncl$nprjdraws_out, nobsv),
+                     info = tstsetup)
 
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        weightsnew = ~ wobs_col,
                        .seed = seed2_tst)
-    expect_identical(dim(pp), c(nprjdraws_out, nobsv), info = tstsetup)
+    expect_identical(dim(pp), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
 
     ppw <- proj_predict(prjs[[tstsetup]],
                         newdata = dat_wobs_new,
                         weightsnew = ~ wobs_col_new,
                         .seed = seed2_tst)
-    expect_identical(dim(ppw), c(nprjdraws_out, nobsv), info = tstsetup)
+    expect_identical(dim(ppw), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
 
     # Weights are only relevant for the binomial() family:
     if (args_prj[[tstsetup]]$fam_nm != "binom") {
@@ -795,33 +777,29 @@ test_that("`weightsnew` works", {
 test_that("`offsetnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    if (ndr_ncl$p_type) {
-      nprjdraws_out <- nresample_clusters_default
-    } else {
-      nprjdraws_out <- ndr_ncl$nprjdraws
-    }
 
     pp_orig <- pps[[tstsetup]]
-    expect_identical(dim(pp_orig), c(nprjdraws_out, nobsv), info = tstsetup)
+    expect_identical(dim(pp_orig), c(ndr_ncl$nprjdraws_out, nobsv),
+                     info = tstsetup)
 
     pp_zeros <- proj_predict(prjs[[tstsetup]],
                              newdata = dat_offs_zeros,
                              offsetnew = ~ offs_col_zeros,
                              .seed = seed2_tst)
-    expect_identical(dim(pp_zeros), c(nprjdraws_out, nobsv),
+    expect_identical(dim(pp_zeros), c(ndr_ncl$nprjdraws_out, nobsv),
                      info = tstsetup)
 
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        offsetnew = ~ offs_col,
                        .seed = seed2_tst)
-    expect_identical(dim(pp), c(nprjdraws_out, nobsv), info = tstsetup)
+    expect_identical(dim(pp), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
 
     ppo <- proj_predict(prjs[[tstsetup]],
                         newdata = dat_offs_new,
                         offsetnew = ~ offs_col_new,
                         .seed = seed2_tst)
-    expect_identical(dim(ppo), c(nprjdraws_out, nobsv), info = tstsetup)
+    expect_identical(dim(ppo), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
 
     ### Note: This equivalence might in fact be undesired:
     expect_equal(pp_zeros, pp_orig, info = tstsetup)
