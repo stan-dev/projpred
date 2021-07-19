@@ -121,10 +121,12 @@ proj_list_tester <- function(p,
   if (is_seq) {
     # kl should be non-increasing on training data
     klseq <- sapply(p, function(x) sum(x$kl))
-    expect_identical(klseq, cummin(klseq), info = info_str)
-    ### Check with tolerance:
-    # expect_true(all(diff(klseq) < 1e-1), info = info_str)
-    ###
+    if (inherits(p[[1]]$refmodel, "datafit")) {
+      # For some "datafit"s, we need to allow for a certain tolerance:
+      expect_true(all(diff(klseq) < 3e-1), info = info_str)
+    } else {
+      expect_identical(klseq, cummin(klseq), info = info_str)
+    }
   }
   return(invisible(TRUE))
 }
