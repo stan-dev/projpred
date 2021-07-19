@@ -17,7 +17,7 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
-    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size
@@ -35,7 +35,7 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
-    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
@@ -102,8 +102,8 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
-      list(object = vss[[args_prj_vs_i$tstsetup]]),
-      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup"))]
+      list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
+      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup_vsel"))]
     ))
     pl_from_prj <- pls_vs[[tstsetup]]
     expect_equal(pl_from_vsel, pl_from_prj, info = tstsetup)
@@ -120,8 +120,8 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
-      list(object = cvvss[[args_prj_cvvs_i$tstsetup]]),
-      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup"))]
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
+      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup_vsel"))]
     ))
     pl_from_prj <- pls_cvvs[[tstsetup]]
     expect_equal(pl_from_vsel, pl_from_prj, info = tstsetup)
@@ -463,7 +463,7 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
-    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       nterms_crr <- vss[[tstsetup_vs]]$suggested_size
@@ -481,7 +481,7 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
-    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
@@ -549,9 +549,9 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
-      list(object = vss[[args_prj_vs_i$tstsetup]],
+      list(object = vss[[args_prj_vs_i$tstsetup_vsel]],
            .seed = seed2_tst),
-      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup"))]
+      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup_vsel"))]
     ))
     pp_from_prj <- pps_vs[[tstsetup]]
     expect_equal(pp_from_vsel, pp_from_prj, info = tstsetup)
@@ -568,9 +568,9 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
-      list(object = cvvss[[args_prj_cvvs_i$tstsetup]],
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]],
            .seed = seed2_tst),
-      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup"))]
+      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup_vsel"))]
     ))
     pp_from_prj <- pps_cvvs[[tstsetup]]
     expect_equal(pp_from_vsel, pp_from_prj, info = tstsetup)

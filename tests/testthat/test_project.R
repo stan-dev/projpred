@@ -69,7 +69,7 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
-    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     stopifnot(length(tstsetup_vs) > 0)
     mod_crr <- args_vs[[tstsetup_vs]]$mod_nm
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
@@ -124,7 +124,7 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
-    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     stopifnot(length(tstsetup_cvvs) > 0)
     mod_crr <- args_cvvs[[tstsetup_cvvs]]$mod_nm
     fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm

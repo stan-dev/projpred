@@ -577,9 +577,9 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 #### varsel() -------------------------------------------------------------
 
 cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
-  lapply(tstsetups_prj_vsel, function(tstsetup) {
+  lapply(tstsetups_prj_vsel, function(tstsetup_vsel) {
     lapply(nterms_avail, function(nterms_crr) {
-      args_out <- nlist(tstsetup, nclusters = nclusters_pred_tst,
+      args_out <- nlist(tstsetup_vsel, nclusters = nclusters_pred_tst,
                         seed = seed_tst)
       if (!is.null(nterms_crr)) {
         args_out <- c(args_out, list(nterms = nterms_crr))
@@ -592,13 +592,13 @@ tstsetups_prj_vs <- setNames(nm = grep("^glm\\.gauss\\.default_meth",
                                        names(vss), value = TRUE))
 stopifnot(length(tstsetups_prj_vs) > 0)
 args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
-args_prj_vs <- unlist_cust(args_prj_vs, nm_stop = "tstsetup")
+args_prj_vs <- unlist_cust(args_prj_vs, nm_stop = "tstsetup_vsel")
 
 if (run_vs) {
   prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
     do.call(project, c(
-      list(object = vss[[args_prj_vs_i$tstsetup]]),
-      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup"))]
+      list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
+      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup_vsel"))]
     ))
   })
 }
@@ -611,14 +611,14 @@ tstsetups_prj_cvvs <- setNames(
 )
 stopifnot(length(tstsetups_prj_cvvs) > 0)
 args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
-args_prj_cvvs <- unlist_cust(args_prj_cvvs, nm_stop = "tstsetup")
+args_prj_cvvs <- unlist_cust(args_prj_cvvs, nm_stop = "tstsetup_vsel")
 
 if (run_cvvs) {
   # Use SW() because of occasional pwrssUpdate() warnings:
   SW(prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
     do.call(project, c(
-      list(object = cvvss[[args_prj_cvvs_i$tstsetup]]),
-      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup"))]
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
+      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup_vsel"))]
     ))
   }))
 }
