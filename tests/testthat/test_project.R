@@ -315,14 +315,9 @@ test_that("for GLMs, `regul` has an expected effect", {
   tstsetups <- grep("^glm\\..*\\.clust$", names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    ndr_ncl_nm <- intersect(names(args_prj_i), c("ndraws", "nclusters"))
-    if (length(ndr_ncl_nm) == 0) {
-      ndr_ncl_nm <- "ndraws"
-      nprjdraws <- ndraws_pred_default
-    } else {
-      stopifnot(length(ndr_ncl_nm) == 1)
-      nprjdraws <- args_prj_i[[ndr_ncl_nm]]
-    }
+    ndr_ncl <- ndr_ncl_dtls(args_prj_i)
+
+    # Calculate the objects for which to run checks:
     ssq_regul_alpha <- rep(NA, length(regul_tst))
     ssq_regul_beta <- rep(NA, length(regul_tst))
     for (j in seq_along(regul_tst)) {
@@ -338,14 +333,14 @@ test_that("for GLMs, `regul` has an expected effect", {
         projection_tester(
           prj_regul,
           solterms_expected = args_prj_i$solution_terms,
-          nprjdraws_expected = nprjdraws,
-          p_type_expected = (ndr_ncl_nm == "nclusters" || nprjdraws <= 20),
-          info_str = tstsetup
+          nprjdraws_expected = ndr_ncl$nprjdraws,
+          p_type_expected = ndr_ncl$clust_used,
+          info_str = paste(tstsetup, j, sep = "__")
         )
       }
 
       # Run as.matrix.projection():
-      if (ndr_ncl_nm == "nclusters" || nprjdraws <= 20) {
+      if (ndr_ncl$clust_used) {
         # Clustered projection, so we expect a warning:
         warn_prjmat_expect <- "the clusters might have different weights"
       } else {
@@ -367,6 +362,8 @@ test_that("for GLMs, `regul` has an expected effect", {
         ssq_regul_beta[j] <- sum(prjmat_mean[coef_colnms]^2)
       }
     }
+
+    # Checks:
     if (length(args_prj_i$solution_terms) == 0) {
       # For an intercept-only model:
       expect_length(unique(ssq_regul_alpha), 1)
