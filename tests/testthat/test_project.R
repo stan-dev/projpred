@@ -1,25 +1,23 @@
 context("project")
 
+# object and nterms -------------------------------------------------------
+
 test_that(paste(
-  "`object` of class \"refmodel\", correctly specified `solution_terms`, and",
-  "correctly specified `ndraws` or `nclusters` lead to correct output structure"
+  "`object` of class \"refmodel\", `solution_terms`, and `ndraws` (or",
+  "`nclusters`) work"
 ), {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    projection_tester(
-      prjs[[tstsetup]],
-      solterms_expected = args_prj[[tstsetup]]$solution_terms,
-      nprjdraws_expected = ndr_ncl$nprjdraws,
-      p_type_expected = ndr_ncl$clust_used,
-      info_str = tstsetup
-    )
+    projection_tester(prjs[[tstsetup]],
+                      solterms_expected = args_prj[[tstsetup]]$solution_terms,
+                      nprjdraws_expected = ndr_ncl$nprjdraws,
+                      p_type_expected = ndr_ncl$clust_used,
+                      info_str = tstsetup)
   }
 })
 
 # TODO:
-test_that(paste(
-  "specifying `solution_terms` incorrectly leads to a warning or an error"
-), {
+test_that("warn or error if `solution_terms` is incorrect", {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
       expect_error(project(refmods[[!!mod_nm]][[!!fam_nm]],
@@ -49,7 +47,7 @@ test_that(paste(
   }
 })
 
-test_that("a fitted model `object` leads to correct output structure", {
+test_that("`object` of class \"stanreg\" works", {
   tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
@@ -64,8 +62,7 @@ test_that("a fitted model `object` leads to correct output structure", {
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()) and correctly specified",
-  "`nterms` lead to correct output structure"
+  "`object` of class \"vsel\" (created by varsel()) and `nterms` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -119,8 +116,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()) and correctly specified",
-  "`nterms` lead to correct output structure"
+  "`object` of class \"vsel\" (created by cv_varsel()) and `nterms` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
@@ -178,9 +174,12 @@ test_that(paste(
   "neither"
 ), {
   expect_error(project(fits$glm$gauss), "is not an object of class \"vsel\"")
+  expect_error(project(refmods$glm$gauss), "is not an object of class \"vsel\"")
 })
 
-test_that("specifying `nterms` incorrectly leads to an error", {
+# nterms ------------------------------------------------------------------
+
+test_that("error if `nterms` is incorrect", {
   skip_if_not(run_vs)
   for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)[1]) {
     for (nterms_crr in nterms_unavail) {
@@ -195,7 +194,9 @@ test_that("specifying `nterms` incorrectly leads to an error", {
   }
 })
 
-test_that("specifying `ndraws` incorrectly leads to an error", {
+# ndraws and nclusters ----------------------------------------------------
+
+test_that("error if `ndraws` is incorrect", {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
       expect_error(project(refmods[[!!mod_nm]][[!!fam_nm]],
@@ -207,8 +208,8 @@ test_that("specifying `ndraws` incorrectly leads to an error", {
 })
 
 test_that(paste(
-  "specifying `ndraws` and/or `nclusters` too big causes them to be cut off",
-  "at the number of posterior draws in the reference model"
+  "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
+  "of posterior draws in the reference model"
 ), {
   for (mod_nm in mod_nms["glm"]) {
     for (fam_nm in fam_nms["gauss"]) {
@@ -233,10 +234,9 @@ test_that(paste(
   }
 })
 
-test_that(paste(
-  "specifying `seed` correctly leads to reproducible results (and restores the",
-  "RNG state afterwards)"
-), {
+# seed --------------------------------------------------------------------
+
+test_that("`seed` works (and restores the RNG state afterwards)", {
   # Note: Extensive tests for reproducibility may be found among the tests for
   # .get_refdist().
   for (mod_nm in mod_nms[1]) {
@@ -278,6 +278,8 @@ test_that(paste(
     }
   }
 })
+
+# regul -------------------------------------------------------------------
 
 test_that("for non-GLMs, `regul` has no effect", {
   regul_tst <- 1e-1
