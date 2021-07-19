@@ -65,18 +65,22 @@ SW(datafits <- lapply(mod_nms, function(mod_nm) {
   })
 }))
 
-## varsel() ---------------------------------------------------------------
+## Variable selection -----------------------------------------------------
+
+### varsel() --------------------------------------------------------------
 
 args_vs_datafit <- args_vs
 
-vss_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
-  do.call(varsel, c(
-    list(object = datafits[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
-    args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
-  ))
-})
+if (run_vs) {
+  vss_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
+    do.call(varsel, c(
+      list(object = datafits[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
+      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+    ))
+  })
+}
 
-## cv_varsel() ------------------------------------------------------------
+### cv_varsel() -----------------------------------------------------------
 
 # (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
 args_cvvs_datafit <- args_cvvs[
@@ -87,12 +91,33 @@ args_cvvs_datafit <- lapply(args_cvvs_datafit, "c",
 names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                  names(args_cvvs_datafit))
 
-cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
-  do.call(cv_varsel, c(
-    list(object = datafits[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
-    args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
-  ))
+if (run_cvvs) {
+  cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
+    do.call(cv_varsel, c(
+      list(object = datafits[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+    ))
+  })
+}
+
+## Projection -------------------------------------------------------------
+
+### From varsel() ---------------------------------------------------------
+
+args_prj_vs_datafit <- args_prj_vs
+args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
+  args_prj_vs_i$nclusters <- 1L
+  return(args_prj_vs_i)
 })
+
+if (run_vs) {
+  prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
+    do.call(project, c(
+      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]]),
+      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup_vsel"))]
+    ))
+  })
+}
 
 # Tests (projpred only) ---------------------------------------------------
 
@@ -121,46 +146,47 @@ test_that("project(): error if `object` is of class \"datafit\"", {
   }
 })
 
-### TODO:
 test_that(paste(
   "project(): `object` of class \"vsel\" (created by varsel() applied to an",
-  "`object` of class \"datafit\"), " # TODO: "`solution_terms`, and `ndraws` (or `nclusters`) work"
+  "`object` of class \"datafit\"), `nclusters`, and `nterms` work"
 ), {
-  for (i in 1:length(vsd_list)) {
-
-    # length of output of project is legit
-    p <- project(vsd_list[[i]], nterms = 0:nterms)
-    expect_equal(length(p), nterms + 1)
-
-    for (j in 1:length(p)) {
-      expect_named(p[[j]], c(
-        "kl", "weights", "dis", "solution_terms", "sub_fit", "p_type",
-        "family", "intercept", "extract_model_data", "refmodel"
-      ), ignore.order = TRUE)
-      # number of draws should equal to the number of draw weights
-      ndraws <- length(p[[j]]$weights)
-      expect_equal(length(p[[j]]$sub_fit$alpha), ndraws)
-      expect_equal(length(p[[j]]$dis), ndraws)
-      if (j > 1) {
-        expect_equal(ncol(p[[j]]$sub_fit$beta), ndraws)
-      }
-      # j:th element should have j-1 variables
-      expect_equal(length(which(p[[j]]$sub_fit$beta != 0)), j - 1)
-      if (j > 1) {
-        expect_equal(length(p[[j]]$solution_terms), j - 1)
-      }
-      # family kl
-      expect_equal(p[[j]]$family, vsd_list[[i]]$family)
+  skip_if_not(run_vs)
+  for (tstsetup in names(prjs_vs_datafit)) {
+    tstsetup_vs <- args_prj_vs_datafit[[tstsetup]]$tstsetup_vsel
+    stopifnot(length(tstsetup_vs) > 0)
+    mod_crr <- args_vs_datafit[[tstsetup_vs]]$mod_nm
+    fam_crr <- args_vs_datafit[[tstsetup_vs]]$fam_nm
+    nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
     }
-    # kl should be non-increasing on training data
-    klseq <- sapply(p, function(e) e$kl)
-    expect_equal(klseq, cummin(klseq), tolerance = 15e-2)
-
-    # all submodels should use the same clustering/subsampling
-    expect_equal(p[[1]]$weights, p[[nterms]]$weights)
+    if (length(nterms_crr) == 1) {
+      solterms_expected_crr <- vss_datafit[[tstsetup_vs]]$solution_terms[
+        seq_len(nterms_crr)
+      ]
+      projection_tester(
+        prjs_vs_datafit[[tstsetup]],
+        solterms_expected = solterms_expected_crr,
+        nprjdraws_expected = args_prj_vs_datafit[[tstsetup]]$nclusters,
+        p_type_expected = TRUE,
+        info_str = tstsetup
+      )
+    } else {
+      proj_list_tester(
+        prjs_vs_datafit[[tstsetup]],
+        len_expected = length(nterms_crr),
+        is_seq = all(diff(nterms_crr) == 1),
+        info_str = tstsetup,
+        nprjdraws_expected = args_prj_vs_datafit[[tstsetup]]$nclusters,
+        p_type_expected = TRUE,
+        fam_expected = vss_datafit[[tstsetup_vs]]$family,
+        prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights
+      )
+    }
   }
 })
 
+### TODO:
 test_that(paste(
   "output of proj_linpred is sensible with only data provided as",
   "reference model"
