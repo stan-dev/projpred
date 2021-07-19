@@ -7,8 +7,8 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
        call. = FALSE)
 }
 
-.extrmoddat <- function(object, newdata = NULL, wrhs = NULL,
-                        orhs = NULL, resp_form = NULL) {
+.extrmoddat_datafit <- function(object, newdata = NULL, wrhs = NULL,
+                                orhs = NULL, resp_form = NULL) {
   if (is.null(newdata)) {
     newdata <- object$data
   }
@@ -51,7 +51,7 @@ SW(datafits <- lapply(mod_nms, function(mod_nm) {
         newdata <- dat
       }
       args <- nlist(object, newdata, wrhs, orhs, resp_form)
-      return(do.call(.extrmoddat, args))
+      return(do.call(.extrmoddat_datafit, args))
     }
     return(init_refmodel(
       object = NULL,
