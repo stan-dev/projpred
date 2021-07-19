@@ -146,6 +146,38 @@ pl_tester <- function(pl,
   return(invisible(TRUE))
 }
 
+# A helper function for testing the structure of an object returned by
+# proj_predict().
+#
+# @param pp An object resulting from a call to proj_predict().
+# @param len_expected The number of `"projection"` objects used for `pp`.
+# @param nprjdraws_expected The expected number of projected draws in `pp`.
+# @param nobsv_expected The expected number of observations in `pp`.
+# @param lpd_null_expected A single logical value indicating whether output
+#   element `lpd` is expected to be `NULL` (`TRUE`) or not (`FALSE`).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+pp_tester <- function(pp,
+                      len_expected = 1,
+                      nprjdraws_expected = nclusters_pred_tst,
+                      nobsv_expected = nobsv,
+                      info_str) {
+  if (len_expected == 1) {
+    pp <- list(pp)
+  } else {
+    expect_type(pp, "list")
+    expect_length(pp, len_expected)
+  }
+  for (j in seq_along(pp)) {
+    expect_identical(dim(pp[[!!j]]),
+                     c(nprjdraws_expected, nobsv_expected),
+                     info = info_str)
+  }
+  return(invisible(TRUE))
+}
+
 # A helper function for testing the structure of an expected "vsel" object
 #
 # @param vs An object of class "vsel" (at least expected so).
