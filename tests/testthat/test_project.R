@@ -188,7 +188,8 @@ test_that(paste(
 
 test_that("error if `nterms` is incorrect", {
   skip_if_not(run_vs)
-  for (tstsetup in grep("^glm\\.gauss", names(vss), value = TRUE)[1]) {
+  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
+  for (tstsetup in tstsetups) {
     for (nterms_crr in nterms_unavail) {
       expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
                    paste("Cannot perform the projection with", max(nterms_crr),
@@ -204,13 +205,19 @@ test_that("error if `nterms` is incorrect", {
 # ndraws and nclusters ----------------------------------------------------
 
 test_that("error if `ndraws` is incorrect", {
-  for (mod_nm in mod_nms["glm"]) {
-    for (fam_nm in fam_nms["gauss"]) {
-      expect_error(project(refmods[[!!mod_nm]][[!!fam_nm]],
-                           ndraws = NULL,
-                           solution_terms = solterms_x),
-                   "^!is\\.null\\(ndraws\\) is not TRUE$")
-    }
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.default_ndr_ncl$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    expect_error(
+      do.call(project, c(
+        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+             ndraws = NULL),
+        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      )),
+      "^!is\\.null\\(ndraws\\) is not TRUE$",
+      info = tstsetup
+    )
   }
 })
 
@@ -218,24 +225,28 @@ test_that(paste(
   "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
   "of posterior draws in the reference model"
 ), {
-  for (mod_nm in mod_nms["glm"]) {
-    for (fam_nm in fam_nms["gauss"]) {
-      S <- nrow(as.matrix(fits[[mod_nm]][[fam_nm]]))
-      for (ndraws_crr in list(S + 1L)) {
-        for (nclusters_crr in list(NULL, S + 1L)) {
-          tstsetup <- paste(c(mod_nm, fam_nm, ndraws_crr, nclusters_crr),
-                            collapse = ".")
-          p <- project(refmods[[mod_nm]][[fam_nm]],
-                       ndraws = ndraws_crr,
-                       nclusters = nclusters_crr,
-                       solution_terms = solterms_x,
-                       seed = seed_tst)
-          projection_tester(p,
-                            solterms_expected = solterms_x,
-                            nprjdraws_expected = S,
-                            p_type_expected = !is.null(nclusters_crr),
-                            info_str = tstsetup)
-        }
+  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.default_ndr_ncl$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    mod_crr <- args_prj_i$mod_nm
+    fam_crr <- args_prj_i$fam_nm
+    S <- nrow(as.matrix(fits[[mod_crr]][[fam_crr]]))
+    for (ndraws_crr in list(S + 1L)) {
+      for (nclusters_crr in list(NULL, S + 1L)) {
+        p <- do.call(project, c(
+          list(object = refmods[[mod_crr]][[fam_crr]],
+               ndraws = ndraws_crr,
+               nclusters = nclusters_crr),
+          args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+        ))
+        projection_tester(
+          p,
+          solterms_expected = args_prj_i$solution_terms,
+          nprjdraws_expected = S,
+          p_type_expected = !is.null(nclusters_crr),
+          info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")
+        )
       }
     }
   }
