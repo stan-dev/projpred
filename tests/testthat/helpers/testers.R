@@ -56,11 +56,13 @@ projection_tester <- function(p,
   }
   expect_length(p$weights, nprjdraws_expected)
   expect_length(p$dis, nprjdraws_expected)
-  # Number of projected draws in as.matrix.projection() (note that more
-  # extensive tests for as.matrix.projection() may be found in
-  # "test_as_matrix.R"):
-  SW(nprjdraws <- NROW(as.matrix(p)))
-  expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
+  if (!from_datafit) {
+    # Number of projected draws in as.matrix.projection() (note that more
+    # extensive tests for as.matrix.projection() may be found in
+    # "test_as_matrix.R"):
+    SW(nprjdraws <- NROW(as.matrix(p)))
+    expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
+  }
   expect_identical(p$p_type, p_type_expected, info = info_str)
   if (!is.null(fam_expected)) {
     expect_identical(p$family, fam_expected, info = info_str)
