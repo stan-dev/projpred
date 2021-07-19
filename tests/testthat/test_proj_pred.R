@@ -196,7 +196,8 @@ test_that("`newdata` set to the original dataset doesn't change results", {
 })
 
 test_that(paste(
-  "omitting the response in `newdata` causes output element `lpd` to be `NULL`"
+  "omitting the response in `newdata` causes output element `lpd` to be `NULL`",
+  "but doesn't change results otherwise"
 ), {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
@@ -204,12 +205,14 @@ test_that(paste(
       prjs[[tstsetup]]$refmodel$formula
     )$response
     stopifnot(!exists(resp_nm))
-    pl <- proj_linpred(prjs[[tstsetup]],
-                       newdata = dat[, setdiff(names(dat), resp_nm)])
-    pl_tester(pl,
+    pl_noresp <- proj_linpred(prjs[[tstsetup]],
+                              newdata = dat[, setdiff(names(dat), resp_nm)])
+    pl_tester(pl_noresp,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               lpd_null_expected = TRUE,
               info_str = tstsetup)
+    pl_orig <- pls[[tstsetup]]
+    expect_equal(pl_noresp$pred, pl_orig$pred, info = tstsetup)
   }
 })
 
