@@ -70,7 +70,20 @@ vss_datafit <- lapply(args_vs, function(args_vs_i) {
   ))
 })
 
-# TODO: cv_varsel(). Note that `cv_method = "kfold"` is needed here for datafits.
+# (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
+args_cvvs_datafit <- args_cvvs[
+  grep("kfold", names(args_cvvs), value = TRUE, invert = TRUE)
+]
+args_cvvs_datafit <- lapply(args_cvvs_datafit, "c",
+                            list(cv_method = "kfold", K = 2))
+names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
+                                 names(args_cvvs_datafit))
+cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
+  do.call(cv_varsel, c(
+    list(object = datafits[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
+    args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+  ))
+})
 
 # Tests (projpred only) ---------------------------------------------------
 
