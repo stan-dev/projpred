@@ -665,30 +665,28 @@ test_that("omitting the response in `newdata` doesn't change results", {
 test_that("`weightsnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-
     pp_orig <- pps[[tstsetup]]
-    expect_identical(dim(pp_orig), c(ndr_ncl$nprjdraws_out, nobsv),
-                     info = tstsetup)
-
     pp_ones <- proj_predict(prjs[[tstsetup]],
                             newdata = dat_wobs_ones,
                             weightsnew = ~ wobs_col_ones,
                             .seed = seed2_tst)
-    expect_identical(dim(pp_ones), c(ndr_ncl$nprjdraws_out, nobsv),
-                     info = tstsetup)
-
+    pp_tester(pp_ones,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              info_str = tstsetup)
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        weightsnew = ~ wobs_col,
                        .seed = seed2_tst)
-    expect_identical(dim(pp), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
-
+    pp_tester(pp,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              info_str = tstsetup)
     ppw <- proj_predict(prjs[[tstsetup]],
                         newdata = dat_wobs_new,
                         weightsnew = ~ wobs_col_new,
                         .seed = seed2_tst)
-    expect_identical(dim(ppw), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
-
+    pp_tester(ppw,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              info_str = tstsetup)
     # Weights are only relevant for the binomial() family:
     if (args_prj[[tstsetup]]$fam_nm != "binom") {
       expect_equal(pp_ones, pp_orig, info = tstsetup)
@@ -710,30 +708,28 @@ test_that("`weightsnew` works", {
 test_that("`offsetnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-
     pp_orig <- pps[[tstsetup]]
-    expect_identical(dim(pp_orig), c(ndr_ncl$nprjdraws_out, nobsv),
-                     info = tstsetup)
-
     pp_zeros <- proj_predict(prjs[[tstsetup]],
                              newdata = dat_offs_zeros,
                              offsetnew = ~ offs_col_zeros,
                              .seed = seed2_tst)
-    expect_identical(dim(pp_zeros), c(ndr_ncl$nprjdraws_out, nobsv),
-                     info = tstsetup)
-
+    pp_tester(pp_zeros,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              info_str = tstsetup)
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        offsetnew = ~ offs_col,
                        .seed = seed2_tst)
-    expect_identical(dim(pp), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
-
+    pp_tester(pp,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              info_str = tstsetup)
     ppo <- proj_predict(prjs[[tstsetup]],
                         newdata = dat_offs_new,
                         offsetnew = ~ offs_col_new,
                         .seed = seed2_tst)
-    expect_identical(dim(ppo), c(ndr_ncl$nprjdraws_out, nobsv), info = tstsetup)
-
+    pp_tester(ppo,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              info_str = tstsetup)
     ### Note: This equivalence might in fact be undesired:
     expect_equal(pp_zeros, pp_orig, info = tstsetup)
     ###
@@ -751,6 +747,8 @@ test_that("`offsetnew` works", {
     }
   }
 })
+
+## filter_nterms ----------------------------------------------------------
 
 test_that(paste(
   "`filter_nterms` works correctly (for an `object` of class",
