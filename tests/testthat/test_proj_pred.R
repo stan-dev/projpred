@@ -404,7 +404,7 @@ context("proj_predict()")
 
 ## seed -------------------------------------------------------------------
 
-test_that("`.seed` works", {
+test_that("`.seed` works (and restores the RNG state afterwards)", {
   for (tstsetup in names(prjs)) {
     .Random.seed_orig1 <- .Random.seed
     pp_orig <- pps[[tstsetup]]
