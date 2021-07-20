@@ -535,8 +535,11 @@ vsel_tester <- function(
                    c(NA_character_, vs$solution_terms),
                    info = info_str)
   if (!from_datafit) {
-    expect_equal(diff(vs$summary[, grep("^elpd", vsel_smmry_nms, value = TRUE)]),
-                 diff(vs$summary$diff), info = info_str)
+    expect_equal(
+      diff(vs$summary[, grep("^elpd", vsel_smmry_nms, value = TRUE)]),
+      diff(vs$summary$diff),
+      info = info_str
+    )
   } else {
     expect_equal(vs$summary$diff, numeric(nrow(vs$summary)), info = info_str)
   }
