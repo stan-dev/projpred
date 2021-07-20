@@ -344,6 +344,7 @@ test_that(paste(
   "L1-projection with data reference gives the same results as",
   "Lasso from glmnet."
 ), {
+  suppressWarnings(RNGversion("3.5.0"))
   set.seed(1235)
   n <- 100
   nterms <- 10
@@ -489,4 +490,5 @@ test_that(paste(
       expect_true(sum(ind == solution_terms_lasso[[i]]) >= nterms / 2)
     }
   }
+  RNGversion(paste(R.Version()$major, R.Version()$minor, sep = "."))
 })
