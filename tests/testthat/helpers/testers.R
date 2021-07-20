@@ -230,21 +230,23 @@ pp_tester <- function(pp,
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-vsel_tester <- function(vs,
-                        with_cv = FALSE,
-                        from_datafit = FALSE,
-                        refmod_expected,
-                        dtest_expected = NULL,
-                        solterms_len_expected,
-                        method_expected,
-                        cv_method_expected = NULL,
-                        valsearch_expected = NULL,
-                        ndraws_expected = if (!from_datafit) ndraws_default else 1L,
-                        ndraws_pred_expected = if (!from_datafit) ndraws_pred_default else 1L,
-                        nclusters_expected = NULL,
-                        nclusters_pred_expected = NULL,
-                        nloo_expected = NULL,
-                        info_str = "") {
+vsel_tester <- function(
+  vs,
+  with_cv = FALSE,
+  from_datafit = FALSE,
+  refmod_expected,
+  dtest_expected = NULL,
+  solterms_len_expected,
+  method_expected,
+  cv_method_expected = NULL,
+  valsearch_expected = NULL,
+  ndraws_expected = if (!from_datafit) ndraws_default else 1L,
+  ndraws_pred_expected = if (!from_datafit) ndraws_pred_default else 1L,
+  nclusters_expected = NULL,
+  nclusters_pred_expected = NULL,
+  nloo_expected = NULL,
+  info_str = ""
+) {
   dtest_type <- "train"
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
