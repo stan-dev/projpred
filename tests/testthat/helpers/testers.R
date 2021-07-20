@@ -427,7 +427,7 @@ vsel_tester <- function(vs,
     expect_identical(vs$kl, cummin(vs$kl), info = info_str)
   } else {
     # For some "datafit"s, we need to allow for a certain tolerance:
-    expect_true(all(diff(vs$kl) < 1e-4), info = info_str)
+    expect_true(all(diff(vs$kl) < 3e-1), info = info_str)
   }
 
   # pct_solution_terms_cv
@@ -502,8 +502,12 @@ vsel_tester <- function(vs,
   expect_identical(vs$summary$solution_terms,
                    c(NA_character_, vs$solution_terms),
                    info = info_str)
-  expect_equal(diff(vs$summary[, grep("^elpd", vsel_smmry_nms, value = TRUE)]),
-               diff(vs$summary$diff), info = info_str)
+  if (!from_datafit) {
+    expect_equal(diff(vs$summary[, grep("^elpd", vsel_smmry_nms, value = TRUE)]),
+                 diff(vs$summary$diff), info = info_str)
+  } else {
+    expect_equal(vs$summary$diff, numeric(nrow(vs$summary)), info = info_str)
+  }
 
   return(invisible(TRUE))
 }
