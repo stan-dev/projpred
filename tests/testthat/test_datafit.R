@@ -38,7 +38,8 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
   return(nlist(y, weights, offset))
 }
 
-## datafit ----------------------------------------------------------------
+## Reference model --------------------------------------------------------
+## (actually "datafit"s)
 
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
@@ -128,6 +129,8 @@ pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
 
 # Tests (projpred only) ---------------------------------------------------
 
+## Reference model --------------------------------------------------------
+
 test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
@@ -136,6 +139,42 @@ test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
     }
   }
 })
+
+## Variable selection -----------------------------------------------------
+
+test_that(paste(
+  "varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
+  "`nclusters`, and `nclusters_pred` work"
+), {
+  for (tstsetup in names(vss_datafit)) {
+    vsel_tester(
+      # TODO
+    )
+  }
+})
+
+test_that(paste(
+  "cv_varsel(): `object` of class \"datafit\", `method`, `cv_method`,",
+  "`nterms_max`, `nclusters`, and `nclusters_pred` work"
+), {
+  for (tstsetup in names(cvvss_datafit)) {
+    vsel_tester(
+      # TODO
+    )
+  }
+})
+
+test_that("summary.vsel() fails if `baseline = \"ref\"` and `deltas = TRUE`", {
+  for (tstsetup in names(vss_datafit)[1]) {
+    expect_error(
+      summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
+      paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
+            "reference model\\.$")
+    )
+  }
+})
+
+## Projection -------------------------------------------------------------
 
 test_that("project(): error if `object` is of class \"datafit\"", {
   tstsetups <- grep("\\.solterms_x.*\\.clust$", names(args_prj), value = TRUE)
@@ -256,38 +295,6 @@ test_that(paste(
               )$nprjdraws_out,
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste("with_args", tstsetup, sep = "__"))
-  }
-})
-
-test_that(paste(
-  "varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
-  "`nclusters`, and `nclusters_pred` work"
-), {
-  for (tstsetup in names(vss_datafit)) {
-    vsel_tester(
-      # TODO
-    )
-  }
-})
-
-test_that(paste(
-  "cv_varsel(): `object` of class \"datafit\", `method`, `cv_method`,",
-  "`nterms_max`, `nclusters`, and `nclusters_pred` work"
-), {
-  for (tstsetup in names(cvvss_datafit)) {
-    vsel_tester(
-      # TODO
-    )
-  }
-})
-
-test_that("summary.vsel() fails if `baseline = \"ref\"` and `deltas = TRUE`", {
-  for (tstsetup in names(vss_datafit)[1]) {
-    expect_error(
-      summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
-      paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
-            "reference model\\.$")
-    )
   }
 })
 
