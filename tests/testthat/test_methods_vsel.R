@@ -1,30 +1,43 @@
+# Common tests ------------------------------------------------------------
+
 context("summary(), plot(), suggest_size()")
 
-vs_funs <- list(summary.vsel, plot.vsel, suggest_size.vsel)
-
 test_that("error if `object` is incorrect", {
-  for (fun in vs_funs) {
-    expect_error(fun(NULL), "is not a variable selection object")
-    expect_error(fun(fits$glm$gauss), "is not a variable selection object")
-    expect_error(fun(refmods$glm$gauss), "is not a variable selection object")
-    expect_error(fun(prjs[[1]]), "is not a variable selection object")
-    expect_error(fun(prjs_vs[[1]]), "is not a variable selection object")
-    expect_error(fun(prjs_cvvs[[1]]), "is not a variable selection object")
+  objs_invalid <- nlist(
+    NULL,
+    fit = fits[[1]][[1]],
+    refmod = refmods[[1]][[1]],
+    prj = prjs[[1]],
+    prj_vs = prjs_vs[[1]],
+    prj_cvvs = prjs_cvvs[[1]]
+  )
+  for (obj_nm in names(objs_invalid)) {
+    for (vsel_fun in vsel_funs) {
+      expect_error(get(!!vsel_fun, mode = "function")(objs_invalid[[!!obj_nm]]),
+                   "is not a variable selection object")
+    }
   }
 })
 
 test_that("error if `stats` is incorrect", {
-  for (fun in vs_funs) {
-    expect_error(fun(vss[[1]], stat = NULL),
-                 "specified as NULL")
-    expect_error(fun(vss[[1]], stat = NA),
-                 "not recognized")
-    expect_error(fun(vss[[1]], stat = "zzz"),
-                 "not recognized")
-    expect_error(fun(vss[[1]], stat = "acc"),
-                 "available only for the binomial family")
-    expect_error(fun(vss[[1]], stat = "auc"),
-                 "available only for the binomial family")
+  tstsetup <- grep("^.*\\.gauss\\.", names(vss), value = TRUE)[1]
+  stats_invalid <- nlist(NULL, NA, "zzz", "acc", "auc")
+  err_expected <- as.list(c(
+    "specified as NULL",
+    rep("not recognized", 2),
+    rep("available only for the binomial family", 2)
+  ))
+  names(err_expected) <- names(stats_invalid)
+  for (stat_nm in names(stats_invalid)) {
+    for (vsel_fun in vsel_funs) {
+      expect_error(
+        get(!!vsel_fun, mode = "function")(
+          vss[[tstsetup]], stat = stats_invalid[[stat_nm]]
+        ),
+        err_expected[[stat_nm]],
+        info = paste(tstsetup, stat_nm, sep = "__")
+      )
+    }
   }
 })
 

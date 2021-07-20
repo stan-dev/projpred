@@ -124,6 +124,7 @@ if (run_cvvs_kfold) {
                   list(kfold = list(cv_method = "kfold", K = K_tst)))
 }
 type_tst <- c("mean", "lower", "upper", "se")
+vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 
 # Data --------------------------------------------------------------------
 
