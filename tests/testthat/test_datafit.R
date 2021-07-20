@@ -203,12 +203,13 @@ test_that(paste(
   }
 })
 
-test_that("summary.vsel() fails if `baseline = \"ref\"` and `deltas = TRUE`", {
+test_that("summary.vsel(): error if `baseline = \"ref\"` and `deltas = TRUE`", {
   for (tstsetup in names(vss_datafit)[1]) {
     expect_error(
       summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
       paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
-            "reference model\\.$")
+            "reference model\\.$"),
+      info = tstsetup
     )
   }
 })
