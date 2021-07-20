@@ -1,32 +1,36 @@
+context("summary(), plot(), suggest_size()")
+
+vs_funs <- list(summary.vsel, plot.vsel, suggest_size.vsel)
+
+test_that("error if `object` is incorrect", {
+  for (fun in vs_funs) {
+    expect_error(fun(NULL), "is not a variable selection object")
+    expect_error(fun(fits$glm$gauss), "is not a variable selection object")
+    expect_error(fun(refmods$glm$gauss), "is not a variable selection object")
+    expect_error(fun(prjs[[1]]), "is not a variable selection object")
+    expect_error(fun(prjs_vs[[1]]), "is not a variable selection object")
+    expect_error(fun(prjs_cvvs[[1]]), "is not a variable selection object")
+  }
+})
+
+test_that("error if `stats` is incorrect", {
+  for (fun in vs_funs) {
+    expect_error(fun(vss[[1]], stat = NULL),
+                 "specified as NULL")
+    expect_error(fun(vss[[1]], stat = NA),
+                 "not recognized")
+    expect_error(fun(vss[[1]], stat = "zzz"),
+                 "not recognized")
+    expect_error(fun(vss[[1]], stat = "acc"),
+                 "available only for the binomial family")
+    expect_error(fun(vss[[1]], stat = "auc"),
+                 "available only for the binomial family")
+  }
+})
+
 # summary() ---------------------------------------------------------------
 
 context("summary()")
-
-## vs_funs <- c(summary, plot, suggest_size)
-
-## test_that("invalid objects are rejected", {
-##   for (fun in vs_funs) {
-##     expect_error(fun(NULL), "is not a variable selection object")
-##     expect_error(fun(fit_gauss), "is not a variable selection object")
-##   }
-## })
-
-## test_that("invalid stats are rejected", {
-##   for (fun in vs_funs) {
-##     expect_error(fun(vs_list[[1]][["gauss"]], stat = NULL),
-##                  "specified as NULL")
-##     expect_error(fun(vs_list[[1]][["gauss"]], stat = NA),
-##                  "not recognized")
-##     expect_error(fun(vs_list[[1]][["gauss"]], stat = "zzz"),
-##                  "not recognized")
-##     expect_error(fun(vs_list[[1]][["gauss"]], stat = "acc"),
-##                  "available only for the binomial family")
-##     expect_error(
-##       fun(vs_list[[1]][["gauss"]], stat = "auc"),
-##       "available only for the binomial family"
-##     )
-##   }
-## })
 
 test_that("error if `baseline` is incorrect", {
   skip_if_not(run_vs)
@@ -65,6 +69,7 @@ test_that(paste(
   }
 })
 
+# TODO:
 test_that("summary works with reference models", {
   for (i in seq_along(vsref_list)) {
     for (j in seq_along(vsref_list[[i]])) {
