@@ -8,8 +8,8 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(vss)) {
-    mod_crr <- args_vs[[tstsetup]]$mod
-    fam_crr <- args_vs[[tstsetup]]$fam
+    mod_crr <- args_vs[[tstsetup]]$mod_nm
+    fam_crr <- args_vs[[tstsetup]]$fam_nm
     meth_exp_crr <- args_vs[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
@@ -437,8 +437,8 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss)) {
-    mod_crr <- args_cvvs[[tstsetup]]$mod
-    fam_crr <- args_cvvs[[tstsetup]]$fam
+    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       refmods_crr <- refmods_kfold
     } else {
@@ -571,8 +571,8 @@ test_that("setting `nloo` smaller than the number of observations works", {
   tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    mod_crr <- args_cvvs_i$mod
-    fam_crr <- args_cvvs_i$fam
+    mod_crr <- args_cvvs_i$mod_nm
+    fam_crr <- args_cvvs_i$fam_nm
     meth_exp_crr <- args_cvvs_i$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
@@ -618,8 +618,8 @@ test_that("`validate_search` works", {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     stopifnot(is.null(args_cvvs_i$validate_search) ||
                 isTRUE(args_cvvs_i$validate_search))
-    mod_crr <- args_cvvs_i$mod
-    fam_crr <- args_cvvs_i$fam
+    mod_crr <- args_cvvs_i$mod_nm
+    fam_crr <- args_cvvs_i$fam_nm
     meth_exp_crr <- args_cvvs_i$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")

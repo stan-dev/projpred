@@ -156,8 +156,8 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(vss_datafit)) {
-    mod_crr <- args_vs_datafit[[tstsetup]]$mod
-    fam_crr <- args_vs_datafit[[tstsetup]]$fam
+    mod_crr <- args_vs_datafit[[tstsetup]]$mod_nm
+    fam_crr <- args_vs_datafit[[tstsetup]]$fam_nm
     meth_exp_crr <- args_vs_datafit[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
@@ -181,8 +181,8 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss_datafit)) {
-    mod_crr <- args_cvvs_datafit[[tstsetup]]$mod
-    fam_crr <- args_cvvs_datafit[[tstsetup]]$fam
+    mod_crr <- args_cvvs_datafit[[tstsetup]]$mod_nm
+    fam_crr <- args_cvvs_datafit[[tstsetup]]$fam_nm
     meth_exp_crr <- args_cvvs_datafit[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
