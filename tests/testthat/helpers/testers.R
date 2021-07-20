@@ -625,6 +625,30 @@ smmry_sel_tester <- function(
       }
     }
   }
+  if ("lower" %in% type_expected) {
+    if (length(stats_expected) == 1) {
+      lower_nm <- "lower"
+    } else {
+      lower_nm <- paste(stats_expected, "lower", sep = ".")
+    }
+    for (stat_idx in seq_along(stats_expected)) {
+      expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] >
+                        smmry_sel[, lower_nm[stat_idx]]),
+                  info = info_str)
+    }
+  }
+  if ("upper" %in% type_expected) {
+    if (length(stats_expected) == 1) {
+      upper_nm <- "upper"
+    } else {
+      upper_nm <- paste(stats_expected, "upper", sep = ".")
+    }
+    for (stat_idx in seq_along(stats_expected)) {
+      expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] <
+                        smmry_sel[, upper_nm[stat_idx]]),
+                  info = info_str)
+    }
+  }
 
   return(invisible(TRUE))
 }
