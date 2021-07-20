@@ -71,6 +71,11 @@ SW(datafits <- lapply(mod_nms, function(mod_nm) {
 ### varsel() --------------------------------------------------------------
 
 args_vs_datafit <- args_vs
+args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
+  return(args_vs_i[setdiff(names(args_vs_i),
+                           c("ndraws", "nclusters",
+                             "ndraws_pred", "nclusters_pred"))])
+})
 
 if (run_vs) {
   vss_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
@@ -91,6 +96,11 @@ args_cvvs_datafit <- lapply(args_cvvs_datafit, "c",
                             list(cv_method = "kfold", K = 2))
 names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                  names(args_cvvs_datafit))
+args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
+  return(args_cvvs_i[setdiff(names(args_cvvs_i),
+                             c("ndraws", "nclusters",
+                               "ndraws_pred", "nclusters_pred"))])
+})
 
 if (run_cvvs) {
   cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
@@ -107,7 +117,7 @@ if (run_cvvs) {
 
 args_prj_vs_datafit <- args_prj_vs
 args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
-  return(args_prj_vs_i[setdiff(names(args_prj_vs_i), "nclusters")])
+  return(args_prj_vs_i[setdiff(names(args_prj_vs_i), c("ndraws", "nclusters"))])
 })
 
 if (run_vs) {
@@ -142,8 +152,7 @@ test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
 ## Variable selection -----------------------------------------------------
 
 test_that(paste(
-  "varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
-  "`nclusters`, and `nclusters_pred` work"
+  "varsel(): `object` of class \"datafit\", `method`, and `nterms_max` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(vss_datafit)) {
@@ -159,8 +168,8 @@ test_that(paste(
       refmod_expected = datafits[[mod_crr]][[fam_crr]],
       solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nclusters_expected = args_vs_datafit[[tstsetup]]$nclusters,
-      nclusters_pred_expected = args_vs_datafit[[tstsetup]]$nclusters_pred,
+      nclusters_expected = 1L,
+      nclusters_pred_expected = 1L,
       info_str = tstsetup
     )
   }
