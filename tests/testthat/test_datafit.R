@@ -146,9 +146,23 @@ test_that(paste(
   "varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
   "`nclusters`, and `nclusters_pred` work"
 ), {
+  skip_if_not(run_vs)
   for (tstsetup in names(vss_datafit)) {
+    mod_crr <- args_vs_datafit[[tstsetup]]$mod
+    fam_crr <- args_vs_datafit[[tstsetup]]$fam
+    meth_exp_crr <- args_vs_datafit[[tstsetup]]$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
     vsel_tester(
-      # TODO
+      vss_datafit[[tstsetup]],
+      from_datafit = TRUE,
+      refmod_expected = datafits[[mod_crr]][[fam_crr]],
+      solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      nclusters_expected = args_vs_datafit[[tstsetup]]$nclusters,
+      nclusters_pred_expected = args_vs_datafit[[tstsetup]]$nclusters_pred,
+      info_str = tstsetup
     )
   }
 })
@@ -215,6 +229,7 @@ test_that(paste(
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_vs_datafit[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
+        from_datafit = TRUE,
         info_str = tstsetup
       )
     } else {
@@ -222,6 +237,7 @@ test_that(paste(
         prjs_vs_datafit[[tstsetup]],
         len_expected = length(nterms_crr),
         is_seq = all(diff(nterms_crr) == 1),
+        from_datafit = TRUE,
         info_str = tstsetup,
         nprjdraws_expected = args_prj_vs_datafit[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
