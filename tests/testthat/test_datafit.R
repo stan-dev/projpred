@@ -176,12 +176,29 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cv_varsel(): `object` of class \"datafit\", `method`, `cv_method`,",
-  "`nterms_max`, `nclusters`, and `nclusters_pred` work"
+  "cv_varsel(): `object` of class \"datafit\", `method`, `cv_method`, and",
+  "`nterms_max` work"
 ), {
+  skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss_datafit)) {
+    mod_crr <- args_cvvs_datafit[[tstsetup]]$mod
+    fam_crr <- args_cvvs_datafit[[tstsetup]]$fam
+    meth_exp_crr <- args_cvvs_datafit[[tstsetup]]$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
     vsel_tester(
-      # TODO
+      cvvss_datafit[[tstsetup]],
+      with_cv = TRUE,
+      from_datafit = TRUE,
+      refmod_expected = datafits[[mod_crr]][[fam_crr]],
+      solterms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "kfold",
+      valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
+      nclusters_expected = 1L,
+      nclusters_pred_expected = 1L,
+      info_str = tstsetup
     )
   }
 })
