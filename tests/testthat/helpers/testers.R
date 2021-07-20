@@ -525,24 +525,53 @@ vsel_tester <- function(
   expect_length(vs$suggested_size, 1)
 
   # summary
-  expect_s3_class(vs$summary, "data.frame")
-  expect_named(vs$summary, vsel_smmry_nms, info = info_str)
-  expect_identical(nrow(vs$summary), solterms_len_expected + 1L,
+  smmry_sel_tester(vs$summary,
+                   vsel_smmry_nms = vsel_smmry_nms,
+                   solterms_expected = vs$solution_terms,
+                   from_datafit = from_datafit,
+                   info_str = info_str)
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of a `data.frame` as returned by
+# summary.vsel() in its output element `selection`
+#
+# @param smmry_sel A `data.frame` as returned by `summary.vsel()` in its output
+#   element `selection`.
+# @param vsel_smmry_nms A character vector giving the expected column names of
+#   `smmry_sel`.
+# @param solterms_expected A character vector giving the expected solution terms
+#   (not counting the intercept, even for the intercept-only model).
+# @param from_datafit A single logical value indicating whether an object of
+#   class `"datafit"` was used for creating the `"vsel"` object (from which
+#   `smmry_sel` was created) (`TRUE`) or not (`FALSE`).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+smmry_sel_tester <- function(smmry_sel,
+                             vsel_smmry_nms = vsel_smmry_nms,
+                             solterms_expected,
+                             from_datafit = FALSE,
+                             info_str) {
+  expect_s3_class(smmry_sel, "data.frame")
+  expect_named(smmry_sel, vsel_smmry_nms, info = info_str)
+  expect_identical(nrow(smmry_sel), length(solterms_expected) + 1L,
                    info = info_str)
-  expect_identical(vs$summary$size, seq_len(nrow(vs$summary)) - 1,
+  expect_identical(smmry_sel$size, seq_len(nrow(smmry_sel)) - 1,
                    info = info_str)
-  expect_identical(vs$summary$solution_terms,
-                   c(NA_character_, vs$solution_terms),
+  expect_identical(smmry_sel$solution_terms,
+                   c(NA_character_, solterms_expected),
                    info = info_str)
   if (!from_datafit) {
     expect_equal(
-      diff(vs$summary[, grep("^elpd", vsel_smmry_nms, value = TRUE)]),
-      diff(vs$summary$diff),
+      diff(smmry_sel[, grep("^elpd", vsel_smmry_nms, value = TRUE)]),
+      diff(smmry_sel$diff),
       info = info_str
     )
   } else {
-    expect_equal(vs$summary$diff, numeric(nrow(vs$summary)), info = info_str)
+    expect_equal(smmry_sel$diff, numeric(nrow(smmry_sel)), info = info_str)
   }
-
   return(invisible(TRUE))
 }
