@@ -340,12 +340,14 @@ vsel_tester <- function(
                        vs$refmodel$y, info = info_str)
       expect_identical(vs$d_test$test_points[order(vs$d_test$test_points)],
                        seq_len(nobsv), info = info_str)
+      expect_identical(vs$d_test$weights[order(vs$d_test$test_points)],
+                       vs$refmodel$wobs, info = info_str)
     } else {
       expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
       expect_identical(vs$d_test$test_points, seq_len(nobsv), info = info_str)
+      expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
     }
     expect_null(vs$d_test$data, info = info_str)
-    expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
     expect_identical(vs$d_test$type, dtest_type, info = info_str)
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)
