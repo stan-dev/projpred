@@ -462,7 +462,7 @@ test_that(paste(
     lambdainds <- sapply(unique(nselected), function(nterms) {
       max(which(nselected == nterms))
     })
-    lambdaval <- lasso$lambda[lambdainds]
+    ## lambdaval <- lasso$lambda[lambdainds]
     ## pred2 <- predict(lasso,
     ##   newx = x, type = "link", s = lambdaval,
     ##   newoffset = offset
