@@ -289,9 +289,6 @@ vsel_tester <- function(
     }
 
     dtest_type <- cv_method_expected
-    vsel_smmry_nms <- sub(
-      "^elpd$", paste0("elpd.", tolower(cv_method_expected)), vsel_smmry_nms
-    )
     if (cv_method_expected == "LOO") {
       # Re-order:
       dtest_nms <- dtest_nms[c(1, 5, 2, 4, 3, 6)]
@@ -525,11 +522,13 @@ vsel_tester <- function(
   expect_length(vs$suggested_size, 1)
 
   # summary
-  smmry_sel_tester(vs$summary,
-                   vsel_smmry_nms = vsel_smmry_nms,
-                   solterms_expected = vs$solution_terms,
-                   from_datafit = from_datafit,
-                   info_str = info_str)
+  smmry_sel_tester(
+    vs$summary,
+    cv_method_expected = if (with_cv) cv_method_expected else character(),
+    solterms_expected = vs$solution_terms,
+    from_datafit = from_datafit,
+    info_str = info_str
+  )
 
   return(invisible(TRUE))
 }
@@ -537,10 +536,15 @@ vsel_tester <- function(
 # A helper function for testing the structure of a `data.frame` as returned by
 # summary.vsel() in its output element `selection`
 #
-# @param smmry_sel A `data.frame` as returned by `summary.vsel()` in its output
+# @param smmry_sel A `data.frame` as returned by summary.vsel() in its output
 #   element `selection`.
-# @param vsel_smmry_nms A character vector giving the expected column names of
-#   `smmry_sel`.
+# @param stats_expected A character vector of expected `stats` (see the
+#   corresponding argument of summary.vsel()).
+# @param type_expected A character vector of expected `type`s (see the
+#   corresponding argument of summary.vsel()).
+# @param cv_method_expected Either `character()` for the no-CV case or a single
+#   character string giving the CV method (see argument `cv_method` of
+#   cv_varsel()).
 # @param solterms_expected A character vector giving the expected solution terms
 #   (not counting the intercept, even for the intercept-only model).
 # @param from_datafit A single logical value indicating whether an object of
@@ -550,28 +554,77 @@ vsel_tester <- function(
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-smmry_sel_tester <- function(smmry_sel,
-                             vsel_smmry_nms = vsel_smmry_nms,
-                             solterms_expected,
-                             from_datafit = FALSE,
-                             info_str) {
+smmry_sel_tester <- function(
+  smmry_sel,
+  stats_expected = "elpd",
+  type_expected = c("mean", "se", "diff", "diff.se"),
+  cv_method_expected = character(),
+  solterms_expected,
+  from_datafit = FALSE,
+  info_str
+) {
   expect_s3_class(smmry_sel, "data.frame")
-  expect_named(smmry_sel, vsel_smmry_nms, info = info_str)
+
+  # Rows:
   expect_identical(nrow(smmry_sel), length(solterms_expected) + 1L,
                    info = info_str)
+
+  # Columns:
+  smmry_nms <- c("size", "solution_terms")
+  ### Requires R >= 4.0.1:
+  # stats_mean_name <- paste0(
+  #   stats_expected,
+  #   paste0(".", tolower(cv_method_expected), recycle0 = TRUE)
+  # )
+  ###
+  ### Without relying on R >= 4.0.1:
+  if (length(cv_method_expected) == 0) {
+    stats_mean_name <- stats_expected
+  } else {
+    stopifnot(length(cv_method_expected) == 1)
+    stats_mean_name <- paste(stats_expected, tolower(cv_method_expected),
+                             sep = ".")
+  }
+  ###
+  if (length(stats_expected) == 1) {
+    smmry_nms <- c(smmry_nms, stats_mean_name, setdiff(type_expected, "mean"))
+  } else {
+    smmry_nms <- c(
+      smmry_nms,
+      sapply(seq_along(stats_expected), function(stat_idx) {
+        c(stats_mean_name[stat_idx],
+          paste(stats_expected[stat_idx], setdiff(type_expected, "mean"),
+                sep = "."))
+      })
+    )
+  }
+  expect_named(smmry_sel, smmry_nms, info = info_str)
+
+  # Columns in detail:
   expect_identical(smmry_sel$size, seq_len(nrow(smmry_sel)) - 1,
                    info = info_str)
   expect_identical(smmry_sel$solution_terms,
                    c(NA_character_, solterms_expected),
                    info = info_str)
-  if (!from_datafit) {
-    expect_equal(
-      diff(smmry_sel[, grep("^elpd", vsel_smmry_nms, value = TRUE)]),
-      diff(smmry_sel$diff),
-      info = info_str
-    )
-  } else {
-    expect_equal(smmry_sel$diff, numeric(nrow(smmry_sel)), info = info_str)
+  if ("diff" %in% type_expected) {
+    if (length(stats_expected) == 1) {
+      diff_nm <- "diff"
+    } else {
+      diff_nm <- paste(stats_expected, "diff", sep = ".")
+    }
+    for (stat_idx in seq_along(stats_expected)) {
+      if (!from_datafit) {
+        expect_equal(
+          diff(smmry_sel[, stats_mean_name[stat_idx]]),
+          diff(smmry_sel[, diff_nm[stat_idx]]),
+          info = info_str
+        )
+      } else {
+        expect_equal(smmry_sel[, diff_nm[stat_idx]], numeric(nrow(smmry_sel)),
+                     info = info_str)
+      }
+    }
   }
+
   return(invisible(TRUE))
 }
