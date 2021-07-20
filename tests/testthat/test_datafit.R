@@ -348,8 +348,6 @@ b <- seq(0, 1, length.out = nterms)
 dis <- runif(1, 0.3, 0.5)
 weights <- sample(1:4, n, replace = TRUE)
 offset <- 0.1 * rnorm(n)
-seed <- 1235
-source(testthat::test_path("helpers", "SW.R"))
 
 fams <- list(gaussian(), binomial(), poisson())
 x_list <- lapply(fams, function(fam) x)
