@@ -23,6 +23,7 @@ projection_tester <- function(p,
                               p_type_expected,
                               fam_expected = NULL,
                               prjdraw_weights_expected = NULL,
+                              from_datafit = FALSE,
                               info_str = "") {
   expect_s3_class(p, "projection")
   # Check the names using `ignore.order = FALSE` because an incorrect
@@ -30,7 +31,6 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(p, projection_nms, info = info_str)
 
-  from_datafit <- inherits(p$refmodel, "datafit")
   if (from_datafit) {
     subfit_nms <- setdiff(subfit_nms, "y")
   }
@@ -232,14 +232,15 @@ pp_tester <- function(pp,
 # @return `TRUE` (invisible).
 vsel_tester <- function(vs,
                         with_cv = FALSE,
+                        from_datafit = FALSE,
                         refmod_expected,
                         dtest_expected = NULL,
                         solterms_len_expected,
                         method_expected,
                         cv_method_expected = NULL,
                         valsearch_expected = NULL,
-                        ndraws_expected = ndraws_default,
-                        ndraws_pred_expected = ndraws_pred_default,
+                        ndraws_expected = if (!from_datafit) ndraws_default else 1L,
+                        ndraws_pred_expected = if (!from_datafit) ndraws_pred_default else 1L,
                         nclusters_expected = NULL,
                         nclusters_pred_expected = NULL,
                         nloo_expected = NULL,
@@ -281,7 +282,11 @@ vsel_tester <- function(vs,
   expect_named(vs, vsel_nms, info = info_str)
 
   # refmodel
-  expect_s3_class(vs$refmodel, "refmodel")
+  refmod_class_expected <- "refmodel"
+  if (from_datafit) {
+    refmod_class_expected <- c("datafit", refmod_class_expected)
+  }
+  expect_s3_class(vs$refmodel, refmod_class_expected, exact = TRUE)
   expect_identical(vs$refmodel, refmod_expected, info = info_str)
 
   # search_path
@@ -388,9 +393,17 @@ vsel_tester <- function(vs,
   expect_type(vs$summaries$ref, "list")
   expect_named(vs$summaries$ref, vsel_smmrs_ref_nms, info = info_str)
   expect_length(vs$summaries$ref$mu, nobsv)
-  expect_true(all(!is.na(vs$summaries$ref$mu)), info = info_str)
+  if (!from_datafit) {
+    expect_true(all(!is.na(vs$summaries$ref$mu)), info = info_str)
+  } else {
+    expect_true(all(is.na(vs$summaries$ref$mu)), info = info_str)
+  }
   expect_length(vs$summaries$ref$lppd, nobsv)
-  expect_true(all(!is.na(vs$summaries$ref$lppd)), info = info_str)
+  if (!from_datafit) {
+    expect_true(all(!is.na(vs$summaries$ref$lppd)), info = info_str)
+  } else {
+    expect_true(all(is.na(vs$summaries$ref$lppd)), info = info_str)
+  }
 
   # family
   expect_s3_class(vs$family, "family")
@@ -410,10 +423,12 @@ vsel_tester <- function(vs,
   expect_length(vs$kl, solterms_len_expected + 1)
   expect_true(all(vs$kl >= 0), info = info_str)
   # Expected to be decreasing:
-  expect_identical(vs$kl, cummin(vs$kl), info = info_str)
-  ### Check with tolerance:
-  # expect_true(all(diff(vs$kl) < 1e-1), info = info_str)
-  ###
+  if (!from_datafit) {
+    expect_identical(vs$kl, cummin(vs$kl), info = info_str)
+  } else {
+    # For some "datafit"s, we need to allow for a certain tolerance:
+    expect_true(all(diff(vs$kl) < 1e-4), info = info_str)
+  }
 
   # pct_solution_terms_cv
   if (with_cv) {
