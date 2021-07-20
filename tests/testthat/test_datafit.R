@@ -340,55 +340,54 @@ test_that(paste(
 # tested separately, so these would only check that the results do not change
 # due to varsel/cv_varsel etc.)
 
-set.seed(1235)
-n <- 100
-nterms <- 10
-x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
-b <- seq(0, 1, length.out = nterms)
-dis <- runif(1, 0.3, 0.5)
-weights <- sample(1:4, n, replace = TRUE)
-offset <- 0.1 * rnorm(n)
-
-fams <- list(gaussian(), binomial(), poisson())
-x_list <- lapply(fams, function(fam) x)
-y_list <- lapply(fams, function(fam) {
-  if (fam$family == "gaussian") {
-    y <- rnorm(n, x %*% b, 0.5)
-    weights <- NULL
-    y_glmnet <- y
-  } else if (fam$family == "binomial") {
-    y <- rbinom(n, weights, fam$linkinv(x %*% b))
-    ## y <- y / weights
-    ## different way of specifying binomial y for glmnet
-    y_glmnet <- cbind(1 - y / weights, y / weights)
-    weights <- weights
-  } else if (fam$family == "poisson") {
-    y <- rpois(n, fam$linkinv(x %*% b))
-    y_glmnet <- y
-    weights <- NULL
-  }
-  nlist(y, y_glmnet, weights)
-})
-
-median_lasso_preds <- list(
-  c(0.2774068, 0.2857059, 0.2878935, 0.2813947, 0.2237729,
-    0.2895152, 0.3225808, 0.3799348),
-  c(0.009607217, 0.015400719, -0.017591445, -0.009711566,
-    -0.023867036, -0.038964983, -0.036081074, -0.045065655),
-  c(1.8846845, 1.8830678, 1.8731548, 1.4232035, 0.9960167,
-    0.9452660, 0.6216253, 0.5856283)
-)
-
-solution_terms_lasso <- list(
-  c(10, 9, 6, 8, 7, 5, 4, 3, 1, 2),
-  c(10, 9, 8, 6, 7, 5, 3, 4, 2, 1),
-  c(9, 10, 6, 7, 3, 5, 2, 4, 3, 1)
-)
-
 test_that(paste(
   "L1-projection with data reference gives the same results as",
   "Lasso from glmnet."
 ), {
+  set.seed(1235)
+  n <- 100
+  nterms <- 10
+  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
+  b <- seq(0, 1, length.out = nterms)
+  dis <- runif(1, 0.3, 0.5)
+  weights <- sample(1:4, n, replace = TRUE)
+  offset <- 0.1 * rnorm(n)
+
+  fams <- list(gaussian(), binomial(), poisson())
+  x_list <- lapply(fams, function(fam) x)
+  y_list <- lapply(fams, function(fam) {
+    if (fam$family == "gaussian") {
+      y <- rnorm(n, x %*% b, 0.5)
+      weights <- NULL
+      y_glmnet <- y
+    } else if (fam$family == "binomial") {
+      y <- rbinom(n, weights, fam$linkinv(x %*% b))
+      ## y <- y / weights
+      ## different way of specifying binomial y for glmnet
+      y_glmnet <- cbind(1 - y / weights, y / weights)
+      weights <- weights
+    } else if (fam$family == "poisson") {
+      y <- rpois(n, fam$linkinv(x %*% b))
+      y_glmnet <- y
+      weights <- NULL
+    }
+    nlist(y, y_glmnet, weights)
+  })
+
+  median_lasso_preds <- list(
+    c(0.2774068, 0.2857059, 0.2878935, 0.2813947, 0.2237729,
+      0.2895152, 0.3225808, 0.3799348),
+    c(0.009607217, 0.015400719, -0.017591445, -0.009711566,
+      -0.023867036, -0.038964983, -0.036081074, -0.045065655),
+    c(1.8846845, 1.8830678, 1.8731548, 1.4232035, 0.9960167,
+      0.9452660, 0.6216253, 0.5856283)
+  )
+
+  solution_terms_lasso <- list(
+    c(10, 9, 6, 8, 7, 5, 4, 3, 1, 2),
+    c(10, 9, 8, 6, 7, 5, 3, 4, 2, 1),
+    c(9, 10, 6, 7, 3, 5, 2, 4, 3, 1)
+  )
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = FALSE) {
