@@ -13,7 +13,7 @@ test_that("`object` of class \"projection\" works", {
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created by varsel()) works"
+  "`object` of (informal) class \"proj_list\" (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -31,7 +31,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created by cv_varsel()) works"
+  "`object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
@@ -456,7 +456,7 @@ test_that("`object` of class \"projection\" works", {
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created by varsel()) works"
+  "`object` of (informal) class \"proj_list\" (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -474,7 +474,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created by cv_varsel()) works"
+  "`object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
