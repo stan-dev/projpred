@@ -107,8 +107,7 @@ if (run_cvvs) {
 
 args_prj_vs_datafit <- args_prj_vs
 args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
-  args_prj_vs_i$nclusters <- 1L
-  return(args_prj_vs_i)
+  return(args_prj_vs_i[setdiff(names(args_prj_vs_i), "nclusters")])
 })
 
 if (run_vs) {
@@ -227,7 +226,7 @@ test_that(paste(
       projection_tester(
         prjs_vs_datafit[[tstsetup]],
         solterms_expected = solterms_expected_crr,
-        nprjdraws_expected = args_prj_vs_datafit[[tstsetup]]$nclusters,
+        nprjdraws_expected = 1L,
         p_type_expected = TRUE,
         from_datafit = TRUE,
         info_str = tstsetup
@@ -239,7 +238,7 @@ test_that(paste(
         is_seq = all(diff(nterms_crr) == 1),
         from_datafit = TRUE,
         info_str = tstsetup,
-        nprjdraws_expected = args_prj_vs_datafit[[tstsetup]]$nclusters,
+        nprjdraws_expected = 1L,
         p_type_expected = TRUE,
         fam_expected = vss_datafit[[tstsetup_vs]]$family,
         prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights
@@ -261,8 +260,7 @@ test_that(paste(
     }
     pl_tester(pls_vs_datafit[[tstsetup]],
               len_expected = length(nterms_crr),
-              nprjdraws_expected =
-                ndr_ncl_dtls(args_prj_vs_datafit[[tstsetup]])$nprjdraws,
+              nprjdraws_expected = 1L,
               info_str = tstsetup)
     pl_with_args <- proj_linpred(prjs_vs_datafit[[tstsetup]],
                                  newdata = head(dat, tail(nobsv_tst, 1)),
@@ -271,8 +269,7 @@ test_that(paste(
                                  filter_nterms = nterms_crr[1])
     pl_tester(pl_with_args,
               len_expected = 1L,
-              nprjdraws_expected =
-                ndr_ncl_dtls(args_prj_vs_datafit[[tstsetup]])$nprjdraws,
+              nprjdraws_expected = 1L,
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste("with_args", tstsetup, sep = "__"))
   }
@@ -291,8 +288,6 @@ test_that(paste(
     }
     pp_tester(pps_vs_datafit[[tstsetup]],
               len_expected = length(nterms_crr),
-              nprjdraws_out_expected =
-                ndr_ncl_dtls(args_prj_vs_datafit[[tstsetup]])$nprjdraws_out,
               info_str = tstsetup)
     pp_with_args <- proj_predict(
       prjs_vs_datafit[[tstsetup]],
@@ -305,10 +300,7 @@ test_that(paste(
     )
     pp_tester(pp_with_args,
               len_expected = 1L,
-              nprjdraws_out_expected = ndr_ncl_dtls(
-                args_prj_vs_datafit[[tstsetup]],
-                nresample_clusters_crr = tail(nresample_clusters_tst, 1)
-              )$nprjdraws_out,
+              nprjdraws_out_expected = tail(nresample_clusters_tst, 1),
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste("with_args", tstsetup, sep = "__"))
   }
