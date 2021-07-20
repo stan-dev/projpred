@@ -74,6 +74,14 @@ psel_nms <- c("mu", "var", "weights", "cl")
 dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
+## Summary statistics -----------------------------------------------------
+
+valid_stats_all <- c("elpd", "mlpd")
+valid_stats_gauss_only <- c("mse", "rmse")
+valid_stats_binom_only <- c("acc", "auc")
+valid_stats_gauss <- c(valid_stats_all, valid_stats_gauss_only)
+valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
+
 ## Defaults ---------------------------------------------------------------
 
 ndraws_default <- 20L # Adopt this if the default is changed.
@@ -115,6 +123,7 @@ if (run_cvvs_kfold) {
   cvmeth_tst <- c(cvmeth_tst,
                   list(kfold = list(cv_method = "kfold", K = K_tst)))
 }
+type_tst <- c("mean", "lower", "upper", "se")
 
 # Data --------------------------------------------------------------------
 

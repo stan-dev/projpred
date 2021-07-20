@@ -2,12 +2,7 @@
 
 context("summary()")
 
-valid_stats_all <- c("elpd", "mlpd")
-valid_stats_gauss_only <- c("mse", "rmse")
-valid_stats_binom_only <- c("acc", "auc")
-valid_stats_gauss <- c(valid_stats_all, valid_stats_gauss_only)
-valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
-vs_funs <- c(summary, plot, suggest_size)
+## vs_funs <- c(summary, plot, suggest_size)
 
 ## test_that("invalid objects are rejected", {
 ##   for (fun in vs_funs) {
@@ -33,40 +28,40 @@ vs_funs <- c(summary, plot, suggest_size)
 ##   }
 ## })
 
-## test_that("invalid 'baseline' arguments are rejected", {
-##   expect_error(
-##     summary(vs_list[[1]][["gauss"]], baseline = "zzz"),
-##     "Argument 'baseline' must be either 'ref' or 'best'"
-##   )
-## })
+test_that("error if `baseline` is incorrect", {
+  skip_if_not(run_vs)
+  tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
+  for (tstsetup in tstsetups) {
+    expect_error(
+      summary(vss[[tstsetup]], baseline = "zzz"),
+      "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
+      info = tstsetup
+    )
+  }
+})
 
-test_that("summary output seems legit", {
-  skip_on_cran()
-  for (i in seq_along(cvs_list)) {
-    for (j in seq_along(cvs_list[[i]])) {
-      cvs <- cvs_list[[i]][[j]]
-      if (cvs$family$family == "gaussian") {
-        stats_str <- valid_stats_gauss
-      } else if (cvs$family$family == "binomial") {
-        stats_str <- valid_stats_binom
-      } else {
-        stats_str <- valid_stats_all
-      }
-      cv_method <- cvs_list[[i]][[j]]$cv_method
-      stats <- summary(cvs,
-                       stats = stats_str,
-                       type = c("mean", "lower", "upper", "se")
-      )$selection
-      expect_true(nrow(stats) == nterms + 1)
-      expect_true(all(c(
-        "size", "solution_terms", paste0(stats_str, ".", tolower(cv_method)),
-        paste0(stats_str, ".", c("se", "upper", "lower"))
-      ) %in% names(stats)))
-      expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] >
-                        stats[, "mlpd.lower"]))
-      expect_true(all(stats[, paste0("mlpd.", tolower(cv_method))] <
-                        stats[, "mlpd.upper"]))
-    }
+test_that(paste(
+  "`object` of class \"vsel\" (created by cv_varsel()), `stats`, and `type`",
+  "work"
+), {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(cvvss)) {
+    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
+    stats_crr <- switch(fam_crr,
+                        "gauss" = valid_stats_gauss,
+                        "binom" = valid_stats_binom,
+                        valid_stats_all)
+    smmry <- summary(cvvss[[tstsetup]],
+                     stats = stats_crr,
+                     type = type_tst)
+    smmry_sel_tester(
+      smmry$selection,
+      stats_expected = stats_crr,
+      type_expected = type_tst,
+      cv_method_expected = args_cvvs[[tstsetup]]$cv_method %ORifNULL% "LOO",
+      solterms_expected = cvvss[[tstsetup]]$solution_terms,
+      info_str = tstsetup
+    )
   }
 })
 
@@ -75,11 +70,11 @@ test_that("summary works with reference models", {
     for (j in seq_along(vsref_list[[i]])) {
       vs <- vsref_list[[i]][[j]]
       if (vs$family$family == "gaussian") {
-        stats_str <- valid_stats_gauss
+        stats_crr <- valid_stats_gauss
       } else {
-        stats_str <- valid_stats_binom
+        stats_crr <- valid_stats_binom
       }
-      stats <- summary(vs, stats = stats_str)$selection
+      stats <- summary(vs, stats = stats_crr)$selection
       expect_true(is.data.frame(stats))
     }
   }
