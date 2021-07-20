@@ -119,6 +119,13 @@ if (run_vs) {
   })
 }
 
+## Prediction -------------------------------------------------------------
+
+### From "proj_list" ------------------------------------------------------
+
+pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred)
+# pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
+
 # Tests (projpred only) ---------------------------------------------------
 
 test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
@@ -186,33 +193,37 @@ test_that(paste(
   }
 })
 
-### TODO:
 test_that(paste(
-  "output of proj_linpred is sensible with only data provided as",
-  "reference model"
+  "proj_linpred(): `object` of (informal) class \"proj_list\" (based on",
+  "varsel()) works"
 ), {
-  for (i in 1:length(vsd_list)) {
-
-    # length of output of project is legit
-    pred <- predd_list[[i]]
-    expect_equal(length(pred$pred), nrow(x))
-
-    ynew <- dref_list[[i]]$y
-    pred <- proj_linpred(vsd_list[[i]],
-                         newdata = data.frame(
-                           y = ynew, x = x,
-                           weights = weights, offset = offset
-                         ),
-                         seed = seed, offsetnew = ~offset,
-                         weightsnew = ~weights, nterms = 3)
-
-    expect_equal(length(pred$pred), nrow(x))
-    expect_equal(length(pred$lpd), nrow(x))
+  skip_if_not(run_vs)
+  for (tstsetup in names(prjs_vs_datafit)) {
+    tstsetup_vs <- args_prj_vs_datafit[[tstsetup]]$tstsetup_vsel
+    nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
+    }
+    pl_tester(pls_vs_datafit[[tstsetup]],
+              len_expected = length(nterms_crr),
+              nprjdraws_expected =
+                ndr_ncl_dtls(args_prj_vs_datafit[[tstsetup]])$nprjdraws,
+              info_str = tstsetup)
+    pl_with_args <- proj_linpred(prjs_vs_datafit[[tstsetup]],
+                                 newdata = head(dat, tail(nobsv_tst, 1)),
+                                 weightsnew = ~ wobs_col,
+                                 offsetnew = ~ offs_col,
+                                 filter_nterms = nterms_crr[1])
+    pl_tester(pl_with_args,
+              len_expected = 1L,
+              nprjdraws_expected =
+                ndr_ncl_dtls(args_prj_vs_datafit[[tstsetup]])$nprjdraws,
+              nobsv_expected = tail(nobsv_tst, 1),
+              info_str = paste("with_args", tstsetup, sep = "__"))
   }
 })
-###
 
-# TODO: Add tests for as.matrix.projection() and proj_predict().
+# TODO: Add test for proj_predict().
 
 test_that(paste(
   "varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
