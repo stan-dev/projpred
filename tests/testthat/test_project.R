@@ -171,7 +171,7 @@ test_that(paste(
         info_str = tstsetup,
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
-        fam_expected = cvvss[[tstsetup_vs]]$family,
+        fam_expected = cvvss[[tstsetup_cvvs]]$family,
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$weights
       )
     }
