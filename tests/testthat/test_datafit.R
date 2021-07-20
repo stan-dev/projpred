@@ -124,7 +124,7 @@ if (run_vs) {
 ### From "proj_list" ------------------------------------------------------
 
 pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred)
-# pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
+pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
 
 # Tests (projpred only) ---------------------------------------------------
 
@@ -223,7 +223,41 @@ test_that(paste(
   }
 })
 
-# TODO: Add test for proj_predict().
+test_that(paste(
+  "proj_predict(): `object` of (informal) class \"proj_list\" (based on",
+  "varsel()) works"
+), {
+  skip_if_not(run_vs)
+  for (tstsetup in names(prjs_vs_datafit)) {
+    tstsetup_vs <- args_prj_vs_datafit[[tstsetup]]$tstsetup_vsel
+    nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
+    }
+    pp_tester(pps_vs_datafit[[tstsetup]],
+              len_expected = length(nterms_crr),
+              nprjdraws_out_expected =
+                ndr_ncl_dtls(args_prj_vs_datafit[[tstsetup]])$nprjdraws_out,
+              info_str = tstsetup)
+    pp_with_args <- proj_predict(
+      prjs_vs_datafit[[tstsetup]],
+      newdata = head(dat, tail(nobsv_tst, 1)),
+      weightsnew = ~ wobs_col,
+      offsetnew = ~ offs_col,
+      filter_nterms = nterms_crr[1],
+      nresample_clusters = tail(nresample_clusters_tst, 1),
+      .seed = seed2_tst
+    )
+    pp_tester(pp_with_args,
+              len_expected = 1L,
+              nprjdraws_out_expected = ndr_ncl_dtls(
+                args_prj_vs_datafit[[tstsetup]],
+                nresample_clusters_crr = tail(nresample_clusters_tst, 1)
+              )$nprjdraws_out,
+              nobsv_expected = tail(nobsv_tst, 1),
+              info_str = paste("with_args", tstsetup, sep = "__"))
+  }
+})
 
 test_that(paste(
   "varsel(): `object` of class \"datafit\", `method`, `nterms_max`,",
