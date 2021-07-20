@@ -48,6 +48,31 @@ projection_tester <- function(p,
       expect_s3_class(sub_fit_totest[[!!j]], "subfit")
       expect_type(sub_fit_totest[[!!j]], "list")
       expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
+      expect_length(sub_fit_totest[[!!j]]$alpha, 1)
+      if (length(p$solution_terms) > 0) {
+        expect_identical(ncol(sub_fit_totest[[!!j]]$beta), 1L, info = info_str)
+        solterms_len_expected <- sum(sapply(p$solution_terms, function(trm_i) {
+          ncol(model.matrix(
+            as.formula(paste("~ 0 +", trm_i)),
+            data = p$refmodel$fetch_data()
+          ))
+        }))
+        ### As discussed in issue #149, the following might be more appropriate:
+        # solterms_len_expected <- ncol(model.matrix(
+        #   as.formula(paste("~", paste(p$solution_terms, collapse = " + "))),
+        #   data = p$refmodel$fetch_data()
+        # )) - 1L
+        ###
+        expect_equal(nrow(sub_fit_totest[[!!j]]$beta), solterms_len_expected,
+                     info = info_str)
+      } else {
+        if (!from_datafit) {
+          expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(0L, 1L),
+                           info = info_str)
+        } else {
+          expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
+        }
+      }
     } else if (has_grp && !has_add) {
       inherits(sub_fit_totest[[!!j]], c("lmerMod", "glmerMod"))
     } else if (has_add) {
