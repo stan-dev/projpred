@@ -93,12 +93,14 @@ projection_tester <- function(p,
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to projection_tester(), apart from
-#   projection_tester()'s arguments `p`, `solterms_expected`, and `info_str`.
+#   projection_tester()'s arguments `p`, `solterms_expected`, `from_datafit`,
+#   and `info_str`.
 #
 # @return `TRUE` (invisible).
 proj_list_tester <- function(p,
                              len_expected = nterms_max_tst + 1L,
                              is_seq = TRUE,
+                             from_datafit = FALSE,
                              info_str = "",
                              ...) {
   expect_type(p, "list")
@@ -115,13 +117,14 @@ proj_list_tester <- function(p,
     }
     projection_tester(p[[j]],
                       solterms_expected = solterms_expected_crr,
+                      from_datafit = from_datafit,
                       info_str = paste(info_str, j, sep = "__"),
                       ...)
   }
   if (is_seq) {
     # kl should be non-increasing on training data
     klseq <- sapply(p, function(x) sum(x$kl))
-    if (inherits(p[[1]]$refmodel, "datafit")) {
+    if (from_datafit) {
       # For some "datafit"s, we need to allow for a certain tolerance:
       expect_true(all(diff(klseq) < 3e-1), info = info_str)
     } else {
