@@ -335,6 +335,24 @@ test_that(paste(
   }
 })
 
+## summary.vsel() ---------------------------------------------------------
+
+# TODO:
+test_that("summary works with `\"datafit\"`s", {
+  for (i in seq_along(vsref_list)) {
+    for (j in seq_along(vsref_list[[i]])) {
+      vs <- vsref_list[[i]][[j]]
+      if (vs$family$family == "gaussian") {
+        stats_crr <- valid_stats_gauss
+      } else {
+        stats_crr <- valid_stats_binom
+      }
+      stats <- summary(vs, stats = stats_crr)$selection
+      expect_true(is.data.frame(stats))
+    }
+  }
+})
+
 # Comparison with glmnet --------------------------------------------------
 
 # below are some tests that check Lasso solution computed with varsel is the
