@@ -382,6 +382,39 @@ test_that(paste(
   }
 })
 
+test_that(paste(
+  "summary.vsel(): `object` of class \"vsel\" (created by cv_varsel() applied",
+  "to an `object` of class \"datafit\"), `stats`, and `type` work"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
+    unlist(lapply(fam_nms, function(fam_nm) {
+      grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss_datafit),
+           value = TRUE)[1]
+    }))
+  }))
+  for (tstsetup in tstsetups) {
+    fam_crr <- args_cvvs_datafit[[tstsetup]]$fam_nm
+    stats_crr <- switch(fam_crr,
+                        "gauss" = valid_stats_gauss,
+                        "binom" = valid_stats_binom,
+                        valid_stats_all)
+    smmry <- summary(cvvss_datafit[[tstsetup]],
+                     stats = stats_crr,
+                     type = type_tst)
+    smmry_tester(
+      smmry,
+      vsel_expected = cvvss_datafit[[tstsetup]],
+      info_str = tstsetup,
+      stats_expected = stats_crr,
+      type_expected = type_tst,
+      cv_method_expected =
+        args_cvvs_datafit[[tstsetup]]$cv_method %ORifNULL% "LOO",
+      solterms_expected = cvvss_datafit[[tstsetup]]$solution_terms
+    )
+  }
+})
+
 # Comparison with glmnet --------------------------------------------------
 
 # below are some tests that check Lasso solution computed with varsel is the
