@@ -98,7 +98,7 @@ test_that(paste(
 context("print()")
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()) and passing arguments to",
+  "`x` of class \"vsel\" (created by varsel()) and passing arguments to",
   "summary.vsel() works"
 ), {
   skip_if_not(run_vs)
@@ -117,8 +117,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()) and passing arguments",
-  "to summary.vsel() works"
+  "`x` of class \"vsel\" (created by cv_varsel()) and passing arguments to",
+  "summary.vsel() works"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(smmrys_cvvs)[1]) {
