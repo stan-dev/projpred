@@ -59,7 +59,12 @@ test_that(paste(
   "work"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)) {
+  tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
+    unlist(lapply(fam_nms, function(fam_nm) {
+      grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE)[1]
+    }))
+  }))
+  for (tstsetup in tstsetups) {
     fam_crr <- args_vs[[tstsetup]]$fam_nm
     stats_crr <- switch(fam_crr,
                         "gauss" = valid_stats_gauss,
@@ -83,7 +88,12 @@ test_that(paste(
   "work"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(cvvss)) {
+  tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
+    unlist(lapply(fam_nms, function(fam_nm) {
+      grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss), value = TRUE)[1]
+    }))
+  }))
+  for (tstsetup in tstsetups) {
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
     stats_crr <- switch(fam_crr,
                         "gauss" = valid_stats_gauss,
