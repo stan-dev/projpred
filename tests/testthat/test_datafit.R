@@ -144,7 +144,8 @@ test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       expect_error(predict(datafits[[mod_nm]][[fam_nm]], newdata = dat),
-                   "^Cannot make predictions with data reference only\\.$")
+                   "^Cannot make predictions with data reference only\\.$",
+                   info = paste(mod_nm, fam_nm, sep = "__"))
     }
   }
 })
@@ -337,8 +338,24 @@ test_that(paste(
 
 ## summary.vsel() ---------------------------------------------------------
 
-# TODO:
-test_that("summary works with `\"datafit\"`s", {
+test_that("summary.vsel(): error if `object` is of class \"datafit\"", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      expect_error(
+        summary.vsel(datafits[[mod_nm]][[fam_nm]]),
+        paste("^The object is not a variable selection object\\. Run variable",
+              "selection first$"),
+        info = paste(mod_nm, fam_nm, sep = "__")
+      )
+    }
+  }
+})
+
+test_that(paste(
+  "summary.vsel(): `object` of class \"vsel\" (created by varsel() applied to",
+  "an `object` of class \"datafit\") and `stats` work"
+), {
+  # TODO:
   for (i in seq_along(vsref_list)) {
     for (j in seq_along(vsref_list[[i]])) {
       vs <- vsref_list[[i]][[j]]
