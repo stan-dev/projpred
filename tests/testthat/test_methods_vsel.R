@@ -107,16 +107,6 @@ test_that(paste(
     expect_output(out <- print(vss[[tstsetup]]),
                   "Family:.*Link function:.*Formula:.*Observations:",
                   info = tstsetup)
-    ### TODO: MOVE:
-    # # default rounding
-    # expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
-    #              tolerance = 1e-3)
-    #
-    # # rounding to 4 decimal places
-    # expect_output(out <- print(vs_list[[1]][[1]], digits = 4))
-    # expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
-    #              tolerance = 1e-3)
-    ###
     # options to summary
     expect_output(out <- print(vs_list[[1]][[1]],
                                nterms_max = 3,
@@ -141,16 +131,6 @@ test_that(paste(
     expect_output(out <- print(cvvss[[tstsetup]]),
                   "Family:.*Link function:.*Formula:.*Observations:",
                   info = tstsetup)
-    ### TODO: MOVE:
-    # # default rounding
-    # expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
-    #              tolerance = 1e-3)
-    #
-    # # rounding to 4 decimal places
-    # expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
-    # expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
-    #              tolerance = 1e-3)
-    ###
     # options to summary
     expect_output(out <- print(cvs_list[[1]][[1]],
                                nterms_max = 3,
