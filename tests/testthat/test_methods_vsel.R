@@ -208,22 +208,31 @@ test_that("error if `stat` is of invalid length", {
 
 test_that("`stat` works", {
   skip_if_not(run_vs)
-  for (tstsetup in tstsetups_smmry_vs) {
+  tstsetups <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
+    unlist(lapply(fam_nms, function(fam_nm) {
+      grep(paste0("^", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
+           value = TRUE)[1]
+    }))
+  })))
+  for (tstsetup in tstsetups) {
     tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     stat_crr_nm <- switch(fam_crr,
                           "gauss" = "gauss_stats",
                           "binom" = "binom_stats",
                           "common_stats")
-    stat_crr <- stats_tst[[stat_crr_nm]]
-    suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr)
-    expect_type(suggsize, "double")
-    expect_length(suggsize, 1)
-    expect_true(!is.na(suggsize), info = tstsetup)
-    expect_true(suggsize >= 0, info = tstsetup)
-    if (stat_crr == "elpd") {
-      expect_identical(suggsize, vss[[tstsetup_vs]]$suggested_size,
-                       info = tstsetup)
+    stat_vec <- stats_tst[[stat_crr_nm]]$stats
+    for (stat_crr in stat_vec) {
+      suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr)
+      expect_type(suggsize, "double")
+      expect_length(suggsize, 1)
+      expect_true(!is.na(suggsize),
+                  info = paste(tstsetup, stat_crr, sep = "__"))
+      expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))
+      if (stat_crr == "elpd") {
+        expect_identical(suggsize, vss[[tstsetup_vs]]$suggested_size,
+                         info = paste(tstsetup, stat_crr, sep = "__"))
+      }
     }
   }
 })
