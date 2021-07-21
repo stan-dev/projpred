@@ -55,8 +55,8 @@ test_that("error if `baseline` is invalid", {
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()), `stats`, and `type`",
-  "work"
+  "`object` of class \"vsel\" (created by varsel()), `nterms_max`, `stats`,",
+  "`type`, and `digits` work"
 ), {
   skip_if_not(run_vs)
   tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
@@ -66,6 +66,7 @@ test_that(paste(
   }))
   for (tstsetup in tstsetups) {
     fam_crr <- args_vs[[tstsetup]]$fam_nm
+    # TODO: nterms_max, digits
     stats_crr <- switch(fam_crr,
                         "gauss" = valid_stats_gauss,
                         "binom" = valid_stats_binom,
@@ -85,8 +86,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()), `stats`, and `type`",
-  "work"
+  "`object` of class \"vsel\" (created by cv_varsel()), `nterms_max`, `stats`,",
+  "`type`, and `digits` work"
 ), {
   skip_if_not(run_cvvs)
   tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
@@ -96,6 +97,7 @@ test_that(paste(
   }))
   for (tstsetup in tstsetups) {
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
+    # TODO: nterms_max, digits
     stats_crr <- switch(fam_crr,
                         "gauss" = valid_stats_gauss,
                         "binom" = valid_stats_binom,
@@ -119,28 +121,49 @@ test_that(paste(
 
 context("print()")
 
-test_that("print() works as expected", {
+test_that("`object` of class \"vsel\" (created by varsel()) works", {
+  skip_if_not(run_vs)
 
-  skip_on_cran()
-  # default rounding
-  expect_output(out <- print(vs_list[[1]][[1]]))
-  expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
-               tolerance = 1e-3
-  )
-  expect_output(out <- print(cvs_list[[1]][[1]]))
-  expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
-               tolerance = 1e-3
-  )
+  for (tstsetup in names(vss)[1]) {
+    expect_output(out <- print(vss[[tstsetup]]),
+                  "Family:.*Link function:.*Formula:.*Observations:",
+                  info = tstsetup)
+    ### TODO: MOVE:
+    # # default rounding
+    # expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
+    #              tolerance = 1e-3)
+    #
+    # # rounding to 4 decimal places
+    # expect_output(out <- print(vs_list[[1]][[1]], digits = 4))
+    # expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
+    #              tolerance = 1e-3)
+    ###
+  }
+})
 
-  # rounding to 4 decimal places
-  expect_output(out <- print(vs_list[[1]][[1]], digits = 4))
-  expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
-               tolerance = 1e-3
-  )
-  expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
-  expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
-               tolerance = 1e-3
-  )
+test_that("`object` of class \"vsel\" (created by cv_varsel()) works", {
+  skip_if_not(run_cvvs)
+
+  for (tstsetup in names(cvvss)[1]) {
+    expect_output(out <- print(cvvss[[tstsetup]]),
+                  "Family:.*Link function:.*Formula:.*Observations:",
+                  info = tstsetup)
+    ### TODO: MOVE:
+    # # default rounding
+    # expect_equal(out$selection$elpd, round(out$selection$elpd, 2),
+    #              tolerance = 1e-3)
+    #
+    # # rounding to 4 decimal places
+    # expect_output(out <- print(cvs_list[[1]][[1]], digits = 4))
+    # expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
+    #              tolerance = 1e-3)
+    ###
+  }
+})
+
+test_that("passing arguments to summary.vsel() works", {
+  # TODO:
+
   # options to summary
   expect_output(out <- print(vs_list[[1]][[1]],
                              nterms_max = 3,
