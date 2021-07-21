@@ -547,18 +547,23 @@ vsel_tester <- function(
 smmry_tester <- function(smmry, vsel_expected, info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
+  pct_solterms_nm <- if ("pct_solution_terms_cv" %in% names(vsel_expected)) {
+    "pct_solution_terms_cv"
+  } else {
+    character()
+  }
   expect_named(
     smmry,
     c("formula", "fit", "family", "nobs", "method", "cv_method",
       "validate_search", "ndraws", "ndraws_pred", "nclusters", "nclusters_pred",
-      "search_included", "nterms", "pct_solution_terms_cv", "suggested_size",
+      "search_included", "nterms", pct_solterms_nm, "suggested_size",
       "selection"),
     info = info_str
   )
 
   for (nm in c(
     "family", "method", "cv_method", "validate_search", "ndraws", "ndraws_pred",
-    "nclusters", "nclusters_pred", "pct_solution_terms_cv", "suggested_size"
+    "nclusters", "nclusters_pred", pct_solterms_nm, "suggested_size"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))
