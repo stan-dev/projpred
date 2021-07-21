@@ -55,6 +55,30 @@ test_that("error if `baseline` is invalid", {
 })
 
 test_that(paste(
+  "`object` of class \"vsel\" (created by varsel()), `stats`, and `type`",
+  "work"
+), {
+  skip_if_not(run_vs)
+  for (tstsetup in names(vss)) {
+    fam_crr <- args_vs[[tstsetup]]$fam_nm
+    stats_crr <- switch(fam_crr,
+                        "gauss" = valid_stats_gauss,
+                        "binom" = valid_stats_binom,
+                        valid_stats_all)
+    smmry <- summary(vss[[tstsetup]],
+                     stats = stats_crr,
+                     type = type_tst)
+    smmry_sel_tester(
+      smmry$selection,
+      stats_expected = stats_crr,
+      type_expected = type_tst,
+      solterms_expected = vss[[tstsetup]]$solution_terms,
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
   "`object` of class \"vsel\" (created by cv_varsel()), `stats`, and `type`",
   "work"
 ), {
