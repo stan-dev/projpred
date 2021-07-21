@@ -594,9 +594,9 @@ smmry_tester <- function(smmry, vsel_expected, info_str, ...) {
 # @param smmry_sel A `data.frame` as returned by summary.vsel() in its output
 #   element `selection`.
 # @param stats_expected A character vector of expected `stats` (see the
-#   corresponding argument of summary.vsel()).
+#   corresponding argument of summary.vsel()). Use `NULL` for the default.
 # @param type_expected A character vector of expected `type`s (see the
-#   corresponding argument of summary.vsel()).
+#   corresponding argument of summary.vsel()). Use `NULL` for the default.
 # @param cv_method_expected Either `character()` for the no-CV case or a single
 #   character string giving the CV method (see argument `cv_method` of
 #   cv_varsel()).
@@ -611,13 +611,19 @@ smmry_tester <- function(smmry, vsel_expected, info_str, ...) {
 # @return `TRUE` (invisible).
 smmry_sel_tester <- function(
   smmry_sel,
-  stats_expected = "elpd",
-  type_expected = c("mean", "se", "diff", "diff.se"),
+  stats_expected = NULL,
+  type_expected = NULL,
   cv_method_expected = character(),
   solterms_expected,
   from_datafit = FALSE,
   info_str
 ) {
+  if (is.null(stats_expected)) {
+    stats_expected <- "elpd"
+  }
+  if (is.null(type_expected)) {
+    type_expected <- c("mean", "se", "diff", "diff.se")
+  }
   expect_s3_class(smmry_sel, "data.frame")
 
   # Rows:
