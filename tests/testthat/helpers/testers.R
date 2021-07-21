@@ -533,6 +533,56 @@ vsel_tester <- function(
   return(invisible(TRUE))
 }
 
+# A helper function for testing the structure of an object as returned by
+# summary.vsel()
+#
+# @param smmry An object as returned by summary.vsel().
+# @param vsel_expected The `"vsel"` object which was used in the summary.vsel()
+#   call.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+# @param ... Arguments to be passed to smmry_sel_tester().
+#
+# @return `TRUE` (invisible).
+smmry_tester <- function(smmry, vsel_expected, info_str, ...) {
+  expect_s3_class(smmry, "vselsummary")
+  expect_type(smmry, "list")
+  expect_named(
+    smmry,
+    c("formula", "fit", "family", "nobs", "method", "cv_method",
+      "validate_search", "ndraws", "ndraws_pred", "nclusters", "nclusters_pred",
+      "search_included", "nterms", "pct_solution_terms_cv", "suggested_size",
+      "selection"),
+    info = info_str
+  )
+
+  for (nm in c(
+    "family", "method", "cv_method", "validate_search", "ndraws", "ndraws_pred",
+    "nclusters", "nclusters_pred", "pct_solution_terms_cv", "suggested_size"
+  )) {
+    expect_identical(smmry[[nm]], vsel_expected[[nm]],
+                     info = paste(info_str, nm, sep = "__"))
+  }
+  expect_identical(smmry$formula, vsel_expected$refmodel$formula,
+                   info = info_str)
+  expect_null(smmry$fit, info = info_str)
+  expect_identical(smmry$nobs, length(vsel_expected$refmodel$y),
+                   info = info_str)
+  # In summary.vsel(), `nterms_max` and output element `nterms` do not count the
+  # intercept (whereas `vsel_expected$nterms_max` does):
+  expect_identical(smmry$nterms, vsel_expected$nterms_max - 1,
+                   info = info_str)
+  expect_true(smmry$search_included %in% c("search included",
+                                           "search not included"),
+              info = info_str)
+  expect_identical(smmry$search_included == "search included",
+                   isTRUE(vsel_expected$validate_search),
+                   info = info_str)
+  smmry_sel_tester(smmry$selection, info_str = info_str, ...)
+
+  return(invisible(TRUE))
+}
+
 # A helper function for testing the structure of a `data.frame` as returned by
 # summary.vsel() in its output element `selection`
 #
