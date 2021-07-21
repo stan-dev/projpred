@@ -157,11 +157,15 @@ test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   }
 })
 
-test_that("invalid 'baseline' arguments are rejected", {
-  expect_error(
-    plot(vs_list[[1]][[1]], baseline = "zzz"),
-    "Argument 'baseline' must be either 'ref' or 'best'"
-  )
+test_that("error if `baseline` is invalid", {
+  skip_if_not(run_vs)
+  for (tstsetup in names(vss)[1]) {
+    expect_error(
+      plot(vss[[tstsetup]], baseline = "zzz"),
+      "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
+      info = tstsetup
+    )
+  }
 })
 
 test_that("the value of nterms_max is valid", {
