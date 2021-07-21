@@ -363,19 +363,14 @@ test_that(paste(
     }))
   }))
   for (tstsetup in tstsetups) {
-    fam_crr <- args_vs_datafit[[tstsetup]]$fam_nm
-    stats_crr <- switch(fam_crr,
-                        "gauss" = valid_stats_gauss,
-                        "binom" = valid_stats_binom,
-                        valid_stats_all)
     smmry <- summary(vss_datafit[[tstsetup]],
-                     stats = stats_crr,
+                     stats = stats_common,
                      type = type_tst)
     smmry_tester(
       smmry,
       vsel_expected = vss_datafit[[tstsetup]],
       info_str = tstsetup,
-      stats_expected = stats_crr,
+      stats_expected = stats_common,
       type_expected = type_tst,
       solterms_expected = vss_datafit[[tstsetup]]$solution_terms
     )
@@ -394,19 +389,14 @@ test_that(paste(
     }))
   }))
   for (tstsetup in tstsetups) {
-    fam_crr <- args_cvvs_datafit[[tstsetup]]$fam_nm
-    stats_crr <- switch(fam_crr,
-                        "gauss" = valid_stats_gauss,
-                        "binom" = valid_stats_binom,
-                        valid_stats_all)
     smmry <- summary(cvvss_datafit[[tstsetup]],
-                     stats = stats_crr,
+                     stats = stats_common,
                      type = type_tst)
     smmry_tester(
       smmry,
       vsel_expected = cvvss_datafit[[tstsetup]],
       info_str = tstsetup,
-      stats_expected = stats_crr,
+      stats_expected = stats_common,
       type_expected = type_tst,
       cv_method_expected =
         args_cvvs_datafit[[tstsetup]]$cv_method %ORifNULL% "LOO",
