@@ -194,9 +194,16 @@ test_that("`nterms_max` is capped to the maximum model size", {
 
 context("suggest_size()")
 
-test_that("suggest_size() checks the length of stat", {
-  expect_error(suggest_size(vs_list[[1]][["gauss"]], stat = valid_stats_all),
-               "Only one statistic")
+test_that("error if `stat` is of invalid length", {
+  stopifnot(length(stats_common) > 0)
+  skip_if_not(run_vs)
+  for (tstsetup in names(vss)[1]) {
+    expect_error(
+      suggest_size(vss[[tstsetup]], stat = stats_common),
+      "^Only one statistic can be specified to suggest_size$",
+      info = tstsetup
+    )
+  }
 })
 
 test_that("suggest_size() works on all stats", {
