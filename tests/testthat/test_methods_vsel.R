@@ -179,12 +179,16 @@ test_that("error if `nterms_max` is invalid", {
   }
 })
 
-## test_that("nterms_max is capped to the largest model size", {
-##   expect_equal(
-##     plot(vs_list[[1]][[1]]),
-##     plot(vs_list[[1]][[1]], nterms_max = 1000)
-##   )
-## })
+test_that("`nterms_max` is capped to the maximum model size", {
+  skip_if_not(run_vs)
+  for (tstsetup in names(vss)[1]) {
+    expect_equal(
+      plot(vss[[tstsetup]]),
+      plot(vss[[tstsetup]], nterms_max = args_vs[[tstsetup]]$nterms_max + 1L),
+      info = tstsetup
+    )
+  }
+})
 
 # suggest_size() ----------------------------------------------------------
 
