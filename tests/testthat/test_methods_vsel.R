@@ -116,7 +116,7 @@ test_that(paste(
 })
 
 # TODO:
-test_that("summary works with reference models", {
+test_that("summary works with `\"datafit\"`s", {
   for (i in seq_along(vsref_list)) {
     for (j in seq_along(vsref_list[[i]])) {
       vs <- vsref_list[[i]][[j]]
