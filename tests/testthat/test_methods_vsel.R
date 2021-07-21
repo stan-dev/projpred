@@ -102,22 +102,17 @@ test_that(paste(
   "summary.vsel() works"
 ), {
   skip_if_not(run_vs)
-
-  for (tstsetup in names(vss)[1]) {
-    expect_output(out <- print(vss[[tstsetup]]),
-                  "Family:.*Link function:.*Formula:.*Observations:",
-                  info = tstsetup)
-    # options to summary
-    expect_output(out <- print(vs_list[[1]][[1]],
-                               nterms_max = 3,
-                               stats = "mse"
-    ))
-    expect_equal(nrow(out$selection) - 1, 3)
-    expect_named(out$selection, c(
-      "size", "solution_terms",
-      "mse", "se",
-      "diff", "diff.se"
-    ))
+  for (tstsetup in names(smmrys_vs)[1]) {
+    args_smmry_vs_i <- args_smmry_vs[[tstsetup]]
+    expect_output(
+      print_obj <- do.call(print, c(
+        list(x = vss[[args_smmry_vs_i$tstsetup_vsel]]),
+        args_smmry_vs_i[setdiff(names(args_smmry_vs_i), c("tstsetup_vsel"))]
+      )),
+      "Family:.*Link function:.*Formula:.*Observations:",
+      info = tstsetup
+    )
+    expect_identical(print_obj, smmrys_vs[[tstsetup]], info = tstsetup)
   }
 })
 
@@ -126,23 +121,17 @@ test_that(paste(
   "to summary.vsel() works"
 ), {
   skip_if_not(run_cvvs)
-
-  for (tstsetup in names(cvvss)[1]) {
-    expect_output(out <- print(cvvss[[tstsetup]]),
-                  "Family:.*Link function:.*Formula:.*Observations:",
-                  info = tstsetup)
-    # options to summary
-    expect_output(out <- print(cvs_list[[1]][[1]],
-                               nterms_max = 3,
-                               stats = "mse"
-    ))
-    expect_equal(nrow(out$selection) - 1, 3)
-    expect_named(out$selection, c(
-      "size", "solution_terms",
-      paste0("mse.", tolower(out$cv_method)), "se",
-      "diff", "diff.se"
-      # "pct_solution_terms_cv"
-    ))
+  for (tstsetup in names(smmrys_cvvs)[1]) {
+    args_smmry_cvvs_i <- args_smmry_cvvs[[tstsetup]]
+    expect_output(
+      print_obj <- do.call(print, c(
+        list(x = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
+        args_smmry_cvvs_i[setdiff(names(args_smmry_cvvs_i), c("tstsetup_vsel"))]
+      )),
+      "Family:.*Link function:.*Formula:.*Observations:",
+      info = tstsetup
+    )
+    expect_identical(print_obj, smmrys_cvvs[[tstsetup]], info = tstsetup)
   }
 })
 
