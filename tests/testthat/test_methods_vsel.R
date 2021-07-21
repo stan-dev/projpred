@@ -73,12 +73,13 @@ test_that(paste(
     smmry <- summary(vss[[tstsetup]],
                      stats = stats_crr,
                      type = type_tst)
-    smmry_sel_tester(
-      smmry$selection,
+    smmry_tester(
+      smmry,
+      vsel_expected = vss[[tstsetup]],
+      info_str = tstsetup,
       stats_expected = stats_crr,
       type_expected = type_tst,
-      solterms_expected = vss[[tstsetup]]$solution_terms,
-      info_str = tstsetup
+      solterms_expected = vss[[tstsetup]]$solution_terms
     )
   }
 })
@@ -102,13 +103,14 @@ test_that(paste(
     smmry <- summary(cvvss[[tstsetup]],
                      stats = stats_crr,
                      type = type_tst)
-    smmry_sel_tester(
-      smmry$selection,
+    smmry_tester(
+      smmry,
+      vsel_expected = cvvss[[tstsetup]],
+      info_str = tstsetup,
       stats_expected = stats_crr,
       type_expected = type_tst,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method %ORifNULL% "LOO",
-      solterms_expected = cvvss[[tstsetup]]$solution_terms,
-      info_str = tstsetup
+      solterms_expected = cvvss[[tstsetup]]$solution_terms
     )
   }
 })
