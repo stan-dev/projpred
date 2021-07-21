@@ -59,27 +59,13 @@ test_that(paste(
   "`type`, and `digits` work"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
-    unlist(lapply(fam_nms, function(fam_nm) {
-      grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE)[1]
-    }))
-  }))
-  for (tstsetup in tstsetups) {
-    fam_crr <- args_vs[[tstsetup]]$fam_nm
-    # TODO: nterms_max, digits
-    stats_crr <- switch(fam_crr,
-                        "gauss" = valid_stats_gauss,
-                        "binom" = valid_stats_binom,
-                        valid_stats_all)
-    smmry <- summary(vss[[tstsetup]],
-                     stats = stats_crr,
-                     type = type_tst)
+  for (tstsetup in names(smmrys_vs)) {
     smmry_tester(
-      smmry,
+      smmrys_vs[[tstsetup]],
       vsel_expected = vss[[tstsetup]],
       info_str = tstsetup,
-      stats_expected = stats_crr,
-      type_expected = type_tst,
+      stats_expected = args_smmry_vs[[tstsetup]]$stats,
+      type_expected = args_smmry_vs[[tstsetup]]$type,
       solterms_expected = vss[[tstsetup]]$solution_terms
     )
   }

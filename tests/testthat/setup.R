@@ -74,14 +74,6 @@ psel_nms <- c("mu", "var", "weights", "cl")
 dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
-## Summary statistics -----------------------------------------------------
-
-valid_stats_all <- c("elpd", "mlpd")
-valid_stats_gauss_only <- c("mse", "rmse")
-valid_stats_binom_only <- c("acc", "auc")
-valid_stats_gauss <- c(valid_stats_all, valid_stats_gauss_only)
-valid_stats_binom <- c(valid_stats_all, valid_stats_binom_only)
-
 ## Defaults ---------------------------------------------------------------
 
 ndraws_default <- 20L # Adopt this if the default is changed.
@@ -93,6 +85,7 @@ regul_default <- 1e-4 # Adopt this if the default is changed.
 
 seed2_tst <- 866028
 nobsv_tst <- c(1L, 12L)
+
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 ndr_ncl_pred_tst <- list(
@@ -103,17 +96,20 @@ ndr_ncl_pred_tst <- list(
   clust1 = list(nclusters = 1L)
 )
 nresample_clusters_tst <- c(1L, 100L)
+
 ### Because of issue #149:
 # solterms_x <- c("xco.2", "xca.1")
 solterms_x <- c("xco.2", "xco.1")
 ###
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
 solterms_s <- c("s(s.1)", "s(s.2)")
+
 meth_tst <- list(
   default_meth = list(),
   L1 = list(method = "L1"),
   forward = list(method = "forward")
 )
+
 cvmeth_tst <- list(
   default_cvmeth = list(),
   LOO = list(cv_method = "LOO")
@@ -123,8 +119,20 @@ if (run_cvvs_kfold) {
   cvmeth_tst <- c(cvmeth_tst,
                   list(kfold = list(cv_method = "kfold", K = K_tst)))
 }
-type_tst <- c("mean", "lower", "upper", "se")
+
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
+stats_common <- c("elpd", "mlpd")
+stats_tst <- list(
+  default_stats = list(),
+  common_stats = list(stats = stats_common),
+  gauss_stats = list(stats = c(stats_common, c("mse", "rmse"))),
+  binom_stats = list(stats = c(stats_common, c("acc", "auc")))
+)
+type_tst <- c("mean", "lower", "upper", "se")
+digits_tst <- list(
+  default_digits = list(),
+  dig4 = list(digits = 4)
+)
 
 # Data --------------------------------------------------------------------
 
@@ -653,3 +661,56 @@ pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
 
 pls_cvvs <- lapply(prjs_cvvs, proj_linpred)
 pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
+
+## summary.vsel() ---------------------------------------------------------
+
+tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
+  unlist(lapply(fam_nms, function(fam_nm) {
+    grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE)[1]
+  }))
+})))
+stopifnot(length(tstsetups_smmry_vs) > 0)
+args_smmry_vs <- lapply(tstsetups_smmry_vs, function(tstsetup_vsel) {
+  mod_crr <- args_vs[[tstsetup_vsel]]$mod_nm
+  fam_crr <- args_vs[[tstsetup_vsel]]$fam_nm
+  add_stats <- switch(mod_crr,
+                      "glm" = switch(fam_crr,
+                                     "gauss" = "gauss_stats",
+                                     "binom" = "binom_stats",
+                                     "common_stats"),
+                      character())
+  stats_tst <- stats_tst[c("default_stats", add_stats)]
+  lapply(stats_tst, function(stats_crr) {
+    if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0) {
+      add_digits <- "dig4"
+    } else {
+      add_digits <- character()
+    }
+    digits_tst <- digits_tst[c("default_digits", add_digits)]
+    lapply(digits_tst, function(digits_crr) {
+      if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0 &&
+          length(digits_crr) == 0) {
+        nterms_tst <- nterms_avail[c("default_nterms", "single")]
+      } else {
+        nterms_tst <- nterms_avail["default_nterms"]
+      }
+      lapply(nterms_tst, function(nterms_crr) {
+        return(c(
+          nlist(tstsetup_vsel, type = type_tst, nterms_max = nterms_crr),
+          stats_crr,
+          digits_crr
+        ))
+      })
+    })
+  })
+})
+args_smmry_vs <- unlist_cust(args_smmry_vs, nm_stop = "tstsetup_vsel")
+
+if (run_vs) {
+  smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
+    do.call(summary, c(
+      list(object = vss[[args_smmry_vs_i$tstsetup_vsel]]),
+      args_smmry_vs_i[setdiff(names(args_smmry_vs_i), c("tstsetup_vsel"))]
+    ))
+  })
+}
