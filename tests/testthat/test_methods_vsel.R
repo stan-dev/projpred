@@ -168,11 +168,15 @@ test_that("error if `baseline` is invalid", {
   }
 })
 
-test_that("the value of nterms_max is valid", {
-  expect_error(
-    plot(vs_list[[1]][[1]], nterms_max = 0),
-    "nterms_max must be at least 1"
-  )
+test_that("error if `nterms_max` is invalid", {
+  skip_if_not(run_vs)
+  for (tstsetup in names(vss)[1]) {
+    expect_error(
+      plot(vss[[tstsetup]], nterms_max = 0),
+      "^nterms_max must be at least 1$",
+      info = tstsetup
+    )
+  }
 })
 
 ## test_that("nterms_max is capped to the largest model size", {
