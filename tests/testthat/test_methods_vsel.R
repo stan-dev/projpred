@@ -78,29 +78,17 @@ test_that(paste(
   "`type`, and `digits` work"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
-    unlist(lapply(fam_nms, function(fam_nm) {
-      grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss), value = TRUE)[1]
-    }))
-  }))
-  for (tstsetup in tstsetups) {
-    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
-    # TODO: nterms_max, digits
-    stats_crr <- switch(fam_crr,
-                        "gauss" = valid_stats_gauss,
-                        "binom" = valid_stats_binom,
-                        valid_stats_all)
-    smmry <- summary(cvvss[[tstsetup]],
-                     stats = stats_crr,
-                     type = type_tst)
+  for (tstsetup in names(smmrys_cvvs)) {
+    tstsetup_cvvs <- args_smmry_cvvs[[tstsetup]]$tstsetup_vsel
     smmry_tester(
-      smmry,
-      vsel_expected = cvvss[[tstsetup]],
+      smmrys_cvvs[[tstsetup]],
+      vsel_expected = cvvss[[tstsetup_cvvs]],
       info_str = tstsetup,
-      stats_expected = stats_crr,
-      type_expected = type_tst,
+      stats_expected = args_smmry_cvvs[[tstsetup]]$stats,
+      type_expected = args_smmry_cvvs[[tstsetup]]$type,
+      nterms_max_expected = args_smmry_cvvs[[tstsetup]]$nterms_max,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method %ORifNULL% "LOO",
-      solterms_expected = cvvss[[tstsetup]]$solution_terms
+      solterms_expected = cvvss[[tstsetup_cvvs]]$solution_terms
     )
   }
 })

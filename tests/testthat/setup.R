@@ -664,6 +664,8 @@ pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
 
 ## summary.vsel() ---------------------------------------------------------
 
+### varsel() --------------------------------------------------------------
+
 tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
   unlist(lapply(fam_nms, function(fam_nm) {
     grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE)[1]
@@ -711,6 +713,59 @@ if (run_vs) {
     do.call(summary, c(
       list(object = vss[[args_smmry_vs_i$tstsetup_vsel]]),
       args_smmry_vs_i[setdiff(names(args_smmry_vs_i), c("tstsetup_vsel"))]
+    ))
+  })
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+tstsetups_smmry_cvvs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
+  unlist(lapply(fam_nms, function(fam_nm) {
+    grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss), value = TRUE)[1]
+  }))
+})))
+stopifnot(length(tstsetups_smmry_cvvs) > 0)
+args_smmry_cvvs <- lapply(tstsetups_smmry_cvvs, function(tstsetup_vsel) {
+  mod_crr <- args_cvvs[[tstsetup_vsel]]$mod_nm
+  fam_crr <- args_cvvs[[tstsetup_vsel]]$fam_nm
+  add_stats <- switch(mod_crr,
+                      "glm" = switch(fam_crr,
+                                     "gauss" = "gauss_stats",
+                                     "binom" = "binom_stats",
+                                     "common_stats"),
+                      character())
+  stats_tst <- stats_tst[c("default_stats", add_stats)]
+  lapply(stats_tst, function(stats_crr) {
+    if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0) {
+      add_digits <- "dig4"
+    } else {
+      add_digits <- character()
+    }
+    digits_tst <- digits_tst[c("default_digits", add_digits)]
+    lapply(digits_tst, function(digits_crr) {
+      if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0 &&
+          length(digits_crr) == 0) {
+        nterms_tst <- nterms_avail[c("default_nterms", "single")]
+      } else {
+        nterms_tst <- nterms_avail["default_nterms"]
+      }
+      lapply(nterms_tst, function(nterms_crr) {
+        return(c(
+          nlist(tstsetup_vsel, type = type_tst, nterms_max = nterms_crr),
+          stats_crr,
+          digits_crr
+        ))
+      })
+    })
+  })
+})
+args_smmry_cvvs <- unlist_cust(args_smmry_cvvs, nm_stop = "tstsetup_vsel")
+
+if (run_cvvs) {
+  smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
+    do.call(summary, c(
+      list(object = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
+      args_smmry_cvvs_i[setdiff(names(args_smmry_cvvs_i), c("tstsetup_vsel"))]
     ))
   })
 }
