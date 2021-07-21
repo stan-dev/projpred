@@ -5,6 +5,7 @@ test_that(paste(
 ), {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
+      tstsetup <- paste(mod_nm, fam_nm, sep = "__")
       .Random.seed_orig1 <- .Random.seed
       refdist_orig <- .get_refdist(refmods[[mod_nm]][[fam_nm]], nclusters = 10,
                                    seed = seed_tst)
