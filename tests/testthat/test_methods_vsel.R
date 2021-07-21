@@ -206,15 +206,24 @@ test_that("error if `stat` is of invalid length", {
   }
 })
 
-test_that("suggest_size() works on all stats", {
-  for (stat in valid_stats_gauss) {
-    suggested_size <- suggest_size(vs_list[[1]][["gauss"]], stat = stat)
-    expect_true(!is.na(suggested_size))
-    expect_true(suggested_size >= 0)
-  }
-  for (stat in valid_stats_binom) {
-    suggested_size <- suggest_size(vs_list[[1]][["binom"]], stat = stat)
-    expect_true(!is.na(suggested_size))
-    expect_true(suggested_size >= 0)
+test_that("`stat` works", {
+  skip_if_not(run_vs)
+  for (tstsetup in tstsetups_smmry_vs) {
+    tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
+    fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
+    stat_crr_nm <- switch(fam_crr,
+                          "gauss" = "gauss_stats",
+                          "binom" = "binom_stats",
+                          "common_stats")
+    stat_crr <- stats_tst[[stat_crr_nm]]
+    suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr)
+    expect_type(suggsize, "double")
+    expect_length(suggsize, 1)
+    expect_true(!is.na(suggsize), info = tstsetup)
+    expect_true(suggsize >= 0, info = tstsetup)
+    if (stat_crr == "elpd") {
+      expect_identical(suggsize, vss[[tstsetup_vs]]$suggested_size,
+                       info = tstsetup)
+    }
   }
 })
