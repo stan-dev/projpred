@@ -632,7 +632,7 @@ smmry_sel_tester <- function(
       lower_nm <- paste(stats_expected, "lower", sep = ".")
     }
     for (stat_idx in seq_along(stats_expected)) {
-      expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] >
+      expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] >=
                         smmry_sel[, lower_nm[stat_idx]]),
                   info = info_str)
     }
@@ -644,7 +644,7 @@ smmry_sel_tester <- function(
       upper_nm <- paste(stats_expected, "upper", sep = ".")
     }
     for (stat_idx in seq_along(stats_expected)) {
-      expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] <
+      expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] <=
                         smmry_sel[, upper_nm[stat_idx]]),
                   info = info_str)
     }
