@@ -60,13 +60,14 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(smmrys_vs)) {
+    tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     smmry_tester(
       smmrys_vs[[tstsetup]],
-      vsel_expected = vss[[tstsetup]],
+      vsel_expected = vss[[tstsetup_vs]],
       info_str = tstsetup,
       stats_expected = args_smmry_vs[[tstsetup]]$stats,
       type_expected = args_smmry_vs[[tstsetup]]$type,
-      solterms_expected = vss[[tstsetup]]$solution_terms
+      solterms_expected = vss[[tstsetup_vs]]$solution_terms
     )
   }
 })
