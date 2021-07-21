@@ -13,14 +13,15 @@ test_that("error if `object` is invalid", {
   )
   for (obj_nm in names(objs_invalid)) {
     for (vsel_fun in vsel_funs) {
-      expect_error(get(!!vsel_fun, mode = "function")(objs_invalid[[!!obj_nm]]),
-                   "is not a variable selection object")
+      expect_error(get(vsel_fun, mode = "function")(objs_invalid[[obj_nm]]),
+                   "is not a variable selection object",
+                   info = paste(obj_nm, vsel_fun, sep = "__"))
     }
   }
 })
 
 test_that("error if `stats` is invalid", {
-  tstsetup <- grep("^.*\\.gauss\\.", names(vss), value = TRUE)[1]
+  tstsetup <- grep("\\.gauss\\.", names(vss), value = TRUE)[1]
   stats_invalid <- nlist(NULL, NA, "zzz", "acc", "auc")
   err_expected <- as.list(c(
     "specified as NULL",
@@ -31,11 +32,10 @@ test_that("error if `stats` is invalid", {
   for (stat_nm in names(stats_invalid)) {
     for (vsel_fun in vsel_funs) {
       expect_error(
-        get(!!vsel_fun, mode = "function")(
-          vss[[tstsetup]], stat = stats_invalid[[stat_nm]]
-        ),
+        get(vsel_fun, mode = "function")(vss[[tstsetup]],
+                                         stat = stats_invalid[[stat_nm]]),
         err_expected[[stat_nm]],
-        info = paste(tstsetup, stat_nm, sep = "__")
+        info = paste(tstsetup, stat_nm, vsel_fun, sep = "__")
       )
     }
   }
@@ -47,13 +47,10 @@ context("summary()")
 
 test_that("error if `baseline` is invalid", {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
-  for (tstsetup in tstsetups) {
-    expect_error(
-      summary(vss[[tstsetup]], baseline = "zzz"),
-      "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
-      info = tstsetup
-    )
+  for (tstsetup in names(vss)[1]) {
+    expect_error(summary(vss[[tstsetup]], baseline = "zzz"),
+                 "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
+                 info = tstsetup)
   }
 })
 
