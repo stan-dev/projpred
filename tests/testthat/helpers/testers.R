@@ -539,12 +539,17 @@ vsel_tester <- function(
 # @param smmry An object as returned by summary.vsel().
 # @param vsel_expected The `"vsel"` object which was used in the summary.vsel()
 #   call.
+# @param nterms_max_expected A single numeric value as supplied to
+#   summary.vsel()'s argument `nterms_max`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
-# @param ... Arguments to be passed to smmry_sel_tester().
+# @param ... Arguments passed to smmry_sel_tester(), apart from
+#   smmry_sel_tester()'s arguments `smmry_sel`, `nterms_max_expected`, and
+#   `info_str`.
 #
 # @return `TRUE` (invisible).
-smmry_tester <- function(smmry, vsel_expected, info_str, ...) {
+smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
+                         info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
   pct_solterms_nm <- if ("pct_solution_terms_cv" %in% names(vsel_expected)) {
@@ -575,7 +580,12 @@ smmry_tester <- function(smmry, vsel_expected, info_str, ...) {
                    info = info_str)
   # In summary.vsel(), `nterms_max` and output element `nterms` do not count the
   # intercept (whereas `vsel_expected$nterms_max` does):
-  expect_identical(smmry$nterms, vsel_expected$nterms_max - 1,
+  if (is.null(nterms_max_expected)) {
+    nterms_ch <- vsel_expected$nterms_max - 1
+  } else {
+    nterms_ch <- nterms_max_expected
+  }
+  expect_identical(smmry$nterms, nterms_ch,
                    info = info_str)
   expect_true(smmry$search_included %in% c("search included",
                                            "search not included"),
@@ -583,7 +593,8 @@ smmry_tester <- function(smmry, vsel_expected, info_str, ...) {
   expect_identical(smmry$search_included == "search included",
                    isTRUE(vsel_expected$validate_search),
                    info = info_str)
-  smmry_sel_tester(smmry$selection, info_str = info_str, ...)
+  smmry_sel_tester(smmry$selection, nterms_max_expected = nterms_max_expected,
+                   info_str = info_str, ...)
 
   return(invisible(TRUE))
 }
@@ -597,6 +608,8 @@ smmry_tester <- function(smmry, vsel_expected, info_str, ...) {
 #   corresponding argument of summary.vsel()). Use `NULL` for the default.
 # @param type_expected A character vector of expected `type`s (see the
 #   corresponding argument of summary.vsel()). Use `NULL` for the default.
+# @param nterms_max_expected A single numeric value as supplied to
+#   summary.vsel()'s argument `nterms_max`.
 # @param cv_method_expected Either `character()` for the no-CV case or a single
 #   character string giving the CV method (see argument `cv_method` of
 #   cv_varsel()).
@@ -613,6 +626,7 @@ smmry_sel_tester <- function(
   smmry_sel,
   stats_expected = NULL,
   type_expected = NULL,
+  nterms_max_expected = NULL,
   cv_method_expected = character(),
   solterms_expected,
   from_datafit = FALSE,
@@ -624,10 +638,16 @@ smmry_sel_tester <- function(
   if (is.null(type_expected)) {
     type_expected <- c("mean", "se", "diff", "diff.se")
   }
+  if (is.null(nterms_max_expected)) {
+    nterms_max_expected <- length(solterms_expected)
+  } else {
+    solterms_expected <- head(solterms_expected, nterms_max_expected)
+  }
+
   expect_s3_class(smmry_sel, "data.frame")
 
   # Rows:
-  expect_identical(nrow(smmry_sel), length(solterms_expected) + 1L,
+  expect_identical(nrow(smmry_sel), nterms_max_expected + 1L,
                    info = info_str)
 
   # Columns:
