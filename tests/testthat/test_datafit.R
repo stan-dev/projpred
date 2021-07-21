@@ -204,17 +204,6 @@ test_that(paste(
   }
 })
 
-test_that("summary.vsel(): error if `baseline = \"ref\"` and `deltas = TRUE`", {
-  for (tstsetup in names(vss_datafit)[1]) {
-    expect_error(
-      summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
-      paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
-            "reference model\\.$"),
-      info = tstsetup
-    )
-  }
-})
-
 ## Projection -------------------------------------------------------------
 
 test_that("project(): error if `object` is of class \"datafit\"", {
@@ -348,6 +337,17 @@ test_that("summary.vsel(): error if `object` is of class \"datafit\"", {
         info = paste(mod_nm, fam_nm, sep = "__")
       )
     }
+  }
+})
+
+test_that("summary.vsel(): error if `baseline = \"ref\"` and `deltas = TRUE`", {
+  for (tstsetup in names(vss_datafit)[1]) {
+    expect_error(
+      summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
+      paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
+            "reference model\\.$"),
+      info = tstsetup
+    )
   }
 })
 
