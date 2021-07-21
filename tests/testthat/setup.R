@@ -129,10 +129,10 @@ stats_tst <- list(
   binom_stats = list(stats = c(stats_common, c("acc", "auc")))
 )
 type_tst <- c("mean", "lower", "upper", "se")
-digits_tst <- list(
-  default_digits = list(),
-  dig4 = list(digits = 4)
-)
+# digits_tst <- list(
+#   default_digits = list(),
+#   dig4 = list(digits = 4)
+# )
 
 # Data --------------------------------------------------------------------
 
@@ -684,25 +684,15 @@ args_smmry_vs <- lapply(tstsetups_smmry_vs, function(tstsetup_vsel) {
   stats_tst <- stats_tst[c("default_stats", add_stats)]
   lapply(stats_tst, function(stats_crr) {
     if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0) {
-      add_digits <- "dig4"
+      nterms_tst <- nterms_avail[c("default_nterms", "single")]
     } else {
-      add_digits <- character()
+      nterms_tst <- nterms_avail["default_nterms"]
     }
-    digits_tst <- digits_tst[c("default_digits", add_digits)]
-    lapply(digits_tst, function(digits_crr) {
-      if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0 &&
-          length(digits_crr) == 0) {
-        nterms_tst <- nterms_avail[c("default_nterms", "single")]
-      } else {
-        nterms_tst <- nterms_avail["default_nterms"]
-      }
-      lapply(nterms_tst, function(nterms_crr) {
-        return(c(
-          nlist(tstsetup_vsel, type = type_tst, nterms_max = nterms_crr),
-          stats_crr,
-          digits_crr
-        ))
-      })
+    lapply(nterms_tst, function(nterms_crr) {
+      return(c(
+        nlist(tstsetup_vsel, type = type_tst, nterms_max = nterms_crr),
+        stats_crr
+      ))
     })
   })
 })
@@ -737,25 +727,15 @@ args_smmry_cvvs <- lapply(tstsetups_smmry_cvvs, function(tstsetup_vsel) {
   stats_tst <- stats_tst[c("default_stats", add_stats)]
   lapply(stats_tst, function(stats_crr) {
     if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0) {
-      add_digits <- "dig4"
+      nterms_tst <- nterms_avail[c("default_nterms", "single")]
     } else {
-      add_digits <- character()
+      nterms_tst <- nterms_avail["default_nterms"]
     }
-    digits_tst <- digits_tst[c("default_digits", add_digits)]
-    lapply(digits_tst, function(digits_crr) {
-      if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0 &&
-          length(digits_crr) == 0) {
-        nterms_tst <- nterms_avail[c("default_nterms", "single")]
-      } else {
-        nterms_tst <- nterms_avail["default_nterms"]
-      }
-      lapply(nterms_tst, function(nterms_crr) {
-        return(c(
-          nlist(tstsetup_vsel, type = type_tst, nterms_max = nterms_crr),
-          stats_crr,
-          digits_crr
-        ))
-      })
+    lapply(nterms_tst, function(nterms_crr) {
+      return(c(
+        nlist(tstsetup_vsel, type = type_tst, nterms_max = nterms_crr),
+        stats_crr
+      ))
     })
   })
 })
