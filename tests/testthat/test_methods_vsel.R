@@ -97,7 +97,10 @@ test_that(paste(
 
 context("print()")
 
-test_that("`object` of class \"vsel\" (created by varsel()) works", {
+test_that(paste(
+  "`object` of class \"vsel\" (created by varsel()) and passing arguments to",
+  "summary.vsel() works"
+), {
   skip_if_not(run_vs)
 
   for (tstsetup in names(vss)[1]) {
@@ -114,10 +117,24 @@ test_that("`object` of class \"vsel\" (created by varsel()) works", {
     # expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
     #              tolerance = 1e-3)
     ###
+    # options to summary
+    expect_output(out <- print(vs_list[[1]][[1]],
+                               nterms_max = 3,
+                               stats = "mse"
+    ))
+    expect_equal(nrow(out$selection) - 1, 3)
+    expect_named(out$selection, c(
+      "size", "solution_terms",
+      "mse", "se",
+      "diff", "diff.se"
+    ))
   }
 })
 
-test_that("`object` of class \"vsel\" (created by cv_varsel()) works", {
+test_that(paste(
+  "`object` of class \"vsel\" (created by cv_varsel()) and passing arguments",
+  "to summary.vsel() works"
+), {
   skip_if_not(run_cvvs)
 
   for (tstsetup in names(cvvss)[1]) {
@@ -134,35 +151,19 @@ test_that("`object` of class \"vsel\" (created by cv_varsel()) works", {
     # expect_equal(out$selection$elpd, round(out$selection$elpd, 4),
     #              tolerance = 1e-3)
     ###
+    # options to summary
+    expect_output(out <- print(cvs_list[[1]][[1]],
+                               nterms_max = 3,
+                               stats = "mse"
+    ))
+    expect_equal(nrow(out$selection) - 1, 3)
+    expect_named(out$selection, c(
+      "size", "solution_terms",
+      paste0("mse.", tolower(out$cv_method)), "se",
+      "diff", "diff.se"
+      # "pct_solution_terms_cv"
+    ))
   }
-})
-
-test_that("passing arguments to summary.vsel() works", {
-  # TODO:
-
-  # options to summary
-  expect_output(out <- print(vs_list[[1]][[1]],
-                             nterms_max = 3,
-                             stats = "mse"
-  ))
-  expect_equal(nrow(out$selection) - 1, 3)
-  expect_named(out$selection, c(
-    "size", "solution_terms",
-    "mse", "se",
-    "diff", "diff.se"
-  ))
-
-  expect_output(out <- print(cvs_list[[1]][[1]],
-                             nterms_max = 3,
-                             stats = "mse"
-  ))
-  expect_equal(nrow(out$selection) - 1, 3)
-  expect_named(out$selection, c(
-    "size", "solution_terms",
-    paste0("mse.", tolower(out$cv_method)), "se",
-    "diff", "diff.se"
-    # "pct_solution_terms_cv"
-  ))
 })
 
 # plot() ------------------------------------------------------------------
