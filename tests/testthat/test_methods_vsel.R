@@ -139,9 +139,13 @@ test_that(paste(
 
 context("plot()")
 
-test_that("plotting works", {
-  expect_s3_class(plot(vs_list[[1]][[1]]), "ggplot")
-  expect_visible(plot(vs_list[[1]][[1]], nterms_max = 3))
+test_that("`x` of class \"vsel\" (created by varsel()) works", {
+  skip_if_not(run_vs)
+  for (tstsetup in names(vss)[1]) {
+    plot_obj <- plot(vss[[tstsetup]], nterms_max = nterms_avail$single)
+    expect_s3_class(plot_obj, "ggplot")
+    expect_visible(plot_obj, label = tstsetup)
+  }
 })
 
 test_that("invalid 'baseline' arguments are rejected", {
