@@ -2,7 +2,7 @@
 
 context("summary(), plot(), suggest_size()")
 
-test_that("error if `object` is incorrect", {
+test_that("error if `object` is invalid", {
   objs_invalid <- nlist(
     NULL,
     fit = fits[[1]][[1]],
@@ -19,7 +19,7 @@ test_that("error if `object` is incorrect", {
   }
 })
 
-test_that("error if `stats` is incorrect", {
+test_that("error if `stats` is invalid", {
   tstsetup <- grep("^.*\\.gauss\\.", names(vss), value = TRUE)[1]
   stats_invalid <- nlist(NULL, NA, "zzz", "acc", "auc")
   err_expected <- as.list(c(
@@ -45,7 +45,7 @@ test_that("error if `stats` is incorrect", {
 
 context("summary()")
 
-test_that("error if `baseline` is incorrect", {
+test_that("error if `baseline` is invalid", {
   skip_if_not(run_vs)
   tstsetups <- grep("^glm\\.gauss\\.default_meth", names(vss), value = TRUE)[1]
   for (tstsetup in tstsetups) {

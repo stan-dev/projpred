@@ -26,12 +26,12 @@ test_that(paste(
   }
 })
 
-test_that("error if `object` is incorrect", {
+test_that("error if `object` is invalid", {
   expect_error(varsel(rnorm(5), verbose = FALSE),
                "no applicable method")
 })
 
-test_that("error if `method` is incorrect", {
+test_that("error if `method` is invalid", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "k-fold"),
@@ -333,7 +333,7 @@ test_that(paste(
 
 ## Penalty ----------------------------------------------------------------
 
-test_that("error if `penalty` is of incorrect length", {
+test_that("error if `penalty` is of invalid length", {
   skip_if_not(run_vs)
   tstsetups <- setdiff(
     grep("^glm\\.", names(args_vs), value = TRUE),
@@ -463,12 +463,12 @@ test_that(paste(
   }
 })
 
-test_that("error if `object` is incorrect", {
+test_that("error if `object` is invalid", {
   expect_error(cv_varsel(rnorm(5)),
                "^no applicable method for")
 })
 
-test_that("error if `method` is incorrect", {
+test_that("error if `method` is invalid", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
@@ -482,7 +482,7 @@ test_that("error if `method` is incorrect", {
   }
 })
 
-test_that("error if `cv_method` is incorrect", {
+test_that("error if `cv_method` is invalid", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
@@ -530,7 +530,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   }
 })
 
-test_that("error if `nloo` is incorrect", {
+test_that("error if `nloo` is invalid", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       # Use SW() because of occasional warnings concerning Pareto k diagnostics:
@@ -675,7 +675,7 @@ test_that("`validate_search` works", {
   }
 })
 
-test_that("error if `K` is incorrect", {
+test_that("error if `K` is invalid", {
   skip_if_not(run_cvvs_kfold)
   refmod_crr <- refmods_kfold$glm$gauss
   expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = 1),
