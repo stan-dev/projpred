@@ -148,6 +148,15 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
   }
 })
 
+test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(cvvss)[1]) {
+    plot_obj <- plot(cvvss[[tstsetup]], nterms_max = nterms_avail$single)
+    expect_s3_class(plot_obj, "ggplot")
+    expect_visible(plot_obj, label = tstsetup)
+  }
+})
+
 test_that("invalid 'baseline' arguments are rejected", {
   expect_error(
     plot(vs_list[[1]][[1]], baseline = "zzz"),
