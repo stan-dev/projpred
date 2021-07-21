@@ -208,12 +208,14 @@ test_that("error if `stat` is of invalid length", {
 
 test_that("`stat` works", {
   skip_if_not(run_vs)
-  tstsetups <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
-    unlist(lapply(fam_nms, function(fam_nm) {
-      grep(paste0("^", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
-           value = TRUE)[1]
+  tstsetups <- setNames(
+    nm = unlist(lapply(setdiff(mod_nms, "glmm"), function(mod_nm) {
+      unlist(lapply(fam_nms, function(fam_nm) {
+        grep(paste0("^", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
+             value = TRUE)[1]
+      }))
     }))
-  })))
+  )
   for (tstsetup in tstsetups) {
     tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
