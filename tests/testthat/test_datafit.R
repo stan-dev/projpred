@@ -355,18 +355,30 @@ test_that(paste(
   "summary.vsel(): `object` of class \"vsel\" (created by varsel() applied to",
   "an `object` of class \"datafit\") and `stats` work"
 ), {
-  # TODO:
-  for (i in seq_along(vsref_list)) {
-    for (j in seq_along(vsref_list[[i]])) {
-      vs <- vsref_list[[i]][[j]]
-      if (vs$family$family == "gaussian") {
-        stats_crr <- valid_stats_gauss
-      } else {
-        stats_crr <- valid_stats_binom
-      }
-      stats <- summary(vs, stats = stats_crr)$selection
-      expect_true(is.data.frame(stats))
-    }
+  skip_if_not(run_vs)
+  tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
+    unlist(lapply(fam_nms, function(fam_nm) {
+      grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss_datafit),
+           value = TRUE)[1]
+    }))
+  }))
+  for (tstsetup in tstsetups) {
+    fam_crr <- args_vs_datafit[[tstsetup]]$fam_nm
+    stats_crr <- switch(fam_crr,
+                        "gauss" = valid_stats_gauss,
+                        "binom" = valid_stats_binom,
+                        valid_stats_all)
+    smmry <- summary(vss_datafit[[tstsetup]],
+                     stats = stats_crr,
+                     type = type_tst)
+    smmry_tester(
+      smmry,
+      vsel_expected = vss_datafit[[tstsetup]],
+      info_str = tstsetup,
+      stats_expected = stats_crr,
+      type_expected = type_tst,
+      solterms_expected = vss_datafit[[tstsetup]]$solution_terms
+    )
   }
 })
 
