@@ -274,6 +274,8 @@ test_that(paste(
   }
 })
 
+## Prediction -------------------------------------------------------------
+
 test_that(paste(
   "proj_linpred(): `object` of (informal) class \"proj_list\" (based on",
   "varsel()) works"
