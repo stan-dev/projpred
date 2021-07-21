@@ -67,6 +67,7 @@ test_that(paste(
       info_str = tstsetup,
       stats_expected = args_smmry_vs[[tstsetup]]$stats,
       type_expected = args_smmry_vs[[tstsetup]]$type,
+      nterms_max_expected = args_smmry_vs[[tstsetup]]$nterms_max,
       solterms_expected = vss[[tstsetup_vs]]$solution_terms
     )
   }
