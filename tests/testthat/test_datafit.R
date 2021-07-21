@@ -353,7 +353,7 @@ test_that("summary.vsel(): error if `object` is of class \"datafit\"", {
 
 test_that(paste(
   "summary.vsel(): `object` of class \"vsel\" (created by varsel() applied to",
-  "an `object` of class \"datafit\") and `stats` work"
+  "an `object` of class \"datafit\"), `stats`, and `type` work"
 ), {
   skip_if_not(run_vs)
   tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
