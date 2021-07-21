@@ -34,11 +34,13 @@ test_that("error if `object` is invalid", {
 test_that("error if `method` is invalid", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
-      expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "k-fold"),
-                   "Unknown search method")
+      expect_error(varsel(refmods[[mod_nm]][[fam_nm]], method = "k-fold"),
+                   "Unknown search method",
+                   info = paste(mod_nm, fam_nm, sep = "__"))
       if (mod_nm != "glm") {
-        expect_error(varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
-                     "^L1 search is only supported for GLMs\\.$")
+        expect_error(varsel(refmods[[mod_nm]][[fam_nm]], method = "L1"),
+                     "^L1 search is only supported for GLMs\\.$",
+                     info = paste(mod_nm, fam_nm, sep = "__"))
       }
     }
   }
@@ -471,12 +473,13 @@ test_that("error if `object` is invalid", {
 test_that("error if `method` is invalid", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
-      expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
-                             method = "k-fold"),
-                   "^Unknown search method$")
+      expect_error(cv_varsel(refmods[[mod_nm]][[fam_nm]], method = "k-fold"),
+                   "^Unknown search method$",
+                   info = paste(mod_nm, fam_nm, sep = "__"))
       if (mod_nm != "glm") {
-        expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]], method = "L1"),
-                     "^L1 search is only supported for GLMs\\.$")
+        expect_error(cv_varsel(refmods[[mod_nm]][[fam_nm]], method = "L1"),
+                     "^L1 search is only supported for GLMs\\.$",
+                     info = paste(mod_nm, fam_nm, sep = "__"))
       }
     }
   }
@@ -485,9 +488,9 @@ test_that("error if `method` is invalid", {
 test_that("error if `cv_method` is invalid", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
-      expect_error(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
-                             cv_method = "k-fold"),
-                   "^Unknown cross-validation method$")
+      expect_error(cv_varsel(refmods[[mod_nm]][[fam_nm]], cv_method = "k-fold"),
+                   "^Unknown cross-validation method$",
+                   info = paste(mod_nm, fam_nm, sep = "__"))
     }
   }
 })
