@@ -15,6 +15,20 @@ test_that("`object` of class \"stanreg\" works", {
       )
     }
   }
+  if (run_cvvs_kfold) {
+    for (mod_nm in names(refmods_kfold)) {
+      for (fam_nm in names(refmods_kfold[[mod_nm]])) {
+        refmodel_tester(
+          refmod = refmods_kfold[[mod_nm]][[fam_nm]],
+          fit_expected = fits_kfold[[mod_nm]][[fam_nm]],
+          nobsv_expected = nobsv,
+          nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
+          info_str = paste(mod_nm, fam_nm, "kfold", sep = "__"),
+          fam_orig = get(paste0("f_", fam_nm))
+        )
+      }
+    }
+  }
 })
 
 test_that("error if `data` is missing", {
