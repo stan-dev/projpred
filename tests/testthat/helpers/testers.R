@@ -54,6 +54,9 @@ extfam_tester <- function(extfam,
 #
 # @param refmod An object of class `"refmodel"` (at least expected so).
 # @param fit_expected The expected `refmod$fit` object.
+# @param formul_expected The expected `refmod$formula` object. For the binomial
+#   family, the left-hand side is expected to be of the form
+#   `cbind(y, n_trials - y)` (further modifications are made internally).
 # @param nobsv_expected A single integer value giving the expected number of
 #   observations.
 # @param nrefdraws_expected A single integer value giving the expected number of
