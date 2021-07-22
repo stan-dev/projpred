@@ -332,6 +332,16 @@ SW({
       offset = offs_tst,
       chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
     )
+    # For some arguments, if they are specified via objects,
+    # rstanarm:::kfold.stanreg() seems to assume those objects to lie in the
+    # global environment. Since `testthat` uses a new environment for running
+    # the tests (see `?testthat::test_env`), we need the following code to be
+    # able to run devtools::test():
+    for (obj_symb_chr in c("f_gauss", "chains_tst", "seed_tst", "iter_tst")) {
+      if (!exists(obj_symb_chr, envir = .GlobalEnv)) {
+        assign(obj_symb_chr, get(obj_symb_chr), envir = .GlobalEnv)
+      }
+    }
   }
 })
 
