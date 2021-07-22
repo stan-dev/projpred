@@ -54,6 +54,10 @@ extfam_tester <- function(extfam,
 #
 # @param refmod An object of class `"refmodel"` (at least expected so).
 # @param fit_expected The expected `refmod$fit` object.
+# @param nobsv_expected A single integer value giving the expected number of
+#   observations.
+# @param nrefdraws_expected A single integer value giving the expected number of
+#   posterior draws in the reference model.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to extfam_tester(), apart from
@@ -62,6 +66,8 @@ extfam_tester <- function(extfam,
 # @return `TRUE` (invisible).
 refmodel_tester <- function(refmod,
                             fit_expected,
+                            nobsv_expected,
+                            nrefdraws_expected,
                             info_str,
                             ...) {
   refmod_nms <- c(
@@ -103,7 +109,76 @@ refmodel_tester <- function(refmod,
   expect_identical(refmod$family$family, fit_expected$family$family,
                    info = info_str)
 
-  # TODO (see `refmod_nms`)
+  # mu
+  expect_true(is.matrix(refmod$mu), info = info_str)
+  expect_type(refmod$mu, "double")
+  expect_identical(dim(refmod$mu), c(nobsv_expected, nrefdraws_expected),
+                   info = info_str)
+
+  # dis
+  if (refmod$family$family == "gaussian") {
+    expect_true(is.vector(refmod$dis, "double"), info = info_str)
+    expect_length(refmod$dis, nrefdraws_expected)
+    expect_true(all(refmod$dis > 0), info = info_str)
+  } else {
+    expect_identical(refmod$dis, rep(0, nrefdraws_expected), info = info_str)
+  }
+
+  # y
+  expect_true(is.vector(refmod$y, "numeric"), info = info_str)
+  expect_length(refmod$y, nobsv_expected)
+
+  # loglik
+  expect_true(is.matrix(refmod$loglik), info = info_str)
+  expect_type(refmod$loglik, "double")
+  expect_identical(dim(refmod$loglik), c(nrefdraws_expected, nobsv_expected),
+                   info = info_str)
+
+  # intercept
+  expect_type(refmod$intercept, "logical")
+  expect_length(refmod$intercept, 1)
+  expect_false(is.na(refmod$intercept), info = info_str)
+  # As long as models without an intercept are not supported by projpred:
+  expect_true(refmod$intercept, info = info_str)
+
+  # proj_predfun
+  expect_type(refmod$proj_predfun, "closure")
+
+  # fetch_data
+  expect_type(refmod$fetch_data, "closure")
+
+  # wobs
+  expect_true(is.vector(refmod$wobs, "numeric"), info = info_str)
+  expect_length(refmod$wobs, nobsv_expected)
+  expect_true(all(refmod$wobs > 0), info = info_str)
+
+  # wsample
+  expect_true(is.vector(refmod$wsample, "double"), info = info_str)
+  expect_length(refmod$wsample, nrefdraws_expected)
+  expect_true(all(refmod$wsample > 0), info = info_str)
+
+  # offset
+  expect_true(is.vector(refmod$offset, "double"), info = info_str)
+  expect_length(refmod$offset, nobsv_expected)
+
+  # folds
+  expect_null(refmod$folds, info = info_str)
+
+  # cvfun
+  if (inherits(refmod$fit, "stanreg")) {
+    expect_type(refmod$cvfun, "closure")
+  } else {
+    expect_null(refmod$cvfun, info = info_str)
+  }
+
+  # cvfits
+  expect_null(refmod$cvfits, info = info_str)
+
+  # extract_model_data
+  expect_type(refmod$extract_model_data, "closure")
+
+  # ref_predfun
+  expect_type(refmod$ref_predfun, "closure")
 
   return(invisible(TRUE))
 }

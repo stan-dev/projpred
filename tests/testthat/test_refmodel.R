@@ -8,6 +8,8 @@ test_that("`object` of class \"stanreg\" works", {
       refmodel_tester(
         refmod = refmods[[mod_nm]][[fam_nm]],
         fit_expected = fits[[mod_nm]][[fam_nm]],
+        nobsv_expected = nobsv,
+        nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
         info_str = paste(mod_nm, fam_nm, sep = "__"),
         fam_orig = get(paste0("f_", fam_nm))
       )
