@@ -3,7 +3,7 @@ context("datafit")
 # Setup -------------------------------------------------------------------
 
 if (!requireNamespace("glmnet", quietly = TRUE)) {
-  stop("Package \"glmnet\" needed for this test to work. Please install it.",
+  stop("Package \"glmnet\" is needed for these tests. Please install it.",
        call. = FALSE)
 }
 
