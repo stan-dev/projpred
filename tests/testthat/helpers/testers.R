@@ -47,7 +47,7 @@ refmodel_tester <- function(refmod,
   expect_identical(refmod$fit, fit_expected, info = info_str)
 
   # formula
-  if (fam_fullnm_expected == "binomial") {
+  if (refmod$family$family == "binomial") {
     formul_expected_chr <- as.character(fit_expected$formula)
     stopifnot(length(formul_expected_chr) == 3)
     y_expected_chr <- sub("^cbind\\(", "", formul_expected_chr[2])
