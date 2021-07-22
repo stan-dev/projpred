@@ -3,10 +3,18 @@
 context("get_refmodel()")
 
 test_that("`object` of class \"stanreg\" works", {
+  refmod_nms <- c(
+    "fit", "formula", "div_minimizer", "family", "mu", "dis", "y", "loglik",
+    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
+    "folds", "cvfun", "cvfits", "extract_model_data", "ref_predfun"
+  )
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       refmod <- refmods[[mod_nm]][[fam_nm]]
+      info_str <- paste(mod_nm, fam_nm, sep = "__")
       expect_s3_class(refmod, "refmodel", exact = TRUE)
+      expect_type(refmod, "list")
+      expect_named(refmod, refmod_nms, info = info_str)
     }
   }
 })
@@ -22,7 +30,7 @@ test_that("error if `data` is missing", {
                "^object of type 'environment' is not subsettable$")
 })
 
-test_that("string formula fails", {
+test_that("error if `formula` is a character string", {
   SW(fit_str <- rstanarm::stan_glm(
     "y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2",
     family = f_gauss, data = dat,
