@@ -1,17 +1,39 @@
-# A helper function for testing the structure of an expected `"refmodel"` object
+# A helper function for testing the structure of an expected extended `"family"`
+# object
 #
-# @param refmod An object of class `"refmodel"` (at least expected so).
-# @param fit_expected The expected `refmod$fit` object.
+# @param extfam An object of class `"family"` (at least expected so) which has
+#   been extended by projpred.
 # @param fam_fullnm_expected The expected full name of the family (e.g.,
 #   `"gaussian"` or `"binomial"`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
+extfam_tester <- function(extfam,
+                          fam_fullnm_expected,
+                          info_str) {
+  expect_s3_class(extfam, "family")
+  expect_type(extfam, "list")
+  expect_identical(extfam$family, fam_fullnm_expected,
+                   info = info_str)
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of an expected `"refmodel"` object
+#
+# @param refmod An object of class `"refmodel"` (at least expected so).
+# @param fit_expected The expected `refmod$fit` object.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+# @param ... Arguments passed to extfam_tester(), apart from
+#   extfam_tester()'s arguments `extfam` and `info_str`.
+#
+# @return `TRUE` (invisible).
 refmodel_tester <- function(refmod,
                             fit_expected,
-                            fam_fullnm_expected,
-                            info_str) {
+                            info_str,
+                            ...) {
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "mu", "dis", "y", "loglik",
     "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
@@ -46,12 +68,9 @@ refmodel_tester <- function(refmod,
   expect_type(refmod$div_minimizer, "closure")
 
   # family
-  expect_s3_class(refmod$family, "family")
-  expect_identical(refmod$family$family, fam_fullnm_expected,
-                   info = info_str)
+  extfam_tester(refmod$family, info_str = info_str, ...)
   expect_identical(refmod$family$family, fit_expected$family$family,
                    info = info_str)
-  # extfam_tester(refmod$family)
 
   # TODO (see `refmod_nms`)
 
