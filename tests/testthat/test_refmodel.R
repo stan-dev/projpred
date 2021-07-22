@@ -11,10 +11,36 @@ test_that("`object` of class \"stanreg\" works", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       refmod <- refmods[[mod_nm]][[fam_nm]]
+      fit_expected <- fits[[mod_nm]][[fam_nm]]
+      fam_fullnm_expected <- get(paste0("f_", fam_nm))$family
       info_str <- paste(mod_nm, fam_nm, sep = "__")
+
       expect_s3_class(refmod, "refmodel", exact = TRUE)
       expect_type(refmod, "list")
       expect_named(refmod, refmod_nms, info = info_str)
+
+      expect_identical(refmod$fit, fit_expected, info = info_str)
+      if (fam_fullnm_expected == "binomial") {
+        formul_expected_chr <- as.character(fit_expected$formula)
+        stopifnot(length(formul_expected_chr) == 3)
+        y_expected_chr <- sub("^cbind\\(", "", formul_expected_chr[2])
+        y_expected_chr <- sub(",.*\\)$", "", y_expected_chr)
+        formul_expected <- as.formula(paste(
+          y_expected_chr,
+          formul_expected_chr[1],
+          formul_expected_chr[3]
+        ))
+        expect_identical(refmod$formula, formul_expected, info = info_str)
+      } else {
+        expect_identical(refmod$formula, fit_expected$formula, info = info_str)
+      }
+      expect_type(refmod$div_minimizer, "closure")
+      expect_s3_class(refmod$family, "family")
+      expect_identical(refmod$family$family, fam_fullnm_expected,
+                       info = info_str)
+      expect_identical(refmod$family$family, fit_expected$family$family,
+                       info = info_str)
+      # extfam_tester(refmod$family)
     }
   }
 })
