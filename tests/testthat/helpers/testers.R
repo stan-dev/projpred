@@ -3,19 +3,20 @@
 #
 # @param extfam An object of class `"family"` (at least expected so) which has
 #   been extended by projpred.
-# @param fam_fullnm_expected The expected full name of the family (e.g.,
-#   `"gaussian"` or `"binomial"`).
+# @param fam_orig The original object of class `"family"` which has been used as
+#   input to extend_family().
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
 extfam_tester <- function(extfam,
-                          fam_fullnm_expected,
+                          fam_orig,
                           info_str) {
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
-  expect_identical(extfam$family, fam_fullnm_expected,
+  expect_identical(extfam$family, fam_orig$family,
                    info = info_str)
+  # TODO (add more expectations)
 
   return(invisible(TRUE))
 }

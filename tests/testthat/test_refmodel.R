@@ -9,7 +9,7 @@ test_that("`object` of class \"stanreg\" works", {
         refmod = refmods[[mod_nm]][[fam_nm]],
         fit_expected = fits[[mod_nm]][[fam_nm]],
         info_str = paste(mod_nm, fam_nm, sep = "__"),
-        fam_fullnm_expected = get(paste0("f_", fam_nm))$family
+        fam_orig = get(paste0("f_", fam_nm))
       )
     }
   }
