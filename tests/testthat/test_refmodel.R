@@ -43,10 +43,12 @@ test_that("error if `data` is missing", {
 })
 
 test_that("error if `formula` is a character string", {
+  # If `formula` is a character string, rstanarm::stan_glm() is not able to find
+  # objects supplied to arguments `weights` or `offset`, at least when using
+  # devtools::test():
   SW(fit_str <- rstanarm::stan_glm(
     "y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2",
     family = f_gauss, data = dat,
-    weights = wobs_tst, offset = offs_tst,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   ))
   expect_error(get_refmodel(fit_str),
