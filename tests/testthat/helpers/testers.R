@@ -5,12 +5,16 @@
 #   been extended by projpred.
 # @param fam_orig The original object of class `"family"` which has been used as
 #   input to extend_family().
+# @param extfam_nms_add2 A character vector of additional element names which
+#   do not exist in the output of extend_family() (needed for testing
+#   `get_refmodel([...])$family`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
 extfam_tester <- function(extfam,
                           fam_orig,
+                          extfam_nms_add2 = character(),
                           info_str) {
   # Some minimal checks for `fam_orig`:
   expect_s3_class(fam_orig, "family")
@@ -26,7 +30,8 @@ extfam_tester <- function(extfam,
   expect_named(fam_orig, fam_orig_nms, info = info_str)
 
   # Now the checks for `extfam` (first starting with the general structure):
-  extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd")
+  extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
+                      extfam_nms_add2)
   extfam_nms <- c(names(fam_orig), extfam_nms_add)
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
@@ -52,7 +57,7 @@ extfam_tester <- function(extfam,
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to extfam_tester(), apart from
-#   extfam_tester()'s arguments `extfam` and `info_str`.
+#   extfam_tester()'s arguments `extfam`, `extfam_nms_add2`, and `info_str`.
 #
 # @return `TRUE` (invisible).
 refmodel_tester <- function(refmod,
@@ -93,7 +98,8 @@ refmodel_tester <- function(refmod,
   expect_type(refmod$div_minimizer, "closure")
 
   # family
-  extfam_tester(refmod$family, info_str = info_str, ...)
+  extfam_tester(refmod$family, info_str = info_str,
+                extfam_nms_add2 = "mu_fun", ...)
   expect_identical(refmod$family$family, fit_expected$family$family,
                    info = info_str)
 
