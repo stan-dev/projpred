@@ -1,7 +1,11 @@
 context("extend_family()")
 
 test_that("`family` works", {
-  for (fam_nm in fam_nms) {
+  fam_nms_tst <- fam_nms
+  if (!"poiss" %in% fam_nms) {
+    fam_nms_tst <- setNames(nm = c(fam_nms_tst, "poiss"))
+  }
+  for (fam_nm in fam_nms_tst) {
     fam_orig_crr <- get(paste0("f_", fam_nm))
     extfam_tester(
       extend_family(fam_orig_crr),
