@@ -185,6 +185,7 @@ refmodel_tester <- function(refmod,
 
   # cvfits
   expect_null(refmod$cvfits, info = info_str)
+  expect_false(is.null(refmod$cvfun) && is.null(refmod$cvfits), info = info_str)
 
   # extract_model_data
   expect_type(refmod$extract_model_data, "closure")
