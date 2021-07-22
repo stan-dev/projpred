@@ -65,7 +65,9 @@ extfam_tester <- function(extfam,
 #
 # @return `TRUE` (invisible).
 refmodel_tester <- function(refmod,
+                            is_datafit = FALSE,
                             fit_expected,
+                            formul_expected = fit_expected$formula,
                             nobsv_expected,
                             nrefdraws_expected,
                             info_str,
@@ -75,7 +77,11 @@ refmodel_tester <- function(refmod,
     "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
     "folds", "cvfun", "cvfits", "extract_model_data", "ref_predfun"
   )
-  expect_s3_class(refmod, "refmodel", exact = TRUE)
+  refmod_class_expected <- "refmodel"
+  if (is_datafit) {
+    refmod_class_expected <- c("datafit", refmod_class_expected)
+  }
+  expect_s3_class(refmod, refmod_class_expected, exact = TRUE)
   expect_type(refmod, "list")
   expect_named(refmod, refmod_nms, info = info_str)
 
@@ -84,7 +90,7 @@ refmodel_tester <- function(refmod,
 
   # formula
   if (refmod$family$family == "binomial") {
-    formul_expected_chr <- as.character(fit_expected$formula)
+    formul_expected_chr <- as.character(formul_expected)
     stopifnot(length(formul_expected_chr) == 3)
     y_expected_chr <- sub("^cbind\\(", "", formul_expected_chr[2])
     y_expected_chr <- sub(",.*\\)$", "", y_expected_chr)
@@ -97,7 +103,7 @@ refmodel_tester <- function(refmod,
     # do not match:
     expect_equal(refmod$formula, formul_expected, info = info_str)
   } else {
-    expect_identical(refmod$formula, fit_expected$formula, info = info_str)
+    expect_identical(refmod$formula, formul_expected, info = info_str)
   }
 
   # div_minimizer
@@ -106,8 +112,6 @@ refmodel_tester <- function(refmod,
   # family
   extfam_tester(refmod$family, info_str = info_str,
                 extfam_nms_add2 = "mu_fun", ...)
-  expect_identical(refmod$family$family, fit_expected$family$family,
-                   info = info_str)
 
   # mu
   expect_true(is.matrix(refmod$mu), info = info_str)
@@ -119,7 +123,11 @@ refmodel_tester <- function(refmod,
   if (refmod$family$family == "gaussian") {
     expect_true(is.vector(refmod$dis, "double"), info = info_str)
     expect_length(refmod$dis, nrefdraws_expected)
-    expect_true(all(refmod$dis > 0), info = info_str)
+    if (!is_datafit) {
+      expect_true(all(refmod$dis > 0), info = info_str)
+    } else {
+      expect_identical(refmod$dis, 0, info = info_str)
+    }
   } else {
     expect_identical(refmod$dis, rep(0, nrefdraws_expected), info = info_str)
   }
@@ -129,10 +137,14 @@ refmodel_tester <- function(refmod,
   expect_length(refmod$y, nobsv_expected)
 
   # loglik
-  expect_true(is.matrix(refmod$loglik), info = info_str)
-  expect_type(refmod$loglik, "double")
-  expect_identical(dim(refmod$loglik), c(nrefdraws_expected, nobsv_expected),
-                   info = info_str)
+  if (!is_datafit) {
+    expect_true(is.matrix(refmod$loglik), info = info_str)
+    expect_type(refmod$loglik, "double")
+    expect_identical(dim(refmod$loglik), c(nrefdraws_expected, nobsv_expected),
+                     info = info_str)
+  } else {
+    expect_null(refmod$loglik, info = info_str)
+  }
 
   # intercept
   expect_type(refmod$intercept, "logical")
@@ -165,7 +177,7 @@ refmodel_tester <- function(refmod,
   expect_null(refmod$folds, info = info_str)
 
   # cvfun
-  if (inherits(refmod$fit, "stanreg")) {
+  if (inherits(refmod$fit, "stanreg") || is_datafit) {
     expect_type(refmod$cvfun, "closure")
   } else {
     expect_null(refmod$cvfun, info = info_str)

@@ -140,6 +140,23 @@ pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
 
 ## Reference model --------------------------------------------------------
 
+test_that("init_refmodel(): `object` of class \"datafit\" works", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      refmodel_tester(
+        refmod = datafits[[mod_nm]][[fam_nm]],
+        is_datafit = TRUE,
+        fit_expected = NULL,
+        formul_expected = fits[[mod_nm]][[fam_nm]]$formula,
+        nobsv_expected = nobsv,
+        nrefdraws_expected = 1L,
+        info_str = paste(mod_nm, fam_nm, sep = "__"),
+        fam_orig = get(paste0("f_", fam_nm))
+      )
+    }
+  }
+})
+
 test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
