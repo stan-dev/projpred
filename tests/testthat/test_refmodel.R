@@ -77,84 +77,9 @@ test_that("error if `ynew` is invalid", {
                "^ynew must be a numerical vector$")
 })
 
-test_that("`object` of class `\"refmodel\"`, `newdata`, and `type` work", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      tstsetup <- paste(mod_nm, fam_nm, sep = "__")
-      # We expect a warning which in fact should be suppressed, though (see
-      # issue #162):
-      warn_expected <- switch(
-        mod_nm,
-        "glm" = paste("^'offset' argument is NULL but it looks like you",
-                      "estimated the model using an offset term\\.$"),
-        NA
-      )
-      expect_warning(
-        predref_resp <- predict(refmods[[mod_nm]][[fam_nm]], dat,
-                                type = "response"),
-        warn_expected,
-        info = tstsetup
-      )
-      expect_warning(
-        predref_link <- predict(refmods[[mod_nm]][[fam_nm]], dat,
-                                type = "link"),
-        warn_expected,
-        info = tstsetup
-      )
-      expect_true(is.vector(predref_resp, "double"), info = tstsetup)
-      expect_length(predref_resp, nobsv)
-      if (fam_nm == "binom") {
-        expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                    info = tstsetup)
-      }
-      expect_true(is.vector(predref_link, "double"), info = tstsetup)
-      expect_length(predref_link, nobsv)
-      if (fam_nm == "gauss") {
-        expect_equal(predref_resp, predref_link, info = tstsetup)
-      }
-    }
-  }
-  if (run_cvvs_kfold) {
-    for (mod_nm in names(refmods_kfold)) {
-      for (fam_nm in names(refmods_kfold[[mod_nm]])) {
-        tstsetup <- paste(mod_nm, fam_nm, "kfold", sep = "__")
-        # We expect a warning which in fact should be suppressed, though (see
-        # issue #162):
-        warn_expected <- switch(
-          mod_nm,
-          "glm" = paste("^'offset' argument is NULL but it looks like you",
-                        "estimated the model using an offset term\\.$"),
-          NA
-        )
-        expect_warning(
-          predref_resp <- predict(refmods_kfold[[mod_nm]][[fam_nm]], dat,
-                                  type = "response"),
-          warn_expected,
-          info = tstsetup
-        )
-        expect_warning(
-          predref_link <- predict(refmods_kfold[[mod_nm]][[fam_nm]], dat,
-                                  type = "link"),
-          warn_expected,
-          info = tstsetup
-        )
-        expect_true(is.vector(predref_resp, "double"), info = tstsetup)
-        expect_length(predref_resp, nobsv)
-        if (fam_nm == "binom") {
-          expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                      info = tstsetup)
-        }
-        expect_true(is.vector(predref_link, "double"), info = tstsetup)
-        expect_length(predref_link, nobsv)
-        if (fam_nm == "gauss") {
-          expect_equal(predref_resp, predref_link, info = tstsetup)
-        }
-      }
-    }
-  }
-})
-
-test_that("`ynew` works", {
+test_that(paste(
+  "`object` of class `\"refmodel\"`, `newdata`, `ynew`, and `type` work"
+), {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
       tstsetup <- paste(mod_nm, fam_nm, sep = "__")
@@ -170,21 +95,56 @@ test_that("`ynew` works", {
                       "estimated the model using an offset term\\.$"),
         NA
       )
+
+      # Without `ynew`:
       expect_warning(
-        predref_resp <- predict(refmods[[mod_nm]][[fam_nm]], dat, ynew = y_crr,
+        predref_resp <- predict(refmods[[mod_nm]][[fam_nm]], dat,
                                 type = "response"),
         warn_expected,
         info = tstsetup
       )
       expect_warning(
-        predref_link <- predict(refmods[[mod_nm]][[fam_nm]], dat, ynew = y_crr,
+        predref_link <- predict(refmods[[mod_nm]][[fam_nm]], dat,
                                 type = "link"),
         warn_expected,
         info = tstsetup
       )
-      expect_equal(predref_resp, predref_link, info = tstsetup)
+
+      # With `ynew`:
+      expect_warning(
+        predref_ynew_resp <- predict(refmods[[mod_nm]][[fam_nm]], dat,
+                                     ynew = y_crr, type = "response"),
+        warn_expected,
+        info = tstsetup
+      )
+      expect_warning(
+        predref_ynew_link <- predict(refmods[[mod_nm]][[fam_nm]], dat,
+                                     ynew = y_crr, type = "link"),
+        warn_expected,
+        info = tstsetup
+      )
+
+      # Checks without `ynew`:
       expect_true(is.vector(predref_resp, "double"), info = tstsetup)
       expect_length(predref_resp, nobsv)
+      if (fam_nm == "binom") {
+        expect_true(all(predref_resp >= 0 & predref_resp <= 1),
+                    info = tstsetup)
+      }
+      expect_true(is.vector(predref_link, "double"), info = tstsetup)
+      expect_length(predref_link, nobsv)
+      if (fam_nm == "gauss") {
+        expect_equal(predref_resp, predref_link, info = tstsetup)
+      }
+
+      # Checks with `ynew`:
+      expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
+      expect_true(is.vector(predref_ynew_resp, "double"), info = tstsetup)
+      expect_length(predref_ynew_resp, nobsv)
+      expect_false(isTRUE(all.equal(predref_ynew_resp, predref_resp)),
+                   info = tstsetup)
+      expect_false(isTRUE(all.equal(predref_ynew_resp, predref_link)),
+                   info = tstsetup)
     }
   }
   if (run_cvvs_kfold) {
@@ -203,21 +163,56 @@ test_that("`ynew` works", {
                         "estimated the model using an offset term\\.$"),
           NA
         )
+
+        # Without `ynew`:
         expect_warning(
           predref_resp <- predict(refmods_kfold[[mod_nm]][[fam_nm]], dat,
-                                  ynew = y_crr, type = "response"),
+                                  type = "response"),
           warn_expected,
           info = tstsetup
         )
         expect_warning(
           predref_link <- predict(refmods_kfold[[mod_nm]][[fam_nm]], dat,
-                                  ynew = y_crr, type = "link"),
+                                  type = "link"),
           warn_expected,
           info = tstsetup
         )
-        expect_equal(predref_resp, predref_link, info = tstsetup)
+
+        # With `ynew`:
+        expect_warning(
+          predref_ynew_resp <- predict(refmods_kfold[[mod_nm]][[fam_nm]], dat,
+                                       ynew = y_crr, type = "response"),
+          warn_expected,
+          info = tstsetup
+        )
+        expect_warning(
+          predref_ynew_link <- predict(refmods_kfold[[mod_nm]][[fam_nm]], dat,
+                                       ynew = y_crr, type = "link"),
+          warn_expected,
+          info = tstsetup
+        )
+
+        # Checks without `ynew`:
         expect_true(is.vector(predref_resp, "double"), info = tstsetup)
         expect_length(predref_resp, nobsv)
+        if (fam_nm == "binom") {
+          expect_true(all(predref_resp >= 0 & predref_resp <= 1),
+                      info = tstsetup)
+        }
+        expect_true(is.vector(predref_link, "double"), info = tstsetup)
+        expect_length(predref_link, nobsv)
+        if (fam_nm == "gauss") {
+          expect_equal(predref_resp, predref_link, info = tstsetup)
+        }
+
+        # Checks with `ynew`:
+        expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
+        expect_true(is.vector(predref_ynew_resp, "double"), info = tstsetup)
+        expect_length(predref_ynew_resp, nobsv)
+        expect_false(isTRUE(all.equal(predref_ynew_resp, predref_resp)),
+                     info = tstsetup)
+        expect_false(isTRUE(all.equal(predref_ynew_resp, predref_link)),
+                     info = tstsetup)
       }
     }
   }
