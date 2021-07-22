@@ -711,7 +711,8 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     # Refit `K_crr` times:
     # rstanarm::kfold() lacks an argument for setting the seed:
     set.seed(seed_tst)
-    # Additionally to SW(), suppressMessages() could be used here:
+    # Additionally to SW(), suppressMessages() could be used here (but is not
+    # necessary since messages seem to be suppressed within test_that() `code`):
     SW(kfold_obj <- rstanarm::kfold(fit_crr, K = K_crr, save_fits = TRUE))
 
     # Create the folds vector:
