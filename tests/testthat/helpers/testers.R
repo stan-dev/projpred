@@ -12,8 +12,22 @@
 extfam_tester <- function(extfam,
                           fam_orig,
                           info_str) {
+  # Some minimal checks for `fam_orig`:
+  expect_s3_class(fam_orig, "family")
+  expect_type(fam_orig, "list")
+  fam_orig_nms_min <- c(
+    "family", "link", "linkfun", "linkinv", "variance", "dev.resids", "aic",
+    "mu.eta", "initialize", "validmu", "valideta"
+  )
+  expect_true(all(fam_orig_nms_min %in% names(fam_orig)), info = info_str)
+
+  # Now the checks for `extfam` (first starting with the general structure):
+  extfam_nms <- c(
+    names(fam_orig), "kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd"
+  )
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
+  expect_named(extfam, extfam_nms, info = info_str)
 
   fam_orig_ch <- structure(extfam[names(fam_orig)], class = "family")
   if (extfam$family == "binomial") {
