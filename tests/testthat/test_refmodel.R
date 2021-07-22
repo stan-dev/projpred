@@ -69,11 +69,9 @@ context("predict.refmodel()")
 
 # TODO
 
-test_that("predict checks the 'type' argument", {
-  expect_error(
-    predict(ref_gauss, df_gauss, type = "zzz"),
-    "type should be one of"
-  )
+test_that("error if `type` is invalid", {
+  expect_error(predict(refmods$glm$gauss, dat, type = "zzz"),
+               "^type should be one of")
 })
 
 test_that("predict produces sensible results for gaussian models", {
