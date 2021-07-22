@@ -21,7 +21,10 @@ refmodel_tester <- function(refmod,
   expect_type(refmod, "list")
   expect_named(refmod, refmod_nms, info = info_str)
 
+  # fit
   expect_identical(refmod$fit, fit_expected, info = info_str)
+
+  # formula
   if (fam_fullnm_expected == "binomial") {
     formul_expected_chr <- as.character(fit_expected$formula)
     stopifnot(length(formul_expected_chr) == 3)
@@ -38,13 +41,20 @@ refmodel_tester <- function(refmod,
   } else {
     expect_identical(refmod$formula, fit_expected$formula, info = info_str)
   }
+
+  # div_minimizer
   expect_type(refmod$div_minimizer, "closure")
+
+  # family
   expect_s3_class(refmod$family, "family")
   expect_identical(refmod$family$family, fam_fullnm_expected,
                    info = info_str)
   expect_identical(refmod$family$family, fit_expected$family$family,
                    info = info_str)
   # extfam_tester(refmod$family)
+
+  # TODO (see `refmod_nms`)
+
   return(invisible(TRUE))
 }
 
