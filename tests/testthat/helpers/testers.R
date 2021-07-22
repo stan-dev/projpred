@@ -15,11 +15,15 @@ extfam_tester <- function(extfam,
   # Some minimal checks for `fam_orig`:
   expect_s3_class(fam_orig, "family")
   expect_type(fam_orig, "list")
-  fam_orig_nms_common <- c(
+  fam_orig_nms <- fam_orig_nms_common <- c(
     "family", "link", "linkfun", "linkinv", "variance", "dev.resids", "aic",
     "mu.eta", "initialize", "validmu", "valideta"
   )
   expect_true(all(fam_orig_nms_common %in% names(fam_orig)), info = info_str)
+  if (fam_orig$family %in% c("binomial", "poisson")) {
+    fam_orig_nms <- c(fam_orig_nms, "simulate")
+  }
+  expect_named(fam_orig, fam_orig_nms, info = info_str)
 
   # Now the checks for `extfam` (first starting with the general structure):
   extfam_nms <- c(
