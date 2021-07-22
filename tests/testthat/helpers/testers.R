@@ -14,8 +14,12 @@ extfam_tester <- function(extfam,
                           info_str) {
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
-  expect_identical(extfam$family, fam_orig$family,
-                   info = info_str)
+  fam_orig_ch <- structure(extfam[names(fam_orig)], class = "family")
+  expect_identical(fam_orig_ch, fam_orig, info = info_str)
+  ### Alternative:
+  # expect_equal(extfam[names(fam_orig)], fam_orig, check.attributes = FALSE,
+  #              info = info_str)
+  ###
   # TODO (add more expectations)
 
   return(invisible(TRUE))
