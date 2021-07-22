@@ -209,6 +209,7 @@ test_that("error if `stat` is of invalid length", {
 test_that("`stat` works", {
   skip_if_not(run_vs)
   tstsetups <- setNames(
+    # TODO: Clarify why GLMMs lead to a suggested size of `NA`.
     nm = unlist(lapply(setdiff(mod_nms, "glmm"), function(mod_nm) {
       unlist(lapply(fam_nms, function(fam_nm) {
         grep(paste0("^", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
