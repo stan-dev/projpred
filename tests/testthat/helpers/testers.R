@@ -1,3 +1,51 @@
+# A helper function for testing the structure of an expected `"refmodel"` object
+#
+# @param refmod An object of class `"refmodel"` (at least expected so).
+# @param fit_expected The expected `refmod$fit` object.
+# @param fam_fullnm_expected The expected full name of the family (e.g.,
+#   `"gaussian"` or `"binomial"`).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+refmodel_tester <- function(refmod,
+                            fit_expected,
+                            fam_fullnm_expected,
+                            info_str) {
+  refmod_nms <- c(
+    "fit", "formula", "div_minimizer", "family", "mu", "dis", "y", "loglik",
+    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
+    "folds", "cvfun", "cvfits", "extract_model_data", "ref_predfun"
+  )
+  expect_s3_class(refmod, "refmodel", exact = TRUE)
+  expect_type(refmod, "list")
+  expect_named(refmod, refmod_nms, info = info_str)
+
+  expect_identical(refmod$fit, fit_expected, info = info_str)
+  if (fam_fullnm_expected == "binomial") {
+    formul_expected_chr <- as.character(fit_expected$formula)
+    stopifnot(length(formul_expected_chr) == 3)
+    y_expected_chr <- sub("^cbind\\(", "", formul_expected_chr[2])
+    y_expected_chr <- sub(",.*\\)$", "", y_expected_chr)
+    formul_expected <- as.formula(paste(
+      y_expected_chr,
+      formul_expected_chr[1],
+      formul_expected_chr[3]
+    ))
+    expect_identical(refmod$formula, formul_expected, info = info_str)
+  } else {
+    expect_identical(refmod$formula, fit_expected$formula, info = info_str)
+  }
+  expect_type(refmod$div_minimizer, "closure")
+  expect_s3_class(refmod$family, "family")
+  expect_identical(refmod$family$family, fam_fullnm_expected,
+                   info = info_str)
+  expect_identical(refmod$family$family, fit_expected$family$family,
+                   info = info_str)
+  # extfam_tester(refmod$family)
+  return(invisible(TRUE))
+}
+
 # A helper function for testing the structure of an expected `"projection"`
 # object
 #
