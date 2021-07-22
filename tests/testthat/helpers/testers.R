@@ -26,9 +26,8 @@ extfam_tester <- function(extfam,
   expect_named(fam_orig, fam_orig_nms, info = info_str)
 
   # Now the checks for `extfam` (first starting with the general structure):
-  extfam_nms <- c(
-    names(fam_orig), "kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd"
-  )
+  extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd")
+  extfam_nms <- c(names(fam_orig), extfam_nms_add)
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
   expect_named(extfam, extfam_nms, info = info_str)
@@ -39,7 +38,9 @@ extfam_tester <- function(extfam,
   }
   expect_identical(fam_orig_ch, fam_orig, info = info_str)
 
-  # TODO (add more expectations)
+  for (el_nm in extfam_nms_add) {
+    expect_type(extfam[[el_nm]], "closure")
+  }
 
   return(invisible(TRUE))
 }
