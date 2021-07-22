@@ -1,6 +1,7 @@
-# A helper function for testing the structure of an expected "projection" object
+# A helper function for testing the structure of an expected `"projection"`
+# object
 #
-# @param p An object of class "projection" (at least expected so).
+# @param p An object of class `"projection"` (at least expected so).
 # @param solterms_expected Either a single numeric value giving the expected
 #   number of solution terms (not counting the intercept, even for the
 #   intercept-only model), a character vector giving the expected solution
@@ -9,8 +10,8 @@
 #   projected draws.
 # @param p_type_expected A single logical value giving the expected value for
 #   `p$p_type`.
-# @param fam_expected The expected "family" object or `NULL` for not testing the
-#   family object at all.
+# @param fam_expected The expected `"family"` object or `NULL` for not testing
+#   the family object at all.
 # @param prjdraw_weights_expected The expected weights for the projected draws
 #   or `NULL` for not testing these weights at all.
 # @param info_str A single character string giving information to be printed in
@@ -108,9 +109,10 @@ projection_tester <- function(p,
   }
   return(invisible(TRUE))
 }
-# A helper function for testing the structure of an expected "proj_list" object
+# A helper function for testing the structure of an expected `"proj_list"`
+# object
 #
-# @param p An object of (informal) class "proj_list" (at least expected so).
+# @param p An object of (informal) class `"proj_list"` (at least expected so).
 # @param len_expected The expected length of `p`.
 # @param is_seq A single logical value indicating whether `p` is expected to be
 #   sequential (i.e., the number of solution terms increases by 1 from one
@@ -234,9 +236,9 @@ pp_tester <- function(pp,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected "vsel" object
+# A helper function for testing the structure of an expected `"vsel"` object
 #
-# @param vs An object of class "vsel" (at least expected so).
+# @param vs An object of class `"vsel"` (at least expected so).
 # @param with_cv A single logical value indicating whether `vs` was created by
 #   cv_varsel() (`TRUE`) or not (`FALSE`).
 # @param refmod_expected The expected `vs$refmodel` object.
