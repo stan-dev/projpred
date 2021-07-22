@@ -106,7 +106,8 @@ test_that("`d_test` works", {
         args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
       )),
       paste("^'offset' argument is NULL but it looks like you estimated the",
-            "model using an offset term\\.$")
+            "model using an offset term\\.$"),
+      info = tstsetup
     )
     meth_exp_crr <- args_vs_i$method
     if (is.null(meth_exp_crr)) {
@@ -737,7 +738,8 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
         args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm", "K"))]
       )),
       paste("^'offset' argument is NULL but it looks like you estimated the",
-            "model using an offset term\\.$")
+            "model using an offset term\\.$"),
+      info = tstsetup
     )
 
     # Checks:
