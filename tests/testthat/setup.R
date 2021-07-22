@@ -26,6 +26,11 @@ seed_tst <- 74345
 
 # rstanarm setup ----------------------------------------------------------
 
+if (!requireNamespace("rstanarm", quietly = TRUE)) {
+  stop("Package \"rstanarm\" is needed for these tests. Please install it.",
+       call. = FALSE)
+}
+
 chains_tst <- 2L
 iter_tst <- 500L
 
