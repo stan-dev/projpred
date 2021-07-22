@@ -72,6 +72,11 @@ test_that("error if `type` is invalid", {
                "^type should be one of")
 })
 
+test_that("error if `ynew` is invalid", {
+  expect_error(predict(refmods$glm$gauss, dat, ynew = dat),
+               "^ynew must be a numerical vector$")
+})
+
 test_that("`object` of class `\"refmodel\"`, `newdata`, and `type` work", {
   for (mod_nm in mod_nms) {
     for (fam_nm in fam_nms) {
@@ -149,13 +154,71 @@ test_that("`object` of class `\"refmodel\"`, `newdata`, and `type` work", {
   }
 })
 
-test_that("predict produces sensible results when specifying ynew", {
-  out <- predict(ref_gauss, df_gauss, ynew = df_gauss$y)
-  expect_vector(out)
-  expect_length(out, length(df_gauss$y))
-
-  expect_error(
-    predict(ref_gauss, df_gauss, ynew = df_gauss),
-    "must be a numerical vector"
-  )
+test_that("`ynew` works", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      tstsetup <- paste(mod_nm, fam_nm, sep = "__")
+      y_crr <- dat[, paste("y", mod_nm, fam_nm, sep = "_")]
+      if (is.integer(y_crr)) {
+        y_crr <- as.numeric(y_crr)
+      }
+      # We expect a warning which in fact should be suppressed, though (see
+      # issue #162):
+      warn_expected <- switch(
+        mod_nm,
+        "glm" = paste("^'offset' argument is NULL but it looks like you",
+                      "estimated the model using an offset term\\.$"),
+        NA
+      )
+      expect_warning(
+        predref_resp <- predict(refmods[[mod_nm]][[fam_nm]], dat, ynew = y_crr,
+                                type = "response"),
+        warn_expected,
+        info = tstsetup
+      )
+      expect_warning(
+        predref_link <- predict(refmods[[mod_nm]][[fam_nm]], dat, ynew = y_crr,
+                                type = "link"),
+        warn_expected,
+        info = tstsetup
+      )
+      expect_equal(predref_resp, predref_link, info = tstsetup)
+      expect_true(is.vector(predref_resp, "double"), info = tstsetup)
+      expect_length(predref_resp, nobsv)
+    }
+  }
+  if (run_cvvs_kfold) {
+    for (mod_nm in names(refmods_kfold)) {
+      for (fam_nm in names(refmods_kfold[[mod_nm]])) {
+        tstsetup <- paste(mod_nm, fam_nm, "kfold", sep = "__")
+        y_crr <- dat[, paste("y", mod_nm, fam_nm, sep = "_")]
+        if (is.integer(y_crr)) {
+          y_crr <- as.numeric(y_crr)
+        }
+        # We expect a warning which in fact should be suppressed, though (see
+        # issue #162):
+        warn_expected <- switch(
+          mod_nm,
+          "glm" = paste("^'offset' argument is NULL but it looks like you",
+                        "estimated the model using an offset term\\.$"),
+          NA
+        )
+        expect_warning(
+          predref_resp <- predict(refmods_kfold[[mod_nm]][[fam_nm]], dat,
+                                  ynew = y_crr, type = "response"),
+          warn_expected,
+          info = tstsetup
+        )
+        expect_warning(
+          predref_link <- predict(refmods_kfold[[mod_nm]][[fam_nm]], dat,
+                                  ynew = y_crr, type = "link"),
+          warn_expected,
+          info = tstsetup
+        )
+        expect_equal(predref_resp, predref_link, info = tstsetup)
+        expect_true(is.vector(predref_resp, "double"), info = tstsetup)
+        expect_length(predref_resp, nobsv)
+      }
+    }
+  }
 })
