@@ -32,7 +32,9 @@ refmodel_tester <- function(refmod,
       formul_expected_chr[1],
       formul_expected_chr[3]
     ))
-    expect_identical(refmod$formula, formul_expected, info = info_str)
+    # Use expect_equal() instead of expect_identical() since the environments
+    # do not match:
+    expect_equal(refmod$formula, formul_expected, info = info_str)
   } else {
     expect_identical(refmod$formula, fit_expected$formula, info = info_str)
   }
