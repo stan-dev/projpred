@@ -528,14 +528,13 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 
   if (length(stats) > 1) {
     suffix <- lapply(stats, function(s) {
-      paste0(
-        s,
-        unname(sapply(type, function(t) {
+      unname(sapply(type, function(t) {
+        paste0(
+          s,
           switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-                 se = ".se", diff = ".diff", diff.se = ".diff.se"
-          )
-        }))
-      )
+                 se = ".se", diff = ".diff", diff.se = ".diff.se")
+        )
+      }))
     })
   } else {
     suffix <- list(unname(sapply(type, function(t) {
