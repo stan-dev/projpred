@@ -1,106 +1,87 @@
-context("refmodel")
+# get_refmodel() ----------------------------------------------------------
 
+context("get_refmodel()")
 
-# tests for generic reference model
+test_that("`object` of class \"stanreg\" works", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      refmod <- refmods[[mod_nm]][[fam_nm]]
+      expect_s3_class(refmod, "refmodel", exact = TRUE)
+    }
+  }
+})
 
-if (require(rstanarm)) {
-  seed <- 1235
-  set.seed(seed)
-  n <- 50
-  nterms <- 5
-  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
-  b <- runif(nterms) - 0.5
-  dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = TRUE)
-  chains <- 2
-  iter <- 500
-  offset <- rnorm(n)
-  source(testthat::test_path("helpers", "SW.R"))
+test_that("error if `data` is missing", {
+  SW(fit_nodata <- rstanarm::stan_glm(
+    dat$y_glm_gauss ~ dat$xco.1 + dat$xco.2 + dat$xco.3 + dat$xca.1 + dat$xca.2,
+    family = f_gauss,
+    weights = dat$wobs_tst, offset = dat$offs_tst,
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+  ))
+  expect_error(get_refmodel(fit_nodata),
+               "^object of type 'environment' is not subsettable$")
+})
 
-  f_gauss <- gaussian()
-  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
-  f_binom <- binomial()
-  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x %*% b)),
-                         x = x, weights = weights)
+test_that("string formula fails", {
+  SW(fit_str <- rstanarm::stan_glm(
+    "y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2",
+    family = f_gauss, data = dat,
+    weights = wobs_tst, offset = offs_tst,
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+  ))
+  expect_error(get_refmodel(fit_str),
+               "^inherits\\(formula, \"formula\"\\) is not TRUE$")
+})
 
-  SW({
-    fit_gauss_formula <- stan_glm("y ~ x.1 + x.2 + x.3 + x.4 + x.5",
-                          family = f_gauss, data = df_gauss,
-                          chains = chains, seed = seed, iter = iter
-    )
-    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                          family = f_gauss, data = df_gauss,
-                          chains = chains, seed = seed, iter = iter
-    )
-    fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                          family = f_binom,
-                          data = df_binom, chains = chains, seed = seed,
-                          iter = iter
-    )
-    ref_gauss <- get_refmodel(fit_gauss)
-    ref_binom <- get_refmodel(fit_binom)
-  })
+test_that("get_refmodel() is idempotent", {
+  for (mod_nm in mod_nms) {
+    for (fam_nm in fam_nms) {
+      expect_identical(get_refmodel(refmods[[mod_nm]][[fam_nm]]),
+                       refmods[[mod_nm]][[fam_nm]],
+                       info = paste(mod_nm, fam_nm, sep = "__"))
+    }
+  }
+})
 
-  test_that("get_refmodel produces sensible results", {
-    expect_s3_class(ref_gauss, "refmodel")
-    expect_s3_class(ref_binom, "refmodel")
-  })
+# predict.refmodel() ------------------------------------------------------
 
-  ## test_that('get_refmode checks for the absence of data', {
-  ##   SW({
-  ##   fit_nodata <- stan_glm(df_gauss$y ~ x, family = f_gauss, QR = TRUE,
-  ##                          weights = weights, offset = offset,
-  ##                          chains = chains, seed = seed, iter = iter)
-  ##   })
-  ##   expect_error(get_refmodel(fit_nodata),
-  ##                'Model was fitted without a \'data\' argument')
-  ## })
+context("predict.refmodel()")
 
-  test_that("string formula fails", {
-    expect_error(
-      get_refmodel(fit_gauss_formula)
-    )
-  })
+# TODO
 
-  test_that("get_refmodel() is idempotent", {
-    expect_identical(get_refmodel(ref_gauss), ref_gauss)
-    expect_identical(get_refmodel(ref_binom), ref_binom)
-  })
+test_that("predict checks the 'type' argument", {
+  expect_error(
+    predict(ref_gauss, df_gauss, type = "zzz"),
+    "type should be one of"
+  )
+})
 
-  test_that("predict checks the 'type' argument", {
-    expect_error(
-      predict(ref_gauss, df_gauss, type = "zzz"),
-      "type should be one of"
-    )
-  })
+test_that("predict produces sensible results for gaussian models", {
+  out.resp <- predict(ref_gauss, df_gauss, type = "response")
+  expect_vector(out.resp)
+  expect_length(out.resp, nrow(df_gauss))
 
-  test_that("predict produces sensible results for gaussian models", {
-    out.resp <- predict(ref_gauss, df_gauss, type = "response")
-    expect_vector(out.resp)
-    expect_length(out.resp, nrow(df_gauss))
+  out.link <- predict(ref_gauss, df_gauss, type = "link")
+  expect_equal(out.resp, out.link)
+})
 
-    out.link <- predict(ref_gauss, df_gauss, type = "link")
-    expect_equal(out.resp, out.link)
-  })
+test_that("predict produces sensible results for binomial models", {
+  out.resp <- predict(ref_binom, df_binom, type = "response")
+  expect_vector(out.resp)
+  expect_length(out.resp, nrow(df_binom))
+  expect_true(all(out.resp >= 0 & out.resp <= 1))
 
-  test_that("predict produces sensible results for binomial models", {
-    out.resp <- predict(ref_binom, df_binom, type = "response")
-    expect_vector(out.resp)
-    expect_length(out.resp, nrow(df_binom))
-    expect_true(all(out.resp >= 0 & out.resp <= 1))
+  out.link <- predict(ref_binom, df_binom, type = "link")
+  expect_length(out.resp, nrow(df_binom))
+})
 
-    out.link <- predict(ref_binom, df_binom, type = "link")
-    expect_length(out.resp, nrow(df_binom))
-  })
+test_that("predict produces sensible results when specifying ynew", {
+  out <- predict(ref_gauss, df_gauss, ynew = df_gauss$y)
+  expect_vector(out)
+  expect_length(out, length(df_gauss$y))
 
-  test_that("predict produces sensible results when specifying ynew", {
-    out <- predict(ref_gauss, df_gauss, ynew = df_gauss$y)
-    expect_vector(out)
-    expect_length(out, length(df_gauss$y))
-
-    expect_error(
-      predict(ref_gauss, df_gauss, ynew = df_gauss),
-      "must be a numerical vector"
-    )
-  })
-}
+  expect_error(
+    predict(ref_gauss, df_gauss, ynew = df_gauss),
+    "must be a numerical vector"
+  )
+})
