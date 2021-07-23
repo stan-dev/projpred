@@ -24,16 +24,6 @@ fam_nms <- setNames(nm = c("gauss", "binom")) # , "poiss"
 
 seed_tst <- 74345
 
-# rstanarm setup ----------------------------------------------------------
-
-if (!requireNamespace("rstanarm", quietly = TRUE)) {
-  stop("Package \"rstanarm\" is needed for these tests. Please install it.",
-       call. = FALSE)
-}
-
-chains_tst <- 2L
-iter_tst <- 500L
-
 # projpred setup ----------------------------------------------------------
 
 ## Output names -----------------------------------------------------------
@@ -293,183 +283,158 @@ dat_offs_new <- within(dat, {
 
 # Fits --------------------------------------------------------------------
 
-# Notes:
-#   * In principle, one could also generalize the construction of the formulas.
-#     However, rstanarm seems to have problems with that (see
-#     <https://github.com/stan-dev/projpred/issues/65#issuecomment-765345522>).
-#   * Argument `weights` is not needed when using the cbind() syntax (for the
-#     binomial family with > 1 trials).
+## rstanarm setup ---------------------------------------------------------
 
-## GLMs -------------------------------------------------------------------
+if (!requireNamespace("rstanarm", quietly = TRUE)) {
+  stop("Package \"rstanarm\" is needed for these tests. Please install it.",
+       call. = FALSE)
+}
 
-SW({
-  fit_glm_gauss <- rstanarm::stan_glm(
-    y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
-    family = f_gauss, data = dat,
-    weights = wobs_tst, offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
-  fit_glm_binom <- rstanarm::stan_glm(
-    cbind(y_glm_binom, wobs_col - y_glm_binom) ~
-      xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
-    family = f_binom, data = dat,
-    offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
-  if ("poiss" %in% fam_nms) {
-    fit_glm_poiss <- rstanarm::stan_glm(
-      y_glm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
-      family = f_poiss, data = dat,
-      weights = wobs_tst, offset = offs_tst,
-      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-    )
-  }
-  if (run_cvvs_kfold) {
-    # rstanarm:::kfold.stanreg() does not support weights:
-    fit_glm_gauss_kfold <- rstanarm::stan_glm(
-      y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
-      family = f_gauss, data = dat,
-      offset = offs_tst,
-      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-    )
-    # For some arguments, if they are specified via objects,
-    # rstanarm:::kfold.stanreg() seems to assume those objects to lie in the
-    # global environment. Since `testthat` uses a new environment for running
-    # the tests (see `?testthat::test_env`), we need the following code to be
-    # able to run devtools::test():
-    for (obj_symb_chr in c("f_gauss", "chains_tst", "seed_tst", "iter_tst")) {
-      if (!exists(obj_symb_chr, envir = .GlobalEnv)) {
-        assign(obj_symb_chr, get(obj_symb_chr), envir = .GlobalEnv)
-      }
-    }
-  }
-})
+chains_tst <- 2L
+iter_tst <- 500L
 
-## GLMMs ------------------------------------------------------------------
-
-SW({
-  fit_glmm_gauss <- rstanarm::stan_glmer(
-    y_glmm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
-    family = f_gauss, data = dat,
-    weights = wobs_tst, offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
-  fit_glmm_binom <- rstanarm::stan_glmer(
-    cbind(y_glmm_binom, wobs_col - y_glmm_binom) ~
-      xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
-    family = f_binom, data = dat,
-    offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-  )
-  if ("poiss" %in% fam_nms) {
-    fit_glmm_poiss <- rstanarm::stan_glmer(
-      y_glmm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + (xco.1 | z.1),
-      family = f_poiss, data = dat,
-      weights = wobs_tst, offset = offs_tst,
-      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-    )
-  }
-})
-
-## GAMs -------------------------------------------------------------------
+### Formula ---------------------------------------------------------------
 
 # Notes:
 #   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
 #     offset() in the formula.
-
-if ("gam" %in% mod_nms) {
-  SW({
-    fit_gam_gauss <- rstanarm::stan_gamm4(
-      y_gam_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-        s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-      family = f_gauss, data = dat,
-      weights = wobs_tst,
-      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-    )
-    fit_gam_binom <- rstanarm::stan_gamm4(
-      cbind(y_gam_binom, wobs_col - y_gam_binom) ~
-        xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-        s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-      family = f_binom, data = dat,
-      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-    )
-    if ("poiss" %in% fam_nms) {
-      fit_gam_poiss <- rstanarm::stan_gamm4(
-        y_gam_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-          s(s.1) + s(s.2) + s(s.3) + offset(offs_col),
-        family = f_poiss, data = dat,
-        weights = wobs_tst,
-        chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-      )
-    }
-  })
-}
-
-## GAMMs ------------------------------------------------------------------
-
-# Notes:
+#   * In rstanarm::stan_gamm4(), multilevel terms are specified via argument
+#     `random`.
 #   * In the presence of multilevel terms (argument `random`),
 #     rstanarm::stan_gamm4() seems to be unable to support an offset() in the
 #     formula. Therefore, omit the offset here.
 
-if ("gamm" %in% mod_nms) {
-  SW({
-    fit_gamm_gauss <- rstanarm::stan_gamm4(
-      y_gamm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-        s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
-      random = ~ (xco.1 | z.1),
-      family = f_gauss, data = dat,
-      weights = wobs_tst,
-      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-    )
-    fit_gamm_binom <- rstanarm::stan_gamm4(
-      cbind(y_gamm_binom, wobs_col - y_gamm_binom) ~
-        xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-        s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
-      random = ~ (xco.1 | z.1),
-      family = f_binom, data = dat,
-      chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
-    )
-    if ("poiss" %in% fam_nms) {
-      fit_gamm_poiss <- rstanarm::stan_gamm4(
-        y_gamm_poiss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 +
-          s(s.1) + s(s.2) + s(s.3), # + offset(offs_col)
-        random = ~ (xco.1 | z.1),
-        family = f_poiss, data = dat,
-        weights = wobs_tst,
-        chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2")
+trms_grp <- c("(xco.1 | z.1)")
+trms_add <- c("s(s.1)", "s(s.2)", "s(s.3)", "offset(offs_col)")
+trms <- list(
+  glm = trms_common,
+  glmm = c(trms_common, trms_grp),
+  gam = c(trms_common, trms_add),
+  gamm = c(trms_common, setdiff(trms_add, "offset(offs_col)"))
+)
+trms_common_spcl <- c("xco.1", "I(xco.1^2)", "log(abs(xco.2)) * poly(xco.3, 3)",
+                      "xca.1", "xca.2")
+
+### Weights (observations) ------------------------------------------------
+
+# Argument `weights` is not needed when using the cbind() syntax (for the
+# binomial family with > 1 trials). Furthermore, rstanarm:::kfold.stanreg() does
+# not support weights. Thus, we have two possible options for the `weights`
+# argument:
+wobss_tst <- list(with_wobs = list(weights = wobs_tst),
+                  without_wobs = list())
+
+### Offsets ---------------------------------------------------------------
+
+offss_tst <- list(with_offs = list(offset = offs_tst),
+                  without_offs = list())
+
+### Argument list ---------------------------------------------------------
+
+args_fit <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
+    if (fam_nm == "binom") {
+      y_chr <- paste0("cbind(", y_chr, ", wobs_col - ", y_chr, ")")
+    }
+    formul_tst <- list(stdformul = list(
+      formula = as.formula(paste(
+        y_chr, "~", paste(trms[[mod_nm]], collapse = " + ")
+      ))
+    ))
+    if (mod_nm == "glm" && fam_nm == "gauss") {
+      # Here, we also test a special formula (note that `y_chr_spcl` would need
+      # to be adopted for families other than `"gauss"`):
+      y_chr_spcl <- paste0("log(abs(", y_chr, "))")
+      formul_tst <- c(
+        formul_tst,
+        list(spclformul = list(
+          formula = as.formula(paste(
+            y_chr_spcl, "~", paste(trms_common_spcl, collapse = " + ")
+          ))
+        ))
       )
     }
-  })
-}
-
-## List -------------------------------------------------------------------
-
-fits <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    get(paste("fit", mod_nm, fam_nm, sep = "_"))
+    formul_nms <- setNames(nm = names(formul_tst))
+    lapply(formul_nms, function(formul_nm) {
+      if (fam_nm == "binom") {
+        # Here, the weights are specified in the formula via the cbind() syntax:
+        wobss_tst <- wobss_tst["without_wobs"]
+      } else if (run_cvvs_kfold && mod_nm == "glm" && fam_nm == "gauss" &&
+                 formul_nm == "stdformul") {
+        # Here, rstanarm:::kfold.stanreg() is applied, so we also need the model
+        # without observation weights:
+        wobss_tst <- wobss_tst
+      } else {
+        wobss_tst <- wobss_tst["with_wobs"]
+      }
+      lapply(wobss_tst, function(opt_wobs) {
+        if (mod_nm %in% c("gam", "gamm")) {
+          # Here, the offsets are specified in the formula (or, for GAMMs, not
+          # at all) (see the notes above):
+          offss_tst <- offss_tst["without_offs"]
+        } else {
+          offss_tst <- offss_tst["with_offs"]
+        }
+        lapply(offss_tst, function(opt_offs) {
+          if (mod_nm  == "gamm") {
+            random_arg <- list(random = as.formula(paste("~", trms_grp)))
+          } else {
+            random_arg <- list()
+          }
+          return(c(
+            nlist(mod_nm, fam_nm, family = get(paste0("f_", fam_nm)),
+                  data = dat, chains = chains_tst, iter = iter_tst,
+                  seed = seed_tst, QR = TRUE),
+            formul_tst[[formul_nm]],
+            opt_wobs,
+            opt_offs,
+            random_arg
+          ))
+        })
+      })
+    })
   })
 })
-if (run_cvvs_kfold) {
-  fits_kfold = list(glm = list(gauss = fit_glm_gauss_kfold))
-}
-rm(list = grep("^fit_", ls(), value = TRUE))
+args_fit <- unlist_cust(args_fit)
+stopifnot(length(unique(names(args_fit))) == length(args_fit))
+
+## Run --------------------------------------------------------------------
+
+SW(fits <- lapply(args_fit, function(args_fit_i) {
+  fit_fun_nm <- switch(args_fit_i$mod_nm,
+                       "glm" = "stan_glm",
+                       "glmm" = "stan_glmer",
+                       "stan_gamm4")
+  ### Option 1:
+  # do.call(fit_fun_nm,
+  #         args_fit_i[setdiff(names(args_fit_i), c("mod_nm", "fam_nm"))],
+  #         envir = as.environment(asNamespace("rstanarm")))
+  ###
+  ### Option 2:
+  do.call(get(fit_fun_nm, asNamespace("rstanarm")),
+          args_fit_i[setdiff(names(args_fit_i), c("mod_nm", "fam_nm"))])
+  ###
+}))
 
 # projpred ----------------------------------------------------------------
 
 ## Reference model --------------------------------------------------------
 
+args_ref <- lapply(setNames(nm = names(args_fit)), function(x) {
+  list(tstsetup_fit = x)
+})
+
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(refmods <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    get_refmodel(fits[[mod_nm]][[fam_nm]])
-  })
+SW(refmods <- lapply(args_ref, function(args_ref_i) {
+  do.call(get_refmodel, c(
+    list(object = fits[[args_ref_i$tstsetup_fit]]),
+    args_ref_i[setdiff(names(args_ref_i), c("tstsetup_fit"))]
+  ))
 }))
-if (run_cvvs_kfold) {
-  refmods_kfold = list(glm = list(gauss = get_refmodel(fits_kfold$glm$gauss)))
-}
 
 ## Variable selection -----------------------------------------------------
 
