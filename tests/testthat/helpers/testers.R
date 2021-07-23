@@ -161,6 +161,27 @@ refmodel_tester <- function(refmod,
 
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
+  if (!is_datafit || (is_datafit && refmod$family$family != "binomial")) {
+    expect_identical(refmod$fetch_data(), dat, info = info_str)
+  } else {
+    refdat_ch <- dat
+    has_grp <- formula_contains_group_terms(refmod$formula)
+    has_add <- formula_contains_additive_terms(refmod$formula)
+    if (!has_grp && !has_add) {
+      mod_nm <- "glm"
+    } else if (has_grp && !has_add) {
+      mod_nm <- "glmm"
+    } else if (!has_grp && has_add) {
+      mod_nm <- "gam"
+    } else if (has_grp && has_add) {
+      mod_nm <- "gamm"
+    }
+    y_nm <- paste0("y_", mod_nm, "_binom")
+    refdat_ch$dummy_nm <- refdat_ch$wobs_col - refdat_ch[, y_nm]
+    names(refdat_ch)[names(refdat_ch) == "dummy_nm"] <- paste("wobs_col -",
+                                                              y_nm)
+    expect_identical(refmod$fetch_data(), refdat_ch, info = info_str)
+  }
 
   # wobs
   expect_true(is.vector(refmod$wobs, "numeric"), info = info_str)
