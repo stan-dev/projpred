@@ -71,8 +71,8 @@ refmodel_tester <- function(refmod,
                             is_datafit = FALSE,
                             fit_expected,
                             formul_expected = fit_expected$formula,
-                            nobsv_expected,
-                            nrefdraws_expected,
+                            nobsv_expected = nobsv,
+                            nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
                             info_str,
                             ...) {
   refmod_nms <- c(
