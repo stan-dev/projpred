@@ -57,6 +57,7 @@ extfam_tester <- function(extfam,
 # @param formul_expected The expected `refmod$formula` object. For the binomial
 #   family, the left-hand side is expected to be of the form
 #   `cbind(y, n_trials - y)` (further modifications are made internally).
+# @param data_expected The expected dataset returned by `refmod$fetch_data()`.
 # @param nobsv_expected A single integer value giving the expected number of
 #   observations.
 # @param nrefdraws_expected A single integer value giving the expected number of
@@ -71,6 +72,7 @@ refmodel_tester <- function(refmod,
                             is_datafit = FALSE,
                             fit_expected,
                             formul_expected = fit_expected$formula,
+                            data_expected = dat,
                             nobsv_expected = nobsv,
                             nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
                             info_str,
@@ -162,9 +164,9 @@ refmodel_tester <- function(refmod,
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
   if (!is_datafit || (is_datafit && refmod$family$family != "binomial")) {
-    expect_identical(refmod$fetch_data(), dat, info = info_str)
+    expect_identical(refmod$fetch_data(), data_expected, info = info_str)
   } else {
-    refdat_ch <- dat
+    refdat_ch <- data_expected
     has_grp <- formula_contains_group_terms(refmod$formula)
     has_add <- formula_contains_additive_terms(refmod$formula)
     if (!has_grp && !has_add) {
