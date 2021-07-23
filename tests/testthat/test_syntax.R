@@ -1,46 +1,55 @@
-context("syntax")
+context("special formulas")
 
-# test for simple fits but with varying syntax (e.g. varying formula etc.)
+test_that("special formulas work", {
+  tstsetup <- "glm__gauss__spclformul"
+  SW(fit_glm_gauss_spclformul <- rstanarm::stan_glm(
+    log(abs(y_glm_gauss)) ~
+      xco.1 + I(xco.1^2) + log(abs(xco.2)) * poly(xco.3, 3) + xca.1 + xca.2,
+    family = f_gauss, data = dat,
+    weights = wobs_tst, offset = offs_tst,
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+  ))
+  mf_spclformul <- fit_glm_gauss_spclformul$model
 
+  ### TODO: Move this to `test_misc.R`:
+  # Compare with standard fit (excluding the special formula elements):
+  nms_spclformul <- setdiff(grep("y_|xco", names(mf_spclformul), value = TRUE),
+                            "xco.1")
+  mf <- fits$glm$gauss$model
+  nms <- setdiff(grep("y_|xco", names(mf), value = TRUE), "xco.1")
+  expect_equal(mf_spclformul[, setdiff(names(mf_spclformul), nms_spclformul)],
+               mf[, setdiff(names(mf), nms)], info = tstsetup)
+  # Check arithmetic expressions:
+  expect_equal(mf_spclformul$`log(abs(y_glm_gauss))`, log(abs(dat$y_glm_gauss)),
+               info = tstsetup)
+  for (nm_spclformul in nms_spclformul) {
+    expect_equal(mf_spclformul[, nm_spclformul],
+                 eval(str2lang(nm_spclformul), envir = dat),
+                 info = paste(tstsetup, nm_spclformul, sep = "__"))
+  }
+  ###
 
-if (require(rstanarm)) {
-  # load the mesquite data
-  data("mesquite", package = "projpred")
-
-  ndraws <- 1
-  ndraws_pred <- 5
-  # fit the model with some transformations on the target variable and the
-  # original inputs
-  SW(
-    fit <- stan_glm(log(LeafWt) ~ log(Diam1) + log(Diam2) + log(CanHt) +
-                      log(TotHt) + log(Dens) + log(Diam1) * log(Diam2) + Group,
-                    data = mesquite,
-                    refresh = 0, chain = 2
-    )
+  # Reference model (takes arithmetic expressions on the left-hand side of the
+  # formula into account):
+  refmod_spclformul <- get_refmodel(fit_glm_gauss_spclformul)
+  y_spclformul <- as.character(fit_glm_gauss_spclformul$formula)[[2]]
+  refformul_spclformul <- as.formula(paste(
+    gsub("\\(|\\)", "", y_spclformul),
+    "~",
+    paste(labels(terms(fit_glm_gauss_spclformul$formula)), collapse = " + ")
+  ))
+  refdat_spclformul <- dat
+  refdat_spclformul$logabsy_glm_gauss <- log(abs(refdat_spclformul$y_glm_gauss))
+  refmodel_tester(
+    refmod_spclformul,
+    fit_expected = fit_glm_gauss_spclformul,
+    formul_expected = refformul_spclformul,
+    data_expected = refdat_spclformul,
+    info_str = tstsetup,
+    fam_orig = f_gauss
   )
-  # selection
-  SW({
-    cvs <- cv_varsel(fit,
-                     verbose = FALSE, ndraws = ndraws,
-                     ndraws_pred = ndraws_pred
-    )
-    vs <- varsel(fit,
-                 verbose = FALSE, ndraws = ndraws,
-                 ndraws_pred = ndraws_pred
-    )
-  })
-  suggested_size <- suggest_size(cvs)
 
-  # project onto some model size
-  proj <- project(cvs, nterms = 3)
-
-  test_that("varsel/cv_varsel/project return objects with correct types", {
-    expect_true("vsel" %in% class(vs))
-    expect_true("vsel" %in% class(cvs))
-    expect_true("projection" %in% class(proj))
-  })
-
-  test_that("suggested model size is ok", {
-    expect_true(!is.na(suggested_size))
-  })
-}
+  # TODO: Add tests for refmod_spclformul$div_minimizer() to check that the
+  # arithmetic expressions on the right-hand side of the formula are taken there
+  # into account.
+})
