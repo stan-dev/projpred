@@ -384,7 +384,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
             random_arg <- list()
           }
           return(c(
-            nlist(mod_nm, fam_nm, family = bquote(get(.(paste0("f_", fam_nm)))),
+            nlist(mod_nm, fam_nm, family = as.name(paste0("f_", fam_nm)),
                   data = quote(dat), chains = chains_tst, iter = iter_tst,
                   seed = seed_tst, QR = TRUE),
             formul_tst[[formul_nm]],
