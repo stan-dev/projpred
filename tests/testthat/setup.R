@@ -385,7 +385,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
           }
           return(c(
             nlist(mod_nm, fam_nm, family = get(paste0("f_", fam_nm)),
-                  data = dat, chains = chains_tst, iter = iter_tst,
+                  data = quote(dat), chains = chains_tst, iter = iter_tst,
                   seed = seed_tst, QR = TRUE),
             formul_tst[[formul_nm]],
             opt_wobs,
