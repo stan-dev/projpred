@@ -422,8 +422,8 @@ SW(fits <- lapply(args_fit, function(args_fit_i) {
 
 ## Reference model --------------------------------------------------------
 
-args_ref <- lapply(setNames(nm = names(args_fit)), function(x) {
-  list(tstsetup_fit = x)
+args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
+  c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
 
 # For the binomial family with > 1 trials, we currently expect the warning
@@ -432,7 +432,7 @@ args_ref <- lapply(setNames(nm = names(args_fit)), function(x) {
 SW(refmods <- lapply(args_ref, function(args_ref_i) {
   do.call(get_refmodel, c(
     list(object = fits[[args_ref_i$tstsetup_fit]]),
-    args_ref_i[setdiff(names(args_ref_i), c("tstsetup_fit"))]
+    excl_nonargs(args_ref_i)
   ))
 }))
 
@@ -445,9 +445,8 @@ if (run_vs) {
     nm = grep("\\.spclformul", names(refmods), value = TRUE, invert = TRUE)
   )
   args_vs <- lapply(tstsetups_vs_ref, function(tstsetup_ref) {
-    tstsetup_fit_crr <- args_ref[[tstsetup_ref]]$tstsetup_fit
-    mod_crr <- args_fit[[tstsetup_fit_crr]]$mod_nm
-    fam_crr <- args_fit[[tstsetup_fit_crr]]$fam_nm
+    mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
+    fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     if (mod_crr == "glm" && fam_crr == "gauss") {
       # Here, we test the default `method` (which is L1 search here) as well as
       # forward search:
@@ -458,8 +457,8 @@ if (run_vs) {
     }
     lapply(meth, function(meth_i) {
       return(c(
-        nlist(
-          tstsetup_ref, tstsetup_fit = tstsetup_fit_crr,
+        nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+        list(
           nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
           nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
         ),
@@ -472,7 +471,7 @@ if (run_vs) {
   vss <- lapply(args_vs, function(args_vs_i) {
     do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]]),
-      args_vs_i[setdiff(names(args_vs_i), c("tstsetup_ref", "tstsetup_fit"))]
+      excl_nonargs(args_vs_i)
     ))
   })
 }
@@ -484,9 +483,8 @@ if (run_cvvs) {
     nm = grep("\\.spclformul", names(refmods), value = TRUE, invert = TRUE)
   )
   args_cvvs <- lapply(tstsetups_cvvs_ref, function(tstsetup_ref) {
-    tstsetup_fit_crr <- args_ref[[tstsetup_ref]]$tstsetup_fit
-    mod_crr <- args_fit[[tstsetup_fit_crr]]$mod_nm
-    fam_crr <- args_fit[[tstsetup_fit_crr]]$fam_nm
+    mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
+    fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     if (mod_crr == "glm" && fam_crr == "gauss" &&
         grepl("\\.without_wobs", tstsetup_ref)) {
       # Here, we test the default `method` (which is L1 search here) as well as
@@ -510,8 +508,8 @@ if (run_cvvs) {
       }
       lapply(cvmeth, function(cvmeth_i) {
         return(c(
-          nlist(
-            tstsetup_ref, tstsetup_fit = tstsetup_fit_crr,
+          nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+          list(
             nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
             nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
           ),
@@ -528,7 +526,7 @@ if (run_cvvs) {
   SW(cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
     do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup_ref", "tstsetup_fit"))]
+      excl_nonargs(args_cvvs_i)
     ))
   }))
 }

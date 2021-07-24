@@ -1,3 +1,33 @@
+# A helper function for picking only those elements from an argument list which
+# are not arguments in the narrower sense
+#
+# @param args_i A list of arguments.
+#
+# @return Those elements of `args_i` named as follows (if existing):
+#   * `"mod_nm"`,
+#   * `"fam_nm"`,
+#   * everything starting with "tstsetup_" (regexp: "^tstsetup_").
+only_nonargs <- function(args_i) {
+  nms_only <- c("mod_nm", "fam_nm",
+                grep("^tstsetup_", names(args_i), value = TRUE))
+  return(args_i[intersect(names(args_i), nms_only)])
+}
+
+# A helper function for excluding elements from an argument list which are not
+# arguments in the narrower sense
+#
+# @param args_i A list of arguments.
+#
+# @return `args_i` with the following elements excluded:
+#   * `"mod_nm"`,
+#   * `"fam_nm"`,
+#   * everything starting with "tstsetup_" (regexp: "^tstsetup_").
+excl_nonargs <- function(args_i) {
+  nms_excl <- c("mod_nm", "fam_nm",
+                grep("^tstsetup_", names(args_i), value = TRUE))
+  return(args_i[setdiff(names(args_i), nms_excl)])
+}
+
 # A helper function for retrieving details about the actually used `ndraws` or
 # `nclusters` argument as well as about associated objects
 #
