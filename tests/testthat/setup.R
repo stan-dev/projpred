@@ -441,31 +441,38 @@ SW(refmods <- lapply(args_ref, function(args_ref_i) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  args_vs <- lapply(mod_nms, function(mod_nm) {
-    lapply(fam_nms, function(fam_nm) {
-      if (mod_nm == "glm" && fam_nm == "gauss") {
-        meth <- meth_tst[setdiff(names(meth_tst), "L1")]
-      } else {
-        meth <- meth_tst["default_meth"]
-      }
-      lapply(meth, function(meth_i) {
-        return(c(
-          nlist(
-            mod_nm, fam_nm, nclusters = nclusters_tst,
-            nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
-            verbose = FALSE, seed = seed_tst
-          ),
-          meth_i
-        ))
-      })
+  tstsetups_vs_ref <- setNames(
+    nm = grep("\\.spclformul", names(refmods), value = TRUE, invert = TRUE)
+  )
+  args_vs <- lapply(tstsetups_vs_ref, function(tstsetup_ref) {
+    tstsetup_fit_crr <- args_ref[[tstsetup_ref]]$tstsetup_fit
+    mod_crr <- args_fit[[tstsetup_fit_crr]]$mod_nm
+    fam_crr <- args_fit[[tstsetup_fit_crr]]$fam_nm
+    if (mod_crr == "glm" && fam_crr == "gauss") {
+      # Here, we test the default `method` (which is L1 search here) as well as
+      # forward search:
+      meth <- meth_tst[setdiff(names(meth_tst), "L1")]
+    } else {
+      # Here, we only test the default `method`:
+      meth <- meth_tst["default_meth"]
+    }
+    lapply(meth, function(meth_i) {
+      return(c(
+        nlist(
+          tstsetup_ref, tstsetup_fit = tstsetup_fit_crr,
+          nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+          nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
+        ),
+        meth_i
+      ))
     })
   })
-  args_vs <- unlist_cust(args_vs)
+  args_vs <- unlist_cust(args_vs, nm_stop = "tstsetup_ref")
 
   vss <- lapply(args_vs, function(args_vs_i) {
     do.call(varsel, c(
-      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+      list(object = refmods[[args_vs_i$tstsetup_ref]]),
+      args_vs_i[setdiff(names(args_vs_i), c("tstsetup_ref", "tstsetup_fit"))]
     ))
   })
 }
@@ -473,49 +480,55 @@ if (run_vs) {
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  args_cvvs <- lapply(mod_nms, function(mod_nm) {
-    lapply(fam_nms, function(fam_nm) {
-      if (mod_nm == "glm" && fam_nm == "gauss") {
-        meth <- meth_tst[setdiff(names(meth_tst), "L1")]
-        cvmeth <- cvmeth_tst[setdiff(names(cvmeth_tst), "LOO")]
-      } else {
-        meth <- meth_tst["default_meth"]
-        cvmeth <- cvmeth_tst["default_cvmeth"]
+  tstsetups_cvvs_ref <- setNames(
+    nm = grep("\\.spclformul", names(refmods), value = TRUE, invert = TRUE)
+  )
+  args_cvvs <- lapply(tstsetups_cvvs_ref, function(tstsetup_ref) {
+    tstsetup_fit_crr <- args_ref[[tstsetup_ref]]$tstsetup_fit
+    mod_crr <- args_fit[[tstsetup_fit_crr]]$mod_nm
+    fam_crr <- args_fit[[tstsetup_fit_crr]]$fam_nm
+    if (mod_crr == "glm" && fam_crr == "gauss" &&
+        grepl("\\.without_wobs", tstsetup_ref)) {
+      # Here, we test the default `method` (which is L1 search here) as well as
+      # forward search:
+      meth <- meth_tst[setdiff(names(meth_tst), "L1")]
+      # Here, we test the default `cv_method` (which is LOO CV) as well as
+      # K-fold CV:
+      cvmeth <- cvmeth_tst[setdiff(names(cvmeth_tst), "LOO")]
+    } else {
+      # Here, we only test the default `method`:
+      meth <- meth_tst["default_meth"]
+      # Here, we only test the default `cv_method`:
+      cvmeth <- cvmeth_tst["default_cvmeth"]
+    }
+    lapply(meth, function(meth_i) {
+      if ((length(meth_i) == 0 && mod_crr != "glm") ||
+          (length(meth_i) > 0 && meth_i$method == "forward")) {
+        # In this case, we have forward search. And to save time, we use
+        # `validate_search = FALSE`.
+        meth_i <- c(meth_i, list(validate_search = FALSE))
       }
-      lapply(meth, function(meth_i) {
-        if ((length(meth_i) == 0 && mod_nm != "glm") ||
-            (length(meth_i) > 0 && meth_i$method == "forward")) {
-          # In this case, we have forward search. And to save time, we use
-          # `validate_search = FALSE`.
-          meth_i <- c(meth_i, list(validate_search = FALSE))
-        }
-        lapply(cvmeth, function(cvmeth_i) {
-          return(c(
-            nlist(
-              mod_nm, fam_nm, nclusters = nclusters_tst,
-              nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
-              verbose = FALSE, seed = seed_tst
-            ),
-            meth_i, cvmeth_i
-          ))
-        })
+      lapply(cvmeth, function(cvmeth_i) {
+        return(c(
+          nlist(
+            tstsetup_ref, tstsetup_fit = tstsetup_fit_crr,
+            nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+            nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
+          ),
+          meth_i, cvmeth_i
+        ))
       })
     })
   })
-  args_cvvs <- unlist_cust(args_cvvs)
+  args_cvvs <- unlist_cust(args_cvvs, nm_stop = "tstsetup_ref")
 
   # Use SW() because of occasional warnings concerning Pareto k diagnostics:
   # Additionally to SW(), suppressMessages() could be used here (because of the
   # refits in K-fold CV):
   SW(cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
-    if (identical(args_cvvs_i$cv_method, "kfold")) {
-      refmods_crr <- refmods_kfold
-    } else {
-      refmods_crr <- refmods
-    }
     do.call(cv_varsel, c(
-      list(object = refmods_crr[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      args_cvvs_i[setdiff(names(args_cvvs_i), c("tstsetup_ref", "tstsetup_fit"))]
     ))
   }))
 }
