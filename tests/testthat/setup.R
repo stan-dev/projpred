@@ -591,13 +591,20 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 
 #### varsel() -------------------------------------------------------------
 
-# A helper function to create the list of lists of arguments for project() for a
-# given character vector of test setups (referring to either `vss` or `cvvss`):
+# A helper function to create the argument list for project() for a given
+# character vector of test setups (referring to either `vss` or `cvvss`):
 cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
+  vsel_type <- deparse(substitute(tstsetups_prj_vsel))
   lapply(tstsetups_prj_vsel, function(tstsetup_vsel) {
     lapply(nterms_avail, function(nterms_crr) {
-      args_out <- nlist(tstsetup_vsel, nclusters = nclusters_pred_tst,
-                        seed = seed_tst)
+      args_obj <- switch(vsel_type,
+                         "tstsetups_prj_vs" = args_vs,
+                         "tstsetups_prj_cvvs" = args_cvvs,
+                         stop("Unexpected `vsel_type`."))
+      args_out <- c(
+        nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+        list(nclusters = nclusters_pred_tst, seed = seed_tst)
+      )
       if (!is.null(nterms_crr)) {
         args_out <- c(args_out, list(nterms = nterms_crr))
       }
@@ -605,17 +612,19 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
     })
   })
 }
-tstsetups_prj_vs <- setNames(nm = grep("^glm\\.gauss\\.default_meth",
-                                       names(vss), value = TRUE))
+tstsetups_prj_vs <- setNames(
+  nm = grep("^glm\\.gauss\\..*\\.with_wobs\\..*\\.default_meth", names(vss),
+            value = TRUE)
+)
 stopifnot(length(tstsetups_prj_vs) > 0)
 args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
-args_prj_vs <- unlist_cust(args_prj_vs, nm_stop = "tstsetup_vsel")
+args_prj_vs <- unlist_cust(args_prj_vs)
 
 if (run_vs) {
   prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
     do.call(project, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
-      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_prj_vs_i)
     ))
   })
 }
