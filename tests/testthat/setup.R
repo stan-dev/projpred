@@ -442,7 +442,8 @@ SW(refmods <- lapply(args_ref, function(args_ref_i) {
 
 if (run_vs) {
   tstsetups_vs_ref <- setNames(
-    nm = grep("\\.spclformul", names(refmods), value = TRUE, invert = TRUE)
+    nm = grep("\\.spclformul|\\.gauss\\..*\\.without_wobs", names(refmods),
+              value = TRUE, invert = TRUE)
   )
   args_vs <- lapply(tstsetups_vs_ref, function(tstsetup_ref) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
@@ -485,14 +486,17 @@ if (run_cvvs) {
   args_cvvs <- lapply(tstsetups_cvvs_ref, function(tstsetup_ref) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
-    if (mod_crr == "glm" && fam_crr == "gauss" &&
-        grepl("\\.without_wobs", tstsetup_ref)) {
+    if (mod_crr == "glm" && fam_crr == "gauss") {
       # Here, we test the default `method` (which is L1 search here) as well as
       # forward search:
       meth <- meth_tst[setdiff(names(meth_tst), "L1")]
-      # Here, we test the default `cv_method` (which is LOO CV) as well as
-      # K-fold CV:
-      cvmeth <- cvmeth_tst[setdiff(names(cvmeth_tst), "LOO")]
+      if (grepl("\\.without_wobs", tstsetup_ref)) {
+        # Here, we only test the "kfold" `cv_method`:
+        cvmeth <- cvmeth_tst["kfold"]
+      } else {
+        # Here, we only test the default `cv_method` (which is LOO CV):
+        cvmeth <- cvmeth_tst["default_cvmeth"]
+      }
     } else {
       # Here, we only test the default `method`:
       meth <- meth_tst["default_meth"]
