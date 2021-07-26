@@ -466,7 +466,7 @@ if (run_vs) {
       ))
     })
   })
-  args_vs <- unlist_cust(args_vs, nm_stop = "tstsetup_ref")
+  args_vs <- unlist_cust(args_vs)
 
   vss <- lapply(args_vs, function(args_vs_i) {
     do.call(varsel, c(
@@ -518,7 +518,7 @@ if (run_cvvs) {
       })
     })
   })
-  args_cvvs <- unlist_cust(args_cvvs, nm_stop = "tstsetup_ref")
+  args_cvvs <- unlist_cust(args_cvvs)
 
   # Use SW() because of occasional warnings concerning Pareto k diagnostics:
   # Additionally to SW(), suppressMessages() could be used here (because of the
@@ -535,40 +535,46 @@ if (run_cvvs) {
 
 ### From "refmodel" -------------------------------------------------------
 
-# A list of lists of arguments for project():
-args_prj <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    solterms <- nlist(empty = character(), solterms_x)
-    if (mod_nm %in% c("glmm", "gamm")) {
-      solterms <- c(solterms,
-                    nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
+# Exclude the "special formula" case as well as the case which was added for
+# K-fold CV only:
+tstsetups_prj_ref <- setNames(
+  nm = grep("\\.spclformul|^glm\\.gauss\\.stdformul\\.without_wobs",
+            names(refmods), value = TRUE, invert = TRUE)
+)
+args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
+  mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
+  fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
+  solterms <- nlist(empty = character(), solterms_x)
+  if (mod_crr %in% c("glmm", "gamm")) {
+    solterms <- c(solterms,
+                  nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
+  }
+  if (mod_crr %in% c("gam", "gamm")) {
+    solterms <- c(solterms,
+                  nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
+  }
+  if (mod_crr == "gamm") {
+    solterms <- c(solterms,
+                  nlist(solterms_sz = c(solterms_s, solterms_z),
+                        solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
+  }
+  if (fam_crr != "gauss") {
+    solterms <- tail(solterms, 1)
+  }
+  lapply(solterms, function(solterms_i) {
+    if (mod_crr == "glm" && fam_crr == "gauss") {
+      ndr_ncl_pred <- ndr_ncl_pred_tst
+    } else if (mod_crr == "glmm" && fam_crr == "binom") {
+      ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust", "clust1")]
+    } else {
+      ndr_ncl_pred <- ndr_ncl_pred_tst["clust"]
     }
-    if (mod_nm %in% c("gam", "gamm")) {
-      solterms <- c(solterms,
-                    nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
-    }
-    if (mod_nm == "gamm") {
-      solterms <- c(solterms,
-                    nlist(solterms_sz = c(solterms_s, solterms_z),
-                          solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
-    }
-    if (fam_nm != "gauss") {
-      solterms <- tail(solterms, 1)
-    }
-    lapply(solterms, function(solterms_i) {
-      if (mod_nm == "glm" && fam_nm == "gauss") {
-        ndr_ncl_pred <- ndr_ncl_pred_tst
-      } else if (mod_nm == "glmm" && fam_nm == "binom") {
-        ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust", "clust1")]
-      } else {
-        ndr_ncl_pred <- ndr_ncl_pred_tst["clust"]
-      }
-      lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
-        return(c(
-          nlist(mod_nm, fam_nm, solution_terms = solterms_i, seed = seed_tst),
-          ndr_ncl_pred_i
-        ))
-      })
+    lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
+      return(c(
+        nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+        list(solution_terms = solterms_i, seed = seed_tst),
+        ndr_ncl_pred_i
+      ))
     })
   })
 })
@@ -576,8 +582,8 @@ args_prj <- unlist_cust(args_prj)
 
 prjs <- lapply(args_prj, function(args_prj_i) {
   do.call(project, c(
-    list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
-    args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+    list(object = refmods[[args_prj_i$tstsetup_ref]]),
+    excl_nonargs(args_prj_i)
   ))
 })
 
