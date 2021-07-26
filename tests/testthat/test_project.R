@@ -17,16 +17,15 @@ test_that(paste(
 })
 
 test_that("warn or error if `solution_terms` is invalid", {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     expect_error(
       do.call(project, c(
-        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+        list(object = refmods[[args_prj_i$tstsetup_ref]],
              solution_terms = NULL),
-        args_prj_i[setdiff(names(args_prj_i),
-                           c("mod_nm", "fam_nm", "solution_terms"))]
+        excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
       )),
       "is not an object of class \"vsel\"",
       info = tstsetup
@@ -36,10 +35,9 @@ test_that("warn or error if `solution_terms` is invalid", {
                             sep = "__")
       expect_warning(
         p <- do.call(project, c(
-          list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+          list(object = refmods[[args_prj_i$tstsetup_ref]],
                solution_terms = solterms_crr),
-          args_prj_i[setdiff(names(args_prj_i),
-                             c("mod_nm", "fam_nm", "solution_terms"))]
+          excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
         )),
         paste("At least one element of `solution_terms` could not be found",
               "among the terms in the reference model"),
@@ -55,13 +53,13 @@ test_that("warn or error if `solution_terms` is invalid", {
 })
 
 test_that("`object` of class \"stanreg\" works", {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_fit <- do.call(project, c(
-      list(object = fits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      list(object = fits[[args_prj_i$tstsetup_fit]]),
+      excl_nonargs(args_prj_i)
     ))
     expect_identical(p_fit, prjs[[tstsetup]], ignore.environment = TRUE,
                      info = tstsetup)
@@ -182,8 +180,8 @@ test_that(paste(
   "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
   "neither"
 ), {
-  expect_error(project(fits$glm$gauss), "is not an object of class \"vsel\"")
-  expect_error(project(refmods$glm$gauss), "is not an object of class \"vsel\"")
+  expect_error(project(fits[[1]]), "is not an object of class \"vsel\"")
+  expect_error(project(refmods[[1]]), "is not an object of class \"vsel\"")
 })
 
 # nterms ------------------------------------------------------------------
@@ -207,15 +205,15 @@ test_that("error if `nterms` is invalid", {
 # ndraws and nclusters ----------------------------------------------------
 
 test_that("error if `ndraws` is invalid", {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.default_ndr_ncl$", names(prjs),
-                    value = TRUE)
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
+                    names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     expect_error(
       do.call(project, c(
-        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+        list(object = refmods[[args_prj_i$tstsetup_ref]],
              ndraws = NULL),
-        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+        excl_nonargs(args_prj_i)
       )),
       "^!is\\.null\\(ndraws\\) is not TRUE$",
       info = tstsetup
@@ -227,20 +225,18 @@ test_that(paste(
   "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
   "of posterior draws in the reference model"
 ), {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.default_ndr_ncl$", names(prjs),
-                    value = TRUE)
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
+                    names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    mod_crr <- args_prj_i$mod_nm
-    fam_crr <- args_prj_i$fam_nm
-    S <- nrow(as.matrix(fits[[mod_crr]][[fam_crr]]))
+    S <- nrow(as.matrix(fits[[args_prj_i$tstsetup_fit]]))
     for (ndraws_crr in list(S + 1L)) {
       for (nclusters_crr in list(NULL, S + 1L)) {
         p <- do.call(project, c(
-          list(object = refmods[[mod_crr]][[fam_crr]],
+          list(object = refmods[[args_prj_i$tstsetup_ref]],
                ndraws = ndraws_crr,
                nclusters = nclusters_crr),
-          args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+          excl_nonargs(args_prj_i)
         ))
         projection_tester(
           p,
@@ -267,16 +263,16 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_new1 <- .Random.seed
     p_new <- do.call(project, c(
-      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+      list(object = refmods[[args_prj_i$tstsetup_ref]],
            seed = args_prj_i$seed + 1L),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm", "seed"))]
+      excl_nonargs(args_prj_i, nms_excl_add = "seed")
     ))
     .Random.seed_new2 <- .Random.seed
     rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
     p_repr <- do.call(project, c(
-      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      excl_nonargs(args_prj_i)
     ))
     .Random.seed_repr2 <- .Random.seed
     # Expected equality:
@@ -296,14 +292,14 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 test_that("for non-GLMs, `regul` has no effect", {
   regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
-    tstsetups <- grep(paste0("^", mod_crr, "\\.gauss\\.solterms_x\\.clust"),
+    tstsetups <- grep(paste0("^", mod_crr, "\\.gauss.*\\.solterms_x\\.clust"),
                       names(prjs), value = TRUE)[1]
     for (tstsetup in tstsetups) {
       args_prj_i <- args_prj[[tstsetup]]
       p_regul <- do.call(project, c(
-        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+        list(object = refmods[[args_prj_i$tstsetup_ref]],
              regul = regul_tst),
-        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+        excl_nonargs(args_prj_i)
       ))
       expect_equal(p_regul, prjs[[tstsetup]], info = tstsetup)
     }
@@ -328,9 +324,9 @@ test_that("for GLMs, `regul` has an expected effect", {
         prj_regul <- prjs[[tstsetup]]
       } else {
         prj_regul <- do.call(project, c(
-          list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+          list(object = refmods[[args_prj_i$tstsetup_ref]],
                regul = regul_tst[j]),
-          args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+          excl_nonargs(args_prj_i)
         ))
         projection_tester(
           prj_regul,
