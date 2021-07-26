@@ -63,13 +63,13 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_refmod <- do.call(proj_linpred, c(
-      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      excl_nonargs(args_prj_i)
     ))
     pl_from_prj <- pls[[tstsetup]]
     expect_equal(pl_from_refmod, pl_from_prj, info = tstsetup)
@@ -79,13 +79,13 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"stanreg\" and passing arguments to project() works"
 ), {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_fit <- do.call(proj_linpred, c(
-      list(object = fits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      list(object = fits[[args_prj_i$tstsetup_fit]]),
+      excl_nonargs(args_prj_i)
     ))
     pl_from_prj <- pls[[tstsetup]]
     expect_equal(pl_from_fit, pl_from_prj, info = tstsetup)
@@ -97,13 +97,13 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.subvec", names(prjs_vs),
+  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.subvec", names(prjs_vs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
-      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_prj_vs_i)
     ))
     pl_from_prj <- pls_vs[[tstsetup]]
     expect_equal(pl_from_vsel, pl_from_prj, info = tstsetup)
@@ -115,13 +115,13 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth\\.subvec",
+  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
                     names(prjs_cvvs), value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
       list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
-      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_prj_cvvs_i)
     ))
     pl_from_prj <- pls_cvvs[[tstsetup]]
     expect_equal(pl_from_vsel, pl_from_prj, info = tstsetup)
@@ -133,9 +133,9 @@ test_that(paste(
   "neither"
 ), {
   expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
-  expect_error(proj_linpred(fits$glm$gauss),
+  expect_error(proj_linpred(fits[[1]]),
                "is not an object of class \"vsel\"")
-  expect_error(proj_linpred(refmods$glm$gauss),
+  expect_error(proj_linpred(refmods[[1]]),
                "is not an object of class \"vsel\"")
   expect_error(proj_linpred(c(prjs, list(dat))),
                "Invalid object supplied to argument `object`\\.")
@@ -320,10 +320,10 @@ test_that("`regul` works", {
     args_prj_i <- args_prj[[tstsetup]]
     norms <- sapply(regul_tst, function(regul_crr) {
       pl <- do.call(proj_linpred, c(
-        list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+        list(object = refmods[[args_prj_i$tstsetup_ref]],
              integrated = TRUE,
              regul = regul_crr),
-        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+        excl_nonargs(args_prj_i)
       ))
       pl_tester(pl,
                 nprjdraws_expected = 1L,
@@ -339,7 +339,7 @@ test_that("`regul` works", {
 ## filter_nterms ----------------------------------------------------------
 
 test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
@@ -362,7 +362,7 @@ test_that(paste(
   "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.full$", names(prjs_vs),
+  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.full$", names(prjs_vs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     # Unavailable number(s) of terms:
@@ -505,14 +505,14 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_refmod <- do.call(proj_predict, c(
-      list(object = refmods[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+      list(object = refmods[[args_prj_i$tstsetup_ref]],
            .seed = seed2_tst),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      excl_nonargs(args_prj_i)
     ))
     pp_from_prj <- pps[[tstsetup]]
     expect_equal(pp_from_refmod, pp_from_prj, info = tstsetup)
@@ -522,14 +522,14 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"stanreg\" and passing arguments to project() works"
 ), {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_fit <- do.call(proj_predict, c(
-      list(object = fits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]],
+      list(object = fits[[args_prj_i$tstsetup_fit]],
            .seed = seed2_tst),
-      args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+      excl_nonargs(args_prj_i)
     ))
     pp_from_prj <- pps[[tstsetup]]
     expect_equal(pp_from_fit, pp_from_prj, info = tstsetup)
@@ -541,14 +541,14 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.subvec", names(prjs_vs),
+  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.subvec", names(prjs_vs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]],
            .seed = seed2_tst),
-      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_prj_vs_i)
     ))
     pp_from_prj <- pps_vs[[tstsetup]]
     expect_equal(pp_from_vsel, pp_from_prj, info = tstsetup)
@@ -560,14 +560,14 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.default_cvmeth\\.subvec",
+  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
                     names(prjs_cvvs), value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
       list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]],
            .seed = seed2_tst),
-      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_prj_cvvs_i)
     ))
     pp_from_prj <- pps_cvvs[[tstsetup]]
     expect_equal(pp_from_vsel, pp_from_prj, info = tstsetup)
@@ -580,9 +580,9 @@ test_that(paste(
 ), {
   expect_error(proj_predict(1, .seed = seed2_tst),
                "is not an object of class \"vsel\"")
-  expect_error(proj_predict(fits$glm$gauss, .seed = seed2_tst),
+  expect_error(proj_predict(fits[[1]], .seed = seed2_tst),
                "is not an object of class \"vsel\"")
-  expect_error(proj_predict(refmods$glm$gauss, .seed = seed2_tst),
+  expect_error(proj_predict(refmods[[1]], .seed = seed2_tst),
                "is not an object of class \"vsel\"")
   expect_error(proj_predict(c(prjs, list(dat)), .seed = seed2_tst),
                "Invalid object supplied to argument `object`\\.")
@@ -750,7 +750,7 @@ test_that("`offsetnew` works", {
 ## filter_nterms ----------------------------------------------------------
 
 test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
-  tstsetups <- grep("^glm\\.gauss\\.solterms_x\\.clust", names(prjs),
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
                     value = TRUE)[1]
   for (tstsetup in tstsetups) {
     nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
@@ -775,7 +775,7 @@ test_that(paste(
   "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss\\.default_meth\\.full$", names(prjs_vs),
+  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.full$", names(prjs_vs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     # Unavailable number(s) of terms:
