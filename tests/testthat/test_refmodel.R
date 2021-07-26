@@ -16,13 +16,14 @@ test_that("`object` of class \"stanreg\" works", {
       # Reference models take arithmetic expressions on the left-hand side of
       # the formula into account:
       y_spclformul <- as.character(fits[[tstsetup_fit]]$formula)[[2]]
-      refformul_spclformul <- as.formula(paste(
-        gsub("\\(|\\)", "", y_spclformul),
-        "~",
-        paste(labels(terms(fits[[tstsetup_fit]]$formula)), collapse = " + ")
-      ))
-      refdat_spclformul <- dat
-      refdat_spclformul$logabsy_glm_gauss <- log(abs(refdat_spclformul$y_glm_gauss))
+      y_spclformul_new <- gsub("\\(|\\)", "", y_spclformul)
+      refformul_spclformul <- update(
+        fits[[tstsetup_fit]]$formula,
+        as.formula(paste(y_spclformul_new, "~ ."))
+      )
+      refdat_spclformul <- within(dat, {
+        assign(y_spclformul_new, eval(str2lang(y_spclformul)))
+      })
       refmodel_tester(
         refmods[[tstsetup]],
         fit_expected = fits[[tstsetup_fit]],
