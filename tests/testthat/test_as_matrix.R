@@ -18,6 +18,7 @@ if (length(args_gamm)) {
 
 test_that("as.matrix.projection() works", {
   for (tstsetup in names(prjs)) {
+    tstsetup_ref <- args_prj[[tstsetup]]$tstsetup_ref
     mod_crr <- args_prj[[tstsetup]]$mod_nm
     fam_crr <- args_prj[[tstsetup]]$fam_nm
     solterms <- args_prj[[tstsetup]]$solution_terms
@@ -80,14 +81,14 @@ test_that("as.matrix.projection() works", {
                  sub("^s\\(", "",
                      grep("^s\\(.*\\)$", solterms, value = TRUE)))
     if (length(s_nms) > 0) {
-      stopifnot(inherits(refmods[[mod_crr]][[fam_crr]]$fit, "stanreg"))
+      stopifnot(inherits(refmods[[tstsetup_ref]]$fit, "stanreg"))
       # Get the number of basis coefficients:
-      s_info <- refmods[[mod_crr]][[fam_crr]]$fit$jam$smooth
+      s_info <- refmods[[tstsetup_ref]]$fit$jam$smooth
       s_terms <- sapply(s_info, "[[", "term")
       s_dfs <- setNames(sapply(s_info, "[[", "df"), s_terms)
       ### Alternative:
       # par_nms_orig <- colnames(
-      #   as.matrix(refmods[[mod_crr]][[fam_crr]]$fit)
+      #   as.matrix(refmods[[tstsetup_ref]]$fit)
       # )
       # s_dfs <- sapply(s_nms, function(s_nm) {
       #   sum(grepl(paste0("^s\\(", s_nm, "\\)"), par_nms_orig))
