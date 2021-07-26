@@ -632,19 +632,22 @@ if (run_vs) {
 #### cv_varsel() ----------------------------------------------------------
 
 tstsetups_prj_cvvs <- setNames(
-  nm = grep("^glm\\.gauss\\.default_meth\\.default_cvmeth", names(cvvss),
-            value = TRUE)
+  nm = grep(
+    "^glm\\.gauss\\..*\\.with_wobs\\..*\\.default_meth\\.default_cvmeth",
+    names(cvvss),
+    value = TRUE
+  )
 )
 stopifnot(length(tstsetups_prj_cvvs) > 0)
 args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
-args_prj_cvvs <- unlist_cust(args_prj_cvvs, nm_stop = "tstsetup_vsel")
+args_prj_cvvs <- unlist_cust(args_prj_cvvs)
 
 if (run_cvvs) {
   # Use SW() because of occasional pwrssUpdate() warnings:
   SW(prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
     do.call(project, c(
       list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
-      args_prj_cvvs_i[setdiff(names(args_prj_cvvs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_prj_cvvs_i)
     ))
   }))
 }
