@@ -17,14 +17,17 @@ only_nonargs <- function(args_i) {
 # arguments in the narrower sense
 #
 # @param args_i A list of arguments.
+# @param nms_excl_add A character vector of element names which should also be
+#   excluded from `args_i`.
 #
 # @return `args_i` with the following elements excluded:
 #   * `"mod_nm"`,
 #   * `"fam_nm"`,
 #   * everything starting with "tstsetup_" (regexp: "^tstsetup_").
-excl_nonargs <- function(args_i) {
+excl_nonargs <- function(args_i, nms_excl_add = character()) {
   nms_excl <- c("mod_nm", "fam_nm",
-                grep("^tstsetup_", names(args_i), value = TRUE))
+                grep("^tstsetup_", names(args_i), value = TRUE),
+                nms_excl_add)
   return(args_i[setdiff(names(args_i), nms_excl)])
 }
 
