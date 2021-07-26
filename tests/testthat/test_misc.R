@@ -53,8 +53,6 @@ test_that("rstanarm: special formulas work", {
     expect_equal(mf_spclformul[, setdiff(names(mf_spclformul), nms_spclformul)],
                  mf[, setdiff(names(mf), nms)], info = tstsetup)
     # Check arithmetic expressions:
-    expect_equal(mf_spclformul$`log(abs(y_glm_gauss))`, log(abs(dat$y_glm_gauss)),
-                 info = tstsetup)
     for (nm_spclformul in nms_spclformul) {
       expect_equal(mf_spclformul[, nm_spclformul],
                    eval(str2lang(nm_spclformul), envir = dat),
