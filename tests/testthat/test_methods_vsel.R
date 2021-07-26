@@ -5,8 +5,8 @@ context("summary(), plot(), suggest_size()")
 test_that("error if `object` is invalid", {
   objs_invalid <- nlist(
     NULL,
-    fit = fits[[1]][[1]],
-    refmod = refmods[[1]][[1]],
+    fit = fits[[1]],
+    refmod = refmods[[1]],
     prj = prjs[[1]],
     prj_vs = prjs_vs[[1]],
     prj_cvvs = prjs_cvvs[[1]]
@@ -107,7 +107,7 @@ test_that(paste(
     expect_output(
       print_obj <- do.call(print, c(
         list(x = vss[[args_smmry_vs_i$tstsetup_vsel]]),
-        args_smmry_vs_i[setdiff(names(args_smmry_vs_i), c("tstsetup_vsel"))]
+        excl_nonargs(args_smmry_vs_i)
       )),
       "Family:.*Link function:.*Formula:.*Observations:",
       info = tstsetup
@@ -126,7 +126,7 @@ test_that(paste(
     expect_output(
       print_obj <- do.call(print, c(
         list(x = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
-        args_smmry_cvvs_i[setdiff(names(args_smmry_cvvs_i), c("tstsetup_vsel"))]
+        excl_nonargs(args_smmry_cvvs_i)
       )),
       "Family:.*Link function:.*Formula:.*Observations:",
       info = tstsetup
