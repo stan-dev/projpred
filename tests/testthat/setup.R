@@ -332,6 +332,19 @@ offss_tst <- list(with_offs = list(offset = offs_tst),
 
 ### Argument list ---------------------------------------------------------
 
+if (run_cvvs_kfold) {
+  # For some arguments, if they are specified via objects,
+  # rstanarm:::kfold.stanreg() seems to assume these objects to lie in the
+  # global environment. Since `testthat` uses a new environment for running
+  # the tests (see `?testthat::test_env`), we need the following code to be
+  # able to run devtools::test():
+  for (obj_symb_chr in c(paste0("f_", fam_nms))) {
+    if (!exists(obj_symb_chr, envir = .GlobalEnv)) {
+      assign(obj_symb_chr, get(obj_symb_chr), envir = .GlobalEnv)
+    }
+  }
+}
+
 args_fit <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
