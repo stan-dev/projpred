@@ -3,26 +3,34 @@
 context("get_refmodel()")
 
 test_that("`object` of class \"stanreg\" works", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
+  for (tstsetup in names(refmods)) {
+    tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
+    if (!grepl("\\.spclformul", tstsetup)) {
       refmodel_tester(
-        refmod = refmods[[mod_nm]][[fam_nm]],
-        fit_expected = fits[[mod_nm]][[fam_nm]],
-        info_str = paste(mod_nm, fam_nm, sep = "__"),
-        fam_orig = get(paste0("f_", fam_nm))
+        refmod = refmods[[tstsetup]],
+        fit_expected = fits[[tstsetup_fit]],
+        info_str = tstsetup,
+        fam_orig = eval(args_fit[[tstsetup_fit]]$family)
       )
-    }
-  }
-  if (run_cvvs_kfold) {
-    for (mod_nm in names(refmods_kfold)) {
-      for (fam_nm in names(refmods_kfold[[mod_nm]])) {
-        refmodel_tester(
-          refmod = refmods_kfold[[mod_nm]][[fam_nm]],
-          fit_expected = fits_kfold[[mod_nm]][[fam_nm]],
-          info_str = paste(mod_nm, fam_nm, "kfold", sep = "__"),
-          fam_orig = get(paste0("f_", fam_nm))
-        )
-      }
+    } else {
+      # Reference models take arithmetic expressions on the left-hand side of
+      # the formula into account:
+      y_spclformul <- as.character(fits[[tstsetup_fit]]$formula)[[2]]
+      refformul_spclformul <- as.formula(paste(
+        gsub("\\(|\\)", "", y_spclformul),
+        "~",
+        paste(labels(terms(fits[[tstsetup_fit]]$formula)), collapse = " + ")
+      ))
+      refdat_spclformul <- dat
+      refdat_spclformul$logabsy_glm_gauss <- log(abs(refdat_spclformul$y_glm_gauss))
+      refmodel_tester(
+        refmods[[tstsetup]],
+        fit_expected = fits[[tstsetup_fit]],
+        formul_expected = refformul_spclformul,
+        data_expected = refdat_spclformul,
+        info_str = tstsetup,
+        fam_orig = eval(args_fit[[tstsetup_fit]]$family)
+      )
     }
   }
 })

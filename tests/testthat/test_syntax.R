@@ -29,26 +29,6 @@ test_that("special formulas work", {
   }
   ###
 
-  # Reference model (takes arithmetic expressions on the left-hand side of the
-  # formula into account):
-  refmod_spclformul <- get_refmodel(fit_glm_gauss_spclformul)
-  y_spclformul <- as.character(fit_glm_gauss_spclformul$formula)[[2]]
-  refformul_spclformul <- as.formula(paste(
-    gsub("\\(|\\)", "", y_spclformul),
-    "~",
-    paste(labels(terms(fit_glm_gauss_spclformul$formula)), collapse = " + ")
-  ))
-  refdat_spclformul <- dat
-  refdat_spclformul$logabsy_glm_gauss <- log(abs(refdat_spclformul$y_glm_gauss))
-  refmodel_tester(
-    refmod_spclformul,
-    fit_expected = fit_glm_gauss_spclformul,
-    formul_expected = refformul_spclformul,
-    data_expected = refdat_spclformul,
-    info_str = tstsetup,
-    fam_orig = f_gauss
-  )
-
   # TODO: Add tests for refmod_spclformul$div_minimizer() to check that the
   # arithmetic expressions on the right-hand side of the formula are taken there
   # into account.
