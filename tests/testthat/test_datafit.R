@@ -41,36 +41,52 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
 ## Reference model --------------------------------------------------------
 ## (actually "datafit"s)
 
+# Exclude the "special formula" case as well as the case which was added for
+# K-fold CV only:
+args_datafit <- lapply(setNames(
+  nm = grep("\\.spclformul|^glm\\.gauss\\.stdformul\\.without_wobs",
+            names(fits), value = TRUE, invert = TRUE)
+), function(tstsetup_fit) {
+  c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
+})
+
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(datafits <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    formul_crr <- fits[[mod_nm]][[fam_nm]]$formula
-    extrmoddat <- function(object, newdata = NULL, wrhs = NULL, orhs = NULL,
-                           extract_y = TRUE) {
-      resp_form <- if (!extract_y) NULL else lhs(formul_crr)
-      if (is.null(newdata)) {
-        newdata <- dat
-      }
-      args <- nlist(object, newdata, wrhs, orhs, resp_form)
-      return(do.call(.extrmoddat_datafit, args))
+SW(datafits <- lapply(args_datafit, function(args_datafit_i) {
+  formul_crr <- fits[[args_datafit_i$tstsetup_fit]]$formula
+  extrmoddat <- function(object, newdata = NULL, wrhs = NULL, orhs = NULL,
+                         extract_y = TRUE) {
+    resp_form <- if (!extract_y) NULL else lhs(formul_crr)
+    if (is.null(newdata)) {
+      newdata <- dat
     }
-    return(init_refmodel(
-      object = NULL,
-      data = dat,
-      formula = formul_crr,
-      family = get(paste0("f_", fam_nm)),
-      extract_model_data = extrmoddat
-    ))
-  })
+    args <- nlist(object, newdata, wrhs, orhs, resp_form)
+    return(do.call(.extrmoddat_datafit, args))
+  }
+  return(init_refmodel(
+    object = NULL,
+    data = dat,
+    formula = formul_crr,
+    family = get(paste0("f_", args_datafit_i$fam_nm)),
+    extract_model_data = extrmoddat
+  ))
 }))
 
 ## Variable selection -----------------------------------------------------
 
 ### varsel() --------------------------------------------------------------
 
-args_vs_datafit <- args_vs
+stopifnot(all(names(args_datafit) %in% names(args_ref)))
+args_vs_datafit <- args_vs[
+  sapply(args_vs, "[[", "tstsetup_ref") %in% names(datafits)
+]
+args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
+  names(args_vs_i)[names(args_vs_i) == "tstsetup_ref"] <- "tstsetup_datafit"
+  return(args_vs_i)
+})
+# For `"datafit"`s, we always have 1 cluster by default, so omit related
+# arguments:
 args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
   return(args_vs_i[setdiff(names(args_vs_i),
                            c("ndraws", "nclusters",
@@ -80,22 +96,29 @@ args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
 if (run_vs) {
   vss_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
     do.call(varsel, c(
-      list(object = datafits[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+      list(object = datafits[[args_vs_i$tstsetup_datafit]]),
+      excl_nonargs(args_vs_i)
     ))
   })
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
-# (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
 args_cvvs_datafit <- args_cvvs[
-  grep("kfold", names(args_cvvs), value = TRUE, invert = TRUE)
+  sapply(args_cvvs, "[[", "tstsetup_ref") %in% names(datafits)
 ]
+args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
+  names(args_cvvs_i)[names(args_cvvs_i) == "tstsetup_ref"] <- "tstsetup_datafit"
+  return(args_cvvs_i)
+})
+# (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
+stopifnot(!any(grepl("kfold", names(args_cvvs_datafit))))
 args_cvvs_datafit <- lapply(args_cvvs_datafit, "c",
-                            list(cv_method = "kfold", K = 2))
+                            list(cv_method = "kfold", K = K_tst))
 names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                  names(args_cvvs_datafit))
+# For `"datafit"`s, we always have 1 cluster by default, so omit related
+# arguments:
 args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
   return(args_cvvs_i[setdiff(names(args_cvvs_i),
                              c("ndraws", "nclusters",
@@ -105,8 +128,8 @@ args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
 if (run_cvvs) {
   cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     do.call(cv_varsel, c(
-      list(object = datafits[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+      list(object = datafits[[args_cvvs_i$tstsetup_datafit]]),
+      excl_nonargs(args_cvvs_i)
     ))
   })
 }
@@ -115,7 +138,17 @@ if (run_cvvs) {
 
 ### From varsel() ---------------------------------------------------------
 
-args_prj_vs_datafit <- args_prj_vs
+args_prj_vs_datafit <- args_prj_vs[
+  sapply(args_prj_vs, "[[", "tstsetup_ref") %in% names(datafits) &
+    sapply(args_prj_vs, "[[", "tstsetup_vsel") %in% names(vss_datafit)
+]
+args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
+  names(args_prj_vs_i)[names(args_prj_vs_i) == "tstsetup_ref"] <-
+    "tstsetup_datafit"
+  return(args_prj_vs_i)
+})
+# For `"datafit"`s, we always have 1 cluster by default, so omit related
+# arguments:
 args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
   return(args_prj_vs_i[setdiff(names(args_prj_vs_i), c("ndraws", "nclusters"))])
 })
@@ -124,7 +157,7 @@ if (run_vs) {
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
     do.call(project, c(
       list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]]),
-      args_prj_vs_i[setdiff(names(args_prj_vs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_prj_vs_i)
     ))
   })
 }
@@ -141,28 +174,24 @@ pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
 ## Reference model --------------------------------------------------------
 
 test_that("init_refmodel(): `object` of class \"datafit\" works", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      refmodel_tester(
-        refmod = datafits[[mod_nm]][[fam_nm]],
-        is_datafit = TRUE,
-        fit_expected = NULL,
-        formul_expected = fits[[mod_nm]][[fam_nm]]$formula,
-        nrefdraws_expected = 1L,
-        info_str = paste(mod_nm, fam_nm, sep = "__"),
-        fam_orig = get(paste0("f_", fam_nm))
-      )
-    }
+  for (tstsetup in names(datafits)) {
+    refmodel_tester(
+      refmod = datafits[[tstsetup]],
+      is_datafit = TRUE,
+      fit_expected = NULL,
+      formul_expected = fits[[args_datafit[[tstsetup]]$tstsetup_fit]]$formula,
+      nrefdraws_expected = 1L,
+      info_str = tstsetup,
+      fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
+    )
   }
 })
 
 test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      expect_error(predict(datafits[[mod_nm]][[fam_nm]], newdata = dat),
-                   "^Cannot make predictions with data reference only\\.$",
-                   info = paste(mod_nm, fam_nm, sep = "__"))
-    }
+  for (tstsetup in names(datafits)) {
+    expect_error(predict(datafits[[tstsetup]], newdata = dat),
+                 "^Cannot make predictions with data reference only\\.$",
+                 info = tstsetup)
   }
 })
 
@@ -174,7 +203,6 @@ test_that(paste(
   skip_if_not(run_vs)
   for (tstsetup in names(vss_datafit)) {
     mod_crr <- args_vs_datafit[[tstsetup]]$mod_nm
-    fam_crr <- args_vs_datafit[[tstsetup]]$fam_nm
     meth_exp_crr <- args_vs_datafit[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
@@ -182,7 +210,8 @@ test_that(paste(
     vsel_tester(
       vss_datafit[[tstsetup]],
       from_datafit = TRUE,
-      refmod_expected = datafits[[mod_crr]][[fam_crr]],
+      refmod_expected =
+        datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
       solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       nclusters_expected = 1L,
@@ -199,7 +228,6 @@ test_that(paste(
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss_datafit)) {
     mod_crr <- args_cvvs_datafit[[tstsetup]]$mod_nm
-    fam_crr <- args_cvvs_datafit[[tstsetup]]$fam_nm
     meth_exp_crr <- args_cvvs_datafit[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
@@ -208,7 +236,8 @@ test_that(paste(
       cvvss_datafit[[tstsetup]],
       with_cv = TRUE,
       from_datafit = TRUE,
-      refmod_expected = datafits[[mod_crr]][[fam_crr]],
+      refmod_expected =
+        datafits[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
       solterms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
@@ -223,13 +252,17 @@ test_that(paste(
 ## Projection -------------------------------------------------------------
 
 test_that("project(): error if `object` is of class \"datafit\"", {
+  # A prerequisite for this `project()` test (otherwise, it would have to be
+  # adopted):
+  stopifnot(all(names(args_datafit) %in% names(args_ref)))
+
   tstsetups <- grep("\\.solterms_x.*\\.clust$", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     expect_error(
       do.call(project, c(
-        list(object = datafits[[args_prj_i$mod_nm]][[args_prj_i$fam_nm]]),
-        args_prj_i[setdiff(names(args_prj_i), c("mod_nm", "fam_nm"))]
+        list(object = datafits[[args_prj_i$tstsetup_ref]]),
+        excl_nonargs(args_prj_i)
       )),
       paste("^no applicable method for 'predict' applied to an object of class",
             "\"NULL\"$"),
@@ -246,8 +279,6 @@ test_that(paste(
   for (tstsetup in names(prjs_vs_datafit)) {
     tstsetup_vs <- args_prj_vs_datafit[[tstsetup]]$tstsetup_vsel
     stopifnot(length(tstsetup_vs) > 0)
-    mod_crr <- args_vs_datafit[[tstsetup_vs]]$mod_nm
-    fam_crr <- args_vs_datafit[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
       nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
@@ -306,7 +337,7 @@ test_that(paste(
               len_expected = 1L,
               nprjdraws_expected = 1L,
               nobsv_expected = tail(nobsv_tst, 1),
-              info_str = paste("with_args", tstsetup, sep = "__"))
+              info_str = paste(tstsetup, "with_args", sep = "__"))
   }
 })
 
@@ -337,22 +368,20 @@ test_that(paste(
               len_expected = 1L,
               nprjdraws_out_expected = tail(nresample_clusters_tst, 1),
               nobsv_expected = tail(nobsv_tst, 1),
-              info_str = paste("with_args", tstsetup, sep = "__"))
+              info_str = paste(tstsetup, "with_args", sep = "__"))
   }
 })
 
 ## summary.vsel() ---------------------------------------------------------
 
 test_that("summary.vsel(): error if `object` is of class \"datafit\"", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      expect_error(
-        summary.vsel(datafits[[mod_nm]][[fam_nm]]),
-        paste("^The object is not a variable selection object\\. Run variable",
-              "selection first$"),
-        info = paste(mod_nm, fam_nm, sep = "__")
-      )
-    }
+  for (tstsetup in names(datafits)) {
+    expect_error(
+      summary.vsel(datafits[[tstsetup]]),
+      paste("^The object is not a variable selection object\\. Run variable",
+            "selection first$"),
+      info = tstsetup
+    )
   }
 })
 
