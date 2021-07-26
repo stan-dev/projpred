@@ -35,3 +35,30 @@ test_that(paste(
                  info = tstsetup)
   }
 })
+
+test_that("rstanarm: special formulas work", {
+  tstsetups <- grep("\\.spclformul", names(fits), value = TRUE)
+  # Compare the "special formula" fit with the corresponding "standard formula"
+  # fit (which does not have the special formula elements):
+  for (tstsetup in tstsetups) {
+    mf_spclformul <- fits[[tstsetup]]$model
+    nms_spclformul <- setdiff(
+      grep("y_|xco", names(mf_spclformul), value = TRUE),
+      "xco.1"
+    )
+    tstsetup_stdformul <- sub("\\.spclformul", ".stdformul", tstsetup)
+    stopifnot(tstsetup_stdformul != tstsetup)
+    mf <- fits[[tstsetup_stdformul]]$model
+    nms <- setdiff(grep("y_|xco", names(mf), value = TRUE), "xco.1")
+    expect_equal(mf_spclformul[, setdiff(names(mf_spclformul), nms_spclformul)],
+                 mf[, setdiff(names(mf), nms)], info = tstsetup)
+    # Check arithmetic expressions:
+    expect_equal(mf_spclformul$`log(abs(y_glm_gauss))`, log(abs(dat$y_glm_gauss)),
+                 info = tstsetup)
+    for (nm_spclformul in nms_spclformul) {
+      expect_equal(mf_spclformul[, nm_spclformul],
+                   eval(str2lang(nm_spclformul), envir = dat),
+                   info = paste(tstsetup, nm_spclformul, sep = "__"))
+    }
+  }
+})
