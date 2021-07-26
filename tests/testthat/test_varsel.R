@@ -8,6 +8,7 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(vss)) {
+    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
     mod_crr <- args_vs[[tstsetup]]$mod_nm
     fam_crr <- args_vs[[tstsetup]]$fam_nm
     meth_exp_crr <- args_vs[[tstsetup]]$method
@@ -16,7 +17,7 @@ test_that(paste(
     }
     vsel_tester(
       vss[[tstsetup]],
-      refmod_expected = refmods[[mod_crr]][[fam_crr]],
+      refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       nclusters_expected = args_vs[[tstsetup]]$nclusters,
@@ -32,16 +33,16 @@ test_that("error if `object` is invalid", {
 })
 
 test_that("error if `method` is invalid", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      expect_error(varsel(refmods[[mod_nm]][[fam_nm]], method = "k-fold"),
-                   "Unknown search method",
-                   info = paste(mod_nm, fam_nm, sep = "__"))
-      if (mod_nm != "glm") {
-        expect_error(varsel(refmods[[mod_nm]][[fam_nm]], method = "L1"),
-                     "^L1 search is only supported for GLMs\\.$",
-                     info = paste(mod_nm, fam_nm, sep = "__"))
-      }
+  # Exclude the "special formula" setting due to issue #182:
+  for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
+                        invert = TRUE)) {
+    expect_error(varsel(refmods[[tstsetup]], method = "k-fold"),
+                 "Unknown search method",
+                 info = tstsetup)
+    if (args_ref[[tstsetup]]$mod_nm != "glm") {
+      expect_error(varsel(refmods[[tstsetup]], method = "L1"),
+                   "^L1 search is only supported for GLMs\\.$",
+                   info = tstsetup)
     }
   }
 })
@@ -58,16 +59,16 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_new1 <- .Random.seed
     vs_new <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+      list(object = refmods[[args_vs_i$tstsetup_ref]],
            seed = args_vs_i$seed + 1L),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm", "seed"))]
+      excl_nonargs(args_vs_i, nms_excl_add = "seed")
     ))
     .Random.seed_new2 <- .Random.seed
     rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
     vs_repr <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+      list(object = refmods[[args_vs_i$tstsetup_ref]]),
+      excl_nonargs(args_vs_i)
     ))
     .Random.seed_repr2 <- .Random.seed
     # Expected equality:
@@ -87,9 +88,10 @@ test_that("`d_test` works", {
   tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
+    tstsetup_ref <- args_vs_i$tstsetup_ref
     mod_crr <- args_vs_i$mod_nm
     fam_crr <- args_vs_i$fam_nm
-    refmod_crr <- refmods[[mod_crr]][[fam_crr]]
+    refmod_crr <- refmods[[tstsetup_ref]]
     d_test_crr <- list(
       y = refmod_crr$y,
       test_points = seq_along(refmod_crr$y),
@@ -103,7 +105,7 @@ test_that("`d_test` works", {
     expect_warning(
       vs_repr <- do.call(varsel, c(
         list(object = refmod_crr, d_test = d_test_crr),
-        args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+        excl_nonargs(args_vs_i)
       )),
       paste("^'offset' argument is NULL but it looks like you estimated the",
             "model using an offset term\\.$"),
@@ -148,9 +150,9 @@ test_that("for non-GLMs, `regul` has no effect", {
     for (tstsetup in tstsetups) {
       args_vs_i <- args_vs[[tstsetup]]
       vs_regul <- do.call(varsel, c(
-        list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+        list(object = refmods[[args_vs_i$tstsetup_ref]],
              regul = regul_tst),
-        args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+        excl_nonargs(args_vs_i)
       ))
       expect_equal(vs_regul, vss[[tstsetup]], info = tstsetup)
     }
@@ -176,13 +178,13 @@ test_that(paste(
         vs_regul <- vss[[tstsetup]]
       } else {
         vs_regul <- do.call(varsel, c(
-          list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+          list(object = refmods[[args_vs_i$tstsetup_ref]],
                regul = regul_tst[j]),
-          args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+          excl_nonargs(args_vs_i)
         ))
         vsel_tester(
           vs_regul,
-          refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+          refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "L1",
           nclusters_expected = args_vs_i$nclusters,
@@ -254,13 +256,13 @@ test_that(paste(
         vs_regul <- vss[[tstsetup]]
       } else {
         vs_regul <- do.call(varsel, c(
-          list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+          list(object = refmods[[args_vs_i$tstsetup_ref]],
                regul = regul_tst[j]),
-          args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+          excl_nonargs(args_vs_i)
         ))
         vsel_tester(
           vs_regul,
-          refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+          refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "forward",
           nclusters_expected = args_vs_i$nclusters,
@@ -353,9 +355,9 @@ test_that("error if `penalty` is of invalid length", {
     for (penal_crr in penal_tst) {
       expect_error(
         do.call(varsel, c(
-          list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+          list(object = refmods[[args_vs_i$tstsetup_ref]],
                penalty = penal_crr),
-          args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+          excl_nonargs(args_vs_i)
         )),
         paste0("^Incorrect length of penalty vector \\(should be ",
                len_penal, "\\)\\.$")
@@ -374,9 +376,9 @@ test_that("for forward search, `penalty` has no effect", {
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_penal <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+      list(object = refmods[[args_vs_i$tstsetup_ref]],
            penalty = penal_tst),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+      excl_nonargs(args_vs_i)
     ))
     expect_equal(vs_penal, vss[[tstsetup]], info = tstsetup)
   }
@@ -399,13 +401,13 @@ test_that("for L1 search, `penalty` has an expected effect", {
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_penal <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+      list(object = refmods[[args_vs_i$tstsetup_ref]],
            penalty = penal_crr),
-      args_vs_i[setdiff(names(args_vs_i), c("mod_nm", "fam_nm"))]
+      excl_nonargs(args_vs_i)
     ))
     vsel_tester(
       vs_penal,
-      refmod_expected = refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]],
+      refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = "L1",
       nclusters_expected = args_vs_i$nclusters,
@@ -414,7 +416,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
     )
     # Check that the variables with no cost are selected first and the ones
     # with infinite penalty last:
-    formula_crr <- refmods[[args_vs_i$mod_nm]][[args_vs_i$fam_nm]]$formula
+    formula_crr <- refmods[[args_vs_i$tstsetup_ref]]$formula
     solterms_orig <- setdiff(split_formula(formula_crr), "1")
     solterms_penal <- vs_penal$solution_terms
     # Note: This test probably needs to be adopted properly to categorical
@@ -442,11 +444,6 @@ test_that(paste(
   for (tstsetup in names(cvvss)) {
     mod_crr <- args_cvvs[[tstsetup]]$mod_nm
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
-    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
-      refmods_crr <- refmods_kfold
-    } else {
-      refmods_crr <- refmods
-    }
     meth_exp_crr <- args_cvvs[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
@@ -454,7 +451,7 @@ test_that(paste(
     vsel_tester(
       cvvss[[tstsetup]],
       with_cv = TRUE,
-      refmod_expected = refmods_crr[[mod_crr]][[fam_crr]],
+      refmod_expected = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
@@ -472,27 +469,27 @@ test_that("error if `object` is invalid", {
 })
 
 test_that("error if `method` is invalid", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      expect_error(cv_varsel(refmods[[mod_nm]][[fam_nm]], method = "k-fold"),
-                   "^Unknown search method$",
-                   info = paste(mod_nm, fam_nm, sep = "__"))
-      if (mod_nm != "glm") {
-        expect_error(cv_varsel(refmods[[mod_nm]][[fam_nm]], method = "L1"),
-                     "^L1 search is only supported for GLMs\\.$",
-                     info = paste(mod_nm, fam_nm, sep = "__"))
-      }
+  # Exclude the "special formula" setting due to issue #182:
+  for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
+                        invert = TRUE)) {
+    expect_error(cv_varsel(refmods[[tstsetup]], method = "k-fold"),
+                 "^Unknown search method$",
+                 info = tstsetup)
+    if (args_ref[[tstsetup]]$mod_nm != "glm") {
+      expect_error(cv_varsel(refmods[[tstsetup]], method = "L1"),
+                   "^L1 search is only supported for GLMs\\.$",
+                   info = tstsetup)
     }
   }
 })
 
 test_that("error if `cv_method` is invalid", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      expect_error(cv_varsel(refmods[[mod_nm]][[fam_nm]], cv_method = "k-fold"),
-                   "^Unknown cross-validation method$",
-                   info = paste(mod_nm, fam_nm, sep = "__"))
-    }
+  # Exclude the "special formula" setting due to issue #182:
+  for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
+                        invert = TRUE)) {
+    expect_error(cv_varsel(refmods[[tstsetup]], cv_method = "k-fold"),
+                 "^Unknown cross-validation method$",
+                 info = tstsetup)
   }
 })
 
@@ -510,16 +507,16 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     .Random.seed_new1 <- .Random.seed
     # Use SW() because of occasional warnings concerning Pareto k diagnostics:
     SW(cvvs_new <- do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            seed = args_cvvs_i$seed + 1L),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm", "seed"))]
+      excl_nonargs(args_cvvs_i, nms_excl_add = "seed")
     )))
     .Random.seed_new2 <- .Random.seed
     rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
     SW(cvvs_repr <- do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]]),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      excl_nonargs(args_cvvs_i)
     )))
     .Random.seed_repr2 <- .Random.seed
     # Expected equality:
@@ -535,14 +532,13 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 })
 
 test_that("error if `nloo` is invalid", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      # Use SW() because of occasional warnings concerning Pareto k diagnostics:
-      expect_error(SW(cv_varsel(refmods[[!!mod_nm]][[!!fam_nm]],
-                                nloo = -1)),
-                   "^nloo must be at least 1$",
-                   info = paste(mod_nm, fam_nm, sep = "__"))
-    }
+  # Exclude the "special formula" setting due to issue #182:
+  for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
+                        invert = TRUE)) {
+    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
+    expect_error(SW(cv_varsel(refmods[[tstsetup]], nloo = -1)),
+                 "^nloo must be at least 1$",
+                 info = tstsetup)
   }
 })
 
@@ -559,9 +555,9 @@ test_that(paste(
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use SW() because of occasional warnings concerning Pareto k diagnostics:
     SW(cvvs_nloo <- do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+      excl_nonargs(args_cvvs_i)
     )))
     expect_equal(cvvs_nloo, cvvss[[tstsetup]], info = tstsetup)
   }
@@ -575,6 +571,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
   tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
+    tstsetup_ref <- args_cvvs_i$tstsetup_ref
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     meth_exp_crr <- args_cvvs_i$method
@@ -583,14 +580,14 @@ test_that("setting `nloo` smaller than the number of observations works", {
     }
     # Use SW() because of occasional warnings concerning Pareto k diagnostics:
     SW(cvvs_nloo <- do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+      excl_nonargs(args_cvvs_i)
     )))
     vsel_tester(
       cvvs_nloo,
       with_cv = TRUE,
-      refmod_expected = refmods[[mod_crr]][[fam_crr]],
+      refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
@@ -622,6 +619,7 @@ test_that("`validate_search` works", {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     stopifnot(is.null(args_cvvs_i$validate_search) ||
                 isTRUE(args_cvvs_i$validate_search))
+    tstsetup_ref <- args_cvvs_i$tstsetup_ref
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     meth_exp_crr <- args_cvvs_i$method
@@ -630,14 +628,14 @@ test_that("`validate_search` works", {
     }
     # Use SW() because of occasional warnings concerning Pareto k diagnostics:
     SW(cvvs_valsearch <- do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$mod_nm]][[args_cvvs_i$fam_nm]],
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            validate_search = FALSE),
-      args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm"))]
+      excl_nonargs(args_cvvs_i)
     )))
     vsel_tester(
       cvvs_valsearch,
       with_cv = TRUE,
-      refmod_expected = refmods[[mod_crr]][[fam_crr]],
+      refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
@@ -681,16 +679,15 @@ test_that("`validate_search` works", {
 
 test_that("error if `K` is invalid", {
   skip_if_not(run_cvvs_kfold)
-  refmod_crr <- refmods_kfold$glm$gauss
-  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = 1),
+  expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1),
                "^K must be at least 2$")
-  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = 1000),
+  expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1000),
                "^K cannot exceed n$")
-  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = c(4, 9)),
+  expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = c(4, 9)),
                "^K must be a single integer value$")
-  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = "a"),
+  expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = "a"),
                "^K must be a single integer value$")
-  expect_error(cv_varsel(refmod_crr, cv_method = "kfold", K = dat),
+  expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = dat),
                "^K must be a single integer value$")
 })
 
@@ -699,13 +696,14 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
   tstsetups <- grep("kfold", names(cvvss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
+    tstsetup_fit <- args_cvvs_i$tstsetup_fit
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     meth_exp_crr <- args_cvvs_i$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
-    fit_crr <- fits_kfold[[mod_crr]][[fam_crr]]
+    fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
 
     # Refit `K_crr` times:
@@ -736,7 +734,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     expect_warning(
       cvvs_cvfits <- do.call(cv_varsel, c(
         list(object = refmod_crr),
-        args_cvvs_i[setdiff(names(args_cvvs_i), c("mod_nm", "fam_nm", "K"))]
+        excl_nonargs(args_cvvs_i, nms_excl_add = "K")
       )),
       paste("^'offset' argument is NULL but it looks like you estimated the",
             "model using an offset term\\.$"),
