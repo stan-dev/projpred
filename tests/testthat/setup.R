@@ -595,16 +595,16 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 # character vector of test setups (referring to either `vss` or `cvvss`):
 cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
   vsel_type <- deparse(substitute(tstsetups_prj_vsel))
+  args_obj <- switch(vsel_type,
+                     "tstsetups_prj_vs" = args_vs,
+                     "tstsetups_prj_cvvs" = args_cvvs,
+                     stop("Unexpected `vsel_type`."))
   lapply(tstsetups_prj_vsel, function(tstsetup_vsel) {
+    args_out <- c(
+      nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+      list(nclusters = nclusters_pred_tst, seed = seed_tst)
+    )
     lapply(nterms_avail, function(nterms_crr) {
-      args_obj <- switch(vsel_type,
-                         "tstsetups_prj_vs" = args_vs,
-                         "tstsetups_prj_cvvs" = args_cvvs,
-                         stop("Unexpected `vsel_type`."))
-      args_out <- c(
-        nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
-        list(nclusters = nclusters_pred_tst, seed = seed_tst)
-      )
       if (!is.null(nterms_crr)) {
         args_out <- c(args_out, list(nterms = nterms_crr))
       }
@@ -675,43 +675,52 @@ pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
 
 ### varsel() --------------------------------------------------------------
 
+cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
+  vsel_type <- deparse(substitute(tstsetups_smmry_vsel))
+  args_obj <- switch(vsel_type,
+                     "tstsetups_smmry_vs" = args_vs,
+                     "tstsetups_smmry_cvvs" = args_cvvs,
+                     stop("Unexpected `vsel_type`."))
+  lapply(tstsetups_smmry_vsel, function(tstsetup_vsel) {
+    mod_crr <- args_obj[[tstsetup_vsel]]$mod_nm
+    fam_crr <- args_obj[[tstsetup_vsel]]$fam_nm
+    add_stats <- switch(mod_crr,
+                        "glm" = switch(fam_crr,
+                                       "gauss" = "gauss_stats",
+                                       "binom" = "binom_stats",
+                                       "common_stats"),
+                        character())
+    stats_tst <- stats_tst[c("default_stats", add_stats)]
+    lapply(stats_tst, function(stats_crr) {
+      if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0) {
+        nterms_tst <- nterms_avail[c("default_nterms", "single")]
+      } else {
+        nterms_tst <- nterms_avail["default_nterms"]
+      }
+      lapply(nterms_tst, function(nterms_crr) {
+        return(c(
+          nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+          list(type = type_tst, nterms_max = nterms_crr),
+          stats_crr
+        ))
+      })
+    })
+  })
+}
 tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
   unlist(lapply(fam_nms, function(fam_nm) {
     grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE)[1]
   }))
 })))
 stopifnot(length(tstsetups_smmry_vs) > 0)
-args_smmry_vs <- lapply(tstsetups_smmry_vs, function(tstsetup_vsel) {
-  mod_crr <- args_vs[[tstsetup_vsel]]$mod_nm
-  fam_crr <- args_vs[[tstsetup_vsel]]$fam_nm
-  add_stats <- switch(mod_crr,
-                      "glm" = switch(fam_crr,
-                                     "gauss" = "gauss_stats",
-                                     "binom" = "binom_stats",
-                                     "common_stats"),
-                      character())
-  stats_tst <- stats_tst[c("default_stats", add_stats)]
-  lapply(stats_tst, function(stats_crr) {
-    if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0) {
-      nterms_tst <- nterms_avail[c("default_nterms", "single")]
-    } else {
-      nterms_tst <- nterms_avail["default_nterms"]
-    }
-    lapply(nterms_tst, function(nterms_crr) {
-      return(c(
-        nlist(tstsetup_vsel, type = type_tst, nterms_max = nterms_crr),
-        stats_crr
-      ))
-    })
-  })
-})
-args_smmry_vs <- unlist_cust(args_smmry_vs, nm_stop = "tstsetup_vsel")
+args_smmry_vs <- cre_args_smmry_vsel(tstsetups_smmry_vs)
+args_smmry_vs <- unlist_cust(args_smmry_vs)
 
 if (run_vs) {
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
     do.call(summary, c(
       list(object = vss[[args_smmry_vs_i$tstsetup_vsel]]),
-      args_smmry_vs_i[setdiff(names(args_smmry_vs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_smmry_vs_i)
     ))
   })
 }
@@ -724,37 +733,14 @@ tstsetups_smmry_cvvs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
   }))
 })))
 stopifnot(length(tstsetups_smmry_cvvs) > 0)
-args_smmry_cvvs <- lapply(tstsetups_smmry_cvvs, function(tstsetup_vsel) {
-  mod_crr <- args_cvvs[[tstsetup_vsel]]$mod_nm
-  fam_crr <- args_cvvs[[tstsetup_vsel]]$fam_nm
-  add_stats <- switch(mod_crr,
-                      "glm" = switch(fam_crr,
-                                     "gauss" = "gauss_stats",
-                                     "binom" = "binom_stats",
-                                     "common_stats"),
-                      character())
-  stats_tst <- stats_tst[c("default_stats", add_stats)]
-  lapply(stats_tst, function(stats_crr) {
-    if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0) {
-      nterms_tst <- nterms_avail[c("default_nterms", "single")]
-    } else {
-      nterms_tst <- nterms_avail["default_nterms"]
-    }
-    lapply(nterms_tst, function(nterms_crr) {
-      return(c(
-        nlist(tstsetup_vsel, type = type_tst, nterms_max = nterms_crr),
-        stats_crr
-      ))
-    })
-  })
-})
-args_smmry_cvvs <- unlist_cust(args_smmry_cvvs, nm_stop = "tstsetup_vsel")
+args_smmry_cvvs <- cre_args_smmry_vsel(tstsetups_smmry_cvvs)
+args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
 
 if (run_cvvs) {
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
     do.call(summary, c(
       list(object = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
-      args_smmry_cvvs_i[setdiff(names(args_smmry_cvvs_i), c("tstsetup_vsel"))]
+      excl_nonargs(args_smmry_cvvs_i)
     ))
   })
 }
