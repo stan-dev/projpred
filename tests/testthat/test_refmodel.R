@@ -61,12 +61,10 @@ test_that("error if `formula` is a character string", {
 })
 
 test_that("get_refmodel() is idempotent", {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      expect_identical(get_refmodel(refmods[[mod_nm]][[fam_nm]]),
-                       refmods[[mod_nm]][[fam_nm]],
-                       info = paste(mod_nm, fam_nm, sep = "__"))
-    }
+  for (tstsetup in names(refmods)) {
+    expect_identical(get_refmodel(refmods[[tstsetup]]),
+                     refmods[[tstsetup]],
+                     info = tstsetup)
   }
 })
 
@@ -87,87 +85,70 @@ test_that("error if `ynew` is invalid", {
 test_that(paste(
   "`object` of class `\"refmodel\"`, `newdata`, `ynew`, and `type` work"
 ), {
-  for (mod_nm in mod_nms) {
-    for (fam_nm in fam_nms) {
-      # We expect a warning which in fact should be suppressed, though (see
-      # issue #162):
-      warn_expected <- switch(
-        mod_nm,
-        "glm" = paste("^'offset' argument is NULL but it looks like you",
-                      "estimated the model using an offset term\\.$"),
-        NA
-      )
+  for (tstsetup in names(refmods)) {
+    mod_crr <- args_ref[[tstsetup]]$mod_nm
+    fam_crr <- args_ref[[tstsetup]]$fam_nm
 
-      y_crr <- dat[, paste("y", mod_nm, fam_nm, sep = "_")]
-      if (is.integer(y_crr)) {
-        y_crr <- as.numeric(y_crr)
-      }
+    # We expect a warning which in fact should be suppressed, though (see
+    # issue #162):
+    warn_expected <- switch(
+      mod_crr,
+      "glm" = paste("^'offset' argument is NULL but it looks like you",
+                    "estimated the model using an offset term\\.$"),
+      NA
+    )
 
-      refmod_types <- "original"
-      if (run_cvvs_kfold &&
-          mod_nm %in% names(refmods_kfold) &&
-          fam_nm %in% names(refmods_kfold[[mod_nm]])) {
-        refmod_types <- c(refmod_types, "kfold")
-      }
-      for (refmod_type in refmod_types) {
-        tstsetup <- paste(mod_nm, fam_nm, sep = "__")
-        if (refmod_type == "original") {
-          refmods_crr <- refmods
-        } else {
-          tstsetup <- paste(tstsetup, "kfold", sep = "__")
-          refmods_crr <- refmods_kfold
-        }
-
-        # Without `ynew`:
-        expect_warning(
-          predref_resp <- predict(refmods_crr[[mod_nm]][[fam_nm]], dat,
-                                  type = "response"),
-          warn_expected,
-          info = tstsetup
-        )
-        expect_warning(
-          predref_link <- predict(refmods_crr[[mod_nm]][[fam_nm]], dat,
-                                  type = "link"),
-          warn_expected,
-          info = tstsetup
-        )
-
-        # With `ynew`:
-        expect_warning(
-          predref_ynew_resp <- predict(refmods_crr[[mod_nm]][[fam_nm]], dat,
-                                       ynew = y_crr, type = "response"),
-          warn_expected,
-          info = tstsetup
-        )
-        expect_warning(
-          predref_ynew_link <- predict(refmods_crr[[mod_nm]][[fam_nm]], dat,
-                                       ynew = y_crr, type = "link"),
-          warn_expected,
-          info = tstsetup
-        )
-
-        # Checks without `ynew`:
-        expect_true(is.vector(predref_resp, "double"), info = tstsetup)
-        expect_length(predref_resp, nobsv)
-        if (fam_nm == "binom") {
-          expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                      info = tstsetup)
-        }
-        expect_true(is.vector(predref_link, "double"), info = tstsetup)
-        expect_length(predref_link, nobsv)
-        if (fam_nm == "gauss") {
-          expect_equal(predref_resp, predref_link, info = tstsetup)
-        }
-
-        # Checks with `ynew`:
-        expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
-        expect_true(is.vector(predref_ynew_resp, "double"), info = tstsetup)
-        expect_length(predref_ynew_resp, nobsv)
-        expect_false(isTRUE(all.equal(predref_ynew_resp, predref_resp)),
-                     info = tstsetup)
-        expect_false(isTRUE(all.equal(predref_ynew_resp, predref_link)),
-                     info = tstsetup)
-      }
+    y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
+    if (is.integer(y_crr)) {
+      y_crr <- as.numeric(y_crr)
     }
+
+    # Without `ynew`:
+    expect_warning(
+      predref_resp <- predict(refmods[[tstsetup]], dat, type = "response"),
+      warn_expected,
+      info = tstsetup
+    )
+    expect_warning(
+      predref_link <- predict(refmods[[tstsetup]], dat, type = "link"),
+      warn_expected,
+      info = tstsetup
+    )
+
+    # With `ynew`:
+    expect_warning(
+      predref_ynew_resp <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
+                                   type = "response"),
+      warn_expected,
+      info = tstsetup
+    )
+    expect_warning(
+      predref_ynew_link <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
+                                   type = "link"),
+      warn_expected,
+      info = tstsetup
+    )
+
+    # Checks without `ynew`:
+    expect_true(is.vector(predref_resp, "double"), info = tstsetup)
+    expect_length(predref_resp, nobsv)
+    if (fam_crr == "binom") {
+      expect_true(all(predref_resp >= 0 & predref_resp <= 1),
+                  info = tstsetup)
+    }
+    expect_true(is.vector(predref_link, "double"), info = tstsetup)
+    expect_length(predref_link, nobsv)
+    if (fam_crr == "gauss") {
+      expect_equal(predref_resp, predref_link, info = tstsetup)
+    }
+
+    # Checks with `ynew`:
+    expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
+    expect_true(is.vector(predref_ynew_resp, "double"), info = tstsetup)
+    expect_length(predref_ynew_resp, nobsv)
+    expect_false(isTRUE(all.equal(predref_ynew_resp, predref_resp)),
+                 info = tstsetup)
+    expect_false(isTRUE(all.equal(predref_ynew_resp, predref_link)),
+                 info = tstsetup)
   }
 })
