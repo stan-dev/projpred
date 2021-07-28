@@ -27,12 +27,12 @@ test_that(paste(
   }
 })
 
-test_that("error if `object` is invalid", {
+test_that("invalid `object` fails", {
   expect_error(varsel(rnorm(5), verbose = FALSE),
                "no applicable method")
 })
 
-test_that("error if `method` is invalid", {
+test_that("invalid `method` fails", {
   # Exclude the "special formula" setting due to issue #182:
   for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
                         invert = TRUE)) {
@@ -472,12 +472,12 @@ test_that(paste(
   }
 })
 
-test_that("error if `object` is invalid", {
+test_that("invalid `object` fails", {
   expect_error(cv_varsel(rnorm(5)),
                "^no applicable method for")
 })
 
-test_that("error if `method` is invalid", {
+test_that("invalid `method` fails", {
   # Exclude the "special formula" setting due to issue #182:
   for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
                         invert = TRUE)) {
@@ -492,7 +492,7 @@ test_that("error if `method` is invalid", {
   }
 })
 
-test_that("error if `cv_method` is invalid", {
+test_that("invalid `cv_method` fails", {
   # Exclude the "special formula" setting due to issue #182:
   for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
                         invert = TRUE)) {
@@ -541,7 +541,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   }
 })
 
-test_that("error if `nloo` is invalid", {
+test_that("invalid `nloo` fails", {
   # Exclude the "special formula" setting due to issue #182:
   for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
                         invert = TRUE)) {
@@ -685,7 +685,7 @@ test_that("`validate_search` works", {
   }
 })
 
-test_that("error if `K` is invalid", {
+test_that("invalid `K` fails", {
   skip_if_not(run_cvvs_kfold)
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1),
                "^K must be at least 2$")

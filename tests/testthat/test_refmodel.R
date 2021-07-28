@@ -72,12 +72,12 @@ test_that("get_refmodel() is idempotent", {
 
 context("predict.refmodel()")
 
-test_that("error if `type` is invalid", {
+test_that("invalid `type` fails", {
   expect_error(predict(refmods[[1]], dat, type = "zzz"),
                "^type should be one of")
 })
 
-test_that("error if `ynew` is invalid", {
+test_that("invalid `ynew` fails", {
   expect_error(predict(refmods[[1]], dat, ynew = dat),
                "^ynew must be a numerical vector$")
 })

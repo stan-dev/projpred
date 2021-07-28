@@ -16,7 +16,7 @@ test_that(paste(
   }
 })
 
-test_that("warn or error if `solution_terms` is invalid", {
+test_that("invalid `solution_terms` warns or fails", {
   tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -186,7 +186,7 @@ test_that(paste(
 
 # nterms ------------------------------------------------------------------
 
-test_that("error if `nterms` is invalid", {
+test_that("invalid `nterms` fails", {
   skip_if_not(run_vs)
   tstsetups <- head(grep("^glm\\.gauss", names(vss), value = TRUE), 1)
   for (tstsetup in tstsetups) {
@@ -204,7 +204,7 @@ test_that("error if `nterms` is invalid", {
 
 # ndraws and nclusters ----------------------------------------------------
 
-test_that("error if `ndraws` is invalid", {
+test_that("invalid `ndraws` fails", {
   tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
                     names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {

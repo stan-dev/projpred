@@ -2,7 +2,7 @@
 
 context("summary(), plot(), suggest_size()")
 
-test_that("error if `object` is invalid", {
+test_that("invalid `object` fails", {
   objs_invalid <- nlist(
     NULL,
     fit = fits[[1]],
@@ -20,7 +20,7 @@ test_that("error if `object` is invalid", {
   }
 })
 
-test_that("error if `stats` is invalid", {
+test_that("invalid `stats` fails", {
   tstsetup <- head(grep("\\.gauss\\.", names(vss), value = TRUE), 1)
   stats_invalid <- nlist(NULL, NA, "zzz", "acc", "auc")
   err_expected <- as.list(c(
@@ -45,7 +45,7 @@ test_that("error if `stats` is invalid", {
 
 context("summary()")
 
-test_that("error if `baseline` is invalid", {
+test_that("invalid `baseline` fails", {
   skip_if_not(run_vs)
   for (tstsetup in head(names(vss), 1)) {
     expect_error(summary(vss[[tstsetup]], baseline = "zzz"),
@@ -157,7 +157,7 @@ test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   }
 })
 
-test_that("error if `baseline` is invalid", {
+test_that("invalid `baseline` fails", {
   skip_if_not(run_vs)
   for (tstsetup in head(names(vss), 1)) {
     expect_error(
@@ -168,7 +168,7 @@ test_that("error if `baseline` is invalid", {
   }
 })
 
-test_that("error if `nterms_max` is invalid", {
+test_that("invalid `nterms_max` fails", {
   skip_if_not(run_vs)
   for (tstsetup in head(names(vss), 1)) {
     expect_error(

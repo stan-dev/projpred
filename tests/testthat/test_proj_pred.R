@@ -149,7 +149,7 @@ test_that(paste(
 
 ## newdata and integrated -------------------------------------------------
 
-test_that("error if `newdata` is invalid", {
+test_that("invalid `newdata` fails", {
   expect_error(
     proj_linpred(prjs, newdata = dat[, 1]),
     "must be a data\\.frame or a matrix"
@@ -602,7 +602,7 @@ test_that(paste(
 
 ## newdata and nresample_clusters -----------------------------------------
 
-test_that("error if `newdata` is invalid", {
+test_that("invalid `newdata` fails", {
   expect_error(
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
