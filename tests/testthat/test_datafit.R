@@ -386,7 +386,7 @@ test_that("summary.vsel(): error if `object` is of class \"datafit\"", {
 })
 
 test_that("summary.vsel(): error if `baseline = \"ref\"` and `deltas = TRUE`", {
-  for (tstsetup in names(vss_datafit)[1]) {
+  for (tstsetup in head(names(vss_datafit), 1)) {
     expect_error(
       summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
       paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
@@ -401,12 +401,11 @@ test_that(paste(
   "an `object` of class \"datafit\"), `stats`, and `type` work"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
+  tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
     unlist(lapply(fam_nms, function(fam_nm) {
-      grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss_datafit),
-           value = TRUE)[1]
+      grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss_datafit), value = TRUE)
     }))
-  }))
+  })))
   for (tstsetup in tstsetups) {
     smmry <- summary(vss_datafit[[tstsetup]],
                      stats = stats_common,
@@ -427,12 +426,12 @@ test_that(paste(
   "to an `object` of class \"datafit\"), `stats`, and `type` work"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- unlist(lapply(mod_nms, function(mod_nm) {
+  tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
     unlist(lapply(fam_nms, function(fam_nm) {
       grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss_datafit),
-           value = TRUE)[1]
+           value = TRUE)
     }))
-  }))
+  })))
   for (tstsetup in tstsetups) {
     smmry <- summary(cvvss_datafit[[tstsetup]],
                      stats = stats_common,

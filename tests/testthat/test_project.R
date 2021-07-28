@@ -53,8 +53,8 @@ test_that("warn or error if `solution_terms` is invalid", {
 })
 
 test_that("`object` of class \"stanreg\" works", {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
-                    value = TRUE)[1]
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_fit <- do.call(project, c(
@@ -188,7 +188,7 @@ test_that(paste(
 
 test_that("error if `nterms` is invalid", {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
+  tstsetups <- head(grep("^glm\\.gauss", names(vss), value = TRUE), 1)
   for (tstsetup in tstsetups) {
     for (nterms_crr in nterms_unavail) {
       expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
@@ -292,8 +292,11 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 test_that("for non-GLMs, `regul` has no effect", {
   regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
-    tstsetups <- grep(paste0("^", mod_crr, "\\.gauss.*\\.solterms_x\\.clust"),
-                      names(prjs), value = TRUE)[1]
+    tstsetups <- setNames(nm = unlist(lapply(fam_nms, function(fam_nm) {
+      tail(grep(paste0("^", mod_crr, "\\.", fam_nm, ".*\\.clust$"), names(prjs),
+                value = TRUE),
+           1)
+    })))
     for (tstsetup in tstsetups) {
       args_prj_i <- args_prj[[tstsetup]]
       p_regul <- do.call(project, c(

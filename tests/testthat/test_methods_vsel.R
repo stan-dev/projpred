@@ -21,7 +21,7 @@ test_that("error if `object` is invalid", {
 })
 
 test_that("error if `stats` is invalid", {
-  tstsetup <- grep("\\.gauss\\.", names(vss), value = TRUE)[1]
+  tstsetup <- head(grep("\\.gauss\\.", names(vss), value = TRUE), 1)
   stats_invalid <- nlist(NULL, NA, "zzz", "acc", "auc")
   err_expected <- as.list(c(
     "specified as NULL",
@@ -47,7 +47,7 @@ context("summary()")
 
 test_that("error if `baseline` is invalid", {
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)[1]) {
+  for (tstsetup in head(names(vss), 1)) {
     expect_error(summary(vss[[tstsetup]], baseline = "zzz"),
                  "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
                  info = tstsetup)
@@ -102,7 +102,7 @@ test_that(paste(
   "summary.vsel() works"
 ), {
   skip_if_not(run_vs)
-  for (tstsetup in names(smmrys_vs)[1]) {
+  for (tstsetup in head(names(smmrys_vs), 1)) {
     args_smmry_vs_i <- args_smmry_vs[[tstsetup]]
     expect_output(
       print_obj <- do.call(print, c(
@@ -121,7 +121,7 @@ test_that(paste(
   "summary.vsel() works"
 ), {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(smmrys_cvvs)[1]) {
+  for (tstsetup in head(names(smmrys_cvvs), 1)) {
     args_smmry_cvvs_i <- args_smmry_cvvs[[tstsetup]]
     expect_output(
       print_obj <- do.call(print, c(
@@ -141,7 +141,7 @@ context("plot()")
 
 test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)[1]) {
+  for (tstsetup in head(names(vss), 1)) {
     plot_obj <- plot(vss[[tstsetup]], nterms_max = nterms_avail$single)
     expect_s3_class(plot_obj, "ggplot")
     expect_visible(plot_obj, label = tstsetup)
@@ -150,7 +150,7 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
 
 test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in names(cvvss)[1]) {
+  for (tstsetup in head(names(cvvss), 1)) {
     plot_obj <- plot(cvvss[[tstsetup]], nterms_max = nterms_avail$single)
     expect_s3_class(plot_obj, "ggplot")
     expect_visible(plot_obj, label = tstsetup)
@@ -159,7 +159,7 @@ test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
 
 test_that("error if `baseline` is invalid", {
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)[1]) {
+  for (tstsetup in head(names(vss), 1)) {
     expect_error(
       plot(vss[[tstsetup]], baseline = "zzz"),
       "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
@@ -170,7 +170,7 @@ test_that("error if `baseline` is invalid", {
 
 test_that("error if `nterms_max` is invalid", {
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)[1]) {
+  for (tstsetup in head(names(vss), 1)) {
     expect_error(
       plot(vss[[tstsetup]], nterms_max = 0),
       "^nterms_max must be at least 1$",
@@ -181,7 +181,7 @@ test_that("error if `nterms_max` is invalid", {
 
 test_that("`nterms_max` is capped to the maximum model size", {
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)[1]) {
+  for (tstsetup in head(names(vss), 1)) {
     expect_equal(
       plot(vss[[tstsetup]]),
       plot(vss[[tstsetup]], nterms_max = args_vs[[tstsetup]]$nterms_max + 1L),
@@ -197,7 +197,7 @@ context("suggest_size()")
 test_that("error if `stat` is of invalid length", {
   stopifnot(length(stats_common) > 0)
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)[1]) {
+  for (tstsetup in head(names(vss), 1)) {
     expect_error(
       suggest_size(vss[[tstsetup]], stat = stats_common),
       "^Only one statistic can be specified to suggest_size$",
@@ -208,15 +208,13 @@ test_that("error if `stat` is of invalid length", {
 
 test_that("`stat` works", {
   skip_if_not(run_vs)
-  tstsetups <- setNames(
-    # TODO: Clarify why GLMMs lead to a suggested size of `NA`.
-    nm = unlist(lapply(setdiff(mod_nms, "glmm"), function(mod_nm) {
-      unlist(lapply(fam_nms, function(fam_nm) {
-        grep(paste0("^", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
-             value = TRUE)[1]
-      }))
+  # TODO: Clarify why GLMMs lead to a suggested size of `NA`.
+  tstsetups <- unname(unlist(lapply(setdiff(mod_nms, "glmm"), function(mod_nm) {
+    unlist(lapply(fam_nms, function(fam_nm) {
+      head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
+                value = TRUE), 1)
     }))
-  )
+  })))
   for (tstsetup in tstsetups) {
     tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm

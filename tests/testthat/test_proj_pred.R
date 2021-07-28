@@ -51,7 +51,7 @@ test_that(paste(
 test_that(paste(
   "`object` of (informal) class \"proj_list\" (created manually) works"
 ), {
-  tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
+  tstsetups <- grep("^glm\\.gauss\\..*\\.clust1", names(prjs), value = TRUE)
   stopifnot(length(tstsetups) > 1)
   pl <- proj_linpred(prjs[tstsetups])
   pl_tester(pl,
@@ -63,8 +63,9 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
-                    value = TRUE)[1]
+  tstsetups <- head(grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                         value = TRUE),
+                    1)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_refmod <- do.call(proj_linpred, c(
@@ -79,8 +80,9 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"stanreg\" and passing arguments to project() works"
 ), {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
-                    value = TRUE)[1]
+  tstsetups <- head(grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                         value = TRUE),
+                    1)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_fit <- do.call(proj_linpred, c(
@@ -97,8 +99,9 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.subvec", names(prjs_vs),
-                    value = TRUE)[1]
+  tstsetups <- head(grep("^glm\\.gauss.*\\.default_meth\\.subvec",
+                         names(prjs_vs), value = TRUE),
+                    1)
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
@@ -115,8 +118,11 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
-                    names(prjs_cvvs), value = TRUE)[1]
+  tstsetups <- head(
+    grep("^glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
+         names(prjs_cvvs), value = TRUE),
+    1
+  )
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
@@ -156,7 +162,7 @@ test_that("error if `newdata` is invalid", {
   )
   stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_linpred(prjs[[grep("^glm\\.gauss", names(prjs))[1]]],
+    proj_linpred(prjs[[head(grep("^glm\\.gauss", names(prjs)), 1)]],
                  newdata = dat[, 1, drop = FALSE],
                  solution_terms = solterms_x),
     paste("^The number of solution terms is greater than the number of",
@@ -339,8 +345,8 @@ test_that("`regul` works", {
 ## filter_nterms ----------------------------------------------------------
 
 test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
-                    value = TRUE)[1]
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
     nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
@@ -505,8 +511,9 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
-                    value = TRUE)[1]
+  tstsetups <- head(grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                         value = TRUE),
+                    1)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_refmod <- do.call(proj_predict, c(
@@ -522,8 +529,9 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"stanreg\" and passing arguments to project() works"
 ), {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
-                    value = TRUE)[1]
+  tstsetups <- head(grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                         value = TRUE),
+                    1)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_fit <- do.call(proj_predict, c(
@@ -541,8 +549,9 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.subvec", names(prjs_vs),
-                    value = TRUE)[1]
+  tstsetups <- head(grep("^glm\\.gauss.*\\.default_meth\\.subvec",
+                         names(prjs_vs), value = TRUE),
+                    1)
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
@@ -560,8 +569,11 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("^glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
-                    names(prjs_cvvs), value = TRUE)[1]
+  tstsetups <- head(
+    grep("^glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
+         names(prjs_cvvs), value = TRUE),
+    1
+  )
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pp_from_vsel <- do.call(proj_predict, c(
@@ -604,7 +616,7 @@ test_that("error if `newdata` is invalid", {
   )
   stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_predict(prjs[[grep("^glm\\.gauss", names(prjs))[1]]],
+    proj_predict(prjs[[head(grep("^glm\\.gauss", names(prjs)), 1)]],
                  newdata = dat[, 1, drop = FALSE],
                  .seed = seed2_tst,
                  solution_terms = solterms_x),
@@ -750,8 +762,8 @@ test_that("`offsetnew` works", {
 ## filter_nterms ----------------------------------------------------------
 
 test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust", names(prjs),
-                    value = TRUE)[1]
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
     nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)

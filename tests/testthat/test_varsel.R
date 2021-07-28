@@ -85,7 +85,10 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 
 test_that("`d_test` works", {
   skip_if_not(run_vs)
-  tstsetups <- grep("^glm\\.gauss", names(vss), value = TRUE)[1]
+  tstsetups <- names(vss)
+  ### Alternative with less test setups:
+  # tstsetups <- grep("^glm\\.", names(vss), value = TRUE)
+  ###
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     tstsetup_ref <- args_vs_i$tstsetup_ref
@@ -102,13 +105,18 @@ test_that("`d_test` works", {
     )
     # We expect a warning which in fact should be suppressed, though (see
     # issue #162):
+    warn_expected <- if (mod_crr == "glm") {
+      paste("^'offset' argument is NULL but it looks like you estimated the",
+            "model using an offset term\\.$")
+    } else {
+      NA
+    }
     expect_warning(
       vs_repr <- do.call(varsel, c(
         list(object = refmod_crr, d_test = d_test_crr),
         excl_nonargs(args_vs_i)
       )),
-      paste("^'offset' argument is NULL but it looks like you estimated the",
-            "model using an offset term\\.$"),
+      warn_expected,
       info = tstsetup
     )
     meth_exp_crr <- args_vs_i$method
@@ -145,8 +153,9 @@ test_that("for non-GLMs, `regul` has no effect", {
   skip_if_not(run_vs)
   regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
-    tstsetups <- grep(paste0("^", mod_crr, "\\.gauss"), names(vss),
-                      value = TRUE)[1]
+    tstsetups <- head(grep(paste0("^", mod_crr, "\\.gauss"), names(vss),
+                           value = TRUE),
+                      1)
     for (tstsetup in tstsetups) {
       args_vs_i <- args_vs[[tstsetup]]
       vs_regul <- do.call(varsel, c(
@@ -372,7 +381,7 @@ test_that("for forward search, `penalty` has no effect", {
   tstsetups <- union(grep("\\.forward", names(vss), value = TRUE),
                      grep("^glm\\.", names(vss), value = TRUE, invert = TRUE))
   # To save time:
-  tstsetups <- tstsetups[1]
+  tstsetups <- head(tstsetups, 1)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_penal <- do.call(varsel, c(
@@ -498,8 +507,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   # .get_refdist().
   skip_if_not(run_cvvs)
   # To save time:
-  tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
-                    value = TRUE)
+  tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     cvvs_orig <- cvvss[[tstsetup]]
@@ -521,8 +529,10 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     .Random.seed_repr2 <- .Random.seed
     # Expected equality:
     expect_equal(cvvs_repr, cvvs_orig, info = tstsetup)
-    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
-    expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
+    if (!identical(args_cvvs_i$cv_method, "kfold")) {
+      expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
+      expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
+    }
     # Expected inequality:
     expect_false(isTRUE(all.equal(cvvs_new, cvvs_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
@@ -548,9 +558,8 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv + 1L
-  # To save time: Pick only a single scenario with a GLM and a forward search
-  # (the latter because of `validate_search = FALSE`):
-  tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
+  tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use SW() because of occasional warnings concerning Pareto k diagnostics:
@@ -566,9 +575,8 @@ test_that(paste(
 test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv - 1L
-  # To save time: Pick only a single scenario with a GLM and a forward search
-  # (the latter because of `validate_search = FALSE`):
-  tstsetups <- grep("^glm\\..*\\.forward", names(cvvss), value = TRUE)[1]
+  tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     tstsetup_ref <- args_cvvs_i$tstsetup_ref

@@ -726,7 +726,7 @@ cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
 }
 tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
   unlist(lapply(fam_nms, function(fam_nm) {
-    grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE)[1]
+    head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE), 1)
   }))
 })))
 stopifnot(length(tstsetups_smmry_vs) > 0)
@@ -746,7 +746,8 @@ if (run_vs) {
 
 tstsetups_smmry_cvvs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
   unlist(lapply(fam_nms, function(fam_nm) {
-    grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss), value = TRUE)[1]
+    head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss), value = TRUE),
+         1)
   }))
 })))
 stopifnot(length(tstsetups_smmry_cvvs) > 0)
