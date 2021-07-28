@@ -187,7 +187,7 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
   }
 })
 
-test_that("predict.refmodel(): error if `object` is of class \"datafit\"", {
+test_that("predict.refmodel(): `object` of class \"datafit\" fails", {
   for (tstsetup in names(datafits)) {
     expect_error(predict(datafits[[tstsetup]], newdata = dat),
                  "^Cannot make predictions with data reference only\\.$",
@@ -251,7 +251,7 @@ test_that(paste(
 
 ## Projection -------------------------------------------------------------
 
-test_that("project(): error if `object` is of class \"datafit\"", {
+test_that("project(): `object` of class \"datafit\" fails", {
   # A prerequisite for this `project()` test (otherwise, it would have to be
   # adopted):
   stopifnot(all(names(args_datafit) %in% names(args_ref)))
@@ -374,7 +374,7 @@ test_that(paste(
 
 ## summary.vsel() ---------------------------------------------------------
 
-test_that("summary.vsel(): error if `object` is of class \"datafit\"", {
+test_that("summary.vsel(): `object` of class \"datafit\" fails", {
   for (tstsetup in names(datafits)) {
     expect_error(
       summary.vsel(datafits[[tstsetup]]),
@@ -385,7 +385,7 @@ test_that("summary.vsel(): error if `object` is of class \"datafit\"", {
   }
 })
 
-test_that("summary.vsel(): error if `baseline = \"ref\"` and `deltas = TRUE`", {
+test_that("summary.vsel(): `baseline = \"ref\"` and `deltas = TRUE` fails", {
   for (tstsetup in head(names(vss_datafit), 1)) {
     expect_error(
       summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),

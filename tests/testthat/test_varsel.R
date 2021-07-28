@@ -347,7 +347,7 @@ test_that(paste(
 
 ## Penalty ----------------------------------------------------------------
 
-test_that("error if `penalty` is of invalid length", {
+test_that("`penalty` of invalid length fails", {
   skip_if_not(run_vs)
   tstsetups <- setdiff(
     grep("^glm\\.", names(args_vs), value = TRUE),

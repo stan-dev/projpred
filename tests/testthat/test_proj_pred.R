@@ -134,10 +134,7 @@ test_that(paste(
   }
 })
 
-test_that(paste(
-  "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
-  "neither"
-), {
+test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
   expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
   expect_error(proj_linpred(fits[[1]]),
                "is not an object of class \"vsel\"")
@@ -586,10 +583,7 @@ test_that(paste(
   }
 })
 
-test_that(paste(
-  "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
-  "neither"
-), {
+test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
   expect_error(proj_predict(1, .seed = seed2_tst),
                "is not an object of class \"vsel\"")
   expect_error(proj_predict(fits[[1]], .seed = seed2_tst),

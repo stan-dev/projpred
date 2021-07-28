@@ -176,10 +176,7 @@ test_that(paste(
   }
 })
 
-test_that(paste(
-  "error if `object` is not of class \"vsel\" and `solution_terms` is provided",
-  "neither"
-), {
+test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
   expect_error(project(fits[[1]]), "is not an object of class \"vsel\"")
   expect_error(project(refmods[[1]]), "is not an object of class \"vsel\"")
 })

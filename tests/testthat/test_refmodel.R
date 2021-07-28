@@ -36,7 +36,7 @@ test_that("`object` of class \"stanreg\" works", {
   }
 })
 
-test_that("error if `data` is missing", {
+test_that("missing `data` fails", {
   SW(fit_nodata <- rstanarm::stan_glm(
     dat$y_glm_gauss ~ dat$xco.1 + dat$xco.2 + dat$xco.3 + dat$xca.1 + dat$xca.2,
     family = f_gauss,
@@ -47,7 +47,7 @@ test_that("error if `data` is missing", {
                "^object of type 'environment' is not subsettable$")
 })
 
-test_that("error if `formula` is a character string", {
+test_that("`formula` as a character string fails", {
   # If `formula` is a character string, rstanarm::stan_glm() is not able to find
   # objects supplied to arguments `weights` or `offset`, at least when using
   # devtools::test():
