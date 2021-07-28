@@ -422,12 +422,12 @@ SW(fits <- lapply(args_fit, function(args_fit_i) {
                        "stan_gamm4")
   ### Option 1:
   # do.call(fit_fun_nm,
-  #         args_fit_i[setdiff(names(args_fit_i), c("mod_nm", "fam_nm"))],
+  #         excl_nonargs(args_fit_i),
   #         envir = as.environment(asNamespace("rstanarm")))
   ###
   ### Option 2:
   do.call(get(fit_fun_nm, asNamespace("rstanarm")),
-          args_fit_i[setdiff(names(args_fit_i), c("mod_nm", "fam_nm"))])
+          excl_nonargs(args_fit_i))
   ###
 }))
 
