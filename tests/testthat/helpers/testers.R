@@ -243,6 +243,7 @@ refmodel_tester <- function(refmod,
 #
 # @return `TRUE` (invisible).
 projection_tester <- function(p,
+                              refmod_expected,
                               solterms_expected,
                               nprjdraws_expected,
                               p_type_expected,
@@ -260,7 +261,7 @@ projection_tester <- function(p,
   # refmodel
   # Note: Extensive tests for `"refmodel"`s and `"datafit"`s may be run via
   # refmodel_tester().
-  expect_true(inherits(p$refmodel, c("refmodel", "datafit")), info = info_str)
+  expect_identical(p$refmodel, refmod_expected, info = info_str)
 
   # extract_model_data
   expect_identical(p$extract_model_data, p$refmodel$extract_model_data,
@@ -575,11 +576,6 @@ vsel_tester <- function(
   expect_named(vs, vsel_nms, info = info_str)
 
   # refmodel
-  refmod_class_expected <- "refmodel"
-  if (from_datafit) {
-    refmod_class_expected <- c("datafit", refmod_class_expected)
-  }
-  expect_s3_class(vs$refmodel, refmod_class_expected, exact = TRUE)
   expect_identical(vs$refmodel, refmod_expected, info = info_str)
 
   # search_path

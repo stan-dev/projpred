@@ -289,6 +289,8 @@ test_that(paste(
       ]
       projection_tester(
         prjs_vs_datafit[[tstsetup]],
+        refmod_expected =
+          datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = 1L,
         p_type_expected = TRUE,
@@ -302,6 +304,8 @@ test_that(paste(
         is_seq = all(diff(nterms_crr) == 1),
         from_datafit = TRUE,
         info_str = tstsetup,
+        refmod_expected =
+          datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         nprjdraws_expected = 1L,
         p_type_expected = TRUE,
         fam_expected = vss_datafit[[tstsetup_vs]]$family,
