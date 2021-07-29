@@ -251,16 +251,55 @@ projection_tester <- function(p,
                               from_datafit = FALSE,
                               info_str = "") {
   expect_s3_class(p, "projection")
+  expect_type(p, "list")
   # Check the names using `ignore.order = FALSE` because an incorrect
   # order would mean that the documentation of project()'s return value
   # would have to be updated:
   expect_named(p, projection_nms, info = info_str)
 
+  # refmodel
+  # Note: Extensive tests for `"refmodel"`s and `"datafit"`s may be run via
+  # refmodel_tester().
+  expect_true(inherits(p$refmodel, c("refmodel", "datafit")), info = info_str)
+
+  # extract_model_data
+  expect_identical(p$extract_model_data, p$refmodel$extract_model_data,
+                   info = info_str)
+
+  # intercept
+  expect_identical(p$intercept, p$refmodel$intercept, info = info_str)
+
+  # family
+  expect_identical(p$family, p$refmodel$family, info = info_str)
+  if (!is.null(fam_expected)) {
+    expect_identical(p$family, fam_expected, info = info_str)
+  }
+
+  # A preliminary check for `nprjdraws_expected`:
+  if (!from_datafit) {
+    # Number of projected draws in as.matrix.projection() (note that more
+    # extensive tests for as.matrix.projection() may be found in
+    # "test_as_matrix.R"):
+    SW(nprjdraws <- NROW(as.matrix(p)))
+    expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
+  }
+
+  # solution_terms
+  if (is.numeric(solterms_expected)) {
+    expect_length(p$solution_terms, solterms_expected)
+    # Same check, but using count_terms_chosen():
+    expect_equal(count_terms_chosen(p$solution_terms, add_icpt = TRUE),
+                 solterms_expected + 1, info = info_str)
+  } else if (is.character(solterms_expected)) {
+    expect_identical(p$solution_terms, solterms_expected, info = info_str)
+  }
+
+  # sub_fit
   if (from_datafit) {
     subfit_nms <- setdiff(subfit_nms, "y")
   }
-
   if (nprjdraws_expected > 1) {
+    expect_type(p$sub_fit, "list")
     expect_length(p$sub_fit, nprjdraws_expected)
     sub_fit_totest <- p$sub_fit
   } else {
@@ -310,33 +349,28 @@ projection_tester <- function(p,
       stop("Still to-do.")
     }
   }
-  expect_length(p$weights, nprjdraws_expected)
+
+  # dis
   expect_length(p$dis, nprjdraws_expected)
-  if (!from_datafit) {
-    # Number of projected draws in as.matrix.projection() (note that more
-    # extensive tests for as.matrix.projection() may be found in
-    # "test_as_matrix.R"):
-    SW(nprjdraws <- NROW(as.matrix(p)))
-    expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
-  }
-  expect_identical(p$p_type, p_type_expected, info = info_str)
-  if (!is.null(fam_expected)) {
-    expect_identical(p$family, fam_expected, info = info_str)
-  }
+
+  # kl
+  expect_type(p$kl, "double")
+  expect_length(p$kl, 1)
+  expect_true(!is.na(p$kl), info = info_str)
+  expect_gte(p$kl, 0)
+
+  # weights
+  expect_length(p$weights, nprjdraws_expected)
   if (!is.null(prjdraw_weights_expected)) {
     expect_identical(p$weights, prjdraw_weights_expected, info = info_str)
-  }
-  if (is.numeric(solterms_expected)) {
-    expect_length(p$solution_terms, solterms_expected)
-    # Same check, but using count_terms_chosen():
-    expect_equal(count_terms_chosen(p$solution_terms, add_icpt = TRUE),
-                 solterms_expected + 1, info = info_str)
-  } else if (is.character(solterms_expected)) {
-    expect_identical(p$solution_terms, solterms_expected, info = info_str)
   }
   if (nprjdraws_expected == 1) {
     expect_identical(p$weights, 1, info = info_str)
   }
+
+  # p_type
+  expect_identical(p$p_type, p_type_expected, info = info_str)
+
   return(invisible(TRUE))
 }
 # A helper function for testing the structure of an expected `"proj_list"`
