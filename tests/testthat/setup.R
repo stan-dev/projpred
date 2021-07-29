@@ -244,6 +244,12 @@ dat <- data.frame(
   wobs_col = wobs_tst, offs_col = offs_tst,
   check.names = FALSE
 )
+dat <- within(dat, {
+  ybinprop_glm = y_glm_binom / wobs_col
+  ybinprop_glmm = y_glmm_binom / wobs_col
+  ybinprop_gam = y_gam_binom / wobs_col
+  ybinprop_gamm = y_gamm_binom / wobs_col
+})
 
 ## nterms -----------------------------------------------------------------
 
