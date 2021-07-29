@@ -222,6 +222,90 @@ refmodel_tester <- function(refmod,
   return(invisible(TRUE))
 }
 
+# A helper function for testing the structure of a list of subfits (whose
+# elements must not necessarily be of class `"subfit"`) for the same single
+# submodel
+#
+# @param sub_fit_obj The list of subfits to test.
+# @param nprjdraws_expected A single numeric value giving the expected number of
+#   projected draws.
+# @param sub_trms The terms on the right-hand side of the submodel's formula
+#   (excluding the intercept).
+# @param sub_icpt A single logical value indicating whether the submodel has an
+#   intercept (`TRUE`) or not (`FALSE`).
+# @param sub_data The dataset used for fitting the submodel.
+# @param from_datafit A single logical value indicating whether `sub_fit_obj` is
+#   based on an object of class `"datafit"` (`TRUE`) or not (`FALSE`).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+sub_fit_tester <- function(sub_fit_obj,
+                           nprjdraws_expected,
+                           sub_trms,
+                           sub_icpt = TRUE,
+                           sub_data,
+                           from_datafit = FALSE,
+                           info_str) {
+  if (from_datafit) {
+    subfit_nms <- setdiff(subfit_nms, "y")
+  }
+
+  if (nprjdraws_expected > 1) {
+    expect_type(sub_fit_obj, "list")
+    expect_length(sub_fit_obj, nprjdraws_expected)
+    sub_fit_totest <- sub_fit_obj
+  } else {
+    sub_fit_totest <- list(sub_fit_obj)
+  }
+
+  sub_formul_rhs <- sub_trms
+  if (length(sub_formul_rhs) == 0) {
+    sub_formul_rhs <- as.character(as.numeric(sub_icpt))
+  }
+  sub_formul_rhs <- as.formula(paste("~",
+                                     paste(sub_formul_rhs, collapse = " + ")))
+  has_grp <- formula_contains_group_terms(sub_formul_rhs)
+  has_add <- formula_contains_additive_terms(sub_formul_rhs)
+  for (j in seq_along(sub_fit_totest)) {
+    if (!has_grp && !has_add) {
+      expect_s3_class(sub_fit_totest[[!!j]], "subfit")
+      expect_type(sub_fit_totest[[!!j]], "list")
+      expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
+      expect_length(sub_fit_totest[[!!j]]$alpha, 1)
+      if (length(sub_trms) > 0) {
+        expect_identical(ncol(sub_fit_totest[[!!j]]$beta), 1L, info = info_str)
+        solterms_len_expected <- sum(sapply(sub_trms, function(trm_i) {
+          ncol(model.matrix(
+            as.formula(paste("~ 0 +", trm_i)),
+            data = sub_data
+          ))
+        }))
+        ### As discussed in issue #149, the following might be more appropriate:
+        # solterms_len_expected <- ncol(model.matrix(
+        #   as.formula(paste("~", paste(sub_trms, collapse = " + "))),
+        #   data = sub_data
+        # )) - 1L
+        ###
+        expect_equal(nrow(sub_fit_totest[[!!j]]$beta), solterms_len_expected,
+                     info = info_str)
+      } else {
+        if (!from_datafit) {
+          expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(0L, 1L),
+                           info = info_str)
+        } else {
+          expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
+        }
+      }
+    } else if (has_grp && !has_add) {
+      expect_true(inherits(sub_fit_totest[[!!j]], c("lmerMod", "glmerMod")),
+                  info = info_str)
+    } else if (has_add) {
+      stop("Still to-do.")
+    }
+  }
+}
+
 # A helper function for testing the structure of an expected `"projection"`
 # object
 #
@@ -296,60 +380,12 @@ projection_tester <- function(p,
   }
 
   # sub_fit
-  if (from_datafit) {
-    subfit_nms <- setdiff(subfit_nms, "y")
-  }
-  if (nprjdraws_expected > 1) {
-    expect_type(p$sub_fit, "list")
-    expect_length(p$sub_fit, nprjdraws_expected)
-    sub_fit_totest <- p$sub_fit
-  } else {
-    sub_fit_totest <- list(p$sub_fit)
-  }
-  sub_trms <- p$solution_terms
-  if (length(sub_trms) == 0) {
-    sub_trms <- as.character(as.numeric(p$intercept))
-  }
-  sub_formul_rhs <- as.formula(paste("~", paste(sub_trms, collapse = " + ")))
-  has_grp <- formula_contains_group_terms(sub_formul_rhs)
-  has_add <- formula_contains_additive_terms(sub_formul_rhs)
-  for (j in seq_along(sub_fit_totest)) {
-    if (!has_grp && !has_add) {
-      expect_s3_class(sub_fit_totest[[!!j]], "subfit")
-      expect_type(sub_fit_totest[[!!j]], "list")
-      expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
-      expect_length(sub_fit_totest[[!!j]]$alpha, 1)
-      if (length(p$solution_terms) > 0) {
-        expect_identical(ncol(sub_fit_totest[[!!j]]$beta), 1L, info = info_str)
-        solterms_len_expected <- sum(sapply(p$solution_terms, function(trm_i) {
-          ncol(model.matrix(
-            as.formula(paste("~ 0 +", trm_i)),
-            data = p$refmodel$fetch_data()
-          ))
-        }))
-        ### As discussed in issue #149, the following might be more appropriate:
-        # solterms_len_expected <- ncol(model.matrix(
-        #   as.formula(paste("~", paste(p$solution_terms, collapse = " + "))),
-        #   data = p$refmodel$fetch_data()
-        # )) - 1L
-        ###
-        expect_equal(nrow(sub_fit_totest[[!!j]]$beta), solterms_len_expected,
-                     info = info_str)
-      } else {
-        if (!from_datafit) {
-          expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(0L, 1L),
-                           info = info_str)
-        } else {
-          expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
-        }
-      }
-    } else if (has_grp && !has_add) {
-      expect_true(inherits(sub_fit_totest[[!!j]], c("lmerMod", "glmerMod")),
-                  info = info_str)
-    } else if (has_add) {
-      stop("Still to-do.")
-    }
-  }
+  sub_fit_tester(p$sub_fit,
+                 nprjdraws_expected = nprjdraws_expected,
+                 sub_trms = p$solution_terms,
+                 sub_data = p$refmodel$fetch_data(),
+                 from_datafit = from_datafit,
+                 info_str = info_str)
 
   # dis
   expect_length(p$dis, nprjdraws_expected)
