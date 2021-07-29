@@ -208,8 +208,7 @@ test_that("`stat` of invalid length fails", {
 
 test_that("`stat` works", {
   skip_if_not(run_vs)
-  # TODO: Clarify why GLMMs lead to a suggested size of `NA`.
-  tstsetups <- unname(unlist(lapply(setdiff(mod_nms, "glmm"), function(mod_nm) {
+  tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
     unlist(lapply(fam_nms, function(fam_nm) {
       head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
                 value = TRUE), 1)
@@ -224,15 +223,41 @@ test_that("`stat` works", {
                           "common_stats")
     stat_vec <- stats_tst[[stat_crr_nm]]$stats
     for (stat_crr in stat_vec) {
-      suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr)
+      # A pretty inelegant way to check for warnings (ideally, we would use
+      # ```r
+      # warn_out <- capture.output(
+      #   suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr),
+      #   type = "message"
+      # )
+      # ```
+      # instead, but that doesn't work).
+      if (args_smmry_vs[[tstsetup]]$mod_nm == "glmm") {
+        warn_expected <- paste(
+          "^Could not suggest model size\\. Investigate plot\\.vsel to",
+          "identify if the search was terminated too early\\. If this is the",
+          "case, run variable selection with larger value for nterms_max\\."
+        )
+      } else {
+        warn_expected <- NA
+      }
+      expect_warning(
+        suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr),
+        warn_expected,
+        info = paste(tstsetup, stat_crr, sep = "__")
+      )
       expect_type(suggsize, "double")
       expect_length(suggsize, 1)
-      expect_true(!is.na(suggsize),
-                  info = paste(tstsetup, stat_crr, sep = "__"))
-      expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))
-      if (stat_crr == "elpd") {
-        expect_identical(suggsize, vss[[tstsetup_vs]]$suggested_size,
-                         info = paste(tstsetup, stat_crr, sep = "__"))
+      if (!is.na(suggsize)) {
+        expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))
+        if (stat_crr == "elpd") {
+          expect_identical(suggsize, vss[[tstsetup_vs]]$suggested_size,
+                           info = paste(tstsetup, stat_crr, sep = "__"))
+        }
+      } else {
+        expect_true(
+          vss[[tstsetup_vs]]$nterms_max < vss[[tstsetup_vs]]$nterms_all,
+          info = paste(tstsetup, stat_crr, sep = "__")
+        )
       }
     }
   }
