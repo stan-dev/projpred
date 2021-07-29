@@ -745,7 +745,8 @@ test_that("`offsetnew` works", {
     # identity link):
     if (args_prj[[tstsetup]]$fam_nm == "gauss") {
       expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
-      expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig), info = tstsetup)
+      expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
+                   info = tstsetup)
     } else {
       expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
       expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
