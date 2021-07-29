@@ -260,8 +260,8 @@ test_that(paste(
 test_that("`seed` works (and restores the RNG state afterwards)", {
   # Note: Extensive tests for reproducibility may be found among the tests for
   # .get_refdist().
-  tstsetups <- tail(grep("^glm\\.gauss\\..*\\.clust$", names(prjs),
-                         value = TRUE), 1)
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]

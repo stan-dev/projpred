@@ -63,9 +63,8 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
-  tstsetups <- head(grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
-                         value = TRUE),
-                    1)
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_refmod <- do.call(proj_linpred, c(
@@ -80,9 +79,8 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"stanreg\" and passing arguments to project() works"
 ), {
-  tstsetups <- head(grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
-                         value = TRUE),
-                    1)
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_fit <- do.call(proj_linpred, c(
@@ -508,9 +506,8 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
-  tstsetups <- head(grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
-                         value = TRUE),
-                    1)
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_refmod <- do.call(proj_predict, c(
@@ -526,9 +523,8 @@ test_that(paste(
 test_that(paste(
   "`object` of class \"stanreg\" and passing arguments to project() works"
 ), {
-  tstsetups <- head(grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
-                         value = TRUE),
-                    1)
+  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pp_from_fit <- do.call(proj_predict, c(
