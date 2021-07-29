@@ -230,7 +230,8 @@ refmodel_tester <- function(refmod,
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
 # @param sub_trms The terms on the right-hand side of the submodel's formula
-#   (excluding the intercept).
+#   (excluding the intercept). May also be the submodel's formula or only the
+#   right-hand side of the submodel's formula.
 # @param sub_icpt A single logical value indicating whether the submodel has an
 #   intercept (`TRUE`) or not (`FALSE`).
 # @param sub_data The dataset used for fitting the submodel.
@@ -261,6 +262,12 @@ sub_fit_tester <- function(sub_fit_obj,
     sub_fit_totest <- list(sub_fit_obj)
   }
 
+  if (inherits(sub_trms, "formula")) {
+    sub_trms <- labels(terms(sub_trms))
+    sub_trms[grepl("\\|", sub_trms)] <- paste0(
+      "(", sub_trms[grepl("\\|", sub_trms)], ")"
+    )
+  }
   sub_formul_rhs <- sub_trms
   if (length(sub_formul_rhs) == 0) {
     sub_formul_rhs <- as.character(as.numeric(sub_icpt))
@@ -306,7 +313,8 @@ sub_fit_tester <- function(sub_fit_obj,
         expect_s4_class(sub_fit_totest[[!!j]], "glmerMod")
       }
     } else if (has_add) {
-      stop("Still to-do.")
+      # TODO: Add expectations for GAMs and GAMMs.
+      stop("Still to-do. Info: ", info_str)
     }
   }
 }
