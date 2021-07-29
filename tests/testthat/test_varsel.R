@@ -621,8 +621,11 @@ test_that("setting `nloo` smaller than the number of observations works", {
 
 test_that("`validate_search` works", {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("^glm\\..*\\.default_meth\\.default_cvmeth", names(cvvss),
-                    value = TRUE)
+  tstsetups <- grep("\\.default_cvmeth", names(cvvss), value = TRUE)
+  if (!run_valsearch_always) {
+    tstsetups <- grep("^glm\\.", tstsetups, value = TRUE)
+    tstsetups <- grep("\\.forward", tstsetups, value = TRUE, invert = TRUE)
+  }
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     stopifnot(is.null(args_cvvs_i$validate_search) ||
@@ -671,9 +674,12 @@ test_that("`validate_search` works", {
     # also an increased ELPD) in the submodels (since the hold-out fold was
     # included in the dataset for fitting the submodels):
     tol_crr <- 5e-2
+    # Allow for just a small proportion of extreme differences:
+    prop_as_expected <- 0.925
     for (j in seq_along(cvvs_valsearch$summaries$sub)) {
-      expect_true(all(cvvs_valsearch$summaries$sub[[j]]$lppd >=
-                        cvvss[[tstsetup]]$summaries$sub[[j]]$lppd - tol_crr),
+      expect_true(mean(cvvs_valsearch$summaries$sub[[j]]$lppd >=
+                         cvvss[[tstsetup]]$summaries$sub[[j]]$lppd - tol_crr) >=
+                    prop_as_expected,
                   info = paste(tstsetup, j, sep = "__"))
     }
     expect_true(all(cvvs_valsearch$summary$elpd.loo >=
@@ -681,7 +687,11 @@ test_that("`validate_search` works", {
                 info = tstsetup)
     # Without a validated search, we expect overfitting in the suggested model
     # size:
-    expect_gte(cvvs_valsearch$suggested_size, cvvss[[tstsetup]]$suggested_size)
+    if (!is.na(cvvs_valsearch$suggested_size) &
+        !is.na(cvvss[[tstsetup]]$suggested_size)) {
+      expect_gte(cvvs_valsearch$suggested_size,
+                 cvvss[[tstsetup]]$suggested_size)
+    }
   }
 })
 
@@ -718,7 +728,8 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     # rstanarm::kfold() lacks an argument for setting the seed:
     set.seed(seed_tst)
     # Additionally to SW(), suppressMessages() could be used here (but is not
-    # necessary since messages seem to be suppressed within test_that() `code`):
+    # necessary since messages seem to be suppressed within test_that()'s
+    # `code`):
     SW(kfold_obj <- rstanarm::kfold(fit_crr, K = K_crr, save_fits = TRUE))
 
     # Create the folds vector:

@@ -9,6 +9,9 @@
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
 run_cvvs <- run_vs
 run_cvvs_kfold <- run_cvvs
+# Run `cv_varsel()` with `validate_search = TRUE` always (`TRUE`) or just for L1
+# search (`FALSE`)?:
+run_valsearch_always <- FALSE
 
 set.seed(8541351)
 
@@ -517,10 +520,12 @@ if (run_cvvs) {
       cvmeth <- cvmeth_tst["default_cvmeth"]
     }
     lapply(meth, function(meth_i) {
-      if ((length(meth_i) == 0 && mod_crr != "glm") ||
-          (length(meth_i) > 0 && meth_i$method == "forward")) {
-        # In this case, we have forward search. And to save time, we use
-        # `validate_search = FALSE`.
+      if (!run_valsearch_always &&
+          ((length(meth_i) == 0 && mod_crr != "glm") ||
+           (length(meth_i) > 0 && meth_i$method == "forward"))) {
+        # In this case, we have forward search and `!run_valsearch_always`
+        # indicates that we want to save time by using
+        # `validate_search = FALSE`:
         meth_i <- c(meth_i, list(validate_search = FALSE))
       }
       lapply(cvmeth, function(cvmeth_i) {
