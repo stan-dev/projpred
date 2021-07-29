@@ -277,19 +277,19 @@ sub_fit_tester <- function(sub_fit_obj,
       expect_length(sub_fit_totest[[!!j]]$alpha, 1)
       if (length(sub_trms) > 0) {
         expect_identical(ncol(sub_fit_totest[[!!j]]$beta), 1L, info = info_str)
-        solterms_len_expected <- sum(sapply(sub_trms, function(trm_i) {
+        ncoefs <- sum(sapply(sub_trms, function(trm_i) {
           ncol(model.matrix(
             as.formula(paste("~ 0 +", trm_i)),
             data = sub_data
           ))
         }))
         ### As discussed in issue #149, the following might be more appropriate:
-        # solterms_len_expected <- ncol(model.matrix(
+        # ncoefs <- ncol(model.matrix(
         #   as.formula(paste("~", paste(sub_trms, collapse = " + "))),
         #   data = sub_data
         # )) - 1L
         ###
-        expect_equal(nrow(sub_fit_totest[[!!j]]$beta), solterms_len_expected,
+        expect_equal(nrow(sub_fit_totest[[!!j]]$beta), ncoefs,
                      info = info_str)
       } else {
         if (!from_datafit) {
