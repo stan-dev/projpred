@@ -266,8 +266,13 @@ projection_tester <- function(p,
   } else {
     sub_fit_totest <- list(p$sub_fit)
   }
-  has_grp <- formula_contains_group_terms(p$refmodel$formula)
-  has_add <- formula_contains_additive_terms(p$refmodel$formula)
+  sub_trms <- p$solution_terms
+  if (length(sub_trms) == 0) {
+    sub_trms <- as.character(as.numeric(p$intercept))
+  }
+  sub_formul_rhs <- as.formula(paste("~", paste(sub_trms, collapse = " + ")))
+  has_grp <- formula_contains_group_terms(sub_formul_rhs)
+  has_add <- formula_contains_additive_terms(sub_formul_rhs)
   for (j in seq_along(sub_fit_totest)) {
     if (!has_grp && !has_add) {
       expect_s3_class(sub_fit_totest[[!!j]], "subfit")
@@ -299,7 +304,8 @@ projection_tester <- function(p,
         }
       }
     } else if (has_grp && !has_add) {
-      inherits(sub_fit_totest[[!!j]], c("lmerMod", "glmerMod"))
+      expect_true(inherits(sub_fit_totest[[!!j]], c("lmerMod", "glmerMod")),
+                  info = info_str)
     } else if (has_add) {
       stop("Still to-do.")
     }
