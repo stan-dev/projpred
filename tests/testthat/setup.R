@@ -322,7 +322,7 @@ trms <- list(
   gam = c(trms_common, trms_add),
   gamm = c(trms_common, setdiff(trms_add, "offset(offs_col)"))
 )
-trms_common_spcl <- c("xco.1", "I(xco.1^2)", "log(abs(xco.2)) * poly(xco.3, 3)",
+trms_common_spcl <- c("xco.1", "I(xco.1^2)", "exp(xco.2) * poly(xco.3, 3)",
                       "xca.1", "xca.2")
 
 ### Weights (observations) ------------------------------------------------

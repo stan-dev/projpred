@@ -33,9 +33,7 @@ test_that("invalid `object` fails", {
 })
 
 test_that("invalid `method` fails", {
-  # Exclude the "special formula" setting due to issue #182:
-  for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
-                        invert = TRUE)) {
+  for (tstsetup in names(refmods)) {
     expect_error(varsel(refmods[[tstsetup]], method = "k-fold"),
                  "Unknown search method",
                  info = tstsetup)
@@ -478,9 +476,7 @@ test_that("invalid `object` fails", {
 })
 
 test_that("invalid `method` fails", {
-  # Exclude the "special formula" setting due to issue #182:
-  for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
-                        invert = TRUE)) {
+  for (tstsetup in names(refmods)) {
     expect_error(cv_varsel(refmods[[tstsetup]], method = "k-fold"),
                  "^Unknown search method$",
                  info = tstsetup)
@@ -493,9 +489,7 @@ test_that("invalid `method` fails", {
 })
 
 test_that("invalid `cv_method` fails", {
-  # Exclude the "special formula" setting due to issue #182:
-  for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
-                        invert = TRUE)) {
+  for (tstsetup in names(refmods)) {
     expect_error(cv_varsel(refmods[[tstsetup]], cv_method = "k-fold"),
                  "^Unknown cross-validation method$",
                  info = tstsetup)
@@ -542,9 +536,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 })
 
 test_that("invalid `nloo` fails", {
-  # Exclude the "special formula" setting due to issue #182:
-  for (tstsetup in grep("\\.spclformul", names(refmods), value = TRUE,
-                        invert = TRUE)) {
+  for (tstsetup in names(refmods)) {
     # Use SW() because of occasional warnings concerning Pareto k diagnostics:
     expect_error(SW(cv_varsel(refmods[[tstsetup]], nloo = -1)),
                  "^nloo must be at least 1$",
