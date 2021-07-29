@@ -234,6 +234,7 @@ refmodel_tester <- function(refmod,
 # @param sub_icpt A single logical value indicating whether the submodel has an
 #   intercept (`TRUE`) or not (`FALSE`).
 # @param sub_data The dataset used for fitting the submodel.
+# @param sub_fam A single character string giving the submodel's family.
 # @param from_datafit A single logical value indicating whether `sub_fit_obj` is
 #   based on an object of class `"datafit"` (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
@@ -245,6 +246,7 @@ sub_fit_tester <- function(sub_fit_obj,
                            sub_trms,
                            sub_icpt = TRUE,
                            sub_data,
+                           sub_fam,
                            from_datafit = FALSE,
                            info_str) {
   if (from_datafit) {
@@ -298,8 +300,11 @@ sub_fit_tester <- function(sub_fit_obj,
         }
       }
     } else if (has_grp && !has_add) {
-      expect_true(inherits(sub_fit_totest[[!!j]], c("lmerMod", "glmerMod")),
-                  info = info_str)
+      if (sub_fam == "gaussian") {
+        expect_s4_class(sub_fit_totest[[!!j]], "lmerMod")
+      } else {
+        expect_s4_class(sub_fit_totest[[!!j]], "glmerMod")
+      }
     } else if (has_add) {
       stop("Still to-do.")
     }
@@ -384,6 +389,7 @@ projection_tester <- function(p,
                  nprjdraws_expected = nprjdraws_expected,
                  sub_trms = p$solution_terms,
                  sub_data = p$refmodel$fetch_data(),
+                 sub_fam = p$family$family,
                  from_datafit = from_datafit,
                  info_str = info_str)
 
