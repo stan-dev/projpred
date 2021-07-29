@@ -229,11 +229,9 @@ refmodel_tester <- function(refmod,
 # @param sub_fit_obj The list of subfits to test.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
-# @param sub_trms The terms on the right-hand side of the submodel's formula
-#   (excluding the intercept). May also be the submodel's formula or only the
-#   right-hand side of the submodel's formula.
-# @param sub_icpt A single logical value indicating whether the submodel has an
-#   intercept (`TRUE`) or not (`FALSE`).
+# @param sub_formul The submodel's formula (with the original response on the
+#   left-hand side; replications of the response for the different (clustered)
+#   draws are created automatically).
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
 # @param from_datafit A single logical value indicating whether `sub_fit_obj` is
@@ -244,8 +242,7 @@ refmodel_tester <- function(refmod,
 # @return `TRUE` (invisible).
 sub_fit_tester <- function(sub_fit_obj,
                            nprjdraws_expected,
-                           sub_trms,
-                           sub_icpt = TRUE,
+                           sub_formul,
                            sub_data,
                            sub_fam,
                            from_datafit = FALSE,
@@ -262,61 +259,95 @@ sub_fit_tester <- function(sub_fit_obj,
     sub_fit_totest <- list(sub_fit_obj)
   }
 
-  if (inherits(sub_trms, "formula")) {
-    sub_trms <- labels(terms(sub_trms))
-    sub_trms[grepl("\\|", sub_trms)] <- paste0(
-      "(", sub_trms[grepl("\\|", sub_trms)], ")"
-    )
-  }
-  sub_formul_rhs <- sub_trms
-  if (length(sub_formul_rhs) == 0) {
-    sub_formul_rhs <- as.character(as.numeric(sub_icpt))
-  }
-  sub_formul_rhs <- as.formula(paste("~",
-                                     paste(sub_formul_rhs, collapse = " + ")))
-  has_grp <- formula_contains_group_terms(sub_formul_rhs)
-  has_add <- formula_contains_additive_terms(sub_formul_rhs)
-  for (j in seq_along(sub_fit_totest)) {
-    if (!has_grp && !has_add) {
+  has_grp <- formula_contains_group_terms(sub_formul)
+  has_add <- formula_contains_additive_terms(sub_formul)
+  if (!has_grp && !has_add) {
+    sub_trms <- labels(terms(sub_formul))
+    if (length(sub_trms) > 0) {
+      ncoefs <- sum(sapply(sub_trms, function(trm_i) {
+        ncol(model.matrix(
+          as.formula(paste("~ 0 +", trm_i)),
+          data = sub_data
+        ))
+      }))
+      ### As discussed in issue #149, the following might be more appropriate:
+      # ncoefs <- ncol(model.matrix(
+      #   as.formula(paste("~", paste(sub_trms, collapse = " + "))),
+      #   data = sub_data
+      # )) - 1L
+      ###
+      if (any(grepl("xca\\.", sub_trms))) {
+        sub_contr <- lapply(
+          setNames(nm = grep("xca\\.", sub_trms, value = TRUE)),
+          function(x_nm) {
+            contrasts(get(x_nm, envir = as.environment(sub_data)),
+                      contrasts = FALSE)
+          }
+        )
+      } else {
+        sub_contr <- NULL
+      }
+    } else {
+      ncoefs <- 0L
+      sub_contr <- NULL
+    }
+    sub_x_expected <- model.matrix(update(sub_formul, ~ . + 0),
+                                   data = sub_data,
+                                   contrasts.arg = sub_contr)
+    for (j in seq_along(sub_fit_totest)) {
       expect_s3_class(sub_fit_totest[[!!j]], "subfit")
       expect_type(sub_fit_totest[[!!j]], "list")
       expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
+
+      expect_true(is.vector(sub_fit_totest[[!!j]]$alpha, "double"),
+                  info = info_str)
       expect_length(sub_fit_totest[[!!j]]$alpha, 1)
-      if (length(sub_trms) > 0) {
-        expect_identical(ncol(sub_fit_totest[[!!j]]$beta), 1L, info = info_str)
-        ncoefs <- sum(sapply(sub_trms, function(trm_i) {
-          ncol(model.matrix(
-            as.formula(paste("~ 0 +", trm_i)),
-            data = sub_data
-          ))
-        }))
-        ### As discussed in issue #149, the following might be more appropriate:
-        # ncoefs <- ncol(model.matrix(
-        #   as.formula(paste("~", paste(sub_trms, collapse = " + "))),
-        #   data = sub_data
-        # )) - 1L
-        ###
-        expect_equal(nrow(sub_fit_totest[[!!j]]$beta), ncoefs,
-                     info = info_str)
-      } else {
-        if (!from_datafit) {
-          expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(0L, 1L),
-                           info = info_str)
-        } else {
-          expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
-        }
+
+      if (length(sub_trms) > 0 || !from_datafit) {
+        expect_true(is.matrix(sub_fit_totest[[!!j]]$beta), info = info_str)
+        expect_true(is.numeric(sub_fit_totest[[!!j]]$beta), info = info_str)
+        expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(ncoefs, 1L),
+                         info = info_str)
+      } else if (length(sub_trms) == 0) {
+        expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
       }
-    } else if (has_grp && !has_add) {
-      if (sub_fam == "gaussian") {
+
+      expect_true(is.matrix(sub_fit_totest[[!!j]]$w), info = info_str)
+      expect_type(sub_fit_totest[[!!j]]$w, "double")
+      expect_identical(dim(sub_fit_totest[[!!j]]$w), c(nobsv, 1L),
+                       info = info_str)
+      expect_true(all(sub_fit_totest[[!!j]]$w > 0), info = info_str)
+
+      expect_s3_class(sub_fit_totest[[!!j]]$formula, "formula")
+      expect_identical(tail(as.character(sub_fit_totest[[!!j]]$formula), 1),
+                       tail(as.character(sub_formul), 1),
+                       info = info_str)
+      # TODO: Compare the complete formula (including response).
+
+      expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected, info = info_str)
+
+      ### TODO:
+      # expect_identical(sub_fit_totest[[!!j]]$y,
+      #                  get(),
+      #                  info = info_str)
+      ###
+    }
+  } else if (has_grp && !has_add) {
+    if (sub_fam == "gaussian") {
+      for (j in seq_along(sub_fit_totest)) {
         expect_s4_class(sub_fit_totest[[!!j]], "lmerMod")
-      } else {
+      }
+    } else {
+      for (j in seq_along(sub_fit_totest)) {
         expect_s4_class(sub_fit_totest[[!!j]], "glmerMod")
       }
-    } else if (has_add) {
-      # TODO: Add expectations for GAMs and GAMMs.
-      stop("Still to-do. Info: ", info_str)
     }
+  } else if (has_add) {
+    # TODO: Add expectations for GAMs and GAMMs.
+    stop("Still to-do. Info: ", info_str)
   }
+
+  return(invisible(TRUE))
 }
 
 # A helper function for testing the structure of an expected `"projection"`
@@ -393,9 +424,15 @@ projection_tester <- function(p,
   }
 
   # sub_fit
+  sub_trms_crr <- p$solution_terms
+  if (length(sub_trms_crr) == 0) {
+    sub_trms_crr <- as.character(as.numeric(p$intercept))
+  }
+  sub_formul_crr <- update(p$refmodel$formula,
+                           paste(". ~", paste(sub_trms_crr, collapse = " + ")))
   sub_fit_tester(p$sub_fit,
                  nprjdraws_expected = nprjdraws_expected,
-                 sub_trms = p$solution_terms,
+                 sub_formul = sub_formul_crr,
                  sub_data = p$refmodel$fetch_data(),
                  sub_fam = p$family$family,
                  from_datafit = from_datafit,
@@ -424,6 +461,7 @@ projection_tester <- function(p,
 
   return(invisible(TRUE))
 }
+
 # A helper function for testing the structure of an expected `"proj_list"`
 # object
 #
