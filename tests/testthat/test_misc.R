@@ -37,6 +37,11 @@ test_that(paste(
 })
 
 test_that("rstanarm: special formulas work", {
+  # Note: This test only tests that **rstanarm** handles special formulas
+  # correctly. Within projpred, arithmetic expressions on the left-hand side of
+  # a formula are handled by get_refmodel() and init_refmodel(); arithmetic
+  # expressions on the right-hand side of a formula are handled by the
+  # `div_minimizer`.
   tstsetups <- grep("\\.spclformul", names(fits), value = TRUE)
   # Compare the "special formula" fit with the corresponding "standard formula"
   # fit (which does not have the special formula elements):
