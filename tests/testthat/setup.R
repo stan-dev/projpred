@@ -327,6 +327,8 @@ solterms_x <- c("xco.2", "xco.1")
 ###
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
 solterms_s <- c("s(s.1)", "s(s.2)")
+solterms_spcl <- c("xco.1", "I(xco.1^2)", "exp(xco.2)", "poly(xco.3, 3)",
+                   "exp(xco.2):poly(xco.3, 3)")
 
 ### Weights (observations) ------------------------------------------------
 
@@ -569,31 +571,34 @@ if (run_cvvs) {
 
 ### From "refmodel" -------------------------------------------------------
 
-# Exclude the "special formula" case as well as the case which was added for
-# K-fold CV only:
+# Exclude the case which was added for K-fold CV only:
 tstsetups_prj_ref <- setNames(
-  nm = grep("\\.spclformul|^glm\\.gauss\\.stdformul\\.without_wobs",
-            names(refmods), value = TRUE, invert = TRUE)
+  nm = grep("^glm\\.gauss\\.stdformul\\.without_wobs", names(refmods),
+            value = TRUE, invert = TRUE)
 )
 args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
   mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
   fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
   solterms <- nlist(empty = character(), solterms_x)
-  if (mod_crr %in% c("glmm", "gamm")) {
-    solterms <- c(solterms,
-                  nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
-  }
-  if (mod_crr %in% c("gam", "gamm")) {
-    solterms <- c(solterms,
-                  nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
-  }
-  if (mod_crr == "gamm") {
-    solterms <- c(solterms,
-                  nlist(solterms_sz = c(solterms_s, solterms_z),
-                        solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
-  }
-  if (fam_crr != "gauss") {
-    solterms <- tail(solterms, 1)
+  if (!grepl("\\.spclformul", tstsetup_ref)) {
+    if (mod_crr %in% c("glmm", "gamm")) {
+      solterms <- c(solterms,
+                    nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
+    }
+    if (mod_crr %in% c("gam", "gamm")) {
+      solterms <- c(solterms,
+                    nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
+    }
+    if (mod_crr == "gamm") {
+      solterms <- c(solterms,
+                    nlist(solterms_sz = c(solterms_s, solterms_z),
+                          solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
+    }
+    if (fam_crr != "gauss") {
+      solterms <- tail(solterms, 1)
+    }
+  } else {
+    solterms <- nlist(solterms_spcl)
   }
   lapply(setNames(nm = names(solterms)), function(solterms_nm_i) {
     if (mod_crr == "glm" && fam_crr == "gauss" &&
