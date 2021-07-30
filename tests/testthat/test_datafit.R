@@ -283,6 +283,9 @@ test_that(paste(
     if (is.null(nterms_crr)) {
       nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
     }
+    with_L1 <- (args_vs_datafit[[tstsetup_vs]]$mod_nm == "glm" &&
+                  is.null(args_vs_datafit[[tstsetup_vs]]$method)) ||
+      args_vs_datafit[[tstsetup_vs]]$method == "L1"
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- vss_datafit[[tstsetup_vs]]$solution_terms[
         seq_len(nterms_crr)
@@ -295,7 +298,7 @@ test_that(paste(
         nprjdraws_expected = 1L,
         p_type_expected = TRUE,
         seed_expected = args_prj_vs_datafit[[tstsetup]]$seed,
-        from_datafit = TRUE,
+        from_datafit_withL1 = with_L1,
         info_str = tstsetup
       )
     } else {
@@ -303,7 +306,7 @@ test_that(paste(
         prjs_vs_datafit[[tstsetup]],
         len_expected = length(nterms_crr),
         is_seq = all(diff(nterms_crr) == 1),
-        from_datafit = TRUE,
+        extra_tol = TRUE,
         info_str = tstsetup,
         refmod_expected =
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
@@ -311,7 +314,8 @@ test_that(paste(
         p_type_expected = TRUE,
         seed_expected = args_prj_vs_datafit[[tstsetup]]$seed,
         fam_expected = vss_datafit[[tstsetup_vs]]$family,
-        prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights
+        prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights,
+        from_datafit_withL1 = with_L1
       )
     }
   }

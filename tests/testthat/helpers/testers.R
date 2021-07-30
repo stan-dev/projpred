@@ -234,8 +234,9 @@ refmodel_tester <- function(refmod,
 #   draws are created automatically).
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
-# @param from_datafit A single logical value indicating whether `sub_fit_obj` is
-#   based on an object of class `"datafit"` (`TRUE`) or not (`FALSE`).
+# @param from_datafit_withL1 A single logical value indicating whether
+#   `sub_fit_obj` is based on an object of class `"datafit"` for which an L1
+#   search was performed (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -245,7 +246,7 @@ sub_fit_tester <- function(sub_fit_obj,
                            sub_formul,
                            sub_data,
                            sub_fam,
-                           from_datafit = FALSE,
+                           from_datafit_withL1 = FALSE,
                            info_str) {
   if (nprjdraws_expected > 1) {
     expect_type(sub_fit_obj, "list")
@@ -294,7 +295,7 @@ sub_fit_tester <- function(sub_fit_obj,
     for (j in seq_along(sub_fit_totest)) {
       expect_s3_class(sub_fit_totest[[!!j]], "subfit")
       expect_type(sub_fit_totest[[!!j]], "list")
-      if (from_datafit) {
+      if (from_datafit_withL1) {
         subfit_nms <- setdiff(subfit_nms, "y")
       }
       expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
@@ -303,7 +304,7 @@ sub_fit_tester <- function(sub_fit_obj,
                   info = info_str)
       expect_length(sub_fit_totest[[!!j]]$alpha, 1)
 
-      if (length(sub_trms) > 0 || !from_datafit) {
+      if (length(sub_trms) > 0 || !from_datafit_withL1) {
         expect_true(is.matrix(sub_fit_totest[[!!j]]$beta), info = info_str)
         expect_true(is.numeric(sub_fit_totest[[!!j]]$beta), info = info_str)
         expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(ncoefs, 1L),
@@ -312,7 +313,7 @@ sub_fit_tester <- function(sub_fit_obj,
         expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
       }
 
-      if (!from_datafit) {
+      if (!from_datafit_withL1) {
         expect_true(is.matrix(sub_fit_totest[[!!j]]$w), info = info_str)
         expect_type(sub_fit_totest[[!!j]]$w, "double")
         expect_identical(dim(sub_fit_totest[[!!j]]$w), c(nobsv, 1L),
@@ -328,14 +329,14 @@ sub_fit_tester <- function(sub_fit_obj,
       expect_equal(sub_fit_totest[[!!j]]$formula, sub_formul[[!!j]],
                    info = info_str)
 
-      if (!from_datafit) {
+      if (!from_datafit_withL1) {
         expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
                          info = info_str)
       } else {
         warning("Not testing `\"subfit\"` element `x` for `\"datafit\"`s.")
       }
 
-      if (!from_datafit) {
+      if (!from_datafit_withL1) {
         y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
                               sub_data),
                          seq_len(nobsv))
@@ -378,6 +379,9 @@ sub_fit_tester <- function(sub_fit_obj,
 #   the family object at all.
 # @param prjdraw_weights_expected The expected weights for the projected draws
 #   or `NULL` for not testing these weights at all.
+# @param from_datafit_withL1 A single logical value indicating whether `p` is
+#   based on an object of class `"datafit"` for which an L1 search was performed
+#   (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -390,7 +394,7 @@ projection_tester <- function(p,
                               seed_expected,
                               fam_expected = NULL,
                               prjdraw_weights_expected = NULL,
-                              from_datafit = FALSE,
+                              from_datafit_withL1 = FALSE,
                               info_str = "") {
   expect_s3_class(p, "projection")
   expect_type(p, "list")
@@ -418,7 +422,7 @@ projection_tester <- function(p,
   }
 
   # A preliminary check for `nprjdraws_expected`:
-  if (!from_datafit) {
+  if (!from_datafit_withL1) {
     # Number of projected draws in as.matrix.projection() (note that more
     # extensive tests for as.matrix.projection() may be found in
     # "test_as_matrix.R"):
@@ -441,7 +445,7 @@ projection_tester <- function(p,
   if (length(sub_trms_crr) == 0) {
     sub_trms_crr <- as.character(as.numeric(p$intercept))
   }
-  if (!from_datafit) {
+  if (!from_datafit_withL1) {
     y_nm <- as.character(p$refmodel$formula)[2]
   } else {
     y_nm <- ""
@@ -473,7 +477,7 @@ projection_tester <- function(p,
                  sub_formul = sub_formul_crr,
                  sub_data = sub_data_crr,
                  sub_fam = p$family$family,
-                 from_datafit = from_datafit,
+                 from_datafit_withL1 = from_datafit_withL1,
                  info_str = info_str)
 
   # dis
@@ -508,17 +512,18 @@ projection_tester <- function(p,
 # @param is_seq A single logical value indicating whether `p` is expected to be
 #   sequential (i.e., the number of solution terms increases by 1 from one
 #   element of `p` to the next).
+# @param extra_tol Allow for a certain tolerance when checking the monotonicity
+#   of the KL divergences.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to projection_tester(), apart from
-#   projection_tester()'s arguments `p`, `solterms_expected`, `from_datafit`,
-#   and `info_str`.
+#   projection_tester()'s arguments `p`, `solterms_expected`, and `info_str`.
 #
 # @return `TRUE` (invisible).
 proj_list_tester <- function(p,
                              len_expected = nterms_max_tst + 1L,
                              is_seq = TRUE,
-                             from_datafit = FALSE,
+                             extra_tol = FALSE,
                              info_str = "",
                              ...) {
   expect_type(p, "list")
@@ -535,16 +540,19 @@ proj_list_tester <- function(p,
     }
     projection_tester(p[[j]],
                       solterms_expected = solterms_expected_crr,
-                      from_datafit = from_datafit,
                       info_str = paste(info_str, j, sep = "__"),
                       ...)
   }
   if (is_seq) {
     # kl should be non-increasing on training data
     klseq <- sapply(p, function(x) sum(x$kl))
-    if (from_datafit) {
-      # For some "datafit"s, we need to allow for a certain tolerance:
+    if (extra_tol) {
       expect_true(all(diff(klseq) < 3e-1), info = info_str)
+      ### Too unsafe because `length(klseq)` is usually small:
+      # prop_as_expected <- 0.8
+      # expect_true(mean(diff(klseq) < 1e-2) >= prop_as_expected,
+      #             info = info_str)
+      ###
     } else {
       expect_identical(klseq, cummin(klseq), info = info_str)
     }
