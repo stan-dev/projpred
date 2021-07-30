@@ -43,6 +43,5 @@ test_that("all div_minimizer()s work", {
                    sub_data = eval(args_fit_i$data),
                    sub_fam = eval(args_fit_i$family)$family,
                    info_str = tstsetup)
-    # TODO: Add more expectations for special formulas.
   }
 })
