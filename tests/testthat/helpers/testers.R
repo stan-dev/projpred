@@ -336,10 +336,12 @@ sub_fit_tester <- function(sub_fit_obj,
         warning("Not testing `\"subfit\"` element `x` for `\"datafit\"`s.")
       }
 
-      y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
-                            sub_data),
-                       seq_len(nobsv))
-      expect_identical(sub_fit_totest[[!!j]]$y, y_ch, info = info_str)
+      if (!from_datafit) {
+        y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
+                              sub_data),
+                         seq_len(nobsv))
+        expect_identical(sub_fit_totest[[!!j]]$y, y_ch, info = info_str)
+      }
     }
   } else if (has_grp && !has_add) {
     if (sub_fam == "gaussian") {
