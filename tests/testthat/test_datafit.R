@@ -294,6 +294,7 @@ test_that(paste(
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = 1L,
         p_type_expected = TRUE,
+        seed_expected = args_prj_vs_datafit[[tstsetup]]$seed,
         from_datafit = TRUE,
         info_str = tstsetup
       )
@@ -308,6 +309,7 @@ test_that(paste(
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         nprjdraws_expected = 1L,
         p_type_expected = TRUE,
+        seed_expected = args_prj_vs_datafit[[tstsetup]]$seed,
         fam_expected = vss_datafit[[tstsetup_vs]]$family,
         prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights
       )

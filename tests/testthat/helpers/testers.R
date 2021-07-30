@@ -259,10 +259,11 @@ sub_fit_tester <- function(sub_fit_obj,
     sub_fit_totest <- list(sub_fit_obj)
   }
 
-  has_grp <- formula_contains_group_terms(sub_formul)
-  has_add <- formula_contains_additive_terms(sub_formul)
+  if (!is.list(sub_formul)) sub_formul <- list(sub_formul)
+  has_grp <- formula_contains_group_terms(sub_formul[[1]])
+  has_add <- formula_contains_additive_terms(sub_formul[[1]])
   if (!has_grp && !has_add) {
-    sub_trms <- labels(terms(sub_formul))
+    sub_trms <- labels(terms(sub_formul[[1]]))
     if (length(sub_trms) > 0) {
       ncoefs <- sum(sapply(sub_trms, function(trm_i) {
         ncol(model.matrix(
@@ -291,7 +292,7 @@ sub_fit_tester <- function(sub_fit_obj,
       ncoefs <- 0L
       sub_contr <- NULL
     }
-    sub_x_expected <- model.matrix(update(sub_formul, ~ . + 0),
+    sub_x_expected <- model.matrix(update(sub_formul[[1]], NULL ~ . + 0),
                                    data = sub_data,
                                    contrasts.arg = sub_contr)
     for (j in seq_along(sub_fit_totest)) {
@@ -319,18 +320,15 @@ sub_fit_tester <- function(sub_fit_obj,
       expect_true(all(sub_fit_totest[[!!j]]$w > 0), info = info_str)
 
       expect_s3_class(sub_fit_totest[[!!j]]$formula, "formula")
-      expect_identical(tail(as.character(sub_fit_totest[[!!j]]$formula), 1),
-                       tail(as.character(sub_formul), 1),
-                       info = info_str)
-      # TODO: Compare the complete formula (including response).
+      expect_equal(sub_fit_totest[[!!j]]$formula, sub_formul[[!!j]],
+                   info = info_str)
 
       expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected, info = info_str)
 
-      ### TODO:
-      # expect_identical(sub_fit_totest[[!!j]]$y,
-      #                  get(),
-      #                  info = info_str)
-      ###
+      y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
+                            sub_data),
+                       seq_len(nobsv))
+      expect_identical(sub_fit_totest[[!!j]]$y, y_ch, info = info_str)
     }
   } else if (has_grp && !has_add) {
     if (sub_fam == "gaussian") {
@@ -362,6 +360,8 @@ sub_fit_tester <- function(sub_fit_obj,
 #   projected draws.
 # @param p_type_expected A single logical value giving the expected value for
 #   `p$p_type`.
+# @param seed_expected The seed which was used for clustering the posterior
+#   draws of the reference model.
 # @param fam_expected The expected `"family"` object or `NULL` for not testing
 #   the family object at all.
 # @param prjdraw_weights_expected The expected weights for the projected draws
@@ -375,6 +375,7 @@ projection_tester <- function(p,
                               solterms_expected,
                               nprjdraws_expected,
                               p_type_expected,
+                              seed_expected,
                               fam_expected = NULL,
                               prjdraw_weights_expected = NULL,
                               from_datafit = FALSE,
@@ -428,12 +429,33 @@ projection_tester <- function(p,
   if (length(sub_trms_crr) == 0) {
     sub_trms_crr <- as.character(as.numeric(p$intercept))
   }
-  sub_formul_crr <- update(p$refmodel$formula,
-                           paste(". ~", paste(sub_trms_crr, collapse = " + ")))
+  y_nm <- as.character(p$refmodel$formula)[2]
+  y_nms <- paste0(".", y_nm)
+  if (nprjdraws_expected > 1) {
+    y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
+  }
+  sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
+    as.formula(paste(
+      y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
+    ))
+  })
+  sub_data_crr <- p$refmodel$fetch_data()
+  if (p_type_expected) {
+    clust_ref <- .get_refdist(p$refmodel,
+                              nclusters = nprjdraws_expected,
+                              seed = seed_expected)
+  } else {
+    clust_ref <- .get_refdist(p$refmodel,
+                              ndraws = nprjdraws_expected,
+                              seed = seed_expected)
+  }
+  for (i in seq_len(nprjdraws_expected)) {
+    sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
+  }
   sub_fit_tester(p$sub_fit,
                  nprjdraws_expected = nprjdraws_expected,
                  sub_formul = sub_formul_crr,
-                 sub_data = p$refmodel$fetch_data(),
+                 sub_data = sub_data_crr,
                  sub_fam = p$family$family,
                  from_datafit = from_datafit,
                  info_str = info_str)

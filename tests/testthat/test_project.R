@@ -14,6 +14,7 @@ test_that(paste(
                       solterms_expected = args_prj_i$solution_terms,
                       nprjdraws_expected = ndr_ncl$nprjdraws,
                       p_type_expected = ndr_ncl$clust_used,
+                      seed_expected = args_prj_i$seed,
                       info_str = tstsetup)
   }
 })
@@ -50,6 +51,7 @@ test_that("invalid `solution_terms` warns or fails", {
                         solterms_expected = character(),
                         nprjdraws_expected = nclusters_pred_tst,
                         p_type_expected = TRUE,
+                        seed_expected = args_prj_i$seed,
                         info_str = tstsetup_crr)
     }
   }
@@ -93,6 +95,7 @@ test_that(paste(
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
+        seed_expected = args_prj_vs[[tstsetup]]$seed,
         info_str = tstsetup
       )
       # Check that projecting from the "vsel" object onto a single submodel
@@ -119,6 +122,7 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
+        seed_expected = args_prj_vs[[tstsetup]]$seed,
         fam_expected = vss[[tstsetup_vs]]$family,
         prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$weights
       )
@@ -150,6 +154,7 @@ test_that(paste(
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
+        seed_expected = args_prj_cvvs[[tstsetup]]$seed,
         info_str = tstsetup
       )
       # Check that projecting from the "vsel" object onto a single submodel
@@ -176,6 +181,7 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
+        seed_expected = args_prj_cvvs[[tstsetup]]$seed,
         fam_expected = cvvss[[tstsetup_cvvs]]$family,
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$weights
       )
@@ -248,6 +254,7 @@ test_that(paste(
           solterms_expected = args_prj_i$solution_terms,
           nprjdraws_expected = S,
           p_type_expected = !is.null(nclusters_crr),
+          seed_expected = args_prj_i$seed,
           info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")
         )
       }
@@ -342,6 +349,7 @@ test_that("for GLMs, `regul` has an expected effect", {
           solterms_expected = args_prj_i$solution_terms,
           nprjdraws_expected = ndr_ncl$nprjdraws,
           p_type_expected = ndr_ncl$clust_used,
+          seed_expected = args_prj_i$seed,
           info_str = paste(tstsetup, j, sep = "__")
         )
       }
