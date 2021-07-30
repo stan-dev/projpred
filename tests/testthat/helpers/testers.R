@@ -333,7 +333,11 @@ sub_fit_tester <- function(sub_fit_obj,
         expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
                          info = info_str)
       } else {
-        warning("Not testing `\"subfit\"` element `x` for `\"datafit\"`s.")
+        expect_true(is.matrix(sub_fit_totest[[!!j]]$x), info = info_str)
+        expect_type(sub_fit_totest[[!!j]]$x, "double")
+        expect_identical(nrow(sub_fit_totest[[!!j]]$x), nobsv, info = info_str)
+        expect_gte(ncol(sub_fit_totest[[!!j]]$x), ncol(sub_x_expected))
+        # TODO: Perhaps check the content of `x` here, too.
       }
 
       if (!from_datafit_withL1) {
