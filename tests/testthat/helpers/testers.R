@@ -292,59 +292,66 @@ sub_fit_tester <- function(sub_fit_obj,
     sub_x_expected <- model.matrix(update(sub_formul[[1]], NULL ~ . + 0),
                                    data = sub_data,
                                    contrasts.arg = sub_contr)
+    if (from_datafit_withL1) {
+      subfit_nms <- setdiff(subfit_nms, "y")
+    }
+    seq_extensive_tests <- unique(round(
+      seq(1, length(sub_fit_totest),
+          length.out = min(length(sub_fit_totest), nclusters_pred_tst))
+    ))
     for (j in seq_along(sub_fit_totest)) {
       expect_s3_class(sub_fit_totest[[!!j]], "subfit")
       expect_type(sub_fit_totest[[!!j]], "list")
-      if (from_datafit_withL1) {
-        subfit_nms <- setdiff(subfit_nms, "y")
-      }
       expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
 
-      expect_true(is.vector(sub_fit_totest[[!!j]]$alpha, "double"),
-                  info = info_str)
-      expect_length(sub_fit_totest[[!!j]]$alpha, 1)
-
-      if (length(sub_trms) > 0 || !from_datafit_withL1) {
-        expect_true(is.matrix(sub_fit_totest[[!!j]]$beta), info = info_str)
-        expect_true(is.numeric(sub_fit_totest[[!!j]]$beta), info = info_str)
-        expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(ncoefs, 1L),
-                         info = info_str)
-      } else if (length(sub_trms) == 0) {
-        expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
-      }
-
-      if (!from_datafit_withL1) {
-        expect_true(is.matrix(sub_fit_totest[[!!j]]$w), info = info_str)
-        expect_type(sub_fit_totest[[!!j]]$w, "double")
-        expect_identical(dim(sub_fit_totest[[!!j]]$w), c(nobsv, 1L),
-                         info = info_str)
-      } else {
-        expect_true(is.vector(sub_fit_totest[[!!j]]$w, "double"),
+      if (j %in% seq_extensive_tests) {
+        expect_true(is.vector(sub_fit_totest[[!!j]]$alpha, "double"),
                     info = info_str)
-        expect_length(sub_fit_totest[[!!j]]$w, nobsv)
-      }
-      expect_true(all(sub_fit_totest[[!!j]]$w > 0), info = info_str)
+        expect_length(sub_fit_totest[[!!j]]$alpha, 1)
 
-      expect_s3_class(sub_fit_totest[[!!j]]$formula, "formula")
-      expect_equal(sub_fit_totest[[!!j]]$formula, sub_formul[[!!j]],
-                   info = info_str)
+        if (length(sub_trms) > 0 || !from_datafit_withL1) {
+          expect_true(is.matrix(sub_fit_totest[[!!j]]$beta), info = info_str)
+          expect_true(is.numeric(sub_fit_totest[[!!j]]$beta), info = info_str)
+          expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(ncoefs, 1L),
+                           info = info_str)
+        } else if (length(sub_trms) == 0) {
+          expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
+        }
 
-      if (!from_datafit_withL1) {
-        expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
-                         info = info_str)
-      } else {
-        expect_true(is.matrix(sub_fit_totest[[!!j]]$x), info = info_str)
-        expect_type(sub_fit_totest[[!!j]]$x, "double")
-        expect_identical(nrow(sub_fit_totest[[!!j]]$x), nobsv, info = info_str)
-        expect_gte(ncol(sub_fit_totest[[!!j]]$x), ncol(sub_x_expected))
-        # TODO: Perhaps check the content of `x` here, too.
-      }
+        if (!from_datafit_withL1) {
+          expect_true(is.matrix(sub_fit_totest[[!!j]]$w), info = info_str)
+          expect_type(sub_fit_totest[[!!j]]$w, "double")
+          expect_identical(dim(sub_fit_totest[[!!j]]$w), c(nobsv, 1L),
+                           info = info_str)
+        } else {
+          expect_true(is.vector(sub_fit_totest[[!!j]]$w, "double"),
+                      info = info_str)
+          expect_length(sub_fit_totest[[!!j]]$w, nobsv)
+        }
+        expect_true(all(sub_fit_totest[[!!j]]$w > 0), info = info_str)
 
-      if (!from_datafit_withL1) {
-        y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
-                              sub_data),
-                         seq_len(nobsv))
-        expect_identical(sub_fit_totest[[!!j]]$y, y_ch, info = info_str)
+        expect_s3_class(sub_fit_totest[[!!j]]$formula, "formula")
+        expect_equal(sub_fit_totest[[!!j]]$formula, sub_formul[[!!j]],
+                     info = info_str)
+
+        if (!from_datafit_withL1) {
+          expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
+                           info = info_str)
+        } else {
+          expect_true(is.matrix(sub_fit_totest[[!!j]]$x), info = info_str)
+          expect_type(sub_fit_totest[[!!j]]$x, "double")
+          expect_identical(nrow(sub_fit_totest[[!!j]]$x), nobsv,
+                           info = info_str)
+          expect_gte(ncol(sub_fit_totest[[!!j]]$x), ncol(sub_x_expected))
+          # TODO: Perhaps check the content of `x` here, too.
+        }
+
+        if (!from_datafit_withL1) {
+          y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
+                                sub_data),
+                           seq_len(nobsv))
+          expect_identical(sub_fit_totest[[!!j]]$y, y_ch, info = info_str)
+        }
       }
     }
   } else if (has_grp && !has_add) {
