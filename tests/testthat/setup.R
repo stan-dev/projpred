@@ -82,7 +82,6 @@ regul_default <- 1e-4 # Adopt this if the default is changed.
 ## Customized -------------------------------------------------------------
 
 seed2_tst <- 866028
-nobsv_tst <- c(1L, 12L)
 
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
@@ -94,13 +93,6 @@ ndr_ncl_pred_tst <- list(
   clust1 = list(nclusters = 1L)
 )
 nresample_clusters_tst <- c(1L, 100L)
-
-### Because of issue #149:
-# solterms_x <- c("xco.2", "xca.1")
-solterms_x <- c("xco.2", "xco.1")
-###
-solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
-solterms_s <- c("s(s.1)", "s(s.2)")
 
 meth_tst <- list(
   default_meth = list(),
@@ -135,6 +127,9 @@ type_tst <- c("mean", "lower", "upper", "se")
 # Data --------------------------------------------------------------------
 
 nobsv <- 33L
+
+# Values for testing:
+nobsv_tst <- c(1L, nobsv %/% 3L)
 
 ## GLMs --------------------------------------------------------------------
 ## Add nonpooled ("fixed") effects to the intercept-(and-offset-)only model
@@ -324,6 +319,14 @@ trms <- list(
 )
 trms_common_spcl <- c("xco.1", "I(xco.1^2)", "exp(xco.2) * poly(xco.3, 3)",
                       "xca.1", "xca.2")
+
+# Solution terms for project()-ing from `"refmodel"`s:
+### Because of issue #149:
+# solterms_x <- c("xco.2", "xca.1")
+solterms_x <- c("xco.2", "xco.1")
+###
+solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
+solterms_s <- c("s(s.1)", "s(s.2)")
 
 ### Weights (observations) ------------------------------------------------
 
