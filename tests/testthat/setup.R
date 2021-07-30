@@ -592,10 +592,12 @@ args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
   if (fam_crr != "gauss") {
     solterms <- tail(solterms, 1)
   }
-  lapply(solterms, function(solterms_i) {
-    if (mod_crr == "glm" && fam_crr == "gauss") {
+  lapply(setNames(nm = names(solterms)), function(solterms_nm_i) {
+    if (mod_crr == "glm" && fam_crr == "gauss" &&
+        solterms_nm_i == "solterms_x") {
       ndr_ncl_pred <- ndr_ncl_pred_tst
-    } else if (mod_crr == "glmm" && fam_crr == "binom") {
+    } else if ((mod_crr == "glm" && fam_crr == "gauss") ||
+               (mod_crr == "glmm" && fam_crr == "binom")) {
       ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust", "clust1")]
     } else {
       ndr_ncl_pred <- ndr_ncl_pred_tst["clust"]
@@ -603,7 +605,7 @@ args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
     lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
       return(c(
         nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-        list(solution_terms = solterms_i, seed = seed_tst),
+        list(solution_terms = solterms[[solterms_nm_i]], seed = seed_tst),
         ndr_ncl_pred_i
       ))
     })
