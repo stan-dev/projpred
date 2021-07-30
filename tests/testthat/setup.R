@@ -90,7 +90,7 @@ ndr_ncl_pred_tst <- list(
   default_ndr_ncl = list(),
   noclust = list(ndraws = 25L),
   clust = list(nclusters = nclusters_pred_tst),
-  clust_draws = list(ndraws = 3L),
+  clust_draws = list(ndraws = nclusters_pred_tst),
   clust1 = list(nclusters = 1L)
 )
 nresample_clusters_tst <- c(1L, 100L)
