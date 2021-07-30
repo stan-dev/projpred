@@ -247,10 +247,6 @@ sub_fit_tester <- function(sub_fit_obj,
                            sub_fam,
                            from_datafit = FALSE,
                            info_str) {
-  if (from_datafit) {
-    subfit_nms <- setdiff(subfit_nms, "y")
-  }
-
   if (nprjdraws_expected > 1) {
     expect_type(sub_fit_obj, "list")
     expect_length(sub_fit_obj, nprjdraws_expected)
@@ -298,6 +294,9 @@ sub_fit_tester <- function(sub_fit_obj,
     for (j in seq_along(sub_fit_totest)) {
       expect_s3_class(sub_fit_totest[[!!j]], "subfit")
       expect_type(sub_fit_totest[[!!j]], "list")
+      if (from_datafit) {
+        subfit_nms <- setdiff(subfit_nms, "y")
+      }
       expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
 
       expect_true(is.vector(sub_fit_totest[[!!j]]$alpha, "double"),
