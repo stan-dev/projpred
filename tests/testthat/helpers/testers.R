@@ -313,17 +313,28 @@ sub_fit_tester <- function(sub_fit_obj,
         expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
       }
 
-      expect_true(is.matrix(sub_fit_totest[[!!j]]$w), info = info_str)
-      expect_type(sub_fit_totest[[!!j]]$w, "double")
-      expect_identical(dim(sub_fit_totest[[!!j]]$w), c(nobsv, 1L),
-                       info = info_str)
+      if (!from_datafit) {
+        expect_true(is.matrix(sub_fit_totest[[!!j]]$w), info = info_str)
+        expect_type(sub_fit_totest[[!!j]]$w, "double")
+        expect_identical(dim(sub_fit_totest[[!!j]]$w), c(nobsv, 1L),
+                         info = info_str)
+      } else {
+        expect_true(is.vector(sub_fit_totest[[!!j]]$w, "double"),
+                    info = info_str)
+        expect_length(sub_fit_totest[[!!j]]$w, nobsv)
+      }
       expect_true(all(sub_fit_totest[[!!j]]$w > 0), info = info_str)
 
       expect_s3_class(sub_fit_totest[[!!j]]$formula, "formula")
       expect_equal(sub_fit_totest[[!!j]]$formula, sub_formul[[!!j]],
                    info = info_str)
 
-      expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected, info = info_str)
+      if (!from_datafit) {
+        expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
+                         info = info_str)
+      } else {
+        warning("Not testing `\"subfit\"` element `x` for `\"datafit\"`s.")
+      }
 
       y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
                             sub_data),
@@ -429,7 +440,11 @@ projection_tester <- function(p,
   if (length(sub_trms_crr) == 0) {
     sub_trms_crr <- as.character(as.numeric(p$intercept))
   }
-  y_nm <- as.character(p$refmodel$formula)[2]
+  if (!from_datafit) {
+    y_nm <- as.character(p$refmodel$formula)[2]
+  } else {
+    y_nm <- ""
+  }
   y_nms <- paste0(".", y_nm)
   if (nprjdraws_expected > 1) {
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
