@@ -21,7 +21,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
   for (size in seq_len(stop_search)) {
     cands <- select_possible_terms_size(chosen, allterms, size = size)
     if (is.null(cands))
-      break
+      next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     sub <- sapply(full_cands, projfun)
 
@@ -34,8 +34,8 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
     ## append submodels
     submodels <- c(submodels, sub["sub_fit", imin])
 
-    if (verbose && length(chosen) %in% iq) {
-      print(paste0(names(iq)[max(which(length(chosen) == iq))],
+    if (verbose && count_terms_chosen(chosen) %in% iq) {
+      print(paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
                    " of terms selected."))
     }
   }
