@@ -172,12 +172,12 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
       }
     }
   )
+  sel_solution_terms <- sel$solution_terms
   ## make sure it's always a matrix
   solution_terms_cv_ch <- matrix(solution_terms_cv_ch,
-                                 ncol = length(solution_terms))
+                                 ncol = length(sel_solution_terms))
 
   ## these weights might be non-constant in case of subsampling LOO
-  sel_solution_terms <- sel$solution_terms
   ## if weights are not set, then all validation folds have equal weight
   w <- rep(1, NCOL(solution_terms_cv_ch))
   w <- w / sum(w)
