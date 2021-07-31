@@ -640,6 +640,10 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
       nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
       list(nclusters = nclusters_pred_tst, seed = seed_tst)
     )
+    if (identical(args_obj[[tstsetup_vsel]]$method, "forward") ||
+        args_obj[[tstsetup_vsel]]$mod_nm != "glm") {
+      nterms_avail <- nterms_avail["subvec"]
+    }
     lapply(nterms_avail, function(nterms_crr) {
       if (!is.null(nterms_crr)) {
         args_out <- c(args_out, list(nterms = nterms_crr))
@@ -649,8 +653,7 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
   })
 }
 tstsetups_prj_vs <- setNames(
-  nm = grep("^glm\\.gauss\\..*\\.with_wobs\\..*\\.default_meth", names(vss),
-            value = TRUE)
+  nm = grep("^glm\\.gauss\\..*\\.with_wobs", names(vss), value = TRUE)
 )
 stopifnot(length(tstsetups_prj_vs) > 0)
 args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
@@ -668,11 +671,8 @@ if (run_vs) {
 #### cv_varsel() ----------------------------------------------------------
 
 tstsetups_prj_cvvs <- setNames(
-  nm = grep(
-    "^glm\\.gauss\\..*\\.with_wobs\\..*\\.default_meth\\.default_cvmeth",
-    names(cvvss),
-    value = TRUE
-  )
+  nm = grep("^glm\\.gauss\\..*\\.with_wobs\\..*\\.default_cvmeth", names(cvvss),
+            value = TRUE)
 )
 stopifnot(length(tstsetups_prj_cvvs) > 0)
 args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
