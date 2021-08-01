@@ -19,6 +19,7 @@ source(testthat::test_path("helpers", "SW.R"), local = TRUE)
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
+source(testthat::test_path("helpers", "get_dat.R"), local = TRUE)
 
 # Exclude GAMs because of issue #150; exclude GAMMs because of issue #148:
 mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"

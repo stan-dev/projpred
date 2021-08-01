@@ -168,15 +168,21 @@ test_that("invalid `newdata` fails", {
 test_that("`newdata` and `integrated` work (even in edge cases)", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    dat_crr <- get_dat(tstsetup)
     for (nobsv_crr in nobsv_tst) {
+      if (nobsv_crr <= 3 && grepl("\\.spclformul", tstsetup)) {
+        # Since the "special formula" contains polynomial terms of up to degree
+        # 3, we have to skip `nobsv_crr` values <= 3:
+        next
+      }
       pl_false <- proj_linpred(prjs[[tstsetup]],
-                               newdata = head(dat, nobsv_crr))
+                               newdata = head(dat_crr, nobsv_crr))
       pl_tester(pl_false,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 nobsv_expected = nobsv_crr,
                 info_str = paste(tstsetup, nobsv_crr, sep = "__"))
       pl_true <- proj_linpred(prjs[[tstsetup]],
-                              newdata = head(dat, nobsv_crr),
+                              newdata = head(dat_crr, nobsv_crr),
                               integrated = TRUE)
       pl_tester(pl_true,
                 nprjdraws_expected = 1L,
@@ -190,7 +196,8 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
 
 test_that("`newdata` set to the original dataset doesn't change results", {
   for (tstsetup in names(prjs)) {
-    pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat)
+    dat_crr <- get_dat(tstsetup)
+    pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr)
     pl_orig <- pls[[tstsetup]]
     expect_equal(pl_newdata, pl_orig, info = tstsetup)
   }
@@ -206,8 +213,11 @@ test_that(paste(
       prjs[[tstsetup]]$refmodel$formula
     )$response
     stopifnot(!exists(resp_nm))
-    pl_noresp <- proj_linpred(prjs[[tstsetup]],
-                              newdata = dat[, setdiff(names(dat), resp_nm)])
+    dat_crr <- get_dat(tstsetup)
+    pl_noresp <- proj_linpred(
+      prjs[[tstsetup]],
+      newdata = dat_crr[, setdiff(names(dat_crr), resp_nm)]
+    )
     pl_tester(pl_noresp,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               lpd_null_expected = TRUE,
@@ -224,19 +234,19 @@ test_that("`weightsnew` works", {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pl_orig <- pls[[tstsetup]]
     pl_ones <- proj_linpred(prjs[[tstsetup]],
-                            newdata = dat_wobs_ones,
+                            newdata = get_dat(tstsetup, dat_wobs_ones),
                             weightsnew = ~ wobs_col_ones)
     pl_tester(pl_ones,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               info_str = tstsetup)
     pl <- proj_linpred(prjs[[tstsetup]],
-                       newdata = dat,
+                       newdata = get_dat(tstsetup, dat),
                        weightsnew = ~ wobs_col)
     pl_tester(pl,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               info_str = tstsetup)
     plw <- proj_linpred(prjs[[tstsetup]],
-                        newdata = dat_wobs_new,
+                        newdata = get_dat(tstsetup, dat_wobs_new),
                         weightsnew = ~ wobs_col_new)
     pl_tester(plw,
               nprjdraws_expected = ndr_ncl$nprjdraws,
@@ -262,19 +272,19 @@ test_that("`offsetnew` works", {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pl_orig <- pls[[tstsetup]]
     pl_zeros <- proj_linpred(prjs[[tstsetup]],
-                             newdata = dat_offs_zeros,
+                             newdata = get_dat(tstsetup, dat_offs_zeros),
                              offsetnew = ~ offs_col_zeros)
     pl_tester(pl_zeros,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               info_str = tstsetup)
     pl <- proj_linpred(prjs[[tstsetup]],
-                       newdata = dat,
+                       newdata = get_dat(tstsetup, dat),
                        offsetnew = ~ offs_col)
     pl_tester(pl,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               info_str = tstsetup)
     plo <- proj_linpred(prjs[[tstsetup]],
-                        newdata = dat_offs_new,
+                        newdata = get_dat(tstsetup, dat_offs_new),
                         offsetnew = ~ offs_col_new)
     pl_tester(plo,
               nprjdraws_expected = ndr_ncl$nprjdraws,
@@ -618,6 +628,11 @@ test_that("invalid `newdata` fails", {
 test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
   for (tstsetup in names(prjs)) {
     for (nobsv_crr in nobsv_tst) {
+      if (nobsv_crr <= 3 && grepl("\\.spclformul", tstsetup)) {
+        # Since the "special formula" contains polynomial terms of up to degree
+        # 3, we have to skip `nobsv_crr` values <= 3:
+        next
+      }
       for (nresample_clusters_crr in nresample_clusters_tst) {
         pp <- proj_predict(prjs[[tstsetup]],
                            newdata = head(dat, nobsv_crr),
