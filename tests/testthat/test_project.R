@@ -387,7 +387,7 @@ test_that("for GLMs, `regul` has an expected effect", {
       # All other (i.e., not intercept-only) models:
       for (j in seq_along(ssq_regul_alpha)[-1]) {
         expect_equal(ssq_regul_alpha[!!j], ssq_regul_alpha[j - 1],
-                     tolerance = 1e-1, info = tstsetup)
+                     tolerance = 2e-1, info = tstsetup)
       }
       for (j in seq_along(ssq_regul_beta)[-1]) {
         expect_lt(ssq_regul_beta[!!j], ssq_regul_beta[j - 1])
