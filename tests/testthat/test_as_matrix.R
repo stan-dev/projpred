@@ -47,8 +47,7 @@ test_that("as.matrix.projection() works", {
            value = TRUE, invert = TRUE)
     )
     xca_idxs <- as.integer(
-      sub("^xca\\.", "",
-          grep("^xca\\.", colnms_prjmat_expect, value = TRUE))
+      sub("^xca\\.", "", grep("^xca\\.", colnms_prjmat_expect, value = TRUE))
     )
     for (xca_idx in xca_idxs) {
       colnms_prjmat_expect <- grep(paste0("^xca\\.", xca_idx, "$"),
