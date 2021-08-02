@@ -111,9 +111,11 @@ args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
   return(args_cvvs_i)
 })
 # (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
-stopifnot(!any(grepl("kfold", names(args_cvvs_datafit))))
-args_cvvs_datafit <- lapply(args_cvvs_datafit, "c",
-                            list(cv_method = "kfold", K = K_tst))
+args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
+  args_cvvs_i$cv_method <- NULL
+  args_cvvs_i$K <- NULL
+  return(c(args_cvvs_i, list(cv_method = "kfold", K = K_tst)))
+})
 names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                  names(args_cvvs_datafit))
 # For `"datafit"`s, we always have 1 cluster by default, so omit related
