@@ -469,8 +469,8 @@ SW(refmods <- lapply(args_ref, function(args_ref_i) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  # Exclude the "special formula" case as well as the case which was added for
-  # K-fold CV only:
+  # Exclude the "special formula" case (because of issue #183) as well as the
+  # case which was added for K-fold CV only:
   tstsetups_vs_ref <- setNames(
     nm = grep("\\.spclformul|\\.gauss\\..*\\.without_wobs", names(refmods),
               value = TRUE, invert = TRUE)
@@ -510,7 +510,7 @@ if (run_vs) {
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  # Exclude the "special formula" case:
+  # Exclude the "special formula" case (because of issue #183):
   tstsetups_cvvs_ref <- setNames(
     nm = grep("\\.spclformul", names(refmods), value = TRUE, invert = TRUE)
   )
