@@ -390,7 +390,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         # Here, the weights are specified in the formula via the cbind() syntax:
         wobss_tst <- wobss_tst["without_wobs"]
       } else if (run_cvvs_kfold && mod_nm == "glm" && fam_nm == "gauss" &&
-                 formul_nm == "stdformul") {
+                 formul_nm != "spclformul") {
         # Here, rstanarm:::kfold.stanreg() is applied, so we also need the model
         # without observation weights:
         wobss_tst <- wobss_tst
