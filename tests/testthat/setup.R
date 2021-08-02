@@ -312,12 +312,6 @@ iter_tst <- 500L
 trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2")
 trms_grp <- c("(xco.1 | z.1)")
 trms_add <- c("s(s.1)", "s(s.2)", "s(s.3)", "offset(offs_col)")
-trms <- list(
-  glm = trms_common,
-  glmm = c(trms_common, trms_grp),
-  gam = c(trms_common, trms_add),
-  gamm = c(trms_common, setdiff(trms_add, "offset(offs_col)"))
-)
 trms_common_spcl <- c("xco.1", "I(xco.1^2)", "exp(xco.2) * poly(xco.3, 3)",
                       "xca.1", "xca.2")
 
@@ -366,26 +360,32 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
     if (fam_nm == "binom") {
       y_chr <- paste0("cbind(", y_chr, ", wobs_col - ", y_chr, ")")
     }
-    formul_tst <- list(stdformul = list(
-      formula = as.formula(paste(
-        y_chr, "~", paste(trms[[mod_nm]], collapse = " + ")
-      ))
-    ))
-    if (mod_nm == "glm" && fam_nm == "gauss") {
-      # Here, we also test a special formula (note that `y_chr_spcl` would need
-      # to be adopted for families other than `"gauss"`):
-      y_chr_spcl <- paste0("log(abs(", y_chr, "))")
-      formul_tst <- c(
-        formul_tst,
-        list(spclformul = list(
-          formula = as.formula(paste(
-            y_chr_spcl, "~", paste(trms_common_spcl, collapse = " + ")
-          ))
-        ))
-      )
+    formul_nms <- "stdformul"
+    if (fam_nm == "gauss") {
+      # Here, we also test a special formula:
+      formul_nms <- c(formul_nms, "spclformul")
     }
-    formul_nms <- setNames(nm = names(formul_tst))
+    formul_nms <- setNames(nm = formul_nms)
     lapply(formul_nms, function(formul_nm) {
+      if (formul_nm == "spclformul") {
+        trms_common <- trms_common_spcl
+        if (fam_nm != "gauss") {
+          stop("`y_chr` needs to be adopted for families other than ",
+               "`\"gauss\"`.")
+        }
+        y_chr <- paste0("log(abs(", y_chr, "))")
+      }
+      trms <- switch(
+        mod_nm,
+        "glm" = trms_common,
+        "glmm" = c(trms_common, trms_grp),
+        "gam" = c(trms_common, trms_add),
+        "gamm" = c(trms_common, setdiff(trms_add, "offset(offs_col)")),
+        stop("Unknown `mod_nm`.")
+      )
+      formul_crr <- as.formula(paste(
+        y_chr, "~", paste(trms, collapse = " + ")
+      ))
       if (fam_nm == "binom") {
         # Here, the weights are specified in the formula via the cbind() syntax:
         wobss_tst <- wobss_tst["without_wobs"]
@@ -412,10 +412,10 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
             random_arg <- list()
           }
           return(c(
-            nlist(mod_nm, fam_nm, family = as.name(paste0("f_", fam_nm)),
-                  data = quote(dat), chains = chains_tst, iter = iter_tst,
-                  seed = seed_tst, QR = TRUE),
-            formul_tst[[formul_nm]],
+            nlist(mod_nm, fam_nm, formula = formul_crr,
+                  family = as.name(paste0("f_", fam_nm)), data = quote(dat),
+                  chains = chains_tst, iter = iter_tst, seed = seed_tst,
+                  QR = TRUE),
             opt_wobs,
             opt_offs,
             random_arg
@@ -605,7 +605,8 @@ args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
     if (mod_crr == "glm" && fam_crr == "gauss" &&
         solterms_nm_i == "solterms_x") {
       ndr_ncl_pred <- ndr_ncl_pred_tst
-    } else if ((mod_crr == "glm" && fam_crr == "gauss") ||
+    } else if ((mod_crr == "glm" && fam_crr == "gauss" &&
+                solterms_nm_i == "empty") ||
                (mod_crr == "glmm" && fam_crr == "binom")) {
       ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust", "clust1")]
     } else {

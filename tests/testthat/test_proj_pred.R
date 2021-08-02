@@ -51,12 +51,11 @@ test_that(paste(
 test_that(paste(
   "`object` of (informal) class \"proj_list\" (created manually) works"
 ), {
-  tstsetups <- grep("^glm\\.gauss\\..*\\.clust1", names(prjs), value = TRUE)
+  tstsetups <- grep("^glm\\.gauss\\..*\\.clust$", names(prjs), value = TRUE)
   stopifnot(length(tstsetups) > 1)
   pl <- proj_linpred(prjs[tstsetups])
   pl_tester(pl,
             len_expected = length(tstsetups),
-            nprjdraws_expected = 1L,
             info_str = paste(tstsetups, collapse = ","))
 })
 
@@ -505,7 +504,7 @@ test_that(paste(
 test_that(paste(
   "`object` of (informal) class \"proj_list\" (created manually) works"
 ), {
-  tstsetups <- grep("^glm\\.gauss.*clust1", names(prjs), value = TRUE)
+  tstsetups <- grep("^glm\\.gauss\\..*\\.clust$", names(prjs), value = TRUE)
   stopifnot(length(tstsetups) > 1)
   pp <- proj_predict(prjs[tstsetups], .seed = seed2_tst)
   pp_tester(pp,
