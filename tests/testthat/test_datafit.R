@@ -41,11 +41,10 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
 ## Reference model --------------------------------------------------------
 ## (actually "datafit"s)
 
-# Exclude the "special formula" case as well as the case which was added for
-# K-fold CV only:
+# Exclude the case which was added for K-fold CV only:
 args_datafit <- lapply(setNames(
-  nm = grep("\\.spclformul|^glm\\.gauss\\.stdformul\\.without_wobs",
-            names(fits), value = TRUE, invert = TRUE)
+  nm = grep("^glm\\.gauss\\.stdformul\\.without_wobs", names(fits),
+            value = TRUE, invert = TRUE)
 ), function(tstsetup_fit) {
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
@@ -175,15 +174,40 @@ pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
 
 test_that("init_refmodel(): `object` of class \"datafit\" works", {
   for (tstsetup in names(datafits)) {
-    refmodel_tester(
-      refmod = datafits[[tstsetup]],
-      is_datafit = TRUE,
-      fit_expected = NULL,
-      formul_expected = fits[[args_datafit[[tstsetup]]$tstsetup_fit]]$formula,
-      nrefdraws_expected = 1L,
-      info_str = tstsetup,
-      fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
-    )
+    tstsetup_fit <- args_datafit[[tstsetup]]$tstsetup_fit
+    if (!grepl("\\.spclformul", tstsetup)) {
+      refmodel_tester(
+        refmod = datafits[[tstsetup]],
+        is_datafit = TRUE,
+        fit_expected = NULL,
+        formul_expected = fits[[tstsetup_fit]]$formula,
+        nrefdraws_expected = 1L,
+        info_str = tstsetup,
+        fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
+      )
+    } else {
+      # Reference models take arithmetic expressions on the left-hand side of
+      # the formula into account:
+      y_spclformul <- as.character(fits[[tstsetup_fit]]$formula)[2]
+      y_spclformul_new <- gsub("\\(|\\)", "", y_spclformul)
+      refformul_spclformul <- update(
+        fits[[tstsetup_fit]]$formula,
+        as.formula(paste(y_spclformul_new, "~ ."))
+      )
+      refdat_spclformul <- within(dat, {
+        assign(y_spclformul_new, eval(str2lang(y_spclformul)))
+      })
+      refmodel_tester(
+        refmod = datafits[[tstsetup]],
+        is_datafit = TRUE,
+        fit_expected = NULL,
+        formul_expected = refformul_spclformul,
+        data_expected = refdat_spclformul,
+        nrefdraws_expected = 1L,
+        info_str = tstsetup,
+        fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
+      )
+    }
   }
 })
 
