@@ -529,21 +529,23 @@ if (run_cvvs) {
         cvmeth <- cvmeth_tst["default_cvmeth"]
       }
     } else {
-      # Here, we only test the default `method`:
       meth <- meth_tst["default_meth"]
-      # Here, we only test the default `cv_method`:
-      cvmeth <- cvmeth_tst["default_cvmeth"]
+      if (mod_crr != "glm" && fam_crr == "binom") {
+        cvmeth <- cvmeth_tst["kfold"]
+      } else {
+        cvmeth <- cvmeth_tst["default_cvmeth"]
+      }
     }
     lapply(meth, function(meth_i) {
-      if (!run_valsearch_always &&
-          ((length(meth_i) == 0 && mod_crr != "glm") ||
-           (length(meth_i) > 0 && meth_i$method == "forward"))) {
-        # In this case, we have forward search and `!run_valsearch_always`
-        # indicates that we want to save time by using
-        # `validate_search = FALSE`:
-        meth_i <- c(meth_i, list(validate_search = FALSE))
-      }
       lapply(cvmeth, function(cvmeth_i) {
+        if (!run_valsearch_always && !identical(cvmeth_i$cv_method, "kfold") &&
+            ((length(meth_i) == 0 && mod_crr != "glm") ||
+             (length(meth_i) > 0 && meth_i$method == "forward"))) {
+          # In this case, we have forward search (and LOO CV) and
+          # `!run_valsearch_always` indicates that we want to save time by using
+          # `validate_search = FALSE`:
+          meth_i <- c(meth_i, list(validate_search = FALSE))
+        }
         return(c(
           nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
           list(
