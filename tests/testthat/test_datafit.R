@@ -430,6 +430,7 @@ test_that("summary.vsel(): `object` of class \"datafit\" fails", {
 })
 
 test_that("summary.vsel(): `baseline = \"ref\"` and `deltas = TRUE` fails", {
+  skip_if_not(run_vs)
   for (tstsetup in head(names(vss_datafit), 1)) {
     expect_error(
       summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
