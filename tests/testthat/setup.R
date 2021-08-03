@@ -12,6 +12,9 @@ run_cvvs_kfold <- run_cvvs
 # Run `cv_varsel()` with `validate_search = TRUE` always (`TRUE`) or just for L1
 # search (`FALSE`)?:
 run_valsearch_always <- FALSE
+# Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
+# first one (`FALSE`)?:
+run_cvfits_all <- FALSE
 
 set.seed(8541351)
 
