@@ -101,8 +101,13 @@ test_that(paste(
       # Check that projecting from the "vsel" object onto a single submodel
       # gives the same output as projecting the reference model onto that
       # submodel directly:
-      tstsetup_tries <- grep(paste0("^", mod_crr, ".", fam_crr, ".*\\.clust$"),
-                             names(prjs), value = TRUE)
+      tstsetup_tries <- grep(
+        paste0("^",
+               gsub("\\.", "\\\\.", sub("(with_offs).*", "\\1", tstsetup)),
+               ".*\\.clust$"),
+        names(prjs),
+        value = TRUE
+      )
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
         setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
       })
@@ -160,8 +165,13 @@ test_that(paste(
       # Check that projecting from the "vsel" object onto a single submodel
       # gives the same output as projecting the reference model onto that
       # submodel directly:
-      tstsetup_tries <- grep(paste0("^", mod_crr, ".", fam_crr, ".*\\.clust$"),
-                             names(prjs), value = TRUE)
+      tstsetup_tries <- grep(
+        paste0("^",
+               gsub("\\.", "\\\\.", sub("(with_offs).*", "\\1", tstsetup)),
+               ".*\\.clust$"),
+        names(prjs),
+        value = TRUE
+      )
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
         setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
       })
@@ -329,6 +339,11 @@ test_that("for GLMs, `regul` has an expected effect", {
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
+    if (!grepl("\\.spclformul", tstsetup)) {
+      tol_alpha <- 1e-1
+    } else {
+      tol_alpha <- 5e-1
+    }
 
     # Calculate the objects for which to run checks:
     ssq_regul_alpha <- rep(NA, length(regul_tst))
@@ -387,7 +402,7 @@ test_that("for GLMs, `regul` has an expected effect", {
       # All other (i.e., not intercept-only) models:
       for (j in seq_along(ssq_regul_alpha)[-1]) {
         expect_equal(ssq_regul_alpha[!!j], ssq_regul_alpha[j - 1],
-                     tolerance = 2e-1, info = tstsetup)
+                     tolerance = tol_alpha, info = tstsetup)
       }
       for (j in seq_along(ssq_regul_beta)[-1]) {
         expect_lt(ssq_regul_beta[!!j], ssq_regul_beta[j - 1])

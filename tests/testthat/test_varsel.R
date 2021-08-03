@@ -255,6 +255,11 @@ test_that(paste(
     } else {
       ncl_crr <- 1L
     }
+    if (!grepl("\\.spclformul", tstsetup)) {
+      tol_alpha <- 5e-2
+    } else {
+      tol_alpha <- 5e-1
+    }
     ssq_regul_sel_alpha <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_sel_beta <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_prd <- array(dim = c(length(regul_tst), m_max))
@@ -315,7 +320,7 @@ test_that(paste(
         for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
           expect_equal(ssq_regul_sel_alpha[!!j, !!m, !!nn],
                        ssq_regul_sel_alpha[j - 1, m, nn],
-                       tolerance = 5e-2)
+                       tolerance = tol_alpha)
         }
       }
     }
@@ -351,14 +356,12 @@ test_that("`penalty` of invalid length fails", {
     grep("^glm\\.", names(args_vs), value = TRUE),
     grep("^glm\\..*\\.forward", names(args_vs), value = TRUE)
   )
-  # Note: As mentioned in issue #149, the reference level of a categorical
-  # predictor actually should not have its own coefficient:
-  len_penal <- sum(grepl("^xco\\.", names(dat))) +
-    sum(sapply(dat[, grep("^xca\\.", names(dat))], nlevels))
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    penal_tst <- list(rep(1, args_vs_i$nterms_max + 10),
-                      1)
+    penal_possbl <- get_penal_possbl(fits[[args_vs_i$tstsetup_fit]]$formula)
+    len_penal <- length(penal_possbl)
+    # The `penalty` objects to be tested:
+    penal_tst <- list(rep(1, len_penal + 1), rep(1, len_penal - 1))
     for (penal_crr in penal_tst) {
       expect_error(
         do.call(varsel, c(
@@ -367,7 +370,9 @@ test_that("`penalty` of invalid length fails", {
           excl_nonargs(args_vs_i)
         )),
         paste0("^Incorrect length of penalty vector \\(should be ",
-               len_penal, "\\)\\.$")
+               len_penal, "\\)\\.$"),
+        info = paste(tstsetup, which(sapply(penal_tst, identical, penal_crr)),
+                     sep = "__")
       )
     }
   }
@@ -395,18 +400,23 @@ test_that("for L1 search, `penalty` has an expected effect", {
   skip_if_not(run_vs)
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
-  # Note: As mentioned in issue #149, the reference level of a categorical
-  # predictor actually should not have its own coefficient:
-  len_penal <- sum(grepl("^xco\\.", names(dat))) +
-    sum(sapply(dat[, grep("^xca\\.", names(dat))], nlevels))
-  penal_crr <- rep(1, len_penal)
-  stopifnot(len_penal >= 5)
-  idx_penal_0 <- c(1, 2) # A few variables without cost.
-  idx_penal_Inf <- c(3) # One variable with infinite penalty.
-  penal_crr[idx_penal_0] <- 0
-  penal_crr[idx_penal_Inf] <- Inf
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
+    if (any(grepl("\\*|:",
+                  labels(terms(refmods[[args_vs_i$tstsetup_ref]]$formula))))) {
+      # `penalty` does not seem to work in case of interactions, so skip:
+      next
+    }
+
+    penal_possbl <- get_penal_possbl(fits[[args_vs_i$tstsetup_fit]]$formula)
+    len_penal <- length(penal_possbl)
+    penal_crr <- rep(1, len_penal)
+    stopifnot(len_penal >= 5)
+    idx_penal_0 <- c(1, 2) # A few variables without cost.
+    idx_penal_Inf <- c(3) # One variable with infinite penalty.
+    penal_crr[idx_penal_0] <- 0
+    penal_crr[idx_penal_Inf] <- Inf
+
     vs_penal <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]],
            penalty = penal_crr),
@@ -423,8 +433,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
     )
     # Check that the variables with no cost are selected first and the ones
     # with infinite penalty last:
-    formula_crr <- refmods[[args_vs_i$tstsetup_ref]]$formula
-    solterms_orig <- setdiff(split_formula(formula_crr), "1")
+    solterms_orig <- labels(terms(refmods[[args_vs_i$tstsetup_ref]]$formula))
     solterms_penal <- vs_penal$solution_terms
     # Note: This test probably needs to be adopted properly to categorical
     # predictors.

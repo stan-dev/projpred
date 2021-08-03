@@ -22,7 +22,7 @@ source(testthat::test_path("helpers", "SW.R"), local = TRUE)
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
-source(testthat::test_path("helpers", "get_dat.R"), local = TRUE)
+source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 
 # Exclude GAMs because of issue #150; exclude GAMMs because of issue #148:
 mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
@@ -315,8 +315,8 @@ iter_tst <- 500L
 trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2")
 trms_grp <- c("(xco.1 | z.1)")
 trms_add <- c("s(s.1)", "s(s.2)", "s(s.3)", "offset(offs_col)")
-trms_common_spcl <- c("xco.1", "I(xco.1^2)", "exp(xco.2) * poly(xco.3, 3)",
-                      "xca.1", "xca.2")
+trms_common_spcl <- c("xco.1", "I(xco.1^2)",
+                      "exp(xco.2) * I(as.numeric(xco.3 > 0))", "xca.1", "xca.2")
 
 # Solution terms for project()-ing from `"refmodel"`s:
 ### Because of issue #149:
@@ -325,8 +325,9 @@ solterms_x <- c("xco.2", "xco.1")
 ###
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
 solterms_s <- c("s(s.1)", "s(s.2)")
-solterms_spcl <- c("xco.1", "I(xco.1^2)", "exp(xco.2)", "poly(xco.3, 3)",
-                   "exp(xco.2):poly(xco.3, 3)")
+solterms_spcl <- c("xco.1", "I(xco.1^2)", "exp(xco.2)",
+                   "I(as.numeric(xco.3 > 0))",
+                   "exp(xco.2):I(as.numeric(xco.3 > 0))")
 
 ### Weights (observations) ------------------------------------------------
 
@@ -472,11 +473,10 @@ SW(refmods <- lapply(args_ref, function(args_ref_i) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  # Exclude the "special formula" case (because of issue #183) as well as the
-  # case which was added for K-fold CV only:
+  # Exclude the case which was added for K-fold CV only:
   tstsetups_vs_ref <- setNames(
-    nm = grep("\\.spclformul|\\.gauss\\..*\\.without_wobs", names(refmods),
-              value = TRUE, invert = TRUE)
+    nm = grep("\\.gauss\\..*\\.without_wobs", names(refmods), value = TRUE,
+              invert = TRUE)
   )
   args_vs <- lapply(tstsetups_vs_ref, function(tstsetup_ref) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
@@ -513,10 +513,7 @@ if (run_vs) {
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  # Exclude the "special formula" case (because of issue #183):
-  tstsetups_cvvs_ref <- setNames(
-    nm = grep("\\.spclformul", names(refmods), value = TRUE, invert = TRUE)
-  )
+  tstsetups_cvvs_ref <- setNames(nm = names(refmods))
   args_cvvs <- lapply(tstsetups_cvvs_ref, function(tstsetup_ref) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm

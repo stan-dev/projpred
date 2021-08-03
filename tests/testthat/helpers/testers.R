@@ -848,11 +848,23 @@ vsel_tester <- function(
   # solution_terms
   expect_type(vs$solution_terms, "character")
   expect_length(vs$solution_terms, solterms_len_expected)
-  expect_true(
-    all(vs$solution_terms %in% split_formula(vs$refmodel$formula,
-                                             add_main_effects = FALSE)),
-    info = info_str
-  )
+  solterms_possbl <- split_formula(vs$refmodel$formula,
+                                   add_main_effects = FALSE)
+  if (any(sapply(gregexpr(":", solterms_possbl), length) > 1)) {
+    stop("`vsel_tester()` needs to be adopted to interactions of order > 1.")
+  }
+  solterms_possbl_iact_rev <- grep(":", solterms_possbl, value = TRUE)
+  if (length(solterms_possbl_iact_rev) > 0) {
+    # Revert the ordering of interaction terms:
+    solterms_possbl_iact_rev <- sapply(
+      strsplit(solterms_possbl_iact_rev, split = ":"),
+      function(x) {
+        paste(rev(x), collapse = ":")
+      }
+    )
+  }
+  solterms_possbl <- c(solterms_possbl, solterms_possbl_iact_rev)
+  expect_true(all(vs$solution_terms %in% solterms_possbl), info = info_str)
 
   # kl
   expect_type(vs$kl, "double")

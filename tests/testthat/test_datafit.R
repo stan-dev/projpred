@@ -364,11 +364,19 @@ test_that(paste(
               len_expected = length(nterms_crr),
               nprjdraws_expected = 1L,
               info_str = tstsetup)
-    pl_with_args <- proj_linpred(prjs_vs_datafit[[tstsetup]],
-                                 newdata = head(dat, tail(nobsv_tst, 1)),
-                                 weightsnew = ~ wobs_col,
-                                 offsetnew = ~ offs_col,
-                                 filter_nterms = nterms_crr[1])
+    pl_with_args <- proj_linpred(
+      prjs_vs_datafit[[tstsetup]],
+      newdata = head(
+        get_dat_formul(
+          args_fit[[args_prj_vs_datafit[[tstsetup]]$tstsetup_fit]]$formula,
+          needs_adj = grepl("\\.spclformul", tstsetup)
+        ),
+        tail(nobsv_tst, 1)
+      ),
+      weightsnew = ~ wobs_col,
+      offsetnew = ~ offs_col,
+      filter_nterms = nterms_crr[1]
+    )
     pl_tester(pl_with_args,
               len_expected = 1L,
               nprjdraws_expected = 1L,
