@@ -311,7 +311,7 @@ test_that(paste(
     }
     with_L1 <- (args_vs_datafit[[tstsetup_vs]]$mod_nm == "glm" &&
                   is.null(args_vs_datafit[[tstsetup_vs]]$method)) ||
-      args_vs_datafit[[tstsetup_vs]]$method == "L1"
+      identical(args_vs_datafit[[tstsetup_vs]]$method, "L1")
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- vss_datafit[[tstsetup_vs]]$solution_terms[
         seq_len(nterms_crr)
