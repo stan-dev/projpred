@@ -224,28 +224,9 @@ test_that("`stat` works", {
                           "common_stats")
     stat_vec <- stats_tst[[stat_crr_nm]]$stats
     for (stat_crr in stat_vec) {
-      # A pretty inelegant way to check for warnings (ideally, we would use
-      # ```r
-      # warn_out <- capture.output(
-      #   suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr),
-      #   type = "message"
-      # )
-      # ```
-      # instead, but that doesn't work).
-      if (args_smmry_vs[[tstsetup]]$mod_nm == "glmm") {
-        warn_expected <- paste(
-          "^Could not suggest model size\\. Investigate plot\\.vsel to",
-          "identify if the search was terminated too early\\. If this is the",
-          "case, run variable selection with larger value for nterms_max\\."
-        )
-      } else {
-        warn_expected <- NA
-      }
-      expect_warning(
-        suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr),
-        warn_expected,
-        info = paste(tstsetup, stat_crr, sep = "__")
-      )
+      # Warnings are suppressed, but a suggested size of `NA` (because of a
+      # search which was terminated too early) is tested below:
+      SW(suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr))
       expect_type(suggsize, "double")
       expect_length(suggsize, 1)
       if (!is.na(suggsize)) {
