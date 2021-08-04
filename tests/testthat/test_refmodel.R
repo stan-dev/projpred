@@ -6,21 +6,17 @@ test_that("`object` of class \"stanreg\" works", {
   for (tstsetup in names(refmods)) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     if (!grepl("\\.spclformul", tstsetup)) {
-      refmodel_tester(
-        refmod = refmods[[tstsetup]],
-        fit_expected = fits[[tstsetup_fit]],
-        info_str = tstsetup,
-        fam_orig = eval(args_fit[[tstsetup_fit]]$family)
-      )
+      needs_y_overwrite_crr <- FALSE
     } else {
-      refmodel_tester(
-        refmods[[tstsetup]],
-        fit_expected = fits[[tstsetup_fit]],
-        needs_y_overwrite = TRUE,
-        info_str = tstsetup,
-        fam_orig = eval(args_fit[[tstsetup_fit]]$family)
-      )
+      needs_y_overwrite_crr <- TRUE
     }
+    refmodel_tester(
+      refmods[[tstsetup]],
+      fit_expected = fits[[tstsetup_fit]],
+      needs_y_overwrite = needs_y_overwrite_crr,
+      info_str = tstsetup,
+      fam_orig = eval(args_fit[[tstsetup_fit]]$family)
+    )
   }
 })
 

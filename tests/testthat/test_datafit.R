@@ -178,27 +178,20 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
   for (tstsetup in names(datafits)) {
     tstsetup_fit <- args_datafit[[tstsetup]]$tstsetup_fit
     if (!grepl("\\.spclformul", tstsetup)) {
-      refmodel_tester(
-        refmod = datafits[[tstsetup]],
-        is_datafit = TRUE,
-        fit_expected = NULL,
-        formul_expected = fits[[tstsetup_fit]]$formula,
-        nrefdraws_expected = 1L,
-        info_str = tstsetup,
-        fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
-      )
+      needs_y_overwrite_crr <- FALSE
     } else {
-      refmodel_tester(
-        refmod = datafits[[tstsetup]],
-        is_datafit = TRUE,
-        fit_expected = NULL,
-        formul_expected = fits[[tstsetup_fit]]$formula,
-        needs_y_overwrite = TRUE,
-        nrefdraws_expected = 1L,
-        info_str = tstsetup,
-        fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
-      )
+      needs_y_overwrite_crr <- TRUE
     }
+    refmodel_tester(
+      datafits[[tstsetup]],
+      is_datafit = TRUE,
+      fit_expected = NULL,
+      formul_expected = fits[[tstsetup_fit]]$formula,
+      needs_y_overwrite = needs_y_overwrite_crr,
+      nrefdraws_expected = 1L,
+      info_str = tstsetup,
+      fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
+    )
   }
 })
 
