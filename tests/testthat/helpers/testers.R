@@ -85,12 +85,12 @@ refmodel_tester <- function(refmod,
                             ...) {
   # Preparations:
   needs_wobs_added <- inherits(refmod$fit, "stanreg") &&
-    length(refmod$fit$weights) > 0 # && !identical(unique(refmod$wobs), 1)
+    length(refmod$fit$weights) > 0
   if (needs_wobs_added) {
     data_expected$projpred_internal_wobs_stanreg <- refmod$fit$weights
   }
   needs_offs_added <- inherits(refmod$fit, "stanreg") &&
-    length(refmod$fit$offset) > 0 # && !identical(unique(refmod$offset), 0)
+    length(refmod$fit$offset) > 0
   if (needs_offs_added) {
     data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
   }
