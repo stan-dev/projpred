@@ -314,7 +314,6 @@ test_that(paste(
         prjs_vs_datafit[[tstsetup]],
         len_expected = length(nterms_crr),
         is_seq = all(diff(nterms_crr) == 1),
-        extra_tol = TRUE,
         info_str = tstsetup,
         refmod_expected =
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],

@@ -174,7 +174,7 @@ nterms_glm <- nterms_cont + nterms_cate
 ## GLMMs ------------------------------------------------------------------
 ## Add partially pooled ("random") effects to the GLMs
 
-nlvl_ran <- c(8L)
+nlvl_ran <- c(6L)
 nlvl_ran <- setNames(nlvl_ran, seq_along(nlvl_ran))
 if (length(nlvl_ran) <= 1) {
   names(nlvl_ran) <- paste0("z.", names(nlvl_ran))
