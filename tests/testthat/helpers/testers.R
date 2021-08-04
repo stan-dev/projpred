@@ -594,6 +594,13 @@ proj_list_tester <- function(p,
     if (extra_tol) {
       expect_true(all(tail(klseq, -1) <= 1.2 * head(klseq, -1)),
                   info = info_str)
+      ### Too unsafe because `length(klseq)` is usually small:
+      # prop_as_expected <- 0.8
+      # expect_true(
+      #   mean(tail(klseq, -1) <= 1.2 * head(klseq, -1)) >= prop_as_expected,
+      #   info = info_str
+      # )
+      ###
     } else {
       expect_identical(klseq, cummin(klseq), info = info_str)
     }
@@ -907,6 +914,13 @@ vsel_tester <- function(
   # Expected to be non-increasing for increasing model size:
   if (extra_tol) {
     expect_true(all(tail(vs$kl, -1) <= 1.2 * head(vs$kl, -1)), info = info_str)
+    ### Too unsafe because `length(vs$kl)` is usually small:
+    # prop_as_expected <- 0.8
+    # expect_true(
+    #   mean(tail(vs$kl, -1) <= 1.2 * head(vs$kl, -1)) >= prop_as_expected,
+    #   info = info_str
+    # )
+    ###
   } else {
     expect_identical(vs$kl, cummin(vs$kl), info = info_str)
   }
