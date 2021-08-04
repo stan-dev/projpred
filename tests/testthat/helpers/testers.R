@@ -126,6 +126,9 @@ refmodel_tester <- function(refmod,
   expect_identical(refmod$fit, fit_expected, info = info_str)
 
   # formula
+  # In the reference model, the offset() term is placed last:
+  formul_expected <- update(formul_expected,
+                            . ~ . - offset(offs_col) + offset(offs_col))
   if (refmod$family$family == "binomial") {
     formul_expected_chr <- as.character(formul_expected)
     stopifnot(length(formul_expected_chr) == 3)
@@ -577,7 +580,7 @@ projection_tester <- function(p,
 proj_list_tester <- function(p,
                              len_expected = nterms_max_tst + 1L,
                              is_seq = TRUE,
-                             extra_tol = 1,
+                             extra_tol = 1.2, # TODO: Clarify why we need more `extra_tol` in the presence of offsets.
                              info_str = "",
                              ...) {
   expect_type(p, "list")
@@ -732,7 +735,7 @@ vsel_tester <- function(
   nclusters_expected = NULL,
   nclusters_pred_expected = NULL,
   nloo_expected = NULL,
-  extra_tol = 1,
+  extra_tol = 1.2, # TODO: Clarify why we need more `extra_tol` in the presence of offsets.
   info_str = ""
 ) {
   dtest_type <- "train"

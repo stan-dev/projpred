@@ -304,6 +304,8 @@ iter_tst <- 500L
 ### Formula ---------------------------------------------------------------
 
 # Notes:
+#   * Argument `offset` has an issue for rstanarm::stan_glmer() (see rstanarm
+#     issue #541). Instead, use offset() in the formula.
 #   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
 #     offset() in the formula.
 #   * In rstanarm::stan_gamm4(), multilevel terms are specified via argument
@@ -312,11 +314,13 @@ iter_tst <- 500L
 #     rstanarm::stan_gamm4() seems to be unable to support an offset() in the
 #     formula. Therefore, omit the offset here.
 
-trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2")
+trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2",
+                 "offset(offs_col)")
 trms_grp <- c("(xco.1 | z.1)")
-trms_add <- c("s(s.1)", "s(s.2)", "s(s.3)", "offset(offs_col)")
+trms_add <- c("s(s.1)", "s(s.2)", "s(s.3)")
 trms_common_spcl <- c("xco.1", "I(xco.1^2)",
-                      "exp(xco.2) * I(as.numeric(xco.3 > 0))", "xca.1", "xca.2")
+                      "exp(xco.2) * I(as.numeric(xco.3 > 0))", "xca.1", "xca.2",
+                      "offset(offs_col)")
 
 # Solution terms for project()-ing from `"refmodel"`s:
 ### Because of issue #149:
@@ -340,8 +344,14 @@ wobss_tst <- list(with_wobs = list(weights = wobs_tst),
 
 ### Offsets ---------------------------------------------------------------
 
-offss_tst <- list(with_offs = list(offset = offs_tst),
-                  without_offs = list())
+### See the notes above: Due to rstanarm issue #541 and the fact that rstanarm
+### doesn't support argument `offset` for GAMs and GAMMs, the easiest way to use
+### offsets is to always specify them in the formula (or, for GAMMs: not at all,
+### see the definition of `args_fit` below):
+# offss_tst <- list(with_offs = list(offset = offs_tst),
+#                   without_offs = list())
+offss_tst <- list(with_offs = list())
+###
 
 ### Argument list ---------------------------------------------------------
 
@@ -384,7 +394,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         "glm" = trms_common,
         "glmm" = c(trms_common, trms_grp),
         "gam" = c(trms_common, trms_add),
-        "gamm" = c(trms_common, setdiff(trms_add, "offset(offs_col)")),
+        "gamm" = c(setdiff(trms_common, "offset(offs_col)"), trms_add),
         stop("Unknown `mod_nm`.")
       )
       formul_crr <- as.formula(paste(
@@ -402,13 +412,6 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         wobss_tst <- wobss_tst["with_wobs"]
       }
       lapply(wobss_tst, function(opt_wobs) {
-        if (mod_nm %in% c("gam", "gamm")) {
-          # Here, the offsets are specified in the formula (or, for GAMMs, not
-          # at all) (see the notes above):
-          offss_tst <- offss_tst["without_offs"]
-        } else {
-          offss_tst <- offss_tst["with_offs"]
-        }
         lapply(offss_tst, function(opt_offs) {
           if (mod_nm  == "gamm") {
             random_arg <- list(random = as.formula(paste("~", trms_grp)))
