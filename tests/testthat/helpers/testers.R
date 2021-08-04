@@ -555,7 +555,8 @@ proj_list_tester <- function(p,
                       ...)
   }
   if (is_seq) {
-    # kl should be non-increasing on training data
+    # For a sequential `"proj_list"` object and training data, `kl` should be
+    # non-increasing for increasing model size:
     klseq <- sapply(p, function(x) sum(x$kl))
     if (extra_tol) {
       expect_true(all(diff(klseq) < 3e-1), info = info_str)
