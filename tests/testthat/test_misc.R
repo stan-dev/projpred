@@ -36,7 +36,7 @@ if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
   )
   SW(
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                          family = f_binom, data = df_binom, weights = weights,
+                          family = f_binom, data = df_binom,
                           chains = chains, seed = seed, iter = iter
     )
   )
