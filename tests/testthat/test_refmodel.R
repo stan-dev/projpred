@@ -21,14 +21,11 @@ test_that("`object` of class \"stanreg\" works", {
         fits[[tstsetup_fit]]$formula,
         as.formula(paste(y_spclformul_new, "~ ."))
       )
-      refdat_spclformul <- within(dat, {
-        assign(y_spclformul_new, eval(str2lang(y_spclformul)))
-      })
       refmodel_tester(
         refmods[[tstsetup]],
         fit_expected = fits[[tstsetup_fit]],
         formul_expected = refformul_spclformul,
-        data_expected = refdat_spclformul,
+        needs_y_overwrite = TRUE,
         info_str = tstsetup,
         fam_orig = eval(args_fit[[tstsetup_fit]]$family)
       )

@@ -57,7 +57,12 @@ extfam_tester <- function(extfam,
 # @param formul_expected The expected `refmod$formula` object. For the binomial
 #   family, the left-hand side is expected to be of the form
 #   `cbind(y, n_trials - y)` (further modifications are made internally).
-# @param data_expected The expected dataset returned by `refmod$fetch_data()`.
+# @param data_expected The original dataset used for the reference model fit or
+#   as input to get_refmodel() or init_refmodel(). Internal changes (i.e.,
+#   inside of projpred) of this dataset are performed automatically.
+# @param needs_y_overwrite A single logical value indicating whether in
+#   `data_expected`, the response needs to be overwritten (because of a special
+#   expression on the left-hand side of the formula).
 # @param nobsv_expected A single integer value giving the expected number of
 #   observations.
 # @param nrefdraws_expected A single integer value giving the expected number of
@@ -73,6 +78,7 @@ refmodel_tester <- function(refmod,
                             fit_expected,
                             formul_expected = fit_expected$formula,
                             data_expected = dat,
+                            needs_y_overwrite = FALSE,
                             nobsv_expected = nobsv,
                             nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
                             info_str,
@@ -163,6 +169,19 @@ refmodel_tester <- function(refmod,
 
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
+  if (!identical(unique(refmod$wobs), 1) &&
+      refmod$family$family != "binomial") {
+      data_expected$projpred_internal_wobs_stanreg <- refmod$fit$weights
+  }
+  if (!identical(unique(refmod$offset), 1)) {
+    data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
+  }
+  if (needs_y_overwrite) {
+    data_expected <- within(data_expected, {
+      assign(as.character(refmod$formula)[2],
+             eval(str2lang(as.character(refmod$fit$formula)[2])))
+    })
+  }
   if (!is_datafit || (is_datafit && refmod$family$family != "binomial")) {
     expect_identical(refmod$fetch_data(), data_expected, info = info_str)
   } else {

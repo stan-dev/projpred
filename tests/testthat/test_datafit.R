@@ -196,15 +196,12 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
         fits[[tstsetup_fit]]$formula,
         as.formula(paste(y_spclformul_new, "~ ."))
       )
-      refdat_spclformul <- within(dat, {
-        assign(y_spclformul_new, eval(str2lang(y_spclformul)))
-      })
       refmodel_tester(
         refmod = datafits[[tstsetup]],
         is_datafit = TRUE,
         fit_expected = NULL,
         formul_expected = refformul_spclformul,
-        data_expected = refdat_spclformul,
+        needs_y_overwrite = TRUE,
         nrefdraws_expected = 1L,
         info_str = tstsetup,
         fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
