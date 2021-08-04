@@ -188,19 +188,11 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
         fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
       )
     } else {
-      # Reference models take arithmetic expressions on the left-hand side of
-      # the formula into account:
-      y_spclformul <- as.character(fits[[tstsetup_fit]]$formula)[2]
-      y_spclformul_new <- gsub("\\(|\\)", "", y_spclformul)
-      refformul_spclformul <- update(
-        fits[[tstsetup_fit]]$formula,
-        as.formula(paste(y_spclformul_new, "~ ."))
-      )
       refmodel_tester(
         refmod = datafits[[tstsetup]],
         is_datafit = TRUE,
         fit_expected = NULL,
-        formul_expected = refformul_spclformul,
+        formul_expected = fits[[tstsetup_fit]]$formula,
         needs_y_overwrite = TRUE,
         nrefdraws_expected = 1L,
         info_str = tstsetup,

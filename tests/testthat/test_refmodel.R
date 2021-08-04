@@ -13,18 +13,9 @@ test_that("`object` of class \"stanreg\" works", {
         fam_orig = eval(args_fit[[tstsetup_fit]]$family)
       )
     } else {
-      # Reference models take arithmetic expressions on the left-hand side of
-      # the formula into account:
-      y_spclformul <- as.character(fits[[tstsetup_fit]]$formula)[2]
-      y_spclformul_new <- gsub("\\(|\\)", "", y_spclformul)
-      refformul_spclformul <- update(
-        fits[[tstsetup_fit]]$formula,
-        as.formula(paste(y_spclformul_new, "~ ."))
-      )
       refmodel_tester(
         refmods[[tstsetup]],
         fit_expected = fits[[tstsetup_fit]],
-        formul_expected = refformul_spclformul,
         needs_y_overwrite = TRUE,
         info_str = tstsetup,
         fam_orig = eval(args_fit[[tstsetup_fit]]$family)
