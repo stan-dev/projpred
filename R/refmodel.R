@@ -348,6 +348,31 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 
   if (is.null(data)) {
     data <- object$data
+    if (length(object$weights) != 0) {
+      if ("projpred_internal_wobs_stanreg" %in% names(data)) {
+        stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
+             "`data`, but that column already exists. Please rename this ",
+             "column in `data` and try again.")
+      }
+      data$projpred_internal_wobs_stanreg <- object$weights
+      default_wrhs <- ~ projpred_internal_wobs_stanreg
+    } else {
+      default_wrhs <- NULL
+    }
+    if (length(object$offset) != 0) {
+      if ("projpred_internal_offs_stanreg" %in% names(data)) {
+        stop("Need to write to column `projpred_internal_offs_stanreg` of ",
+             "`data`, but that column already exists. Please rename this ",
+             "column in `data` and try again.")
+      }
+      data$projpred_internal_offs_stanreg <- object$offset
+      default_orhs <- ~ projpred_internal_offs_stanreg
+    } else {
+      default_orhs <- NULL
+    }
+  } else {
+    default_wrhs <- NULL
+    default_orhs <- NULL
   }
 
   stopifnot(inherits(formula, "formula"))
@@ -361,6 +386,14 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
   )
 
   if (length(response_name) > 1) {
+    if (family$family != "binomial") {
+      stop("This case should not occur. Please notify the package maintainer.")
+    }
+    # This check is needed to be able to overwrite `default_wrhs` safely:
+    if (length(object$weights) != 0) {
+      stop("projpred cannot handle observation weights for a binomial family ",
+           "with > 1 trials.")
+    }
     resp_form <- as.formula(paste("~", response_name[[1]]))
     default_wrhs <- as.formula(paste(
       "~", response_name[[2]], "+",
@@ -368,25 +401,16 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     ))
   } else {
     resp_form <- as.formula(paste("~", response_name))
-    default_wrhs <- NULL
   }
 
   extract_model_data <- function(object, newdata = NULL, wrhs = default_wrhs,
-                                 orhs = NULL, extract_y = TRUE) {
+                                 orhs = default_orhs, extract_y = TRUE) {
     if (!extract_y) {
       resp_form <- NULL
     }
 
     if (is.null(newdata)) {
-      newdata <- object$data
-      if (is.null(wrhs) && length(object$weights) != 0) {
-        wrhs <- ~weights
-        newdata <- cbind(newdata, weights = object$weights)
-      }
-      if (is.null(orhs) && length(object$offset) != 0) {
-        orhs <- ~offset
-        newdata <- cbind(newdata, offset = object$offset)
-      }
+      newdata <- data
     }
 
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
