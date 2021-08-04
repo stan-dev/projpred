@@ -555,8 +555,9 @@ projection_tester <- function(p,
 # @param is_seq A single logical value indicating whether `p` is expected to be
 #   sequential (i.e., the number of solution terms increases by 1 from one
 #   element of `p` to the next).
-# @param extra_tol Allow for a certain tolerance when checking the monotonicity
-#   of the KL divergences.
+# @param extra_tol A single logical value indicating whether to allow for a
+#   certain tolerance when checking the monotonicity of the KL divergences
+#   (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to projection_tester(), apart from
@@ -699,6 +700,9 @@ pp_tester <- function(pp,
 # @param nclusters_pred_expected The expected `vs$nclusters_pred` object.
 # @param nloo_expected Only relevant if `with_cv` is `TRUE`. The value which was
 #   used for argument `nloo` of cv_varsel().
+# @param extra_tol A single logical value indicating whether to allow for a
+#   certain tolerance when checking the monotonicity of the KL divergences
+#   (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -718,6 +722,7 @@ vsel_tester <- function(
   nclusters_expected = NULL,
   nclusters_pred_expected = NULL,
   nloo_expected = NULL,
+  extra_tol = from_datafit,
   info_str = ""
 ) {
   dtest_type <- "train"
@@ -903,12 +908,16 @@ vsel_tester <- function(
   expect_type(vs$kl, "double")
   expect_length(vs$kl, solterms_len_expected + 1)
   expect_true(all(vs$kl >= 0), info = info_str)
-  # Expected to be decreasing:
-  if (!from_datafit) {
-    expect_identical(vs$kl, cummin(vs$kl), info = info_str)
-  } else {
-    # For some "datafit"s, we need to allow for a certain tolerance:
+  # Expected to be non-increasing for increasing model size:
+  if (extra_tol) {
     expect_true(all(diff(vs$kl) < 3e-1), info = info_str)
+    ### Too unsafe because `length(vs$kl)` is usually small:
+    # prop_as_expected <- 0.8
+    # expect_true(mean(diff(vs$kl) < 1e-2) >= prop_as_expected,
+    #             info = info_str)
+    ###
+  } else {
+    expect_identical(vs$kl, cummin(vs$kl), info = info_str)
   }
 
   # pct_solution_terms_cv
