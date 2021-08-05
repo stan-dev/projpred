@@ -29,7 +29,6 @@ if (require(rstanarm)) {
                           chains = chains, seed = seed, iter = iter)
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
                           data = df_binom, family = f_binom,
-                          weights = weights,
                           chains = chains, seed = seed, iter = iter)
   })
 
@@ -139,7 +138,7 @@ if (require(rstanarm)) {
     fit_binom <- stan_glmer(
       cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr),
       data = df_binom, family = f_binom,
-      weights = weights, offset = offset,
+      offset = offset,
       chains = chains, seed = seed, iter = iter
     )
   })
