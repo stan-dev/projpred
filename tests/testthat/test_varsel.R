@@ -81,7 +81,8 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   }
 })
 
-### TODO: Clarify why this fails in the presence of offsets:
+### TODO: Clarify why this fails in the presence of (large, i.e. `sd = 1`)
+### offsets:
 # test_that("`d_test` works", {
 #   skip_if_not(run_vs)
 #   tstsetups <- names(vss)
@@ -178,8 +179,8 @@ test_that(paste(
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
-  ### TODO: Clarify why this fails in the presence of offsets (may be related to
-  ### issue #169):
+  ### TODO: Clarify why this fails in the presence of (large, i.e. `sd = 1`)
+  ### offsets (may be related to issue #169):
   tstsetups <- setdiff(
     tstsetups,
     "glm.binom.stdformul.without_wobs.with_offs.default_meth"

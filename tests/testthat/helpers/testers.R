@@ -580,7 +580,7 @@ projection_tester <- function(p,
 proj_list_tester <- function(p,
                              len_expected = nterms_max_tst + 1L,
                              is_seq = TRUE,
-                             extra_tol = 1.2, # TODO: Clarify why we need more `extra_tol` in the presence of offsets.
+                             extra_tol = 1.2, # TODO: Clarify why we need `extra_tol > 1` in the presence of (large, i.e. `sd = 1`) offsets (but for at least one `"datafit"`, we also need `extra_tol > 1` for small, i.e. `sd = 1e-10`, offsets).
                              info_str = "",
                              ...) {
   expect_type(p, "list")
@@ -735,7 +735,7 @@ vsel_tester <- function(
   nclusters_expected = NULL,
   nclusters_pred_expected = NULL,
   nloo_expected = NULL,
-  extra_tol = 1.2, # TODO: Clarify why we need more `extra_tol` in the presence of offsets.
+  extra_tol = 1.2, # TODO: Clarify why we need `extra_tol > 1` in the presence of (large, i.e. `sd = 1`) offsets.
   info_str = ""
 ) {
   dtest_type <- "train"
