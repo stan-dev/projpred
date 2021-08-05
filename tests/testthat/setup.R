@@ -521,9 +521,13 @@ if (run_cvvs) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     if (mod_crr == "glm" && fam_crr == "gauss") {
-      # Here, we test the default `method` (which is L1 search here) as well as
-      # forward search:
-      meth <- meth_tst[c("default_meth", "forward")]
+      if (!grepl("\\.spclformul", tstsetup_ref)) {
+        # Here, we test the default `method` (which is L1 search here) as well as
+        # forward search:
+        meth <- meth_tst[c("default_meth", "forward")]
+      } else {
+        meth <- meth_tst["default_meth"]
+      }
       if (grepl("\\.without_wobs", tstsetup_ref)) {
         # Here, we only test the "kfold" `cv_method`:
         cvmeth <- cvmeth_tst["kfold"]
