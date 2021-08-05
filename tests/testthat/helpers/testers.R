@@ -363,8 +363,18 @@ sub_fit_tester <- function(sub_fit_obj,
         expect_true(all(sub_fit_totest[[!!j]]$w > 0), info = info_str)
 
         expect_s3_class(sub_fit_totest[[!!j]]$formula, "formula")
-        expect_equal(sub_fit_totest[[!!j]]$formula, sub_formul[[!!j]],
-                     info = info_str)
+        if (!grepl(":", as.character(sub_fit_totest[[j]]$formula)[3])) {
+          expect_equal(sub_fit_totest[[!!j]]$formula, sub_formul[[!!j]],
+                       info = info_str)
+        } else {
+          # The order of interactions might be changed in the reference model:
+          expect_equal(sub_fit_totest[[!!j]]$formula[[2]],
+                       sub_formul[[!!j]][[2]],
+                       info = info_str)
+          expect_equal(labels(terms(sub_fit_totest[[!!j]]$formula)),
+                       labels(terms(sub_formul[[!!j]])),
+                       info = info_str)
+        }
 
         if (!from_datafit_withL1) {
           expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
