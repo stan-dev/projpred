@@ -65,6 +65,8 @@ extfam_tester <- function(extfam,
 #   expression on the left-hand side of the formula).
 # @param nobsv_expected A single integer value giving the expected number of
 #   observations.
+# @param wobs_expected The expected numeric vector of observation weights.
+# @param offs_expected The expected numeric vector of offsets.
 # @param nrefdraws_expected A single integer value giving the expected number of
 #   posterior draws in the reference model.
 # @param info_str A single character string giving information to be printed in
@@ -80,6 +82,8 @@ refmodel_tester <- function(refmod,
                             data_expected = dat,
                             needs_y_overwrite = FALSE,
                             nobsv_expected = nobsv,
+                            wobs_expected = wobs_tst,
+                            offs_expected = offs_tst,
                             nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
                             info_str,
                             ...) {
@@ -221,9 +225,12 @@ refmodel_tester <- function(refmod,
   }
 
   # wobs
-  expect_true(is.vector(refmod$wobs, "numeric"), info = info_str)
-  expect_length(refmod$wobs, nobsv_expected)
-  expect_true(all(refmod$wobs > 0), info = info_str)
+  ### Not needed because of expect_identical() below:
+  # expect_true(is.vector(refmod$wobs, "numeric"), info = info_str)
+  # expect_length(refmod$wobs, nobsv_expected)
+  # expect_true(all(refmod$wobs > 0), info = info_str)
+  ###
+  expect_identical(refmod$wobs, wobs_expected, info = info_str)
 
   # wsample
   expect_true(is.vector(refmod$wsample, "double"), info = info_str)
@@ -231,8 +238,11 @@ refmodel_tester <- function(refmod,
   expect_true(all(refmod$wsample > 0), info = info_str)
 
   # offset
-  expect_true(is.vector(refmod$offset, "double"), info = info_str)
-  expect_length(refmod$offset, nobsv_expected)
+  ### Not needed because of expect_identical() below:
+  # expect_true(is.vector(refmod$offset, "double"), info = info_str)
+  # expect_length(refmod$offset, nobsv_expected)
+  ###
+  expect_identical(refmod$offset, offs_expected, info = info_str)
 
   # folds
   expect_null(refmod$folds, info = info_str)

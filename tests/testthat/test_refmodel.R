@@ -10,10 +10,17 @@ test_that("`object` of class \"stanreg\" works", {
     } else {
       needs_y_overwrite_crr <- TRUE
     }
+    if (args_ref[[tstsetup]]$fam_nm == "binom" ||
+        grepl("\\.with_wobs", tstsetup)) {
+      wobs_expected_crr <- wobs_tst
+    } else {
+      wobs_expected_crr <- rep(1, nobsv)
+    }
     refmodel_tester(
       refmods[[tstsetup]],
       fit_expected = fits[[tstsetup_fit]],
       needs_y_overwrite = needs_y_overwrite_crr,
+      wobs_expected = wobs_expected_crr,
       info_str = tstsetup,
       fam_orig = eval(args_fit[[tstsetup_fit]]$family)
     )
