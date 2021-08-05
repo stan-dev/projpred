@@ -103,7 +103,8 @@ test_that(paste(
       # submodel directly:
       tstsetup_tries <- grep(
         paste0("^",
-               gsub("\\.", "\\\\.", sub("(with_offs).*", "\\1", tstsetup)),
+               gsub("\\.", "\\\\.",
+                    sub("(with_offs|without_offs).*", "\\1", tstsetup)),
                ".*\\.clust$"),
         names(prjs),
         value = TRUE
@@ -167,7 +168,8 @@ test_that(paste(
       # submodel directly:
       tstsetup_tries <- grep(
         paste0("^",
-               gsub("\\.", "\\\\.", sub("(with_offs).*", "\\1", tstsetup)),
+               gsub("\\.", "\\\\.",
+                    sub("(with_offs|without_offs).*", "\\1", tstsetup)),
                ".*\\.clust$"),
         names(prjs),
         value = TRUE
