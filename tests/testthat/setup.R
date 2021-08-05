@@ -130,6 +130,7 @@ type_tst <- c("mean", "lower", "upper", "se")
 
 # Data --------------------------------------------------------------------
 
+# Number of observations:
 nobsv <- 33L
 
 # Values for testing:
@@ -162,8 +163,10 @@ x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
   return(nlist(x_cate, eta_cate, b_cate))
 })
 
+# Intercept and offsets:
 icpt <- -0.42
 offs_tst <- rnorm(nobsv)
+
 eta_glm <- icpt +
   x_cont %*% b_cont +
   do.call("+", lapply(x_cate_list, "[[", "eta_cate")) +
