@@ -411,8 +411,8 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
       } else {
         wobss_tst <- wobss_tst["with_wobs"]
       }
-      lapply(wobss_tst, function(opt_wobs) {
-        lapply(offss_tst, function(opt_offs) {
+      lapply(wobss_tst, function(wobs_crr) {
+        lapply(offss_tst, function(offs_crr) {
           if (mod_nm  == "gamm") {
             random_arg <- list(random = as.formula(paste("~", trms_grp)))
           } else {
@@ -423,8 +423,8 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
                   family = as.name(paste0("f_", fam_nm)), data = quote(dat),
                   chains = chains_tst, iter = iter_tst, seed = seed_tst,
                   QR = TRUE),
-            opt_wobs,
-            opt_offs,
+            wobs_crr,
+            offs_crr,
             random_arg
           ))
         })
