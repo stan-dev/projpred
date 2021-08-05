@@ -21,8 +21,8 @@ test_that("`object` of class \"stanreg\" works", {
       fit_expected = fits[[tstsetup_fit]],
       needs_y_overwrite = needs_y_overwrite_crr,
       wobs_expected = wobs_expected_crr,
-      info_str = tstsetup,
-      fam_orig = eval(args_fit[[tstsetup_fit]]$family)
+      fam_orig = eval(args_fit[[tstsetup_fit]]$family),
+      info_str = tstsetup
     )
   }
 })

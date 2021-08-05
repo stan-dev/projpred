@@ -69,10 +69,10 @@ extfam_tester <- function(extfam,
 # @param offs_expected The expected numeric vector of offsets.
 # @param nrefdraws_expected A single integer value giving the expected number of
 #   posterior draws in the reference model.
+# @param fam_orig The original object of class `"family"` which has been used as
+#   input to extend_family().
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
-# @param ... Arguments passed to extfam_tester(), apart from
-#   extfam_tester()'s arguments `extfam`, `extfam_nms_add2`, and `info_str`.
 #
 # @return `TRUE` (invisible).
 refmodel_tester <- function(refmod,
@@ -85,8 +85,8 @@ refmodel_tester <- function(refmod,
                             wobs_expected = wobs_tst,
                             offs_expected = offs_tst,
                             nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
-                            info_str,
-                            ...) {
+                            fam_orig,
+                            info_str) {
   # Preparations:
   needs_wobs_added <- inherits(refmod$fit, "stanreg") &&
     length(refmod$fit$weights) > 0
@@ -154,14 +154,35 @@ refmodel_tester <- function(refmod,
   expect_type(refmod$div_minimizer, "closure")
 
   # family
-  extfam_tester(refmod$family, info_str = info_str,
-                extfam_nms_add2 = "mu_fun", ...)
+  extfam_tester(refmod$family, fam_orig = fam_orig,
+                extfam_nms_add2 = "mu_fun", info_str = info_str)
 
   # mu
-  expect_true(is.matrix(refmod$mu), info = info_str)
-  expect_type(refmod$mu, "double")
-  expect_identical(dim(refmod$mu), c(nobsv_expected, nrefdraws_expected),
-                   info = info_str)
+  ### Not needed because of expect_identical() below:
+  # expect_true(is.matrix(refmod$mu), info = info_str)
+  # expect_type(refmod$mu, "double")
+  # expect_identical(dim(refmod$mu), c(nobsv_expected, nrefdraws_expected),
+  #                  info = info_str)
+  ###
+  if (!is_datafit) {
+    mu_expected <- unname(t(posterior_linpred(refmod$fit)))
+    if (refmod$family$family != "gaussian") {
+      mu_expected <- fam_orig$linkinv(mu_expected)
+    }
+    expect_identical(refmod$mu, mu_expected,
+                     info = info_str)
+  } else {
+    ### Because of issue #185:
+    # if (refmod$family$family != "binomial") {
+    #   expect_identical(refmod$mu, as.matrix(refmod$y), info = info_str)
+    # } else {
+    #   expect_identical(refmod$mu, as.matrix(refmod$y / refmod$wobs),
+    #                    info = info_str)
+    # }
+    expect_identical(refmod$mu, as.matrix(refmod$y / refmod$wobs),
+                     info = info_str)
+    ###
+  }
 
   # dis
   if (refmod$family$family == "gaussian") {

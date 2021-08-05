@@ -190,8 +190,8 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
       formul_expected = fits[[tstsetup_fit]]$formula,
       needs_y_overwrite = needs_y_overwrite_crr,
       nrefdraws_expected = 1L,
-      info_str = tstsetup,
-      fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm))
+      fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm)),
+      info_str = tstsetup
     )
   }
 })
