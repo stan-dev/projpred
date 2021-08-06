@@ -169,8 +169,7 @@ refmodel_tester <- function(refmod,
     if (refmod$family$family != "gaussian") {
       mu_expected <- fam_orig$linkinv(mu_expected)
     }
-    expect_identical(refmod$mu, mu_expected,
-                     info = info_str)
+    expect_identical(refmod$mu, mu_expected, info = info_str)
   } else {
     ### Because of issue #185:
     # if (refmod$family$family != "binomial") {
