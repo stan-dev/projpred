@@ -158,18 +158,69 @@ refmodel_tester <- function(refmod,
                 extfam_nms_add2 = "mu_fun", info_str = info_str)
 
   # mu
-  ### Not needed because of expect_identical() below:
+  ### Not needed because of the more precise test below:
   # expect_true(is.matrix(refmod$mu), info = info_str)
   # expect_type(refmod$mu, "double")
   # expect_identical(dim(refmod$mu), c(nobsv_expected, nrefdraws_expected),
   #                  info = info_str)
   ###
+  has_grp <- formula_contains_group_terms(refmod$formula)
+  has_add <- formula_contains_additive_terms(refmod$formula)
   if (!is_datafit) {
-    mu_expected <- unname(t(posterior_linpred(refmod$fit)))
+    ### Helpful for debugging:
+    # mu_expected_ch <- unname(t(posterior_linpred(refmod$fit)))
+    ###
+    stopifnot(inherits(refmod$fit, "stanreg"))
+    drws <- as.matrix(refmod$fit)
+    drws_icpt <- drws[, "(Intercept)"]
+    drws_beta_cont <- drws[
+      ,
+      setdiff(grep("xco\\.", colnames(drws), value = TRUE),
+              grep("z\\.", colnames(drws), value = TRUE)),
+      drop = FALSE
+    ]
+    mm_cont <- model.matrix(
+      as.formula(paste("~", paste(colnames(drws_beta_cont), collapse = " + "))),
+      data = refmod$fetch_data()
+    )
+    stopifnot(identical(c("(Intercept)", colnames(drws_beta_cont)),
+                        colnames(mm_cont)))
+    mu_expected <- cbind(drws_icpt, drws_beta_cont) %*% t(mm_cont)
+    mu_expected <- unname(mu_expected)
+    ### TODO: Because of rstanarm issue #542:
+    if (!has_grp) {
+      mu_expected <- mu_expected +
+        matrix(offs_expected, nrow = nrow(drws), ncol = nobsv, byrow = TRUE)
+    }
+    ###
+    cate_post <- lapply(names(x_cate_list), function(x_cate_idx) {
+      sapply(x_cate_list[[x_cate_idx]]$x_cate, function(lvl_obs_i) {
+        if (lvl_obs_i != "lvl1") {
+          return(drws[, paste0("xca.", x_cate_idx, lvl_obs_i)])
+        } else {
+          return(matrix(0, nrow = nrow(drws)))
+        }
+      })
+    })
+    mu_expected <- mu_expected + do.call("+", cate_post)
+    if (has_grp) {
+      r_post <- lapply(names(z_list), function(z_nm) {
+        unname(
+          drws[, paste0("b[(Intercept) ", z_nm, ":", z_list[[z_nm]]$z, "]")] +
+            drws[, paste0("b[xco.1 ", z_nm, ":", z_list[[z_nm]]$z, "]")] %*%
+            diag(x_cont[, 1])
+        )
+      })
+      mu_expected <- mu_expected + do.call("+", r_post)
+    }
+    if (has_add) {
+      # TODO: Add manual calculation of the linear predictor for GAMs and GAMMs.
+      stop("Still to-do. Info: ", info_str)
+    }
     if (refmod$family$family != "gaussian") {
       mu_expected <- fam_orig$linkinv(mu_expected)
     }
-    expect_identical(refmod$mu, mu_expected, info = info_str)
+    expect_equal(refmod$mu, t(mu_expected), info = info_str)
   } else {
     ### Because of issue #185:
     # if (refmod$family$family != "binomial") {
@@ -226,8 +277,6 @@ refmodel_tester <- function(refmod,
     expect_identical(refmod$fetch_data(), data_expected, info = info_str)
   } else {
     refdat_ch <- data_expected
-    has_grp <- formula_contains_group_terms(refmod$formula)
-    has_add <- formula_contains_additive_terms(refmod$formula)
     if (!has_grp && !has_add) {
       mod_nm <- "glm"
     } else if (has_grp && !has_add) {
@@ -245,7 +294,7 @@ refmodel_tester <- function(refmod,
   }
 
   # wobs
-  ### Not needed because of expect_identical() below:
+  ### Not needed because of the more precise test below:
   # expect_true(is.vector(refmod$wobs, "numeric"), info = info_str)
   # expect_length(refmod$wobs, nobsv_expected)
   # expect_true(all(refmod$wobs > 0), info = info_str)
@@ -258,7 +307,7 @@ refmodel_tester <- function(refmod,
   expect_true(all(refmod$wsample > 0), info = info_str)
 
   # offset
-  ### Not needed because of expect_identical() below:
+  ### Not needed because of the more precise test below:
   # expect_true(is.vector(refmod$offset, "double"), info = info_str)
   # expect_length(refmod$offset, nobsv_expected)
   ###
