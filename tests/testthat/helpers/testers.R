@@ -181,7 +181,7 @@ refmodel_tester <- function(refmod,
     ]
     mm_cont <- model.matrix(
       as.formula(paste("~", paste(colnames(drws_beta_cont), collapse = " + "))),
-      data = refmod$fetch_data()
+      data = data_expected
     )
     stopifnot(identical(c("(Intercept)", colnames(drws_beta_cont)),
                         colnames(mm_cont)))
@@ -248,8 +248,31 @@ refmodel_tester <- function(refmod,
   }
 
   # y
-  expect_true(is.vector(refmod$y, "numeric"), info = info_str)
-  expect_length(refmod$y, nobsv_expected)
+  ### Not needed because of the more precise test below:
+  # expect_true(is.vector(refmod$y, "numeric"), info = info_str)
+  # expect_length(refmod$y, nobsv_expected)
+  ###
+  if (!has_grp && !has_add) {
+    mod_nm <- "glm"
+  } else if (has_grp && !has_add) {
+    mod_nm <- "glmm"
+  } else if (!has_grp && has_add) {
+    mod_nm <- "gam"
+  } else if (has_grp && has_add) {
+    mod_nm <- "gamm"
+  }
+  fam_nm <- switch(refmod$family$family,
+                   "gaussian" = "gauss",
+                   "binomial" = "binom",
+                   "poisson" = "poiss",
+                   stop("Unexpected `refmod$family$family`."))
+  if (!needs_y_overwrite) {
+    expect_identical(refmod$y, dat[[paste("y", mod_nm, fam_nm, sep = "_")]],
+                     info = info_str)
+  } else {
+    expect_identical(refmod$y, data_expected[[y_spclformul_new]],
+                     info = info_str)
+  }
 
   # loglik
   if (!is_datafit) {
@@ -277,15 +300,6 @@ refmodel_tester <- function(refmod,
     expect_identical(refmod$fetch_data(), data_expected, info = info_str)
   } else {
     refdat_ch <- data_expected
-    if (!has_grp && !has_add) {
-      mod_nm <- "glm"
-    } else if (has_grp && !has_add) {
-      mod_nm <- "glmm"
-    } else if (!has_grp && has_add) {
-      mod_nm <- "gam"
-    } else if (has_grp && has_add) {
-      mod_nm <- "gamm"
-    }
     y_nm <- paste0("y_", mod_nm, "_binom")
     refdat_ch$dummy_nm <- refdat_ch$wobs_col - refdat_ch[, y_nm]
     names(refdat_ch)[names(refdat_ch) == "dummy_nm"] <- paste("wobs_col -",
