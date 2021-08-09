@@ -433,10 +433,12 @@ sub_fit_tester <- function(sub_fit_obj,
     if (sub_fam == "gaussian") {
       for (j in seq_along(sub_fit_totest)) {
         expect_s4_class(sub_fit_totest[[!!j]], "lmerMod")
+        # TODO: Add more expectations here.
       }
     } else {
       for (j in seq_along(sub_fit_totest)) {
         expect_s4_class(sub_fit_totest[[!!j]], "glmerMod")
+        # TODO: Add more expectations here.
       }
     }
   } else if (has_add) {
