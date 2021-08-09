@@ -741,6 +741,8 @@ pp_tester <- function(pp,
 # @param nclusters_expected The expected `vs$nclusters` object (not adopted for
 #   L1 search).
 # @param nclusters_pred_expected The expected `vs$nclusters_pred` object.
+# @param seed_expected The seed which was used for clustering the posterior
+#   draws of the reference model.
 # @param nloo_expected Only relevant if `with_cv` is `TRUE`. The value which was
 #   used for argument `nloo` of cv_varsel().
 # @param extra_tol A single numeric value giving the relative tolerance when
@@ -764,10 +766,12 @@ vsel_tester <- function(
   ndraws_pred_expected = if (!from_datafit) ndraws_pred_default else 1L,
   nclusters_expected = NULL,
   nclusters_pred_expected = NULL,
+  seed_expected = seed_tst,
   nloo_expected = NULL,
   extra_tol = 1.2, # TODO: Clarify why we need `extra_tol > 1` in the presence of (large, i.e. `sd = 1`) offsets.
   info_str = ""
 ) {
+  # Preparations:
   dtest_type <- "train"
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
@@ -798,7 +802,9 @@ vsel_tester <- function(
     nclusters_expected <- 1
   }
 
+  # Test the general structure of the object:
   expect_s3_class(vs, "vsel")
+  expect_type(vs, "list")
   expect_named(vs, vsel_nms, info = info_str)
 
   # refmodel
@@ -811,18 +817,46 @@ vsel_tester <- function(
                    info = info_str)
   expect_type(vs$search_path$sub_fits, "list")
   expect_length(vs$search_path$sub_fits, solterms_len_expected + 1)
+  from_datafit_withL1 <- method_expected == "l1"
+  clust_ref <- .get_refdist(vs$refmodel,
+                            ndraws = ndraws_expected,
+                            nclusters = nclusters_expected,
+                            seed = seed_expected)
+  nprjdraws_expected <- ncol(clust_ref$mu)
+  if (!from_datafit_withL1) {
+    y_nm <- as.character(vs$refmodel$formula)[2]
+  } else {
+    y_nm <- ""
+  }
+  y_nms <- paste0(".", y_nm)
+  if (nprjdraws_expected > 1) {
+    y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
+  }
+  sub_data_crr <- vs$refmodel$fetch_data()
+  for (i in seq_len(nprjdraws_expected)) {
+    sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
+  }
+  solterms_for_subfits <- c(as.character(as.numeric(vs$refmodel$intercept)),
+                            vs$solution_terms)
   for (i in seq_along(vs$search_path$sub_fits)) {
-    if (!is.null(nclusters_expected) && nclusters_expected == 1) {
-      sub_fits_totest <- list(vs$search_path$sub_fits[[i]])
-    } else {
-      expect_length(vs$search_path$sub_fits[[!!i]], nclusters_expected)
-      sub_fits_totest <- vs$search_path$sub_fits[[i]]
+    sub_trms_crr <- head(solterms_for_subfits, i)
+    if (length(sub_trms_crr) > 1) {
+      sub_trms_crr <- setdiff(sub_trms_crr, "1")
     }
-    for (j in seq_along(sub_fits_totest)) {
-      expect_true(inherits(sub_fits_totest[[!!j]],
-                           get_as.matrix_cls_projpred()),
-                  info = paste(info_str, i, sep = "__"))
-    }
+    sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
+      as.formula(paste(
+        y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
+      ))
+    })
+    sub_fit_tester(
+      vs$search_path$sub_fits[[i]],
+      nprjdraws_expected = nprjdraws_expected,
+      sub_formul = sub_formul_crr,
+      sub_data = sub_data_crr,
+      sub_fam = vs$family$family,
+      from_datafit_withL1 = from_datafit_withL1,
+      info_str = paste(info_str, i, sep = "__")
+    )
   }
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel, psel_nms, info = info_str)
