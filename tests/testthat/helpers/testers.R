@@ -299,9 +299,9 @@ refmodel_tester <- function(refmod,
 #   draws are created automatically).
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
-# @param from_datafit_withL1 A single logical value indicating whether
-#   `sub_fit_obj` is based on an object of class `"datafit"` for which an L1
-#   search was performed (`TRUE`) or not (`FALSE`).
+# @param from_vsel_L1_search A single logical value indicating whether
+#   `sub_fit_obj` comes from the L1 `search_path` of an object of class `"vsel"`
+#   (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -311,7 +311,7 @@ sub_fit_tester <- function(sub_fit_obj,
                            sub_formul,
                            sub_data,
                            sub_fam,
-                           from_datafit_withL1 = FALSE,
+                           from_vsel_L1_search = FALSE,
                            info_str) {
   if (nprjdraws_expected > 1) {
     expect_type(sub_fit_obj, "list")
@@ -357,7 +357,7 @@ sub_fit_tester <- function(sub_fit_obj,
     sub_x_expected <- model.matrix(update(sub_formul[[1]], NULL ~ . + 0),
                                    data = sub_data,
                                    contrasts.arg = sub_contr)
-    if (from_datafit_withL1) {
+    if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
     seq_extensive_tests <- unique(round(
@@ -374,7 +374,7 @@ sub_fit_tester <- function(sub_fit_obj,
                     info = info_str)
         expect_length(sub_fit_totest[[!!j]]$alpha, 1)
 
-        if (length(sub_trms) > 0 || !from_datafit_withL1) {
+        if (length(sub_trms) > 0 || !from_vsel_L1_search) {
           expect_true(is.matrix(sub_fit_totest[[!!j]]$beta), info = info_str)
           expect_true(is.numeric(sub_fit_totest[[!!j]]$beta), info = info_str)
           expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(ncoefs, 1L),
@@ -383,7 +383,7 @@ sub_fit_tester <- function(sub_fit_obj,
           expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
         }
 
-        if (!from_datafit_withL1) {
+        if (!from_vsel_L1_search) {
           expect_true(is.matrix(sub_fit_totest[[!!j]]$w), info = info_str)
           expect_type(sub_fit_totest[[!!j]]$w, "double")
           expect_identical(dim(sub_fit_totest[[!!j]]$w), c(nobsv, 1L),
@@ -409,7 +409,7 @@ sub_fit_tester <- function(sub_fit_obj,
                        info = info_str)
         }
 
-        if (!from_datafit_withL1) {
+        if (!from_vsel_L1_search) {
           expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
                            info = info_str)
         } else {
@@ -421,7 +421,7 @@ sub_fit_tester <- function(sub_fit_obj,
           # TODO: Perhaps check the content of `x` here, too.
         }
 
-        if (!from_datafit_withL1) {
+        if (!from_vsel_L1_search) {
           y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
                                 sub_data),
                            seq_len(nobsv))
@@ -465,9 +465,9 @@ sub_fit_tester <- function(sub_fit_obj,
 #   the family object at all.
 # @param prjdraw_weights_expected The expected weights for the projected draws
 #   or `NULL` for not testing these weights at all.
-# @param from_datafit_withL1 A single logical value indicating whether `p` is
-#   based on an object of class `"datafit"` for which an L1 search was performed
-#   (`TRUE`) or not (`FALSE`).
+# @param from_vsel_L1_search A single logical value indicating whether `p` uses
+#   the L1 `search_path` of an object of class `"vsel"` for extracting the
+#   subfit(s) (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -480,7 +480,7 @@ projection_tester <- function(p,
                               seed_expected,
                               fam_expected = NULL,
                               prjdraw_weights_expected = NULL,
-                              from_datafit_withL1 = FALSE,
+                              from_vsel_L1_search = FALSE,
                               info_str = "") {
   expect_s3_class(p, "projection")
   expect_type(p, "list")
@@ -508,7 +508,7 @@ projection_tester <- function(p,
   }
 
   # A preliminary check for `nprjdraws_expected`:
-  if (!from_datafit_withL1) {
+  if (!from_vsel_L1_search) {
     # Number of projected draws in as.matrix.projection() (note that more
     # extensive tests for as.matrix.projection() may be found in
     # "test_as_matrix.R"):
@@ -531,7 +531,7 @@ projection_tester <- function(p,
   if (length(sub_trms_crr) == 0) {
     sub_trms_crr <- as.character(as.numeric(p$intercept))
   }
-  if (!from_datafit_withL1) {
+  if (!from_vsel_L1_search) {
     y_nm <- as.character(p$refmodel$formula)[2]
   } else {
     y_nm <- ""
@@ -563,7 +563,7 @@ projection_tester <- function(p,
                  sub_formul = sub_formul_crr,
                  sub_data = sub_data_crr,
                  sub_fam = p$family$family,
-                 from_datafit_withL1 = from_datafit_withL1,
+                 from_vsel_L1_search = from_vsel_L1_search,
                  info_str = info_str)
 
   # dis
@@ -817,13 +817,13 @@ vsel_tester <- function(
                    info = info_str)
   expect_type(vs$search_path$sub_fits, "list")
   expect_length(vs$search_path$sub_fits, solterms_len_expected + 1)
-  from_datafit_withL1 <- method_expected == "l1"
+  from_vsel_L1_search <- method_expected == "l1"
   clust_ref <- .get_refdist(vs$refmodel,
                             ndraws = ndraws_expected,
                             nclusters = nclusters_expected,
                             seed = seed_expected)
   nprjdraws_expected <- ncol(clust_ref$mu)
-  if (!from_datafit_withL1) {
+  if (!from_vsel_L1_search) {
     y_nm <- as.character(vs$refmodel$formula)[2]
   } else {
     y_nm <- ""
@@ -854,7 +854,7 @@ vsel_tester <- function(
       sub_formul = sub_formul_crr,
       sub_data = sub_data_crr,
       sub_fam = vs$family$family,
-      from_datafit_withL1 = from_datafit_withL1,
+      from_vsel_L1_search = from_vsel_L1_search,
       info_str = paste(info_str, i, sep = "__")
     )
   }
