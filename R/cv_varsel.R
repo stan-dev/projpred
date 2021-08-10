@@ -157,43 +157,37 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
     sel <- sel_cv$sel
   }
 
+  # Find out how many CV folds select the same variables as the selection with
+  # all the data (assuming all CV folds have equal weight):
   candidate_terms <- split_formula(refmodel$formula,
                                    data = refmodel$fetch_data(),
                                    add_main_effects = FALSE)
-  ## find out how many of cross-validated iterations select
-  ## the same variables as the selection with all the data.
+  candidate_terms <- unlist(tail(candidate_terms, -1))
   solution_terms_cv_ch <- sapply(
     seq_len(NROW(sel_cv$solution_terms_cv)),
     function(i) {
       if (!is.character(sel_cv$solution_terms_cv[i, ])) {
-        unlist(candidate_terms[-1])[sel_cv$solution_terms_cv[i, ]]
+        return(candidate_terms[sel_cv$solution_terms_cv[i, ]])
       } else {
-        sel_cv$solution_terms_cv[i, ]
+        return(sel_cv$solution_terms_cv[i, ])
       }
     }
   )
-  ## make sure it's always a matrix
-  solution_terms_cv_ch <- matrix(solution_terms_cv_ch,
-                                 ncol = length(solution_terms))
-
-  ## these weights might be non-constant in case of subsampling LOO
-  sel_solution_terms <- sel$solution_terms
-  ## if weights are not set, then all validation folds have equal weight
-  w <- rep(1, NCOL(solution_terms_cv_ch))
-  w <- w / sum(w)
-  vars <- unlist(sel_solution_terms)
-  pct_solution_terms_cv <- t(sapply(
-    seq_along(sel_solution_terms),
-    function(size) {
-      c(
-        size = size,
-        sapply(vars, function(var) {
-          sum((solution_terms_cv_ch[seq_len(size), , drop = FALSE] == var) * w,
-              na.rm = TRUE)
-        })
-      )
-    }
-  ))
+  sel_solution_terms <- unlist(sel$solution_terms)
+  if (!is.matrix(solution_terms_cv_ch)) {
+    stop("Unexpected `solution_terms_cv_ch`. Please notify the package ",
+         "maintainer.")
+  }
+  if (!identical(nrow(solution_terms_cv_ch), length(sel_solution_terms))) {
+    stop("Unexpected number of rows in `solution_terms_cv_ch`. Please notify ",
+         "the package maintainer.")
+  }
+  pct_solution_terms_cv <- cbind(
+    size = seq_len(nrow(solution_terms_cv_ch)),
+    sapply(sel_solution_terms, function(var_nm) {
+      rowMeans(solution_terms_cv_ch == var_nm, na.rm = TRUE)
+    })
+  )
 
   ## create the object to be returned
   vs <- nlist(refmodel,
@@ -425,10 +419,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## with `match` we get the indices of the variables as they enter the
     ## solution path in solution_terms
     solution <- match(solution_terms, candidate_terms[-1])
-    solution_terms_mat[, seq_along(solution)] <- solution
-    if (length(solution) < (nterms_max - 1)) {
-      not_in_solution <- setdiff(seq_len(nterms_max - 1), seq_along(solution))
-      solution_terms_mat[, not_in_solution] <- NA
+    for (i in seq_len(n)) {
+      solution_terms_mat[i, seq_along(solution)] <- solution
     }
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
                  solution_terms)
@@ -484,10 +476,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ## solution path in solution_terms
       solution <- match(solution_terms, candidate_terms[-1])
       solution_terms_mat[i, seq_along(solution)] <- solution
-      if (length(solution) < (nterms_max - 1)) {
-        not_in_solution <- setdiff(seq_len(nterms_max - 1), seq_along(solution))
-        solution_terms_mat[i, not_in_solution] <- NA
-      }
 
       if (verbose) {
         utils::setTxtProgressBar(pb, run_index)
