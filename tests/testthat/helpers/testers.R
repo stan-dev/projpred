@@ -1083,7 +1083,8 @@ vsel_tester <- function(
     if (!anyNA(pct_solterms)) {
       expect_false(anyNA(pct_solterms), info = info_str)
       expect_true(all(pct_solterms >= 0 & pct_solterms <= 1), info = info_str)
-      if (isFALSE(vs$validate_search)) {
+      if (isFALSE(vs$validate_search) &&
+          !identical(cv_method_expected, "kfold")) {
         expect_true(all(pct_solterms %in% c(0, 1)), info = info_str)
         # More specifically:
         pct_solterms_ch <- matrix(0, nrow = nrow(pct_solterms),
