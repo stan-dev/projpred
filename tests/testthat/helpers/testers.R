@@ -1028,23 +1028,11 @@ vsel_tester <- function(
   # solution_terms
   expect_type(vs$solution_terms, "character")
   expect_length(vs$solution_terms, solterms_len_expected)
-  solterms_possbl <- split_formula(vs$refmodel$formula,
-                                   add_main_effects = FALSE)
-  if (any(sapply(gregexpr(":", solterms_possbl), length) > 1)) {
-    stop("`vsel_tester()` needs to be adopted to interactions of order > 1.")
-  }
-  solterms_possbl_iact_rev <- grep(":", solterms_possbl, value = TRUE)
-  if (length(solterms_possbl_iact_rev) > 0) {
-    # Revert the ordering of interaction terms:
-    solterms_possbl_iact_rev <- sapply(
-      strsplit(solterms_possbl_iact_rev, split = ":"),
-      function(x) {
-        paste(rev(x), collapse = ":")
-      }
-    )
-  }
-  solterms_possbl <- c(solterms_possbl, solterms_possbl_iact_rev)
-  expect_true(all(vs$solution_terms %in% solterms_possbl), info = info_str)
+  expect_true(
+    all(vs$solution_terms %in% split_formula(vs$refmodel$formula,
+                                             add_main_effects = FALSE)),
+    info = info_str
+  )
 
   # kl
   expect_type(vs$kl, "double")
@@ -1077,22 +1065,17 @@ vsel_tester <- function(
                      info = info_str)
     pct_nonsize_nms <- setdiff(colnames(vs$pct_solution_terms_cv), "size")
     pct_solterms <- vs$pct_solution_terms_cv[, pct_nonsize_nms, drop = FALSE]
-    # TODO: The following if() condition should in fact not be necesssary. As
-    # soon as the issue is resolved, remove the if() condition so that its
-    # content is always run:
-    if (!anyNA(pct_solterms)) {
-      expect_false(anyNA(pct_solterms), info = info_str)
-      expect_true(all(pct_solterms >= 0 & pct_solterms <= 1), info = info_str)
-      if (isFALSE(vs$validate_search) &&
-          !identical(cv_method_expected, "kfold")) {
-        expect_true(all(pct_solterms %in% c(0, 1)), info = info_str)
-        # More specifically:
-        pct_solterms_ch <- matrix(0, nrow = nrow(pct_solterms),
-                                  ncol = ncol(pct_solterms))
-        diag(pct_solterms_ch) <- 1
-        colnames(pct_solterms_ch) <- pct_nonsize_nms
-        expect_identical(pct_solterms_ch, pct_solterms, info = info_str)
-      }
+    expect_false(anyNA(pct_solterms), info = info_str)
+    expect_true(all(pct_solterms >= 0 & pct_solterms <= 1), info = info_str)
+    if (isFALSE(vs$validate_search) &&
+        !identical(cv_method_expected, "kfold")) {
+      expect_true(all(pct_solterms %in% c(0, 1)), info = info_str)
+      # More specifically:
+      pct_solterms_ch <- matrix(0, nrow = nrow(pct_solterms),
+                                ncol = ncol(pct_solterms))
+      diag(pct_solterms_ch) <- 1
+      colnames(pct_solterms_ch) <- pct_nonsize_nms
+      expect_identical(pct_solterms_ch, pct_solterms, info = info_str)
     }
   }
 
