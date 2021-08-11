@@ -619,11 +619,12 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
-  print(x$selection %>% dplyr::mutate(dplyr::across(
-    where(is.numeric),
-    ~ round(., digits)
-  )),
-  row.names = FALSE
+  print(
+    x$selection %>% dplyr::mutate(dplyr::across(
+      where(is.numeric),
+      ~ round(., digits)
+    )),
+    row.names = FALSE
   )
   return(invisible(x))
 }
