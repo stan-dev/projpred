@@ -201,7 +201,7 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
   if (!(type %in% c("response", "link"))) {
     stop("type should be one of ('response', 'link')")
   }
-  if ("datafit" %in% class(object)) {
+  if (inherits(object, "datafit")) {
     stop("Cannot make predictions with data reference only.")
   }
   if (!is.null(ynew)) {
@@ -244,7 +244,7 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
   } else {
 
     ## evaluate the log predictive density at the given ynew values
-    loglik <- object$fam$ll_fun(
+    loglik <- object$family$ll_fun(
       object$family$linkinv(mu), object$dis, ynew,
       weightsnew
     )
@@ -536,7 +536,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     mu <- family$linkinv(mu)
   } else {
     mu <- matrix(y / weights, NROW(y), 1)
-    ref_predfun_datafit <- function(fit = NULL, newdata = NULL, offset = 0) {
+    ref_predfun_datafit <- function(fit = NULL, newdata = NULL) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
         matrix(rep(NA, NROW(y)))

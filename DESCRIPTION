@@ -32,7 +32,6 @@ Imports:
     ggplot2,
     Rcpp,
     utils,
-    rngtools (>= 1.2.4),
     magrittr,
     mgcv,
     gamm4,
@@ -48,7 +47,8 @@ Suggests:
     knitr,
     rmarkdown,
     glmnet,
-    bayesplot (>= 1.5.0)
+    bayesplot (>= 1.5.0),
+    optimx
 VignetteBuilder: knitr
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/

@@ -157,11 +157,10 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
 .get_standard_y <- function(y, weights, fam) {
   # Return `y` and the corresponding observation weights in the "standard" form:
-  # For the binomial family, `y` is transformed into a vector with values
-  # between 0 and 1 (i.e., proportions), and `weights` gives the number of
-  # trials for each observation. For all other families, `y` and `weights` are
-  # kept as they are (unless `weights` has length zero in which case it is
-  # replaced by a vector of ones).
+  # For the binomial family, `y` is transformed into a vector with values in the
+  # set {0, 1}, and `weights` gives the number of trials for each observation.
+  # For all other families, `y` and `weights` are kept as they are (unless
+  # `weights` has length zero in which case it is replaced by a vector of ones).
   if (NCOL(y) == 1) {
     if (length(weights) > 0) {
       weights <- unname(weights)
@@ -474,3 +473,6 @@ get_as.matrix_cls_projpred <- function() {
   return(as.matrix_cls_projpred)
 }
 
+## Helper function extract and combine mu and lppd from K lists with each
+## n/K of the elements to one list with n elements
+hf <- function(x) as.list(do.call(rbind, x))
