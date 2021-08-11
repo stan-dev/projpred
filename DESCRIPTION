@@ -32,7 +32,6 @@ Imports:
     ggplot2,
     Rcpp,
     utils,
-    rngtools (>= 1.2.4),
     magrittr,
     mgcv,
     gamm4,
