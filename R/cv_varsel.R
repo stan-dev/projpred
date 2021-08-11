@@ -760,48 +760,48 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
 }
 
-.loo_subsample <- function(n, nloo, pareto_k, seed) {
-  ## decide which points to go through in the validation (i.e., which points
-  ## belong to the semi random subsample of validation points)
-
-  ## set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-  }
-  set.seed(seed)
-
-  resample <- function(x, ...) x[sample.int(length(x), ...)]
-
-  if (nloo < n) {
-    bad <- which(pareto_k > 0.7)
-    ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
-    good <- which(pareto_k <= 0.5)
-    inds <- resample(bad, min(length(bad), floor(nloo / 3)))
-    inds <- c(inds, resample(ok, min(length(ok), floor(nloo / 3))))
-    inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
-    if (length(inds) < nloo) {
-      ## not enough points selected, so choose randomly among the rest
-      inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
-    }
-
-    ## assign the weights corresponding to this stratification (for example, the
-    ## 'bad' values are likely to be overpresented in the sample)
-    w <- rep(0, n)
-    w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
-    w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
-    w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
-  } else {
-    ## all points used
-    inds <- seq_len(n)
-    w <- rep(1, n)
-  }
-
-  ## ensure weights are normalized
-  w <- w / sum(w)
-
-  return(nlist(inds, w))
-}
+# .loo_subsample <- function(n, nloo, pareto_k, seed) {
+#   ## decide which points to go through in the validation (i.e., which points
+#   ## belong to the semi random subsample of validation points)
+#
+#   ## set random seed but ensure the old RNG state is restored on exit
+#   if (exists(".Random.seed")) {
+#     rng_state_old <- .Random.seed
+#     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+#   }
+#   set.seed(seed)
+#
+#   resample <- function(x, ...) x[sample.int(length(x), ...)]
+#
+#   if (nloo < n) {
+#     bad <- which(pareto_k > 0.7)
+#     ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
+#     good <- which(pareto_k <= 0.5)
+#     inds <- resample(bad, min(length(bad), floor(nloo / 3)))
+#     inds <- c(inds, resample(ok, min(length(ok), floor(nloo / 3))))
+#     inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
+#     if (length(inds) < nloo) {
+#       ## not enough points selected, so choose randomly among the rest
+#       inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
+#     }
+#
+#     ## assign the weights corresponding to this stratification (for example, the
+#     ## 'bad' values are likely to be overpresented in the sample)
+#     w <- rep(0, n)
+#     w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
+#     w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
+#     w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
+#   } else {
+#     ## all points used
+#     inds <- seq_len(n)
+#     w <- rep(1, n)
+#   }
+#
+#   ## ensure weights are normalized
+#   w <- w / sum(w)
+#
+#   return(nlist(inds, w))
+# }
 
 .loo_subsample_pps <- function(nloo, lppd, seed) {
   ## decide which points to go through in the validation based on
