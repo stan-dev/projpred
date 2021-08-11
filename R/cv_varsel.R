@@ -233,7 +233,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
                                  nclusters_pred = NULL) {
   if (is.null(cv_method)) {
     if (inherits(refmodel, "datafit")) {
-      ## only data given, no actual reference model
       cv_method <- "kfold"
     } else {
       cv_method <- "LOO"
