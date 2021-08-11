@@ -674,7 +674,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       # refmodel is datafit, cvfun will return an empty list and this will lead
       # to normal cross-validation for the submodels although we don't have an
       # actual reference model
-      if (verbose && !("datafit" %in% class(refmodel))) {
+      if (verbose && !inherits(refmodel, "datafit")) {
         print("Performing cross-validation for the reference model..")
       }
       nobs <- NROW(refmodel$y)

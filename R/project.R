@@ -108,11 +108,11 @@ NULL
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     seed = NULL, regul = 1e-4, ...) {
-  if (!("vsel" %in% class(object)) && is.null(solution_terms)) {
+  if (!inherits(object, "vsel") && is.null(solution_terms)) {
     stop("The given object is not an object of class \"vsel\". Run the ",
          "variable selection first, or provide argument `solution_terms`.")
   }
-  if (!("vsel" %in% class(object)) && !cv_search) {
+  if (!inherits(object, "vsel") && !cv_search) {
     stop("The given object is not an object of class \"vsel\". Run the ",
          "variable selection first, or provide argument `cv_search = TRUE`.")
   }
