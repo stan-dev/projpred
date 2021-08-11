@@ -473,3 +473,6 @@ get_as.matrix_cls_projpred <- function() {
   return(as.matrix_cls_projpred)
 }
 
+## Helper function extract and combine mu and lppd from K lists with each
+## n/K of the elements to one list with n elements
+hf <- function(x) as.list(do.call(rbind, x))

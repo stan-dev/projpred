@@ -618,10 +618,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     close(pb)
   }
 
-  ## Helper function extract and combine mu and lppd from K lists with each
-  ## n/K of the elements to one list with n elements
-  hf <- function(x) as.list(do.call(rbind, x))
-
   ## Apply some magic to manipulate the structure of the list so that instead of
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
