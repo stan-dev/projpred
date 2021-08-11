@@ -596,9 +596,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
-  nterms_max <- max(x$selection$size)
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
-             nterms_max, "\n"))
+             max(x$selection$size), "\n"))
   if (!is.null(x$nclusters)) {
     cat(paste0(
       "Number of clusters used for selection: ", x$nclusters, "\n"
