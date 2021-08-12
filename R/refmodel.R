@@ -535,7 +535,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     mu <- unname(as.matrix(mu))
     mu <- family$linkinv(mu)
   } else {
-    mu <- matrix(y / weights, NROW(y), 1)
+    if (family$family != "binomial") {
+      mu <- y
+    } else {
+      mu <- y / weights
+    }
+    mu <- matrix(mu)
     ref_predfun_datafit <- function(fit = NULL, newdata = NULL) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
