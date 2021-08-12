@@ -130,8 +130,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       mu_test <- refmodel$mu
     } else {
       mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
-                                                     newdata = d_test$data)) +
-        d_test$offset
+                                                     newdata = d_test$data) +
+                                  d_test$offset)
       mu_test <- unname(mu_test)
     }
     ref <- .weighted_summary_means(
