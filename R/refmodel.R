@@ -483,6 +483,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   data[, response_name] <- y
 
+  target <- .get_standard_y(y, weights, family)
+  y <- target$y
+  weights <- target$weights
+
   if (is.null(div_minimizer)) {
     if (length(terms$additive_terms) != 0) {
       div_minimizer <- additive_mle
@@ -559,13 +563,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (is.null(offset)) {
     offset <- rep(0, NROW(y))
   }
-
-  if (is.null(weights)) {
-    weights <- rep(1, NROW(y))
-  }
-
-  target <- .get_standard_y(y, weights, family)
-  y <- target$y
 
   if (proper_model) {
     loglik <- t(family$ll_fun(mu, dis, y, weights = weights))

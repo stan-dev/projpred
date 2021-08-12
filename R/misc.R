@@ -155,12 +155,14 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   return(baseline)
 }
 
+# A function for retrieving `y` and the corresponding observation weights
+# `weights` in their "standard" forms:
+#   * If `NCOL(y) == 2`: `y` is the first column and `weights` the second.
+#   * If `NCOL(y) == 1`: `weights` is basically unchanged (unless of length zero
+#     in which case it is replaced by a vector of ones). For a binomial family,
+#     if `is.factor(y)`, `y` is transformed into a zero-one vector (i.e., with
+#     values in the set {0, 1}).
 .get_standard_y <- function(y, weights, fam) {
-  # Return `y` and the corresponding observation weights in the "standard" form:
-  # For the binomial family, `y` is transformed into a vector with values in the
-  # set {0, 1}, and `weights` gives the number of trials for each observation.
-  # For all other families, `y` and `weights` are kept as they are (unless
-  # `weights` has length zero in which case it is replaced by a vector of ones).
   if (NCOL(y) == 1) {
     if (length(weights) > 0) {
       weights <- unname(weights)
@@ -180,10 +182,13 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       }
     }
   } else if (NCOL(y) == 2) {
-    weights <- y[, 2]
-    y <- y[, 1]
+    if (fam$family != "binomial") {
+      stop("For non-binomial families, a two-column response is not allowed.")
+    }
+    weights <- unname(y[, 1] + y[, 2])
+    y <- unname(y[, 1])
   } else {
-    stop("y cannot have more than two columns.")
+    stop("The response is not allowed to have more than two columns.")
   }
   return(nlist(y, weights))
 }
