@@ -120,7 +120,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## predictive statistics of the reference model on test data. if no test data
   ## are provided,
   ## simply fetch the statistics on the train data
-  if ("datafit" %in% class(refmodel)) {
+  if (inherits(refmodel, "datafit")) {
     ## no actual reference model, so we don't know how to predict test
     ## observations
     ntest <- NROW(refmodel$y)
@@ -161,9 +161,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   )
   ## suggest model size
   class(vs) <- "vsel"
-  vs$suggested_size <- suggest_size(vs,
-                                    warnings = FALSE
-  )
+  vs$suggested_size <- suggest_size(vs, warnings = FALSE)
   summary <- summary(vs)
   vs$summary <- summary$selection
 

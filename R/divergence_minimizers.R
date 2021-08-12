@@ -252,7 +252,6 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   beta <- subfit$beta
   alpha <- subfit$alpha
   x <- subfit$x
-  w <- subfit$w
   if (is.null(newdata)) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(subfit$x))))

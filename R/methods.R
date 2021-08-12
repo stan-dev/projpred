@@ -257,8 +257,8 @@ proj_predict <- function(object, newdata = NULL,
                          filter_nterms = NULL,
                          nresample_clusters = 1000, .seed = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- rngtools::RNGseed()
-  on.exit(rngtools::RNGseed(rng_state_old))
+  rng_state_old <- .Random.seed
+  on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
@@ -596,9 +596,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
-  nterms_max <- max(x$selection$size)
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
-             nterms_max, "\n"))
+             max(x$selection$size), "\n"))
   if (!is.null(x$nclusters)) {
     cat(paste0(
       "Number of clusters used for selection: ", x$nclusters, "\n"
@@ -620,11 +619,12 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
-  print(x$selection %>% dplyr::mutate(dplyr::across(
-    where(is.numeric),
-    ~ round(., digits)
-  )),
-  row.names = FALSE
+  print(
+    x$selection %>% dplyr::mutate(dplyr::across(
+      where(is.numeric),
+      ~ round(., digits)
+    )),
+    row.names = FALSE
   )
   return(invisible(x))
 }

@@ -15,8 +15,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   sub_fit <- refmodel$div_minimizer(
     formula = flatten_formula(subset$formula),
     data = subset$data,
-    weights = refmodel$wobs,
     family = family,
+    weights = refmodel$wobs,
     regul = regul,
     var = p_ref$var
   )

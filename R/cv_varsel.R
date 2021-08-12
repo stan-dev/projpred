@@ -162,7 +162,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
   candidate_terms <- split_formula(refmodel$formula,
                                    data = refmodel$fetch_data(),
                                    add_main_effects = FALSE)
-  candidate_terms <- unlist(tail(candidate_terms, -1))
+  candidate_terms <- unlist(utils::tail(candidate_terms, -1))
   solution_terms_cv_ch <- sapply(
     seq_len(NROW(sel_cv$solution_terms_cv)),
     function(i) {
@@ -233,7 +233,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
                                  nclusters_pred = NULL) {
   if (is.null(cv_method)) {
     if (inherits(refmodel, "datafit")) {
-      ## only data given, no actual reference model
       cv_method <- "kfold"
     } else {
       cv_method <- "LOO"
@@ -260,8 +259,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
   if (tolower(cv_method) == "kfold" && is.null(K)) {
     if (inherits(refmodel, "datafit")) {
       K <- 10
-      nclusters_pred <- 1
-      nclusters <- 1
     } else {
       K <- 5
     }
@@ -540,7 +537,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
   })
 
-  ## List of K elements, each containing d_train, p_pred, etc. corresponding
+  ## List of K elements, each containing d_test, p_pred, etc. corresponding
   ## to each fold.
   make_list_cv <- function(refmodel, d_test, msg) {
     if (!is.null(nclusters_pred) || !is.null(refmodel$nclusters_pred)) {
@@ -618,10 +615,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     close(pb)
   }
 
-  ## Helper function extract and combine mu and lppd from K lists with each
-  ## n/K of the elements to one list with n elements
-  hf <- function(x) as.list(do.call(rbind, x))
-
   ## Apply some magic to manipulate the structure of the list so that instead of
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
@@ -678,7 +671,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       # refmodel is datafit, cvfun will return an empty list and this will lead
       # to normal cross-validation for the submodels although we don't have an
       # actual reference model
-      if (verbose && !("datafit" %in% class(refmodel))) {
+      if (verbose && !inherits(refmodel, "datafit")) {
         print("Performing cross-validation for the reference model..")
       }
       nobs <- NROW(refmodel$y)
@@ -764,48 +757,48 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
 }
 
-.loo_subsample <- function(n, nloo, pareto_k, seed) {
-  ## decide which points to go through in the validation (i.e., which points
-  ## belong to the semi random subsample of validation points)
-
-  ## set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-  }
-  set.seed(seed)
-
-  resample <- function(x, ...) x[sample.int(length(x), ...)]
-
-  if (nloo < n) {
-    bad <- which(pareto_k > 0.7)
-    ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
-    good <- which(pareto_k <= 0.5)
-    inds <- resample(bad, min(length(bad), floor(nloo / 3)))
-    inds <- c(inds, resample(ok, min(length(ok), floor(nloo / 3))))
-    inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
-    if (length(inds) < nloo) {
-      ## not enough points selected, so choose randomly among the rest
-      inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
-    }
-
-    ## assign the weights corresponding to this stratification (for example, the
-    ## 'bad' values are likely to be overpresented in the sample)
-    w <- rep(0, n)
-    w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
-    w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
-    w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
-  } else {
-    ## all points used
-    inds <- seq_len(n)
-    w <- rep(1, n)
-  }
-
-  ## ensure weights are normalized
-  w <- w / sum(w)
-
-  return(nlist(inds, w))
-}
+# .loo_subsample <- function(n, nloo, pareto_k, seed) {
+#   ## decide which points to go through in the validation (i.e., which points
+#   ## belong to the semi random subsample of validation points)
+#
+#   ## set random seed but ensure the old RNG state is restored on exit
+#   if (exists(".Random.seed")) {
+#     rng_state_old <- .Random.seed
+#     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+#   }
+#   set.seed(seed)
+#
+#   resample <- function(x, ...) x[sample.int(length(x), ...)]
+#
+#   if (nloo < n) {
+#     bad <- which(pareto_k > 0.7)
+#     ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
+#     good <- which(pareto_k <= 0.5)
+#     inds <- resample(bad, min(length(bad), floor(nloo / 3)))
+#     inds <- c(inds, resample(ok, min(length(ok), floor(nloo / 3))))
+#     inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
+#     if (length(inds) < nloo) {
+#       ## not enough points selected, so choose randomly among the rest
+#       inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
+#     }
+#
+#     ## assign the weights corresponding to this stratification (for example, the
+#     ## 'bad' values are likely to be overpresented in the sample)
+#     w <- rep(0, n)
+#     w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
+#     w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
+#     w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
+#   } else {
+#     ## all points used
+#     inds <- seq_len(n)
+#     w <- rep(1, n)
+#   }
+#
+#   ## ensure weights are normalized
+#   w <- w / sum(w)
+#
+#   return(nlist(inds, w))
+# }
 
 .loo_subsample_pps <- function(nloo, lppd, seed) {
   ## decide which points to go through in the validation based on

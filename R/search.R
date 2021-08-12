@@ -1,8 +1,7 @@
 search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
                            verbose = TRUE, opt, search_terms = NULL,
                            increasing_order = TRUE) {
-  ## initialize the forward selection
-  ## proj performs the projection over draws
+  # projfun() performs the projection:
   projfun <- .get_proj_handle(refmodel, p_ref, family, opt$regul, intercept)
 
   formula <- refmodel$formula
