@@ -222,16 +222,12 @@ refmodel_tester <- function(refmod,
     }
     expect_equal(refmod$mu, t(mu_expected), info = info_str)
   } else {
-    ### Because of issue #185:
-    # if (refmod$family$family != "binomial") {
-    #   expect_identical(refmod$mu, as.matrix(refmod$y), info = info_str)
-    # } else {
-    #   expect_identical(refmod$mu, as.matrix(refmod$y / refmod$wobs),
-    #                    info = info_str)
-    # }
-    expect_identical(refmod$mu, as.matrix(refmod$y / refmod$wobs),
-                     info = info_str)
-    ###
+    if (refmod$family$family != "binomial") {
+      expect_identical(refmod$mu, as.matrix(refmod$y), info = info_str)
+    } else {
+      expect_identical(refmod$mu, as.matrix(refmod$y / refmod$wobs),
+                       info = info_str)
+    }
   }
 
   # dis
