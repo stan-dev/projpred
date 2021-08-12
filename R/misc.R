@@ -182,10 +182,13 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       }
     }
   } else if (NCOL(y) == 2) {
+    if (fam$family != "binomial") {
+      stop("For non-binomial families, a two-column response is not allowed.")
+    }
     weights <- y[, 2]
     y <- y[, 1]
   } else {
-    stop("y cannot have more than two columns.")
+    stop("The response is not allowed to have more than two columns.")
   }
   return(nlist(y, weights))
 }
