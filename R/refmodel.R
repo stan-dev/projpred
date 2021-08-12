@@ -449,13 +449,20 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
       stop("Unexpected length of `<stanreg_fit>$stan_function`. Please notify ",
            "the package maintainer.")
     }
-    # Workaround for rstanarm issues #541 and #542:
-    if ((fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
-         !is.null(attr(terms(fit$formula), "offset"))) ||
-        (fit$stan_function %in% c("stan_lm", "stan_glm") &&
-         !is.null(newdata) && length(fit$offset) > 0)) {
-      stopifnot(identical(nrow(linpred_out), length(fit$offset)))
-      linpred_out <- linpred_out + fit$offset
+    # Since posterior_linpred() is supposed to include the offsets in its
+    # result, subtract them here (and use a workaround for rstanarm issue #541
+    # and rstanarm issue #542):
+    cond_no_offs <- (
+      fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
+        !is.null(attr(terms(fit$formula), "offset"))
+    ) || (
+      fit$stan_function %in% c("stan_lm", "stan_glm") &&
+        !is.null(newdata) && length(fit$offset) > 0
+    )
+    if (!cond_no_offs) {
+      offs <- extract_model_data(fit, newdata = newdata)$offset
+      stopifnot(identical(nrow(linpred_out), length(offs)))
+      linpred_out <- linpred_out - offs
     }
     return(linpred_out)
   }
@@ -491,7 +498,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   response_name <- terms$response
   if (is.null(ref_predfun)) {
     ref_predfun <- function(fit, newdata = NULL) {
-      t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
+      linpred_out <- t(
+        posterior_linpred(fit, transform = FALSE, newdata = newdata)
+      )
+      # Since posterior_linpred() is supposed to include the offsets in its
+      # result, subtract them here:
+      offs <- extract_model_data(fit, newdata = newdata)$offset
+      stopifnot(identical(nrow(linpred_out), length(offs)))
+      linpred_out <- linpred_out - offs
+      return(linpred_out)
     }
   }
 
