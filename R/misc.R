@@ -185,7 +185,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     if (fam$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
     }
-    weights <- unname(rowSums(y))
+    weights <- unname(y[, 1] + y[, 2])
     y <- unname(y[, 1])
   } else {
     stop("The response is not allowed to have more than two columns.")
