@@ -705,7 +705,7 @@ select_possible_terms_size <- function(chosen, terms, size) {
   })
   valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
   if (length(chosen) > 0) {
-    add_chosen <- paste0(paste(chosen, collapse = "+"), " + ")
+    add_chosen <- paste0(" + ", paste(chosen, collapse = "+"))
     remove_chosen <- paste0(" - ", paste(chosen, collapse = "-"))
   } else {
     add_chosen <- ""
@@ -713,7 +713,7 @@ select_possible_terms_size <- function(chosen, terms, size) {
   }
   full_valid_submodels <- unique(unlist(lapply(valid_submodels, function(x)
     to_character_rhs(flatten_formula(make_formula(
-      paste(add_chosen, x, remove_chosen)))))))
+      paste(x, add_chosen, remove_chosen)))))))
   return(full_valid_submodels)
 }
 
