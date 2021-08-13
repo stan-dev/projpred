@@ -352,9 +352,12 @@ refmodel_tester <- function(refmod,
 #   draws are created automatically).
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
+# @param wobs_expected The expected numeric vector of observation weights.
 # @param from_vsel_L1_search A single logical value indicating whether
 #   `sub_fit_obj` comes from the L1 `search_path` of an object of class `"vsel"`
 #   (`TRUE`) or not (`FALSE`).
+# @param with_offs A single logical value indicating whether `sub_fit_obj` is
+#   expected to include offsets (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -364,7 +367,9 @@ sub_fit_tester <- function(sub_fit_obj,
                            sub_formul,
                            sub_data,
                            sub_fam,
+                           wobs_expected = wobs_tst,
                            from_vsel_L1_search = FALSE,
+                           with_offs = FALSE,
                            info_str) {
   if (nprjdraws_expected > 1) {
     expect_type(sub_fit_obj, "list")
@@ -373,6 +378,11 @@ sub_fit_tester <- function(sub_fit_obj,
   } else {
     sub_fit_totest <- list(sub_fit_obj)
   }
+
+  seq_extensive_tests <- unique(round(
+    seq(1, length(sub_fit_totest),
+        length.out = min(length(sub_fit_totest), nclusters_pred_tst))
+  ))
 
   if (!is.list(sub_formul)) sub_formul <- list(sub_formul)
   has_grp <- formula_contains_group_terms(sub_formul[[1]])
@@ -413,10 +423,6 @@ sub_fit_tester <- function(sub_fit_obj,
     if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
-    seq_extensive_tests <- unique(round(
-      seq(1, length(sub_fit_totest),
-          length.out = min(length(sub_fit_totest), nclusters_pred_tst))
-    ))
     for (j in seq_along(sub_fit_totest)) {
       expect_s3_class(sub_fit_totest[[!!j]], "subfit")
       expect_type(sub_fit_totest[[!!j]], "list")
@@ -486,12 +492,122 @@ sub_fit_tester <- function(sub_fit_obj,
     if (sub_fam == "gaussian") {
       for (j in seq_along(sub_fit_totest)) {
         expect_s4_class(sub_fit_totest[[!!j]], "lmerMod")
-        # TODO: Add more expectations here.
       }
     } else {
       for (j in seq_along(sub_fit_totest)) {
         expect_s4_class(sub_fit_totest[[!!j]], "glmerMod")
-        # TODO: Add more expectations here.
+      }
+    }
+
+    sub_trms_for_mf <- labels(terms(sub_formul[[1]]))
+    sub_trms_for_mf <- sub(
+      "^[[:blank:]]*(.*)[[:blank:]]*\\|[[:blank:]]*(.*)[[:blank:]]*$",
+      "\\1 + \\2",
+      sub_trms_for_mf
+    )
+    sub_trms_for_mf <- unique(sub_trms_for_mf)
+    sub_formul_for_mf <- as.formula(paste(
+      "~", paste(sub_trms_for_mf, collapse = " + ")
+    ))
+    sub_mf_expected <- model.frame(sub_formul_for_mf, data = sub_data)
+
+    sub_formul_for_mm <- grep("\\|", labels(terms(sub_formul[[1]])),
+                              value = TRUE, invert = TRUE)
+    if (length(sub_formul_for_mm) == 0) {
+      sub_formul_for_mm <- "1"
+    }
+    sub_formul_for_mm <- as.formula(paste(
+      "~", paste(sub_formul_for_mm, collapse = " + ")
+    ))
+    mm_expected <- model.matrix(sub_formul_for_mm, data = sub_mf_expected)
+    attr(mm_expected, "msgScaleX") <- character()
+
+    for (j in seq_extensive_tests) {
+      # formula
+      if (!with_offs) {
+        sub_formul_expected <- flatten_formula(sub_formul[[j]])
+      } else {
+        sub_formul_expected <- sub_formul[[j]]
+      }
+      expect_equal(sub_fit_totest[[!!j]]@call[["formula"]],
+                   sub_formul_expected,
+                   info = info_str)
+
+      # resp
+      if (!with_offs) {
+        offs_expected <- numeric(nobsv)
+      } else {
+        offs_expected <- offs_tst
+      }
+      expect_identical(sub_fit_totest[[!!j]]@resp$offset,
+                       offs_expected,
+                       info = info_str)
+      expect_equal(sub_fit_totest[[!!j]]@resp$weights,
+                   wobs_expected,
+                   info = info_str)
+      expect_equal(sub_fit_totest[[!!j]]@resp$y,
+                   eval(str2lang(as.character(sub_formul[[!!j]])[2]),
+                        sub_data),
+                   info = info_str)
+
+      # frame
+      expect_identical(sub_fit_totest[[!!j]]@frame,
+                       model.frame(sub_fit_totest[[!!j]]),
+                       info = info_str)
+      expect_equal(
+        sub_fit_totest[[!!j]]@frame[[
+          grep("y_|ybinprop", names(sub_fit_totest[[!!j]]@frame), value = TRUE)
+        ]],
+        sub_fit_totest[[!!j]]@resp$y,
+        info = info_str
+      )
+      expect_equal(sub_fit_totest[[!!j]]@frame$`(weights)`,
+                   sub_fit_totest[[!!j]]@resp$weights,
+                   info = info_str)
+      if (with_offs) {
+        expect_equal(sub_fit_totest[[!!j]]@frame$`offset(offs_col)`,
+                     offs_expected,
+                     info = info_str)
+      }
+      frame_nms <- grep("y_|ybinprop|^\\(weights\\)$|^offset\\(.*\\)$",
+                        names(sub_fit_totest[[j]]@frame),
+                        value = TRUE,
+                        invert = TRUE)
+      expect_setequal(frame_nms, names(sub_mf_expected))
+      expect_equal(
+        sub_fit_totest[[!!j]]@frame[frame_nms],
+        sub_mf_expected[frame_nms],
+        info = info_str
+      )
+
+      # model.matrix()
+      expect_identical(model.matrix(sub_fit_totest[[!!j]]), mm_expected,
+                       info = info_str)
+
+      # flist
+      expect_type(sub_fit_totest[[!!j]]@flist, "list")
+      expect_length(sub_fit_totest[[!!j]]@flist, length(nlvl_ran))
+      z_nms <- intersect(names(sub_fit_totest[[j]]@flist),
+                         names(sub_fit_totest[[j]]@frame))
+      expect_identical(sub_fit_totest[[!!j]]@flist[z_nms],
+                       as.list(sub_fit_totest[[!!j]]@frame[z_nms]),
+                       info = info_str)
+
+      # nobs()
+      expect_identical(nobs(sub_fit_totest[[!!j]]), nobsv, info = info_str)
+
+      # coef()
+      coefs_crr <- coef(sub_fit_totest[[!!j]])
+      expect_type(coefs_crr, "list")
+      expect_length(coefs_crr, length(nlvl_ran))
+      for (zz in seq_len(length(nlvl_ran))) {
+        expect_true(is.data.frame(coefs_crr[[zz]]),
+                    info = paste(info_str, j, zz, sep = "__"))
+        expect_identical(nrow(coefs_crr[[zz]]),
+                         unname(nlvl_ran[zz]),
+                         info = paste(info_str, j, zz, sep = "__"))
+        expect_true(all(sapply(coefs_crr[[zz]], is.numeric)),
+                    info = paste(info_str, j, zz, sep = "__"))
       }
     }
   } else if (has_add) {
@@ -618,6 +734,7 @@ projection_tester <- function(p,
                  sub_formul = sub_formul_crr,
                  sub_data = sub_data_crr,
                  sub_fam = p$family$family,
+                 wobs_expected = p$refmodel$wobs,
                  from_vsel_L1_search = from_vsel_L1_search,
                  info_str = info_str)
 
@@ -909,6 +1026,7 @@ vsel_tester <- function(
       sub_formul = sub_formul_crr,
       sub_data = sub_data_crr,
       sub_fam = vs$family$family,
+      wobs_expected = vs$refmodel$wobs,
       from_vsel_L1_search = from_vsel_L1_search,
       info_str = paste(info_str, i, sep = "__")
     )

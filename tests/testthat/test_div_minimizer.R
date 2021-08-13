@@ -42,6 +42,7 @@ test_that("all div_minimizer()s work", {
                    sub_formul = args_fit_i$formula,
                    sub_data = eval(args_fit_i$data),
                    sub_fam = eval(args_fit_i$family)$family,
+                   with_offs = TRUE,
                    info_str = tstsetup)
   }
 })
