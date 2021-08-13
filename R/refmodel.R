@@ -345,7 +345,8 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
       is.null(attr(terms(object$formula), "offset"))) {
     # In this case, we would have to use argument `offset` of
     # posterior_linpred.stanreg() to allow for new offsets, requiring changes in
-    # all ref_predfun() calls. Thus, throw an error:
+    # all ref_predfun() calls. Furthermore, there is rstanarm issue #541. Thus,
+    # throw an error:
     stop("It looks like `object` was fitted with offsets specified via ",
          "argument `offset`. Currently, projpred does not support offsets ",
          "specified this way. Please use an `offset()` term in the model ",
@@ -450,8 +451,10 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
            "the package maintainer.")
     }
     # Since posterior_linpred() is supposed to include the offsets in its
-    # result, subtract them here (and use a workaround for rstanarm issue #541
-    # and rstanarm issue #542):
+    # result, subtract them here and use a workaround for rstanarm issue #541
+    # and rstanarm issue #542. This workaround consists of using `cond_no_offs`
+    # which indicates whether posterior_linpred() excluded (`TRUE`) or included
+    # (`FALSE`) the offsets:
     cond_no_offs <- (
       fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
         !is.null(attr(terms(fit$formula), "offset"))
