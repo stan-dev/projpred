@@ -81,66 +81,63 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   }
 })
 
-### TODO: Clarify why this fails in the presence of (large, i.e. `sd = 1`)
-### offsets:
-# test_that("`d_test` works", {
-#   skip_if_not(run_vs)
-#   tstsetups <- names(vss)
-#   ### Alternative with less test setups:
-#   # tstsetups <- grep("^glm\\.", names(vss), value = TRUE)
-#   ###
-#   for (tstsetup in tstsetups) {
-#     args_vs_i <- args_vs[[tstsetup]]
-#     tstsetup_ref <- args_vs_i$tstsetup_ref
-#     mod_crr <- args_vs_i$mod_nm
-#     fam_crr <- args_vs_i$fam_nm
-#     refmod_crr <- refmods[[tstsetup_ref]]
-#     d_test_crr <- list(
-#       y = refmod_crr$y,
-#       test_points = seq_along(refmod_crr$y),
-#       data = refmod_crr$fit$data,
-#       weights = refmod_crr$wobs,
-#       type = "test",
-#       offset = refmod_crr$offset
-#     )
-#     # We expect a warning which in fact should be suppressed, though (see
-#     # issue #162):
-#     warn_expected <- if (mod_crr == "glm") {
-#       paste("^'offset' argument is NULL but it looks like you estimated the",
-#             "model using an offset term\\.$")
-#     } else {
-#       NA
-#     }
-#     expect_warning(
-#       vs_repr <- do.call(varsel, c(
-#         list(object = refmod_crr, d_test = d_test_crr),
-#         excl_nonargs(args_vs_i)
-#       )),
-#       warn_expected,
-#       info = tstsetup
-#     )
-#     meth_exp_crr <- args_vs_i$method
-#     if (is.null(meth_exp_crr)) {
-#       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
-#     }
-#     vsel_tester(
-#       vs_repr,
-#       refmod_expected = refmod_crr,
-#       dtest_expected = d_test_crr,
-#       solterms_len_expected = args_vs_i$nterms_max,
-#       method_expected = meth_exp_crr,
-#       nclusters_expected = args_vs_i$nclusters,
-#       nclusters_pred_expected = args_vs_i$nclusters_pred,
-#       info_str = tstsetup
-#     )
-#     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
-#     expect_equal(vs_repr[setdiff(names(vs_repr), vsel_nms_dtest)],
-#                  vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
-#                                          vsel_nms_dtest)],
-#                  info = tstsetup)
-#   }
-# })
-###
+test_that("`d_test` works", {
+  skip_if_not(run_vs)
+  tstsetups <- names(vss)
+  ### Alternative with less test setups:
+  # tstsetups <- grep("^glm\\.", names(vss), value = TRUE)
+  ###
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    tstsetup_ref <- args_vs_i$tstsetup_ref
+    mod_crr <- args_vs_i$mod_nm
+    fam_crr <- args_vs_i$fam_nm
+    refmod_crr <- refmods[[tstsetup_ref]]
+    d_test_crr <- list(
+      y = refmod_crr$y,
+      test_points = seq_along(refmod_crr$y),
+      data = refmod_crr$fit$data,
+      weights = refmod_crr$wobs,
+      type = "test",
+      offset = refmod_crr$offset
+    )
+    # We expect a warning which in fact should be suppressed, though (see
+    # issue #162):
+    warn_expected <- if (mod_crr == "glm") {
+      paste("^'offset' argument is NULL but it looks like you estimated the",
+            "model using an offset term\\.$")
+    } else {
+      NA
+    }
+    expect_warning(
+      vs_repr <- do.call(varsel, c(
+        list(object = refmod_crr, d_test = d_test_crr),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected,
+      info = tstsetup
+    )
+    meth_exp_crr <- args_vs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
+    vsel_tester(
+      vs_repr,
+      refmod_expected = refmod_crr,
+      dtest_expected = d_test_crr,
+      solterms_len_expected = args_vs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      nclusters_expected = args_vs_i$nclusters,
+      nclusters_pred_expected = args_vs_i$nclusters_pred,
+      info_str = tstsetup
+    )
+    expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
+    expect_equal(vs_repr[setdiff(names(vs_repr), vsel_nms_dtest)],
+                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
+                                         vsel_nms_dtest)],
+                 info = tstsetup)
+  }
+})
 
 ## Regularization ---------------------------------------------------------
 
@@ -179,13 +176,6 @@ test_that(paste(
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
-  ### TODO: Clarify why this fails in the presence of (large, i.e. `sd = 1`)
-  ### offsets (may be related to issue #169):
-  tstsetups <- setdiff(
-    tstsetups,
-    "glm.binom.stdformul.without_wobs.with_offs.default_meth"
-  )
-  ###
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -348,7 +338,7 @@ test_that(paste(
         }
       }
     }
-    sum_as_unexpected <- 4L # TODO: Clarify why we need to set this > 0 in the presence of offsets.
+    sum_as_unexpected <- 0L
     expect_true(sum(!ssq_regul_sel_beta_cond) <= sum_as_unexpected,
                 info = tstsetup)
     # Prediction:
@@ -711,7 +701,7 @@ test_that("`validate_search` works", {
         cvvss[[tstsetup]]$suggested_size
     }
   }
-  sum_as_unexpected <- 2L # TODO: Clarify why we need to set this > 0 in the presence of offsets.
+  sum_as_unexpected <- 0L
   expect_true(sum(!suggsize_cond) <= sum_as_unexpected)
 })
 

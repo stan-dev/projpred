@@ -29,9 +29,10 @@ test_that("`object` of class \"stanreg\" works", {
 
 test_that("missing `data` fails", {
   SW(fit_nodata <- rstanarm::stan_glm(
-    dat$y_glm_gauss ~ dat$xco.1 + dat$xco.2 + dat$xco.3 + dat$xca.1 + dat$xca.2,
+    dat$y_glm_gauss ~ dat$xco.1 + dat$xco.2 + dat$xco.3 +
+      dat$xca.1 + dat$xca.2 + offset(dat$offs_col),
     family = f_gauss,
-    weights = dat$wobs_col, offset = dat$offs_col,
+    weights = dat$wobs_col,
     chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
   ))
   expect_error(get_refmodel(fit_nodata),

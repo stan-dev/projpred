@@ -187,12 +187,6 @@ refmodel_tester <- function(refmod,
                         colnames(mm_cont)))
     mu_expected <- cbind(drws_icpt, drws_beta_cont) %*% t(mm_cont)
     mu_expected <- unname(mu_expected)
-    ### TODO: Because of rstanarm issue #542:
-    if (!has_grp) {
-      mu_expected <- mu_expected +
-        matrix(offs_expected, nrow = nrow(drws), ncol = nobsv, byrow = TRUE)
-    }
-    ###
     cate_post <- lapply(names(x_cate_list), function(x_cate_idx) {
       sapply(x_cate_list[[x_cate_idx]]$x_cate, function(lvl_obs_i) {
         if (lvl_obs_i != "lvl1") {
@@ -671,7 +665,7 @@ projection_tester <- function(p,
 proj_list_tester <- function(p,
                              len_expected = nterms_max_tst + 1L,
                              is_seq = TRUE,
-                             extra_tol = 1.2, # TODO: Clarify why we need `extra_tol > 1` in the presence of (large, i.e. `sd = 1`) offsets (but for at least one `"datafit"`, we also need `extra_tol > 1` for small, i.e. `sd = 1e-10`, offsets).
+                             extra_tol = 1,
                              info_str = "",
                              ...) {
   expect_type(p, "list")
@@ -829,7 +823,7 @@ vsel_tester <- function(
   nclusters_pred_expected = NULL,
   seed_expected = seed_tst,
   nloo_expected = NULL,
-  extra_tol = 1.2, # TODO: Clarify why we need `extra_tol > 1` in the presence of (large, i.e. `sd = 1`) offsets.
+  extra_tol = 1,
   info_str = ""
 ) {
   # Preparations:
