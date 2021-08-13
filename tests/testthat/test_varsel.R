@@ -216,9 +216,10 @@ test_that(paste(
       # intercept) for increasing `regul`:
       for (m in seq_len(m_max)) {
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
-        # `$summaries$sub[[m]]$mu` here (instead of the coefficients themselves,
-        # which would only be accessible from `p_sub`):
-        mu_jm_regul <- vs_regul$summaries$sub[[m]]$mu - offs_tst
+        # here (instead of the coefficients themselves, which would only be
+        # accessible from `p_sub`):
+        mu_jm_regul <- vs_regul$family$linkfun(vs_regul$summaries$sub[[m]]$mu) -
+          offs_tst
         # In fact, `sum((mu - offset - intercept)^2)` would make more sense than
         # `var(mu - offset) = sum((mu - offset - mean(mu - offset))^2)` but
         # since varsel() doesn't output object `p_sub`, the intercept from the
@@ -299,9 +300,10 @@ test_that(paste(
         }
         # Prediction:
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
-        # `$summaries$sub[[m]]$mu` here (instead of the coefficients themselves,
-        # which would only be accessible from `p_sub`):
-        mu_jm_regul <- vs_regul$summaries$sub[[m]]$mu - offs_tst
+        # here (instead of the coefficients themselves, which would only be
+        # accessible from `p_sub`):
+        mu_jm_regul <- vs_regul$family$linkfun(vs_regul$summaries$sub[[m]]$mu) -
+          offs_tst
         # In fact, `sum((mu - offset - intercept)^2)` would make more sense than
         # `var(mu - offset) = sum((mu - offset - mean(mu - offset))^2)` but
         # since varsel() doesn't output object `p_sub`, the intercept from the
