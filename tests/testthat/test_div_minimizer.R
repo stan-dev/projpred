@@ -30,6 +30,7 @@ test_that("all div_minimizer()s work", {
         args_fit_i$formula,
         as.formula(paste(ybinprop_nm, "~ ."))
       )
+      args_fit_i$weights <- wobs_tst
     }
 
     divmin <- do.call(divmin_fun, c(
