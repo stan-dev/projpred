@@ -593,9 +593,6 @@ sub_fit_tester <- function(sub_fit_obj,
                        as.list(sub_fit_totest[[!!j]]@frame[z_nms]),
                        info = info_str)
 
-      # nobs()
-      expect_identical(nobs(sub_fit_totest[[!!j]]), nobsv, info = info_str)
-
       # coef()
       coefs_crr <- coef(sub_fit_totest[[!!j]])
       expect_type(coefs_crr, "list")
