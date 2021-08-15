@@ -353,9 +353,9 @@ refmodel_tester <- function(refmod,
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
 # @param wobs_expected The expected numeric vector of observation weights.
-# @param from_vsel_L1_search A single logical value indicating whether
-#   `sub_fit_obj` comes from the L1 `search_path` of an object of class `"vsel"`
-#   (`TRUE`) or not (`FALSE`).
+# @param ref_formul The formula of the reference model . Should only be needed
+#   if `sub_fit_obj` comes from the L1 `search_path` of an object of class
+#   `"vsel"`. Otherwise, use `NULL`.
 # @param with_offs A single logical value indicating whether `sub_fit_obj` is
 #   expected to include offsets (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
@@ -368,7 +368,7 @@ sub_fit_tester <- function(sub_fit_obj,
                            sub_data,
                            sub_fam,
                            wobs_expected = wobs_tst,
-                           from_vsel_L1_search = FALSE,
+                           ref_formul = NULL,
                            with_offs = FALSE,
                            info_str) {
   if (nprjdraws_expected > 1) {
@@ -378,6 +378,8 @@ sub_fit_tester <- function(sub_fit_obj,
   } else {
     sub_fit_totest <- list(sub_fit_obj)
   }
+
+  from_vsel_L1_search <- !is.null(ref_formul)
 
   seq_extensive_tests <- unique(round(
     seq(1, length(sub_fit_totest),
@@ -402,9 +404,19 @@ sub_fit_tester <- function(sub_fit_obj,
       #   data = sub_data
       # )) - 1L
       ###
-      if (any(grepl("xca\\.", sub_trms))) {
+    } else {
+      ncoefs <- 0L
+    }
+    if (!from_vsel_L1_search) {
+      formul_for_mm <- sub_formul[[1]]
+    } else {
+      formul_for_mm <- ref_formul
+    }
+    sub_trms_for_mm <- labels(terms(formul_for_mm))
+    if (length(sub_trms_for_mm) > 0) {
+      if (any(grepl("xca\\.", sub_trms_for_mm))) {
         sub_contr <- lapply(
-          setNames(nm = grep("xca\\.", sub_trms, value = TRUE)),
+          setNames(nm = grep("xca\\.", sub_trms_for_mm, value = TRUE)),
           function(x_nm) {
             contrasts(get(x_nm, envir = as.environment(sub_data)),
                       contrasts = FALSE)
@@ -414,10 +426,9 @@ sub_fit_tester <- function(sub_fit_obj,
         sub_contr <- NULL
       }
     } else {
-      ncoefs <- 0L
       sub_contr <- NULL
     }
-    sub_x_expected <- model.matrix(update(sub_formul[[1]], NULL ~ . + 0),
+    sub_x_expected <- model.matrix(update(formul_for_mm, NULL ~ . + 0),
                                    data = sub_data,
                                    contrasts.arg = sub_contr)
     if (from_vsel_L1_search) {
@@ -468,17 +479,8 @@ sub_fit_tester <- function(sub_fit_obj,
                        info = info_str)
         }
 
-        if (!from_vsel_L1_search) {
-          expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
-                           info = info_str)
-        } else {
-          expect_true(is.matrix(sub_fit_totest[[!!j]]$x), info = info_str)
-          expect_type(sub_fit_totest[[!!j]]$x, "double")
-          expect_identical(nrow(sub_fit_totest[[!!j]]$x), nobsv,
-                           info = info_str)
-          expect_gte(ncol(sub_fit_totest[[!!j]]$x), ncol(sub_x_expected))
-          # TODO: Perhaps check the content of `x` here, too.
-        }
+        expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
+                         info = info_str)
 
         if (!from_vsel_L1_search) {
           y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
@@ -701,8 +703,10 @@ projection_tester <- function(p,
   }
   if (!from_vsel_L1_search) {
     y_nm <- as.character(p$refmodel$formula)[2]
+    ref_formul_crr <- NULL
   } else {
     y_nm <- ""
+    ref_formul_crr <- p$refmodel$formula
   }
   y_nms <- paste0(".", y_nm)
   if (nprjdraws_expected > 1) {
@@ -732,7 +736,7 @@ projection_tester <- function(p,
                  sub_data = sub_data_crr,
                  sub_fam = p$family$family,
                  wobs_expected = p$refmodel$wobs,
-                 from_vsel_L1_search = from_vsel_L1_search,
+                 ref_formul = ref_formul_crr,
                  info_str = info_str)
 
   # dis
@@ -994,8 +998,10 @@ vsel_tester <- function(
   nprjdraws_expected <- ncol(clust_ref$mu)
   if (!from_vsel_L1_search) {
     y_nm <- as.character(vs$refmodel$formula)[2]
+    ref_formul_crr <- NULL
   } else {
     y_nm <- ""
+    ref_formul_crr <- vs$refmodel$formula
   }
   y_nms <- paste0(".", y_nm)
   if (nprjdraws_expected > 1) {
@@ -1024,7 +1030,7 @@ vsel_tester <- function(
       sub_data = sub_data_crr,
       sub_fam = vs$family$family,
       wobs_expected = vs$refmodel$wobs,
-      from_vsel_L1_search = from_vsel_L1_search,
+      ref_formul = ref_formul_crr,
       info_str = paste(info_str, i, sep = "__")
     )
   }
