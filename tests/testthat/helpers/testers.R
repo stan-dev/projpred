@@ -665,7 +665,7 @@ projection_tester <- function(p,
 proj_list_tester <- function(p,
                              len_expected = nterms_max_tst + 1L,
                              is_seq = TRUE,
-                             extra_tol = 1.05,
+                             extra_tol = 1.01,
                              info_str = "",
                              ...) {
   expect_type(p, "list")
@@ -823,7 +823,7 @@ vsel_tester <- function(
   nclusters_pred_expected = NULL,
   seed_expected = seed_tst,
   nloo_expected = NULL,
-  extra_tol = 1.05,
+  extra_tol = 1.01,
   info_str = ""
 ) {
   # Preparations:
