@@ -34,7 +34,8 @@ test_that("all div_minimizer()s work", {
     }
 
     divmin <- do.call(divmin_fun, c(
-      args_fit_i[c("formula", "data", "family", "weights")],
+      args_fit_i[intersect(names(args_fit_i),
+                           c("formula", "data", "family", "weights"))],
       list(regul = regul_default, var = var_crr)
     ))
 
