@@ -223,21 +223,25 @@ nterms_gamm <- nterms_glmm + 2L * nterms_s
 ## Combined dataset -------------------------------------------------------
 
 f_gauss <- gaussian()
-f_binom <- binomial()
+f_binom <- f_brnll <- binomial()
 f_poiss <- poisson()
 dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, nobsv, replace = TRUE)
 dat <- data.frame(
   y_glm_gauss = rnorm(nobsv, f_gauss$linkinv(eta_glm), dis_tst),
+  y_glm_brnll = rbinom(nobsv, 1, f_brnll$linkinv(eta_glm)),
   y_glm_binom = rbinom(nobsv, wobs_tst, f_binom$linkinv(eta_glm)),
   y_glm_poiss = rpois(nobsv, f_poiss$linkinv(eta_glm)),
   y_glmm_gauss = rnorm(nobsv, f_gauss$linkinv(eta_glmm), dis_tst),
+  y_glmm_brnll = rbinom(nobsv, 1, f_brnll$linkinv(eta_glmm)),
   y_glmm_binom = rbinom(nobsv, wobs_tst, f_binom$linkinv(eta_glmm)),
   y_glmm_poiss = rpois(nobsv, f_poiss$linkinv(eta_glmm)),
   y_gam_gauss = rnorm(nobsv, f_gauss$linkinv(eta_gam), dis_tst),
+  y_gam_brnll = rbinom(nobsv, 1, f_brnll$linkinv(eta_gam)),
   y_gam_binom = rbinom(nobsv, wobs_tst, f_binom$linkinv(eta_gam)),
   y_gam_poiss = rpois(nobsv, f_poiss$linkinv(eta_gam)),
   y_gamm_gauss = rnorm(nobsv, f_gauss$linkinv(eta_gamm), dis_tst),
+  y_gamm_brnll = rbinom(nobsv, 1, f_brnll$linkinv(eta_gamm)),
   y_gamm_binom = rbinom(nobsv, wobs_tst, f_binom$linkinv(eta_gamm)),
   y_gamm_poiss = rpois(nobsv, f_poiss$linkinv(eta_gamm)),
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
@@ -405,6 +409,8 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
       ))
       if (fam_nm == "binom") {
         # Here, the weights are specified in the formula via the cbind() syntax:
+        wobss_tst <- wobss_tst["without_wobs"]
+      } else if (fam_nm == "brnll") {
         wobss_tst <- wobss_tst["without_wobs"]
       } else if (run_cvvs_kfold && mod_nm == "glm" && fam_nm == "gauss" &&
                  formul_nm != "spclformul") {
@@ -747,6 +753,7 @@ cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
     add_stats <- switch(mod_crr,
                         "glm" = switch(fam_crr,
                                        "gauss" = "gauss_stats",
+                                       "brnll" = "binom_stats",
                                        "binom" = "binom_stats",
                                        "common_stats"),
                         character())

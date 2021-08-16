@@ -691,15 +691,17 @@ test_that("`weightsnew` works", {
               nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
               info_str = tstsetup)
     # Weights are only relevant for the binomial() family:
-    if (args_prj[[tstsetup]]$fam_nm != "binom") {
+    if (!args_prj[[tstsetup]]$fam_nm %in% c("brnll", "binom")) {
       expect_equal(pp_ones, pp_orig, info = tstsetup)
       expect_equal(pp, pp_orig, info = tstsetup)
       expect_equal(ppw, pp_orig, info = tstsetup)
     } else {
-      ### Note: This equivalence might in fact be undesired:
+      ### Note: For the binomial family with > 1 trials, this equivalence might
+      ### in fact be undesired:
       expect_equal(pp_ones, pp_orig, info = tstsetup)
       ###
-      ### Note: This inequality might in fact be undesired:
+      ### Note: For the binomial family with > 1 trials, this inequality might
+      ### in fact be undesired:
       expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
       ###
       expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)

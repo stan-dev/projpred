@@ -138,7 +138,7 @@ test_that(paste(
     # Checks without `ynew`:
     expect_true(is.vector(predref_resp, "double"), info = tstsetup)
     expect_length(predref_resp, nobsv)
-    if (fam_crr == "binom") {
+    if (fam_crr %in% c("brnll", "binom")) {
       expect_true(all(predref_resp >= 0 & predref_resp <= 1),
                   info = tstsetup)
     }

@@ -54,9 +54,8 @@ extfam_tester <- function(extfam,
 #
 # @param refmod An object of class `"refmodel"` (at least expected so).
 # @param fit_expected The expected `refmod$fit` object.
-# @param formul_expected The expected `refmod$formula` object. For the binomial
-#   family, the left-hand side is expected to be of the form
-#   `cbind(y, n_trials - y)` (further modifications are made internally).
+# @param formul_expected The expected `refmod$formula` object. A `cbind()`
+#   expression on the left-hand side of the formula is handled automatically.
 # @param data_expected The original dataset used for the reference model fit or
 #   as input to get_refmodel() or init_refmodel(). Internal changes (i.e.,
 #   inside of projpred) of this dataset are performed automatically.
@@ -133,9 +132,9 @@ refmodel_tester <- function(refmod,
   # In the reference model, the offset() term is placed last:
   formul_expected <- update(formul_expected,
                             . ~ . - offset(offs_col) + offset(offs_col))
-  if (refmod$family$family == "binomial") {
-    formul_expected_chr <- as.character(formul_expected)
-    stopifnot(length(formul_expected_chr) == 3)
+  formul_expected_chr <- as.character(formul_expected)
+  stopifnot(length(formul_expected_chr) == 3)
+  if (grepl("^cbind\\(.*,.*\\)$", formul_expected_chr[2])) {
     y_expected_chr <- sub("^cbind\\(", "", formul_expected_chr[2])
     y_expected_chr <- sub(",.*\\)$", "", y_expected_chr)
     formul_expected <- as.formula(paste(
@@ -251,11 +250,19 @@ refmodel_tester <- function(refmod,
   } else if (has_grp && has_add) {
     mod_nm <- "gamm"
   }
-  fam_nm <- switch(refmod$family$family,
-                   "gaussian" = "gauss",
-                   "binomial" = "binom",
-                   "poisson" = "poiss",
-                   stop("Unexpected `refmod$family$family`."))
+  if (refmod$family$family == "gaussian") {
+    fam_nm <- "gauss"
+  } else if (refmod$family$family == "binomial") {
+    if (all(refmod$wobs == 1)) {
+      fam_nm <- "brnll"
+    } else {
+      fam_nm <- "binom"
+    }
+  } else if (refmod$family$family == "poisson") {
+    fam_nm <- "poiss"
+  } else {
+    stop("Unexpected `refmod$family$family`.")
+  }
   if (!needs_y_overwrite) {
     expect_identical(refmod$y, dat[[paste("y", mod_nm, fam_nm, sep = "_")]],
                      info = info_str)
@@ -286,11 +293,11 @@ refmodel_tester <- function(refmod,
 
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
-  if (!is_datafit || (is_datafit && refmod$family$family != "binomial")) {
+  if (!is_datafit || (is_datafit && fam_nm != "binom")) {
     expect_identical(refmod$fetch_data(), data_expected, info = info_str)
   } else {
     refdat_ch <- data_expected
-    y_nm <- paste0("y_", mod_nm, "_binom")
+    y_nm <- paste("y", mod_nm, fam_nm, sep = "_")
     refdat_ch$dummy_nm <- refdat_ch$wobs_col - refdat_ch[, y_nm]
     names(refdat_ch)[names(refdat_ch) == "dummy_nm"] <- paste("wobs_col -",
                                                               y_nm)

@@ -60,6 +60,9 @@ SW(datafits <- lapply(args_datafit, function(args_datafit_i) {
     if (is.null(newdata)) {
       newdata <- dat
     }
+    if (args_datafit_i$fam_nm == "brnll") {
+      newdata$wobs_col <- 1
+    }
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do.call(.extrmoddat_datafit, args))
   }

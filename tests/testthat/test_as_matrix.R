@@ -37,7 +37,7 @@ test_that("as.matrix.projection() works", {
 
     if (fam_crr == "gauss") {
       npars_fam <- "sigma"
-    } else if (fam_crr == "binom") {
+    } else {
       npars_fam <- character()
     }
 
