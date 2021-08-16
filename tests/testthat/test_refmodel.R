@@ -52,6 +52,20 @@ test_that("`formula` as a character string fails", {
                "^inherits\\(formula, \"formula\"\\) is not TRUE$")
 })
 
+test_that("offsets specified via argument `offset` fail", {
+  SW(fit_offs_arg <- rstanarm::stan_glm(
+    y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
+    family = f_gauss, data = dat,
+    weights = wobs_tst, offset = offs_tst,
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+  ))
+  expect_error(
+    get_refmodel(fit_offs_arg),
+    paste("^It looks like `object` was fitted with offsets specified via",
+          "argument `offset`\\.")
+  )
+})
+
 test_that("get_refmodel() is idempotent", {
   for (tstsetup in names(refmods)) {
     expect_identical(get_refmodel(refmods[[tstsetup]]),
