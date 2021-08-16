@@ -410,30 +410,32 @@ test_that("for L1 search, `penalty` has an expected effect", {
                        grep("^glm\\..*\\.forward", names(vss), value = TRUE))
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    if (any(grepl("\\*|:",
-                  labels(terms(refmods[[args_vs_i$tstsetup_ref]]$formula))))) {
-      # `penalty` does not seem to work in case of interactions, so skip:
-      next
-    }
 
     penal_possbl <- get_penal_possbl(fits[[args_vs_i$tstsetup_fit]]$formula)
     len_penal <- length(penal_possbl)
     penal_crr <- rep(1, len_penal)
-    stopifnot(len_penal >= 5)
+    stopifnot(len_penal >= 3)
     idx_penal_0 <- c(1, 2) # A few variables without cost.
     idx_penal_Inf <- c(3) # One variable with infinite penalty.
     penal_crr[idx_penal_0] <- 0
     penal_crr[idx_penal_Inf] <- Inf
+    # Note: This test probably needs to be adopted properly to categorical
+    # predictors. As a workaround, perform the following check:
+    stopifnot(all(grep("^xca\\.", penal_possbl) >= max(c(idx_penal_0,
+                                                         idx_penal_Inf))))
 
     vs_penal <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]],
            penalty = penal_crr),
-      excl_nonargs(args_vs_i)
+      excl_nonargs(args_vs_i, nms_excl_add = "nterms_max")
     ))
+    nterms_max_crr <- count_terms_in_formula(
+      fits[[args_vs_i$tstsetup_fit]]$formula
+    ) - 1L
     vsel_tester(
       vs_penal,
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
-      solterms_len_expected = args_vs_i$nterms_max,
+      solterms_len_expected = nterms_max_crr,
       method_expected = "L1",
       nclusters_expected = args_vs_i$nclusters,
       nclusters_pred_expected = args_vs_i$nclusters_pred,
@@ -441,17 +443,12 @@ test_that("for L1 search, `penalty` has an expected effect", {
     )
     # Check that the variables with no cost are selected first and the ones
     # with infinite penalty last:
-    solterms_orig <- labels(terms(refmods[[args_vs_i$tstsetup_ref]]$formula))
     solterms_penal <- vs_penal$solution_terms
-    # Note: This test probably needs to be adopted properly to categorical
-    # predictors.
-    stopifnot(all(grep("^xca\\.", solterms_orig) >= max(c(idx_penal_0,
-                                                          idx_penal_Inf))))
     expect_identical(solterms_penal[seq_along(idx_penal_0)],
-                     solterms_orig[idx_penal_0],
+                     penal_possbl[idx_penal_0],
                      info = tstsetup)
     expect_identical(rev(solterms_penal)[seq_along(idx_penal_Inf)],
-                     rev(solterms_orig[idx_penal_Inf]),
+                     rev(penal_possbl[idx_penal_Inf]),
                      info = tstsetup)
   }
 })
