@@ -682,7 +682,7 @@ test_that("`validate_search` works", {
     # included in the dataset for fitting the submodels):
     tol_crr <- 5e-2
     # Allow for just a small proportion of extreme differences:
-    prop_as_expected <- 0.925
+    prop_as_expected <- 0.9
     for (j in seq_along(cvvs_valsearch$summaries$sub)) {
       expect_true(mean(cvvs_valsearch$summaries$sub[[j]]$lppd >=
                          cvvss[[tstsetup]]$summaries$sub[[j]]$lppd - tol_crr) >=
