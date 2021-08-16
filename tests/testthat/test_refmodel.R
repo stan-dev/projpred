@@ -48,8 +48,8 @@ if (require(rstanarm)) {
 
   ## test_that('get_refmode checks for the absence of data', {
   ##   SW({
-  ##   fit_nodata <- stan_glm(df_gauss$y ~ x, family = f_gauss, QR = TRUE,
-  ##                          weights = weights, offset = offset,
+  ##   fit_nodata <- stan_glm(df_gauss$y ~ x + offset(offset), family = f_gauss,
+  ##                          QR = TRUE, weights = weights,
   ##                          chains = chains, seed = seed, iter = iter)
   ##   })
   ##   expect_error(get_refmodel(fit_nodata),

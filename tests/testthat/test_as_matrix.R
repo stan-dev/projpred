@@ -130,15 +130,15 @@ if (require(rstanarm)) {
 
   SW({
     fit_gauss <- stan_glmer(
-      y ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr),
+      y ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr) + offset(offset),
       data = df_gauss, family = f_gauss,
-      weights = weights, offset = offset,
+      weights = weights,
       chains = chains, seed = seed, iter = iter
     )
     fit_binom <- stan_glmer(
-      cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr),
+      cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr) +
+        offset(offset),
       data = df_binom, family = f_binom,
-      offset = offset,
       chains = chains, seed = seed, iter = iter
     )
   })

@@ -28,9 +28,9 @@ if (require(rstanarm)) {
   df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
 
   SW({
-    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
+    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5 + offset(offset),
                           family = f_gauss, data = df_gauss, QR = TRUE,
-                          weights = weights, offset = offset,
+                          weights = weights,
                           chains = chains, seed = seed, iter = iter
     )
     fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
