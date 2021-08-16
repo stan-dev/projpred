@@ -340,6 +340,19 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
                                  folds = NULL, ...) {
   family <- family(object)
   family <- extend_family(family)
+
+  if (length(object$offset) > 0 &&
+      is.null(attr(terms(object$formula), "offset"))) {
+    # In this case, we would have to use argument `offset` of
+    # posterior_linpred.stanreg() to allow for new offsets, requiring changes in
+    # all ref_predfun() calls. Furthermore, there is rstanarm issue #541. Thus,
+    # throw an error:
+    stop("It looks like `object` was fitted with offsets specified via ",
+         "argument `offset`. Currently, projpred does not support offsets ",
+         "specified this way. Please use an `offset()` term in the model ",
+         "formula instead.")
+  }
+
   if (inherits(object, "gamm4")) {
     formula <- formula.gamm4(object)
   } else {
@@ -427,6 +440,36 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     dis <- NULL
   }
 
+  ref_predfun_stanreg <- function(fit, newdata = NULL) {
+    linpred_out <- t(
+      posterior_linpred(fit, transform = FALSE, newdata = newdata)
+    )
+    # Element `stan_function` is not documented in
+    # `?rstanarm::`stanreg-objects``, so check at least its length:
+    if (length(fit$stan_function) != 1) {
+      stop("Unexpected length of `<stanreg_fit>$stan_function`. Please notify ",
+           "the package maintainer.")
+    }
+    # Since posterior_linpred() is supposed to include the offsets in its
+    # result, subtract them here and use a workaround for rstanarm issue #541
+    # and rstanarm issue #542. This workaround consists of using `cond_no_offs`
+    # which indicates whether posterior_linpred() excluded (`TRUE`) or included
+    # (`FALSE`) the offsets:
+    cond_no_offs <- (
+      fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
+        !is.null(attr(terms(fit$formula), "offset"))
+    ) || (
+      fit$stan_function %in% c("stan_lm", "stan_glm") &&
+        !is.null(newdata) && length(fit$offset) > 0
+    )
+    if (!cond_no_offs) {
+      offs <- extract_model_data(fit, newdata = newdata)$offset
+      stopifnot(identical(nrow(linpred_out), length(offs)))
+      linpred_out <- linpred_out - offs
+    }
+    return(linpred_out)
+  }
+
   cvfun <- function(folds) {
     cvres <- rstanarm::kfold(object,
                              K = max(folds), save_fits = TRUE,
@@ -437,7 +480,7 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 
   refmodel <- init_refmodel(
     object, data, formula, family,
-    ref_predfun = ref_predfun, div_minimizer = div_minimizer,
+    ref_predfun = ref_predfun_stanreg, div_minimizer = div_minimizer,
     proj_predfun = proj_predfun, folds = folds,
     extract_model_data = extract_model_data, dis = dis,
     cvfun = cvfun, ...
@@ -458,7 +501,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   response_name <- terms$response
   if (is.null(ref_predfun)) {
     ref_predfun <- function(fit, newdata = NULL) {
-      t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
+      linpred_out <- t(
+        posterior_linpred(fit, transform = FALSE, newdata = newdata)
+      )
+      # Since posterior_linpred() is supposed to include the offsets in its
+      # result, subtract them here:
+      offs <- extract_model_data(fit, newdata = newdata)$offset
+      stopifnot(identical(nrow(linpred_out), length(offs)))
+      linpred_out <- linpred_out - offs
+      return(linpred_out)
     }
   }
 
