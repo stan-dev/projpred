@@ -169,11 +169,6 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     dat_crr <- get_dat(tstsetup)
     for (nobsv_crr in nobsv_tst) {
-      if (nobsv_crr <= 2 && grepl("\\.spclformul", tstsetup)) {
-        # Since the "special formula" contains polynomial terms of up to degree
-        # 2, we have to skip `nobsv_crr` values <= 2:
-        next
-      }
       pl_false <- proj_linpred(prjs[[tstsetup]],
                                newdata = head(dat_crr, nobsv_crr))
       pl_tester(pl_false,
@@ -627,11 +622,6 @@ test_that("invalid `newdata` fails", {
 test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
   for (tstsetup in names(prjs)) {
     for (nobsv_crr in nobsv_tst) {
-      if (nobsv_crr <= 2 && grepl("\\.spclformul", tstsetup)) {
-        # Since the "special formula" contains polynomial terms of up to degree
-        # 2, we have to skip `nobsv_crr` values <= 2:
-        next
-      }
       for (nresample_clusters_crr in nresample_clusters_tst) {
         pp <- proj_predict(prjs[[tstsetup]],
                            newdata = head(dat, nobsv_crr),
