@@ -116,6 +116,9 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     stop("Please provide an `object` of class \"vsel\" or use ",
          "`cv_search = TRUE`.")
   }
+  if (inherits(object, "datafit")) {
+    stop("project() does not support an `object` of class \"datafit\".")
+  }
 
   refmodel <- get_refmodel(object, ...)
 
