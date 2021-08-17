@@ -45,11 +45,17 @@ test_that("all div_minimizer()s work", {
       list(regul = regul_default, var = var_crr)
     ))
 
+    if (fam_crr == "binom" || grepl("\\.with_wobs", tstsetup)) {
+      wobs_expected_crr <- wobs_tst
+    } else {
+      wobs_expected_crr <- NULL
+    }
     sub_fit_tester(divmin,
                    nprjdraws_expected = 1L,
                    sub_formul = args_fit_i$formula,
                    sub_data = eval(args_fit_i$data),
                    sub_fam = eval(args_fit_i$family)$family,
+                   wobs_expected = wobs_expected_crr,
                    with_offs = TRUE,
                    info_str = tstsetup)
   }
