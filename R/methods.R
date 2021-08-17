@@ -1019,6 +1019,10 @@ t.list <- function(x, ...) {
 #' @keywords internal
 #' @export
 as.matrix.projection <- function(x, ...) {
+  if (inherits(x$refmodel, "datafit")) {
+    stop("as.matrix.projection() does not work for objects based on ",
+         "\"datafit\"s.")
+  }
   if (x$p_type) {
     warning(paste(
       "Note that projection was performed using",
