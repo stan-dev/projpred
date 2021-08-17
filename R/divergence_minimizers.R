@@ -133,24 +133,20 @@ fit_glmer_callback <- function(formula, data, family, weights,
   environment(formula) <- environment()
   suppressMessages(suppressWarnings(tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
-      return(lme4::lmer(formula,
-                        data = data, weights = weights,
+      return(lme4::lmer(formula, data = data, weights = weights,
                         control = control))
     } else {
-      return(lme4::glmer(formula,
-                         data = data, family = family, weights = weights,
-                         control = control))
+      return(lme4::glmer(formula, data = data, family = family,
+                         weights = weights, control = control))
     }
-  },
-  error = function(e) {
+  }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
-      return(fit_glm_ridge_callback(formula,
-                                    data = data, family = family,
-                                    weights = weights, ...))
+      return(fit_glm_ridge_callback(
+        formula, data = data, family = family, weights = weights, ...
+      ))
     } else if (grepl("not positive definite", as.character(e))) {
       return(fit_glmer_callback(
-        formula,
-        data = data, weights = weights, family = family,
+        formula, data = data, family = family, weights = weights,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb"))
@@ -158,8 +154,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
     } else if (grepl("PIRLS step-halvings", as.character(e))) {
       data <- preprocess_data(data, formula)
       return(fit_glmer_callback(
-        formula,
-        data = data, weights = weights, family = family
+        formula, data = data, family = family, weights = weights
       ))
     } else {
       stop(e)
