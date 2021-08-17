@@ -795,7 +795,7 @@ projection_tester <- function(p,
   sub_formul_crr_rhs <- as.formula(paste(
     "~", paste(sub_trms_crr, collapse = " + ")
   ))
-  if (!from_vsel_L1_search &&
+  if (!inherits(p$refmodel, "datafit") &&
       !(formula_contains_additive_terms(p$refmodel$formula) &&
         formula_contains_group_terms(sub_formul_crr_rhs))) {
     # Number of projected draws in as.matrix.projection() (note that more
