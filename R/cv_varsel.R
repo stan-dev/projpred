@@ -70,16 +70,19 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
-cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
-                               ndraws = 20, nclusters = NULL,
-                               ndraws_pred = 400, nclusters_pred = NULL,
-                               cv_search = !inherits(object, "datafit"),
-                               nterms_max = NULL, penalty = NULL,
-                               verbose = TRUE,
-                               nloo = NULL, K = NULL, lambda_min_ratio = 1e-5,
-                               nlambda = 150, thresh = 1e-6, regul = 1e-4,
-                               validate_search = TRUE, seed = NULL,
-                               search_terms = NULL, ...) {
+cv_varsel.refmodel <- function(
+  object, method = NULL,
+  cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
+  ndraws = 20, nclusters = NULL,
+  ndraws_pred = 400, nclusters_pred = NULL,
+  cv_search = !inherits(object, "datafit"),
+  nterms_max = NULL, penalty = NULL,
+  verbose = TRUE,
+  nloo = NULL, K = NULL, lambda_min_ratio = 1e-5,
+  nlambda = 150, thresh = 1e-6, regul = 1e-4,
+  validate_search = TRUE, seed = NULL,
+  search_terms = NULL, ...
+) {
   refmodel <- object
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
@@ -139,7 +142,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
       seed = seed, search_terms = search_terms
     )
   } else {
-    stop(sprintf("Unknown cross-validation method: %s.", method))
+    stop(sprintf("Unknown `cv_method`: %s.", method))
   }
 
   if (validate_search || cv_method == "kfold") {
@@ -231,32 +234,32 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
 #   maximum likelihood estimation).
 parse_args_cv_varsel <- function(refmodel, cv_method, K,
                                  nclusters, nclusters_pred) {
-  if (is.null(cv_method)) {
-    if (inherits(refmodel, "datafit")) {
-      cv_method <- "kfold"
-    } else {
-      cv_method <- "LOO"
-    }
-  } else {
-    if (tolower(cv_method) != "kfold" &&
-        tolower(cv_method) != "loo") {
-      stop("Unknown cross-validation method")
-    }
+  stopifnot(!is.null(cv_method))
+  if (cv_method == "loo") {
+    cv_method <- toupper(cv_method)
+  }
+  if (!cv_method %in% c("kfold", "LOO")) {
+    stop("Unknown `cv_method`.")
+  }
+  if (cv_method == "LOO" && inherits(refmodel, "datafit")) {
+    warning("For an `object` of class \"datafit\", `cv_method` is ",
+            "automatically set to \"kfold\".")
+    cv_method <- "kfold"
   }
 
   if (!is.null(K)) {
-    if (length(K) > 1 || !(is.numeric(K)) || !(K == round(K))) {
-      stop("K must be a single integer value")
+    if (length(K) > 1 || !is.numeric(K) || K != round(K)) {
+      stop("K must be a single integer value.")
     }
     if (K < 2) {
-      stop("K must be at least 2")
+      stop("K must be at least 2.")
     }
     if (K > NROW(refmodel$y)) {
-      stop("K cannot exceed n")
+      stop("K cannot exceed the number of observations.")
     }
   }
 
-  if (tolower(cv_method) == "kfold" && is.null(K)) {
+  if (cv_method == "kfold" && is.null(K)) {
     if (inherits(refmodel, "datafit")) {
       K <- 10
     } else {
@@ -264,11 +267,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K,
     }
   }
 
-  if (tolower(cv_method) == "loo") {
-    cv_method <- "LOO"
-  } else {
-    cv_method <- "kfold"
-  }
   return(nlist(cv_method, K, nclusters, nclusters_pred))
 }
 

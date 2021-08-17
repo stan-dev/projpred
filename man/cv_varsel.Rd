@@ -13,7 +13,7 @@ cv_varsel(object, ...)
 \method{cv_varsel}{refmodel}(
   object,
   method = NULL,
-  cv_method = NULL,
+  cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
   ndraws = 20,
   nclusters = NULL,
   ndraws_pred = 400,
