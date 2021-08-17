@@ -18,7 +18,7 @@ cv_varsel(object, ...)
   nclusters = NULL,
   ndraws_pred = 400,
   nclusters_pred = NULL,
-  cv_search = TRUE,
+  cv_search = !inherits(object, "datafit"),
   nterms_max = NULL,
   penalty = NULL,
   verbose = TRUE,

@@ -52,7 +52,8 @@ varsel.default <- function(object, ...) {
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             ndraws = 20, nclusters = NULL, ndraws_pred = 400,
-                            nclusters_pred = NULL, cv_search = TRUE,
+                            nclusters_pred = NULL,
+                            cv_search = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
@@ -231,8 +232,11 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     stop("Unknown search method")
   }
 
-  if (is.null(cv_search)) {
-    cv_search <- !inherits(refmodel, "datafit")
+  stopifnot(!is.null(cv_search))
+  if (cv_search && inherits(refmodel, "datafit")) {
+    warning("For an `object` of class \"datafit\", `cv_search` is ",
+            "automatically set to `FALSE`.")
+    cv_search <- FALSE
   }
 
   stopifnot(!is.null(ndraws))

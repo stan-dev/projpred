@@ -18,7 +18,7 @@ varsel(object, ...)
   nclusters = NULL,
   ndraws_pred = 400,
   nclusters_pred = NULL,
-  cv_search = TRUE,
+  cv_search = !inherits(object, "datafit"),
   nterms_max = NULL,
   verbose = TRUE,
   lambda_min_ratio = 1e-05,
