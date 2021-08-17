@@ -25,7 +25,13 @@ test_that("all div_minimizer()s work", {
     }
 
     if (fam_crr == "binom") {
+      # Use the proportion of successes as (1-column) response and the number of
+      # trials as `weights`:
       ybinprop_nm <- paste("ybinprop", mod_crr, sep = "_")
+      args_fit_i$data <- within(dat, {
+        assign(ybinprop_nm,
+               get(paste("y", mod_crr, fam_crr, sep = "_")) / wobs_col)
+      })
       args_fit_i$formula <- update(
         args_fit_i$formula,
         as.formula(paste(ybinprop_nm, "~ ."))
