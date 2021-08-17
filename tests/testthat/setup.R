@@ -27,7 +27,7 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 # Exclude GAMs because of issue #150; exclude GAMMs because of issue #148:
 mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
 # Exclude "poiss" to save time:
-fam_nms <- setNames(nm = c("gauss", "binom")) # , "poiss"
+fam_nms <- setNames(nm = c("gauss", "binom")) # , "brnll", "poiss"
 
 seed_tst <- 74345
 
