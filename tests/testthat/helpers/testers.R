@@ -551,9 +551,15 @@ sub_fit_tester <- function(sub_fit_obj,
       expect_identical(sub_fit_totest[[!!j]]@resp$offset,
                        offs_expected,
                        info = info_str)
-      expect_equal(sub_fit_totest[[!!j]]@resp$weights,
-                   wobs_expected,
-                   info = info_str)
+      if (!is.null(wobs_expected)) {
+        expect_equal(sub_fit_totest[[!!j]]@resp$weights,
+                     wobs_expected,
+                     info = info_str)
+      } else {
+        expect_equal(sub_fit_totest[[!!j]]@resp$weights,
+                     rep(1, nobsv),
+                     info = info_str)
+      }
       expect_equal(sub_fit_totest[[!!j]]@resp$y,
                    eval(str2lang(as.character(sub_formul[[!!j]])[2]),
                         sub_data),
@@ -570,9 +576,14 @@ sub_fit_tester <- function(sub_fit_obj,
         sub_fit_totest[[!!j]]@resp$y,
         info = info_str
       )
-      expect_equal(sub_fit_totest[[!!j]]@frame$`(weights)`,
-                   sub_fit_totest[[!!j]]@resp$weights,
-                   info = info_str)
+      if (!is.null(wobs_expected)) {
+        expect_equal(sub_fit_totest[[!!j]]@frame$`(weights)`,
+                     sub_fit_totest[[!!j]]@resp$weights,
+                     info = info_str)
+      } else {
+        expect_null(sub_fit_totest[[!!j]]@frame$`(weights)`,
+                    info = info_str)
+      }
       if (with_offs) {
         expect_equal(sub_fit_totest[[!!j]]@frame$`offset(offs_col)`,
                      offs_expected,
