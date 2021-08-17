@@ -229,9 +229,8 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
 # @param K Number of folds in the K-fold cross validation. Default is 5 for
 #   genuine reference models and 10 for datafits (that is, for penalized
 #   maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
-                                 nclusters = NULL,
-                                 nclusters_pred = NULL) {
+parse_args_cv_varsel <- function(refmodel, cv_method, K,
+                                 nclusters, nclusters_pred) {
   if (is.null(cv_method)) {
     if (inherits(refmodel, "datafit")) {
       cv_method <- "kfold"
