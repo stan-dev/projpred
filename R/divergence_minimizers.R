@@ -157,6 +157,12 @@ fit_glmer_callback <- function(formula, data, family, weights,
         formula, data = data, family = family, weights = weights,
         control = control, nAGQ = 20L, ...
       ))
+    } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
+                     as.character(e))) {
+      return(fit_glmer_callback(
+        formula, data = data, family = family, weights = weights,
+        control = control_callback(family, tolPwrss = 1e-6), ...
+      ))
     } else {
       stop(e)
     }
