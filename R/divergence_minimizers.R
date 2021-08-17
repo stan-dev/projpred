@@ -153,9 +153,9 @@ fit_glmer_callback <- function(formula, data, family, weights,
         ...
       ))
     } else if (grepl("PIRLS step-halvings", as.character(e))) {
-      data <- preprocess_data(data, formula)
       return(fit_glmer_callback(
-        formula, data = data, family = family, weights = weights, ...
+        formula, data = data, family = family, weights = weights,
+        control = control, nAGQ = 20L, ...
       ))
     } else {
       stop(e)
