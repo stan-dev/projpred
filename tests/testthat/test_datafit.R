@@ -186,12 +186,19 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
     } else {
       needs_y_overwrite_crr <- TRUE
     }
+    if (args_datafit[[tstsetup]]$fam_nm == "binom" ||
+        grepl("\\.with_wobs", tstsetup)) {
+      wobs_expected_crr <- wobs_tst
+    } else {
+      wobs_expected_crr <- rep(1, nobsv)
+    }
     refmodel_tester(
       datafits[[tstsetup]],
       is_datafit = TRUE,
       fit_expected = NULL,
       formul_expected = fits[[tstsetup_fit]]$formula,
       needs_y_overwrite = needs_y_overwrite_crr,
+      wobs_expected = wobs_expected_crr,
       nrefdraws_expected = 1L,
       fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm)),
       info_str = tstsetup
