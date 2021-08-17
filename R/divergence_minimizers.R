@@ -192,7 +192,7 @@ control_callback <- function(family, ...) {
 # helper function for linear_multilevel_proj_predfun to only pass
 # allow.new.levels if the fit is multilevel
 predict_multilevel_callback <- function(fit, newdata = NULL, weights = NULL) {
-  if (inherits(fit, "lmerMod")) {
+  if (inherits(fit, c("lmerMod", "glmerMod"))) {
     return(predict(fit,
                    newdata = newdata, allow.new.levels = TRUE,
                    weights = weights))
