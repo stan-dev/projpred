@@ -131,7 +131,7 @@ type_tst <- c("mean", "lower", "upper", "se")
 # Data --------------------------------------------------------------------
 
 # Number of observations:
-nobsv <- 33L
+nobsv <- 41L
 
 # Values for testing:
 nobsv_tst <- c(1L, nobsv %/% 3L)
