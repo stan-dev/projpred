@@ -66,7 +66,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
                       lambda_min_ratio = opt$lambda_min_ratio,
                       nlambda = opt$nlambda,
                       pmax = nterms_max + 1, pmax_strict = FALSE,
-                      offset = d_train$offset, weights = d_train$weights,
+                      weights = d_train$weights,
                       intercept = intercept, obsvar = v, penalty = penalty,
                       thresh = opt$thresh)
 
@@ -153,7 +153,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
-    p_ref, list(refmodel, x = x), family,
+    p_ref, nlist(x, weights = refmodel$wobs), family,
     intercept, ncol(x), penalty, opt
   )
   solution_terms <- collapse_contrasts_solution_path(
