@@ -820,9 +820,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     inds <- seq_len(nloo)
     w <- rep(1, nloo)
   } else if (nloo < length(lppd)) {
-    weights <- exp(lppd - max(lppd))
-    inds <- sample(seq_along(lppd), size = nloo, prob = weights)
-    w <- weights
+    w <- exp(lppd - max(lppd))
+    inds <- sample(seq_along(lppd), size = nloo, prob = w)
   }
   w <- w / sum(w)
 
