@@ -335,7 +335,7 @@ test_that("for GLMs, `regul` has an expected effect", {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
     if (!grepl("\\.spclformul", tstsetup)) {
-      tol_alpha <- 1e-1
+      tol_alpha <- 3e-1
     } else {
       tol_alpha <- 5e-1
     }

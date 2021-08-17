@@ -257,7 +257,7 @@ test_that(paste(
       ncl_crr <- 1L
     }
     if (!grepl("\\.spclformul", tstsetup)) {
-      tol_alpha <- 2e-1
+      tol_alpha <- 3e-1
     } else {
       tol_alpha <- 5e-1
     }
