@@ -307,11 +307,7 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname get-refmodel
 #' @export
-get_refmodel.default <- function(object, data, formula, ref_predfun = NULL,
-                                 proj_predfun = NULL, div_minimizer = NULL,
-                                 family = NULL, folds = NULL,
-                                 cvfits = NULL, cvfun = NULL,
-                                 dis = NULL, ...) {
+get_refmodel.default <- function(object, formula, family = NULL, ...) {
   if (is.null(family)) {
     family <- extend_family(family(object))
   } else {
@@ -325,19 +321,16 @@ get_refmodel.default <- function(object, data, formula, ref_predfun = NULL,
     return(do_call(.extract_model_data, args))
   }
 
-  refmodel <- init_refmodel(object, data, formula, family, ref_predfun,
-                            div_minimizer, proj_predfun,
-                            extract_model_data = extract_model_data,
-                            cvfits = cvfits, folds = folds, cvfun = cvfun,
-                            dis = dis, ...)
+  refmodel <- init_refmodel(
+    object = object, formula = formula, family = family,
+    extract_model_data = extract_model_data, ...
+  )
   return(refmodel)
 }
 
 #' @rdname get-refmodel
 #' @export
-get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
-                                 proj_predfun = NULL, div_minimizer = NULL,
-                                 folds = NULL, ...) {
+get_refmodel.stanreg <- function(object, ...) {
   family <- family(object)
   family <- extend_family(family)
 
@@ -359,32 +352,27 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     formula <- object$formula
   }
 
-  if (is.null(data)) {
-    data <- object$data
-    if (length(object$weights) != 0) {
-      if ("projpred_internal_wobs_stanreg" %in% names(data)) {
-        stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
-             "`data`, but that column already exists. Please rename this ",
-             "column in `data` and try again.")
-      }
-      data$projpred_internal_wobs_stanreg <- object$weights
-      default_wrhs <- ~ projpred_internal_wobs_stanreg
-    } else {
-      default_wrhs <- NULL
+  data <- object$data
+  if (length(object$weights) != 0) {
+    if ("projpred_internal_wobs_stanreg" %in% names(data)) {
+      stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
+           "`data`, but that column already exists. Please rename this ",
+           "column in `data` and try again.")
     }
-    if (length(object$offset) != 0) {
-      if ("projpred_internal_offs_stanreg" %in% names(data)) {
-        stop("Need to write to column `projpred_internal_offs_stanreg` of ",
-             "`data`, but that column already exists. Please rename this ",
-             "column in `data` and try again.")
-      }
-      data$projpred_internal_offs_stanreg <- object$offset
-      default_orhs <- ~ projpred_internal_offs_stanreg
-    } else {
-      default_orhs <- NULL
-    }
+    data$projpred_internal_wobs_stanreg <- object$weights
+    default_wrhs <- ~ projpred_internal_wobs_stanreg
   } else {
     default_wrhs <- NULL
+  }
+  if (length(object$offset) != 0) {
+    if ("projpred_internal_offs_stanreg" %in% names(data)) {
+      stop("Need to write to column `projpred_internal_offs_stanreg` of ",
+           "`data`, but that column already exists. Please rename this ",
+           "column in `data` and try again.")
+    }
+    data$projpred_internal_offs_stanreg <- object$offset
+    default_orhs <- ~ projpred_internal_offs_stanreg
+  } else {
     default_orhs <- NULL
   }
 
@@ -479,11 +467,9 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
   }
 
   refmodel <- init_refmodel(
-    object, data, formula, family,
-    ref_predfun = ref_predfun_stanreg, div_minimizer = div_minimizer,
-    proj_predfun = proj_predfun, folds = folds,
-    extract_model_data = extract_model_data, dis = dis,
-    cvfun = cvfun, ...
+    object = object, data = data, formula = formula, family = family,
+    ref_predfun = ref_predfun_stanreg, extract_model_data = extract_model_data,
+    dis = dis, cvfun = cvfun, ...
   )
   return(refmodel)
 }

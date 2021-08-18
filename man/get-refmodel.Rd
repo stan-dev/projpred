@@ -16,30 +16,9 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
 
-\method{get_refmodel}{default}(
-  object,
-  data,
-  formula,
-  ref_predfun = NULL,
-  proj_predfun = NULL,
-  div_minimizer = NULL,
-  family = NULL,
-  folds = NULL,
-  cvfits = NULL,
-  cvfun = NULL,
-  dis = NULL,
-  ...
-)
+\method{get_refmodel}{default}(object, formula, family = NULL, ...)
 
-\method{get_refmodel}{stanreg}(
-  object,
-  data = NULL,
-  ref_predfun = NULL,
-  proj_predfun = NULL,
-  div_minimizer = NULL,
-  folds = NULL,
-  ...
-)
+\method{get_refmodel}{stanreg}(object, ...)
 
 init_refmodel(
   object,
@@ -72,12 +51,16 @@ object of the corresponding class.}
 arguments passed to \code{init_refmodel}. For the \code{get_refmodel}
 generic: arguments passed to the appropriate method. Else: ignored.}
 
-\item{data}{Data used for fitting the reference model.}
-
 \item{formula}{Reference model's formula. For general information on formulas
 in \R, see \code{\link{formula}}. For multilevel formulas, see also package
 \pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer}} and
 \code{\link[lme4:glmer]{lme4::glmer}}.}
+
+\item{family}{A \code{"family"} object representing the observational model
+(i.e., the distributional family for the response). For general information
+on \code{"family"} objects in \R, see \code{\link{family}}.}
+
+\item{data}{Data used for fitting the reference model.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model. May be \code{NULL} for using an internal default.
@@ -95,34 +78,6 @@ Let \eqn{N} denote the number of observations in the original dataset (used
 for fitting the reference model) and \eqn{S} the number of posterior draws
 for the reference model's parameters. Then the return value of
 \code{ref_predfun} has to be a \eqn{N \times S}{N x S} matrix.}
-
-\item{proj_predfun}{Prediction function for the linear predictor of a
-submodel onto which the reference model is projected. May be \code{NULL}
-for using an internal default. Otherwise, needs to have the prototype
-\code{proj_predfun(fit, newdata = NULL, weights = NULL)} where:
-\itemize{
-  \item{\code{fit} accepts fit(s) of a submodel as returned by
-  \code{\link{project}} in its output element \code{sub_fit} (which in turn
-  is the same as the return value of \code{div_minimizer}, except if
-  \code{\link{project}} was used with a \code{"vsel"} object from an L1
-  search as well as \code{cv_search = FALSE});}
-  \item{\code{newdata} accepts either \code{NULL} (for using the original
-  dataset, typically stored in \code{fit}) or data for new observations (at
-  least in the form of a \code{data.frame});}
-  \item{\code{weights} accepts either \code{NULL} (for using a vector of
-  ones) or weights for the new observations from \code{newdata} (at least
-  in the form of a numeric vector).}
-}
-Let \eqn{N} denote the number of observations and
-\eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws (corresponding to
-the number of fits in \code{fit}). Then the return value of
-\code{proj_predfun} has to be:
-\itemize{
-  \item{a vector or a 1-column matrix of length \eqn{N} if
-  \eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
-  \item{a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix if
-  \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
-}}
 
 \item{div_minimizer}{A function for minimizing the Kullback-Leibler (KL)
 divergence from a submodel to the reference model (i.e., for performing the
@@ -154,30 +109,36 @@ The return value of \code{div_minimizer} has to be:
 This output of \code{div_minimizer} is used, e.g., by \code{proj_predfun}'s
 argument \code{fit}.}
 
-\item{family}{A \code{"family"} object representing the observational model
-(i.e., the distributional family for the response). For general information
-on \code{"family"} objects in \R, see \code{\link{family}}.}
+\item{proj_predfun}{Prediction function for the linear predictor of a
+submodel onto which the reference model is projected. May be \code{NULL}
+for using an internal default. Otherwise, needs to have the prototype
+\code{proj_predfun(fit, newdata = NULL, weights = NULL)} where:
+\itemize{
+  \item{\code{fit} accepts fit(s) of a submodel as returned by
+  \code{\link{project}} in its output element \code{sub_fit} (which in turn
+  is the same as the return value of \code{div_minimizer}, except if
+  \code{\link{project}} was used with a \code{"vsel"} object from an L1
+  search as well as \code{cv_search = FALSE});}
+  \item{\code{newdata} accepts either \code{NULL} (for using the original
+  dataset, typically stored in \code{fit}) or data for new observations (at
+  least in the form of a \code{data.frame});}
+  \item{\code{weights} accepts either \code{NULL} (for using a vector of
+  ones) or weights for the new observations from \code{newdata} (at least
+  in the form of a numeric vector).}
+}
+Let \eqn{N} denote the number of observations and
+\eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws (corresponding to
+the number of fits in \code{fit}). Then the return value of
+\code{proj_predfun} has to be:
+\itemize{
+  \item{a vector or a 1-column matrix of length \eqn{N} if
+  \eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
+  \item{a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix if
+  \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
+}}
 
 \item{folds}{For K-fold cross-validation only. A vector of fold indices for
 each observation from \code{data}.}
-
-\item{cvfits}{For K-fold cross-validation only. A list with one sublist
-called \code{"fits"} containing K-fold fitted objects from which reference
-models are created. The \code{cvfits} list (i.e., the superlist) needs to
-have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a
-single integer giving the number of folds and \code{"folds"} has to be an
-integer vector giving the fold indices (one fold index per observation).
-Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
-are provided, \code{cvfits} is used.}
-
-\item{cvfun}{For K-fold cross-validation only. A function that, given a folds
-vector, fits a reference model per fold and returns the fitted object. May
-be \code{NULL} if \code{object} is \code{NULL}. Note that \code{cvfits}
-takes precedence over \code{cvfun}, i.e., if both are provided,
-\code{cvfits} is used.}
-
-\item{dis}{A vector of posterior draws for the dispersion parameter (if such
-a parameter exists; else \code{dis} may be \code{NULL}).}
 
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (i.e., the dataset
@@ -205,6 +166,24 @@ with elements \code{y}, \code{weights}, and \code{offset}, each being a
 numeric vector containing the data for the response, the observation
 weights, and the offsets, respectively. An exception is that \code{y} may
 also be \code{NULL} (depending on argument \code{extract_y}).}
+
+\item{cvfun}{For K-fold cross-validation only. A function that, given a folds
+vector, fits a reference model per fold and returns the fitted object. May
+be \code{NULL} if \code{object} is \code{NULL}. Note that \code{cvfits}
+takes precedence over \code{cvfun}, i.e., if both are provided,
+\code{cvfits} is used.}
+
+\item{cvfits}{For K-fold cross-validation only. A list with one sublist
+called \code{"fits"} containing K-fold fitted objects from which reference
+models are created. The \code{cvfits} list (i.e., the superlist) needs to
+have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a
+single integer giving the number of folds and \code{"folds"} has to be an
+integer vector giving the fold indices (one fold index per observation).
+Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
+are provided, \code{cvfits} is used.}
+
+\item{dis}{A vector of posterior draws for the dispersion parameter (if such
+a parameter exists; else \code{dis} may be \code{NULL}).}
 }
 \value{
 An object that can be passed to all the functions that take the
