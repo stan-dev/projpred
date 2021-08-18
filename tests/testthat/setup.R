@@ -674,17 +674,18 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
     })
   })
 }
-tstsetups_prj_vs <- setNames(
-  nm = unlist(lapply(mod_nms, function(mod_nm) {
-    grep(paste0("^", mod_nm, "\\.gauss\\..*\\.default_meth"), names(vss),
-         value = TRUE)
-  }))
-)
-stopifnot(length(tstsetups_prj_vs) > 0)
-args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
-args_prj_vs <- unlist_cust(args_prj_vs)
 
 if (run_vs) {
+  tstsetups_prj_vs <- setNames(
+    nm = unlist(lapply(mod_nms, function(mod_nm) {
+      grep(paste0("^", mod_nm, "\\.gauss\\..*\\.default_meth"), names(vss),
+           value = TRUE)
+    }))
+  )
+  stopifnot(length(tstsetups_prj_vs) > 0)
+  args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
+  args_prj_vs <- unlist_cust(args_prj_vs)
+
   prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
     do.call(project, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
@@ -695,17 +696,17 @@ if (run_vs) {
 
 #### cv_varsel() ----------------------------------------------------------
 
-tstsetups_prj_cvvs <- setNames(
-  nm = unlist(lapply(mod_nms, function(mod_nm) {
-    grep(paste0("^", mod_nm, "\\.gauss\\..*\\.default_meth\\.default_cvmeth"),
-         names(cvvss), value = TRUE)
-  }))
-)
-stopifnot(length(tstsetups_prj_cvvs) > 0)
-args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
-args_prj_cvvs <- unlist_cust(args_prj_cvvs)
-
 if (run_cvvs) {
+  tstsetups_prj_cvvs <- setNames(
+    nm = unlist(lapply(mod_nms, function(mod_nm) {
+      grep(paste0("^", mod_nm, "\\.gauss\\..*\\.default_meth\\.default_cvmeth"),
+           names(cvvss), value = TRUE)
+    }))
+  )
+  stopifnot(length(tstsetups_prj_cvvs) > 0)
+  args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
+  args_prj_cvvs <- unlist_cust(args_prj_cvvs)
+
   # Use SW() because of occasional pwrssUpdate() warnings:
   SW(prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
     do.call(project, c(
@@ -726,13 +727,17 @@ pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
 
 #### varsel() -------------------------------------------------------------
 
-pls_vs <- lapply(prjs_vs, proj_linpred)
-pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
+if (run_vs) {
+  pls_vs <- lapply(prjs_vs, proj_linpred)
+  pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
+}
 
 #### cv_varsel() ----------------------------------------------------------
 
-pls_cvvs <- lapply(prjs_cvvs, proj_linpred)
-pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
+if (run_cvvs) {
+  pls_cvvs <- lapply(prjs_cvvs, proj_linpred)
+  pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
+}
 
 ## summary.vsel() ---------------------------------------------------------
 
@@ -771,16 +776,18 @@ cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
     })
   })
 }
-tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
-  unlist(lapply(fam_nms, function(fam_nm) {
-    head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE), 1)
-  }))
-})))
-stopifnot(length(tstsetups_smmry_vs) > 0)
-args_smmry_vs <- cre_args_smmry_vsel(tstsetups_smmry_vs)
-args_smmry_vs <- unlist_cust(args_smmry_vs)
 
 if (run_vs) {
+  tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
+    unlist(lapply(fam_nms, function(fam_nm) {
+      head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE),
+           1)
+    }))
+  })))
+  stopifnot(length(tstsetups_smmry_vs) > 0)
+  args_smmry_vs <- cre_args_smmry_vsel(tstsetups_smmry_vs)
+  args_smmry_vs <- unlist_cust(args_smmry_vs)
+
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
     do.call(summary, c(
       list(object = vss[[args_smmry_vs_i$tstsetup_vsel]]),
@@ -791,17 +798,20 @@ if (run_vs) {
 
 ### cv_varsel() -----------------------------------------------------------
 
-tstsetups_smmry_cvvs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
-  unlist(lapply(fam_nms, function(fam_nm) {
-    head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss), value = TRUE),
-         1)
-  }))
-})))
-stopifnot(length(tstsetups_smmry_cvvs) > 0)
-args_smmry_cvvs <- cre_args_smmry_vsel(tstsetups_smmry_cvvs)
-args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
-
 if (run_cvvs) {
+  tstsetups_smmry_cvvs <- setNames(
+    nm = unlist(lapply(mod_nms, function(mod_nm) {
+      unlist(lapply(fam_nms, function(fam_nm) {
+        head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss),
+                  value = TRUE),
+             1)
+      }))
+    }))
+  )
+  stopifnot(length(tstsetups_smmry_cvvs) > 0)
+  args_smmry_cvvs <- cre_args_smmry_vsel(tstsetups_smmry_cvvs)
+  args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
+
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
     do.call(summary, c(
       list(object = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
