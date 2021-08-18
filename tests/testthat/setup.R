@@ -528,8 +528,8 @@ if (run_cvvs) {
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     if (mod_crr == "glm" && fam_crr == "gauss") {
       if (!grepl("\\.spclformul", tstsetup_ref)) {
-        # Here, we test the default `method` (which is L1 search here) as well as
-        # forward search:
+        # Here, we test the default `method` (which is L1 search here) as well
+        # as forward search:
         meth <- meth_tst[c("default_meth", "forward")]
       } else {
         meth <- meth_tst["default_meth"]
