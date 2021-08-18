@@ -79,23 +79,23 @@ SW(datafits <- lapply(args_datafit, function(args_datafit_i) {
 
 ### varsel() --------------------------------------------------------------
 
-stopifnot(all(names(args_datafit) %in% names(args_ref)))
-args_vs_datafit <- args_vs[
-  sapply(args_vs, "[[", "tstsetup_ref") %in% names(datafits)
-]
-args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
-  names(args_vs_i)[names(args_vs_i) == "tstsetup_ref"] <- "tstsetup_datafit"
-  return(args_vs_i)
-})
-# For `"datafit"`s, we always have 1 cluster by default, so omit related
-# arguments:
-args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
-  return(args_vs_i[setdiff(names(args_vs_i),
-                           c("ndraws", "nclusters",
-                             "ndraws_pred", "nclusters_pred"))])
-})
-
 if (run_vs) {
+  stopifnot(all(names(args_datafit) %in% names(args_ref)))
+  args_vs_datafit <- args_vs[
+    sapply(args_vs, "[[", "tstsetup_ref") %in% names(datafits)
+  ]
+  args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
+    names(args_vs_i)[names(args_vs_i) == "tstsetup_ref"] <- "tstsetup_datafit"
+    return(args_vs_i)
+  })
+  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # arguments:
+  args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
+    return(args_vs_i[setdiff(names(args_vs_i),
+                             c("ndraws", "nclusters",
+                               "ndraws_pred", "nclusters_pred"))])
+  })
+
   vss_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
     do.call(varsel, c(
       list(object = datafits[[args_vs_i$tstsetup_datafit]]),
@@ -106,31 +106,32 @@ if (run_vs) {
 
 ### cv_varsel() -----------------------------------------------------------
 
-args_cvvs_datafit <- args_cvvs[
-  sapply(args_cvvs, "[[", "tstsetup_ref") %in% names(datafits)
-]
-args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
-  names(args_cvvs_i)[names(args_cvvs_i) == "tstsetup_ref"] <- "tstsetup_datafit"
-  return(args_cvvs_i)
-})
-# (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
-args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
-  args_cvvs_i$cv_method <- NULL
-  args_cvvs_i$K <- NULL
-  return(c(args_cvvs_i, list(cv_method = "kfold", K = K_tst)))
-})
-names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
-                                 names(args_cvvs_datafit))
-stopifnot(!any(duplicated(names(args_cvvs_datafit))))
-# For `"datafit"`s, we always have 1 cluster by default, so omit related
-# arguments:
-args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
-  return(args_cvvs_i[setdiff(names(args_cvvs_i),
-                             c("ndraws", "nclusters",
-                               "ndraws_pred", "nclusters_pred"))])
-})
-
 if (run_cvvs) {
+  args_cvvs_datafit <- args_cvvs[
+    sapply(args_cvvs, "[[", "tstsetup_ref") %in% names(datafits)
+  ]
+  args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
+    names(args_cvvs_i)[names(args_cvvs_i) == "tstsetup_ref"] <-
+      "tstsetup_datafit"
+    return(args_cvvs_i)
+  })
+  # (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
+  args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
+    args_cvvs_i$cv_method <- NULL
+    args_cvvs_i$K <- NULL
+    return(c(args_cvvs_i, list(cv_method = "kfold", K = K_tst)))
+  })
+  names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
+                                   names(args_cvvs_datafit))
+  stopifnot(!any(duplicated(names(args_cvvs_datafit))))
+  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # arguments:
+  args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
+    return(args_cvvs_i[setdiff(names(args_cvvs_i),
+                               c("ndraws", "nclusters",
+                                 "ndraws_pred", "nclusters_pred"))])
+  })
+
   cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     do.call(cv_varsel, c(
       list(object = datafits[[args_cvvs_i$tstsetup_datafit]]),
@@ -143,22 +144,23 @@ if (run_cvvs) {
 
 ### From varsel() ---------------------------------------------------------
 
-args_prj_vs_datafit <- args_prj_vs[
-  sapply(args_prj_vs, "[[", "tstsetup_ref") %in% names(datafits) &
-    sapply(args_prj_vs, "[[", "tstsetup_vsel") %in% names(vss_datafit)
-]
-args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
-  names(args_prj_vs_i)[names(args_prj_vs_i) == "tstsetup_ref"] <-
-    "tstsetup_datafit"
-  return(args_prj_vs_i)
-})
-# For `"datafit"`s, we always have 1 cluster by default, so omit related
-# arguments:
-args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
-  return(args_prj_vs_i[setdiff(names(args_prj_vs_i), c("ndraws", "nclusters"))])
-})
-
 if (run_vs) {
+  args_prj_vs_datafit <- args_prj_vs[
+    sapply(args_prj_vs, "[[", "tstsetup_ref") %in% names(datafits) &
+      sapply(args_prj_vs, "[[", "tstsetup_vsel") %in% names(vss_datafit)
+  ]
+  args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
+    names(args_prj_vs_i)[names(args_prj_vs_i) == "tstsetup_ref"] <-
+      "tstsetup_datafit"
+    return(args_prj_vs_i)
+  })
+  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # arguments:
+  args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
+    return(args_prj_vs_i[setdiff(names(args_prj_vs_i),
+                                 c("ndraws", "nclusters"))])
+  })
+
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
     do.call(project, c(
       list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]]),
@@ -171,8 +173,10 @@ if (run_vs) {
 
 ### From "proj_list" ------------------------------------------------------
 
-pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred)
-pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
+if (run_vs) {
+  pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred)
+  pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
+}
 
 # Tests (projpred only) ---------------------------------------------------
 
