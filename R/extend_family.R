@@ -165,7 +165,7 @@ extend_family_gamma <- function(family) {
     ## TODO, IMPLEMENT THIS
     stop("Projection of dispersion parameter not yet implemented for family",
          " Gamma.")
-    ## mean(data$weights*((pref$mu - p_sub$mu)/
+    ## mean(wobs*((pref$mu - p_sub$mu)/
     ##                      family$mu.eta(family$linkfun(p_sub$mu))^2))
   }
   predvar_gamma <- function(mu, dis, wsample = 1) {
