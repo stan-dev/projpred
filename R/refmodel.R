@@ -494,7 +494,7 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, extract_model_data = NULL, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, ...) {
+                          cvfits = NULL, dis = NULL, latent=FALSE, ...) {
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   terms <- extract_terms_response(formula)
@@ -515,10 +515,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   ## remove parens from response
   response_name <- gsub("[()]", "", response_name)
-  formula <- update(
-    formula,
-    paste(response_name, "~ .")
-  )
 
   ## add (transformed) response with new name
   if (is.null(data)) {
@@ -532,8 +528,22 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   offset <- model_data$offset
   y <- model_data$y
 
-  data[, response_name] <- y
+  if (latent) {
+    y <- rowMeans(ref_predfun(object, newdata = data))
+    ## latent noise is fixed
+    dis <- rep(1, 4000)
+    response_name <- paste0(".", response_name)
+    data[, response_name] <- y
+    response_family <- family
+    family <- gaussian()
+  } else {
+    data[, response_name] <- y
+  }
 
+  formula <- update(
+    formula,
+    paste(response_name, "~ .")
+  )
   target <- .get_standard_y(y, weights, family)
   y <- target$y
   weights <- target$weights
