@@ -7,10 +7,14 @@ test_that("invalid `object` fails", {
     NULL,
     fit = fits[[1]],
     refmod = refmods[[1]],
-    prj = prjs[[1]],
-    prj_vs = prjs_vs[[1]],
-    prj_cvvs = prjs_cvvs[[1]]
+    prj = prjs[[1]]
   )
+  if (run_vs) {
+    objs_invalid <- c(objs_invalid, list(prj_vs = prjs_vs[[1]]))
+  }
+  if (run_cvvs) {
+    objs_invalid <- c(objs_invalid, list(prj_cvvs = prjs_cvvs[[1]]))
+  }
   for (obj_nm in names(objs_invalid)) {
     for (vsel_fun in vsel_funs) {
       expect_error(get(vsel_fun, mode = "function")(objs_invalid[[obj_nm]]),
@@ -21,6 +25,7 @@ test_that("invalid `object` fails", {
 })
 
 test_that("invalid `stats` fails", {
+  skip_if_not(run_vs)
   tstsetup <- head(grep("\\.gauss\\.", names(vss), value = TRUE), 1)
   stats_invalid <- nlist(NULL, NA, "zzz", "acc", "auc")
   err_expected <- as.list(c(
