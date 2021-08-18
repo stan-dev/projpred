@@ -525,12 +525,8 @@ get_refmodel.stanreg <- function(object, ...) {
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
-                          extract_model_data, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, ...) {
-  proper_model <- !is.null(object)
-
-  # Formula -----------------------------------------------------------------
-
+                          folds = NULL, extract_model_data = NULL, cvfun = NULL,
+                          cvfits = NULL, dis = NULL, latent=FALSE, ...) {
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
@@ -543,18 +539,28 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
-  formula <- update(formula, paste(response_name[1], "~ ."))
-
-  # Data --------------------------------------------------------------------
 
   model_data <- extract_model_data(object, newdata = data)
   weights <- model_data$weights
   offset <- model_data$offset
   y <- model_data$y
 
-  # Add (transformed) response under the (possibly) new name:
-  data[, response_name] <- y
+  if (latent) {
+    y <- rowMeans(ref_predfun(object, newdata = data))
+    ## latent noise is fixed
+    dis <- rep(1, 4000)
+    response_name <- paste0(".", response_name)
+    data[, response_name] <- y
+    response_family <- family
+    family <- gaussian()
+  } else {
+    data[, response_name] <- y
+  }
 
+  formula <- update(
+    formula,
+    paste(response_name, "~ .")
+  )
   target <- .get_standard_y(y, weights, family)
   y <- target$y
   weights <- target$weights
