@@ -11,10 +11,10 @@ run_cvvs <- run_vs
 run_cvvs_kfold <- run_cvvs
 # Run `cv_varsel()` with `validate_search = TRUE` always (`TRUE`) or just for L1
 # search (`FALSE`)?:
-run_valsearch_always <- TRUE
+run_valsearch_always <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
 # first one (`FALSE`)?:
-run_cvfits_all <- TRUE
+run_cvfits_all <- FALSE
 
 set.seed(8541351)
 
@@ -27,7 +27,7 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 # Exclude GAMs because of issue #150; exclude GAMMs because of issue #148:
 mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
 
-fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
+fam_nms <- setNames(nm = c("gauss", "binom")) # , "brnll", "poiss"
 
 seed_tst <- 74345
 
