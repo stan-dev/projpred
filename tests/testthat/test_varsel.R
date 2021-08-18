@@ -680,7 +680,7 @@ test_that("`validate_search` works", {
     # Without a validated search, we expect increased LPPDs (and consequently
     # also an increased ELPD) in the submodels (since the hold-out fold was
     # included in the dataset for fitting the submodels):
-    tol_crr <- 5e-2
+    tol_crr <- 2e-1
     # Allow for just a small proportion of extreme differences:
     prop_as_expected <- 0.9
     for (j in seq_along(cvvs_valsearch$summaries$sub)) {
