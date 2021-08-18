@@ -108,6 +108,9 @@ NULL
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     seed = NULL, regul = 1e-4, ...) {
+  if (inherits(object, "datafit")) {
+    stop("project() does not support an `object` of class \"datafit\".")
+  }
   if (!inherits(object, "vsel") && is.null(solution_terms)) {
     stop("Please provide an `object` of class \"vsel\" or use argument ",
          "`solution_terms`.")
@@ -115,9 +118,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   if (!inherits(object, "vsel") && !cv_search) {
     stop("Please provide an `object` of class \"vsel\" or use ",
          "`cv_search = TRUE`.")
-  }
-  if (inherits(object, "datafit")) {
-    stop("project() does not support an `object` of class \"datafit\".")
   }
 
   refmodel <- get_refmodel(object, ...)

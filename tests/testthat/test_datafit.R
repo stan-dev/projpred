@@ -303,8 +303,8 @@ test_that("project(): `object` of class \"datafit\" fails", {
              cv_search = FALSE),
         excl_nonargs(args_prj_i)
       )),
-      paste("^Please provide an `object` of class \"vsel\" or use",
-            "`cv_search = TRUE`\\.$"),
+      paste("^project\\(\\) does not support an `object` of class",
+            "\"datafit\"\\.$"),
       info = tstsetup
     )
   }
