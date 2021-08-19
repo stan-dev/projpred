@@ -772,20 +772,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     attr(kfold_obj, "folds") <- folds_vec
 
     # Create `"refmodel"` object with `cvfits`:
-    # For the binomial family with > 1 trials, we currently expect the warning
-    # "Using formula(x) is deprecated when x is a character vector of length >
-    # 1" (see GitHub issue #136):
-    warn_expected_binom <- switch(
-      fam_crr,
-      "binom" = paste("Using formula\\(x\\) is deprecated when x is a",
-                      "character vector of length > 1"),
-      NA
-    )
-    expect_warning(
-      refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj),
-      warn_expected_binom,
-      info = tstsetup
-    )
+    refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
 
     # Run cv_varsel():
     # We expect a warning which in fact should be suppressed, though (see
@@ -796,10 +783,6 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
             "model using an offset term\\.$")
     } else {
       NA
-    }
-    if (fam_crr == "binom") {
-      warn_expected <- paste(c(warn_expected_binom, warn_expected),
-                             collapse = "|")
     }
     expect_warning(
       cvvs_cvfits <- do.call(cv_varsel, c(
