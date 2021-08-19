@@ -29,7 +29,7 @@ init_refmodel(
   div_minimizer = NULL,
   proj_predfun = NULL,
   folds = NULL,
-  extract_model_data = NULL,
+  extract_model_data,
   cvfun = NULL,
   cvfits = NULL,
   dis = NULL,
