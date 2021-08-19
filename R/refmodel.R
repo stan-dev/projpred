@@ -386,12 +386,6 @@ get_refmodel.stanreg <- function(object, ...) {
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
-
-  formula <- update(
-    formula,
-    as.formula(paste(response_name, "~ ."))
-  )
-
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
@@ -404,6 +398,7 @@ get_refmodel.stanreg <- function(object, ...) {
     stop("The response is not allowed to have more than two columns.")
   }
   resp_form <- as.formula(paste("~", response_name))
+  formula <- update(formula, as.formula(paste(response_name, "~ .")))
 
   # Functions ---------------------------------------------------------------
 
@@ -499,10 +494,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
-  formula <- update(
-    formula,
-    paste(response_name, "~ .")
-  )
+  formula <- update(formula, paste(response_name[1], "~ ."))
 
   # Data --------------------------------------------------------------------
 
