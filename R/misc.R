@@ -174,7 +174,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
         if (nlevels(y) > 2) {
           stop("y cannot contain more than two classes if specified as factor.")
         }
-        y <- as.vector(y, mode = "integer") - 1 # zero-one vector
+        y <- as.vector(y, mode = "integer") - 1L # zero-one vector
       }
     } else {
       if (is.factor(y)) {
