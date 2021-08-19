@@ -74,6 +74,30 @@ test_that("offsets specified via argument `offset` fail", {
   )
 })
 
+test_that(paste(
+  "binomial family with 1-column response and weights which are not all ones",
+  "warns"
+), {
+  dat_prop <- within(dat, {
+    ybinprop_glm <- y_glm_binom / wobs_col
+  })
+  fit_binom_1col_wobs <- suppressWarnings(rstanarm::stan_glm(
+    ybinprop_glm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + offset(offs_col),
+    family = f_binom, data = dat_prop,
+    weights = wobs_tst,
+    chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
+    refresh = 0
+  ))
+  expect_equal(
+    as.matrix(fit_binom_1col_wobs),
+    as.matrix(fits$rstanarm.glm.binom.stdformul.without_wobs.with_offs)
+  )
+  expect_error(
+    get_refmodel(fit_binom_1col_wobs),
+    paste("response must contain numbers of successes")
+  )
+})
+
 test_that("get_refmodel() is idempotent", {
   for (tstsetup in names(refmods)) {
     expect_identical(get_refmodel(refmods[[tstsetup]]),
