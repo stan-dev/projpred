@@ -507,8 +507,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       # Since posterior_linpred() is supposed to include the offsets in its
       # result, subtract them here:
       offs <- extract_model_data(fit, newdata = newdata)$offset
-      stopifnot(identical(nrow(linpred_out), length(offs)))
-      linpred_out <- linpred_out - offs
+      if (length(offs) > 0) {
+        stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
+        linpred_out <- linpred_out - offs
+      }
       return(linpred_out)
     }
   }
