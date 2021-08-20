@@ -579,8 +579,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  fetch_data_wrapper <- function(obs = NULL, newdata = NULL) {
-    fetch_data(data, obs, newdata)
+  fetch_data_wrapper <- function(obs = NULL) {
+    fetch_data(data, obs, newdata = NULL)
   }
 
   # Family ------------------------------------------------------------------
@@ -591,7 +591,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL,
                             weights = NULL) {
-    newdata <- fetch_data_wrapper(obs = obs, newdata = newdata)
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     }
