@@ -580,7 +580,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   fetch_data_wrapper <- function(obs = NULL, newdata = NULL) {
-    as.data.frame(fetch_data(data, obs, newdata))
+    fetch_data(data, obs, newdata)
   }
 
   # Family ------------------------------------------------------------------

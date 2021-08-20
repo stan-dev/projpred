@@ -1,15 +1,16 @@
 fetch_data <- function(data, obs = NULL, newdata = NULL) {
   if (is.null(obs)) {
     if (is.null(newdata)) {
-      return(data)
+      data_out <- data
     } else {
-      return(newdata)
+      data_out <- newdata
     }
   } else if (is.null(newdata)) {
-    return(data[obs, , drop = FALSE])
+    data_out <- data[obs, , drop = FALSE]
   } else {
-    return(newdata[obs, , drop = FALSE])
+    data_out <- newdata[obs, , drop = FALSE]
   }
+  return(as.data.frame(data_out))
 }
 
 linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
