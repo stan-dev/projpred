@@ -41,8 +41,11 @@ test_that("missing `data` fails", {
     chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
     refresh = 0
   ))
-  expect_error(get_refmodel(fit_nodata),
-               "^object of type 'environment' is not subsettable$")
+  expect_error(
+    get_refmodel(fit_nodata),
+    paste("^`object\\$data` must be a `data\\.frame` or a `matrix` \\(but a",
+          "`data\\.frame` is recommended\\)\\.$")
+  )
 })
 
 test_that("`formula` as a character string fails", {
