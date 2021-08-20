@@ -10,7 +10,8 @@
 \arguments{
 \item{x}{An object of class vsel/vsel.}
 
-\item{...}{Further arguments passed to \code{\link{summary.vsel}}.}
+\item{...}{Further arguments passed to \code{\link{summary.vsel}} (apart from
+argument \code{digits} which is passed to \code{\link{print.vselsummary}}).}
 }
 \value{
 Returns invisibly the data frame produced by

@@ -641,7 +641,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
 #' @name print-vsel
 #'
 #' @param x An object of class vsel/vsel.
-#' @param ... Further arguments passed to \code{\link{summary.vsel}}.
+#' @param ... Further arguments passed to \code{\link{summary.vsel}} (apart from
+#'   argument \code{digits} which is passed to \code{\link{print.vselsummary}}).
 #'
 #' @return Returns invisibly the data frame produced by
 #'   \code{\link{summary.vsel}}.
@@ -650,7 +651,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
 #' @method print vsel
 print.vsel <- function(x, ...) {
   stats <- summary.vsel(x, ...)
-  print(stats)
+  print(stats, ...)
   return(invisible(stats))
 }
 
