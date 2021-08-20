@@ -747,7 +747,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       object = fit, data = fetch_fold(),
       formula = refmodel$formula, family = refmodel$family,
       div_minimizer = refmodel$div_minimizer,
-      proj_predfun = proj_predfun, folds = seq_along(fold),
+      proj_predfun = proj_predfun,
       extract_model_data = extract_model_data
     )
   }

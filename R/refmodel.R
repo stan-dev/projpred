@@ -123,8 +123,6 @@
 #' @param family A \code{"family"} object representing the observational model
 #'   (i.e., the distributional family for the response). For general information
 #'   on \code{"family"} objects in \R, see \code{\link{family}}.
-#' @param folds For K-fold cross-validation only. A vector of fold indices for
-#'   each observation from \code{data}.
 #' @param cvfits For K-fold cross-validation only. A list with one sublist
 #'   called \code{"fits"} containing K-fold fitted objects from which reference
 #'   models are created. The \code{cvfits} list (i.e., the superlist) needs to
@@ -481,7 +479,7 @@ get_refmodel.stanreg <- function(object, ...) {
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
-                          folds = NULL, extract_model_data, cvfun = NULL,
+                          extract_model_data, cvfun = NULL,
                           cvfits = NULL, dis = NULL, ...) {
   proper_model <- !is.null(object)
 
@@ -566,7 +564,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  fetch_data_wrapper <- function(obs = folds, newdata = NULL) {
+  fetch_data_wrapper <- function(obs = NULL, newdata = NULL) {
     as.data.frame(fetch_data(data, obs, newdata))
   }
 
@@ -576,15 +574,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     family <- extend_family(family)
   }
 
-  family$mu_fun <- function(fit, obs = folds, newdata = NULL, offset = NULL,
+  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL,
                             weights = NULL) {
+    newdata <- fetch_data_wrapper(obs = obs, newdata = newdata)
     if (is.null(offset)) {
-      offset <- rep(0, length(obs))
+      offset <- rep(0, nrow(newdata))
     }
     if (is.null(weights)) {
-      weights <- rep(1, length(obs))
+      weights <- rep(1, nrow(newdata))
     }
-    newdata <- fetch_data_wrapper(obs = obs, newdata = newdata)
     suppressWarnings(family$linkinv(proj_predfun(fit,
                                                  newdata = newdata,
                                                  weights = weights) +
@@ -643,7 +641,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, mu, dis, y, loglik, intercept,
     proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
-    offset, folds, cvfun, cvfits, extract_model_data, ref_predfun
+    offset, cvfun, cvfits, extract_model_data, ref_predfun
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"
