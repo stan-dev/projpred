@@ -114,17 +114,20 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
 }
 
 # Use lmer to fit the projection to the posterior draws for multilevel models.
-linear_multilevel_mle <- function(formula, data, family, weights = NULL, ...) {
+linear_multilevel_mle <- function(formula, data, family, weights = NULL,
+                                  var = 0, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     return(fit_glmer_callback(
-      formula, data = data, family = family, weights = weights, ...
+      formula, data = data, family = family, weights = weights, var = var, ...
     ))
   } else if (inherits(formula, "list")) {
-    return(lapply(
-      formula, fit_glmer_callback, data = data, family = family,
-      weights = weights, ...
-    ))
+    return(lapply(seq_along(formula), function(s) {
+      fit_glmer_callback(
+        formula[[s]], data = data, family = family, weights = weights,
+        var = var[, s, drop = FALSE], ...
+      )
+    }))
   } else {
     stop("The provided formula is neither a formula object nor a list")
   }
