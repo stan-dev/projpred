@@ -2,11 +2,16 @@ linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
                        var = 0, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
-    return(fit_glm_ridge_callback(formula, data, family, weights, var, regul))
+    return(fit_glm_ridge_callback(
+      formula, data = data, family = family, weights = weights, var = var,
+      regul = regul, ...
+    ))
   } else if (inherits(formula, "list")) {
     return(lapply(seq_along(formula), function(s) {
-      fit_glm_ridge_callback(formula[[s]], data, family, weights,
-                             regul = regul, var = var[, s, drop = FALSE])
+      fit_glm_ridge_callback(
+        formula[[s]], data = data, family = family, weights = weights,
+        var = var[, s, drop = FALSE], regul = regul, ...
+      )
     }))
   } else {
     stop("The provided formula is neither a formula object nor a list")
@@ -19,9 +24,8 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
   y <- model.response(fr)
-  fit <- glm_ridge(x, y,
-                   family = family, lambda = regul,
-                   weights = weights, obsvar = var)
+  fit <- glm_ridge(x, y, family = family, lambda = regul, weights = weights,
+                   obsvar = var, ...)
   rownames(fit$beta) <- colnames(x)
   sub <- nlist(
     alpha = fit$beta0,
@@ -43,15 +47,26 @@ additive_mle <- function(formula, data, family, weights = NULL, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     if (is.null(random)) {
-      return(fit_gam_callback(formula, data, family, weights))
+      return(fit_gam_callback(
+        formula, data = data, family = family, weights = weights, ...
+      ))
     } else {
-      return(fit_gamm_callback(formula, random, data, family, weights))
+      return(fit_gamm_callback(
+        formula, random = random, data = data, family = family,
+        weights = weights, ...
+      ))
     }
   } else if (inherits(formula, "list")) {
     if (is.null(random)) {
-      return(lapply(formula, fit_gam_callback, data, family, weights))
+      return(lapply(
+        formula, fit_gam_callback, data = data, family = family,
+        weights = weights, ...
+      ))
     } else {
-      return(lapply(formula, fit_gamm_callback, random, data, family, weights))
+      return(lapply(
+        formula, fit_gamm_callback, random = random, data = data,
+        family = family, weights = weights, ...
+      ))
     }
   } else {
     stop("The provided formula is neither a formula object nor a list")
@@ -63,9 +78,9 @@ additive_mle <- function(formula, data, family, weights = NULL, ...) {
 fit_gam_callback <- function(formula, data, family, weights, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
-  return(suppressMessages(suppressWarnings(gam(formula,
-                                               data = data, family = family,
-                                               weights = weights))))
+  return(suppressMessages(suppressWarnings(gam(
+    formula, data = data, family = family, weights = weights, ...
+  ))))
 }
 
 # helper function of 'additive_mle'
@@ -75,19 +90,18 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
   fit <- suppressMessages(suppressWarnings(tryCatch({
-    gamm4(formula,
-          random = random, data = data,
-          family = family, weights = weights,
-          control = control)
+    gamm4(formula, random = random, data = data, family = family,
+          weights = weights, control = control, ...)
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       scaled_data <- preprocess_data(data, formula)
       fit_gamm_callback(
-        formula, random = random,
-        data = scaled_data, weights = weights, family = family,
+        formula, random = random, data = scaled_data, weights = weights,
+        family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
-                                   optCtrl = list(method = "nlminb"))
+                                   optCtrl = list(method = "nlminb")),
+        ...
       )
     } else {
       stop(e)
@@ -104,9 +118,14 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
 linear_multilevel_mle <- function(formula, data, family, weights = NULL, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
-    return(fit_glmer_callback(formula, data, family, weights))
+    return(fit_glmer_callback(
+      formula, data = data, family = family, weights = weights, ...
+    ))
   } else if (inherits(formula, "list")) {
-    return(lapply(formula, fit_glmer_callback, data, family, weights))
+    return(lapply(
+      formula, fit_glmer_callback, data = data, family = family,
+      weights = weights, ...
+    ))
   } else {
     stop("The provided formula is neither a formula object nor a list")
   }
