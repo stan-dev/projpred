@@ -1,16 +1,15 @@
-linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
-                       var = 0, ...) {
+linear_mle <- function(formula, data, family, weights = NULL, var = 0, ...) {
   formula <- validate_response_formula(formula)
   if (inherits(formula, "formula")) {
     return(fit_glm_ridge_callback(
       formula, data = data, family = family, weights = weights, var = var,
-      regul = regul, ...
+      ...
     ))
   } else if (inherits(formula, "list")) {
     return(lapply(seq_along(formula), function(s) {
       fit_glm_ridge_callback(
         formula[[s]], data = data, family = family, weights = weights,
-        var = var[, s, drop = FALSE], regul = regul, ...
+        var = var[, s, drop = FALSE], ...
       )
     }))
   } else {
