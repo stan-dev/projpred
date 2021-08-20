@@ -166,7 +166,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
                                control = control_callback(family), ...) {
   ## make sure correct 'weights' can be found
   environment(formula) <- environment()
-  suppressMessages(suppressWarnings(tryCatch({
+  tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
       dot_args <- list(...)
@@ -219,7 +219,7 @@ fit_glmer_callback <- function(formula, data, family, weights,
     } else {
       stop(e)
     }
-  })))
+  })
 }
 
 preprocess_data <- function(data, formula) {

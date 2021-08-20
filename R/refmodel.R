@@ -616,8 +616,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     }
-    suppressWarnings(family$linkinv(proj_predfun(fit, newdata = newdata) +
-                                      offset))
+    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
   }
 
   # mu ----------------------------------------------------------------------
