@@ -111,7 +111,7 @@ argument \code{fit}.}
 \item{proj_predfun}{Prediction function for the linear predictor of a
 submodel onto which the reference model is projected. May be \code{NULL}
 for using an internal default. Otherwise, needs to have the prototype
-\code{proj_predfun(fit, newdata = NULL, weights = NULL)} where:
+\code{proj_predfun(fit, newdata = NULL)} where:
 \itemize{
   \item{\code{fit} accepts fit(s) of a submodel as returned by
   \code{\link{project}} in its output element \code{sub_fit} (which in turn
@@ -121,9 +121,6 @@ for using an internal default. Otherwise, needs to have the prototype
   \item{\code{newdata} accepts either \code{NULL} (for using the original
   dataset, typically stored in \code{fit}) or data for new observations (at
   least in the form of a \code{data.frame});}
-  \item{\code{weights} accepts either \code{NULL} (for using a vector of
-  ones) or weights for the new observations from \code{newdata} (at least
-  in the form of a numeric vector).}
 }
 Let \eqn{N} denote the number of observations and
 \eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws (corresponding to

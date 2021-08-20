@@ -6,8 +6,7 @@
     weights <- refmodel$wobs[test_points]
     mu <- family$mu_fun(sub_fit,
                         obs = test_points,
-                        offset = refmodel$offset[test_points],
-                        weights = weights)
+                        offset = refmodel$offset[test_points])
 
     y <- refmodel$y[test_points]
     y_test <- nlist(y, weights)
