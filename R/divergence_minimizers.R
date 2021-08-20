@@ -1,18 +1,3 @@
-fetch_data <- function(data, obs = NULL, newdata = NULL) {
-  if (is.null(obs)) {
-    if (is.null(newdata)) {
-      data_out <- data
-    } else {
-      data_out <- newdata
-    }
-  } else if (is.null(newdata)) {
-    data_out <- data[obs, , drop = FALSE]
-  } else {
-    data_out <- newdata[obs, , drop = FALSE]
-  }
-  return(as.data.frame(data_out))
-}
-
 linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
                        var = 0, ...) {
   formula <- validate_response_formula(formula)
