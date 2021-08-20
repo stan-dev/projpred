@@ -140,9 +140,6 @@ test_that(paste(
     }
 
     y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
-    if (is.integer(y_crr)) {
-      y_crr <- as.numeric(y_crr)
-    }
 
     # Without `ynew`:
     expect_warning(
