@@ -202,7 +202,7 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     stop("type should be one of ('response', 'link')")
   }
   if (inherits(object, "datafit")) {
-    stop("Cannot make predictions with data reference only.")
+    stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
   if (!is.null(ynew)) {
     if (!(inherits(ynew, "numeric")) || NCOL(ynew) != 1) {
