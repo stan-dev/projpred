@@ -203,7 +203,7 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
   if (!is.null(ynew)) {
-    if (!(inherits(ynew, "numeric")) || NCOL(ynew) != 1) {
+    if (!is.numeric(ynew) || NCOL(ynew) != 1) {
       stop("ynew must be a numerical vector")
     }
   }
