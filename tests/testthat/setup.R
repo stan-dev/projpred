@@ -123,10 +123,6 @@ stats_tst <- list(
   binom_stats = list(stats = c(stats_common, c("acc", "auc")))
 )
 type_tst <- c("mean", "lower", "upper", "se")
-# digits_tst <- list(
-#   default_digits = list(),
-#   dig4 = list(digits = 4)
-# )
 
 # Data --------------------------------------------------------------------
 

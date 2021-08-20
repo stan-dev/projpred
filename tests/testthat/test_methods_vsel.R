@@ -61,7 +61,7 @@ test_that("invalid `baseline` fails", {
 
 test_that(paste(
   "`object` of class \"vsel\" (created by varsel()), `nterms_max`, `stats`,",
-  "`type`, and `digits` work"
+  "and `type` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(smmrys_vs)) {
@@ -80,7 +80,7 @@ test_that(paste(
 
 test_that(paste(
   "`object` of class \"vsel\" (created by cv_varsel()), `nterms_max`, `stats`,",
-  "`type`, and `digits` work"
+  "and `type` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(smmrys_cvvs)) {
