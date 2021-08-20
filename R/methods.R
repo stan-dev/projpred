@@ -443,7 +443,6 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
 #'   reference model or the best submodel found. Default is 'ref' when the
 #'   reference model exists, and 'best' otherwise.
-#' @param digits Number of decimal places to be reported (1 by default).
 #' @param ... Currently ignored.
 #'
 #' @examples
@@ -470,8 +469,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @export
 summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
                          type = c("mean", "se", "diff", "diff.se"),
-                         deltas = FALSE, alpha = 0.32, baseline = NULL,
-                         digits = 1, ...) {
+                         deltas = FALSE, alpha = 0.32, baseline = NULL, ...) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
@@ -643,7 +641,6 @@ print.vselsummary <- function(x, digits = 1, ...) {
 #' @name print-vsel
 #'
 #' @param x An object of class vsel/vsel.
-#' @param digits Number of decimal places to be reported (1 by default).
 #' @param ... Further arguments passed to \code{\link{summary.vsel}}.
 #'
 #' @return Returns invisibly the data frame produced by
@@ -651,8 +648,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
 #'
 #' @export
 #' @method print vsel
-print.vsel <- function(x, digits = 1, ...) {
-  stats <- summary.vsel(x, digits = digits, ...)
+print.vsel <- function(x, ...) {
+  stats <- summary.vsel(x, ...)
   print(stats)
   return(invisible(stats))
 }
