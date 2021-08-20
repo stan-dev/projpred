@@ -724,33 +724,26 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     cvfit$omitted
   )
   default_data <- refmodel$fetch_data(obs = fold)
-  fetch_fold <- function(data = NULL, obs = NULL, newdata = NULL) {
-    refmodel$fetch_data(obs = fold, newdata = newdata)
-  }
   ref_predfun <- function(fit, newdata = default_data) {
     refmodel$ref_predfun(fit, newdata = newdata)
   }
   proj_predfun <- function(fit, newdata = default_data, weights = NULL) {
     refmodel$proj_predfun(fit, newdata = newdata, weights = weights)
   }
-  extract_model_data <- function(object, newdata = fetch_fold(), ...) {
+  extract_model_data <- function(object, newdata = default_data, ...) {
     refmodel$extract_model_data(object = object, newdata = newdata, ...)
   }
   if (!inherits(refmodel, "datafit")) {
-    fit <- cvfit
-    k_refmodel <- get_refmodel(fit)
+    k_refmodel <- get_refmodel(cvfit)
   } else {
-    fit <- NULL
     k_refmodel <- init_refmodel(
-      object = fit, data = fetch_fold(),
+      object = NULL, data = default_data,
       formula = refmodel$formula, family = refmodel$family,
       div_minimizer = refmodel$div_minimizer,
       proj_predfun = proj_predfun,
       extract_model_data = extract_model_data
     )
   }
-
-  k_refmodel$fetch_data <- fetch_fold
   ## k_refmodel$nclusters_pred <- min(NCOL(k_refmodel$mu), 5)
   return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
 }
