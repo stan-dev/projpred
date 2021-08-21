@@ -23,8 +23,17 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
   y <- model.response(fr)
-  fit <- glm_ridge(x, y, family = family, lambda = regul, weights = weights,
-                   obsvar = var, ...)
+  # Exclude arguments from `...` which cannot be passed to glm_ridge():
+  dot_args <- list(...)
+  dot_args <- dot_args[intersect(
+    names(dot_args),
+    methods::formalArgs(glm_ridge)
+  )]
+  fit <- do.call(glm_ridge, c(
+    list(x = x, y = y, family = family, lambda = regul, weights = weights,
+         obsvar = var),
+    dot_args
+  ))
   rownames(fit$beta) <- colnames(x)
   sub <- nlist(
     alpha = fit$beta0,
@@ -77,9 +86,17 @@ additive_mle <- function(formula, data, family, weights = NULL, ...) {
 fit_gam_callback <- function(formula, data, family, weights, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
-  return(suppressMessages(suppressWarnings(gam(
-    formula, data = data, family = family, weights = weights, ...
-  ))))
+  # Exclude arguments from `...` which cannot be passed to mgcv::gam():
+  dot_args <- list(...)
+  dot_args <- dot_args[intersect(
+    names(dot_args),
+    union(methods::formalArgs(gam),
+          methods::formalArgs(mgcv::gam.fit))
+  )]
+  return(suppressMessages(suppressWarnings(do.call(gam, c(
+    list(formula = formula, data = data, family = family, weights = weights),
+    dot_args
+  )))))
 }
 
 # helper function of 'additive_mle'
@@ -88,9 +105,20 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
                               control = control_callback(family), ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
+  # Exclude arguments from `...` which cannot be passed to gamm4::gamm4():
+  dot_args <- list(...)
+  dot_args <- dot_args[intersect(
+    names(dot_args),
+    union(union(methods::formalArgs(gamm4),
+                methods::formalArgs(lme4::lFormula)),
+          methods::formalArgs(lme4::glFormula))
+  )]
   fit <- suppressMessages(suppressWarnings(tryCatch({
-    gamm4(formula, random = random, data = data, family = family,
-          weights = weights, control = control, ...)
+    do.call(gamm4, c(
+      list(formula = formula, random = random, data = data, family = family,
+           weights = weights, control = control),
+      dot_args
+    ))
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       scaled_data <- preprocess_data(data, formula)
@@ -140,11 +168,29 @@ fit_glmer_callback <- function(formula, data, family, weights,
   environment(formula) <- environment()
   suppressMessages(suppressWarnings(tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
-      return(lme4::lmer(formula, data = data, weights = weights,
-                        control = control, ...))
+      # Exclude arguments from `...` which cannot be passed to lme4::lmer():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        methods::formalArgs(lme4::lmer)
+      )]
+      return(do.call(lme4::lmer, c(
+        list(formula = formula, data = data, weights = weights,
+             control = control),
+        dot_args
+      )))
     } else {
-      return(lme4::glmer(formula, data = data, family = family,
-                         weights = weights, control = control, ...))
+      # Exclude arguments from `...` which cannot be passed to lme4::glmer():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        methods::formalArgs(lme4::glmer)
+      )]
+      return(do.call(lme4::glmer, c(
+        list(formula = formula, data = data, family = family, weights = weights,
+             control = control),
+        dot_args
+      )))
     }
   }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
