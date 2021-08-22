@@ -43,7 +43,7 @@ test_that("invalid `solution_terms` warns or fails", {
           excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
         )),
         paste("At least one element of `solution_terms` could not be found",
-              "among the terms in the reference model"),
+              "in the table of solution terms"),
         info = tstsetup_crr
       )
       projection_tester(p,
