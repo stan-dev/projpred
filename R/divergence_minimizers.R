@@ -234,11 +234,16 @@ preprocess_data <- function(data, formula) {
 
 # helper function of fit_glmer_callback to pass the proper kind of control
 # options depending on the family
-control_callback <- function(family, ...) {
+control_callback <- function(
+  family,
+  check.conv.singular = lme4::.makeCC(action = "ignore",
+                                      tol = formals(lme4::isSingular)$tol),
+  ...
+) {
   if (family$family == "gaussian" && family$link == "identity") {
-    return(lme4::lmerControl(...))
+    return(lme4::lmerControl(check.conv.singular = check.conv.singular, ...))
   } else {
-    return(lme4::glmerControl(...))
+    return(lme4::glmerControl(check.conv.singular = check.conv.singular, ...))
   }
 }
 
