@@ -106,16 +106,11 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
 .validate_vsel_object_stats <- function(object, stats) {
   if (!inherits(object, c("vsel"))) {
-    stop(
-      "The object is not a variable selection object. ",
-      "Run variable selection first"
-    )
+    stop("The object is not a variable selection object. Run variable ",
+         "selection first")
   }
 
-  recognized_stats <- c(
-    "elpd", "mlpd", "mse", "rmse", "acc",
-    "pctcorr", "auc"
-  )
+  recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   binomial_only_stats <- c("acc", "pctcorr", "auc")
   family <- object$family$family
 
@@ -146,10 +141,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
       # no reference model (or the results missing for some other reason),
       # so cannot compute differences between the reference model and submodels
-      stop(
-        "Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
-        "reference model."
-      )
+      stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
+           "reference model.")
     }
   }
   return(baseline)
@@ -195,7 +188,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
                          thinning = TRUE) {
-  #
   # Creates the reference distribution based on the refmodel-object, and the
   # desired number of clusters (nclusters) or number of subsamples (ndraws). If
   # nclusters is specified, then clustering is used and ndraws is ignored.
@@ -232,31 +224,25 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
       # special case, only one cluster
       cl <- rep(1, S)
       p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
-                            wobs = refmodel$wobs, cl = cl
-      )
+                            wobs = refmodel$wobs, cl = cl)
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
       return(.get_refdist(refmodel, ndraws = nclusters, seed = seed))
     } else {
       # several clusters
       if (nclusters > NCOL(refmodel$mu)) {
-        stop(
-          "The number of clusters nclusters cannot exceed the number of ",
-          "columns in mu."
-        )
+        stop("The number of clusters nclusters cannot exceed the number of ",
+             "columns in mu.")
       }
       p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
-                            wobs = refmodel$wobs, nclusters = nclusters
-      )
+                            wobs = refmodel$wobs, nclusters = nclusters)
     }
   } else {
     # Perform thinning or subsampling (depending on argument `thinning`) from
     # the reference model.
     if (ndraws > NCOL(refmodel$mu)) {
-      stop(
-        "The number of draws ndraws cannot exceed the number of ",
-        "columns in mu."
-      )
+      stop("The number of draws ndraws cannot exceed the number of ",
+           "columns in mu.")
     }
     if (thinning) {
       s_ind <- round(seq(from = 1, to = S, length.out = ndraws))
@@ -270,8 +256,7 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     })
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
-      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws),
-      cl = cl
+      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl
     )
   }
 
@@ -291,10 +276,8 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices
     if (is.null(cl$cluster)) {
-      stop(
-        "argument cl must be a vector of cluster indices or a clustering ",
-        "object returned by k-means."
-      )
+      stop("argument cl must be a vector of cluster indices or a clustering ",
+           "object returned by k-means.")
     }
     cl <- cl$cluster
   }
