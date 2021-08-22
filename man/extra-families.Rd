@@ -15,7 +15,7 @@ Student_t(link = "identity", nu = 3)
 }
 \value{
 A family object analogous to those described in
-  \link[=family]{family}
+\link[=family]{family}
 }
 \description{
 Family objects not in the set of default \link[=family]{family}-objects.

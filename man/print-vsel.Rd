@@ -15,7 +15,7 @@ argument \code{digits} which is passed to \code{\link{print.vselsummary}}).}
 }
 \value{
 Returns invisibly the data frame produced by
-  \code{\link{summary.vsel}}.
+\code{\link{summary.vsel}}.
 }
 \description{
 The \code{print} methods for vsel/vsel objects created by

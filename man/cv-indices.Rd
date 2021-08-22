@@ -23,14 +23,14 @@ See below for details.}
 }
 \value{
 \code{cvfolds} returns a vector of length \code{n} such that each
-  element is an integer between 1 and \code{k} denoting which fold the
-  corresponding data point belongs to. The returned value of \code{cv_ids}
-  depends on the \code{out}-argument. If \code{out}='foldwise', the returned
-  value is a list with \code{k} elements, each having fields \code{tr} and
-  \code{ts} which give the training and test indices, respectively, for the
-  corresponding fold. If \code{out}='indices', the returned value is a list
-  with fields \code{tr} and \code{ts} each of which is a list with \code{k}
-  elements giving the training and test indices for each fold.
+element is an integer between 1 and \code{k} denoting which fold the
+corresponding data point belongs to. The returned value of \code{cv_ids}
+depends on the \code{out}-argument. If \code{out}='foldwise', the returned
+value is a list with \code{k} elements, each having fields \code{tr} and
+\code{ts} which give the training and test indices, respectively, for the
+corresponding fold. If \code{out}='indices', the returned value is a list
+with fields \code{tr} and \code{ts} each of which is a list with \code{k}
+elements giving the training and test indices for each fold.
 }
 \description{
 Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross

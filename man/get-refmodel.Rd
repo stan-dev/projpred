@@ -64,14 +64,14 @@ on \code{"family"} objects in \R, see \code{\link{family}}.}
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model. May be \code{NULL} for using an internal default.
 Otherwise, needs to have the prototype \code{ref_predfun(fit, newdata =
-NULL)} where:
+  NULL)} where:
 \itemize{
-  \item{\code{fit} accepts the reference model fit as given in argument
-  \code{object} (but possibly re-fitted to a subset of the observations, as
-  done in K-fold cross-validation);}
-  \item{\code{newdata} accepts either \code{NULL} (for using the original
-  dataset, typically stored in \code{fit}) or data for new observations (at
-  least in the form of a \code{data.frame}).}
+\item{\code{fit} accepts the reference model fit as given in argument
+\code{object} (but possibly re-fitted to a subset of the observations, as
+done in K-fold cross-validation);}
+\item{\code{newdata} accepts either \code{NULL} (for using the original
+dataset, typically stored in \code{fit}) or data for new observations (at
+least in the form of a \code{data.frame}).}
 }
 Let \eqn{N} denote the number of observations in the original dataset (used
 for fitting the reference model) and \eqn{S} the number of posterior draws
@@ -86,24 +86,24 @@ using an internal default. Otherwise, needs to have the prototype
 (with \eqn{S_{\mbox{prj}}}{S_prj} denoting the number of resulting
 projected draws):
 \itemize{
-  \item{\code{formula} accepts either a standard formula with a single
-  response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
-  \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
-  \code{\link{cbind}}-ed on the left-hand side in which case the projection
-  has to be performed for each of the response variables separately;}
-  \item{\code{data} accepts a \code{data.frame} to be used for the
-  projection;}
-  \item{\code{family} accepts a \code{"family"} object (see argument
-  \code{family});}
-  \item{\code{weights} accepts either \code{NULL} (for using a vector of
-  ones as weights) or observation weights (at least in the form of a
-  numeric vector).}
+\item{\code{formula} accepts either a standard formula with a single
+response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
+\eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
+\code{\link{cbind}}-ed on the left-hand side in which case the projection
+has to be performed for each of the response variables separately;}
+\item{\code{data} accepts a \code{data.frame} to be used for the
+projection;}
+\item{\code{family} accepts a \code{"family"} object (see argument
+\code{family});}
+\item{\code{weights} accepts either \code{NULL} (for using a vector of
+ones as weights) or observation weights (at least in the form of a
+numeric vector).}
 }
 The return value of \code{div_minimizer} has to be:
 \itemize{
-  \item{a fitted model object if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
-  \item{a list of \eqn{S_{\mbox{prj}}}{S_prj} fitted model objects if
-  \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
+\item{a fitted model object if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
+\item{a list of \eqn{S_{\mbox{prj}}}{S_prj} fitted model objects if
+\eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
 }
 This output of \code{div_minimizer} is used, e.g., by \code{proj_predfun}'s
 argument \code{fit}.}
@@ -113,46 +113,46 @@ submodel onto which the reference model is projected. May be \code{NULL}
 for using an internal default. Otherwise, needs to have the prototype
 \code{proj_predfun(fit, newdata = NULL)} where:
 \itemize{
-  \item{\code{fit} accepts fit(s) of a submodel as returned by
-  \code{\link{project}} in its output element \code{sub_fit} (which in turn
-  is the same as the return value of \code{div_minimizer}, except if
-  \code{\link{project}} was used with a \code{"vsel"} object from an L1
-  search as well as \code{cv_search = FALSE});}
-  \item{\code{newdata} accepts either \code{NULL} (for using the original
-  dataset, typically stored in \code{fit}) or data for new observations (at
-  least in the form of a \code{data.frame});}
+\item{\code{fit} accepts fit(s) of a submodel as returned by
+\code{\link{project}} in its output element \code{sub_fit} (which in turn
+is the same as the return value of \code{div_minimizer}, except if
+\code{\link{project}} was used with a \code{"vsel"} object from an L1
+search as well as \code{cv_search = FALSE});}
+\item{\code{newdata} accepts either \code{NULL} (for using the original
+dataset, typically stored in \code{fit}) or data for new observations (at
+least in the form of a \code{data.frame});}
 }
 Let \eqn{N} denote the number of observations and
 \eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws (corresponding to
 the number of fits in \code{fit}). Then the return value of
 \code{proj_predfun} has to be:
 \itemize{
-  \item{a vector or a 1-column matrix of length \eqn{N} if
-  \eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
-  \item{a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix if
-  \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
+\item{a vector or a 1-column matrix of length \eqn{N} if
+\eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
+\item{a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix if
+\eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
 }}
 
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (i.e., the dataset
 used for fitting the reference model) or from a new dataset. This function
 needs to have the prototype \code{extract_model_data(object, newdata,
-wrhs = NULL, orhs = NULL, extract_y = TRUE)}, where:
+  wrhs = NULL, orhs = NULL, extract_y = TRUE)}, where:
 \itemize{
-  \item{\code{object} accepts the reference model fit as given in argument
-  \code{object} (but possibly re-fitted to a subset of the observations, as
-  done in K-fold cross-validation);}
-  \item{\code{newdata} accepts data for new observations (at least in the
-  form of a \code{data.frame});}
-  \item{\code{wrhs} accepts at least either \code{NULL} (for using a vector
-  of ones) or a right-hand side formula consisting only of the variable in
-  \code{newdata} containing the weights;}
-  \item{\code{orhs} accepts at least either \code{NULL} (for using a vector
-  of zeros) or a right-hand side formula consisting only of the variable in
-  \code{newdata} containing the offsets;}
-  \item{\code{extract_y} accepts a single logical value indicating whether
-  output element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or
-  not (\code{FALSE}).}
+\item{\code{object} accepts the reference model fit as given in argument
+\code{object} (but possibly re-fitted to a subset of the observations, as
+done in K-fold cross-validation);}
+\item{\code{newdata} accepts data for new observations (at least in the
+form of a \code{data.frame});}
+\item{\code{wrhs} accepts at least either \code{NULL} (for using a vector
+of ones) or a right-hand side formula consisting only of the variable in
+\code{newdata} containing the weights;}
+\item{\code{orhs} accepts at least either \code{NULL} (for using a vector
+of zeros) or a right-hand side formula consisting only of the variable in
+\code{newdata} containing the offsets;}
+\item{\code{extract_y} accepts a single logical value indicating whether
+output element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or
+not (\code{FALSE}).}
 }
 The return value of \code{extract_model_data} needs to be a \code{list}
 with elements \code{y}, \code{weights}, and \code{offset}, each being a
@@ -180,14 +180,14 @@ a parameter exists; else \code{dis} may be \code{NULL}).}
 }
 \value{
 An object that can be passed to all the functions that take the
-  reference model fit as the first argument, such as \link{varsel},
-  \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict}, and
-  \link[=proj-pred]{proj_linpred}. Usually, the returned object is of class
-  \code{"refmodel"}. However, if \code{object} is \code{NULL}, the returned
-  object is of class \code{c("datafit", "refmodel")} which is handled
-  differently at several places throughout this package. In particular, for a
-  \code{"datafit"}, argument \code{ref_predfun} is ignored and an internal
-  function is used instead which always returns \code{NA}.
+reference model fit as the first argument, such as \link{varsel},
+\link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict}, and
+\link[=proj-pred]{proj_linpred}. Usually, the returned object is of class
+\code{"refmodel"}. However, if \code{object} is \code{NULL}, the returned
+object is of class \code{c("datafit", "refmodel")} which is handled
+differently at several places throughout this package. In particular, for a
+\code{"datafit"}, argument \code{ref_predfun} is ignored and an internal
+function is used instead which always returns \code{NA}.
 }
 \description{
 Function \code{get_refmodel} is a generic function for creating the reference

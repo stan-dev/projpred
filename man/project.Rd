@@ -66,33 +66,33 @@ regularization to avoid numerical problems.}
 }
 \value{
 If the projection is performed onto a single submodel (i.e.,
-  \code{nterms} has length one or \code{solution_terms} is specified), an
-  object of class \code{"projection"} which is a \code{list} containing the
-  following elements:
-  \describe{
-    \item{\code{dis}}{Projected draws for the dispersion parameter.}
-    \item{\code{kl}}{The KL divergence from the submodel to the reference
-    model.}
-    \item{\code{weights}}{Weights for the projected draws.}
-    \item{\code{solution_terms}}{A character vector of the submodel's
-    predictor terms, ordered the way in which the terms were added to the
-    submodel.}
-    \item{\code{sub_fit}}{The submodel's fitted model object.}
-    \item{\code{family}}{A modified \code{\link{family}}-object.}
-    \item{\code{p_type}}{A single logical value indicating whether the
-    reference model's posterior draws have been clustered for the projection
-    (\code{TRUE}) or not (\code{FALSE}).}
-    \item{\code{intercept}}{A single logical value indicating whether the
-    reference model (as well as the submodel) contains an intercept
-    (\code{TRUE}) or not (\code{FALSE}).}
-    \item{\code{extract_model_data}}{The \code{extract_model_data()} function
-    from the reference model (see \code{\link{init_refmodel}}).}
-    \item{\code{refmodel}}{The reference model object (see
-    \code{\link{init_refmodel}}).}
-  }
-  If the projection is performed onto more than one submodel, the output from
-  above is returned for each submodel, giving a \code{list} with one element
-  for each submodel.
+\code{nterms} has length one or \code{solution_terms} is specified), an
+object of class \code{"projection"} which is a \code{list} containing the
+following elements:
+\describe{
+\item{\code{dis}}{Projected draws for the dispersion parameter.}
+\item{\code{kl}}{The KL divergence from the submodel to the reference
+model.}
+\item{\code{weights}}{Weights for the projected draws.}
+\item{\code{solution_terms}}{A character vector of the submodel's
+predictor terms, ordered the way in which the terms were added to the
+submodel.}
+\item{\code{sub_fit}}{The submodel's fitted model object.}
+\item{\code{family}}{A modified \code{\link{family}}-object.}
+\item{\code{p_type}}{A single logical value indicating whether the
+reference model's posterior draws have been clustered for the projection
+(\code{TRUE}) or not (\code{FALSE}).}
+\item{\code{intercept}}{A single logical value indicating whether the
+reference model (as well as the submodel) contains an intercept
+(\code{TRUE}) or not (\code{FALSE}).}
+\item{\code{extract_model_data}}{The \code{extract_model_data()} function
+from the reference model (see \code{\link{init_refmodel}}).}
+\item{\code{refmodel}}{The reference model object (see
+\code{\link{init_refmodel}}).}
+}
+If the projection is performed onto more than one submodel, the output from
+above is returned for each submodel, giving a \code{list} with one element
+for each submodel.
 }
 \description{
 Project the reference model onto a single submodel consisting of a specific
@@ -101,9 +101,9 @@ specific sizes.
 }
 \details{
 Using less draws or clusters in \code{ndraws} or \code{nclusters}
-  than posterior draws in the reference model may result in slightly
-  inaccurate projection performance. Increasing these arguments linearly
-  affects the computation time.
+than posterior draws in the reference model may result in slightly
+inaccurate projection performance. Increasing these arguments linearly
+affects the computation time.
 }
 \examples{
 \donttest{

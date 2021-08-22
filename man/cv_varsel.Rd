@@ -144,9 +144,9 @@ default considers all the terms in the reference model's formula.}
 }
 \value{
 An object of type \code{vsel} that contains information about the
-  feature selection. The fields are not meant to be accessed directly by the
-  user but instead via the helper functions (see the vignettes or type
-  ?projpred to see the main functions in the package.)
+feature selection. The fields are not meant to be accessed directly by the
+user but instead via the helper functions (see the vignettes or type
+?projpred to see the main functions in the package.)
 }
 \description{
 Perform cross-validation for the projective variable selection for a
@@ -155,9 +155,9 @@ models.
 }
 \details{
 Using less draws or clusters in \code{ndraws}, \code{nclusters},
-  \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
-  reference model may result in slightly inaccurate projection performance.
-  Increasing these arguments linearly affects the computation time.
+\code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
+reference model may result in slightly inaccurate projection performance.
+Increasing these arguments linearly affects the computation time.
 }
 \examples{
 \donttest{
