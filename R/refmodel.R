@@ -484,7 +484,7 @@ get_refmodel.stanreg <- function(object, ...) {
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, extract_model_data, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, ...) {
+                          cvfits = NULL, dis = NULL) {
   proper_model <- !is.null(object)
 
   # Formula -----------------------------------------------------------------
