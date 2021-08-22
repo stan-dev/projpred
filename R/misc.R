@@ -251,9 +251,9 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
     }
     cl <- rep(NA, S)
     cl[s_ind] <- c(1:ndraws)
-    predvar <- sapply(s_ind, function(j) {
+    predvar <- do.call(cbind, lapply(s_ind, function(j) {
       family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
-    })
+    }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
       dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl
@@ -302,13 +302,13 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   wcluster <- wcluster / sum(wcluster)
 
   # predictive variances
-  predvar <- sapply(1:nclusters, function(j) {
+  predvar <- do.call(cbind, lapply(1:nclusters, function(j) {
     # compute normalized weights within the cluster, 1-eps is for numerical
     # stability
     ind <- which(cl == j)
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
     family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
-  })
+  }))
 
   # combine the results
   p <- list(
