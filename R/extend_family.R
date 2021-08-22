@@ -36,7 +36,7 @@ extend_family_binomial <- function(family) {
   }
   dis_na <- function(pref, psub, wobs = 1) rep(0, ncol(pref$mu))
   predvar_na <- function(mu, dis, wsample = 1) {
-    0
+    rep(0, NROW(mu))
   }
   ll_binom <- function(mu, dis, y, weights = 1) {
     dbinom(y, weights, mu, log = TRUE)
@@ -91,7 +91,7 @@ extend_family_poisson <- function(family) {
   }
   dis_na <- function(pref, psub, wobs = 1) rep(0, ncol(pref$mu))
   predvar_na <- function(mu, dis, wsample = 1) {
-    0
+    rep(0, NROW(mu))
   }
   ll_poiss <- function(mu, dis, y, weights = 1)
     weights * dpois(y, mu, log = TRUE)
