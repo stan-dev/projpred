@@ -154,10 +154,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       )
     }
     if (length(solution_terms) > length(vars)) {
-      stop(
-        "Argument 'solution_terms' contains more terms than the number of ",
-        "terms in the reference model."
-      )
+      stop("Argument 'solution_terms' contains more terms than the number of ",
+           "terms in the reference model.")
     }
 
     if (!all(solution_terms %in% vars)) {
@@ -176,10 +174,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         ## by default, project onto the suggested model size
         nterms <- min(object$suggested_size, length(solution_terms))
       } else {
-        stop(
-          "No suggested model size found, please specify nterms or solution",
-          "terms"
-        )
+        stop("No suggested model size found, please specify nterms or solution",
+             "terms")
       }
     } else {
       if (!is.numeric(nterms) || any(nterms < 0)) {
@@ -189,8 +185,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         stop(paste(
           "Cannot perform the projection with", max(nterms), "variables,",
           "because variable selection was run only up to",
-          length(solution_terms),
-          "variables."
+          length(solution_terms), "variables."
         ))
       }
     }
