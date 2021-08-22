@@ -159,9 +159,14 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     }
 
     if (!all(solution_terms %in% vars)) {
-      warning("At least one element of `solution_terms` could not be found ",
-              "among the terms in the reference model. This element (or these ",
-              "elements) is/are ignored.")
+      warning(
+        "At least one element of `solution_terms` could not be found in the ",
+        "table of solution terms (which is either `object$solution_terms` or ",
+        "the vector of terms in the reference model, depending on whether ",
+        "`object$solution_terms` is `NULL` or not). Elements which cannot be ",
+        "found are ignored. The table of solution terms is here: `c(\"",
+        paste(vars, collapse = "\", \""), "\")`."
+      )
     }
 
     solution_terms <- intersect(solution_terms, vars)
