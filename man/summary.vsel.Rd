@@ -47,7 +47,7 @@ to the baseline model (see argument \code{baseline}) instead of estimating
 the actual values of the statistics. Defaults to \code{FALSE}.}
 
 \item{alpha}{A number indicating the desired coverage of the credible
-intervals. For example \code{alpha=0.32} corresponds to 68\\% probability
+intervals. For example \code{alpha=0.32} corresponds to 68\% probability
 mass within the intervals, that is, one standard error intervals.}
 
 \item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the

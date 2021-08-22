@@ -434,7 +434,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   to the baseline model (see argument \code{baseline}) instead of estimating
 #'   the actual values of the statistics. Defaults to \code{FALSE}.
 #' @param alpha A number indicating the desired coverage of the credible
-#'   intervals. For example \code{alpha=0.32} corresponds to 68\% probability
+#'   intervals. For example \code{alpha=0.32} corresponds to 68% probability
 #'   mass within the intervals, that is, one standard error intervals.
 #' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
 #'   reference model or the best submodel found. Default is 'ref' when the
@@ -672,7 +672,7 @@ suggest_size <- function(object, ...) {
 #'   \code{summary} for other possible choices.
 #' @param alpha A number indicating the desired coverage of the credible
 #'   intervals based on which the decision is made. E.g. \code{alpha=0.32}
-#'   corresponds to 68\% probability mass within the intervals (one standard
+#'   corresponds to 68% probability mass within the intervals (one standard
 #'   error intervals). See details for more information.
 #' @param pct Number indicating the relative proportion between baseline model
 #'   and null model utilities one is willing to sacrifice. See details for more

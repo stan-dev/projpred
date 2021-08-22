@@ -29,7 +29,7 @@ suggest_size(object, ...)
 
 \item{alpha}{A number indicating the desired coverage of the credible
 intervals based on which the decision is made. E.g. \code{alpha=0.32}
-corresponds to 68\\% probability mass within the intervals (one standard
+corresponds to 68\% probability mass within the intervals (one standard
 error intervals). See details for more information.}
 
 \item{pct}{Number indicating the relative proportion between baseline model
