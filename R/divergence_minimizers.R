@@ -46,8 +46,8 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
   return(sub)
 }
 
-# Use mgcv to fit the projection to the posterior draws for additive multilevel
-# models.
+# Use package "mgcv" to fit submodels for additive reference models. Use package
+# "gamm4" to fit submodels for additive multilevel reference models:
 additive_mle <- function(formula, data, family, weights = NULL, ...) {
   f <- split_formula_random_gamm4(formula)
   formula <- f$formula
@@ -81,7 +81,7 @@ additive_mle <- function(formula, data, family, weights = NULL, ...) {
   }
 }
 
-# helper function of 'additive_mle'
+# Helper function for additive_mle():
 #' @importFrom mgcv gam
 fit_gam_callback <- function(formula, data, family, weights, ...) {
   # make sure correct 'weights' can be found
@@ -99,7 +99,7 @@ fit_gam_callback <- function(formula, data, family, weights, ...) {
   )))))
 }
 
-# helper function of 'additive_mle'
+# Helper function for additive_mle():
 #' @importFrom gamm4 gamm4
 fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
                               control = control_callback(family), ...) {
@@ -141,7 +141,9 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
   return(fit)
 }
 
-# Use lmer to fit the projection to the posterior draws for multilevel models.
+# Use package "lme4" to fit submodels for multilevel reference models (with a
+# fallback to "projpred"'s own implementation for fitting non-multilevel (and
+# non-additive) submodels):
 linear_multilevel_mle <- function(formula, data, family, weights = NULL,
                                   var = 0, ...) {
   formula <- validate_response_formula(formula)
@@ -161,7 +163,7 @@ linear_multilevel_mle <- function(formula, data, family, weights = NULL,
   }
 }
 
-# helper function of 'linear_multilevel_mle'
+# Helper function for linear_multilevel_mle():
 fit_glmer_callback <- function(formula, data, family, weights,
                                control = control_callback(family), ...) {
   ## make sure correct 'weights' can be found
@@ -232,8 +234,8 @@ preprocess_data <- function(data, formula) {
   return(data)
 }
 
-# helper function of fit_glmer_callback to pass the proper kind of control
-# options depending on the family
+# Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
+# appropriate control options depending on the family:
 control_callback <- function(
   family,
   check.conv.singular = lme4::.makeCC(action = "ignore",
@@ -247,8 +249,8 @@ control_callback <- function(
   }
 }
 
-# helper function for linear_multilevel_proj_predfun to only pass
-# allow.new.levels if the fit is multilevel
+# Helper function for linear_multilevel_proj_predfun() which only passes
+# argument `allow.new.levels` to the predict() generic if the fit is multilevel:
 predict_multilevel_callback <- function(fit, newdata = NULL) {
   if (inherits(fit, c("lmerMod", "glmerMod"))) {
     return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
