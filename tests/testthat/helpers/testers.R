@@ -409,7 +409,7 @@ refmodel_tester <- function(
 # elements must not necessarily be of class `"subfit"`) for the same single
 # submodel
 #
-# @param sub_fit_obj The list of subfits to test.
+# @param sub_fit_totest The list of subfits to test.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
 # @param sub_formul A list of formulas for the submodel (with one element per
@@ -424,16 +424,16 @@ refmodel_tester <- function(
 #   submodel is non-multilevel or multilevel, respectively).
 # @param wobs_expected The expected numeric vector of observation weights.
 # @param ref_formul The formula of the reference model . Should only be needed
-#   if `sub_fit_obj` comes from the L1 `search_path` of an object of class
+#   if `sub_fit_totest` comes from the L1 `search_path` of an object of class
 #   `"vsel"`. Otherwise, use `NULL`.
-# @param with_offs A single logical value indicating whether `sub_fit_obj` is
+# @param with_offs A single logical value indicating whether `sub_fit_totest` is
 #   expected to include offsets (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
 sub_fit_tester <- function(
-  sub_fit_obj,
+  sub_fit_totest,
   nprjdraws_expected,
   sub_formul,
   sub_data,
@@ -445,13 +445,8 @@ sub_fit_tester <- function(
   with_offs = FALSE,
   info_str
 ) {
-  if (nprjdraws_expected > 1) {
-    expect_type(sub_fit_obj, "list")
-    expect_length(sub_fit_obj, nprjdraws_expected)
-    sub_fit_totest <- sub_fit_obj
-  } else {
-    sub_fit_totest <- list(sub_fit_obj)
-  }
+  expect_type(sub_fit_totest, "list")
+  expect_length(sub_fit_totest, nprjdraws_expected)
 
   from_vsel_L1_search <- !is.null(ref_formul)
 

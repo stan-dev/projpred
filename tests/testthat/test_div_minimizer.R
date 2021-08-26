@@ -20,10 +20,10 @@ test_that("all div_minimizer()s work", {
       # Crude approximations for the predictive variances:
       var_crr <- mean(as.matrix(fits[[tstsetup]])[, "sigma"]^2) +
         (colMeans(mu_crr^2) - colMeans(mu_crr)^2)
-      var_crr <- median(var_crr)
     } else {
-      var_crr <- 0
+      var_crr <- rep(0, nobsv)
     }
+    var_crr <- matrix(var_crr)
 
     if (args_fit_i$pkg_nm == "brms" && grepl("\\.with_wobs", tstsetup)) {
       args_fit_i$formula <- rm_addresp(args_fit_i$formula)
