@@ -140,12 +140,8 @@
 #'     \item{if \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}: a
 #'     \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.}
 #'   }
-#' * `div_minimizer`:
-#'   \itemize{
-#'     \item{if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}: a fitted model object;}
-#'     \item{if \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}: a \code{list} of
-#'     \eqn{S_{\mbox{prj}}}{S_prj} fitted model objects.}
-#'   }
+#' * `div_minimizer`: a \code{list} of \eqn{S_{\mbox{prj}}}{S_prj} fitted model
+#'   objects.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as \link{varsel},

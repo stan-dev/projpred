@@ -132,7 +132,7 @@ validate_response_formula <- function(formula) {
       update(formula, paste0(r, " ~ ."))
     }))
   } else {
-    return(formula)
+    return(list(formula))
   }
 }
 
