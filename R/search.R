@@ -26,7 +26,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
 
     ## select best candidate
     imin <- which.min(sapply(seq_len(NCOL(sub)), function(i) {
-      min(unlist(sub["kl", i]))
+      unlist(sub["kl", i])
     }))
     chosen <- c(chosen, cands[imin])
 
