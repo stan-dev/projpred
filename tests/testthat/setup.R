@@ -49,7 +49,7 @@ source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 
-mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
+mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
 
 fam_nms <- setNames(nm = c("gauss", "binom")) # , "brnll", "poiss"
 ### TODO: Fix this: When using all `fam_nms`, use the following order because
