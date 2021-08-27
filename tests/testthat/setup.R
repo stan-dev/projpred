@@ -307,13 +307,10 @@ iter_tst <- 500L
 #   * Argument `offset` has an issue for rstanarm::stan_glmer() (see rstanarm
 #     issue #541). Instead, use offset() in the formula.
 #   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
-#     offset() in the formula.
+#     offset() in the formula. However, because of rstanarm issue #546 and
+#     rstanarm issue #253, omit the offsets in GAMs and GAMMs.
 #   * In rstanarm::stan_gamm4(), multilevel terms are specified via argument
 #     `random`.
-#   * In the presence of multilevel terms (argument `random`),
-#     rstanarm::stan_gamm4() seems to be unable to support an offset() term in
-#     the formula (see rstanarm issue #253). Therefore, omit the offset in that
-#     case.
 
 trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2",
                  "offset(offs_col)")
@@ -394,7 +391,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         mod_nm,
         "glm" = trms_common,
         "glmm" = c(trms_common, trms_grp),
-        "gam" = c(trms_common, trms_add),
+        "gam" = c(setdiff(trms_common, "offset(offs_col)"), trms_add),
         "gamm" = c(setdiff(trms_common, "offset(offs_col)"), trms_add),
         stop("Unknown `mod_nm`.")
       )
