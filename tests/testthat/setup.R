@@ -311,8 +311,9 @@ iter_tst <- 500L
 #   * In rstanarm::stan_gamm4(), multilevel terms are specified via argument
 #     `random`.
 #   * In the presence of multilevel terms (argument `random`),
-#     rstanarm::stan_gamm4() seems to be unable to support an offset() in the
-#     formula. Therefore, omit the offset here.
+#     rstanarm::stan_gamm4() seems to be unable to support an offset() term in
+#     the formula (see rstanarm issue #253). Therefore, omit the offset in that
+#     case.
 
 trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2",
                  "offset(offs_col)")
