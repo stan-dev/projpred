@@ -228,34 +228,15 @@ predict_multilevel_callback <- function(fit, newdata = NULL) {
 }
 
 linear_multilevel_proj_predfun <- function(fit, newdata = NULL) {
-  if (inherits(fit, "list")) {
-    return(do.call(cbind, lapply(fit, function(fit) {
-      predict_multilevel_callback(fit, newdata)
-    })))
-  } else {
-    return(as.matrix(predict_multilevel_callback(fit, newdata)))
-  }
+  return(do.call(cbind, lapply(fit, function(fit) {
+    predict_multilevel_callback(fit, newdata)
+  })))
 }
 
 linear_proj_predfun <- function(fit, newdata = NULL) {
-  if (inherits(fit, "list")) {
-    if (!is.null(newdata)) {
-      return(do.call(cbind, lapply(fit, function(fit) {
-        predict(fit, newdata = newdata)
-      })))
-    } else {
-      return(do.call(cbind, lapply(fit, function(fit) {
-        predict(fit)
-      })))
-    }
-  }
-  else {
-    if (!is.null(newdata)) {
-      return(predict(fit, newdata = newdata))
-    } else {
-      return(predict(fit))
-    }
-  }
+  return(do.call(cbind, lapply(fit, function(fit) {
+    predict(fit, newdata = newdata)
+  })))
 }
 
 additive_proj_predfun <- function(fit, newdata = NULL) {
