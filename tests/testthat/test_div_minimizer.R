@@ -39,6 +39,13 @@ test_that("all div_minimizer()s work", {
       args_fit_i$weights <- wobs_tst
     }
 
+    if ("random" %in% names(args_fit_i)) {
+      args_fit_i$formula <- update(
+        args_fit_i$formula,
+        as.formula(paste(". ~ . +", tail(as.character(args_fit_i$random), 1)))
+      )
+    }
+
     divmin <- do.call(divmin_fun, c(
       args_fit_i[intersect(names(args_fit_i),
                            c("formula", "data", "family", "weights"))],
