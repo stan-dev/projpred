@@ -96,7 +96,7 @@ test_that("`d_test` works", {
     d_test_crr <- list(
       y = refmod_crr$y,
       test_points = seq_along(refmod_crr$y),
-      data = refmod_crr$fit$data,
+      data = refmod_crr$fetch_data(),
       weights = refmod_crr$wobs,
       type = "test",
       offset = refmod_crr$offset
