@@ -354,11 +354,16 @@ refmodel_tester <- function(refmod,
 # @param sub_fit_obj The list of subfits to test.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
-# @param sub_formul The submodel's formula (with the original response on the
-#   left-hand side; replications of the response for the different (clustered)
-#   draws are created automatically).
+# @param sub_formul A list of formulas for the submodel (with one element per
+#   projected draw).
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
+# @param has_grp A single logical value indicating whether `sub_fit_obj` is
+#   expected to be of class `"lmerMod"` or `"glmerMod"` (if, at the same time,
+#   `has_add` is `FALSE`).
+# @param has_add A single logical value indicating whether `sub_fit_obj` is
+#   expected to be of class `"gam"` or `"gamm4"` (depending on whether the
+#   submodel is non-multilevel or multilevel, respectively).
 # @param wobs_expected The expected numeric vector of observation weights.
 # @param ref_formul The formula of the reference model . Should only be needed
 #   if `sub_fit_obj` comes from the L1 `search_path` of an object of class
@@ -369,15 +374,19 @@ refmodel_tester <- function(refmod,
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-sub_fit_tester <- function(sub_fit_obj,
-                           nprjdraws_expected,
-                           sub_formul,
-                           sub_data,
-                           sub_fam,
-                           wobs_expected = wobs_tst,
-                           ref_formul = NULL,
-                           with_offs = FALSE,
-                           info_str) {
+sub_fit_tester <- function(
+  sub_fit_obj,
+  nprjdraws_expected,
+  sub_formul,
+  sub_data,
+  sub_fam,
+  has_grp = formula_contains_group_terms(sub_formul[[1]]),
+  has_add = formula_contains_additive_terms(sub_formul[[1]]),
+  wobs_expected = wobs_tst,
+  ref_formul = NULL,
+  with_offs = FALSE,
+  info_str
+) {
   if (nprjdraws_expected > 1) {
     expect_type(sub_fit_obj, "list")
     expect_length(sub_fit_obj, nprjdraws_expected)
@@ -393,9 +402,6 @@ sub_fit_tester <- function(sub_fit_obj,
         length.out = min(length(sub_fit_totest), nclusters_pred_tst))
   ))
 
-  if (!is.list(sub_formul)) sub_formul <- list(sub_formul)
-  has_grp <- formula_contains_group_terms(sub_formul[[1]])
-  has_add <- formula_contains_additive_terms(sub_formul[[1]])
   if (!has_grp && !has_add) {
     sub_trms <- labels(terms(sub_formul[[1]]))
     if (length(sub_trms) > 0) {
@@ -702,15 +708,6 @@ projection_tester <- function(p,
     expect_identical(p$family, fam_expected, info = info_str)
   }
 
-  # A preliminary check for `nprjdraws_expected`:
-  if (!from_vsel_L1_search) {
-    # Number of projected draws in as.matrix.projection() (note that more
-    # extensive tests for as.matrix.projection() may be found in
-    # "test_as_matrix.R"):
-    SW(nprjdraws <- NROW(as.matrix(p)))
-    expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
-  }
-
   # solution_terms
   if (is.numeric(solterms_expected)) {
     expect_length(p$solution_terms, solterms_expected)
@@ -734,6 +731,21 @@ projection_tester <- function(p,
     ref_formul_crr <- p$refmodel$formula
   }
   y_nms <- paste0(".", y_nm)
+  # A preliminary check for `nprjdraws_expected` (doesn't work for "datafit"s
+  # and, because of issue #131, for submodels with multilevel terms which belong
+  # to an additive reference model):
+  sub_formul_crr_rhs <- as.formula(paste(
+    "~", paste(sub_trms_crr, collapse = " + ")
+  ))
+  if (!from_vsel_L1_search &&
+      !(formula_contains_additive_terms(p$refmodel$formula) &&
+        formula_contains_group_terms(sub_formul_crr_rhs))) {
+    # Number of projected draws in as.matrix.projection() (note that more
+    # extensive tests for as.matrix.projection() may be found in
+    # "test_as_matrix.R"):
+    SW(nprjdraws <- NROW(as.matrix(p)))
+    expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
+  }
   if (nprjdraws_expected > 1) {
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
   }
@@ -760,6 +772,7 @@ projection_tester <- function(p,
                  sub_formul = sub_formul_crr,
                  sub_data = sub_data_crr,
                  sub_fam = p$family$family,
+                 has_add = formula_contains_additive_terms(p$refmodel$formula),
                  wobs_expected = p$refmodel$wobs,
                  ref_formul = ref_formul_crr,
                  info_str = info_str)
@@ -1054,6 +1067,7 @@ vsel_tester <- function(
       sub_formul = sub_formul_crr,
       sub_data = sub_data_crr,
       sub_fam = vs$family$family,
+      has_add = formula_contains_additive_terms(vs$refmodel$formula),
       wobs_expected = vs$refmodel$wobs,
       ref_formul = ref_formul_crr,
       info_str = paste(info_str, i, sep = "__")
