@@ -357,6 +357,13 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   # Offsets:
+  # Element `stan_function` (needed for handling the offsets) is not documented
+  # in `?rstanarm::`stanreg-objects``, so check at least its length and type:
+  if (length(object$stan_function) != 1 ||
+      !is.vector(object$stan_function, mode = "character")) {
+    stop("Unexpected value of `object$stan_function`. Please notify the ",
+         "package maintainer.")
+  }
   if (length(object$offset) > 0) {
     if (is.null(attr(terms(formula(object)), "offset"))) {
       # In this case, we would have to use argument `offset` of
@@ -367,6 +374,11 @@ get_refmodel.stanreg <- function(object, ...) {
            "argument `offset`. Currently, projpred does not support offsets ",
            "specified this way. Please use an `offset()` term in the model ",
            "formula instead.")
+    }
+    if (object$stan_function == "stan_gamm4") {
+      stop("Because of rstanarm issue #546 (see GitHub), projpred cannot ",
+           "allow offsets for additive models (fit with ",
+           "rstanarm::stan_gamm4()).")
     }
     if ("projpred_internal_offs_stanreg" %in% names(data)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
@@ -424,12 +436,6 @@ get_refmodel.stanreg <- function(object, ...) {
     linpred_out <- t(
       posterior_linpred(fit, transform = FALSE, newdata = newdata)
     )
-    # Element `stan_function` is not documented in
-    # `?rstanarm::`stanreg-objects``, so check at least its length:
-    if (length(fit$stan_function) != 1) {
-      stop("Unexpected length of `<stanreg_fit>$stan_function`. Please notify ",
-           "the package maintainer.")
-    }
     # Since posterior_linpred() is supposed to include the offsets in its
     # result, subtract them here and use a workaround for rstanarm issue #541
     # and rstanarm issue #542. This workaround consists of using `cond_no_offs`
