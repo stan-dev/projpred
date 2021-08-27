@@ -1032,7 +1032,7 @@ as.matrix.projection <- function(x, ...) {
   if (!inherits(x$sub_fit, "list")) {
     x$sub_fit <- list(x$sub_fit)
   }
-  if (!inherits(x$sub_fit[[1]], get_as.matrix_cls_projpred())) {
+  if (!all(sapply(x$sub_fit, inherits, what = get_as.matrix_cls_projpred()))) {
     # Throw an error because in this case, we probably need a new
     # as.matrix.<class_name>() method.
     stop("This case should not occur. Please notify the package maintainer.")
