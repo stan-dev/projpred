@@ -198,8 +198,8 @@ nterms_glmm <- nterms_glm + nterms_z
 
 # For simplicity, always use the same nonlinear function (could be extended in
 # the future):
-s_mat <- apply(x_cont, 2, function(x, a = -0.125, b = 0.25, c = 0.5) {
-  b * (x - c)^2 + a
+s_mat <- apply(x_cont, 2, function(x, b = 2, c = - pi / 4) {
+  b * sin(x - c)
 })
 s_sum <- rowSums(s_mat)
 nterms_s <- ncol(s_mat)
