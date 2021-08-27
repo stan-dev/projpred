@@ -78,10 +78,10 @@ vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------
 
-ndraws_default <- 20L # Adopt this if the default is changed.
-ndraws_pred_default <- 400L # Adopt this if the default is changed.
-nresample_clusters_default <- 1000L # Adopt this if the default is changed.
-regul_default <- 1e-4 # Adopt this if the default is changed.
+ndraws_default <- 20L # Adapt this if the default is changed.
+ndraws_pred_default <- 400L # Adapt this if the default is changed.
+nresample_clusters_default <- 1000L # Adapt this if the default is changed.
+regul_default <- 1e-4 # Adapt this if the default is changed.
 
 ## Customized -------------------------------------------------------------
 
