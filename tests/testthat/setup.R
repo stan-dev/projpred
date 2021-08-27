@@ -204,6 +204,9 @@ s_mat <- apply(x_cont, 2, function(x, a = -0.125, b = 0.25, c = 0.5) {
 s_sum <- rowSums(s_mat)
 nterms_s <- ncol(s_mat)
 eta_gam <- eta_glm + s_sum
+### Because of rstanarm issue #546 (see also further below):
+eta_gam <- eta_gam - offs_tst
+###
 
 # Multiply by 2 because of the baseline linear term as well as the standard
 # deviation for the wiggliness around it:
@@ -213,6 +216,9 @@ nterms_gam <- nterms_glm + 2L * nterms_s
 ## Add nonlinear (smoothed) effects to the GLMMs
 
 eta_gamm <- eta_glmm + s_sum
+### Because of rstanarm issue #253 (see also further below):
+eta_gamm <- eta_gamm - offs_tst
+###
 
 nterms_gamm <- nterms_glmm + 2L * nterms_s
 
