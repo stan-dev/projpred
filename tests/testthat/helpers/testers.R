@@ -627,9 +627,16 @@ sub_fit_tester <- function(sub_fit_obj,
                     info = paste(info_str, j, zz, sep = "__"))
       }
     }
-  } else if (has_add) {
-    # TODO: Add expectations for GAMs and GAMMs.
-    stop("Still to-do. Info: ", info_str)
+  } else if (!has_grp && has_add) {
+    for (j in seq_along(sub_fit_totest)) {
+      expect_s3_class(sub_fit_totest[[!!j]], "gam")
+    }
+    # TODO: Add more expectations for GAMs.
+  } else if (has_grp && has_add) {
+    for (j in seq_along(sub_fit_totest)) {
+      expect_s3_class(sub_fit_totest[[!!j]], "gamm4")
+    }
+    # TODO: Add more expectations for GAMMs.
   }
 
   return(invisible(TRUE))
