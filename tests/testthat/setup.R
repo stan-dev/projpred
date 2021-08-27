@@ -380,8 +380,9 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
       y_chr <- paste0("cbind(", y_chr, ", wobs_col - ", y_chr, ")")
     }
     formul_nms <- "stdformul"
-    if (fam_nm == "gauss") {
-      # Here, we also test a special formula:
+    if (fam_nm == "gauss" && mod_nm != "gamm") {
+      # Here, we also test a special formula (the "gamm" case is excluded
+      # because of rstanarm issue #545):
       formul_nms <- c(formul_nms, "spclformul")
     }
     formul_nms <- setNames(nm = formul_nms)
