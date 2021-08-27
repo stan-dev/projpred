@@ -16,11 +16,17 @@ test_that("`object` of class \"stanreg\" works", {
     } else {
       wobs_expected_crr <- rep(1, nobsv)
     }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_expected_crr <- offs_tst
+    } else {
+      offs_expected_crr <- rep(0, nobsv)
+    }
     refmodel_tester(
       refmods[[tstsetup]],
       fit_expected = fits[[tstsetup_fit]],
       needs_y_overwrite = needs_y_overwrite_crr,
       wobs_expected = wobs_expected_crr,
+      offs_expected = offs_expected_crr,
       fam_orig = eval(args_fit[[tstsetup_fit]]$family),
       info_str = tstsetup
     )
