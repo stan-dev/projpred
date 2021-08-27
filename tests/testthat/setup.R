@@ -350,11 +350,12 @@ wobss_tst <- list(with_wobs = list(weights = wobs_tst),
 
 ### See the notes above: Due to rstanarm issue #541 and the fact that rstanarm
 ### doesn't support argument `offset` for GAMs and GAMMs, the easiest way to use
-### offsets is to always specify them in the formula (or, for GAMMs: not at all,
-### see the definition of `args_fit` below):
-# offss_tst <- list(with_offs = list(offset = offs_tst),
-#                   without_offs = list())
-offss_tst <- list(with_offs = list())
+### offsets is to always specify them in the formula (or, for GAMs and GAMMs:
+### not at all, see the definition of `args_fit` below). Therefore, the
+### following object is just a dummy (but used nevertheless, namely to construct
+### the names for the argument lists):
+offss_tst <- list(with_offs = list(),
+                  without_offs = list())
 ###
 
 ### Argument list ---------------------------------------------------------
@@ -416,6 +417,11 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         wobss_tst <- wobss_tst
       } else {
         wobss_tst <- wobss_tst["with_wobs"]
+      }
+      if (!mod_nm %in% c("gam", "gamm")) {
+        offss_tst <- offss_tst["with_offs"]
+      } else {
+        offss_tst <- offss_tst["without_offs"]
       }
       lapply(wobss_tst, function(wobs_crr) {
         lapply(offss_tst, function(offs_crr) {
