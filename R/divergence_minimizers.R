@@ -217,19 +217,15 @@ control_callback <- function(
   }
 }
 
-# Helper function for linear_multilevel_proj_predfun() which only passes
-# argument `allow.new.levels` to the predict() generic if the fit is multilevel:
-predict_multilevel_callback <- function(fit, newdata = NULL) {
-  if (inherits(fit, c("lmerMod", "glmerMod"))) {
-    return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
-  } else {
-    return(predict(fit, newdata = newdata))
-  }
-}
-
 linear_multilevel_proj_predfun <- function(fit, newdata = NULL) {
   return(do.call(cbind, lapply(fit, function(fit) {
-    predict_multilevel_callback(fit, newdata)
+    # Only pass argument `allow.new.levels` to the predict() generic if the fit
+    # is multilevel:
+    if (inherits(fit, c("lmerMod", "glmerMod"))) {
+      return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
+    } else {
+      return(predict(fit, newdata = newdata))
+    }
   })))
 }
 
