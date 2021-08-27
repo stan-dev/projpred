@@ -374,6 +374,12 @@ if (run_cvvs_kfold) {
 }
 
 args_fit <- lapply(mod_nms, function(mod_nm) {
+  if (mod_nm == "gamm") {
+    # Exclude "binom" from `fam_nms` since there seems to be an issue with
+    # get_refmodel.stanreg() in this case:
+    fam_nms <- setNames(nm = setdiff(fam_nms, "binom"))
+    # TODO (GAMMs): Fix this.
+  }
   lapply(fam_nms, function(fam_nm) {
     y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
     if (fam_nm == "binom") {
