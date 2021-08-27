@@ -110,6 +110,11 @@ refmodel_tester <- function(refmod,
       assign(y_spclformul_new, eval(str2lang(y_spclformul)))
     })
   }
+  if (inherits(refmod$fit, "stanreg") &&
+      refmod$fit$stan_function == "stan_gamm4" &&
+      refmod$family$family == "binomial") {
+    data_expected$temp_y <- 1
+  }
 
   # Test the general structure of the object:
   refmod_nms <- c(
@@ -129,9 +134,11 @@ refmodel_tester <- function(refmod,
   expect_identical(refmod$fit, fit_expected, info = info_str)
 
   # formula
-  # In the reference model, the offset() term is placed last:
-  formul_expected <- update(formul_expected,
-                            . ~ . - offset(offs_col) + offset(offs_col))
+  if (!is.null(attr(terms(formul_expected), "offset"))) {
+    # In the reference model, the offset() term is placed last:
+    formul_expected <- update(formul_expected,
+                              . ~ . - offset(offs_col) + offset(offs_col))
+  }
   formul_expected_chr <- as.character(formul_expected)
   stopifnot(length(formul_expected_chr) == 3)
   if (grepl("^cbind\\(.*,.*\\)$", formul_expected_chr[2])) {
@@ -185,7 +192,6 @@ refmodel_tester <- function(refmod,
     stopifnot(identical(c("(Intercept)", colnames(drws_beta_cont)),
                         colnames(mm_cont)))
     mu_expected <- cbind(drws_icpt, drws_beta_cont) %*% t(mm_cont)
-    mu_expected <- unname(mu_expected)
     cate_post <- lapply(names(x_cate_list), function(x_cate_idx) {
       sapply(x_cate_list[[x_cate_idx]]$x_cate, function(lvl_obs_i) {
         if (lvl_obs_i != "lvl1") {
@@ -207,9 +213,18 @@ refmodel_tester <- function(refmod,
       mu_expected <- mu_expected + do.call("+", r_post)
     }
     if (has_add) {
-      # TODO: Add manual calculation of the linear predictor for GAMs and GAMMs.
-      stop("Still to-do. Info: ", info_str)
+      drws_beta_s <- drws[
+        ,
+        grep("^s\\(", colnames(drws), value = TRUE),
+        drop = FALSE
+      ]
+      ### TODO (GAMs and GAMMs): Do this manually:
+      mm_s <- `%:::%`("rstanarm", "pp_data")(refmod$fit)$x
+      mm_s <- mm_s[, grep("^s\\(", colnames(mm_s), value = TRUE), drop = FALSE]
+      ###
+      mu_expected <- mu_expected + drws_beta_s %*% t(mm_s)
     }
+    mu_expected <- unname(mu_expected)
     if (refmod$family$family != "gaussian") {
       mu_expected <- fam_orig$linkinv(mu_expected)
     }
