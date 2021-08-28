@@ -194,8 +194,9 @@ NULL
 #'   densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
 
 #' @export
-predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
-                             weightsnew = NULL, type = "response", ...) {
+predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
+                             offsetnew = NULL, weightsnew = NULL,
+                             type = "response", ...) {
   if (!(type %in% c("response", "link"))) {
     stop("type should be one of ('response', 'link')")
   }

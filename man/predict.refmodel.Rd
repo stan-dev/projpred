@@ -6,7 +6,7 @@
 \usage{
 \method{predict}{refmodel}(
   object,
-  newdata,
+  newdata = NULL,
   ynew = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
