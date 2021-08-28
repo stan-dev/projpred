@@ -1,23 +1,20 @@
 context("as.matrix.projection")
 
-# Skip GAMs:
-args_gam <- grep("^gam\\.", names(args_prj))
-if (length(args_gam)) {
-  warning("Skipping GAMs because of issue #151. Note that for GAMs, the ",
-          "current expectations in `test_as_matrix.R` refer to a mixture of ",
-          "brms's and rstanarm's naming scheme; as soon as issue #152 ",
-          "is solved, these expectations need to be adopted.")
-  args_prj <- args_prj[-args_gam]
-}
-# Skip GAMMs:
-args_gamm <- grep("^gamm\\.", names(args_prj))
-if (length(args_gamm)) {
-  warning("Skipping GAMMs because of issue #131.")
-  args_prj <- args_prj[-args_gamm]
-}
-
 test_that("as.matrix.projection() works", {
   for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gam") {
+      # Skipping GAMs because of issue #151. Note that for GAMs, the current
+      # expectations in `test_as_matrix.R` refer to a mixture of brms's and
+      # rstanarm's naming scheme; as soon as issue #152 is solved, these
+      # expectations need to be adopted.
+      # TODO (GAMs): Fix this.
+      next
+    }
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # Skipping GAMMs because of issue #131.
+      # TODO (GAMMs): Fix this.
+      next
+    }
     tstsetup_ref <- args_prj[[tstsetup]]$tstsetup_ref
     mod_crr <- args_prj[[tstsetup]]$mod_nm
     fam_crr <- args_prj[[tstsetup]]$fam_nm
