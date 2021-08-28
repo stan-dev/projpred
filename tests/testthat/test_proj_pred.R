@@ -195,7 +195,7 @@ test_that("invalid `newdata` fails", {
     proj_linpred(prjs,
                  solution_terms = rep_len(solterms_x, length.out = 1e4)),
     paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
+          "columns in `newdata`\\.$")
   )
   stopifnot(length(solterms_x) > 1)
   expect_error(
@@ -203,7 +203,7 @@ test_that("invalid `newdata` fails", {
                  newdata = dat[, 1, drop = FALSE],
                  solution_terms = solterms_x),
     paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
+          "columns in `newdata`\\.$")
   )
 })
 
@@ -772,7 +772,7 @@ test_that("invalid `newdata` fails", {
                  .seed = seed2_tst,
                  solution_terms = rep_len(solterms_x, length.out = 1e4)),
     paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
+          "columns in `newdata`\\.$")
   )
   stopifnot(length(solterms_x) > 1)
   expect_error(
@@ -781,7 +781,7 @@ test_that("invalid `newdata` fails", {
                  .seed = seed2_tst,
                  solution_terms = solterms_x),
     paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
+          "columns in `newdata`\\.$")
   )
 })
 

@@ -165,10 +165,8 @@ proj_helper <- function(object, newdata,
   solution_terms <- list(...)$solution_terms
   if (!is.null(solution_terms) &&
       length(solution_terms) > NCOL(newdata)) {
-    stop(paste(
-      "The number of solution terms is greater than the number of columns in",
-      "newdata."
-    ))
+    stop("The number of solution terms is greater than the number of columns ",
+         "in `newdata`.")
   }
 
   preds <- lapply(projs, function(proj) {
