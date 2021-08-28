@@ -197,24 +197,14 @@ NULL
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
                              type = "response", ...) {
-  if (!(type %in% c("response", "link"))) {
+  if (!type %in% c("response", "link")) {
     stop("type should be one of ('response', 'link')")
   }
   if (inherits(object, "datafit")) {
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
-  if (!is.null(ynew)) {
-    if (!is.numeric(ynew) || NCOL(ynew) != 1) {
-      stop("ynew must be a numerical vector")
-    }
-  }
-
-  if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
-    stop("offsetnew specified but it's not a right hand side formula")
-  }
-
-  if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
-    stop("weightsnew specified but it's not a right hand side formula")
+  if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1)) {
+    stop("ynew must be a numerical vector")
   }
 
   w_o <- object$extract_model_data(object$fit,
