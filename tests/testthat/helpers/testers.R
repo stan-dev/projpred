@@ -118,10 +118,6 @@ refmodel_tester <- function(refmod,
   has_grp <- formula_contains_group_terms(refmod$formula)
   has_add <- formula_contains_additive_terms(refmod$formula)
   is_gamm <- has_grp && has_add
-  if (is_gamm) {
-    warning("Skipping some expectations in refmodel_tester() because this is ",
-            "a GAMM. Info: ", info_str)
-  }
 
   # Test the general structure of the object:
   refmod_nms <- c(
