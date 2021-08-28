@@ -63,6 +63,9 @@ SW(datafits <- lapply(args_datafit, function(args_datafit_i) {
     if (args_datafit_i$fam_nm == "brnll") {
       newdata$wobs_col <- 1
     }
+    if (grepl("\\.without_offs", args_datafit_i$tstsetup_fit)) {
+      newdata$offs_col <- 0
+    }
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do.call(.extrmoddat_datafit, args))
   }
@@ -196,6 +199,11 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
     } else {
       wobs_expected_crr <- rep(1, nobsv)
     }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_expected_crr <- offs_tst
+    } else {
+      offs_expected_crr <- rep(0, nobsv)
+    }
     refmodel_tester(
       datafits[[tstsetup]],
       is_datafit = TRUE,
@@ -203,6 +211,7 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
       formul_expected = fits[[tstsetup_fit]]$formula,
       needs_y_overwrite = needs_y_overwrite_crr,
       wobs_expected = wobs_expected_crr,
+      offs_expected = offs_expected_crr,
       nrefdraws_expected = 1L,
       fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm)),
       info_str = tstsetup
