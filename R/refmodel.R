@@ -210,7 +210,6 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   w_o <- object$extract_model_data(object$fit,
                                    newdata = newdata, weightsnew,
                                    offsetnew)
-
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
 
@@ -218,20 +217,13 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   mu <- object$ref_predfun(object$fit, newdata) + offsetnew
 
   if (is.null(ynew)) {
-    if (type == "link") {
-      pred <- mu
-    } else {
-      pred <- object$family$linkinv(mu)
-    }
-
+    pred <- if (type == "link") mu else object$family$linkinv(mu)
     ## integrate over the samples
     if (NCOL(pred) > 1) {
       pred <- rowMeans(pred)
     }
-
     return(pred)
   } else {
-
     ## evaluate the log predictive density at the given ynew values
     loglik <- object$family$ll_fun(
       object$family$linkinv(mu), object$dis, ynew,
