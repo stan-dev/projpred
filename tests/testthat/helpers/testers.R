@@ -115,8 +115,9 @@ refmodel_tester <- function(refmod,
       refmod$family$family == "binomial") {
     data_expected$temp_y <- 1
   }
-  is_gamm <- formula_contains_additive_terms(refmod$formula) &&
-    formula_contains_group_terms(refmod$formula)
+  has_grp <- formula_contains_group_terms(refmod$formula)
+  has_add <- formula_contains_additive_terms(refmod$formula)
+  is_gamm <- has_grp && has_add
   if (is_gamm) {
     warning("Skipping some expectations in refmodel_tester() because this is ",
             "a GAMM. Info: ", info_str)
@@ -182,8 +183,6 @@ refmodel_tester <- function(refmod,
   # expect_identical(dim(refmod$mu), c(nobsv_expected, nrefdraws_expected),
   #                  info = info_str)
   ###
-  has_grp <- formula_contains_group_terms(refmod$formula)
-  has_add <- formula_contains_additive_terms(refmod$formula)
   if (!is_datafit) {
     ### Helpful for debugging:
     # mu_expected_ch <- unname(t(posterior_linpred(refmod$fit)))
