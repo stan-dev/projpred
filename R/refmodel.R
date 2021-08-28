@@ -554,9 +554,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun <- function(fit, newdata = NULL) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
-        matrix(rep(NA, NROW(y)))
+        return(matrix(rep(NA, NROW(y))))
       } else {
-        matrix(rep(NA, NROW(newdata)))
+        return(matrix(rep(NA, NROW(newdata))))
       }
     }
   }
