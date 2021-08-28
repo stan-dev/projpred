@@ -53,7 +53,13 @@ args_datafit <- lapply(setNames(
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
 # (see GitHub issue #136), so temporarily wrap the following call in SW():
 SW(datafits <- lapply(args_datafit, function(args_datafit_i) {
-  formul_crr <- fits[[args_datafit_i$tstsetup_fit]]$formula
+  formul_crr <- args_fit[[args_datafit_i$tstsetup_fit]]$formula
+  if (!is.null(args_fit[[args_datafit_i$tstsetup_fit]]$random)) {
+    formul_crr <- update(formul_crr, paste(
+      ". ~ . + ",
+      tail(as.character(args_fit[[args_datafit_i$tstsetup_fit]]$random), 1)
+    ))
+  }
   extrmoddat <- function(object, newdata = NULL, wrhs = NULL, orhs = NULL,
                          extract_y = TRUE) {
     resp_form <- if (!extract_y) NULL else lhs(formul_crr)
