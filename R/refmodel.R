@@ -507,7 +507,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   offset <- model_data$offset
   y <- model_data$y
 
-  # Add (transformed) response under the new name:
+  # Add (transformed) response under the (possibly) new name:
   data[, response_name] <- y
 
   target <- .get_standard_y(y, weights, family)
