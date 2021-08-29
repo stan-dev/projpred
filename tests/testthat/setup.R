@@ -381,7 +381,8 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
     # Exclude "binom" from `fam_nms` since there seems to be an issue with
     # get_refmodel.stanreg() in this case:
     fam_nms <- setNames(nm = setdiff(fam_nms, "binom"))
-    # TODO (GAMMs): Fix this.
+    # TODO (GAMMs): Fix this. This exclusion also has the downside that K-fold
+    # CV cannot be tested in that case.
   }
   lapply(fam_nms, function(fam_nm) {
     y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
@@ -561,8 +562,15 @@ if (run_cvvs) {
       }
     } else {
       meth <- meth_tst["default_meth"]
-      if (mod_crr != "glm" && fam_crr == "binom") {
+      if (mod_crr != "glm" && grepl("\\.without_wobs", tstsetup_ref)) {
         cvmeth <- cvmeth_tst["kfold"]
+        if (mod_crr == "gamm" && fam_crr == "brnll") {
+          # In this case, K-fold CV leads to an error in pwrssUpdate()
+          # ("(maxstephalfit) PIRLS step-halvings failed to reduce deviance in
+          # pwrssUpdate"). Therefore, use LOO CV:
+          cvmeth <- cvmeth_tst["default_cvmeth"]
+          # TODO (GAMMs): Fix this.
+        }
       } else {
         cvmeth <- cvmeth_tst["default_cvmeth"]
       }
