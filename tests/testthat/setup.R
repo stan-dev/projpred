@@ -28,6 +28,12 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
 
 fam_nms <- setNames(nm = c("gauss", "binom")) # , "brnll", "poiss"
+### TODO: Fix this: When using all `fam_nms`, use the following order because
+### the order `fam_nms <- setNames(nm = c("gauss", "binom", "brnll", "poiss"))`
+### might lead to a "C stack usage" error, probably due to unfavorable simulated
+### data:
+# fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
+###
 
 seed_tst <- 74345
 
