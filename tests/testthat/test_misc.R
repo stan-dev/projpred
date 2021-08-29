@@ -54,6 +54,7 @@ test_that("rstanarm: special formulas work", {
 
     tstsetup_stdformul <- sub("\\.spclformul", ".stdformul", tstsetup)
     stopifnot(tstsetup_stdformul != tstsetup)
+    stopifnot(tstsetup_stdformul %in% names(fits))
     mf_stdformul <- fits[[tstsetup_stdformul]]$model
     nms_stdformul <- setdiff(
       grep("y_|xco", names(mf_stdformul), value = TRUE),
