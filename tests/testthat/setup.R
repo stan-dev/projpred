@@ -23,7 +23,6 @@ source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 
-# Exclude GAMs because of issue #150; exclude GAMMs because of issue #148:
 mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
 
 fam_nms <- setNames(nm = c("gauss", "binom")) # , "brnll", "poiss"
@@ -379,7 +378,7 @@ for (obj_symb_chr in c(paste0("f_", fam_nms))) {
 args_fit <- lapply(mod_nms, function(mod_nm) {
   if (mod_nm == "gamm") {
     # Exclude "binom" from `fam_nms` since there seems to be an issue with
-    # get_refmodel.stanreg() in this case:
+    # get_refmodel.stanreg() in this case (probably issue #148):
     fam_nms <- setNames(nm = setdiff(fam_nms, "binom"))
     # TODO (GAMMs): Fix this. This exclusion also has the downside that K-fold
     # CV cannot be tested in that case.

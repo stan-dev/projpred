@@ -3,10 +3,10 @@ context("as.matrix.projection")
 test_that("as.matrix.projection() works", {
   for (tstsetup in names(prjs)) {
     if (args_prj[[tstsetup]]$mod_nm == "gam") {
-      # Skipping GAMs because of issue #151. Note that for GAMs, the current
-      # expectations in `test_as_matrix.R` refer to a mixture of brms's and
-      # rstanarm's naming scheme; as soon as issue #152 is solved, these
-      # expectations need to be adopted.
+      # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,
+      # the current expectations in `test_as_matrix.R` refer to a mixture of
+      # brms's and rstanarm's naming scheme; as soon as issue #152 is solved,
+      # these expectations need to be adopted.
       # TODO (GAMs): Fix this.
       next
     }
