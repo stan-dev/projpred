@@ -8,7 +8,6 @@
 # switches may be set to `FALSE` to save time:
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
 run_cvvs <- run_vs
-run_cvvs_kfold <- run_cvvs
 # Run `cv_varsel()` with `validate_search = TRUE` always (`TRUE`) or just for L1
 # search (`FALSE`)?:
 run_valsearch_always <- FALSE
@@ -110,15 +109,12 @@ meth_tst <- list(
   forward = list(method = "forward")
 )
 
+K_tst <- 2L
 cvmeth_tst <- list(
   default_cvmeth = list(),
-  LOO = list(cv_method = "LOO")
+  LOO = list(cv_method = "LOO"),
+  kfold = list(cv_method = "kfold", K = K_tst)
 )
-if (run_cvvs_kfold) {
-  K_tst <- 2L
-  cvmeth_tst <- c(cvmeth_tst,
-                  list(kfold = list(cv_method = "kfold", K = K_tst)))
-}
 
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 stats_common <- c("elpd", "mlpd")
@@ -369,16 +365,14 @@ offss_tst <- list(with_offs = list(),
 
 ### Argument list ---------------------------------------------------------
 
-if (run_cvvs_kfold) {
-  # For some arguments, if they are specified via objects,
-  # rstanarm:::kfold.stanreg() seems to assume these objects to lie in the
-  # global environment. Since `testthat` uses a new environment for running
-  # the tests (see `?testthat::test_env`), we need the following code to be
-  # able to run devtools::test():
-  for (obj_symb_chr in c(paste0("f_", fam_nms))) {
-    if (!exists(obj_symb_chr, envir = .GlobalEnv)) {
-      assign(obj_symb_chr, get(obj_symb_chr), envir = .GlobalEnv)
-    }
+# For some arguments, if they are specified via objects,
+# rstanarm:::kfold.stanreg() seems to assume these objects to lie in the
+# global environment. Since `testthat` uses a new environment for running
+# the tests (see `?testthat::test_env`), we need the following code to be
+# able to run devtools::test():
+for (obj_symb_chr in c(paste0("f_", fam_nms))) {
+  if (!exists(obj_symb_chr, envir = .GlobalEnv)) {
+    assign(obj_symb_chr, get(obj_symb_chr), envir = .GlobalEnv)
   }
 }
 
@@ -425,11 +419,13 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         # Here, the weights are specified in the formula via the cbind() syntax:
         wobss_tst <- wobss_tst["without_wobs"]
       } else if (fam_nm == "brnll") {
+        # In this case, observation weights are not supported by projpred:
         wobss_tst <- wobss_tst["without_wobs"]
-      } else if (run_cvvs_kfold && mod_nm == "glm" && fam_nm == "gauss" &&
+      } else if (mod_nm == "glm" && fam_nm == "gauss" &&
                  formul_nm != "spclformul") {
         # Here, rstanarm:::kfold.stanreg() is applied, so we also need the model
-        # without observation weights:
+        # without observation weights (because rstanarm:::kfold.stanreg()
+        # doesn't support observation weights):
         wobss_tst <- wobss_tst
       } else {
         wobss_tst <- wobss_tst["with_wobs"]

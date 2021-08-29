@@ -705,7 +705,6 @@ test_that("`validate_search` works", {
 })
 
 test_that("invalid `K` fails", {
-  skip_if_not(run_cvvs_kfold)
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1),
                "^K must be at least 2$")
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1000),
@@ -719,7 +718,6 @@ test_that("invalid `K` fails", {
 })
 
 test_that("`cvfits` (actually passed to init_refmodel()) works", {
-  skip_if_not(run_cvvs_kfold)
   tstsetups <- grep("kfold", names(cvvss), value = TRUE)
   if (!run_cvfits_all) {
     tstsetups <- head(tstsetups, 1)
