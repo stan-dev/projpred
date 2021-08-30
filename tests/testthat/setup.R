@@ -384,6 +384,17 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
     # TODO (GAMMs): Fix this. This exclusion also has the downside that K-fold
     # CV cannot be tested in that case.
   }
+  if (!mod_nm %in% c("gam", "gamm")) {
+    offss_nms <- "with_offs"
+  } else {
+    offss_nms <- "without_offs"
+  }
+  offss_nms <- setNames(nm = offss_nms)
+  if (mod_nm != "gamm") {
+    random_arg <- list()
+  } else {
+    random_arg <- list(random = as.formula(paste("~", trms_grp)))
+  }
   lapply(fam_nms, function(fam_nm) {
     y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
     if (fam_nm == "binom") {
@@ -405,6 +416,12 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         }
         y_chr <- paste0("log(abs(", y_chr, "))")
       }
+      trms <- switch(mod_nm,
+                     "glm" = trms_common,
+                     "glmm" = c(trms_common, trms_grp),
+                     "gam" = c(trms_common, trms_add),
+                     "gamm" = c(trms_common, trms_add),
+                     stop("Unknown `mod_nm`."))
       if (fam_nm == "binom") {
         # Here, the weights are specified in the formula via the cbind() syntax:
         wobss_tst <- wobss_tst["without_wobs"]
@@ -420,31 +437,14 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
       } else {
         wobss_tst <- wobss_tst["with_wobs"]
       }
-      if (!mod_nm %in% c("gam", "gamm")) {
-        offss_tst <- offss_tst["with_offs"]
-      } else {
-        offss_tst <- offss_tst["without_offs"]
-      }
-      offss_nms <- setNames(nm = names(offss_tst))
       lapply(wobss_tst, function(wobs_crr) {
         lapply(offss_nms, function(offs_nm) {
-          trms <- switch(mod_nm,
-                         "glm" = trms_common,
-                         "glmm" = c(trms_common, trms_grp),
-                         "gam" = c(trms_common, trms_add),
-                         "gamm" = c(trms_common, trms_add),
-                         stop("Unknown `mod_nm`."))
           if (offs_nm == "without_offs") {
             trms <- setdiff(trms, "offset(offs_col)")
           }
           formul_crr <- as.formula(paste(
             y_chr, "~", paste(trms, collapse = " + ")
           ))
-          if (mod_nm  == "gamm") {
-            random_arg <- list(random = as.formula(paste("~", trms_grp)))
-          } else {
-            random_arg <- list()
-          }
           return(c(
             nlist(mod_nm, fam_nm, formula = formul_crr,
                   family = as.name(paste0("f_", fam_nm)), data = quote(dat),
