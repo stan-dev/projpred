@@ -16,6 +16,8 @@ run_valsearch_always <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
 # first one (`FALSE`)?:
 run_cvfits_all <- FALSE
+# Run tests for "brmsfit"s (`TRUE`) or not (`FALSE`)?:
+run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
 
 set.seed(8541351)
 
@@ -302,11 +304,21 @@ dat_offs_new <- within(dat, {
 
 # Fits --------------------------------------------------------------------
 
-## rstanarm setup ---------------------------------------------------------
+## rstanarm and brms setup ------------------------------------------------
 
 if (!requireNamespace("rstanarm", quietly = TRUE)) {
   stop("Package \"rstanarm\" is needed for these tests. Please install it.",
        call. = FALSE)
+}
+
+if (run_brms) {
+  if (!requireNamespace("brms", quietly = TRUE)) {
+    stop("Package \"brms\" is needed for these tests. Please install it.",
+         call. = FALSE)
+  }
+  # For storing "brmsfit"s locally:
+  file_pth <- testthat::test_path("bfits")
+  if(!dir.exists(file_pth)) dir.create(file_pth)
 }
 
 chains_tst <- 2L
@@ -353,12 +365,13 @@ wobss_tst <- list(with_wobs = list(weights = wobs_tst),
 
 ### Offsets ---------------------------------------------------------------
 
-### See the notes above: Due to rstanarm issue #541 and the fact that rstanarm
-### doesn't support argument `offset` for GAMs and GAMMs, the easiest way to use
-### offsets is to always specify them in the formula (or not at all, see the
-### definition of `args_fit` below). Therefore, the following object which could
-### be used to use *argument* `offset` is just a dummy (but used nevertheless,
-### namely to construct the names for the argument lists):
+### See the notes above: Due to rstanarm issue #541, the fact that rstanarm
+### doesn't support argument `offset` for GAMs and GAMMs, and the fact that
+### brms::brm() has no argument `offset`, the easiest way to use offsets is to
+### always specify them in the formula (or not at all, see the definition of
+### `args_fit` below). Therefore, the following object which could be used to
+### use *argument* `offset` is just a dummy (but used nevertheless, namely to
+### construct the names for the argument lists):
 offss_tst <- list(with_offs = list(), # with_offs = list(offset = offs_tst),
                   without_offs = list())
 ###
@@ -377,6 +390,8 @@ for (obj_symb_chr in c(paste0("f_", fam_nms))) {
 }
 
 args_fit <- lapply(mod_nms, function(mod_nm) {
+  pkg_nms <- "rstanarm"
+
   if (mod_nm == "gamm") {
     # Exclude "binom" from `fam_nms` since there seems to be an issue with
     # get_refmodel.stanreg() in this case (probably issue #148):
@@ -452,15 +467,37 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
             y_chr, "~", paste(trms, collapse = " + ")
           ))
 
-          return(c(
-            nlist(mod_nm, fam_nm, formula = formul_crr,
-                  family = as.name(paste0("f_", fam_nm)), data = quote(dat),
-                  chains = chains_tst, iter = iter_tst, seed = seed_tst,
-                  QR = TRUE, refresh = 0),
-            wobss_tst[[wobss_nm]],
-            offss_tst[[offss_nm]],
-            random_arg
-          ))
+          if (run_brms && mod_nm == "glm" && fam_nm == "gauss" &&
+              formul_nm == "stdformul" && wobss_nm == "with_wobs") {
+            pkg_nms <- c(pkg_nms, "brms")
+          }
+          pkg_nms <- setNames(nm = pkg_nms)
+          lapply(pkg_nms, function(pkg_nm) {
+            if (pkg_nm == "rstanarm") {
+              pkg_args <- c(list(QR = TRUE),
+                            wobss_tst[[wobss_nm]],
+                            offss_tst[[offss_nm]],
+                            random_arg)
+            } else if (pkg_nm == "brms") {
+              if (wobss_nm == "with_wobs") {
+                formul_crr <- update(formul_crr, paste(
+                  y_chr, "| weights(wobs_col)", "~",
+                  paste(trms, collapse = " + ")
+                ))
+              }
+
+              pkg_args <- list(file = file_pth,
+                               file_refit = "on_change") # , silent = 2
+            }
+
+            return(c(
+              nlist(mod_nm, fam_nm, pkg_nm, formula = formul_crr,
+                    family = as.name(paste0("f_", fam_nm)), data = quote(dat),
+                    chains = chains_tst, iter = iter_tst, seed = seed_tst,
+                    refresh = 0),
+              pkg_args
+            ))
+          })
         })
       })
     })
@@ -468,21 +505,36 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
 })
 args_fit <- unlist_cust(args_fit)
 stopifnot(length(unique(names(args_fit))) == length(args_fit))
+# For "brmsfit"s, set a unique file name (done here because during the creation
+# of `args_fit`, these unique names are not easily accessible):
+args_fit <- lapply(setNames(nm = names(args_fit)), function(args_fit_nm) {
+  if (args_fit[[args_fit_nm]]$pkg_nm == "brms" &&
+      "file" %in% names(args_fit[[args_fit_nm]])) {
+    args_fit[[args_fit_nm]]$file <- file.path(
+      args_fit[[args_fit_nm]]$file,
+      paste0("bfit_", args_fit_nm)
+    )
+  }
+  return(args_fit[[args_fit_nm]])
+})
 
 ## Run --------------------------------------------------------------------
 
 fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
-  fit_fun_nm <- switch(args_fit_i$mod_nm,
-                       "glm" = "stan_glm",
-                       "glmm" = "stan_glmer",
-                       "stan_gamm4")
+  fit_fun_nm <- switch(args_fit_i$pkg_nm,
+                       "rstanarm" = switch(args_fit_i$mod_nm,
+                                           "glm" = "stan_glm",
+                                           "glmm" = "stan_glmer",
+                                           "stan_gamm4"),
+                       "brms" = "brm",
+                       stop("Unknown `pkg_nm`."))
   ### Option 1:
   # do.call(fit_fun_nm,
   #         excl_nonargs(args_fit_i),
-  #         envir = as.environment(asNamespace("rstanarm")))
+  #         envir = as.environment(asNamespace(args_fit_i$pkg_nm)))
   ###
   ### Option 2:
-  do.call(get(fit_fun_nm, asNamespace("rstanarm")),
+  do.call(get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
           excl_nonargs(args_fit_i))
   ###
 }))

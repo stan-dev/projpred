@@ -8,6 +8,9 @@
 # @param extfam_nms_add2 A character vector of additional element names which
 #   do not exist in the output of extend_family() (needed for testing
 #   `get_refmodel([...])$family`).
+# @param from_brms A single logical value indicating whether the extended family
+#   was created for a reference model based on a `"brmsfit"` (`TRUE`) or not
+#   (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -15,6 +18,7 @@
 extfam_tester <- function(extfam,
                           fam_orig,
                           extfam_nms_add2 = character(),
+                          from_brms = FALSE,
                           info_str) {
   # Some minimal checks for `fam_orig`:
   expect_s3_class(fam_orig, "family")
@@ -41,7 +45,12 @@ extfam_tester <- function(extfam,
   if (extfam$family == "binomial") {
     fam_orig_ch$initialize <- fam_orig$initialize
   }
-  expect_identical(fam_orig_ch, fam_orig, info = info_str)
+  if (!from_brms) {
+    expect_identical(fam_orig_ch, fam_orig, info = info_str)
+  } else {
+    expect_identical(fam_orig_ch, fam_orig, ignore.environment = TRUE,
+                     info = info_str)
+  }
 
   for (el_nm in extfam_nms_add) {
     expect_type(extfam[[el_nm]], "closure")
@@ -74,18 +83,24 @@ extfam_tester <- function(extfam,
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-refmodel_tester <- function(refmod,
-                            is_datafit = FALSE,
-                            fit_expected,
-                            formul_expected = fit_expected$formula,
-                            data_expected = dat,
-                            needs_y_overwrite = FALSE,
-                            nobsv_expected = nobsv,
-                            wobs_expected = wobs_tst,
-                            offs_expected = offs_tst,
-                            nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
-                            fam_orig,
-                            info_str) {
+refmodel_tester <- function(
+  refmod,
+  is_datafit = FALSE,
+  fit_expected,
+  formul_expected = if (inherits(fit_expected, "stanreg")) {
+    formula(fit_expected)
+  } else if (inherits(fit_expected, "brmsfit")) {
+    formula(formula(fit_expected))
+  },
+  data_expected = dat,
+  needs_y_overwrite = FALSE,
+  nobsv_expected = nobsv,
+  wobs_expected = wobs_tst,
+  offs_expected = offs_tst,
+  nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
+  fam_orig,
+  info_str
+) {
   # Preparations:
   needs_wobs_added <- inherits(refmod$fit, "stanreg") &&
     length(refmod$fit$weights) > 0
@@ -144,18 +159,22 @@ refmodel_tester <- function(refmod,
   }
   formul_expected_chr <- as.character(formul_expected)
   stopifnot(length(formul_expected_chr) == 3)
-  if (grepl("^cbind\\(.*,.*\\)$", formul_expected_chr[2])) {
+  if (grepl("^cbind\\(.*,.*\\)$", formul_expected_chr[2]) ||
+      grepl("[[:blank:]]*\\|[[:blank:]]*weights\\(.*\\)$",
+            formul_expected_chr[2])) {
     y_expected_chr <- sub("^cbind\\(", "", formul_expected_chr[2])
     y_expected_chr <- sub(",.*\\)$", "", y_expected_chr)
+    y_expected_chr <- sub("[[:blank:]]*\\|[[:blank:]]*weights\\(.*\\)$", "",
+                          y_expected_chr)
     formul_expected <- as.formula(paste(
       y_expected_chr,
       formul_expected_chr[1],
       formul_expected_chr[3]
     ))
+    # Use expect_equal() instead of expect_identical() since the environments
+    # do not match:
     if (!is_gamm) {
       # TODO: Adapt the expected formula to GAMMs.
-      # Use expect_equal() instead of expect_identical() since the environments
-      # do not match:
       expect_equal(refmod$formula, formul_expected, info = info_str)
     }
   } else {
@@ -170,7 +189,9 @@ refmodel_tester <- function(refmod,
 
   # family
   extfam_tester(refmod$family, fam_orig = fam_orig,
-                extfam_nms_add2 = "mu_fun", info_str = info_str)
+                extfam_nms_add2 = "mu_fun",
+                from_brms = inherits(refmod$fit, "brmsfit"),
+                info_str = info_str)
 
   # mu
   ### Not needed because of the more precise test below:
@@ -183,55 +204,69 @@ refmodel_tester <- function(refmod,
     ### Helpful for debugging:
     # mu_expected_ch <- unname(t(posterior_linpred(refmod$fit)))
     ###
-    stopifnot(inherits(refmod$fit, "stanreg"))
-    drws <- as.matrix(refmod$fit)
-    drws_icpt <- drws[, "(Intercept)"]
-    drws_beta_cont <- drws[
-      ,
-      setdiff(grep("xco\\.", colnames(drws), value = TRUE),
-              grep("z\\.", colnames(drws), value = TRUE)),
-      drop = FALSE
-    ]
-    mm_cont <- model.matrix(
-      as.formula(paste("~", paste(colnames(drws_beta_cont), collapse = " + "))),
-      data = data_expected
-    )
-    stopifnot(identical(c("(Intercept)", colnames(drws_beta_cont)),
-                        colnames(mm_cont)))
-    mu_expected <- cbind(drws_icpt, drws_beta_cont) %*% t(mm_cont)
-    cate_post <- lapply(names(x_cate_list), function(x_cate_idx) {
-      sapply(x_cate_list[[x_cate_idx]]$x_cate, function(lvl_obs_i) {
-        if (lvl_obs_i != "lvl1") {
-          return(drws[, paste0("xca.", x_cate_idx, lvl_obs_i)])
-        } else {
-          return(matrix(0, nrow = nrow(drws)))
-        }
-      })
-    })
-    mu_expected <- mu_expected + do.call("+", cate_post)
-    if (has_grp) {
-      r_post <- lapply(names(z_list), function(z_nm) {
-        unname(
-          drws[, paste0("b[(Intercept) ", z_nm, ":", z_list[[z_nm]]$z, "]")] +
-            drws[, paste0("b[xco.1 ", z_nm, ":", z_list[[z_nm]]$z, "]")] %*%
-            diag(x_cont[, 1])
-        )
-      })
-      mu_expected <- mu_expected + do.call("+", r_post)
-    }
-    if (has_add) {
-      drws_beta_s <- drws[
+    if (inherits(refmod$fit, "stanreg")) {
+      drws <- as.matrix(refmod$fit)
+      drws_icpt <- drws[, "(Intercept)"]
+      drws_beta_cont <- drws[
         ,
-        grep("^s\\(", colnames(drws), value = TRUE),
+        setdiff(grep("xco\\.", colnames(drws), value = TRUE),
+                grep("z\\.", colnames(drws), value = TRUE)),
         drop = FALSE
       ]
-      ### TODO (GAMs and GAMMs): Do this manually:
-      mm_s <- `%:::%`("rstanarm", "pp_data")(refmod$fit)$x
-      mm_s <- mm_s[, grep("^s\\(", colnames(mm_s), value = TRUE), drop = FALSE]
-      ###
-      mu_expected <- mu_expected + drws_beta_s %*% t(mm_s)
+      mm_cont <- model.matrix(
+        as.formula(paste("~",
+                         paste(colnames(drws_beta_cont), collapse = " + "))),
+        data = data_expected
+      )
+      stopifnot(identical(c("(Intercept)", colnames(drws_beta_cont)),
+                          colnames(mm_cont)))
+      mu_expected <- cbind(drws_icpt, drws_beta_cont) %*% t(mm_cont)
+      cate_post <- lapply(names(x_cate_list), function(x_cate_idx) {
+        sapply(x_cate_list[[x_cate_idx]]$x_cate, function(lvl_obs_i) {
+          if (lvl_obs_i != "lvl1") {
+            return(drws[, paste0("xca.", x_cate_idx, lvl_obs_i)])
+          } else {
+            return(matrix(0, nrow = nrow(drws)))
+          }
+        })
+      })
+      mu_expected <- mu_expected + do.call("+", cate_post)
+      if (has_grp) {
+        r_post <- lapply(names(z_list), function(z_nm) {
+          unname(
+            drws[, paste0("b[(Intercept) ", z_nm, ":", z_list[[z_nm]]$z, "]")] +
+              drws[, paste0("b[xco.1 ", z_nm, ":", z_list[[z_nm]]$z, "]")] %*%
+              diag(x_cont[, 1])
+          )
+        })
+        mu_expected <- mu_expected + do.call("+", r_post)
+      }
+      if (has_add) {
+        drws_beta_s <- drws[
+          ,
+          grep("^s\\(", colnames(drws), value = TRUE),
+          drop = FALSE
+        ]
+        ### TODO (GAMs and GAMMs): Do this manually:
+        mm_s <- `%:::%`("rstanarm", "pp_data")(refmod$fit)$x
+        mm_s <- mm_s[, grep("^s\\(", colnames(mm_s), value = TRUE),
+                     drop = FALSE]
+        ###
+        mu_expected <- mu_expected + drws_beta_s %*% t(mm_s)
+      }
+      mu_expected <- unname(mu_expected)
+    } else if (inherits(refmod$fit, "brmsfit")) {
+      # TODO ("brmfit"s): Do this manually (but posterior_linpred.brmsfit()
+      # should already be tested extensively in brms, so perhaps we don't need a
+      # manual calculation here (the reason for the manual calculation for
+      # "stanreg"s were the offset issues in rstanarm)):
+      mu_expected <- posterior_linpred(refmod$fit) - matrix(
+        offs_expected,
+        nrow = nrefdraws_expected,
+        ncol = nobsv_expected,
+        byrow = TRUE
+      )
     }
-    mu_expected <- unname(mu_expected)
     if (refmod$family$family != "gaussian") {
       mu_expected <- fam_orig$linkinv(mu_expected)
     }
@@ -315,11 +350,23 @@ refmodel_tester <- function(refmod,
 
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
-  if (!is_datafit || (is_datafit && fam_nm != "binom")) {
+  if ((!is_datafit && !inherits(refmod$fit, "brmsfit")) ||
+      (is_datafit && fam_nm != "binom")) {
     if (!is_gamm) {
       # TODO: Adapt the expected dataset to GAMMs.
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
     }
+  } else if (!is_datafit && inherits(refmod$fit, "brmsfit")) {
+    refdat_colnms <- as.character(attr(terms(formul_expected), "variables"))[-1]
+    if (!all(wobs_expected == 1)) {
+      refdat_colnms <- c(head(refdat_colnms, 1),
+                         "wobs_col",
+                         tail(refdat_colnms, -1))
+    }
+    refdat_colnms <- sub("^offset\\((.*)\\)$", "\\1", refdat_colnms)
+    refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
+    expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
+                 info = info_str)
   } else {
     refdat_ch <- data_expected
     y_nm <- paste("y", mod_nm, fam_nm, sep = "_")
@@ -359,7 +406,7 @@ refmodel_tester <- function(refmod,
   expect_null(refmod$folds, info = info_str)
 
   # cvfun
-  if (inherits(refmod$fit, "stanreg") || is_datafit) {
+  if (inherits(refmod$fit, c("stanreg", "brmsfit")) || is_datafit) {
     expect_type(refmod$cvfun, "closure")
   } else {
     expect_null(refmod$cvfun, info = info_str)

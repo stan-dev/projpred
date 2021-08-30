@@ -8,7 +8,7 @@
 #   * `"fam_nm"`,
 #   * everything starting with "tstsetup_" (regexp: "^tstsetup_").
 only_nonargs <- function(args_i) {
-  nms_only <- c("mod_nm", "fam_nm",
+  nms_only <- c("mod_nm", "fam_nm", "pkg_nm",
                 grep("^tstsetup_", names(args_i), value = TRUE))
   return(args_i[intersect(names(args_i), nms_only)])
 }
@@ -25,7 +25,7 @@ only_nonargs <- function(args_i) {
 #   * `"fam_nm"`,
 #   * everything starting with "tstsetup_" (regexp: "^tstsetup_").
 excl_nonargs <- function(args_i, nms_excl_add = character()) {
-  nms_excl <- c("mod_nm", "fam_nm",
+  nms_excl <- c("mod_nm", "fam_nm", "pkg_nm",
                 grep("^tstsetup_", names(args_i), value = TRUE),
                 nms_excl_add)
   return(args_i[setdiff(names(args_i), nms_excl)])

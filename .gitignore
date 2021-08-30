@@ -6,8 +6,9 @@
 .Rproj.user
 .Rapp.history
 .RData
+/src/projpred.dll
 
 vignettes/quickstart_cache
 *cache/
 *files/
-/src/projpred.dll
+tests/testthat/bfits
