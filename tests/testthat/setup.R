@@ -443,8 +443,8 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         wobss_tst <- wobss_tst["with_wobs"]
       }
       lapply(wobss_tst, function(wobs_crr) {
-        lapply(offss_nms, function(offs_nm) {
-          if (offs_nm == "without_offs") {
+        lapply(offss_nms, function(offss_nm) {
+          if (offss_nm == "without_offs") {
             trms <- setdiff(trms, "offset(offs_col)")
           }
           formul_crr <- as.formula(paste(
@@ -457,7 +457,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
                   chains = chains_tst, iter = iter_tst, seed = seed_tst,
                   QR = TRUE, refresh = 0),
             wobs_crr,
-            offss_tst[[offs_nm]],
+            offss_tst[[offss_nm]],
             random_arg
           ))
         })
