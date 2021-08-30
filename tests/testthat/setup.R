@@ -384,22 +384,26 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
     # TODO (GAMMs): Fix this. This exclusion also has the downside that K-fold
     # CV cannot be tested in that case.
   }
+
   if (!mod_nm %in% c("gam", "gamm")) {
     offss_nms <- "with_offs"
   } else {
     offss_nms <- "without_offs"
   }
   offss_nms <- setNames(nm = offss_nms)
+
   if (mod_nm != "gamm") {
     random_arg <- list()
   } else {
     random_arg <- list(random = as.formula(paste("~", trms_grp)))
   }
+
   lapply(fam_nms, function(fam_nm) {
     y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
     if (fam_nm == "binom") {
       y_chr <- paste0("cbind(", y_chr, ", wobs_col - ", y_chr, ")")
     }
+
     formul_nms <- "stdformul"
     if (fam_nm == "gauss" && mod_nm != "gamm") {
       # Here, we also test a special formula (the "gamm" case is excluded
@@ -422,6 +426,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
                      "gam" = c(trms_common, trms_add),
                      "gamm" = c(trms_common, trms_add),
                      stop("Unknown `mod_nm`."))
+
       if (fam_nm == "binom") {
         # Here, the weights are specified in the formula via the cbind() syntax:
         wobss_tst <- wobss_tst["without_wobs"]
@@ -445,6 +450,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
           formul_crr <- as.formula(paste(
             y_chr, "~", paste(trms, collapse = " + ")
           ))
+
           return(c(
             nlist(mod_nm, fam_nm, formula = formul_crr,
                   family = as.name(paste0("f_", fam_nm)), data = quote(dat),
