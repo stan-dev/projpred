@@ -237,7 +237,7 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
     }
   }
   return(nlist(pred = t(pred_out),
-               lpd = if(is.null(lpd_out)) lpd_out else t(lpd_out)))
+               lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
 compute_lpd <- function(ynew, mu, proj, weights) {
