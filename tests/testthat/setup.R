@@ -354,11 +354,11 @@ wobss_tst <- list(with_wobs = list(weights = wobs_tst),
 
 ### See the notes above: Due to rstanarm issue #541 and the fact that rstanarm
 ### doesn't support argument `offset` for GAMs and GAMMs, the easiest way to use
-### offsets is to always specify them in the formula (or, for GAMs and GAMMs:
-### not at all, see the definition of `args_fit` below). Therefore, the
-### following object is just a dummy (but used nevertheless, namely to construct
-### the names for the argument lists):
-offss_tst <- list(with_offs = list(),
+### offsets is to always specify them in the formula (or not at all, see the
+### definition of `args_fit` below). Therefore, the following object which could
+### be used to use *argument* `offset` is just a dummy (but used nevertheless,
+### namely to construct the names for the argument lists):
+offss_tst <- list(with_offs = list(), # with_offs = list(offset = offs_tst),
                   without_offs = list())
 ###
 
@@ -404,17 +404,6 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
         }
         y_chr <- paste0("log(abs(", y_chr, "))")
       }
-      trms <- switch(
-        mod_nm,
-        "glm" = trms_common,
-        "glmm" = c(trms_common, trms_grp),
-        "gam" = c(setdiff(trms_common, "offset(offs_col)"), trms_add),
-        "gamm" = c(setdiff(trms_common, "offset(offs_col)"), trms_add),
-        stop("Unknown `mod_nm`.")
-      )
-      formul_crr <- as.formula(paste(
-        y_chr, "~", paste(trms, collapse = " + ")
-      ))
       if (fam_nm == "binom") {
         # Here, the weights are specified in the formula via the cbind() syntax:
         wobss_tst <- wobss_tst["without_wobs"]
@@ -435,8 +424,21 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
       } else {
         offss_tst <- offss_tst["without_offs"]
       }
+      offss_nms <- setNames(nm = names(offss_tst))
       lapply(wobss_tst, function(wobs_crr) {
-        lapply(offss_tst, function(offs_crr) {
+        lapply(offss_nms, function(offs_nm) {
+          trms <- switch(mod_nm,
+                         "glm" = trms_common,
+                         "glmm" = c(trms_common, trms_grp),
+                         "gam" = c(trms_common, trms_add),
+                         "gamm" = c(trms_common, trms_add),
+                         stop("Unknown `mod_nm`."))
+          if (offs_nm == "without_offs") {
+            trms <- setdiff(trms, "offset(offs_col)")
+          }
+          formul_crr <- as.formula(paste(
+            y_chr, "~", paste(trms, collapse = " + ")
+          ))
           if (mod_nm  == "gamm") {
             random_arg <- list(random = as.formula(paste("~", trms_grp)))
           } else {
@@ -448,7 +450,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
                   chains = chains_tst, iter = iter_tst, seed = seed_tst,
                   QR = TRUE),
             wobs_crr,
-            offs_crr,
+            offss_tst[[offs_nm]],
             random_arg
           ))
         })
