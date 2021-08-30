@@ -812,27 +812,15 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     # Therefore, the following checks for equality/inequality are quite
     # restricted.
     # Expected equality for some components:
-    if (mod_crr != "gam") {
-      expect_equal(cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
-                   cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
-                   info = tstsetup)
-    } else {
-      # TODO (GAMs): Fix this.
-      cvvs_tmp <- cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)]
-      cvvs_ch <- cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)]
-      for (m in seq_along(cvvs_tmp$search_path$sub_fits)) {
-        for (s in seq_along(cvvs_tmp$search_path$sub_fits[[m]])) {
-          expect_equal(cvvs_tmp$search_path$sub_fits[[m]][[s]][[4]][[19]],
-                       cvvs_ch$search_path$sub_fits[[m]][[s]][[4]][[19]],
-                       check.environment = FALSE,
-                       info = tstsetup)
-          cvvs_tmp$search_path$sub_fits[[m]][[s]][[4]][[19]] <-
-            cvvs_ch$search_path$sub_fits[[m]][[s]][[4]][[19]]
-        }
-      }
-      expect_equal(cvvs_tmp, cvvs_ch,
-                   info = paste(tstsetup, m, s, sep = "__"))
-    }
+    # TODO: Currently, `check.environment = FALSE` is needed. The reason is
+    # probably that in the divergence minimizers, the projpred-extended family
+    # is passed to argument `family` of the external model fitting functions
+    # like lme4::glmer(). This should be fixed and then `check.environment =
+    # FALSE` should be removed.
+    expect_equal(cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+                 check.environment = FALSE,
+                 info = tstsetup)
     # Expected inequality for the remaining components (but note that the
     # components from `vsel_nms_cv_cvfits_opt` can be, but don't need to be
     # differing):
