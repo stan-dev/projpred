@@ -232,7 +232,9 @@ test_that("`stat` works", {
     for (stat_crr in stat_vec) {
       # Warnings are suppressed, but a suggested size of `NA` (because of a
       # search which was terminated too early) is tested below:
-      SW(suggsize <- suggest_size(vss[[tstsetup_vs]], stat = stat_crr))
+      suggsize <- suppressWarnings(
+        suggest_size(vss[[tstsetup_vs]], stat = stat_crr)
+      )
       expect_type(suggsize, "double")
       expect_length(suggsize, 1)
       if (!is.na(suggsize)) {

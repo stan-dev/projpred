@@ -17,7 +17,6 @@ run_cvfits_all <- FALSE
 
 set.seed(8541351)
 
-source(testthat::test_path("helpers", "SW.R"), local = TRUE)
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
@@ -448,7 +447,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
             nlist(mod_nm, fam_nm, formula = formul_crr,
                   family = as.name(paste0("f_", fam_nm)), data = quote(dat),
                   chains = chains_tst, iter = iter_tst, seed = seed_tst,
-                  QR = TRUE),
+                  QR = TRUE, refresh = 0),
             wobs_crr,
             offss_tst[[offs_nm]],
             random_arg
@@ -463,7 +462,7 @@ stopifnot(length(unique(names(args_fit))) == length(args_fit))
 
 ## Run --------------------------------------------------------------------
 
-SW(fits <- lapply(args_fit, function(args_fit_i) {
+fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
   fit_fun_nm <- switch(args_fit_i$mod_nm,
                        "glm" = "stan_glm",
                        "glmm" = "stan_glmer",
@@ -489,8 +488,9 @@ args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
 
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
-# (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(refmods <- lapply(args_ref, function(args_ref_i) {
+# (see GitHub issue #136), so temporarily wrap the following call in
+# suppressWarnings():
+refmods <- suppressWarnings(lapply(args_ref, function(args_ref_i) {
   do.call(get_refmodel, c(
     list(object = fits[[args_ref_i$tstsetup_fit]]),
     excl_nonargs(args_ref_i)
@@ -599,10 +599,10 @@ if (run_cvvs) {
   })
   args_cvvs <- unlist_cust(args_cvvs)
 
-  # Use SW() because of occasional warnings concerning Pareto k diagnostics:
-  # Additionally to SW(), suppressMessages() could be used here (because of the
-  # refits in K-fold CV):
-  SW(cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
+  # Use suppressWarnings() because of occasional warnings concerning Pareto k
+  # diagnostics: Additionally to suppressWarnings(), suppressMessages() could be
+  # used here (because of the refits in K-fold CV):
+  cvvss <- suppressWarnings(lapply(args_cvvs, function(args_cvvs_i) {
     do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
@@ -734,13 +734,16 @@ if (run_cvvs) {
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
   args_prj_cvvs <- unlist_cust(args_prj_cvvs)
 
-  # Use SW() because of occasional pwrssUpdate() warnings:
-  SW(prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
-    do.call(project, c(
-      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
-      excl_nonargs(args_prj_cvvs_i)
-    ))
-  }))
+  # Use suppressWarnings() because of occasional pwrssUpdate() warnings:
+  prjs_cvvs <- suppressWarnings(lapply(
+    args_prj_cvvs,
+    function(args_prj_cvvs_i) {
+      do.call(project, c(
+        list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
+        excl_nonargs(args_prj_cvvs_i)
+      ))
+    }
+  ))
 }
 
 ## Prediction -------------------------------------------------------------

@@ -51,8 +51,9 @@ args_datafit <- lapply(setNames(
 
 # For the binomial family with > 1 trials, we currently expect the warning
 # "Using formula(x) is deprecated when x is a character vector of length > 1"
-# (see GitHub issue #136), so temporarily wrap the following call in SW():
-SW(datafits <- lapply(args_datafit, function(args_datafit_i) {
+# (see GitHub issue #136), so temporarily wrap the following call in
+# suppressWarnings():
+datafits <- suppressWarnings(lapply(args_datafit, function(args_datafit_i) {
   formul_crr <- args_fit[[args_datafit_i$tstsetup_fit]]$formula
   if (!is.null(args_fit[[args_datafit_i$tstsetup_fit]]$random)) {
     formul_crr <- update(formul_crr, paste(
@@ -611,11 +612,11 @@ test_that(paste(
       object = NULL, data = df, formula = formula,
       family = fam, extract_model_data = extract_model_data
     )
-    SW({
-      vs <- varsel(ref,
-                   method = "l1", lambda_min_ratio = lambda_min_ratio,
-                   nlambda = nlambda, thresh = 1e-12)
-    })
+    vs <- suppressWarnings(varsel(
+      ref,
+      method = "l1", lambda_min_ratio = lambda_min_ratio,
+      nlambda = nlambda, thresh = 1e-12
+    ))
     pred1 <- proj_linpred(vs,
                           newdata = data.frame(x = x, offset = offset,
                                                weights = weights),

@@ -774,8 +774,8 @@ projection_tester <- function(p,
     # Number of projected draws in as.matrix.projection() (note that more
     # extensive tests for as.matrix.projection() may be found in
     # "test_as_matrix.R"):
-    SW(nprjdraws <- NROW(as.matrix(p)))
-    expect_identical(nprjdraws, nprjdraws_expected, info = info_str)
+    expect_identical(suppressWarnings(NROW(as.matrix(p))), nprjdraws_expected,
+                     info = info_str)
   }
   if (nprjdraws_expected > 1) {
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))

@@ -521,8 +521,9 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     cvvs_orig <- cvvss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_new1 <- .Random.seed
-    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
-    SW(cvvs_new <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_new <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            seed = args_cvvs_i$seed + 1L),
       excl_nonargs(args_cvvs_i, nms_excl_add = "seed")
@@ -530,7 +531,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     .Random.seed_new2 <- .Random.seed
     rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
-    SW(cvvs_repr <- do.call(cv_varsel, c(
+    cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
     )))
@@ -551,8 +552,9 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 
 test_that("invalid `nloo` fails", {
   for (tstsetup in names(refmods)) {
-    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
-    expect_error(SW(cv_varsel(refmods[[tstsetup]], nloo = -1)),
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    expect_error(suppressWarnings(cv_varsel(refmods[[tstsetup]], nloo = -1)),
                  "^nloo must be at least 1$",
                  info = tstsetup)
   }
@@ -568,8 +570,9 @@ test_that(paste(
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
-    SW(cvvs_nloo <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
       excl_nonargs(args_cvvs_i)
@@ -592,8 +595,9 @@ test_that("setting `nloo` smaller than the number of observations works", {
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
-    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
-    SW(cvvs_nloo <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
       excl_nonargs(args_cvvs_i)
@@ -644,8 +648,9 @@ test_that("`validate_search` works", {
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
-    # Use SW() because of occasional warnings concerning Pareto k diagnostics:
-    SW(cvvs_valsearch <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_valsearch <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            validate_search = FALSE),
       excl_nonargs(args_cvvs_i)
@@ -737,10 +742,12 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     # Refit `K_crr` times:
     # rstanarm::kfold() lacks an argument for setting the seed:
     set.seed(seed_tst)
-    # Additionally to SW(), suppressMessages() could be used here (but is not
-    # necessary since messages seem to be suppressed within test_that()'s
-    # `code`):
-    SW(kfold_obj <- rstanarm::kfold(fit_crr, K = K_crr, save_fits = TRUE))
+    # Additionally to suppressWarnings(), suppressMessages() could be used here
+    # (but is not necessary since messages seem to be suppressed within
+    # test_that()'s `code`):
+    kfold_obj <- suppressWarnings(
+      rstanarm::kfold(fit_crr, K = K_crr, save_fits = TRUE)
+    )
 
     # Create the folds vector:
     folds_vec <- rep(NA, nobsv)

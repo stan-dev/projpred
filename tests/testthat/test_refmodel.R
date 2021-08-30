@@ -34,12 +34,13 @@ test_that("`object` of class \"stanreg\" works", {
 })
 
 test_that("missing `data` fails", {
-  SW(fit_nodata <- rstanarm::stan_glm(
+  fit_nodata <- suppressWarnings(rstanarm::stan_glm(
     dat$y_glm_gauss ~ dat$xco.1 + dat$xco.2 + dat$xco.3 +
       dat$xca.1 + dat$xca.2 + offset(dat$offs_col),
     family = f_gauss,
     weights = dat$wobs_col,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE,
+    refresh = 0
   ))
   expect_error(get_refmodel(fit_nodata),
                "^object of type 'environment' is not subsettable$")
@@ -49,21 +50,23 @@ test_that("`formula` as a character string fails", {
   # If `formula` is a character string, rstanarm::stan_glm() is not able to find
   # objects supplied to arguments `weights` or `offset`, at least when using
   # devtools::test():
-  SW(fit_str <- rstanarm::stan_glm(
+  fit_str <- suppressWarnings(rstanarm::stan_glm(
     "y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2",
     family = f_gauss, data = dat,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE,
+    refresh = 0
   ))
   expect_error(get_refmodel(fit_str),
                "^inherits\\(formula, \"formula\"\\) is not TRUE$")
 })
 
 test_that("offsets specified via argument `offset` fail", {
-  SW(fit_offs_arg <- rstanarm::stan_glm(
+  fit_offs_arg <- suppressWarnings(rstanarm::stan_glm(
     y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_gauss, data = dat,
     weights = wobs_tst, offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE
+    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE,
+    refresh = 0
   ))
   expect_error(
     get_refmodel(fit_offs_arg),
