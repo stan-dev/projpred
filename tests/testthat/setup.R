@@ -4,6 +4,8 @@
 
 # General setup -----------------------------------------------------------
 
+options(warn = 1)
+
 # When debugging interactively without needing the "vsel" objects, these
 # switches may be set to `FALSE` to save time:
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
