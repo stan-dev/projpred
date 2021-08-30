@@ -429,20 +429,21 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
 
       if (fam_nm == "binom") {
         # Here, the weights are specified in the formula via the cbind() syntax:
-        wobss_tst <- wobss_tst["without_wobs"]
+        wobss_nms <- "without_wobs"
       } else if (fam_nm == "brnll") {
         # In this case, observation weights are not supported by projpred:
-        wobss_tst <- wobss_tst["without_wobs"]
+        wobss_nms <- "without_wobs"
       } else if (mod_nm == "glm" && fam_nm == "gauss" &&
                  formul_nm != "spclformul") {
         # Here, rstanarm:::kfold.stanreg() is applied, so we also need the model
         # without observation weights (because rstanarm:::kfold.stanreg()
         # doesn't support observation weights):
-        wobss_tst <- wobss_tst
+        wobss_nms <- c("with_wobs", "without_wobs")
       } else {
-        wobss_tst <- wobss_tst["with_wobs"]
+        wobss_nms <- "with_wobs"
       }
-      lapply(wobss_tst, function(wobs_crr) {
+      wobss_nms <- setNames(nm = wobss_nms)
+      lapply(wobss_nms, function(wobss_nm) {
         lapply(offss_nms, function(offss_nm) {
           if (offss_nm == "without_offs") {
             trms <- setdiff(trms, "offset(offs_col)")
@@ -456,7 +457,7 @@ args_fit <- lapply(mod_nms, function(mod_nm) {
                   family = as.name(paste0("f_", fam_nm)), data = quote(dat),
                   chains = chains_tst, iter = iter_tst, seed = seed_tst,
                   QR = TRUE, refresh = 0),
-            wobs_crr,
+            wobss_tst[[wobss_nm]],
             offss_tst[[offss_nm]],
             random_arg
           ))
