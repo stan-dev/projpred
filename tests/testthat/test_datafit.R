@@ -43,7 +43,7 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
 
 # Exclude the case which was added for K-fold CV only:
 args_datafit <- lapply(setNames(
-  nm = grep("^glm\\.gauss\\.stdformul\\.without_wobs", names(fits),
+  nm = grep("\\.glm\\.gauss\\.stdformul\\.without_wobs", names(fits),
             value = TRUE, invert = TRUE)
 ), function(tstsetup_fit) {
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))

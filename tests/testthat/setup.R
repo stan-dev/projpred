@@ -703,7 +703,7 @@ if (run_cvvs) {
 
 # Exclude the case which was added for K-fold CV only:
 tstsetups_prj_ref <- setNames(
-  nm = grep("^glm\\.gauss\\.stdformul\\.without_wobs", names(refmods),
+  nm = grep("\\.glm\\.gauss\\.stdformul\\.without_wobs", names(refmods),
             value = TRUE, invert = TRUE)
 )
 args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {

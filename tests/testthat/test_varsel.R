@@ -50,7 +50,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   # .get_refdist().
   skip_if_not(run_vs)
   # To save time:
-  tstsetups <- grep("^glm\\.gauss\\.", names(vss), value = TRUE)
+  tstsetups <- grep("\\.glm\\.gauss\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- vss[[tstsetup]]
@@ -85,7 +85,7 @@ test_that("`d_test` works", {
   skip_if_not(run_vs)
   tstsetups <- names(vss)
   ### Alternative with less test setups:
-  # tstsetups <- grep("^glm\\.", names(vss), value = TRUE)
+  # tstsetups <- grep("\\.glm\\.", names(vss), value = TRUE)
   ###
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
@@ -174,8 +174,8 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
-                       grep("^glm\\..*\\.forward", names(vss), value = TRUE))
+  tstsetups <- setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
+                       grep("\\.glm\\..*\\.forward", names(vss), value = TRUE))
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -247,7 +247,7 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- grep("^glm\\..*\\.forward", names(vss), value = TRUE)
+  tstsetups <- grep("\\.glm\\..*\\.forward", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -361,8 +361,8 @@ test_that(paste(
 test_that("`penalty` of invalid length fails", {
   skip_if_not(run_vs)
   tstsetups <- setdiff(
-    grep("^glm\\.", names(args_vs), value = TRUE),
-    grep("^glm\\..*\\.forward", names(args_vs), value = TRUE)
+    grep("\\.glm\\.", names(args_vs), value = TRUE),
+    grep("\\.glm\\..*\\.forward", names(args_vs), value = TRUE)
   )
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
@@ -390,7 +390,7 @@ test_that("for forward search, `penalty` has no effect", {
   skip_if_not(run_vs)
   penal_tst <- 2
   tstsetups <- union(grep("\\.forward", names(vss), value = TRUE),
-                     grep("^glm\\.", names(vss), value = TRUE, invert = TRUE))
+                     grep("\\.glm\\.", names(vss), value = TRUE, invert = TRUE))
   # To save time:
   tstsetups <- head(tstsetups, 1)
   for (tstsetup in tstsetups) {
@@ -406,8 +406,8 @@ test_that("for forward search, `penalty` has no effect", {
 
 test_that("for L1 search, `penalty` has an expected effect", {
   skip_if_not(run_vs)
-  tstsetups <- setdiff(grep("^glm\\.", names(vss), value = TRUE),
-                       grep("^glm\\..*\\.forward", names(vss), value = TRUE))
+  tstsetups <- setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
+                       grep("\\.glm\\..*\\.forward", names(vss), value = TRUE))
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
 
@@ -515,7 +515,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   # .get_refdist().
   skip_if_not(run_cvvs)
   # To save time:
-  tstsetups <- grep("^glm\\.gauss", names(cvvss), value = TRUE)
+  tstsetups <- grep("\\.glm\\.gauss", names(cvvss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     cvvs_orig <- cvvss[[tstsetup]]
@@ -566,7 +566,7 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv + 1L
-  tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
+  tstsetups <- grep("\\.glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
@@ -584,7 +584,7 @@ test_that(paste(
 test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv - 1L
-  tstsetups <- grep("^glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
+  tstsetups <- grep("\\.glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
@@ -633,7 +633,7 @@ test_that("`validate_search` works", {
   skip_if_not(run_cvvs)
   tstsetups <- grep("\\.default_cvmeth", names(cvvss), value = TRUE)
   if (!run_valsearch_always) {
-    tstsetups <- grep("^glm\\.", tstsetups, value = TRUE)
+    tstsetups <- grep("\\.glm\\.", tstsetups, value = TRUE)
     tstsetups <- grep("\\.forward", tstsetups, value = TRUE, invert = TRUE)
   }
   suggsize_cond <- setNames(rep(NA, length(tstsetups)), nm = tstsetups)

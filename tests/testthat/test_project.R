@@ -19,7 +19,7 @@ test_that(paste(
 })
 
 test_that("invalid `solution_terms` warns or fails", {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -56,7 +56,7 @@ test_that("invalid `solution_terms` warns or fails", {
 })
 
 test_that("`object` of class \"stanreg\" works", {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -204,7 +204,7 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
 
 test_that("invalid `nterms` fails", {
   skip_if_not(run_vs)
-  tstsetups <- head(grep("^glm\\.gauss", names(vss), value = TRUE), 1)
+  tstsetups <- head(grep("\\.glm\\.gauss", names(vss), value = TRUE), 1)
   for (tstsetup in tstsetups) {
     for (nterms_crr in nterms_unavail) {
       expect_error(project(vss[[!!tstsetup]], nterms = !!nterms_crr),
@@ -221,7 +221,7 @@ test_that("invalid `nterms` fails", {
 # ndraws and nclusters ----------------------------------------------------
 
 test_that("invalid `ndraws` fails", {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
                     names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -241,7 +241,7 @@ test_that(paste(
   "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
   "of posterior draws in the reference model"
 ), {
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
                     names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -272,7 +272,7 @@ test_that(paste(
 test_that("`seed` works (and restores the RNG state afterwards)", {
   # Note: Extensive tests for reproducibility may be found among the tests for
   # .get_refdist().
-  tstsetups <- grep("^glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -330,7 +330,7 @@ test_that("for GLMs, `regul` has an expected effect", {
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- grep("^glm\\..*\\.clust$", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.glm\\..*\\.clust$", names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
