@@ -310,16 +310,19 @@ if (!requireNamespace("rstanarm", quietly = TRUE)) {
   stop("Package \"rstanarm\" is needed for these tests. Please install it.",
        call. = FALSE)
 }
+pkg_nms <- "rstanarm"
 
 if (run_brms) {
   if (!requireNamespace("brms", quietly = TRUE)) {
     stop("Package \"brms\" is needed for these tests. Please install it.",
          call. = FALSE)
   }
+  pkg_nms <- c(pkg_nms, "brms")
   # For storing "brmsfit"s locally:
   file_pth <- testthat::test_path("bfits")
   if(!dir.exists(file_pth)) dir.create(file_pth)
 }
+pkg_nms <- setNames(nm = pkg_nms)
 
 chains_tst <- 2L
 iter_tst <- 500L
@@ -389,103 +392,126 @@ for (obj_symb_chr in c(paste0("f_", fam_nms))) {
   }
 }
 
-args_fit <- lapply(mod_nms, function(mod_nm) {
-  pkg_nms <- "rstanarm"
-
-  if (mod_nm == "gamm") {
-    # Exclude "binom" from `fam_nms` since there seems to be an issue with
-    # get_refmodel.stanreg() in this case (probably issue #148):
-    fam_nms <- setNames(nm = setdiff(fam_nms, "binom"))
-    # TODO (GAMMs): Fix this. This exclusion also has the downside that K-fold
-    # CV cannot be tested in that case.
+args_fit <- lapply(pkg_nms, function(pkg_nm) {
+  if (pkg_nm == "brms") {
+    # For speed reasons:
+    mod_nms <- intersect(mod_nms, "glm")
+    fam_nms <- intersect(fam_nms, "gauss")
   }
 
-  if (!mod_nm %in% c("gam", "gamm")) {
-    offss_nms <- "with_offs"
-  } else {
-    offss_nms <- "without_offs"
-  }
-  offss_nms <- setNames(nm = offss_nms)
-
-  if (mod_nm != "gamm") {
-    random_arg <- list()
-  } else {
-    random_arg <- list(random = as.formula(paste("~", trms_grp)))
-  }
-
-  lapply(fam_nms, function(fam_nm) {
-    y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
-    if (fam_nm == "binom") {
-      y_chr <- paste0("cbind(", y_chr, ", wobs_col - ", y_chr, ")")
-    }
-
-    formul_nms <- "stdformul"
-    if (fam_nm == "gauss" && mod_nm != "gamm") {
-      # Here, we also test a special formula (the "gamm" case is excluded
-      # because of rstanarm issue #545):
-      formul_nms <- c(formul_nms, "spclformul")
-    }
-    formul_nms <- setNames(nm = formul_nms)
-    lapply(formul_nms, function(formul_nm) {
-      if (formul_nm == "spclformul") {
-        trms_common <- trms_common_spcl
-        if (fam_nm != "gauss") {
-          stop("`y_chr` needs to be adopted for families other than ",
-               "`\"gauss\"`.")
-        }
-        y_chr <- paste0("log(abs(", y_chr, "))")
-      }
-      trms <- switch(mod_nm,
-                     "glm" = trms_common,
-                     "glmm" = c(trms_common, trms_grp),
-                     "gam" = c(trms_common, trms_add),
-                     "gamm" = c(trms_common, trms_add),
-                     stop("Unknown `mod_nm`."))
-
-      if (fam_nm == "binom") {
-        # Here, the weights are specified in the formula via the cbind() syntax:
-        wobss_nms <- "without_wobs"
-      } else if (fam_nm == "brnll") {
-        # In this case, observation weights are not supported by projpred:
-        wobss_nms <- "without_wobs"
-      } else if (mod_nm == "glm" && fam_nm == "gauss" &&
-                 formul_nm != "spclformul") {
-        # Here, rstanarm:::kfold.stanreg() is applied, so we also need the model
-        # without observation weights (because rstanarm:::kfold.stanreg()
-        # doesn't support observation weights):
-        wobss_nms <- c("with_wobs", "without_wobs")
+  mod_nms <- setNames(nm = mod_nms)
+  lapply(mod_nms, function(mod_nm) {
+    if (pkg_nm == "rstanarm") {
+      if (mod_nm != "gamm") {
+        random_arg <- list()
       } else {
-        wobss_nms <- "with_wobs"
+        random_arg <- list(random = as.formula(paste("~", trms_grp)))
       }
-      wobss_nms <- setNames(nm = wobss_nms)
-      lapply(wobss_nms, function(wobss_nm) {
-        lapply(offss_nms, function(offss_nm) {
-          if (offss_nm == "without_offs") {
-            trms <- setdiff(trms, "offset(offs_col)")
-          }
-          formul_crr <- as.formula(paste(
-            y_chr, "~", paste(trms, collapse = " + ")
-          ))
+    }
 
-          if (run_brms && mod_nm == "glm" && fam_nm == "gauss" &&
-              formul_nm == "stdformul" && wobss_nm == "with_wobs") {
-            pkg_nms <- c(pkg_nms, "brms")
+    if (pkg_nm == "rstanarm" && mod_nm == "gamm") {
+      # Exclude "binom" from `fam_nms` since there seems to be an issue with
+      # get_refmodel.stanreg() in this case (probably issue #148):
+      fam_nms <- setdiff(fam_nms, "binom")
+      # TODO (GAMMs): Fix this. This exclusion also has the downside that K-fold
+      # CV cannot be tested in that case.
+    }
+
+    if ((pkg_nm == "rstanarm" && mod_nm %in% c("gam", "gamm")) ||
+        pkg_nm == "brms") {
+      # In the rstanarm "gam" and "gamm" case, the offsets are omitted because
+      # of rstanarm issue #546 and rstanarm issue #253.
+      # In the brms case, the offsets are omitted because of brms issue #1220.
+      offss_nms <- "without_offs"
+    } else {
+      offss_nms <- "with_offs"
+    }
+
+    fam_nms <- setNames(nm = fam_nms)
+    lapply(fam_nms, function(fam_nm) {
+      y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
+
+      if (fam_nm == "gauss" && pkg_nm != "brms" &&
+          !(pkg_nm == "rstanarm" && mod_nm == "gamm")) {
+        # Here, we also test a special formula (the brms case is excluded for
+        # speed reasons; the rstanarm "gamm" case is excluded because of
+        # rstanarm issue #545):
+        formul_nms <- c("stdformul", "spclformul")
+      } else {
+        formul_nms <- "stdformul"
+      }
+
+      formul_nms <- setNames(nm = formul_nms)
+      lapply(formul_nms, function(formul_nm) {
+        if (formul_nm == "spclformul") {
+          trms_common <- trms_common_spcl
+          if (fam_nm != "gauss") {
+            stop("`y_chr` needs to be adopted for families other than ",
+                 "`\"gauss\"`.")
           }
-          pkg_nms <- setNames(nm = pkg_nms)
-          lapply(pkg_nms, function(pkg_nm) {
+          y_chr <- paste0("log(abs(", y_chr, "))")
+        }
+        if (fam_nm == "binom") {
+          if (pkg_nm == "rstanarm") {
+            y_chr <- paste0("cbind(", y_chr, ", wobs_col - ", y_chr, ")")
+          } else if (pkg_nm == "brms") {
+            y_chr <- paste(y_chr, "| trials(wobs_col)")
+          }
+        }
+        trms <- switch(mod_nm,
+                       "glm" = trms_common,
+                       "glmm" = c(trms_common, trms_grp),
+                       "gam" = c(trms_common, trms_add),
+                       "gamm" = switch(
+                         pkg_nm,
+                         "rstanarm" = c(trms_common, trms_add),
+                         "brms" = c(trms_common, trms_add, trms_grp),
+                         stop("Unknown `pkg_nm`.")
+                       ),
+                       stop("Unknown `mod_nm`."))
+
+        if (fam_nm %in% c("brnll", "binom")) {
+          # In this case, observation weights are not supported by projpred (and
+          # for rstanarm, the number of trials is specified in the formula via
+          # the cbind() syntax (indirectly, because the number of trials is the
+          # sum of the two columns)):
+          wobss_nms <- "without_wobs"
+        } else if (pkg_nm == "rstanarm" && mod_nm == "glm" &&
+                   fam_nm == "gauss" && formul_nm != "spclformul") {
+          # Here, rstanarm:::kfold.stanreg() is applied, so we also need the
+          # model without observation weights (because
+          # rstanarm:::kfold.stanreg() doesn't support observation weights):
+          wobss_nms <- c("with_wobs", "without_wobs")
+        } else {
+          wobss_nms <- "with_wobs"
+        }
+
+        wobss_nms <- setNames(nm = wobss_nms)
+        lapply(wobss_nms, function(wobss_nm) {
+          if (pkg_nm == "brms" && wobss_nm == "with_wobs") {
+            if (fam_nm == "binom") {
+              stop("Because of `\"| trials(wobs_col)\"` above, the code here ",
+                   "(for pasting `\"| weights(wobs_col)\"`) needs to be ",
+                   "adopted.")
+            }
+            y_chr <- paste(y_chr, "| weights(wobs_col)")
+          }
+
+          offss_nms <- setNames(nm = offss_nms)
+          lapply(offss_nms, function(offss_nm) {
+            if (offss_nm == "without_offs") {
+              trms <- setdiff(trms, "offset(offs_col)")
+            }
+            formul_crr <- as.formula(paste(
+              y_chr, "~", paste(trms, collapse = " + ")
+            ))
+
             if (pkg_nm == "rstanarm") {
               pkg_args <- c(list(QR = TRUE),
                             wobss_tst[[wobss_nm]],
                             offss_tst[[offss_nm]],
                             random_arg)
             } else if (pkg_nm == "brms") {
-              if (wobss_nm == "with_wobs") {
-                formul_crr <- update(formul_crr, paste(
-                  y_chr, "| weights(wobs_col)", "~",
-                  paste(trms, collapse = " + ")
-                ))
-              }
-
               pkg_args <- list(file = file_pth,
                                file_refit = "on_change") # , silent = 2
             }
