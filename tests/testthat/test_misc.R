@@ -42,7 +42,7 @@ test_that("rstanarm: special formulas work", {
   # a formula are handled by get_refmodel() and init_refmodel(); arithmetic
   # expressions on the right-hand side of a formula are handled by the
   # `div_minimizer`.
-  tstsetups <- grep("\\.spclformul.*\\.rstanarm", names(fits), value = TRUE)
+  tstsetups <- grep("^rstanarm.*\\.spclformul", names(fits), value = TRUE)
   # Compare the "special formula" fit with the corresponding "standard formula"
   # fit (which does not have the special formula elements):
   for (tstsetup in tstsetups) {
