@@ -2,7 +2,7 @@
 
 context("get_refmodel()")
 
-test_that("`object` of class \"stanreg\" works", {
+test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
   for (tstsetup in names(refmods)) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     if (!grepl("\\.spclformul", tstsetup)) {
@@ -101,17 +101,18 @@ test_that(paste(
   "`object` of class `\"refmodel\"`, `newdata`, `ynew`, and `type` work"
 ), {
   for (tstsetup in names(refmods)) {
+    pkg_crr <- args_ref[[tstsetup]]$pkg_nm
     mod_crr <- args_ref[[tstsetup]]$mod_nm
     fam_crr <- args_ref[[tstsetup]]$fam_nm
 
     # We expect a warning which in fact should be suppressed, though (see
     # issue #162):
-    warn_expected <- switch(
-      mod_crr,
-      "glm" = paste("^'offset' argument is NULL but it looks like you",
-                    "estimated the model using an offset term\\.$"),
+    warn_expected <- if (pkg_crr == "rstanarm" && mod_crr == "glm") {
+      paste("^'offset' argument is NULL but it looks like you",
+            "estimated the model using an offset term\\.$")
+    } else {
       NA
-    )
+    }
 
     y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
     if (is.integer(y_crr)) {
