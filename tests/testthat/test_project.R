@@ -55,7 +55,7 @@ test_that("invalid `solution_terms` warns or fails", {
   }
 })
 
-test_that("`object` of class \"stanreg\" works", {
+test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
