@@ -55,6 +55,20 @@ args_datafit <- lapply(setNames(
 # suppressWarnings():
 datafits <- suppressWarnings(lapply(args_datafit, function(args_datafit_i) {
   formul_crr <- args_fit[[args_datafit_i$tstsetup_fit]]$formula
+  if (args_datafit_i$pkg_nm == "brms") {
+    formul_crr <- formula(formul_crr)
+    formul_chr <- as.character(formul_crr)
+    # For "brmsfit"s, remove additional response information:
+    if (grepl("[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
+              formul_chr[2])) {
+      formul_chr[2] <- gsub(
+        "[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
+        "", formul_chr[2]
+      )
+    }
+    formul_crr <- update(formul_crr,
+                         paste(formul_chr[c(2, 1, 3)], collapse = " "))
+  }
   if (!is.null(args_fit[[args_datafit_i$tstsetup_fit]]$random)) {
     formul_crr <- update(formul_crr, paste(
       ". ~ . + ",
@@ -215,7 +229,11 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
       datafits[[tstsetup]],
       is_datafit = TRUE,
       fit_expected = NULL,
-      formul_expected = fits[[tstsetup_fit]]$formula,
+      formul_expected = if (inherits(fits[[tstsetup_fit]], "stanreg")) {
+        formula(fits[[tstsetup_fit]])
+      } else if (inherits(fits[[tstsetup_fit]], "brmsfit")) {
+        formula(formula(fits[[tstsetup_fit]]))
+      },
       needs_y_overwrite = needs_y_overwrite_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = offs_expected_crr,
