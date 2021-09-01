@@ -424,7 +424,7 @@ get_refmodel.stanreg <- function(object, ...) {
     return(do_call(.extract_model_data, args))
   }
 
-  ref_predfun_stanreg <- function(fit, newdata = NULL) {
+  ref_predfun <- function(fit, newdata = NULL) {
     linpred_out <- t(
       posterior_linpred(fit, transform = FALSE, newdata = newdata)
     )
@@ -473,7 +473,7 @@ get_refmodel.stanreg <- function(object, ...) {
 
   return(init_refmodel(
     object = object, data = data, formula = formula, family = family,
-    ref_predfun = ref_predfun_stanreg, extract_model_data = extract_model_data,
+    ref_predfun = ref_predfun, extract_model_data = extract_model_data,
     dis = dis, cvfun = cvfun, ...
   ))
 }
