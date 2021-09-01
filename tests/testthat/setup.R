@@ -19,7 +19,7 @@ run_valsearch_always <- FALSE
 # first one (`FALSE`)?:
 run_cvfits_all <- TRUE
 # Run tests for "brmsfit"s?:
-run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
+run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
 if (run_brms && packageVersion("brms") <= package_version("2.16.1")) {
   warning("Deactivating the brms tests because brms version <= 2.16.1 calls ",
           "init_refmodel() with the now omitted argument `folds`. Install a ",
