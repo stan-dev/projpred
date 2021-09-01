@@ -76,7 +76,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"stanreg\" and passing arguments to project() works"
+  "`object` of class \"stanreg\" or \"brmsfit\" and passing arguments to",
+  "project() works"
 ), {
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
@@ -202,10 +203,14 @@ test_that("`newdata` set to the original dataset doesn't change results", {
 })
 
 test_that(paste(
-  "omitting the response in `newdata` causes output element `lpd` to be `NULL`",
-  "but doesn't change results otherwise"
+  "omitting the response in `newdata` (not possible for `\"brmsfit\"`-based",
+  "reference models) causes output element `lpd` to be `NULL` but doesn't",
+  "change results otherwise"
 ), {
   for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+      next
+    }
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
@@ -252,14 +257,23 @@ test_that("`weightsnew` works", {
     expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
     expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
     expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
-    ### Note: This equivalence might in fact be undesired:
-    expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
-    ###
-    ### Note: This inequality might in fact be undesired:
-    expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
-    ###
-    expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
-    expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
+    if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+      ### Note: This equivalence might in fact be undesired:
+      expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
+      ###
+      ### Note: This inequality might in fact be undesired:
+      expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+      ###
+      expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
+      expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
+    } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+      expect_false(isTRUE(all.equal(pl_ones$lpd, pl_orig$lpd)), info = tstsetup)
+      expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
+      expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
+      ### Note: This equivalence might in fact be undesired:
+      expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
+      ###
+    }
   }
 })
 
@@ -269,37 +283,47 @@ test_that("`offsetnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pl_orig <- pls[[tstsetup]]
-    pl_zeros <- proj_linpred(prjs[[tstsetup]],
-                             newdata = get_dat(tstsetup, dat_offs_zeros),
-                             offsetnew = ~ offs_col_zeros)
-    pl_tester(pl_zeros,
-              nprjdraws_expected = ndr_ncl$nprjdraws,
-              info_str = tstsetup)
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      pl_zeros <- proj_linpred(prjs[[tstsetup]],
+                               newdata = get_dat(tstsetup, dat_offs_zeros),
+                               offsetnew = ~ offs_col_zeros)
+      pl_tester(pl_zeros,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                info_str = tstsetup)
+    }
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = get_dat(tstsetup, dat),
                        offsetnew = ~ offs_col)
     pl_tester(pl,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               info_str = tstsetup)
-    plo <- proj_linpred(prjs[[tstsetup]],
-                        newdata = get_dat(tstsetup, dat_offs_new),
-                        offsetnew = ~ offs_col_new)
-    pl_tester(plo,
-              nprjdraws_expected = ndr_ncl$nprjdraws,
-              info_str = tstsetup)
-    ### Note: This equivalence might in fact be undesired:
-    expect_equal(pl_zeros, pl_orig, info = tstsetup)
-    ###
-    ### Note: This inequality might in fact be undesired:
-    expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
-    ###
-    expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
-                 info = tstsetup)
-    expect_equal(t(plo$pred) - dat_offs_new$offs_col_new, t(pl_orig$pred),
-                 info = tstsetup)
-    expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
-    expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
-    expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      plo <- proj_linpred(prjs[[tstsetup]],
+                          newdata = get_dat(tstsetup, dat_offs_new),
+                          offsetnew = ~ offs_col_new)
+      pl_tester(plo,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                info_str = tstsetup)
+    }
+    if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+      ### Note: This equivalence might in fact be undesired:
+      expect_equal(pl_zeros, pl_orig, info = tstsetup)
+      ###
+      ### Note: This inequality might in fact be undesired:
+      expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
+      ###
+      expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
+                   info = tstsetup)
+      expect_equal(t(plo$pred) - dat_offs_new$offs_col_new, t(pl_orig$pred),
+                   info = tstsetup)
+      expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+      expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
+      expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
+    } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+      expect_equal(pl, pl_orig, info = tstsetup)
+    }
   }
 })
 
@@ -529,7 +553,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"stanreg\" and passing arguments to project() works"
+  "`object` of class \"stanreg\" or \"brmsfit\" and passing arguments to",
+  "project() works"
 ), {
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
@@ -657,8 +682,14 @@ test_that("`newdata` set to the original dataset doesn't change results", {
   }
 })
 
-test_that("omitting the response in `newdata` doesn't change results", {
+test_that(paste(
+  "omitting the response in `newdata` (not possible for `\"brmsfit\"`-based",
+  "reference models) doesn't change results"
+), {
   for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+      next
+    }
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
     )$response
@@ -724,13 +755,16 @@ test_that("`offsetnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pp_orig <- pps[[tstsetup]]
-    pp_zeros <- proj_predict(prjs[[tstsetup]],
-                             newdata = dat_offs_zeros,
-                             offsetnew = ~ offs_col_zeros,
-                             .seed = seed2_tst)
-    pp_tester(pp_zeros,
-              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
-              info_str = tstsetup)
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      pp_zeros <- proj_predict(prjs[[tstsetup]],
+                               newdata = dat_offs_zeros,
+                               offsetnew = ~ offs_col_zeros,
+                               .seed = seed2_tst)
+      pp_tester(pp_zeros,
+                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                info_str = tstsetup)
+    }
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        offsetnew = ~ offs_col,
@@ -738,28 +772,35 @@ test_that("`offsetnew` works", {
     pp_tester(pp,
               nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
               info_str = tstsetup)
-    ppo <- proj_predict(prjs[[tstsetup]],
-                        newdata = dat_offs_new,
-                        offsetnew = ~ offs_col_new,
-                        .seed = seed2_tst)
-    pp_tester(ppo,
-              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
-              info_str = tstsetup)
-    ### Note: This equivalence might in fact be undesired:
-    expect_equal(pp_zeros, pp_orig, info = tstsetup)
-    ###
-    ### Note: This inequality might in fact be undesired:
-    expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
-    ###
-    # For the gaussian() family, we can perform an easy check (because of the
-    # identity link):
-    if (args_prj[[tstsetup]]$fam_nm == "gauss") {
-      expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
-      expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
-                   info = tstsetup)
-    } else {
-      expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
-      expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      ppo <- proj_predict(prjs[[tstsetup]],
+                          newdata = dat_offs_new,
+                          offsetnew = ~ offs_col_new,
+                          .seed = seed2_tst)
+      pp_tester(ppo,
+                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                info_str = tstsetup)
+    }
+    if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+      ### Note: This equivalence might in fact be undesired:
+      expect_equal(pp_zeros, pp_orig, info = tstsetup)
+      ###
+      ### Note: This inequality might in fact be undesired:
+      expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+      ###
+      # For the gaussian() family, we can perform an easy check (because of the
+      # identity link):
+      if (args_prj[[tstsetup]]$fam_nm == "gauss") {
+        expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
+        expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
+                     info = tstsetup)
+      } else {
+        expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
+        expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
+      }
+    } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+      expect_equal(pp, pp_orig, info = tstsetup)
     }
   }
 })
