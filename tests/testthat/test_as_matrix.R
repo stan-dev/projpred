@@ -6,7 +6,7 @@ test_that("as.matrix.projection() works", {
       # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,
       # the current expectations in `test_as_matrix.R` refer to a mixture of
       # brms's and rstanarm's naming scheme; as soon as issue #152 is solved,
-      # these expectations need to be adopted.
+      # these expectations need to be adapted.
       # TODO (GAMs): Fix this.
       next
     }
@@ -59,7 +59,7 @@ test_that("as.matrix.projection() works", {
     if (length(poly_trms) > 0) {
       poly_degree <- sub(".*(poly\\(.*\\)).*", "\\1", poly_trms)
       if (length(unique(poly_degree)) != 1) {
-        stop("This test needs to be adopted. Info: ", tstsetup)
+        stop("This test needs to be adapted. Info: ", tstsetup)
       }
       poly_degree <- unique(poly_degree)
       poly_degree <- sub(".*,[[:blank:]]+(.*)\\)", "\\1", poly_degree)

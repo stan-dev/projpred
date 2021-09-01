@@ -292,7 +292,7 @@ test_that(paste(
 
 test_that("project(): `object` of class \"datafit\" fails", {
   # A prerequisite for this `project()` test (otherwise, it would have to be
-  # adopted):
+  # adapted):
   stopifnot(all(names(args_datafit) %in% names(args_ref)))
 
   tstsetups <- grep("\\.solterms_x.*\\.clust$", names(args_prj), value = TRUE)

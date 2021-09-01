@@ -1027,7 +1027,7 @@ pp_tester <- function(pp,
 # @param valsearch_expected The expected `vs$validate_search` object.
 # @param ndraws_expected The expected `vs$ndraws` object.
 # @param ndraws_pred_expected The expected `vs$ndraws_pred` object.
-# @param nclusters_expected The expected `vs$nclusters` object (not adopted for
+# @param nclusters_expected The expected `vs$nclusters` object (not adapted for
 #   L1 search).
 # @param nclusters_pred_expected The expected `vs$nclusters_pred` object.
 # @param seed_expected The seed which was used for clustering the posterior

@@ -448,7 +448,7 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
         if (formul_nm == "spclformul") {
           trms_common <- trms_common_spcl
           if (fam_nm != "gauss") {
-            stop("`y_chr` needs to be adopted for families other than ",
+            stop("`y_chr` needs to be adapted for families other than ",
                  "`\"gauss\"`.")
           }
           y_chr <- paste0("log(abs(", y_chr, "))")
@@ -494,7 +494,7 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
             if (fam_nm == "binom") {
               stop("Because of `\"| trials(wobs_col)\"` above, the code here ",
                    "(for pasting `\"| weights(wobs_col)\"`) needs to be ",
-                   "adopted.")
+                   "adapted.")
             }
             y_chr <- paste(y_chr, "| weights(wobs_col)")
           }
