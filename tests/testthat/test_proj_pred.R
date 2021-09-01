@@ -258,10 +258,10 @@ test_that("`weightsnew` works", {
     expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
     expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
     if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-      ### Note: This equivalence might in fact be undesired:
+      ### TODO: This equivalence might in fact be undesired:
       expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
       ###
-      ### Note: This inequality might in fact be undesired:
+      ### TODO: This inequality might in fact be undesired:
       expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
       ###
       expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
@@ -270,7 +270,7 @@ test_that("`weightsnew` works", {
       expect_false(isTRUE(all.equal(pl_ones$lpd, pl_orig$lpd)), info = tstsetup)
       expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
       expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
-      ### Note: This equivalence might in fact be undesired:
+      ### TODO: This equivalence might in fact be undesired:
       expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
       ###
     }
@@ -308,10 +308,10 @@ test_that("`offsetnew` works", {
                 info_str = tstsetup)
     }
     if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-      ### Note: This equivalence might in fact be undesired:
+      ### TODO: This equivalence might in fact be undesired:
       expect_equal(pl_zeros, pl_orig, info = tstsetup)
       ###
-      ### Note: This inequality might in fact be undesired:
+      ### TODO: This inequality might in fact be undesired:
       expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
       ###
       expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
@@ -783,10 +783,10 @@ test_that("`offsetnew` works", {
                 info_str = tstsetup)
     }
     if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-      ### Note: This equivalence might in fact be undesired:
+      ### TODO: This equivalence might in fact be undesired:
       expect_equal(pp_zeros, pp_orig, info = tstsetup)
       ###
-      ### Note: This inequality might in fact be undesired:
+      ### TODO: This inequality might in fact be undesired:
       expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
       ###
       # For the gaussian() family, we can perform an easy check (because of the
