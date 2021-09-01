@@ -418,10 +418,12 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
     }
 
     if ((pkg_nm == "rstanarm" && mod_nm %in% c("gam", "gamm")) ||
-        pkg_nm == "brms") {
+        (pkg_nm == "brms" &&
+         packageVersion("brms") <= package_version("2.16.1"))) {
       # In the rstanarm "gam" and "gamm" case, the offsets are omitted because
       # of rstanarm issue #546 and rstanarm issue #253.
-      # In the brms case, the offsets are omitted because of brms issue #1220.
+      # In the brms case (up to (including) brms version 2.16.1), the offsets
+      # are omitted because of brms issue #1220.
       offss_nms <- "without_offs"
     } else {
       offss_nms <- "with_offs"
