@@ -367,21 +367,8 @@ test_that("`penalty` of invalid length fails", {
   )
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    formul_crr <- formula(fits[[args_vs_i$tstsetup_fit]])
-    if (args_vs_i$pkg_nm == "brms") {
-      formul_crr <- formula(formul_crr)
-      formul_chr <- as.character(formul_crr)
-      # For "brmsfit"s, remove additional response information:
-      if (grepl("[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
-                formul_chr[2])) {
-        formul_chr[2] <- gsub(
-          "[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
-          "", formul_chr[2]
-        )
-      }
-      formul_crr <- update(formul_crr,
-                           paste(formul_chr[c(2, 1, 3)], collapse = " "))
-    }
+    formul_crr <- get_formul_from_fit(fits[[args_vs_i$tstsetup_fit]])
+    formul_crr <- rm_addresp(formul_crr)
     penal_possbl <- get_penal_possbl(formul_crr)
     len_penal <- length(penal_possbl)
     # The `penalty` objects to be tested:
@@ -427,21 +414,8 @@ test_that("for L1 search, `penalty` has an expected effect", {
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
 
-    formul_crr <- formula(fits[[args_vs_i$tstsetup_fit]])
-    if (args_vs_i$pkg_nm == "brms") {
-      formul_crr <- formula(formul_crr)
-      formul_chr <- as.character(formul_crr)
-      # For "brmsfit"s, remove additional response information:
-      if (grepl("[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
-                formul_chr[2])) {
-        formul_chr[2] <- gsub(
-          "[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
-          "", formul_chr[2]
-        )
-      }
-      formul_crr <- update(formul_crr,
-                           paste(formul_chr[c(2, 1, 3)], collapse = " "))
-    }
+    formul_crr <- get_formul_from_fit(fits[[args_vs_i$tstsetup_fit]])
+    formul_crr <- rm_addresp(formul_crr)
     penal_possbl <- get_penal_possbl(formul_crr)
     len_penal <- length(penal_possbl)
     penal_crr <- rep(1, len_penal)

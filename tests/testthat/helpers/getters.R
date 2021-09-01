@@ -1,3 +1,11 @@
+get_formul_from_fit <- function(fit_obj) {
+  formul_out <- formula(fit_obj)
+  if (inherits(fit_obj, "brmsfit")) {
+    formul_out <- formula(formul_out)
+  }
+  return(formul_out)
+}
+
 get_dat_formul <- function(formul_crr, needs_adj, dat_crr = dat) {
   if (needs_adj) {
     y_nm_orig <- as.character(formul_crr)[2]

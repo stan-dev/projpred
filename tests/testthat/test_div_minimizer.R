@@ -24,25 +24,10 @@ test_that("all div_minimizer()s work", {
       var_crr <- 0
     }
 
-    formul_chr <- as.character(args_fit_i$formula)
-    ### Note: Here, the offset term is *not* removed (as done in projpred when
-    ### fitting submodels) because then, the response would have to be adapted,
-    ### too. The code for omitting the offsets would be:
-    # if (grepl("[[:blank:]]*\\+[[:blank:]]*offset\\(.*\\)", formul_chr[3])) {
-    #   formul_chr[3] <- gsub("[[:blank:]]*\\+[[:blank:]]*offset\\(.*\\)", "",
-    #                         formul_chr[3])
-    # }
-    ###
-    # For "brmsfit"s, remove additional response information:
-    if (args_fit_i$pkg_nm == "brms" &&
-        grepl("[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
-              formul_chr[2])) {
-      formul_chr[2] <- gsub("[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
-                            "", formul_chr[2])
+    if (args_fit_i$pkg_nm == "brms" && grepl("\\.with_wobs", tstsetup)) {
+      args_fit_i$formula <- rm_addresp(args_fit_i$formula)
       args_fit_i$weights <- eval(args_fit_i$data)$wobs_col
     }
-    args_fit_i$formula <- update(args_fit_i$formula,
-                                 paste(formul_chr[c(2, 1, 3)], collapse = " "))
 
     if (fam_crr == "binom") {
       # Use the proportion of successes as (1-column) response and the number of

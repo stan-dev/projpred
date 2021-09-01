@@ -87,11 +87,7 @@ refmodel_tester <- function(
   refmod,
   is_datafit = FALSE,
   fit_expected,
-  formul_expected = if (inherits(fit_expected, "stanreg")) {
-    formula(fit_expected)
-  } else if (inherits(fit_expected, "brmsfit")) {
-    formula(formula(fit_expected))
-  },
+  formul_expected = get_formul_from_fit(fit_expected),
   data_expected = dat,
   needs_y_overwrite = FALSE,
   nobsv_expected = nobsv,
@@ -157,29 +153,13 @@ refmodel_tester <- function(
     formul_expected <- update(formul_expected,
                               . ~ . - offset(offs_col) + offset(offs_col))
   }
-  formul_expected_chr <- as.character(formul_expected)
-  stopifnot(length(formul_expected_chr) == 3)
-  if (grepl("^cbind\\(.*,.*\\)$", formul_expected_chr[2]) ||
-      grepl("[[:blank:]]*\\|[[:blank:]]*weights\\(.*\\)$",
-            formul_expected_chr[2])) {
-    y_expected_chr <- sub("^cbind\\(", "", formul_expected_chr[2])
-    y_expected_chr <- sub(",.*\\)$", "", y_expected_chr)
-    y_expected_chr <- sub("[[:blank:]]*\\|[[:blank:]]*weights\\(.*\\)$", "",
-                          y_expected_chr)
-    formul_expected <- as.formula(paste(
-      y_expected_chr,
-      formul_expected_chr[1],
-      formul_expected_chr[3]
-    ))
-    # Use expect_equal() instead of expect_identical() since the environments
-    # do not match:
-    if (!is_gamm) {
-      # TODO: Adapt the expected formula to GAMMs.
+  formul_expected <- rm_cbind(formul_expected)
+  formul_expected <- rm_addresp(formul_expected)
+  if (!is_gamm) {
+    # TODO: Adapt the expected formula to GAMMs.
+    if (is_datafit && grepl("brms", info_str)) {
       expect_equal(refmod$formula, formul_expected, info = info_str)
-    }
-  } else {
-    if (!is_gamm) {
-      # TODO: Adapt the expected formula to GAMMs.
+    } else {
       expect_identical(refmod$formula, formul_expected, info = info_str)
     }
   }
