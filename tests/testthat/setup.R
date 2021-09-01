@@ -794,7 +794,7 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
 if (run_vs) {
   tstsetups_prj_vs <- setNames(
     nm = unlist(lapply(mod_nms, function(mod_nm) {
-      grep(paste0("^", mod_nm, "\\.gauss\\..*\\.default_meth"), names(vss),
+      grep(paste0("\\.", mod_nm, "\\.gauss\\..*\\.default_meth"), names(vss),
            value = TRUE)
     }))
   )
@@ -815,8 +815,10 @@ if (run_vs) {
 if (run_cvvs) {
   tstsetups_prj_cvvs <- setNames(
     nm = unlist(lapply(mod_nms, function(mod_nm) {
-      grep(paste0("^", mod_nm, "\\.gauss\\..*\\.default_meth\\.default_cvmeth"),
-           names(cvvss), value = TRUE)
+      grep(
+        paste0("\\.", mod_nm, "\\.gauss\\..*\\.default_meth\\.default_cvmeth"),
+        names(cvvss), value = TRUE
+      )
     }))
   )
   stopifnot(length(tstsetups_prj_cvvs) > 0)
@@ -899,7 +901,7 @@ cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
 if (run_vs) {
   tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
     unlist(lapply(fam_nms, function(fam_nm) {
-      head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss), value = TRUE),
+      head(grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(vss), value = TRUE),
            1)
     }))
   })))
@@ -921,7 +923,7 @@ if (run_cvvs) {
   tstsetups_smmry_cvvs <- setNames(
     nm = unlist(lapply(mod_nms, function(mod_nm) {
       unlist(lapply(fam_nms, function(fam_nm) {
-        head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss),
+        head(grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(cvvss),
                   value = TRUE),
              1)
       }))

@@ -99,7 +99,7 @@ test_that(paste(
       # gives the same output as projecting the reference model onto that
       # submodel directly:
       tstsetup_tries <- grep(
-        paste0("^",
+        paste0("\\.",
                gsub("\\.", "\\\\.",
                     sub("(with_offs|without_offs).*", "\\1", tstsetup)),
                ".*\\.clust$"),
@@ -162,7 +162,7 @@ test_that(paste(
       # gives the same output as projecting the reference model onto that
       # submodel directly:
       tstsetup_tries <- grep(
-        paste0("^",
+        paste0("\\.",
                gsub("\\.", "\\\\.",
                     sub("(with_offs|without_offs).*", "\\1", tstsetup)),
                ".*\\.clust$"),
@@ -310,8 +310,8 @@ test_that("for non-GLMs, `regul` has no effect", {
   regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
     tstsetups <- setNames(nm = unlist(lapply(fam_nms, function(fam_nm) {
-      tail(grep(paste0("^", mod_crr, "\\.", fam_nm, ".*\\.clust$"), names(prjs),
-                value = TRUE),
+      tail(grep(paste0("\\.", mod_crr, "\\.", fam_nm, ".*\\.clust$"),
+                names(prjs), value = TRUE),
            1)
     })))
     for (tstsetup in tstsetups) {

@@ -458,7 +458,8 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
     unlist(lapply(fam_nms, function(fam_nm) {
-      grep(paste0("^", mod_nm, "\\.", fam_nm), names(vss_datafit), value = TRUE)
+      grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(vss_datafit),
+           value = TRUE)
     }))
   })))
   for (tstsetup in tstsetups) {
@@ -483,7 +484,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
     unlist(lapply(fam_nms, function(fam_nm) {
-      grep(paste0("^", mod_nm, "\\.", fam_nm), names(cvvss_datafit),
+      grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(cvvss_datafit),
            value = TRUE)
     }))
   })))

@@ -216,7 +216,7 @@ test_that("`stat` works", {
   skip_if_not(run_vs)
   tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
     unlist(lapply(fam_nms, function(fam_nm) {
-      head(grep(paste0("^", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
+      head(grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(args_smmry_vs),
                 value = TRUE), 1)
     }))
   })))

@@ -151,7 +151,7 @@ test_that("for non-GLMs, `regul` has no effect", {
   skip_if_not(run_vs)
   regul_tst <- 1e-1
   for (mod_crr in setdiff(mod_nms, "glm")) {
-    tstsetups <- head(grep(paste0("^", mod_crr, "\\.gauss"), names(vss),
+    tstsetups <- head(grep(paste0("\\.", mod_crr, "\\.gauss"), names(vss),
                            value = TRUE),
                       1)
     for (tstsetup in tstsetups) {
