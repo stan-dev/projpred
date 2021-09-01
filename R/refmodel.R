@@ -536,7 +536,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         return(linpred_out)
       }
     } else {
-      ref_predfun <- function(fit = NULL, newdata = NULL) {
+      ref_predfun <- function(fit, newdata = NULL) {
         stopifnot(is.null(fit))
         if (is.null(newdata)) {
           matrix(rep(NA, NROW(y)))
