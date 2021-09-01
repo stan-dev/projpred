@@ -454,9 +454,9 @@ get_refmodel.stanreg <- function(object, ...) {
     return(linpred_out)
   }
 
-  cvfun <- function(folds) {
+  cvfun <- function(folds, ...) {
     cvres <- rstanarm::kfold(object, K = max(folds), save_fits = TRUE,
-                             folds = folds)
+                             folds = folds, ...)
     fits <- cvres$fits[, "fit"]
     return(fits)
   }
