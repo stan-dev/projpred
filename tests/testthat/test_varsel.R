@@ -90,6 +90,7 @@ test_that("`d_test` works", {
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     tstsetup_ref <- args_vs_i$tstsetup_ref
+    pkg_crr <- args_vs_i$pkg_nm
     mod_crr <- args_vs_i$mod_nm
     fam_crr <- args_vs_i$fam_nm
     refmod_crr <- refmods[[tstsetup_ref]]
@@ -103,7 +104,7 @@ test_that("`d_test` works", {
     )
     # We expect a warning which in fact should be suppressed, though (see
     # issue #162):
-    warn_expected <- if (mod_crr == "glm") {
+    warn_expected <- if (pkg_crr == "rstanarm" && mod_crr == "glm") {
       paste("^'offset' argument is NULL but it looks like you estimated the",
             "model using an offset term\\.$")
     } else {
@@ -366,7 +367,22 @@ test_that("`penalty` of invalid length fails", {
   )
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    penal_possbl <- get_penal_possbl(fits[[args_vs_i$tstsetup_fit]]$formula)
+    formul_crr <- formula(fits[[args_vs_i$tstsetup_fit]])
+    if (args_vs_i$pkg_nm == "brms") {
+      formul_crr <- formula(formul_crr)
+      formul_chr <- as.character(formul_crr)
+      # For "brmsfit"s, remove additional response information:
+      if (grepl("[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
+                formul_chr[2])) {
+        formul_chr[2] <- gsub(
+          "[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
+          "", formul_chr[2]
+        )
+      }
+      formul_crr <- update(formul_crr,
+                           paste(formul_chr[c(2, 1, 3)], collapse = " "))
+    }
+    penal_possbl <- get_penal_possbl(formul_crr)
     len_penal <- length(penal_possbl)
     # The `penalty` objects to be tested:
     penal_tst <- list(rep(1, len_penal + 1), rep(1, len_penal - 1))
@@ -411,7 +427,22 @@ test_that("for L1 search, `penalty` has an expected effect", {
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
 
-    penal_possbl <- get_penal_possbl(fits[[args_vs_i$tstsetup_fit]]$formula)
+    formul_crr <- formula(fits[[args_vs_i$tstsetup_fit]])
+    if (args_vs_i$pkg_nm == "brms") {
+      formul_crr <- formula(formul_crr)
+      formul_chr <- as.character(formul_crr)
+      # For "brmsfit"s, remove additional response information:
+      if (grepl("[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
+                formul_chr[2])) {
+        formul_chr[2] <- gsub(
+          "[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
+          "", formul_chr[2]
+        )
+      }
+      formul_crr <- update(formul_crr,
+                           paste(formul_chr[c(2, 1, 3)], collapse = " "))
+    }
+    penal_possbl <- get_penal_possbl(formul_crr)
     len_penal <- length(penal_possbl)
     penal_crr <- rep(1, len_penal)
     stopifnot(len_penal >= 3)
@@ -429,9 +460,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
            penalty = penal_crr),
       excl_nonargs(args_vs_i, nms_excl_add = "nterms_max")
     ))
-    nterms_max_crr <- count_terms_in_formula(
-      fits[[args_vs_i$tstsetup_fit]]$formula
-    ) - 1L
+    nterms_max_crr <- count_terms_in_formula(formul_crr) - 1L
     vsel_tester(
       vs_penal,
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
