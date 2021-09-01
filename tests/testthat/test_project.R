@@ -99,7 +99,7 @@ test_that(paste(
       # gives the same output as projecting the reference model onto that
       # submodel directly:
       tstsetup_tries <- grep(
-        paste0("\\.",
+        paste0("^",
                gsub("\\.", "\\\\.",
                     sub("(with_offs|without_offs).*", "\\1", tstsetup)),
                ".*\\.clust$"),
@@ -162,7 +162,7 @@ test_that(paste(
       # gives the same output as projecting the reference model onto that
       # submodel directly:
       tstsetup_tries <- grep(
-        paste0("\\.",
+        paste0("^",
                gsub("\\.", "\\\\.",
                     sub("(with_offs|without_offs).*", "\\1", tstsetup)),
                ".*\\.clust$"),
