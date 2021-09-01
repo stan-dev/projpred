@@ -16,8 +16,7 @@ rm_cbind <- function(formul) {
 rm_addresp <- function(formul) {
   formul_chr <- as.character(formul)
   stopifnot(length(formul_chr) == 3)
-  formul_chr[2] <- sub("[[:blank:]]*\\|[[:blank:]]*weights\\(wobs_col\\)$",
-                       "", formul_chr[2])
+  formul_chr[2] <- sub("[[:blank:]]*\\|.*$", "", formul_chr[2])
   formul <- update(formul, paste(formul_chr[c(2, 1, 3)], collapse = " "))
   return(formul)
 }
