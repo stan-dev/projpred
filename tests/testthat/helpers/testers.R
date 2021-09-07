@@ -350,6 +350,7 @@ refmodel_tester <- function(
         attr(terms(formul_expected), "variables")
       )[-1]
       refdat_colnms <- sub(".*\\|[[:blank:]]*", "", refdat_colnms)
+      refdat_colnms <- sub("s\\((.*)\\)", "\\1", refdat_colnms)
       if (!all(wobs_expected == 1)) {
         refdat_colnms <- c(head(refdat_colnms, 1),
                            "wobs_col",
