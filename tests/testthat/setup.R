@@ -327,7 +327,6 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
   if (pkg_nm == "brms") {
     # For speed reasons:
     mod_nms <- intersect(mod_nms, "glm")
-    fam_nms <- intersect(fam_nms, "gauss")
   }
 
   mod_nms <- setNames(nm = mod_nms)
