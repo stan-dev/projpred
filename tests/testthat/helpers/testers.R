@@ -349,6 +349,7 @@ refmodel_tester <- function(
       refdat_colnms <- as.character(
         attr(terms(formul_expected), "variables")
       )[-1]
+      refdat_colnms <- sub(".*\\|[[:blank:]]*", "", refdat_colnms)
       if (!all(wobs_expected == 1)) {
         refdat_colnms <- c(head(refdat_colnms, 1),
                            "wobs_col",
