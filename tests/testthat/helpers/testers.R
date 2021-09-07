@@ -161,7 +161,7 @@ refmodel_tester <- function(
   formul_expected <- rm_cbind(formul_expected)
   formul_expected <- rm_addresp(formul_expected)
   if (!is_gamm) {
-    # TODO: Adapt the expected formula to GAMMs.
+    # TODO (GAMMs): Adapt the expected formula to GAMMs.
     if (is_datafit && grepl("brms", info_str)) {
       expect_equal(refmod$formula, formul_expected, info = info_str)
     } else {
@@ -241,10 +241,10 @@ refmodel_tester <- function(
       }
       mu_expected <- unname(mu_expected)
     } else if (pkg_nm == "brms") {
-      # TODO ("brmfit"s): Do this manually (but posterior_linpred.brmsfit()
-      # should already be tested extensively in brms, so perhaps we don't need a
-      # manual calculation here (the reason for the manual calculation for
-      # "stanreg"s were the offset issues in rstanarm)):
+      # TODO (brms): Do this manually (but posterior_linpred.brmsfit() should
+      # already be tested extensively in brms, so perhaps we don't need a manual
+      # calculation here (the reason for the manual calculation for "stanreg"s
+      # were the offset issues in rstanarm)):
       mu_expected <- posterior_linpred(refmod$fit) - matrix(
         offs_expected,
         nrow = nrefdraws_expected,
@@ -340,7 +340,7 @@ refmodel_tester <- function(
   if ((!is_datafit && pkg_nm != "brms") ||
       (is_datafit && fam_nm != "binom")) {
     if (!is_gamm) {
-      # TODO: Adapt the expected dataset to GAMMs.
+      # TODO (GAMMs): Adapt the expected dataset to GAMMs.
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
     }
   } else if (!is_datafit && pkg_nm == "brms") {
@@ -361,7 +361,7 @@ refmodel_tester <- function(
     names(refdat_ch)[names(refdat_ch) == "dummy_nm"] <- paste("wobs_col -",
                                                               y_nm)
     if (!is_gamm) {
-      # TODO: Adapt the expected dataset to GAMMs.
+      # TODO (GAMMs): Adapt the expected dataset to GAMMs.
       expect_identical(refmod$fetch_data(), refdat_ch, info = info_str)
     }
   }
@@ -373,7 +373,7 @@ refmodel_tester <- function(
   # expect_true(all(refmod$wobs > 0), info = info_str)
   ###
   if (!is_gamm) {
-    # TODO: Adapt the expected observation weights to GAMMs.
+    # TODO (GAMMs): Adapt the expected observation weights to GAMMs.
     expect_identical(refmod$wobs, wobs_expected, info = info_str)
   }
 
@@ -702,12 +702,12 @@ sub_fit_tester <- function(
     for (j in seq_along(sub_fit_totest)) {
       expect_s3_class(sub_fit_totest[[!!j]], "gam")
     }
-    # TODO: Add more expectations for GAMs.
+    # TODO (GAMs): Add more expectations for GAMs.
   } else if (has_grp && has_add) {
     for (j in seq_along(sub_fit_totest)) {
       expect_s3_class(sub_fit_totest[[!!j]], "gamm4")
     }
-    # TODO: Add more expectations for GAMMs.
+    # TODO (GAMMs): Add more expectations for GAMMs.
   }
 
   return(invisible(TRUE))

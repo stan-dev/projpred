@@ -273,10 +273,8 @@ test_that("`weightsnew` works", {
     }
     if (grepl("\\.with_wobs", tstsetup)) {
       if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-        ### TODO: This equivalence might in fact be undesired:
+        ### TODO: This might in fact be undesired:
         expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
-        ###
-        ### TODO: This inequality might in fact be undesired:
         expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
         ###
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
@@ -304,23 +302,15 @@ test_that("`weightsnew` works", {
         expect_false(isTRUE(all.equal(plw$lpd, pl_ones$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        ### TODO: This equivalence might in fact be undesired:
+        ### TODO: This might in fact be undesired:
         expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
-        ###
         if (args_prj[[tstsetup]]$fam_nm != "binom") {
-          ### TODO: This equivalence might in fact be undesired:
           expect_equal(plw$lpd, pl_orig$lpd, info = tstsetup)
-          ###
-          ### TODO: This equivalence might in fact be undesired:
           expect_equal(pl$lpd, pl_ones$lpd, info = tstsetup)
-          ###
-          ### TODO: This equivalence might in fact be undesired:
           expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
-          ###
-          ### TODO: This equivalence might in fact be undesired:
           expect_equal(plw$lpd, pl$lpd, info = tstsetup)
-          ###
         }
+        ###
       }
     }
   }
@@ -809,22 +799,16 @@ test_that("`weightsnew` works", {
         expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
         expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        ### TODO: This equivalence might in fact be undesired:
+        ### TODO: This might in fact be undesired:
         expect_equal(pp, pp_orig, info = tstsetup)
-        ###
-        ### TODO: This equivalence might in fact be undesired:
         expect_equal(ppw, pp_orig, info = tstsetup)
-        ###
-        ### TODO: This equivalence might in fact be undesired:
         expect_equal(ppw, pp, info = tstsetup)
         ###
       }
     } else if (args_prj[[tstsetup]]$fam_nm == "binom") {
       if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-        ### TODO: This equivalence might in fact be undesired:
+        ### TODO: This might in fact be undesired:
         expect_equal(pp_ones, pp_orig, info = tstsetup)
-        ###
-        ### TODO: This inequality might in fact be undesired:
         expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
         ###
         expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
