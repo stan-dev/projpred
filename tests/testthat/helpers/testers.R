@@ -99,17 +99,17 @@ refmodel_tester <- function(
 ) {
   # Preparations:
   if (inherits(refmod$fit, "stanreg")) {
-    pkg_crr <- "rstanarm"
+    pkg_nm <- "rstanarm"
   } else if (inherits(refmod$fit, "brmsfit")) {
-    pkg_crr <- "brms"
+    pkg_nm <- "brms"
   } else {
-    pkg_crr <- "UNRECOGNIZED"
+    pkg_nm <- "UNRECOGNIZED"
   }
-  needs_wobs_added <- pkg_crr == "rstanarm" && length(refmod$fit$weights) > 0
+  needs_wobs_added <- pkg_nm == "rstanarm" && length(refmod$fit$weights) > 0
   if (needs_wobs_added) {
     data_expected$projpred_internal_wobs_stanreg <- refmod$fit$weights
   }
-  needs_offs_added <- pkg_crr == "rstanarm" && length(refmod$fit$offset) > 0
+  needs_offs_added <- pkg_nm == "rstanarm" && length(refmod$fit$offset) > 0
   if (needs_offs_added) {
     data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
   }
@@ -126,7 +126,7 @@ refmodel_tester <- function(
       assign(y_spclformul_new, eval(str2lang(y_spclformul)))
     })
   }
-  if (pkg_crr == "rstanarm" &&
+  if (pkg_nm == "rstanarm" &&
       refmod$fit$stan_function == "stan_gamm4" &&
       refmod$family$family == "binomial") {
     data_expected$temp_y <- 1
@@ -175,7 +175,7 @@ refmodel_tester <- function(
   # family
   extfam_tester(refmod$family, fam_orig = fam_orig,
                 extfam_nms_add2 = "mu_fun",
-                from_brms = (pkg_crr == "brms"),
+                from_brms = (pkg_nm == "brms"),
                 info_str = info_str)
 
   # mu
@@ -189,7 +189,7 @@ refmodel_tester <- function(
     ### Helpful for debugging:
     # mu_expected_ch <- unname(t(posterior_linpred(refmod$fit)))
     ###
-    if (pkg_crr == "rstanarm") {
+    if (pkg_nm == "rstanarm") {
       drws <- as.matrix(refmod$fit)
       drws_icpt <- drws[, "(Intercept)"]
       drws_beta_cont <- drws[
@@ -240,7 +240,7 @@ refmodel_tester <- function(
         mu_expected <- mu_expected + drws_beta_s %*% t(mm_s)
       }
       mu_expected <- unname(mu_expected)
-    } else if (pkg_crr == "brms") {
+    } else if (pkg_nm == "brms") {
       # TODO ("brmfit"s): Do this manually (but posterior_linpred.brmsfit()
       # should already be tested extensively in brms, so perhaps we don't need a
       # manual calculation here (the reason for the manual calculation for
@@ -307,7 +307,7 @@ refmodel_tester <- function(
   }
   if (!needs_y_overwrite) {
     y_expected <- dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
-    if (pkg_crr == "brms" && fam_nm == "brnll") {
+    if (pkg_nm == "brms" && fam_nm == "brnll") {
       y_expected <- as.numeric(y_expected)
     }
   } else {
@@ -337,13 +337,13 @@ refmodel_tester <- function(
 
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
-  if ((!is_datafit && pkg_crr != "brms") ||
+  if ((!is_datafit && pkg_nm != "brms") ||
       (is_datafit && fam_nm != "binom")) {
     if (!is_gamm) {
       # TODO: Adapt the expected dataset to GAMMs.
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
     }
-  } else if (!is_datafit && pkg_crr == "brms") {
+  } else if (!is_datafit && pkg_nm == "brms") {
     refdat_colnms <- as.character(attr(terms(formul_expected), "variables"))[-1]
     if (!all(wobs_expected == 1)) {
       refdat_colnms <- c(head(refdat_colnms, 1),
@@ -393,7 +393,7 @@ refmodel_tester <- function(
   expect_null(refmod$folds, info = info_str)
 
   # cvfun
-  if (pkg_crr %in% c("rstanarm", "brms") || is_datafit) {
+  if (pkg_nm %in% c("rstanarm", "brms") || is_datafit) {
     expect_type(refmod$cvfun, "closure")
   } else {
     expect_null(refmod$cvfun, info = info_str)
