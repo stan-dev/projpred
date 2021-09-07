@@ -444,6 +444,12 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
         formul_nms <- "stdformul"
       }
 
+      if (pkg_nm == "brms" && fam_nm == "brnll") {
+        family_crr <- quote(get("bernoulli", envir = asNamespace("brms"))())
+      } else {
+        family_crr <- as.name(paste0("f_", fam_nm))
+      }
+
       formul_nms <- setNames(nm = formul_nms)
       lapply(formul_nms, function(formul_nm) {
         if (formul_nm == "spclformul") {
@@ -521,7 +527,7 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
 
             return(c(
               nlist(mod_nm, fam_nm, pkg_nm, formula = formul_crr,
-                    family = as.name(paste0("f_", fam_nm)), data = quote(dat),
+                    family = family_crr, data = quote(dat),
                     chains = chains_tst, iter = iter_tst, seed = seed_tst,
                     refresh = 0),
               pkg_args
