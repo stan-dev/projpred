@@ -104,7 +104,9 @@ test_that("`d_test` works", {
     )
     # We expect a warning which in fact should be suppressed, though (see
     # issue #162):
-    warn_expected <- if (pkg_crr == "rstanarm" && mod_crr == "glm") {
+    warn_expected <- if (pkg_crr == "rstanarm" &&
+                         mod_crr == "glm" &&
+                         grepl("\\.with_offs", tstsetup)) {
       paste("^'offset' argument is NULL but it looks like you estimated the",
             "model using an offset term\\.$")
     } else {
@@ -785,12 +787,13 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     # Run cv_varsel():
     # We expect a warning which in fact should be suppressed, though (see
     # issue #162):
-    warn_expected <- switch(
-      mod_crr,
-      "glm" = paste("^'offset' argument is NULL but it looks like you",
-                    "estimated the model using an offset term\\.$"),
+    warn_expected <- if (mod_crr == "glm" &&
+                         grepl("\\.with_offs", tstsetup)) {
+      paste("^'offset' argument is NULL but it looks like you estimated the",
+            "model using an offset term\\.$")
+    } else {
       NA
-    )
+    }
     if (fam_crr == "binom") {
       warn_expected <- paste(c(warn_expected_binom, warn_expected),
                              collapse = "|")
