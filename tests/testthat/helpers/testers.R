@@ -56,6 +56,9 @@ extfam_tester <- function(extfam,
     expect_type(extfam[[el_nm]], "closure")
   }
 
+  # TODO: Add some mathematical checks (i.e., check that the calculations for
+  # the objects listed in `extfam_nms_add` are mathematically correct).
+
   return(invisible(TRUE))
 }
 
