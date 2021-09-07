@@ -364,11 +364,9 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
     lapply(fam_nms, function(fam_nm) {
       y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
 
-      if (fam_nm == "gauss" && pkg_nm != "brms" &&
-          !(pkg_nm == "rstanarm" && mod_nm == "gamm")) {
-        # Here, we also test a special formula (the brms case is excluded for
-        # speed reasons; the rstanarm "gamm" case is excluded because of
-        # rstanarm issue #545):
+      if (fam_nm == "gauss" && !(pkg_nm == "rstanarm" && mod_nm == "gamm")) {
+        # Here, we also test a special formula (the rstanarm "gamm" case is
+        # excluded because of rstanarm issue #545):
         formul_nms <- c("stdformul", "spclformul")
       } else {
         formul_nms <- "stdformul"
