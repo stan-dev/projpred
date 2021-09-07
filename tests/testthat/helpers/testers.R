@@ -341,7 +341,8 @@ refmodel_tester <- function(
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
   if ((!is_datafit && pkg_nm != "brms") ||
-      (is_datafit && fam_nm != "binom")) {
+      (is_datafit && fam_nm != "binom") ||
+      (is_datafit && fam_nm == "binom" && grepl("brms", info_str))) {
     if (!is_gamm) {
       # TODO (GAMMs): Adapt the expected dataset to GAMMs.
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
