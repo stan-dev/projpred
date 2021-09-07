@@ -107,7 +107,9 @@ test_that(paste(
 
     # We expect a warning which in fact should be suppressed, though (see
     # issue #162):
-    warn_expected <- if (pkg_crr == "rstanarm" && mod_crr == "glm") {
+    warn_expected <- if (pkg_crr == "rstanarm" &&
+                         mod_crr == "glm" &&
+                         grepl("\\.with_offs", tstsetup)) {
       paste("^'offset' argument is NULL but it looks like you",
             "estimated the model using an offset term\\.$")
     } else {
