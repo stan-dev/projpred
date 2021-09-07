@@ -324,12 +324,7 @@ for (obj_symb_chr in c(paste0("f_", fam_nms))) {
 }
 
 args_fit <- lapply(pkg_nms, function(pkg_nm) {
-  if (pkg_nm == "brms") {
-    # For speed reasons:
-    mod_nms <- intersect(mod_nms, "glm")
-  }
 
-  mod_nms <- setNames(nm = mod_nms)
   lapply(mod_nms, function(mod_nm) {
     if (pkg_nm == "rstanarm") {
       if (mod_nm != "gamm") {
