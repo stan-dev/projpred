@@ -311,7 +311,6 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
   if (is.null(family)) {
     family <- family(object)
   }
-  family <- extend_family(family)
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = TRUE) {
@@ -333,7 +332,6 @@ get_refmodel.stanreg <- function(object, ...) {
   # Family ------------------------------------------------------------------
 
   family <- family(object)
-  family <- extend_family(family)
 
   # Data --------------------------------------------------------------------
 
