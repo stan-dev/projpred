@@ -340,35 +340,34 @@ refmodel_tester <- function(
 
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
-  if ((!is_datafit && pkg_nm != "brms") ||
-      (is_datafit && (grepl("brms", info_str) || fam_nm != "binom"))) {
-    if (!is_gamm) {
-      # TODO (GAMMs): Adapt the expected dataset to GAMMs.
+  if (!is_gamm) {
+    # TODO (GAMMs): Adapt this to GAMMs.
+    if ((!is_datafit && pkg_nm != "brms") ||
+        (is_datafit && (grepl("brms", info_str) || fam_nm != "binom"))) {
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
-    }
-  } else if (!is_datafit && pkg_nm == "brms") {
-    refdat_colnms <- as.character(attr(terms(formul_expected), "variables"))[-1]
-    if (!all(wobs_expected == 1)) {
-      refdat_colnms <- c(head(refdat_colnms, 1),
-                         "wobs_col",
-                         tail(refdat_colnms, -1))
-    }
-    refdat_colnms <- sub("^offset\\((.*)\\)$", "\\1", refdat_colnms)
-    refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
-    expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
-                 info = info_str)
-  } else if (is_datafit && !grepl("brms", info_str) && fam_nm == "binom") {
-    refdat_ch <- data_expected
-    y_nm <- paste("y", mod_nm, fam_nm, sep = "_")
-    refdat_ch$dummy_nm <- refdat_ch$wobs_col - refdat_ch[, y_nm]
-    names(refdat_ch)[names(refdat_ch) == "dummy_nm"] <- paste("wobs_col -",
-                                                              y_nm)
-    if (!is_gamm) {
-      # TODO (GAMMs): Adapt the expected dataset to GAMMs.
+    } else if (!is_datafit && pkg_nm == "brms") {
+      refdat_colnms <- as.character(
+        attr(terms(formul_expected), "variables")
+      )[-1]
+      if (!all(wobs_expected == 1)) {
+        refdat_colnms <- c(head(refdat_colnms, 1),
+                           "wobs_col",
+                           tail(refdat_colnms, -1))
+      }
+      refdat_colnms <- sub("^offset\\((.*)\\)$", "\\1", refdat_colnms)
+      refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
+      expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
+                   info = info_str)
+    } else if (is_datafit && !grepl("brms", info_str) && fam_nm == "binom") {
+      refdat_ch <- data_expected
+      y_nm <- paste("y", mod_nm, fam_nm, sep = "_")
+      refdat_ch$dummy_nm <- refdat_ch$wobs_col - refdat_ch[, y_nm]
+      names(refdat_ch)[names(refdat_ch) == "dummy_nm"] <- paste("wobs_col -",
+                                                                y_nm)
       expect_identical(refmod$fetch_data(), refdat_ch, info = info_str)
+    } else {
+      stop("This case should not occur.")
     }
-  } else {
-    stop("This case should not occur.")
   }
 
   # wobs
