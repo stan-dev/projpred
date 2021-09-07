@@ -341,8 +341,7 @@ refmodel_tester <- function(
   # fetch_data
   expect_type(refmod$fetch_data, "closure")
   if ((!is_datafit && pkg_nm != "brms") ||
-      (is_datafit && fam_nm != "binom") ||
-      (is_datafit && fam_nm == "binom" && grepl("brms", info_str))) {
+      (is_datafit && (grepl("brms", info_str) || fam_nm != "binom"))) {
     if (!is_gamm) {
       # TODO (GAMMs): Adapt the expected dataset to GAMMs.
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
@@ -358,7 +357,7 @@ refmodel_tester <- function(
     refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
     expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
                  info = info_str)
-  } else {
+  } else if (is_datafit && !grepl("brms", info_str) && fam_nm == "binom") {
     refdat_ch <- data_expected
     y_nm <- paste("y", mod_nm, fam_nm, sep = "_")
     refdat_ch$dummy_nm <- refdat_ch$wobs_col - refdat_ch[, y_nm]
@@ -368,6 +367,8 @@ refmodel_tester <- function(
       # TODO (GAMMs): Adapt the expected dataset to GAMMs.
       expect_identical(refmod$fetch_data(), refdat_ch, info = info_str)
     }
+  } else {
+    stop("This case should not occur.")
   }
 
   # wobs
