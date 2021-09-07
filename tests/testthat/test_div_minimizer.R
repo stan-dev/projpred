@@ -3,6 +3,7 @@ context("div_minimizer")
 test_that("all div_minimizer()s work", {
   for (tstsetup in names(fits)) {
     args_fit_i <- args_fit[[tstsetup]]
+    pkg_crr <- args_fit_i$pkg_nm
     mod_crr <- args_fit_i$mod_nm
     fam_crr <- args_fit_i$fam_nm
 
@@ -42,6 +43,10 @@ test_that("all div_minimizer()s work", {
         as.formula(paste(ybinprop_nm, "~ ."))
       )
       args_fit_i$weights <- wobs_tst
+    } else if (fam_crr == "brnll") {
+      if (pkg_crr == "brms") {
+        args_fit_i$family <- f_binom
+      }
     }
 
     if ("random" %in% names(args_fit_i)) {
