@@ -73,7 +73,7 @@ test_that("all div_minimizer()s work", {
                    sub_data = eval(args_fit_i$data),
                    sub_fam = eval(args_fit_i$family)$family,
                    wobs_expected = wobs_expected_crr,
-                   with_offs = TRUE,
+                   with_offs = grepl("\\.with_offs", tstsetup),
                    info_str = tstsetup)
   }
 })
