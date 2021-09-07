@@ -27,7 +27,7 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
       needs_y_overwrite = needs_y_overwrite_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = offs_expected_crr,
-      fam_orig = eval(args_fit[[tstsetup_fit]]$family),
+      fam_orig = get(paste0("f_", args_fit[[tstsetup_fit]]$fam_nm)),
       info_str = tstsetup
     )
   }

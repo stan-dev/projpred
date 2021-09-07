@@ -306,12 +306,14 @@ refmodel_tester <- function(
     stop("Unexpected `refmod$family$family`.")
   }
   if (!needs_y_overwrite) {
-    expect_identical(refmod$y, dat[[paste("y", mod_nm, fam_nm, sep = "_")]],
-                     info = info_str)
+    y_expected <- dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
+    if (pkg_crr == "brms" && fam_nm == "brnll") {
+      y_expected <- as.numeric(y_expected)
+    }
   } else {
-    expect_identical(refmod$y, data_expected[[y_spclformul_new]],
-                     info = info_str)
+    y_expected <- data_expected[[y_spclformul_new]]
   }
+  expect_identical(refmod$y, y_expected, info = info_str)
 
   # loglik
   if (!is_datafit) {
