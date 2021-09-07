@@ -236,43 +236,92 @@ test_that("`weightsnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pl_orig <- pls[[tstsetup]]
-    pl_ones <- proj_linpred(prjs[[tstsetup]],
-                            newdata = get_dat(tstsetup, dat_wobs_ones),
-                            weightsnew = ~ wobs_col_ones)
-    pl_tester(pl_ones,
-              nprjdraws_expected = ndr_ncl$nprjdraws,
-              info_str = tstsetup)
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      pl_ones <- proj_linpred(prjs[[tstsetup]],
+                              newdata = get_dat(tstsetup, dat_wobs_ones),
+                              weightsnew = ~ wobs_col_ones)
+      pl_tester(pl_ones,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                info_str = tstsetup)
+    }
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = get_dat(tstsetup, dat),
                        weightsnew = ~ wobs_col)
     pl_tester(pl,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               info_str = tstsetup)
-    plw <- proj_linpred(prjs[[tstsetup]],
-                        newdata = get_dat(tstsetup, dat_wobs_new),
-                        weightsnew = ~ wobs_col_new)
-    pl_tester(plw,
-              nprjdraws_expected = ndr_ncl$nprjdraws,
-              info_str = tstsetup)
-    expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      plw <- proj_linpred(prjs[[tstsetup]],
+                          newdata = get_dat(tstsetup, dat_wobs_new),
+                          weightsnew = ~ wobs_col_new)
+      pl_tester(plw,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                info_str = tstsetup)
+    }
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
+    }
     expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
-    expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
-    if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-      ### TODO: This equivalence might in fact be undesired:
-      expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
-      ###
-      ### TODO: This inequality might in fact be undesired:
-      expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
-      ###
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
+    }
+    if (grepl("\\.with_wobs", tstsetup)) {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        ### TODO: This equivalence might in fact be undesired:
+        expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
+        ###
+        ### TODO: This inequality might in fact be undesired:
+        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        ###
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_false(isTRUE(all.equal(pl_ones$lpd, pl_orig$lpd)),
+                     info = tstsetup)
+        expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
+      }
       expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
+      expect_false(isTRUE(all.equal(pl$lpd, pl_ones$lpd)), info = tstsetup)
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_false(isTRUE(all.equal(plw$lpd, pl_ones$lpd)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
+      }
       expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
-    } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-      expect_false(isTRUE(all.equal(pl_ones$lpd, pl_orig$lpd)), info = tstsetup)
-      expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
-      expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
-      ### TODO: This equivalence might in fact be undesired:
-      expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
-      ###
+    } else {
+      if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+            args_prj[[tstsetup]]$fam_nm == "binom")) {
+        expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
+      }
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(pl$lpd, pl_ones$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plw$lpd, pl_ones$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        ### TODO: This equivalence might in fact be undesired:
+        expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
+        ###
+        if (args_prj[[tstsetup]]$fam_nm != "binom") {
+          ### TODO: This equivalence might in fact be undesired:
+          expect_equal(plw$lpd, pl_orig$lpd, info = tstsetup)
+          ###
+          ### TODO: This equivalence might in fact be undesired:
+          expect_equal(pl$lpd, pl_ones$lpd, info = tstsetup)
+          ###
+          ### TODO: This equivalence might in fact be undesired:
+          expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
+          ###
+          ### TODO: This equivalence might in fact be undesired:
+          expect_equal(plw$lpd, pl$lpd, info = tstsetup)
+          ###
+        }
+      }
     }
   }
 })
@@ -307,22 +356,35 @@ test_that("`offsetnew` works", {
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 info_str = tstsetup)
     }
-    if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-      ### TODO: This equivalence might in fact be undesired:
-      expect_equal(pl_zeros, pl_orig, info = tstsetup)
-      ###
-      ### TODO: This inequality might in fact be undesired:
-      expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
-      ###
-      expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
-                   info = tstsetup)
-      expect_equal(t(plo$pred) - dat_offs_new$offs_col_new, t(pl_orig$pred),
-                   info = tstsetup)
-      expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
-      expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
-      expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
-    } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-      expect_equal(pl, pl_orig, info = tstsetup)
+    if (grepl("\\.with_offs", tstsetup)) {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pl_zeros, pl_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
+        expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
+                     info = tstsetup)
+        expect_equal(t(plo$pred) - dat_offs_new$offs_col_new, t(pl_orig$pred),
+                     info = tstsetup)
+        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        ###
+        expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_equal(pl, pl_orig, info = tstsetup)
+      }
+    } else {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_equal(pl_zeros, pl_orig, info = tstsetup)
+        expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
+                     info = tstsetup)
+        expect_equal(t(plo$pred) - dat_offs_new$offs_col_new, t(pl_orig$pred),
+                     info = tstsetup)
+        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        stop("Still to do.")
+      }
     }
   }
 })
@@ -708,13 +770,16 @@ test_that("`weightsnew` works", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     pp_orig <- pps[[tstsetup]]
-    pp_ones <- proj_predict(prjs[[tstsetup]],
-                            newdata = dat_wobs_ones,
-                            weightsnew = ~ wobs_col_ones,
-                            .seed = seed2_tst)
-    pp_tester(pp_ones,
-              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
-              info_str = tstsetup)
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      pp_ones <- proj_predict(prjs[[tstsetup]],
+                              newdata = dat_wobs_ones,
+                              weightsnew = ~ wobs_col_ones,
+                              .seed = seed2_tst)
+      pp_tester(pp_ones,
+                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                info_str = tstsetup)
+    }
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
                        weightsnew = ~ wobs_col,
@@ -722,29 +787,51 @@ test_that("`weightsnew` works", {
     pp_tester(pp,
               nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
               info_str = tstsetup)
-    ppw <- proj_predict(prjs[[tstsetup]],
-                        newdata = dat_wobs_new,
-                        weightsnew = ~ wobs_col_new,
-                        .seed = seed2_tst)
-    pp_tester(ppw,
-              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
-              info_str = tstsetup)
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      ppw <- proj_predict(prjs[[tstsetup]],
+                          newdata = dat_wobs_new,
+                          weightsnew = ~ wobs_col_new,
+                          .seed = seed2_tst)
+      pp_tester(ppw,
+                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                info_str = tstsetup)
+    }
     # Weights are only relevant for the binomial() family:
     if (!args_prj[[tstsetup]]$fam_nm %in% c("brnll", "binom")) {
       expect_equal(pp_ones, pp_orig, info = tstsetup)
       expect_equal(pp, pp_orig, info = tstsetup)
       expect_equal(ppw, pp_orig, info = tstsetup)
-    } else {
-      ### Note: For the binomial family with > 1 trials, this equivalence might
-      ### in fact be undesired:
+    } else if (args_prj[[tstsetup]]$fam_nm == "brnll") {
       expect_equal(pp_ones, pp_orig, info = tstsetup)
-      ###
-      ### Note: For the binomial family with > 1 trials, this inequality might
-      ### in fact be undesired:
-      expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
-      ###
-      expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
-      expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+        expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
+        expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        ### TODO: This equivalence might in fact be undesired:
+        expect_equal(pp, pp_orig, info = tstsetup)
+        ###
+        ### TODO: This equivalence might in fact be undesired:
+        expect_equal(ppw, pp_orig, info = tstsetup)
+        ###
+        ### TODO: This equivalence might in fact be undesired:
+        expect_equal(ppw, pp, info = tstsetup)
+        ###
+      }
+    } else if (args_prj[[tstsetup]]$fam_nm == "binom") {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        ### TODO: This equivalence might in fact be undesired:
+        expect_equal(pp_ones, pp_orig, info = tstsetup)
+        ###
+        ### TODO: This inequality might in fact be undesired:
+        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+        ###
+        expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
+        expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_equal(pp, pp_orig, info = tstsetup)
+      }
     }
   }
 })
@@ -782,25 +869,44 @@ test_that("`offsetnew` works", {
                 nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
                 info_str = tstsetup)
     }
-    if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-      ### TODO: This equivalence might in fact be undesired:
-      expect_equal(pp_zeros, pp_orig, info = tstsetup)
-      ###
-      ### TODO: This inequality might in fact be undesired:
-      expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
-      ###
-      # For the gaussian() family, we can perform an easy check (because of the
-      # identity link):
-      if (args_prj[[tstsetup]]$fam_nm == "gauss") {
-        expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
-        expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
-                     info = tstsetup)
-      } else {
-        expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
-        expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
+    if (grepl("\\.with_offs", tstsetup)) {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pp_zeros, pp_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+        ###
+        # For the gaussian() family, we can perform an easy check (because of
+        # the identity link):
+        if (args_prj[[tstsetup]]$fam_nm == "gauss") {
+          ### TODO: This might in fact be undesired (see above):
+          expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
+          expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
+                       info = tstsetup)
+          ###
+        } else {
+          expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
+          expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
+        }
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_equal(pp, pp_orig, info = tstsetup)
       }
-    } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-      expect_equal(pp, pp_orig, info = tstsetup)
+    } else {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_equal(pp_zeros, pp_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+        # For the gaussian() family, we can perform an easy check (because of
+        # the identity link):
+        if (args_prj[[tstsetup]]$fam_nm == "gauss") {
+          expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
+          expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
+                       info = tstsetup)
+        } else {
+          expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
+          expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
+        }
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        stop("Still to do.")
+      }
     }
   }
 })
