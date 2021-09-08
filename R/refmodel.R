@@ -207,9 +207,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("ynew must be a numerical vector")
   }
 
-  w_o <- object$extract_model_data(object$fit,
-                                   newdata = newdata, weightsnew,
-                                   offsetnew)
+  w_o <- object$extract_model_data(object$fit, newdata = newdata,
+                                   wrhs = weightsnew, orhs = offsetnew)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
 
