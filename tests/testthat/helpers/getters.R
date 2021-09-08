@@ -8,6 +8,8 @@ get_formul_from_fit <- function(fit_obj) {
 
 get_dat_formul <- function(formul_crr, needs_adj, dat_crr = dat) {
   if (needs_adj) {
+    formul_crr <- rm_cbind(formul_crr)
+    formul_crr <- rm_addresp(formul_crr)
     y_nm_orig <- as.character(formul_crr)[2]
     y_nm <- gsub("\\(|\\)", "", y_nm_orig)
     dat_crr[[y_nm]] <- eval(str2lang(y_nm_orig), dat_crr)
