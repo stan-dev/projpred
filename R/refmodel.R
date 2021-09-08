@@ -211,6 +211,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                                    wrhs = weightsnew, orhs = offsetnew)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
+  if (length(weightsnew) == 0) {
+    weightsnew <- rep(1, length(w_o$y))
+  }
+  if (length(offsetnew) == 0) {
+    offsetnew <- rep(0, length(w_o$y))
+  }
 
   ## ref_predfun returns link(mu)
   mu <- object$ref_predfun(object$fit, newdata) + offsetnew

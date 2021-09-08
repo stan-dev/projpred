@@ -175,10 +175,10 @@ proj_helper <- function(object, newdata,
                                    extract_y = FALSE)
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
-    if (is.null(weightsnew)) {
+    if (length(weightsnew) == 0) {
       weightsnew <- rep(1, NROW(newdata))
     }
-    if (is.null(offsetnew)) {
+    if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
     mu <- proj$family$mu_fun(proj$sub_fit,
