@@ -373,7 +373,9 @@ test_that("`offsetnew` works", {
         expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        stop("Still to do.")
+        ### TODO: This might in fact be undesired:
+        expect_equal(pl, pl_orig, info = tstsetup)
+        ###
       }
     }
   }
@@ -889,7 +891,9 @@ test_that("`offsetnew` works", {
           expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
         }
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        stop("Still to do.")
+        ### TODO: This might in fact be undesired:
+        expect_equal(pp, pp_orig, info = tstsetup)
+        ###
       }
     }
   }
