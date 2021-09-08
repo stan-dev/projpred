@@ -116,6 +116,13 @@ refmodel_tester <- function(
   if (needs_offs_added) {
     data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
   }
+  if (!is.null(attr(terms(formul_expected), "offset"))) {
+    # In the reference model, the offset() term is placed last:
+    formul_expected <- update(formul_expected,
+                              . ~ . - offset(offs_col) + offset(offs_col))
+  }
+  formul_expected <- rm_cbind(formul_expected)
+  formul_expected <- rm_addresp(formul_expected)
   if (needs_y_overwrite) {
     # Reference models take arithmetic expressions on the left-hand side of
     # the formula into account:
@@ -156,13 +163,6 @@ refmodel_tester <- function(
   expect_identical(refmod$fit, fit_expected, info = info_str)
 
   # formula
-  if (!is.null(attr(terms(formul_expected), "offset"))) {
-    # In the reference model, the offset() term is placed last:
-    formul_expected <- update(formul_expected,
-                              . ~ . - offset(offs_col) + offset(offs_col))
-  }
-  formul_expected <- rm_cbind(formul_expected)
-  formul_expected <- rm_addresp(formul_expected)
   if (!is_gamm) {
     # TODO (GAMMs): Adapt the expected formula to GAMMs.
     if (is_datafit && grepl("brms", info_str)) {
