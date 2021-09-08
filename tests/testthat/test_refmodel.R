@@ -5,11 +5,7 @@ context("get_refmodel()")
 test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
   for (tstsetup in names(refmods)) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
-    if (!grepl("\\.spclformul", tstsetup)) {
-      needs_y_overwrite_crr <- FALSE
-    } else {
-      needs_y_overwrite_crr <- TRUE
-    }
+    with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
     if (args_ref[[tstsetup]]$fam_nm == "binom" ||
         grepl("\\.with_wobs", tstsetup)) {
       wobs_expected_crr <- wobs_tst
@@ -24,7 +20,7 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
     refmodel_tester(
       refmods[[tstsetup]],
       fit_expected = fits[[tstsetup_fit]],
-      needs_y_overwrite = needs_y_overwrite_crr,
+      with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = offs_expected_crr,
       fam_orig = get(paste0("f_", args_fit[[tstsetup_fit]]$fam_nm)),

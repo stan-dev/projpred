@@ -196,11 +196,7 @@ if (run_vs) {
 test_that("init_refmodel(): `object` of class \"datafit\" works", {
   for (tstsetup in names(datafits)) {
     tstsetup_fit <- args_datafit[[tstsetup]]$tstsetup_fit
-    if (!grepl("\\.spclformul", tstsetup)) {
-      needs_y_overwrite_crr <- FALSE
-    } else {
-      needs_y_overwrite_crr <- TRUE
-    }
+    with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
     if (args_datafit[[tstsetup]]$fam_nm == "binom" ||
         grepl("\\.with_wobs", tstsetup)) {
       wobs_expected_crr <- wobs_tst
@@ -217,7 +213,7 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
       is_datafit = TRUE,
       fit_expected = NULL,
       formul_expected = get_formul_from_fit(fits[[tstsetup_fit]]),
-      needs_y_overwrite = needs_y_overwrite_crr,
+      with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = offs_expected_crr,
       nrefdraws_expected = 1L,

@@ -71,9 +71,8 @@ extfam_tester <- function(extfam,
 # @param data_expected The original dataset used for the reference model fit or
 #   as input to get_refmodel() or init_refmodel(). Internal changes (i.e.,
 #   inside of projpred) of this dataset are performed automatically.
-# @param needs_y_overwrite A single logical value indicating whether in
-#   `data_expected`, the response needs to be overwritten (because of a special
-#   expression on the left-hand side of the formula).
+# @param with_spclformul A single logical value indicating whether the reference
+#   model has a special formula (`TRUE`) or not (`FALSE`).
 # @param nobsv_expected A single integer value giving the expected number of
 #   observations.
 # @param wobs_expected The expected numeric vector of observation weights.
@@ -92,7 +91,7 @@ refmodel_tester <- function(
   fit_expected,
   formul_expected = get_formul_from_fit(fit_expected),
   data_expected = dat,
-  needs_y_overwrite = FALSE,
+  with_spclformul = FALSE,
   nobsv_expected = nobsv,
   wobs_expected = wobs_tst,
   offs_expected = offs_tst,
@@ -123,7 +122,7 @@ refmodel_tester <- function(
   }
   formul_expected <- rm_cbind(formul_expected)
   formul_expected <- rm_addresp(formul_expected)
-  if (needs_y_overwrite) {
+  if (with_spclformul) {
     # Reference models take arithmetic expressions on the left-hand side of
     # the formula into account:
     y_spclformul <- as.character(formul_expected)[2]
@@ -308,7 +307,7 @@ refmodel_tester <- function(
   } else {
     stop("Unexpected `refmod$family$family`.")
   }
-  if (!needs_y_overwrite) {
+  if (!with_spclformul) {
     y_expected <- dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
     if (pkg_nm == "brms" && fam_nm == "brnll") {
       y_expected <- as.numeric(y_expected)
