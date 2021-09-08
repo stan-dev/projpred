@@ -219,6 +219,8 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
       offs_expected = offs_expected_crr,
       nrefdraws_expected = 1L,
       fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm)),
+      mod_nm = args_datafit[[tstsetup]]$mod_nm,
+      fam_nm = args_datafit[[tstsetup]]$fam_nm,
       info_str = tstsetup
     )
   }

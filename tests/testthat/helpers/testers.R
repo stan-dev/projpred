@@ -85,6 +85,10 @@ extfam_tester <- function(extfam,
 #   posterior draws in the reference model.
 # @param fam_orig The original object of class `"family"` which has been used as
 #   input to extend_family().
+# @param mod_nm A single character string specifying the type of model (see
+#   object `mod_nms`.
+# @param fam_nm A single character string specifying the family (see object
+#   `fam_nms`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -102,6 +106,8 @@ refmodel_tester <- function(
   offs_expected = offs_tst,
   nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
   fam_orig,
+  mod_nm,
+  fam_nm,
   info_str
 ) {
   # Preparations:
@@ -140,9 +146,9 @@ refmodel_tester <- function(
       refmod$family$family == "binomial") {
     data_expected$temp_y <- 1
   }
-  has_grp <- formula_contains_group_terms(refmod$formula)
-  has_add <- formula_contains_additive_terms(refmod$formula)
-  is_gamm <- has_grp && has_add
+  has_grp <- mod_nm %in% c("glmm", "gamm")
+  has_add <- mod_nm %in% c("gam", "gamm")
+  is_gamm <- mod_nm == "gamm"
 
   # Test the general structure of the object:
   refmod_nms <- c(
@@ -285,28 +291,6 @@ refmodel_tester <- function(
   # expect_true(is.vector(refmod$y, "numeric"), info = info_str)
   # expect_length(refmod$y, nobsv_expected)
   ###
-  if (!has_grp && !has_add) {
-    mod_nm <- "glm"
-  } else if (has_grp && !has_add) {
-    mod_nm <- "glmm"
-  } else if (!has_grp && has_add) {
-    mod_nm <- "gam"
-  } else if (has_grp && has_add) {
-    mod_nm <- "gamm"
-  }
-  if (refmod$family$family == "gaussian") {
-    fam_nm <- "gauss"
-  } else if (refmod$family$family == "binomial") {
-    if (all(refmod$wobs == 1)) {
-      fam_nm <- "brnll"
-    } else {
-      fam_nm <- "binom"
-    }
-  } else if (refmod$family$family == "poisson") {
-    fam_nm <- "poiss"
-  } else {
-    stop("Unexpected `refmod$family$family`.")
-  }
   if (!with_spclformul) {
     y_expected <- dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
     if (!is_datafit && pkg_nm == "brms" && fam_nm == "brnll") {
