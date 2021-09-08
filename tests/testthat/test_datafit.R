@@ -211,6 +211,7 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
     refmodel_tester(
       datafits[[tstsetup]],
       is_datafit = TRUE,
+      pkg_nm = args_datafit[[tstsetup]]$pkg_nm,
       fit_expected = NULL,
       formul_expected = get_formul_from_fit(fits[[tstsetup_fit]]),
       with_spclformul = with_spclformul_crr,

@@ -19,6 +19,7 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
     }
     refmodel_tester(
       refmods[[tstsetup]],
+      pkg_nm = args_ref[[tstsetup]]$pkg_nm,
       fit_expected = fits[[tstsetup_fit]],
       with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,

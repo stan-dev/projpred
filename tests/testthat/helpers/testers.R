@@ -65,6 +65,10 @@ extfam_tester <- function(extfam,
 # A helper function for testing the structure of an expected `"refmodel"` object
 #
 # @param refmod An object of class `"refmodel"` (at least expected so).
+# @param is_datafit A single logical value indicating whether the reference
+#   model is expected to be a `"datafit"` (`TRUE`) or not (`FALSE`).
+# @param pkg_nm A single character string specifying the name of the package
+#   upon whose fit the reference model (or `"datafit"`) is based.
 # @param fit_expected The expected `refmod$fit` object.
 # @param formul_expected The expected `refmod$formula` object. A `cbind()`
 #   expression on the left-hand side of the formula is handled automatically.
@@ -88,6 +92,7 @@ extfam_tester <- function(extfam,
 refmodel_tester <- function(
   refmod,
   is_datafit = FALSE,
+  pkg_nm,
   fit_expected,
   formul_expected = get_formul_from_fit(fit_expected),
   data_expected = dat,
@@ -100,18 +105,13 @@ refmodel_tester <- function(
   info_str
 ) {
   # Preparations:
-  if (inherits(refmod$fit, "stanreg")) {
-    pkg_nm <- "rstanarm"
-  } else if (inherits(refmod$fit, "brmsfit")) {
-    pkg_nm <- "brms"
-  } else {
-    pkg_nm <- "UNRECOGNIZED"
-  }
-  needs_wobs_added <- pkg_nm == "rstanarm" && length(refmod$fit$weights) > 0
+  needs_wobs_added <- !is_datafit && pkg_nm == "rstanarm" &&
+    length(refmod$fit$weights) > 0
   if (needs_wobs_added) {
     data_expected$projpred_internal_wobs_stanreg <- refmod$fit$weights
   }
-  needs_offs_added <- pkg_nm == "rstanarm" && length(refmod$fit$offset) > 0
+  needs_offs_added <- !is_datafit && pkg_nm == "rstanarm" &&
+    length(refmod$fit$offset) > 0
   if (needs_offs_added) {
     data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
   }
@@ -135,7 +135,7 @@ refmodel_tester <- function(
       assign(y_spclformul_new, eval(str2lang(y_spclformul)))
     })
   }
-  if (pkg_nm == "rstanarm" &&
+  if (!is_datafit && pkg_nm == "rstanarm" &&
       refmod$fit$stan_function == "stan_gamm4" &&
       refmod$family$family == "binomial") {
     data_expected$temp_y <- 1
@@ -164,7 +164,7 @@ refmodel_tester <- function(
   # formula
   if (!is_gamm) {
     # TODO (GAMMs): Adapt the expected formula to GAMMs.
-    if (is_datafit && grepl("brms", info_str)) {
+    if (is_datafit && pkg_nm == "brms") {
       expect_equal(refmod$formula, formul_expected, info = info_str)
     } else {
       expect_identical(refmod$formula, formul_expected, info = info_str)
@@ -309,7 +309,7 @@ refmodel_tester <- function(
   }
   if (!with_spclformul) {
     y_expected <- dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
-    if (pkg_nm == "brms" && fam_nm == "brnll") {
+    if (!is_datafit && pkg_nm == "brms" && fam_nm == "brnll") {
       y_expected <- as.numeric(y_expected)
     }
   } else {
@@ -342,7 +342,7 @@ refmodel_tester <- function(
   if (!is_gamm) {
     # TODO (GAMMs): Adapt this to GAMMs.
     if ((!is_datafit && pkg_nm != "brms") ||
-        (is_datafit && (grepl("brms", info_str) || fam_nm != "binom"))) {
+        (is_datafit && (pkg_nm == "brms" || fam_nm != "binom"))) {
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
     } else if (!is_datafit && pkg_nm == "brms") {
       refdat_colnms <- as.character(
@@ -359,7 +359,7 @@ refmodel_tester <- function(
       refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
       expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
                    info = info_str)
-    } else if (is_datafit && !grepl("brms", info_str) && fam_nm == "binom") {
+    } else if (is_datafit && pkg_nm != "brms" && fam_nm == "binom") {
       refdat_ch <- data_expected
       y_nm <- paste("y", mod_nm, fam_nm, sep = "_")
       refdat_ch$dummy_nm <- refdat_ch$wobs_col - refdat_ch[, y_nm]
@@ -398,7 +398,7 @@ refmodel_tester <- function(
   expect_null(refmod$folds, info = info_str)
 
   # cvfun
-  if (pkg_nm %in% c("rstanarm", "brms") || is_datafit) {
+  if ((!is_datafit && pkg_nm %in% c("rstanarm", "brms")) || is_datafit) {
     expect_type(refmod$cvfun, "closure")
   } else {
     expect_null(refmod$cvfun, info = info_str)
