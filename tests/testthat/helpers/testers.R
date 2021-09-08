@@ -329,20 +329,31 @@ refmodel_tester <- function(
         (is_datafit && (pkg_nm == "brms" || fam_nm != "binom"))) {
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
     } else if (!is_datafit && pkg_nm == "brms") {
-      refdat_colnms <- as.character(
-        attr(terms(formul_expected), "variables")
-      )[-1]
-      refdat_colnms <- sub(".*\\|[[:blank:]]*", "", refdat_colnms)
-      refdat_colnms <- sub("s\\((.*)\\)", "\\1", refdat_colnms)
-      if (!all(wobs_expected == 1)) {
-        refdat_colnms <- c(head(refdat_colnms, 1),
-                           "wobs_col",
-                           tail(refdat_colnms, -1))
+      if (!with_spclformul) {
+        refdat_colnms <- as.character(
+          attr(terms(formul_expected), "variables")
+        )[-1]
+        refdat_colnms <- sub(".*\\|[[:blank:]]*", "", refdat_colnms)
+        refdat_colnms <- sub("s\\((.*)\\)", "\\1", refdat_colnms)
+        if (!all(wobs_expected == 1)) {
+          refdat_colnms <- c(head(refdat_colnms, 1),
+                             "wobs_col",
+                             tail(refdat_colnms, -1))
+        }
+        refdat_colnms <- sub("^offset\\((.*)\\)$", "\\1", refdat_colnms)
+        refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
+        expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
+                     info = info_str)
+      } else {
+        # TODO: The check in this case is not perfect yet.
+        refdat_ch <- model.frame(formul_expected, data = data_expected)
+        if (!all(wobs_expected == 1)) {
+          refdat_ch <- cbind(refdat_ch, wobs_col = data_expected$wobs_col)
+        }
+        names(refdat_ch) <- sub("^offset\\((.*)\\)$", "\\1", names(refdat_ch))
+        expect_equal(refmod$fetch_data()[, names(refdat_ch), drop = FALSE],
+                     refdat_ch, check.attributes = FALSE, info = info_str)
       }
-      refdat_colnms <- sub("^offset\\((.*)\\)$", "\\1", refdat_colnms)
-      refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
-      expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
-                   info = info_str)
     } else if (is_datafit && pkg_nm != "brms" && fam_nm == "binom") {
       refdat_ch <- data_expected
       y_nm <- paste("y", mod_nm, fam_nm, sep = "_")
