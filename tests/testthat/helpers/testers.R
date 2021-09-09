@@ -393,11 +393,7 @@ refmodel_tester <- function(
   expect_null(refmod$folds, info = info_str)
 
   # cvfun
-  if ((!is_datafit && pkg_nm %in% c("rstanarm", "brms")) || is_datafit) {
-    expect_type(refmod$cvfun, "closure")
-  } else {
-    expect_null(refmod$cvfun, info = info_str)
-  }
+  expect_type(refmod$cvfun, "closure")
 
   # cvfits
   expect_null(refmod$cvfits, info = info_str)
