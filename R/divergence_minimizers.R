@@ -144,11 +144,11 @@ fit_glmer_callback <- function(formula, data, family, weights,
         names(dot_args),
         methods::formalArgs(lme4::lmer)
       )]
-      return(do.call(lme4::lmer, c(
+      return(suppressMessages(suppressWarnings(do.call(lme4::lmer, c(
         list(formula = formula, data = data, weights = weights,
              control = control),
         dot_args
-      )))
+      )))))
     } else {
       # Exclude arguments from `...` which cannot be passed to lme4::glmer():
       dot_args <- list(...)
@@ -156,11 +156,11 @@ fit_glmer_callback <- function(formula, data, family, weights,
         names(dot_args),
         methods::formalArgs(lme4::glmer)
       )]
-      return(do.call(lme4::glmer, c(
+      return(suppressMessages(suppressWarnings(do.call(lme4::glmer, c(
         list(formula = formula, data = data, family = family, weights = weights,
              control = control),
         dot_args
-      )))
+      )))))
     }
   }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
@@ -204,16 +204,11 @@ preprocess_data <- function(data, formula) {
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
 # appropriate control options depending on the family:
-control_callback <- function(
-  family,
-  check.conv.singular = lme4::.makeCC(action = "ignore",
-                                      tol = formals(lme4::isSingular)$tol),
-  ...
-) {
+control_callback <- function(family, ...) {
   if (family$family == "gaussian" && family$link == "identity") {
-    return(lme4::lmerControl(check.conv.singular = check.conv.singular, ...))
+    return(lme4::lmerControl(...))
   } else {
-    return(lme4::glmerControl(check.conv.singular = check.conv.singular, ...))
+    return(lme4::glmerControl(...))
   }
 }
 
