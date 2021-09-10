@@ -136,13 +136,7 @@
 #'
 #' The return value of those functions needs to be:
 #' * `ref_predfun`: a \eqn{N \times S}{N x S} matrix.
-#' * `proj_predfun`:
-#'   \itemize{
-#'     \item{if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}: a vector or a 1-column
-#'     matrix of length \eqn{N};}
-#'     \item{if \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}: a
-#'     \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.}
-#'   }
+#' * `proj_predfun`: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 #' * `div_minimizer`: a \code{list} of \eqn{S_{\mbox{prj}}}{S_prj} fitted model
 #'   objects.
 #'
