@@ -110,9 +110,7 @@
 #' }
 #' * `div_minimizer(formula, data, family, weights = NULL, ...)` where:
 #' \itemize{
-#'   \item{\code{formula} accepts a model formula (in case of additive models,
-#'   this formula excludes any multilevel terms (see \code{projpred_random}
-#'   below));}
+#'   \item{\code{formula} accepts a model formula;}
 #'   \item{\code{data} accepts a \code{data.frame} to be used for the
 #'   projection;}
 #'   \item{\code{family} accepts a \code{"family"} object (see argument
@@ -129,6 +127,9 @@
 #'     \code{div_minimizer}).
 #'     + \code{projpred_regul}: see argument \code{regul} of [project()], for
 #'     example.
+#'     + \code{projpred_formula_no_random}: For additive models: The same as
+#'     argument \code{formula}, but excluding any multilevel terms (see
+#'     \code{projpred_random} below). For non-additive models: \code{NA}.
 #'     + \code{projpred_random}: For additive models: A right-hand side formula
 #'     containing only the multilevel terms of \code{formula} or \code{NULL} if
 #'     there are no multilevel terms. For non-additive models: \code{NA}.

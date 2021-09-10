@@ -31,7 +31,8 @@ fit_glm_ridge_callback <- function(formula, data, family, weights = NULL,
 # Use package "mgcv" to fit submodels for additive reference models. Use package
 # "gamm4" to fit submodels for additive multilevel reference models:
 fit_gam_gamm_callback <- function(formula, data, family, weights = NULL,
-                                  projpred_random, ...) {
+                                  projpred_formula_no_random, projpred_random,
+                                  ...) {
   stopifnot(is.null(projpred_random) || inherits(projpred_random, "formula"))
   if (is.null(projpred_random)) {
     return(fit_gam_callback(
@@ -39,8 +40,8 @@ fit_gam_gamm_callback <- function(formula, data, family, weights = NULL,
     ))
   } else {
     return(fit_gamm_callback(
-      formula, random = projpred_random, data = data, family = family,
-      weights = weights, ...
+      projpred_formula_no_random, random = projpred_random, data = data,
+      family = family, weights = weights, ...
     ))
   }
 }

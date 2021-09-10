@@ -16,12 +16,20 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   if (formula_contains_additive_terms(refmodel$formula)) {
     f_additive <- split_formula_random_gamm4(formula_mv)
-    formula_mv <- f_additive$formula
+    projpred_formulas_no_random <- validate_response_formula(f_additive$formula)
     projpred_random <- f_additive$random
   } else {
+    projpred_formulas_no_random <- NA
     projpred_random <- NA
   }
   formulas <- validate_response_formula(formula_mv)
+  if (is.list(projpred_formulas_no_random)) {
+    stopifnot(length(projpred_formulas_no_random) == length(formulas))
+  } else {
+    projpred_formulas_no_random <- as.list(
+      rep(projpred_formulas_no_random, length(formulas))
+    )
+  }
 
   sub_fit <- lapply(seq_along(formulas), function(s) {
     refmodel$div_minimizer(
@@ -31,6 +39,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
       weights = refmodel$wobs,
       projpred_var = p_ref$var[, s, drop = FALSE],
       projpred_regul = regul,
+      projpred_formula_no_random = projpred_formulas_no_random[[s]],
       projpred_random = projpred_random
     )
   })

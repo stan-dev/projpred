@@ -182,10 +182,17 @@ vector);}
 Currently, \code{div_minimizer} is called with the arguments from above (apart
 from \code{...}) as well as:
 \itemize{
-\item \code{var}: a numeric vector of length \eqn{N} containing predictive
-variances (necessary for \pkg{projpred}'s internal (G)LM
+\item \code{projpred_var}: a numeric vector of length \eqn{N} containing
+predictive variances (necessary for \pkg{projpred}'s internal (G)LM
 \code{div_minimizer}).
-\item \code{regul}: see argument \code{regul} of \code{\link[=project]{project()}}, for example.
+\item \code{projpred_regul}: see argument \code{regul} of \code{\link[=project]{project()}}, for
+example.
+\item \code{projpred_formula_no_random}: For additive models: The same as
+argument \code{formula}, but excluding any multilevel terms (see
+\code{projpred_random} below). For non-additive models: \code{NA}.
+\item \code{projpred_random}: For additive models: A right-hand side formula
+containing only the multilevel terms of \code{formula} or \code{NULL} if
+there are no multilevel terms. For non-additive models: \code{NA}.
 }
 }
 
