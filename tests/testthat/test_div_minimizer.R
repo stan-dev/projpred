@@ -49,17 +49,31 @@ test_that("all div_minimizer()s work", {
       }
     }
 
-    if ("random" %in% names(args_fit_i)) {
-      args_fit_i$formula <- update(
-        args_fit_i$formula,
-        as.formula(paste(". ~ . +", tail(as.character(args_fit_i$random), 1)))
-      )
+    if (mod_crr %in% c("gam", "gamm")) {
+      args_fit_i$projpred_formula_no_random <- args_fit_i$formula
+      args_fit_i <- c(args_fit_i, list(projpred_random = args_fit_i$random))
+      if (length(args_fit_i$random) > 0) {
+        ### Not necessary, but left here to emulate how the divergence minimizer
+        ### is actually called:
+        args_fit_i$formula <- update(
+          args_fit_i$formula,
+          as.formula(paste(". ~ . +", tail(as.character(args_fit_i$random), 1)))
+        )
+        ###
+      }
+    } else {
+      ### Not necessary, but left here to emulate how the divergence minimizer
+      ### is actually called:
+      args_fit_i$projpred_formula_no_random <- NA
+      args_fit_i$projpred_random <- NA
+      ###
     }
 
     divmin <- do.call(divmin_fun, c(
       args_fit_i[intersect(names(args_fit_i),
-                           c("formula", "data", "family", "weights"))],
-      list(regul = regul_default, var = var_crr)
+                           c("formula", "data", "family", "weights",
+                             "projpred_formula_no_random", "projpred_random"))],
+      list(projpred_var = var_crr, projpred_regul = regul_default)
     ))
 
     if (fam_crr == "binom" || grepl("\\.with_wobs", tstsetup)) {
@@ -67,7 +81,7 @@ test_that("all div_minimizer()s work", {
     } else {
       wobs_expected_crr <- NULL
     }
-    sub_fit_tester(divmin,
+    sub_fit_tester(list(divmin),
                    nprjdraws_expected = 1L,
                    sub_formul = list(args_fit_i$formula),
                    sub_data = eval(args_fit_i$data),
