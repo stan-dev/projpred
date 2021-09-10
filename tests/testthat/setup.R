@@ -20,6 +20,12 @@ run_valsearch_always <- FALSE
 run_cvfits_all <- FALSE
 # Run tests for "brmsfit"s?:
 run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
+if (run_brms && packageVersion("brms") <= package_version("2.16.1")) {
+  warning("Deactivating the brms tests because brms version <= 2.16.1 calls ",
+          "init_refmodel() with the now omitted argument `folds`. Install a ",
+          "newer brms version to run the brms tests.")
+  run_brms <- FALSE
+}
 # Run snapshot tests (see, e.g., `?expect_snapshot` and
 # `vignette("snapshotting", package = "testthat")`)?:
 # Notes:
@@ -353,13 +359,9 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
       # CV cannot be tested in that case.
     }
 
-    if ((pkg_nm == "rstanarm" && mod_nm %in% c("gam", "gamm")) ||
-        (pkg_nm == "brms" &&
-         packageVersion("brms") <= package_version("2.16.1"))) {
+    if (pkg_nm == "rstanarm" && mod_nm %in% c("gam", "gamm")) {
       # In the rstanarm "gam" and "gamm" case, the offsets are omitted because
       # of rstanarm issue #546 and rstanarm issue #253.
-      # In the brms case (up to (including) brms version 2.16.1), the offsets
-      # are omitted because of brms issue #1220.
       offss_nms <- "without_offs"
     } else {
       offss_nms <- "with_offs"
