@@ -169,11 +169,7 @@ least in the form of a \code{data.frame});}
 }
 \item \code{div_minimizer(formula, data, family, weights = NULL, ...)} where:
 \itemize{
-\item{\code{formula} accepts either a standard formula with a single
-response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
-\eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
-\code{\link{cbind}}-ed on the left-hand side in which case the projection
-has to be performed for each of the response variables separately;}
+\item{\code{formula} accepts a model formula;}
 \item{\code{data} accepts a \code{data.frame} to be used for the
 projection;}
 \item{\code{family} accepts a \code{"family"} object (see argument
@@ -186,8 +182,8 @@ vector);}
 Currently, \code{div_minimizer} is called with the arguments from above (apart
 from \code{...}) as well as:
 \itemize{
-\item \code{var}: a numeric \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix
-of predictive variances (necessary for \pkg{projpred}'s internal (G)LM
+\item \code{var}: a numeric vector of length \eqn{N} containing predictive
+variances (necessary for \pkg{projpred}'s internal (G)LM
 \code{div_minimizer}).
 \item \code{regul}: see argument \code{regul} of \code{\link[=project]{project()}}, for example.
 }

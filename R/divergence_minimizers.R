@@ -1,15 +1,6 @@
-linear_mle <- function(formula, data, family, weights = NULL, var = 0, ...) {
-  formula <- validate_response_formula(formula)
-  return(lapply(seq_along(formula), function(s) {
-    fit_glm_ridge_callback(
-      formula[[s]], data = data, family = family, weights = weights,
-      var = var[, s, drop = FALSE], ...
-    )
-  }))
-}
-
-fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
-                                   regul = 1e-4, ...) {
+fit_glm_ridge_callback <- function(formula, data, family, weights = NULL,
+                                   projpred_var = 0, projpred_regul = 1e-4,
+                                   ...) {
   fr <- model.frame(delete.intercept(formula), data = data)
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
@@ -21,8 +12,8 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
     methods::formalArgs(glm_ridge)
   )]
   fit <- do.call(glm_ridge, c(
-    list(x = x, y = y, family = family, lambda = regul, weights = weights,
-         obsvar = var),
+    list(x = x, y = y, family = family, lambda = projpred_regul,
+         weights = weights, obsvar = projpred_var),
     dot_args
   ))
   rownames(fit$beta) <- colnames(x)
@@ -39,27 +30,24 @@ fit_glm_ridge_callback <- function(formula, data, family, weights, var = 0,
 
 # Use package "mgcv" to fit submodels for additive reference models. Use package
 # "gamm4" to fit submodels for additive multilevel reference models:
-additive_mle <- function(formula, data, family, weights = NULL, ...) {
-  f <- split_formula_random_gamm4(formula)
-  formula <- f$formula
-  random <- f$random
-  formula <- validate_response_formula(formula)
-  if (is.null(random)) {
-    return(lapply(
-      formula, fit_gam_callback, data = data, family = family,
-      weights = weights, ...
+fit_gam_gamm_callback <- function(formula, data, family, weights = NULL,
+                                  projpred_random, ...) {
+  stopifnot(is.null(projpred_random) || inherits(projpred_random, "formula"))
+  if (is.null(projpred_random)) {
+    return(fit_gam_callback(
+      formula, data = data, family = family, weights = weights, ...
     ))
   } else {
-    return(lapply(
-      formula, fit_gamm_callback, random = random, data = data, family = family,
+    return(fit_gamm_callback(
+      formula, random = projpred_random, data = data, family = family,
       weights = weights, ...
     ))
   }
 }
 
-# Helper function for additive_mle():
+# Helper function for fit_gam_gamm_callback():
 #' @importFrom mgcv gam
-fit_gam_callback <- function(formula, data, family, weights, ...) {
+fit_gam_callback <- function(formula, data, family, weights = NULL, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
@@ -75,7 +63,7 @@ fit_gam_callback <- function(formula, data, family, weights, ...) {
   )))))
 }
 
-# Helper function for additive_mle():
+# Helper function for fit_gam_gamm_callback():
 #' @importFrom gamm4 gamm4
 fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
                               control = control_callback(family), ...) {
@@ -120,19 +108,7 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
 # Use package "lme4" to fit submodels for multilevel reference models (with a
 # fallback to "projpred"'s own implementation for fitting non-multilevel (and
 # non-additive) submodels):
-linear_multilevel_mle <- function(formula, data, family, weights = NULL,
-                                  var = 0, ...) {
-  formula <- validate_response_formula(formula)
-  return(lapply(seq_along(formula), function(s) {
-    fit_glmer_callback(
-      formula[[s]], data = data, family = family, weights = weights,
-      var = var[, s, drop = FALSE], ...
-    )
-  }))
-}
-
-# Helper function for linear_multilevel_mle():
-fit_glmer_callback <- function(formula, data, family, weights,
+fit_glmer_callback <- function(formula, data, family, weights = NULL,
                                control = control_callback(family), ...) {
   ## make sure correct 'weights' can be found
   environment(formula) <- environment()

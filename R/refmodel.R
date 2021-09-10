@@ -110,11 +110,9 @@
 #' }
 #' * `div_minimizer(formula, data, family, weights = NULL, ...)` where:
 #' \itemize{
-#'   \item{\code{formula} accepts either a standard formula with a single
-#'   response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
-#'   \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
-#'   \code{\link{cbind}}-ed on the left-hand side in which case the projection
-#'   has to be performed for each of the response variables separately;}
+#'   \item{\code{formula} accepts a model formula (in case of additive models,
+#'   this formula excludes any multilevel terms (see \code{projpred_random}
+#'   below));}
 #'   \item{\code{data} accepts a \code{data.frame} to be used for the
 #'   projection;}
 #'   \item{\code{family} accepts a \code{"family"} object (see argument
@@ -126,10 +124,14 @@
 #' }
 #' Currently, `div_minimizer` is called with the arguments from above (apart
 #' from `...`) as well as:
-#'     + \code{var}: a numeric \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix
-#'     of predictive variances (necessary for \pkg{projpred}'s internal (G)LM
+#'     + \code{projpred_var}: a numeric vector of length \eqn{N} containing
+#'     predictive variances (necessary for \pkg{projpred}'s internal (G)LM
 #'     \code{div_minimizer}).
-#'     + \code{regul}: see argument \code{regul} of [project()], for example.
+#'     + \code{projpred_regul}: see argument \code{regul} of [project()], for
+#'     example.
+#'     + \code{projpred_random}: For additive models: A right-hand side formula
+#'     containing only the multilevel terms of \code{formula} or \code{NULL} if
+#'     there are no multilevel terms. For non-additive models: \code{NA}.
 #'
 #' The return value of those functions needs to be:
 #' * `ref_predfun`: a \eqn{N \times S}{N x S} matrix.
@@ -579,11 +581,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (is.null(div_minimizer)) {
     if (length(terms$additive_terms) != 0) {
-      div_minimizer <- additive_mle
+      div_minimizer <- fit_gam_gamm_callback
     } else if (length(terms$group_terms) != 0) {
-      div_minimizer <- linear_multilevel_mle
+      div_minimizer <- fit_glmer_callback
     } else {
-      div_minimizer <- linear_mle
+      div_minimizer <- fit_glm_ridge_callback
     }
   }
 

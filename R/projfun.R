@@ -12,14 +12,28 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     data = refmodel$fetch_data(), y = p_ref$mu
   )
 
-  sub_fit <- refmodel$div_minimizer(
-    formula = flatten_formula(subset$formula),
-    data = subset$data,
-    family = family,
-    weights = refmodel$wobs,
-    var = p_ref$var,
-    regul = regul
-  )
+  formula_mv <- flatten_formula(subset$formula)
+
+  if (formula_contains_additive_terms(refmodel$formula)) {
+    f_additive <- split_formula_random_gamm4(formula_mv)
+    formula_mv <- f_additive$formula
+    projpred_random <- f_additive$random
+  } else {
+    projpred_random <- NA
+  }
+  formulas <- validate_response_formula(formula_mv)
+
+  sub_fit <- lapply(seq_along(formulas), function(s) {
+    refmodel$div_minimizer(
+      formula = formulas[[s]],
+      data = subset$data,
+      family = family,
+      weights = refmodel$wobs,
+      projpred_var = p_ref$var[, s, drop = FALSE],
+      projpred_regul = regul,
+      projpred_random = projpred_random
+    )
+  })
 
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,

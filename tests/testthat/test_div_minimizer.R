@@ -8,11 +8,11 @@ test_that("all div_minimizer()s work", {
     fam_crr <- args_fit_i$fam_nm
 
     if (mod_crr == "glm") {
-      divmin_fun <- "linear_mle"
+      divmin_fun <- "fit_glm_ridge_callback"
     } else if (mod_crr == "glmm") {
-      divmin_fun <- "linear_multilevel_mle"
+      divmin_fun <- "fit_glmer_callback"
     } else if (mod_crr %in% c("gam", "gamm")) {
-      divmin_fun <- "additive_mle"
+      divmin_fun <- "fit_gam_gamm_callback"
     }
 
     if (fam_crr == "gauss") {
