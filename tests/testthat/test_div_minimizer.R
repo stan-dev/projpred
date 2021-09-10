@@ -23,7 +23,8 @@ test_that("all div_minimizer()s work", {
     } else {
       var_crr <- rep(0, nobsv)
     }
-    var_crr <- matrix(var_crr)
+    args_fit_i$projpred_var <- matrix(var_crr)
+    args_fit_i$projpred_regul <- regul_default
 
     if (args_fit_i$pkg_nm == "brms" && grepl("\\.with_wobs", tstsetup)) {
       args_fit_i$formula <- rm_addresp(args_fit_i$formula)
@@ -69,12 +70,13 @@ test_that("all div_minimizer()s work", {
       ###
     }
 
-    divmin <- do.call(divmin_fun, c(
-      args_fit_i[intersect(names(args_fit_i),
-                           c("formula", "data", "family", "weights",
-                             "projpred_formula_no_random", "projpred_random"))],
-      list(projpred_var = var_crr, projpred_regul = regul_default)
-    ))
+    divmin <- do.call(
+      divmin_fun,
+      args_fit_i[intersect(c("formula", "data", "family", "weights",
+                             "projpred_var", "projpred_regul",
+                             "projpred_formula_no_random", "projpred_random"),
+                           names(args_fit_i))]
+    )
 
     if (fam_crr == "binom" || grepl("\\.with_wobs", tstsetup)) {
       wobs_expected_crr <- wobs_tst
