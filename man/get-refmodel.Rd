@@ -200,8 +200,8 @@ The return value of those functions needs to be:
 \itemize{
 \item \code{ref_predfun}: a \eqn{N \times S}{N x S} matrix.
 \item \code{proj_predfun}: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
-\item \code{div_minimizer}: a \code{list} of \eqn{S_{\mbox{prj}}}{S_prj} fitted model
-objects.
+\item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
+containing this number of fitted model objects.
 }
 }
 \examples{

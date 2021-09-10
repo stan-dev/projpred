@@ -137,8 +137,8 @@
 #' The return value of those functions needs to be:
 #' * `ref_predfun`: a \eqn{N \times S}{N x S} matrix.
 #' * `proj_predfun`: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
-#' * `div_minimizer`: a \code{list} of \eqn{S_{\mbox{prj}}}{S_prj} fitted model
-#'   objects.
+#' * `div_minimizer`: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
+#'   containing this number of fitted model objects.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as \link{varsel},
