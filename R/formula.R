@@ -908,12 +908,12 @@ collapse_contrasts_solution_path <- function(formula, path, data) {
 
 split_formula_random_gamm4 <- function(formula) {
   tt <- extract_terms_response(formula)
+  if (length(tt$group_terms) == 0) {
+    return(nlist(formula, random = NULL))
+  }
   parens_group_terms <- unlist(lapply(tt$group_terms, function(t) {
     paste0("(", t, ")")
   }))
-  if (length(parens_group_terms) == 0) {
-    return(nlist(formula, random = NULL))
-  }
   random <- as.formula(paste(
     "~",
     paste(parens_group_terms, collapse = " + ")
