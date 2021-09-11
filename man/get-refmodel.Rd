@@ -32,7 +32,8 @@ init_refmodel(
   extract_model_data,
   cvfun = NULL,
   cvfits = NULL,
-  dis = NULL
+  dis = NULL,
+  ...
 )
 }
 \arguments{
