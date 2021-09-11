@@ -746,7 +746,7 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
 
     # Refit `K_crr` times:
     # rstanarm::kfold() lacks an argument for setting the seed:
-    set.seed(seed_tst)
+    set.seed(seed_fit)
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
     # test_that()'s `code`):

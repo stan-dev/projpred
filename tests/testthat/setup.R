@@ -6,9 +6,11 @@
 
 options(warn = 1)
 
-# When debugging interactively without needing the "vsel" objects, these
-# switches may be set to `FALSE` to save time:
+# These switches may be set to `FALSE` to save time (e.g., when debugging
+# interactively):
+# Run `varsel()`?:
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
+# Run `cv_varsel()`?:
 run_cvvs <- run_vs
 # Run `cv_varsel()` with `validate_search = TRUE` always (`TRUE`) or just for L1
 # search (`FALSE`)?:
@@ -16,10 +18,8 @@ run_valsearch_always <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
 # first one (`FALSE`)?:
 run_cvfits_all <- FALSE
-# Run tests for "brmsfit"s (`TRUE`) or not (`FALSE`)?:
+# Run tests for "brmsfit"s?:
 run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
-
-set.seed(8541351)
 
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
@@ -37,105 +37,18 @@ fam_nms <- setNames(nm = c("gauss", "binom")) # , "brnll", "poiss"
 # fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
 ###
 
-seed_tst <- 74345
-
-# projpred setup ----------------------------------------------------------
-
-## Output names -----------------------------------------------------------
-
-projection_nms <- c(
-  "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
-  "p_type", "intercept", "extract_model_data", "refmodel"
-)
-vsel_nms <- c(
-  "refmodel", "search_path", "d_test", "summaries", "family", "solution_terms",
-  "kl", "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
-  "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "suggested_size",
-  "summary"
-)
-vsel_nms_cv <- c(
-  "refmodel", "search_path", "d_test", "summaries", "family", "kl",
-  "solution_terms", "pct_solution_terms_cv", "nterms_all", "nterms_max",
-  "method", "cv_method", "validate_search", "nclusters", "nclusters_pred",
-  "ndraws", "ndraws_pred", "suggested_size", "summary"
-)
-# Related to prediction (in contrast to selection):
-vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
-                   "summary")
-vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
-# Related to `d_test`:
-vsel_nms_dtest <- c("d_test", setdiff(vsel_nms_pred, c("solution_terms", "kl")))
-# Related to `nloo`:
-vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
-                      "summary")
-vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv", "suggested_size")
-# Related to `validate_search`:
-vsel_nms_cv_valsearch <- c("validate_search", "summaries",
-                           "pct_solution_terms_cv", "suggested_size",
-                           "summary")
-vsel_nms_cv_valsearch_opt <- c("suggested_size")
-# Related to `cvfits`:
-vsel_nms_cv_cvfits <- c("refmodel", "d_test", "summaries", "family",
-                        "pct_solution_terms_cv", "summary", "suggested_size")
-vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
-subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
-searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
-psel_nms <- c("mu", "var", "weights", "cl")
-dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
-vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
-
-## Defaults ---------------------------------------------------------------
-
-ndraws_default <- 20L # Adapt this if the default is changed.
-ndraws_pred_default <- 400L # Adapt this if the default is changed.
-nresample_clusters_default <- 1000L # Adapt this if the default is changed.
-regul_default <- 1e-4 # Adapt this if the default is changed.
-
-## Customized -------------------------------------------------------------
-
-seed2_tst <- 866028
-
-nclusters_tst <- 2L
-nclusters_pred_tst <- 3L
-ndr_ncl_pred_tst <- list(
-  default_ndr_ncl = list(),
-  noclust = list(ndraws = 25L),
-  clust = list(nclusters = nclusters_pred_tst),
-  clust_draws = list(ndraws = nclusters_pred_tst),
-  clust1 = list(nclusters = 1L)
-)
-nresample_clusters_tst <- c(1L, 100L)
-
-meth_tst <- list(
-  default_meth = list(),
-  L1 = list(method = "L1"),
-  forward = list(method = "forward")
-)
-
-K_tst <- 2L
-cvmeth_tst <- list(
-  default_cvmeth = list(),
-  LOO = list(cv_method = "LOO"),
-  kfold = list(cv_method = "kfold", K = K_tst)
-)
-
-vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
-stats_common <- c("elpd", "mlpd")
-stats_tst <- list(
-  default_stats = list(),
-  common_stats = list(stats = stats_common),
-  gauss_stats = list(stats = c(stats_common, c("mse", "rmse"))),
-  binom_stats = list(stats = c(stats_common, c("acc", "auc")))
-)
-type_tst <- c("mean", "lower", "upper", "se")
-
 # Data --------------------------------------------------------------------
+
+## Setup ------------------------------------------------------------------
 
 # Number of observations:
 nobsv <- 41L
-
 # Values for testing:
 nobsv_tst <- c(1L, nobsv %/% 3L)
+
+# Seed:
+seed_dat <- 8541351
+set.seed(seed_dat)
 
 ## GLMs --------------------------------------------------------------------
 ## Add nonpooled ("fixed") effects to the intercept-(and-offset-)only model
@@ -305,7 +218,7 @@ dat_offs_new <- within(dat, {
 
 # Fits --------------------------------------------------------------------
 
-## rstanarm and brms setup ------------------------------------------------
+## Setup ------------------------------------------------------------------
 
 if (!requireNamespace("rstanarm", quietly = TRUE)) {
   stop("Package \"rstanarm\" is needed for these tests. Please install it.",
@@ -327,6 +240,7 @@ pkg_nms <- setNames(nm = pkg_nms)
 
 chains_tst <- 2L
 iter_tst <- 500L
+seed_fit <- 74345
 
 ### Formula ---------------------------------------------------------------
 
@@ -528,7 +442,7 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
             return(c(
               nlist(mod_nm, fam_nm, pkg_nm, formula = formul_crr,
                     family = family_crr, data = quote(dat),
-                    chains = chains_tst, iter = iter_tst, seed = seed_tst,
+                    chains = chains_tst, iter = iter_tst, seed = seed_fit,
                     refresh = 0),
               pkg_args
             ))
@@ -575,6 +489,45 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
 }))
 
 # projpred ----------------------------------------------------------------
+
+## Setup ------------------------------------------------------------------
+
+nclusters_tst <- 2L
+nclusters_pred_tst <- 3L
+ndr_ncl_pred_tst <- list(
+  default_ndr_ncl = list(),
+  noclust = list(ndraws = 25L),
+  clust = list(nclusters = nclusters_pred_tst),
+  clust_draws = list(ndraws = nclusters_pred_tst),
+  clust1 = list(nclusters = 1L)
+)
+nresample_clusters_tst <- c(1L, 100L)
+
+meth_tst <- list(
+  default_meth = list(),
+  L1 = list(method = "L1"),
+  forward = list(method = "forward")
+)
+
+K_tst <- 2L
+cvmeth_tst <- list(
+  default_cvmeth = list(),
+  LOO = list(cv_method = "LOO"),
+  kfold = list(cv_method = "kfold", K = K_tst)
+)
+
+vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
+stats_common <- c("elpd", "mlpd")
+stats_tst <- list(
+  default_stats = list(),
+  common_stats = list(stats = stats_common),
+  gauss_stats = list(stats = c(stats_common, c("mse", "rmse"))),
+  binom_stats = list(stats = c(stats_common, c("acc", "auc")))
+)
+type_tst <- c("mean", "lower", "upper", "se")
+
+seed_tst <- 74345
+seed2_tst <- 866028
 
 ## Reference model --------------------------------------------------------
 
@@ -947,3 +900,53 @@ if (run_cvvs) {
     ))
   })
 }
+
+## Output names -----------------------------------------------------------
+
+projection_nms <- c(
+  "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
+  "p_type", "intercept", "extract_model_data", "refmodel"
+)
+vsel_nms <- c(
+  "refmodel", "search_path", "d_test", "summaries", "family", "solution_terms",
+  "kl", "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
+  "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "suggested_size",
+  "summary"
+)
+vsel_nms_cv <- c(
+  "refmodel", "search_path", "d_test", "summaries", "family", "kl",
+  "solution_terms", "pct_solution_terms_cv", "nterms_all", "nterms_max",
+  "method", "cv_method", "validate_search", "nclusters", "nclusters_pred",
+  "ndraws", "ndraws_pred", "suggested_size", "summary"
+)
+# Related to prediction (in contrast to selection):
+vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
+                   "summary")
+vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
+# Related to `d_test`:
+vsel_nms_dtest <- c("d_test", setdiff(vsel_nms_pred, c("solution_terms", "kl")))
+# Related to `nloo`:
+vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
+                      "summary")
+vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv", "suggested_size")
+# Related to `validate_search`:
+vsel_nms_cv_valsearch <- c("validate_search", "summaries",
+                           "pct_solution_terms_cv", "suggested_size",
+                           "summary")
+vsel_nms_cv_valsearch_opt <- c("suggested_size")
+# Related to `cvfits`:
+vsel_nms_cv_cvfits <- c("refmodel", "d_test", "summaries", "family",
+                        "pct_solution_terms_cv", "summary", "suggested_size")
+vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
+subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
+searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
+psel_nms <- c("mu", "var", "weights", "cl")
+dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
+vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
+
+## Defaults ---------------------------------------------------------------
+
+ndraws_default <- 20L # Adapt this if the default is changed.
+ndraws_pred_default <- 400L # Adapt this if the default is changed.
+nresample_clusters_default <- 1000L # Adapt this if the default is changed.
+regul_default <- 1e-4 # Adapt this if the default is changed.

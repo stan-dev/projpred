@@ -38,7 +38,7 @@ test_that("missing `data` fails", {
       dat$xca.1 + dat$xca.2 + offset(dat$offs_col),
     family = f_gauss,
     weights = dat$wobs_col,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE,
+    chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
     refresh = 0
   ))
   expect_error(get_refmodel(fit_nodata),
@@ -52,7 +52,7 @@ test_that("`formula` as a character string fails", {
   fit_str <- suppressWarnings(rstanarm::stan_glm(
     "y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2",
     family = f_gauss, data = dat,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE,
+    chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
     refresh = 0
   ))
   expect_error(get_refmodel(fit_str),
@@ -64,7 +64,7 @@ test_that("offsets specified via argument `offset` fail", {
     y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
     family = f_gauss, data = dat,
     weights = wobs_tst, offset = offs_tst,
-    chains = chains_tst, seed = seed_tst, iter = iter_tst, QR = TRUE,
+    chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
     refresh = 0
   ))
   expect_error(
