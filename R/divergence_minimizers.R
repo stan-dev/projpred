@@ -1,6 +1,47 @@
-fit_glm_ridge_callback <- function(formula, data, family, weights = NULL,
-                                   projpred_var = 0, projpred_regul = 1e-4,
-                                   ...) {
+# Divergence minimizers ---------------------------------------------------
+
+divmin <- function(formula, projpred_var, ...) {
+  trms_all <- extract_terms_response(formula)
+  has_grp <- length(trms_all$group_terms) > 0
+  has_add <- length(trms_all$additive_terms) > 0
+  projpred_formulas_no_random <- NA
+  projpred_random <- NA
+  if (!has_grp && !has_add) {
+    sdivmin <- fit_glm_ridge_callback
+  } else if (has_grp && !has_add) {
+    sdivmin <- fit_glmer_callback
+  } else if (!has_grp && has_add) {
+    sdivmin <- fit_gam_callback
+  } else if (has_grp && has_add) {
+    sdivmin <- fit_gamm_callback
+    formula_random <- split_formula_random_gamm4(formula)
+    projpred_formulas_no_random <- validate_response_formula(
+      formula_random$formula
+    )
+    projpred_random <- formula_random$random
+  }
+  formulas <- validate_response_formula(formula)
+  if (is.list(projpred_formulas_no_random)) {
+    stopifnot(length(projpred_formulas_no_random) == length(formulas))
+  } else {
+    projpred_formulas_no_random <- as.list(
+      rep(projpred_formulas_no_random, length(formulas))
+    )
+  }
+
+  lapply(seq_along(formulas), function(s) {
+    sdivmin(
+      formula = formulas[[s]],
+      projpred_var = projpred_var[, s, drop = FALSE],
+      projpred_formula_no_random = projpred_formulas_no_random[[s]],
+      projpred_random = projpred_random,
+      ...
+    )
+  })
+}
+
+fit_glm_ridge_callback <- function(formula, data, projpred_var = 0,
+                                   projpred_regul = 1e-4, ...) {
   fr <- model.frame(delete.intercept(formula), data = data)
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
@@ -12,8 +53,7 @@ fit_glm_ridge_callback <- function(formula, data, family, weights = NULL,
     methods::formalArgs(glm_ridge)
   )]
   fit <- do.call(glm_ridge, c(
-    list(x = x, y = y, family = family, lambda = projpred_regul,
-         weights = weights, obsvar = projpred_var),
+    list(x = x, y = y, lambda = projpred_regul, obsvar = projpred_var),
     dot_args
   ))
   rownames(fit$beta) <- colnames(x)
@@ -28,27 +68,9 @@ fit_glm_ridge_callback <- function(formula, data, family, weights = NULL,
   return(sub)
 }
 
-# Use package "mgcv" to fit submodels for additive reference models. Use package
-# "gamm4" to fit submodels for additive multilevel reference models:
-fit_gam_gamm_callback <- function(formula, data, family, weights = NULL,
-                                  projpred_formula_no_random, projpred_random,
-                                  ...) {
-  stopifnot(is.null(projpred_random) || inherits(projpred_random, "formula"))
-  if (is.null(projpred_random)) {
-    return(fit_gam_callback(
-      formula, data = data, family = family, weights = weights, ...
-    ))
-  } else {
-    return(fit_gamm_callback(
-      projpred_formula_no_random, random = projpred_random, data = data,
-      family = family, weights = weights, ...
-    ))
-  }
-}
-
-# Helper function for fit_gam_gamm_callback():
+# Use package "mgcv" to fit additive non-multilevel submodels:
 #' @importFrom mgcv gam
-fit_gam_callback <- function(formula, data, family, weights = NULL, ...) {
+fit_gam_callback <- function(formula, ...) {
   # make sure correct 'weights' can be found
   environment(formula) <- environment()
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
@@ -59,17 +81,18 @@ fit_gam_callback <- function(formula, data, family, weights = NULL, ...) {
           methods::formalArgs(mgcv::gam.fit))
   )]
   return(suppressMessages(suppressWarnings(do.call(gam, c(
-    list(formula = formula, data = data, family = family, weights = weights),
+    list(formula = formula),
     dot_args
   )))))
 }
 
-# Helper function for fit_gam_gamm_callback():
+# Use package "gamm4" to fit additive multilevel submodels:
 #' @importFrom gamm4 gamm4
-fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
+fit_gamm_callback <- function(formula, projpred_formula_no_random,
+                              projpred_random, data, family,
                               control = control_callback(family), ...) {
   # make sure correct 'weights' can be found
-  environment(formula) <- environment()
+  environment(projpred_formula_no_random) <- environment()
   # Exclude arguments from `...` which cannot be passed to gamm4::gamm4():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -80,16 +103,16 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
   )]
   fit <- suppressMessages(suppressWarnings(tryCatch({
     do.call(gamm4, c(
-      list(formula = formula, random = random, data = data, family = family,
-           weights = weights, control = control),
+      list(formula = projpred_formula_no_random, random = projpred_random,
+           data = data, family = family, control = control),
       dot_args
     ))
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
-      scaled_data <- preprocess_data(data, formula)
+      scaled_data <- preprocess_data(data, projpred_formula_no_random)
       fit_gamm_callback(
-        formula, random = random, data = scaled_data, weights = weights,
-        family = family,
+        formula, projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random, data = scaled_data, family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
@@ -100,8 +123,8 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
     }
   })))
 
-  fit$random <- random
-  fit$formula <- formula
+  fit$random <- projpred_random
+  fit$formula <- projpred_formula_no_random
   class(fit) <- c("gamm4")
   return(fit)
 }
@@ -109,7 +132,7 @@ fit_gamm_callback <- function(formula, random, data, family, weights = NULL,
 # Use package "lme4" to fit submodels for multilevel reference models (with a
 # fallback to "projpred"'s own implementation for fitting non-multilevel (and
 # non-additive) submodels):
-fit_glmer_callback <- function(formula, data, family, weights = NULL,
+fit_glmer_callback <- function(formula, family,
                                control = control_callback(family), ...) {
   ## make sure correct 'weights' can be found
   environment(formula) <- environment()
@@ -122,8 +145,7 @@ fit_glmer_callback <- function(formula, data, family, weights = NULL,
         methods::formalArgs(lme4::lmer)
       )]
       return(suppressMessages(suppressWarnings(do.call(lme4::lmer, c(
-        list(formula = formula, data = data, weights = weights,
-             control = control),
+        list(formula = formula, control = control),
         dot_args
       )))))
     } else {
@@ -134,19 +156,21 @@ fit_glmer_callback <- function(formula, data, family, weights = NULL,
         methods::formalArgs(lme4::glmer)
       )]
       return(suppressMessages(suppressWarnings(do.call(lme4::glmer, c(
-        list(formula = formula, data = data, family = family, weights = weights,
+        list(formula = formula, family = family,
              control = control),
         dot_args
       )))))
     }
   }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
+      # This case should not occur anymore, but leave it here for safety
+      # reasons.
       return(fit_glm_ridge_callback(
-        formula, data = data, family = family, weights = weights, ...
+        formula, family = family, ...
       ))
     } else if (grepl("not positive definite", as.character(e))) {
       return(fit_glmer_callback(
-        formula, data = data, family = family, weights = weights,
+        formula, family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
@@ -154,13 +178,12 @@ fit_glmer_callback <- function(formula, data, family, weights = NULL,
       ))
     } else if (grepl("PIRLS step-halvings", as.character(e))) {
       return(fit_glmer_callback(
-        formula, data = data, family = family, weights = weights,
-        control = control, nAGQ = 20L, ...
+        formula, family = family, control = control, nAGQ = 20L, ...
       ))
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
       return(fit_glmer_callback(
-        formula, data = data, family = family, weights = weights,
+        formula, family = family,
         control = control_callback(family, tolPwrss = 1e-6), ...
       ))
     } else {
@@ -189,29 +212,23 @@ control_callback <- function(family, ...) {
   }
 }
 
-linear_multilevel_proj_predfun <- function(fit, newdata = NULL) {
+# Prediction functions for submodels --------------------------------------
+
+subprd <- function(fit, newdata = NULL) {
   return(do.call(cbind, lapply(fit, function(fit) {
     # Only pass argument `allow.new.levels` to the predict() generic if the fit
     # is multilevel:
-    if (inherits(fit, c("lmerMod", "glmerMod"))) {
-      return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
-    } else {
+    has_grp <- inherits(fit, c("lmerMod", "glmerMod"))
+    has_add <- inherits(fit, c("gam", "gamm4"))
+    if (has_add && !is.null(newdata)) {
+      newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
+    }
+    if (!has_grp) {
       return(predict(fit, newdata = newdata))
+    } else {
+      return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
     }
   })))
-}
-
-linear_proj_predfun <- function(fit, newdata = NULL) {
-  return(do.call(cbind, lapply(fit, function(fit) {
-    predict(fit, newdata = newdata)
-  })))
-}
-
-additive_proj_predfun <- function(fit, newdata = NULL) {
-  if (!is.null(newdata)) {
-    newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
-  }
-  return(linear_multilevel_proj_predfun(fit, newdata))
 }
 
 ## FIXME: find a way that allows us to remove this

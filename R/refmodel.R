@@ -81,12 +81,12 @@
 #'   generic: arguments passed to the appropriate method. Else: ignored.
 #'
 #' @details Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be
-#' \code{NULL} for using an internal default. Otherwise, let \eqn{N} denote the
-#' number of observations in the original dataset (used for fitting the
-#' reference model), \eqn{S} the number of posterior draws for the reference
-#' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of projected
-#' draws. Then the functions supplied to these arguments need to have the
-#' following prototypes:
+#'   \code{NULL} for using an internal default. Otherwise, let \eqn{N} denote
+#'   the number of observations in the original dataset (used for fitting the
+#'   reference model), \eqn{S} the number of posterior draws for the reference
+#'   model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of resulting
+#'   projected draws. Then the functions supplied to these arguments need to
+#'   have the following prototypes:
 #' * `ref_predfun(fit, newdata = NULL)` where:
 #' \itemize{
 #'   \item{\code{fit} accepts the reference model fit as given in argument
@@ -98,19 +98,24 @@
 #' }
 #' * `proj_predfun(fit, newdata = NULL)` where:
 #' \itemize{
-#'   \item{\code{fit} accepts \eqn{S_{\mbox{prj}}}{S_prj} fits of a submodel as
-#'   they are returned by \code{\link{project}} in its output element
-#'   \code{sub_fit} (which in turn is the same as the return value of
-#'   \code{div_minimizer}, except if \code{\link{project}} was used with a
-#'   \code{"vsel"} object based on an L1 search as well as
-#'   \code{cv_search = FALSE});}
+#'   \item{\code{fit} accepts a list of length \eqn{S_{\mbox{prj}}}{S_prj}
+#'   containing this number of submodel fits. This list is the same as that
+#'   returned by \code{\link{project}} in its output element \code{sub_fit}
+#'   (which in turn is the same as the return value of \code{div_minimizer},
+#'   except if \code{\link{project}} was used with a \code{"vsel"} object based
+#'   on an L1 search as well as \code{cv_search = FALSE});}
 #'   \item{\code{newdata} accepts either \code{NULL} (for using the original
 #'   dataset, typically stored in \code{fit}) or data for new observations (at
 #'   least in the form of a \code{data.frame});}
 #' }
-#' * `div_minimizer(formula, data, family, weights = NULL, ...)` where:
+#' * `div_minimizer()` does not need to have a specific prototype, but it is
+#' called with the following arguments:
 #' \itemize{
-#'   \item{\code{formula} accepts a model formula;}
+#'   \item{\code{formula} accepts either a standard formula with a single
+#'   response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
+#'   \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
+#'   \code{\link{cbind}}-ed on the left-hand side in which case the projection
+#'   has to be performed for each of the response variables separately;}
 #'   \item{\code{data} accepts a \code{data.frame} to be used for the
 #'   projection;}
 #'   \item{\code{family} accepts a \code{"family"} object (see argument
@@ -118,27 +123,18 @@
 #'   \item{\code{weights} accepts either \code{NULL} (for using a vector of ones
 #'   as weights) or observation weights (at least in the form of a numeric
 #'   vector);}
-#'   \item{\code{...} accepts further arguments (see below).}
+#'   \item{\code{projpred_var} accepts a numeric vector of length \eqn{N}
+#'   containing predictive variances (necessary for \pkg{projpred}'s internal
+#'   (G)LM fitter);}
+#'   \item{\code{projpred_regul} accepts a single numeric value as supplied to
+#'   argument \code{regul} of [project()], for example.}
 #' }
-#' Currently, `div_minimizer` is called with the arguments from above (apart
-#' from `...`) as well as:
-#'     + \code{projpred_var}: a numeric vector of length \eqn{N} containing
-#'     predictive variances (necessary for \pkg{projpred}'s internal (G)LM
-#'     \code{div_minimizer}).
-#'     + \code{projpred_regul}: see argument \code{regul} of [project()], for
-#'     example.
-#'     + \code{projpred_formula_no_random}: For additive models: The same as
-#'     argument \code{formula}, but excluding any multilevel terms (see
-#'     \code{projpred_random} below). For non-additive models: \code{NA}.
-#'     + \code{projpred_random}: For additive models: A right-hand side formula
-#'     containing only the multilevel terms of \code{formula} or \code{NULL} if
-#'     there are no multilevel terms. For non-additive models: \code{NA}.
 #'
 #' The return value of those functions needs to be:
 #' * `ref_predfun`: a \eqn{N \times S}{N x S} matrix.
 #' * `proj_predfun`: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 #' * `div_minimizer`: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
-#'   containing this number of fitted model objects.
+#'   containing this number of submodel fits.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as \link{varsel},
@@ -496,8 +492,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
-  terms <- extract_terms_response(formula)
-  response_name <- terms$response
+  response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
@@ -575,23 +570,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(div_minimizer)) {
-    if (length(terms$additive_terms) != 0) {
-      div_minimizer <- fit_gam_gamm_callback
-    } else if (length(terms$group_terms) != 0) {
-      div_minimizer <- fit_glmer_callback
-    } else {
-      div_minimizer <- fit_glm_ridge_callback
-    }
+    div_minimizer <- divmin
   }
 
   if (is.null(proj_predfun)) {
-    if (length(terms$additive_terms) != 0) {
-      proj_predfun <- additive_proj_predfun
-    } else if (length(terms$group_terms) != 0) {
-      proj_predfun <- linear_multilevel_proj_predfun
-    } else {
-      proj_predfun <- linear_proj_predfun
-    }
+    proj_predfun <- subprd
   }
 
   fetch_data_wrapper <- function(obs = NULL) {

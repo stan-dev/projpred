@@ -1,19 +1,12 @@
 context("div_minimizer")
 
 test_that("all div_minimizer()s work", {
+  divmin_fun <- "divmin"
   for (tstsetup in names(fits)) {
     args_fit_i <- args_fit[[tstsetup]]
     pkg_crr <- args_fit_i$pkg_nm
     mod_crr <- args_fit_i$mod_nm
     fam_crr <- args_fit_i$fam_nm
-
-    if (mod_crr == "glm") {
-      divmin_fun <- "fit_glm_ridge_callback"
-    } else if (mod_crr == "glmm") {
-      divmin_fun <- "fit_glmer_callback"
-    } else if (mod_crr %in% c("gam", "gamm")) {
-      divmin_fun <- "fit_gam_gamm_callback"
-    }
 
     if (fam_crr == "gauss") {
       mu_crr <- posterior_linpred(fits[[tstsetup]])
@@ -50,31 +43,17 @@ test_that("all div_minimizer()s work", {
       }
     }
 
-    if (mod_crr %in% c("gam", "gamm")) {
-      args_fit_i$projpred_formula_no_random <- args_fit_i$formula
-      args_fit_i <- c(args_fit_i, list(projpred_random = args_fit_i$random))
-      if (length(args_fit_i$random) > 0) {
-        ### Not necessary, but left here to emulate how the divergence minimizer
-        ### is actually called:
-        args_fit_i$formula <- update(
-          args_fit_i$formula,
-          as.formula(paste(". ~ . +", tail(as.character(args_fit_i$random), 1)))
-        )
-        ###
-      }
-    } else {
-      ### Not necessary, but left here to emulate how the divergence minimizer
-      ### is actually called:
-      args_fit_i$projpred_formula_no_random <- NA
-      args_fit_i$projpred_random <- NA
-      ###
+    if ("random" %in% names(args_fit_i)) {
+      args_fit_i$formula <- update(
+        args_fit_i$formula,
+        as.formula(paste(". ~ . +", tail(as.character(args_fit_i$random), 1)))
+      )
     }
 
-    divmin <- do.call(
+    divmin_res <- do.call(
       divmin_fun,
       args_fit_i[intersect(c("formula", "data", "family", "weights",
-                             "projpred_var", "projpred_regul",
-                             "projpred_formula_no_random", "projpred_random"),
+                             "projpred_var", "projpred_regul"),
                            names(args_fit_i))]
     )
 
@@ -83,7 +62,7 @@ test_that("all div_minimizer()s work", {
     } else {
       wobs_expected_crr <- NULL
     }
-    sub_fit_tester(list(divmin),
+    sub_fit_tester(divmin_res,
                    nprjdraws_expected = 1L,
                    sub_formul = list(args_fit_i$formula),
                    sub_data = eval(args_fit_i$data),

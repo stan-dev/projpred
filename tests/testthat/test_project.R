@@ -315,28 +315,6 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 
 # regul -------------------------------------------------------------------
 
-if (length(setdiff(mod_nms, c("glm", "glmm")))) {
-  test_that("for non-GLMs and non-GLMMs, `regul` has no effect", {
-    regul_tst <- 1e-1
-    for (mod_crr in setdiff(mod_nms, c("glm", "glmm"))) {
-      tstsetups <- setNames(nm = unlist(lapply(fam_nms, function(fam_nm) {
-        tail(grep(paste0("\\.", mod_crr, "\\.", fam_nm, ".*\\.clust$"),
-                  names(prjs), value = TRUE),
-             1)
-      })))
-      for (tstsetup in tstsetups) {
-        args_prj_i <- args_prj[[tstsetup]]
-        p_regul <- do.call(project, c(
-          list(object = refmods[[args_prj_i$tstsetup_ref]],
-               regul = regul_tst),
-          excl_nonargs(args_prj_i)
-        ))
-        expect_equal(p_regul, prjs[[tstsetup]], info = tstsetup)
-      }
-    }
-  })
-}
-
 test_that("for GLMs, `regul` has an expected effect", {
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)

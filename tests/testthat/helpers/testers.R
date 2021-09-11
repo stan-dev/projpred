@@ -825,7 +825,6 @@ projection_tester <- function(p,
                  sub_formul = sub_formul_crr,
                  sub_data = sub_data_crr,
                  sub_fam = p$family$family,
-                 has_add = formula_contains_additive_terms(p$refmodel$formula),
                  wobs_expected = p$refmodel$wobs,
                  ref_formul = ref_formul_crr,
                  info_str = info_str)
@@ -1120,7 +1119,6 @@ vsel_tester <- function(
       sub_formul = sub_formul_crr,
       sub_data = sub_data_crr,
       sub_fam = vs$family$family,
-      has_add = formula_contains_additive_terms(vs$refmodel$formula),
       wobs_expected = vs$refmodel$wobs,
       ref_formul = ref_formul_crr,
       info_str = paste(info_str, i, sep = "__")
