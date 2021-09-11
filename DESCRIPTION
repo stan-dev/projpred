@@ -40,7 +40,7 @@ LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Suggests:
     rstanarm,
     brms,
