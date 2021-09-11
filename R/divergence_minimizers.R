@@ -169,6 +169,13 @@ fit_glmer_callback <- function(formula, family,
         formula, family = family, ...
       ))
     } else if (grepl("not positive definite", as.character(e))) {
+      if ("optimx" %in% control$optimizer &&
+          length(control$optCtrl$method) > 0 &&
+          control$optCtrl$method == "nlminb") {
+        stop("Encountering the `not positive definite` error while running ",
+             "the lme4 fitting procedure, but cannot fix this automatically ",
+             "anymore.")
+      }
       return(fit_glmer_callback(
         formula, family = family,
         control = control_callback(family,
@@ -177,14 +184,44 @@ fit_glmer_callback <- function(formula, family,
         ...
       ))
     } else if (grepl("PIRLS step-halvings", as.character(e))) {
+      if (length(dot_args$nAGQ) > 0) {
+        nAGQ_new <- dot_args$nAGQ + 1L
+      } else {
+        nAGQ_new <- 20L
+      }
+      if (nAGQ_new > 30L) {
+        stop("Encountering the `PIRLS step-halvings` error while running the ",
+             "lme4 fitting procedure, but cannot fix this automatically ",
+             "anymore.")
+      }
       return(fit_glmer_callback(
-        formula, family = family, control = control, nAGQ = 20L, ...
+        formula, family = family, control = control, nAGQ = nAGQ_new, ...
       ))
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
+      tolPwrss_new <- 10 * control$tolPwrss
+      if (length(control$optCtrl$maxfun) > 0) {
+        maxfun_new <- 10 * control$optCtrl$maxfun
+      } else {
+        maxfun_new <- 1e4
+      }
+      if (length(control$optCtrl$maxit) > 0) {
+        maxit_new <- 10 * control$optCtrl$maxit
+      } else {
+        maxit_new <- 1e4
+      }
+      if (tolPwrss_new > 1e-4 && maxfun_new > 1e7 && maxit_new > 1e7) {
+        stop("Encountering the ",
+             "`pwrssUpdate did not converge in (maxit) iterations` error ",
+             "while running the lme4 fitting procedure, but cannot fix this ",
+             "automatically anymore.")
+      }
       return(fit_glmer_callback(
         formula, family = family,
-        control = control_callback(family, tolPwrss = 1e-6), ...
+        control = control_callback(family, tolPwrss = tolPwrss_new,
+                                   optCtrl = list(maxfun = maxfun_new,
+                                                  maxit = maxit_new)),
+        ...
       ))
     } else {
       stop(e)
