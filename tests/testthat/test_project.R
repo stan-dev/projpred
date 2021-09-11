@@ -1,6 +1,6 @@
 context("project")
 
-# object and nterms -------------------------------------------------------
+# object, solution_terms, ndraws / nclusters, nterms ----------------------
 
 test_that(paste(
   "`object` of class \"refmodel\", `solution_terms`, and `ndraws` (or",
