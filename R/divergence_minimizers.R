@@ -101,12 +101,12 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
                 methods::formalArgs(lme4::lFormula)),
           methods::formalArgs(lme4::glFormula))
   )]
-  fit <- suppressMessages(suppressWarnings(tryCatch({
-    do.call(gamm4, c(
+  fit <- tryCatch({
+    suppressMessages(suppressWarnings(do.call(gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
            data = data, family = family, control = control),
       dot_args
-    ))
+    ))))
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       scaled_data <- preprocess_data(data, projpred_formula_no_random)
@@ -121,7 +121,7 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
     } else {
       stop(e)
     }
-  })))
+  })
 
   fit$random <- projpred_random
   fit$formula <- projpred_formula_no_random
