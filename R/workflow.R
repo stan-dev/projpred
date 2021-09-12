@@ -230,6 +230,7 @@ approximate_loo.refmodel <- function(object, ...) {
 approximate_loo.vselsearch <- function(object,
                                        ndraws_pred = 400,
                                        nclusters_pred = NULL,
+                                       nterms_max = NULL,
                                        verbose = TRUE,
                                        penalty = NULL,
                                        nloo = NULL,
@@ -238,7 +239,9 @@ approximate_loo.vselsearch <- function(object,
                                        ...) {
   refmodel <- object$refmodel
   family <- refmodel$family
-  nterms_max <- object$control$nterms_max
+  if (is.null(nterms_max)) {
+    nterms_max <- object$object$nterms_max
+  }
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
@@ -445,6 +448,7 @@ approximate_kfold.refmodel <- function(object, ...) {
 approximate_kfold.vselsearch <- function(object,
                                          ndraws_pred = 400,
                                          nclusters_pred = NULL,
+                                         nterms_max = NULL,
                                          K = NULL,
                                          verbose = TRUE,
                                          penalty = NULL,
@@ -454,7 +458,9 @@ approximate_kfold.vselsearch <- function(object,
                                          ...) {
   refmodel <- object$refmodel
   family <- refmodel$family
-  nterms_max <- object$object$nterms_max
+  if (is.null(nterms_max)) {
+    nterms_max <- object$object$nterms_max
+  }
 
   solution_terms <- object$solution_terms
   p_sel <- object$p_sel
