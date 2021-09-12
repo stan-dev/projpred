@@ -107,28 +107,25 @@ can also handle multiple projected submodels at once (if the input object is
 of class \code{"vsel"}).
 }
 \examples{
-\donttest{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
   # Data:
-  n <- 30
-  d <- 5
-  x <- matrix(rnorm(n * d), nrow = n)
-  y <- x[, 1] + rnorm(n, sd = 0.5)
-  data <- data.frame(x, y)
+  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # Reference model (here an object of class "stanreg"):
-  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(),
-                            data = data, chains = 2, iter = 500, seed = 1235)
+  # The "stanreg" fit which will be used as the reference model:
+  fit <- rstanarm::stan_glm(
+    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+  )
 
-  # Variable selection (here without cross-validation, but only for the sake
-  # of speed in this demonstration):
-  vs <- varsel(fit)
+  # Projection onto an arbitrary combination of predictor terms (with a small
+  # value for `nclusters`, but only for the sake of speed in this example;
+  # this is not recommended in general):
+  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+                 seed = 9182)
 
-  # Predictions (at the training points) from the projected submodels
-  # corresponding to the first 4 selected predictor terms:
-  pred <- proj_linpred(vs, nterms = 4)
-  pred <- proj_predict(vs, nterms = 4)
-}
+  # Predictions (at the training points) from the projected submodel:
+  prjl <- proj_linpred(prj)
+  prjp <- proj_predict(prj, .seed = 7364)
 }
 
 }

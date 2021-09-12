@@ -136,19 +136,23 @@ reference model may result in slightly inaccurate projection performance.
 Increasing these arguments linearly affects the computation time.
 }
 \examples{
-\donttest{
-if (requireNamespace('rstanarm', quietly=TRUE)) {
-  ### Usage with stanreg objects
-  n <- 30
-  d <- 5
-  x <- matrix(rnorm(n*d), nrow=n)
-  y <- x[,1] + 0.5*rnorm(n)
-  data <- data.frame(x,y)
-  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-                            data=data, chains=2, iter=500)
-  vs <- varsel(fit)
-  plot(vs)
-}
+if (requireNamespace("rstanarm", quietly = TRUE)) {
+  # Data:
+  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+
+  # The "stanreg" fit which will be used as the reference model:
+  fit <- rstanarm::stan_glm(
+    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+  )
+
+  # Variable selection (here without cross-validation and with small values
+  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+  # sake of speed in this example; this is not recommended in general):
+  vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+               seed = 5555)
+  # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+  # and `?solution_terms.vsel` for possible post-processing functions.
 }
 
 }

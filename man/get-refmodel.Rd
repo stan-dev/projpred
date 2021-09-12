@@ -199,20 +199,24 @@ containing this number of submodel fits.
 }
 }
 \examples{
-\donttest{
-if (requireNamespace('rstanarm', quietly=TRUE)) {
-  ### Usage with stanreg objects
-  dat <- data.frame(y = rnorm(100), x = rnorm(100))
-  fit <- rstanarm::stan_glm(y ~ x, family = gaussian(), data = dat)
-  ref <- get_refmodel(fit)
-  print(class(ref))
+if (requireNamespace("rstanarm", quietly = TRUE)) {
+  # Data:
+  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # variable selection, use the already constructed reference model
-  vs <- varsel(ref)
-  # this will first construct the reference model and then execute
-  # exactly the same way as the previous command (the result is identical)
-  vs <- varsel(fit)
-}
+  # The "stanreg" fit which will be used as the reference model:
+  fit <- rstanarm::stan_glm(
+    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+  )
+
+  # Define the reference model formally:
+  ref <- get_refmodel(fit)
+  class(ref) # gives "refmodel"
+  # Now see, for example, `?varsel.refmodel`, `?cv_varsel.refmodel`,
+  # `?project`, and `?predict.refmodel` for possible post-processing
+  # functions. Most of them call get_refmodel() internally at the beginning
+  # (or are methods whose generics do so), so you will rarely need to call
+  # get_refmodel() yourself.
 }
 
 }

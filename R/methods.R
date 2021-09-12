@@ -60,28 +60,25 @@
 #'   solutions terms of the submodels when counting the intercept, too).
 #'
 #' @examples
-#' \donttest{
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n * d), nrow = n)
-#'   y <- x[, 1] + rnorm(n, sd = 0.5)
-#'   data <- data.frame(x, y)
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # Reference model (here an object of class "stanreg"):
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(),
-#'                             data = data, chains = 2, iter = 500, seed = 1235)
+#'   # The "stanreg" fit which will be used as the reference model:
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
 #'
-#'   # Variable selection (here without cross-validation, but only for the sake
-#'   # of speed in this demonstration):
-#'   vs <- varsel(fit)
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
 #'
-#'   # Predictions (at the training points) from the projected submodels
-#'   # corresponding to the first 4 selected predictor terms:
-#'   pred <- proj_linpred(vs, nterms = 4)
-#'   pred <- proj_predict(vs, nterms = 4)
-#' }
+#'   # Predictions (at the training points) from the projected submodel:
+#'   prjl <- proj_linpred(prj)
+#'   prjp <- proj_predict(prj, .seed = 7364)
 #' }
 #'
 NULL
@@ -296,20 +293,22 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'   \link[=cv_varsel]{cv_varsel}.
 #'
 #' @examples
-#' \donttest{
-#' ### Usage with stanreg objects
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'     data=data, chains=2, iter=500)
-#'   vs <- cv_varsel(fit)
+#'   # The "stanreg" fit which will be used as the reference model:
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
 #'   plot(vs)
-#' }
 #' }
 #'
 #' @method plot vsel
@@ -442,23 +441,22 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' @param ... Currently ignored.
 #'
 #' @examples
-#' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'                             data=data, chains=2, iter=500)
-#'   vs <- cv_varsel(fit)
-#'   plot(vs)
+#'   # The "stanreg" fit which will be used as the reference model:
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
 #'
-#'   # print out some stats
-#'   summary(vs, stats=c('mse'), type = c('mean','se'))
-#' }
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
+#'   summary(vs)
 #' }
 #'
 #' @method summary vsel
@@ -715,19 +713,22 @@ suggest_size <- function(object, ...) {
 #'   \code{type} the same regardless of argument \code{stat}.
 #'
 #' @examples
-#' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'            data=data, chains=2, iter=500)
-#'   vs <- cv_varsel(fit)
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model:
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
 #'   suggest_size(vs)
-#' }
 #' }
 #'
 #' @export
@@ -1035,40 +1036,38 @@ as.matrix.projection <- function(x, ...) {
   return(res)
 }
 
-#' Create cross-validation indices
+#' Create cross-validation (CV) folds
 #'
-#' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross
-#' validation. These functions are potentially useful when creating the
-#' \code{cvfits} and \code{cvfun} arguments for
-#' \link[=init_refmodel]{init_refmodel}. The returned value is different for
-#' these two methods, see below for details.
+#' Split up indices from 1 to `n` into `K` subsets ("folds") for K-fold CV.
+#' These functions are potentially useful when creating the \code{cvfits} and
+#' \code{cvfun} arguments for \link[=init_refmodel]{init_refmodel}. The returned
+#' value is different for these two methods, see below for details.
 #'
 #' @name cv-indices
 #'
 #' @param n Number of data points.
 #' @param K Number of folds. Must be at least 2 and not exceed \code{n}.
-#' @param out Format of the output, either 'foldwise' (default) or 'indices'.
-#'   See below for details.
-#' @param seed Random seed so that the same division could be obtained again if
-#'   needed.
+#' @param out Format of the output, either `"foldwise"` or `"indices"`. See
+#'   below for details.
+#' @param seed Seed for pseudorandom number generation so that the same results
+#'   could be obtained again if needed.
 #'
 #' @return \code{cvfolds} returns a vector of length \code{n} such that each
 #'   element is an integer between 1 and \code{k} denoting which fold the
 #'   corresponding data point belongs to. The returned value of \code{cv_ids}
-#'   depends on the \code{out}-argument. If \code{out}='foldwise', the returned
+#'   depends on the \code{out}-argument. If `out = "foldwise"`, the returned
 #'   value is a list with \code{k} elements, each having fields \code{tr} and
 #'   \code{ts} which give the training and test indices, respectively, for the
-#'   corresponding fold. If \code{out}='indices', the returned value is a list
-#'   with fields \code{tr} and \code{ts} each of which is a list with \code{k}
+#'   corresponding fold. If `out = "indices"`, the returned value is a list with
+#'   fields \code{tr} and \code{ts} each of which is a list with \code{k}
 #'   elements giving the training and test indices for each fold.
 #' @examples
-#' \donttest{
-#' ### compute sample means within each fold
 #' n <- 100
+#' set.seed(1234)
 #' y <- rnorm(n)
-#' cv <- cv_ids(n, K=5)
-#' cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
-#' }
+#' cv <- cv_ids(n, K = 5, seed = 9876)
+#' # Mean within each fold:
+#' cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
 #'
 NULL
 

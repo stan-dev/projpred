@@ -80,25 +80,32 @@
 #'   for each submodel.
 #'
 #' @examples
-#' \donttest{
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n * d), nrow = n)
-#'   y <- x[, 1] + 0.5 * rnorm(n)
-#'   data <- data.frame(x, y)
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'     data = data, chains = 2, iter = 500)
-#'   vs <- varsel(fit)
+#'   # The "stanreg" fit which will be used as the reference model:
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
 #'
-#'   # project onto the best model with 4 variables
-#'   proj4 <- project(vs, nterms = 4)
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
 #'
-#'   # project onto an arbitrary variable combination
-#'   proj <- project(fit, solution_terms = c("X1", "X3", "X5"))
-#' }
+#'   # Projection onto the best submodel with 2 predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182)
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
 #' }
 #'
 NULL
