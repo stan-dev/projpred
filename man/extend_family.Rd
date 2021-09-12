@@ -2,16 +2,17 @@
 % Please edit documentation in R/extend_family.R
 \name{extend_family}
 \alias{extend_family}
-\title{Add extra fields to the family object.}
+\title{Extend a family}
 \usage{
 extend_family(family)
 }
 \arguments{
-\item{family}{Family object.}
+\item{family}{A \code{\link{family}} object.}
 }
 \value{
-Extended family object.
+The \code{\link{family}} object extended in the way needed by \pkg{projpred}.
 }
 \description{
-Add extra fields to the family object.
+This function adds elements to a \code{\link{family}} object. It is called internally
+by \code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call it yourself.
 }

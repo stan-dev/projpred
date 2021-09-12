@@ -15,10 +15,10 @@
 #'   reference model may result in slightly inaccurate projection performance.
 #'   Increasing these arguments linearly affects the computation time.
 #'
-#' @return An object of type \code{vsel} that contains information about the
-#'   feature selection. The fields are not meant to be accessed directly by the
-#'   user but instead via the helper functions (see the vignettes or type
-#'   \code{?projpred} to see the main functions in the package).
+#' @return An object of class `vsel` that contains information about the
+#'   variable selection. The elements of this object are not meant to be
+#'   accessed directly but instead via helper functions (see the vignettes or
+#'   type `?projpred` to see the main functions in the package).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {

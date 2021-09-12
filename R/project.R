@@ -4,8 +4,6 @@
 #' combination of predictor terms or onto a single or multiple submodels of
 #' specific sizes.
 #'
-#' @name project
-#'
 #' @param object Either a \code{refmodel}-type object created by
 #'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
 #'   or an object which can be converted to a reference model using
@@ -63,7 +61,7 @@
 #'     predictor terms, ordered the way in which the terms were added to the
 #'     submodel.}
 #'     \item{\code{sub_fit}}{The submodel's fitted model object.}
-#'     \item{\code{family}}{A modified \code{\link{family}}-object.}
+#'     \item{\code{family}}{A modified [`family`] object.}
 #'     \item{\code{p_type}}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
 #'     (\code{TRUE}) or not (\code{FALSE}).}
@@ -108,9 +106,6 @@
 #'                  seed = 9182)
 #' }
 #'
-NULL
-
-#' @rdname project
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,

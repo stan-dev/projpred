@@ -8,9 +8,15 @@
 # Missing: Quasi-families are not implemented. If dis_gamma is the correct shape
 # parameter for projected Gamma regression, everything should be OK for gamma.
 
-#' Add extra fields to the family object.
-#' @param family Family object.
-#' @return Extended family object.
+#' Extend a family
+#'
+#' This function adds elements to a [`family`] object. It is called internally
+#' by [init_refmodel()], so you will rarely need to call it yourself.
+#'
+#' @param family A [`family`] object.
+#'
+#' @return The [`family`] object extended in the way needed by \pkg{projpred}.
+#'
 #' @export
 extend_family <- function(family) {
   if (.has_family_extras(family)) {

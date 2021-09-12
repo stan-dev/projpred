@@ -1,8 +1,5 @@
 #' Projection predictive feature selection
 #'
-#' @docType package
-#' @name projpred
-#'
 #' @useDynLib projpred
 #' @importFrom Rcpp sourceCpp
 #'
@@ -36,8 +33,9 @@
 #'   \item{\link{project}}{Get the projected posteriors of the reduced models.}
 #'   \item{\link{proj_predict}, \link{proj_linpred}}{Make predictions with
 #'   reduced number of features.}
-#'   \item{\link{plot}, \link{summary}}{Visualize and get some key statistics
-#'   about the variable selection.}
+#'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
+#'   [suggest_size.vsel()], [solution_terms.vsel()]}{Post-processing after
+#'   variable selection}
 #' }
 #'
 #' @details # References
@@ -54,4 +52,5 @@
 #'   methods for model selection. \emph{Statistics and Computing},
 #'   27(3):711-735. doi:10.1007/s11222-016-9649-y.
 #'   (\href{https://link.springer.com/article/10.1007/s11222-016-9649-y}{Online}).
-NULL
+#'
+"_PACKAGE"

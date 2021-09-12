@@ -119,10 +119,10 @@ default considers all the terms in the reference model's formula.}
 \item{seed}{Random seed used when clustering the posterior draws.}
 }
 \value{
-An object of type \code{vsel} that contains information about the
-feature selection. The fields are not meant to be accessed directly by the
-user but instead via the helper functions (see the vignettes or type
-\code{?projpred} to see the main functions in the package).
+An object of class \code{vsel} that contains information about the
+variable selection. The elements of this object are not meant to be
+accessed directly but instead via helper functions (see the vignettes or
+type \code{?projpred} to see the main functions in the package).
 }
 \description{
 Perform the projection predictive variable selection for generalized linear

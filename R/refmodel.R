@@ -6,7 +6,7 @@
 #' to create the reference model structure (and may also be used directly
 #' without using \code{get_refmodel}).
 #'
-#' @name get-refmodel
+#' @name refmodel-init-get
 #'
 #' @param object Object from which the reference model is created. For
 #'   \code{init_refmodel}, an object on which the functions from arguments
@@ -19,7 +19,7 @@
 #'   object of the corresponding class.
 #' @param data Data used for fitting the reference model.
 #' @param formula Reference model's formula. For general information on formulas
-#'   in \R, see \code{\link{formula}}. For multilevel formulas, see also package
+#'   in \R, see [`formula`]. For multilevel formulas, see also package
 #'   \pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer}} and
 #'   \code{\link[lme4:glmer]{lme4::glmer}}.
 #' @param ref_predfun Prediction function for the linear predictor of the
@@ -60,7 +60,7 @@
 #'   also be \code{NULL} (depending on argument \code{extract_y}).
 #' @param family A \code{"family"} object representing the observational model
 #'   (i.e., the distributional family for the response). For general information
-#'   on \code{"family"} objects in \R, see \code{\link{family}}.
+#'   on \code{"family"} objects in \R, see [`family`].
 #' @param cvfits For K-fold CV only. A list with one sublist called
 #'   \code{"fits"} containing K-fold fitted objects from which reference models
 #'   are created. The \code{cvfits} list (i.e., the superlist) needs to have
@@ -190,7 +190,7 @@ NULL
 #'
 #' @return Returns either a vector of predictions, or vector of log predictive
 #'   densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
-
+#'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
@@ -284,27 +284,27 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
   return(nlist(y, weights, offset))
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel <- function(object, ...) {
   UseMethod("get_refmodel", object)
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel.refmodel <- function(object, ...) {
   # If the object is already of class "refmodel", then simply return it as is:
   object
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel.vsel <- function(object, ...) {
   # The reference model is stored in the `object` of class "vsel":
   object$refmodel
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel.default <- function(object, formula, family = NULL, ...) {
   if (is.null(family)) {
@@ -325,7 +325,7 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
   return(refmodel)
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel.stanreg <- function(object, ...) {
   # Family ------------------------------------------------------------------
@@ -483,7 +483,7 @@ get_refmodel.stanreg <- function(object, ...) {
   ))
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @importFrom rstantools posterior_linpred
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,

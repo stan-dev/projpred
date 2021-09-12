@@ -78,7 +78,7 @@ model.}
 predictor terms, ordered the way in which the terms were added to the
 submodel.}
 \item{\code{sub_fit}}{The submodel's fitted model object.}
-\item{\code{family}}{A modified \code{\link{family}}-object.}
+\item{\code{family}}{A modified \code{\link{family}} object.}
 \item{\code{p_type}}{A single logical value indicating whether the
 reference model's posterior draws have been clustered for the projection
 (\code{TRUE}) or not (\code{FALSE}).}

@@ -8,7 +8,7 @@
 #' can also handle multiple projected submodels at once (if the input object is
 #' of class \code{"vsel"}).
 #'
-#' @name proj-pred
+#' @name projection-linpred-predict
 #'
 #' @template args-newdata
 #' @param object Either an object returned by \code{\link{project}} or
@@ -191,7 +191,7 @@ proj_helper <- function(object, newdata,
   return(.unlist_proj(preds))
 }
 
-#' @rdname proj-pred
+#' @rdname projection-linpred-predict
 #' @export
 proj_linpred <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
@@ -247,7 +247,7 @@ compute_lpd <- function(ynew, mu, proj, weights) {
   }
 }
 
-#' @rdname proj-pred
+#' @rdname projection-linpred-predict
 #' @export
 proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
@@ -311,7 +311,6 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'   plot(vs)
 #' }
 #'
-#' @method plot vsel
 #' @export
 plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
                       deltas = FALSE, alpha = 0.32, baseline = NULL,
@@ -459,7 +458,6 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   summary(vs)
 #' }
 #'
-#' @method summary vsel
 #' @export
 summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
                          type = c("mean", "se", "diff", "diff.se"),
@@ -567,23 +565,19 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   return(out)
 }
 
-#' Print methods for summary objects
+#' Print summary of variable selection
 #'
-#' The \code{print} methods for summary objects created by
-#' \code{\link{summary}} to display a summary of the results of the
-#' projection predictive variable selection.
+#' This is the [print()] method for summary objects created by [summary.vsel()].
+#' It displays a summary of the results of the projection predictive variable
+#' selection.
 #'
-#' @name print-vselsummary
-#'
-#' @param x An object of class vselsummary.
-#' @param digits Number of decimal places to be reported (1 by default).
+#' @param x An object of class [`vselsummary`].
+#' @param digits Number of decimal places to be reported.
 #' @param ... Currently ignored.
 #'
-#' @return Returns invisibly the output produced by
-#'   \code{\link{summary.vsel}}.
+#' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
-#' @method print vselsummary
 print.vselsummary <- function(x, digits = 1, ...) {
   print(x$family)
   cat("Formula: ")
@@ -625,34 +619,24 @@ print.vselsummary <- function(x, digits = 1, ...) {
   return(invisible(x))
 }
 
-#' Print methods for vsel/vsel objects
+#' Print results (summary) of variable selection
 #'
-#' The \code{print} methods for vsel/vsel objects created by
-#' \code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
-#' \code{\link{summary.vsel}} to display a summary of the results of the
-#' projection predictive variable selection.
+#' This is the [print()] method for `vsel` objects created by
+#' \code{\link{varsel}} or \code{\link{cv_varsel}}. It displays a summary of the
+#' results of the projection predictive variable selection by first calling
+#' [summary.vsel()] and then [print.vselsummary()].
 #'
-#' @name print-vsel
+#' @param x An object of class `vsel`.
+#' @param ... Further arguments passed to [summary.vsel()] (apart from
+#'   argument `digits` which is passed to [print.vselsummary()]).
 #'
-#' @param x An object of class vsel/vsel.
-#' @param ... Further arguments passed to \code{\link{summary.vsel}} (apart from
-#'   argument \code{digits} which is passed to \code{\link{print.vselsummary}}).
-#'
-#' @return Returns invisibly the data frame produced by
-#'   \code{\link{summary.vsel}}.
+#' @return The `data.frame` returned by [summary.vsel()] (invisible).
 #'
 #' @export
-#' @method print vsel
 print.vsel <- function(x, ...) {
   stats <- summary.vsel(x, ...)
   print(stats, ...)
   return(invisible(stats))
-}
-
-#' @rdname suggest_size.vsel
-#' @export
-suggest_size <- function(object, ...) {
-  UseMethod("suggest_size")
 }
 
 #' Suggest model size
@@ -732,6 +716,12 @@ suggest_size <- function(object, ...) {
 #' }
 #'
 #' @export
+suggest_size <- function(object, ...) {
+  UseMethod("suggest_size")
+}
+
+#' @rdname suggest_size
+#' @export
 suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0,
                               type = "upper", baseline = NULL, warnings = TRUE,
                               ...) {
@@ -804,7 +794,6 @@ replace_population_names <- function(population_effects) {
   return(population_effects)
 }
 
-#' @method coef subfit
 #' @keywords internal
 #' @export
 coef.subfit <- function(object, ...) {
@@ -984,28 +973,24 @@ as.matrix.list <- function(x, ...) {
   return(do.call(cbind, lapply(x, as.matrix.glm, ...)))
 }
 
-#' @method t glm
 #' @keywords internal
 #' @export
 t.glm <- function(x, ...) {
   return(t(as.matrix(x), ...))
 }
 
-#' @method t lm
 #' @keywords internal
 #' @export
 t.lm <- function(x, ...) {
   return(t(as.matrix(x), ...))
 }
 
-#' @method t ridgelm
 #' @keywords internal
 #' @export
 t.ridgelm <- function(x, ...) {
   return(t(as.matrix(x), ...))
 }
 
-#' @method t list
 #' @keywords internal
 #' @export
 t.list <- function(x, ...) {
@@ -1039,34 +1024,35 @@ as.matrix.projection <- function(x, ...) {
 #' Create cross-validation (CV) folds
 #'
 #' Split up indices from 1 to `n` into `K` subsets ("folds") for K-fold CV.
-#' These functions are potentially useful when creating the \code{cvfits} and
-#' \code{cvfun} arguments for \link[=init_refmodel]{init_refmodel}. The returned
-#' value is different for these two methods, see below for details.
+#' These functions are potentially useful when creating the `cvfits` and `cvfun`
+#' arguments for [init_refmodel()]. The return value is different for these two
+#' methods, see below for details.
 #'
 #' @name cv-indices
 #'
-#' @param n Number of data points.
-#' @param K Number of folds. Must be at least 2 and not exceed \code{n}.
+#' @param n Number of observations (data points).
+#' @param K Number of folds. Must be at least 2 and not exceed `n`.
 #' @param out Format of the output, either `"foldwise"` or `"indices"`. See
 #'   below for details.
 #' @param seed Seed for pseudorandom number generation so that the same results
 #'   could be obtained again if needed.
 #'
-#' @return \code{cvfolds} returns a vector of length \code{n} such that each
-#'   element is an integer between 1 and \code{k} denoting which fold the
-#'   corresponding data point belongs to. The returned value of \code{cv_ids}
-#'   depends on the \code{out}-argument. If `out = "foldwise"`, the returned
-#'   value is a list with \code{k} elements, each having fields \code{tr} and
-#'   \code{ts} which give the training and test indices, respectively, for the
-#'   corresponding fold. If `out = "indices"`, the returned value is a list with
-#'   fields \code{tr} and \code{ts} each of which is a list with \code{k}
-#'   elements giving the training and test indices for each fold.
+#' @return [cvfolds()] returns a vector of length `n` such that each element is
+#'   an integer between 1 and `k` denoting which fold the corresponding data
+#'   point belongs to. The return value of [cv_ids()] depends on the `out`
+#'   argument. If `out = "foldwise"`, the return value is a `list` with `k`
+#'   elements, each being a `list` with elements `tr` and `ts` giving the
+#'   training and test indices, respectively, for the corresponding fold. If
+#'   `out = "indices"`, the return value is a `list` with elements `tr` and `ts`
+#'   each being a `list` with `k` elements giving the training and test indices,
+#'   respectively, for each fold.
+#'
 #' @examples
 #' n <- 100
 #' set.seed(1234)
 #' y <- rnorm(n)
 #' cv <- cv_ids(n, K = 5, seed = 9876)
-#' # Mean within each fold:
+#' # Mean within the test set of each fold:
 #' cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
 #'
 NULL
@@ -1134,7 +1120,9 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
 #'   \link[=varsel]{varsel} or \link[=cv_varsel]{cv_varsel}).
 #' @param ... Arguments passed from the \code{solution_terms} generic to its
 #'   methods.
+#'
 #' @return A character vector of solution terms.
+#'
 #' @export
 solution_terms <- function(object, ...) {
   UseMethod("solution_terms")

@@ -4,8 +4,6 @@
 #' generalized linear model or generalized lienar and additive multilevel
 #' models.
 #'
-#' @name cv_varsel
-#'
 #' @template args-vsel
 #' @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
 #'   Default is 'LOO'.
@@ -35,10 +33,7 @@
 #'   reference model may result in slightly inaccurate projection performance.
 #'   Increasing these arguments linearly affects the computation time.
 #'
-#' @return An object of type \code{vsel} that contains information about the
-#'   feature selection. The fields are not meant to be accessed directly by the
-#'   user but instead via the helper functions (see the vignettes or type
-#'   ?projpred to see the main functions in the package.)
+#' @inherit varsel return
 #'
 #' @examplesIf identical(Sys.getenv("RUN_EX"), "true")
 #' # Note: The code from this example is not executed when called via example().

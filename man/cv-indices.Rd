@@ -11,7 +11,7 @@ cvfolds(n, K, seed = NULL)
 cv_ids(n, K, out = c("foldwise", "indices"), seed = NULL)
 }
 \arguments{
-\item{n}{Number of data points.}
+\item{n}{Number of observations (data points).}
 
 \item{K}{Number of folds. Must be at least 2 and not exceed \code{n}.}
 
@@ -22,28 +22,28 @@ could be obtained again if needed.}
 below for details.}
 }
 \value{
-\code{cvfolds} returns a vector of length \code{n} such that each
-element is an integer between 1 and \code{k} denoting which fold the
-corresponding data point belongs to. The returned value of \code{cv_ids}
-depends on the \code{out}-argument. If \code{out = "foldwise"}, the returned
-value is a list with \code{k} elements, each having fields \code{tr} and
-\code{ts} which give the training and test indices, respectively, for the
-corresponding fold. If \code{out = "indices"}, the returned value is a list with
-fields \code{tr} and \code{ts} each of which is a list with \code{k}
-elements giving the training and test indices for each fold.
+\code{\link[=cvfolds]{cvfolds()}} returns a vector of length \code{n} such that each element is
+an integer between 1 and \code{k} denoting which fold the corresponding data
+point belongs to. The return value of \code{\link[=cv_ids]{cv_ids()}} depends on the \code{out}
+argument. If \code{out = "foldwise"}, the return value is a \code{list} with \code{k}
+elements, each being a \code{list} with elements \code{tr} and \code{ts} giving the
+training and test indices, respectively, for the corresponding fold. If
+\code{out = "indices"}, the return value is a \code{list} with elements \code{tr} and \code{ts}
+each being a \code{list} with \code{k} elements giving the training and test indices,
+respectively, for each fold.
 }
 \description{
 Split up indices from 1 to \code{n} into \code{K} subsets ("folds") for K-fold CV.
-These functions are potentially useful when creating the \code{cvfits} and
-\code{cvfun} arguments for \link[=init_refmodel]{init_refmodel}. The returned
-value is different for these two methods, see below for details.
+These functions are potentially useful when creating the \code{cvfits} and \code{cvfun}
+arguments for \code{\link[=init_refmodel]{init_refmodel()}}. The return value is different for these two
+methods, see below for details.
 }
 \examples{
 n <- 100
 set.seed(1234)
 y <- rnorm(n)
 cv <- cv_ids(n, K = 5, seed = 9876)
-# Mean within each fold:
+# Mean within the test set of each fold:
 cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
 
 }
