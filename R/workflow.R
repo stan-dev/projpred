@@ -450,7 +450,7 @@ approximate_kfold.vselsearch <- function(object,
                                          penalty = NULL,
                                          refit_proj = TRUE,
                                          seed = NULL,
-                                         cores = NULL,
+                                         cores = 1,
                                          ...) {
   refmodel <- object$refmodel
   family <- refmodel$family
@@ -812,7 +812,7 @@ cv_loo.vselapproxcv <- function(object,
                                 thresh = 1e-6,
                                 regul = 1e-4,
                                 seed = NULL,
-                                cores = NULL,
+                                cores = 1,
                                 search_terms = NULL,
                                 ...) {
   search_path_prev <- object$search_path
@@ -1129,7 +1129,7 @@ cv_kfold.vselapproxcv <- function(object,
                                   nlambda = 150,
                                   thresh = 1e-6,
                                   regul = 1e-4,
-                                  cores = NULL,
+                                  cores = 1,
                                   seed = NULL,
                                   search_terms = NULL,
                                   ...) {
@@ -1524,7 +1524,7 @@ varsel_cv.vselapproxcv <- function(object,
                                    seed = NULL,
                                    search_terms = NULL,
                                    cv_search = TRUE,
-                                   cores = NULL,
+                                   cores = 1,
                                    ...) {
   search_path <- object$search_path
   refmodel <- search_path$refmodel
