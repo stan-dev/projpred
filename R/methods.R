@@ -1035,45 +1035,45 @@ as.matrix.projection <- function(x, ...) {
   return(res)
 }
 
-##' Create cross-validation indices
-##'
-##' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross
-##' validation. These functions are potentially useful when creating the
-##' \code{cvfits} and \code{cvfun} arguments for
-##' \link[=init_refmodel]{init_refmodel}. The returned value is different for
-##' these two methods, see below for details.
-##'
-##' @name cv-indices
-##'
-##' @param n Number of data points.
-##' @param K Number of folds. Must be at least 2 and not exceed \code{n}.
-##' @param out Format of the output, either 'foldwise' (default) or 'indices'.
-##'   See below for details.
-##' @param seed Random seed so that the same division could be obtained again if
-##'   needed.
-##'
-##' @return \code{cvfolds} returns a vector of length \code{n} such that each
-##'   element is an integer between 1 and \code{k} denoting which fold the
-##'   corresponding data point belongs to. The returned value of \code{cv_ids}
-##'   depends on the \code{out}-argument. If \code{out}='foldwise', the returned
-##'   value is a list with \code{k} elements, each having fields \code{tr} and
-##'   \code{ts} which give the training and test indices, respectively, for the
-##'   corresponding fold. If \code{out}='indices', the returned value is a list
-##'   with fields \code{tr} and \code{ts} each of which is a list with \code{k}
-##'   elements giving the training and test indices for each fold.
-##' @examples
-##' \donttest{
-##' ### compute sample means within each fold
-##' n <- 100
-##' y <- rnorm(n)
-##' cv <- cv_ids(n, K=5)
-##' cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
-##' }
-##'
+#' Create cross-validation indices
+#'
+#' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross
+#' validation. These functions are potentially useful when creating the
+#' \code{cvfits} and \code{cvfun} arguments for
+#' \link[=init_refmodel]{init_refmodel}. The returned value is different for
+#' these two methods, see below for details.
+#'
+#' @name cv-indices
+#'
+#' @param n Number of data points.
+#' @param K Number of folds. Must be at least 2 and not exceed \code{n}.
+#' @param out Format of the output, either 'foldwise' (default) or 'indices'.
+#'   See below for details.
+#' @param seed Random seed so that the same division could be obtained again if
+#'   needed.
+#'
+#' @return \code{cvfolds} returns a vector of length \code{n} such that each
+#'   element is an integer between 1 and \code{k} denoting which fold the
+#'   corresponding data point belongs to. The returned value of \code{cv_ids}
+#'   depends on the \code{out}-argument. If \code{out}='foldwise', the returned
+#'   value is a list with \code{k} elements, each having fields \code{tr} and
+#'   \code{ts} which give the training and test indices, respectively, for the
+#'   corresponding fold. If \code{out}='indices', the returned value is a list
+#'   with fields \code{tr} and \code{ts} each of which is a list with \code{k}
+#'   elements giving the training and test indices for each fold.
+#' @examples
+#' \donttest{
+#' ### compute sample means within each fold
+#' n <- 100
+#' y <- rnorm(n)
+#' cv <- cv_ids(n, K=5)
+#' cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
+#' }
+#'
 NULL
 
-##' @rdname cv-indices
-##' @export
+#' @rdname cv-indices
+#' @export
 cvfolds <- function(n, K, seed = NULL) {
   .validate_num_folds(K, n)
 
@@ -1091,8 +1091,8 @@ cvfolds <- function(n, K, seed = NULL) {
   return(folds)
 }
 
-##' @rdname cv-indices
-##' @export
+#' @rdname cv-indices
+#' @export
 cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
   .validate_num_folds(K, n)
   out <- match.arg(out)
