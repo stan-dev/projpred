@@ -96,7 +96,6 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     wsample <- ref_wsample
   }
 
-  wobs <- wobs / sum(wobs)
   wsample <- wsample / sum(wsample)
   return(nlist(wobs, wsample))
 }
