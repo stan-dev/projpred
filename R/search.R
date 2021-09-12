@@ -29,7 +29,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
     chosen <- c(chosen, cands[imin])
 
     ## append submodels
-    submodels <- c(submodels, list(sub_fit = subL[[imin]]$sub_fit))
+    submodels <- c(submodels, list(subL[[imin]]$sub_fit))
 
     if (verbose && count_terms_chosen(chosen) %in% iq) {
       print(paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
