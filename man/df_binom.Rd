@@ -3,7 +3,7 @@
 \docType{data}
 \name{df_binom}
 \alias{df_binom}
-\title{Binomial toy example.}
+\title{Binomial toy example}
 \format{
 A simulated classification dataset containing 100 observations.
 \describe{
@@ -12,12 +12,12 @@ A simulated classification dataset containing 100 observations.
 }
 }
 \source{
-\url{http://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData}
+\url{https://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData}
 }
 \usage{
 df_binom
 }
 \description{
-Binomial toy example.
+Binomial toy example
 }
 \keyword{datasets}

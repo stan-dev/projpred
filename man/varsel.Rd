@@ -4,7 +4,7 @@
 \alias{varsel}
 \alias{varsel.default}
 \alias{varsel.refmodel}
-\title{Variable selection for generalized linear models}
+\title{Variable selection (without cross-validation)}
 \usage{
 varsel(object, ...)
 
@@ -51,11 +51,12 @@ if the reference model has multilevel or additive terms and \code{"L1"}
 otherwise.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
-Cannot be larger than the number of draws in the reference model.
-\strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is
-passed to \code{nclusters} (so that clustering is used). Ignored if
-\code{nclusters} is not \code{NULL} or if \code{method = "L1"} (L1 search
-uses always one cluster). See also section "Details" below.}
+Automatically truncated at the number of draws in the reference model
+(which is \code{1} for \code{"datafit"}s). \strong{Caution:} For \code{ndraws <= 20},
+the value of \code{ndraws} is passed to \code{nclusters} (so that
+clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if
+\code{method = "L1"} (L1 search uses always one cluster). See also section
+"Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws used in the variable
 selection. Ignored if \code{method = "L1"} (L1 search uses always one
@@ -63,11 +64,11 @@ cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
 also section "Details" below.}
 
 \item{ndraws_pred}{Number of posterior draws used for prediction (after
-selection). Cannot be larger than the number of draws in the reference
-model. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
-\code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering
-is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
-section "Details" below.}
+selection). Automatically truncated at the number of draws in the reference
+model (which is \code{1} for \code{"datafit"}s). \strong{Caution:} For
+\code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to
+\code{nclusters_pred} (so that clustering is used). Ignored if
+\code{nclusters_pred} is not \code{NULL}. See also section "Details" below.}
 
 \item{nclusters_pred}{Number of clusters of posterior draws used for
 prediction (after selection). For the meaning of \code{NULL}, see argument
@@ -119,15 +120,13 @@ default considers all the terms in the reference model's formula.}
 \item{seed}{Random seed used when clustering the posterior draws.}
 }
 \value{
-An object of class \code{vsel} that contains information about the
-variable selection. The elements of this object are not meant to be
-accessed directly but instead via helper functions (see the vignettes or
-type \code{?projpred} to see the main functions in the package).
+An object of class \code{vsel}. The elements of this object are not meant
+to be accessed directly but instead via helper functions (see the vignettes
+or type \code{?projpred}).
 }
 \description{
-Perform the projection predictive variable selection for generalized linear
-models, generalized linear and additive multilevel models using generic
-reference models.
+Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
+(G)AMs, and (G)AMMs.
 }
 \details{
 Notes:
@@ -160,4 +159,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # and `?solution_terms.vsel` for possible post-processing functions.
 }
 
+}
+\seealso{
+\code{\link[=cv_varsel]{cv_varsel()}}
 }

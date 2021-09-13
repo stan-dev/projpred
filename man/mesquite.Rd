@@ -3,29 +3,30 @@
 \docType{data}
 \name{mesquite}
 \alias{mesquite}
-\title{Mesquite data set.}
+\title{Mesquite data set}
 \format{
 The outcome variable is the total weight (in grams) of photosynthetic
 material as derived from actual harvesting of the bush. The predictor
 variables are:
 \describe{
-\item{diam1}{diameter of the canopy (the leafy area of the bush)
-in meters, measured along the longer axis of the bush.}
+\item{diam1}{diameter of the canopy (the leafy area of the bush) in meters,
+measured along the longer axis of the bush.}
 \item{diam2}{canopy diameter measured along the shorter axis}
 \item{canopy height}{height of the canopy.}
 \item{total height}{total height of the bush.}
 \item{density}{plant unit density (# of primary stems per plant unit).}
-\item{group}{group of measurements (0 for the first group, 1 for the second group)}
+\item{group}{group of measurements (0 for the first group, 1 for the second
+group)}
 }
 }
 \source{
-\url{http://www.stat.columbia.edu/~gelman/arm/examples/}
+\url{http://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat}
 }
 \usage{
 mesquite
 }
 \description{
-The mesquite bushes yields data set from Gelman
-and Hill (2007) (\url{http://www.stat.columbia.edu/~gelman/arm/}).
+The mesquite bushes yields data set from Gelman and Hill (2007)
+(\url{http://www.stat.columbia.edu/~gelman/arm/}).
 }
 \keyword{datasets}

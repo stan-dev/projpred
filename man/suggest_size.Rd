@@ -19,69 +19,68 @@ suggest_size(object, ...)
 )
 }
 \arguments{
-\item{object}{The object returned by \link[=varsel]{varsel} or
-\link[=cv_varsel]{cv_varsel}.}
+\item{object}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}).}
 
 \item{...}{Currently ignored.}
 
-\item{stat}{Statistic used for the decision. Default is 'elpd'. See
-\code{summary} for other possible choices.}
+\item{stat}{Statistic used for the decision. See \code{\link[=summary.vsel]{summary.vsel()}} for
+possible choices.}
 
-\item{alpha}{A number indicating the desired coverage of the credible
-intervals based on which the decision is made. E.g. \code{alpha=0.32}
-corresponds to 68\% probability mass within the intervals (one standard
-error intervals). See details for more information.}
+\item{alpha}{A number giving the desired coverage of the credible intervals
+based on which the decision is made. For example, \code{alpha = 0.32}
+corresponds to 68\% probability mass within the intervals, that is,
+one-standard-error intervals. See section "Details" for more information.}
 
-\item{pct}{Number indicating the relative proportion between baseline model
-and null model utilities one is willing to sacrifice. See details for more
-information.}
+\item{pct}{A number giving the relative proportion (\emph{not} percents) between
+baseline model and null model utilities one is willing to sacrifice. See
+section "Details" for more information.}
 
-\item{type}{Either 'upper' (default) or 'lower' determining whether the
-decisions are based on the upper or lower credible bounds. See details for
-more information.}
+\item{type}{Either \code{"upper"} or \code{"lower"} determining whether the decisions
+are based on the upper or lower credible bounds, respectively. See section
+"Details" for more information.}
 
-\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the
-reference model or the best submodel found. Default is 'ref' when the
-reference model exists, and 'best' otherwise.}
+\item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
+the reference model or the best submodel found, respectively. If \code{NULL},
+then \code{"ref"} is used, except for \code{"datafit"}s for which \code{"best"} is used.}
 
 \item{warnings}{Whether to give warnings if automatic suggestion fails,
-mainly for internal use. Default is TRUE, and usually there is no reason to
-set to FALSE.}
+mainly for internal use. Usually there is no reason to set this to \code{FALSE}.}
 }
 \description{
-This function can be used for suggesting an appropriate model size
-based on a certain default rule. Notice that the decision rules are heuristic
-and should be interpreted as guidelines. It is recommended that the user
-studies the results via \code{varsel_plot} and/or \code{summary}
-and makes the final decision based on what is most appropriate for the given
-problem.
+This function can suggest an appropriate model size based on a decision rule
+described in section "Details". Note that the decision rule is heuristic and
+should only be interpreted as a guideline. It is recommended to examine the
+results via \code{\link[=plot.vsel]{plot.vsel()}} and/or \code{\link[=summary.vsel]{summary.vsel()}} and make the final decision
+based on what is most appropriate for the given problem.
 }
 \details{
-The suggested model size is the smallest model for which either the
-lower or upper (depending on argument \code{type}) credible bound of the
-submodel utility \eqn{u_k} with significance level \code{alpha} falls above
-\deqn{u_base - pct*(u_base - u_0)}
-Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0}
-the null model utility. The baseline is either the reference model or the
-best submodel found (see argument \code{baseline}). The lower and upper
-bounds are defined to contain the submodel utility with probability 1-alpha
-(each tail has mass alpha/2).
+The suggested model size is the smallest model size for which either
+the lower or upper bound (depending on argument \code{type}) of the credible
+interval (with coverage \code{1 - alpha}) for \eqn{u_k - u_{\mbox{base}}}{u_k -
+  u_base} (with \eqn{u_k} denoting the \eqn{k}-th submodel's utility and
+\eqn{u_{\mbox{base}}}{u_base} denoting the baseline model's utility) falls
+above (or is equal to) \deqn{\mbox{pct} * (u_0 - u_{\mbox{base}})}{pct *
+  (u_0 - u_base)} where \eqn{u_0} denotes the null model utility. The
+baseline is either the reference model or the best submodel found (see
+argument \code{baseline}).
 
-By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
-means that we select the smallest model for which the upper tail exceeds
-the baseline model level, that is, which is better than the baseline model
-with probability 0.16 (and consequently, worse with probability 0.84). In
-other words, the estimated difference between the baseline model and
-submodel utilities is at most one standard error away from zero, so the two
-utilities are considered to be close.
-
-NOTE: Loss statistics like RMSE and MSE are converted to utilities by
-multiplying them by -1, so call such as \code{suggest_size(object,
-  stat='rmse', type='upper')} should be interpreted as finding the smallest
-model whose upper credible bound of the \emph{negative} RMSE exceeds the
-cutoff level (or equivalently has the lower credible bound of RMSE below
-the cutoff level). This is done to make the interpretation of the argument
-\code{type} the same regardless of argument \code{stat}.
+For example, \code{alpha = 0.32}, \code{pct = 0}, and \code{type = "upper"} means that we
+select the smallest model size for which the upper bound of the
+corresponding credible interval exceeds (or is equal to) the baseline model
+utility, that is, which is better than the baseline model with a
+probability of at least 0.16 (and consequently, worse with a probability of
+at most 0.84). In other words, the estimated difference between the
+baseline model utility and the submodel utility is at most one standard
+error away from zero, so the two utilities are considered to be close.
+}
+\note{
+Loss statistics like the root mean-squared error (RMSE) and the
+mean-squared error (MSE) are converted to utilities by multiplying them by
+\code{-1}, so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")} finds the smallest model size whose upper credible bound of the
+\emph{negative} RMSE or MSE exceeds the cutoff (or equivalently has the lower
+credible bound of RMSE or MSE below the cutoff). This is done to make the
+interpretation of argument \code{type} the same regardless of argument \code{stat}.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

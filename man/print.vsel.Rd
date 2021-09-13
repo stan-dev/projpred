@@ -7,7 +7,7 @@
 \method{print}{vsel}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{vsel}.}
+\item{x}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}).}
 
 \item{...}{Further arguments passed to \code{\link[=summary.vsel]{summary.vsel()}} (apart from
 argument \code{digits} which is passed to \code{\link[=print.vselsummary]{print.vselsummary()}}).}
@@ -16,8 +16,8 @@ argument \code{digits} which is passed to \code{\link[=print.vselsummary]{print.
 The \code{data.frame} returned by \code{\link[=summary.vsel]{summary.vsel()}} (invisible).
 }
 \description{
-This is the \code{\link[=print]{print()}} method for \code{vsel} objects created by
-\code{\link{varsel}} or \code{\link{cv_varsel}}. It displays a summary of the
-results of the projection predictive variable selection by first calling
-\code{\link[=summary.vsel]{summary.vsel()}} and then \code{\link[=print.vselsummary]{print.vselsummary()}}.
+This is the \code{\link[=print]{print()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}). It displays a summary of the results of the projection
+predictive variable selection by first calling \code{\link[=summary.vsel]{summary.vsel()}} and then
+\code{\link[=print.vselsummary]{print.vselsummary()}}.
 }

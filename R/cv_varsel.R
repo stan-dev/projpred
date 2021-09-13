@@ -1,12 +1,11 @@
-#' Cross-validated variable selection (varsel)
+#' Variable selection with cross-validation
 #'
-#' Perform cross-validation for the projective variable selection for a
-#' generalized linear model or generalized lienar and additive multilevel
-#' models.
+#' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
+#' (G)AMs, and (G)AMMs. In contrast to [varsel()], [cv_varsel()] performs a
+#' cross-validation (CV).
 #'
 #' @template args-vsel
-#' @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
-#'   Default is 'LOO'.
+#' @param cv_method The CV method, either `"LOO"` or `"kfold"`.
 #' @param nloo Number of observations used to compute the LOO validation
 #'   (anything between 1 and the total number of observations). Smaller values
 #'   lead to faster computation but higher uncertainty (larger errorbars) in the
@@ -29,6 +28,8 @@
 #'   seed.
 #'
 #' @inherit varsel details return
+#'
+#' @seealso [varsel()]
 #'
 #' @examplesIf identical(Sys.getenv("RUN_EX"), "true")
 #' # Note: The code from this example is not executed when called via example().

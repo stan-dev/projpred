@@ -1,8 +1,9 @@
 #' Projection onto submodel(s)
 #'
-#' Project the reference model onto a single submodel consisting of a specific
-#' combination of predictor terms or onto a single or multiple submodels of
-#' specific sizes.
+#' Project the posterior of the reference model onto the parameter space of a
+#' single submodel consisting of a specific combination of predictor terms or
+#' (after variable selection) onto the parameter space of a single or multiple
+#' submodels of specific sizes.
 #'
 #' @param object Either a \code{refmodel}-type object created by
 #'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},

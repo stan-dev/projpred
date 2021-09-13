@@ -1,8 +1,8 @@
 #' Predictions from a projected submodel
 #'
-#' \code{proj_linpred} gives draws of the linear predictor (possibly transformed
-#' to response scale) of a projected submodel (i.e., a submodel resulting from
-#' projecting the reference model onto it). \code{proj_predict} draws from the
+#' [proj_linpred()] gives draws of the linear predictor (possibly transformed to
+#' response scale) of a projected submodel (i.e., a submodel resulting from
+#' projecting the reference model onto it). [proj_predict()] draws from the
 #' predictive distribution of a projected submodel. If the projection has not
 #' been performed, both functions also perform the projection. Both functions
 #' can also handle multiple projected submodels at once (if the input object is
@@ -19,20 +19,20 @@
 #'   filter \code{object} for only those elements (submodels) with a number of
 #'   solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 #'   vector or \code{NULL}. If \code{NULL}, use all submodels.
-#' @param transform For \code{proj_linpred} only. A single logical value
-#'   indicating whether the linear predictor should be transformed using the
-#'   inverse-link function (\code{TRUE}) or not (\code{FALSE}).
-#' @param integrated For \code{proj_linpred} only. A single logical value
+#' @param transform For [proj_linpred()] only. A single logical value indicating
+#'   whether the linear predictor should be transformed using the inverse-link
+#'   function (`TRUE`) or not (`FALSE`).
+#' @param integrated For [proj_linpred()] only. A single logical value
 #'   indicating whether the output should be averaged over the projected
-#'   posterior draws (\code{TRUE}) or not (\code{FALSE}).
-#' @param nresample_clusters For \code{proj_predict} with clustered projection
+#'   posterior draws (`TRUE`) or not (`FALSE`).
+#' @param nresample_clusters For [proj_predict()] with clustered projection
 #'   only. Number of draws to return from the predictive distribution of the
 #'   projection. Not to be confused with argument \code{nclusters} of
 #'   \code{\link{project}}: \code{nresample_clusters} gives the number of draws
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
 #'   projection (as determined by argument \code{nclusters} of
 #'   \code{\link{project}}).
-#' @param .seed For \code{proj_predict} only. A seed for drawing from the
+#' @param .seed For [proj_predict()] only. A seed for drawing from the
 #'   predictive distribution of the submodel(s) onto which the reference model
 #'   was (or is) projected. If a clustered projection was performed,
 #'   \code{.seed} is also used for drawing from the set of the projected
@@ -45,10 +45,10 @@
 #' @return If the prediction is done for one submodel only (i.e., \code{nterms}
 #'   has length one or \code{solution_terms} is specified):
 #'   \itemize{
-#'     \item \code{proj_linpred} returns a \code{list} with elements \code{pred}
+#'     \item [proj_linpred()] returns a \code{list} with elements \code{pred}
 #'     (predictions) and \code{lpd} (log predictive densities). Each of these
 #'     two elements is a \eqn{S \times N}{S x N} matrix.
-#'     \item \code{proj_predict} returns a \eqn{S \times N}{S x N} matrix of
+#'     \item [proj_predict()] returns a \eqn{S \times N}{S x N} matrix of
 #'     predictions.
 #'   }
 #'   Thereby, \eqn{S} denotes the number of (possibly clustered) projected
@@ -286,11 +286,13 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
   }))
 }
 
-#' Plot summary statistics related to variable selection
+#' Plot summary statistics of a variable selection
+#'
+#' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
+#' [cv_varsel()]).
 #'
 #' @inheritParams summary.vsel
-#' @param x The object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
+#' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -404,39 +406,42 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
   return(pp)
 }
 
-#' Summary statistics related to variable selection
+#' Summary statistics of a variable selection
 #'
-#' @param object The object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
+#' This is the [summary()] method for `vsel` objects (returned by [varsel()] or
+#' [cv_varsel()]).
+#'
+#' @param object An object of class `vsel` (returned by [varsel()] or
+#'   [cv_varsel()]).
 #' @param nterms_max Maximum submodel size for which the statistics are
-#'   calculated. Note that \code{nterms_max} does not count the intercept, so
-#'   use \code{nterms_max = 0} for the intercept-only model. For
-#'   \code{plot.vsel}, \code{nterms_max} must be at least 1.
+#'   calculated. Note that `nterms_max` does not count the intercept, so use
+#'   `nterms_max = 0` for the intercept-only model. For [plot.vsel()],
+#'   `nterms_max` must be at least `1`.
 #' @param stats One or several strings determining which statistics to
 #'   calculate. Available statistics are:
-#' \itemize{
-#'  \item{elpd:} {(Expected) sum of log predictive densities}
-#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
-#'   number of datapoints.} \item{mse:} {Mean squared error (gaussian family
-#'   only)}
-#'  \item{rmse:} {Root mean squared error (gaussian family only)}
-#'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
-#'  \item{auc:} {Area under the ROC curve (binomial family only)}
-#' }
-#' Default is \code{"elpd"}.
-#' @param type One or more items from 'mean', 'se', 'lower' and 'upper'
-#'   indicating which of these to compute (mean, standard error, and lower and
-#'   upper credible bounds). The credible bounds are determined so that
-#'   \code{1-alpha} percent of the mass falls between them.
-#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative
-#'   to the baseline model (see argument \code{baseline}) instead of estimating
-#'   the actual values of the statistics. Defaults to \code{FALSE}.
-#' @param alpha A number indicating the desired coverage of the credible
-#'   intervals. For example \code{alpha=0.32} corresponds to 68% probability
-#'   mass within the intervals, that is, one standard error intervals.
-#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
-#'   reference model or the best submodel found. Default is 'ref' when the
-#'   reference model exists, and 'best' otherwise.
+#'   * `elpd`: (expected) sum of log predictive densities;
+#'   * `mlpd`: mean log predictive density, that is, `elpd` divided by the
+#'   number of observations (data points);
+#'   * `mse`: mean squared error ([gaussian()] family only);
+#'   * `rmse`: root mean squared error ([gaussian()] family only);
+#'   * `acc`/`pctcorr`: classification accuracy ([binomial()] family only);
+#'   * `auc`: area under the ROC curve ([binomial()] family only).
+#' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
+#'   `"diff"`, and `"diff.se"` indicating which of these to compute (mean,
+#'   standard error, lower and upper credible bounds, difference to the
+#'   corresponding statistic of the reference model, and standard error of this
+#'   difference). The credible bounds are determined so that `1 - alpha` percent
+#'   of the probability mass falls between them. Items `"diff"` and `"diff.se"`
+#'   are only supported if `!deltas`.
+#' @param deltas If `TRUE`, the submodel statistics are estimated relative to
+#'   the baseline model (see argument `baseline`) instead of estimating the
+#'   actual values of the statistics.
+#' @param alpha A number giving the desired coverage of the credible intervals.
+#'   For example, `alpha = 0.32` corresponds to 68% probability mass within the
+#'   intervals, that is, one-standard-error intervals.
+#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
+#'   the reference model or the best submodel found, respectively. If `NULL`,
+#'   then `"ref"` is used, except for `"datafit"`s for which `"best"` is used.
 #' @param ... Currently ignored.
 #'
 #' @examples
@@ -621,12 +626,12 @@ print.vselsummary <- function(x, digits = 1, ...) {
 
 #' Print results (summary) of variable selection
 #'
-#' This is the [print()] method for `vsel` objects created by
-#' \code{\link{varsel}} or \code{\link{cv_varsel}}. It displays a summary of the
-#' results of the projection predictive variable selection by first calling
-#' [summary.vsel()] and then [print.vselsummary()].
+#' This is the [print()] method for `vsel` objects (returned by [varsel()] or
+#' [cv_varsel()]). It displays a summary of the results of the projection
+#' predictive variable selection by first calling [summary.vsel()] and then
+#' [print.vselsummary()].
 #'
-#' @param x An object of class `vsel`.
+#' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #' @param ... Further arguments passed to [summary.vsel()] (apart from
 #'   argument `digits` which is passed to [print.vselsummary()]).
 #'
@@ -641,60 +646,57 @@ print.vsel <- function(x, ...) {
 
 #' Suggest model size
 #'
-#' This function can be used for suggesting an appropriate model size
-#' based on a certain default rule. Notice that the decision rules are heuristic
-#' and should be interpreted as guidelines. It is recommended that the user
-#' studies the results via \code{varsel_plot} and/or \code{summary}
-#' and makes the final decision based on what is most appropriate for the given
-#' problem.
+#' This function can suggest an appropriate model size based on a decision rule
+#' described in section "Details". Note that the decision rule is heuristic and
+#' should only be interpreted as a guideline. It is recommended to examine the
+#' results via [plot.vsel()] and/or [summary.vsel()] and make the final decision
+#' based on what is most appropriate for the given problem.
 #'
-#' @param object The object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
-#' @param stat Statistic used for the decision. Default is 'elpd'. See
-#'   \code{summary} for other possible choices.
-#' @param alpha A number indicating the desired coverage of the credible
-#'   intervals based on which the decision is made. E.g. \code{alpha=0.32}
-#'   corresponds to 68% probability mass within the intervals (one standard
-#'   error intervals). See details for more information.
-#' @param pct Number indicating the relative proportion between baseline model
-#'   and null model utilities one is willing to sacrifice. See details for more
-#'   information.
-#' @param type Either 'upper' (default) or 'lower' determining whether the
-#'   decisions are based on the upper or lower credible bounds. See details for
-#'   more information.
-#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
-#'   reference model or the best submodel found. Default is 'ref' when the
-#'   reference model exists, and 'best' otherwise.
+#' @inheritParams summary.vsel
+#' @param object An object of class `vsel` (returned by [varsel()] or
+#'   [cv_varsel()]).
+#' @param stat Statistic used for the decision. See [summary.vsel()] for
+#'   possible choices.
+#' @param alpha A number giving the desired coverage of the credible intervals
+#'   based on which the decision is made. For example, `alpha = 0.32`
+#'   corresponds to 68% probability mass within the intervals, that is,
+#'   one-standard-error intervals. See section "Details" for more information.
+#' @param pct A number giving the relative proportion (*not* percents) between
+#'   baseline model and null model utilities one is willing to sacrifice. See
+#'   section "Details" for more information.
+#' @param type Either `"upper"` or `"lower"` determining whether the decisions
+#'   are based on the upper or lower credible bounds, respectively. See section
+#'   "Details" for more information.
 #' @param warnings Whether to give warnings if automatic suggestion fails,
-#'   mainly for internal use. Default is TRUE, and usually there is no reason to
-#'   set to FALSE.
+#'   mainly for internal use. Usually there is no reason to set this to `FALSE`.
 #' @param ... Currently ignored.
 #'
-#' @details The suggested model size is the smallest model for which either the
-#'   lower or upper (depending on argument \code{type}) credible bound of the
-#'   submodel utility \eqn{u_k} with significance level \code{alpha} falls above
-#'   \deqn{u_base - pct*(u_base - u_0)}
-#' Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0}
-#'   the null model utility. The baseline is either the reference model or the
-#'   best submodel found (see argument \code{baseline}). The lower and upper
-#'   bounds are defined to contain the submodel utility with probability 1-alpha
-#'   (each tail has mass alpha/2).
+#' @details The suggested model size is the smallest model size for which either
+#'   the lower or upper bound (depending on argument `type`) of the credible
+#'   interval (with coverage `1 - alpha`) for \eqn{u_k - u_{\mbox{base}}}{u_k -
+#'   u_base} (with \eqn{u_k} denoting the \eqn{k}-th submodel's utility and
+#'   \eqn{u_{\mbox{base}}}{u_base} denoting the baseline model's utility) falls
+#'   above (or is equal to) \deqn{\mbox{pct} * (u_0 - u_{\mbox{base}})}{pct *
+#'   (u_0 - u_base)} where \eqn{u_0} denotes the null model utility. The
+#'   baseline is either the reference model or the best submodel found (see
+#'   argument `baseline`).
 #'
-#' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
-#'   means that we select the smallest model for which the upper tail exceeds
-#'   the baseline model level, that is, which is better than the baseline model
-#'   with probability 0.16 (and consequently, worse with probability 0.84). In
-#'   other words, the estimated difference between the baseline model and
-#'   submodel utilities is at most one standard error away from zero, so the two
-#'   utilities are considered to be close.
+#'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
+#'   select the smallest model size for which the upper bound of the
+#'   corresponding credible interval exceeds (or is equal to) the baseline model
+#'   utility, that is, which is better than the baseline model with a
+#'   probability of at least 0.16 (and consequently, worse with a probability of
+#'   at most 0.84). In other words, the estimated difference between the
+#'   baseline model utility and the submodel utility is at most one standard
+#'   error away from zero, so the two utilities are considered to be close.
 #'
-#' NOTE: Loss statistics like RMSE and MSE are converted to utilities by
-#'   multiplying them by -1, so call such as \code{suggest_size(object,
-#'   stat='rmse', type='upper')} should be interpreted as finding the smallest
-#'   model whose upper credible bound of the \emph{negative} RMSE exceeds the
-#'   cutoff level (or equivalently has the lower credible bound of RMSE below
-#'   the cutoff level). This is done to make the interpretation of the argument
-#'   \code{type} the same regardless of argument \code{stat}.
+#' @note Loss statistics like the root mean-squared error (RMSE) and the
+#'   mean-squared error (MSE) are converted to utilities by multiplying them by
+#'   `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
+#'   "upper")` finds the smallest model size whose upper credible bound of the
+#'   *negative* RMSE or MSE exceeds the cutoff (or equivalently has the lower
+#'   credible bound of RMSE or MSE below the cutoff). This is done to make the
+#'   interpretation of argument `type` the same regardless of argument `stat`.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -1113,15 +1115,46 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
   return(cv)
 }
 
-#' Recover solution path from an object
+#' Retrieve predictor solution path or predictor combination
 #'
-#' @param object The object from which to extract the solution terms, for
-#'   example an object of class \code{"vsel"} (returned by
-#'   \link[=varsel]{varsel} or \link[=cv_varsel]{cv_varsel}).
-#' @param ... Arguments passed from the \code{solution_terms} generic to its
-#'   methods.
+#' This function retrieves the "solution terms" from an object. For `vsel`
+#' objects (returned by [varsel()] or [cv_varsel()]), this is the predictor
+#' solution path of the variable selection. For `projection` objects (returned
+#' by [project()]), this is the predictor combination upon which the projection
+#' was performed.
+#'
+#' @param object The object from which to retrieve the solution terms. Possible
+#'   classes may be inferred from the names of the corresponding methods (see
+#'   also the description).
+#' @param ... Currently ignored.
 #'
 #' @return A character vector of solution terms.
+#'
+#' @examples
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model:
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
+#'   solution_terms(vs)
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
+#'   solution_terms(prj) # gives `c("X1", "X3", "X5")`
+#' }
 #'
 #' @export
 solution_terms <- function(object, ...) {

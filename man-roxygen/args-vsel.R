@@ -15,21 +15,22 @@
 #'   genuine reference models and \code{FALSE} if \code{object} is datafit (see
 #'   \link[=init_refmodel]{init_refmodel}).
 #' @param ndraws Number of posterior draws used in the variable selection.
-#'   Cannot be larger than the number of draws in the reference model.
-#'   \strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is
-#'   passed to \code{nclusters} (so that clustering is used). Ignored if
-#'   \code{nclusters} is not \code{NULL} or if \code{method = "L1"} (L1 search
-#'   uses always one cluster). See also section "Details" below.
+#'   Automatically truncated at the number of draws in the reference model
+#'   (which is `1` for `"datafit"`s). \strong{Caution:} For \code{ndraws <= 20},
+#'   the value of \code{ndraws} is passed to \code{nclusters} (so that
+#'   clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if
+#'   \code{method = "L1"} (L1 search uses always one cluster). See also section
+#'   "Details" below.
 #' @param nclusters Number of clusters of posterior draws used in the variable
 #'   selection. Ignored if \code{method = "L1"} (L1 search uses always one
 #'   cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
 #'   also section "Details" below.
 #' @param ndraws_pred Number of posterior draws used for prediction (after
-#'   selection). Cannot be larger than the number of draws in the reference
-#'   model. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
-#'   \code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering
-#'   is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
-#'   section "Details" below.
+#'   selection). Automatically truncated at the number of draws in the reference
+#'   model (which is `1` for `"datafit"`s). \strong{Caution:} For
+#'   \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to
+#'   \code{nclusters_pred} (so that clustering is used). Ignored if
+#'   \code{nclusters_pred} is not \code{NULL}. See also section "Details" below.
 #' @param nclusters_pred Number of clusters of posterior draws used for
 #'   prediction (after selection). For the meaning of \code{NULL}, see argument
 #'   \code{ndraws_pred}. See also section "Details" below.

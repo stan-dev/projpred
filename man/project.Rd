@@ -95,9 +95,10 @@ above is returned for each submodel, giving a \code{list} with one element
 for each submodel.
 }
 \description{
-Project the reference model onto a single submodel consisting of a specific
-combination of predictor terms or onto a single or multiple submodels of
-specific sizes.
+Project the posterior of the reference model onto the parameter space of a
+single submodel consisting of a specific combination of predictor terms or
+(after variable selection) onto the parameter space of a single or multiple
+submodels of specific sizes.
 }
 \details{
 Using less draws or clusters in \code{ndraws} or \code{nclusters}

@@ -52,18 +52,18 @@ filter \code{object} for only those elements (submodels) with a number of
 solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 vector or \code{NULL}. If \code{NULL}, use all submodels.}
 
-\item{transform}{For \code{proj_linpred} only. A single logical value
-indicating whether the linear predictor should be transformed using the
-inverse-link function (\code{TRUE}) or not (\code{FALSE}).}
+\item{transform}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value indicating
+whether the linear predictor should be transformed using the inverse-link
+function (\code{TRUE}) or not (\code{FALSE}).}
 
-\item{integrated}{For \code{proj_linpred} only. A single logical value
+\item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
 indicating whether the output should be averaged over the projected
 posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{...}{Additional arguments passed to \code{\link{project}} if
 \code{object} is not already an object returned by \code{\link{project}}.}
 
-\item{nresample_clusters}{For \code{proj_predict} with clustered projection
+\item{nresample_clusters}{For \code{\link[=proj_predict]{proj_predict()}} with clustered projection
 only. Number of draws to return from the predictive distribution of the
 projection. Not to be confused with argument \code{nclusters} of
 \code{\link{project}}: \code{nresample_clusters} gives the number of draws
@@ -71,7 +71,7 @@ projection. Not to be confused with argument \code{nclusters} of
 projection (as determined by argument \code{nclusters} of
 \code{\link{project}}).}
 
-\item{.seed}{For \code{proj_predict} only. A seed for drawing from the
+\item{.seed}{For \code{\link[=proj_predict]{proj_predict()}} only. A seed for drawing from the
 predictive distribution of the submodel(s) onto which the reference model
 was (or is) projected. If a clustered projection was performed,
 \code{.seed} is also used for drawing from the set of the projected
@@ -83,10 +83,10 @@ reproducible. See \code{\link{set.seed}} for details.}
 If the prediction is done for one submodel only (i.e., \code{nterms}
 has length one or \code{solution_terms} is specified):
 \itemize{
-\item \code{proj_linpred} returns a \code{list} with elements \code{pred}
+\item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred}
 (predictions) and \code{lpd} (log predictive densities). Each of these
 two elements is a \eqn{S \times N}{S x N} matrix.
-\item \code{proj_predict} returns a \eqn{S \times N}{S x N} matrix of
+\item \code{\link[=proj_predict]{proj_predict()}} returns a \eqn{S \times N}{S x N} matrix of
 predictions.
 }
 Thereby, \eqn{S} denotes the number of (possibly clustered) projected
@@ -98,9 +98,9 @@ for each submodel (the names of this \code{list} being the numbers of
 solutions terms of the submodels when counting the intercept, too).
 }
 \description{
-\code{proj_linpred} gives draws of the linear predictor (possibly transformed
-to response scale) of a projected submodel (i.e., a submodel resulting from
-projecting the reference model onto it). \code{proj_predict} draws from the
+\code{\link[=proj_linpred]{proj_linpred()}} gives draws of the linear predictor (possibly transformed to
+response scale) of a projected submodel (i.e., a submodel resulting from
+projecting the reference model onto it). \code{\link[=proj_predict]{proj_predict()}} draws from the
 predictive distribution of a projected submodel. If the projection has not
 been performed, both functions also perform the projection. Both functions
 can also handle multiple projected submodels at once (if the input object is

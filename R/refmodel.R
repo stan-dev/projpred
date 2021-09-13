@@ -165,7 +165,7 @@
 #'
 #'   # Define the reference model formally:
 #'   ref <- get_refmodel(fit)
-#'   class(ref) # gives "refmodel"
+#'   class(ref) # gives `"refmodel"`
 #'   # Now see, for example, `?varsel.refmodel`, `?cv_varsel.refmodel`,
 #'   # `?project`, and `?predict.refmodel` for possible post-processing
 #'   # functions. Most of them call get_refmodel() internally at the beginning

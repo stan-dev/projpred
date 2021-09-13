@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{plot.vsel}
 \alias{plot.vsel}
-\title{Plot summary statistics related to variable selection}
+\title{Plot summary statistics of a variable selection}
 \usage{
 \method{plot}{vsel}(
   x,
@@ -15,43 +15,42 @@
 )
 }
 \arguments{
-\item{x}{The object returned by \link[=varsel]{varsel} or
-\link[=cv_varsel]{cv_varsel}.}
+\item{x}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}).}
 
 \item{nterms_max}{Maximum submodel size for which the statistics are
-calculated. Note that \code{nterms_max} does not count the intercept, so
-use \code{nterms_max = 0} for the intercept-only model. For
-\code{plot.vsel}, \code{nterms_max} must be at least 1.}
+calculated. Note that \code{nterms_max} does not count the intercept, so use
+\code{nterms_max = 0} for the intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}},
+\code{nterms_max} must be at least \code{1}.}
 
 \item{stats}{One or several strings determining which statistics to
 calculate. Available statistics are:
 \itemize{
-\item{elpd:} {(Expected) sum of log predictive densities}
-\item{mlpd:} {Mean log predictive density, that is, elpd divided by the
-number of datapoints.} \item{mse:} {Mean squared error (gaussian family
-only)}
-\item{rmse:} {Root mean squared error (gaussian family only)}
-\item{acc/pctcorr:} {Classification accuracy (binomial family only)}
-\item{auc:} {Area under the ROC curve (binomial family only)}
-}
-Default is \code{"elpd"}.}
+\item \code{elpd}: (expected) sum of log predictive densities;
+\item \code{mlpd}: mean log predictive density, that is, \code{elpd} divided by the
+number of observations (data points);
+\item \code{mse}: mean squared error (\code{\link[=gaussian]{gaussian()}} family only);
+\item \code{rmse}: root mean squared error (\code{\link[=gaussian]{gaussian()}} family only);
+\item \code{acc}/\code{pctcorr}: classification accuracy (\code{\link[=binomial]{binomial()}} family only);
+\item \code{auc}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only).
+}}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative
-to the baseline model (see argument \code{baseline}) instead of estimating
-the actual values of the statistics. Defaults to \code{FALSE}.}
+\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative to
+the baseline model (see argument \code{baseline}) instead of estimating the
+actual values of the statistics.}
 
-\item{alpha}{A number indicating the desired coverage of the credible
-intervals. For example \code{alpha=0.32} corresponds to 68\% probability
-mass within the intervals, that is, one standard error intervals.}
+\item{alpha}{A number giving the desired coverage of the credible intervals.
+For example, \code{alpha = 0.32} corresponds to 68\% probability mass within the
+intervals, that is, one-standard-error intervals.}
 
-\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the
-reference model or the best submodel found. Default is 'ref' when the
-reference model exists, and 'best' otherwise.}
+\item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
+the reference model or the best submodel found, respectively. If \code{NULL},
+then \code{"ref"} is used, except for \code{"datafit"}s for which \code{"best"} is used.}
 
 \item{...}{Currently ignored.}
 }
 \description{
-Plot summary statistics related to variable selection
+This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}).
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

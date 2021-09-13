@@ -1,8 +1,7 @@
-#' Variable selection for generalized linear models
+#' Variable selection (without cross-validation)
 #'
-#' Perform the projection predictive variable selection for generalized linear
-#' models, generalized linear and additive multilevel models using generic
-#' reference models.
+#' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
+#' (G)AMs, and (G)AMMs.
 #'
 #' @template args-vsel
 #' @param d_test A test dataset which is used to evaluate model performance. If
@@ -18,10 +17,11 @@
 #' * An L1 search may select interaction terms before the corresponding main
 #' terms are selected. If this is undesired, choose the forward search instead.
 #'
-#' @return An object of class `vsel` that contains information about the
-#'   variable selection. The elements of this object are not meant to be
-#'   accessed directly but instead via helper functions (see the vignettes or
-#'   type `?projpred` to see the main functions in the package).
+#' @return An object of class `vsel`. The elements of this object are not meant
+#'   to be accessed directly but instead via helper functions (see the vignettes
+#'   or type `?projpred`).
+#'
+#' @seealso [cv_varsel()]
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {

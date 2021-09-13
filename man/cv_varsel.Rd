@@ -4,7 +4,7 @@
 \alias{cv_varsel}
 \alias{cv_varsel.default}
 \alias{cv_varsel.refmodel}
-\title{Cross-validated variable selection (varsel)}
+\title{Variable selection with cross-validation}
 \usage{
 cv_varsel(object, ...)
 
@@ -49,15 +49,15 @@ search and \code{"forward"} for forward search. Default is \code{"forward"}
 if the reference model has multilevel or additive terms and \code{"L1"}
 otherwise.}
 
-\item{cv_method}{The cross-validation method, either 'LOO' or 'kfold'.
-Default is 'LOO'.}
+\item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
-Cannot be larger than the number of draws in the reference model.
-\strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is
-passed to \code{nclusters} (so that clustering is used). Ignored if
-\code{nclusters} is not \code{NULL} or if \code{method = "L1"} (L1 search
-uses always one cluster). See also section "Details" below.}
+Automatically truncated at the number of draws in the reference model
+(which is \code{1} for \code{"datafit"}s). \strong{Caution:} For \code{ndraws <= 20},
+the value of \code{ndraws} is passed to \code{nclusters} (so that
+clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if
+\code{method = "L1"} (L1 search uses always one cluster). See also section
+"Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws used in the variable
 selection. Ignored if \code{method = "L1"} (L1 search uses always one
@@ -65,11 +65,11 @@ cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
 also section "Details" below.}
 
 \item{ndraws_pred}{Number of posterior draws used for prediction (after
-selection). Cannot be larger than the number of draws in the reference
-model. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
-\code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering
-is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
-section "Details" below.}
+selection). Automatically truncated at the number of draws in the reference
+model (which is \code{1} for \code{"datafit"}s). \strong{Caution:} For
+\code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to
+\code{nclusters_pred} (so that clustering is used). Ignored if
+\code{nclusters_pred} is not \code{NULL}. See also section "Details" below.}
 
 \item{nclusters_pred}{Number of clusters of posterior draws used for
 prediction (after selection). For the meaning of \code{NULL}, see argument
@@ -143,15 +143,14 @@ selection. The intercept (\code{"1"}) needs to be included explicitly. The
 default considers all the terms in the reference model's formula.}
 }
 \value{
-An object of class \code{vsel} that contains information about the
-variable selection. The elements of this object are not meant to be
-accessed directly but instead via helper functions (see the vignettes or
-type \code{?projpred} to see the main functions in the package).
+An object of class \code{vsel}. The elements of this object are not meant
+to be accessed directly but instead via helper functions (see the vignettes
+or type \code{?projpred}).
 }
 \description{
-Perform cross-validation for the projective variable selection for a
-generalized linear model or generalized lienar and additive multilevel
-models.
+Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
+(G)AMs, and (G)AMMs. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
+cross-validation (CV).
 }
 \details{
 Notes:
@@ -187,4 +186,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # and `?solution_terms.vsel` for possible post-processing functions.
 }
 \dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link[=varsel]{varsel()}}
 }
