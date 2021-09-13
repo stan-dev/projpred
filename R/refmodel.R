@@ -34,30 +34,8 @@
 #'   \code{fit}. See section "Details" below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
-#'   used for fitting the reference model) or from a new dataset. This function
-#'   needs to have the prototype \code{extract_model_data(object, newdata,
-#'   wrhs = NULL, orhs = NULL, extract_y = TRUE)}, where:
-#'   \itemize{
-#'     \item{\code{object} accepts the reference model fit as given in argument
-#'     \code{object} (but possibly re-fitted to a subset of the observations, as
-#'     done in K-fold CV);}
-#'     \item{\code{newdata} accepts data for new observations (at least in the
-#'     form of a \code{data.frame});}
-#'     \item{\code{wrhs} accepts at least either \code{NULL} (for using a vector
-#'     of ones) or a right-hand side formula consisting only of the variable in
-#'     \code{newdata} containing the weights;}
-#'     \item{\code{orhs} accepts at least either \code{NULL} (for using a vector
-#'     of zeros) or a right-hand side formula consisting only of the variable in
-#'     \code{newdata} containing the offsets;}
-#'     \item{\code{extract_y} accepts a single logical value indicating whether
-#'     output element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or
-#'     not (\code{FALSE}).}
-#'   }
-#'   The return value of \code{extract_model_data} needs to be a \code{list}
-#'   with elements \code{y}, \code{weights}, and \code{offset}, each being a
-#'   numeric vector containing the data for the response, the observation
-#'   weights, and the offsets, respectively. An exception is that \code{y} may
-#'   also be \code{NULL} (depending on argument \code{extract_y}).
+#'   used for fitting the reference model) or from a new dataset. See section
+#'   "Details" below.
 #' @param family A \code{"family"} object representing the observational model
 #'   (i.e., the distributional family for the response). For general information
 #'   on \code{"family"} objects in \R, see [`family`].
@@ -80,13 +58,15 @@
 #'   arguments passed to \code{init_refmodel}. For the \code{get_refmodel}
 #'   generic: arguments passed to the appropriate method. Else: ignored.
 #'
-#' @details Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be
-#'   \code{NULL} for using an internal default. Otherwise, let \eqn{N} denote
-#'   the number of observations in the original dataset (used for fitting the
-#'   reference model), \eqn{S} the number of posterior draws for the reference
-#'   model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of resulting
-#'   projected draws. Then the functions supplied to these arguments need to
-#'   have the following prototypes:
+#' @details # `ref_predfun`, `proj_predfun`, `div_minimizer`
+#'
+#' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be
+#' \code{NULL} for using an internal default. Otherwise, let \eqn{N} denote the
+#' number of observations in the original dataset (used for fitting the
+#' reference model), \eqn{S} the number of posterior draws for the reference
+#' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of resulting
+#' projected draws. Then the functions supplied to these arguments need to have
+#' the following prototypes:
 #' * `ref_predfun(fit, newdata = NULL)` where:
 #' \itemize{
 #'   \item{\code{fit} accepts the reference model fit as given in argument
@@ -108,8 +88,8 @@
 #'   dataset, typically stored in \code{fit}) or data for new observations (at
 #'   least in the form of a \code{data.frame});}
 #' }
-#' * `div_minimizer()` does not need to have a specific prototype, but it is
-#' called with the following arguments:
+#' * `div_minimizer()` does not need to have a specific prototype, but it needs
+#' to be able to be called with the following arguments:
 #' \itemize{
 #'   \item{\code{formula} accepts either a standard formula with a single
 #'   response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
@@ -135,6 +115,33 @@
 #' * `proj_predfun`: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 #' * `div_minimizer`: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
 #'   containing this number of submodel fits.
+#'
+#' # `extract_model_data`
+#'
+#' The function supplied to argument `extract_model_data` needs to have the
+#' prototype \code{extract_model_data(object, newdata, wrhs = NULL, orhs = NULL,
+#' extract_y = TRUE)}, where:
+#' \itemize{
+#'   \item{\code{object} accepts the reference model fit as given in argument
+#'   \code{object} (but possibly re-fitted to a subset of the observations, as
+#'   done in K-fold CV);}
+#'   \item{\code{newdata} accepts data for new observations (at least in the
+#'   form of a \code{data.frame});}
+#'   \item{\code{wrhs} accepts at least either \code{NULL} (for using a vector
+#'   of ones) or a right-hand side formula consisting only of the variable in
+#'   \code{newdata} containing the weights;}
+#'   \item{\code{orhs} accepts at least either \code{NULL} (for using a vector
+#'   of zeros) or a right-hand side formula consisting only of the variable in
+#'   \code{newdata} containing the offsets;}
+#'   \item{\code{extract_y} accepts a single logical value indicating whether
+#'   output element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or
+#'   not (\code{FALSE}).}
+#' }
+#' The return value of \code{extract_model_data} needs to be a \code{list} with
+#' elements \code{y}, \code{weights}, and \code{offset}, each being a numeric
+#' vector containing the data for the response, the observation weights, and the
+#' offsets, respectively. An exception is that \code{y} may also be \code{NULL}
+#' (depending on argument \code{extract_y}).
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as \link{varsel},
