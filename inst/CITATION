@@ -5,18 +5,18 @@ authors <- grep("\\[cre|\\[aut", authors, value = TRUE)
 
 bibentry(
   bibtype = "Misc",
-  title = "projpred: Projection Predictive Feature Selection",
+  title = "{projpred}: Projection Predictive Feature Selection",
   author = authors,
   year = year,
   note = note,
   url = "https://mc-stan.org/projpred",
-  header = "To cite the projpred R package:",
+  header = "To cite the 'projpred' R package:",
   encoding = "UTF-8"
 )
 
 bibentry(
   bibtype = "Article",
-  title = "Comparison of Bayesian predictive methods for model selection.",
+  title = "Comparison of Bayesian predictive methods for model selection",
   author = c(
     person("Juho", "Piironen"),
     person("Aki", "Vehtari")
@@ -27,12 +27,12 @@ bibentry(
   issue = 3,
   pages = "711-735",
   doi = "10.1007/s11222-016-9649-y",
-  header = "To cite the projpred comparison paper:"
+  header = "To cite the 'projpred' comparison paper:"
 )
 
 bibentry(
   bibtype = "Article",
-  title = "Projective inference in high-dimensional problems: prediction and feature selection.",
+  title = "Projective inference in high-dimensional problems: Prediction and feature selection",
   author = c(
     person("Juho", "Piironen"),
     person("Markus", "Paasiniemi"),
@@ -44,12 +44,12 @@ bibentry(
   issue = 1,
   pages = "2155-2197",
   doi = "10.1214/20-EJS1711",
-  header = "To cite the GLMs projpred paper:"
+  header = "To cite the 'projpred' GLM paper:"
 )
 
 bibentry(
   bibtype = "Unpublished",
-  title = "Projection Predictive Inference for Generalized Linear and Additive Multilevel Models",
+  title = "Projection predictive inference for generalized linear and additive multilevel models",
   author = c(
     person("Alejandro", "Catalina"),
     person("Paul-Christian", "Bürkner"),
@@ -57,6 +57,6 @@ bibentry(
   ),
   year = "2020",
   note = "arxiv:2010.06994",
-  header = "To cite the GLMMs and GAMMs projpred paper:",
+  header = "To cite the 'projpred' GLMMs and GAMMs paper:",
   encoding = "UTF-8"
 )
