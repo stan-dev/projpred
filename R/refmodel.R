@@ -20,8 +20,7 @@
 #' @param data Data used for fitting the reference model.
 #' @param formula Reference model's formula. For general information on formulas
 #'   in \R, see [`formula`]. For multilevel formulas, see also package
-#'   \pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer}} and
-#'   \code{\link[lme4:glmer]{lme4::glmer}}.
+#'   \pkg{lme4}, in particular [lme4::lmer()] and [lme4::glmer()].
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model. See section "Details" below.
 #' @param proj_predfun Prediction function for the linear predictor of a

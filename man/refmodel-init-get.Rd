@@ -52,8 +52,7 @@ generic: arguments passed to the appropriate method. Else: ignored.}
 
 \item{formula}{Reference model's formula. For general information on formulas
 in \R, see \code{\link{formula}}. For multilevel formulas, see also package
-\pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer}} and
-\code{\link[lme4:glmer]{lme4::glmer}}.}
+\pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}.}
 
 \item{family}{A \code{"family"} object representing the observational model
 (i.e., the distributional family for the response). For general information
