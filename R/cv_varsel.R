@@ -28,12 +28,7 @@
 #' @param seed Random seed used in the subsampling LOO. By default uses a fixed
 #'   seed.
 #'
-#' @details Using less draws or clusters in \code{ndraws}, \code{nclusters},
-#'   \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
-#'   reference model may result in slightly inaccurate projection performance.
-#'   Increasing these arguments linearly affects the computation time.
-#'
-#' @inherit varsel return
+#' @inherit varsel details return
 #'
 #' @examplesIf identical(Sys.getenv("RUN_EX"), "true")
 #' # Note: The code from this example is not executed when called via example().

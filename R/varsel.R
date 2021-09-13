@@ -10,10 +10,13 @@
 #'   internal use only.
 #' @param seed Random seed used when clustering the posterior draws.
 #'
-#' @details Using less draws or clusters in \code{ndraws}, \code{nclusters},
-#'   \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
-#'   reference model may result in slightly inaccurate projection performance.
-#'   Increasing these arguments linearly affects the computation time.
+#' @details Notes:
+#' * Using less draws or clusters in \code{ndraws}, \code{nclusters},
+#' \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
+#' reference model may result in slightly inaccurate projection performance.
+#' Increasing these arguments affects the computation time linearly.
+#' * An L1 search may select interaction terms before the corresponding main
+#' terms are selected. If this is undesired, choose the forward search instead.
 #'
 #' @return An object of class `vsel` that contains information about the
 #'   variable selection. The elements of this object are not meant to be

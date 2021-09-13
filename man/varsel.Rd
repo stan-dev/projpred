@@ -130,10 +130,15 @@ models, generalized linear and additive multilevel models using generic
 reference models.
 }
 \details{
-Using less draws or clusters in \code{ndraws}, \code{nclusters},
+Notes:
+\itemize{
+\item Using less draws or clusters in \code{ndraws}, \code{nclusters},
 \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
 reference model may result in slightly inaccurate projection performance.
-Increasing these arguments linearly affects the computation time.
+Increasing these arguments affects the computation time linearly.
+\item An L1 search may select interaction terms before the corresponding main
+terms are selected. If this is undesired, choose the forward search instead.
+}
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
