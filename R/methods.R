@@ -999,8 +999,40 @@ t.list <- function(x, ...) {
   return(t(as.matrix(x), ...))
 }
 
+#' Extract projected parameter draws
+#'
+#' This is the [as.matrix()] method for `projection` objects (returned by
+#' [project()], possibly as elements of a list). It extracts the projected
+#' parameter draws and returns them as a matrix.
+#'
+#' @param x An object of class `projection` (returned by [project()], possibly
+#'   as elements of a list).
+#' @param ... Currently ignored.
+#'
+#' @return An \eqn{S_{\mbox{prj}} \times Q}{S_prj x Q} matrix of projected
+#'   draws, with \eqn{S_{\mbox{prj}}}{S_prj} denoting the number of projected
+#'   draws and \eqn{Q} the number of parameters.
+#'
+#' @examples
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model:
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
+#'   prjmat <- as.matrix(prj)
+#' }
+#'
 #' @method as.matrix projection
-#' @keywords internal
 #' @export
 as.matrix.projection <- function(x, ...) {
   if (inherits(x$refmodel, "datafit")) {
@@ -1120,8 +1152,8 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
 #' This function retrieves the "solution terms" from an object. For `vsel`
 #' objects (returned by [varsel()] or [cv_varsel()]), this is the predictor
 #' solution path of the variable selection. For `projection` objects (returned
-#' by [project()]), this is the predictor combination upon which the projection
-#' was performed.
+#' by [project()], possibly as elements of a list), this is the predictor
+#' combination upon which the projection was performed.
 #'
 #' @param object The object from which to retrieve the solution terms. Possible
 #'   classes may be inferred from the names of the corresponding methods (see

@@ -41,6 +41,7 @@
 #'   \item{[project()]}{Project the reference model onto submodel(s). Typically,
 #'   this follows the variable selection, but it can also be applied directly
 #'   (without a variable selection).}
+#'   \item{[as.matrix.projection()]}{Extract projected parameter draws.}
 #'   \item{[proj_linpred()], [proj_predict()]}{Make predictions from a submodel
 #'   (after projection).}
 #' }

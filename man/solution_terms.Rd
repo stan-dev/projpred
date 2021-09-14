@@ -26,8 +26,8 @@ A character vector of solution terms.
 This function retrieves the "solution terms" from an object. For \code{vsel}
 objects (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}), this is the predictor
 solution path of the variable selection. For \code{projection} objects (returned
-by \code{\link[=project]{project()}}), this is the predictor combination upon which the projection
-was performed.
+by \code{\link[=project]{project()}}, possibly as elements of a list), this is the predictor
+combination upon which the projection was performed.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
