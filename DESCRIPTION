@@ -49,7 +49,8 @@ Suggests:
     rmarkdown,
     glmnet,
     bayesplot (>= 1.5.0),
-    optimx
+    optimx,
+    posterior
 VignetteBuilder: knitr
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
