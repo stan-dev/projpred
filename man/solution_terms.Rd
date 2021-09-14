@@ -45,14 +45,14 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # sake of speed in this example; this is not recommended in general):
   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                seed = 5555)
-  solution_terms(vs)
+  print(solution_terms(vs))
 
   # Projection onto an arbitrary combination of predictor terms (with a small
   # value for `nclusters`, but only for the sake of speed in this example;
   # this is not recommended in general):
   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
                  seed = 9182)
-  solution_terms(prj) # gives `c("X1", "X3", "X5")`
+  print(solution_terms(prj)) # gives `c("X1", "X3", "X5")`
 }
 
 }

@@ -98,7 +98,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # sake of speed in this example; this is not recommended in general):
   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                seed = 5555)
-  suggest_size(vs)
+  print(suggest_size(vs))
 }
 
 }
