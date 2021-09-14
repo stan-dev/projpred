@@ -38,10 +38,7 @@
 #'   (if \code{!is.null(nclusters)}). Can be used to ensure reproducible
 #'   results. If \code{NULL}, no seed is set and therefore, the results are not
 #'   reproducible. See \code{\link{set.seed}} for details.
-#' @param regul Amount of ridge regularization when fitting the models in the
-#'   projection. Usually there is no need for regularization, but sometimes for
-#'   some models the projection can be ill-behaved and we need to add some
-#'   regularization to avoid numerical problems.
+#' @inheritParams varsel
 #' @param ... Arguments passed to \link[=get_refmodel]{get_refmodel}.
 #'
 #' @details Using less draws or clusters in \code{ndraws} or \code{nclusters}

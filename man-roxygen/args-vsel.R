@@ -52,10 +52,11 @@
 #'   No need to change unless the program gives a warning about this.
 #' @param thresh Convergence threshold when computing the L1 path. Usually,
 #'   there is no need to change this.
-#' @param regul Amount of regularization in the projection. Usually there is no
-#'   need for regularization, but sometimes for some models the projection can
-#'   be ill-behaved and we need to add some regularization to avoid numerical
-#'   problems.
+#' @param regul A number giving the amount of ridge regularization when
+#'   projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
+#'   is no need for regularization, but sometimes we need to add (or rather
+#'   increase, given that `regul` defaults to `1e-4`) some regularization to
+#'   avoid numerical problems.
 #' @param search_terms A custom character vector of terms to consider for
 #'   selection. The intercept (\code{"1"}) needs to be included explicitly. The
 #'   default considers all the terms in the reference model's formula.
