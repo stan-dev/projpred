@@ -11,14 +11,13 @@
 #' @name projection-linpred-predict
 #'
 #' @template args-newdata
-#' @param object Either an object returned by [project()] or
-#'   alternatively any object that can be passed to argument `object` of
-#'   [project()].
+#' @param object Either an object returned by [project()] or alternatively any
+#'   object that can be passed to argument `object` of [project()].
 #' @param filter_nterms Only applies if `object` is an object returned by
-#'   [project()]. In that case, `filter_nterms` can be used to
-#'   filter `object` for only those elements (submodels) with a number of
-#'   solution terms in `filter_nterms`. Therefore, needs to be a numeric
-#'   vector or `NULL`. If `NULL`, use all submodels.
+#'   [project()]. In that case, `filter_nterms` can be used to filter `object`
+#'   for only those elements (submodels) with a number of solution terms in
+#'   `filter_nterms`. Therefore, needs to be a numeric vector or `NULL`. If
+#'   `NULL`, use all submodels.
 #' @param transform For [proj_linpred()] only. A single logical value indicating
 #'   whether the linear predictor should be transformed using the inverse-link
 #'   function (`TRUE`) or not (`FALSE`).
@@ -27,11 +26,10 @@
 #'   posterior draws (`TRUE`) or not (`FALSE`).
 #' @param nresample_clusters For [proj_predict()] with clustered projection
 #'   only. Number of draws to return from the predictive distribution of the
-#'   projection. Not to be confused with argument `nclusters` of
-#'   [project()]: `nresample_clusters` gives the number of draws
-#'   (*with* replacement) from the set of clustered posterior draws after
-#'   projection (as determined by argument `nclusters` of
-#'   [project()]).
+#'   projection. Not to be confused with argument `nclusters` of [project()]:
+#'   `nresample_clusters` gives the number of draws (*with* replacement) from
+#'   the set of clustered posterior draws after projection (as determined by
+#'   argument `nclusters` of [project()]).
 #' @param .seed For [proj_predict()] only. Pseudorandom number generation (PRNG)
 #'   seed by which the same results can be obtained again if needed. If `NULL`,
 #'   no seed is set and therefore, the results are not reproducible. See
@@ -40,25 +38,23 @@
 #'   was projected. If a clustered projection was performed, `.seed` is also
 #'   used for drawing from the set of the projected clusters of posterior draws
 #'   (see argument `nresample_clusters`).
-#' @param ... Additional arguments passed to [project()] if
-#'   `object` is not already an object returned by [project()].
+#' @param ... Additional arguments passed to [project()] if `object` is not
+#'   already an object returned by [project()].
 #'
-#' @return If the prediction is done for one submodel only (i.e., `nterms`
-#'   has length one or `solution_terms` is specified):
-#'   \itemize{
-#'     \item [proj_linpred()] returns a `list` with elements `pred`
-#'     (predictions) and `lpd` (log predictive densities). Each of these
-#'     two elements is a \eqn{S \times N}{S x N} matrix.
-#'     \item [proj_predict()] returns a \eqn{S \times N}{S x N} matrix of
-#'     predictions.
-#'   }
+#' @return If the prediction is done for one submodel only (i.e., `nterms` has
+#'   length one or `solution_terms` is specified):
+#'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
+#'   `lpd` (log predictive densities). Each of these two elements is a \eqn{S
+#'   \times N}{S x N} matrix.
+#'   * [proj_predict()] returns a \eqn{S \times N}{S x N} matrix of predictions.
+#'
 #'   Thereby, \eqn{S} denotes the number of (possibly clustered) projected
 #'   posterior draws and \eqn{N} denotes the number of observations.
 #'
 #'   If the prediction is done for more than one submodel, the output from above
-#'   is returned for each submodel, giving a named `list` with one element
-#'   for each submodel (the names of this `list` being the numbers of
-#'   solutions terms of the submodels when counting the intercept, too).
+#'   is returned for each submodel, giving a named `list` with one element for
+#'   each submodel (the names of this `list` being the numbers of solutions
+#'   terms of the submodels when counting the intercept, too).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {

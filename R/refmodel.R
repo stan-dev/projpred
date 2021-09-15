@@ -11,13 +11,13 @@
 #'
 #' @param object Object from which the reference model is created. For
 #'   [init_refmodel()], an object on which the functions from arguments
-#'   `extract_model_data` and `ref_predfun` can be applied, with a
-#'   `NULL` object being treated specially (see section "Value" below). For
-#'   [get_refmodel.default()], an object on which function [family()] can
-#'   be applied to retrieve the family (if argument `family` is
-#'   `NULL`), additionally to the properties required for
-#'   [init_refmodel()]. For non-default methods of [get_refmodel()], an
-#'   object of the corresponding class.
+#'   `extract_model_data` and `ref_predfun` can be applied, with a `NULL` object
+#'   being treated specially (see section "Value" below). For
+#'   [get_refmodel.default()], an object on which function [family()] can be
+#'   applied to retrieve the family (if argument `family` is `NULL`),
+#'   additionally to the properties required for [init_refmodel()]. For
+#'   non-default methods of [get_refmodel()], an object of the corresponding
+#'   class.
 #' @param data Data used for fitting the reference model.
 #' @param formula Reference model's formula. For general information on formulas
 #'   in \R, see [`formula`]. For multilevel formulas, see also package
@@ -30,127 +30,114 @@
 #' @param div_minimizer A function for minimizing the Kullback-Leibler (KL)
 #'   divergence from a submodel to the reference model (i.e., for performing the
 #'   projection of the reference model onto a submodel). The output of
-#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument
-#'   `fit`. See section "Details" below.
+#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fit`. See
+#'   section "Details" below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
 #'   used for fitting the reference model) or from a new dataset. See section
 #'   "Details" below.
-#' @param family A [`family`] object representing the observational model
-#'   (i.e., the distributional family for the response). For general information
-#'   on [`family`] objects in \R, see [`family`].
-#' @param cvfits For K-fold CV only. A list with one sublist called
-#'   `fits` containing K-fold fitted objects from which reference models
-#'   are created. The `cvfits` list (i.e., the superlist) needs to have
-#'   attributes `K` and `folds`: `K` has to be a single
-#'   integer giving the number of folds and `folds` has to be an integer
-#'   vector giving the fold indices (one fold index per observation). Note that
-#'   `cvfits` takes precedence over `cvfun`, i.e., if both are
-#'   provided, `cvfits` is used.
+#' @param family A [`family`] object representing the observational model (i.e.,
+#'   the distributional family for the response). For general information on
+#'   [`family`] objects in \R, see [`family`].
+#' @param cvfits For K-fold CV only. A list with one sublist called `fits`
+#'   containing K-fold fitted objects from which reference models are created.
+#'   The `cvfits` list (i.e., the superlist) needs to have attributes `K` and
+#'   `folds`: `K` has to be a single integer giving the number of folds and
+#'   `folds` has to be an integer vector giving the fold indices (one fold index
+#'   per observation). Note that `cvfits` takes precedence over `cvfun`, i.e.,
+#'   if both are provided, `cvfits` is used.
 #' @param cvfun For K-fold CV only. A function that, given a folds vector, fits
-#'   a reference model per fold and returns the fitted object. May be
-#'   `NULL` if `object` is `NULL`. Note that `cvfits` takes
-#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is
-#'   used.
+#'   a reference model per fold and returns the fitted object. May be `NULL` if
+#'   `object` is `NULL`. Note that `cvfits` takes precedence over `cvfun`, i.e.,
+#'   if both are provided, `cvfits` is used.
 #' @param dis A vector of posterior draws for the dispersion parameter (if such
 #'   a parameter exists; else `dis` may be `NULL`).
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
-#'   arguments passed to [init_refmodel()]. For the [get_refmodel()]
-#'   generic: arguments passed to the appropriate method. Else: ignored.
+#'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
+#'   arguments passed to the appropriate method. Else: ignored.
 #'
-#' @details # `ref_predfun`, `proj_predfun`, `div_minimizer`
+#' @details
 #'
-#' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be
-#' `NULL` for using an internal default. Otherwise, let \eqn{N} denote the
-#' number of observations in the original dataset (used for fitting the
-#' reference model), \eqn{S} the number of posterior draws for the reference
-#' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of resulting
-#' projected draws. Then the functions supplied to these arguments need to have
-#' the following prototypes:
+#' # `ref_predfun`, `proj_predfun`, `div_minimizer`
+#'
+#' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
+#' for using an internal default. Otherwise, let \eqn{N} denote the number of
+#' observations in the original dataset (used for fitting the reference model),
+#' \eqn{S} the number of posterior draws for the reference model's parameters,
+#' and \eqn{S_{\mbox{prj}}}{S_prj} the number of resulting projected draws. Then
+#' the functions supplied to these arguments need to have the following
+#' prototypes:
 #' * `ref_predfun(fit, newdata = NULL)` where:
-#' \itemize{
-#'   \item{`fit` accepts the reference model fit as given in argument
-#'   `object` (but possibly re-fitted to a subset of the observations, as
-#'   done in K-fold CV);}
-#'   \item{`newdata` accepts either `NULL` (for using the original
-#'   dataset, typically stored in `fit`) or data for new observations (at
-#'   least in the form of a `data.frame`).}
-#' }
+#'     + `fit` accepts the reference model fit as given in argument `object`
+#'     (but possibly re-fitted to a subset of the observations, as done in
+#'     K-fold CV);
+#'     + `newdata` accepts either `NULL` (for using the original dataset,
+#'     typically stored in `fit`) or data for new observations (at least in the
+#'     form of a `data.frame`).
 #' * `proj_predfun(fit, newdata = NULL)` where:
-#' \itemize{
-#'   \item{`fit` accepts a list of length \eqn{S_{\mbox{prj}}}{S_prj}
-#'   containing this number of submodel fits. This list is the same as that
-#'   returned by [project()] in its output element `sub_fit`
-#'   (which in turn is the same as the return value of `div_minimizer`,
-#'   except if [project()] was used with an object of class `vsel` based
-#'   on an L1 search as well as `cv_search = FALSE`);}
-#'   \item{`newdata` accepts either `NULL` (for using the original
-#'   dataset, typically stored in `fit`) or data for new observations (at
-#'   least in the form of a `data.frame`);}
-#' }
-#' * `div_minimizer` does not need to have a specific prototype, but it needs
-#' to be able to be called with the following arguments:
-#' \itemize{
-#'   \item{`formula` accepts either a standard [`formula`] with a single
-#'   response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a [`formula`] with
-#'   \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
-#'   [cbind()]-ed on the left-hand side in which case the projection
-#'   has to be performed for each of the response variables separately;}
-#'   \item{`data` accepts a `data.frame` to be used for the
-#'   projection;}
-#'   \item{`family` accepts a [`family`] object (see argument `family`);}
-#'   \item{`weights` accepts either `NULL` (for using a vector of ones
-#'   as weights) or observation weights (at least in the form of a numeric
-#'   vector);}
-#'   \item{`projpred_var` accepts a numeric vector of length \eqn{N}
-#'   containing predictive variances (necessary for \pkg{projpred}'s internal
-#'   (G)LM fitter);}
-#'   \item{`projpred_regul` accepts a single numeric value as supplied to
-#'   argument `regul` of [project()], for example.}
-#' }
+#'     + `fit` accepts a list of length \eqn{S_{\mbox{prj}}}{S_prj} containing
+#'     this number of submodel fits. This list is the same as that returned by
+#'     [project()] in its output element `sub_fit` (which in turn is the same as
+#'     the return value of `div_minimizer`, except if [project()] was used with
+#'     an object of class `vsel` based on an L1 search as well as `cv_search =
+#'     FALSE`);
+#'     + `newdata` accepts either `NULL` (for using the original dataset,
+#'     typically stored in `fit`) or data for new observations (at least in the
+#'     form of a `data.frame`);
+#' * `div_minimizer` does not need to have a specific prototype, but it needs to
+#' be able to be called with the following arguments:
+#'     + `formula` accepts either a standard [`formula`] with a single response
+#'     (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a [`formula`] with
+#'     \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
+#'     the left-hand side in which case the projection has to be performed for
+#'     each of the response variables separately;
+#'     + `data` accepts a `data.frame` to be used for the projection;
+#'     + `family` accepts a [`family`] object (see argument `family`);
+#'     + `weights` accepts either `NULL` (for using a vector of ones as weights)
+#'     or observation weights (at least in the form of a numeric vector);
+#'     + `projpred_var` accepts a numeric vector of length \eqn{N} containing
+#'     predictive variances (necessary for \pkg{projpred}'s internal (G)LM
+#'     fitter);
+#'     + `projpred_regul` accepts a single numeric value as supplied to argument
+#'     `regul` of [project()], for example.
 #'
 #' The return value of those functions needs to be:
 #' * `ref_predfun`: a \eqn{N \times S}{N x S} matrix.
 #' * `proj_predfun`: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
-#' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj}
-#'   containing this number of submodel fits.
+#' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
+#' this number of submodel fits.
 #'
 #' # `extract_model_data`
 #'
 #' The function supplied to argument `extract_model_data` needs to have the
 #' prototype `extract_model_data(object, newdata, wrhs = NULL, orhs = NULL,
 #' extract_y = TRUE)`, where:
-#' \itemize{
-#'   \item{`object` accepts the reference model fit as given in argument
-#'   `object` (but possibly re-fitted to a subset of the observations, as
-#'   done in K-fold CV);}
-#'   \item{`newdata` accepts data for new observations (at least in the
-#'   form of a `data.frame`);}
-#'   \item{`wrhs` accepts at least either `NULL` (for using a vector
-#'   of ones) or a right-hand side formula consisting only of the variable in
-#'   `newdata` containing the weights;}
-#'   \item{`orhs` accepts at least either `NULL` (for using a vector
-#'   of zeros) or a right-hand side formula consisting only of the variable in
-#'   `newdata` containing the offsets;}
-#'   \item{`extract_y` accepts a single logical value indicating whether
-#'   output element `y` (see below) shall be `NULL` (`TRUE`) or
-#'   not (`FALSE`).}
-#' }
-#' The return value of `extract_model_data` needs to be a `list` with
-#' elements `y`, `weights`, and `offset`, each being a numeric
-#' vector containing the data for the response, the observation weights, and the
-#' offsets, respectively. An exception is that `y` may also be `NULL`
-#' (depending on argument `extract_y`).
+#' * `object` accepts the reference model fit as given in argument `object` (but
+#' possibly re-fitted to a subset of the observations, as done in K-fold CV);
+#' * `newdata` accepts data for new observations (at least in the form of a
+#' `data.frame`);
+#' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
+#' right-hand side formula consisting only of the variable in `newdata`
+#' containing the weights;
+#' * `orhs` accepts at least either `NULL` (for using a vector of zeros) or a
+#' right-hand side formula consisting only of the variable in `newdata`
+#' containing the offsets;
+#' * `extract_y` accepts a single logical value indicating whether output
+#' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
+#'
+#' The return value of `extract_model_data` needs to be a `list` with elements
+#' `y`, `weights`, and `offset`, each being a numeric vector containing the data
+#' for the response, the observation weights, and the offsets, respectively. An
+#' exception is that `y` may also be `NULL` (depending on argument `extract_y`).
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
 #'   [cv_varsel()], [project()], [proj_linpred()], and [proj_predict()].
-#'   Usually, the returned object is of class `refmodel`. However, if
-#'   `object` is `NULL`, the returned object is of class
-#'   `c("datafit", "refmodel")` which is handled differently at several
-#'   places throughout this package. In particular, for a `datafit`,
-#'   argument `ref_predfun` is ignored and an internal function is used
-#'   instead which always returns `NA`.
+#'   Usually, the returned object is of class `refmodel`. However, if `object`
+#'   is `NULL`, the returned object is of class `c("datafit", "refmodel")` which
+#'   is handled differently at several places throughout this package. In
+#'   particular, for a `datafit`, argument `ref_predfun` is ignored and an
+#'   internal function is used instead which always returns `NA`.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -187,12 +174,11 @@ NULL
 #'   density for the new observations is computed.
 #' @param type Scale on which the predictions are returned. Either 'link' (the
 #'   latent function value, from -inf to inf) or 'response' (the scale on which
-#'   the target `y` is measured, obtained by taking the inverse-link from
-#'   the latent value).
+#'   the target `y` is measured, obtained by taking the inverse-link from the
+#'   latent value).
 #' @param ... Currently ignored.
 #'
-#' @details Argument `weightsnew` is only relevant if
-#'   `!is.null(ynew)`.
+#' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
 #'
 #' @return Returns either a vector of predictions, or vector of log predictive
 #'   densities evaluated at `ynew` if `ynew` is not `NULL`.

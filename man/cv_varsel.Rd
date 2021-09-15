@@ -35,41 +35,39 @@ cv_varsel(object, ...)
 )
 }
 \arguments{
-\item{object}{Either a \code{refmodel}-type object created by
-\code{\link[=init_refmodel]{init_refmodel()}}, an object which can be converted to a
-reference model using \code{\link[=get_refmodel]{get_refmodel()}}, or a \code{vsel}
-object resulting from \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}.}
+\item{object}{Either a \code{refmodel}-type object created by \code{\link[=init_refmodel]{init_refmodel()}},
+an object which can be converted to a reference model using
+\code{\link[=get_refmodel]{get_refmodel()}}, or a \code{vsel} object resulting from \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}.}
 
 \item{...}{Additional arguments to be passed to the \code{\link[=get_refmodel]{get_refmodel()}}
 function.}
 
 \item{method}{The search method, i.e. the method for finding a single
-submodel per number of terms. Possible options are \code{"L1"} for L1
-search and \code{"forward"} for forward search. Default is \code{"forward"}
-if the reference model has multilevel or additive terms and \code{"L1"}
-otherwise.}
+submodel per number of terms. Possible options are \code{"L1"} for L1 search and
+\code{"forward"} for forward search. Default is \code{"forward"} if the reference
+model has multilevel or additive terms and \code{"L1"} otherwise.}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
 Automatically truncated at the number of draws in the reference model
-(which is \code{1} for \code{datafit}s). \strong{Caution:} For \code{ndraws <= 20},
-the value of \code{ndraws} is passed to \code{nclusters} (so that
-clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if
-\code{method == "L1"} (L1 search uses always one cluster). See also section
-"Details" below.}
+(which is \code{1} for \code{datafit}s). \strong{Caution:} For \code{ndraws <= 20}, the value
+of \code{ndraws} is passed to \code{nclusters} (so that clustering is used). Ignored
+if \code{nclusters} is not \code{NULL} or if \code{method == "L1"} (L1 search uses always
+one cluster). See also section "Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws used in the variable
-selection. Ignored if \code{method == "L1"} (L1 search uses always one
-cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
-also section "Details" below.}
+selection. Ignored if \code{method == "L1"} (L1 search uses always one cluster).
+For the meaning of \code{NULL}, see argument \code{ndraws}. See also section
+"Details" below.}
 
 \item{ndraws_pred}{Number of posterior draws used for prediction (after
 selection). Automatically truncated at the number of draws in the reference
-model (which is \code{1} for \code{datafit}s). \strong{Caution:} For
-\code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to
-\code{nclusters_pred} (so that clustering is used). Ignored if
-\code{nclusters_pred} is not \code{NULL}. See also section "Details" below.}
+model (which is \code{1} for \code{datafit}s). \strong{Caution:} For \code{ndraws_pred <= 20},
+the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
+clustering is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
+section "Details" below.}
 
 \item{nclusters_pred}{Number of clusters of posterior draws used for
 prediction (after selection). For the meaning of \code{NULL}, see argument
@@ -77,23 +75,22 @@ prediction (after selection). For the meaning of \code{NULL}, see argument
 
 \item{cv_search}{If \code{TRUE}, then the projected coefficients after an L1
 search are computed without any penalization (or using only the
-regularization determined by \code{regul}). If \code{FALSE}, then the
-coefficients are the solution from the L1-penalized projection. This option
-is relevant only if \code{method == "L1"}. Default is \code{TRUE} for
-genuine reference models and \code{FALSE} if \code{object} is datafit (see
-\code{\link[=init_refmodel]{init_refmodel()}}).}
+regularization determined by \code{regul}). If \code{FALSE}, then the coefficients
+are the solution from the L1-penalized projection. This option is relevant
+only if \code{method == "L1"}. Default is \code{TRUE} for genuine reference models
+and \code{FALSE} if \code{object} is datafit (see \code{\link[=init_refmodel]{init_refmodel()}}).}
 
 \item{nterms_max}{Maximum number of variables until which the selection is
-continued. Defaults to \code{min(19, D)} where \code{D} is the number of
-terms in the reference model (or in \code{search_terms}, if supplied). Note
-that \code{nterms_max} does not count the intercept, so use
-\code{nterms_max = 0} for the intercept-only model.}
+continued. Defaults to \code{min(19, D)} where \code{D} is the number of terms in the
+reference model (or in \code{search_terms}, if supplied). Note that \code{nterms_max}
+does not count the intercept, so use \code{nterms_max = 0} for the
+intercept-only model.}
 
 \item{penalty}{Vector determining the relative penalties or costs for the
-variables. A value of \code{0} means that those variables have no cost and
-will therefore be selected first, whereas \code{Inf} means those variables
-will never be selected. Currently works only if \code{method == "L1"}. By
-default \code{1} for each variable.}
+variables. A value of \code{0} means that those variables have no cost and will
+therefore be selected first, whereas \code{Inf} means those variables will never
+be selected. Currently works only if \code{method == "L1"}. By default \code{1} for
+each variable.}
 
 \item{verbose}{A single logical value indicating whether to print out
 additional information while running (\code{TRUE}) or not (\code{FALSE}).}
@@ -161,10 +158,10 @@ cross-validation (CV).
 \details{
 Notes:
 \itemize{
-\item Using less draws or clusters in \code{ndraws}, \code{nclusters},
-\code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
-reference model may result in slightly inaccurate projection performance.
-Increasing these arguments affects the computation time linearly.
+\item Using less draws or clusters in \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, or
+\code{ndraws_pred} than posterior draws in the reference model may result in
+slightly inaccurate projection performance. Increasing these arguments
+affects the computation time linearly.
 \item An L1 search may select interaction terms before the corresponding main
 terms are selected. If this is undesired, choose the forward search instead.
 }

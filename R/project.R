@@ -5,35 +5,33 @@
 #' (after variable selection) onto the parameter space of a single or multiple
 #' submodels of specific sizes.
 #'
-#' @param object Either a `refmodel`-type object created by
-#'   [get_refmodel()] or [init_refmodel()],
-#'   or an object which can be converted to a reference model using
-#'   [get_refmodel()].
+#' @param object Either a `refmodel`-type object created by [get_refmodel()] or
+#'   [init_refmodel()], or an object which can be converted to a reference model
+#'   using [get_refmodel()].
 #' @param nterms Number of terms in the submodel (the variable combination is
 #'   taken from the `varsel` information). If a numeric vector, then the
 #'   projection is performed for each model size. If `NULL`, the model size
 #'   suggested by the variable selection (see function [suggest_size()]).
-#'   Ignored if `solution_terms` is specified. Note that `nterms` does
-#'   not count the intercept, so use `nterms = 0` for the intercept-only
-#'   model.
+#'   Ignored if `solution_terms` is specified. Note that `nterms` does not count
+#'   the intercept, so use `nterms = 0` for the intercept-only model.
 #' @param solution_terms Variable indices onto which the projection is done. If
 #'   specified, `nterms` is ignored.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
 #'   are computed without any penalization (or using only the regularization
-#'   determined by `regul`). If FALSE, then the coefficients are the
-#'   solution from the L1-penalized projection. This option is relevant only if
-#'   L1-search was used. Default is TRUE for genuine reference models and FALSE
-#'   if `object` is datafit (see [init_refmodel()]).
+#'   determined by `regul`). If FALSE, then the coefficients are the solution
+#'   from the L1-penalized projection. This option is relevant only if L1-search
+#'   was used. Default is TRUE for genuine reference models and FALSE if
+#'   `object` is datafit (see [init_refmodel()]).
 #' @param ndraws Number of posterior draws to be projected. Cannot be larger
-#'   than the number of draws in the reference model. **Caution:** For
-#'   `ndraws <= 20`, the value of `ndraws` is passed to
-#'   `nclusters` (so that clustering is used). Ignored if `nclusters`
-#'   is not `NULL` or if the reference model is of class `datafit`
-#'   (in which case one cluster is used). See also section "Details" below.
+#'   than the number of draws in the reference model. **Caution:** For `ndraws
+#'   <= 20`, the value of `ndraws` is passed to `nclusters` (so that clustering
+#'   is used). Ignored if `nclusters` is not `NULL` or if the reference model is
+#'   of class `datafit` (in which case one cluster is used). See also section
+#'   "Details" below.
 #' @param nclusters Number of clusters of posterior draws to be projected.
-#'   Ignored if the reference model is of class `datafit` (in which case
-#'   one cluster is used). For the meaning of `NULL`, see argument
-#'   `ndraws`. See also section "Details" below.
+#'   Ignored if the reference model is of class `datafit` (in which case one
+#'   cluster is used). For the meaning of `NULL`, see argument `ndraws`. See
+#'   also section "Details" below.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. If `NULL`, no seed is set and
 #'   therefore, the results are not reproducible. See [set.seed()] for details.
@@ -42,15 +40,14 @@
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()].
 #'
-#' @details Using less draws or clusters in `ndraws` or `nclusters`
-#'   than posterior draws in the reference model may result in slightly
-#'   inaccurate projection performance. Increasing these arguments linearly
-#'   affects the computation time.
+#' @details Using less draws or clusters in `ndraws` or `nclusters` than
+#'   posterior draws in the reference model may result in slightly inaccurate
+#'   projection performance. Increasing these arguments linearly affects the
+#'   computation time.
 #'
-#' @return If the projection is performed onto a single submodel (i.e.,
-#'   `nterms` has length one or `solution_terms` is specified), an
-#'   object of class `projection` which is a `list` containing the
-#'   following elements:
+#' @return If the projection is performed onto a single submodel (i.e., `nterms`
+#'   has length one or `solution_terms` is specified), an object of class
+#'   `projection` which is a `list` containing the following elements:
 #'   \describe{
 #'     \item{`dis`}{Projected draws for the dispersion parameter.}
 #'     \item{`kl`}{The KL divergence from the submodel to the reference
@@ -73,8 +70,8 @@
 #'     [init_refmodel()]).}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
-#'   above is returned for each submodel, giving a `list` with one element
-#'   for each submodel.
+#'   above is returned for each submodel, giving a `list` with one element for
+#'   each submodel.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {

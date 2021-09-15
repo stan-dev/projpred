@@ -30,7 +30,9 @@
 #' for example applications. Smaller examples are included here in the
 #' documentation.
 #'
-#' @details # Functions
+#' @details
+#'
+#' # Functions
 #'
 #' \describe{
 #'   \item{[varsel()], [cv_varsel()]}{Perform the variable selection, possibly
@@ -46,7 +48,7 @@
 #'   (after projection).}
 #' }
 #'
-#' @details # References
+#' # References
 #'
 #' See the `CITATION` file for details on citation.
 #'
