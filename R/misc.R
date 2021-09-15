@@ -350,17 +350,17 @@ nlist <- function(...) {
   x
 }
 
-#' Execute a Function Call
+#' Execute a function call
 #'
-#' Execute a function call similar to \code{\link{do.call}}, but without
-#' deparsing function arguments.
+#' Execute a function call similar to [do.call()], but without deparsing
+#' function arguments.
 #'
 #' @param what Either a function or a non-empty character string naming the
 #'   function to be called.
-#' @param args A list of arguments to the function call. The names attribute of
-#'   \code{args} gives the argument names.
-#' @param pkg Optional name of the package in which to search for the
-#'   function if \code{what} is a character string.
+#' @param args A list of arguments to the function call. The [`names`] attribute
+#'   of `args` gives the argument names.
+#' @param pkg Optional name of the package in which to search for the function
+#'   if `what` is a character string.
 #'
 #' @return The result of the (evaluated) function call.
 #'
