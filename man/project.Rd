@@ -18,14 +18,14 @@ project(
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by
-\link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+\code{\link[=get_refmodel]{get_refmodel()}} or \code{\link[=init_refmodel]{init_refmodel()}},
 or an object which can be converted to a reference model using
-\link[=get_refmodel]{get_refmodel}.}
+\code{\link[=get_refmodel]{get_refmodel()}}.}
 
 \item{nterms}{Number of terms in the submodel (the variable combination is
 taken from the \code{varsel} information). If a numeric vector, then the
 projection is performed for each model size. If \code{NULL}, the model size
-suggested by the variable selection (see function \code{suggest_size}).
+suggested by the variable selection (see function \code{\link[=suggest_size]{suggest_size()}}).
 Ignored if \code{solution_terms} is specified. Note that \code{nterms} does
 not count the intercept, so use \code{nterms = 0} for the intercept-only
 model.}
@@ -38,7 +38,7 @@ are computed without any penalization (or using only the regularization
 determined by \code{regul}). If FALSE, then the coefficients are the
 solution from the L1-penalized projection. This option is relevant only if
 L1-search was used. Default is TRUE for genuine reference models and FALSE
-if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).}
+if \code{object} is datafit (see \code{\link[=init_refmodel]{init_refmodel()}}).}
 
 \item{ndraws}{Number of posterior draws to be projected. Cannot be larger
 than the number of draws in the reference model. \strong{Caution:} For
@@ -64,7 +64,7 @@ is no need for regularization, but sometimes we need to add (or rather
 increase, given that \code{regul} defaults to \code{1e-4}) some regularization to
 avoid numerical problems.}
 
-\item{...}{Arguments passed to \link[=get_refmodel]{get_refmodel}.}
+\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
 }
 \value{
 If the projection is performed onto a single submodel (i.e.,
@@ -87,10 +87,10 @@ reference model's posterior draws have been clustered for the projection
 \item{\code{intercept}}{A single logical value indicating whether the
 reference model (as well as the submodel) contains an intercept
 (\code{TRUE}) or not (\code{FALSE}).}
-\item{\code{extract_model_data}}{The \code{extract_model_data()} function
-from the reference model (see \code{\link{init_refmodel}}).}
+\item{\code{extract_model_data}}{The \code{extract_model_data} function
+from the reference model (see \code{\link[=init_refmodel]{init_refmodel()}}).}
 \item{\code{refmodel}}{The reference model object (see
-\code{\link{init_refmodel}}).}
+\code{\link[=init_refmodel]{init_refmodel()}}).}
 }
 If the projection is performed onto more than one submodel, the output from
 above is returned for each submodel, giving a \code{list} with one element

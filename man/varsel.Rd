@@ -33,11 +33,11 @@ varsel(object, ...)
 }
 \arguments{
 \item{object}{Either a \code{refmodel}-type object created by
-\link[=init_refmodel]{init_refmodel}, an object which can be converted to a
-reference model using \link[=get_refmodel]{get_refmodel}, or a \code{vsel}
-object resulting from \code{varsel} or \code{cv_varsel}.}
+\code{\link[=init_refmodel]{init_refmodel()}}, an object which can be converted to a
+reference model using \code{\link[=get_refmodel]{get_refmodel()}}, or a \code{vsel}
+object resulting from \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}.}
 
-\item{...}{Additional arguments to be passed to the \code{get_refmodel}
+\item{...}{Additional arguments to be passed to the \code{\link[=get_refmodel]{get_refmodel()}}
 function.}
 
 \item{d_test}{For internal use only. A \code{list} providing information about the
@@ -55,11 +55,11 @@ Automatically truncated at the number of draws in the reference model
 (which is \code{1} for \code{"datafit"}s). \strong{Caution:} For \code{ndraws <= 20},
 the value of \code{ndraws} is passed to \code{nclusters} (so that
 clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if
-\code{method = "L1"} (L1 search uses always one cluster). See also section
+\code{method == "L1"} (L1 search uses always one cluster). See also section
 "Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws used in the variable
-selection. Ignored if \code{method = "L1"} (L1 search uses always one
+selection. Ignored if \code{method == "L1"} (L1 search uses always one
 cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See
 also section "Details" below.}
 
@@ -78,9 +78,9 @@ prediction (after selection). For the meaning of \code{NULL}, see argument
 search are computed without any penalization (or using only the
 regularization determined by \code{regul}). If \code{FALSE}, then the
 coefficients are the solution from the L1-penalized projection. This option
-is relevant only if \code{method = "L1"}. Default is \code{TRUE} for
+is relevant only if \code{method == "L1"}. Default is \code{TRUE} for
 genuine reference models and \code{FALSE} if \code{object} is datafit (see
-\link[=init_refmodel]{init_refmodel}).}
+\code{\link[=init_refmodel]{init_refmodel()}}).}
 
 \item{nterms_max}{Maximum number of variables until which the selection is
 continued. Defaults to \code{min(19, D)} where \code{D} is the number of
@@ -111,7 +111,7 @@ avoid numerical problems.}
 \item{penalty}{Vector determining the relative penalties or costs for the
 variables. A value of \code{0} means that those variables have no cost and
 will therefore be selected first, whereas \code{Inf} means those variables
-will never be selected. Currently works only if \code{method = "L1"}. By
+will never be selected. Currently works only if \code{method == "L1"}. By
 default \code{1} for each variable.}
 
 \item{search_terms}{A custom character vector of terms to consider for

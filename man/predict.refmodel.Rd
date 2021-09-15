@@ -18,7 +18,7 @@
 \item{object}{The object of class \code{refmodel}.}
 
 \item{newdata}{Passed to argument \code{newdata} of the reference model's
-\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}).
 Provides the predictor (and possibly also the response) data for the new
 observations.}
 
@@ -26,11 +26,11 @@ observations.}
 density for the new observations is computed.}
 
 \item{offsetnew}{Passed to argument \code{orhs} of the reference model's
-\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}).
 Used to get the offsets for the (new) observations.}
 
 \item{weightsnew}{Passed to argument \code{wrhs} of the reference model's
-\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}).
 Used to get the weights for the (new) observations.}
 
 \item{type}{Scale on which the predictions are returned. Either 'link' (the

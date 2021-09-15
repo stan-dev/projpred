@@ -5,75 +5,75 @@
 #' (after variable selection) onto the parameter space of a single or multiple
 #' submodels of specific sizes.
 #'
-#' @param object Either a \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
+#' @param object Either a `refmodel`-type object created by
+#'   [get_refmodel()] or [init_refmodel()],
 #'   or an object which can be converted to a reference model using
-#'   \link[=get_refmodel]{get_refmodel}.
+#'   [get_refmodel()].
 #' @param nterms Number of terms in the submodel (the variable combination is
-#'   taken from the \code{varsel} information). If a numeric vector, then the
-#'   projection is performed for each model size. If \code{NULL}, the model size
-#'   suggested by the variable selection (see function \code{suggest_size}).
-#'   Ignored if \code{solution_terms} is specified. Note that \code{nterms} does
-#'   not count the intercept, so use \code{nterms = 0} for the intercept-only
+#'   taken from the `varsel` information). If a numeric vector, then the
+#'   projection is performed for each model size. If `NULL`, the model size
+#'   suggested by the variable selection (see function [suggest_size()]).
+#'   Ignored if `solution_terms` is specified. Note that `nterms` does
+#'   not count the intercept, so use `nterms = 0` for the intercept-only
 #'   model.
 #' @param solution_terms Variable indices onto which the projection is done. If
-#'   specified, \code{nterms} is ignored.
+#'   specified, `nterms` is ignored.
 #' @param cv_search If TRUE, then the projected coefficients after L1-selection
 #'   are computed without any penalization (or using only the regularization
-#'   determined by \code{regul}). If FALSE, then the coefficients are the
+#'   determined by `regul`). If FALSE, then the coefficients are the
 #'   solution from the L1-penalized projection. This option is relevant only if
 #'   L1-search was used. Default is TRUE for genuine reference models and FALSE
-#'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
+#'   if `object` is datafit (see [init_refmodel()]).
 #' @param ndraws Number of posterior draws to be projected. Cannot be larger
-#'   than the number of draws in the reference model. \strong{Caution:} For
-#'   \code{ndraws <= 20}, the value of \code{ndraws} is passed to
-#'   \code{nclusters} (so that clustering is used). Ignored if \code{nclusters}
-#'   is not \code{NULL} or if the reference model is of class \code{"datafit"}
+#'   than the number of draws in the reference model. **Caution:** For
+#'   `ndraws <= 20`, the value of `ndraws` is passed to
+#'   `nclusters` (so that clustering is used). Ignored if `nclusters`
+#'   is not `NULL` or if the reference model is of class `"datafit"`
 #'   (in which case one cluster is used). See also section "Details" below.
 #' @param nclusters Number of clusters of posterior draws to be projected.
-#'   Ignored if the reference model is of class \code{"datafit"} (in which case
-#'   one cluster is used). For the meaning of \code{NULL}, see argument
-#'   \code{ndraws}. See also section "Details" below.
+#'   Ignored if the reference model is of class `"datafit"` (in which case
+#'   one cluster is used). For the meaning of `NULL`, see argument
+#'   `ndraws`. See also section "Details" below.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. If `NULL`, no seed is set and
 #'   therefore, the results are not reproducible. See [set.seed()] for details.
 #'   Here, this seed is used for clustering the reference model's posterior
 #'   draws (if `!is.null(nclusters)`).
 #' @inheritParams varsel
-#' @param ... Arguments passed to \link[=get_refmodel]{get_refmodel}.
+#' @param ... Arguments passed to [get_refmodel()].
 #'
-#' @details Using less draws or clusters in \code{ndraws} or \code{nclusters}
+#' @details Using less draws or clusters in `ndraws` or `nclusters`
 #'   than posterior draws in the reference model may result in slightly
 #'   inaccurate projection performance. Increasing these arguments linearly
 #'   affects the computation time.
 #'
 #' @return If the projection is performed onto a single submodel (i.e.,
-#'   \code{nterms} has length one or \code{solution_terms} is specified), an
-#'   object of class \code{"projection"} which is a \code{list} containing the
+#'   `nterms` has length one or `solution_terms` is specified), an
+#'   object of class `"projection"` which is a `list` containing the
 #'   following elements:
 #'   \describe{
-#'     \item{\code{dis}}{Projected draws for the dispersion parameter.}
-#'     \item{\code{kl}}{The KL divergence from the submodel to the reference
+#'     \item{`dis`}{Projected draws for the dispersion parameter.}
+#'     \item{`kl`}{The KL divergence from the submodel to the reference
 #'     model.}
-#'     \item{\code{weights}}{Weights for the projected draws.}
-#'     \item{\code{solution_terms}}{A character vector of the submodel's
+#'     \item{`weights`}{Weights for the projected draws.}
+#'     \item{`solution_terms`}{A character vector of the submodel's
 #'     predictor terms, ordered the way in which the terms were added to the
 #'     submodel.}
-#'     \item{\code{sub_fit}}{The submodel's fitted model object.}
-#'     \item{\code{family}}{A modified [`family`] object.}
-#'     \item{\code{p_type}}{A single logical value indicating whether the
+#'     \item{`sub_fit`}{The submodel's fitted model object.}
+#'     \item{`family`}{A modified [`family`] object.}
+#'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
-#'     (\code{TRUE}) or not (\code{FALSE}).}
-#'     \item{\code{intercept}}{A single logical value indicating whether the
+#'     (`TRUE`) or not (`FALSE`).}
+#'     \item{`intercept`}{A single logical value indicating whether the
 #'     reference model (as well as the submodel) contains an intercept
-#'     (\code{TRUE}) or not (\code{FALSE}).}
-#'     \item{\code{extract_model_data}}{The \code{extract_model_data()} function
-#'     from the reference model (see \code{\link{init_refmodel}}).}
-#'     \item{\code{refmodel}}{The reference model object (see
-#'     \code{\link{init_refmodel}}).}
+#'     (`TRUE`) or not (`FALSE`).}
+#'     \item{`extract_model_data`}{The `extract_model_data` function
+#'     from the reference model (see [init_refmodel()]).}
+#'     \item{`refmodel`}{The reference model object (see
+#'     [init_refmodel()]).}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
-#'   above is returned for each submodel, giving a \code{list} with one element
+#'   above is returned for each submodel, giving a `list` with one element
 #'   for each submodel.
 #'
 #' @examples

@@ -37,26 +37,26 @@ init_refmodel(
 }
 \arguments{
 \item{object}{Object from which the reference model is created. For
-\code{init_refmodel}, an object on which the functions from arguments
+\code{\link[=init_refmodel]{init_refmodel()}}, an object on which the functions from arguments
 \code{extract_model_data} and \code{ref_predfun} can be applied, with a
 \code{NULL} object being treated specially (see section "Value" below). For
-\code{get_refmodel.default}, an object on which function \code{family} can
+\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object on which function \code{\link[=family]{family()}} can
 be applied to retrieve the family (if argument \code{family} is
 \code{NULL}), additionally to the properties required for
-\code{init_refmodel}. For non-default methods of \code{get_refmodel}, an
+\code{\link[=init_refmodel]{init_refmodel()}}. For non-default methods of \code{\link[=get_refmodel]{get_refmodel()}}, an
 object of the corresponding class.}
 
-\item{...}{For \code{get_refmodel.default} and \code{get_refmodel.stanreg}:
-arguments passed to \code{init_refmodel}. For the \code{get_refmodel}
+\item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
+arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}}
 generic: arguments passed to the appropriate method. Else: ignored.}
 
 \item{formula}{Reference model's formula. For general information on formulas
 in \R, see \code{\link{formula}}. For multilevel formulas, see also package
 \pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}.}
 
-\item{family}{A \code{"family"} object representing the observational model
+\item{family}{A \code{\link{family}} object representing the observational model
 (i.e., the distributional family for the response). For general information
-on \code{"family"} objects in \R, see \code{\link{family}}.}
+on \code{\link{family}} objects in \R, see \code{\link{family}}.}
 
 \item{data}{Data used for fitting the reference model.}
 
@@ -98,8 +98,8 @@ a parameter exists; else \code{dis} may be \code{NULL}).}
 }
 \value{
 An object that can be passed to all the functions that take the
-reference model fit as the first argument, such as \link{varsel},
-\link{cv_varsel}, \link{project}, \code{\link[=proj_linpred]{proj_linpred()}}, and \code{\link[=proj_predict]{proj_predict()}}.
+reference model fit as the first argument, such as \code{\link[=varsel]{varsel()}},
+\code{\link[=cv_varsel]{cv_varsel()}}, \code{\link[=project]{project()}}, \code{\link[=proj_linpred]{proj_linpred()}}, and \code{\link[=proj_predict]{proj_predict()}}.
 Usually, the returned object is of class \code{"refmodel"}. However, if
 \code{object} is \code{NULL}, the returned object is of class
 \code{c("datafit", "refmodel")} which is handled differently at several
@@ -108,11 +108,11 @@ argument \code{ref_predfun} is ignored and an internal function is used
 instead which always returns \code{NA}.
 }
 \description{
-Function \code{get_refmodel} is a generic function for creating the reference
-model structure from a specific \code{object}. The \code{get_refmodel}
-methods usually call \code{init_refmodel} which is the underlying workhorse
+Function \code{\link[=get_refmodel]{get_refmodel()}} is a generic function for creating the reference
+model structure from a specific \code{object}. The \code{\link[=get_refmodel]{get_refmodel()}}
+methods usually call \code{\link[=init_refmodel]{init_refmodel()}} which is the underlying workhorse
 to create the reference model structure (and may also be used directly
-without using \code{get_refmodel}).
+without using \code{\link[=get_refmodel]{get_refmodel()}}).
 }
 \section{\code{ref_predfun}, \code{proj_predfun}, \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be
@@ -136,9 +136,9 @@ least in the form of a \code{data.frame}).}
 \itemize{
 \item{\code{fit} accepts a list of length \eqn{S_{\mbox{prj}}}{S_prj}
 containing this number of submodel fits. This list is the same as that
-returned by \code{\link{project}} in its output element \code{sub_fit}
+returned by \code{\link[=project]{project()}} in its output element \code{sub_fit}
 (which in turn is the same as the return value of \code{div_minimizer},
-except if \code{\link{project}} was used with a \code{"vsel"} object based
+except if \code{\link[=project]{project()}} was used with a \code{"vsel"} object based
 on an L1 search as well as \code{cv_search = FALSE});}
 \item{\code{newdata} accepts either \code{NULL} (for using the original
 dataset, typically stored in \code{fit}) or data for new observations (at
@@ -147,15 +147,14 @@ least in the form of a \code{data.frame});}
 \item \code{div_minimizer()} does not need to have a specific prototype, but it needs
 to be able to be called with the following arguments:
 \itemize{
-\item{\code{formula} accepts either a standard formula with a single
-response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
+\item{\code{formula} accepts either a standard \code{\link{formula}} with a single
+response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a \code{\link{formula}} with
 \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
-\code{\link{cbind}}-ed on the left-hand side in which case the projection
+\code{\link[=cbind]{cbind()}}-ed on the left-hand side in which case the projection
 has to be performed for each of the response variables separately;}
 \item{\code{data} accepts a \code{data.frame} to be used for the
 projection;}
-\item{\code{family} accepts a \code{"family"} object (see argument
-\code{family});}
+\item{\code{family} accepts a \code{\link{family}} object (see argument \code{family});}
 \item{\code{weights} accepts either \code{NULL} (for using a vector of ones
 as weights) or observation weights (at least in the form of a numeric
 vector);}
@@ -178,8 +177,7 @@ containing this number of submodel fits.
 
 \section{\code{extract_model_data}}{
 The function supplied to argument \code{extract_model_data} needs to have the
-prototype \code{extract_model_data(object, newdata, wrhs = NULL, orhs = NULL,
-extract_y = TRUE)}, where:
+prototype \code{extract_model_data(object, newdata, wrhs = NULL, orhs = NULL, extract_y = TRUE)}, where:
 \itemize{
 \item{\code{object} accepts the reference model fit as given in argument
 \code{object} (but possibly re-fitted to a subset of the observations, as

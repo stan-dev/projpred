@@ -11,7 +11,7 @@
 #'   lead to faster computation but higher uncertainty (larger errorbars) in the
 #'   accuracy estimation. Default is to use all observations, but for faster
 #'   experimentation, one can set this to a small value such as 100. Only
-#'   applicable if \code{cv_method = 'LOO'}.
+#'   applicable if `cv_method == "LOO"`.
 #' @param K Number of folds in the K-fold cross validation. Default is 5 for
 #'   genuine reference models and 10 for datafits (that is, for penalized
 #'   maximum likelihood estimation).

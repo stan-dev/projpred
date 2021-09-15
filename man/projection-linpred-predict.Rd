@@ -29,25 +29,25 @@ proj_predict(
 )
 }
 \arguments{
-\item{object}{Either an object returned by \code{\link{project}} or
+\item{object}{Either an object returned by \code{\link[=project]{project()}} or
 alternatively any object that can be passed to argument \code{object} of
-\code{\link{project}}.}
+\code{\link[=project]{project()}}.}
 
 \item{newdata}{Passed to argument \code{newdata} of the reference model's
-\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}).
 Provides the predictor (and possibly also the response) data for the new
 observations.}
 
 \item{offsetnew}{Passed to argument \code{orhs} of the reference model's
-\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}).
 Used to get the offsets for the (new) observations.}
 
 \item{weightsnew}{Passed to argument \code{wrhs} of the reference model's
-\code{extract_model_data} function (see \code{\link{init_refmodel}}).
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}).
 Used to get the weights for the (new) observations.}
 
 \item{filter_nterms}{Only applies if \code{object} is an object returned by
-\code{\link{project}}. In that case, \code{filter_nterms} can be used to
+\code{\link[=project]{project()}}. In that case, \code{filter_nterms} can be used to
 filter \code{object} for only those elements (submodels) with a number of
 solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
 vector or \code{NULL}. If \code{NULL}, use all submodels.}
@@ -60,16 +60,16 @@ function (\code{TRUE}) or not (\code{FALSE}).}
 indicating whether the output should be averaged over the projected
 posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
-\item{...}{Additional arguments passed to \code{\link{project}} if
-\code{object} is not already an object returned by \code{\link{project}}.}
+\item{...}{Additional arguments passed to \code{\link[=project]{project()}} if
+\code{object} is not already an object returned by \code{\link[=project]{project()}}.}
 
 \item{nresample_clusters}{For \code{\link[=proj_predict]{proj_predict()}} with clustered projection
 only. Number of draws to return from the predictive distribution of the
 projection. Not to be confused with argument \code{nclusters} of
-\code{\link{project}}: \code{nresample_clusters} gives the number of draws
+\code{\link[=project]{project()}}: \code{nresample_clusters} gives the number of draws
 (\emph{with} replacement) from the set of clustered posterior draws after
 projection (as determined by argument \code{nclusters} of
-\code{\link{project}}).}
+\code{\link[=project]{project()}}).}
 
 \item{.seed}{For \code{\link[=proj_predict]{proj_predict()}} only. Pseudorandom number generation (PRNG)
 seed by which the same results can be obtained again if needed. If \code{NULL},
