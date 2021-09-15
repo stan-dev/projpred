@@ -7,7 +7,7 @@
 \method{print}{vselsummary}(x, digits = 1, ...)
 }
 \arguments{
-\item{x}{An object of class \code{\link{vselsummary}}.}
+\item{x}{An object of class \code{vselsummary}.}
 
 \item{digits}{Number of decimal places to be reported.}
 

@@ -577,7 +577,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 #' It displays a summary of the results of the projection predictive variable
 #' selection.
 #'
-#' @param x An object of class [`vselsummary`].
+#' @param x An object of class `vselsummary`.
 #' @param digits Number of decimal places to be reported.
 #' @param ... Currently ignored.
 #'

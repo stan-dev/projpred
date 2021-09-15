@@ -144,13 +144,13 @@
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as \link{varsel},
-#'   \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict}, and
-#'   \link[=proj-pred]{proj_linpred}. Usually, the returned object is of class
-#'   \code{"refmodel"}. However, if \code{object} is \code{NULL}, the returned
-#'   object is of class \code{c("datafit", "refmodel")} which is handled
-#'   differently at several places throughout this package. In particular, for a
-#'   \code{"datafit"}, argument \code{ref_predfun} is ignored and an internal
-#'   function is used instead which always returns \code{NA}.
+#'   \link{cv_varsel}, \link{project}, [proj_linpred()], and [proj_predict()].
+#'   Usually, the returned object is of class \code{"refmodel"}. However, if
+#'   \code{object} is \code{NULL}, the returned object is of class
+#'   \code{c("datafit", "refmodel")} which is handled differently at several
+#'   places throughout this package. In particular, for a \code{"datafit"},
+#'   argument \code{ref_predfun} is ignored and an internal function is used
+#'   instead which always returns \code{NA}.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
