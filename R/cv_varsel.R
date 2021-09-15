@@ -4,7 +4,7 @@
 #' (G)AMs, and (G)AMMs. In contrast to [varsel()], [cv_varsel()] performs a
 #' cross-validation (CV).
 #'
-#' @template args-vsel
+#' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`.
 #' @param nloo Number of observations used to compute the LOO validation
 #'   (anything between 1 and the total number of observations). Smaller values
