@@ -32,13 +32,14 @@
 #'   (\emph{with} replacement) from the set of clustered posterior draws after
 #'   projection (as determined by argument \code{nclusters} of
 #'   \code{\link{project}}).
-#' @param .seed For [proj_predict()] only. A seed for drawing from the
+#' @param .seed For [proj_predict()] only. Pseudorandom number generation (PRNG)
+#'   seed by which the same results can be obtained again if needed. If `NULL`,
+#'   no seed is set and therefore, the results are not reproducible. See
+#'   [set.seed()] for details. Here, this seed is used for drawing from the
 #'   predictive distribution of the submodel(s) onto which the reference model
-#'   was (or is) projected. If a clustered projection was performed,
-#'   \code{.seed} is also used for drawing from the set of the projected
-#'   clusters of posterior draws (see argument \code{nresample_clusters}). If
-#'   \code{NULL}, no seed is set and therefore, the results are in general not
-#'   reproducible. See \code{\link{set.seed}} for details.
+#'   was projected. If a clustered projection was performed, `.seed` is also
+#'   used for drawing from the set of the projected clusters of posterior draws
+#'   (see argument `nresample_clusters`).
 #' @param ... Additional arguments passed to \code{\link{project}} if
 #'   \code{object} is not already an object returned by \code{\link{project}}.
 #'
@@ -1093,8 +1094,9 @@ as.matrix.projection <- function(x, ...) {
 #' @param K Number of folds. Must be at least 2 and not exceed `n`.
 #' @param out Format of the output, either `"foldwise"` or `"indices"`. See
 #'   below for details.
-#' @param seed Seed for pseudorandom number generation so that the same results
-#'   could be obtained again if needed.
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
 #'
 #' @return [cvfolds()] returns a vector of length `n` such that each element is
 #'   an integer between 1 and `k` denoting which fold the corresponding data

@@ -71,13 +71,14 @@ projection. Not to be confused with argument \code{nclusters} of
 projection (as determined by argument \code{nclusters} of
 \code{\link{project}}).}
 
-\item{.seed}{For \code{\link[=proj_predict]{proj_predict()}} only. A seed for drawing from the
+\item{.seed}{For \code{\link[=proj_predict]{proj_predict()}} only. Pseudorandom number generation (PRNG)
+seed by which the same results can be obtained again if needed. If \code{NULL},
+no seed is set and therefore, the results are not reproducible. See
+\code{\link[=set.seed]{set.seed()}} for details. Here, this seed is used for drawing from the
 predictive distribution of the submodel(s) onto which the reference model
-was (or is) projected. If a clustered projection was performed,
-\code{.seed} is also used for drawing from the set of the projected
-clusters of posterior draws (see argument \code{nresample_clusters}). If
-\code{NULL}, no seed is set and therefore, the results are in general not
-reproducible. See \code{\link{set.seed}} for details.}
+was projected. If a clustered projection was performed, \code{.seed} is also
+used for drawing from the set of the projected clusters of posterior draws
+(see argument \code{nresample_clusters}).}
 }
 \value{
 If the prediction is done for one submodel only (i.e., \code{nterms}

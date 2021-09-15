@@ -136,8 +136,13 @@ feature selection is (over)fitted to the data (the difference corresponds
 to the search degrees of freedom or the effective number of parameters
 introduced by the selectin process).}
 
-\item{seed}{Random seed used in the subsampling LOO. By default uses a fixed
-seed.}
+\item{seed}{Pseudorandom number generation (PRNG) seed by which the same
+results can be obtained again if needed. If \code{NULL}, no seed is set and
+therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
+Here, this seed is used for clustering the reference model's posterior
+draws (if \code{!is.null(nclusters)}), for subsampling LOO-CV folds (if \code{nloo}
+is smaller than the number of observations), and for sampling the folds in
+K-fold CV.}
 
 \item{search_terms}{A custom character vector of terms to consider for
 selection. The intercept (\code{"1"}) needs to be included explicitly. The

@@ -118,7 +118,11 @@ default \code{1} for each variable.}
 selection. The intercept (\code{"1"}) needs to be included explicitly. The
 default considers all the terms in the reference model's formula.}
 
-\item{seed}{Random seed used when clustering the posterior draws.}
+\item{seed}{Pseudorandom number generation (PRNG) seed by which the same
+results can be obtained again if needed. If \code{NULL}, no seed is set and
+therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
+Here, this seed is used for clustering the reference model's posterior
+draws (if \code{!is.null(nclusters)}).}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant

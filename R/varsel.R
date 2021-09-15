@@ -70,7 +70,11 @@
 #'   default considers all the terms in the reference model's formula.
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information while running (\code{TRUE}) or not (\code{FALSE}).
-#' @param seed Random seed used when clustering the posterior draws.
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   Here, this seed is used for clustering the reference model's posterior
+#'   draws (if `!is.null(nclusters)`).
 #' @param ... Additional arguments to be passed to the \code{get_refmodel}
 #'   function.
 #'

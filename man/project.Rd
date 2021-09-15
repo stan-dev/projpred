@@ -52,10 +52,11 @@ Ignored if the reference model is of class \code{"datafit"} (in which case
 one cluster is used). For the meaning of \code{NULL}, see argument
 \code{ndraws}. See also section "Details" below.}
 
-\item{seed}{A seed used for clustering the reference model's posterior draws
-(if \code{!is.null(nclusters)}). Can be used to ensure reproducible
-results. If \code{NULL}, no seed is set and therefore, the results are not
-reproducible. See \code{\link{set.seed}} for details.}
+\item{seed}{Pseudorandom number generation (PRNG) seed by which the same
+results can be obtained again if needed. If \code{NULL}, no seed is set and
+therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
+Here, this seed is used for clustering the reference model's posterior
+draws (if \code{!is.null(nclusters)}).}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there

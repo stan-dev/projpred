@@ -34,10 +34,11 @@
 #'   Ignored if the reference model is of class \code{"datafit"} (in which case
 #'   one cluster is used). For the meaning of \code{NULL}, see argument
 #'   \code{ndraws}. See also section "Details" below.
-#' @param seed A seed used for clustering the reference model's posterior draws
-#'   (if \code{!is.null(nclusters)}). Can be used to ensure reproducible
-#'   results. If \code{NULL}, no seed is set and therefore, the results are not
-#'   reproducible. See \code{\link{set.seed}} for details.
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   Here, this seed is used for clustering the reference model's posterior
+#'   draws (if `!is.null(nclusters)`).
 #' @inheritParams varsel
 #' @param ... Arguments passed to \link[=get_refmodel]{get_refmodel}.
 #'
