@@ -20,8 +20,8 @@
 #' of other packages are welcome to add more methods for the [get_refmodel()]
 #' generic. Custom reference models can also be used via [init_refmodel()].
 #'
-#' Currently, the supported families are [gaussian()], [binomial()] (as well as
-#' [brms::bernoulli()]), and [poisson()].
+#' Currently, the supported families are [gaussian()], [binomial()] (and, via
+#' [brms::get_refmodel.brmsfit()], [brms::bernoulli()]), and [poisson()].
 #'
 #' See the vignettes
 #' (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}

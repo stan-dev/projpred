@@ -8,7 +8,7 @@
 }
 \arguments{
 \item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}, possibly
-as elements of a list).}
+as elements of a \code{list}).}
 
 \item{...}{Currently ignored.}
 }
@@ -19,7 +19,7 @@ draws and \eqn{Q} the number of parameters.
 }
 \description{
 This is the \code{\link[=as.matrix]{as.matrix()}} method for \code{projection} objects (returned by
-\code{\link[=project]{project()}}, possibly as elements of a list). It extracts the projected
+\code{\link[=project]{project()}}, possibly as elements of a \code{list}). It extracts the projected
 parameter draws and returns them as a matrix.
 }
 \examples{

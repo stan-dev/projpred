@@ -357,8 +357,8 @@ nlist <- function(...) {
 #'
 #' @param what Either a function or a non-empty character string naming the
 #'   function to be called.
-#' @param args A list of arguments to the function call. The [`names`] attribute
-#'   of `args` gives the argument names.
+#' @param args A `list` of arguments to the function call. The [`names`]
+#'   attribute of `args` gives the argument names.
 #' @param pkg Optional name of the package in which to search for the function
 #'   if `what` is a character string.
 #'

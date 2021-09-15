@@ -10,8 +10,8 @@ do_call(what, args, pkg = NULL)
 \item{what}{Either a function or a non-empty character string naming the
 function to be called.}
 
-\item{args}{A list of arguments to the function call. The \code{\link{names}} attribute
-of \code{args} gives the argument names.}
+\item{args}{A \code{list} of arguments to the function call. The \code{\link{names}}
+attribute of \code{args} gives the argument names.}
 
 \item{pkg}{Optional name of the package in which to search for the function
 if \code{what} is a character string.}

@@ -8,8 +8,8 @@
 #'   [get_refmodel()], or a `vsel` object resulting from [varsel()] or
 #'   [cv_varsel()].
 #' @param d_test For internal use only. A `list` providing information about the
-#'   test set which is used to evaluate model performance. If not provided,
-#'   training data is used.
+#'   test set which is used to evaluate model performance. If not provided, the
+#'   training set is used.
 #' @param method The search method, i.e. the method for finding a single
 #'   submodel per number of terms. Possible options are `"L1"` for L1 search and
 #'   `"forward"` for forward search. Default is `"forward"` if the reference

@@ -16,8 +16,8 @@ The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
 of other packages are welcome to add more methods for the \code{\link[=get_refmodel]{get_refmodel()}}
 generic. Custom reference models can also be used via \code{\link[=init_refmodel]{init_refmodel()}}.
 
-Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (as well as
-\code{\link[brms:brmsfamily]{brms::bernoulli()}}), and \code{\link[=poisson]{poisson()}}.
+Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and, via
+\code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}, \code{\link[brms:brmsfamily]{brms::bernoulli()}}), and \code{\link[=poisson]{poisson()}}.
 
 See the vignettes
 (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}

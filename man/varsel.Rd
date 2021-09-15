@@ -41,8 +41,8 @@ an object which can be converted to a reference model using
 function.}
 
 \item{d_test}{For internal use only. A \code{list} providing information about the
-test set which is used to evaluate model performance. If not provided,
-training data is used.}
+test set which is used to evaluate model performance. If not provided, the
+training set is used.}
 
 \item{method}{The search method, i.e. the method for finding a single
 submodel per number of terms. Possible options are \code{"L1"} for L1 search and

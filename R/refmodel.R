@@ -1,11 +1,11 @@
 #' Reference model structure
 #'
 #' Function [get_refmodel()] is a generic function for creating the reference
-#' model structure from a specific `object`. The [get_refmodel()] methods
-#' usually call [init_refmodel()] which is the underlying workhorse to create
-#' the reference model structure (and may also be used directly without using
-#' [get_refmodel()]). Some arguments are for K-fold cross-validation (K-fold CV)
-#' only; see [cv_varsel()] for the use of K-fold CV in \pkg{projpred}.
+#' model structure from a specific `object`. The methods for [get_refmodel()]
+#' usually call [init_refmodel()] which is the underlying workhorse (and may
+#' also be used directly without a call to [get_refmodel()]). Some arguments are
+#' for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see [cv_varsel()]
+#' for the use of \eqn{K}-fold CV in \pkg{projpred}.
 #'
 #' @name refmodel-init-get
 #'
@@ -21,9 +21,12 @@
 #' @param data Data used for fitting the reference model.
 #' @param formula Reference model's formula. For general information on formulas
 #'   in \R, see [`formula`]. For multilevel formulas, see also package
-#'   \pkg{lme4}, in particular [lme4::lmer()] and [lme4::glmer()].
+#'   \pkg{lme4}, in particular [lme4::lmer()] and [lme4::glmer()]. For additive
+#'   formulas, see also packages \pkg{mgcv}, in particular [mgcv::gam()], and
+#'   \pkg{gamm4}, in particular [gamm4::gamm4()].
 #' @param ref_predfun Prediction function for the linear predictor of the
-#'   reference model. See section "Details" below.
+#'   reference model. See section "Details" below. If `object` is `NULL`,
+#'   `ref_predfun` is ignored and an internal default is used instead.
 #' @param proj_predfun Prediction function for the linear predictor of a
 #'   submodel onto which the reference model is projected. See section "Details"
 #'   below.
@@ -37,19 +40,19 @@
 #'   used for fitting the reference model) or from a new dataset. See section
 #'   "Details" below.
 #' @param family A [`family`] object representing the observational model (i.e.,
-#'   the distributional family for the response). For general information on
-#'   [`family`] objects in \R, see [`family`].
-#' @param cvfits For K-fold CV only. A list with one sublist called `fits`
-#'   containing K-fold fitted objects from which reference models are created.
-#'   The `cvfits` list (i.e., the superlist) needs to have attributes `K` and
-#'   `folds`: `K` has to be a single integer giving the number of folds and
-#'   `folds` has to be an integer vector giving the fold indices (one fold index
-#'   per observation). Note that `cvfits` takes precedence over `cvfun`, i.e.,
-#'   if both are provided, `cvfits` is used.
-#' @param cvfun For K-fold CV only. A function that, given a folds vector, fits
-#'   a reference model per fold and returns the fitted object. May be `NULL` if
-#'   `object` is `NULL`. Note that `cvfits` takes precedence over `cvfun`, i.e.,
-#'   if both are provided, `cvfits` is used.
+#'   the distributional family for the response).
+#' @param cvfits For \eqn{K}-fold CV only. A `list` with one sub-`list` called
+#'   `fits` containing the \eqn{K} fitted model objects from which reference
+#'   model structures are created. The `cvfits` `list` (i.e., the super-`list`)
+#'   needs to have attributes `K` and `folds`: `K` has to be a single integer
+#'   giving the number of folds and `folds` has to be an integer vector giving
+#'   the fold indices (one fold index per observation). Note that `cvfits` takes
+#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
+#'   vector, fits the reference model separately for each fold and returns the
+#'   \eqn{K} fitted model objects as a `list`. If `object` is `NULL`, `cvfun`
+#'   may be `NULL` for using an internal default. Note that `cvfits` takes
+#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
 #' @param dis A vector of posterior draws for the dispersion parameter (if such
 #'   a parameter exists; else `dis` may be `NULL`).
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
@@ -62,25 +65,25 @@
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
-#' observations in the original dataset (used for fitting the reference model),
-#' \eqn{S} the number of posterior draws for the reference model's parameters,
-#' and \eqn{S_{\mbox{prj}}}{S_prj} the number of resulting projected draws. Then
-#' the functions supplied to these arguments need to have the following
-#' prototypes:
-#' * `ref_predfun(fit, newdata = NULL)` where:
+#' observations (data points), \eqn{S} the number of posterior draws for the
+#' reference model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of
+#' (possibly clustered) parameter draws in the projection (short: the number of
+#' projected draws). Then the functions supplied to these arguments need to have
+#' the following prototypes:
+#' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
-#'     K-fold CV);
+#'     \eqn{K}-fold CV);
 #'     + `newdata` accepts either `NULL` (for using the original dataset,
 #'     typically stored in `fit`) or data for new observations (at least in the
 #'     form of a `data.frame`).
-#' * `proj_predfun(fit, newdata = NULL)` where:
-#'     + `fit` accepts a list of length \eqn{S_{\mbox{prj}}}{S_prj} containing
-#'     this number of submodel fits. This list is the same as that returned by
+#' * `proj_predfun`: `proj_predfun(fit, newdata = NULL)` where:
+#'     + `fit` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
+#'     this number of submodel fits. This `list` is the same as that returned by
 #'     [project()] in its output element `sub_fit` (which in turn is the same as
 #'     the return value of `div_minimizer`, except if [project()] was used with
-#'     an object of class `vsel` based on an L1 search as well as `cv_search =
-#'     FALSE`);
+#'     an `object` of class `vsel` based on an L1 search as well as with
+#'     `cv_search = FALSE`);
 #'     + `newdata` accepts either `NULL` (for using the original dataset,
 #'     typically stored in `fit`) or data for new observations (at least in the
 #'     form of a `data.frame`);
@@ -92,7 +95,7 @@
 #'     the left-hand side in which case the projection has to be performed for
 #'     each of the response variables separately;
 #'     + `data` accepts a `data.frame` to be used for the projection;
-#'     + `family` accepts a [`family`] object (see argument `family`);
+#'     + `family` accepts a [`family`] object;
 #'     + `weights` accepts either `NULL` (for using a vector of ones as weights)
 #'     or observation weights (at least in the form of a numeric vector);
 #'     + `projpred_var` accepts a numeric vector of length \eqn{N} containing
@@ -110,10 +113,14 @@
 #' # `extract_model_data`
 #'
 #' The function supplied to argument `extract_model_data` needs to have the
-#' prototype `extract_model_data(object, newdata, wrhs = NULL, orhs = NULL,
-#' extract_y = TRUE)`, where:
+#' prototype
+#' ```{r, eval = FALSE}
+#' extract_model_data(object, newdata, wrhs = NULL, orhs = NULL, extract_y = TRUE)
+#' ```
+#' where:
 #' * `object` accepts the reference model fit as given in argument `object` (but
-#' possibly re-fitted to a subset of the observations, as done in K-fold CV);
+#' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
+#' CV);
 #' * `newdata` accepts data for new observations (at least in the form of a
 #' `data.frame`);
 #' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
@@ -134,10 +141,9 @@
 #'   reference model fit as the first argument, such as [varsel()],
 #'   [cv_varsel()], [project()], [proj_linpred()], and [proj_predict()].
 #'   Usually, the returned object is of class `refmodel`. However, if `object`
-#'   is `NULL`, the returned object is of class `c("datafit", "refmodel")` which
-#'   is handled differently at several places throughout this package. In
-#'   particular, for a `datafit`, argument `ref_predfun` is ignored and an
-#'   internal function is used instead which always returns `NA`.
+#'   is `NULL`, the returned object is of class `datafit` as well as of class
+#'   `refmodel` (with `datafit` being first). Objects of class `datafit` are
+#'   handled differently at several places throughout this package.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
