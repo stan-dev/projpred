@@ -40,9 +40,9 @@ object resulting from \code{varsel} or \code{cv_varsel}.}
 \item{...}{Additional arguments to be passed to the \code{get_refmodel}
 function.}
 
-\item{d_test}{A test dataset which is used to evaluate model performance. If
-not provided, training data is used. Currently this argument is for
-internal use only.}
+\item{d_test}{For internal use only. A \code{list} providing information about the
+test set which is used to evaluate model performance. If not provided,
+training data is used.}
 
 \item{method}{The search method, i.e. the method for finding a single
 submodel per number of terms. Possible options are \code{"L1"} for L1

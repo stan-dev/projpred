@@ -4,9 +4,9 @@
 #' (G)AMs, and (G)AMMs.
 #'
 #' @template args-vsel
-#' @param d_test A test dataset which is used to evaluate model performance. If
-#'   not provided, training data is used. Currently this argument is for
-#'   internal use only.
+#' @param d_test For internal use only. A `list` providing information about the
+#'   test set which is used to evaluate model performance. If not provided,
+#'   training data is used.
 #' @param seed Random seed used when clustering the posterior draws.
 #'
 #' @details Notes:
