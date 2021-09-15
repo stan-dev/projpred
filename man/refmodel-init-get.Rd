@@ -85,10 +85,10 @@ precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is
 used.}
 
 \item{cvfits}{For K-fold CV only. A list with one sublist called
-\code{"fits"} containing K-fold fitted objects from which reference models
+\code{fits} containing K-fold fitted objects from which reference models
 are created. The \code{cvfits} list (i.e., the superlist) needs to have
-attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a single
-integer giving the number of folds and \code{"folds"} has to be an integer
+attributes \code{K} and \code{folds}: \code{K} has to be a single
+integer giving the number of folds and \code{folds} has to be an integer
 vector giving the fold indices (one fold index per observation). Note that
 \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
 provided, \code{cvfits} is used.}
@@ -100,10 +100,10 @@ a parameter exists; else \code{dis} may be \code{NULL}).}
 An object that can be passed to all the functions that take the
 reference model fit as the first argument, such as \code{\link[=varsel]{varsel()}},
 \code{\link[=cv_varsel]{cv_varsel()}}, \code{\link[=project]{project()}}, \code{\link[=proj_linpred]{proj_linpred()}}, and \code{\link[=proj_predict]{proj_predict()}}.
-Usually, the returned object is of class \code{"refmodel"}. However, if
+Usually, the returned object is of class \code{refmodel}. However, if
 \code{object} is \code{NULL}, the returned object is of class
 \code{c("datafit", "refmodel")} which is handled differently at several
-places throughout this package. In particular, for a \code{"datafit"},
+places throughout this package. In particular, for a \code{datafit},
 argument \code{ref_predfun} is ignored and an internal function is used
 instead which always returns \code{NA}.
 }
@@ -138,13 +138,13 @@ least in the form of a \code{data.frame}).}
 containing this number of submodel fits. This list is the same as that
 returned by \code{\link[=project]{project()}} in its output element \code{sub_fit}
 (which in turn is the same as the return value of \code{div_minimizer},
-except if \code{\link[=project]{project()}} was used with a \code{"vsel"} object based
+except if \code{\link[=project]{project()}} was used with an object of class \code{vsel} based
 on an L1 search as well as \code{cv_search = FALSE});}
 \item{\code{newdata} accepts either \code{NULL} (for using the original
 dataset, typically stored in \code{fit}) or data for new observations (at
 least in the form of a \code{data.frame});}
 }
-\item \code{div_minimizer()} does not need to have a specific prototype, but it needs
+\item \code{div_minimizer} does not need to have a specific prototype, but it needs
 to be able to be called with the following arguments:
 \itemize{
 \item{\code{formula} accepts either a standard \code{\link{formula}} with a single

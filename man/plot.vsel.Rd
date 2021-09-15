@@ -44,7 +44,7 @@ intervals, that is, one-standard-error intervals.}
 
 \item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
 the reference model or the best submodel found, respectively. If \code{NULL},
-then \code{"ref"} is used, except for \code{"datafit"}s for which \code{"best"} is used.}
+then \code{"ref"} is used, except for \code{datafit}s for which \code{"best"} is used.}
 
 \item{...}{Currently ignored.}
 }

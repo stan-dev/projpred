@@ -44,11 +44,11 @@ if \code{object} is datafit (see \code{\link[=init_refmodel]{init_refmodel()}}).
 than the number of draws in the reference model. \strong{Caution:} For
 \code{ndraws <= 20}, the value of \code{ndraws} is passed to
 \code{nclusters} (so that clustering is used). Ignored if \code{nclusters}
-is not \code{NULL} or if the reference model is of class \code{"datafit"}
+is not \code{NULL} or if the reference model is of class \code{datafit}
 (in which case one cluster is used). See also section "Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws to be projected.
-Ignored if the reference model is of class \code{"datafit"} (in which case
+Ignored if the reference model is of class \code{datafit} (in which case
 one cluster is used). For the meaning of \code{NULL}, see argument
 \code{ndraws}. See also section "Details" below.}
 
@@ -69,7 +69,7 @@ avoid numerical problems.}
 \value{
 If the projection is performed onto a single submodel (i.e.,
 \code{nterms} has length one or \code{solution_terms} is specified), an
-object of class \code{"projection"} which is a \code{list} containing the
+object of class \code{projection} which is a \code{list} containing the
 following elements:
 \describe{
 \item{\code{dis}}{Projected draws for the dispersion parameter.}

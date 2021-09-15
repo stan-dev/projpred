@@ -39,10 +39,10 @@
 #'   (i.e., the distributional family for the response). For general information
 #'   on [`family`] objects in \R, see [`family`].
 #' @param cvfits For K-fold CV only. A list with one sublist called
-#'   `"fits"` containing K-fold fitted objects from which reference models
+#'   `fits` containing K-fold fitted objects from which reference models
 #'   are created. The `cvfits` list (i.e., the superlist) needs to have
-#'   attributes `"K"` and `"folds"`: `"K"` has to be a single
-#'   integer giving the number of folds and `"folds"` has to be an integer
+#'   attributes `K` and `folds`: `K` has to be a single
+#'   integer giving the number of folds and `folds` has to be an integer
 #'   vector giving the fold indices (one fold index per observation). Note that
 #'   `cvfits` takes precedence over `cvfun`, i.e., if both are
 #'   provided, `cvfits` is used.
@@ -81,13 +81,13 @@
 #'   containing this number of submodel fits. This list is the same as that
 #'   returned by [project()] in its output element `sub_fit`
 #'   (which in turn is the same as the return value of `div_minimizer`,
-#'   except if [project()] was used with a `"vsel"` object based
+#'   except if [project()] was used with an object of class `vsel` based
 #'   on an L1 search as well as `cv_search = FALSE`);}
 #'   \item{`newdata` accepts either `NULL` (for using the original
 #'   dataset, typically stored in `fit`) or data for new observations (at
 #'   least in the form of a `data.frame`);}
 #' }
-#' * `div_minimizer()` does not need to have a specific prototype, but it needs
+#' * `div_minimizer` does not need to have a specific prototype, but it needs
 #' to be able to be called with the following arguments:
 #' \itemize{
 #'   \item{`formula` accepts either a standard [`formula`] with a single
@@ -144,10 +144,10 @@
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
 #'   [cv_varsel()], [project()], [proj_linpred()], and [proj_predict()].
-#'   Usually, the returned object is of class `"refmodel"`. However, if
+#'   Usually, the returned object is of class `refmodel`. However, if
 #'   `object` is `NULL`, the returned object is of class
 #'   `c("datafit", "refmodel")` which is handled differently at several
-#'   places throughout this package. In particular, for a `"datafit"`,
+#'   places throughout this package. In particular, for a `datafit`,
 #'   argument `ref_predfun` is ignored and an internal function is used
 #'   instead which always returns `NA`.
 #'

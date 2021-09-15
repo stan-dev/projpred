@@ -52,7 +52,7 @@ otherwise.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
 Automatically truncated at the number of draws in the reference model
-(which is \code{1} for \code{"datafit"}s). \strong{Caution:} For \code{ndraws <= 20},
+(which is \code{1} for \code{datafit}s). \strong{Caution:} For \code{ndraws <= 20},
 the value of \code{ndraws} is passed to \code{nclusters} (so that
 clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if
 \code{method == "L1"} (L1 search uses always one cluster). See also section
@@ -65,7 +65,7 @@ also section "Details" below.}
 
 \item{ndraws_pred}{Number of posterior draws used for prediction (after
 selection). Automatically truncated at the number of draws in the reference
-model (which is \code{1} for \code{"datafit"}s). \strong{Caution:} For
+model (which is \code{1} for \code{datafit}s). \strong{Caution:} For
 \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to
 \code{nclusters_pred} (so that clustering is used). Ignored if
 \code{nclusters_pred} is not \code{NULL}. See also section "Details" below.}

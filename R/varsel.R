@@ -24,7 +24,7 @@
 #'   [init_refmodel()]).
 #' @param ndraws Number of posterior draws used in the variable selection.
 #'   Automatically truncated at the number of draws in the reference model
-#'   (which is `1` for `"datafit"`s). **Caution:** For `ndraws <= 20`,
+#'   (which is `1` for `datafit`s). **Caution:** For `ndraws <= 20`,
 #'   the value of `ndraws` is passed to `nclusters` (so that
 #'   clustering is used). Ignored if `nclusters` is not `NULL` or if
 #'   `method == "L1"` (L1 search uses always one cluster). See also section
@@ -35,7 +35,7 @@
 #'   also section "Details" below.
 #' @param ndraws_pred Number of posterior draws used for prediction (after
 #'   selection). Automatically truncated at the number of draws in the reference
-#'   model (which is `1` for `"datafit"`s). **Caution:** For
+#'   model (which is `1` for `datafit`s). **Caution:** For
 #'   `ndraws_pred <= 20`, the value of `ndraws_pred` is passed to
 #'   `nclusters_pred` (so that clustering is used). Ignored if
 #'   `nclusters_pred` is not `NULL`. See also section "Details" below.

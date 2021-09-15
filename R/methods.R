@@ -6,7 +6,7 @@
 #' predictive distribution of a projected submodel. If the projection has not
 #' been performed, both functions also perform the projection. Both functions
 #' can also handle multiple projected submodels at once (if the input object is
-#' of class `"vsel"`).
+#' of class `vsel`).
 #'
 #' @name projection-linpred-predict
 #'
@@ -442,7 +442,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   intervals, that is, one-standard-error intervals.
 #' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
 #'   the reference model or the best submodel found, respectively. If `NULL`,
-#'   then `"ref"` is used, except for `"datafit"`s for which `"best"` is used.
+#'   then `"ref"` is used, except for `datafit`s for which `"best"` is used.
 #' @param ... Currently ignored.
 #'
 #' @examples

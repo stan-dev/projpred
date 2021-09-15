@@ -28,10 +28,10 @@
 #'   than the number of draws in the reference model. **Caution:** For
 #'   `ndraws <= 20`, the value of `ndraws` is passed to
 #'   `nclusters` (so that clustering is used). Ignored if `nclusters`
-#'   is not `NULL` or if the reference model is of class `"datafit"`
+#'   is not `NULL` or if the reference model is of class `datafit`
 #'   (in which case one cluster is used). See also section "Details" below.
 #' @param nclusters Number of clusters of posterior draws to be projected.
-#'   Ignored if the reference model is of class `"datafit"` (in which case
+#'   Ignored if the reference model is of class `datafit` (in which case
 #'   one cluster is used). For the meaning of `NULL`, see argument
 #'   `ndraws`. See also section "Details" below.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
@@ -49,7 +49,7 @@
 #'
 #' @return If the projection is performed onto a single submodel (i.e.,
 #'   `nterms` has length one or `solution_terms` is specified), an
-#'   object of class `"projection"` which is a `list` containing the
+#'   object of class `projection` which is a `list` containing the
 #'   following elements:
 #'   \describe{
 #'     \item{`dis`}{Projected draws for the dispersion parameter.}

@@ -105,7 +105,7 @@ projecting the reference model onto it). \code{\link[=proj_predict]{proj_predict
 predictive distribution of a projected submodel. If the projection has not
 been performed, both functions also perform the projection. Both functions
 can also handle multiple projected submodels at once (if the input object is
-of class \code{"vsel"}).
+of class \code{vsel}).
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

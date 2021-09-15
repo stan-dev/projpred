@@ -42,7 +42,7 @@ are based on the upper or lower credible bounds, respectively. See section
 
 \item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
 the reference model or the best submodel found, respectively. If \code{NULL},
-then \code{"ref"} is used, except for \code{"datafit"}s for which \code{"best"} is used.}
+then \code{"ref"} is used, except for \code{datafit}s for which \code{"best"} is used.}
 
 \item{warnings}{Whether to give warnings if automatic suggestion fails,
 mainly for internal use. Usually there is no reason to set this to \code{FALSE}.}
