@@ -17,32 +17,33 @@ project(
 )
 }
 \arguments{
-\item{object}{Either a \code{refmodel}-type object created by \code{\link[=get_refmodel]{get_refmodel()}} or
-\code{\link[=init_refmodel]{init_refmodel()}}, or an object which can be converted to a reference model
-using \code{\link[=get_refmodel]{get_refmodel()}}.}
+\item{object}{An object which can be used as input to \code{\link[=get_refmodel]{get_refmodel()}} (in
+particular, objects of class \code{refmodel}).}
 
-\item{nterms}{Number of terms in the submodel (the variable combination is
-taken from the \code{varsel} information). If a numeric vector, then the
-projection is performed for each model size. If \code{NULL}, the model size
-suggested by the variable selection (see function \code{\link[=suggest_size]{suggest_size()}}).
-Ignored if \code{solution_terms} is specified. Note that \code{nterms} does not count
-the intercept, so use \code{nterms = 0} for the intercept-only model.}
+\item{nterms}{Only relevant if \code{object} is of class \code{vsel} (returned by
+\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}). Ignored if \code{!is.null(solution_terms)}.
+Number of terms for the submodel (the corresponding combination of
+predictor terms is taken from \code{object}). If a numeric vector, then the
+projection is performed for each element of this vector. If \code{NULL} (and
+\code{is.null(solution_terms)}), then the value suggested by the variable
+selection is taken (see function \code{\link[=suggest_size]{suggest_size()}}). Note that \code{nterms} does
+not count the intercept, so use \code{nterms = 0} for the intercept-only model.}
 
-\item{solution_terms}{Variable indices onto which the projection is done. If
-specified, \code{nterms} is ignored.}
+\item{solution_terms}{If not \code{NULL}, then this needs to be a character vector
+of predictor terms for the submodel onto which the projection will be
+performed. Argument \code{nterms} is ignored in that case. For an \code{object} which
+is not of class \code{vsel}, \code{solution_terms} must not be \code{NULL}.}
 
-\item{cv_search}{If TRUE, then the projected coefficients after L1-selection
-are computed without any penalization (or using only the regularization
-determined by \code{regul}). If FALSE, then the coefficients are the solution
-from the L1-penalized projection. This option is relevant only if L1-search
-was used. Default is TRUE for genuine reference models and FALSE if
-\code{object} is datafit (see \code{\link[=init_refmodel]{init_refmodel()}}).}
+\item{cv_search}{A single logical value indicating whether to fit the
+submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
+\code{object} (\code{FALSE}). For an \code{object} which is not of class \code{vsel},
+\code{cv_search} must be \code{TRUE}.}
 
-\item{ndraws}{Number of posterior draws to be projected. Cannot be larger
-than the number of draws in the reference model. \strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that clustering
-is used). Ignored if \code{nclusters} is not \code{NULL} or if the reference model is
-of class \code{datafit} (in which case one cluster is used). See also section
-"Details" below.}
+\item{ndraws}{Number of posterior draws to be projected. \strong{Caution:} For
+\code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
+clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if the
+reference model is of class \code{datafit} (in which case one cluster is used).
+See also section "Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws to be projected.
 Ignored if the reference model is of class \code{datafit} (in which case one
@@ -61,11 +62,12 @@ is no need for regularization, but sometimes we need to add (or rather
 increase, given that \code{regul} defaults to \code{1e-4}) some regularization to
 avoid numerical problems.}
 
-\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
+\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} (if \code{\link[=get_refmodel]{get_refmodel()}} is
+actually used; see argument \code{object}).}
 }
 \value{
-If the projection is performed onto a single submodel (i.e., \code{nterms}
-has length one or \code{solution_terms} is specified), an object of class
+If the projection is performed onto a single submodel (i.e.,
+\code{length(nterms) == 1 || !is.null(solution_terms)}), an object of class
 \code{projection} which is a \code{list} containing the following elements:
 \describe{
 \item{\code{dis}}{Projected draws for the dispersion parameter.}
@@ -73,7 +75,7 @@ has length one or \code{solution_terms} is specified), an object of class
 model.}
 \item{\code{weights}}{Weights for the projected draws.}
 \item{\code{solution_terms}}{A character vector of the submodel's
-predictor terms, ordered the way in which the terms were added to the
+predictor terms, ordered in the way in which the terms were added to the
 submodel.}
 \item{\code{sub_fit}}{The submodel's fitted model object.}
 \item{\code{family}}{A modified \code{\link{family}} object.}
@@ -85,8 +87,7 @@ reference model (as well as the submodel) contains an intercept
 (\code{TRUE}) or not (\code{FALSE}).}
 \item{\code{extract_model_data}}{The \code{extract_model_data} function
 from the reference model (see \code{\link[=init_refmodel]{init_refmodel()}}).}
-\item{\code{refmodel}}{The reference model object (see
-\code{\link[=init_refmodel]{init_refmodel()}}).}
+\item{\code{refmodel}}{The reference model object.}
 }
 If the projection is performed onto more than one submodel, the output from
 above is returned for each submodel, giving a \code{list} with one element for
@@ -99,10 +100,16 @@ single submodel consisting of a specific combination of predictor terms or
 submodels of specific sizes.
 }
 \details{
-Using less draws or clusters in \code{ndraws} or \code{nclusters} than
-posterior draws in the reference model may result in slightly inaccurate
-projection performance. Increasing these arguments linearly affects the
-computation time.
+Notes:
+\itemize{
+\item Arguments \code{ndraws} and \code{nclusters} are automatically truncated at the
+number of posterior draws in the reference model (which is \code{1} for
+\code{datafit}s).
+\item Using less draws or clusters in \code{ndraws} or \code{nclusters} than posterior
+draws in the reference model may result in slightly inaccurate projection
+performance. Increasing these arguments affects the computation time
+linearly.
+}
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

@@ -51,11 +51,10 @@ model has multilevel or additive terms and \code{"L1"} otherwise.}
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}.}
 
 \item{ndraws}{Number of posterior draws used in the variable selection.
-Automatically truncated at the number of draws in the reference model
-(which is \code{1} for \code{datafit}s). \strong{Caution:} For \code{ndraws <= 20}, the value
-of \code{ndraws} is passed to \code{nclusters} (so that clustering is used). Ignored
-if \code{nclusters} is not \code{NULL} or if \code{method == "L1"} (L1 search uses always
-one cluster). See also section "Details" below.}
+\strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is passed to
+\code{nclusters} (so that clustering is used). Ignored if \code{nclusters} is not
+\code{NULL} or if \code{method == "L1"} (L1 search uses always one cluster). See also
+section "Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws used in the variable
 selection. Ignored if \code{method == "L1"} (L1 search uses always one cluster).
@@ -63,11 +62,10 @@ For the meaning of \code{NULL}, see argument \code{ndraws}. See also section
 "Details" below.}
 
 \item{ndraws_pred}{Number of posterior draws used for prediction (after
-selection). Automatically truncated at the number of draws in the reference
-model (which is \code{1} for \code{datafit}s). \strong{Caution:} For \code{ndraws_pred <= 20},
-the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
-clustering is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
-section "Details" below.}
+selection). \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
+\code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering is used).
+Ignored if \code{nclusters_pred} is not \code{NULL}. See also section "Details"
+below.}
 
 \item{nclusters_pred}{Number of clusters of posterior draws used for
 prediction (after selection). For the meaning of \code{NULL}, see argument
@@ -158,6 +156,9 @@ cross-validation (CV).
 \details{
 Notes:
 \itemize{
+\item Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred} are
+automatically truncated at the number of posterior draws in the reference
+model (which is \code{1} for \code{datafit}s).
 \item Using less draws or clusters in \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, or
 \code{ndraws_pred} than posterior draws in the reference model may result in
 slightly inaccurate projection performance. Increasing these arguments

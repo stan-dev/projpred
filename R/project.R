@@ -5,29 +5,29 @@
 #' (after variable selection) onto the parameter space of a single or multiple
 #' submodels of specific sizes.
 #'
-#' @param object Either a `refmodel`-type object created by [get_refmodel()] or
-#'   [init_refmodel()], or an object which can be converted to a reference model
-#'   using [get_refmodel()].
-#' @param nterms Number of terms in the submodel (the variable combination is
-#'   taken from the `varsel` information). If a numeric vector, then the
-#'   projection is performed for each model size. If `NULL`, the model size
-#'   suggested by the variable selection (see function [suggest_size()]).
-#'   Ignored if `solution_terms` is specified. Note that `nterms` does not count
-#'   the intercept, so use `nterms = 0` for the intercept-only model.
-#' @param solution_terms Variable indices onto which the projection is done. If
-#'   specified, `nterms` is ignored.
-#' @param cv_search If TRUE, then the projected coefficients after L1-selection
-#'   are computed without any penalization (or using only the regularization
-#'   determined by `regul`). If FALSE, then the coefficients are the solution
-#'   from the L1-penalized projection. This option is relevant only if L1-search
-#'   was used. Default is TRUE for genuine reference models and FALSE if
-#'   `object` is datafit (see [init_refmodel()]).
-#' @param ndraws Number of posterior draws to be projected. Cannot be larger
-#'   than the number of draws in the reference model. **Caution:** For `ndraws
-#'   <= 20`, the value of `ndraws` is passed to `nclusters` (so that clustering
-#'   is used). Ignored if `nclusters` is not `NULL` or if the reference model is
-#'   of class `datafit` (in which case one cluster is used). See also section
-#'   "Details" below.
+#' @param object An object which can be used as input to [get_refmodel()] (in
+#'   particular, objects of class `refmodel`).
+#' @param nterms Only relevant if `object` is of class `vsel` (returned by
+#'   [varsel()] or [cv_varsel()]). Ignored if `!is.null(solution_terms)`.
+#'   Number of terms for the submodel (the corresponding combination of
+#'   predictor terms is taken from `object`). If a numeric vector, then the
+#'   projection is performed for each element of this vector. If `NULL` (and
+#'   `is.null(solution_terms)`), then the value suggested by the variable
+#'   selection is taken (see function [suggest_size()]). Note that `nterms` does
+#'   not count the intercept, so use `nterms = 0` for the intercept-only model.
+#' @param solution_terms If not `NULL`, then this needs to be a character vector
+#'   of predictor terms for the submodel onto which the projection will be
+#'   performed. Argument `nterms` is ignored in that case. For an `object` which
+#'   is not of class `vsel`, `solution_terms` must not be `NULL`.
+#' @param cv_search A single logical value indicating whether to fit the
+#'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
+#'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
+#'   `cv_search` must be `TRUE`.
+#' @param ndraws Number of posterior draws to be projected. **Caution:** For
+#'   `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
+#'   clustering is used). Ignored if `nclusters` is not `NULL` or if the
+#'   reference model is of class `datafit` (in which case one cluster is used).
+#'   See also section "Details" below.
 #' @param nclusters Number of clusters of posterior draws to be projected.
 #'   Ignored if the reference model is of class `datafit` (in which case one
 #'   cluster is used). For the meaning of `NULL`, see argument `ndraws`. See
@@ -38,15 +38,22 @@
 #'   Here, this seed is used for clustering the reference model's posterior
 #'   draws (if `!is.null(nclusters)`).
 #' @inheritParams varsel
-#' @param ... Arguments passed to [get_refmodel()].
+#' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
+#'   actually used; see argument `object`).
 #'
-#' @details Using less draws or clusters in `ndraws` or `nclusters` than
-#'   posterior draws in the reference model may result in slightly inaccurate
-#'   projection performance. Increasing these arguments linearly affects the
-#'   computation time.
+#' @details
 #'
-#' @return If the projection is performed onto a single submodel (i.e., `nterms`
-#'   has length one or `solution_terms` is specified), an object of class
+#' Notes:
+#' * Arguments `ndraws` and `nclusters` are automatically truncated at the
+#' number of posterior draws in the reference model (which is `1` for
+#' `datafit`s).
+#' * Using less draws or clusters in `ndraws` or `nclusters` than posterior
+#' draws in the reference model may result in slightly inaccurate projection
+#' performance. Increasing these arguments affects the computation time
+#' linearly.
+#'
+#' @return If the projection is performed onto a single submodel (i.e.,
+#'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class
 #'   `projection` which is a `list` containing the following elements:
 #'   \describe{
 #'     \item{`dis`}{Projected draws for the dispersion parameter.}
@@ -54,7 +61,7 @@
 #'     model.}
 #'     \item{`weights`}{Weights for the projected draws.}
 #'     \item{`solution_terms`}{A character vector of the submodel's
-#'     predictor terms, ordered the way in which the terms were added to the
+#'     predictor terms, ordered in the way in which the terms were added to the
 #'     submodel.}
 #'     \item{`sub_fit`}{The submodel's fitted model object.}
 #'     \item{`family`}{A modified [`family`] object.}
@@ -66,8 +73,7 @@
 #'     (`TRUE`) or not (`FALSE`).}
 #'     \item{`extract_model_data`}{The `extract_model_data` function
 #'     from the reference model (see [init_refmodel()]).}
-#'     \item{`refmodel`}{The reference model object (see
-#'     [init_refmodel()]).}
+#'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
 #'   above is returned for each submodel, giving a `list` with one element for

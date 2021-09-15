@@ -21,21 +21,19 @@
 #'   only if `method == "L1"`. Default is `TRUE` for genuine reference models
 #'   and `FALSE` if `object` is datafit (see [init_refmodel()]).
 #' @param ndraws Number of posterior draws used in the variable selection.
-#'   Automatically truncated at the number of draws in the reference model
-#'   (which is `1` for `datafit`s). **Caution:** For `ndraws <= 20`, the value
-#'   of `ndraws` is passed to `nclusters` (so that clustering is used). Ignored
-#'   if `nclusters` is not `NULL` or if `method == "L1"` (L1 search uses always
-#'   one cluster). See also section "Details" below.
+#'   **Caution:** For `ndraws <= 20`, the value of `ndraws` is passed to
+#'   `nclusters` (so that clustering is used). Ignored if `nclusters` is not
+#'   `NULL` or if `method == "L1"` (L1 search uses always one cluster). See also
+#'   section "Details" below.
 #' @param nclusters Number of clusters of posterior draws used in the variable
 #'   selection. Ignored if `method == "L1"` (L1 search uses always one cluster).
 #'   For the meaning of `NULL`, see argument `ndraws`. See also section
 #'   "Details" below.
 #' @param ndraws_pred Number of posterior draws used for prediction (after
-#'   selection). Automatically truncated at the number of draws in the reference
-#'   model (which is `1` for `datafit`s). **Caution:** For `ndraws_pred <= 20`,
-#'   the value of `ndraws_pred` is passed to `nclusters_pred` (so that
-#'   clustering is used). Ignored if `nclusters_pred` is not `NULL`. See also
-#'   section "Details" below.
+#'   selection). **Caution:** For `ndraws_pred <= 20`, the value of
+#'   `ndraws_pred` is passed to `nclusters_pred` (so that clustering is used).
+#'   Ignored if `nclusters_pred` is not `NULL`. See also section "Details"
+#'   below.
 #' @param nclusters_pred Number of clusters of posterior draws used for
 #'   prediction (after selection). For the meaning of `NULL`, see argument
 #'   `ndraws_pred`. See also section "Details" below.
@@ -78,6 +76,9 @@
 #' @details
 #'
 #' Notes:
+#' * Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred` are
+#' automatically truncated at the number of posterior draws in the reference
+#' model (which is `1` for `datafit`s).
 #' * Using less draws or clusters in `ndraws`, `nclusters`, `nclusters_pred`, or
 #' `ndraws_pred` than posterior draws in the reference model may result in
 #' slightly inaccurate projection performance. Increasing these arguments
