@@ -70,7 +70,7 @@ extfam_tester <- function(extfam,
 # @param pkg_nm A single character string specifying the name of the package
 #   upon whose fit the reference model (or `"datafit"`) is based.
 # @param fit_expected The expected `refmod$fit` object.
-# @param formul_expected The expected `refmod$formula` object. A `cbind()`
+# @param formul_expected The expected `refmod$formula` object. A cbind()
 #   expression on the left-hand side of the formula is handled automatically.
 # @param data_expected The original dataset used for the reference model fit or
 #   as input to get_refmodel() or init_refmodel(). Internal changes (i.e.,

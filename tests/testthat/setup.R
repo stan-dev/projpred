@@ -8,11 +8,11 @@ options(warn = 1)
 
 # These switches may be set to `FALSE` to save time (e.g., when debugging
 # interactively):
-# Run `varsel()`?:
+# Run varsel()?:
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
-# Run `cv_varsel()`?:
+# Run cv_varsel()?:
 run_cvvs <- run_vs
-# Run `cv_varsel()` with `validate_search = TRUE` always (`TRUE`) or just for L1
+# Run cv_varsel() with `validate_search = TRUE` always (`TRUE`) or just for L1
 # search (`FALSE`)?:
 run_valsearch_always <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
