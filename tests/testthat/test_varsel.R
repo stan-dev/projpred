@@ -305,8 +305,10 @@ test_that(paste(
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
         # here (instead of the coefficients themselves, which would only be
         # accessible from `p_sub`):
-        mu_jm_regul <- vs_regul$family$linkfun(vs_regul$summaries$sub[[m]]$mu) -
-          offs_tst
+        mu_jm_regul <- vs_regul$family$linkfun(vs_regul$summaries$sub[[m]]$mu)
+        if (grepl("\\.with_offs", tstsetup)) {
+          mu_jm_regul <- mu_jm_regul - offs_tst
+        }
         # In fact, `sum((mu - offset - intercept)^2)` would make more sense than
         # `var(mu - offset) = sum((mu - offset - mean(mu - offset))^2)` but
         # since varsel() doesn't output object `p_sub`, the intercept from the
