@@ -39,25 +39,31 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
                  seed = 9182)
   prjmat <- as.matrix(prj)
+  ### For further post-processing (e.g., via packages `bayesplot` and
+  ### `posterior`), we will here ignore the fact that clustering was used
+  ### (due to argument `nclusters` above). CAUTION: Ignoring the clustering
+  ### is not recommended and only shown here for demonstration purposes. A
+  ### better solution for the clustering case is explained below.
+  # If the `bayesplot` package is installed, the output from
+  # as.matrix.projection() can be used there, for example:
+  if (requireNamespace("bayesplot", quietly = TRUE)) {
+    print(bayesplot::mcmc_intervals(prjmat))
+  }
   # If the `posterior` package is installed, the output from
-  # as.matrix.projection() can be used there:
+  # as.matrix.projection() can be used there, for example:
   if (requireNamespace("posterior", quietly = TRUE)) {
-    # If we ignored the fact that clustering was used here (because of
-    # argument `nclusters` above); note that ignoring the clustering is not
-    # recommended and only shown for demonstration purposes (a better
-    # solution for the clustering case is explained below):
     prjdrws <- posterior::as_draws_matrix(prjmat)
-    # Now, for example:
     print(posterior::summarize_draws(
       prjdrws,
       "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
     ))
-    # Better: Don't ignore the fact that clustering was used here by
-    # resampling the clusters according to their weights. However, this
-    # requires access to the cluster weights which is not implemented in
-    # `projpred` yet. This example will be extended as soon as those weights
-    # are accessible.
   }
+  ### Better solution for post-processing clustered draws (e.g., via
+  ### `bayesplot` or `posterior`): Don't ignore the fact that clustering was
+  ### used. Instead, resample the clusters according to their weights (e.g.,
+  ### via posterior::resample_draws()). However, this requires access to the
+  ### cluster weights which is not implemented in `projpred` yet. This
+  ### example will be extended as soon as those weights are accessible.
 }
 
 }
