@@ -168,26 +168,31 @@
 #'
 NULL
 
-#' Predict method for reference model objects
+#' Predictions or log predictive densities from a reference model
 #'
-#' Compute the predictions using the reference model, that is, compute the
-#' expected value for the next observation, or evaluate the log-predictive
-#' density at a given point.
+#' This is the [predict()] method for `refmodel` objects (returned by
+#' [get_refmodel()] or [init_refmodel()]). It offers three types of output which
+#' are all based on the reference model and new (or old) observations: Either
+#' the linear predictor on link scale, the linear predictor transformed to
+#' response scale, or the log-predictive density.
 #'
 #' @template args-newdata
-#' @param object The object of class `refmodel`.
-#' @param ynew New (test) target variables. If given, then the log predictive
-#'   density for the new observations is computed.
-#' @param type Scale on which the predictions are returned. Either 'link' (the
-#'   latent function value, from -inf to inf) or 'response' (the scale on which
-#'   the target `y` is measured, obtained by taking the inverse-link from the
-#'   latent value).
+#' @param object An object of class `refmodel` (returned by [get_refmodel()] or
+#'   [init_refmodel()]).
+#' @param ynew If not `NULL`, then this needs to be a vector of new (or old)
+#'   response values. See section "Value" below.
+#' @param type Only relevant if `is.null(ynew)`. The scale on which the
+#'   predictions are returned, either `"link"` or `"response"` (see
+#'   [predict.glm()] but note that [predict.refmodel()] does not adhere to the
+#'   typical \R convention of a default prediction on link scale). For both
+#'   scales, the predictions are averaged across the posterior draws.
 #' @param ... Currently ignored.
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
 #'
-#' @return Returns either a vector of predictions, or vector of log predictive
-#'   densities evaluated at `ynew` if `ynew` is not `NULL`.
+#' @return Either a vector of predictions (with the scale depending on argument
+#'   `type`) or, if `!is.null(ynew)`, a vector of log predictive densities
+#'   evaluated at `ynew`.
 #'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
