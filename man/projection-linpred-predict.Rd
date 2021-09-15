@@ -34,15 +34,16 @@ object that can be passed to argument \code{object} of \code{\link[=project]{pro
 
 \item{newdata}{Passed to argument \code{newdata} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Provides the
-predictor (and possibly also the response) data for the new observations.}
+predictor (and possibly also the response) data for the new (or old)
+observations.}
 
 \item{offsetnew}{Passed to argument \code{orhs} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
-offsets for the (new) observations.}
+offsets for the new (or old) observations.}
 
 \item{weightsnew}{Passed to argument \code{wrhs} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
-weights for the (new) observations.}
+weights for the new (or old) observations.}
 
 \item{filter_nterms}{Only applies if \code{object} is an object returned by
 \code{\link[=project]{project()}}. In that case, \code{filter_nterms} can be used to filter \code{object}

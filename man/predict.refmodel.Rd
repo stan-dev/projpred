@@ -19,18 +19,19 @@
 
 \item{newdata}{Passed to argument \code{newdata} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Provides the
-predictor (and possibly also the response) data for the new observations.}
+predictor (and possibly also the response) data for the new (or old)
+observations.}
 
 \item{ynew}{New (test) target variables. If given, then the log predictive
 density for the new observations is computed.}
 
 \item{offsetnew}{Passed to argument \code{orhs} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
-offsets for the (new) observations.}
+offsets for the new (or old) observations.}
 
 \item{weightsnew}{Passed to argument \code{wrhs} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
-weights for the (new) observations.}
+weights for the new (or old) observations.}
 
 \item{type}{Scale on which the predictions are returned. Either 'link' (the
 latent function value, from -inf to inf) or 'response' (the scale on which
