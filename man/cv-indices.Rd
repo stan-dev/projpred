@@ -4,7 +4,7 @@
 \alias{cv-indices}
 \alias{cvfolds}
 \alias{cv_ids}
-\title{Create cross-validation (CV) folds}
+\title{Create cross-validation folds}
 \usage{
 cvfolds(n, K, seed = NULL)
 
@@ -34,7 +34,8 @@ each being a \code{list} with \code{k} elements giving the training and test ind
 respectively, for each fold.
 }
 \description{
-Split up indices from 1 to \code{n} into \code{K} subsets ("folds") for K-fold CV.
+These are helper functions to create cross-validation (CV) folds, i.e., to
+split up the indices from 1 to \code{n} into \code{K} subsets ("folds") for K-fold CV.
 These functions are potentially useful when creating the \code{cvfits} and \code{cvfun}
 arguments for \code{\link[=init_refmodel]{init_refmodel()}}. The return value is different for these two
 methods, see below for details.

@@ -1,10 +1,11 @@
 #' Reference model structure
 #'
 #' Function [get_refmodel()] is a generic function for creating the reference
-#' model structure from a specific `object`. The [get_refmodel()]
-#' methods usually call [init_refmodel()] which is the underlying workhorse
-#' to create the reference model structure (and may also be used directly
-#' without using [get_refmodel()]).
+#' model structure from a specific `object`. The [get_refmodel()] methods
+#' usually call [init_refmodel()] which is the underlying workhorse to create
+#' the reference model structure (and may also be used directly without using
+#' [get_refmodel()]). Some arguments are for K-fold cross-validation (K-fold CV)
+#' only; see [cv_varsel()] for the use of K-fold CV in \pkg{projpred}.
 #'
 #' @name refmodel-init-get
 #'

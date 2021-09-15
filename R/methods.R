@@ -1081,9 +1081,10 @@ as.matrix.projection <- function(x, ...) {
   return(res)
 }
 
-#' Create cross-validation (CV) folds
+#' Create cross-validation folds
 #'
-#' Split up indices from 1 to `n` into `K` subsets ("folds") for K-fold CV.
+#' These are helper functions to create cross-validation (CV) folds, i.e., to
+#' split up the indices from 1 to `n` into `K` subsets ("folds") for K-fold CV.
 #' These functions are potentially useful when creating the `cvfits` and `cvfun`
 #' arguments for [init_refmodel()]. The return value is different for these two
 #' methods, see below for details.

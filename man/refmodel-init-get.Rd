@@ -109,10 +109,11 @@ instead which always returns \code{NA}.
 }
 \description{
 Function \code{\link[=get_refmodel]{get_refmodel()}} is a generic function for creating the reference
-model structure from a specific \code{object}. The \code{\link[=get_refmodel]{get_refmodel()}}
-methods usually call \code{\link[=init_refmodel]{init_refmodel()}} which is the underlying workhorse
-to create the reference model structure (and may also be used directly
-without using \code{\link[=get_refmodel]{get_refmodel()}}).
+model structure from a specific \code{object}. The \code{\link[=get_refmodel]{get_refmodel()}} methods
+usually call \code{\link[=init_refmodel]{init_refmodel()}} which is the underlying workhorse to create
+the reference model structure (and may also be used directly without using
+\code{\link[=get_refmodel]{get_refmodel()}}). Some arguments are for K-fold cross-validation (K-fold CV)
+only; see \code{\link[=cv_varsel]{cv_varsel()}} for the use of K-fold CV in \pkg{projpred}.
 }
 \section{\code{ref_predfun}, \code{proj_predfun}, \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be
