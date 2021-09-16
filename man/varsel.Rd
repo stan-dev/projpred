@@ -43,8 +43,9 @@ test set which is used for evaluating the predictive performance of the
 reference model. If not provided, the training set is used.}
 
 \item{method}{The method for the search. Possible options are \code{"L1"} for L1
-search and \code{"forward"} for forward search. \code{NULL} leads to \code{"forward"} if
-the reference model has multilevel or additive terms and \code{"L1"} otherwise.}
+search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"} is
+used if the reference model has multilevel or additive terms and \code{"L1"}
+otherwise.}
 
 \item{ndraws}{Number of posterior draws used in the search. \strong{Caution:} For
 \code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
@@ -71,8 +72,8 @@ submodels along the solution path again (\code{TRUE}) or to retrieve their fits
 from the search (\code{FALSE}) before using those (re-)fits in the evaluation.}
 
 \item{nterms_max}{Maximum number of predictor terms until which the search is
-continued. \code{NULL} leads to \code{min(19, D)} where \code{D} is the number of terms in
-the reference model (or in \code{search_terms}, if supplied). Note that
+continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
+terms in the reference model (or in \code{search_terms}, if supplied). Note that
 \code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
 intercept-only model.}
 
@@ -102,7 +103,7 @@ regularization to avoid numerical problems.}
 vector determining the relative penalties or costs for the predictors. A
 value of \code{0} means that those predictors have no cost and will therefore be
 selected first, whereas \code{Inf} means those predictors will never be
-selected. \code{NULL} leads to \code{1} for each predictor.}
+selected. If \code{NULL}, then \code{1} is used for each predictor.}
 
 \item{search_terms}{A custom character vector of terms to consider for
 selection. The intercept (\code{"1"}) needs to be included explicitly. The

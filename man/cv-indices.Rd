@@ -35,10 +35,10 @@ respectively, for each fold.
 }
 \description{
 These are helper functions to create cross-validation (CV) folds, i.e., to
-split up the indices from 1 to \code{n} into \code{K} subsets ("folds") for K-fold CV.
-These functions are potentially useful when creating the \code{cvfits} and \code{cvfun}
-arguments for \code{\link[=init_refmodel]{init_refmodel()}}. The return value is different for these two
-methods, see below for details.
+split up the indices from 1 to \code{n} into \code{K} subsets ("folds") for
+\eqn{K}-fold CV. These functions are potentially useful when creating the
+\code{cvfits} and \code{cvfun} arguments for \code{\link[=init_refmodel]{init_refmodel()}}. The return value is
+different for these two methods, see below for details.
 }
 \examples{
 n <- 100

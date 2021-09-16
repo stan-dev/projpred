@@ -6,38 +6,49 @@
 #' submodel for each number of predictor terms (model size). The evaluation
 #' determines the predictive performance of the submodels along the solution
 #' path. In contrast to [varsel()], [cv_varsel()] performs a cross-validation
-#' (CV) around both, search and evaluation (or only the evaluation, depending on
-#' arguments `cv_method` and `validate_search`).
+#' (CV) by running the search with the training data of each CV fold separately
+#' (an exception is explained in section "Note" below) and running the
+#' evaluation on the corresponding test set of each CV fold.
 #'
 #' @inheritParams varsel
-#' @param cv_method The CV method, either `"LOO"` or `"kfold"`.
-#' @param nloo Number of observations used to compute the LOO validation
-#'   (anything between 1 and the total number of observations). Smaller values
-#'   lead to faster computation but higher uncertainty (larger errorbars) in the
-#'   accuracy estimation. Default is to use all observations, but for faster
-#'   experimentation, one can set this to a small value such as 100. Only
-#'   applicable if `cv_method == "LOO"`.
-#' @param K Number of folds in the K-fold cross validation. Default is 5 for
-#'   genuine reference models and 10 for datafits (that is, for penalized
+#' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
+#'   case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
+#'   is performed, which avoids refitting the reference model `nloo` times (in
+#'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
+#'   performed.
+#' @param nloo Only relevant if `cv_method == "LOO"`. Number of subsampled LOO
+#'   CV folds, i.e., number of observations used for the LOO CV (anything
+#'   between 1 and the original number of observations). Smaller values lead to
+#'   faster computation but higher uncertainty in the evaluation. If `NULL`, all
+#'   observations are used, but for faster experimentation, one can set this to
+#'   a smaller value.
+#' @param K Only relevant if `cv_method == "kfold"`. Number of folds in the
+#'   \eqn{K}-fold CV. If `NULL`, then `5` is used for genuine reference models
+#'   (i.e., of class `refmodel`) and `10` for `datafit`s (that is, for penalized
 #'   maximum likelihood estimation).
-#' @param validate_search Only relevant if `cv_method == "LOO"`. Whether to cross-validate also the selection process,
-#'   that is, whether to perform selection separately for each fold. Default is
-#'   TRUE and we strongly recommend not setting this to FALSE, because this is
-#'   known to bias the accuracy estimates for the selected submodels. However,
-#'   setting this to FALSE can sometimes be useful because comparing the results
-#'   to the case where this parameter is TRUE gives idea how strongly the
-#'   feature selection is (over)fitted to the data (the difference corresponds
-#'   to the search degrees of freedom or the effective number of parameters
-#'   introduced by the selectin process).
+#' @param validate_search Only relevant if `cv_method == "LOO"`. A single
+#'   logical value indicating whether to cross-validate also the search, i.e.,
+#'   whether to run the search separately for each CV fold (`TRUE`) or not
+#'   (`FALSE`). We strongly do not recommend setting this to `FALSE`, because
+#'   this is known to bias the predictive performance estimates of the selected
+#'   submodels. However, setting this to `FALSE` can sometimes be useful because
+#'   comparing the results to the case where this argument is `TRUE` gives an
+#'   idea of how strongly the variable selection is (over-)fitted to the data
+#'   (the difference corresponds to the search degrees of freedom or the
+#'   effective number of parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. If `NULL`, no seed is set and
 #'   therefore, the results are not reproducible. See [set.seed()] for details.
 #'   Here, this seed is used for clustering the reference model's posterior
-#'   draws (if `!is.null(nclusters)`), for subsampling LOO-CV folds (if `nloo`
+#'   draws (if `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo`
 #'   is smaller than the number of observations), and for sampling the folds in
 #'   K-fold CV.
 #'
 #' @inherit varsel details return
+#'
+#' @note The case `cv_method == "LOO" && !validate_search` constitutes an
+#'   exception where the search is not cross-validated. In that case, the
+#'   evaluation is based on a PSIS-LOO CV.
 #'
 #' @seealso [varsel()]
 #'

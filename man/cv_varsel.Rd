@@ -42,10 +42,15 @@ cv_varsel(object, ...)
 \item{...}{Additional arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
 
 \item{method}{The method for the search. Possible options are \code{"L1"} for L1
-search and \code{"forward"} for forward search. \code{NULL} leads to \code{"forward"} if
-the reference model has multilevel or additive terms and \code{"L1"} otherwise.}
+search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"} is
+used if the reference model has multilevel or additive terms and \code{"L1"}
+otherwise.}
 
-\item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}.}
+\item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
+case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
+is performed, which avoids refitting the reference model \code{nloo} times (in
+contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
+performed.}
 
 \item{ndraws}{Number of posterior draws used in the search. \strong{Caution:} For
 \code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
@@ -72,8 +77,8 @@ submodels along the solution path again (\code{TRUE}) or to retrieve their fits
 from the search (\code{FALSE}) before using those (re-)fits in the evaluation.}
 
 \item{nterms_max}{Maximum number of predictor terms until which the search is
-continued. \code{NULL} leads to \code{min(19, D)} where \code{D} is the number of terms in
-the reference model (or in \code{search_terms}, if supplied). Note that
+continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
+terms in the reference model (or in \code{search_terms}, if supplied). Note that
 \code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
 intercept-only model.}
 
@@ -81,20 +86,21 @@ intercept-only model.}
 vector determining the relative penalties or costs for the predictors. A
 value of \code{0} means that those predictors have no cost and will therefore be
 selected first, whereas \code{Inf} means those predictors will never be
-selected. \code{NULL} leads to \code{1} for each predictor.}
+selected. If \code{NULL}, then \code{1} is used for each predictor.}
 
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{nloo}{Number of observations used to compute the LOO validation
-(anything between 1 and the total number of observations). Smaller values
-lead to faster computation but higher uncertainty (larger errorbars) in the
-accuracy estimation. Default is to use all observations, but for faster
-experimentation, one can set this to a small value such as 100. Only
-applicable if \code{cv_method == "LOO"}.}
+\item{nloo}{Only relevant if \code{cv_method == "LOO"}. Number of subsampled LOO
+CV folds, i.e., number of observations used for the LOO CV (anything
+between 1 and the original number of observations). Smaller values lead to
+faster computation but higher uncertainty in the evaluation. If \code{NULL}, all
+observations are used, but for faster experimentation, one can set this to
+a smaller value.}
 
-\item{K}{Number of folds in the K-fold cross validation. Default is 5 for
-genuine reference models and 10 for datafits (that is, for penalized
+\item{K}{Only relevant if \code{cv_method == "kfold"}. Number of folds in the
+\eqn{K}-fold CV. If \code{NULL}, then \code{5} is used for genuine reference models
+(i.e., of class \code{refmodel}) and \code{10} for \code{datafit}s (that is, for penalized
 maximum likelihood estimation).}
 
 \item{lambda_min_ratio}{Only relevant if \code{method} turns out as \code{"L1"}. Ratio
@@ -116,21 +122,22 @@ projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
 is no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
 
-\item{validate_search}{Only relevant if \code{cv_method == "LOO"}. Whether to cross-validate also the selection process,
-that is, whether to perform selection separately for each fold. Default is
-TRUE and we strongly recommend not setting this to FALSE, because this is
-known to bias the accuracy estimates for the selected submodels. However,
-setting this to FALSE can sometimes be useful because comparing the results
-to the case where this parameter is TRUE gives idea how strongly the
-feature selection is (over)fitted to the data (the difference corresponds
-to the search degrees of freedom or the effective number of parameters
-introduced by the selectin process).}
+\item{validate_search}{Only relevant if \code{cv_method == "LOO"}. A single
+logical value indicating whether to cross-validate also the search, i.e.,
+whether to run the search separately for each CV fold (\code{TRUE}) or not
+(\code{FALSE}). We strongly do not recommend setting this to \code{FALSE}, because
+this is known to bias the predictive performance estimates of the selected
+submodels. However, setting this to \code{FALSE} can sometimes be useful because
+comparing the results to the case where this argument is \code{TRUE} gives an
+idea of how strongly the variable selection is (over-)fitted to the data
+(the difference corresponds to the search degrees of freedom or the
+effective number of parameters introduced by the search).}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If \code{NULL}, no seed is set and
 therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
 Here, this seed is used for clustering the reference model's posterior
-draws (if \code{!is.null(nclusters)}), for subsampling LOO-CV folds (if \code{nloo}
+draws (if \code{!is.null(nclusters)}), for subsampling LOO CV folds (if \code{nloo}
 is smaller than the number of observations), and for sampling the folds in
 K-fold CV.}
 
@@ -150,8 +157,9 @@ Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
 submodel for each number of predictor terms (model size). The evaluation
 determines the predictive performance of the submodels along the solution
 path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a cross-validation
-(CV) around both, search and evaluation (or only the evaluation, depending on
-arguments \code{cv_method} and \code{validate_search}).
+(CV) by running the search with the training data of each CV fold separately
+(an exception is explained in section "Note" below) and running the
+evaluation on the corresponding test set of each CV fold.
 }
 \details{
 Notes:
@@ -166,6 +174,11 @@ affects the computation time linearly.
 \item An L1 search may select interaction terms before the corresponding main
 terms are selected. If this is undesired, choose the forward search instead.
 }
+}
+\note{
+The case \code{cv_method == "LOO" && !validate_search} constitutes an
+exception where the search is not cross-validated. In that case, the
+evaluation is based on a PSIS-LOO CV.
 }
 \examples{
 \dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}

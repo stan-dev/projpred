@@ -14,8 +14,9 @@
 #'   test set which is used for evaluating the predictive performance of the
 #'   reference model. If not provided, the training set is used.
 #' @param method The method for the search. Possible options are `"L1"` for L1
-#'   search and `"forward"` for forward search. `NULL` leads to `"forward"` if
-#'   the reference model has multilevel or additive terms and `"L1"` otherwise.
+#'   search and `"forward"` for forward search. If `NULL`, then `"forward"` is
+#'   used if the reference model has multilevel or additive terms and `"L1"`
+#'   otherwise.
 #' @param cv_search A single logical value indicating whether to fit the
 #'   submodels along the solution path again (`TRUE`) or to retrieve their fits
 #'   from the search (`FALSE`) before using those (re-)fits in the evaluation.
@@ -36,15 +37,15 @@
 #'   evaluation. For the meaning of `NULL`, see argument `ndraws_pred`. See also
 #'   section "Details" below.
 #' @param nterms_max Maximum number of predictor terms until which the search is
-#'   continued. `NULL` leads to `min(19, D)` where `D` is the number of terms in
-#'   the reference model (or in `search_terms`, if supplied). Note that
+#'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
+#'   terms in the reference model (or in `search_terms`, if supplied). Note that
 #'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
 #'   intercept-only model.
 #' @param penalty Only relevant if `method` turns out as `"L1"`. A numeric
 #'   vector determining the relative penalties or costs for the predictors. A
 #'   value of `0` means that those predictors have no cost and will therefore be
 #'   selected first, whereas `Inf` means those predictors will never be
-#'   selected. `NULL` leads to `1` for each predictor.
+#'   selected. If `NULL`, then `1` is used for each predictor.
 #' @param lambda_min_ratio Only relevant if `method` turns out as `"L1"`. Ratio
 #'   between the smallest and largest lambda in the L1-penalized search. This
 #'   parameter essentially determines how long the search is carried out, i.e.,
