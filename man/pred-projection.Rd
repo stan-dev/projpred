@@ -79,17 +79,18 @@ used for drawing from the set of the projected clusters of posterior draws
 (see argument \code{nresample_clusters}).}
 }
 \value{
-If the prediction is done for one submodel only (i.e.,
-\code{length(nterms) == 1 || !is.null(solution_terms)}), then:
+Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
+clustered) projected posterior draws (short: the number of projected draws)
+and \eqn{N} the number of observations. Then, if the prediction is done for
+one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)}
+in the call to \code{\link[=project]{project()}}):
 \itemize{
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions) and
-\code{lpd} (log predictive densities). Each of these two elements is a \eqn{S
-  \times N}{S x N} matrix.
-\item \code{\link[=proj_predict]{proj_predict()}} returns a \eqn{S \times N}{S x N} matrix of predictions.
+\code{lpd} (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
+  \times N}{S_prj x N} matrices.
+\item \code{\link[=proj_predict]{proj_predict()}} returns a \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
+matrix of predictions.
 }
-
-Thereby, \eqn{S} denotes the number of (possibly clustered) projected
-posterior draws and \eqn{N} denotes the number of observations.
 
 If the prediction is done for more than one submodel, the output from above
 is returned for each submodel, giving a named \code{list} with one element for

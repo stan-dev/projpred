@@ -41,15 +41,16 @@
 #' @param ... Additional arguments passed to [project()] if `object` is not
 #'   already an object returned by [project()].
 #'
-#' @return If the prediction is done for one submodel only (i.e.,
-#'   `length(nterms) == 1 || !is.null(solution_terms)`), then:
+#' @return Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
+#'   clustered) projected posterior draws (short: the number of projected draws)
+#'   and \eqn{N} the number of observations. Then, if the prediction is done for
+#'   one submodel only (i.e., `length(nterms) == 1 || !is.null(solution_terms)`
+#'   in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
-#'   `lpd` (log predictive densities). Each of these two elements is a \eqn{S
-#'   \times N}{S x N} matrix.
-#'   * [proj_predict()] returns a \eqn{S \times N}{S x N} matrix of predictions.
-#'
-#'   Thereby, \eqn{S} denotes the number of (possibly clustered) projected
-#'   posterior draws and \eqn{N} denotes the number of observations.
+#'   `lpd` (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
+#'   \times N}{S_prj x N} matrices.
+#'   * [proj_predict()] returns a \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
+#'   matrix of predictions.
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
