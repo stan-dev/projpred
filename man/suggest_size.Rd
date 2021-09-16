@@ -81,6 +81,9 @@ mean-squared error (MSE) are converted to utilities by multiplying them by
 \emph{negative} RMSE or MSE exceeds the cutoff (or equivalently has the lower
 credible bound of RMSE or MSE below the cutoff). This is done to make the
 interpretation of argument \code{type} the same regardless of argument \code{stat}.
+
+The intercept is not counted by \code{\link[=suggest_size]{suggest_size()}}, so a suggested size of
+zero stands for the intercept-only model.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

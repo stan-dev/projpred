@@ -695,6 +695,9 @@ print.vsel <- function(x, ...) {
 #'   credible bound of RMSE or MSE below the cutoff). This is done to make the
 #'   interpretation of argument `type` the same regardless of argument `stat`.
 #'
+#'   The intercept is not counted by [suggest_size()], so a suggested size of
+#'   zero stands for the intercept-only model.
+#'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:
