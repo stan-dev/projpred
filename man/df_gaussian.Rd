@@ -8,7 +8,7 @@
 A simulated regression dataset containing 100 observations.
 \describe{
 \item{y}{response, real-valued.}
-\item{x}{predictors, 20 in total. Mean and SD approximately 0 and 1,
+\item{x}{predictors, 20 in total. Mean and SD are approximately 0 and 1,
 respectively.}
 }
 }

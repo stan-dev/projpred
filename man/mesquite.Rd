@@ -5,18 +5,18 @@
 \alias{mesquite}
 \title{Mesquite data set}
 \format{
-The outcome variable is the total weight (in grams) of photosynthetic
-material as derived from actual harvesting of the bush. The predictor
-variables are:
+The response variable is the total weight (in grams) of
+photosynthetic material as derived from actual harvesting of the bush. The
+predictor variables are:
 \describe{
 \item{diam1}{diameter of the canopy (the leafy area of the bush) in meters,
 measured along the longer axis of the bush.}
-\item{diam2}{canopy diameter measured along the shorter axis}
+\item{diam2}{canopy diameter measured along the shorter axis.}
 \item{canopy height}{height of the canopy.}
 \item{total height}{total height of the bush.}
 \item{density}{plant unit density (# of primary stems per plant unit).}
 \item{group}{group of measurements (0 for the first group, 1 for the second
-group)}
+group).}
 }
 }
 \source{

@@ -13,7 +13,7 @@
 #' @format A simulated regression dataset containing 100 observations.
 #' \describe{
 #'   \item{y}{response, real-valued.}
-#'   \item{x}{predictors, 20 in total. Mean and SD approximately 0 and 1,
+#'   \item{x}{predictors, 20 in total. Mean and SD are approximately 0 and 1,
 #'   respectively.}
 #' }
 #' @source <https://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData>
@@ -24,18 +24,18 @@
 #' The mesquite bushes yields data set from Gelman and Hill (2007)
 #' (<http://www.stat.columbia.edu/~gelman/arm/>).
 #'
-#' @format The outcome variable is the total weight (in grams) of photosynthetic
-#'   material as derived from actual harvesting of the bush. The predictor
-#'   variables are:
+#' @format The response variable is the total weight (in grams) of
+#'   photosynthetic material as derived from actual harvesting of the bush. The
+#'   predictor variables are:
 #' \describe{
 #'   \item{diam1}{diameter of the canopy (the leafy area of the bush) in meters,
 #'   measured along the longer axis of the bush.}
-#'   \item{diam2}{canopy diameter measured along the shorter axis}
+#'   \item{diam2}{canopy diameter measured along the shorter axis.}
 #'   \item{canopy height}{height of the canopy.}
 #'   \item{total height}{total height of the bush.}
 #'   \item{density}{plant unit density (# of primary stems per plant unit).}
 #'   \item{group}{group of measurements (0 for the first group, 1 for the second
-#'   group)}
+#'   group).}
 #' }
 #'
 #' @source <http://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat>
