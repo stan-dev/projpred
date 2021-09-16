@@ -30,7 +30,8 @@ calculate. Available statistics are:
 number of observations (data points);
 \item \code{mse}: mean squared error (\code{\link[=gaussian]{gaussian()}} family only);
 \item \code{rmse}: root mean squared error (\code{\link[=gaussian]{gaussian()}} family only);
-\item \code{acc}/\code{pctcorr}: classification accuracy (\code{\link[=binomial]{binomial()}} family only);
+\item \code{acc} (or its alias, \code{pctcorr}): classification accuracy (\code{\link[=binomial]{binomial()}}
+family only);
 \item \code{auc}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only).
 }}
 

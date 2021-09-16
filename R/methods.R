@@ -423,7 +423,8 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   number of observations (data points);
 #'   * `mse`: mean squared error ([gaussian()] family only);
 #'   * `rmse`: root mean squared error ([gaussian()] family only);
-#'   * `acc`/`pctcorr`: classification accuracy ([binomial()] family only);
+#'   * `acc` (or its alias, `pctcorr`): classification accuracy ([binomial()]
+#'   family only);
 #'   * `auc`: area under the ROC curve ([binomial()] family only).
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute (mean,
