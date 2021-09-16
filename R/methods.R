@@ -1,12 +1,11 @@
-#' Predictions from a projected submodel
+#' Predictions from a submodel (after projection)
 #'
 #' [proj_linpred()] gives draws of the linear predictor (possibly transformed to
-#' response scale) of a projected submodel (i.e., a submodel resulting from
-#' projecting the reference model onto it). [proj_predict()] draws from the
-#' predictive distribution of a projected submodel. If the projection has not
-#' been performed, both functions also perform the projection. Both functions
-#' can also handle multiple projected submodels at once (if the input object is
-#' of class `vsel`).
+#' response scale) of a submodel (after projecting the reference model onto it).
+#' [proj_predict()] draws from the predictive distribution of such a submodel.
+#' If the projection has not been performed, both functions also perform the
+#' projection. Both functions can also handle multiple submodels at once (if the
+#' input object is of class `vsel`).
 #'
 #' @name projection-linpred-predict
 #'

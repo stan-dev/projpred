@@ -38,7 +38,7 @@ this follows the variable selection, but it can also be applied directly
 (without a variable selection).}
 \item{\code{\link[=as.matrix.projection]{as.matrix.projection()}}}{Extract projected parameter draws.}
 \item{\code{\link[=proj_linpred]{proj_linpred()}}, \code{\link[=proj_predict]{proj_predict()}}}{Make predictions from a submodel
-(after projection).}
+(after projecting the reference model onto it).}
 }
 }
 

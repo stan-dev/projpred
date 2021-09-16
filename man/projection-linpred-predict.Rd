@@ -4,7 +4,7 @@
 \alias{projection-linpred-predict}
 \alias{proj_linpred}
 \alias{proj_predict}
-\title{Predictions from a projected submodel}
+\title{Predictions from a submodel (after projection)}
 \usage{
 proj_linpred(
   object,
@@ -98,12 +98,11 @@ terms of the submodels when counting the intercept, too).
 }
 \description{
 \code{\link[=proj_linpred]{proj_linpred()}} gives draws of the linear predictor (possibly transformed to
-response scale) of a projected submodel (i.e., a submodel resulting from
-projecting the reference model onto it). \code{\link[=proj_predict]{proj_predict()}} draws from the
-predictive distribution of a projected submodel. If the projection has not
-been performed, both functions also perform the projection. Both functions
-can also handle multiple projected submodels at once (if the input object is
-of class \code{vsel}).
+response scale) of a submodel (after projecting the reference model onto it).
+\code{\link[=proj_predict]{proj_predict()}} draws from the predictive distribution of such a submodel.
+If the projection has not been performed, both functions also perform the
+projection. Both functions can also handle multiple submodels at once (if the
+input object is of class \code{vsel}).
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
