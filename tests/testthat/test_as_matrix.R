@@ -137,5 +137,95 @@ test_that("as.matrix.projection() works", {
     expect_true(setequal(colnames(m), colnms_prjmat_expect),
                 info = tstsetup)
     ###
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(cat(m))
+    }
   }
 })
+
+if (run_snaps) {
+  local_edition(3)
+
+  test_that(paste(
+    "as.matrix.projection() works for projections based on varsel() output"
+  ), {
+    for (tstsetup in names(prjs_vs)) {
+      if (args_prj_vs[[tstsetup]]$mod_nm == "gam") {
+        # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,
+        # the current expectations in `test_as_matrix.R` refer to a mixture of
+        # brms's and rstanarm's naming scheme; as soon as issue #152 is solved,
+        # these expectations need to be adapted.
+        # TODO (GAMs): Fix this.
+        next
+      }
+      if (args_prj_vs[[tstsetup]]$mod_nm == "gamm") {
+        # Skipping GAMMs because of issue #131.
+        # TODO (GAMMs): Fix this.
+        next
+      }
+      ndr_ncl <- ndr_ncl_dtls(args_prj_vs[[tstsetup]])
+      nterms_crr <- args_prj_vs[[tstsetup]]$nterms
+
+      # Expected warning (more precisely: regexp which is matched against the
+      # warning; NA means no warning) for as.matrix.projection():
+      if (ndr_ncl$clust_used) {
+        # Clustered projection, so we expect a warning:
+        warn_prjmat_expect <- "the clusters might have different weights"
+      } else {
+        warn_prjmat_expect <- NA
+      }
+      prjs_vs_l <- prjs_vs[[tstsetup]]
+      if (length(nterms_crr) <= 1) {
+        prjs_vs_l <- list(prjs_vs_l)
+      }
+      res_vs <- lapply(prjs_vs_l, function(prjs_vs_i) {
+        expect_warning(m <- as.matrix(prjs_vs_i),
+                       warn_prjmat_expect, info = tstsetup)
+        expect_snapshot(cat(m))
+        return(invisible(TRUE))
+      })
+    }
+  })
+
+  test_that(paste(
+    "as.matrix.projection() works for projections based on cv_varsel() output"
+  ), {
+    for (tstsetup in names(prjs_cvvs)) {
+      if (args_prj_cvvs[[tstsetup]]$mod_nm == "gam") {
+        # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,
+        # the current expectations in `test_as_matrix.R` refer to a mixture of
+        # brms's and rstanarm's naming scheme; as soon as issue #152 is solved,
+        # these expectations need to be adapted.
+        # TODO (GAMs): Fix this.
+        next
+      }
+      if (args_prj_cvvs[[tstsetup]]$mod_nm == "gamm") {
+        # Skipping GAMMs because of issue #131.
+        # TODO (GAMMs): Fix this.
+        next
+      }
+      ndr_ncl <- ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])
+      nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
+
+      # Expected warning (more precisely: regexp which is matched against the
+      # warning; NA means no warning) for as.matrix.projection():
+      if (ndr_ncl$clust_used) {
+        # Clustered projection, so we expect a warning:
+        warn_prjmat_expect <- "the clusters might have different weights"
+      } else {
+        warn_prjmat_expect <- NA
+      }
+      prjs_cvvs_l <- prjs_cvvs[[tstsetup]]
+      if (length(nterms_crr) <= 1) {
+        prjs_cvvs_l <- list(prjs_cvvs_l)
+      }
+      res_cvvs <- lapply(prjs_cvvs_l, function(prjs_cvvs_i) {
+        expect_warning(m <- as.matrix(prjs_cvvs_i),
+                       warn_prjmat_expect, info = tstsetup)
+        expect_snapshot(cat(m))
+        return(invisible(TRUE))
+      })
+    }
+  })
+}

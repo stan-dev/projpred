@@ -20,6 +20,12 @@ run_valsearch_always <- FALSE
 run_cvfits_all <- FALSE
 # Run tests for "brmsfit"s?:
 run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
+# Run snapshot tests (see, e.g., `?expect_snapshot` and
+# `vignette("snapshotting", package = "testthat")`)?:
+# Notes:
+#   * The snapshot tests are at least OS-dependent (perhaps even
+#   machine-dependent), so they only make sense locally.
+run_snaps <- FALSE
 
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)

@@ -339,6 +339,14 @@ test_that(paste(
         from_vsel_L1_search = with_L1,
         info_str = tstsetup
       )
+      ### TODO: Currently, the as.matrix() call below is not possible for
+      ### `datafit`s. Fix this.
+      # if (run_snaps) {
+      #   local_edition(3)
+      #   suppressWarnings(m <- as.matrix(prjs_vs_datafit[[tstsetup]]))
+      #   expect_snapshot(cat(m))
+      # }
+      ###
     } else {
       proj_list_tester(
         prjs_vs_datafit[[tstsetup]],
@@ -353,6 +361,17 @@ test_that(paste(
         prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights,
         from_vsel_L1_search = with_L1
       )
+      ### TODO: Currently, the as.matrix() call below is not possible for
+      ### `datafit`s. Fix this.
+      # if (run_snaps) {
+      #   local_edition(3)
+      #   res_vs <- lapply(prjs_vs_datafit[[tstsetup]], function(prjs_vs_i) {
+      #     suppressWarnings(m <- as.matrix(prjs_vs_i))
+      #     expect_snapshot(cat(m))
+      #     return(invisible(TRUE))
+      #   })
+      # }
+      ###
     }
   }
 })
@@ -392,6 +411,10 @@ test_that(paste(
               nprjdraws_expected = 1L,
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste(tstsetup, "with_args", sep = "__"))
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(pl_with_args))
+    }
   }
 })
 
@@ -423,6 +446,10 @@ test_that(paste(
               nprjdraws_out_expected = tail(nresample_clusters_tst, 1),
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste(tstsetup, "with_args", sep = "__"))
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(pp_with_args))
+    }
   }
 })
 
@@ -474,6 +501,10 @@ test_that(paste(
       type_expected = type_tst,
       solterms_expected = vss_datafit[[tstsetup]]$solution_terms
     )
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(smmry, digits = 6))
+    }
   }
 })
 
@@ -502,6 +533,10 @@ test_that(paste(
         args_cvvs_datafit[[tstsetup]]$cv_method %ORifNULL% "LOO",
       solterms_expected = cvvss_datafit[[tstsetup]]$solution_terms
     )
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(smmry, digits = 6))
+    }
   }
 })
 

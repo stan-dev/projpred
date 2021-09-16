@@ -9,6 +9,10 @@ test_that("`object` of class \"projection\" works", {
     pl_tester(pls[[tstsetup]],
               nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
               info_str = tstsetup)
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(pls[[tstsetup]]))
+    }
   }
 })
 
@@ -27,6 +31,10 @@ test_that(paste(
               nprjdraws_expected =
                 ndr_ncl_dtls(args_prj_vs[[tstsetup]])$nprjdraws,
               info_str = tstsetup)
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(pls_vs[[tstsetup]]))
+    }
   }
 })
 
@@ -45,6 +53,10 @@ test_that(paste(
               nprjdraws_expected =
                 ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])$nprjdraws,
               info_str = tstsetup)
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(pls_cvvs[[tstsetup]]))
+    }
   }
 })
 
@@ -539,6 +551,10 @@ test_that("`object` of class \"projection\" works", {
               nprjdraws_out_expected =
                 ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws_out,
               info_str = tstsetup)
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(pps[[tstsetup]]))
+    }
   }
 })
 
@@ -557,6 +573,10 @@ test_that(paste(
               nprjdraws_out_expected =
                 ndr_ncl_dtls(args_prj_vs[[tstsetup]])$nprjdraws_out,
               info_str = tstsetup)
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(pps_vs[[tstsetup]]))
+    }
   }
 })
 
@@ -575,6 +595,10 @@ test_that(paste(
               nprjdraws_out_expected =
                 ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])$nprjdraws_out,
               info_str = tstsetup)
+    if (run_snaps) {
+      local_edition(3)
+      expect_snapshot(print(pps_cvvs[[tstsetup]]))
+    }
   }
 })
 
