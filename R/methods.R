@@ -8,7 +8,7 @@
 #' also handle multiple submodels at once (if the input `object` is of class
 #' `vsel`).
 #'
-#' @name projection-linpred-predict
+#' @name pred-projection
 #'
 #' @template args-newdata
 #' @param object Either an object returned by [project()] or alternatively any
@@ -189,7 +189,7 @@ proj_helper <- function(object, newdata,
   return(.unlist_proj(preds))
 }
 
-#' @rdname projection-linpred-predict
+#' @rdname pred-projection
 #' @export
 proj_linpred <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
@@ -245,7 +245,7 @@ compute_lpd <- function(ynew, mu, proj, weights) {
   }
 }
 
-#' @rdname projection-linpred-predict
+#' @rdname pred-projection
 #' @export
 proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
