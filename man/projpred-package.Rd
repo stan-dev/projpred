@@ -47,17 +47,17 @@ See the \code{CITATION} file for details on citation.
 \itemize{
 \item Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
 models: a Bayesian approach via Kullback–Leibler projections. \emph{Biometrika},
-85(1):29–37.
+\strong{85}(1):29–37.
 \item Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
 models via an entropic explanatory power. \emph{Journal of Statistical Planning
-and Inference}, 111(1-2):77–94.
+and Inference}, \strong{111}(1-2):77–94.
 doi:\href{https://doi.org/10.1016/S0378-3758(02)00286-0}{10.1016/S0378-3758(02)00286-0}.
 \item Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
-methods for model selection. \emph{Statistics and Computing}, 27(3):711-735.
+methods for model selection. \emph{Statistics and Computing}, \strong{27}(3):711-735.
 doi:\href{https://doi.org/10.1007/s11222-016-9649-y}{10.1007/s11222-016-9649-y}.
 \item Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference
 in high-dimensional problems: Prediction and feature selection. \emph{Electronic
-Journal of Statistics}, 14(1):2155-2197.
+Journal of Statistics}, \strong{14}(1):2155-2197.
 doi:\href{https://doi.org/10.1214/20-EJS1711}{10.1214/20-EJS1711}.
 \item Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
 inference for generalized linear and additive multilevel models.
