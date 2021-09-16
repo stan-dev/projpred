@@ -1183,7 +1183,7 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
 #' objects (returned by [varsel()] or [cv_varsel()]), this is the predictor
 #' solution path of the variable selection. For `projection` objects (returned
 #' by [project()], possibly as elements of a `list`), this is the predictor
-#' combination upon which the projection was performed.
+#' combination onto which the projection was performed.
 #'
 #' @param object The object from which to retrieve the solution terms. Possible
 #'   classes may be inferred from the names of the corresponding methods (see
