@@ -29,8 +29,8 @@ proj_predict(
 )
 }
 \arguments{
-\item{object}{Either an object returned by \code{\link[=project]{project()}} or alternatively any
-object that can be passed to argument \code{object} of \code{\link[=project]{project()}}.}
+\item{object}{An object returned by \code{\link[=project]{project()}} or an object that can be
+passed to argument \code{object} of \code{\link[=project]{project()}}.}
 
 \item{newdata}{Passed to argument \code{newdata} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Provides the

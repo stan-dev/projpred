@@ -35,63 +35,56 @@ cv_varsel(object, ...)
 )
 }
 \arguments{
-\item{object}{Either a \code{refmodel}-type object created by \code{\link[=init_refmodel]{init_refmodel()}},
-an object which can be converted to a reference model using
-\code{\link[=get_refmodel]{get_refmodel()}}, or a \code{vsel} object resulting from \code{\link[=varsel]{varsel()}} or
-\code{\link[=cv_varsel]{cv_varsel()}}.}
+\item{object}{An object of class \code{refmodel} (returned by \code{\link[=get_refmodel]{get_refmodel()}} or
+\code{\link[=init_refmodel]{init_refmodel()}}) or an object that can be passed to argument \code{object} of
+\code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{...}{Additional arguments to be passed to the \code{\link[=get_refmodel]{get_refmodel()}}
-function.}
+\item{...}{Additional arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{method}{The search method, i.e. the method for finding a single
-submodel per number of terms. Possible options are \code{"L1"} for L1 search and
-\code{"forward"} for forward search. Default is \code{"forward"} if the reference
-model has multilevel or additive terms and \code{"L1"} otherwise.}
+\item{method}{The method for the search. Possible options are \code{"L1"} for L1
+search and \code{"forward"} for forward search. \code{NULL} leads to \code{"forward"} if
+the reference model has multilevel or additive terms and \code{"L1"} otherwise.}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}.}
 
-\item{ndraws}{Number of posterior draws used in the variable selection.
-\strong{Caution:} For \code{ndraws <= 20}, the value of \code{ndraws} is passed to
-\code{nclusters} (so that clustering is used). Ignored if \code{nclusters} is not
-\code{NULL} or if \code{method == "L1"} (L1 search uses always one cluster). See also
-section "Details" below.}
-
-\item{nclusters}{Number of clusters of posterior draws used in the variable
-selection. Ignored if \code{method == "L1"} (L1 search uses always one cluster).
-For the meaning of \code{NULL}, see argument \code{ndraws}. See also section
+\item{ndraws}{Number of posterior draws used in the search. \strong{Caution:} For
+\code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
+clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if \code{method}
+turns out as \code{"L1"} (L1 search uses always one cluster). See also section
 "Details" below.}
 
-\item{ndraws_pred}{Number of posterior draws used for prediction (after
-selection). \strong{Caution:} For \code{ndraws_pred <= 20}, the value of
-\code{ndraws_pred} is passed to \code{nclusters_pred} (so that clustering is used).
-Ignored if \code{nclusters_pred} is not \code{NULL}. See also section "Details"
-below.}
+\item{nclusters}{Number of clusters of posterior draws used in the search.
+Ignored if \code{method} turns out as \code{"L1"} (L1 search uses always one
+cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See also
+section "Details" below.}
 
-\item{nclusters_pred}{Number of clusters of posterior draws used for
-prediction (after selection). For the meaning of \code{NULL}, see argument
-\code{ndraws_pred}. See also section "Details" below.}
+\item{ndraws_pred}{Number of posterior draws used in the evaluation.
+\strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed
+to \code{nclusters_pred} (so that clustering is used). Ignored if
+\code{nclusters_pred} is not \code{NULL}. See also section "Details" below.}
 
-\item{cv_search}{If \code{TRUE}, then the projected coefficients after an L1
-search are computed without any penalization (or using only the
-regularization determined by \code{regul}). If \code{FALSE}, then the coefficients
-are the solution from the L1-penalized projection. This option is relevant
-only if \code{method == "L1"}. Default is \code{TRUE} for genuine reference models
-and \code{FALSE} if \code{object} is datafit (see \code{\link[=init_refmodel]{init_refmodel()}}).}
+\item{nclusters_pred}{Number of clusters of posterior draws used in the
+evaluation. For the meaning of \code{NULL}, see argument \code{ndraws_pred}. See also
+section "Details" below.}
 
-\item{nterms_max}{Maximum number of variables until which the selection is
-continued. Defaults to \code{min(19, D)} where \code{D} is the number of terms in the
-reference model (or in \code{search_terms}, if supplied). Note that \code{nterms_max}
-does not count the intercept, so use \code{nterms_max = 0} for the
+\item{cv_search}{A single logical value indicating whether to fit the
+submodels along the solution path again (\code{TRUE}) or to retrieve their fits
+from the search (\code{FALSE}) before using those (re-)fits in the evaluation.}
+
+\item{nterms_max}{Maximum number of predictor terms until which the search is
+continued. \code{NULL} leads to \code{min(19, D)} where \code{D} is the number of terms in
+the reference model (or in \code{search_terms}, if supplied). Note that
+\code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
 intercept-only model.}
 
-\item{penalty}{Vector determining the relative penalties or costs for the
-variables. A value of \code{0} means that those variables have no cost and will
-therefore be selected first, whereas \code{Inf} means those variables will never
-be selected. Currently works only if \code{method == "L1"}. By default \code{1} for
-each variable.}
+\item{penalty}{Only relevant if \code{method} turns out as \code{"L1"}. A numeric
+vector determining the relative penalties or costs for the predictors. A
+value of \code{0} means that those predictors have no cost and will therefore be
+selected first, whereas \code{Inf} means those predictors will never be
+selected. \code{NULL} leads to \code{1} for each predictor.}
 
 \item{verbose}{A single logical value indicating whether to print out
-additional information while running (\code{TRUE}) or not (\code{FALSE}).}
+additional information during the computations.}
 
 \item{nloo}{Number of observations used to compute the LOO validation
 (anything between 1 and the total number of observations). Smaller values
@@ -104,24 +97,26 @@ applicable if \code{cv_method == "LOO"}.}
 genuine reference models and 10 for datafits (that is, for penalized
 maximum likelihood estimation).}
 
-\item{lambda_min_ratio}{Ratio between the smallest and largest lambda in the
-L1-penalized search. This parameter essentially determines how long the
-search is carried out, i.e., how large submodels are explored. No need to
-change the default value unless the program gives a warning about this.}
+\item{lambda_min_ratio}{Only relevant if \code{method} turns out as \code{"L1"}. Ratio
+between the smallest and largest lambda in the L1-penalized search. This
+parameter essentially determines how long the search is carried out, i.e.,
+how large submodels are explored. No need to change this unless the program
+gives a warning about this.}
 
-\item{nlambda}{Number of values in the lambda grid for L1-penalized search.
-No need to change unless the program gives a warning about this.}
+\item{nlambda}{Only relevant if \code{method} turns out as \code{"L1"}. Number of
+values in the lambda grid for L1-penalized search. No need to change this
+unless the program gives a warning about this.}
 
-\item{thresh}{Convergence threshold when computing the L1 path. Usually,
-there is no need to change this.}
+\item{thresh}{Only relevant if \code{method} turns out as \code{"L1"}. Convergence
+threshold when computing the L1 path. Usually, there is no need to change
+this.}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
-is no need for regularization, but sometimes we need to add (or rather
-increase, given that \code{regul} defaults to \code{1e-4}) some regularization to
-avoid numerical problems.}
+is no need for regularization, but sometimes we need to add some
+regularization to avoid numerical problems.}
 
-\item{validate_search}{Whether to cross-validate also the selection process,
+\item{validate_search}{Only relevant if \code{cv_method == "LOO"}. Whether to cross-validate also the selection process,
 that is, whether to perform selection separately for each fold. Default is
 TRUE and we strongly recommend not setting this to FALSE, because this is
 known to bias the accuracy estimates for the selected submodels. However,
@@ -150,8 +145,13 @@ or type \code{?projpred}).
 }
 \description{
 Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-(G)AMs, and (G)AMMs. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
-cross-validation (CV).
+(G)AMs, and (G)AMMs. This variable selection consists of a \emph{search} and an
+\emph{evaluation}. The search determines the solution path, i.e., the best
+submodel for each number of predictor terms (model size). The evaluation
+determines the predictive performance of the submodels along the solution
+path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a cross-validation
+(CV) around both, search and evaluation (or only the evaluation, depending on
+arguments \code{cv_method} and \code{validate_search}).
 }
 \details{
 Notes:

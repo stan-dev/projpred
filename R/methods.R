@@ -11,8 +11,8 @@
 #' @name pred-projection
 #'
 #' @template args-newdata
-#' @param object Either an object returned by [project()] or alternatively any
-#'   object that can be passed to argument `object` of [project()].
+#' @param object An object returned by [project()] or an object that can be
+#'   passed to argument `object` of [project()].
 #' @param filter_nterms Only applies if `object` is an object returned by
 #'   [project()]. In that case, `filter_nterms` can be used to filter `object`
 #'   for only those elements (submodels) with a number of solution terms in

@@ -1,77 +1,76 @@
 #' Variable selection (without cross-validation)
 #'
 #' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-#' (G)AMs, and (G)AMMs.
+#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* and an
+#' *evaluation*. The search determines the solution path, i.e., the best
+#' submodel for each number of predictor terms (model size). The evaluation
+#' determines the predictive performance of the submodels along the solution
+#' path.
 #'
-#' @param object Either a `refmodel`-type object created by [init_refmodel()],
-#'   an object which can be converted to a reference model using
-#'   [get_refmodel()], or a `vsel` object resulting from [varsel()] or
-#'   [cv_varsel()].
+#' @param object An object of class `refmodel` (returned by [get_refmodel()] or
+#'   [init_refmodel()]) or an object that can be passed to argument `object` of
+#'   [get_refmodel()].
 #' @param d_test For internal use only. A `list` providing information about the
-#'   test set which is used to evaluate model performance. If not provided, the
-#'   training set is used.
-#' @param method The search method, i.e. the method for finding a single
-#'   submodel per number of terms. Possible options are `"L1"` for L1 search and
-#'   `"forward"` for forward search. Default is `"forward"` if the reference
-#'   model has multilevel or additive terms and `"L1"` otherwise.
-#' @param cv_search If `TRUE`, then the projected coefficients after an L1
-#'   search are computed without any penalization (or using only the
-#'   regularization determined by `regul`). If `FALSE`, then the coefficients
-#'   are the solution from the L1-penalized projection. This option is relevant
-#'   only if `method == "L1"`. Default is `TRUE` for genuine reference models
-#'   and `FALSE` if `object` is datafit (see [init_refmodel()]).
-#' @param ndraws Number of posterior draws used in the variable selection.
-#'   **Caution:** For `ndraws <= 20`, the value of `ndraws` is passed to
-#'   `nclusters` (so that clustering is used). Ignored if `nclusters` is not
-#'   `NULL` or if `method == "L1"` (L1 search uses always one cluster). See also
-#'   section "Details" below.
-#' @param nclusters Number of clusters of posterior draws used in the variable
-#'   selection. Ignored if `method == "L1"` (L1 search uses always one cluster).
-#'   For the meaning of `NULL`, see argument `ndraws`. See also section
+#'   test set which is used for evaluating the predictive performance of the
+#'   reference model. If not provided, the training set is used.
+#' @param method The method for the search. Possible options are `"L1"` for L1
+#'   search and `"forward"` for forward search. `NULL` leads to `"forward"` if
+#'   the reference model has multilevel or additive terms and `"L1"` otherwise.
+#' @param cv_search A single logical value indicating whether to fit the
+#'   submodels along the solution path again (`TRUE`) or to retrieve their fits
+#'   from the search (`FALSE`) before using those (re-)fits in the evaluation.
+#' @param ndraws Number of posterior draws used in the search. **Caution:** For
+#'   `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
+#'   clustering is used). Ignored if `nclusters` is not `NULL` or if `method`
+#'   turns out as `"L1"` (L1 search uses always one cluster). See also section
 #'   "Details" below.
-#' @param ndraws_pred Number of posterior draws used for prediction (after
-#'   selection). **Caution:** For `ndraws_pred <= 20`, the value of
-#'   `ndraws_pred` is passed to `nclusters_pred` (so that clustering is used).
-#'   Ignored if `nclusters_pred` is not `NULL`. See also section "Details"
-#'   below.
-#' @param nclusters_pred Number of clusters of posterior draws used for
-#'   prediction (after selection). For the meaning of `NULL`, see argument
-#'   `ndraws_pred`. See also section "Details" below.
-#' @param nterms_max Maximum number of variables until which the selection is
-#'   continued. Defaults to `min(19, D)` where `D` is the number of terms in the
-#'   reference model (or in `search_terms`, if supplied). Note that `nterms_max`
-#'   does not count the intercept, so use `nterms_max = 0` for the
+#' @param nclusters Number of clusters of posterior draws used in the search.
+#'   Ignored if `method` turns out as `"L1"` (L1 search uses always one
+#'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
+#'   section "Details" below.
+#' @param ndraws_pred Number of posterior draws used in the evaluation.
+#'   **Caution:** For `ndraws_pred <= 20`, the value of `ndraws_pred` is passed
+#'   to `nclusters_pred` (so that clustering is used). Ignored if
+#'   `nclusters_pred` is not `NULL`. See also section "Details" below.
+#' @param nclusters_pred Number of clusters of posterior draws used in the
+#'   evaluation. For the meaning of `NULL`, see argument `ndraws_pred`. See also
+#'   section "Details" below.
+#' @param nterms_max Maximum number of predictor terms until which the search is
+#'   continued. `NULL` leads to `min(19, D)` where `D` is the number of terms in
+#'   the reference model (or in `search_terms`, if supplied). Note that
+#'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
 #'   intercept-only model.
-#' @param penalty Vector determining the relative penalties or costs for the
-#'   variables. A value of `0` means that those variables have no cost and will
-#'   therefore be selected first, whereas `Inf` means those variables will never
-#'   be selected. Currently works only if `method == "L1"`. By default `1` for
-#'   each variable.
-#' @param lambda_min_ratio Ratio between the smallest and largest lambda in the
-#'   L1-penalized search. This parameter essentially determines how long the
-#'   search is carried out, i.e., how large submodels are explored. No need to
-#'   change the default value unless the program gives a warning about this.
-#' @param nlambda Number of values in the lambda grid for L1-penalized search.
-#'   No need to change unless the program gives a warning about this.
-#' @param thresh Convergence threshold when computing the L1 path. Usually,
-#'   there is no need to change this.
+#' @param penalty Only relevant if `method` turns out as `"L1"`. A numeric
+#'   vector determining the relative penalties or costs for the predictors. A
+#'   value of `0` means that those predictors have no cost and will therefore be
+#'   selected first, whereas `Inf` means those predictors will never be
+#'   selected. `NULL` leads to `1` for each predictor.
+#' @param lambda_min_ratio Only relevant if `method` turns out as `"L1"`. Ratio
+#'   between the smallest and largest lambda in the L1-penalized search. This
+#'   parameter essentially determines how long the search is carried out, i.e.,
+#'   how large submodels are explored. No need to change this unless the program
+#'   gives a warning about this.
+#' @param nlambda Only relevant if `method` turns out as `"L1"`. Number of
+#'   values in the lambda grid for L1-penalized search. No need to change this
+#'   unless the program gives a warning about this.
+#' @param thresh Only relevant if `method` turns out as `"L1"`. Convergence
+#'   threshold when computing the L1 path. Usually, there is no need to change
+#'   this.
 #' @param regul A number giving the amount of ridge regularization when
 #'   projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
-#'   is no need for regularization, but sometimes we need to add (or rather
-#'   increase, given that `regul` defaults to `1e-4`) some regularization to
-#'   avoid numerical problems.
+#'   is no need for regularization, but sometimes we need to add some
+#'   regularization to avoid numerical problems.
 #' @param search_terms A custom character vector of terms to consider for
 #'   selection. The intercept (`"1"`) needs to be included explicitly. The
 #'   default considers all the terms in the reference model's formula.
 #' @param verbose A single logical value indicating whether to print out
-#'   additional information while running (`TRUE`) or not (`FALSE`).
+#'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. If `NULL`, no seed is set and
 #'   therefore, the results are not reproducible. See [set.seed()] for details.
 #'   Here, this seed is used for clustering the reference model's posterior
 #'   draws (if `!is.null(nclusters)`).
-#' @param ... Additional arguments to be passed to the [get_refmodel()]
-#'   function.
+#' @param ... Additional arguments passed to [get_refmodel()].
 #'
 #' @details
 #'

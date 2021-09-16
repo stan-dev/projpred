@@ -1,8 +1,13 @@
 #' Variable selection with cross-validation
 #'
 #' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-#' (G)AMs, and (G)AMMs. In contrast to [varsel()], [cv_varsel()] performs a
-#' cross-validation (CV).
+#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* and an
+#' *evaluation*. The search determines the solution path, i.e., the best
+#' submodel for each number of predictor terms (model size). The evaluation
+#' determines the predictive performance of the submodels along the solution
+#' path. In contrast to [varsel()], [cv_varsel()] performs a cross-validation
+#' (CV) around both, search and evaluation (or only the evaluation, depending on
+#' arguments `cv_method` and `validate_search`).
 #'
 #' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`.
@@ -15,7 +20,7 @@
 #' @param K Number of folds in the K-fold cross validation. Default is 5 for
 #'   genuine reference models and 10 for datafits (that is, for penalized
 #'   maximum likelihood estimation).
-#' @param validate_search Whether to cross-validate also the selection process,
+#' @param validate_search Only relevant if `cv_method == "LOO"`. Whether to cross-validate also the selection process,
 #'   that is, whether to perform selection separately for each fold. Default is
 #'   TRUE and we strongly recommend not setting this to FALSE, because this is
 #'   known to bias the accuracy estimates for the selected submodels. However,

@@ -58,9 +58,8 @@ draws (if \code{!is.null(nclusters)}).}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
-is no need for regularization, but sometimes we need to add (or rather
-increase, given that \code{regul} defaults to \code{1e-4}) some regularization to
-avoid numerical problems.}
+is no need for regularization, but sometimes we need to add some
+regularization to avoid numerical problems.}
 
 \item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} (if \code{\link[=get_refmodel]{get_refmodel()}} is
 actually used; see argument \code{object}).}
