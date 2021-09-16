@@ -2,8 +2,8 @@
 #'
 #' @format A simulated classification dataset containing 100 observations.
 #' \describe{
-#'   \item{y}{target, 0 or 1.}
-#'   \item{x}{features, 30 in total.}
+#'   \item{y}{response, 0 or 1.}
+#'   \item{x}{predictors, 30 in total.}
 #' }
 #' @source <https://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData>
 "df_binom"
@@ -12,8 +12,8 @@
 #'
 #' @format A simulated regression dataset containing 100 observations.
 #' \describe{
-#'   \item{y}{target, real-valued.}
-#'   \item{x}{features, 20 in total. Mean and SD approximately 0 and 1,
+#'   \item{y}{response, real-valued.}
+#'   \item{x}{predictors, 20 in total. Mean and SD approximately 0 and 1,
 #'   respectively.}
 #' }
 #' @source <https://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData>

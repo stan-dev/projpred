@@ -7,8 +7,8 @@
 \format{
 A simulated classification dataset containing 100 observations.
 \describe{
-\item{y}{target, 0 or 1.}
-\item{x}{features, 30 in total.}
+\item{y}{response, 0 or 1.}
+\item{x}{predictors, 30 in total.}
 }
 }
 \source{

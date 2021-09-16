@@ -7,8 +7,8 @@
 \format{
 A simulated regression dataset containing 100 observations.
 \describe{
-\item{y}{target, real-valued.}
-\item{x}{features, 20 in total. Mean and SD approximately 0 and 1,
+\item{y}{response, real-valued.}
+\item{x}{predictors, 20 in total. Mean and SD approximately 0 and 1,
 respectively.}
 }
 }
