@@ -1,11 +1,12 @@
 #' Predictions from a submodel (after projection)
 #'
-#' [proj_linpred()] gives draws of the linear predictor (possibly transformed to
-#' response scale) of a submodel (after projecting the reference model onto it).
-#' [proj_predict()] draws from the predictive distribution of such a submodel.
-#' If the projection has not been performed, both functions also perform the
-#' projection. Both functions can also handle multiple submodels at once (if the
-#' input object is of class `vsel`).
+#' After the projection of the reference model onto a submodel, [proj_linpred()]
+#' gives the linear predictor (possibly transformed to response scale) for all
+#' projected draws of such a submodel. [proj_predict()] draws from the
+#' predictive distribution of such a submodel. If the projection has not been
+#' performed, both functions also perform the projection. Both functions can
+#' also handle multiple submodels at once (if the input `object` is of class
+#' `vsel`).
 #'
 #' @name projection-linpred-predict
 #'
@@ -18,17 +19,17 @@
 #'   `filter_nterms`. Therefore, needs to be a numeric vector or `NULL`. If
 #'   `NULL`, use all submodels.
 #' @param transform For [proj_linpred()] only. A single logical value indicating
-#'   whether the linear predictor should be transformed using the inverse-link
-#'   function (`TRUE`) or not (`FALSE`).
+#'   whether the linear predictor should be transformed to response scale using
+#'   the inverse-link function (`TRUE`) or not (`FALSE`).
 #' @param integrated For [proj_linpred()] only. A single logical value
-#'   indicating whether the output should be averaged over the projected
+#'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
 #' @param nresample_clusters For [proj_predict()] with clustered projection
 #'   only. Number of draws to return from the predictive distribution of the
-#'   projection. Not to be confused with argument `nclusters` of [project()]:
+#'   submodel. Not to be confused with argument `nclusters` of [project()]:
 #'   `nresample_clusters` gives the number of draws (*with* replacement) from
-#'   the set of clustered posterior draws after projection (as determined by
-#'   argument `nclusters` of [project()]).
+#'   the set of clustered posterior draws after projection (with this set being
+#'   determined by argument `nclusters` of [project()]).
 #' @param .seed For [proj_predict()] only. Pseudorandom number generation (PRNG)
 #'   seed by which the same results can be obtained again if needed. If `NULL`,
 #'   no seed is set and therefore, the results are not reproducible. See
@@ -40,8 +41,8 @@
 #' @param ... Additional arguments passed to [project()] if `object` is not
 #'   already an object returned by [project()].
 #'
-#' @return If the prediction is done for one submodel only (i.e., `nterms` has
-#'   length one or `solution_terms` is specified):
+#' @return If the prediction is done for one submodel only (i.e.,
+#'   `length(nterms) == 1 || !is.null(solution_terms)`), then:
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
 #'   `lpd` (log predictive densities). Each of these two elements is a \eqn{S
 #'   \times N}{S x N} matrix.
@@ -72,7 +73,8 @@
 #'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
 #'                  seed = 9182)
 #'
-#'   # Predictions (at the training points) from the projected submodel:
+#'   # Predictions (at the training points) from the submodel onto which the
+#'   # reference model was projected:
 #'   prjl <- proj_linpred(prj)
 #'   prjp <- proj_predict(prj, .seed = 7364)
 #' }

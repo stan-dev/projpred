@@ -52,11 +52,11 @@ for only those elements (submodels) with a number of solution terms in
 \code{NULL}, use all submodels.}
 
 \item{transform}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value indicating
-whether the linear predictor should be transformed using the inverse-link
-function (\code{TRUE}) or not (\code{FALSE}).}
+whether the linear predictor should be transformed to response scale using
+the inverse-link function (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
-indicating whether the output should be averaged over the projected
+indicating whether the output should be averaged across the projected
 posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{...}{Additional arguments passed to \code{\link[=project]{project()}} if \code{object} is not
@@ -64,10 +64,10 @@ already an object returned by \code{\link[=project]{project()}}.}
 
 \item{nresample_clusters}{For \code{\link[=proj_predict]{proj_predict()}} with clustered projection
 only. Number of draws to return from the predictive distribution of the
-projection. Not to be confused with argument \code{nclusters} of \code{\link[=project]{project()}}:
+submodel. Not to be confused with argument \code{nclusters} of \code{\link[=project]{project()}}:
 \code{nresample_clusters} gives the number of draws (\emph{with} replacement) from
-the set of clustered posterior draws after projection (as determined by
-argument \code{nclusters} of \code{\link[=project]{project()}}).}
+the set of clustered posterior draws after projection (with this set being
+determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
 
 \item{.seed}{For \code{\link[=proj_predict]{proj_predict()}} only. Pseudorandom number generation (PRNG)
 seed by which the same results can be obtained again if needed. If \code{NULL},
@@ -79,8 +79,8 @@ used for drawing from the set of the projected clusters of posterior draws
 (see argument \code{nresample_clusters}).}
 }
 \value{
-If the prediction is done for one submodel only (i.e., \code{nterms} has
-length one or \code{solution_terms} is specified):
+If the prediction is done for one submodel only (i.e.,
+\code{length(nterms) == 1 || !is.null(solution_terms)}), then:
 \itemize{
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions) and
 \code{lpd} (log predictive densities). Each of these two elements is a \eqn{S
@@ -97,12 +97,13 @@ each submodel (the names of this \code{list} being the numbers of solutions
 terms of the submodels when counting the intercept, too).
 }
 \description{
-\code{\link[=proj_linpred]{proj_linpred()}} gives draws of the linear predictor (possibly transformed to
-response scale) of a submodel (after projecting the reference model onto it).
-\code{\link[=proj_predict]{proj_predict()}} draws from the predictive distribution of such a submodel.
-If the projection has not been performed, both functions also perform the
-projection. Both functions can also handle multiple submodels at once (if the
-input object is of class \code{vsel}).
+After the projection of the reference model onto a submodel, \code{\link[=proj_linpred]{proj_linpred()}}
+gives the linear predictor (possibly transformed to response scale) for all
+projected draws of such a submodel. \code{\link[=proj_predict]{proj_predict()}} draws from the
+predictive distribution of such a submodel. If the projection has not been
+performed, both functions also perform the projection. Both functions can
+also handle multiple submodels at once (if the input \code{object} is of class
+\code{vsel}).
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -121,7 +122,8 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
                  seed = 9182)
 
-  # Predictions (at the training points) from the projected submodel:
+  # Predictions (at the training points) from the submodel onto which the
+  # reference model was projected:
   prjl <- proj_linpred(prj)
   prjp <- proj_predict(prj, .seed = 7364)
 }
