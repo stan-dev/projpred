@@ -518,29 +518,30 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Functions ---------------------------------------------------------------
 
-  if (is.null(ref_predfun)) {
-    if (proper_model) {
-      ref_predfun <- function(fit, newdata = NULL) {
-        linpred_out <- t(
-          posterior_linpred(fit, transform = FALSE, newdata = newdata)
-        )
-        # Since posterior_linpred() is supposed to include the offsets in its
-        # result, subtract them here:
-        offs <- extract_model_data(fit, newdata = newdata)$offset
-        if (length(offs) > 0) {
-          stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
-          linpred_out <- linpred_out - offs
-        }
-        return(linpred_out)
+  if (proper_model && is.null(ref_predfun)) {
+    ref_predfun <- function(fit, newdata = NULL) {
+      linpred_out <- t(
+        posterior_linpred(fit, transform = FALSE, newdata = newdata)
+      )
+      # Since posterior_linpred() is supposed to include the offsets in its
+      # result, subtract them here:
+      offs <- extract_model_data(fit, newdata = newdata)$offset
+      if (length(offs) > 0) {
+        stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
+        linpred_out <- linpred_out - offs
       }
-    } else {
-      ref_predfun <- function(fit, newdata = NULL) {
-        stopifnot(is.null(fit))
-        if (is.null(newdata)) {
-          matrix(rep(NA, NROW(y)))
-        } else {
-          matrix(rep(NA, NROW(newdata)))
-        }
+      return(linpred_out)
+    }
+  } else if (!proper_model) {
+    if (!is.null(ref_predfun)) {
+      warning("Ignoring argument `ref_predfun` because `object` is `NULL`.")
+    }
+    ref_predfun <- function(fit, newdata = NULL) {
+      stopifnot(is.null(fit))
+      if (is.null(newdata)) {
+        matrix(rep(NA, NROW(y)))
+      } else {
+        matrix(rep(NA, NROW(newdata)))
       }
     }
   }
