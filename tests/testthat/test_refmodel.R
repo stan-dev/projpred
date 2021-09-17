@@ -120,7 +120,7 @@ test_that("invalid `type` fails", {
 
 test_that("invalid `ynew` fails", {
   expect_error(predict(refmods[[1]], dat, ynew = dat),
-               "^ynew must be a numerical vector$")
+               "^Argument `ynew` must be a numeric vector\\.$")
 })
 
 test_that(paste(

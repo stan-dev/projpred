@@ -204,7 +204,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
   if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1)) {
-    stop("ynew must be a numerical vector")
+    stop("Argument `ynew` must be a numeric vector.")
   }
 
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
