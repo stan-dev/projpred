@@ -732,7 +732,7 @@ suggest_size <- function(object, ...) {
 #' }
 #'
 #' @export
-suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
+suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0,
                               type = "upper", baseline = NULL, warnings = TRUE,
                               ...) {
   .validate_vsel_object_stats(object, stat)
