@@ -308,11 +308,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## log-likelihood available
     loglik <- refmodel$loglik
   }
+  n <- ncol(loglik)
   ## TODO: should take r_eff:s into account
-  psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1, ncol(loglik)))
+  psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1, n))
   lw <- weights(psisloo)
-  pareto_k <- loo::pareto_k_values(psisloo)
-  n <- length(pareto_k)
+  # pareto_k <- loo::pareto_k_values(psisloo)
   ## by default use all observations
   nloo <- min(nloo, n)
 
