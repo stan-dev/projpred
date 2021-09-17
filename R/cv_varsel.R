@@ -365,10 +365,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       family = family, p_ref = p_pred, refmodel = refmodel,
       intercept = intercept, regul = opt$regul, cv_search = cv_search
     )
-    summaries_sub <- .get_sub_summaries(
-      submodels = submodels, test_points = seq_len(n), refmodel = refmodel,
-      family = family
-    )
 
     if (verbose) {
       print(msg)
@@ -380,7 +376,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     ## compute approximate LOO with PSIS weights
     y <- matrix(refmodel$y, nrow = n)
-    for (k in seq_along(summaries_sub)) {
+    for (k in seq_along(submodels)) {
       mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
                             obs = inds,
                             offset = refmodel$offset,
