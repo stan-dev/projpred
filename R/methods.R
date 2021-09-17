@@ -317,9 +317,15 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #' }
 #'
 #' @export
-plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
-                      deltas = FALSE, alpha = 0.32, baseline = NULL,
-                      ...) {
+plot.vsel <- function(
+  x,
+  nterms_max = NULL,
+  stats = "elpd",
+  deltas = FALSE,
+  alpha = 0.32,
+  baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
+  ...
+) {
   object <- x
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
@@ -444,8 +450,7 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   For example, `alpha = 0.32` corresponds to 68% probability mass within the
 #'   intervals, that is, one-standard-error intervals.
 #' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel found, respectively. If `NULL`,
-#'   then `"ref"` is used, except for `datafit`s for which `"best"` is used.
+#'   the reference model or the best submodel found, respectively.
 #' @param ... Currently ignored.
 #'
 #' @examples
@@ -470,9 +475,16 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' }
 #'
 #' @export
-summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
-                         type = c("mean", "se", "diff", "diff.se"),
-                         deltas = FALSE, alpha = 0.32, baseline = NULL, ...) {
+summary.vsel <- function(
+  object,
+  nterms_max = NULL,
+  stats = "elpd",
+  type = c("mean", "se", "diff", "diff.se"),
+  deltas = FALSE,
+  alpha = 0.32,
+  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+  ...
+) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
@@ -735,9 +747,16 @@ suggest_size <- function(object, ...) {
 
 #' @rdname suggest_size
 #' @export
-suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0,
-                              type = "upper", baseline = NULL, warnings = TRUE,
-                              ...) {
+suggest_size.vsel <- function(
+  object,
+  stat = "elpd",
+  alpha = 0.32,
+  pct = 0,
+  type = "upper",
+  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+  warnings = TRUE,
+  ...
+) {
   .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")

@@ -13,7 +13,7 @@ suggest_size(object, ...)
   alpha = 0.32,
   pct = 0,
   type = "upper",
-  baseline = NULL,
+  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   warnings = TRUE,
   ...
 )
@@ -41,8 +41,7 @@ are based on the upper or lower credible bounds, respectively. See section
 "Details" for more information.}
 
 \item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
-the reference model or the best submodel found, respectively. If \code{NULL},
-then \code{"ref"} is used, except for \code{datafit}s for which \code{"best"} is used.}
+the reference model or the best submodel found, respectively.}
 
 \item{warnings}{Whether to give warnings if automatic suggestion fails,
 mainly for internal use. Usually there is no reason to set this to \code{FALSE}.}

@@ -128,22 +128,15 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 }
 
 .validate_baseline <- function(refmodel, baseline, deltas) {
-  if (is.null(baseline)) {
-    if (inherits(refmodel, "datafit")) {
-      baseline <- "best"
-    } else {
-      baseline <- "ref"
-    }
-  } else {
-    if (!(baseline %in% c("ref", "best"))) {
-      stop("Argument 'baseline' must be either 'ref' or 'best'.")
-    }
-    if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
-      # no reference model (or the results missing for some other reason),
-      # so cannot compute differences between the reference model and submodels
-      stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
-           "reference model.")
-    }
+  stopifnot(!is.null(baseline))
+  if (!(baseline %in% c("ref", "best"))) {
+    stop("Argument 'baseline' must be either 'ref' or 'best'.")
+  }
+  if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
+    # no reference model (or the results missing for some other reason),
+    # so cannot compute differences between the reference model and submodels
+    stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
+         "reference model.")
   }
   return(baseline)
 }
