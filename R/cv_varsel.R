@@ -800,7 +800,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   set.seed(seed)
   if (nloo > length(lppd)) {
-    stop("Can only subsample less `nloo` than total number of datapoints.")
+    stop("Argument `nloo` must not be larger than the number of observations.")
   } else if (nloo == length(lppd)) {
     inds <- seq_len(nloo)
     w <- rep(1, nloo)
