@@ -979,13 +979,6 @@ as.matrix.gamm4 <- function(x, ...) {
   return(as.matrix.lm(x, ...))
 }
 
-#' @method as.matrix list
-#' @keywords internal
-#' @export
-as.matrix.list <- function(x, ...) {
-  return(do.call(cbind, lapply(x, as.matrix.glm, ...)))
-}
-
 #' @keywords internal
 #' @export
 t.glm <- function(x, ...) {
