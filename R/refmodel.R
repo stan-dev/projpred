@@ -621,10 +621,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     loglik <- NULL
   }
 
-  # This is a dummy definition for cvfun(), but it will lead to standard
-  # cross-validation for datafit reference; see cv_varsel() and .get_kfold():
   if (is.null(cvfun)) {
     if (!proper_model) {
+      # This is a dummy definition for cvfun(), but it will lead to standard CV
+      # for `datafit`s; see cv_varsel() and .get_kfold():
       cvfun <- function(folds, ...) {
         lapply(seq_len(max(folds)), function(k) list())
       }
