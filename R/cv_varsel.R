@@ -591,7 +591,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     fold <- list_cv[[fold_index]]
     family <- fold$refmodel$family
     solution_terms <- search_path$solution_terms
-    p_sub <- .get_submodels(
+    submodels <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
       family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
       intercept = intercept, regul = opt$regul, cv_search = FALSE
@@ -599,11 +599,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (verbose && cv_search) {
       utils::setTxtProgressBar(pb, fold_index)
     }
-    return(p_sub)
+    return(submodels)
   }
 
-  p_sub_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
-                     SIMPLIFY = FALSE)
+  submodels_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
+                         SIMPLIFY = FALSE)
   if (verbose && cv_search) {
     close(pb)
   }
@@ -611,16 +611,16 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## Apply some magic to manipulate the structure of the list so that instead of
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
-  get_summaries_submodel_cv <- function(p_sub, fold) {
+  get_summaries_submodel_cv <- function(submodels, fold) {
     omitted <- fold$d_test$omitted
     fold_summaries <- .get_sub_summaries(
-      submodels = p_sub, test_points = omitted, refmodel = refmodel,
+      submodels = submodels, test_points = omitted, refmodel = refmodel,
       family = family
     )
     summ <- lapply(fold_summaries, data.frame)
     return(summ)
   }
-  sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
+  sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
     summ$w <- rep(1, length(summ$mu))

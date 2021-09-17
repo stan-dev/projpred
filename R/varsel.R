@@ -109,13 +109,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   solution_terms <- search_path$solution_terms
 
   ## statistics for the selected submodels
-  p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
-                          family = family, p_ref = p_pred, refmodel = refmodel,
-                          intercept = intercept,
-                          regul = regul, cv_search = cv_search)
+  submodels <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
+                              family = family, p_ref = p_pred,
+                              refmodel = refmodel, intercept = intercept,
+                              regul = regul, cv_search = cv_search)
   sub <- .get_sub_summaries(
-    submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
-    family = family
+    submodels = submodels, test_points = seq_along(refmodel$y),
+    refmodel = refmodel, family = family
   )
 
   ## predictive statistics of the reference model on test data. if no test data
@@ -149,7 +149,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     summaries = nlist(sub, ref),
     family,
     solution_terms = search_path$solution_terms,
-    kl = sapply(p_sub, function(x) x$kl),
+    kl = sapply(submodels, function(x) x$kl),
     nterms_max,
     nterms_all = count_terms_in_formula(refmodel$formula),
     method = method,
