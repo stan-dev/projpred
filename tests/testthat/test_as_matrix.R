@@ -152,10 +152,10 @@ if (run_snaps) {
   ), {
     for (tstsetup in names(prjs_vs)) {
       if (args_prj_vs[[tstsetup]]$mod_nm == "gam") {
-        # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,
-        # the current expectations in `test_as_matrix.R` refer to a mixture of
-        # brms's and rstanarm's naming scheme; as soon as issue #152 is solved,
-        # these expectations need to be adapted.
+        # Skipping GAMs because of issue #150 and issue #151. Note that for
+        # GAMs, the current expectations in `test_as_matrix.R` refer to a
+        # mixture of brms's and rstanarm's naming scheme; as soon as issue #152
+        # is solved, these expectations need to be adapted.
         # TODO (GAMs): Fix this.
         next
       }
@@ -193,10 +193,10 @@ if (run_snaps) {
   ), {
     for (tstsetup in names(prjs_cvvs)) {
       if (args_prj_cvvs[[tstsetup]]$mod_nm == "gam") {
-        # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,
-        # the current expectations in `test_as_matrix.R` refer to a mixture of
-        # brms's and rstanarm's naming scheme; as soon as issue #152 is solved,
-        # these expectations need to be adapted.
+        # Skipping GAMs because of issue #150 and issue #151. Note that for
+        # GAMs, the current expectations in `test_as_matrix.R` refer to a
+        # mixture of brms's and rstanarm's naming scheme; as soon as issue #152
+        # is solved, these expectations need to be adapted.
         # TODO (GAMs): Fix this.
         next
       }
