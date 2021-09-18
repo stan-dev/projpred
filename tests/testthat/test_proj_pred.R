@@ -4,7 +4,7 @@ context("proj_linpred()")
 
 ## object -----------------------------------------------------------------
 
-test_that("`object` of class \"projection\" works", {
+test_that("pl: `object` of class \"projection\" works", {
   for (tstsetup in names(prjs)) {
     pl_tester(pls[[tstsetup]],
               nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
@@ -17,7 +17,7 @@ test_that("`object` of class \"projection\" works", {
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (based on varsel()) works"
+  "pl: `object` of (informal) class \"proj_list\" (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -39,7 +39,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
+  "pl: `object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
@@ -545,7 +545,7 @@ test_that("`.seed` works (and restores the RNG state afterwards)", {
 
 ## object -----------------------------------------------------------------
 
-test_that("`object` of class \"projection\" works", {
+test_that("pp: `object` of class \"projection\" works", {
   for (tstsetup in names(prjs)) {
     pp_tester(pps[[tstsetup]],
               nprjdraws_out_expected =
@@ -559,7 +559,7 @@ test_that("`object` of class \"projection\" works", {
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (based on varsel()) works"
+  "pp: `object` of (informal) class \"proj_list\" (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -581,7 +581,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
+  "pp: `object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
