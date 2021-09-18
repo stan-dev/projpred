@@ -1325,6 +1325,7 @@ vsel_tester <- function(
   # summary
   smmry_sel_tester(
     vs$summary,
+    summaries_ref = vs$summaries$ref,
     cv_method_expected = if (with_cv) cv_method_expected else character(),
     solterms_expected = vs$solution_terms,
     from_datafit = from_datafit,
@@ -1394,7 +1395,9 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_identical(smmry$search_included == "search included",
                    isTRUE(vsel_expected$validate_search),
                    info = info_str)
-  smmry_sel_tester(smmry$selection, nterms_max_expected = nterms_max_expected,
+  smmry_sel_tester(smmry$selection,
+                   summaries_ref = vsel_expected$summaries$ref,
+                   nterms_max_expected = nterms_max_expected,
                    info_str = info_str, ...)
 
   return(invisible(TRUE))
@@ -1405,6 +1408,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 #
 # @param smmry_sel A `data.frame` as returned by summary.vsel() in its output
 #   element `selection`.
+# @param summaries_ref The reference model's summaries, as stored in
+#   `<vsel_object>$summaries$ref`.
 # @param stats_expected A character vector of expected `stats` (see the
 #   corresponding argument of summary.vsel()). Use `NULL` for the default.
 # @param type_expected A character vector of expected `type`s (see the
@@ -1425,6 +1430,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 # @return `TRUE` (invisible).
 smmry_sel_tester <- function(
   smmry_sel,
+  summaries_ref,
   stats_expected = NULL,
   type_expected = NULL,
   nterms_max_expected = NULL,
@@ -1501,6 +1507,21 @@ smmry_sel_tester <- function(
           diff(smmry_sel[, diff_nm[stat_idx]]),
           info = info_str
         )
+        if (stats_expected[stat_idx] == "elpd") {
+          stat_ref <- sum(summaries_ref$lppd)
+        } else if (stats_expected[stat_idx] == "mlpd") {
+          stat_ref <- mean(summaries_ref$lppd)
+        } else {
+          # TODO: Implement `stat_ref` for the remaining `stats`.
+          stat_ref <- NULL
+        }
+        if (!is.null(stat_ref)) {
+          expect_equal(
+            smmry_sel[, stats_mean_name[stat_idx]] - stat_ref,
+            smmry_sel[, diff_nm[stat_idx]],
+            tolerance = 1e-12, info = info_str
+          )
+        }
       } else {
         expect_equal(smmry_sel[, diff_nm[stat_idx]], numeric(nrow(smmry_sel)),
                      info = info_str)
