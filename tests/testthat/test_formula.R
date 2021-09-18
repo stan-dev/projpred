@@ -1,3 +1,5 @@
+context("formula")
+
 test_that(paste(
   "check that we recover the correct terms for a simple linear",
   "model without interactions or group terms"
