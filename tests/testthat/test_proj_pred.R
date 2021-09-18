@@ -11,7 +11,7 @@ test_that("`object` of class \"projection\" works", {
               info_str = tstsetup)
     if (run_snaps) {
       local_edition(3)
-      expect_snapshot(print(pls[[tstsetup]]))
+      expect_snapshot(print(digest::digest(pls[[tstsetup]])))
     }
   }
 })
@@ -33,7 +33,7 @@ test_that(paste(
               info_str = tstsetup)
     if (run_snaps) {
       local_edition(3)
-      expect_snapshot(print(pls_vs[[tstsetup]]))
+      expect_snapshot(print(digest::digest(pls_vs[[tstsetup]])))
     }
   }
 })
@@ -55,7 +55,7 @@ test_that(paste(
               info_str = tstsetup)
     if (run_snaps) {
       local_edition(3)
-      expect_snapshot(print(pls_cvvs[[tstsetup]]))
+      expect_snapshot(print(digest::digest(pls_cvvs[[tstsetup]])))
     }
   }
 })
@@ -553,7 +553,7 @@ test_that("`object` of class \"projection\" works", {
               info_str = tstsetup)
     if (run_snaps) {
       local_edition(3)
-      expect_snapshot(print(pps[[tstsetup]]))
+      expect_snapshot(print(digest::digest(pps[[tstsetup]])))
     }
   }
 })
@@ -575,7 +575,7 @@ test_that(paste(
               info_str = tstsetup)
     if (run_snaps) {
       local_edition(3)
-      expect_snapshot(print(pps_vs[[tstsetup]]))
+      expect_snapshot(print(digest::digest(pps_vs[[tstsetup]])))
     }
   }
 })
@@ -597,7 +597,7 @@ test_that(paste(
               info_str = tstsetup)
     if (run_snaps) {
       local_edition(3)
-      expect_snapshot(print(pps_cvvs[[tstsetup]]))
+      expect_snapshot(print(digest::digest(pps_cvvs[[tstsetup]])))
     }
   }
 })

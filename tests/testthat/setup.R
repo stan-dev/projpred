@@ -26,6 +26,12 @@ run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
 #   * The snapshot tests are at least OS-dependent (perhaps even
 #   machine-dependent), so they only make sense locally.
 run_snaps <- FALSE
+if (run_snaps) {
+  if (!requireNamespace("digest", quietly = TRUE)) {
+    stop("Package \"digest\" is needed for these tests. Please install it.",
+         call. = FALSE)
+  }
+}
 
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)

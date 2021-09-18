@@ -344,7 +344,7 @@ test_that(paste(
       # if (run_snaps) {
       #   local_edition(3)
       #   suppressWarnings(m <- as.matrix(prjs_vs_datafit[[tstsetup]]))
-      #   expect_snapshot(cat(m))
+      #   expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
       # }
       ###
     } else {
@@ -367,7 +367,7 @@ test_that(paste(
       #   local_edition(3)
       #   res_vs <- lapply(prjs_vs_datafit[[tstsetup]], function(prjs_vs_i) {
       #     suppressWarnings(m <- as.matrix(prjs_vs_i))
-      #     expect_snapshot(cat(m))
+      #     expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
       #     return(invisible(TRUE))
       #   })
       # }
@@ -413,7 +413,7 @@ test_that(paste(
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
       local_edition(3)
-      expect_snapshot(print(pl_with_args))
+      expect_snapshot(print(digest::digest(pl_with_args)))
     }
   }
 })
@@ -448,7 +448,7 @@ test_that(paste(
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
       local_edition(3)
-      expect_snapshot(print(pp_with_args))
+      expect_snapshot(print(digest::digest(pp_with_args)))
     }
   }
 })
