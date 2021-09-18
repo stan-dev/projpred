@@ -738,18 +738,18 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   extract_model_data <- function(object, newdata = fetch_fold(), ...) {
     refmodel$extract_model_data(object = object, newdata = newdata, ...)
   }
-  if (!inherits(cvfit, "brmsfit") && !inherits(cvfit, "stanreg")) {
+  if (!inherits(refmodel, "datafit")) {
+    fit <- cvfit
+    k_refmodel <- get_refmodel(fit)
+  } else {
     fit <- NULL
     k_refmodel <- init_refmodel(
       object = fit, data = fetch_fold(),
       formula = refmodel$formula, family = refmodel$family,
-      ref_predfun = ref_predfun, div_minimizer = refmodel$div_minimizer,
+      div_minimizer = refmodel$div_minimizer,
       proj_predfun = proj_predfun, folds = seq_along(fold),
       extract_model_data = extract_model_data
     )
-  } else {
-    fit <- cvfit
-    k_refmodel <- get_refmodel(fit)
   }
 
   k_refmodel$fetch_data <- fetch_fold
