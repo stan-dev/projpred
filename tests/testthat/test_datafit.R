@@ -507,7 +507,9 @@ test_that(paste(
     )
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
       expect_snapshot(print(smmry, digits = 6))
+      options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -540,7 +542,9 @@ test_that(paste(
     )
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
       expect_snapshot(print(smmry, digits = 6))
+      options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }
   }
