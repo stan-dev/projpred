@@ -113,8 +113,9 @@ test_that("`x` of class \"vselsummary\" (based on varsel()) works", {
     )
     expect_identical(print_obj, smmrys_vs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(smmrys_vs[[tstsetup]], digits = 6))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -129,8 +130,9 @@ test_that("`x` of class \"vselsummary\" (based on cv_varsel())  works", {
     )
     expect_identical(print_obj, smmrys_cvvs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(smmrys_cvvs[[tstsetup]], digits = 6))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })

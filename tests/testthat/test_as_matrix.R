@@ -138,14 +138,15 @@ test_that("as.matrix.projection() works", {
                 info = tstsetup)
     ###
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
 
 if (run_snaps) {
-  local_edition(3)
+  if (testthat_ed_max2) local_edition(3)
 
   test_that(paste(
     "as.matrix.projection() works for projections based on varsel() output"
@@ -228,4 +229,6 @@ if (run_snaps) {
       })
     }
   })
+
+  if (testthat_ed_max2) local_edition(2)
 }

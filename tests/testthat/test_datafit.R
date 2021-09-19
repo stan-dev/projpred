@@ -342,9 +342,10 @@ test_that(paste(
       ### TODO: Currently, the as.matrix() call below is not possible for
       ### `datafit`s. Fix this.
       # if (run_snaps) {
-      #   local_edition(3)
+      #   if (testthat_ed_max2) local_edition(3)
       #   suppressWarnings(m <- as.matrix(prjs_vs_datafit[[tstsetup]]))
       #   expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
+      #   if (testthat_ed_max2) local_edition(2)
       # }
       ###
     } else {
@@ -364,12 +365,13 @@ test_that(paste(
       ### TODO: Currently, the as.matrix() call below is not possible for
       ### `datafit`s. Fix this.
       # if (run_snaps) {
-      #   local_edition(3)
+      #   if (testthat_ed_max2) local_edition(3)
       #   res_vs <- lapply(prjs_vs_datafit[[tstsetup]], function(prjs_vs_i) {
       #     suppressWarnings(m <- as.matrix(prjs_vs_i))
       #     expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
       #     return(invisible(TRUE))
       #   })
+      #   if (testthat_ed_max2) local_edition(2)
       # }
       ###
     }
@@ -412,8 +414,9 @@ test_that(paste(
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(pl_with_args)))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -447,8 +450,9 @@ test_that(paste(
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(pp_with_args)))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -502,8 +506,9 @@ test_that(paste(
       solterms_expected = vss_datafit[[tstsetup]]$solution_terms
     )
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(smmry, digits = 6))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -534,8 +539,9 @@ test_that(paste(
       solterms_expected = cvvss_datafit[[tstsetup]]$solution_terms
     )
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(smmry, digits = 6))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })

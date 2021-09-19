@@ -10,8 +10,9 @@ test_that("pl: `object` of class \"projection\" works", {
               nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
               info_str = tstsetup)
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(pls[[tstsetup]])))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -32,8 +33,9 @@ test_that(paste(
                 ndr_ncl_dtls(args_prj_vs[[tstsetup]])$nprjdraws,
               info_str = tstsetup)
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(pls_vs[[tstsetup]])))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -54,8 +56,9 @@ test_that(paste(
                 ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])$nprjdraws,
               info_str = tstsetup)
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(pls_cvvs[[tstsetup]])))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -552,8 +555,9 @@ test_that("pp: `object` of class \"projection\" works", {
                 ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws_out,
               info_str = tstsetup)
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(pps[[tstsetup]])))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -574,8 +578,9 @@ test_that(paste(
                 ndr_ncl_dtls(args_prj_vs[[tstsetup]])$nprjdraws_out,
               info_str = tstsetup)
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(pps_vs[[tstsetup]])))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })
@@ -596,8 +601,9 @@ test_that(paste(
                 ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])$nprjdraws_out,
               info_str = tstsetup)
     if (run_snaps) {
-      local_edition(3)
+      if (testthat_ed_max2) local_edition(3)
       expect_snapshot(print(digest::digest(pps_cvvs[[tstsetup]])))
+      if (testthat_ed_max2) local_edition(2)
     }
   }
 })

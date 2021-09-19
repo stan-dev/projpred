@@ -38,6 +38,7 @@ if (run_snaps) {
     stop("Package \"digest\" is needed for these tests. Please install it.",
          call. = FALSE)
   }
+  testthat_ed_max2 <- edition_get() <= 2
 }
 
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
