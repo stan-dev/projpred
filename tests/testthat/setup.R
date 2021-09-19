@@ -25,7 +25,14 @@ run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
 # Notes:
 #   * The snapshot tests are at least OS-dependent (perhaps even
 #   machine-dependent), so they only make sense locally.
-run_snaps <- FALSE
+#   * The latter of the following two conditions avoids that the snapshot tests
+#   are run by `R CMD check` on CRAN and locally (at least in RStudio). The
+#   reason for avoiding this is that in `R CMD check`, the previous snapshots
+#   are not available (at least as long as they are listed in the
+#   `.Rbuildignore` file), so they would be re-created, which would throw a lot
+#   of test warnings.
+run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
+  identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"), "")
 if (run_snaps) {
   if (!requireNamespace("digest", quietly = TRUE)) {
     stop("Package \"digest\" is needed for these tests. Please install it.",
