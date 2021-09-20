@@ -53,7 +53,7 @@
 #' See the `CITATION` file for details on citation.
 #'
 #' * Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
-#' models: a Bayesian approach via Kullback–Leibler projections. *Biometrika*,
+#' models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
 #' **85**(1):29–37.
 #'
 #' * Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative

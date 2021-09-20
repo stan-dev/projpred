@@ -46,7 +46,7 @@ this follows the variable selection, but it can also be applied directly
 See the \code{CITATION} file for details on citation.
 \itemize{
 \item Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
-models: a Bayesian approach via Kullback–Leibler projections. \emph{Biometrika},
+models: A Bayesian approach via Kullback–Leibler projections. \emph{Biometrika},
 \strong{85}(1):29–37.
 \item Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
 models via an entropic explanatory power. \emph{Journal of Statistical Planning
