@@ -62,7 +62,9 @@
 #'   # Data:
 #'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model:
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
@@ -298,7 +300,9 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'   # Data:
 #'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model:
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
@@ -449,7 +453,9 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   # Data:
 #'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model:
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
@@ -706,7 +712,9 @@ print.vsel <- function(x, ...) {
 #'   # Data:
 #'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model:
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
@@ -1021,7 +1029,9 @@ t.list <- function(x, ...) {
 #'   # Data:
 #'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model:
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
@@ -1197,7 +1207,9 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
 #'   # Data:
 #'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model:
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
