@@ -115,7 +115,10 @@ test_that("`x` of class \"vselsummary\" (based on varsel()) works", {
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
       width_orig <- options(width = 145)
-      expect_snapshot(print(smmrys_vs[[tstsetup]], digits = 6))
+      expect_snapshot({
+        print(tstsetup)
+        print(smmrys_vs[[tstsetup]], digits = 6)
+      })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }
@@ -134,7 +137,10 @@ test_that("`x` of class \"vselsummary\" (based on cv_varsel())  works", {
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
       width_orig <- options(width = 145)
-      expect_snapshot(print(smmrys_cvvs[[tstsetup]], digits = 6))
+      expect_snapshot({
+        print(tstsetup)
+        print(smmrys_cvvs[[tstsetup]], digits = 6)
+      })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }

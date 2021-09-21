@@ -139,7 +139,10 @@ test_that("as.matrix.projection() works", {
     ###
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(m)) # cat(m)
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -183,7 +186,11 @@ if (run_snaps) {
       res_vs <- lapply(prjs_vs_l, function(prjs_vs_i) {
         expect_warning(m <- as.matrix(prjs_vs_i),
                        warn_prjmat_expect, info = tstsetup)
-        expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
+        expect_snapshot({
+          print(tstsetup)
+          print(prjs_vs_i$solution_terms)
+          print(digest::digest(m)) # cat(m)
+        })
         return(invisible(TRUE))
       })
     }
@@ -224,7 +231,11 @@ if (run_snaps) {
       res_cvvs <- lapply(prjs_cvvs_l, function(prjs_cvvs_i) {
         expect_warning(m <- as.matrix(prjs_cvvs_i),
                        warn_prjmat_expect, info = tstsetup)
-        expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
+        expect_snapshot({
+          print(tstsetup)
+          print(prjs_cvvs_i$solution_terms)
+          print(digest::digest(m)) # cat(m)
+        })
         return(invisible(TRUE))
       })
     }

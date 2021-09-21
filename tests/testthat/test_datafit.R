@@ -344,7 +344,10 @@ test_that(paste(
       # if (run_snaps) {
       #   if (testthat_ed_max2) local_edition(3)
       #   suppressWarnings(m <- as.matrix(prjs_vs_datafit[[tstsetup]]))
-      #   expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
+      #   expect_snapshot({
+      #     print(tstsetup)
+      #     print(digest::digest(m)) # cat(m)
+      #   })
       #   if (testthat_ed_max2) local_edition(2)
       # }
       ###
@@ -368,7 +371,11 @@ test_that(paste(
       #   if (testthat_ed_max2) local_edition(3)
       #   res_vs <- lapply(prjs_vs_datafit[[tstsetup]], function(prjs_vs_i) {
       #     suppressWarnings(m <- as.matrix(prjs_vs_i))
-      #     expect_snapshot(print(digest::digest(m))) # expect_snapshot(cat(m))
+      #     expect_snapshot({
+      #       print(tstsetup)
+      #       print(prjs_vs_i$solution_terms)
+      #       print(digest::digest(m)) # cat(m)
+      #     })
       #     return(invisible(TRUE))
       #   })
       #   if (testthat_ed_max2) local_edition(2)
@@ -415,7 +422,10 @@ test_that(paste(
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(pl_with_args)))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(pl_with_args))
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -451,7 +461,10 @@ test_that(paste(
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(pp_with_args)))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(pp_with_args))
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -508,7 +521,10 @@ test_that(paste(
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
       width_orig <- options(width = 145)
-      expect_snapshot(print(smmry, digits = 6))
+      expect_snapshot({
+        print(tstsetup)
+        print(smmry, digits = 6)
+      })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }
@@ -543,7 +559,10 @@ test_that(paste(
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
       width_orig <- options(width = 145)
-      expect_snapshot(print(smmry, digits = 6))
+      expect_snapshot({
+        print(tstsetup)
+        print(smmry, digits = 6)
+      })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }

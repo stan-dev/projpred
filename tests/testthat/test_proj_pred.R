@@ -11,7 +11,10 @@ test_that("pl: `object` of class \"projection\" works", {
               info_str = tstsetup)
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(pls[[tstsetup]])))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(pls[[tstsetup]]))
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -34,7 +37,10 @@ test_that(paste(
               info_str = tstsetup)
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(pls_vs[[tstsetup]])))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(pls_vs[[tstsetup]]))
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -57,7 +63,10 @@ test_that(paste(
               info_str = tstsetup)
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(pls_cvvs[[tstsetup]])))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(pls_cvvs[[tstsetup]]))
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -556,7 +565,10 @@ test_that("pp: `object` of class \"projection\" works", {
               info_str = tstsetup)
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(pps[[tstsetup]])))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(pps[[tstsetup]]))
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -579,7 +591,10 @@ test_that(paste(
               info_str = tstsetup)
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(pps_vs[[tstsetup]])))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(pps_vs[[tstsetup]]))
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -602,7 +617,10 @@ test_that(paste(
               info_str = tstsetup)
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      expect_snapshot(print(digest::digest(pps_cvvs[[tstsetup]])))
+      expect_snapshot({
+        print(tstsetup)
+        print(digest::digest(pps_cvvs[[tstsetup]]))
+      })
       if (testthat_ed_max2) local_edition(2)
     }
   }
