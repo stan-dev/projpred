@@ -422,10 +422,12 @@ test_that(paste(
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
         print(digest::digest(pl_with_args))
       })
+      options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -461,10 +463,12 @@ test_that(paste(
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
         print(digest::digest(pp_with_args))
       })
+      options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }
   }

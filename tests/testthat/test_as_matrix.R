@@ -139,10 +139,12 @@ test_that("as.matrix.projection() works", {
     ###
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
         print(digest::digest(m)) # cat(m)
       })
+      options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -150,6 +152,7 @@ test_that("as.matrix.projection() works", {
 
 if (run_snaps) {
   if (testthat_ed_max2) local_edition(3)
+  width_orig <- options(width = 145)
 
   test_that(paste(
     "as.matrix.projection() works for projections based on varsel() output"
@@ -241,5 +244,6 @@ if (run_snaps) {
     }
   })
 
+  options(width = width_orig$width)
   if (testthat_ed_max2) local_edition(2)
 }
