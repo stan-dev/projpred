@@ -214,14 +214,44 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
   )
 
-  # Define the reference model formally:
+  # Define the reference model explicitly:
   ref <- get_refmodel(fit)
   print(class(ref)) # gives `"refmodel"`
-  # Now see, for example, `?varsel.refmodel`, `?cv_varsel.refmodel`,
-  # `?project`, and `?predict.refmodel` for possible post-processing
-  # functions. Most of them call get_refmodel() internally at the beginning
-  # (or are methods whose generics do so), so you will rarely need to call
-  # get_refmodel() yourself.
+  # Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
+  # possible post-processing functions. Most of the post-processing functions
+  # call get_refmodel() internally at the beginning, so you will rarely need
+  # to call get_refmodel() yourself.
+
+  # A custom reference model which may be used in a variable selection where
+  # the candidate predictors are not a subset of those used for the reference
+  # model's predictions:
+  ref_cust <- init_refmodel(
+    fit,
+    data = dat_gauss,
+    formula = y ~ X6 + X7,
+    family = gaussian(),
+    extract_model_data = function(object, newdata = NULL, wrhs = NULL,
+                                  orhs = NULL, extract_y = TRUE) {
+      if (!extract_y) {
+        resp_form <- NULL
+      } else {
+        resp_form <- ~ y
+      }
+
+      if (is.null(newdata)) {
+        newdata <- dat_gauss
+      }
+
+      args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
+      return(projpred:::do_call(projpred:::.extract_model_data, args))
+    },
+    cvfun = function(folds, ...) {
+      rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
+                      folds = folds, ...)$fits[, "fit"]
+    }
+  )
+  # Now, the post-processing functions mentioned above (for example,
+  # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
 }
 
 }
