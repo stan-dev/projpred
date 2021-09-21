@@ -97,7 +97,7 @@
 #'   instead.
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
-#'   to be accessed directly but instead via helper functions (see the vignettes
+#'   to be accessed directly but instead via helper functions (see the vignette
 #'   or type `?projpred`).
 #'
 #' @seealso [cv_varsel()]

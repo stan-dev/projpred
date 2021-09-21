@@ -146,7 +146,7 @@ considers all the terms in the reference model's formula.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
-to be accessed directly but instead via helper functions (see the vignettes
+to be accessed directly but instead via helper functions (see the vignette
 or type \code{?projpred}).
 }
 \description{
