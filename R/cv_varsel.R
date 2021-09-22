@@ -24,9 +24,7 @@
 #'   `NULL`, all observations are used, but for faster experimentation, one can
 #'   set this to a smaller value.
 #' @param K Only relevant if `cv_method == "kfold"`. Number of folds in the
-#'   \eqn{K}-fold CV. If `NULL`, then `5` is used for genuine reference models
-#'   (i.e., of class `refmodel`) and `10` for `datafit`s (that is, for penalized
-#'   maximum likelihood estimation).
+#'   \eqn{K}-fold CV.
 #' @param validate_search Only relevant if `cv_method == "LOO"`. A single
 #'   logical value indicating whether to cross-validate also the search part,
 #'   i.e., whether to run the search separately for each CV fold (`TRUE`) or not
@@ -103,17 +101,27 @@ cv_varsel.default <- function(object, ...) {
 #' @rdname cv_varsel
 #' @export
 cv_varsel.refmodel <- function(
-  object, method = NULL,
+  object,
+  method = NULL,
   cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
-  ndraws = 20, nclusters = NULL,
-  ndraws_pred = 400, nclusters_pred = NULL,
+  ndraws = 20,
+  nclusters = NULL,
+  ndraws_pred = 400,
+  nclusters_pred = NULL,
   cv_search = !inherits(object, "datafit"),
-  nterms_max = NULL, penalty = NULL,
+  nterms_max = NULL,
+  penalty = NULL,
   verbose = TRUE,
-  nloo = NULL, K = NULL, lambda_min_ratio = 1e-5,
-  nlambda = 150, thresh = 1e-6, regul = 1e-4,
-  validate_search = TRUE, seed = NULL,
-  search_terms = NULL, ...
+  nloo = NULL,
+  K = if (!inherits(object, "datafit")) 5 else 10,
+  lambda_min_ratio = 1e-5,
+  nlambda = 150,
+  thresh = 1e-6,
+  regul = 1e-4,
+  validate_search = TRUE,
+  seed = NULL,
+  search_terms = NULL,
+  ...
 ) {
   refmodel <- object
   ## resolve the arguments similar to varsel
@@ -279,23 +287,16 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K,
     cv_method <- "kfold"
   }
 
-  if (!is.null(K)) {
-    if (length(K) > 1 || !is.numeric(K) || K != round(K)) {
-      stop("K must be a single integer value.")
+  if (cv_method == "kfold") {
+    stopifnot(!is.null(K))
+    if (length(K) > 1 || !is.numeric(K) || !.is.wholenumber(K)) {
+      stop("`K` must be a single integer value.")
     }
     if (K < 2) {
-      stop("K must be at least 2.")
+      stop("`K` must be at least 2.")
     }
     if (K > NROW(refmodel$y)) {
-      stop("K cannot exceed the number of observations.")
-    }
-  }
-
-  if (cv_method == "kfold" && is.null(K)) {
-    if (inherits(refmodel, "datafit")) {
-      K <- 10
-    } else {
-      K <- 5
+      stop("`K` cannot exceed the number of observations.")
     }
   }
 

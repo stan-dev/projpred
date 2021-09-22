@@ -701,15 +701,15 @@ test_that("`validate_search` works", {
 
 test_that("invalid `K` fails", {
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1),
-               "^K must be at least 2\\.$")
+               "^`K` must be at least 2\\.$")
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1000),
-               "^K cannot exceed the number of observations\\.$")
+               "^`K` cannot exceed the number of observations\\.$")
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = c(4, 9)),
-               "^K must be a single integer value\\.$")
+               "^`K` must be a single integer value\\.$")
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = "a"),
-               "^K must be a single integer value\\.$")
+               "^`K` must be a single integer value\\.$")
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = dat),
-               "^K must be a single integer value\\.$")
+               "^`K` must be a single integer value\\.$")
 })
 
 test_that("`cvfits` (actually passed to init_refmodel()) works", {
