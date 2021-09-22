@@ -369,7 +369,16 @@ plot.vsel <- function(
   if (nterms_max < 1) {
     stop("nterms_max must be at least 1")
   }
-  ylab <- if (deltas) "Difference to the baseline" else "Value"
+  if (baseline == "ref") {
+    baseline_pretty <- "reference model"
+  } else {
+    baseline_pretty <- "best submodel"
+  }
+  if (deltas) {
+    ylab <- paste0("Difference vs.", baseline_pretty)
+  } else {
+    ylab <- "Value"
+  }
 
   # make sure that breaks on the x-axis are integers
   n_opts <- c(4, 5, 6)
