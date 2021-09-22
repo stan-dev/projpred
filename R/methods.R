@@ -1049,12 +1049,12 @@ t.list <- function(x, ...) {
 #'   ### is not recommended and only shown here for demonstrative purposes. A
 #'   ### better solution for the clustering case is explained below.
 #'   # If the `bayesplot` package is installed, the output from
-#'   # as.matrix.projection() can be used there, for example:
+#'   # as.matrix.projection() can be used there. For example:
 #'   if (requireNamespace("bayesplot", quietly = TRUE)) {
 #'     print(bayesplot::mcmc_intervals(prjmat))
 #'   }
 #'   # If the `posterior` package is installed, the output from
-#'   # as.matrix.projection() can be used there, for example:
+#'   # as.matrix.projection() can be used there. For example:
 #'   if (requireNamespace("posterior", quietly = TRUE)) {
 #'     prjdrws <- posterior::as_draws_matrix(prjmat)
 #'     print(posterior::summarize_draws(
