@@ -44,7 +44,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   ### For further post-processing (e.g., via packages `bayesplot` and
   ### `posterior`), we will here ignore the fact that clustering was used
   ### (due to argument `nclusters` above). CAUTION: Ignoring the clustering
-  ### is not recommended and only shown here for demonstration purposes. A
+  ### is not recommended and only shown here for demonstrative purposes. A
   ### better solution for the clustering case is explained below.
   # If the `bayesplot` package is installed, the output from
   # as.matrix.projection() can be used there, for example:
