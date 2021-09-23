@@ -425,8 +425,8 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   * `elpd`: (expected) sum of log predictive densities;
 #'   * `mlpd`: mean log predictive density, that is, `elpd` divided by the
 #'   number of observations (data points);
-#'   * `mse`: mean squared error ([gaussian()] family only);
-#'   * `rmse`: root mean squared error ([gaussian()] family only);
+#'   * `mse`: mean squared error;
+#'   * `rmse`: root mean squared error;
 #'   * `acc` (or its alias, `pctcorr`): classification accuracy ([binomial()]
 #'   family only);
 #'   * `auc`: area under the ROC curve ([binomial()] family only).
