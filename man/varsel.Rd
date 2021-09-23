@@ -42,34 +42,35 @@ varsel(object, ...)
 test set which is used for evaluating the predictive performance of the
 reference model. If not provided, the training set is used.}
 
-\item{method}{The method for the search. Possible options are \code{"L1"} for L1
-search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"} is
-used if the reference model has multilevel or additive terms and \code{"L1"}
+\item{method}{The method for the search step. Possible options are \code{"L1"} for
+L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
+is used if the reference model has multilevel or additive terms and \code{"L1"}
 otherwise.}
 
-\item{ndraws}{Number of posterior draws used in the search. \strong{Caution:} For
-\code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
+\item{ndraws}{Number of posterior draws used in the search step. \strong{Caution:}
+For \code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
 clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if \code{method}
 turns out as \code{"L1"} (L1 search uses always one cluster). See also section
 "Details" below.}
 
-\item{nclusters}{Number of clusters of posterior draws used in the search.
-Ignored if \code{method} turns out as \code{"L1"} (L1 search uses always one
+\item{nclusters}{Number of clusters of posterior draws used in the search
+step. Ignored if \code{method} turns out as \code{"L1"} (L1 search uses always one
 cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See also
 section "Details" below.}
 
 \item{ndraws_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
-posterior draws used in the evaluation. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
+posterior draws used in the evaluation step. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
 clustering is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
 section "Details" below.}
 
 \item{nclusters_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
-clusters of posterior draws used in the evaluation. For the meaning of
+clusters of posterior draws used in the evaluation step. For the meaning of
 \code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
 \item{cv_search}{A single logical value indicating whether to fit the
 submodels along the solution path again (\code{TRUE}) or to retrieve their fits
-from the search (\code{FALSE}) before using those (re-)fits in the evaluation.}
+from the search step (\code{FALSE}) before using those (re-)fits in the
+evaluation step.}
 
 \item{nterms_max}{Maximum number of predictor terms until which the search is
 continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
@@ -105,9 +106,9 @@ value of \code{0} means that those predictors have no cost and will therefore be
 selected first, whereas \code{Inf} means those predictors will never be
 selected. If \code{NULL}, then \code{1} is used for each predictor.}
 
-\item{search_terms}{A custom character vector of terms to consider for
-selection. The intercept (\code{"1"}) needs to be included explicitly. The
-default considers all the terms in the reference model's formula.}
+\item{search_terms}{A custom character vector of terms to consider for the
+search. The intercept (\code{"1"}) needs to be included explicitly. The default
+considers all the terms in the reference model's formula.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If \code{NULL}, no seed is set and
@@ -122,11 +123,11 @@ or type \code{?projpred}).
 }
 \description{
 Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-(G)AMs, and (G)AMMs. This variable selection consists of a \emph{search} and an
-\emph{evaluation}. The search determines the solution path, i.e., the best
-submodel for each number of predictor terms (model size). The evaluation
-determines the predictive performance of the submodels along the solution
-path.
+(G)AMs, and (G)AMMs. This variable selection consists of a \emph{search} step and
+an \emph{evaluation} step. The search step determines the solution path, i.e., the
+best submodel for each number of predictor terms (model size). The evaluation
+step determines the predictive performance of the submodels along the
+solution path.
 }
 \details{
 Notes:

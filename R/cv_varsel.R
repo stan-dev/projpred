@@ -1,14 +1,15 @@
 #' Variable selection with cross-validation
 #'
 #' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* and an
-#' *evaluation*. The search determines the solution path, i.e., the best
-#' submodel for each number of predictor terms (model size). The evaluation
-#' determines the predictive performance of the submodels along the solution
-#' path. In contrast to [varsel()], [cv_varsel()] performs a cross-validation
-#' (CV) by running the search with the training data of each CV fold separately
-#' (an exception is explained in section "Note" below) and running the
-#' evaluation on the corresponding test set of each CV fold.
+#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* step and
+#' an *evaluation* step. The search step determines the solution path, i.e., the
+#' best submodel for each number of predictor terms (model size). The evaluation
+#' step determines the predictive performance of the submodels along the
+#' solution path. In contrast to [varsel()], [cv_varsel()] performs a
+#' cross-validation (CV) by running the search step with the training data of
+#' each CV fold separately (an exception is explained in section "Note" below)
+#' and running the evaluation step on the corresponding test set of each CV
+#' fold.
 #'
 #' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
@@ -19,16 +20,16 @@
 #' @param nloo Only relevant if `cv_method == "LOO"`. Number of subsampled LOO
 #'   CV folds, i.e., number of observations used for the LOO CV (anything
 #'   between 1 and the original number of observations). Smaller values lead to
-#'   faster computation but higher uncertainty in the evaluation. If `NULL`, all
-#'   observations are used, but for faster experimentation, one can set this to
-#'   a smaller value.
+#'   faster computation but higher uncertainty in the evaluation step. If
+#'   `NULL`, all observations are used, but for faster experimentation, one can
+#'   set this to a smaller value.
 #' @param K Only relevant if `cv_method == "kfold"`. Number of folds in the
 #'   \eqn{K}-fold CV. If `NULL`, then `5` is used for genuine reference models
 #'   (i.e., of class `refmodel`) and `10` for `datafit`s (that is, for penalized
 #'   maximum likelihood estimation).
 #' @param validate_search Only relevant if `cv_method == "LOO"`. A single
-#'   logical value indicating whether to cross-validate also the search, i.e.,
-#'   whether to run the search separately for each CV fold (`TRUE`) or not
+#'   logical value indicating whether to cross-validate also the search step,
+#'   i.e., whether to run the search separately for each CV fold (`TRUE`) or not
 #'   (`FALSE`). We strongly do not recommend setting this to `FALSE`, because
 #'   this is known to bias the predictive performance estimates of the selected
 #'   submodels. However, setting this to `FALSE` can sometimes be useful because
@@ -47,8 +48,8 @@
 #' @inherit varsel details return
 #'
 #' @note The case `cv_method == "LOO" && !validate_search` constitutes an
-#'   exception where the search is not cross-validated. In that case, the
-#'   evaluation is based on a PSIS-LOO CV.
+#'   exception where the search step is not cross-validated. In that case, the
+#'   evaluation step is based on a PSIS-LOO CV.
 #'
 #' @references
 #'

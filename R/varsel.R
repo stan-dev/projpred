@@ -1,11 +1,11 @@
 #' Variable selection (without cross-validation)
 #'
 #' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* and an
-#' *evaluation*. The search determines the solution path, i.e., the best
-#' submodel for each number of predictor terms (model size). The evaluation
-#' determines the predictive performance of the submodels along the solution
-#' path.
+#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* step and
+#' an *evaluation* step. The search step determines the solution path, i.e., the
+#' best submodel for each number of predictor terms (model size). The evaluation
+#' step determines the predictive performance of the submodels along the
+#' solution path.
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
@@ -13,29 +13,30 @@
 #' @param d_test For internal use only. A `list` providing information about the
 #'   test set which is used for evaluating the predictive performance of the
 #'   reference model. If not provided, the training set is used.
-#' @param method The method for the search. Possible options are `"L1"` for L1
-#'   search and `"forward"` for forward search. If `NULL`, then `"forward"` is
-#'   used if the reference model has multilevel or additive terms and `"L1"`
+#' @param method The method for the search step. Possible options are `"L1"` for
+#'   L1 search and `"forward"` for forward search. If `NULL`, then `"forward"`
+#'   is used if the reference model has multilevel or additive terms and `"L1"`
 #'   otherwise.
 #' @param cv_search A single logical value indicating whether to fit the
 #'   submodels along the solution path again (`TRUE`) or to retrieve their fits
-#'   from the search (`FALSE`) before using those (re-)fits in the evaluation.
-#' @param ndraws Number of posterior draws used in the search. **Caution:** For
-#'   `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
+#'   from the search step (`FALSE`) before using those (re-)fits in the
+#'   evaluation step.
+#' @param ndraws Number of posterior draws used in the search step. **Caution:**
+#'   For `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
 #'   clustering is used). Ignored if `nclusters` is not `NULL` or if `method`
 #'   turns out as `"L1"` (L1 search uses always one cluster). See also section
 #'   "Details" below.
-#' @param nclusters Number of clusters of posterior draws used in the search.
-#'   Ignored if `method` turns out as `"L1"` (L1 search uses always one
+#' @param nclusters Number of clusters of posterior draws used in the search
+#'   step. Ignored if `method` turns out as `"L1"` (L1 search uses always one
 #'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
 #'   section "Details" below.
 #' @param ndraws_pred Only relevant if `cv_search` is `TRUE`. Number of
-#'   posterior draws used in the evaluation. **Caution:** For `ndraws_pred <=
-#'   20`, the value of `ndraws_pred` is passed to `nclusters_pred` (so that
+#'   posterior draws used in the evaluation step. **Caution:** For `ndraws_pred
+#'   <= 20`, the value of `ndraws_pred` is passed to `nclusters_pred` (so that
 #'   clustering is used). Ignored if `nclusters_pred` is not `NULL`. See also
 #'   section "Details" below.
 #' @param nclusters_pred Only relevant if `cv_search` is `TRUE`. Number of
-#'   clusters of posterior draws used in the evaluation. For the meaning of
+#'   clusters of posterior draws used in the evaluation step. For the meaning of
 #'   `NULL`, see argument `ndraws_pred`. See also section "Details" below.
 #' @param nterms_max Maximum number of predictor terms until which the search is
 #'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
@@ -62,9 +63,9 @@
 #'   projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
 #'   is no need for regularization, but sometimes we need to add some
 #'   regularization to avoid numerical problems.
-#' @param search_terms A custom character vector of terms to consider for
-#'   selection. The intercept (`"1"`) needs to be included explicitly. The
-#'   default considers all the terms in the reference model's formula.
+#' @param search_terms A custom character vector of terms to consider for the
+#'   search. The intercept (`"1"`) needs to be included explicitly. The default
+#'   considers all the terms in the reference model's formula.
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
