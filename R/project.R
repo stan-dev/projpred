@@ -41,16 +41,12 @@
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`).
 #'
-#' @details
-#'
-#' Notes:
-#' * Arguments `ndraws` and `nclusters` are automatically truncated at the
-#' number of posterior draws in the reference model (which is `1` for
-#' `datafit`s).
-#' * Using less draws or clusters in `ndraws` or `nclusters` than posterior
-#' draws in the reference model may result in slightly inaccurate projection
-#' performance. Increasing these arguments affects the computation time
-#' linearly.
+#' @details Arguments `ndraws` and `nclusters` are automatically truncated at
+#'   the number of posterior draws in the reference model (which is `1` for
+#'   `datafit`s). Using less draws or clusters in `ndraws` or `nclusters` than
+#'   posterior draws in the reference model may result in slightly inaccurate
+#'   projection performance. Increasing these arguments affects the computation
+#'   time linearly.
 #'
 #' @return If the projection is performed onto a single submodel (i.e.,
 #'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class

@@ -99,16 +99,12 @@ single submodel consisting of a specific combination of predictor terms or
 submodels of specific sizes.
 }
 \details{
-Notes:
-\itemize{
-\item Arguments \code{ndraws} and \code{nclusters} are automatically truncated at the
-number of posterior draws in the reference model (which is \code{1} for
-\code{datafit}s).
-\item Using less draws or clusters in \code{ndraws} or \code{nclusters} than posterior
-draws in the reference model may result in slightly inaccurate projection
-performance. Increasing these arguments affects the computation time
-linearly.
-}
+Arguments \code{ndraws} and \code{nclusters} are automatically truncated at
+the number of posterior draws in the reference model (which is \code{1} for
+\code{datafit}s). Using less draws or clusters in \code{ndraws} or \code{nclusters} than
+posterior draws in the reference model may result in slightly inaccurate
+projection performance. Increasing these arguments affects the computation
+time linearly.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

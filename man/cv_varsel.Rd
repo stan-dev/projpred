@@ -164,18 +164,17 @@ and running the evaluation step on the corresponding test set of each CV
 fold.
 }
 \details{
-Notes:
-\itemize{
-\item Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred} are
-automatically truncated at the number of posterior draws in the reference
-model (which is \code{1} for \code{datafit}s).
-\item Using less draws or clusters in \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, or
-\code{ndraws_pred} than posterior draws in the reference model may result in
-slightly inaccurate projection performance. Increasing these arguments
-affects the computation time linearly.
-\item An L1 search may select interaction terms before the corresponding main
-terms are selected. If this is undesired, choose the forward search instead.
-}
+Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
+are automatically truncated at the number of posterior draws in the
+reference model (which is \code{1} for \code{datafit}s). Using less draws or clusters
+in \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, or \code{ndraws_pred} than posterior
+draws in the reference model may result in slightly inaccurate projection
+performance. Increasing these arguments affects the computation time
+linearly.
+
+An L1 search may select interaction terms before the corresponding main
+terms are selected. If this is undesired, choose the forward search
+instead.
 }
 \note{
 The case \code{cv_method == "LOO" && !validate_search} constitutes an

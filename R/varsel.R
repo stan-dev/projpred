@@ -75,18 +75,17 @@
 #'   draws (if `!is.null(nclusters)`).
 #' @param ... Additional arguments passed to [get_refmodel()].
 #'
-#' @details
+#' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
+#'   are automatically truncated at the number of posterior draws in the
+#'   reference model (which is `1` for `datafit`s). Using less draws or clusters
+#'   in `ndraws`, `nclusters`, `nclusters_pred`, or `ndraws_pred` than posterior
+#'   draws in the reference model may result in slightly inaccurate projection
+#'   performance. Increasing these arguments affects the computation time
+#'   linearly.
 #'
-#' Notes:
-#' * Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred` are
-#' automatically truncated at the number of posterior draws in the reference
-#' model (which is `1` for `datafit`s).
-#' * Using less draws or clusters in `ndraws`, `nclusters`, `nclusters_pred`, or
-#' `ndraws_pred` than posterior draws in the reference model may result in
-#' slightly inaccurate projection performance. Increasing these arguments
-#' affects the computation time linearly.
-#' * An L1 search may select interaction terms before the corresponding main
-#' terms are selected. If this is undesired, choose the forward search instead.
+#'   An L1 search may select interaction terms before the corresponding main
+#'   terms are selected. If this is undesired, choose the forward search
+#'   instead.
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the vignettes
