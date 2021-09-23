@@ -45,7 +45,7 @@ reference model. If not provided, the training set is used.}
 \item{method}{The method for the search step. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
 is used if the reference model has multilevel or additive terms and \code{"L1"}
-otherwise.}
+otherwise. See also section "Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search step. \strong{Caution:}
 For \code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
@@ -137,6 +137,15 @@ in \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, or \code{ndraws_pred}
 draws in the reference model may result in slightly inaccurate projection
 performance. Increasing these arguments affects the computation time
 linearly.
+
+For argument \code{method}, there are some restrictions: For a reference model
+with multilevel or additive formula terms, only the forward search is
+available.
+
+L1 search is faster than forward search, but forward search may be more
+accurate. Furthermore, forward search may find a sparser model with
+comparable performance to that found by L1 search, but it may also start
+overfitting when more predictors are added.
 
 An L1 search may select interaction terms before the corresponding main
 terms are selected. If this is undesired, choose the forward search
