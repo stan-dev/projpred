@@ -8,7 +8,6 @@ knitr::opts_chunk$set(
     comment = NA,
     message = FALSE,
     warning = FALSE,
-    # include = FALSE,
     eval = if (exists("params") && !is.null(params$EVAL)) params$EVAL else FALSE,
     dev = "png",
     dpi = 100,

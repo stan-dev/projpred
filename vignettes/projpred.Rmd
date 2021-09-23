@@ -88,7 +88,7 @@ In **projpred**, the projective variable selection consists of a *search* and an
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search with the training data of each CV fold separately (an exception is explained in the `?cv_varsel` help) and running the evaluation on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we'll use `cv_varsel()` here.
 
 It is worth taking a look at the documentation of `cv_varsel()` (see `?cv_varsel`) because we cannot explain all arguments here. Note that we'll modify some arguments here and later in this vignette only to speed up the building of this vignette. This is not recommended in general. For example, we modify argument `cv_method` to use a K-fold CV instead of a leave-one-out (LOO) CV. In general, the LOO CV is more accurate. In this example, the two `cv_method`s give very similar results.
-```{r, include=FALSE}
+```{r, results='hide'}
 cvvs <- cv_varsel(
   refm_fit,
   ### Only for the sake of speed (in general, LOO CV is more accurate):
