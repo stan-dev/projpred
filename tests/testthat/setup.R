@@ -537,11 +537,10 @@ cvmeth_tst <- list(
 )
 
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
-stats_common <- c("elpd", "mlpd")
+stats_common <- c("elpd", "mlpd", "mse", "rmse")
 stats_tst <- list(
   default_stats = list(),
   common_stats = list(stats = stats_common),
-  gauss_stats = list(stats = c(stats_common, c("mse", "rmse"))),
   binom_stats = list(stats = c(stats_common, c("acc", "auc")))
 )
 type_tst <- c("mean", "lower", "upper", "se")
@@ -851,7 +850,6 @@ cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
     fam_crr <- args_obj[[tstsetup_vsel]]$fam_nm
     add_stats <- switch(mod_crr,
                         "glm" = switch(fam_crr,
-                                       "gauss" = "gauss_stats",
                                        "brnll" = "binom_stats",
                                        "binom" = "binom_stats",
                                        "common_stats"),

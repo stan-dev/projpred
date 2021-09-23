@@ -268,7 +268,6 @@ test_that("`stat` works", {
     tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     stat_crr_nm <- switch(fam_crr,
-                          "gauss" = "gauss_stats",
                           "brnll" = "binom_stats",
                           "binom" = "binom_stats",
                           "common_stats")
