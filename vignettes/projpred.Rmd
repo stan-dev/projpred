@@ -238,14 +238,22 @@ prj_linpred <- proj_linpred(prj, newdata = CO2_new, integrated = TRUE)
 cbind(CO2_new, linpred = as.vector(prj_linpred$pred))
 ```
 
-With `proj_predict()`, we can obtain draws from the final submodel's predictive distribution. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this contains not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response (in case of the Gaussian family we are using here, this is the uncertainty arising from the residual standard deviation). This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed a projected posterior predictive check (or similarly) here.
+With `proj_predict()`, we can obtain draws from the final submodel's predictive distribution. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this contains not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response (in case of the Gaussian family we are using here, this is the uncertainty arising from the residual standard deviation). This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed a projected posterior predictive check (PPPC) here.
 ```{r}
 prj_predict <- proj_predict(prj, .seed = 762805)
 # Using the 'bayesplot' package:
 bayesplot_theme_set(ggplot2::theme_bw())
 ppc_dens_overlay(y = CO2$uptake, yrep = prj_predict, alpha = 0.9, bw = "SJ")
 ```
-This projected posterior predictive check indicates that there is clearly room for improvement of the model (because the observed response values exhibit a bimodal distribution whereas the replicated response values don't).
+This PPPC indicates that there is clearly room for improvement of the model (because the observed response values exhibit a bimodal distribution whereas the replicated response values don't). The interesting question is now whether only our final projection performs badly in this PPPC or whether already the reference model does. To answer this question, we inspect the reference model's PPC:
+```{r}
+refm_predict <- posterior_predict(refm_fit, seed = 762805)
+refm_predict_sub <- refm_predict[
+  round(seq(1, nrow(refm_predict), length.out = 100)),
+]
+ppc_dens_overlay(y = CO2$uptake, yrep = refm_predict_sub, alpha = 0.9, bw = "SJ")
+```
+This plot shows that it is already the reference model which performs badly in its PPC. Thus, we would now have to re-iterate and improve the reference model, see Gelman et al. (2020). That would go beyond the scope of this vignette, however, so we'll stop here.
 
 ## Troubleshooting
 
@@ -261,6 +269,8 @@ Sometimes, the ordering of the predictor terms in the solution path makes sense,
 Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inference for generalized linear and additive multilevel models. *arxiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, **111**(1-2):77–94. doi:[10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
+
+Gelman, A., Vehtari, A., Simpson, D., Margossian, C. C., Carpenter, B., Yao, Y., Kennedy, L., Gabry, J., Bürkner, P.-C., and Modrák, M. (2020). Bayesian Workflow. *arXiv:2011.01808*. URL: <https://arxiv.org/abs/2011.01808>.
 
 Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*, **85**(1):29–37.
 
