@@ -58,9 +58,11 @@ N <- nrow(CO2)
 # standard deviation):
 tau0 <- p0 / (D - p0) * 1 / sqrt(N)
 # Standardize the predictor variables:
-CO2$zType <- as.vector(scale(as.numeric(CO2$Type) - 1))
-CO2$zTreatment <- as.vector(scale(as.numeric(CO2$Treatment) - 1))
-CO2$zconc <- as.vector(scale(CO2$conc))
+CO2 <- within(CO2, {
+  zType <- as.vector(scale(as.numeric(Type) - 1))
+  zTreatment <- as.vector(scale(as.numeric(Treatment) - 1))
+  zconc <- as.vector(scale(conc))
+})
 ```
 
 We now fit the reference model to the data. Note that for multilevel formula terms, **projpred** uses the **lme4** syntax. To make this vignette build fast, we use only 2 Markov chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. If sampling for the reference model still takes long and multiple CPU cores are available, uncomment the line setting option `mc.cores` to an automatically detected number of cores (or set `mc.cores` to a manually determined number of cores).
