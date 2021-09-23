@@ -8,9 +8,6 @@
 .RData
 /src/projpred.dll
 
-vignettes/quickstart_cache
-*cache/
-*files/
 tests/testthat/bfits
 tests/testthat/_snaps
 inst/doc
