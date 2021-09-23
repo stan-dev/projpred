@@ -213,7 +213,7 @@ Computing}, \strong{27}(5), 1413-1432.
 doi:\href{https://doi.org/10.1007/s11222-016-9696-4}{10.1007/s11222-016-9696-4}.
 
 Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
-smoothed importance sampling. \emph{arXiv:1507.02646 [stat.CO]}. URL:
+smoothed importance sampling. \emph{arXiv:1507.02646}. URL:
 \url{https://arxiv.org/abs/1507.02646}.
 }
 \seealso{
