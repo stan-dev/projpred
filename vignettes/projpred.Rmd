@@ -44,14 +44,14 @@ Note that this is not a typical dataset for a variable selection problem since i
 
 First, we have to construct the reference model for the projective variable selection. This model is considered as the best ("reference") solution to the prediction task and the aim of the projective variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.
 
-The **projpred** package is compatible with reference models fit by the **rstanarm** and **brms** packages. To our knowledge, **rstanarm** and **brms** are currently the only packages for which `get_refmodel()` methods (which establish the compatibility with **projpred**) exist. Custom reference models can also be used via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We will cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, **projpred** will consider all predictors from the reference model as candidate predictors, so all candidate models are submodels of the reference model.^[In principle, this is not a necessary assumption for a projective variable selection (see, e.g., Piironen et al., 2020) and custom reference models allow to avoid this assumption, but for **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation a lot.]
+The **projpred** package is compatible with reference models fit by the **rstanarm** and **brms** packages. To our knowledge, **rstanarm** and **brms** are currently the only packages for which `get_refmodel()` methods (which establish the compatibility with **projpred**) exist. Custom reference models can also be used via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We'll cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, **projpred** will consider all predictors from the reference model as candidate predictors, so all candidate models are submodels of the reference model.^[In principle, this is not a necessary assumption for a projective variable selection (see, e.g., Piironen et al., 2020) and custom reference models allow to avoid this assumption, but for **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation a lot.]
 
-Here, we will use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, you simply have to replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`).
+Here, we'll use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, you simply have to replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`).
 ```{r}
 library(rstanarm)
 ```
 
-For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response, `uptake`.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and, via `brms::get_refmodel.brmsfit()`, `brms::bernoulli()`), and `poisson()`.] With regard to the predictors, we construct the most comprehensive model which is possible from the predictor variables mentioned above. `Plant` constitutes the typical case where partially pooled (also known as *group-level* or---in frequentist terms---*random*) effects are desirable, so we will use a multilevel formula term for `Plant`.
+For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response, `uptake`.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and, via `brms::get_refmodel.brmsfit()`, `brms::bernoulli()`), and `poisson()`.] With regard to the predictors, we construct the most comprehensive model which is possible from the predictor variables mentioned above. `Plant` constitutes the typical case where partially pooled (also known as *group-level* or---in frequentist terms---*random*) effects are desirable, so we'll use a multilevel formula term for `Plant`.
 
 We use **rstanarm**'s default priors, except for the regression coefficients of the predictors with non-pooled (also known as *population-level* or *fixed*) effects for which we use a regularized horseshoe (RH) prior (Piironen and Vehtari, 2017c) with the hyperprior for the its global shrinkage parameter being based on Piironen and Vehtari (2017b,c). Before applying the RH prior, we standardize the predictor variables (Piironen and Vehtari, 2017c). Note that the `CO2` dataset is not a typical one for the RH prior. Just like for variable selection problems in general (see above), datasets to which the RH prior is applied usually involve many more predictors, especially when setting the number of predictors in relation to the number of observations. We'll use the RH prior here anyway, but only for demonstrative purposes. In R code, these are the preparation steps for the RH prior:
 ```{r}
@@ -88,7 +88,7 @@ refm_fit <- stan_glmer(uptake ~ zType * zconc * zTreatment + (1 | Plant),
                        QR = TRUE, chains = 2, iter = 500, seed = 2052109,
                        refresh = 0)
 ```
-Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`). However, due to the technical reasons for which we reduced `chains` and `iter`, we will skip this step here.
+Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`). However, due to the technical reasons for which we reduced `chains` and `iter`, we'll skip this step here.
 
 ## Variable selection
 
@@ -255,11 +255,11 @@ refm_predict_sub <- refm_predict[
 ]
 ppc_dens_overlay(y = CO2$uptake, yrep = refm_predict_sub, alpha = 0.9, bw = "SJ")
 ```
-This plot shows that it is already the reference model which performs badly in its PPC. Thus, we would now have to re-iterate and improve the reference model, see Gelman et al. (2020). That would go beyond the scope of this vignette, however, so we'll stop here.
+This plot shows that it is already the reference model which performs badly in its PPC. Thus, we would now have to re-iterate and improve the reference model, see Gelman et al. (2020). That would go beyond the scope of this vignette, however.
 
 ## Troubleshooting
 
-Sometimes, the ordering of the predictor terms in the solution path makes sense, but the performance measures of the projections do not approach that of the reference model for increasing model size. There may be different reasons that can explain this behavior:
+Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing model size, the performance measures of the projections do not approach that of the reference model. There are different reasons that can explain this behavior (with the following enumeration not being guaranteed to be complete):
 
 1. The reference model's posterior may be quite wide so that the default `ndraws_pred` could be too small. Usually, this is the case when the difference in predictive performance is not very large. Increasing `ndraws_pred` should help, but it also increases the computational cost. Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
 <!-- See GitHub issue #208: -->
