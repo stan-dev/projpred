@@ -142,7 +142,7 @@ test_that("as.matrix.projection() works", {
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(m)) # cat(m)
+        print(rlang::hash(m)) # cat(m)
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
@@ -192,7 +192,7 @@ if (run_snaps) {
         expect_snapshot({
           print(tstsetup)
           print(prjs_vs_i$solution_terms)
-          print(digest::digest(m)) # cat(m)
+          print(rlang::hash(m)) # cat(m)
         })
         return(invisible(TRUE))
       })
@@ -237,7 +237,7 @@ if (run_snaps) {
         expect_snapshot({
           print(tstsetup)
           print(prjs_cvvs_i$solution_terms)
-          print(digest::digest(m)) # cat(m)
+          print(rlang::hash(m)) # cat(m)
         })
         return(invisible(TRUE))
       })

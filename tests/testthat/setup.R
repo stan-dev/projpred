@@ -34,10 +34,6 @@ run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
 run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
   identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"), "")
 if (run_snaps) {
-  if (!requireNamespace("digest", quietly = TRUE)) {
-    stop("Package \"digest\" is needed for these tests. Please install it.",
-         call. = FALSE)
-  }
   testthat_ed_max2 <- edition_get() <= 2
 }
 

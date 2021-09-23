@@ -346,7 +346,7 @@ test_that(paste(
       #   suppressWarnings(m <- as.matrix(prjs_vs_datafit[[tstsetup]]))
       #   expect_snapshot({
       #     print(tstsetup)
-      #     print(digest::digest(m)) # cat(m)
+      #     print(rlang::hash(m)) # cat(m)
       #   })
       #   if (testthat_ed_max2) local_edition(2)
       # }
@@ -374,7 +374,7 @@ test_that(paste(
       #     expect_snapshot({
       #       print(tstsetup)
       #       print(prjs_vs_i$solution_terms)
-      #       print(digest::digest(m)) # cat(m)
+      #       print(rlang::hash(m)) # cat(m)
       #     })
       #     return(invisible(TRUE))
       #   })
@@ -425,7 +425,7 @@ test_that(paste(
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(pl_with_args))
+        print(rlang::hash(pl_with_args))
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
@@ -466,7 +466,7 @@ test_that(paste(
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(pp_with_args))
+        print(rlang::hash(pp_with_args))
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)

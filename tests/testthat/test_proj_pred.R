@@ -14,7 +14,7 @@ test_that("pl: `object` of class \"projection\" works", {
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(pls[[tstsetup]]))
+        print(rlang::hash(pls[[tstsetup]]))
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
@@ -42,7 +42,7 @@ test_that(paste(
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(pls_vs[[tstsetup]]))
+        print(rlang::hash(pls_vs[[tstsetup]]))
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
@@ -70,7 +70,7 @@ test_that(paste(
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(pls_cvvs[[tstsetup]]))
+        print(rlang::hash(pls_cvvs[[tstsetup]]))
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
@@ -574,7 +574,7 @@ test_that("pp: `object` of class \"projection\" works", {
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(pps[[tstsetup]]))
+        print(rlang::hash(pps[[tstsetup]]))
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
@@ -602,7 +602,7 @@ test_that(paste(
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(pps_vs[[tstsetup]]))
+        print(rlang::hash(pps_vs[[tstsetup]]))
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
@@ -630,7 +630,7 @@ test_that(paste(
       width_orig <- options(width = 145)
       expect_snapshot({
         print(tstsetup)
-        print(digest::digest(pps_cvvs[[tstsetup]]))
+        print(rlang::hash(pps_cvvs[[tstsetup]]))
       })
       options(width = width_orig$width)
       if (testthat_ed_max2) local_edition(2)
