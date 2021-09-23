@@ -344,6 +344,11 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
       }
     }
 
+    if (mod_nm != "glm") {
+      # Because of issue #207:
+      fam_nms <- setdiff(fam_nms, "poiss")
+    }
+
     if (pkg_nm == "rstanarm" && mod_nm == "gamm") {
       # Exclude "binom" from `fam_nms` since there seems to be an issue with
       # get_refmodel.stanreg() in this case (probably issue #148):
