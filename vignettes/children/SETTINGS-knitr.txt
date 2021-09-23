@@ -1,8 +1,6 @@
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
 knitr::opts_chunk$set(
-    cache = TRUE,
-    # cache.lazy = FALSE,
     fig.width = 6.75,
     fig.asp = (sqrt(5) - 1) / 2,
     comment = NA,

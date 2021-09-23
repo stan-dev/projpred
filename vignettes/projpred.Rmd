@@ -66,7 +66,7 @@ CO2 <- within(CO2, {
 ```
 
 We now fit the reference model to the data. Note that for multilevel formula terms, **projpred** uses the **lme4** syntax. To make this vignette build fast, we use only 2 Markov chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. If sampling for the reference model still takes long and multiple CPU cores are available, uncomment the line setting option `mc.cores` to an automatically detected number of cores (or set `mc.cores` to a manually determined number of cores).
-```{r}
+```{r, cache = TRUE, cache.lazy = FALSE}
 library(rstanarm)
 # options(mc.cores = parallel::detectCores())
 refm_fit <- stan_glmer(uptake ~ zType * zconc * zTreatment + (1 | Plant),
@@ -90,7 +90,7 @@ In **projpred**, the projective variable selection consists of a *search* and an
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search with the training data of each CV fold separately (an exception is explained in the `?cv_varsel` help) and running the evaluation on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we'll use `cv_varsel()` here.
 
 It is worth taking a look at the documentation of `cv_varsel()` (see `?cv_varsel`) because we cannot explain all arguments here. Note that we'll modify some arguments here and later in this vignette only to speed up the building of this vignette. This is not recommended in general. For example, we modify argument `cv_method` to use a K-fold CV instead of a leave-one-out (LOO) CV. In general, the LOO CV is more accurate. In this example, the two `cv_method`s give very similar results.
-```{r, results='hide'}
+```{r, results='hide', cache = TRUE, cache.lazy = FALSE}
 cvvs <- cv_varsel(
   refm_fit,
   ### Only for the sake of speed (in general, LOO CV is more accurate):
@@ -139,7 +139,7 @@ Combining the decided model size of 2 with the solution path leads to `(1 | Plan
 ## Post-selection inference
 
 The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference. By the following code, `project()` will project the reference model onto the final submodel once again:^[During the forward search, the reference model has already been projected onto all candidate models (this was where arguments `ndraws` and `nclusters` of `cv_varsel()` came into play). During the evaluation of the submodels along the solution path, the reference model has already been projected onto those submodels (this was where arguments `ndraws_pred` and `nclusters_pred` of `cv_varsel()` came into play). In principle, one could use the results from the evaluation step for post-selection inference, but due to a bug in the current implementation (see GitHub issue #168), we currently have to project once again.]
-```{r}
+```{r, cache = TRUE, cache.lazy = FALSE}
 prj <- project(
   refm_fit,
   solution_terms = soltrms_final,
