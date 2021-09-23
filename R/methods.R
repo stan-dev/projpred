@@ -232,7 +232,11 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   if (dot_args$integrated) {
     ## average over the posterior draws
     pred_out <- pred_out %*% proj$weights
-    lpd_out <- as.matrix(apply(lpd_out, 1, log_weighted_mean_exp, proj$weights))
+    if (!is.null(lpd_out)) {
+      lpd_out <- as.matrix(
+        apply(lpd_out, 1, log_weighted_mean_exp, proj$weights)
+      )
+    }
   }
   return(nlist(pred = t(pred_out),
                lpd = if(is.null(lpd_out)) lpd_out else t(lpd_out)))
