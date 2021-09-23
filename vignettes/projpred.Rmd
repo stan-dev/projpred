@@ -11,17 +11,14 @@ vignette: >
 ---
 
 ```{r, include=FALSE}
-stopifnot(require(knitr))
 knitr::opts_chunk$set(
-    fig.width = 6.75,
-    fig.asp = (sqrt(5) - 1) / 2,
-    comment = NA,
-    message = FALSE,
-    warning = FALSE,
-    eval = if (exists("params") && !is.null(params$EVAL)) params$EVAL else FALSE,
-    dev = "png",
-    dpi = 100,
-    fig.align = "center"
+  fig.width = 6.75,
+  fig.asp = (sqrt(5) - 1) / 2,
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = if (exists("params") && !is.null(params$EVAL)) params$EVAL else FALSE,
+  dpi = 100
 )
 options(rmarkdown.html_vignette.check_title = FALSE)
 ```
