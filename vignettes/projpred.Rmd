@@ -46,7 +46,10 @@ First, we have to construct the reference model for the projective variable sele
 
 The **projpred** package is compatible with reference models fit by the **rstanarm** and **brms** packages. To our knowledge, **rstanarm** and **brms** are currently the only packages for which `get_refmodel()` methods (which establish the compatibility with **projpred**) exist. Custom reference models can also be used via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We will cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, **projpred** will consider all predictors from the reference model as candidate predictors, so all candidate models are submodels of the reference model.^[In principle, this is not a necessary assumption for a projective variable selection (see, e.g., Piironen et al., 2020) and custom reference models allow to avoid this assumption, but for **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation a lot.]
 
-Here, we will use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, you simply have to replace the **rstanarm** fit (of class `stanreg`) in the code below by your **brms** fit (of class `brmsfit`).
+Here, we will use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, you simply have to replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`).
+```{r}
+library(rstanarm)
+```
 
 For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response, `uptake`.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and, via `brms::get_refmodel.brmsfit()`, `brms::bernoulli()`), and `poisson()`.] With regard to the predictors, we construct the most comprehensive model which is possible from the predictor variables mentioned above. `Plant` constitutes the typical case where partially pooled (also known as *group-level* or---in frequentist terms---*random*) effects are desirable, so we will use a multilevel formula term for `Plant`.
 
@@ -77,7 +80,6 @@ CO2 <- within(CO2, {
 
 We now fit the reference model to the data. Note that for multilevel formula terms, **projpred** uses the **lme4** syntax. To make this vignette build fast, we use only 2 Markov chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. If sampling for the reference model still takes long and multiple CPU cores are available, uncomment the line setting option `mc.cores` to an automatically detected number of cores (or set `mc.cores` to a manually determined number of cores).
 ```{r, cache = TRUE, cache.lazy = FALSE}
-library(rstanarm)
 # options(mc.cores = parallel::detectCores())
 refm_fit <- stan_glmer(uptake ~ zType * zconc * zTreatment + (1 | Plant),
                        family = gaussian(),
