@@ -63,14 +63,14 @@ Ignored if \code{method} turns out as \code{"L1"} (L1 search uses always one
 cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See also
 section "Details" below.}
 
-\item{ndraws_pred}{Number of posterior draws used in the evaluation.
-\strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed
-to \code{nclusters_pred} (so that clustering is used). Ignored if
-\code{nclusters_pred} is not \code{NULL}. See also section "Details" below.}
-
-\item{nclusters_pred}{Number of clusters of posterior draws used in the
-evaluation. For the meaning of \code{NULL}, see argument \code{ndraws_pred}. See also
+\item{ndraws_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
+posterior draws used in the evaluation. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
+clustering is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
 section "Details" below.}
+
+\item{nclusters_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
+clusters of posterior draws used in the evaluation. For the meaning of
+\code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
 \item{cv_search}{A single logical value indicating whether to fit the
 submodels along the solution path again (\code{TRUE}) or to retrieve their fits

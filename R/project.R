@@ -23,15 +23,15 @@
 #'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
 #'   `cv_search` must be `TRUE`.
-#' @param ndraws Number of posterior draws to be projected. **Caution:** For
-#'   `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
-#'   clustering is used). Ignored if `nclusters` is not `NULL` or if the
-#'   reference model is of class `datafit` (in which case one cluster is used).
-#'   See also section "Details" below.
-#' @param nclusters Number of clusters of posterior draws to be projected.
-#'   Ignored if the reference model is of class `datafit` (in which case one
-#'   cluster is used). For the meaning of `NULL`, see argument `ndraws`. See
-#'   also section "Details" below.
+#' @param ndraws Only relevant if `cv_search` is `TRUE`. Number of posterior
+#'   draws to be projected. **Caution:** For `ndraws <= 20`, the value of
+#'   `ndraws` is passed to `nclusters` (so that clustering is used). Ignored if
+#'   `nclusters` is not `NULL` or if the reference model is of class `datafit`
+#'   (in which case one cluster is used). See also section "Details" below.
+#' @param nclusters Only relevant if `cv_search` is `TRUE`. Number of clusters
+#'   of posterior draws to be projected. Ignored if the reference model is of
+#'   class `datafit` (in which case one cluster is used). For the meaning of
+#'   `NULL`, see argument `ndraws`. See also section "Details" below.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. If `NULL`, no seed is set and
 #'   therefore, the results are not reproducible. See [set.seed()] for details.

@@ -29,13 +29,14 @@
 #'   Ignored if `method` turns out as `"L1"` (L1 search uses always one
 #'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
 #'   section "Details" below.
-#' @param ndraws_pred Number of posterior draws used in the evaluation.
-#'   **Caution:** For `ndraws_pred <= 20`, the value of `ndraws_pred` is passed
-#'   to `nclusters_pred` (so that clustering is used). Ignored if
-#'   `nclusters_pred` is not `NULL`. See also section "Details" below.
-#' @param nclusters_pred Number of clusters of posterior draws used in the
-#'   evaluation. For the meaning of `NULL`, see argument `ndraws_pred`. See also
+#' @param ndraws_pred Only relevant if `cv_search` is `TRUE`. Number of
+#'   posterior draws used in the evaluation. **Caution:** For `ndraws_pred <=
+#'   20`, the value of `ndraws_pred` is passed to `nclusters_pred` (so that
+#'   clustering is used). Ignored if `nclusters_pred` is not `NULL`. See also
 #'   section "Details" below.
+#' @param nclusters_pred Only relevant if `cv_search` is `TRUE`. Number of
+#'   clusters of posterior draws used in the evaluation. For the meaning of
+#'   `NULL`, see argument `ndraws_pred`. See also section "Details" below.
 #' @param nterms_max Maximum number of predictor terms until which the search is
 #'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
 #'   terms in the reference model (or in `search_terms`, if supplied). Note that

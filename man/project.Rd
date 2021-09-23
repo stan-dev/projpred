@@ -39,16 +39,16 @@ submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
 \code{object} (\code{FALSE}). For an \code{object} which is not of class \code{vsel},
 \code{cv_search} must be \code{TRUE}.}
 
-\item{ndraws}{Number of posterior draws to be projected. \strong{Caution:} For
-\code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
-clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if the
-reference model is of class \code{datafit} (in which case one cluster is used).
-See also section "Details" below.}
+\item{ndraws}{Only relevant if \code{cv_search} is \code{TRUE}. Number of posterior
+draws to be projected. \strong{Caution:} For \code{ndraws <= 20}, the value of
+\code{ndraws} is passed to \code{nclusters} (so that clustering is used). Ignored if
+\code{nclusters} is not \code{NULL} or if the reference model is of class \code{datafit}
+(in which case one cluster is used). See also section "Details" below.}
 
-\item{nclusters}{Number of clusters of posterior draws to be projected.
-Ignored if the reference model is of class \code{datafit} (in which case one
-cluster is used). For the meaning of \code{NULL}, see argument \code{ndraws}. See
-also section "Details" below.}
+\item{nclusters}{Only relevant if \code{cv_search} is \code{TRUE}. Number of clusters
+of posterior draws to be projected. Ignored if the reference model is of
+class \code{datafit} (in which case one cluster is used). For the meaning of
+\code{NULL}, see argument \code{ndraws}. See also section "Details" below.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If \code{NULL}, no seed is set and
