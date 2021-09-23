@@ -10,7 +10,20 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-```{r, child="children/SETTINGS-knitr.txt"}
+```{r, include=FALSE}
+stopifnot(require(knitr))
+knitr::opts_chunk$set(
+    fig.width = 6.75,
+    fig.asp = (sqrt(5) - 1) / 2,
+    comment = NA,
+    message = FALSE,
+    warning = FALSE,
+    eval = if (exists("params") && !is.null(params$EVAL)) params$EVAL else FALSE,
+    dev = "png",
+    dpi = 100,
+    fig.align = "center"
+)
+options(rmarkdown.html_vignette.check_title = FALSE)
 ```
 
 This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear models as well as generalized linear and additive multilevel models. The specialty of the projective variable selection is that it not only performs a variable selection, but that it also provides valid post-selection inference.
