@@ -7,7 +7,7 @@ params:
 vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteIndexEntry{projpred: Projection predictive feature selection}
-  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include=FALSE}
