@@ -23,6 +23,8 @@ knitr::opts_chunk$set(
 options(rmarkdown.html_vignette.check_title = FALSE)
 ```
 
+## Introduction
+
 This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear models as well as generalized linear and additive multilevel models. The specialty of the projective variable selection is that it not only performs a variable selection, but that it also provides valid post-selection inference.
 
 The projective variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in **projpred** are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017a). Type `citation("projpred")` for details on how to cite **projpred**.
@@ -36,7 +38,6 @@ For this vignette, we borrow the `CO2` dataset from the **datasets** package (wh
 # of our steps:
 data("CO2", package = "datasets")
 ```
-**TODO: All wording referring to the former dataset**
 
 Note that this is not a typical dataset for a variable selection problem since it involves only few predictors (even when counting their interactions and setting this in relation to the number of observations). We'll use it for demonstrative purposes here.
 
@@ -48,7 +49,7 @@ The **projpred** package is compatible with reference models fit by the **rstana
 
 Here, we will use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, you simply have to replace the **rstanarm** fit (of class `stanreg`) in the code below by your **brms** fit (of class `brmsfit`).
 
-For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response, `uptake`.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and, via `brms::get_refmodel.brmsfit()`, `brms::bernoulli()`), and `poisson()`.] With regard to the predictors, we construct the most comprehensive model which is possible from the predictor variables listed above [**TODO** really?]. `Plant` constitutes the typical case where partially pooled (also known as *group-level* or---in frequentist terms---*random*) effects are desirable, so we will use a multilevel formula term for `Plant`.
+For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response, `uptake`.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and, via `brms::get_refmodel.brmsfit()`, `brms::bernoulli()`), and `poisson()`.] With regard to the predictors, we construct the most comprehensive model which is possible from the predictor variables mentioned above. `Plant` constitutes the typical case where partially pooled (also known as *group-level* or---in frequentist terms---*random*) effects are desirable, so we will use a multilevel formula term for `Plant`.
 
 We use **rstanarm**'s default priors, except for the regression coefficients of the predictors with non-pooled (also known as *population-level* or *fixed*) effects for which we use a regularized horseshoe (RH) prior (Piironen and Vehtari, 2017c) with the hyperprior for the its global shrinkage parameter being based on Piironen and Vehtari (2017b,c). Before applying the RH prior, we standardize the predictor variables (Piironen and Vehtari, 2017c). Note that the `CO2` dataset is not a typical one for the RH prior. Just like for variable selection problems in general (see above), datasets to which the RH prior is applied usually involve many more predictors, especially when setting the number of predictors in relation to the number of observations. We'll use the RH prior here anyway, but only for demonstrative purposes. In R code, these are the preparation steps for the RH prior:
 ```{r}
@@ -136,7 +137,7 @@ cvvs
 # print(cvvs, digits = 2)
 ### 
 ```
-The solution path can be seen in the `print()` output, but it is also accessible through the `solution_terms()` function:
+The solution path can be seen in the `print()` output (column `solution_terms`), but it is also accessible through the `solution_terms()` function:
 ```{r}
 ( soltrms <- solution_terms(cvvs) )
 ```
