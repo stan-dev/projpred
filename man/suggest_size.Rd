@@ -41,7 +41,8 @@ are based on the upper or lower credible bounds, respectively. See section
 "Details" for more information.}
 
 \item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
-the reference model or the best submodel found, respectively.}
+the reference model or the best submodel (in terms of \code{stats[1]}),
+respectively.}
 
 \item{warnings}{Whether to give warnings if automatic suggestion fails,
 mainly for internal use. Usually there is no reason to set this to \code{FALSE}.}

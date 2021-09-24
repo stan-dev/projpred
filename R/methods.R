@@ -450,7 +450,8 @@ plot.vsel <- function(
 #'   For example, `alpha = 0.32` corresponds to 68% probability mass within the
 #'   intervals, that is, one-standard-error intervals.
 #' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel found, respectively.
+#'   the reference model or the best submodel (in terms of `stats[1]`),
+#'   respectively.
 #' @param ... Currently ignored.
 #'
 #' @examples
