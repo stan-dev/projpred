@@ -440,9 +440,9 @@ plot.vsel <- function(
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute (mean,
 #'   standard error, lower and upper credible bounds, difference to the
 #'   corresponding statistic of the reference model, and standard error of this
-#'   difference). The credible bounds are determined so that `1 - alpha` percent
-#'   of the probability mass falls between them. Items `"diff"` and `"diff.se"`
-#'   are only supported if `!deltas`.
+#'   difference, respectively). The credible bounds are determined so that `1 -
+#'   alpha` percent of the probability mass falls between them. Items `"diff"`
+#'   and `"diff.se"` are only supported if `deltas` is `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated relative to
 #'   the baseline model (see argument `baseline`) instead of estimating the
 #'   actual values of the statistics.

@@ -41,9 +41,8 @@ family only);
 \code{"diff"}, and \code{"diff.se"} indicating which of these to compute (mean,
 standard error, lower and upper credible bounds, difference to the
 corresponding statistic of the reference model, and standard error of this
-difference). The credible bounds are determined so that \code{1 - alpha} percent
-of the probability mass falls between them. Items \code{"diff"} and \code{"diff.se"}
-are only supported if \code{!deltas}.}
+difference, respectively). The credible bounds are determined so that \code{1 - alpha} percent of the probability mass falls between them. Items \code{"diff"}
+and \code{"diff.se"} are only supported if \code{deltas} is \code{FALSE}.}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative to
 the baseline model (see argument \code{baseline}) instead of estimating the
