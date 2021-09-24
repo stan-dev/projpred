@@ -423,9 +423,9 @@ refmodel_tester <- function(
 #   expected to be of class `"gam"` or `"gamm4"` (depending on whether the
 #   submodel is non-multilevel or multilevel, respectively).
 # @param wobs_expected The expected numeric vector of observation weights.
-# @param ref_formul The formula of the reference model . Should only be needed
-#   if `sub_fit_totest` comes from the L1 `search_path` of an object of class
-#   `"vsel"`. Otherwise, use `NULL`.
+# @param solterms_vsel_L1_search If `sub_fit_totest` comes from the L1
+#   `search_path` of an object of class `"vsel"`, provide here the solution
+#   terms. Otherwise, use `NULL`.
 # @param with_offs A single logical value indicating whether `sub_fit_totest` is
 #   expected to include offsets (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
@@ -441,14 +441,14 @@ sub_fit_tester <- function(
   has_grp = formula_contains_group_terms(sub_formul[[1]]),
   has_add = formula_contains_additive_terms(sub_formul[[1]]),
   wobs_expected = wobs_tst,
-  ref_formul = NULL,
+  solterms_vsel_L1_search = NULL,
   with_offs = FALSE,
   info_str
 ) {
   expect_type(sub_fit_totest, "list")
   expect_length(sub_fit_totest, nprjdraws_expected)
 
-  from_vsel_L1_search <- !is.null(ref_formul)
+  from_vsel_L1_search <- !is.null(solterms_vsel_L1_search)
 
   seq_extensive_tests <- unique(round(
     seq(1, length(sub_fit_totest),
@@ -473,11 +473,7 @@ sub_fit_tester <- function(
     } else {
       ncoefs <- 0L
     }
-    if (!from_vsel_L1_search) {
-      formul_for_mm <- sub_formul[[1]]
-    } else {
-      formul_for_mm <- ref_formul
-    }
+    formul_for_mm <- sub_formul[[1]]
     sub_trms_for_mm <- labels(terms(formul_for_mm))
     if (length(sub_trms_for_mm) > 0) {
       if (any(grepl("xca\\.", sub_trms_for_mm))) {
@@ -497,6 +493,56 @@ sub_fit_tester <- function(
     sub_x_expected <- model.matrix(update(formul_for_mm, NULL ~ . + 0),
                                    data = sub_data,
                                    contrasts.arg = sub_contr)
+    if (from_vsel_L1_search) {
+      attr(sub_x_expected, "assign") <- NULL
+      attr(sub_x_expected, "contrasts") <- NULL
+      # Unfortunately, model.matrix() uses terms() and there seems to be no way
+      # to set `keep.order = TRUE` in that internal terms() call. Thus, we have
+      # to reorder the columns manually:
+      if (length(solterms_vsel_L1_search) > 0) {
+        contr_list <- get_contrasts_arg_list(
+          as.formula(paste("~",
+                           paste(solterms_vsel_L1_search, collapse = " + "))),
+          data = sub_data
+        )
+        terms_contr <- names(contr_list)
+        terms_contr_expd <- lapply(solterms_vsel_L1_search, function(term_crr) {
+          if (!term_crr %in% terms_contr) {
+            return(term_crr)
+          } else {
+            if (sum(terms_contr == term_crr) != 1) {
+              stop("The following code is not general enough. It needs to be ",
+                   "adapted.")
+            }
+            return(paste0(
+              terms_contr[terms_contr == term_crr],
+              rownames(contr_list[[which(terms_contr == term_crr)]])
+            ))
+          }
+        })
+        terms_contr_expd <- unlist(terms_contr_expd)
+        colnms_x <- colnames(sub_x_expected)
+        colnms_x <- unlist(lapply(colnms_x, function(colnm_x) {
+          if (!colnm_x %in% terms_contr_expd) {
+            colon_found <- gregexpr(":", colnm_x)
+            if (length(colon_found) != 1 || colon_found == -1) {
+              stop("The following code is not general enough. It needs to be ",
+                   "adapted.")
+            }
+            return(paste(rev(strsplit(colnm_x, ":")[[1]]), collapse = ":"))
+          } else {
+            return(colnm_x)
+          }
+        }))
+        colnames(sub_x_expected) <- colnms_x
+        sub_x_expected <- sub_x_expected[
+          ,
+          colnames(sub_x_expected)[order(match(colnames(sub_x_expected),
+                                               terms_contr_expd))],
+          drop = FALSE
+        ]
+      }
+    }
     if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
@@ -778,10 +824,10 @@ projection_tester <- function(p,
   }
   if (!from_vsel_L1_search) {
     y_nm <- as.character(p$refmodel$formula)[2]
-    ref_formul_crr <- NULL
+    solterms_vsel_L1_search_crr <- NULL
   } else {
     y_nm <- ""
-    ref_formul_crr <- p$refmodel$formula
+    solterms_vsel_L1_search_crr <- p$solution_terms
   }
   y_nms <- paste0(".", y_nm)
   # A preliminary check for `nprjdraws_expected` (doesn't work for "datafit"s
@@ -826,7 +872,7 @@ projection_tester <- function(p,
                  sub_data = sub_data_crr,
                  sub_fam = p$family$family,
                  wobs_expected = p$refmodel$wobs,
-                 ref_formul = ref_formul_crr,
+                 solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
                  info_str = info_str)
 
   # dis
@@ -1088,10 +1134,10 @@ vsel_tester <- function(
   nprjdraws_expected <- ncol(clust_ref$mu)
   if (!from_vsel_L1_search) {
     y_nm <- as.character(vs$refmodel$formula)[2]
-    ref_formul_crr <- NULL
+    solterms_vsel_L1_search_crr <- NULL
   } else {
     y_nm <- ""
-    ref_formul_crr <- vs$refmodel$formula
+    solterms_vsel_L1_search_crr <- vs$solution_terms
   }
   y_nms <- paste0(".", y_nm)
   if (nprjdraws_expected > 1) {
@@ -1120,7 +1166,7 @@ vsel_tester <- function(
       sub_data = sub_data_crr,
       sub_fam = vs$family$family,
       wobs_expected = vs$refmodel$wobs,
-      ref_formul = ref_formul_crr,
+      solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
       info_str = paste(info_str, i, sep = "__")
     )
   }
