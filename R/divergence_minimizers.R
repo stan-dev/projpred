@@ -1,5 +1,9 @@
 # Divergence minimizers ---------------------------------------------------
 
+if (getRversion() >= package_version("2.15.1")) utils::globalVariables("s")
+
+#' @importFrom foreach foreach
+#' @importFrom foreach %dopar%
 divmin <- function(formula, projpred_var, ...) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
@@ -29,7 +33,7 @@ divmin <- function(formula, projpred_var, ...) {
     )
   }
 
-  lapply(seq_along(formulas), function(s) {
+  foreach(s = seq_along(formulas)) %dopar% {
     sdivmin(
       formula = formulas[[s]],
       projpred_var = projpred_var[, s, drop = FALSE],
@@ -37,7 +41,7 @@ divmin <- function(formula, projpred_var, ...) {
       projpred_random = projpred_random,
       ...
     )
-  })
+  }
 }
 
 fit_glm_ridge_callback <- function(formula, data, projpred_var = 0,

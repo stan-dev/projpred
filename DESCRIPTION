@@ -41,7 +41,8 @@ Imports:
     magrittr,
     mgcv,
     gamm4,
-    rlang
+    rlang,
+    foreach
 Suggests:
     rstanarm,
     brms,
@@ -51,7 +52,8 @@ Suggests:
     glmnet,
     bayesplot (>= 1.5.0),
     optimx,
-    posterior
+    posterior,
+    doParallel
 LinkingTo: Rcpp, RcppArmadillo
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
