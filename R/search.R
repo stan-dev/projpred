@@ -162,6 +162,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
     if (nterms == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
+      x <- x[, numeric(), drop = FALSE]
     } else {
       formula <- make_formula(solution_terms[seq_len(nterms)])
       variables <- unlist(lapply(
@@ -180,6 +181,10 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
       ))
       indices <- match(variables, colnames(x)[search_path$solution_terms])
       beta <- search_path$beta[indices, max(indices) + 1, drop = FALSE]
+      # Also reduce `x` (important for coef.subfit(), for example); note that
+      # `x <- x[, variables, drop = FALSE]` should also be possible, but the
+      # re-use of `colnames(x)` should provide another sanity check:
+      x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
     }
     sub <- nlist(
       alpha = search_path$alpha[nterms + 1],
