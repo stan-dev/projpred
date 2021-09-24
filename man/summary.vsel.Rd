@@ -52,9 +52,9 @@ actual values of the statistics.}
 For example, \code{alpha = 0.32} corresponds to 68\% probability mass within the
 intervals, that is, one-standard-error intervals.}
 
-\item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
-the reference model or the best submodel (in terms of \code{stats[1]}),
-respectively.}
+\item{baseline}{Only relevant if \code{deltas} is \code{TRUE}. Either \code{"ref"} or
+\code{"best"} indicating whether the baseline is the reference model or the best
+submodel (in terms of \code{stats[1]}), respectively.}
 
 \item{...}{Currently ignored.}
 }

@@ -294,6 +294,9 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
+#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
+#'   the reference model or the best submodel (in terms of `stats[1]`),
+#'   respectively.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -449,9 +452,9 @@ plot.vsel <- function(
 #' @param alpha A number giving the desired coverage of the credible intervals.
 #'   For example, `alpha = 0.32` corresponds to 68% probability mass within the
 #'   intervals, that is, one-standard-error intervals.
-#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel (in terms of `stats[1]`),
-#'   respectively.
+#' @param baseline Only relevant if `deltas` is `TRUE`. Either `"ref"` or
+#'   `"best"` indicating whether the baseline is the reference model or the best
+#'   submodel (in terms of `stats[1]`), respectively.
 #' @param ... Currently ignored.
 #'
 #' @examples
@@ -671,7 +674,6 @@ print.vsel <- function(x, ...) {
 #' results via [plot.vsel()] and/or [summary.vsel()] and make the final decision
 #' based on what is most appropriate for the given problem.
 #'
-#' @inheritParams summary.vsel
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Statistic used for the decision. See [summary.vsel()] for
@@ -686,6 +688,9 @@ print.vsel <- function(x, ...) {
 #' @param type Either `"upper"` or `"lower"` determining whether the decisions
 #'   are based on the upper or lower credible bounds, respectively. See section
 #'   "Details" for more information.
+#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
+#'   the reference model or the best submodel (in terms of `stats[1]`),
+#'   respectively.
 #' @param warnings Whether to give warnings if automatic suggestion fails,
 #'   mainly for internal use. Usually there is no reason to set this to `FALSE`.
 #' @param ... Currently ignored.
