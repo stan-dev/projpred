@@ -34,10 +34,10 @@ divmin <- function(formula, projpred_var, ...) {
     )
   }
 
-  if (length(formulas) >= getOption("projpred.nprjdraws_parallel", 100L)) {
-    `%do_projpred%` <- `%dopar%`
-  } else {
+  if (length(formulas) < getOption("projpred.nprjdraws_parallel", 100L)) {
     `%do_projpred%` <- `%do%`
+  } else {
+    `%do_projpred%` <- `%dopar%`
   }
   foreach(s = seq_along(formulas)) %do_projpred% {
     sdivmin(
