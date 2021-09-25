@@ -87,7 +87,9 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   }
 }
 
-.is.wholenumber <- function(x) abs(x - round(x)) < .Machine$double.eps^0.5
+.is.wholenumber <- function(x) {
+  abs(x - round(x)) < .Machine$double.eps^0.5
+}
 
 .validate_num_folds <- function(k, n) {
   if (!is.numeric(k) || length(k) != 1 || !.is.wholenumber(k)) {
@@ -454,4 +456,6 @@ get_as.matrix_cls_projpred <- function() {
 
 ## Helper function extract and combine mu and lppd from K lists with each
 ## n/K of the elements to one list with n elements
-hf <- function(x) as.list(do.call(rbind, x))
+hf <- function(x) {
+  as.list(do.call(rbind, x))
+}
