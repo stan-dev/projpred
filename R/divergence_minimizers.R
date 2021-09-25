@@ -3,6 +3,7 @@
 if (getRversion() >= package_version("2.15.1")) utils::globalVariables("s")
 
 #' @importFrom foreach foreach
+#' @importFrom foreach %do%
 #' @importFrom foreach %dopar%
 divmin <- function(formula, projpred_var, ...) {
   trms_all <- extract_terms_response(formula)
@@ -33,7 +34,12 @@ divmin <- function(formula, projpred_var, ...) {
     )
   }
 
-  foreach(s = seq_along(formulas)) %dopar% {
+  if (length(formulas) >= getOption("projpred.nprjdraws_parallel", 100L)) {
+    `%do_projpred%` <- `%dopar%`
+  } else {
+    `%do_projpred%` <- `%do%`
+  }
+  foreach(s = seq_along(formulas)) %do_projpred% {
     sdivmin(
       formula = formulas[[s]],
       projpred_var = projpred_var[, s, drop = FALSE],
