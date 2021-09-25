@@ -28,10 +28,12 @@
 #'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the
-#' \pkg{foreach} package. Using the global option `projpred.nprjdraws_parallel`,
-#' you can modify the number of projected draws from which on parallelization is
-#' used. The default is to run the projection in parallel for at least 100
-#' projected draws.
+#' \pkg{foreach} package. Thus, you can use any parallel (or sequential) backend
+#' compatible with \pkg{foreach}, e.g., the backends from packages
+#' \pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}. Using the global option
+#' `projpred.nprjdraws_parallel`, you can modify the number of projected draws
+#' from which on parallelization is used. The default is to run the projection
+#' in parallel for at least 100 projected draws.
 #'
 #' See the vignettes
 #' (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
