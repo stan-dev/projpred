@@ -93,7 +93,7 @@ test_that(paste(
       type_expected = args_smmry_cvvs[[tstsetup]]$type,
       nterms_max_expected = args_smmry_cvvs[[tstsetup]]$nterms_max,
       cv_method_expected =
-        args_cvvs[[tstsetup_cvvs]]$cv_method %ORifNULL% "LOO",
+        args_cvvs[[tstsetup_cvvs]]$cv_method %||% "LOO",
       solterms_expected = cvvss[[tstsetup_cvvs]]$solution_terms
     )
   }

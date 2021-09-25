@@ -557,7 +557,7 @@ test_that(paste(
       stats_expected = stats_common,
       type_expected = type_tst,
       cv_method_expected =
-        args_cvvs_datafit[[tstsetup]]$cv_method %ORifNULL% "LOO",
+        args_cvvs_datafit[[tstsetup]]$cv_method %||% "LOO",
       solterms_expected = cvvss_datafit[[tstsetup]]$solution_terms
     )
     if (run_snaps) {

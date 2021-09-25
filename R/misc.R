@@ -87,9 +87,6 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   }
 }
 
-# from rstanarm
-`%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
-
 .is.wholenumber <- function(x) abs(x - round(x)) < .Machine$double.eps^0.5
 
 .validate_num_folds <- function(k, n) {
@@ -337,7 +334,8 @@ nlist <- function(...) {
   dots
 }
 
-## ifelse operator
+# The `%||%` special binary (infix) operator from brms (equivalent to the
+# `%ORifNULL%` operator from rstanarm):
 `%||%` <- function(x, y) {
   if (is.null(x)) x <- y
   x
