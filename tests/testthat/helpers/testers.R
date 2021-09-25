@@ -241,7 +241,7 @@ refmodel_tester <- function(
           drop = FALSE
         ]
         ### TODO (GAMs and GAMMs): Do this manually:
-        mm_s <- `%:::%`("rstanarm", "pp_data")(refmod$fit)$x
+        mm_s <- ("rstanarm" %:::% "pp_data")(refmod$fit)$x
         mm_s <- mm_s[, grep("^s\\(", colnames(mm_s), value = TRUE),
                      drop = FALSE]
         ###

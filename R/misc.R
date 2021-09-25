@@ -338,7 +338,7 @@ nlist <- function(...) {
 }
 
 ## ifelse operator
-"%||%" <- function(x, y) {
+`%||%` <- function(x, y) {
   if (is.null(x)) x <- y
   x
 }
@@ -436,7 +436,7 @@ magrittr::`%>%`
 # Function where() is not exported by package tidyselect, so redefine it here to
 # avoid a note in R CMD check which would occur for usage of
 # tidyselect:::where():
-where <- `%:::%`("tidyselect", "where")
+where <- "tidyselect" %:::% "where"
 
 get_as.matrix_cls_projpred <- function() {
   ### Only works when projpred is loaded via devtools::load_all():

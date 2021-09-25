@@ -7,7 +7,7 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
     formula$response <- 1
     pterms$response <- 1
   }
-  gam.setup <- `%:::%`("mgcv", "gam.setup")
+  gam.setup <- "mgcv" %:::% "gam.setup"
 
   G <- gam.setup(formula, pterms,
                  data = data, knots = knots, sp = NULL, min.sp = NULL,
@@ -160,7 +160,7 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   names(dl) <- vars ## list of all variables needed
   ## summarize the input data
 
-  variable.summary <- `%:::%`("mgcv", "variable.summary")
+  variable.summary <- "mgcv" %:::% "variable.summary"
   var.summary <- variable.summary(gp$pf, dl, nrow(mf))
 
   ## lmer offset handling work around...
