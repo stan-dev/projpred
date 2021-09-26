@@ -1,6 +1,7 @@
-## Function handles for the projection
-##
-
+# Function to project the reference model onto a single submodel with predictor
+# terms given in `solution_terms`. Note that "single submodel" does not refer to
+# a single fit (there are as many fits for this single submodel as there are
+# projected draws).
 project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
                              regul = 1e-4) {
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
@@ -28,16 +29,11 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   ))
 }
 
+# Function to project the reference model onto the submodels of given model
+# sizes `nterms`. Returns a list of submodels (each processed by
+# .init_submodel()).
 .get_submodels <- function(search_path, nterms, family, p_ref,
                            refmodel, intercept, regul, cv_search = FALSE) {
-  ##
-  ##
-  ## Project onto given model sizes nterms. Returns a list of submodels. If
-  ## cv_search=FALSE, submodels parameters will be as they were computed during
-  ## the search, so there is no need to project anything anymore, and this
-  ## function simply fetches the information from the search_path list, which
-  ## contains the parameter values.
-
   varorder <- search_path$solution_terms
 
   if (!cv_search) {
