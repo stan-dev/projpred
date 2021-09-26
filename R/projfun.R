@@ -28,17 +28,6 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   ))
 }
 
-## function handle for the projection over samples
-.get_proj_handle <- function(refmodel, p_ref, family, regul = 1e-9,
-                             intercept = TRUE) {
-  return(function(solution_terms) {
-    project_submodel(
-      solution_terms = solution_terms, p_ref = p_ref, refmodel = refmodel,
-      family = family, intercept = intercept, regul = regul
-    )
-  })
-}
-
 .get_submodels <- function(search_path, nterms, family, p_ref,
                            refmodel, intercept, regul, cv_search = FALSE) {
   ##
@@ -73,14 +62,15 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     }
   } else {
     ## need to project again for each submodel size
-    projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept)
     fetch_submodel <- function(nterms) {
-      solution_terms <- utils::head(varorder, nterms)
-      return(projfun(solution_terms))
+      project_submodel(
+        solution_terms = utils::head(varorder, nterms), p_ref = p_ref,
+        refmodel = refmodel, family = family, intercept = intercept,
+        regul = regul
+      )
     }
   }
-  submodels <- lapply(nterms, fetch_submodel)
-  return(submodels)
+  return(lapply(nterms, fetch_submodel))
 }
 
 .validate_wobs_wsample <- function(ref_wobs, ref_wsample, ref_mu) {
@@ -120,6 +110,5 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     nlist(mu, dis)
   ), wsample)
   weights <- wsample
-  submodel <- nlist(dis, kl, weights, solution_terms, sub_fit)
-  return(submodel)
+  return(nlist(dis, kl, weights, solution_terms, sub_fit))
 }

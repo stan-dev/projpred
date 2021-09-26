@@ -1,9 +1,6 @@
 search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
                            verbose = TRUE, opt, search_terms = NULL,
                            increasing_order = TRUE) {
-  # projfun() performs the projection:
-  projfun <- .get_proj_handle(refmodel, p_ref, family, opt$regul, intercept)
-
   formula <- refmodel$formula
   iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
   if (is.null(search_terms)) {
@@ -22,7 +19,9 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
     if (is.null(cands))
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
-    subL <- lapply(full_cands, projfun)
+    subL <- lapply(full_cands, project_submodel,
+                   p_ref = p_ref, refmodel = refmodel, family = family,
+                   intercept = intercept, regul = opt$regul)
 
     ## select best candidate
     imin <- which.min(sapply(subL, "[[", "kl"))
