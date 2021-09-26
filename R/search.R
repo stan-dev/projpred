@@ -1,6 +1,5 @@
 search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
-                           verbose = TRUE, opt, search_terms = NULL,
-                           increasing_order = TRUE) {
+                           verbose = TRUE, opt, search_terms = NULL) {
   formula <- refmodel$formula
   iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
   if (is.null(search_terms)) {
