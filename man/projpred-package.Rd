@@ -30,7 +30,7 @@ compatible with \pkg{foreach}, e.g., the backends from packages
 \code{projpred.nprjdraws_parallel}, you can modify the number of projected draws
 below which no parallelization is used (even if a parallel backend is
 registered). The default is to run the projection in parallel for at least
-100 projected draws (and sequentially below this value).
+200 projected draws (and sequentially below this value).
 
 See the vignettes
 (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
