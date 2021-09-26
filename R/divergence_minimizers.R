@@ -39,6 +39,7 @@ divmin <- function(formula, projpred_var, ...) {
     )
   }
 
+  dot_args <- list(...)
   if (length(formulas) < getOption("projpred.nprjdraws_parallel", 200L)) {
     `%do_projpred%` <- `%do%`
   } else {
@@ -47,14 +48,16 @@ divmin <- function(formula, projpred_var, ...) {
   foreach(
     formula_s = formulas,
     projpred_var_s = iterators::iter(projpred_var, by = "column"),
-    projpred_formula_no_random_s = projpred_formulas_no_random
+    projpred_formula_no_random_s = projpred_formulas_no_random,
+    .export = c("sdivmin", "projpred_random", "dot_args")
   ) %do_projpred% {
-    sdivmin(
-      formula = formula_s,
-      projpred_var = projpred_var_s,
-      projpred_formula_no_random = projpred_formula_no_random_s,
-      projpred_random = projpred_random,
-      ...
+    do.call(
+      sdivmin,
+      c(list(formula = formula_s,
+             projpred_var = projpred_var_s,
+             projpred_formula_no_random = projpred_formula_no_random_s,
+             projpred_random = projpred_random),
+        dot_args)
     )
   }
 }
