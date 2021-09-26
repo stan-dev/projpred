@@ -42,7 +42,8 @@ Imports:
     mgcv,
     gamm4,
     rlang,
-    foreach
+    foreach,
+    iterators
 Suggests:
     rstanarm,
     brms,

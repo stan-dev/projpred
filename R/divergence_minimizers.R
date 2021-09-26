@@ -1,6 +1,11 @@
 # Divergence minimizers ---------------------------------------------------
 
-if (getRversion() >= package_version("2.15.1")) utils::globalVariables("s")
+# Needed to avoid a NOTE in `R CMD check`:
+if (getRversion() >= package_version("2.15.1")) {
+  utils::globalVariables("formula_s")
+  utils::globalVariables("projpred_var_s")
+  utils::globalVariables("projpred_formula_no_random_s")
+}
 
 #' @importFrom foreach foreach
 #' @importFrom foreach %do%
@@ -39,11 +44,15 @@ divmin <- function(formula, projpred_var, ...) {
   } else {
     `%do_projpred%` <- `%dopar%`
   }
-  foreach(s = seq_along(formulas)) %do_projpred% {
+  foreach(
+    formula_s = formulas,
+    projpred_var_s = iterators::iter(projpred_var, by = "column"),
+    projpred_formula_no_random_s = projpred_formulas_no_random
+  ) %do_projpred% {
     sdivmin(
-      formula = formulas[[s]],
-      projpred_var = projpred_var[, s, drop = FALSE],
-      projpred_formula_no_random = projpred_formulas_no_random[[s]],
+      formula = formula_s,
+      projpred_var = projpred_var_s,
+      projpred_formula_no_random = projpred_formula_no_random_s,
       projpred_random = projpred_random,
       ...
     )
