@@ -272,12 +272,11 @@ subprd <- function(fit, newdata = NULL) {
 predict.subfit <- function(subfit, newdata = NULL) {
   beta <- subfit$beta
   alpha <- subfit$alpha
-  x <- subfit$x
   if (is.null(newdata)) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(subfit$x))))
     } else {
-      return(x %*% rbind(alpha, beta))
+      return(subfit$x %*% rbind(alpha, beta))
     }
   } else {
     contrasts_arg <- get_contrasts_arg_list(subfit$formula, newdata)
