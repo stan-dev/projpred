@@ -398,7 +398,7 @@ eval2 <- function(expr, envir = parent.frame(), ...) {
   eval(expr, envir, ...)
 }
 
-# coerce 'x' to a single character string
+# coerce `x` to a single character string
 as_one_character <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.character(x)
