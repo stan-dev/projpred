@@ -45,12 +45,15 @@ divmin <- function(formula, projpred_var, ...) {
   } else {
     `%do_projpred%` <- `%dopar%`
   }
+  objs_noexport <- setdiff(apropos("^.*$"),
+                           c("sdivmin", "projpred_random", "dot_args"))
+  # Check the most important (largest) objects which should not be exported:
+  stopifnot(all(c("object", "search_path", "refmodel") %in% objs_noexport))
   foreach(
     formula_s = formulas,
     projpred_var_s = iterators::iter(projpred_var, by = "column"),
     projpred_formula_no_random_s = projpred_formulas_no_random,
-    # .export = c("sdivmin", "projpred_random", "dot_args"),
-    .noexport = setdiff(apropos("^.*$"), c("sdivmin", "projpred_random", "dot_args")) # c("refmodel", "formulas", "projpred_var", "projpred_formulas_no_random")
+    .noexport = objs_noexport
   ) %do_projpred% {
     do.call(
       sdivmin,
