@@ -363,6 +363,10 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.stanreg <- function(object, ...) {
+  if (!requireNamespace("rstanarm", quietly = TRUE)) {
+    stop("Please install the 'rstanarm' package.")
+  }
+
   # Family ------------------------------------------------------------------
 
   family <- family(object)
