@@ -7,9 +7,6 @@ if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("projpred_formula_no_random_s")
 }
 
-#' @importFrom foreach foreach
-#' @importFrom foreach %do%
-#' @importFrom foreach %dopar%
 divmin <- function(formula, projpred_var, ...) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
@@ -39,30 +36,38 @@ divmin <- function(formula, projpred_var, ...) {
     )
   }
 
-  dot_args <- list(...)
-  if (length(formulas) < getOption("projpred.nprjdraws_parallel", 200L)) {
-    `%do_projpred%` <- `%do%`
+  if (length(formulas) < getOption("projpred.nprjdraws_parallel", Inf)) {
+    return(lapply(seq_along(formulas), function(s) {
+      sdivmin(
+        formula = formulas[[s]],
+        projpred_var = projpred_var[, s, drop = FALSE],
+        projpred_formula_no_random = projpred_formulas_no_random[[s]],
+        projpred_random = projpred_random,
+        ...
+      )
+    }))
   } else {
-    `%do_projpred%` <- `%dopar%`
-  }
-  foreach(
-    formula_s = formulas,
-    projpred_var_s = iterators::iter(projpred_var, by = "column"),
-    projpred_formula_no_random_s = projpred_formulas_no_random,
-    .export = c("sdivmin", "projpred_random", "dot_args"),
-    .noexport = c(
-      "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
-      "formulas", "projpred_var", "projpred_formulas_no_random"
-    )
-  ) %do_projpred% {
-    do.call(
-      sdivmin,
-      c(list(formula = formula_s,
-             projpred_var = projpred_var_s,
-             projpred_formula_no_random = projpred_formula_no_random_s,
-             projpred_random = projpred_random),
-        dot_args)
-    )
+    dot_args <- list(...)
+    `%do_projpred%` <- foreach::`%dopar%`
+    return(foreach::foreach(
+      formula_s = formulas,
+      projpred_var_s = iterators::iter(projpred_var, by = "column"),
+      projpred_formula_no_random_s = projpred_formulas_no_random,
+      .export = c("sdivmin", "projpred_random", "dot_args"),
+      .noexport = c(
+        "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
+        "formulas", "projpred_var", "projpred_formulas_no_random"
+      )
+    ) %do_projpred% {
+      do.call(
+        sdivmin,
+        c(list(formula = formula_s,
+               projpred_var = projpred_var_s,
+               projpred_formula_no_random = projpred_formula_no_random_s,
+               projpred_random = projpred_random),
+          dot_args)
+      )
+    })
   }
 }
 
