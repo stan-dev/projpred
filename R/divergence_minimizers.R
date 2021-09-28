@@ -37,6 +37,10 @@ divmin <- function(formula, projpred_var, ...) {
   }
 
   if (length(formulas) < getOption("projpred.nprjdraws_parallel", Inf)) {
+    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+    # foreach::`%do%`` here and then proceed as in the parallel case, but that
+    # would require adding more "hard" dependencies (because packages 'foreach'
+    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
     return(lapply(seq_along(formulas), function(s) {
       sdivmin(
         formula = formulas[[s]],
@@ -47,6 +51,7 @@ divmin <- function(formula, projpred_var, ...) {
       )
     }))
   } else {
+    # Parallel case.
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     return(foreach::foreach(
