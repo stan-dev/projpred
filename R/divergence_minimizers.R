@@ -52,6 +52,12 @@ divmin <- function(formula, projpred_var, ...) {
     }))
   } else {
     # Parallel case.
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+      stop("Please install the 'foreach' package.")
+    }
+    if (!requireNamespace("iterators", quietly = TRUE)) {
+      stop("Please install the 'iterators' package.")
+    }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     return(foreach::foreach(
