@@ -684,6 +684,7 @@ tstsetups_prj_ref <- setNames(
             value = TRUE, invert = TRUE)
 )
 args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
+  pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
   mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
   fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
   solterms <- nlist(empty = character(), solterms_x)
@@ -708,15 +709,21 @@ args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
     solterms <- nlist(solterms_spcl)
   }
   lapply(setNames(nm = names(solterms)), function(solterms_nm_i) {
-    if (mod_crr == "glm" && fam_crr == "gauss" &&
-        solterms_nm_i == "solterms_x") {
+    if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
+        fam_crr == "gauss" && solterms_nm_i == "solterms_x") {
       ndr_ncl_pred <- ndr_ncl_pred_tst
-    } else if ((mod_crr == "glm" && fam_crr == "gauss" &&
-                solterms_nm_i == "empty") ||
-               (mod_crr == "glmm" && fam_crr == "binom")) {
-      ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust", "clust1")]
+    } else if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
+               fam_crr == "gauss" && solterms_nm_i == "empty") {
+      ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust", "clust1")]
+    } else if ((pkg_crr == "rstanarm" && mod_crr == "glmm" &&
+                fam_crr == "brnll" && solterms_nm_i == "solterms_xz") ||
+               (pkg_crr == "rstanarm" && mod_crr == "gam" &&
+                fam_crr == "binom" && solterms_nm_i == "solterms_xs") ||
+               (pkg_crr == "rstanarm" && mod_crr == "gamm" &&
+                fam_crr == "brnll" && solterms_nm_i == "solterms_xsz")) {
+      ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust")]
     } else {
-      ndr_ncl_pred <- ndr_ncl_pred_tst["clust"]
+      ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust")]
     }
     lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
       return(c(
