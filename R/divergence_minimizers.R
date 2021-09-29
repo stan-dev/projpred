@@ -36,7 +36,7 @@ divmin <- function(formula, projpred_var, ...) {
     )
   }
 
-  if (length(formulas) < getOption("projpred.nprjdraws_parallel", Inf)) {
+  if (length(formulas) < getOption("projpred.prll_prj_trigger", Inf)) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'

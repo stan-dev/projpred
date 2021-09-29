@@ -27,7 +27,7 @@ CPU cores in parallel (across the projected draws). This is powered by the
 \pkg{foreach} package. Thus, you can use any parallel (or sequential) backend
 compatible with \pkg{foreach}, e.g., the backends from packages
 \pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}. Using the global option
-\code{projpred.nprjdraws_parallel}, you can modify the number of projected draws
+\code{projpred.prll_prj_trigger}, you can modify the number of projected draws
 below which no parallelization is used (even if a parallel backend is
 registered). This option exists because of the computational overhead of a
 parallelization. A value of \code{Inf} (the default) turns off parallelization.
