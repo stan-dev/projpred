@@ -283,29 +283,18 @@ test_that("PRNG is not taking place where not expected", {
   # don't expect it to be necessary.
   tstsetups <- grep("\\.noclust$|\\.default_ndr_ncl$", names(prjs),
                     value = TRUE)
-  set.seed(NULL) # Just to be completely random here (but should not be needed).
+  # Be completely random here (should not be necessary, though, when advancing
+  # `.Random.seed[2]` as done further below):
+  set.seed(NULL)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
-    .Random.seed_new1 <- .Random.seed
-    p_new1 <- do.call(project, c(
+    p_new <- do.call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]]),
       excl_nonargs(args_prj_i, nms_excl_add = "seed")
     ))
-    rand_new2 <- runif(1) # Just to advance `.Random.seed[2]`.
-    .Random.seed_new2 <- .Random.seed
-    p_new2 <- do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
-      excl_nonargs(args_prj_i, nms_excl_add = "seed")
-    ))
-    # Expected equality:
-    expect_equal(p_new1, p_orig, info = tstsetup)
-    expect_equal(p_new2, p_orig, info = tstsetup)
-    # Expected inequality:
-    expect_false(isTRUE(all.equal(rand_new2, rand_new1)), info = tstsetup)
-    expect_false(isTRUE(all.equal(.Random.seed_new2, .Random.seed_new1)),
-                 info = tstsetup)
+    expect_equal(p_new, p_orig, info = tstsetup)
   }
 })
 
