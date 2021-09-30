@@ -32,6 +32,12 @@ below which no parallelization is used (even if a parallel backend is
 registered). This option exists because of the computational overhead of a
 parallelization. A value of \code{Inf} (the default) turns off parallelization.
 
+For some performance statistics, the standard errors are bootstrapped. This
+can also be run in parallel (again, powered by the \pkg{foreach} package, but
+this time also powered by the \pkg{doRNG} package) by setting the global
+option \code{projpred.prll_boot} to \code{TRUE} (and registering a parallel backend).
+By default, the parallelization of the bootstrap is turned off.
+
 See the vignettes
 (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
 and

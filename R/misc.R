@@ -66,10 +66,55 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 
   seq_x <- seq_len(NROW(x))
   is_vector <- NCOL(x) == 1
-  bsstat <- rep(NA, b)
-  for (i in 1:b) {
-    bsind <- sample(seq_x, replace = TRUE)
-    bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
+  if (!isTRUE(getOption("projpred.prll_boot", FALSE))) {
+    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+    # foreach::`%do%`` here and then proceed as in the parallel case, but that
+    # would require adding more "hard" dependencies (because packages 'foreach'
+    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+    bsstat <- rep(NA, b)
+    for (i in 1:b) {
+      bsind <- sample(seq_x, replace = TRUE)
+      bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
+    }
+  } else {
+    # Parallel case.
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+      stop("Please install the 'foreach' package.")
+    }
+    if (!requireNamespace("iterators", quietly = TRUE)) {
+      stop("Please install the 'iterators' package.")
+    }
+    if (!requireNamespace("doRNG", quietly = TRUE)) {
+      stop("Please install the 'doRNG' package.")
+    }
+    dot_args <- list(...)
+    `%do_projpred%` <- doRNG::`%dorng%`
+    # Needed because 'doRNG' seems to expect package 'foreach' to be attached
+    # (so that `%dopar%` can be used without referencing 'foreach'), but since
+    # we have 'foreach' under `Suggests:`, we cannot simply import `%dopar%`:
+    `%dopar%` <- foreach::`%dopar%`
+    on.exit(rm(`%dopar%`))
+    bsstat <- foreach::foreach(
+      iterators::icount(b),
+      .combine = "c",
+      .export = c("x", "seq_x", "is_vector", "fun", "dot_args"),
+      .noexport = c(
+        "object", "out", "varsel", "mu", "lppd", "d_test", "family", "mu.bs",
+        "lppd.bs", "weights"
+      )
+    ) %do_projpred% {
+      bsind <- sample(seq_x, replace = TRUE)
+      do.call(
+        fun,
+        c(list(if (is_vector) x[bsind] else x[bsind, ]),
+          dot_args)
+      )
+    }
+    ### If memory is an issue, remove arguments introduced by the 'doRNG'
+    ### package:
+    # attr(bsstat, "rng") <- NULL
+    # attr(bsstat, "doRNG_version") <- NULL
+    ###
   }
   return(bsstat)
 }
