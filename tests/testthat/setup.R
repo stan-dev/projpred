@@ -60,10 +60,8 @@ if (run_prll) {
             "could be detected.")
     run_prll <- FALSE
   }
-  # Just to be sure to not run on more than 2 cores on CRAN (shouldn't be
-  # necessary, though, because by default, we do not run the parallel tests on
-  # CRAN; see the definition of `run_prll` above):
-  if (!identical(Sys.getenv("NOT_CRAN"), "true")) {
+  # Do not run on more than 2 cores if requested so:
+  if (identical(Sys.getenv("_R_CHECK_LIMIT_CORES_"), "TRUE")) {
     ncores <- min(ncores, 2L)
   }
   # Use the 'doParallel' package on all platforms except Windows. For Windows,
