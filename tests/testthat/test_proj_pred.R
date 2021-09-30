@@ -407,6 +407,15 @@ test_that("`offsetnew` works", {
     } else {
       if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
         expect_equal(pl_zeros, pl_orig, info = tstsetup)
+        if (args_prj[[tstsetup]]$fam_nm %in% c("brnll", "binom")) {
+          # To avoid failing tests due to numerical inaccuracies for extreme
+          # values:
+          is_extreme <- which(abs(pl_orig$pred) > f_binom$linkfun(1 - 1e-12),
+                              arr.ind = TRUE)
+          pl_orig$pred[is_extreme] <- NA
+          pl$pred[is_extreme] <- NA
+          plo$pred[is_extreme] <- NA
+        }
         expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
                      info = tstsetup)
         expect_equal(t(plo$pred) - dat_offs_new$offs_col_new, t(pl_orig$pred),
