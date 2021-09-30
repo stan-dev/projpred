@@ -42,6 +42,70 @@ run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
+# Run parallel tests (see notes below)?:
+run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
+  !identical(.Platform$OS.type, "windows")
+if (run_prll) {
+  # Notes:
+  #   * Currently, parallelization only works reliably for GLMs (because of
+  #   memory issues for more complex models like GLMMs, GAMs and GAMMs).
+  #   Therefore, we only test GLMs here.
+  #   * Currently, parallelization on Windows takes longer than running
+  #   sequentially. This makes parallelization impractical on Windows, so we
+  #   don't run the tests on Windows by default.
+
+  ncores <- parallel::detectCores(logical = FALSE)
+  if (ncores == 1) {
+    warning("Deactivating the parallel tests because only a single worker ",
+            "could be detected.")
+    run_prll <- FALSE
+  }
+  # Just to be sure to not run on more than 2 cores on CRAN (shouldn't be
+  # necessary, though, because by default, we do not run the parallel tests on
+  # CRAN; see the definition of `run_prll` above):
+  if (!identical(Sys.getenv("NOT_CRAN"), "true")) {
+    ncores <- min(ncores, 2L)
+  }
+  # Use the 'doParallel' package on all platforms except Windows. For Windows,
+  # the 'doFuture' package provides a faster alternative via the 'future.callr'
+  # package (which is still slower than a sequential run, though):
+  if (!identical(.Platform$OS.type, "windows")) {
+    if (!requireNamespace("doParallel", quietly = TRUE)) {
+      stop("Package \"doParallel\" is needed for these tests. Please ",
+           "install it.",
+           call. = FALSE)
+    }
+    dopar_backend <- "doParallel"
+  } else {
+    # This case (which should not be possible by default) is only included
+    # here to demonstrate how parallelization should be used on Windows (but
+    # currently, this makes no sense, as explained above).
+    if (!requireNamespace("doFuture", quietly = TRUE)) {
+      stop("Package \"doFuture\" is needed for these tests. Please ",
+           "install it.",
+           call. = FALSE)
+    }
+    dopar_backend <- "doFuture"
+    if (identical(.Platform$OS.type, "windows")) {
+      ### Not used in this case because the 'future.callr' package provides a
+      ### faster alternative on Windows (which is still slower than a sequential
+      ### run, though):
+      # future_plan <- "multisession"
+      ###
+      if (!requireNamespace("future.callr", quietly = TRUE)) {
+        stop("Package \"future.callr\" is needed for these tests. Please ",
+             "install it.",
+             call. = FALSE)
+      }
+      future_plan <- "callr"
+    } else {
+      # This case (which should not be possible by default) is only included
+      # here to demonstrate how other systems should be used with the 'doFuture'
+      # package.
+      future_plan <- "multicore"
+    }
+  }
+}
 
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
@@ -664,7 +728,7 @@ if (run_cvvs) {
   args_cvvs <- unlist_cust(args_cvvs)
 
   # Use suppressWarnings() because of occasional warnings concerning Pareto k
-  # diagnostics: Additionally to suppressWarnings(), suppressMessages() could be
+  # diagnostics. Additionally to suppressWarnings(), suppressMessages() could be
   # used here (because of the refits in K-fold CV):
   cvvss <- suppressWarnings(lapply(args_cvvs, function(args_cvvs_i) {
     do.call(cv_varsel, c(
@@ -920,6 +984,13 @@ if (run_cvvs) {
       excl_nonargs(args_smmry_cvvs_i)
     ))
   })
+}
+
+## bootstrap() ------------------------------------------------------------
+
+if (run_prll) {
+  x_boot <- c(-100:100, rep(NA, 20))
+  bs_orig <- bootstrap(x_boot, median, b = 2000, seed = seed2_tst, na.rm = TRUE)
 }
 
 ## Output names -----------------------------------------------------------
