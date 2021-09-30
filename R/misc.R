@@ -53,8 +53,7 @@ auc <- function(x) {
   return(sum(delta_fpr * tpr) + sum(delta_fpr * delta_tpr) / 2)
 }
 
-bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
-                      ...) {
+bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   #
   # bootstrap an arbitrary quantity fun that takes the sample x
   # as the first input. other parameters to fun can be passed in as ...
@@ -71,20 +70,11 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   seq_x <- seq.int(NROW(x))
   is_vector <- NCOL(x) == 1
   bsstat <- rep(NA, b)
-  oobstat <- rep(NA, b)
   for (i in 1:b) {
     bsind <- sample(seq_x, replace = TRUE)
     bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
-    if (!is.null(oobfun)) {
-      oobind <- setdiff(seq_x, unique(bsind))
-      oobstat[i] <- oobfun(if (is_vector) x[oobind] else x[oobind, ], ...)
-    }
   }
-  if (!is.null(oobfun)) {
-    return(list(bs = bsstat, oob = oobstat))
-  } else {
-    return(bsstat)
-  }
+  return(bsstat)
 }
 
 .is.wholenumber <- function(x) {
