@@ -67,7 +67,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   }
   set.seed(seed)
 
-  seq_x <- seq.int(NROW(x))
+  seq_x <- seq_len(NROW(x))
   is_vector <- NCOL(x) == 1
   bsstat <- rep(NA, b)
   for (i in 1:b) {
