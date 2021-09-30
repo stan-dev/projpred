@@ -55,7 +55,8 @@ Suggests:
     parallel,
     foreach,
     iterators,
-    doParallel
+    doParallel,
+    doFuture
 LinkingTo: Rcpp, RcppArmadillo
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
