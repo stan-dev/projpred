@@ -595,7 +595,7 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
 print.vselsummary <- function(x, digits = 1, ...) {
   print(x$family)
   cat("Formula: ")
-  print(x$formula)
+  print(x$formula, showEnv = FALSE)
   cat(paste0("Observations: ", x$nobs, "\n"))
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
