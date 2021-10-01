@@ -24,71 +24,70 @@ options(rmarkdown.html_vignette.check_title = FALSE)
 
 ## Introduction
 
-This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear models as well as generalized linear and additive multilevel models. The specialty of the projective variable selection is that it not only performs a variable selection, but that it also provides valid post-selection inference.
+This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear models as well as generalized linear and additive multilevel models. What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
 
 The projective variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in **projpred** are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017a). Type `citation("projpred")` for details on how to cite **projpred**.
 
 ## Data
 
-For this vignette, we borrow the `CO2` dataset from the **datasets** package (which should have been shipped with your original R installation). It contains 84 observations from an experiment on the cold tolerance of a specific grass species (see `?CO2`). The experiment has been carried out on 12 `Plant`s, with 7 observations per plant. Each plant belongs to one of two `Type`s of origin (half of the plants are from Quebec, the other half from Mississippi). Within each type of origin, the same number of plants has undergone a special `Treatment` (chilling) before measuring the response, the carbon dioxide `uptake` of the plant. The ambient carbon dioxide `conc`entration has also been measured.
+For this vignette, we use **projpred**'s `df_gaussian` data. It contains 100 observations of 20 continuous predictor variables `X1`, ..., `X20` and one continuous response variable `y`.
 ```{r}
-# Should not be necessary since the 'datasets' package should have been shipped
-# with your original R installation, but stated here for a better traceability
-# of our steps:
-data("CO2", package = "datasets")
+data("df_gaussian", package = "projpred")
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 ```
-
-Note that this is not a typical dataset for a variable selection problem since it involves only few predictors (even when counting their interactions and setting this in relation to the number of observations). We'll use it for demonstrative purposes here.
 
 ## Reference model
 
-First, we have to construct the reference model for the projective variable selection. This model is considered as the best ("reference") solution to the prediction task and the aim of the projective variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.
+First, we have to construct the reference model for the projective variable selection. This model is considered as the best ("reference") solution to the prediction task. The aim of the projective variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.
 
-The **projpred** package is compatible with reference models fit by the **rstanarm** and **brms** packages. To our knowledge, **rstanarm** and **brms** are currently the only packages for which `get_refmodel()` methods (which establish the compatibility with **projpred**) exist. Custom reference models can also be used via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We'll cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, **projpred** will consider all predictors from the reference model as candidate predictors, so all candidate models are submodels of the reference model.^[In principle, this is not a necessary assumption for a projective variable selection (see, e.g., Piironen et al., 2020) and custom reference models allow to avoid this assumption, but for **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation a lot.]
+The **projpred** package is compatible with reference models fit by the **rstanarm** and **brms** packages. To our knowledge, **rstanarm** and **brms** are currently the only packages for which `get_refmodel()` methods (which establish the compatibility with **projpred**) exist. Custom reference models can be constructed via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We will cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, **projpred** will consider all predictors from the reference model as candidate predictors, so all candidate models are submodels of the reference model.^[In principle, this is not a necessary assumption for a projective variable selection (see, e.g., Piironen et al., 2020) and custom reference models allow to avoid this assumption, but for **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation a lot.]
 
-Here, we'll use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, you simply have to replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`).
+Here, we use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, you simply have to replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`).
 ```{r}
 library(rstanarm)
 ```
 
-For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response, `uptake`.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and, via `brms::get_refmodel.brmsfit()`, `brms::bernoulli()`), and `poisson()`.] With regard to the predictors, we construct the most comprehensive model which is possible from the predictor variables mentioned above. `Plant` constitutes the typical case where partially pooled (also known as *group-level* or---in frequentist terms---*random*) effects are desirable, so we'll use a multilevel formula term for `Plant`.
+For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and---via `brms::get_refmodel.brmsfit()`---also `brms::bernoulli()`), as well as `poisson()`.] Here, we only include the linear main effects of all 20 predictor variables, but in principle, **projpred** supports more complex models, including models with interactions, multilevel, and/or additive ("smoothing") terms. Note that multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.
 
-We use **rstanarm**'s default priors, except for the regression coefficients of the predictors with non-pooled (also known as *population-level* or *fixed*) effects for which we use a regularized horseshoe (RH) prior (Piironen and Vehtari, 2017c) with the hyperprior for the its global shrinkage parameter being based on Piironen and Vehtari (2017b,c). Before applying the RH prior, we standardize the predictor variables (Piironen and Vehtari, 2017c). Note that the `CO2` dataset is not a typical one for the RH prior. Just like for variable selection problems in general (see above), datasets to which the RH prior is applied usually involve many more predictors, especially when setting the number of predictors in relation to the number of observations. We'll use the RH prior here anyway, but only for demonstrative purposes. In R code, these are the preparation steps for the RH prior:
+We use **rstanarm**'s default priors, except for the regression coefficients for which we use a regularized horseshoe prior (Piironen and Vehtari, 2017c) with the hyperprior for its global shrinkage parameter following Piironen and Vehtari (2017b,c). In R code, these are the preparation steps for the regularized horseshoe prior:
 ```{r}
-# Number of regression coefficients (for `zType * zconc * zTreatment`):
-( D <- sum(sapply(seq_len(3), choose, n = 3)) )
+# Number of regression coefficients:
+( D <- sum(grepl("^X", names(dat_gauss))) )
 ```
 
 ```{r}
 # Prior guess for the number of relevant (i.e., non-zero) regression
-# coefficients (in this example, this is just a heuristic guess and might not
-# make sense to biologists):
-p0 <- 4
+# coefficients:
+p0 <- 5
 # Number of observations:
-N <- nrow(CO2)
+N <- nrow(dat_gauss)
 # Hyperprior scale for tau, the global shrinkage parameter (note that for the
 # Gaussian family, 'rstanarm' will automatically scale this by the residual
 # standard deviation):
 tau0 <- p0 / (D - p0) * 1 / sqrt(N)
-# Standardize the predictor variables:
-CO2 <- within(CO2, {
-  zType <- as.vector(scale(as.numeric(Type) - 1))
-  zTreatment <- as.vector(scale(as.numeric(Treatment) - 1))
-  zconc <- as.vector(scale(conc))
-})
 ```
 
-We now fit the reference model to the data. Note that for multilevel formula terms, **projpred** uses the **lme4** syntax. To make this vignette build fast, we use only 2 Markov chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. If sampling for the reference model still takes long and multiple CPU cores are available, uncomment the line setting option `mc.cores` to an automatically detected number of cores (or set `mc.cores` to a manually determined number of cores).
+We now fit the reference model to the data. To make this vignette build faster, we only use 2 Markov chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. We make use of **rstan**'s parallelization, though, which means to run each Markov chain on a separate CPU core.^[More precisely, the number of Markov chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
 ```{r, cache = TRUE, cache.lazy = FALSE}
-# options(mc.cores = parallel::detectCores())
-refm_fit <- stan_glmer(uptake ~ zType * zconc * zTreatment + (1 | Plant),
-                       family = gaussian(),
-                       data = CO2,
-                       prior = hs(global_scale = tau0),
-                       QR = TRUE, chains = 2, iter = 500, seed = 2052109,
-                       refresh = 0)
+# Set this manually if desired:
+ncores <- parallel::detectCores(logical = FALSE)
+### Only for technical reasons in this vignette (you can omit this when running
+### the code yourself):
+ncores <- min(ncores, 2L)
+###
+refm_fit <- stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 + X10 + X11 + X12 + X13 + X14 +
+    X15 + X16 + X17 + X18 + X19 + X20,
+  family = gaussian(),
+  data = dat_gauss,
+  prior = hs(global_scale = tau0),
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2, iter = 500,
+  ###
+  cores = ncores, seed = 2052109, QR = TRUE, refresh = 0
+)
 ```
-Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`). However, due to the technical reasons for which we reduced `chains` and `iter`, we'll skip this step here.
+Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`). However, due to the technical reasons for which we reduced `chains` and `iter`, we skip this step here.
 
 ## Variable selection
 
@@ -97,41 +96,47 @@ Now, **projpred** comes into play.
 library(projpred)
 ```
 
-In **projpred**, the projective variable selection consists of a *search* step and an *evaluation* step. The search step determines the solution path, i.e., the best submodel for each number of predictor terms (model size) or, in other words, the predictor terms ordered by predictive relevance (with the most predictive predictor term at the beginning). The evaluation step determines the predictive performance of the submodels along the solution path.
+In **projpred**, the projective variable selection consists of a *search* step and an *evaluation* step. The search step determines the solution path, i.e., the best submodel for each model size (i.e., each number of predictor terms) or, in other words, the predictor terms ordered by predictive relevance (with the most predictive predictor term at the beginning). The evaluation step determines the predictive performance of the submodels along the solution path.
 
-There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search step with the training data of each CV fold separately (an exception is explained in the `?cv_varsel` help) and running the evaluation step on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we'll use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
+There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search step with the training data of each CV fold separately (an exception is explained in the `?cv_varsel` help) and running the evaluation step on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
 
-It is worth taking a look at the documentation of `cv_varsel()` (see `?cv_varsel`) because we cannot explain all arguments here. Note that we'll modify some arguments here and later in this vignette only to speed up the building of this vignette. This is not recommended in general. For example, we modify argument `cv_method` to use a K-fold CV instead of a leave-one-out (LOO) CV. In general, the LOO CV is more accurate. In this example, the two `cv_method`s give very similar results.
+In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for multilevel and/or additive models.
+```{r}
+if (!identical(.Platform$OS.type, "windows")) {
+  trigger_default <- options(projpred.prll_prj_trigger = 200)
+  library(doParallel)
+  registerDoParallel(ncores)
+}
+```
+
+It is worth taking a look at the documentation of `cv_varsel()` because we cannot explain all arguments here. By modifying argument `cv_method`, we use a K-fold CV instead of a leave-one-out (LOO) CV. We do this here only to make this vignette build faster. In general, this is not recommended since LOO CV is more accurate. By modifying argument `nterms_max`, we impose a limit on the model size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`12`) is based on such a first run (which is not shown here, though).
 ```{r, results='hide', cache = TRUE, cache.lazy = FALSE}
 cvvs <- cv_varsel(
   refm_fit,
   ### Only for the sake of speed (in general, LOO CV is more accurate):
   cv_method = "kfold",
   ###
-  ### CAUTION: Do not use this for final results in practice:
-  ndraws = 5,
-  ndraws_pred = 100,
-  ###
+  nterms_max = 12,
   seed = 411183
 )
 ```
 
-The first step after running the variable should be the decision for a model size (i.e., a number of predictor terms to include in the final model). This should be the first step (in particular, before inspecting the solution path) in order to avoid user-induced selection bias (which could occur if the user made the model size decision dependent on the solution path). To decide for a model size, there are several statistics we can plot as a function of the model size. Here, we'll use the (estimated) expected log predictive density (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation---or "test"---set) and the root mean squared error (RMSE). By default, the statistics are shown on their original scale, but with `deltas = TRUE`, the statistics are shown as differences from a baseline model (which is the reference model by default, at least in the most common case). Since the differences are usually of more interest (at least in the model size decision), we'll directly plot with `deltas = TRUE` here:
+The first step after running the variable selection should be the decision for a final model size. This should be the first step (in particular, before inspecting the solution path) in order to avoid user-induced selection bias (which could occur if the user made the model size decision dependent on the solution path). To decide for a model size, there are several performance statistics we can plot as a function of the model size. Here, we use the (estimated) expected log predictive density (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation---or "test"---set) and the root mean squared error (RMSE). By default, the statistics are shown on their original scale, but with `deltas = TRUE`, the statistics are shown as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (at least in the model size decision), we directly plot with `deltas = TRUE` here:
 ```{r, fig.asp = 1.5 * (sqrt(5) - 1) / 2}
 plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
 ```
-Based on that plot, we would decide for a model size of 2 because that's the point where the performance measures level off.
+Based on that plot, we would decide for a model size of 8 because that's the point where the performance measures level off.
 ```{r}
-modsize_decided <- 2
+modsize_decided <- 8
 ```
 
-Note that **projpred** includes a function to help deciding for a model size, but this is a rather heuristic decision and needs to be used with caution (see the `?suggest_size` help):
-```{r, eval=FALSE}
+Note that **projpred** includes the `suggest_size()` function which may help in the decision for a model size, but this is a rather heuristic method and needs to be interpreted with caution (see the `?suggest_size` help).
+```{r}
 suggest_size(cvvs)
 ```
-Here, we would get the same result (`2`) as by our manual decision.
+Here, we would get the same final model size (`8`) as by our manual decision.
 
-Only now, after we have made a decision for the model size, we inspect the further results from the variable selection and, in particular, the solution path. For example, to get some basic results, we simply `print()` the resulting object:
+Only now, after we have made a decision for the model size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply `print()` the resulting object:
 ```{r}
 cvvs
 ### Alternative modifying the number of printed decimal places:
@@ -143,7 +148,7 @@ The solution path can be seen in the `print()` output (column `solution_terms`),
 ( soltrms <- solution_terms(cvvs) )
 ```
 
-Combining the decided model size of 2 with the solution path leads to `(1 | Plant)` and `zconc` (as well as the intercept) as the predictor terms of the final submodel:
+Combining the decided model size of 8 with the solution path leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:
 ```{r}
 ( soltrms_final <- head(soltrms, modsize_decided) )
 ```
@@ -155,9 +160,6 @@ The `project()` function returns an object of class `projection` which forms the
 prj <- project(
   refm_fit,
   solution_terms = soltrms_final,
-  ### CAUTION: Do not use this for final results in practice:
-  ndraws = 100,
-  ###
   seed = 15705533
 )
 ```
@@ -170,13 +172,13 @@ prj <- project(
 <!--   seed = 15705533 -->
 <!-- ) -->
 <!-- ``` -->
-For more accurate results, we could have increased argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). This increases runtime, though, which we don't want in this vignette (for technical reasons).
+For more accurate results, we could have increased argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). This increases the runtime, though, which we don't want in this vignette.
 
-Next, we create a matrix containing the projected posterior draws stored in the depths of `project()`'s output object of class `projection`:
+Next, we create a matrix containing the projected posterior draws stored in the depths of `project()`'s output:
 ```{r}
 prj_mat <- as.matrix(prj)
 ```
-This matrix is all we need for post-selection inference. It can be used like any matrix of draws from Markov chain Monte Carlo (MCMC) procedures, except that it doesn't reflect a typical posterior distribution, but rather a projected posterior distribution, i.e. the distribution arising from the deterministic projection of the reference model's posterior distribution onto the parameter space of the final submodel.
+This matrix is all we need for post-selection inference. It can be used like any matrix of draws from Markov chain Monte Carlo (MCMC) procedures, except that it doesn't reflect a typical posterior distribution, but rather a projected posterior distribution, i.e., the distribution arising from the deterministic projection of the reference model's posterior distribution onto the parameter space of the final submodel.
 
 ### Marginals of the projected posterior
 
@@ -190,89 +192,80 @@ summarize_draws(
 )
 ```
 
-A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function. To improve the readability of that plot, we exclude the overall intercept as well as the group-level intercepts.
+A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function.
 ```{r}
 library(bayesplot)
-bayesplot_theme_set(ggplot2::theme_gray())
-# Negative lookaheads are not possible in argument `regex_pars` of
-# mcmc_intervals(), so we use the following workaround:
-pars_nms_prj <- grep("^b_Intercept", colnames(prj_mat), value = TRUE,
-                     invert = TRUE)
-pars_nms_prj <- grep("^[^r]", pars_nms_prj, value = TRUE)
-mcmc_intervals(prj_mat, pars = pars_nms_prj) +
-  ggplot2::coord_cartesian(xlim = c(0, 13))
+bayesplot_theme_set(ggplot2::theme_bw())
+mcmc_intervals(prj_mat) +
+  ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
-Note that we only visualize the *1-dimensional* marginals of the projected posterior here. To gain a more complete picture, we would have to visualize *2-dimensional* marginals of the projected posterior (i.e., marginals of pairs of parameters), giving 3-dimensional plots.
+Note that we only visualize the *1-dimensional* marginals of the projected posterior here. To gain a more complete picture, we would at least have to visualize some *2-dimensional* marginals of the projected posterior (i.e., marginals of pairs of parameters), giving 3-dimensional plots.
 
-For comparison, consider the marginal posteriors of the corresponding parameters from the reference model:
+For comparison, consider the marginal posteriors of the corresponding parameters in the reference model:
 ```{r}
 refm_mat <- as.matrix(refm_fit)
-# See `colnames(refm_mat)` for possible parameter names usable in
-# mcmc_intervals().
-
-# Multilevel terms have to be treated specially (note that the following code
-# tries to be as general as possible, but since it also has to be as concise as
-# possible, it only makes sense for a single term with "random intercepts"):
-pars_nms_pp <- grep("^\\(.*\\|.*\\)$", soltrms_final, value = TRUE)
-pars_nms_pp <- sub("^.*\\|[[:blank:]]*(.+)[[:blank:]]*\\)$", "\\1", pars_nms_pp)
-pars_nms_pp <- paste0("Sigma[", pars_nms_pp, ":(Intercept),(Intercept)]")
-pars_nms_np <- grep("^\\(.*\\|.*\\)$", soltrms_final, value = TRUE,
-                    invert = TRUE)
-pars_nms <- c(pars_nms_np, pars_nms_pp, "sigma")
-mcmc_intervals(refm_mat, pars = pars_nms) +
-  ggplot2::coord_cartesian(xlim = c(0, 13))
+pars_nms_refm <- c(
+  "(Intercept)",
+  sub("^b_", "", grep("^b_X", colnames(prj_mat), value = TRUE)),
+  "sigma"
+)
+mcmc_intervals(refm_mat, pars = pars_nms_refm) +
+  ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
+Here, the reference model's marginal posteriors differ only slightly from the marginals of the projected posterior. This does not necessarily have to be the case, though.
 
 ### Predictions
 
-Predictions from the final submodel can be made by `proj_linpred()` and `proj_predict()`. For example, suppose we have the following new observations:
-```{r}
-CO2_new <- data.frame(
-  Plant = c("Qn4", "Qc4", "Mn4"),
-  conc = c(300, 800, 500)
-)
-CO2_new$zconc <- (CO2_new$conc - mean(CO2$conc)) / sd(CO2$conc)
-```
+Predictions from the final submodel can be made by `proj_linpred()` and `proj_predict()`.
 
-We'll start with `proj_linpred()` which calculates the linear predictor^[It can also transform the linear predictor to response scale, but because of the identity link function we are using here, this is the same as the linear predictor scale.] for all new observations and, depending on argument `integrated`, averaged or not averaged across the projected draws. If `CO2_new` also contained response values (i.e., `uptake` values) for its new observations, then `proj_linpred()` would also evaluate the log predictive density at these. For instance, the following computes the expected values of the new observations' predictive distributions^[Beware that this statement is correct here because of the Gaussian family with the identity link function. For other families (which usually come in combination with a different link function), one would typically have to use `transform = TRUE` in order to make this statement correct.]:
+We start with `proj_linpred()`. For example, suppose we have the following new observations:
 ```{r}
-prj_linpred <- proj_linpred(prj, newdata = CO2_new, integrated = TRUE)
-cbind(CO2_new, linpred = as.vector(prj_linpred$pred))
+( dat_gauss_new <- setNames(
+  as.data.frame(replicate(length(soltrms_final), c(-1, 0, 1))),
+  soltrms_final
+) )
 ```
+Then `proj_linpred()` can calculate the linear predictors^[`proj_linpred()` can also transform the linear predictor to response scale, but here, this is the same as the linear predictor scale (because of the identity link function).] for all new observations from `dat_gauss_new`. Depending on argument `integrated`, these linear predictors can be averaged across the projected draws (within each new observation). For instance, the following computes the expected values of the new observations' predictive distributions^[Beware that this statement is correct here because of the Gaussian family with the identity link function. For other families (which usually come in combination with a different link function), one would typically have to use `transform = TRUE` in order to make this statement correct.]:
+```{r}
+prj_linpred <- proj_linpred(prj, newdata = dat_gauss_new, integrated = TRUE)
+cbind(dat_gauss_new, linpred = as.vector(prj_linpred$pred))
+```
+If `dat_gauss_new` also contained response values (i.e., `y` values in this example), then `proj_linpred()` would also evaluate the log predictive density at these.
 
-With `proj_predict()`, we can obtain draws from the final submodel's predictive distribution. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this contains not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response (in case of the Gaussian family we are using here, this is the uncertainty arising from the residual standard deviation). This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed a projected posterior predictive check (PPPC) here.
+With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response.^[In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.] This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projected predictive check (PPPC) here.
 ```{r}
 prj_predict <- proj_predict(prj, .seed = 762805)
 # Using the 'bayesplot' package:
-bayesplot_theme_set(ggplot2::theme_bw())
-ppc_dens_overlay(y = CO2$uptake, yrep = prj_predict, alpha = 0.9, bw = "SJ")
+ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict, alpha = 0.9, bw = "SJ")
 ```
-This PPPC indicates that there is clearly room for improvement of the model (because the observed response values exhibit a bimodal distribution whereas the replicated response values don't). The interesting question is now whether only our final projection performs badly in this PPPC or whether already the reference model does. To answer this question, we inspect the reference model's PPC:
+This PPPC shows that our final projection is able to generate predictions similar to the observed response values, which indicates that this model is reasonable, at least in this regard.
+
+## Teardown / clean-up
+
+Finally, we clean up everything we have set up for the parallelization of the projection. This may not always be necessary, but sometimes it is and apart from that, it is simply good practice:
 ```{r}
-refm_predict <- posterior_predict(refm_fit, seed = 762805)
-refm_predict_sub <- refm_predict[
-  round(seq(1, nrow(refm_predict), length.out = 100)),
-]
-ppc_dens_overlay(y = CO2$uptake, yrep = refm_predict_sub, alpha = 0.9, bw = "SJ")
+if (!identical(.Platform$OS.type, "windows")) {
+  stopImplicitCluster()
+  registerDoSEQ()
+  options(projpred.prll_prj_trigger = trigger_default$projpred.prll_prj_trigger)
+}
 ```
-This plot shows that it is already the reference model which performs badly in its PPC. Thus, we would now have to re-iterate and improve the reference model, see Gelman et al. (2020). That would go beyond the scope of this vignette, however.
 
 ## Troubleshooting
 
-Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing model size, the performance measures of the projections do not approach that of the reference model. There are different reasons that can explain this behavior (with the following enumeration not being guaranteed to be complete):
+Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing model size, the performance measures of the projections do not approach that of the reference model. There are different reasons that can explain this behavior (the following list might not be exhaustive, though):
 
-1. The reference model's posterior may be quite wide so that the default `ndraws_pred` could be too small. Usually, this is the case when the difference in predictive performance is not very large. Increasing `ndraws_pred` should help, but it also increases the computational cost. Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
-<!-- See GitHub issue #208: -->
-<!-- 1. For non-Gaussian models, the discrepancy may come from the fact that we are running an approximate projection. ("Approximate" in the sense that the defaults of `ndraws` and `nclusters` (as well as of `ndraws_pred` and `nclusters_pred`) do not imply a draw-by-draw projection, meaning that not all posterior draws are projected or that they are clustered before they are projected.) In this case, increasing `ndraws_pred` should also help. -->
+1. The reference model's posterior may be so wide that the default `ndraws_pred` could be too small. Usually, this comes in combination with a difference in predictive performance which is comparatively small. Increasing `ndraws_pred` should help, but it also increases the computational cost. Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
+1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues (Catalina et al., 2021). In this case, the latent-space approach by Catalina et al. (2021) might help.
 1. If you are using `varsel()`, then the lack of the CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
 
 ## References
 
-Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inference for generalized linear and additive multilevel models. *arxiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
+Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inference for generalized linear and additive multilevel models. *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
+
+Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection predictive inference. *arXiv:2109.04702*. URL: <https://arxiv.org/abs/2109.04702>.
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, **111**(1-2):77–94. doi:[10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
-
-Gelman, A., Vehtari, A., Simpson, D., Margossian, C. C., Carpenter, B., Yao, Y., Kennedy, L., Gabry, J., Bürkner, P.-C., and Modrák, M. (2020). Bayesian Workflow. *arXiv:2011.01808*. URL: <https://arxiv.org/abs/2011.01808>.
 
 Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*, **85**(1):29–37.
 

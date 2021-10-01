@@ -43,8 +43,8 @@ which in turn may crash the R session. Thus, we currently cannot recommend
 the parallelization for GLMMs, GAMs, and GAMMs.
 
 See the \href{https://mc-stan.org/projpred/articles/projpred.html}{vignette} for
-an example application. Shorter examples are included here in the
-documentation.
+an example application (which also demonstrates the use of parallelization).
+Shorter examples are included here in the documentation.
 
 Some references relevant for this package are given in section "References"
 below. See \code{citation(package = "projpred")} for details on citing

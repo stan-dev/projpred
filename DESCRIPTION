@@ -58,8 +58,7 @@ Suggests:
     doParallel,
     future,
     future.callr,
-    doFuture,
-    datasets
+    doFuture
 LinkingTo: Rcpp, RcppArmadillo
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
