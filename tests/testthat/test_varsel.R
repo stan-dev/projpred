@@ -730,6 +730,7 @@ test_that("invalid `K` fails", {
 })
 
 test_that("`cvfits` (actually passed to init_refmodel()) works", {
+  skip_if_not(run_cvvs)
   tstsetups <- grep("^rstanarm.*\\.kfold", names(cvvss), value = TRUE)
   if (!run_cvfits_all) {
     tstsetups <- head(tstsetups, 1)
