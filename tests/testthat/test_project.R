@@ -278,7 +278,7 @@ test_that(paste(
 
 # seed --------------------------------------------------------------------
 
-test_that("PRNG is not taking place where not expected", {
+test_that("non-clustered projection does not require a seed", {
   # This test is important to ensure that we don't have to set a seed where we
   # don't expect it to be necessary.
   tstsetups <- grep("\\.noclust$|\\.default_ndr_ncl$", names(prjs),
