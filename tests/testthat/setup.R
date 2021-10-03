@@ -986,13 +986,6 @@ if (run_cvvs) {
   })
 }
 
-## bootstrap() ------------------------------------------------------------
-
-if (run_prll) {
-  x_boot <- c(-100:100, rep(NA, 20))
-  bs_orig <- bootstrap(x_boot, median, b = 2000, seed = seed2_tst, na.rm = TRUE)
-}
-
 ## Output names -----------------------------------------------------------
 
 projection_nms <- c(

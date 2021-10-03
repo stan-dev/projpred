@@ -1,5 +1,12 @@
 context("parallel")
 
+# For the direct bootstrap() test -----------------------------------------
+
+if (run_prll) {
+  x_boot <- c(-100:100, rep(NA, 20))
+  bs_orig <- bootstrap(x_boot, median, b = 2000, seed = seed2_tst, na.rm = TRUE)
+}
+
 # Setup -------------------------------------------------------------------
 
 if (run_prll) {
