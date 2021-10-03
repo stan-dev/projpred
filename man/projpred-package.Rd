@@ -42,12 +42,6 @@ big, which---when running in parallel---may lead to an excessive memory usage
 which in turn may crash the R session. Thus, we currently cannot recommend
 the parallelization for GLMMs, GAMs, and GAMMs.
 
-For some performance statistics, the standard errors are bootstrapped. This
-can also be run in parallel (again, powered by the \pkg{foreach} package, but
-this time also powered by the \pkg{doRNG} package) by setting the global
-option \code{projpred.prll_boot} to \code{TRUE} (and registering a parallel backend).
-By default, the parallelization of the bootstrap is turned off.
-
 See the vignettes
 (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
 and

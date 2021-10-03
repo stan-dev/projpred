@@ -1,17 +1,9 @@
 context("parallel")
 
-# For the direct bootstrap() test -----------------------------------------
-
-if (run_prll) {
-  x_boot <- c(-100:100, rep(NA, 20))
-  bs_orig <- bootstrap(x_boot, median, b = 2000, seed = seed2_tst, na.rm = TRUE)
-}
-
 # Setup -------------------------------------------------------------------
 
 if (run_prll) {
   trigger_default <- options(projpred.prll_prj_trigger = 0L)
-  boot_default <- options(projpred.prll_boot = TRUE)
 
   if (dopar_backend == "doParallel") {
     doParallel::registerDoParallel(ncores)
@@ -82,39 +74,6 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
   }
 })
 
-# bootstrap() -------------------------------------------------------------
-
-test_that("bootstrap() in parallel gives the same results as sequentially", {
-  skip_if_not(run_prll)
-  bs_repr <- bootstrap(x_boot, median, b = 2000, seed = seed2_tst, na.rm = TRUE)
-  expect_named(attributes(bs_repr), c("rng", "doRNG_version"))
-  expect_equal(bs_repr, bs_orig, check.attributes = FALSE)
-})
-
-# Notes:
-#   * Actually, the user-facing functions depending on bootstrap() are
-#     plot.vsel() and summary.vsel(). Here, we only test summary.vsel() as this
-#     should suffice and as this is already run in `setup.R`.
-#   * We only test `smmrys_vs` (and not `smmrys_cvvs`) here to save time.
-
-test_that(paste(
-  "summary.vsel() (when using bootstrap() and a \"vsel\" object created by",
-  "varsel()) in parallel gives the same results as sequentially"
-), {
-  skip_if_not(run_prll)
-  skip_if_not(run_vs)
-  tstsetups <- grep("\\.common_stats\\.|\\.binom_stats\\.", names(smmrys_vs),
-                    value = TRUE)
-  for (tstsetup in tstsetups) {
-    args_smmry_vs_i <- args_smmry_vs[[tstsetup]]
-    smmry_vs_repr <- do.call(summary, c(
-      list(object = vss[[args_smmry_vs_i$tstsetup_vsel]]),
-      excl_nonargs(args_smmry_vs_i)
-    ))
-    expect_equal(smmry_vs_repr, smmrys_vs[[tstsetup]], info = tstsetup)
-  }
-})
-
 # Teardown ----------------------------------------------------------------
 
 if (run_prll) {
@@ -128,8 +87,6 @@ if (run_prll) {
     stop("Unrecognized `dopar_backend`.")
   }
 
-  options(projpred.prll_boot = boot_default$projpred.prll_boot)
-  rm(boot_default)
   options(projpred.prll_prj_trigger = trigger_default$projpred.prll_prj_trigger)
   rm(trigger_default)
 }

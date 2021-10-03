@@ -55,7 +55,6 @@ Suggests:
     parallel,
     foreach,
     iterators,
-    doRNG,
     doParallel,
     future,
     future.callr,
