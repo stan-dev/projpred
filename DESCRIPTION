@@ -22,7 +22,7 @@ Description:
     Paasiniemi and Vehtari, 2020, <doi:10.1214/20-EJS1711>; Catalina, Bürkner
     and Vehtari, 2020, <arXiv:2010.06994>). The package is compatible with the
     'rstanarm' and 'brms' packages, but other reference models can also be used.
-    See the documentation as well as the package vignettes for more information
+    See the documentation as well as the package vignette for more information
     and examples.
 License: GPL-3
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
