@@ -271,7 +271,7 @@ Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: 
 
 Piironen, J. and Vehtari, A. (2017a). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, **27**(3):711-735. DOI: [10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
 
-Piironen, J. and Vehtari, A. (2017b). On the hyperprior choice for the global shrinkage parameter in the horseshoe prior. In *Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)*, PMLR 54:905-913, 2017. URL: [http://proceedings.mlr.press/v54/piironen17a.html](http://proceedings.mlr.press/v54/piironen17a.html).
+Piironen, J. and Vehtari, A. (2017b). On the hyperprior choice for the global shrinkage parameter in the horseshoe prior. In *Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)*, PMLR 54:905-913, 2017. URL: <https://proceedings.mlr.press/v54/piironen17a.html>.
 
 Piironen, J. and Vehtari, A. (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. *Electronic Journal of Statistics*, **11**(2): 5018-5051. DOI: [10.1214/17-EJS1337SI](https://doi.org/10.1214/17-EJS1337SI).
 
