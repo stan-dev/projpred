@@ -75,6 +75,6 @@
 #'
 #' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
 #' inference for generalized linear and additive multilevel models.
-#' *arxiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
+#' *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
 #'
 "_PACKAGE"

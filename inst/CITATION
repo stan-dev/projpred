@@ -56,7 +56,7 @@ bibentry(
     person("Aki", "Vehtari")
   ),
   year = "2020",
-  note = "arxiv:2010.06994",
+  note = "arXiv:2010.06994",
   header = "To cite the 'projpred' GLMMs and GAMMs paper:",
   encoding = "UTF-8"
 )

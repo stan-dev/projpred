@@ -68,7 +68,7 @@ Journal of Statistics}, \strong{14}(1):2155-2197. DOI:
 
 Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
 inference for generalized linear and additive multilevel models.
-\emph{arxiv:2010.06994}. URL: \url{https://arxiv.org/abs/2010.06994}.
+\emph{arXiv:2010.06994}. URL: \url{https://arxiv.org/abs/2010.06994}.
 }
 \seealso{
 Useful links:
