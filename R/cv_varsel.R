@@ -55,8 +55,8 @@
 #'
 #' Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
 #' evaluation using leave-one-out cross-validation and WAIC. *Statistics and
-#' Computing*, **27**(5), 1413-1432.
-#' doi:[10.1007/s11222-016-9696-4](https://doi.org/10.1007/s11222-016-9696-4).
+#' Computing*, **27**(5), 1413-1432. DOI:
+#' [10.1007/s11222-016-9696-4](https://doi.org/10.1007/s11222-016-9696-4).
 #'
 #' Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
 #' smoothed importance sampling. *arXiv:1507.02646*. URL:
