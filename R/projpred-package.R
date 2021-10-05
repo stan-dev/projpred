@@ -31,6 +31,10 @@
 #' for example applications. Smaller examples are included here in the
 #' documentation.
 #'
+#' Some references relevant for this package are given in section "References"
+#' below. See `citation(package = "projpred")` for details on citing
+#' \pkg{projpred}.
+#'
 #' @details
 #'
 #' # Functions
@@ -49,29 +53,27 @@
 #'   (after projecting the reference model onto it).}
 #' }
 #'
-#' # References
+#' @references
 #'
-#' See the `CITATION` file for details on citation.
-#'
-#' * Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
+#' Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
 #' models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
 #' **85**(1):29–37.
 #'
-#' * Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
+#' Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
 #' models via an entropic explanatory power. *Journal of Statistical Planning
 #' and Inference*, **111**(1-2):77–94. DOI:
 #' [10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
 #'
-#' * Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
+#' Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
 #' methods for model selection. *Statistics and Computing*, **27**(3):711-735.
 #' DOI: [10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
 #'
-#' * Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference
+#' Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference
 #' in high-dimensional problems: Prediction and feature selection. *Electronic
 #' Journal of Statistics*, **14**(1):2155-2197. DOI:
 #' [10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).
 #'
-#' * Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
+#' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
 #' inference for generalized linear and additive multilevel models.
 #' *arxiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
 #'

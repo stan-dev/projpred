@@ -26,6 +26,10 @@ and
 \href{https://mc-stan.org/projpred/articles/quickstart_glmm.html}{quickstart-glmm-vignette})
 for example applications. Smaller examples are included here in the
 documentation.
+
+Some references relevant for this package are given in section "References"
+below. See \code{citation(package = "projpred")} for details on citing
+\pkg{projpred}.
 }
 \section{Functions}{
 \describe{
@@ -43,29 +47,29 @@ this follows the variable selection, but it can also be applied directly
 }
 }
 
-\section{References}{
-See the \code{CITATION} file for details on citation.
-\itemize{
-\item Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
+\references{
+Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
 models: A Bayesian approach via Kullback–Leibler projections. \emph{Biometrika},
 \strong{85}(1):29–37.
-\item Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
+
+Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
 models via an entropic explanatory power. \emph{Journal of Statistical Planning
 and Inference}, \strong{111}(1-2):77–94. DOI:
 \href{https://doi.org/10.1016/S0378-3758(02)00286-0}{10.1016/S0378-3758(02)00286-0}.
-\item Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
+
+Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
 methods for model selection. \emph{Statistics and Computing}, \strong{27}(3):711-735.
 DOI: \href{https://doi.org/10.1007/s11222-016-9649-y}{10.1007/s11222-016-9649-y}.
-\item Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference
+
+Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference
 in high-dimensional problems: Prediction and feature selection. \emph{Electronic
 Journal of Statistics}, \strong{14}(1):2155-2197. DOI:
 \href{https://doi.org/10.1214/20-EJS1711}{10.1214/20-EJS1711}.
-\item Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
+
+Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
 inference for generalized linear and additive multilevel models.
 \emph{arxiv:2010.06994}. URL: \url{https://arxiv.org/abs/2010.06994}.
 }
-}
-
 \seealso{
 Useful links:
 \itemize{
