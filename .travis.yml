@@ -4,8 +4,6 @@ cache: packages
 warnings_are_errors: false
 
 latex: true
-r_build_args: '--no-build-vignettes'
-r_check_args: '--ignore-vignettes'
 
 r_github_packages:
   - jimhester/covr
@@ -29,8 +27,8 @@ before_install:
        ')'))" >> ~/.Rprofile.site
 
 script:
-  - travis_wait 120 R CMD build . --no-build-vignettes
-  - travis_wait 120 R CMD check projpred*tar.gz --ignore-vignettes
+  - travis_wait 120 R CMD build .
+  - travis_wait 120 R CMD check projpred*tar.gz
 
 after_success:
 - travis_wait 120 Rscript -e 'covr::codecov()'
