@@ -41,7 +41,7 @@ cv_varsel(object, ...)
 
 \item{...}{Additional arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{method}{The method for the search step. Possible options are \code{"L1"} for
+\item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
 is used if the reference model has multilevel or additive terms and \code{"L1"}
 otherwise. See also section "Details" below.}
@@ -52,30 +52,30 @@ is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed.}
 
-\item{ndraws}{Number of posterior draws used in the search step. \strong{Caution:}
+\item{ndraws}{Number of posterior draws used in the search part. \strong{Caution:}
 For \code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
 clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if \code{method}
 turns out as \code{"L1"} (L1 search uses always one cluster). See also section
 "Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws used in the search
-step. Ignored if \code{method} turns out as \code{"L1"} (L1 search uses always one
+part. Ignored if \code{method} turns out as \code{"L1"} (L1 search uses always one
 cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See also
 section "Details" below.}
 
 \item{ndraws_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
-posterior draws used in the evaluation step. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
+posterior draws used in the evaluation part. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
 clustering is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
 section "Details" below.}
 
 \item{nclusters_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
-clusters of posterior draws used in the evaluation step. For the meaning of
+clusters of posterior draws used in the evaluation part. For the meaning of
 \code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
 \item{cv_search}{A single logical value indicating whether to fit the
 submodels along the solution path again (\code{TRUE}) or to retrieve their fits
-from the search step (\code{FALSE}) before using those (re-)fits in the
-evaluation step.}
+from the search part (\code{FALSE}) before using those (re-)fits in the
+evaluation part.}
 
 \item{nterms_max}{Maximum number of predictor terms until which the search is
 continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
@@ -95,7 +95,7 @@ additional information during the computations.}
 \item{nloo}{Only relevant if \code{cv_method == "LOO"}. Number of subsampled LOO
 CV folds, i.e., number of observations used for the LOO CV (anything
 between 1 and the original number of observations). Smaller values lead to
-faster computation but higher uncertainty in the evaluation step. If
+faster computation but higher uncertainty in the evaluation part. If
 \code{NULL}, all observations are used, but for faster experimentation, one can
 set this to a smaller value.}
 
@@ -124,7 +124,7 @@ is no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
 
 \item{validate_search}{Only relevant if \code{cv_method == "LOO"}. A single
-logical value indicating whether to cross-validate also the search step,
+logical value indicating whether to cross-validate also the search part,
 i.e., whether to run the search separately for each CV fold (\code{TRUE}) or not
 (\code{FALSE}). We strongly do not recommend setting this to \code{FALSE}, because
 this is known to bias the predictive performance estimates of the selected
@@ -153,14 +153,14 @@ or type \code{?projpred}).
 }
 \description{
 Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-(G)AMs, and (G)AMMs. This variable selection consists of a \emph{search} step and
-an \emph{evaluation} step. The search step determines the solution path, i.e., the
+(G)AMs, and (G)AMMs. This variable selection consists of a \emph{search} part and
+an \emph{evaluation} part. The search part determines the solution path, i.e., the
 best submodel for each number of predictor terms (model size). The evaluation
-step determines the predictive performance of the submodels along the
+part determines the predictive performance of the submodels along the
 solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
-cross-validation (CV) by running the search step with the training data of
+cross-validation (CV) by running the search part with the training data of
 each CV fold separately (an exception is explained in section "Note" below)
-and running the evaluation step on the corresponding test set of each CV
+and running the evaluation part on the corresponding test set of each CV
 fold.
 }
 \details{
@@ -187,8 +187,8 @@ instead.
 }
 \note{
 The case \code{cv_method == "LOO" && !validate_search} constitutes an
-exception where the search step is not cross-validated. In that case, the
-evaluation step is based on a PSIS-LOO CV.
+exception where the search part is not cross-validated. In that case, the
+evaluation part is based on a PSIS-LOO CV.
 }
 \examples{
 \dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
