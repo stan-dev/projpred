@@ -10,7 +10,7 @@
 * In the output of `proj_linpred()`, dimensions are not dropped anymore (i.e., output elements `pred` and `lpd` are always S x N matrices now). (GitHub: #143)
 * In case of `integrated = TRUE`, `proj_linpred()` now averages the LPD (across the projected posterior draws) instead of taking the LPD at the averaged linear predictors. (GitHub: #143)
 * If `newdata` does not contain the response variable, `proj_linpred()` now returns `NULL` for output element `lpd`. (GitHub: #143)
-* The fix for the offset issues (listed below under "Bug fixes") requires reference model fits of class `"stanreg"` (from package **rstanarm**) with offsets to have these offsets specified via an `offset()` term in the model formula (and not via argument `offset`).
+* The fix for the offset issues (listed below under "Bug fixes") requires reference model fits of class `stanreg` (from package **rstanarm**) with offsets to have these offsets specified via an `offset()` term in the model formula (and not via argument `offset`).
 * Improved handling of errors when fitting multilevel submodels. (GitHub: #201)
 * Some defaults (like for `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` mentioned above) have been changed from `NULL` to a user-visible value (and `NULL` is not allowed anymore).
 * Argument `data` of `get_refmodel.stanreg()` has been removed. (GitHub: <INSERT_PR_NUMBER_FOR_refmodel>)
@@ -43,11 +43,11 @@
 * Fixed bugs for argument `nterms` of `proj_linpred()` and `proj_predict()`. (GitHub: #110)
 * Fixed an inconsistency for some intercept-only submodels. (GitHub: #119)
 * Fix a bug for `as.matrix.projection()` in case of 1 (clustered) draw after projection. (GitHub: #130)
-* For submodels of class `"subfit"`, make the column names of `as.matrix.projection()`'s output matrix consistent with other classes of submodels. (GitHub: #132)
+* For submodels of class `subfit`, make the column names of `as.matrix.projection()`'s output matrix consistent with other classes of submodels. (GitHub: #132)
 * Fix a bug for argument `nterms_max` of `plot.vsel()` if there is just the intercept-only submodel. (GitHub: #138)
 * Throw an appropriate error message when trying to apply an L1 search to an empty (i.e. intercept-only) reference model. (GitHub: #139)
 * Fix the list names of element `search_path` in, e.g., `varsel()`'s output. (GitHub: #140)
-* Fix a bug (error `unused argument`) when initializing the K reference models in a K-fold CV with CV fits not of class `"brmsfit"` or `"stanreg"`. (GitHub: #140)
+* Fix a bug (error `unused argument`) when initializing the K reference models in a K-fold CV with CV fits not of class `brmsfit` or `stanreg`. (GitHub: #140)
 * In `get_refmodel.default()`, remove old defunct arguments `fetch_data`, `wobs`, and `offset`. (GitHub: #140)
 * Fix a bug in `get_refmodel.stanreg()`. (GitHub: #142, #184)
 * Fix a possible bug related to `extract_model_data()`'s argument `extract_y` in `get_refmodel.default()`. (GitHub: #153, commit 39fece8)
@@ -66,8 +66,8 @@
 * Fix a bug in the default `proj_predfun()` for GLMMs. (GitHub: #174)
 * Fix GitHub issue #171.
 * Fix GitHub issue #172.
-* Fix a bug in the default `proj_predfun()` for `"datafit"`s. (GitHub: #177)
-* Fix the names of `summary.vsel()$selection` for `"vsel"` objects created by `varsel()`. (GitHub: #179)
+* Fix a bug in the default `proj_predfun()` for `datafit`s. (GitHub: #177)
+* Fix the names of `summary.vsel()$selection` for objects of class `vsel` created by `varsel()`. (GitHub: #179)
 * Fix forward search when `search_terms` are not consecutive in size. (GitHub: commit 34e24de)
 * Fix a bug in `cv_varsel()$pct_solution_terms_cv`. (GitHub: commit e529ec1, #188)
 * Fix GitHub issue #185. (GitHub: #193, #194)
@@ -76,7 +76,7 @@
 * Fix a bug in `glm_elnet()` (the workhorse for L1 search), causing the grid for lambda to be constructed without taking observation weights into account. (GitHub: #198; note that the second part of #198 did not have any consequences for users)
 * Fix GitHub issue #136.
 * Fix a bug in `print.vsel()` causing argument `digits` to be ignored. (GitHub: <INSERT_PR_NUMBER_FOR_digits_fix>)
-* Fix a bug causing the default of argument `cv_search` in `varsel()` and `cv_varsel()` to be `TRUE` for `"datafit"`s, although it should be `FALSE` in that case. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
+* Fix a bug causing the default of argument `cv_search` in `varsel()` and `cv_varsel()` to be `TRUE` for `datafit`s, although it should be `FALSE` in that case. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
 * Fix a bug (`Error: Levels '<...>' of grouping factor '<...>' cannot be found in the fitted model. Consider setting argument 'allow_new_levels' to TRUE.`) when predicting from submodels which are GLMMs for `newdata` containing new levels for grouping factors. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
 * `predict.refmodel()`: Fix a bug for integer `ynew`. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
 * `predict.refmodel()`: Fix input checks for `offsetnew` and `weightsnew`. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
