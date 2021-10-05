@@ -10,7 +10,7 @@
 * In the output of `proj_linpred()`, dimensions are not dropped anymore (i.e., output elements `pred` and `lpd` are always S x N matrices now). (GitHub: #143)
 * In case of `integrated = TRUE`, `proj_linpred()` now averages the LPD (across the projected posterior draws) instead of taking the LPD at the averaged linear predictors. (GitHub: #143)
 * If `newdata` does not contain the response variable, `proj_linpred()` now returns `NULL` for output element `lpd`. (GitHub: #143)
-* The fix for the offset issues (listed below under "Bug fixes") requires reference model fits of class `"stanreg"` (from package `rstanarm`) with offsets to have these offsets specified via an `offset()` term in the model formula (and not via argument `offset`).
+* The fix for the offset issues (listed below under "Bug fixes") requires reference model fits of class `"stanreg"` (from package **rstanarm**) with offsets to have these offsets specified via an `offset()` term in the model formula (and not via argument `offset`).
 * Improved handling of errors when fitting multilevel submodels. (GitHub: #201)
 * Some defaults (like for `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` mentioned above) have been changed from `NULL` to a user-visible value (and `NULL` is not allowed anymore).
 * Argument `data` of `get_refmodel.stanreg()` has been removed. (GitHub: <INSERT_PR_NUMBER_FOR_refmodel>)
@@ -27,12 +27,12 @@
 * Show the README also on the CRAN website. (GitHub: #140)
 * `project()`: Warn if elements of `solution_terms` are not found in the reference model (and therefore ignored). (GitHub: #140)
 * `get_refmodel.default()` now passes arguments via the ellipsis (`...`) to `init_refmodel()`. (GitHub: #153, commit dd3716e)
-* Remove dependency on package `rngtools` (version 2.0.0 of `projpred` re-introduced this dependency after it was already removed in version 1.1.2). (GitHub: #189)
+* Remove dependency on package **rngtools** (version 2.0.0 of **projpred** re-introduced this dependency after it was already removed in version 1.1.2). (GitHub: #189)
 * `init_refmodel()`: The default (`NULL`) for argument `extract_model_data` has been removed as it wasn't meaningful anyway. (GitHub: <INSERT_PR_NUMBER_FOR_refmodel>)
 * Argument `folds` of `init_refmodel()` has been removed as it was effectively unused. (GitHub: <INSERT_PR_NUMBER_FOR_folds_rm>)
 * Use the S3 system for `solution_terms()`. This allowed the introduction of a `solution_terms.projection()` method. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
 * `predict.refmodel()` now uses a default of `newdata = NULL`. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
-* `projpred`'s internal `div_minimizer` functions have been unified into a single `div_minimizer` which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: <INSERT_PR_NUMBER_FOR_divmin>)
+* **projpred**'s internal `div_minimizer` functions have been unified into a single `div_minimizer` which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: <INSERT_PR_NUMBER_FOR_divmin>)
 * Improved the y-axis label in `plot.vsel()`.
 
 ### Bug fixes
@@ -148,7 +148,7 @@ Added print methods for vsel and cvsel objects. Added AUC statistics for binomia
 
 ## projpred 1.1.2
 
-Removed the dependency on the ```rngtools``` package.
+Removed the dependency on the **rngtools** package.
 
 ## projpred 1.1.1
 
