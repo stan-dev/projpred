@@ -67,7 +67,7 @@ N <- nrow(dat_gauss)
 tau0 <- p0 / (D - p0) * 1 / sqrt(N)
 ```
 
-We now fit the reference model to the data. To make this vignette build faster, we only use 2 Markov chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. We make use of **rstan**'s parallelization, though, which means to run each Markov chain on a separate CPU core.^[More precisely, the number of Markov chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
+We now fit the reference model to the data. To make this vignette build faster, we only use 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. We make use of **rstan**'s parallelization, though, which means to run each chain on a separate CPU core.^[More precisely, the number of chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
 ```{r, cache = TRUE, cache.lazy = FALSE}
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
@@ -178,7 +178,7 @@ Next, we create a matrix containing the projected posterior draws stored in the 
 ```{r}
 prj_mat <- as.matrix(prj)
 ```
-This matrix is all we need for post-selection inference. It can be used like any matrix of draws from Markov chain Monte Carlo (MCMC) procedures, except that it doesn't reflect a typical posterior distribution, but rather a projected posterior distribution, i.e., the distribution arising from the deterministic projection of the reference model's posterior distribution onto the parameter space of the final submodel.
+This matrix is all we need for post-selection inference. It can be used like any matrix of draws from MCMC procedures, except that it doesn't reflect a typical posterior distribution, but rather a projected posterior distribution, i.e., the distribution arising from the deterministic projection of the reference model's posterior distribution onto the parameter space of the final submodel.
 
 ### Marginals of the projected posterior
 
