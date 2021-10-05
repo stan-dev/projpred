@@ -265,14 +265,14 @@ Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inf
 
 Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection predictive inference. *arXiv:2109.04702*. URL: <https://arxiv.org/abs/2109.04702>.
 
-Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, **111**(1-2):77–94. doi:[10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
+Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, **111**(1-2):77–94. DOI: [10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
 
 Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*, **85**(1):29–37.
 
-Piironen, J. and Vehtari, A. (2017a). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, **27**(3):711-735. doi:[10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
+Piironen, J. and Vehtari, A. (2017a). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, **27**(3):711-735. DOI: [10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
 
 Piironen, J. and Vehtari, A. (2017b). On the hyperprior choice for the global shrinkage parameter in the horseshoe prior. In *Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)*, PMLR 54:905-913, 2017. URL: [http://proceedings.mlr.press/v54/piironen17a.html](http://proceedings.mlr.press/v54/piironen17a.html).
 
-Piironen, J. and Vehtari, A. (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. *Electronic Journal of Statistics*, **11**(2): 5018-5051. doi:[10.1214/17-EJS1337SI](https://doi.org/10.1214/17-EJS1337SI).
+Piironen, J. and Vehtari, A. (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. *Electronic Journal of Statistics*, **11**(2): 5018-5051. DOI: [10.1214/17-EJS1337SI](https://doi.org/10.1214/17-EJS1337SI).
 
-Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in high-dimensional problems: Prediction and feature selection. *Electronic Journal of Statistics*, **14**(1):2155-2197. doi:[10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).
+Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in high-dimensional problems: Prediction and feature selection. *Electronic Journal of Statistics*, **14**(1):2155-2197. DOI: [10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).
