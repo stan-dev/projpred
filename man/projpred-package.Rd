@@ -7,10 +7,11 @@
 \title{Projection predictive feature selection}
 \description{
 \pkg{projpred} is an \R package for performing a projection predictive
-variable (or "feature") selection for (generalized) linear models ((G)LMs),
-(generalized) linear mixed (or "multilevel") models ((G)LMMs), (generalized)
-additive models ((G)AMs) and (generalized) additive mixed (or "multilevel")
-models ((G)AMMs).
+variable (or "feature") selection for generalized linear models (GLMs),
+generalized linear multilevel (or "mixed") models (GLMMs), generalized
+additive models (GAMs), and generalized additive multilevel (or "mixed")
+models (GAMMs). Note that the term "generalized" includes the Gaussian family
+as well.
 
 The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
 of other packages are welcome to add more methods for the \code{\link[=get_refmodel]{get_refmodel()}}
