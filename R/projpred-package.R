@@ -33,8 +33,18 @@
 #' \pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}. Using the global option
 #' `projpred.prll_prj_trigger`, you can modify the number of projected draws
 #' below which no parallelization is used (even if a parallel backend is
-#' registered). This option exists because of the computational overhead of a
-#' parallelization. A value of `Inf` (the default) turns off parallelization.
+#' registered). Such a "trigger" threshold exists because of the computational
+#' overhead of a parallelization which makes parallelization only useful for a
+#' sufficiently large number of projected draws. By default, parallelization is
+#' turned off, which can also be achieved by supplying `Inf` (or `NULL`) to
+#' option `projpred.prll_prj_trigger`. Note that we cannot recommend
+#' parallelizing the projection on Windows because in our experience, the
+#' parallelization overhead is larger there, causing a parallel run to take
+#' longer than a sequential run. Also note that the parallelization works well
+#' for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
+#' big, which---when running in parallel---may lead to an excessive memory usage
+#' which in turn may crash the R session. Thus, we currently cannot recommend
+#' the parallelization for GLMMs, GAMs, and GAMMs.
 #'
 #' For some performance statistics, the standard errors are bootstrapped. This
 #' can also be run in parallel (again, powered by the \pkg{foreach} package, but
