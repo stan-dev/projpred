@@ -202,7 +202,7 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     stop("type should be one of ('response', 'link')")
   }
   if (inherits(object, "datafit")) {
-    stop("Cannot make predictions with data reference only.")
+    stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
   if (!is.null(ynew)) {
     if (!(inherits(ynew, "numeric")) || NCOL(ynew) != 1) {
@@ -294,28 +294,22 @@ get_refmodel <- function(object, ...) {
 #' @rdname get-refmodel
 #' @export
 get_refmodel.refmodel <- function(object, ...) {
-  ## if the object is reference model already, then simply return it as is
+  # If the object is already of class "refmodel", then simply return it as is:
   object
 }
 
 #' @rdname get-refmodel
 #' @export
 get_refmodel.vsel <- function(object, ...) {
-  # the reference model is stored in vsel-object
+  # The reference model is stored in the `object` of class "vsel":
   object$refmodel
 }
 
 #' @rdname get-refmodel
 #' @export
-get_refmodel.default <- function(object, data, formula, ref_predfun = NULL,
-                                 proj_predfun = NULL, div_minimizer = NULL,
-                                 family = NULL, folds = NULL,
-                                 cvfits = NULL, cvfun = NULL,
-                                 dis = NULL, ...) {
+get_refmodel.default <- function(object, formula, family = NULL, ...) {
   if (is.null(family)) {
-    family <- extend_family(family(object))
-  } else {
-    family <- extend_family(family)
+    family <- family(object)
   }
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
@@ -325,73 +319,71 @@ get_refmodel.default <- function(object, data, formula, ref_predfun = NULL,
     return(do_call(.extract_model_data, args))
   }
 
-  refmodel <- init_refmodel(object, data, formula, family, ref_predfun,
-                            div_minimizer, proj_predfun,
-                            extract_model_data = extract_model_data,
-                            cvfits = cvfits, folds = folds, cvfun = cvfun,
-                            dis = dis, ...)
+  refmodel <- init_refmodel(
+    object = object, formula = formula, family = family,
+    extract_model_data = extract_model_data, ...
+  )
   return(refmodel)
 }
 
 #' @rdname get-refmodel
 #' @export
-get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
-                                 proj_predfun = NULL, div_minimizer = NULL,
-                                 folds = NULL, ...) {
-  family <- family(object)
-  family <- extend_family(family)
+get_refmodel.stanreg <- function(object, ...) {
+  # Family ------------------------------------------------------------------
 
-  if (length(object$offset) > 0 &&
-      is.null(attr(terms(object$formula), "offset"))) {
-    # In this case, we would have to use argument `offset` of
-    # posterior_linpred.stanreg() to allow for new offsets, requiring changes in
-    # all ref_predfun() calls. Furthermore, there is rstanarm issue #541. Thus,
-    # throw an error:
-    stop("It looks like `object` was fitted with offsets specified via ",
-         "argument `offset`. Currently, projpred does not support offsets ",
-         "specified this way. Please use an `offset()` term in the model ",
-         "formula instead.")
+  family <- family(object)
+
+  # Data --------------------------------------------------------------------
+
+  data <- object$data
+
+  # Weights (for the observations):
+  if (length(object$weights) > 0) {
+    if ("projpred_internal_wobs_stanreg" %in% names(data)) {
+      stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
+           "`data`, but that column already exists. Please rename this ",
+           "column in `data` and try again.")
+    }
+    data$projpred_internal_wobs_stanreg <- object$weights
+    default_wrhs <- ~ projpred_internal_wobs_stanreg
+  } else {
+    default_wrhs <- NULL
   }
+
+  # Offsets:
+  if (length(object$offset) > 0) {
+    if (is.null(attr(terms(formula(object)), "offset"))) {
+      # In this case, we would have to use argument `offset` of
+      # posterior_linpred.stanreg() to allow for new offsets, requiring changes
+      # in all ref_predfun() calls. Furthermore, there is rstanarm issue #541.
+      # Thus, throw an error:
+      stop("It looks like `object` was fitted with offsets specified via ",
+           "argument `offset`. Currently, projpred does not support offsets ",
+           "specified this way. Please use an `offset()` term in the model ",
+           "formula instead.")
+    }
+    if ("projpred_internal_offs_stanreg" %in% names(data)) {
+      stop("Need to write to column `projpred_internal_offs_stanreg` of ",
+           "`data`, but that column already exists. Please rename this ",
+           "column in `data` and try again.")
+    }
+    data$projpred_internal_offs_stanreg <- object$offset
+    default_orhs <- ~ projpred_internal_offs_stanreg
+  } else {
+    default_orhs <- NULL
+  }
+
+  # Formula -----------------------------------------------------------------
 
   if (inherits(object, "gamm4")) {
     formula <- formula.gamm4(object)
   } else {
-    formula <- object$formula
-  }
-
-  if (is.null(data)) {
-    data <- object$data
-    if (length(object$weights) != 0) {
-      if ("projpred_internal_wobs_stanreg" %in% names(data)) {
-        stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
-             "`data`, but that column already exists. Please rename this ",
-             "column in `data` and try again.")
-      }
-      data$projpred_internal_wobs_stanreg <- object$weights
-      default_wrhs <- ~ projpred_internal_wobs_stanreg
-    } else {
-      default_wrhs <- NULL
-    }
-    if (length(object$offset) != 0) {
-      if ("projpred_internal_offs_stanreg" %in% names(data)) {
-        stop("Need to write to column `projpred_internal_offs_stanreg` of ",
-             "`data`, but that column already exists. Please rename this ",
-             "column in `data` and try again.")
-      }
-      data$projpred_internal_offs_stanreg <- object$offset
-      default_orhs <- ~ projpred_internal_offs_stanreg
-    } else {
-      default_orhs <- NULL
-    }
-  } else {
-    default_wrhs <- NULL
-    default_orhs <- NULL
+    formula <- formula(object)
   }
 
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
-  terms <- extract_terms_response(formula)
-  response_name <- terms$response
+  response_name <- extract_terms_response(formula)$response
 
   formula <- update(
     formula,
@@ -407,14 +399,14 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
       stop("projpred cannot handle observation weights for a binomial family ",
            "with > 1 trials.")
     }
-    resp_form <- as.formula(paste("~", response_name[[1]]))
     default_wrhs <- as.formula(paste(
-      "~", response_name[[2]], "+",
-      response_name[[1]]
+      "~", response_name[2], "+", response_name[1]
     ))
-  } else {
-    resp_form <- as.formula(paste("~", response_name))
+    response_name <- response_name[1]
   }
+  resp_form <- as.formula(paste("~", response_name))
+
+  # Functions ---------------------------------------------------------------
 
   extract_model_data <- function(object, newdata = NULL, wrhs = default_wrhs,
                                  orhs = default_orhs, extract_y = TRUE) {
@@ -430,17 +422,7 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     return(do_call(.extract_model_data, args))
   }
 
-  if (length(response_name) > 1) {
-    response_name <- response_name[[1]]
-  }
-
-  if (.has_dispersion(family)) {
-    dis <- data.frame(object)[, "sigma"]
-  } else {
-    dis <- NULL
-  }
-
-  ref_predfun_stanreg <- function(fit, newdata = NULL) {
+  ref_predfun <- function(fit, newdata = NULL) {
     linpred_out <- t(
       posterior_linpred(fit, transform = FALSE, newdata = newdata)
     )
@@ -470,22 +452,28 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
     return(linpred_out)
   }
 
-  cvfun <- function(folds) {
-    cvres <- rstanarm::kfold(object,
-                             K = max(folds), save_fits = TRUE,
-                             folds = folds)
+  cvfun <- function(folds, ...) {
+    cvres <- rstanarm::kfold(object, K = max(folds), save_fits = TRUE,
+                             folds = folds, ...)
     fits <- cvres$fits[, "fit"]
     return(fits)
   }
 
-  refmodel <- init_refmodel(
-    object, data, formula, family,
-    ref_predfun = ref_predfun_stanreg, div_minimizer = div_minimizer,
-    proj_predfun = proj_predfun, folds = folds,
-    extract_model_data = extract_model_data, dis = dis,
-    cvfun = cvfun, ...
-  )
-  return(refmodel)
+  # Miscellaneous -----------------------------------------------------------
+
+  if (.has_dispersion(family)) {
+    dis <- data.frame(object)[, "sigma"]
+  } else {
+    dis <- NULL
+  }
+
+  # Output ------------------------------------------------------------------
+
+  return(init_refmodel(
+    object = object, data = data, formula = formula, family = family,
+    ref_predfun = ref_predfun, extract_model_data = extract_model_data,
+    dis = dis, cvfun = cvfun, ...
+  ))
 }
 
 #' @rdname get-refmodel
@@ -493,13 +481,44 @@ get_refmodel.stanreg <- function(object, data = NULL, ref_predfun = NULL,
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
-                          folds = NULL, extract_model_data = NULL, cvfun = NULL,
+                          folds = NULL, extract_model_data, cvfun = NULL,
                           cvfits = NULL, dis = NULL, ...) {
+  proper_model <- !is.null(object)
+
+  # Formula -----------------------------------------------------------------
+
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   terms <- extract_terms_response(formula)
   response_name <- terms$response
-  if (is.null(ref_predfun)) {
+  # Remove parentheses from the response:
+  response_name <- gsub("[()]", "", response_name)
+  formula <- update(
+    formula,
+    paste(response_name, "~ .")
+  )
+
+  # Data --------------------------------------------------------------------
+
+  model_data <- extract_model_data(object, newdata = data)
+  weights <- model_data$weights
+  offset <- model_data$offset
+  y <- model_data$y
+
+  # Add (transformed) response under the (possibly) new name:
+  data[, response_name] <- y
+
+  target <- .get_standard_y(y, weights, family)
+  y <- target$y
+  weights <- target$weights
+
+  if (is.null(offset)) {
+    offset <- rep(0, NROW(y))
+  }
+
+  # Functions ---------------------------------------------------------------
+
+  if (proper_model && is.null(ref_predfun)) {
     ref_predfun <- function(fit, newdata = NULL) {
       linpred_out <- t(
         posterior_linpred(fit, transform = FALSE, newdata = newdata)
@@ -513,32 +532,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       }
       return(linpred_out)
     }
+  } else if (!proper_model) {
+    if (!is.null(ref_predfun)) {
+      warning("Ignoring argument `ref_predfun` because `object` is `NULL`.")
+    }
+    ref_predfun <- function(fit, newdata = NULL) {
+      stopifnot(is.null(fit))
+      if (is.null(newdata)) {
+        matrix(rep(NA, NROW(y)))
+      } else {
+        matrix(rep(NA, NROW(newdata)))
+      }
+    }
   }
-
-  ## remove parens from response
-  response_name <- gsub("[()]", "", response_name)
-  formula <- update(
-    formula,
-    paste(response_name, "~ .")
-  )
-
-  ## add (transformed) response with new name
-  if (is.null(data)) {
-    stop("Please provide argument `data`.")
-  }
-  if (is.null(extract_model_data)) {
-    stop("Please provide argument `extract_model_data`.")
-  }
-  model_data <- extract_model_data(object, newdata = data)
-  weights <- model_data$weights
-  offset <- model_data$offset
-  y <- model_data$y
-
-  data[, response_name] <- y
-
-  target <- .get_standard_y(y, weights, family)
-  y <- target$y
-  weights <- target$weights
 
   if (is.null(div_minimizer)) {
     if (length(terms$additive_terms) != 0) {
@@ -564,6 +570,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     as.data.frame(fetch_data(data, obs, newdata))
   }
 
+  # Family ------------------------------------------------------------------
+
   if (!.has_family_extras(family)) {
     family <- extend_family(family)
   }
@@ -583,7 +591,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                                       offset))
   }
 
-  proper_model <- !is.null(object)
+  # mu ----------------------------------------------------------------------
 
   ## ref_predfun should already take into account the family of the model
   ## we leave this here just in case
@@ -598,23 +606,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       mu <- y / weights
     }
     mu <- matrix(mu)
-    ref_predfun_datafit <- function(fit = NULL, newdata = NULL) {
-      stopifnot(is.null(fit))
-      if (is.null(newdata)) {
-        matrix(rep(NA, NROW(y)))
-      } else {
-        matrix(rep(NA, NROW(newdata)))
-      }
-    }
   }
+
+  # Miscellaneous -----------------------------------------------------------
 
   ndraws <- ncol(mu)
   if (is.null(dis)) {
     dis <- rep(0, ndraws)
-  }
-
-  if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
   }
 
   if (proper_model) {
@@ -623,28 +621,33 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     loglik <- NULL
   }
 
-  # this is a dummy definition for cvfun, but it will lead to standard
-  # cross-validation for datafit reference; see cv_varsel and get_kfold
   if (is.null(cvfun)) {
     if (!proper_model) {
-      cvfun <- function(folds, ...) lapply(1:max(folds), function(k) list())
+      # This is a dummy definition for cvfun(), but it will lead to standard CV
+      # for `datafit`s; see cv_varsel() and .get_kfold():
+      cvfun <- function(folds, ...) {
+        lapply(seq_len(max(folds)), function(k) list())
+      }
     } else if (is.null(cvfits)) {
-      stop("Please provide either 'cvfun' or 'cvfits'.")
+      stop("Please provide either argument `cvfun` or argument `cvfits`.")
     }
   }
 
-  wsample <- rep(1 / ndraws, ndraws) # equal sample weights by default
+  # Equal sample (draws) weights by default:
+  wsample <- rep(1 / ndraws, ndraws)
+
   intercept <- as.logical(attr(terms(formula), "intercept"))
+
+  # Output ------------------------------------------------------------------
+
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, dis, y,
-    loglik, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
-    wobs = weights, wsample, offset, folds, cvfun, cvfits, extract_model_data
+    fit = object, formula, div_minimizer, family, mu, dis, y, loglik, intercept,
+    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
+    offset, folds, cvfun, cvfits, extract_model_data, ref_predfun
   )
   if (proper_model) {
-    refmodel$ref_predfun <- ref_predfun
     class(refmodel) <- "refmodel"
   } else {
-    refmodel$ref_predfun <- ref_predfun_datafit
     class(refmodel) <- c("datafit", "refmodel")
   }
 

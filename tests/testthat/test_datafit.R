@@ -228,9 +228,11 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
 
 test_that("predict.refmodel(): `object` of class \"datafit\" fails", {
   for (tstsetup in names(datafits)) {
-    expect_error(predict(datafits[[tstsetup]], newdata = dat),
-                 "^Cannot make predictions with data reference only\\.$",
-                 info = tstsetup)
+    expect_error(
+      predict(datafits[[tstsetup]], newdata = dat),
+      "^Cannot make predictions for an `object` of class \"datafit\"\\.$",
+      info = tstsetup
+    )
   }
 })
 
