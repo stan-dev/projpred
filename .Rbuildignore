@@ -5,3 +5,5 @@
 ^vignettes/quickstart_glmm_cache$
 ^vignettes/quickstart_cache$
 ^man-roxygen$
+^tests/testthat/bfits$
+^tests/testthat/_snaps$

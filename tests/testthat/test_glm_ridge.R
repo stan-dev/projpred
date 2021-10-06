@@ -7,6 +7,9 @@ context("ridge")
 # - Gamma with inverse or id-link
 # - everything except gaussian with id-link for ridge penalty
 
+# Needed to clean up the workspace afterwards (i.e, after this test file):
+ls_bu <- ls()
+
 set.seed(1235)
 n <- 40
 nterms <- 10
@@ -265,3 +268,6 @@ test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
 #   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
 #                tolerance = tol)
 # })
+
+# Clean up the workspace:
+rm(list = setdiff(ls(), ls_bu))

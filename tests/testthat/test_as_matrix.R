@@ -1,239 +1,249 @@
 context("as.matrix.projection")
 
-# Gaussian and binomial reference models without multilevel or additive terms:
-if (require(rstanarm)) {
-  set.seed(1235)
-  n <- 40
-  nterms <- 5
-  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
-  b <- runif(nterms) - 0.5
-  dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = TRUE)
-  offset <- rnorm(n)
-  chains <- 2
-  seed <- 1235
-  iter <- 500
-  source(testthat::test_path("helpers", "SW.R"))
+test_that("as.matrix.projection() works", {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gam") {
+      # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,
+      # the current expectations in `test_as_matrix.R` refer to a mixture of
+      # brms's and rstanarm's naming scheme; as soon as issue #152 is solved,
+      # these expectations need to be adapted.
+      # TODO (GAMs): Fix this.
+      next
+    }
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # Skipping GAMMs because of issue #131.
+      # TODO (GAMMs): Fix this.
+      next
+    }
+    tstsetup_ref <- args_prj[[tstsetup]]$tstsetup_ref
+    mod_crr <- args_prj[[tstsetup]]$mod_nm
+    fam_crr <- args_prj[[tstsetup]]$fam_nm
+    solterms <- args_prj[[tstsetup]]$solution_terms
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
-  f_gauss <- gaussian()
-  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
-  f_binom <- binomial()
-  df_binom <- data.frame(
-    y = rbinom(n, weights, f_binom$linkinv(x %*% b)), x = x,
-    weights = weights, offset = offset
-  )
+    # Expected warning (more precisely: regexp which is matched against the
+    # warning; NA means no warning) for as.matrix.projection():
+    if (ndr_ncl$clust_used) {
+      # Clustered projection, so we expect a warning:
+      warn_prjmat_expect <- "the clusters might have different weights"
+    } else {
+      warn_prjmat_expect <- NA
+    }
+    expect_warning(m <- as.matrix(prjs[[tstsetup]]),
+                   warn_prjmat_expect, info = tstsetup)
 
-  SW({
-    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                          data = df_gauss, family = f_gauss,
-                          chains = chains, seed = seed, iter = iter)
-    fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-                          data = df_binom, family = f_binom,
-                          chains = chains, seed = seed, iter = iter)
-  })
+    if (fam_crr == "gauss") {
+      npars_fam <- "sigma"
+    } else {
+      npars_fam <- character()
+    }
 
-  settings_list <- list(
-    gauss = list(
-      fitobj = fit_gauss,
-      solution_terms_list = list(character(), c("x.3", "x.5")),
-      ndraws_list = list(25, 2, 1)
-    ),
-    binom = list(
-      fitobj = fit_binom,
-      solution_terms_list = list(c("x.3", "x.5")),
-      ndraws_list = list(25)
+    colnms_prjmat_expect <- c(
+      "Intercept",
+      grep("\\|", grep("x(co|ca)\\.[[:digit:]]", solterms, value = TRUE),
+           value = TRUE, invert = TRUE)
     )
-  )
-
-  for (fam_type in settings_list) {
-    for (solution_terms in fam_type$solution_terms_list) {
-      for (ndraws in fam_type$ndraws_list) {
-        # Expected warning (more precisely: regexp which is matched against the
-        # warning; NA means no warning) for project() and family-specific
-        # parameters:
-        if (family(fam_type$fitobj)$family == "gaussian") {
-          warn_prj_expect <- NA
-          npars_fam <- "sigma"
-        } else if (family(fam_type$fitobj)$family == "binomial") {
-          # For the binomial family with > 1 trials, we expect a warning (see
-          # GitHub issue #136):
-          warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
-                                   "is a character vector of length > 1")
-          npars_fam <- character()
-        }
-
-        expect_warning(prj <- project(fam_type$fitobj,
-                                      solution_terms = solution_terms,
-                                      ndraws = ndraws),
-                       warn_prj_expect)
-
-        # Expected warning (more precisely: regexp which is matched against the
-        # warning; NA means no warning) for as.matrix.projection():
-        if (ndraws > 20) {
-          warn_prjmat_expect <- NA
-        } else {
-          # Clustered projection, so we expect a warning:
-          warn_prjmat_expect <- "the clusters might have different weights"
-        }
-
-        expect_warning(m <- as.matrix(prj), warn_prjmat_expect)
-
-        test_that("as.matrix.projection()'s output structure is correct", {
-          expect_equal(
-            dim(m),
-            c(ndraws, length(solution_terms) + 1 + length(npars_fam))
-          )
-          expect_identical(
-            colnames(m),
-            c(paste0("b_", c("Intercept", solution_terms)), npars_fam)
-          )
-        })
+    xca_idxs <- as.integer(
+      sub("^xca\\.", "", grep("^xca\\.", colnms_prjmat_expect, value = TRUE))
+    )
+    for (xca_idx in xca_idxs) {
+      colnms_prjmat_expect <- grep(paste0("^xca\\.", xca_idx, "$"),
+                                   colnms_prjmat_expect,
+                                   value = TRUE, invert = TRUE)
+      colnms_prjmat_expect <- c(
+        colnms_prjmat_expect,
+        paste0("xca.", xca_idx, "lvl", seq_len(nlvl_fix[xca_idx])[-1])
+      )
+    }
+    poly_trms <- grep("poly\\(.*\\)", colnms_prjmat_expect, value = TRUE)
+    if (length(poly_trms) > 0) {
+      poly_degree <- sub(".*(poly\\(.*\\)).*", "\\1", poly_trms)
+      if (length(unique(poly_degree)) != 1) {
+        stop("This test needs to be adapted. Info: ", tstsetup)
+      }
+      poly_degree <- unique(poly_degree)
+      poly_degree <- sub(".*,[[:blank:]]+(.*)\\)", "\\1", poly_degree)
+      poly_degree <- as.integer(poly_degree)
+      colnms_prjmat_expect <- c(
+        setdiff(colnms_prjmat_expect, poly_trms),
+        unlist(lapply(poly_trms, function(poly_trms_i) {
+          paste0(poly_trms_i, seq_len(poly_degree))
+        }))
+      )
+    }
+    colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
+    if ("(1 | z.1)" %in% solterms) {
+      colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__Intercept")
+      colnms_prjmat_expect <- c(
+        colnms_prjmat_expect,
+        paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
+      )
+    }
+    if ("(xco.1 | z.1)" %in% solterms) {
+      colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__xco.1")
+      colnms_prjmat_expect <- c(
+        colnms_prjmat_expect,
+        paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
+      )
+    }
+    if (all(c("(1 | z.1)", "(xco.1 | z.1)") %in% solterms)) {
+      colnms_prjmat_expect <- c(colnms_prjmat_expect,
+                                "cor_z.1__Intercept__xco.1")
+    }
+    s_nms <- sub("\\)$", "",
+                 sub("^s\\(", "",
+                     grep("^s\\(.*\\)$", solterms, value = TRUE)))
+    if (length(s_nms) > 0) {
+      stopifnot(inherits(refmods[[tstsetup_ref]]$fit, "stanreg"))
+      # Get the number of basis coefficients:
+      s_info <- refmods[[tstsetup_ref]]$fit$jam$smooth
+      s_terms <- sapply(s_info, "[[", "term")
+      s_dfs <- setNames(sapply(s_info, "[[", "df"), s_terms)
+      ### Alternative:
+      # par_nms_orig <- colnames(
+      #   as.matrix(refmods[[tstsetup_ref]]$fit)
+      # )
+      # s_dfs <- sapply(s_nms, function(s_nm) {
+      #   sum(grepl(paste0("^s\\(", s_nm, "\\)"), par_nms_orig))
+      # })
+      ###
+      # Construct the expected column names for the basis coefficients:
+      for (s_nm in s_nms) {
+        colnms_prjmat_expect <- c(
+          colnms_prjmat_expect,
+          paste0("b_s(", s_nm, ").", seq_len(s_dfs[s_nm]))
+        )
+      }
+      # Needed for the names of the `smooth_sd` parameters:
+      s_nsds <- setNames(
+        lapply(lapply(s_info, "[[", "sp"), names),
+        s_terms
+      )
+      # Construct the expected column names for the SDs of the smoothing
+      # terms:
+      for (s_nm in s_nms) {
+        colnms_prjmat_expect <- c(
+          colnms_prjmat_expect,
+          paste0("smooth_sd[", s_nsds[[s_nm]], "]")
+        )
       }
     }
-  }
-}
+    colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
 
-# Gaussian and binomial reference models with multilevel but without additive
-# terms:
-if (require(rstanarm)) {
-  set.seed(1235)
-  n <- 40
-  nterms <- 7
-  nterms_pop <- nterms - 2 # -2 for the multilevel terms (intercepts and slopes)
-  x <- matrix(rnorm(n * nterms_pop, 0, 1), n, nterms_pop)
-  b <- runif(nterms_pop) - 0.5
-  dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = TRUE)
-  offset <- rnorm(n)
-  icpt <- -0.42
-  ngr <- 8
-  xgr <- gl(n = ngr, k = floor(n / ngr), length = n,
-            labels = paste0("gr", seq_len(ngr)))
-  bgr_icpts <- rnorm(ngr, sd = 0.8)
-  bgr_x.1 <- rnorm(ngr, sd = 0.8)
-  eta <- icpt +
-    x %*% b +
-    bgr_icpts[xgr] +
-    bgr_x.1[xgr] * x[, 1] +
-    offset
-  chains <- 2
-  seed <- 1235
-  iter <- 500
-  source(testthat::test_path("helpers", "SW.R"))
-
-  f_gauss <- gaussian()
-  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(eta), dis),
-                         x = x, xgr = xgr, weights = weights, offset = offset)
-  f_binom <- binomial()
-  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(eta)),
-                         x = x, xgr = xgr, weights = weights, offset = offset)
-
-  SW({
-    fit_gauss <- stan_glmer(
-      y ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr) + offset(offset),
-      data = df_gauss, family = f_gauss,
-      weights = weights,
-      chains = chains, seed = seed, iter = iter
-    )
-    fit_binom <- stan_glmer(
-      cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5 + (x.1 | xgr) +
-        offset(offset),
-      data = df_binom, family = f_binom,
-      chains = chains, seed = seed, iter = iter
-    )
-  })
-
-  settings_list <- list(
-    gauss = list(
-      fitobj = fit_gauss,
-      solution_terms_list = list(character(),
-                                 c("x.3", "x.5"),
-                                 c("x.3", "(1 | xgr)", "(x.1 | xgr)")),
-      ndraws_list = list(25, 2, 1)
-    ),
-    binom = list(
-      fitobj = fit_binom,
-      solution_terms_list = list(c("x.3", "x.5")),
-      ndraws_list = list(25)
-    )
-  )
-
-  for (fam_type in settings_list) {
-    for (solution_terms in fam_type$solution_terms_list) {
-      for (ndraws in fam_type$ndraws_list) {
-        # Expected warning (more precisely: regexp which is matched against the
-        # warning; NA means no warning) for project() and family-specific
-        # parameters:
-        if (family(fam_type$fitobj)$family == "gaussian") {
-          warn_prj_expect <- NA
-          npars_fam <- "sigma"
-        } else if (family(fam_type$fitobj)$family == "binomial") {
-          # For the binomial family with > 1 trials, we expect a warning (see
-          # GitHub issue #136):
-          warn_prj_expect <- paste("Using formula\\(x\\) is deprecated when x",
-                                   "is a character vector of length > 1")
-          npars_fam <- character()
-        }
-
-        expect_warning(prj <- project(fam_type$fitobj,
-                                      solution_terms = solution_terms,
-                                      ndraws = ndraws),
-                       warn_prj_expect)
-
-        # Expected warning (more precisely: regexp which is matched against the
-        # warning; NA means no warning) for as.matrix.projection():
-        if (ndraws > 20) {
-          warn_prjmat_expect <- NA
-        } else {
-          # Clustered projection, so we expect a warning:
-          warn_prjmat_expect <- "the clusters might have different weights"
-        }
-
-        expect_warning(m <- as.matrix(prj), warn_prjmat_expect)
-
-        test_that("as.matrix.projection()'s output structure is correct", {
-          colnms_prjmat_expect <- c(
-            "Intercept",
-            grep("^x\\.[[:digit:]]$", solution_terms,
-                 value = TRUE)
-          )
-          colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
-          if ("(1 | xgr)" %in% solution_terms) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              "sd_xgr__Intercept"
-            )
-          }
-          if ("(x.1 | xgr)" %in% solution_terms) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              "sd_xgr__x.1"
-            )
-          }
-          if (all(c("(1 | xgr)", "(x.1 | xgr)") %in% solution_terms)) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              "cor_xgr__Intercept__x.1"
-            )
-          }
-          if ("(1 | xgr)" %in% solution_terms) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              paste0("r_xgr[gr", seq_len(ngr), ",Intercept]")
-            )
-          }
-          if ("(x.1 | xgr)" %in% solution_terms) {
-            colnms_prjmat_expect <- c(
-              colnms_prjmat_expect,
-              paste0("r_xgr[gr", seq_len(ngr), ",x.1]")
-            )
-          }
-          colnms_prjmat_expect <- c(colnms_prjmat_expect, npars_fam)
-
-          expect_equal(dim(m), c(ndraws, length(colnms_prjmat_expect)))
-          expect_identical(colnames(m), colnms_prjmat_expect)
-        })
-      }
+    expect_identical(dim(m), c(ndr_ncl$nprjdraws, length(colnms_prjmat_expect)),
+                     info = tstsetup)
+    ### expect_setequal() does not have argument `info`:
+    # expect_setequal(colnames(m), colnms_prjmat_expect)
+    expect_true(setequal(colnames(m), colnms_prjmat_expect),
+                info = tstsetup)
+    ###
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(m)) # cat(m)
+      })
+      options(width = width_orig$width)
+      if (testthat_ed_max2) local_edition(2)
     }
   }
+})
+
+if (run_snaps) {
+  if (testthat_ed_max2) local_edition(3)
+  width_orig <- options(width = 145)
+
+  test_that(paste(
+    "as.matrix.projection() works for projections based on varsel() output"
+  ), {
+    for (tstsetup in names(prjs_vs)) {
+      if (args_prj_vs[[tstsetup]]$mod_nm == "gam") {
+        # Skipping GAMs because of issue #150 and issue #151. Note that for
+        # GAMs, the current expectations in `test_as_matrix.R` refer to a
+        # mixture of brms's and rstanarm's naming scheme; as soon as issue #152
+        # is solved, these expectations need to be adapted.
+        # TODO (GAMs): Fix this.
+        next
+      }
+      if (args_prj_vs[[tstsetup]]$mod_nm == "gamm") {
+        # Skipping GAMMs because of issue #131.
+        # TODO (GAMMs): Fix this.
+        next
+      }
+      ndr_ncl <- ndr_ncl_dtls(args_prj_vs[[tstsetup]])
+      nterms_crr <- args_prj_vs[[tstsetup]]$nterms
+
+      # Expected warning (more precisely: regexp which is matched against the
+      # warning; NA means no warning) for as.matrix.projection():
+      if (ndr_ncl$clust_used) {
+        # Clustered projection, so we expect a warning:
+        warn_prjmat_expect <- "the clusters might have different weights"
+      } else {
+        warn_prjmat_expect <- NA
+      }
+      prjs_vs_l <- prjs_vs[[tstsetup]]
+      if (length(nterms_crr) <= 1) {
+        prjs_vs_l <- list(prjs_vs_l)
+      }
+      res_vs <- lapply(prjs_vs_l, function(prjs_vs_i) {
+        expect_warning(m <- as.matrix(prjs_vs_i),
+                       warn_prjmat_expect, info = tstsetup)
+        expect_snapshot({
+          print(tstsetup)
+          print(prjs_vs_i$solution_terms)
+          print(rlang::hash(m)) # cat(m)
+        })
+        return(invisible(TRUE))
+      })
+    }
+  })
+
+  test_that(paste(
+    "as.matrix.projection() works for projections based on cv_varsel() output"
+  ), {
+    for (tstsetup in names(prjs_cvvs)) {
+      if (args_prj_cvvs[[tstsetup]]$mod_nm == "gam") {
+        # Skipping GAMs because of issue #150 and issue #151. Note that for
+        # GAMs, the current expectations in `test_as_matrix.R` refer to a
+        # mixture of brms's and rstanarm's naming scheme; as soon as issue #152
+        # is solved, these expectations need to be adapted.
+        # TODO (GAMs): Fix this.
+        next
+      }
+      if (args_prj_cvvs[[tstsetup]]$mod_nm == "gamm") {
+        # Skipping GAMMs because of issue #131.
+        # TODO (GAMMs): Fix this.
+        next
+      }
+      ndr_ncl <- ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])
+      nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
+
+      # Expected warning (more precisely: regexp which is matched against the
+      # warning; NA means no warning) for as.matrix.projection():
+      if (ndr_ncl$clust_used) {
+        # Clustered projection, so we expect a warning:
+        warn_prjmat_expect <- "the clusters might have different weights"
+      } else {
+        warn_prjmat_expect <- NA
+      }
+      prjs_cvvs_l <- prjs_cvvs[[tstsetup]]
+      if (length(nterms_crr) <= 1) {
+        prjs_cvvs_l <- list(prjs_cvvs_l)
+      }
+      res_cvvs <- lapply(prjs_cvvs_l, function(prjs_cvvs_i) {
+        expect_warning(m <- as.matrix(prjs_cvvs_i),
+                       warn_prjmat_expect, info = tstsetup)
+        expect_snapshot({
+          print(tstsetup)
+          print(prjs_cvvs_i$solution_terms)
+          print(rlang::hash(m)) # cat(m)
+        })
+        return(invisible(TRUE))
+      })
+    }
+  })
+
+  options(width = width_orig$width)
+  if (testthat_ed_max2) local_edition(2)
 }

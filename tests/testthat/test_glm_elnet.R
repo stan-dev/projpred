@@ -8,6 +8,9 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
   )
 }
 
+# Needed to clean up the workspace afterwards (i.e, after this test file):
+ls_bu <- ls()
+
 set.seed(1235)
 n <- 40
 nterms <- 10
@@ -208,3 +211,6 @@ test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
     }
   }
 })
+
+# Clean up the workspace:
+rm(list = setdiff(ls(), ls_bu))
