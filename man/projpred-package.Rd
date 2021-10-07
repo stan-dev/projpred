@@ -62,8 +62,8 @@ Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
 methods for model selection. \emph{Statistics and Computing}, \strong{27}(3):711-735.
 DOI: \href{https://doi.org/10.1007/s11222-016-9649-y}{10.1007/s11222-016-9649-y}.
 
-Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference
-in high-dimensional problems: Prediction and feature selection. \emph{Electronic
+Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
+high-dimensional problems: Prediction and feature selection. \emph{Electronic
 Journal of Statistics}, \strong{14}(1):2155-2197. DOI:
 \href{https://doi.org/10.1214/20-EJS1711}{10.1214/20-EJS1711}.
 

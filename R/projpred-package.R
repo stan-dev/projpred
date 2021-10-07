@@ -69,8 +69,8 @@
 #' methods for model selection. *Statistics and Computing*, **27**(3):711-735.
 #' DOI: [10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
 #'
-#' Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference
-#' in high-dimensional problems: Prediction and feature selection. *Electronic
+#' Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
+#' high-dimensional problems: Prediction and feature selection. *Electronic
 #' Journal of Statistics*, **14**(1):2155-2197. DOI:
 #' [10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).
 #'
