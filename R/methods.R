@@ -182,8 +182,7 @@ proj_helper <- function(object, newdata,
       offsetnew <- rep(0, NROW(newdata))
     }
     mu <- proj$family$mu_fun(proj$sub_fit,
-                             newdata = newdata, offset = offsetnew,
-                             weights = weightsnew)
+                             newdata = newdata, offset = offsetnew)
 
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,

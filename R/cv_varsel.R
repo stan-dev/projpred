@@ -379,8 +379,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     for (k in seq_along(submodels)) {
       mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
                             obs = inds,
-                            offset = refmodel$offset,
-                            weights = 1)
+                            offset = refmodel$offset)
       log_lik_sub <- t(family$ll_fun(
         mu_k, submodels[[k]]$dis,
         y[inds], refmodel$wobs[inds]
@@ -722,8 +721,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ref_predfun <- function(fit, newdata = default_data) {
     refmodel$ref_predfun(fit, newdata = newdata)
   }
-  proj_predfun <- function(fit, newdata = default_data, weights = NULL) {
-    refmodel$proj_predfun(fit, newdata = newdata, weights = weights)
+  proj_predfun <- function(fit, newdata = default_data) {
+    refmodel$proj_predfun(fit, newdata = newdata)
   }
   extract_model_data <- function(object, newdata = default_data, ...) {
     refmodel$extract_model_data(object = object, newdata = newdata, ...)

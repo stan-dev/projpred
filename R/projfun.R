@@ -113,7 +113,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     ref <- p_ref
   }
 
-  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = 1)
+  mu <- family$mu_fun(sub_fit, offset = refmodel$offset)
   dis <- family$dis_fun(ref, nlist(mu), ref$wobs)
   kl <- weighted.mean(family$kl(
     ref, nlist(weights = wobs),

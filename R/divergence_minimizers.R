@@ -177,38 +177,29 @@ control_callback <- function(family, ...) {
 
 # helper function for linear_multilevel_proj_predfun to only pass
 # allow.new.levels if the fit is multilevel
-predict_multilevel_callback <- function(fit, newdata = NULL, weights = NULL) {
+predict_multilevel_callback <- function(fit, newdata = NULL) {
   if (inherits(fit, c("lmerMod", "glmerMod"))) {
-    return(predict(fit,
-                   newdata = newdata, allow.new.levels = TRUE,
-                   weights = weights))
+    return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
   } else {
-    return(predict(fit, newdata = newdata, weights = weights))
+    return(predict(fit, newdata = newdata))
   }
 }
 
-linear_multilevel_proj_predfun <- function(fit, newdata = NULL,
-                                           weights = NULL) {
-  if (is.null(weights)) {
-    weights <- 1
-  }
+linear_multilevel_proj_predfun <- function(fit, newdata = NULL) {
   if (inherits(fit, "list")) {
     return(do.call(cbind, lapply(fit, function(fit) {
-      predict_multilevel_callback(fit, newdata, weights)
+      predict_multilevel_callback(fit, newdata)
     })))
   } else {
-    return(as.matrix(predict_multilevel_callback(fit, newdata, weights)))
+    return(as.matrix(predict_multilevel_callback(fit, newdata)))
   }
 }
 
-linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
-  if (is.null(weights)) {
-    weights <- 1
-  }
+linear_proj_predfun <- function(fit, newdata = NULL) {
   if (inherits(fit, "list")) {
     if (!is.null(newdata)) {
       return(do.call(cbind, lapply(fit, function(fit) {
-        predict(fit, newdata = newdata, weights = weights)
+        predict(fit, newdata = newdata)
       })))
     } else {
       return(do.call(cbind, lapply(fit, function(fit) {
@@ -218,25 +209,22 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
   }
   else {
     if (!is.null(newdata)) {
-      return(predict(fit, newdata = newdata, weights = weights))
+      return(predict(fit, newdata = newdata))
     } else {
       return(predict(fit))
     }
   }
 }
 
-additive_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
+additive_proj_predfun <- function(fit, newdata = NULL) {
   if (!is.null(newdata)) {
     newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
   }
-  return(linear_multilevel_proj_predfun(fit, newdata, weights))
+  return(linear_multilevel_proj_predfun(fit, newdata))
 }
 
 ## FIXME: find a way that allows us to remove this
-predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
-  if (is.null(weights)) {
-    weights <- rep(1, NROW(subfit$x))
-  }
+predict.subfit <- function(subfit, newdata = NULL) {
   beta <- subfit$beta
   alpha <- subfit$alpha
   x <- subfit$x
@@ -250,7 +238,6 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
     contrasts_arg <- get_contrasts_arg_list(subfit$formula, newdata)
     x <- model.matrix(delete.response(terms(subfit$formula)), newdata,
                       contrasts.arg = contrasts_arg)
-    ## x <- weights * x
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(x))))
     } else {
@@ -259,7 +246,7 @@ predict.subfit <- function(subfit, newdata = NULL, weights = NULL) {
   }
 }
 
-predict.gamm4 <- function(fit, newdata = NULL, weights = NULL) {
+predict.gamm4 <- function(fit, newdata = NULL) {
   if (is.null(newdata)) {
     newdata <- model.frame(fit$mer)
   }
@@ -272,7 +259,7 @@ predict.gamm4 <- function(fit, newdata = NULL, weights = NULL) {
   mf <- gamm_struct$mf
 
   ## base pred only smooth and fixed effects
-  gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA, weights = weights)
+  gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA)
 
   ## gamm4 trick to replace dummy smooth variables with actual smooth terms
   sn <- names(ranef)
