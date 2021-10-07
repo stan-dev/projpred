@@ -13,27 +13,33 @@
 * The fix for the offset issues (listed below under "Bug fixes") requires reference model fits of class `stanreg` (from package **rstanarm**) with offsets to have these offsets specified via an `offset()` term in the model formula (and not via argument `offset`).
 * Improved handling of errors when fitting multilevel submodels. (GitHub: #201)
 * Some defaults (like for `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` mentioned above) have been changed from `NULL` to a user-visible value (and `NULL` is not allowed anymore).
-* Argument `data` of `get_refmodel.stanreg()` has been removed. (GitHub: <INSERT_PR_NUMBER_FOR_refmodel>)
-* The function passed to argument `div_minimizer` of `init_refmodel()` now always needs to return a `list` of submodels (see the documentation for details). Correspondingly, the function passed to argument `proj_predfun` of `init_refmodel()` can now always expect a `list` as input for argument `fit` (see the documentation for details). (GitHub: <INSERT_PR_NUMBER_FOR_divmin>)
-* The function passed to argument `proj_predfun` of `init_refmodel()` now always needs to return a matrix (see the documentation for details). (GitHub: <INSERT_PR_NUMBER_FOR_divmin>)
+* Argument `data` of `get_refmodel.stanreg()` has been removed. (GitHub: #219)
+* The function passed to argument `div_minimizer` of `init_refmodel()` now always needs to return a `list` of submodels (see the documentation for details). Correspondingly, the function passed to argument `proj_predfun` of `init_refmodel()` can now always expect a `list` as input for argument `fit` (see the documentation for details). (GitHub: #230)
+* The function passed to argument `proj_predfun` of `init_refmodel()` now always needs to return a matrix (see the documentation for details). (GitHub: #230)
+* The projection can be run in parallel now. However, we cannot recommend this for all kinds of platforms and all kinds of models. For more information, see the general package documentation available at ``?`projpred-package` ``. (GitHub: #235)
+* In case of the Student-*t* family, a warning is thrown when creating the reference model. The reason is that this family has not been tested thoroughly and might be implemented incorrectly (see GitHub issue #233). Use it at your own risk. (GitHub: #233, <INSERT_PR_NUMBER_FOR_warn_student_t>)
+* Subsampled LOO CV (offered by argument `nloo` of `cv_varsel()`) might be implemented incorrectly (see GitHub issue #94). Use it at your own risk. (GitHub: #94, <INSERT_PR_NUMBER_FOR_warn_subsampled_loo>)
 
 ## Minor changes
 
-* Improved documentation. (GitHub: especially <INSERT_PR_NUMBER_FOR_docs>)
-* Replaced the two former vignettes by a single new one. (GitHub: especially <INSERT_PR_NUMBER_FOR_upd_vignettes>)
-* Some error and warning messages have been improved and added. (GitHub: especially <INSERT_PR_NUMBER_FOR_refmodel>, <INSERT_PR_NUMBER_FOR_binom_fixes>, <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
+* Improved documentation. (GitHub: especially #233)
+* Replaced the two vignettes by a single one which also has new content. (GitHub: #237)
+* Updated the `README` file. (GitHub: <INSERT_PR_NUMBER_FOR_upd_readme>)
+* Some error and warning messages have been improved and added. (GitHub: especially #219, #221, #223)
 * For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2f)
 * Throw a proper error message for unsupported families. (GitHub: #140)
 * Show the README also on the CRAN website. (GitHub: #140)
 * `project()`: Warn if elements of `solution_terms` are not found in the reference model (and therefore ignored). (GitHub: #140)
 * `get_refmodel.default()` now passes arguments via the ellipsis (`...`) to `init_refmodel()`. (GitHub: #153, commit dd3716e)
 * Remove dependency on package **rngtools** (version 2.0.0 of **projpred** re-introduced this dependency after it was already removed in version 1.1.2). (GitHub: #189)
-* `init_refmodel()`: The default (`NULL`) for argument `extract_model_data` has been removed as it wasn't meaningful anyway. (GitHub: <INSERT_PR_NUMBER_FOR_refmodel>)
-* Argument `folds` of `init_refmodel()` has been removed as it was effectively unused. (GitHub: <INSERT_PR_NUMBER_FOR_folds_rm>)
-* Use the S3 system for `solution_terms()`. This allowed the introduction of a `solution_terms.projection()` method. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
-* `predict.refmodel()` now uses a default of `newdata = NULL`. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
-* **projpred**'s internal `div_minimizer` functions have been unified into a single `div_minimizer` which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: <INSERT_PR_NUMBER_FOR_divmin>)
-* Improved the y-axis label in `plot.vsel()`.
+* `init_refmodel()`: The default (`NULL`) for argument `extract_model_data` has been removed as it wasn't meaningful anyway. (GitHub: #219)
+* Argument `folds` of `init_refmodel()` has been removed as it was effectively unused. (GitHub: #220)
+* Use the S3 system for `solution_terms()`. This allowed the introduction of a `solution_terms.projection()` method. (GitHub: #223)
+* `predict.refmodel()` now uses a default of `newdata = NULL`. (GitHub: #223)
+* Argument `weights` of `init_refmodel()`'s argument `proj_predfun` was removed. (GitHub: #163, #224)
+* **projpred**'s internal `div_minimizer` functions have been unified into a single `div_minimizer` which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: #230)
+* Improved the y-axis label in `plot.vsel()`. (GitHub: #234)
+* Handle **rstanarm**'s GitHub issue #551. This implies that **projpred**'s default `cvfun` for `stanreg` fits will now always use *inner* parallelization in `rstanarm::kfold()` (i.e., across chains, not across CV folds), with `getOption("mc.cores", 1)` cores. We do so on all systems (not only Windows). (GitHub: <INSERT_PR_NUMBER_FOR_cvfun_rstanarm>)
 
 ### Bug fixes
 
@@ -72,17 +78,18 @@
 * Fix a bug in `cv_varsel()$pct_solution_terms_cv`. (GitHub: commit e529ec1, #188)
 * Fix GitHub issue #185. (GitHub: #193, #194)
 * Fix a bug in forward searches with interaction terms. (GitHub: #191)
-* Fix offset issues. (GitHub: #196, #203, <INSERT_PR_NUMBER_FOR_PR196_predict_fix>)
+* Fix offset issues. (GitHub: #196, #203, #228)
 * Fix a bug in `glm_elnet()` (the workhorse for L1 search), causing the grid for lambda to be constructed without taking observation weights into account. (GitHub: #198; note that the second part of #198 did not have any consequences for users)
-* Fix GitHub issue #136.
-* Fix a bug in `print.vsel()` causing argument `digits` to be ignored. (GitHub: <INSERT_PR_NUMBER_FOR_digits_fix>)
-* Fix a bug causing the default of argument `cv_search` in `varsel()` and `cv_varsel()` to be `TRUE` for `datafit`s, although it should be `FALSE` in that case. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
-* Fix a bug (`Error: Levels '<...>' of grouping factor '<...>' cannot be found in the fitted model. Consider setting argument 'allow_new_levels' to TRUE.`) when predicting from submodels which are GLMMs for `newdata` containing new levels for grouping factors. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
-* `predict.refmodel()`: Fix a bug for integer `ynew`. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
-* `predict.refmodel()`: Fix input checks for `offsetnew` and `weightsnew`. (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
-* After all calls to `extract_model_data()`, the weights and offsets are now checked if they are of length 0 (and if yes, then they are set to vectors of ones and zeros, respectively). This is important for `extract_model_data()` functions which return weights and offsets of length 0 (see, e.g., `brms` version <= 2.16.1). (GitHub: <INSERT_PR_NUMBER_FOR_misc_mods_fixes>)
-* Handle `rstanarm`'s GitHub issue #546. (GitHub: <INSERT_PR_NUMBER_FOR_offs_gam_fix>)
-* Fix a bug causing the internal submodel fitter for GLMMs to not pass arguments `var` (the predictive variances) and `regul` (amount of ridge regularization) to the internal submodel fitter for GLMs. (GitHub: <INSERT_PR_NUMBER_FOR_divmin>)
+* Fix GitHub issue #136. (GitHub: #221)
+* Fix a bug in `print.vsel()` causing argument `digits` to be ignored. (GitHub: #222)
+* Fix a bug causing the default of argument `cv_search` in `varsel()` and `cv_varsel()` to be `TRUE` for `datafit`s, although it should be `FALSE` in that case. (GitHub: #223)
+* Fix a bug (`Error: Levels '<...>' of grouping factor '<...>' cannot be found in the fitted model. Consider setting argument 'allow_new_levels' to TRUE.`) when predicting from submodels which are GLMMs for `newdata` containing new levels for grouping factors. (GitHub: #223)
+* `predict.refmodel()`: Fix a bug for integer `ynew`. (GitHub: #223)
+* `predict.refmodel()`: Fix input checks for `offsetnew` and `weightsnew`. (GitHub: #223)
+* After all calls to `extract_model_data()`, the weights and offsets are now checked if they are of length 0 (and if yes, then they are set to vectors of ones and zeros, respectively). This is important for `extract_model_data()` functions which return weights and offsets of length 0 (see, e.g., `brms` version <= 2.16.1). (GitHub: #223)
+* Handle **rstanarm**'s GitHub issue #546. (GitHub: #227)
+* Fix a bug causing the internal submodel fitter for GLMMs to not pass arguments `var` (the predictive variances) and `regul` (amount of ridge regularization) to the internal submodel fitter for GLMs. (GitHub: #230)
+* Fix GitHub issue #210. (GitHub: #234)
 
 ## projpred 2.0.5
 
