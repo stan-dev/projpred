@@ -96,8 +96,8 @@ projected draws):
   \item{\code{family} accepts a \code{"family"} object (see argument
   \code{family});}
   \item{\code{weights} accepts either \code{NULL} (for using a vector of
-  ones as weights) or weights for the observations from \code{data} (at
-  least in the form of a numeric vector).}
+  ones as weights) or observation weights (at least in the form of a
+  numeric vector).}
 }
 The return value of \code{div_minimizer} has to be:
 \itemize{

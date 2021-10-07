@@ -2,17 +2,27 @@
 % Please edit documentation in R/methods.R
 \name{solution_terms}
 \alias{solution_terms}
-\title{Recovers solution path from a variable selection object.}
+\alias{solution_terms.vsel}
+\alias{solution_terms.projection}
+\title{Recover solution path from an object}
 \usage{
-solution_terms(object)
+solution_terms(object, ...)
+
+\method{solution_terms}{vsel}(object, ...)
+
+\method{solution_terms}{projection}(object, ...)
 }
 \arguments{
-\item{object}{A vsel object returned by \link[=varsel]{varsel} or
-\link[=cv_varsel]{cv_varsel}.}
+\item{object}{The object from which to extract the solution terms, for
+example an object of class \code{"vsel"} (returned by
+\link[=varsel]{varsel} or \link[=cv_varsel]{cv_varsel}).}
+
+\item{...}{Arguments passed from the \code{solution_terms} generic to its
+methods.}
 }
 \value{
-Variable selection solution path
+A character vector of solution terms.
 }
 \description{
-Recovers solution path from a variable selection object.
+Recover solution path from an object
 }

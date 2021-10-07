@@ -41,8 +41,11 @@ test_that("missing `data` fails", {
     chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
     refresh = 0
   ))
-  expect_error(get_refmodel(fit_nodata),
-               "^object of type 'environment' is not subsettable$")
+  expect_error(
+    get_refmodel(fit_nodata),
+    paste("^`object\\$data` must be a `data\\.frame` or a `matrix` \\(but a",
+          "`data\\.frame` is recommended\\)\\.$")
+  )
 })
 
 test_that("`formula` as a character string fails", {
@@ -117,7 +120,7 @@ test_that("invalid `type` fails", {
 
 test_that("invalid `ynew` fails", {
   expect_error(predict(refmods[[1]], dat, ynew = dat),
-               "^ynew must be a numerical vector$")
+               "^Argument `ynew` must be a numeric vector\\.$")
 })
 
 test_that(paste(
@@ -140,9 +143,6 @@ test_that(paste(
     }
 
     y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
-    if (is.integer(y_crr)) {
-      y_crr <- as.numeric(y_crr)
-    }
 
     # Without `ynew`:
     expect_warning(

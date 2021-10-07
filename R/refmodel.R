@@ -83,8 +83,8 @@
 #'     \item{\code{family} accepts a \code{"family"} object (see argument
 #'     \code{family});}
 #'     \item{\code{weights} accepts either \code{NULL} (for using a vector of
-#'     ones as weights) or weights for the observations from \code{data} (at
-#'     least in the form of a numeric vector).}
+#'     ones as weights) or observation weights (at least in the form of a
+#'     numeric vector).}
 #'   }
 #'   The return value of \code{div_minimizer} has to be:
 #'   \itemize{
@@ -194,53 +194,41 @@ NULL
 #'   densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
 
 #' @export
-predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
-                             weightsnew = NULL, type = "response", ...) {
-  if (!(type %in% c("response", "link"))) {
+predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
+                             offsetnew = NULL, weightsnew = NULL,
+                             type = "response", ...) {
+  if (!type %in% c("response", "link")) {
     stop("type should be one of ('response', 'link')")
   }
   if (inherits(object, "datafit")) {
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
-  if (!is.null(ynew)) {
-    if (!(inherits(ynew, "numeric")) || NCOL(ynew) != 1) {
-      stop("ynew must be a numerical vector")
-    }
+  if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1)) {
+    stop("Argument `ynew` must be a numeric vector.")
   }
 
-  if (!is.null(offsetnew) && !inherits(offsetnew, "formula")) {
-    stop("offsetnew specified but it's not a right hand side formula")
-  }
-
-  if (!is.null(weightsnew) && !inherits(weightsnew, "formula")) {
-    stop("weightsnew specified but it's not a right hand side formula")
-  }
-
-  w_o <- object$extract_model_data(object$fit,
-                                   newdata = newdata, weightsnew,
-                                   offsetnew)
-
+  w_o <- object$extract_model_data(object$fit, newdata = newdata,
+                                   wrhs = weightsnew, orhs = offsetnew)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
+  if (length(weightsnew) == 0) {
+    weightsnew <- rep(1, length(w_o$y))
+  }
+  if (length(offsetnew) == 0) {
+    offsetnew <- rep(0, length(w_o$y))
+  }
 
   ## ref_predfun returns link(mu)
   mu <- object$ref_predfun(object$fit, newdata) + offsetnew
 
   if (is.null(ynew)) {
-    if (type == "link") {
-      pred <- mu
-    } else {
-      pred <- object$family$linkinv(mu)
-    }
-
+    pred <- if (type == "link") mu else object$family$linkinv(mu)
     ## integrate over the samples
     if (NCOL(pred) > 1) {
       pred <- rowMeans(pred)
     }
-
     return(pred)
   } else {
-
     ## evaluate the log predictive density at the given ynew values
     loglik <- object$family$ll_fun(
       object$family$linkinv(mu), object$dis, ynew,
@@ -250,6 +238,21 @@ predict.refmodel <- function(object, newdata, ynew = NULL, offsetnew = NULL,
     lpd <- apply(loglik, 1, log_sum_exp) - log(S)
     return(lpd)
   }
+}
+
+fetch_data <- function(data, obs = NULL, newdata = NULL) {
+  if (is.null(obs)) {
+    if (is.null(newdata)) {
+      data_out <- data
+    } else {
+      data_out <- newdata
+    }
+  } else if (is.null(newdata)) {
+    data_out <- data[obs, , drop = FALSE]
+  } else {
+    data_out <- newdata[obs, , drop = FALSE]
+  }
+  return(as.data.frame(data_out))
 }
 
 .extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
@@ -334,6 +337,10 @@ get_refmodel.stanreg <- function(object, ...) {
   # Data --------------------------------------------------------------------
 
   data <- object$data
+  if (!is.data.frame(data) && !is.matrix(data)) {
+    stop("`object$data` must be a `data.frame` or a `matrix` (but a ",
+         "`data.frame` is recommended).")
+  }
 
   # Weights (for the observations):
   if (family$family == "binomial" && length(object$weights) > 0) {
@@ -552,9 +559,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun <- function(fit, newdata = NULL) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
-        matrix(rep(NA, NROW(y)))
+        return(matrix(rep(NA, NROW(y))))
       } else {
-        matrix(rep(NA, NROW(newdata)))
+        return(matrix(rep(NA, NROW(newdata))))
       }
     }
   }
@@ -579,8 +586,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  fetch_data_wrapper <- function(obs = NULL, newdata = NULL) {
-    as.data.frame(fetch_data(data, obs, newdata))
+  fetch_data_wrapper <- function(obs = NULL) {
+    fetch_data(data, obs, newdata = NULL)
   }
 
   # Family ------------------------------------------------------------------
@@ -591,7 +598,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL,
                             weights = NULL) {
-    newdata <- fetch_data_wrapper(obs = obs, newdata = newdata)
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     }

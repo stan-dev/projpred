@@ -29,7 +29,8 @@ test_that("invalid `solution_terms` warns or fails", {
              solution_terms = NULL),
         excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
       )),
-      "is not an object of class \"vsel\"",
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$"),
       info = tstsetup
     )
     for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
@@ -42,7 +43,7 @@ test_that("invalid `solution_terms` warns or fails", {
           excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
         )),
         paste("At least one element of `solution_terms` could not be found",
-              "among the terms in the reference model"),
+              "in the table of solution terms"),
         info = tstsetup_crr
       )
       projection_tester(p,
@@ -196,8 +197,16 @@ test_that(paste(
 })
 
 test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
-  expect_error(project(fits[[1]]), "is not an object of class \"vsel\"")
-  expect_error(project(refmods[[1]]), "is not an object of class \"vsel\"")
+  expect_error(
+    project(fits[[1]]),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    project(refmods[[1]]),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
 })
 
 # nterms ------------------------------------------------------------------

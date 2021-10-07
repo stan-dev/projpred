@@ -70,15 +70,19 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
-cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
-                               ndraws = 20, nclusters = NULL,
-                               ndraws_pred = 400, nclusters_pred = NULL,
-                               cv_search = TRUE, nterms_max = NULL,
-                               penalty = NULL, verbose = TRUE,
-                               nloo = NULL, K = NULL, lambda_min_ratio = 1e-5,
-                               nlambda = 150, thresh = 1e-6, regul = 1e-4,
-                               validate_search = TRUE, seed = NULL,
-                               search_terms = NULL, ...) {
+cv_varsel.refmodel <- function(
+  object, method = NULL,
+  cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
+  ndraws = 20, nclusters = NULL,
+  ndraws_pred = 400, nclusters_pred = NULL,
+  cv_search = !inherits(object, "datafit"),
+  nterms_max = NULL, penalty = NULL,
+  verbose = TRUE,
+  nloo = NULL, K = NULL, lambda_min_ratio = 1e-5,
+  nlambda = 150, thresh = 1e-6, regul = 1e-4,
+  validate_search = TRUE, seed = NULL,
+  search_terms = NULL, ...
+) {
   refmodel <- object
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
@@ -138,7 +142,7 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
       seed = seed, search_terms = search_terms
     )
   } else {
-    stop(sprintf("Unknown cross-validation method: %s.", method))
+    stop(sprintf("Unknown `cv_method`: %s.", method))
   }
 
   if (validate_search || cv_method == "kfold") {
@@ -228,35 +232,34 @@ cv_varsel.refmodel <- function(object, method = NULL, cv_method = NULL,
 # @param K Number of folds in the K-fold cross validation. Default is 5 for
 #   genuine reference models and 10 for datafits (that is, for penalized
 #   maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
-                                 nclusters = NULL,
-                                 nclusters_pred = NULL) {
-  if (is.null(cv_method)) {
-    if (inherits(refmodel, "datafit")) {
-      cv_method <- "kfold"
-    } else {
-      cv_method <- "LOO"
-    }
-  } else {
-    if (tolower(cv_method) != "kfold" &&
-        tolower(cv_method) != "loo") {
-      stop("Unknown cross-validation method")
-    }
+parse_args_cv_varsel <- function(refmodel, cv_method, K,
+                                 nclusters, nclusters_pred) {
+  stopifnot(!is.null(cv_method))
+  if (cv_method == "loo") {
+    cv_method <- toupper(cv_method)
+  }
+  if (!cv_method %in% c("kfold", "LOO")) {
+    stop("Unknown `cv_method`.")
+  }
+  if (cv_method == "LOO" && inherits(refmodel, "datafit")) {
+    warning("For an `object` of class \"datafit\", `cv_method` is ",
+            "automatically set to \"kfold\".")
+    cv_method <- "kfold"
   }
 
   if (!is.null(K)) {
-    if (length(K) > 1 || !(is.numeric(K)) || !(K == round(K))) {
-      stop("K must be a single integer value")
+    if (length(K) > 1 || !is.numeric(K) || K != round(K)) {
+      stop("K must be a single integer value.")
     }
     if (K < 2) {
-      stop("K must be at least 2")
+      stop("K must be at least 2.")
     }
     if (K > NROW(refmodel$y)) {
-      stop("K cannot exceed n")
+      stop("K cannot exceed the number of observations.")
     }
   }
 
-  if (tolower(cv_method) == "kfold" && is.null(K)) {
+  if (cv_method == "kfold" && is.null(K)) {
     if (inherits(refmodel, "datafit")) {
       K <- 10
     } else {
@@ -264,11 +267,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method = NULL, K = NULL,
     }
   }
 
-  if (tolower(cv_method) == "loo") {
-    cv_method <- "LOO"
-  } else {
-    cv_method <- "kfold"
-  }
   return(nlist(cv_method, K, nclusters, nclusters_pred))
 }
 
@@ -310,11 +308,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## log-likelihood available
     loglik <- refmodel$loglik
   }
+  n <- ncol(loglik)
   ## TODO: should take r_eff:s into account
-  psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1, ncol(loglik)))
+  psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1, n))
   lw <- weights(psisloo)
-  pareto_k <- loo::pareto_k_values(psisloo)
-  n <- length(pareto_k)
+  # pareto_k <- loo::pareto_k_values(psisloo)
   ## by default use all observations
   nloo <- min(nloo, n)
 
@@ -367,10 +365,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       family = family, p_ref = p_pred, refmodel = refmodel,
       intercept = intercept, regul = opt$regul, cv_search = cv_search
     )
-    summaries_sub <- .get_sub_summaries(
-      submodels = submodels, test_points = seq_len(n), refmodel = refmodel,
-      family = family
-    )
 
     if (verbose) {
       print(msg)
@@ -382,7 +376,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     ## compute approximate LOO with PSIS weights
     y <- matrix(refmodel$y, nrow = n)
-    for (k in seq_along(summaries_sub)) {
+    for (k in seq_along(submodels)) {
       mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
                             obs = inds,
                             offset = refmodel$offset,
@@ -548,8 +542,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
     p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
-    newdata <- d_test$newdata
-    pred <- refmodel$ref_predfun(refmodel$fit, newdata = newdata) +
+    pred <- refmodel$ref_predfun(refmodel$fit, newdata = d_test$newdata) +
       d_test$offset
     pred <- matrix(
       as.numeric(pred), nrow = NROW(pred), ncol = NCOL(pred)
@@ -598,7 +591,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     fold <- list_cv[[fold_index]]
     family <- fold$refmodel$family
     solution_terms <- search_path$solution_terms
-    p_sub <- .get_submodels(
+    submodels <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
       family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
       intercept = intercept, regul = opt$regul, cv_search = FALSE
@@ -606,11 +599,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (verbose && cv_search) {
       utils::setTxtProgressBar(pb, fold_index)
     }
-    return(p_sub)
+    return(submodels)
   }
 
-  p_sub_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
-                     SIMPLIFY = FALSE)
+  submodels_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
+                         SIMPLIFY = FALSE)
   if (verbose && cv_search) {
     close(pb)
   }
@@ -618,16 +611,16 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## Apply some magic to manipulate the structure of the list so that instead of
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
-  get_summaries_submodel_cv <- function(p_sub, fold) {
+  get_summaries_submodel_cv <- function(submodels, fold) {
     omitted <- fold$d_test$omitted
     fold_summaries <- .get_sub_summaries(
-      submodels = p_sub, test_points = omitted, refmodel = refmodel,
+      submodels = submodels, test_points = omitted, refmodel = refmodel,
       family = family
     )
     summ <- lapply(fold_summaries, data.frame)
     return(summ)
   }
-  sub_cv_summaries <- mapply(get_summaries_submodel_cv, p_sub_cv, list_cv)
+  sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, hf)
   sub <- lapply(sub, function(summ) {
     summ$w <- rep(1, length(summ$mu))
@@ -726,33 +719,26 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     cvfit$omitted
   )
   default_data <- refmodel$fetch_data(obs = fold)
-  fetch_fold <- function(data = NULL, obs = NULL, newdata = NULL) {
-    refmodel$fetch_data(obs = fold, newdata = newdata)
-  }
   ref_predfun <- function(fit, newdata = default_data) {
     refmodel$ref_predfun(fit, newdata = newdata)
   }
   proj_predfun <- function(fit, newdata = default_data, weights = NULL) {
     refmodel$proj_predfun(fit, newdata = newdata, weights = weights)
   }
-  extract_model_data <- function(object, newdata = fetch_fold(), ...) {
+  extract_model_data <- function(object, newdata = default_data, ...) {
     refmodel$extract_model_data(object = object, newdata = newdata, ...)
   }
   if (!inherits(refmodel, "datafit")) {
-    fit <- cvfit
-    k_refmodel <- get_refmodel(fit)
+    k_refmodel <- get_refmodel(cvfit)
   } else {
-    fit <- NULL
     k_refmodel <- init_refmodel(
-      object = fit, data = fetch_fold(),
+      object = NULL, data = default_data,
       formula = refmodel$formula, family = refmodel$family,
       div_minimizer = refmodel$div_minimizer,
       proj_predfun = proj_predfun,
       extract_model_data = extract_model_data
     )
   }
-
-  k_refmodel$fetch_data <- fetch_fold
   ## k_refmodel$nclusters_pred <- min(NCOL(k_refmodel$mu), 5)
   return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
 }
@@ -814,14 +800,13 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   set.seed(seed)
   if (nloo > length(lppd)) {
-    stop("Can only subsample less `nloo` than total number of datapoints.")
+    stop("Argument `nloo` must not be larger than the number of observations.")
   } else if (nloo == length(lppd)) {
     inds <- seq_len(nloo)
     w <- rep(1, nloo)
   } else if (nloo < length(lppd)) {
-    weights <- exp(lppd - max(lppd))
-    inds <- sample(seq_along(lppd), size = nloo, prob = weights)
-    w <- weights
+    w <- exp(lppd - max(lppd))
+    inds <- sample(seq_along(lppd), size = nloo, prob = w)
   }
   w <- w / sum(w)
 

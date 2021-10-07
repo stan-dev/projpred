@@ -52,7 +52,8 @@ varsel.default <- function(object, ...) {
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             ndraws = 20, nclusters = NULL, ndraws_pred = 400,
-                            nclusters_pred = NULL, cv_search = TRUE,
+                            nclusters_pred = NULL,
+                            cv_search = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
@@ -108,13 +109,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   solution_terms <- search_path$solution_terms
 
   ## statistics for the selected submodels
-  p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
-                          family = family, p_ref = p_pred, refmodel = refmodel,
-                          intercept = intercept,
-                          regul = regul, cv_search = cv_search)
+  submodels <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
+                              family = family, p_ref = p_pred,
+                              refmodel = refmodel, intercept = intercept,
+                              regul = regul, cv_search = cv_search)
   sub <- .get_sub_summaries(
-    submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
-    family = family
+    submodels = submodels, test_points = seq_along(refmodel$y),
+    refmodel = refmodel, family = family
   )
 
   ## predictive statistics of the reference model on test data. if no test data
@@ -148,7 +149,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     summaries = nlist(sub, ref),
     family,
     solution_terms = search_path$solution_terms,
-    kl = sapply(p_sub, function(x) x$kl),
+    kl = sapply(submodels, function(x) x$kl),
     nterms_max,
     nterms_all = count_terms_in_formula(refmodel$formula),
     method = method,
@@ -231,8 +232,11 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     stop("Unknown search method")
   }
 
-  if (is.null(cv_search)) {
-    cv_search <- !inherits(refmodel, "datafit")
+  stopifnot(!is.null(cv_search))
+  if (cv_search && inherits(refmodel, "datafit")) {
+    warning("For an `object` of class \"datafit\", `cv_search` is ",
+            "automatically set to `FALSE`.")
+    cv_search <- FALSE
   }
 
   stopifnot(!is.null(ndraws))

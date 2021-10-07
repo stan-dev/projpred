@@ -170,7 +170,8 @@ if (run_vs) {
 
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
     do.call(project, c(
-      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]]),
+      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
+           cv_search = FALSE),
       excl_nonargs(args_prj_vs_i)
     ))
   })
@@ -298,11 +299,12 @@ test_that("project(): `object` of class \"datafit\" fails", {
     args_prj_i <- args_prj[[tstsetup]]
     expect_error(
       do.call(project, c(
-        list(object = datafits[[args_prj_i$tstsetup_ref]]),
+        list(object = datafits[[args_prj_i$tstsetup_ref]],
+             cv_search = FALSE),
         excl_nonargs(args_prj_i)
       )),
-      paste("^no applicable method for 'predict' applied to an object of class",
-            "\"NULL\"$"),
+      paste("^project\\(\\) does not support an `object` of class",
+            "\"datafit\"\\.$"),
       info = tstsetup
     )
   }
@@ -688,7 +690,8 @@ test_that(paste(
                           newdata = data.frame(x = x, offset = offset,
                                                weights = weights),
                           nterms = 0:nterms, transform = FALSE,
-                          offsetnew = ~offset)
+                          offsetnew = ~offset,
+                          cv_search = FALSE)
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,

@@ -163,13 +163,25 @@ test_that(paste(
 })
 
 test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
-  expect_error(proj_linpred(1), "is not an object of class \"vsel\"")
-  expect_error(proj_linpred(fits[[1]]),
-               "is not an object of class \"vsel\"")
-  expect_error(proj_linpred(refmods[[1]]),
-               "is not an object of class \"vsel\"")
-  expect_error(proj_linpred(c(prjs, list(dat))),
-               "Invalid object supplied to argument `object`\\.")
+  expect_error(
+    proj_linpred(1),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_linpred(fits[[1]]),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_linpred(refmods[[1]]),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_linpred(c(prjs, list(dat))),
+    "Invalid object supplied to argument `object`\\."
+  )
 })
 
 ## newdata and integrated -------------------------------------------------
@@ -183,7 +195,7 @@ test_that("invalid `newdata` fails", {
     proj_linpred(prjs,
                  solution_terms = rep_len(solterms_x, length.out = 1e4)),
     paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
+          "columns in `newdata`\\.$")
   )
   stopifnot(length(solterms_x) > 1)
   expect_error(
@@ -191,7 +203,7 @@ test_that("invalid `newdata` fails", {
                  newdata = dat[, 1, drop = FALSE],
                  solution_terms = solterms_x),
     paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
+          "columns in `newdata`\\.$")
   )
 })
 
@@ -727,14 +739,25 @@ test_that(paste(
 })
 
 test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
-  expect_error(proj_predict(1, .seed = seed2_tst),
-               "is not an object of class \"vsel\"")
-  expect_error(proj_predict(fits[[1]], .seed = seed2_tst),
-               "is not an object of class \"vsel\"")
-  expect_error(proj_predict(refmods[[1]], .seed = seed2_tst),
-               "is not an object of class \"vsel\"")
-  expect_error(proj_predict(c(prjs, list(dat)), .seed = seed2_tst),
-               "Invalid object supplied to argument `object`\\.")
+  expect_error(
+    proj_predict(1, .seed = seed2_tst),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_predict(fits[[1]], .seed = seed2_tst),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_predict(refmods[[1]], .seed = seed2_tst),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_predict(c(prjs, list(dat)), .seed = seed2_tst),
+    "Invalid object supplied to argument `object`\\."
+  )
 })
 
 ## newdata and nresample_clusters -----------------------------------------
@@ -749,7 +772,7 @@ test_that("invalid `newdata` fails", {
                  .seed = seed2_tst,
                  solution_terms = rep_len(solterms_x, length.out = 1e4)),
     paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
+          "columns in `newdata`\\.$")
   )
   stopifnot(length(solterms_x) > 1)
   expect_error(
@@ -758,7 +781,7 @@ test_that("invalid `newdata` fails", {
                  .seed = seed2_tst,
                  solution_terms = solterms_x),
     paste("^The number of solution terms is greater than the number of",
-          "columns in newdata\\.$")
+          "columns in `newdata`\\.$")
   )
 })
 

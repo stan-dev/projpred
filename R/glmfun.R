@@ -29,7 +29,7 @@ pseudo_data <- function(f, y, family, offset = rep(0, NROW(f)),
   #
   # Returns locations z and weights w (inverse-variances) of the Gaussian
   # pseudo-observations based on the linear approximation to the link function
-  # at f = eta = x*beta + beta0, as explained in McGullagh and Nelder (1989).
+  # at f = eta = x*beta + beta0, as explained in McCullagh and Nelder (1989).
   # Returns also the loss (= negative log likelihood) and its pointwise
   # derivative w.r.t f at the current f.
   #

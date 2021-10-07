@@ -165,22 +165,20 @@ proj_helper <- function(object, newdata,
   solution_terms <- list(...)$solution_terms
   if (!is.null(solution_terms) &&
       length(solution_terms) > NCOL(newdata)) {
-    stop(paste(
-      "The number of solution terms is greater than the number of columns in",
-      "newdata."
-    ))
+    stop("The number of solution terms is greater than the number of columns ",
+         "in `newdata`.")
   }
 
   preds <- lapply(projs, function(proj) {
-    w_o <- proj$extract_model_data(proj$refmodel$fit,
-                                   newdata = newdata, weightsnew,
-                                   offsetnew, extract_y = FALSE)
+    w_o <- proj$extract_model_data(proj$refmodel$fit, newdata = newdata,
+                                   wrhs = weightsnew, orhs = offsetnew,
+                                   extract_y = FALSE)
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
-    if (is.null(weightsnew)) {
+    if (length(weightsnew) == 0) {
       weightsnew <- rep(1, NROW(newdata))
     }
-    if (is.null(offsetnew)) {
+    if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
     mu <- proj$family$mu_fun(proj$sub_fit,
@@ -220,9 +218,8 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
   stopifnot(!is.null(dot_args$extract_y_ind))
-  w_o <- proj$extract_model_data(proj$refmodel$fit,
-                                 newdata = dot_args$newdata, wrhs = weights,
-                                 orhs = dot_args$offset,
+  w_o <- proj$extract_model_data(proj$refmodel$fit, newdata = dot_args$newdata,
+                                 wrhs = weights, orhs = dot_args$offset,
                                  extract_y = dot_args$extract_y_ind)
   ynew <- w_o$y
   lpd_out <- compute_lpd(
@@ -239,7 +236,7 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
     }
   }
   return(nlist(pred = t(pred_out),
-               lpd = if(is.null(lpd_out)) lpd_out else t(lpd_out)))
+               lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
 compute_lpd <- function(ynew, mu, proj, weights) {
@@ -735,7 +732,7 @@ suggest_size <- function(object, ...) {
 #' }
 #'
 #' @export
-suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0.0,
+suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0,
                               type = "upper", baseline = NULL, warnings = TRUE,
                               ...) {
   .validate_vsel_object_stats(object, stat)
@@ -1019,6 +1016,10 @@ t.list <- function(x, ...) {
 #' @keywords internal
 #' @export
 as.matrix.projection <- function(x, ...) {
+  if (inherits(x$refmodel, "datafit")) {
+    stop("as.matrix.projection() does not work for objects based on ",
+         "\"datafit\"s.")
+  }
   if (x$p_type) {
     warning(paste(
       "Note that projection was performed using",
@@ -1028,7 +1029,7 @@ as.matrix.projection <- function(x, ...) {
   if (!inherits(x$sub_fit, "list")) {
     x$sub_fit <- list(x$sub_fit)
   }
-  if (!inherits(x$sub_fit[[1]], get_as.matrix_cls_projpred())) {
+  if (!all(sapply(x$sub_fit, inherits, what = get_as.matrix_cls_projpred()))) {
     # Throw an error because in this case, we probably need a new
     # as.matrix.<class_name>() method.
     stop("This case should not occur. Please notify the package maintainer.")
@@ -1131,18 +1132,27 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
   return(cv)
 }
 
-is.vsel <- function(object) {
-  inherits(object, "vsel")
+#' Recover solution path from an object
+#'
+#' @param object The object from which to extract the solution terms, for
+#'   example an object of class \code{"vsel"} (returned by
+#'   \link[=varsel]{varsel} or \link[=cv_varsel]{cv_varsel}).
+#' @param ... Arguments passed from the \code{solution_terms} generic to its
+#'   methods.
+#' @return A character vector of solution terms.
+#' @export
+solution_terms <- function(object, ...) {
+  UseMethod("solution_terms")
 }
 
-#' Recovers solution path from a variable selection object.
-#'
-#' @param object A vsel object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
-#' @return Variable selection solution path
+#' @rdname solution_terms
 #' @export
-solution_terms <- function(object) {
-  stopifnot(is.vsel(object))
+solution_terms.vsel <- function(object, ...) {
+  return(object$solution_terms)
+}
 
+#' @rdname solution_terms
+#' @export
+solution_terms.projection <- function(object, ...) {
   return(object$solution_terms)
 }

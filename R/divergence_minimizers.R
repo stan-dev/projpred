@@ -1,17 +1,3 @@
-fetch_data <- function(data, obs = NULL, newdata = NULL) {
-  if (is.null(obs)) {
-    if (is.null(newdata)) {
-      return(data)
-    } else {
-      return(newdata)
-    }
-  } else if (is.null(newdata)) {
-    return(data[obs, , drop = FALSE])
-  } else {
-    return(newdata[obs, , drop = FALSE])
-  }
-}
-
 linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
                        var = 0, ...) {
   formula <- validate_response_formula(formula)
@@ -192,7 +178,7 @@ control_callback <- function(family, ...) {
 # helper function for linear_multilevel_proj_predfun to only pass
 # allow.new.levels if the fit is multilevel
 predict_multilevel_callback <- function(fit, newdata = NULL, weights = NULL) {
-  if (inherits(fit, "lmerMod")) {
+  if (inherits(fit, c("lmerMod", "glmerMod"))) {
     return(predict(fit,
                    newdata = newdata, allow.new.levels = TRUE,
                    weights = weights))

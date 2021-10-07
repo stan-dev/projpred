@@ -108,27 +108,34 @@ NULL
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,
                     seed = NULL, regul = 1e-4, ...) {
+  if (inherits(object, "datafit")) {
+    stop("project() does not support an `object` of class \"datafit\".")
+  }
   if (!inherits(object, "vsel") && is.null(solution_terms)) {
-    stop("The given object is not an object of class \"vsel\". Run the ",
-         "variable selection first, or provide argument `solution_terms`.")
+    stop("Please provide an `object` of class \"vsel\" or use argument ",
+         "`solution_terms`.")
   }
   if (!inherits(object, "vsel") && !cv_search) {
-    stop("The given object is not an object of class \"vsel\". Run the ",
-         "variable selection first, or provide argument `cv_search = TRUE`.")
+    stop("Please provide an `object` of class \"vsel\" or use ",
+         "`cv_search = TRUE`.")
   }
 
   refmodel <- get_refmodel(object, ...)
 
-  if (inherits(refmodel, "datafit")) {
-    ## use non-cv_searched solution for datafits
+  if (cv_search && inherits(refmodel, "datafit")) {
+    warning("Automatically setting `cv_search` to `FALSE` since the reference ",
+            "model is of class \"datafit\".")
     cv_search <- FALSE
   }
 
-  if (!is.null(solution_terms) &&
-      any(object$solution_terms[1:length(solution_terms)] != solution_terms)) {
-    ## search path not found, or the given variable combination
-    ## not in the search path, then we need to project the
-    ## required variables
+  if (!cv_search &&
+      !is.null(solution_terms) &&
+      any(
+        solution_terms(object)[seq_along(solution_terms)] != solution_terms
+      )) {
+    warning("The given `solution_terms` are not part of the search path (from ",
+            "`solution_terms(object)`), so `cv_search` is automatically set ",
+            "to `TRUE`.")
     cv_search <- TRUE
   }
 
@@ -141,23 +148,25 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       ## project only the given model on a fit object
       vars <- setdiff(
         split_formula(refmodel$formula,
-          data = refmodel$fetch_data(),
-          add_main_effects = FALSE
-        ),
+                      data = refmodel$fetch_data(),
+                      add_main_effects = FALSE),
         "1"
       )
     }
     if (length(solution_terms) > length(vars)) {
-      stop(
-        "Argument 'solution_terms' contains more terms than the number of ",
-        "terms in the reference model."
-      )
+      stop("Argument 'solution_terms' contains more terms than the number of ",
+           "terms in the reference model.")
     }
 
     if (!all(solution_terms %in% vars)) {
-      warning("At least one element of `solution_terms` could not be found ",
-              "among the terms in the reference model. This element (or these ",
-              "elements) is/are ignored.")
+      warning(
+        "At least one element of `solution_terms` could not be found in the ",
+        "table of solution terms (which is either `object$solution_terms` or ",
+        "the vector of terms in the reference model, depending on whether ",
+        "`object$solution_terms` is `NULL` or not). Elements which cannot be ",
+        "found are ignored. The table of solution terms is here: `c(\"",
+        paste(vars, collapse = "\", \""), "\")`."
+      )
     }
 
     solution_terms <- intersect(solution_terms, vars)
@@ -170,10 +179,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         ## by default, project onto the suggested model size
         nterms <- min(object$suggested_size, length(solution_terms))
       } else {
-        stop(
-          "No suggested model size found, please specify nterms or solution",
-          "terms"
-        )
+        stop("No suggested model size found, please specify nterms or solution",
+             "terms")
       }
     } else {
       if (!is.numeric(nterms) || any(nterms < 0)) {
@@ -183,8 +190,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         stop(paste(
           "Cannot perform the projection with", max(nterms), "variables,",
           "because variable selection was run only up to",
-          length(solution_terms),
-          "variables."
+          length(solution_terms), "variables."
         ))
       }
     }
