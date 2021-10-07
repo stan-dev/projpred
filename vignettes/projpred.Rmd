@@ -47,7 +47,7 @@ Here, we use the **rstanarm** package to fit the reference model. If you want to
 library(rstanarm)
 ```
 
-For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and---via `brms::get_refmodel.brmsfit()`---also `brms::bernoulli()`), as well as `poisson()`.] Here, we only include the linear main effects of all 20 predictor variables, but in principle, **projpred** supports more complex models, including models with interactions, multilevel, and/or additive ("smoothing") terms. Note that multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.
+For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response.^[Currently, the families supported by **projpred** are `gaussian()`, `binomial()` (and---via the **brms** package---also `brms::bernoulli()`), as well as `poisson()`.] Here, we only include the linear main effects of all 20 predictor variables, but in principle, **projpred** supports more complex models, including models with interactions, multilevel, and/or additive ("smoothing") terms. Note that multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.
 
 We use **rstanarm**'s default priors, except for the regression coefficients for which we use a regularized horseshoe prior (Piironen and Vehtari, 2017c) with the hyperprior for its global shrinkage parameter following Piironen and Vehtari (2017b,c). In R code, these are the preparation steps for the regularized horseshoe prior:
 ```{r}
