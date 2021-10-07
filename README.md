@@ -1,103 +1,52 @@
 [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" width=100 alt="Stan Logo"/>](https://mc-stan.org)
 
-# projpred
+# **projpred**
 
-[![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
-[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://cran.r-project.org/package=projpred)
+[![Build Status](https://travis-ci.com/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
 
-An R package to perform projection predictive variable selection for generalized linear models. Compatible with [rstanarm][] and [brms][] but other reference models can also be used. 
+An R package to perform the projection predictive variable selection for generalized linear models as well as generalized linear and additive multilevel models. The package is compatible with the [**rstanarm**](https://mc-stan.org/rstanarm/) and [**brms**](https://paul-buerkner.github.io/brms/) packages, but custom reference models can also be used.
 
-The method is described in detail in Piironen et al. (2020) and Catalina et al. (2020) and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
+The projection predictive variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in **projpred** are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017). Type `citation("projpred")` in R (or see the `CITATION` file) for details on how to cite **projpred**.
 
-Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [projpred-vignette][] for an example application. Smaller examples are included in the documentation.
+Currently, the supported response distributions (objects of class `family` in R) are `gaussian()`, `binomial()`^[Via the **brms** package, `brms::bernoulli()` is supported, too.], and `poisson()`.
 
+See the [vignette](https://mc-stan.org/projpred/articles/projpred.html) for an example application. Details on **projpred**'s functions as well as some shorter examples may be found in the documentation (available as a PDF at [CRAN](https://cran.r-project.org/web/packages/projpred/projpred.pdf), but note that this PDF corresponds to the latest CRAN version and not necessarily to the latest GitHub version; section "Installation" below describes the potential difference between these two sources).
 
-### Resources
+## Links
 
-* [mc-stan.org/projpred](https://mc-stan.org/projpred) (online documentation, vignette)
-* [Ask a question](https://discourse.mc-stan.org) (Stan Forums on Discourse)
-* [Open an issue](https://github.com/stan-dev/projpred/issues) (GitHub issues for bug reports, feature requests)
+* Online documentation, vignette: the [**projpred** site on the Stan homepage](https://mc-stan.org/projpred)
+* Discussions/questions: [The Stan Forums](https://discourse.mc-stan.org)
+* Bug reports, feature requests: the [GitHub issue tracker](https://github.com/stan-dev/projpred/issues)
 
+## Installation
 
-### Installation
+There are two options for installing **projpred**: from [CRAN](https://CRAN.R-project.org/package=projpred) or from [GitHub](https://github.com/stan-dev/projpred). The GitHub version might be more recent than the CRAN version, but the CRAN version might be more stable.
 
-* Install the latest release from CRAN:
+### From CRAN
 
 ```r
-install.packages('projpred')
+install.packages("projpred")
 ```
 
-* Install latest development version from GitHub (requires [devtools](https://github.com/r-lib/devtools) package):
+### From GitHub
 
+This option requires the [**devtools**](https://devtools.r-lib.org/) package, so if necessary, the following code will also install **devtools** (from [CRAN](https://CRAN.R-project.org/package=devtools)):
 ```r
-if (!require(devtools)) {
+if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
-  library(devtools)
 }
-devtools::install_github('stan-dev/projpred', build_vignettes = TRUE)
-```
-    
-### Example
-
-```R
-rm(list=ls())
-library(projpred)
-library(rstanarm)
-options(mc.cores = parallel::detectCores())
-set.seed(1)
-
-# Gaussian and Binomial examples from the glmnet-package
-data('df_gaussian', package = 'projpred')
-#data('df_binom', package = 'projpred')
-
-split_structure <- break_up_matrix_term(y ~ x, data = df_gaussian)
-df_gaussian <- split_structure$data
-formula <- split_structure$formula
-
-# fit the full model with a sparsifying prior
-fit <- stan_glm(formula, family = gaussian(), data = df_gaussian,
-                prior = hs(df = 1, global_scale=0.01), iter = 500, seed = 1)
-#fit <- stan_glm(formula, family = binomial(), data = df_binom
-#                prior = hs(df = 1, global_scale=0.01), iter = 500, seed = 1)
-
-
-# perform the variable selection
-vs <- varsel(fit)
-
-# print the results
-summary(vs)
-
-# project the parameters for model sizes nterms = 3,5 variables 
-projs <- project(vs, nterms = c(3, 5))
-
-# predict using only the 5 most relevant variables
-pred <- proj_linpred(vs, newdata=df_gaussian, nterms=5, integrated=TRUE)
-
-# perform cross-validation for the variable selection
-cvs <- cv_varsel(fit, cv_method='LOO')
-
-# plot the validation results 
-plot(cvs)
+devtools::install_github("stan-dev/projpred", build_vignettes = TRUE)
 ```
 
+## References
 
-### References
+Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inference for generalized linear and additive multilevel models. *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
 
-Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, 111(1-2):77–94.
+Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, **111**(1-2):77–94. DOI: [10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
 
-Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: a Bayesian approach via Kullback–Leibler projections. *Biometrika*, 85(1):29–37.
+Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*, **85**(1):29–37.
 
-Piironen, Juho and Vehtari, Aki (2017). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, 27(3):711-735. doi:10.1007/s11222-016-9649-y. ([online][piironenvehtari]).
+Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, **27**(3):711-735. DOI: [10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
 
-Piironen, Juho, Paasiniemi, Markus and Vehtari, Aki (2020). Projective inference in high-dimensional problems: prediction and feature selection. *Electronic Journal of Statistics*, 14(1): 2155-2197 ([Online][projpred]).
-
-Catalina, Alejandro, Bürkner, Paul-Christian, Vehtari, Aki (2020). Projection Predictive Inference for Generalized Linear and Additive Multilevel Models. ([arXiv:2010.06994][new-projpred]).
-
-
-  [rstanarm]: https://github.com/stan-dev/rstanarm
-  [brms]: https://github.com/paul-buerkner/brms
-  [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
-  [projpred]: https://projecteuclid.org/euclid.ejs/1589335310
-  [new-projpred]: https://arxiv.org/abs/2010.06994
-  [projpred-vignette]: https://mc-stan.org/projpred/articles/projpred.html
-
+Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in high-dimensional problems: Prediction and feature selection. *Electronic Journal of Statistics*, **14**(1):2155-2197. DOI: [10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).
