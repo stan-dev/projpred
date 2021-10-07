@@ -5,14 +5,13 @@
 \alias{print.vsel}
 \title{Print methods for vsel/vsel objects}
 \usage{
-\method{print}{vsel}(x, digits = 1, ...)
+\method{print}{vsel}(x, ...)
 }
 \arguments{
 \item{x}{An object of class vsel/vsel.}
 
-\item{digits}{Number of decimal places to be reported (1 by default).}
-
-\item{...}{Further arguments passed to \code{\link{summary.vsel}}.}
+\item{...}{Further arguments passed to \code{\link{summary.vsel}} (apart from
+argument \code{digits} which is passed to \code{\link{print.vselsummary}}).}
 }
 \value{
 Returns invisibly the data frame produced by

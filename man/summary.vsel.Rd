@@ -12,7 +12,6 @@
   deltas = FALSE,
   alpha = 0.32,
   baseline = NULL,
-  digits = 1,
   ...
 )
 }
@@ -54,8 +53,6 @@ mass within the intervals, that is, one standard error intervals.}
 \item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the
 reference model or the best submodel found. Default is 'ref' when the
 reference model exists, and 'best' otherwise.}
-
-\item{digits}{Number of decimal places to be reported (1 by default).}
 
 \item{...}{Currently ignored.}
 }
