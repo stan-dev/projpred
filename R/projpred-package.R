@@ -18,18 +18,19 @@
 #' as well.
 #'
 #' The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
-#' of other packages are welcome to add more methods for the [get_refmodel()]
-#' generic. Custom reference models can also be used via [init_refmodel()].
+#' of other packages are welcome to add new [get_refmodel()] methods (which
+#' enable the compatibility of their packages with \pkg{projpred}). Custom
+#' reference models can also be used via [init_refmodel()].
 #'
-#' Currently, the supported families are [gaussian()], [binomial()] (and, via
-#' [brms::get_refmodel.brmsfit()], [brms::bernoulli()]), and [poisson()].
+#' Currently, the supported families are [gaussian()], [binomial()] (and---via
+#' [brms::get_refmodel.brmsfit()]---also [brms::bernoulli()]), as well as
+#' [poisson()].
 #'
 #' See the vignettes
 #' (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
 #' and
 #' \href{https://mc-stan.org/projpred/articles/quickstart_glmm.html}{quickstart-glmm-vignette})
-#' for example applications. Smaller examples are included here in the
-#' documentation.
+#' for example applications. Shorter examples are included here in the documentation.
 #'
 #' Some references relevant for this package are given in section "References"
 #' below. See `citation(package = "projpred")` for details on citing

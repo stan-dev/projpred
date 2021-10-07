@@ -14,18 +14,19 @@ models (GAMMs). Note that the term "generalized" includes the Gaussian family
 as well.
 
 The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
-of other packages are welcome to add more methods for the \code{\link[=get_refmodel]{get_refmodel()}}
-generic. Custom reference models can also be used via \code{\link[=init_refmodel]{init_refmodel()}}.
+of other packages are welcome to add new \code{\link[=get_refmodel]{get_refmodel()}} methods (which
+enable the compatibility of their packages with \pkg{projpred}). Custom
+reference models can also be used via \code{\link[=init_refmodel]{init_refmodel()}}.
 
-Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and, via
-\code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}, \code{\link[brms:brmsfamily]{brms::bernoulli()}}), and \code{\link[=poisson]{poisson()}}.
+Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and---via
+\code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as
+\code{\link[=poisson]{poisson()}}.
 
 See the vignettes
 (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
 and
 \href{https://mc-stan.org/projpred/articles/quickstart_glmm.html}{quickstart-glmm-vignette})
-for example applications. Smaller examples are included here in the
-documentation.
+for example applications. Shorter examples are included here in the documentation.
 
 Some references relevant for this package are given in section "References"
 below. See \code{citation(package = "projpred")} for details on citing
