@@ -336,6 +336,10 @@ get_refmodel.stanreg <- function(object, ...) {
   data <- object$data
 
   # Weights (for the observations):
+  if (family$family == "binomial" && length(object$weights) > 0) {
+    stop("In case of the binomial family, projpred cannot handle observation ",
+         "weights (apart from the numbers of trials).")
+  }
   if (length(object$weights) > 0) {
     if ("projpred_internal_wobs_stanreg" %in% names(data)) {
       stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
@@ -382,27 +386,19 @@ get_refmodel.stanreg <- function(object, ...) {
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
-
-  formula <- update(
-    formula,
-    as.formula(paste(response_name, "~ ."))
-  )
-
-  if (length(response_name) > 1) {
+  if (length(response_name) == 2) {
     if (family$family != "binomial") {
-      stop("This case should not occur. Please notify the package maintainer.")
-    }
-    # This check is needed to be able to overwrite `default_wrhs` safely:
-    if (length(object$weights) != 0) {
-      stop("projpred cannot handle observation weights for a binomial family ",
-           "with > 1 trials.")
+      stop("For non-binomial families, a two-column response is not allowed.")
     }
     default_wrhs <- as.formula(paste(
       "~", response_name[2], "+", response_name[1]
     ))
     response_name <- response_name[1]
+  } else if (length(response_name) > 2) {
+    stop("The response is not allowed to have more than two columns.")
   }
   resp_form <- as.formula(paste("~", response_name))
+  formula <- update(formula, as.formula(paste(response_name, "~ .")))
 
   # Functions ---------------------------------------------------------------
 
@@ -489,12 +485,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   formula <- expand_formula(formula, data)
   terms <- extract_terms_response(formula)
   response_name <- terms$response
+  if (length(response_name) == 2) {
+    if (family$family != "binomial") {
+      stop("For non-binomial families, a two-column response is not allowed.")
+    }
+  } else if (length(response_name) > 2) {
+    stop("The response is not allowed to have more than two columns.")
+  }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
-  formula <- update(
-    formula,
-    paste(response_name, "~ .")
-  )
+  formula <- update(formula, paste(response_name[1], "~ ."))
 
   # Data --------------------------------------------------------------------
 
@@ -509,6 +509,21 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   target <- .get_standard_y(y, weights, family)
   y <- target$y
   weights <- target$weights
+
+  if (family$family == "binomial") {
+    if (!all(.is.wholenumber(y))) {
+      stop("In projpred, the response must contain numbers of successes (not ",
+           "proportions of successes), in contrast to glm() where this is ",
+           "the convention for a 1-column response.")
+    } else if (all(y %in% c(0, 1)) &&
+               length(response_name) == 1 &&
+               !all(weights == 1)) {
+      warning(
+        "Assuming that the response contains numbers of successes (not ",
+        "proportions of successes), in contrast to glm()."
+      )
+    }
+  }
 
   if (is.null(offset)) {
     offset <- rep(0, NROW(y))

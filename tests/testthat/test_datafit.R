@@ -49,11 +49,7 @@ args_datafit <- lapply(setNames(
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
 
-# For the binomial family with > 1 trials, we currently expect the warning
-# "Using formula(x) is deprecated when x is a character vector of length > 1"
-# (see GitHub issue #136), so temporarily wrap the following call in
-# suppressWarnings():
-datafits <- suppressWarnings(lapply(args_datafit, function(args_datafit_i) {
+datafits <- lapply(args_datafit, function(args_datafit_i) {
   formul_crr <- args_fit[[args_datafit_i$tstsetup_fit]]$formula
   formul_crr <- rm_addresp(formul_crr)
   if (!is.null(args_fit[[args_datafit_i$tstsetup_fit]]$random)) {
@@ -84,7 +80,7 @@ datafits <- suppressWarnings(lapply(args_datafit, function(args_datafit_i) {
     family = get(paste0("f_", args_datafit_i$fam_nm)),
     extract_model_data = extrmoddat
   ))
-}))
+})
 
 ## Variable selection -----------------------------------------------------
 

@@ -558,16 +558,12 @@ args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
 
-# For the binomial family with > 1 trials, we currently expect the warning
-# "Using formula(x) is deprecated when x is a character vector of length > 1"
-# (see GitHub issue #136), so temporarily wrap the following call in
-# suppressWarnings():
-refmods <- suppressWarnings(lapply(args_ref, function(args_ref_i) {
+refmods <- lapply(args_ref, function(args_ref_i) {
   do.call(get_refmodel, c(
     list(object = fits[[args_ref_i$tstsetup_fit]]),
     excl_nonargs(args_ref_i)
   ))
-}))
+})
 
 ## Variable selection -----------------------------------------------------
 
