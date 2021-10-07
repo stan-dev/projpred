@@ -28,7 +28,6 @@ init_refmodel(
   ref_predfun = NULL,
   div_minimizer = NULL,
   proj_predfun = NULL,
-  folds = NULL,
   extract_model_data,
   cvfun = NULL,
   cvfits = NULL,
@@ -136,9 +135,6 @@ the number of fits in \code{fit}). Then the return value of
   \item{a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix if
   \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
 }}
-
-\item{folds}{For K-fold cross-validation only. A vector of fold indices for
-each observation from \code{data}.}
 
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (i.e., the dataset
