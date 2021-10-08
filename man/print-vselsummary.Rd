@@ -16,7 +16,7 @@
 }
 \value{
 Returns invisibly the output produced by
-  \code{\link{summary.vsel}}.
+\code{\link{summary.vsel}}.
 }
 \description{
 The \code{print} methods for summary objects created by

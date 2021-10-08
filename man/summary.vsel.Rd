@@ -25,15 +25,15 @@ use \code{nterms_max = 0} for the intercept-only model. For
 \code{plot.vsel}, \code{nterms_max} must be at least 1.}
 
 \item{stats}{One or several strings determining which statistics to
-  calculate. Available statistics are:
+calculate. Available statistics are:
 \itemize{
- \item{elpd:} {(Expected) sum of log predictive densities}
- \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
-  number of datapoints.} \item{mse:} {Mean squared error (gaussian family
-  only)}
- \item{rmse:} {Root mean squared error (gaussian family only)}
- \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
- \item{auc:} {Area under the ROC curve (binomial family only)}
+\item{elpd:} {(Expected) sum of log predictive densities}
+\item{mlpd:} {Mean log predictive density, that is, elpd divided by the
+number of datapoints.} \item{mse:} {Mean squared error (gaussian family
+only)}
+\item{rmse:} {Root mean squared error (gaussian family only)}
+\item{acc/pctcorr:} {Classification accuracy (binomial family only)}
+\item{auc:} {Area under the ROC curve (binomial family only)}
 }
 Default is \code{"elpd"}.}
 

@@ -81,21 +81,21 @@ reproducible. See \code{\link{set.seed}} for details.}
 }
 \value{
 If the prediction is done for one submodel only (i.e., \code{nterms}
-  has length one or \code{solution_terms} is specified):
-  \itemize{
-    \item \code{proj_linpred} returns a \code{list} with elements \code{pred}
-    (predictions) and \code{lpd} (log predictive densities). Each of these
-    two elements is a \eqn{S \times N}{S x N} matrix.
-    \item \code{proj_predict} returns a \eqn{S \times N}{S x N} matrix of
-    predictions.
-  }
-  Thereby, \eqn{S} denotes the number of (possibly clustered) projected
-  posterior draws and \eqn{N} denotes the number of observations.
+has length one or \code{solution_terms} is specified):
+\itemize{
+\item \code{proj_linpred} returns a \code{list} with elements \code{pred}
+(predictions) and \code{lpd} (log predictive densities). Each of these
+two elements is a \eqn{S \times N}{S x N} matrix.
+\item \code{proj_predict} returns a \eqn{S \times N}{S x N} matrix of
+predictions.
+}
+Thereby, \eqn{S} denotes the number of (possibly clustered) projected
+posterior draws and \eqn{N} denotes the number of observations.
 
-  If the prediction is done for more than one submodel, the output from above
-  is returned for each submodel, giving a named \code{list} with one element
-  for each submodel (the names of this \code{list} being the numbers of
-  solutions terms of the submodels when counting the intercept, too).
+If the prediction is done for more than one submodel, the output from above
+is returned for each submodel, giving a named \code{list} with one element
+for each submodel (the names of this \code{list} being the numbers of
+solutions terms of the submodels when counting the intercept, too).
 }
 \description{
 \code{proj_linpred} gives draws of the linear predictor (possibly transformed

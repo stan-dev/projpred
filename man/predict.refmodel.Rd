@@ -42,7 +42,7 @@ the latent value).}
 }
 \value{
 Returns either a vector of predictions, or vector of log predictive
-  densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
+densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
 }
 \description{
 Compute the predictions using the reference model, that is, compute the
@@ -51,5 +51,5 @@ density at a given point.
 }
 \details{
 Argument \code{weightsnew} is only relevant if
-  \code{!is.null(ynew)}.
+\code{!is.null(ynew)}.
 }
