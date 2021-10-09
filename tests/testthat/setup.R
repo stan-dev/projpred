@@ -17,9 +17,9 @@ run_cvvs <- run_vs
 run_valsearch_always <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
 # first one (`FALSE`)?:
-run_cvfits_all <- FALSE
+run_cvfits_all <- TRUE
 # Run tests for "brmsfit"s?:
-run_brms <- FALSE # identical(Sys.getenv("NOT_CRAN"), "true")
+run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
 if (run_brms && packageVersion("brms") <= package_version("2.16.1")) {
   warning("Deactivating the brms tests because brms version <= 2.16.1 calls ",
           "init_refmodel() with the now omitted argument `folds`. Install a ",
@@ -49,15 +49,9 @@ source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 
-mod_nms <- setNames(nm = c("glm", "glmm")) # , "gam", "gamm"
+mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
 
-fam_nms <- setNames(nm = c("gauss", "binom")) # , "brnll", "poiss"
-### TODO: Fix this: When using all `fam_nms`, use the following order because
-### the order `fam_nms <- setNames(nm = c("gauss", "binom", "brnll", "poiss"))`
-### might lead to a "C stack usage" error, probably due to unfavorable simulated
-### data:
-# fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
-###
+fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
 
 # Data --------------------------------------------------------------------
 
@@ -333,7 +327,6 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
   if (pkg_nm == "brms") {
     # For speed reasons:
     mod_nms <- intersect(mod_nms, "glm")
-    fam_nms <- intersect(fam_nms, "gauss")
   }
 
   mod_nms <- setNames(nm = mod_nms)
@@ -371,11 +364,9 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
     lapply(fam_nms, function(fam_nm) {
       y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
 
-      if (fam_nm == "gauss" && pkg_nm != "brms" &&
-          !(pkg_nm == "rstanarm" && mod_nm == "gamm")) {
-        # Here, we also test a special formula (the brms case is excluded for
-        # speed reasons; the rstanarm "gamm" case is excluded because of
-        # rstanarm issue #545):
+      if (fam_nm == "gauss" && !(pkg_nm == "rstanarm" && mod_nm == "gamm")) {
+        # Here, we also test a special formula (the rstanarm "gamm" case is
+        # excluded because of rstanarm issue #545):
         formul_nms <- c("stdformul", "spclformul")
       } else {
         formul_nms <- "stdformul"
