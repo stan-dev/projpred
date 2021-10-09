@@ -449,7 +449,9 @@ get_refmodel.stanreg <- function(object, ...) {
         !is.null(newdata) && length(fit$offset) > 0
     )
     if (!cond_no_offs) {
-      offs <- extract_model_data(fit, newdata = newdata)$offset
+      # Observation weights are not needed here, so use `wrhs = NULL` to avoid
+      # potential conflicts for a non-`NULL` default `wrhs`:
+      offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
       stopifnot(identical(nrow(linpred_out), length(offs)))
       linpred_out <- linpred_out - offs
     }
@@ -548,7 +550,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       )
       # Since posterior_linpred() is supposed to include the offsets in its
       # result, subtract them here:
-      offs <- extract_model_data(fit, newdata = newdata)$offset
+      # Observation weights are not needed here, so use `wrhs = NULL` to avoid
+      # potential conflicts for a non-`NULL` default `wrhs`:
+      offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
       if (length(offs) > 0) {
         stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
         linpred_out <- linpred_out - offs
