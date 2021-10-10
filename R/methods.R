@@ -1025,9 +1025,6 @@ as.matrix.projection <- function(x, ...) {
       "clustering and the clusters might have different weights."
     ))
   }
-  if (!inherits(x$sub_fit, "list")) {
-    x$sub_fit <- list(x$sub_fit)
-  }
   if (!all(sapply(x$sub_fit, inherits, what = get_as.matrix_cls_projpred()))) {
     # Throw an error because in this case, we probably need a new
     # as.matrix.<class_name>() method.

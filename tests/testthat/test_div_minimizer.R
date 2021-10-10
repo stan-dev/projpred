@@ -1,29 +1,23 @@
 context("div_minimizer")
 
 test_that("all div_minimizer()s work", {
+  divmin_fun <- "divmin"
   for (tstsetup in names(fits)) {
     args_fit_i <- args_fit[[tstsetup]]
     pkg_crr <- args_fit_i$pkg_nm
     mod_crr <- args_fit_i$mod_nm
     fam_crr <- args_fit_i$fam_nm
 
-    if (mod_crr == "glm") {
-      divmin_fun <- "linear_mle"
-    } else if (mod_crr == "glmm") {
-      divmin_fun <- "linear_multilevel_mle"
-    } else if (mod_crr %in% c("gam", "gamm")) {
-      divmin_fun <- "additive_mle"
-    }
-
     if (fam_crr == "gauss") {
       mu_crr <- posterior_linpred(fits[[tstsetup]])
       # Crude approximations for the predictive variances:
       var_crr <- mean(as.matrix(fits[[tstsetup]])[, "sigma"]^2) +
         (colMeans(mu_crr^2) - colMeans(mu_crr)^2)
-      var_crr <- median(var_crr)
     } else {
-      var_crr <- 0
+      var_crr <- rep(0, nobsv)
     }
+    args_fit_i$projpred_var <- matrix(var_crr)
+    args_fit_i$projpred_regul <- regul_default
 
     if (args_fit_i$pkg_nm == "brms" && grepl("\\.with_wobs", tstsetup)) {
       args_fit_i$formula <- rm_addresp(args_fit_i$formula)
@@ -56,18 +50,19 @@ test_that("all div_minimizer()s work", {
       )
     }
 
-    divmin <- do.call(divmin_fun, c(
-      args_fit_i[intersect(names(args_fit_i),
-                           c("formula", "data", "family", "weights"))],
-      list(regul = regul_default, var = var_crr)
-    ))
+    divmin_res <- do.call(
+      divmin_fun,
+      args_fit_i[intersect(c("formula", "data", "family", "weights",
+                             "projpred_var", "projpred_regul"),
+                           names(args_fit_i))]
+    )
 
     if (fam_crr == "binom" || grepl("\\.with_wobs", tstsetup)) {
       wobs_expected_crr <- wobs_tst
     } else {
       wobs_expected_crr <- NULL
     }
-    sub_fit_tester(divmin,
+    sub_fit_tester(divmin_res,
                    nprjdraws_expected = 1L,
                    sub_formul = list(args_fit_i$formula),
                    sub_data = eval(args_fit_i$data),

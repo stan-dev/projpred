@@ -17,8 +17,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     data = subset$data,
     family = family,
     weights = refmodel$wobs,
-    regul = regul,
-    var = p_ref$var
+    projpred_var = p_ref$var,
+    projpred_regul = regul
   )
 
   return(.init_submodel(

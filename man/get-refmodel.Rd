@@ -62,76 +62,17 @@ on \code{"family"} objects in \R, see \code{\link{family}}.}
 \item{data}{Data used for fitting the reference model.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
-reference model. May be \code{NULL} for using an internal default.
-Otherwise, needs to have the prototype \code{ref_predfun(fit, newdata =
-  NULL)} where:
-\itemize{
-\item{\code{fit} accepts the reference model fit as given in argument
-\code{object} (but possibly re-fitted to a subset of the observations, as
-done in K-fold cross-validation);}
-\item{\code{newdata} accepts either \code{NULL} (for using the original
-dataset, typically stored in \code{fit}) or data for new observations (at
-least in the form of a \code{data.frame}).}
-}
-Let \eqn{N} denote the number of observations in the original dataset (used
-for fitting the reference model) and \eqn{S} the number of posterior draws
-for the reference model's parameters. Then the return value of
-\code{ref_predfun} has to be a \eqn{N \times S}{N x S} matrix.}
+reference model. See section "Details" below.}
 
 \item{div_minimizer}{A function for minimizing the Kullback-Leibler (KL)
 divergence from a submodel to the reference model (i.e., for performing the
-projection of the reference model onto a submodel). May be \code{NULL} for
-using an internal default. Otherwise, needs to have the prototype
-\code{div_minimizer(formula, data, family, weights = NULL, ...)} where
-(with \eqn{S_{\mbox{prj}}}{S_prj} denoting the number of resulting
-projected draws):
-\itemize{
-\item{\code{formula} accepts either a standard formula with a single
-response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
-\eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
-\code{\link{cbind}}-ed on the left-hand side in which case the projection
-has to be performed for each of the response variables separately;}
-\item{\code{data} accepts a \code{data.frame} to be used for the
-projection;}
-\item{\code{family} accepts a \code{"family"} object (see argument
-\code{family});}
-\item{\code{weights} accepts either \code{NULL} (for using a vector of
-ones as weights) or observation weights (at least in the form of a
-numeric vector).}
-}
-The return value of \code{div_minimizer} has to be:
-\itemize{
-\item{a fitted model object if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
-\item{a list of \eqn{S_{\mbox{prj}}}{S_prj} fitted model objects if
-\eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
-}
-This output of \code{div_minimizer} is used, e.g., by \code{proj_predfun}'s
-argument \code{fit}.}
+projection of the reference model onto a submodel). The output of
+\code{div_minimizer} is used, e.g., by \code{proj_predfun}'s argument
+\code{fit}. See section "Details" below.}
 
 \item{proj_predfun}{Prediction function for the linear predictor of a
-submodel onto which the reference model is projected. May be \code{NULL}
-for using an internal default. Otherwise, needs to have the prototype
-\code{proj_predfun(fit, newdata = NULL)} where:
-\itemize{
-\item{\code{fit} accepts fit(s) of a submodel as returned by
-\code{\link{project}} in its output element \code{sub_fit} (which in turn
-is the same as the return value of \code{div_minimizer}, except if
-\code{\link{project}} was used with a \code{"vsel"} object from an L1
-search as well as \code{cv_search = FALSE});}
-\item{\code{newdata} accepts either \code{NULL} (for using the original
-dataset, typically stored in \code{fit}) or data for new observations (at
-least in the form of a \code{data.frame});}
-}
-Let \eqn{N} denote the number of observations and
-\eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws (corresponding to
-the number of fits in \code{fit}). Then the return value of
-\code{proj_predfun} has to be:
-\itemize{
-\item{a vector or a 1-column matrix of length \eqn{N} if
-\eqn{S_{\mbox{prj}} = 1}{S_prj = 1};}
-\item{a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix if
-\eqn{S_{\mbox{prj}} > 1}{S_prj > 1}.}
-}}
+submodel onto which the reference model is projected. See section "Details"
+below.}
 
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (i.e., the dataset
@@ -141,7 +82,7 @@ needs to have the prototype \code{extract_model_data(object, newdata,
 \itemize{
 \item{\code{object} accepts the reference model fit as given in argument
 \code{object} (but possibly re-fitted to a subset of the observations, as
-done in K-fold cross-validation);}
+done in K-fold CV);}
 \item{\code{newdata} accepts data for new observations (at least in the
 form of a \code{data.frame});}
 \item{\code{wrhs} accepts at least either \code{NULL} (for using a vector
@@ -160,20 +101,20 @@ numeric vector containing the data for the response, the observation
 weights, and the offsets, respectively. An exception is that \code{y} may
 also be \code{NULL} (depending on argument \code{extract_y}).}
 
-\item{cvfun}{For K-fold cross-validation only. A function that, given a folds
-vector, fits a reference model per fold and returns the fitted object. May
-be \code{NULL} if \code{object} is \code{NULL}. Note that \code{cvfits}
-takes precedence over \code{cvfun}, i.e., if both are provided,
-\code{cvfits} is used.}
+\item{cvfun}{For K-fold CV only. A function that, given a folds vector, fits
+a reference model per fold and returns the fitted object. May be
+\code{NULL} if \code{object} is \code{NULL}. Note that \code{cvfits} takes
+precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is
+used.}
 
-\item{cvfits}{For K-fold cross-validation only. A list with one sublist
-called \code{"fits"} containing K-fold fitted objects from which reference
-models are created. The \code{cvfits} list (i.e., the superlist) needs to
-have attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a
-single integer giving the number of folds and \code{"folds"} has to be an
-integer vector giving the fold indices (one fold index per observation).
-Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both
-are provided, \code{cvfits} is used.}
+\item{cvfits}{For K-fold CV only. A list with one sublist called
+\code{"fits"} containing K-fold fitted objects from which reference models
+are created. The \code{cvfits} list (i.e., the superlist) needs to have
+attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a single
+integer giving the number of folds and \code{"folds"} has to be an integer
+vector giving the fold indices (one fold index per observation). Note that
+\code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
+provided, \code{cvfits} is used.}
 
 \item{dis}{A vector of posterior draws for the dispersion parameter (if such
 a parameter exists; else \code{dis} may be \code{NULL}).}
@@ -195,6 +136,67 @@ model structure from a specific \code{object}. The \code{get_refmodel}
 methods usually call \code{init_refmodel} which is the underlying workhorse
 to create the reference model structure (and may also be used directly
 without using \code{get_refmodel}).
+}
+\details{
+Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be
+\code{NULL} for using an internal default. Otherwise, let \eqn{N} denote
+the number of observations in the original dataset (used for fitting the
+reference model), \eqn{S} the number of posterior draws for the reference
+model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of resulting
+projected draws. Then the functions supplied to these arguments need to
+have the following prototypes:
+\itemize{
+\item \code{ref_predfun(fit, newdata = NULL)} where:
+\itemize{
+\item{\code{fit} accepts the reference model fit as given in argument
+\code{object} (but possibly re-fitted to a subset of the observations, as
+done in K-fold CV);}
+\item{\code{newdata} accepts either \code{NULL} (for using the original
+dataset, typically stored in \code{fit}) or data for new observations (at
+least in the form of a \code{data.frame}).}
+}
+\item \code{proj_predfun(fit, newdata = NULL)} where:
+\itemize{
+\item{\code{fit} accepts a list of length \eqn{S_{\mbox{prj}}}{S_prj}
+containing this number of submodel fits. This list is the same as that
+returned by \code{\link{project}} in its output element \code{sub_fit}
+(which in turn is the same as the return value of \code{div_minimizer},
+except if \code{\link{project}} was used with a \code{"vsel"} object based
+on an L1 search as well as \code{cv_search = FALSE});}
+\item{\code{newdata} accepts either \code{NULL} (for using the original
+dataset, typically stored in \code{fit}) or data for new observations (at
+least in the form of a \code{data.frame});}
+}
+\item \code{div_minimizer()} does not need to have a specific prototype, but it is
+called with the following arguments:
+\itemize{
+\item{\code{formula} accepts either a standard formula with a single
+response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
+\eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
+\code{\link{cbind}}-ed on the left-hand side in which case the projection
+has to be performed for each of the response variables separately;}
+\item{\code{data} accepts a \code{data.frame} to be used for the
+projection;}
+\item{\code{family} accepts a \code{"family"} object (see argument
+\code{family});}
+\item{\code{weights} accepts either \code{NULL} (for using a vector of ones
+as weights) or observation weights (at least in the form of a numeric
+vector);}
+\item{\code{projpred_var} accepts a numeric vector of length \eqn{N}
+containing predictive variances (necessary for \pkg{projpred}'s internal
+(G)LM fitter);}
+\item{\code{projpred_regul} accepts a single numeric value as supplied to
+argument \code{regul} of \code{\link[=project]{project()}}, for example.}
+}
+}
+
+The return value of those functions needs to be:
+\itemize{
+\item \code{ref_predfun}: a \eqn{N \times S}{N x S} matrix.
+\item \code{proj_predfun}: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
+\item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
+containing this number of submodel fits.
+}
 }
 \examples{
 \donttest{

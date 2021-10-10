@@ -150,25 +150,6 @@ test_that("`d_test` works", {
 # doesn't hold for L1 search, though. So for L1 search, the `regul` tests are
 # still needed.
 
-test_that("for non-GLMs, `regul` has no effect", {
-  skip_if_not(run_vs)
-  regul_tst <- 1e-1
-  for (mod_crr in setdiff(mod_nms, "glm")) {
-    tstsetups <- head(grep(paste0("\\.", mod_crr, "\\.gauss"), names(vss),
-                           value = TRUE),
-                      1)
-    for (tstsetup in tstsetups) {
-      args_vs_i <- args_vs[[tstsetup]]
-      vs_regul <- do.call(varsel, c(
-        list(object = refmods[[args_vs_i$tstsetup_ref]],
-             regul = regul_tst),
-        excl_nonargs(args_vs_i)
-      ))
-      expect_equal(vs_regul, vss[[tstsetup]], info = tstsetup)
-    }
-  }
-})
-
 test_that(paste(
   "for GLMs with L1 search, `regul` only has an effect on prediction, not on",
   "selection"

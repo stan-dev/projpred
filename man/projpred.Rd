@@ -5,8 +5,6 @@
 \alias{projpred}
 \title{Projection predictive feature selection}
 \description{
-Description
-
 \pkg{projpred} is an R package to perform projection predictive variable
 (feature) selection for generalized linear models, generalized linear
 multilevel models and generalized additive multilevel models. The package
@@ -21,23 +19,20 @@ and
 for examples.
 }
 \section{Functions}{
-
-
 \describe{
 \item{\link{varsel}, \link{cv_varsel}, \link{init_refmodel},
-\link{suggest_size}}{ Perform and cross-validate the variable selection.
-\link{init_refmodel} can be used to initialize a reference model other than
-\pkg{rstanarm}-fit.} \item{\link{project}}{ Get the projected posteriors of
-the reduced models.} \item{\link{proj_predict}, \link{proj_linpred}}{ Make
-predictions with reduced number of features.} \item{\link{plot},
-\link{summary}}{ Visualize and get some key statistics about the variable
-selection.}
+\link{suggest_size}}{Perform the variable selection, possibly with
+cross-validation (CV). \link{init_refmodel} can be used to initialize a
+reference model other than \pkg{rstanarm}-fit.}
+\item{\link{project}}{Get the projected posteriors of the reduced models.}
+\item{\link{proj_predict}, \link{proj_linpred}}{Make predictions with
+reduced number of features.}
+\item{\link{plot}, \link{summary}}{Visualize and get some key statistics
+about the variable selection.}
 }
 }
 
 \section{References}{
-
-
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
 models via an entropic explanatory power. \emph{Journal of Statistical
 Planning and Inference}, 111(1-2):77–94.

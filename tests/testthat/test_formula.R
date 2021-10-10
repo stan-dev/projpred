@@ -57,15 +57,24 @@ test_that(paste(
   expect_length(tt$response, 1)
 })
 
-test_that("check that we return the same formula for a single response", {
+test_that(paste(
+  "check that we return a list of length one containing the same formula for a",
+  "single response"
+), {
   formula <- y ~ x + z
-  expect_equal(formula, validate_response_formula(formula))
+  valrespformul <- validate_response_formula(formula)
+  expect_type(valrespformul, "list")
+  expect_length(valrespformul, 1)
+  expect_equal(formula, valrespformul[[1]])
 })
 
 test_that("check that we return a list of formulas for multiple responses", {
   formula <- cbind(y.1, y.2) ~ x + z
-  expect_true(length(validate_response_formula(formula)) == 2)
-  expect_equal(y.1 ~ x + z, validate_response_formula(formula)[[1]])
+  valrespformul <- validate_response_formula(formula)
+  expect_type(valrespformul, "list")
+  expect_length(valrespformul, 2)
+  expect_equal(y.1 ~ x + z, valrespformul[[1]])
+  expect_equal(y.2 ~ x + z, valrespformul[[2]])
 })
 
 test_that("check that we properly flatten a formula with duplicated terms", {
