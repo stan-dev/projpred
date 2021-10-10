@@ -22,16 +22,14 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
     if (is.null(cands))
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
-    sub <- sapply(full_cands, projfun)
+    subL <- lapply(full_cands, projfun)
 
     ## select best candidate
-    imin <- which.min(sapply(seq_len(NCOL(sub)), function(i) {
-      min(unlist(sub["kl", i]))
-    }))
+    imin <- which.min(sapply(subL, "[[", "kl"))
     chosen <- c(chosen, cands[imin])
 
     ## append submodels
-    submodels <- c(submodels, sub["sub_fit", imin])
+    submodels <- c(submodels, list(subL[[imin]]$sub_fit))
 
     if (verbose && count_terms_chosen(chosen) %in% iq) {
       print(paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
