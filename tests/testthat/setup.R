@@ -93,14 +93,13 @@ x_cate_list <- lapply(nlvl_fix, function(nlvl_fix_i) {
   return(nlist(x_cate, eta_cate, b_cate))
 })
 
-# Intercept and offsets:
+# Intercept and offsets (offsets are added later):
 icpt <- -0.42
 offs_tst <- rnorm(nobsv)
 
 eta_glm <- icpt +
   x_cont %*% b_cont +
-  do.call("+", lapply(x_cate_list, "[[", "eta_cate")) +
-  offs_tst
+  do.call("+", lapply(x_cate_list, "[[", "eta_cate"))
 
 nterms_glm <- nterms_cont + nterms_cate
 
@@ -138,9 +137,6 @@ s_mat <- apply(x_cont[, 1, drop = FALSE], 2, function(x, b = 2, c = - pi / 4) {
 s_sum <- rowSums(s_mat)
 nterms_s <- ncol(s_mat)
 eta_gam <- eta_glm + s_sum
-### Because of rstanarm issue #546 (see also further below):
-eta_gam <- eta_gam - offs_tst
-###
 
 # Multiply by 2 because of the baseline linear term as well as the standard
 # deviation for the wiggliness around it:
@@ -150,9 +146,6 @@ nterms_gam <- nterms_glm + 2L * nterms_s
 ## Add nonlinear (smoothed) effects to the GLMMs
 
 eta_gamm <- eta_glmm + s_sum
-### Because of rstanarm issue #253 (see also further below):
-eta_gamm <- eta_gamm - offs_tst
-###
 
 nterms_gamm <- nterms_glmm + 2L * nterms_s
 
@@ -165,7 +158,17 @@ dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, nobsv, replace = TRUE)
 dat <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
-    pred_resp <- get(paste0("f_", fam_nm))$linkinv(get(paste0("eta_", mod_nm)))
+    pred_link <- get(paste0("eta_", mod_nm))
+    if (fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm")) {
+      # For the "brnll" `fam_nm`, offsets are simply not added to have some
+      # scenarios without offsets.
+      # For GAMs, offsets are not added because of rstanarm issue #546 (see
+      # also further below).
+      # For GAMMs, offsets are not added because of rstanarm issue #253 (see
+      # also further below).
+      pred_link <- pred_link + offs_tst
+    }
+    pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
     if (fam_nm == "gauss") {
       return(rnorm(nobsv, mean = pred_resp, sd = dis_tst))
     } else if (fam_nm == "brnll") {
@@ -352,14 +355,6 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
       # CV cannot be tested in that case.
     }
 
-    if (pkg_nm == "rstanarm" && mod_nm %in% c("gam", "gamm")) {
-      # In the rstanarm "gam" and "gamm" case, the offsets are omitted because
-      # of rstanarm issue #546 and rstanarm issue #253.
-      offss_nms <- "without_offs"
-    } else {
-      offss_nms <- "with_offs"
-    }
-
     fam_nms <- setNames(nm = fam_nms)
     lapply(fam_nms, function(fam_nm) {
       y_chr <- paste("y", mod_nm, fam_nm, sep = "_")
@@ -376,6 +371,17 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
         family_crr <- quote(get("bernoulli", envir = asNamespace("brms"))())
       } else {
         family_crr <- as.name(paste0("f_", fam_nm))
+      }
+
+      if (fam_nm == "brnll" ||
+          (pkg_nm == "rstanarm" && mod_nm %in% c("gam", "gamm"))) {
+        # For the "brnll" `fam_nm`, the offsets are simply omitted to have some
+        # scenarios without offsets.
+        # In the rstanarm "gam" and "gamm" case, the offsets are omitted because
+        # of rstanarm issue #546 and rstanarm issue #253.
+        offss_nms <- "without_offs"
+      } else {
+        offss_nms <- "with_offs"
       }
 
       formul_nms <- setNames(nm = formul_nms)
