@@ -1,6 +1,7 @@
-## Function handles for the projection
-##
-
+# Function to project the reference model onto a single submodel with predictor
+# terms given in `solution_terms`. Note that "single submodel" does not refer to
+# a single fit (there are as many fits for this single submodel as there are
+# projected draws).
 project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
                              regul = 1e-4) {
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
@@ -28,27 +29,11 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
   ))
 }
 
-## function handle for the projection over samples
-.get_proj_handle <- function(refmodel, p_ref, family, regul = 1e-9,
-                             intercept = TRUE) {
-  return(function(solution_terms) {
-    project_submodel(
-      solution_terms = solution_terms, p_ref = p_ref, refmodel = refmodel,
-      family = family, intercept = intercept, regul = regul
-    )
-  })
-}
-
+# Function to project the reference model onto the submodels of given model
+# sizes `nterms`. Returns a list of submodels (each processed by
+# .init_submodel()).
 .get_submodels <- function(search_path, nterms, family, p_ref,
                            refmodel, intercept, regul, cv_search = FALSE) {
-  ##
-  ##
-  ## Project onto given model sizes nterms. Returns a list of submodels. If
-  ## cv_search=FALSE, submodels parameters will be as they were computed during
-  ## the search, so there is no need to project anything anymore, and this
-  ## function simply fetches the information from the search_path list, which
-  ## contains the parameter values.
-
   varorder <- search_path$solution_terms
 
   if (!cv_search) {
@@ -73,14 +58,15 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     }
   } else {
     ## need to project again for each submodel size
-    projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept)
     fetch_submodel <- function(nterms) {
-      solution_terms <- utils::head(varorder, nterms)
-      return(projfun(solution_terms))
+      project_submodel(
+        solution_terms = utils::head(varorder, nterms), p_ref = p_ref,
+        refmodel = refmodel, family = family, intercept = intercept,
+        regul = regul
+      )
     }
   }
-  submodels <- lapply(nterms, fetch_submodel)
-  return(submodels)
+  return(lapply(nterms, fetch_submodel))
 }
 
 .validate_wobs_wsample <- function(ref_wobs, ref_wsample, ref_mu) {
@@ -120,6 +106,5 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     nlist(mu, dis)
   ), wsample)
   weights <- wsample
-  submodel <- nlist(dis, kl, weights, solution_terms, sub_fit)
-  return(submodel)
+  return(nlist(dis, kl, weights, solution_terms, sub_fit))
 }

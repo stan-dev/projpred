@@ -294,6 +294,9 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
+#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
+#'   the reference model or the best submodel (in terms of `stats[1]`),
+#'   respectively.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -317,9 +320,15 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #' }
 #'
 #' @export
-plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
-                      deltas = FALSE, alpha = 0.32, baseline = NULL,
-                      ...) {
+plot.vsel <- function(
+  x,
+  nterms_max = NULL,
+  stats = "elpd",
+  deltas = FALSE,
+  alpha = 0.32,
+  baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
+  ...
+) {
   object <- x
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
@@ -360,7 +369,16 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
   if (nterms_max < 1) {
     stop("nterms_max must be at least 1")
   }
-  ylab <- if (deltas) "Difference to the baseline" else "Value"
+  if (baseline == "ref") {
+    baseline_pretty <- "reference model"
+  } else {
+    baseline_pretty <- "best submodel"
+  }
+  if (deltas) {
+    ylab <- paste0("Difference vs.", baseline_pretty)
+  } else {
+    ylab <- "Value"
+  }
 
   # make sure that breaks on the x-axis are integers
   n_opts <- c(4, 5, 6)
@@ -434,18 +452,18 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute (mean,
 #'   standard error, lower and upper credible bounds, difference to the
 #'   corresponding statistic of the reference model, and standard error of this
-#'   difference). The credible bounds are determined so that `1 - alpha` percent
-#'   of the probability mass falls between them. Items `"diff"` and `"diff.se"`
-#'   are only supported if `!deltas`.
+#'   difference, respectively). The credible bounds are determined so that `1 -
+#'   alpha` percent of the probability mass falls between them. Items `"diff"`
+#'   and `"diff.se"` are only supported if `deltas` is `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated relative to
 #'   the baseline model (see argument `baseline`) instead of estimating the
 #'   actual values of the statistics.
 #' @param alpha A number giving the desired coverage of the credible intervals.
 #'   For example, `alpha = 0.32` corresponds to 68% probability mass within the
 #'   intervals, that is, one-standard-error intervals.
-#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel found, respectively. If `NULL`,
-#'   then `"ref"` is used, except for `datafit`s for which `"best"` is used.
+#' @param baseline Only relevant if `deltas` is `TRUE`. Either `"ref"` or
+#'   `"best"` indicating whether the baseline is the reference model or the best
+#'   submodel (in terms of `stats[1]`), respectively.
 #' @param ... Currently ignored.
 #'
 #' @examples
@@ -470,9 +488,16 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
 #' }
 #'
 #' @export
-summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
-                         type = c("mean", "se", "diff", "diff.se"),
-                         deltas = FALSE, alpha = 0.32, baseline = NULL, ...) {
+summary.vsel <- function(
+  object,
+  nterms_max = NULL,
+  stats = "elpd",
+  type = c("mean", "se", "diff", "diff.se"),
+  deltas = FALSE,
+  alpha = 0.32,
+  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+  ...
+) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
@@ -658,7 +683,6 @@ print.vsel <- function(x, ...) {
 #' results via [plot.vsel()] and/or [summary.vsel()] and make the final decision
 #' based on what is most appropriate for the given problem.
 #'
-#' @inheritParams summary.vsel
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Statistic used for the decision. See [summary.vsel()] for
@@ -673,6 +697,9 @@ print.vsel <- function(x, ...) {
 #' @param type Either `"upper"` or `"lower"` determining whether the decisions
 #'   are based on the upper or lower credible bounds, respectively. See section
 #'   "Details" for more information.
+#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
+#'   the reference model or the best submodel (in terms of `stats[1]`),
+#'   respectively.
 #' @param warnings Whether to give warnings if automatic suggestion fails,
 #'   mainly for internal use. Usually there is no reason to set this to `FALSE`.
 #' @param ... Currently ignored.
@@ -735,9 +762,16 @@ suggest_size <- function(object, ...) {
 
 #' @rdname suggest_size
 #' @export
-suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0,
-                              type = "upper", baseline = NULL, warnings = TRUE,
-                              ...) {
+suggest_size.vsel <- function(
+  object,
+  stat = "elpd",
+  alpha = 0.32,
+  pct = 0,
+  type = "upper",
+  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+  warnings = TRUE,
+  ...
+) {
   .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
@@ -822,13 +856,6 @@ coef.subfit <- function(object, ...) {
 as.matrix.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names())
-}
-
-#' @method as.matrix ridgelm
-#' @keywords internal
-#' @export
-as.matrix.ridgelm <- function(x, ...) {
-  return(as.matrix.lm(x))
 }
 
 #' @method as.matrix subfit
@@ -977,37 +1004,6 @@ as.matrix.glmerMod <- function(x, ...) {
 #' @export
 as.matrix.gamm4 <- function(x, ...) {
   return(as.matrix.lm(x, ...))
-}
-
-#' @method as.matrix list
-#' @keywords internal
-#' @export
-as.matrix.list <- function(x, ...) {
-  return(do.call(cbind, lapply(x, as.matrix.glm, ...)))
-}
-
-#' @keywords internal
-#' @export
-t.glm <- function(x, ...) {
-  return(t(as.matrix(x), ...))
-}
-
-#' @keywords internal
-#' @export
-t.lm <- function(x, ...) {
-  return(t(as.matrix(x), ...))
-}
-
-#' @keywords internal
-#' @export
-t.ridgelm <- function(x, ...) {
-  return(t(as.matrix(x), ...))
-}
-
-#' @keywords internal
-#' @export
-t.list <- function(x, ...) {
-  return(t(as.matrix(x), ...))
 }
 
 #' Extract projected parameter draws

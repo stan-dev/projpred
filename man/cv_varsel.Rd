@@ -23,7 +23,7 @@ cv_varsel(object, ...)
   penalty = NULL,
   verbose = TRUE,
   nloo = NULL,
-  K = NULL,
+  K = if (!inherits(object, "datafit")) 5 else 10,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
   thresh = 1e-06,
@@ -100,9 +100,7 @@ faster computation but higher uncertainty in the evaluation part. If
 set this to a smaller value.}
 
 \item{K}{Only relevant if \code{cv_method == "kfold"}. Number of folds in the
-\eqn{K}-fold CV. If \code{NULL}, then \code{5} is used for genuine reference models
-(i.e., of class \code{refmodel}) and \code{10} for \code{datafit}s (that is, for penalized
-maximum likelihood estimation).}
+\eqn{K}-fold CV.}
 
 \item{lambda_min_ratio}{Only relevant if \code{method} turns out as \code{"L1"}. Ratio
 between the smallest and largest lambda in the L1-penalized search. This

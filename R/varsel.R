@@ -266,8 +266,8 @@ select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
   ## last three
   ## are returned only if one cluster projection is used for selection):
   ##   solution_terms: the variable ordering
-  ##   beta: coefficients along the search path
-  ##   alpha: intercepts along the search path
+  ##   beta: coefficients along the solution path
+  ##   alpha: intercepts along the solution path
   ##   p_sel: the reference distribution used in the selection (the input
   ##   argument p_sel)
   ##

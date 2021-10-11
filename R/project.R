@@ -135,9 +135,9 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       any(
         solution_terms(object)[seq_along(solution_terms)] != solution_terms
       )) {
-    warning("The given `solution_terms` are not part of the search path (from ",
-            "`solution_terms(object)`), so `cv_search` is automatically set ",
-            "to `TRUE`.")
+    warning("The given `solution_terms` are not part of the solution path ",
+            "(from `solution_terms(object)`), so `cv_search` is automatically ",
+            "set to `TRUE`.")
     cv_search <- TRUE
   }
 

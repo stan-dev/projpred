@@ -10,7 +10,7 @@
   stats = "elpd",
   deltas = FALSE,
   alpha = 0.32,
-  baseline = NULL,
+  baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   ...
 )
 }
@@ -44,8 +44,8 @@ For example, \code{alpha = 0.32} corresponds to 68\% probability mass within the
 intervals, that is, one-standard-error intervals.}
 
 \item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
-the reference model or the best submodel found, respectively. If \code{NULL},
-then \code{"ref"} is used, except for \code{datafit}s for which \code{"best"} is used.}
+the reference model or the best submodel (in terms of \code{stats[1]}),
+respectively.}
 
 \item{...}{Currently ignored.}
 }

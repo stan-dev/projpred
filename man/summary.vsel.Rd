@@ -11,7 +11,7 @@
   type = c("mean", "se", "diff", "diff.se"),
   deltas = FALSE,
   alpha = 0.32,
-  baseline = NULL,
+  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   ...
 )
 }
@@ -41,9 +41,8 @@ family only);
 \code{"diff"}, and \code{"diff.se"} indicating which of these to compute (mean,
 standard error, lower and upper credible bounds, difference to the
 corresponding statistic of the reference model, and standard error of this
-difference). The credible bounds are determined so that \code{1 - alpha} percent
-of the probability mass falls between them. Items \code{"diff"} and \code{"diff.se"}
-are only supported if \code{!deltas}.}
+difference, respectively). The credible bounds are determined so that \code{1 - alpha} percent of the probability mass falls between them. Items \code{"diff"}
+and \code{"diff.se"} are only supported if \code{deltas} is \code{FALSE}.}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative to
 the baseline model (see argument \code{baseline}) instead of estimating the
@@ -53,9 +52,9 @@ actual values of the statistics.}
 For example, \code{alpha = 0.32} corresponds to 68\% probability mass within the
 intervals, that is, one-standard-error intervals.}
 
-\item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
-the reference model or the best submodel found, respectively. If \code{NULL},
-then \code{"ref"} is used, except for \code{datafit}s for which \code{"best"} is used.}
+\item{baseline}{Only relevant if \code{deltas} is \code{TRUE}. Either \code{"ref"} or
+\code{"best"} indicating whether the baseline is the reference model or the best
+submodel (in terms of \code{stats[1]}), respectively.}
 
 \item{...}{Currently ignored.}
 }

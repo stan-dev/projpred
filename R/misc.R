@@ -87,10 +87,9 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
   }
 }
 
-# from rstanarm
-`%ORifNULL%` <- function(a, b) if (is.null(a)) b else a
-
-.is.wholenumber <- function(x) abs(x - round(x)) < .Machine$double.eps^0.5
+.is.wholenumber <- function(x) {
+  abs(x - round(x)) < .Machine$double.eps^0.5
+}
 
 .validate_num_folds <- function(k, n) {
   if (!is.numeric(k) || length(k) != 1 || !.is.wholenumber(k)) {
@@ -128,22 +127,15 @@ bootstrap <- function(x, fun = mean, b = 1000, oobfun = NULL, seed = NULL,
 }
 
 .validate_baseline <- function(refmodel, baseline, deltas) {
-  if (is.null(baseline)) {
-    if (inherits(refmodel, "datafit")) {
-      baseline <- "best"
-    } else {
-      baseline <- "ref"
-    }
-  } else {
-    if (!(baseline %in% c("ref", "best"))) {
-      stop("Argument 'baseline' must be either 'ref' or 'best'.")
-    }
-    if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
-      # no reference model (or the results missing for some other reason),
-      # so cannot compute differences between the reference model and submodels
-      stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
-           "reference model.")
-    }
+  stopifnot(!is.null(baseline))
+  if (!(baseline %in% c("ref", "best"))) {
+    stop("Argument 'baseline' must be either 'ref' or 'best'.")
+  }
+  if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
+    # no reference model (or the results missing for some other reason),
+    # so cannot compute differences between the reference model and submodels
+    stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
+         "reference model.")
   }
   return(baseline)
 }
@@ -344,8 +336,9 @@ nlist <- function(...) {
   dots
 }
 
-## ifelse operator
-"%||%" <- function(x, y) {
+# The `%||%` special binary (infix) operator from brms (equivalent to the
+# `%ORifNULL%` operator from rstanarm):
+`%||%` <- function(x, y) {
   if (is.null(x)) x <- y
   x
 }
@@ -405,7 +398,7 @@ eval2 <- function(expr, envir = parent.frame(), ...) {
   eval(expr, envir, ...)
 }
 
-# coerce 'x' to a single character string
+# coerce `x` to a single character string
 as_one_character <- function(x, allow_na = FALSE) {
   s <- substitute(x)
   x <- as.character(x)
@@ -443,7 +436,7 @@ magrittr::`%>%`
 # Function where() is not exported by package tidyselect, so redefine it here to
 # avoid a note in R CMD check which would occur for usage of
 # tidyselect:::where():
-where <- `%:::%`("tidyselect", "where")
+where <- "tidyselect" %:::% "where"
 
 get_as.matrix_cls_projpred <- function() {
   ### Only works when projpred is loaded via devtools::load_all():
@@ -463,4 +456,6 @@ get_as.matrix_cls_projpred <- function() {
 
 ## Helper function extract and combine mu and lppd from K lists with each
 ## n/K of the elements to one list with n elements
-hf <- function(x) as.list(do.call(rbind, x))
+hf <- function(x) {
+  as.list(do.call(rbind, x))
+}

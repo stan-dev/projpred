@@ -93,7 +93,7 @@ test_that(paste(
       type_expected = args_smmry_cvvs[[tstsetup]]$type,
       nterms_max_expected = args_smmry_cvvs[[tstsetup]]$nterms_max,
       cv_method_expected =
-        args_cvvs[[tstsetup_cvvs]]$cv_method %ORifNULL% "LOO",
+        args_cvvs[[tstsetup_cvvs]]$cv_method %||% "LOO",
       solterms_expected = cvvss[[tstsetup_cvvs]]$solution_terms
     )
   }
@@ -268,7 +268,6 @@ test_that("`stat` works", {
     tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     stat_crr_nm <- switch(fam_crr,
-                          "gauss" = "gauss_stats",
                           "brnll" = "binom_stats",
                           "binom" = "binom_stats",
                           "common_stats")
