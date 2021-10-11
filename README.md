@@ -91,7 +91,7 @@ Piironen, Juho and Vehtari, Aki (2017). Comparison of Bayesian predictive method
 
 Piironen, Juho, Paasiniemi, Markus and Vehtari, Aki (2020). Projective inference in high-dimensional problems: prediction and feature selection. *Electronic Journal of Statistics*, 14(1): 2155-2197 ([Online][projpred]).
 
-Catalina, Alejandro, Bürkner, Paul-Christian, Vehtari, Aki (2020). Projection Predictive Inference for Generalized Linear and Additive Multilevel Models. ([arxiv:2010.06994][new-projpred]).
+Catalina, Alejandro, Bürkner, Paul-Christian, Vehtari, Aki (2020). Projection Predictive Inference for Generalized Linear and Additive Multilevel Models. ([arXiv:2010.06994][new-projpred]).
 
 
   [rstanarm]: https://github.com/stan-dev/rstanarm

@@ -1,192 +1,231 @@
 #' Reference model structure
 #'
-#' Function \code{get_refmodel} is a generic function for creating the reference
-#' model structure from a specific \code{object}. The \code{get_refmodel}
-#' methods usually call \code{init_refmodel} which is the underlying workhorse
-#' to create the reference model structure (and may also be used directly
-#' without using \code{get_refmodel}).
+#' Function [get_refmodel()] is a generic function for creating the reference
+#' model structure from a specific `object`. The methods for [get_refmodel()]
+#' usually call [init_refmodel()] which is the underlying workhorse (and may
+#' also be used directly without a call to [get_refmodel()]). Some arguments are
+#' for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see [cv_varsel()]
+#' for the use of \eqn{K}-fold CV in \pkg{projpred}.
 #'
-#' @name get-refmodel
+#' @name refmodel-init-get
 #'
 #' @param object Object from which the reference model is created. For
-#'   \code{init_refmodel}, an object on which the functions from arguments
-#'   \code{extract_model_data} and \code{ref_predfun} can be applied, with a
-#'   \code{NULL} object being treated specially (see section "Value" below). For
-#'   \code{get_refmodel.default}, an object on which function \code{family} can
-#'   be applied to retrieve the family (if argument \code{family} is
-#'   \code{NULL}), additionally to the properties required for
-#'   \code{init_refmodel}. For non-default methods of \code{get_refmodel}, an
-#'   object of the corresponding class.
+#'   [init_refmodel()], an object on which the functions from arguments
+#'   `extract_model_data` and `ref_predfun` can be applied, with a `NULL` object
+#'   being treated specially (see section "Value" below). For
+#'   [get_refmodel.default()], an object on which function [family()] can be
+#'   applied to retrieve the family (if argument `family` is `NULL`),
+#'   additionally to the properties required for [init_refmodel()]. For
+#'   non-default methods of [get_refmodel()], an object of the corresponding
+#'   class.
 #' @param data Data used for fitting the reference model.
 #' @param formula Reference model's formula. For general information on formulas
-#'   in \R, see \code{\link{formula}}. For multilevel formulas, see also package
-#'   \pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer}} and
-#'   \code{\link[lme4:glmer]{lme4::glmer}}.
+#'   in \R, see [`formula`]. For multilevel formulas, see also package
+#'   \pkg{lme4}, in particular [lme4::lmer()] and [lme4::glmer()]. For additive
+#'   formulas, see also packages \pkg{mgcv}, in particular [mgcv::gam()], and
+#'   \pkg{gamm4}, in particular [gamm4::gamm4()].
 #' @param ref_predfun Prediction function for the linear predictor of the
-#'   reference model. See section "Details" below.
+#'   reference model. See section "Details" below. If `object` is `NULL`,
+#'   `ref_predfun` is ignored and an internal default is used instead.
 #' @param proj_predfun Prediction function for the linear predictor of a
 #'   submodel onto which the reference model is projected. See section "Details"
 #'   below.
 #' @param div_minimizer A function for minimizing the Kullback-Leibler (KL)
 #'   divergence from a submodel to the reference model (i.e., for performing the
 #'   projection of the reference model onto a submodel). The output of
-#'   \code{div_minimizer} is used, e.g., by \code{proj_predfun}'s argument
-#'   \code{fit}. See section "Details" below.
+#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fit`. See
+#'   section "Details" below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
-#'   used for fitting the reference model) or from a new dataset. This function
-#'   needs to have the prototype \code{extract_model_data(object, newdata,
-#'   wrhs = NULL, orhs = NULL, extract_y = TRUE)}, where:
-#'   \itemize{
-#'     \item{\code{object} accepts the reference model fit as given in argument
-#'     \code{object} (but possibly re-fitted to a subset of the observations, as
-#'     done in K-fold CV);}
-#'     \item{\code{newdata} accepts data for new observations (at least in the
-#'     form of a \code{data.frame});}
-#'     \item{\code{wrhs} accepts at least either \code{NULL} (for using a vector
-#'     of ones) or a right-hand side formula consisting only of the variable in
-#'     \code{newdata} containing the weights;}
-#'     \item{\code{orhs} accepts at least either \code{NULL} (for using a vector
-#'     of zeros) or a right-hand side formula consisting only of the variable in
-#'     \code{newdata} containing the offsets;}
-#'     \item{\code{extract_y} accepts a single logical value indicating whether
-#'     output element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or
-#'     not (\code{FALSE}).}
-#'   }
-#'   The return value of \code{extract_model_data} needs to be a \code{list}
-#'   with elements \code{y}, \code{weights}, and \code{offset}, each being a
-#'   numeric vector containing the data for the response, the observation
-#'   weights, and the offsets, respectively. An exception is that \code{y} may
-#'   also be \code{NULL} (depending on argument \code{extract_y}).
-#' @param family A \code{"family"} object representing the observational model
-#'   (i.e., the distributional family for the response). For general information
-#'   on \code{"family"} objects in \R, see \code{\link{family}}.
-#' @param cvfits For K-fold CV only. A list with one sublist called
-#'   \code{"fits"} containing K-fold fitted objects from which reference models
-#'   are created. The \code{cvfits} list (i.e., the superlist) needs to have
-#'   attributes \code{"K"} and \code{"folds"}: \code{"K"} has to be a single
-#'   integer giving the number of folds and \code{"folds"} has to be an integer
-#'   vector giving the fold indices (one fold index per observation). Note that
-#'   \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
-#'   provided, \code{cvfits} is used.
-#' @param cvfun For K-fold CV only. A function that, given a folds vector, fits
-#'   a reference model per fold and returns the fitted object. May be
-#'   \code{NULL} if \code{object} is \code{NULL}. Note that \code{cvfits} takes
-#'   precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is
-#'   used.
+#'   used for fitting the reference model) or from a new dataset. See section
+#'   "Details" below.
+#' @param family A [`family`] object representing the observational model (i.e.,
+#'   the distributional family for the response).
+#' @param cvfits For \eqn{K}-fold CV only. A `list` with one sub-`list` called
+#'   `fits` containing the \eqn{K} fitted model objects from which reference
+#'   model structures are created. The `cvfits` `list` (i.e., the super-`list`)
+#'   needs to have attributes `K` and `folds`: `K` has to be a single integer
+#'   giving the number of folds and `folds` has to be an integer vector giving
+#'   the fold indices (one fold index per observation). Note that `cvfits` takes
+#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
+#'   vector, fits the reference model separately for each fold and returns the
+#'   \eqn{K} fitted model objects as a `list`. If `object` is `NULL`, `cvfun`
+#'   may be `NULL` for using an internal default. Note that `cvfits` takes
+#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
 #' @param dis A vector of posterior draws for the dispersion parameter (if such
-#'   a parameter exists; else \code{dis} may be \code{NULL}).
-#' @param ... For \code{get_refmodel.default} and \code{get_refmodel.stanreg}:
-#'   arguments passed to \code{init_refmodel}. For the \code{get_refmodel}
-#'   generic: arguments passed to the appropriate method. Else: ignored.
+#'   a parameter exists; else `dis` may be `NULL`).
+#' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
+#'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
+#'   arguments passed to the appropriate method. Else: ignored.
 #'
-#' @details Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be
-#'   \code{NULL} for using an internal default. Otherwise, let \eqn{N} denote
-#'   the number of observations in the original dataset (used for fitting the
-#'   reference model), \eqn{S} the number of posterior draws for the reference
-#'   model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of resulting
-#'   projected draws. Then the functions supplied to these arguments need to
-#'   have the following prototypes:
-#' * `ref_predfun(fit, newdata = NULL)` where:
-#' \itemize{
-#'   \item{\code{fit} accepts the reference model fit as given in argument
-#'   \code{object} (but possibly re-fitted to a subset of the observations, as
-#'   done in K-fold CV);}
-#'   \item{\code{newdata} accepts either \code{NULL} (for using the original
-#'   dataset, typically stored in \code{fit}) or data for new observations (at
-#'   least in the form of a \code{data.frame}).}
-#' }
-#' * `proj_predfun(fit, newdata = NULL)` where:
-#' \itemize{
-#'   \item{\code{fit} accepts a list of length \eqn{S_{\mbox{prj}}}{S_prj}
-#'   containing this number of submodel fits. This list is the same as that
-#'   returned by \code{\link{project}} in its output element \code{sub_fit}
-#'   (which in turn is the same as the return value of \code{div_minimizer},
-#'   except if \code{\link{project}} was used with a \code{"vsel"} object based
-#'   on an L1 search as well as \code{cv_search = FALSE});}
-#'   \item{\code{newdata} accepts either \code{NULL} (for using the original
-#'   dataset, typically stored in \code{fit}) or data for new observations (at
-#'   least in the form of a \code{data.frame});}
-#' }
-#' * `div_minimizer()` does not need to have a specific prototype, but it is
-#' called with the following arguments:
-#' \itemize{
-#'   \item{\code{formula} accepts either a standard formula with a single
-#'   response (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a formula with
-#'   \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables
-#'   \code{\link{cbind}}-ed on the left-hand side in which case the projection
-#'   has to be performed for each of the response variables separately;}
-#'   \item{\code{data} accepts a \code{data.frame} to be used for the
-#'   projection;}
-#'   \item{\code{family} accepts a \code{"family"} object (see argument
-#'   \code{family});}
-#'   \item{\code{weights} accepts either \code{NULL} (for using a vector of ones
-#'   as weights) or observation weights (at least in the form of a numeric
-#'   vector);}
-#'   \item{\code{projpred_var} accepts a numeric vector of length \eqn{N}
-#'   containing predictive variances (necessary for \pkg{projpred}'s internal
-#'   (G)LM fitter);}
-#'   \item{\code{projpred_regul} accepts a single numeric value as supplied to
-#'   argument \code{regul} of [project()], for example.}
-#' }
+#' @details
+#'
+#' # `ref_predfun`, `proj_predfun`, `div_minimizer`
+#'
+#' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
+#' for using an internal default. Otherwise, let \eqn{N} denote the number of
+#' observations (data points), \eqn{S} the number of posterior draws for the
+#' reference model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of
+#' (possibly clustered) parameter draws in the projection (short: the number of
+#' projected draws). Then the functions supplied to these arguments need to have
+#' the following prototypes:
+#' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
+#'     + `fit` accepts the reference model fit as given in argument `object`
+#'     (but possibly re-fitted to a subset of the observations, as done in
+#'     \eqn{K}-fold CV);
+#'     + `newdata` accepts either `NULL` (for using the original dataset,
+#'     typically stored in `fit`) or data for new observations (at least in the
+#'     form of a `data.frame`).
+#' * `proj_predfun`: `proj_predfun(fit, newdata = NULL)` where:
+#'     + `fit` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
+#'     this number of submodel fits. This `list` is the same as that returned by
+#'     [project()] in its output element `sub_fit` (which in turn is the same as
+#'     the return value of `div_minimizer`, except if [project()] was used with
+#'     an `object` of class `vsel` based on an L1 search as well as with
+#'     `cv_search = FALSE`);
+#'     + `newdata` accepts either `NULL` (for using the original dataset,
+#'     typically stored in `fit`) or data for new observations (at least in the
+#'     form of a `data.frame`);
+#' * `div_minimizer` does not need to have a specific prototype, but it needs to
+#' be able to be called with the following arguments:
+#'     + `formula` accepts either a standard [`formula`] with a single response
+#'     (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a [`formula`] with
+#'     \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
+#'     the left-hand side in which case the projection has to be performed for
+#'     each of the response variables separately;
+#'     + `data` accepts a `data.frame` to be used for the projection;
+#'     + `family` accepts a [`family`] object;
+#'     + `weights` accepts either `NULL` (for using a vector of ones as weights)
+#'     or observation weights (at least in the form of a numeric vector);
+#'     + `projpred_var` accepts a numeric vector of length \eqn{N} containing
+#'     predictive variances (necessary for \pkg{projpred}'s internal (G)LM
+#'     fitter);
+#'     + `projpred_regul` accepts a single numeric value as supplied to argument
+#'     `regul` of [project()], for example.
 #'
 #' The return value of those functions needs to be:
 #' * `ref_predfun`: a \eqn{N \times S}{N x S} matrix.
 #' * `proj_predfun`: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
-#' * `div_minimizer`: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
-#'   containing this number of submodel fits.
+#' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
+#' this number of submodel fits.
+#'
+#' # `extract_model_data`
+#'
+#' The function supplied to argument `extract_model_data` needs to have the
+#' prototype
+#' ```{r, eval = FALSE}
+#' extract_model_data(object, newdata, wrhs = NULL, orhs = NULL, extract_y = TRUE)
+#' ```
+#' where:
+#' * `object` accepts the reference model fit as given in argument `object` (but
+#' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
+#' CV);
+#' * `newdata` accepts data for new observations (at least in the form of a
+#' `data.frame`);
+#' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
+#' right-hand side formula consisting only of the variable in `newdata`
+#' containing the weights;
+#' * `orhs` accepts at least either `NULL` (for using a vector of zeros) or a
+#' right-hand side formula consisting only of the variable in `newdata`
+#' containing the offsets;
+#' * `extract_y` accepts a single logical value indicating whether output
+#' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
+#'
+#' The return value of `extract_model_data` needs to be a `list` with elements
+#' `y`, `weights`, and `offset`, each being a numeric vector containing the data
+#' for the response, the observation weights, and the offsets, respectively. An
+#' exception is that `y` may also be `NULL` (depending on argument `extract_y`).
 #'
 #' @return An object that can be passed to all the functions that take the
-#'   reference model fit as the first argument, such as \link{varsel},
-#'   \link{cv_varsel}, \link{project}, \link[=proj-pred]{proj_predict}, and
-#'   \link[=proj-pred]{proj_linpred}. Usually, the returned object is of class
-#'   \code{"refmodel"}. However, if \code{object} is \code{NULL}, the returned
-#'   object is of class \code{c("datafit", "refmodel")} which is handled
-#'   differently at several places throughout this package. In particular, for a
-#'   \code{"datafit"}, argument \code{ref_predfun} is ignored and an internal
-#'   function is used instead which always returns \code{NA}.
+#'   reference model fit as the first argument, such as [varsel()],
+#'   [cv_varsel()], [project()], [proj_linpred()], and [proj_predict()].
+#'   Usually, the returned object is of class `refmodel`. However, if `object`
+#'   is `NULL`, the returned object is of class `datafit` as well as of class
+#'   `refmodel` (with `datafit` being first). Objects of class `datafit` are
+#'   handled differently at several places throughout this package.
 #'
 #' @examples
-#' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
-#'   dat <- data.frame(y = rnorm(100), x = rnorm(100))
-#'   fit <- rstanarm::stan_glm(y ~ x, family = gaussian(), data = dat)
-#'   ref <- get_refmodel(fit)
-#'   print(class(ref))
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # variable selection, use the already constructed reference model
-#'   vs <- varsel(ref)
-#'   # this will first construct the reference model and then execute
-#'   # exactly the same way as the previous command (the result is identical)
-#'   vs <- varsel(fit)
-#' }
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Define the reference model explicitly:
+#'   ref <- get_refmodel(fit)
+#'   print(class(ref)) # gives `"refmodel"`
+#'   # Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
+#'   # possible post-processing functions. Most of the post-processing functions
+#'   # call get_refmodel() internally at the beginning, so you will rarely need
+#'   # to call get_refmodel() yourself.
+#'
+#'   # A custom reference model which may be used in a variable selection where
+#'   # the candidate predictors are not a subset of those used for the reference
+#'   # model's predictions:
+#'   ref_cust <- init_refmodel(
+#'     fit,
+#'     data = dat_gauss,
+#'     formula = y ~ X6 + X7,
+#'     family = gaussian(),
+#'     extract_model_data = function(object, newdata = NULL, wrhs = NULL,
+#'                                   orhs = NULL, extract_y = TRUE) {
+#'       if (!extract_y) {
+#'         resp_form <- NULL
+#'       } else {
+#'         resp_form <- ~ y
+#'       }
+#'
+#'       if (is.null(newdata)) {
+#'         newdata <- dat_gauss
+#'       }
+#'
+#'       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
+#'       return(projpred:::do_call(projpred:::.extract_model_data, args))
+#'     },
+#'     cvfun = function(folds, ...) {
+#'       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
+#'                       folds = folds, ...)$fits[, "fit"]
+#'     }
+#'   )
+#'   # Now, the post-processing functions mentioned above (for example,
+#'   # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
 #' }
 #'
 NULL
 
-#' Predict method for reference model objects
+#' Predictions or log predictive densities from a reference model
 #'
-#' Compute the predictions using the reference model, that is, compute the
-#' expected value for the next observation, or evaluate the log-predictive
-#' density at a given point.
+#' This is the [predict()] method for `refmodel` objects (returned by
+#' [get_refmodel()] or [init_refmodel()]). It offers three types of output which
+#' are all based on the reference model and new (or old) observations: Either
+#' the linear predictor on link scale, the linear predictor transformed to
+#' response scale, or the log-predictive density.
 #'
 #' @template args-newdata
-#' @param object The object of class \code{refmodel}.
-#' @param ynew New (test) target variables. If given, then the log predictive
-#'   density for the new observations is computed.
-#' @param type Scale on which the predictions are returned. Either 'link' (the
-#'   latent function value, from -inf to inf) or 'response' (the scale on which
-#'   the target \code{y} is measured, obtained by taking the inverse-link from
-#'   the latent value).
+#' @param object An object of class `refmodel` (returned by [get_refmodel()] or
+#'   [init_refmodel()]).
+#' @param ynew If not `NULL`, then this needs to be a vector of new (or old)
+#'   response values. See section "Value" below.
+#' @param type Only relevant if `is.null(ynew)`. The scale on which the
+#'   predictions are returned, either `"link"` or `"response"` (see
+#'   [predict.glm()] but note that [predict.refmodel()] does not adhere to the
+#'   typical \R convention of a default prediction on link scale). For both
+#'   scales, the predictions are averaged across the posterior draws.
 #' @param ... Currently ignored.
 #'
-#' @details Argument \code{weightsnew} is only relevant if
-#'   \code{!is.null(ynew)}.
+#' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
 #'
-#' @return Returns either a vector of predictions, or vector of log predictive
-#'   densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
-
+#' @return Either a vector of predictions (with the scale depending on argument
+#'   `type`) or, if `!is.null(ynew)`, a vector of log predictive densities
+#'   evaluated at `ynew`.
+#'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
@@ -280,27 +319,27 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
   return(nlist(y, weights, offset))
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel <- function(object, ...) {
   UseMethod("get_refmodel", object)
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel.refmodel <- function(object, ...) {
   # If the object is already of class "refmodel", then simply return it as is:
   object
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel.vsel <- function(object, ...) {
   # The reference model is stored in the `object` of class "vsel":
   object$refmodel
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel.default <- function(object, formula, family = NULL, ...) {
   if (is.null(family)) {
@@ -321,7 +360,7 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
   return(refmodel)
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @export
 get_refmodel.stanreg <- function(object, ...) {
   # Family ------------------------------------------------------------------
@@ -479,7 +518,7 @@ get_refmodel.stanreg <- function(object, ...) {
   ))
 }
 
-#' @rdname get-refmodel
+#' @rdname refmodel-init-get
 #' @importFrom rstantools posterior_linpred
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,

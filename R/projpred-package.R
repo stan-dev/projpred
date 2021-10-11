@@ -1,8 +1,5 @@
 #' Projection predictive feature selection
 #'
-#' @docType package
-#' @name projpred
-#'
 #' @useDynLib projpred
 #' @importFrom Rcpp sourceCpp
 #'
@@ -13,45 +10,72 @@
 #'
 #' @description
 #'
-#' \pkg{projpred} is an R package to perform projection predictive variable
-#'   (feature) selection for generalized linear models, generalized linear
-#'   multilevel models and generalized additive multilevel models. The package
-#'   is aimed to be compatible with \pkg{rstanarm} but also other reference
-#'   models can be used (see function \code{\link{init_refmodel}}).
+#' \pkg{projpred} is an \R package for performing a projection predictive
+#' variable (or "feature") selection for generalized linear models (GLMs),
+#' generalized linear multilevel (or "mixed") models (GLMMs), generalized
+#' additive models (GAMs), and generalized additive multilevel (or "mixed")
+#' models (GAMMs). Note that the term "generalized" includes the Gaussian family
+#' as well.
 #'
-#' Currently, the supported models (family objects in R) include Gaussian,
-#'   Binomial and Poisson families, but more will be implemented later. See the
-#'   \href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
-#'   and
-#'   \href{https://mc-stan.org/projpred/articles/quickstart_glmm.html}{quickstart-glmm-vignette}
-#'   for examples.
+#' The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
+#' of other packages are welcome to add new [get_refmodel()] methods (which
+#' enable the compatibility of their packages with \pkg{projpred}). Custom
+#' reference models can also be used via [init_refmodel()].
 #'
-#' @details # Functions
+#' Currently, the supported families are [gaussian()], [binomial()] (and---via
+#' [brms::get_refmodel.brmsfit()]---also [brms::bernoulli()]), as well as
+#' [poisson()].
+#'
+#' See the vignettes
+#' (\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
+#' and
+#' \href{https://mc-stan.org/projpred/articles/quickstart_glmm.html}{quickstart-glmm-vignette})
+#' for example applications. Shorter examples are included here in the documentation.
+#'
+#' Some references relevant for this package are given in section "References"
+#' below. See `citation(package = "projpred")` for details on citing
+#' \pkg{projpred}.
+#'
+#' @details
+#'
+#' # Functions
 #'
 #' \describe{
-#'   \item{\link{varsel}, \link{cv_varsel}, \link{init_refmodel},
-#'   \link{suggest_size}}{Perform the variable selection, possibly with
-#'   cross-validation (CV). \link{init_refmodel} can be used to initialize a
-#'   reference model other than \pkg{rstanarm}-fit.}
-#'   \item{\link{project}}{Get the projected posteriors of the reduced models.}
-#'   \item{\link{proj_predict}, \link{proj_linpred}}{Make predictions with
-#'   reduced number of features.}
-#'   \item{\link{plot}, \link{summary}}{Visualize and get some key statistics
-#'   about the variable selection.}
+#'   \item{[varsel()], [cv_varsel()]}{Perform the variable selection, possibly
+#'   with cross-validation (CV).}
+#'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
+#'   [suggest_size.vsel()], [solution_terms.vsel()]}{Post-process the results
+#'   from the variable selection.}
+#'   \item{[project()]}{Project the reference model onto submodel(s). Typically,
+#'   this follows the variable selection, but it can also be applied directly
+#'   (without a variable selection).}
+#'   \item{[as.matrix.projection()]}{Extract projected parameter draws.}
+#'   \item{[proj_linpred()], [proj_predict()]}{Make predictions from a submodel
+#'   (after projecting the reference model onto it).}
 #' }
 #'
-#' @details # References
-#'
-#' Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
-#'   models via an entropic explanatory power. \emph{Journal of Statistical
-#'   Planning and Inference}, 111(1-2):77–94.
+#' @references
 #'
 #' Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
-#'   models: a Bayesian approach via Kullback–Leibler projections.
-#'   \emph{Biometrika}, 85(1):29–37.
+#' models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
+#' **85**(1):29–37.
 #'
-#' Juho Piironen and Aki Vehtari (2017). Comparison of Bayesian predictive
-#'   methods for model selection. \emph{Statistics and Computing},
-#'   27(3):711-735. doi:10.1007/s11222-016-9649-y.
-#'   (\href{https://link.springer.com/article/10.1007/s11222-016-9649-y}{Online}).
-NULL
+#' Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
+#' models via an entropic explanatory power. *Journal of Statistical Planning
+#' and Inference*, **111**(1-2):77–94. DOI:
+#' [10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
+#'
+#' Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
+#' methods for model selection. *Statistics and Computing*, **27**(3):711-735.
+#' DOI: [10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
+#'
+#' Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
+#' high-dimensional problems: Prediction and feature selection. *Electronic
+#' Journal of Statistics*, **14**(1):2155-2197. DOI:
+#' [10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).
+#'
+#' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
+#' inference for generalized linear and additive multilevel models.
+#' *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
+#'
+"_PACKAGE"

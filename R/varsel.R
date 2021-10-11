@@ -1,39 +1,127 @@
-#' Variable selection for generalized linear models
+#' Variable selection (without cross-validation)
 #'
-#' Perform the projection predictive variable selection for generalized linear
-#' models, generalized linear and additive multilevel models using generic
-#' reference models.
+#' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
+#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* part and
+#' an *evaluation* part. The search part determines the solution path, i.e., the
+#' best submodel for each number of predictor terms (model size). The evaluation
+#' part determines the predictive performance of the submodels along the
+#' solution path.
 #'
-#' @template args-vsel
-#' @param d_test A test dataset which is used to evaluate model performance. If
-#'   not provided, training data is used. Currently this argument is for
-#'   internal use only.
-#' @param seed Random seed used when clustering the posterior draws.
+#' @param object An object of class `refmodel` (returned by [get_refmodel()] or
+#'   [init_refmodel()]) or an object that can be passed to argument `object` of
+#'   [get_refmodel()].
+#' @param d_test For internal use only. A `list` providing information about the
+#'   test set which is used for evaluating the predictive performance of the
+#'   reference model. If not provided, the training set is used.
+#' @param method The method for the search part. Possible options are `"L1"` for
+#'   L1 search and `"forward"` for forward search. If `NULL`, then `"forward"`
+#'   is used if the reference model has multilevel or additive terms and `"L1"`
+#'   otherwise. See also section "Details" below.
+#' @param cv_search A single logical value indicating whether to fit the
+#'   submodels along the solution path again (`TRUE`) or to retrieve their fits
+#'   from the search part (`FALSE`) before using those (re-)fits in the
+#'   evaluation part.
+#' @param ndraws Number of posterior draws used in the search part. **Caution:**
+#'   For `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
+#'   clustering is used). Ignored if `nclusters` is not `NULL` or if `method`
+#'   turns out as `"L1"` (L1 search uses always one cluster). See also section
+#'   "Details" below.
+#' @param nclusters Number of clusters of posterior draws used in the search
+#'   part. Ignored if `method` turns out as `"L1"` (L1 search uses always one
+#'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
+#'   section "Details" below.
+#' @param ndraws_pred Only relevant if `cv_search` is `TRUE`. Number of
+#'   posterior draws used in the evaluation part. **Caution:** For `ndraws_pred
+#'   <= 20`, the value of `ndraws_pred` is passed to `nclusters_pred` (so that
+#'   clustering is used). Ignored if `nclusters_pred` is not `NULL`. See also
+#'   section "Details" below.
+#' @param nclusters_pred Only relevant if `cv_search` is `TRUE`. Number of
+#'   clusters of posterior draws used in the evaluation part. For the meaning of
+#'   `NULL`, see argument `ndraws_pred`. See also section "Details" below.
+#' @param nterms_max Maximum number of predictor terms until which the search is
+#'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
+#'   terms in the reference model (or in `search_terms`, if supplied). Note that
+#'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
+#'   intercept-only model.
+#' @param penalty Only relevant if `method` turns out as `"L1"`. A numeric
+#'   vector determining the relative penalties or costs for the predictors. A
+#'   value of `0` means that those predictors have no cost and will therefore be
+#'   selected first, whereas `Inf` means those predictors will never be
+#'   selected. If `NULL`, then `1` is used for each predictor.
+#' @param lambda_min_ratio Only relevant if `method` turns out as `"L1"`. Ratio
+#'   between the smallest and largest lambda in the L1-penalized search. This
+#'   parameter essentially determines how long the search is carried out, i.e.,
+#'   how large submodels are explored. No need to change this unless the program
+#'   gives a warning about this.
+#' @param nlambda Only relevant if `method` turns out as `"L1"`. Number of
+#'   values in the lambda grid for L1-penalized search. No need to change this
+#'   unless the program gives a warning about this.
+#' @param thresh Only relevant if `method` turns out as `"L1"`. Convergence
+#'   threshold when computing the L1 path. Usually, there is no need to change
+#'   this.
+#' @param regul A number giving the amount of ridge regularization when
+#'   projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
+#'   is no need for regularization, but sometimes we need to add some
+#'   regularization to avoid numerical problems.
+#' @param search_terms A custom character vector of terms to consider for the
+#'   search. The intercept (`"1"`) needs to be included explicitly. The default
+#'   considers all the terms in the reference model's formula.
+#' @param verbose A single logical value indicating whether to print out
+#'   additional information during the computations.
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   Here, this seed is used for clustering the reference model's posterior
+#'   draws (if `!is.null(nclusters)`).
+#' @param ... Additional arguments passed to [get_refmodel()].
 #'
-#' @details Using less draws or clusters in \code{ndraws}, \code{nclusters},
-#'   \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
-#'   reference model may result in slightly inaccurate projection performance.
-#'   Increasing these arguments linearly affects the computation time.
+#' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
+#'   are automatically truncated at the number of posterior draws in the
+#'   reference model (which is `1` for `datafit`s). Using less draws or clusters
+#'   in `ndraws`, `nclusters`, `nclusters_pred`, or `ndraws_pred` than posterior
+#'   draws in the reference model may result in slightly inaccurate projection
+#'   performance. Increasing these arguments affects the computation time
+#'   linearly.
 #'
-#' @return An object of type \code{vsel} that contains information about the
-#'   feature selection. The fields are not meant to be accessed directly by the
-#'   user but instead via the helper functions (see the vignettes or type
-#'   \code{?projpred} to see the main functions in the package).
+#'   For argument `method`, there are some restrictions: For a reference model
+#'   with multilevel or additive formula terms, only the forward search is
+#'   available.
+#'
+#'   L1 search is faster than forward search, but forward search may be more
+#'   accurate. Furthermore, forward search may find a sparser model with
+#'   comparable performance to that found by L1 search, but it may also start
+#'   overfitting when more predictors are added.
+#'
+#'   An L1 search may select interaction terms before the corresponding main
+#'   terms are selected. If this is undesired, choose the forward search
+#'   instead.
+#'
+#' @return An object of class `vsel`. The elements of this object are not meant
+#'   to be accessed directly but instead via helper functions (see the vignettes
+#'   or type `?projpred`).
+#'
+#' @seealso [cv_varsel()]
 #'
 #' @examples
-#' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'                             data=data, chains=2, iter=500)
-#'   vs <- varsel(fit)
-#'   plot(vs)
-#' }
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
+#'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#'   # and `?solution_terms.vsel` for possible post-processing functions.
 #' }
 #'
 #' @export

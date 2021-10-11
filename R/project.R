@@ -1,109 +1,111 @@
 #' Projection onto submodel(s)
 #'
-#' Project the reference model onto a single submodel consisting of a specific
-#' combination of predictor terms or onto a single or multiple submodels of
-#' specific sizes.
+#' Project the posterior of the reference model onto the parameter space of a
+#' single submodel consisting of a specific combination of predictor terms or
+#' (after variable selection) onto the parameter space of a single or multiple
+#' submodels of specific sizes.
 #'
-#' @name project
-#'
-#' @param object Either a \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel} or \link[=init_refmodel]{init_refmodel},
-#'   or an object which can be converted to a reference model using
-#'   \link[=get_refmodel]{get_refmodel}.
-#' @param nterms Number of terms in the submodel (the variable combination is
-#'   taken from the \code{varsel} information). If a numeric vector, then the
-#'   projection is performed for each model size. If \code{NULL}, the model size
-#'   suggested by the variable selection (see function \code{suggest_size}).
-#'   Ignored if \code{solution_terms} is specified. Note that \code{nterms} does
-#'   not count the intercept, so use \code{nterms = 0} for the intercept-only
-#'   model.
-#' @param solution_terms Variable indices onto which the projection is done. If
-#'   specified, \code{nterms} is ignored.
-#' @param cv_search If TRUE, then the projected coefficients after L1-selection
-#'   are computed without any penalization (or using only the regularization
-#'   determined by \code{regul}). If FALSE, then the coefficients are the
-#'   solution from the L1-penalized projection. This option is relevant only if
-#'   L1-search was used. Default is TRUE for genuine reference models and FALSE
-#'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param ndraws Number of posterior draws to be projected. Cannot be larger
-#'   than the number of draws in the reference model. \strong{Caution:} For
-#'   \code{ndraws <= 20}, the value of \code{ndraws} is passed to
-#'   \code{nclusters} (so that clustering is used). Ignored if \code{nclusters}
-#'   is not \code{NULL} or if the reference model is of class \code{"datafit"}
+#' @param object An object which can be used as input to [get_refmodel()] (in
+#'   particular, objects of class `refmodel`).
+#' @param nterms Only relevant if `object` is of class `vsel` (returned by
+#'   [varsel()] or [cv_varsel()]). Ignored if `!is.null(solution_terms)`.
+#'   Number of terms for the submodel (the corresponding combination of
+#'   predictor terms is taken from `object`). If a numeric vector, then the
+#'   projection is performed for each element of this vector. If `NULL` (and
+#'   `is.null(solution_terms)`), then the value suggested by the variable
+#'   selection is taken (see function [suggest_size()]). Note that `nterms` does
+#'   not count the intercept, so use `nterms = 0` for the intercept-only model.
+#' @param solution_terms If not `NULL`, then this needs to be a character vector
+#'   of predictor terms for the submodel onto which the projection will be
+#'   performed. Argument `nterms` is ignored in that case. For an `object` which
+#'   is not of class `vsel`, `solution_terms` must not be `NULL`.
+#' @param cv_search A single logical value indicating whether to fit the
+#'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
+#'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
+#'   `cv_search` must be `TRUE`.
+#' @param ndraws Only relevant if `cv_search` is `TRUE`. Number of posterior
+#'   draws to be projected. **Caution:** For `ndraws <= 20`, the value of
+#'   `ndraws` is passed to `nclusters` (so that clustering is used). Ignored if
+#'   `nclusters` is not `NULL` or if the reference model is of class `datafit`
 #'   (in which case one cluster is used). See also section "Details" below.
-#' @param nclusters Number of clusters of posterior draws to be projected.
-#'   Ignored if the reference model is of class \code{"datafit"} (in which case
-#'   one cluster is used). For the meaning of \code{NULL}, see argument
-#'   \code{ndraws}. See also section "Details" below.
-#' @param seed A seed used for clustering the reference model's posterior draws
-#'   (if \code{!is.null(nclusters)}). Can be used to ensure reproducible
-#'   results. If \code{NULL}, no seed is set and therefore, the results are not
-#'   reproducible. See \code{\link{set.seed}} for details.
-#' @param regul Amount of ridge regularization when fitting the models in the
-#'   projection. Usually there is no need for regularization, but sometimes for
-#'   some models the projection can be ill-behaved and we need to add some
-#'   regularization to avoid numerical problems.
-#' @param ... Arguments passed to \link[=get_refmodel]{get_refmodel}.
+#' @param nclusters Only relevant if `cv_search` is `TRUE`. Number of clusters
+#'   of posterior draws to be projected. Ignored if the reference model is of
+#'   class `datafit` (in which case one cluster is used). For the meaning of
+#'   `NULL`, see argument `ndraws`. See also section "Details" below.
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   Here, this seed is used for clustering the reference model's posterior
+#'   draws (if `!is.null(nclusters)`).
+#' @inheritParams varsel
+#' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
+#'   actually used; see argument `object`).
 #'
-#' @details Using less draws or clusters in \code{ndraws} or \code{nclusters}
-#'   than posterior draws in the reference model may result in slightly
-#'   inaccurate projection performance. Increasing these arguments linearly
-#'   affects the computation time.
+#' @details Arguments `ndraws` and `nclusters` are automatically truncated at
+#'   the number of posterior draws in the reference model (which is `1` for
+#'   `datafit`s). Using less draws or clusters in `ndraws` or `nclusters` than
+#'   posterior draws in the reference model may result in slightly inaccurate
+#'   projection performance. Increasing these arguments affects the computation
+#'   time linearly.
 #'
 #' @return If the projection is performed onto a single submodel (i.e.,
-#'   \code{nterms} has length one or \code{solution_terms} is specified), an
-#'   object of class \code{"projection"} which is a \code{list} containing the
-#'   following elements:
+#'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class
+#'   `projection` which is a `list` containing the following elements:
 #'   \describe{
-#'     \item{\code{dis}}{Projected draws for the dispersion parameter.}
-#'     \item{\code{kl}}{The KL divergence from the submodel to the reference
+#'     \item{`dis`}{Projected draws for the dispersion parameter.}
+#'     \item{`kl`}{The KL divergence from the submodel to the reference
 #'     model.}
-#'     \item{\code{weights}}{Weights for the projected draws.}
-#'     \item{\code{solution_terms}}{A character vector of the submodel's
-#'     predictor terms, ordered the way in which the terms were added to the
+#'     \item{`weights`}{Weights for the projected draws.}
+#'     \item{`solution_terms`}{A character vector of the submodel's
+#'     predictor terms, ordered in the way in which the terms were added to the
 #'     submodel.}
-#'     \item{\code{sub_fit}}{The submodel's fitted model object.}
-#'     \item{\code{family}}{A modified \code{\link{family}}-object.}
-#'     \item{\code{p_type}}{A single logical value indicating whether the
+#'     \item{`sub_fit`}{The submodel's fitted model object.}
+#'     \item{`family`}{A modified [`family`] object.}
+#'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
-#'     (\code{TRUE}) or not (\code{FALSE}).}
-#'     \item{\code{intercept}}{A single logical value indicating whether the
+#'     (`TRUE`) or not (`FALSE`).}
+#'     \item{`intercept`}{A single logical value indicating whether the
 #'     reference model (as well as the submodel) contains an intercept
-#'     (\code{TRUE}) or not (\code{FALSE}).}
-#'     \item{\code{extract_model_data}}{The \code{extract_model_data()} function
-#'     from the reference model (see \code{\link{init_refmodel}}).}
-#'     \item{\code{refmodel}}{The reference model object (see
-#'     \code{\link{init_refmodel}}).}
+#'     (`TRUE`) or not (`FALSE`).}
+#'     \item{`extract_model_data`}{The `extract_model_data` function
+#'     from the reference model (see [init_refmodel()]).}
+#'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
-#'   above is returned for each submodel, giving a \code{list} with one element
-#'   for each submodel.
+#'   above is returned for each submodel, giving a `list` with one element for
+#'   each submodel.
 #'
 #' @examples
-#' \donttest{
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n * d), nrow = n)
-#'   y <- x[, 1] + 0.5 * rnorm(n)
-#'   data <- data.frame(x, y)
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'     data = data, chains = 2, iter = 500)
-#'   vs <- varsel(fit)
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
 #'
-#'   # project onto the best model with 4 variables
-#'   proj4 <- project(vs, nterms = 4)
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
 #'
-#'   # project onto an arbitrary variable combination
-#'   proj <- project(fit, solution_terms = c("X1", "X3", "X5"))
+#'   # Projection onto the best submodel with 2 predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182)
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
 #' }
-#' }
 #'
-NULL
-
-#' @rdname project
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     cv_search = TRUE, ndraws = 400, nclusters = NULL,

@@ -1,10 +1,13 @@
-Encoding: UTF-8
 Package: projpred
+Encoding: UTF-8
 Title: Projection Predictive Feature Selection
 Version: 2.0.5.9000
-Authors@R: c(person("Juho", "Piironen", role = c("aut"), email = "juho.t.piironen@gmail.com"),
+Date: 2021-09-21
+Authors@R: c(person("Juho", "Piironen", role = c("aut"),
+                    email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
-             person("Alejandro", "Catalina", role = c("cre", "aut"), email="alecatfel@gmail.com"),
+             person("Alejandro", "Catalina", role = c("cre", "aut"),
+                    email = "alecatfel@gmail.com"),
              person("Aki", "Vehtari", role = "aut"),
              person("Jonah", "Gabry", role = "ctb"),
              person("Marco", "Colombo", role = "ctb"),
@@ -15,12 +18,15 @@ Maintainer:
     Alejandro Catalina <alecatfel@gmail.com>
 Description:
     Performs projection predictive feature selection for generalized linear
-    models and generalized linear and additive multilevel models
-    (see, Piironen, Paasiniemi and Vehtari, 2020, <https://projecteuclid.org/euclid.ejs/1589335310>,
-    Catalina, Bürkner and Vehtari, 2020, <arXiv:2010.06994>).
-    The package is compatible with the 'rstanarm' and 'brms' packages, but other
-    reference models can also be used. See the package vignette for more
-    information and examples.
+    models and generalized linear and additive multilevel models (see Piironen,
+    Paasiniemi and Vehtari, 2020, <doi:10.1214/20-EJS1711>; Catalina, Bürkner
+    and Vehtari, 2020, <arXiv:2010.06994>). The package is compatible with the
+    'rstanarm' and 'brms' packages, but other reference models can also be used.
+    See the documentation as well as the package vignettes for more information
+    and examples.
+License: GPL-3
+URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
+BugReports: https://github.com/stan-dev/projpred/issues/
 Depends:
     R (>= 3.5.0)
 Imports:
@@ -36,11 +42,6 @@ Imports:
     mgcv,
     gamm4,
     rlang
-LinkingTo: Rcpp, RcppArmadillo
-License: GPL-3
-LazyData: TRUE
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
 Suggests:
     rstanarm,
     brms,
@@ -49,7 +50,10 @@ Suggests:
     rmarkdown,
     glmnet,
     bayesplot (>= 1.5.0),
-    optimx
+    optimx,
+    posterior
+LinkingTo: Rcpp, RcppArmadillo
+LazyData: TRUE
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
 VignetteBuilder: knitr
-URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
-BugReports: https://github.com/stan-dev/projpred/issues/

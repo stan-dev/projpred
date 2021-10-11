@@ -1,87 +1,85 @@
-#' Predictions from a projected submodel
+#' Predictions from a submodel (after projection)
 #'
-#' \code{proj_linpred} gives draws of the linear predictor (possibly transformed
-#' to response scale) of a projected submodel (i.e., a submodel resulting from
-#' projecting the reference model onto it). \code{proj_predict} draws from the
-#' predictive distribution of a projected submodel. If the projection has not
-#' been performed, both functions also perform the projection. Both functions
-#' can also handle multiple projected submodels at once (if the input object is
-#' of class \code{"vsel"}).
+#' After the projection of the reference model onto a submodel, [proj_linpred()]
+#' gives the linear predictor (possibly transformed to response scale) for all
+#' projected draws of such a submodel. [proj_predict()] draws from the
+#' predictive distribution of such a submodel. If the projection has not been
+#' performed, both functions also perform the projection. Both functions can
+#' also handle multiple submodels at once (if the input `object` is of class
+#' `vsel`).
 #'
-#' @name proj-pred
+#' @name pred-projection
 #'
 #' @template args-newdata
-#' @param object Either an object returned by \code{\link{project}} or
-#'   alternatively any object that can be passed to argument \code{object} of
-#'   \code{\link{project}}.
-#' @param filter_nterms Only applies if \code{object} is an object returned by
-#'   \code{\link{project}}. In that case, \code{filter_nterms} can be used to
-#'   filter \code{object} for only those elements (submodels) with a number of
-#'   solution terms in \code{filter_nterms}. Therefore, needs to be a numeric
-#'   vector or \code{NULL}. If \code{NULL}, use all submodels.
-#' @param transform For \code{proj_linpred} only. A single logical value
-#'   indicating whether the linear predictor should be transformed using the
-#'   inverse-link function (\code{TRUE}) or not (\code{FALSE}).
-#' @param integrated For \code{proj_linpred} only. A single logical value
-#'   indicating whether the output should be averaged over the projected
-#'   posterior draws (\code{TRUE}) or not (\code{FALSE}).
-#' @param nresample_clusters For \code{proj_predict} with clustered projection
+#' @param object An object returned by [project()] or an object that can be
+#'   passed to argument `object` of [project()].
+#' @param filter_nterms Only applies if `object` is an object returned by
+#'   [project()]. In that case, `filter_nterms` can be used to filter `object`
+#'   for only those elements (submodels) with a number of solution terms in
+#'   `filter_nterms`. Therefore, needs to be a numeric vector or `NULL`. If
+#'   `NULL`, use all submodels.
+#' @param transform For [proj_linpred()] only. A single logical value indicating
+#'   whether the linear predictor should be transformed to response scale using
+#'   the inverse-link function (`TRUE`) or not (`FALSE`).
+#' @param integrated For [proj_linpred()] only. A single logical value
+#'   indicating whether the output should be averaged across the projected
+#'   posterior draws (`TRUE`) or not (`FALSE`).
+#' @param nresample_clusters For [proj_predict()] with clustered projection
 #'   only. Number of draws to return from the predictive distribution of the
-#'   projection. Not to be confused with argument \code{nclusters} of
-#'   \code{\link{project}}: \code{nresample_clusters} gives the number of draws
-#'   (\emph{with} replacement) from the set of clustered posterior draws after
-#'   projection (as determined by argument \code{nclusters} of
-#'   \code{\link{project}}).
-#' @param .seed For \code{proj_predict} only. A seed for drawing from the
+#'   submodel. Not to be confused with argument `nclusters` of [project()]:
+#'   `nresample_clusters` gives the number of draws (*with* replacement) from
+#'   the set of clustered posterior draws after projection (with this set being
+#'   determined by argument `nclusters` of [project()]).
+#' @param .seed For [proj_predict()] only. Pseudorandom number generation (PRNG)
+#'   seed by which the same results can be obtained again if needed. If `NULL`,
+#'   no seed is set and therefore, the results are not reproducible. See
+#'   [set.seed()] for details. Here, this seed is used for drawing from the
 #'   predictive distribution of the submodel(s) onto which the reference model
-#'   was (or is) projected. If a clustered projection was performed,
-#'   \code{.seed} is also used for drawing from the set of the projected
-#'   clusters of posterior draws (see argument \code{nresample_clusters}). If
-#'   \code{NULL}, no seed is set and therefore, the results are in general not
-#'   reproducible. See \code{\link{set.seed}} for details.
-#' @param ... Additional arguments passed to \code{\link{project}} if
-#'   \code{object} is not already an object returned by \code{\link{project}}.
+#'   was projected. If a clustered projection was performed, `.seed` is also
+#'   used for drawing from the set of the projected clusters of posterior draws
+#'   (see argument `nresample_clusters`).
+#' @param ... Additional arguments passed to [project()] if `object` is not
+#'   already an object returned by [project()].
 #'
-#' @return If the prediction is done for one submodel only (i.e., \code{nterms}
-#'   has length one or \code{solution_terms} is specified):
-#'   \itemize{
-#'     \item \code{proj_linpred} returns a \code{list} with elements \code{pred}
-#'     (predictions) and \code{lpd} (log predictive densities). Each of these
-#'     two elements is a \eqn{S \times N}{S x N} matrix.
-#'     \item \code{proj_predict} returns a \eqn{S \times N}{S x N} matrix of
-#'     predictions.
-#'   }
-#'   Thereby, \eqn{S} denotes the number of (possibly clustered) projected
-#'   posterior draws and \eqn{N} denotes the number of observations.
+#' @return Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
+#'   clustered) projected posterior draws (short: the number of projected draws)
+#'   and \eqn{N} the number of observations. Then, if the prediction is done for
+#'   one submodel only (i.e., `length(nterms) == 1 || !is.null(solution_terms)`
+#'   in the call to [project()]):
+#'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
+#'   `lpd` (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
+#'   \times N}{S_prj x N} matrices.
+#'   * [proj_predict()] returns a \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
+#'   matrix of predictions.
 #'
 #'   If the prediction is done for more than one submodel, the output from above
-#'   is returned for each submodel, giving a named \code{list} with one element
-#'   for each submodel (the names of this \code{list} being the numbers of
-#'   solutions terms of the submodels when counting the intercept, too).
+#'   is returned for each submodel, giving a named `list` with one element for
+#'   each submodel (the names of this `list` being the numbers of solutions
+#'   terms of the submodels when counting the intercept, too).
 #'
 #' @examples
-#' \donttest{
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n * d), nrow = n)
-#'   y <- x[, 1] + rnorm(n, sd = 0.5)
-#'   data <- data.frame(x, y)
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # Reference model (here an object of class "stanreg"):
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(),
-#'                             data = data, chains = 2, iter = 500, seed = 1235)
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
 #'
-#'   # Variable selection (here without cross-validation, but only for the sake
-#'   # of speed in this demonstration):
-#'   vs <- varsel(fit)
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
 #'
-#'   # Predictions (at the training points) from the projected submodels
-#'   # corresponding to the first 4 selected predictor terms:
-#'   pred <- proj_linpred(vs, nterms = 4)
-#'   pred <- proj_predict(vs, nterms = 4)
-#' }
+#'   # Predictions (at the training points) from the submodel onto which the
+#'   # reference model was projected:
+#'   prjl <- proj_linpred(prj)
+#'   prjp <- proj_predict(prj, .seed = 7364)
 #' }
 #'
 NULL
@@ -194,7 +192,7 @@ proj_helper <- function(object, newdata,
   return(.unlist_proj(preds))
 }
 
-#' @rdname proj-pred
+#' @rdname pred-projection
 #' @export
 proj_linpred <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
@@ -250,7 +248,7 @@ compute_lpd <- function(ynew, mu, proj, weights) {
   }
 }
 
-#' @rdname proj-pred
+#' @rdname pred-projection
 #' @export
 proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
@@ -289,30 +287,35 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
   }))
 }
 
-#' Plot summary statistics related to variable selection
+#' Plot summary statistics of a variable selection
+#'
+#' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
+#' [cv_varsel()]).
 #'
 #' @inheritParams summary.vsel
-#' @param x The object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
+#' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #'
 #' @examples
-#' \donttest{
-#' ### Usage with stanreg objects
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'     data=data, chains=2, iter=500)
-#'   vs <- cv_varsel(fit)
-#'   plot(vs)
-#' }
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
+#'   print(plot(vs))
 #' }
 #'
-#' @method plot vsel
 #' @export
 plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
                       deltas = FALSE, alpha = 0.32, baseline = NULL,
@@ -406,62 +409,66 @@ plot.vsel <- function(x, nterms_max = NULL, stats = "elpd",
   return(pp)
 }
 
-#' Summary statistics related to variable selection
+#' Summary statistics of a variable selection
 #'
-#' @param object The object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
+#' This is the [summary()] method for `vsel` objects (returned by [varsel()] or
+#' [cv_varsel()]).
+#'
+#' @param object An object of class `vsel` (returned by [varsel()] or
+#'   [cv_varsel()]).
 #' @param nterms_max Maximum submodel size for which the statistics are
-#'   calculated. Note that \code{nterms_max} does not count the intercept, so
-#'   use \code{nterms_max = 0} for the intercept-only model. For
-#'   \code{plot.vsel}, \code{nterms_max} must be at least 1.
+#'   calculated. Note that `nterms_max` does not count the intercept, so use
+#'   `nterms_max = 0` for the intercept-only model. For [plot.vsel()],
+#'   `nterms_max` must be at least `1`.
 #' @param stats One or several strings determining which statistics to
 #'   calculate. Available statistics are:
-#' \itemize{
-#'  \item{elpd:} {(Expected) sum of log predictive densities}
-#'  \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
-#'   number of datapoints.} \item{mse:} {Mean squared error (gaussian family
-#'   only)}
-#'  \item{rmse:} {Root mean squared error (gaussian family only)}
-#'  \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
-#'  \item{auc:} {Area under the ROC curve (binomial family only)}
-#' }
-#' Default is \code{"elpd"}.
-#' @param type One or more items from 'mean', 'se', 'lower' and 'upper'
-#'   indicating which of these to compute (mean, standard error, and lower and
-#'   upper credible bounds). The credible bounds are determined so that
-#'   \code{1-alpha} percent of the mass falls between them.
-#' @param deltas If \code{TRUE}, the submodel statistics are estimated relative
-#'   to the baseline model (see argument \code{baseline}) instead of estimating
-#'   the actual values of the statistics. Defaults to \code{FALSE}.
-#' @param alpha A number indicating the desired coverage of the credible
-#'   intervals. For example \code{alpha=0.32} corresponds to 68% probability
-#'   mass within the intervals, that is, one standard error intervals.
-#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
-#'   reference model or the best submodel found. Default is 'ref' when the
-#'   reference model exists, and 'best' otherwise.
+#'   * `elpd`: (expected) sum of log predictive densities;
+#'   * `mlpd`: mean log predictive density, that is, `elpd` divided by the
+#'   number of observations (data points);
+#'   * `mse`: mean squared error;
+#'   * `rmse`: root mean squared error;
+#'   * `acc` (or its alias, `pctcorr`): classification accuracy ([binomial()]
+#'   family only);
+#'   * `auc`: area under the ROC curve ([binomial()] family only).
+#' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
+#'   `"diff"`, and `"diff.se"` indicating which of these to compute (mean,
+#'   standard error, lower and upper credible bounds, difference to the
+#'   corresponding statistic of the reference model, and standard error of this
+#'   difference). The credible bounds are determined so that `1 - alpha` percent
+#'   of the probability mass falls between them. Items `"diff"` and `"diff.se"`
+#'   are only supported if `!deltas`.
+#' @param deltas If `TRUE`, the submodel statistics are estimated relative to
+#'   the baseline model (see argument `baseline`) instead of estimating the
+#'   actual values of the statistics.
+#' @param alpha A number giving the desired coverage of the credible intervals.
+#'   For example, `alpha = 0.32` corresponds to 68% probability mass within the
+#'   intervals, that is, one-standard-error intervals.
+#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
+#'   the reference model or the best submodel found, respectively. If `NULL`,
+#'   then `"ref"` is used, except for `datafit`s for which `"best"` is used.
 #' @param ... Currently ignored.
 #'
 #' @examples
-#' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'                             data=data, chains=2, iter=500)
-#'   vs <- cv_varsel(fit)
-#'   plot(vs)
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
 #'
-#'   # print out some stats
-#'   summary(vs, stats=c('mse'), type = c('mean','se'))
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
+#'   print(summary(vs))
 #' }
-#' }
 #'
-#' @method summary vsel
 #' @export
 summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
                          type = c("mean", "se", "diff", "diff.se"),
@@ -569,23 +576,19 @@ summary.vsel <- function(object, nterms_max = NULL, stats = "elpd",
   return(out)
 }
 
-#' Print methods for summary objects
+#' Print summary of variable selection
 #'
-#' The \code{print} methods for summary objects created by
-#' \code{\link{summary}} to display a summary of the results of the
-#' projection predictive variable selection.
+#' This is the [print()] method for summary objects created by [summary.vsel()].
+#' It displays a summary of the results of the projection predictive variable
+#' selection.
 #'
-#' @name print-vselsummary
-#'
-#' @param x An object of class vselsummary.
-#' @param digits Number of decimal places to be reported (1 by default).
+#' @param x An object of class `vselsummary`.
+#' @param digits Number of decimal places to be reported.
 #' @param ... Currently ignored.
 #'
-#' @return Returns invisibly the output produced by
-#'   \code{\link{summary.vsel}}.
+#' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
-#' @method print vselsummary
 print.vselsummary <- function(x, digits = 1, ...) {
   print(x$family)
   cat("Formula: ")
@@ -627,109 +630,110 @@ print.vselsummary <- function(x, digits = 1, ...) {
   return(invisible(x))
 }
 
-#' Print methods for vsel/vsel objects
+#' Print results (summary) of variable selection
 #'
-#' The \code{print} methods for vsel/vsel objects created by
-#' \code{\link{varsel}} or \code{\link{cv_varsel}}) rely on
-#' \code{\link{summary.vsel}} to display a summary of the results of the
-#' projection predictive variable selection.
+#' This is the [print()] method for `vsel` objects (returned by [varsel()] or
+#' [cv_varsel()]). It displays a summary of the results of the projection
+#' predictive variable selection by first calling [summary.vsel()] and then
+#' [print.vselsummary()].
 #'
-#' @name print-vsel
+#' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
+#' @param ... Further arguments passed to [summary.vsel()] (apart from
+#'   argument `digits` which is passed to [print.vselsummary()]).
 #'
-#' @param x An object of class vsel/vsel.
-#' @param ... Further arguments passed to \code{\link{summary.vsel}} (apart from
-#'   argument \code{digits} which is passed to \code{\link{print.vselsummary}}).
-#'
-#' @return Returns invisibly the data frame produced by
-#'   \code{\link{summary.vsel}}.
+#' @return The `data.frame` returned by [summary.vsel()] (invisible).
 #'
 #' @export
-#' @method print vsel
 print.vsel <- function(x, ...) {
   stats <- summary.vsel(x, ...)
   print(stats, ...)
   return(invisible(stats))
 }
 
-#' @rdname suggest_size.vsel
+#' Suggest model size
+#'
+#' This function can suggest an appropriate model size based on a decision rule
+#' described in section "Details". Note that the decision rule is heuristic and
+#' should only be interpreted as a guideline. It is recommended to examine the
+#' results via [plot.vsel()] and/or [summary.vsel()] and make the final decision
+#' based on what is most appropriate for the given problem.
+#'
+#' @inheritParams summary.vsel
+#' @param object An object of class `vsel` (returned by [varsel()] or
+#'   [cv_varsel()]).
+#' @param stat Statistic used for the decision. See [summary.vsel()] for
+#'   possible choices.
+#' @param alpha A number giving the desired coverage of the credible intervals
+#'   based on which the decision is made. For example, `alpha = 0.32`
+#'   corresponds to 68% probability mass within the intervals, that is,
+#'   one-standard-error intervals. See section "Details" for more information.
+#' @param pct A number giving the relative proportion (*not* percents) between
+#'   baseline model and null model utilities one is willing to sacrifice. See
+#'   section "Details" for more information.
+#' @param type Either `"upper"` or `"lower"` determining whether the decisions
+#'   are based on the upper or lower credible bounds, respectively. See section
+#'   "Details" for more information.
+#' @param warnings Whether to give warnings if automatic suggestion fails,
+#'   mainly for internal use. Usually there is no reason to set this to `FALSE`.
+#' @param ... Currently ignored.
+#'
+#' @details The suggested model size is the smallest model size for which either
+#'   the lower or upper bound (depending on argument `type`) of the credible
+#'   interval (with coverage `1 - alpha`) for \eqn{u_k - u_{\mbox{base}}}{u_k -
+#'   u_base} (with \eqn{u_k} denoting the \eqn{k}-th submodel's utility and
+#'   \eqn{u_{\mbox{base}}}{u_base} denoting the baseline model's utility) falls
+#'   above (or is equal to) \deqn{\mbox{pct} * (u_0 - u_{\mbox{base}})}{pct *
+#'   (u_0 - u_base)} where \eqn{u_0} denotes the null model utility. The
+#'   baseline is either the reference model or the best submodel found (see
+#'   argument `baseline`).
+#'
+#'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
+#'   select the smallest model size for which the upper bound of the
+#'   corresponding credible interval exceeds (or is equal to) the baseline model
+#'   utility, that is, which is better than the baseline model with a
+#'   probability of at least 0.16 (and consequently, worse with a probability of
+#'   at most 0.84). In other words, the estimated difference between the
+#'   baseline model utility and the submodel utility is at most one standard
+#'   error away from zero, so the two utilities are considered to be close.
+#'
+#' @note Loss statistics like the root mean-squared error (RMSE) and the
+#'   mean-squared error (MSE) are converted to utilities by multiplying them by
+#'   `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
+#'   "upper")` finds the smallest model size whose upper credible bound of the
+#'   *negative* RMSE or MSE exceeds the cutoff (or equivalently has the lower
+#'   credible bound of RMSE or MSE below the cutoff). This is done to make the
+#'   interpretation of argument `type` the same regardless of argument `stat`.
+#'
+#'   The intercept is not counted by [suggest_size()], so a suggested size of
+#'   zero stands for the intercept-only model.
+#'
+#' @examples
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
+#'   print(suggest_size(vs))
+#' }
+#'
 #' @export
 suggest_size <- function(object, ...) {
   UseMethod("suggest_size")
 }
 
-#' Suggest model size
-#'
-#' This function can be used for suggesting an appropriate model size
-#' based on a certain default rule. Notice that the decision rules are heuristic
-#' and should be interpreted as guidelines. It is recommended that the user
-#' studies the results via \code{varsel_plot} and/or \code{summary}
-#' and makes the final decision based on what is most appropriate for the given
-#' problem.
-#'
-#' @param object The object returned by \link[=varsel]{varsel} or
-#'   \link[=cv_varsel]{cv_varsel}.
-#' @param stat Statistic used for the decision. Default is 'elpd'. See
-#'   \code{summary} for other possible choices.
-#' @param alpha A number indicating the desired coverage of the credible
-#'   intervals based on which the decision is made. E.g. \code{alpha=0.32}
-#'   corresponds to 68% probability mass within the intervals (one standard
-#'   error intervals). See details for more information.
-#' @param pct Number indicating the relative proportion between baseline model
-#'   and null model utilities one is willing to sacrifice. See details for more
-#'   information.
-#' @param type Either 'upper' (default) or 'lower' determining whether the
-#'   decisions are based on the upper or lower credible bounds. See details for
-#'   more information.
-#' @param baseline Either 'ref' or 'best' indicating whether the baseline is the
-#'   reference model or the best submodel found. Default is 'ref' when the
-#'   reference model exists, and 'best' otherwise.
-#' @param warnings Whether to give warnings if automatic suggestion fails,
-#'   mainly for internal use. Default is TRUE, and usually there is no reason to
-#'   set to FALSE.
-#' @param ... Currently ignored.
-#'
-#' @details The suggested model size is the smallest model for which either the
-#'   lower or upper (depending on argument \code{type}) credible bound of the
-#'   submodel utility \eqn{u_k} with significance level \code{alpha} falls above
-#'   \deqn{u_base - pct*(u_base - u_0)}
-#' Here \eqn{u_base} denotes the utility for the baseline model and \eqn{u_0}
-#'   the null model utility. The baseline is either the reference model or the
-#'   best submodel found (see argument \code{baseline}). The lower and upper
-#'   bounds are defined to contain the submodel utility with probability 1-alpha
-#'   (each tail has mass alpha/2).
-#'
-#' By default \code{ratio=0}, \code{alpha=0.32} and \code{type='upper'} which
-#'   means that we select the smallest model for which the upper tail exceeds
-#'   the baseline model level, that is, which is better than the baseline model
-#'   with probability 0.16 (and consequently, worse with probability 0.84). In
-#'   other words, the estimated difference between the baseline model and
-#'   submodel utilities is at most one standard error away from zero, so the two
-#'   utilities are considered to be close.
-#'
-#' NOTE: Loss statistics like RMSE and MSE are converted to utilities by
-#'   multiplying them by -1, so call such as \code{suggest_size(object,
-#'   stat='rmse', type='upper')} should be interpreted as finding the smallest
-#'   model whose upper credible bound of the \emph{negative} RMSE exceeds the
-#'   cutoff level (or equivalently has the lower credible bound of RMSE below
-#'   the cutoff level). This is done to make the interpretation of the argument
-#'   \code{type} the same regardless of argument \code{stat}.
-#'
-#' @examples
-#' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'            data=data, chains=2, iter=500)
-#'   vs <- cv_varsel(fit)
-#'   suggest_size(vs)
-#' }
-#' }
-#'
+#' @rdname suggest_size
 #' @export
 suggest_size.vsel <- function(object, stat = "elpd", alpha = 0.32, pct = 0,
                               type = "upper", baseline = NULL, warnings = TRUE,
@@ -803,7 +807,6 @@ replace_population_names <- function(population_effects) {
   return(population_effects)
 }
 
-#' @method coef subfit
 #' @keywords internal
 #' @export
 coef.subfit <- function(object, ...) {
@@ -983,36 +986,91 @@ as.matrix.list <- function(x, ...) {
   return(do.call(cbind, lapply(x, as.matrix.glm, ...)))
 }
 
-#' @method t glm
 #' @keywords internal
 #' @export
 t.glm <- function(x, ...) {
   return(t(as.matrix(x), ...))
 }
 
-#' @method t lm
 #' @keywords internal
 #' @export
 t.lm <- function(x, ...) {
   return(t(as.matrix(x), ...))
 }
 
-#' @method t ridgelm
 #' @keywords internal
 #' @export
 t.ridgelm <- function(x, ...) {
   return(t(as.matrix(x), ...))
 }
 
-#' @method t list
 #' @keywords internal
 #' @export
 t.list <- function(x, ...) {
   return(t(as.matrix(x), ...))
 }
 
+#' Extract projected parameter draws
+#'
+#' This is the [as.matrix()] method for `projection` objects (returned by
+#' [project()], possibly as elements of a `list`). It extracts the projected
+#' parameter draws and returns them as a matrix.
+#'
+#' @param x An object of class `projection` (returned by [project()], possibly
+#'   as elements of a `list`).
+#' @param ... Currently ignored.
+#'
+#' @return An \eqn{S_{\mbox{prj}} \times Q}{S_prj x Q} matrix of projected
+#'   draws, with \eqn{S_{\mbox{prj}}}{S_prj} denoting the number of projected
+#'   draws and \eqn{Q} the number of parameters.
+#'
+#' @examples
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
+#'   prjmat <- as.matrix(prj)
+#'   ### For further post-processing (e.g., via packages `bayesplot` and
+#'   ### `posterior`), we will here ignore the fact that clustering was used
+#'   ### (due to argument `nclusters` above). CAUTION: Ignoring the clustering
+#'   ### is not recommended and only shown here for demonstrative purposes. A
+#'   ### better solution for the clustering case is explained below.
+#'   # If the `bayesplot` package is installed, the output from
+#'   # as.matrix.projection() can be used there. For example:
+#'   if (requireNamespace("bayesplot", quietly = TRUE)) {
+#'     print(bayesplot::mcmc_intervals(prjmat))
+#'   }
+#'   # If the `posterior` package is installed, the output from
+#'   # as.matrix.projection() can be used there. For example:
+#'   if (requireNamespace("posterior", quietly = TRUE)) {
+#'     prjdrws <- posterior::as_draws_matrix(prjmat)
+#'     print(posterior::summarize_draws(
+#'       prjdrws,
+#'       "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#'     ))
+#'   }
+#'   ### Better solution for post-processing clustered draws (e.g., via
+#'   ### `bayesplot` or `posterior`): Don't ignore the fact that clustering was
+#'   ### used. Instead, resample the clusters according to their weights (e.g.,
+#'   ### via posterior::resample_draws()). However, this requires access to the
+#'   ### cluster weights which is not implemented in `projpred` yet. This
+#'   ### example will be extended as soon as those weights are accessible.
+#' }
+#'
 #' @method as.matrix projection
-#' @keywords internal
 #' @export
 as.matrix.projection <- function(x, ...) {
   if (inherits(x$refmodel, "datafit")) {
@@ -1035,45 +1093,46 @@ as.matrix.projection <- function(x, ...) {
   return(res)
 }
 
-##' Create cross-validation indices
-##'
-##' Divide indices from 1 to \code{n} into subsets for \code{k}-fold cross
-##' validation. These functions are potentially useful when creating the
-##' \code{cvfits} and \code{cvfun} arguments for
-##' \link[=init_refmodel]{init_refmodel}. The returned value is different for
-##' these two methods, see below for details.
-##'
-##' @name cv-indices
-##'
-##' @param n Number of data points.
-##' @param K Number of folds. Must be at least 2 and not exceed \code{n}.
-##' @param out Format of the output, either 'foldwise' (default) or 'indices'.
-##'   See below for details.
-##' @param seed Random seed so that the same division could be obtained again if
-##'   needed.
-##'
-##' @return \code{cvfolds} returns a vector of length \code{n} such that each
-##'   element is an integer between 1 and \code{k} denoting which fold the
-##'   corresponding data point belongs to. The returned value of \code{cv_ids}
-##'   depends on the \code{out}-argument. If \code{out}='foldwise', the returned
-##'   value is a list with \code{k} elements, each having fields \code{tr} and
-##'   \code{ts} which give the training and test indices, respectively, for the
-##'   corresponding fold. If \code{out}='indices', the returned value is a list
-##'   with fields \code{tr} and \code{ts} each of which is a list with \code{k}
-##'   elements giving the training and test indices for each fold.
-##' @examples
-##' \donttest{
-##' ### compute sample means within each fold
-##' n <- 100
-##' y <- rnorm(n)
-##' cv <- cv_ids(n, K=5)
-##' cvmeans <- lapply(cv, function(fold) mean(y[fold$tr]))
-##' }
-##'
+#' Create cross-validation folds
+#'
+#' These are helper functions to create cross-validation (CV) folds, i.e., to
+#' split up the indices from 1 to `n` into `K` subsets ("folds") for
+#' \eqn{K}-fold CV. These functions are potentially useful when creating the
+#' `cvfits` and `cvfun` arguments for [init_refmodel()]. The return value is
+#' different for these two methods, see below for details.
+#'
+#' @name cv-indices
+#'
+#' @param n Number of observations (data points).
+#' @param K Number of folds. Must be at least 2 and not exceed `n`.
+#' @param out Format of the output, either `"foldwise"` or `"indices"`. See
+#'   below for details.
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'
+#' @return [cvfolds()] returns a vector of length `n` such that each element is
+#'   an integer between 1 and `k` denoting which fold the corresponding data
+#'   point belongs to. The return value of [cv_ids()] depends on the `out`
+#'   argument. If `out = "foldwise"`, the return value is a `list` with `k`
+#'   elements, each being a `list` with elements `tr` and `ts` giving the
+#'   training and test indices, respectively, for the corresponding fold. If
+#'   `out = "indices"`, the return value is a `list` with elements `tr` and `ts`
+#'   each being a `list` with `k` elements giving the training and test indices,
+#'   respectively, for each fold.
+#'
+#' @examples
+#' n <- 100
+#' set.seed(1234)
+#' y <- rnorm(n)
+#' cv <- cv_ids(n, K = 5, seed = 9876)
+#' # Mean within the test set of each fold:
+#' cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
+#'
 NULL
 
-##' @rdname cv-indices
-##' @export
+#' @rdname cv-indices
+#' @export
 cvfolds <- function(n, K, seed = NULL) {
   .validate_num_folds(K, n)
 
@@ -1091,8 +1150,8 @@ cvfolds <- function(n, K, seed = NULL) {
   return(folds)
 }
 
-##' @rdname cv-indices
-##' @export
+#' @rdname cv-indices
+#' @export
 cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
   .validate_num_folds(K, n)
   out <- match.arg(out)
@@ -1128,14 +1187,49 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
   return(cv)
 }
 
-#' Recover solution path from an object
+#' Retrieve predictor solution path or predictor combination
 #'
-#' @param object The object from which to extract the solution terms, for
-#'   example an object of class \code{"vsel"} (returned by
-#'   \link[=varsel]{varsel} or \link[=cv_varsel]{cv_varsel}).
-#' @param ... Arguments passed from the \code{solution_terms} generic to its
-#'   methods.
+#' This function retrieves the "solution terms" from an object. For `vsel`
+#' objects (returned by [varsel()] or [cv_varsel()]), this is the predictor
+#' solution path of the variable selection. For `projection` objects (returned
+#' by [project()], possibly as elements of a `list`), this is the predictor
+#' combination onto which the projection was performed.
+#'
+#' @param object The object from which to retrieve the solution terms. Possible
+#'   classes may be inferred from the names of the corresponding methods (see
+#'   also the description).
+#' @param ... Currently ignored.
+#'
 #' @return A character vector of solution terms.
+#'
+#' @examples
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
+#'   print(solution_terms(vs))
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
+#'   print(solution_terms(prj)) # gives `c("X1", "X3", "X5")`
+#' }
+#'
 #' @export
 solution_terms <- function(object, ...) {
   UseMethod("solution_terms")

@@ -1,59 +1,91 @@
-#' Cross-validated variable selection (varsel)
+#' Variable selection with cross-validation
 #'
-#' Perform cross-validation for the projective variable selection for a
-#' generalized linear model or generalized lienar and additive multilevel
-#' models.
+#' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
+#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* part and
+#' an *evaluation* part. The search part determines the solution path, i.e., the
+#' best submodel for each number of predictor terms (model size). The evaluation
+#' part determines the predictive performance of the submodels along the
+#' solution path. In contrast to [varsel()], [cv_varsel()] performs a
+#' cross-validation (CV) by running the search part with the training data of
+#' each CV fold separately (an exception is explained in section "Note" below)
+#' and running the evaluation part on the corresponding test set of each CV
+#' fold.
 #'
-#' @name cv_varsel
-#'
-#' @template args-vsel
-#' @param cv_method The cross-validation method, either 'LOO' or 'kfold'.
-#'   Default is 'LOO'.
-#' @param nloo Number of observations used to compute the LOO validation
-#'   (anything between 1 and the total number of observations). Smaller values
-#'   lead to faster computation but higher uncertainty (larger errorbars) in the
-#'   accuracy estimation. Default is to use all observations, but for faster
-#'   experimentation, one can set this to a small value such as 100. Only
-#'   applicable if \code{cv_method = 'LOO'}.
-#' @param K Number of folds in the K-fold cross validation. Default is 5 for
-#'   genuine reference models and 10 for datafits (that is, for penalized
+#' @inheritParams varsel
+#' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
+#'   case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
+#'   is performed, which avoids refitting the reference model `nloo` times (in
+#'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
+#'   performed.
+#' @param nloo Only relevant if `cv_method == "LOO"`. Number of subsampled LOO
+#'   CV folds, i.e., number of observations used for the LOO CV (anything
+#'   between 1 and the original number of observations). Smaller values lead to
+#'   faster computation but higher uncertainty in the evaluation part. If
+#'   `NULL`, all observations are used, but for faster experimentation, one can
+#'   set this to a smaller value.
+#' @param K Only relevant if `cv_method == "kfold"`. Number of folds in the
+#'   \eqn{K}-fold CV. If `NULL`, then `5` is used for genuine reference models
+#'   (i.e., of class `refmodel`) and `10` for `datafit`s (that is, for penalized
 #'   maximum likelihood estimation).
-#' @param validate_search Whether to cross-validate also the selection process,
-#'   that is, whether to perform selection separately for each fold. Default is
-#'   TRUE and we strongly recommend not setting this to FALSE, because this is
-#'   known to bias the accuracy estimates for the selected submodels. However,
-#'   setting this to FALSE can sometimes be useful because comparing the results
-#'   to the case where this parameter is TRUE gives idea how strongly the
-#'   feature selection is (over)fitted to the data (the difference corresponds
-#'   to the search degrees of freedom or the effective number of parameters
-#'   introduced by the selectin process).
-#' @param seed Random seed used in the subsampling LOO. By default uses a fixed
-#'   seed.
+#' @param validate_search Only relevant if `cv_method == "LOO"`. A single
+#'   logical value indicating whether to cross-validate also the search part,
+#'   i.e., whether to run the search separately for each CV fold (`TRUE`) or not
+#'   (`FALSE`). We strongly do not recommend setting this to `FALSE`, because
+#'   this is known to bias the predictive performance estimates of the selected
+#'   submodels. However, setting this to `FALSE` can sometimes be useful because
+#'   comparing the results to the case where this argument is `TRUE` gives an
+#'   idea of how strongly the variable selection is (over-)fitted to the data
+#'   (the difference corresponds to the search degrees of freedom or the
+#'   effective number of parameters introduced by the search).
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   Here, this seed is used for clustering the reference model's posterior
+#'   draws (if `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo`
+#'   is smaller than the number of observations), and for sampling the folds in
+#'   K-fold CV.
 #'
-#' @details Using less draws or clusters in \code{ndraws}, \code{nclusters},
-#'   \code{nclusters_pred}, or \code{ndraws_pred} than posterior draws in the
-#'   reference model may result in slightly inaccurate projection performance.
-#'   Increasing these arguments linearly affects the computation time.
+#' @inherit varsel details return
 #'
-#' @return An object of type \code{vsel} that contains information about the
-#'   feature selection. The fields are not meant to be accessed directly by the
-#'   user but instead via the helper functions (see the vignettes or type
-#'   ?projpred to see the main functions in the package.)
+#' @note The case `cv_method == "LOO" && !validate_search` constitutes an
+#'   exception where the search part is not cross-validated. In that case, the
+#'   evaluation part is based on a PSIS-LOO CV.
 #'
-#' @examples
-#' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(),
-#'      data=data, chains=2, iter=500)
-#'   cvs <- cv_varsel(fit)
-#'   plot(cvs)
-#' }
+#' @references
+#'
+#' Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. *Statistics and
+#' Computing*, **27**(5), 1413-1432. DOI:
+#' [10.1007/s11222-016-9696-4](https://doi.org/10.1007/s11222-016-9696-4).
+#'
+#' Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
+#' smoothed importance sampling. *arXiv:1507.02646*. URL:
+#' <https://arxiv.org/abs/1507.02646>.
+#'
+#' @seealso [varsel()]
+#'
+#' @examplesIf identical(Sys.getenv("RUN_EX"), "true")
+#' # Note: The code from this example is not executed when called via example().
+#' # To execute it, you have to copy and paste it manually to the console.
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection with cross-validation (with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   cvvs <- cv_varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                     seed = 5555)
+#'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#'   # and `?solution_terms.vsel` for possible post-processing functions.
 #' }
 #'
 #' @export
