@@ -40,15 +40,13 @@
   }
 }
 
-# copied from summary_funs to remove duplicated code
+# A function to calculate the desired performance statistics, their standard
+# errors, and confidence intervals with coverage `1 - alpha` based on the
+# variable selection output. If `nfeat_baseline` is given, then compute the
+# statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
+# means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
                             nfeat_baseline = NULL) {
-  ##
-  ## Calculates the desired statistics, their standard errors and credible
-  ## bounds with given credible level alpha based on the variable selection
-  ## information. If nfeat_baseline is given, then compute the statistics
-  ## relative to the baseline model with that size (nfeat_baseline = Inf means
-  ## reference model).
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
