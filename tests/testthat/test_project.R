@@ -278,6 +278,26 @@ test_that(paste(
 
 # seed --------------------------------------------------------------------
 
+test_that("non-clustered projection does not require a seed", {
+  # This test is important to ensure that we don't have to set a seed where we
+  # don't expect it to be necessary.
+  tstsetups <- grep("\\.noclust$|\\.default_ndr_ncl$", names(prjs),
+                    value = TRUE)
+  # Be completely random here (should not be necessary, though, when advancing
+  # `.Random.seed[2]` as done further below):
+  set.seed(NULL)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    p_orig <- prjs[[tstsetup]]
+    rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
+    p_new <- do.call(project, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      excl_nonargs(args_prj_i, nms_excl_add = "seed")
+    ))
+    expect_equal(p_new, p_orig, info = tstsetup)
+  }
+})
+
 test_that("`seed` works (and restores the RNG state afterwards)", {
   # Note: Extensive tests for reproducibility may be found among the tests for
   # .get_refdist().

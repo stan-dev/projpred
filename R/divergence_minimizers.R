@@ -1,5 +1,12 @@
 # Divergence minimizers ---------------------------------------------------
 
+# Needed to avoid a NOTE in `R CMD check`:
+if (getRversion() >= package_version("2.15.1")) {
+  utils::globalVariables("formula_s")
+  utils::globalVariables("projpred_var_s")
+  utils::globalVariables("projpred_formula_no_random_s")
+}
+
 divmin <- function(formula, projpred_var, ...) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
@@ -29,15 +36,50 @@ divmin <- function(formula, projpred_var, ...) {
     )
   }
 
-  lapply(seq_along(formulas), function(s) {
-    sdivmin(
-      formula = formulas[[s]],
-      projpred_var = projpred_var[, s, drop = FALSE],
-      projpred_formula_no_random = projpred_formulas_no_random[[s]],
-      projpred_random = projpred_random,
-      ...
-    )
-  })
+  if (length(formulas) < getOption("projpred.prll_prj_trigger", Inf)) {
+    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+    # foreach::`%do%`` here and then proceed as in the parallel case, but that
+    # would require adding more "hard" dependencies (because packages 'foreach'
+    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+    return(lapply(seq_along(formulas), function(s) {
+      sdivmin(
+        formula = formulas[[s]],
+        projpred_var = projpred_var[, s, drop = FALSE],
+        projpred_formula_no_random = projpred_formulas_no_random[[s]],
+        projpred_random = projpred_random,
+        ...
+      )
+    }))
+  } else {
+    # Parallel case.
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+      stop("Please install the 'foreach' package.")
+    }
+    if (!requireNamespace("iterators", quietly = TRUE)) {
+      stop("Please install the 'iterators' package.")
+    }
+    dot_args <- list(...)
+    `%do_projpred%` <- foreach::`%dopar%`
+    return(foreach::foreach(
+      formula_s = formulas,
+      projpred_var_s = iterators::iter(projpred_var, by = "column"),
+      projpred_formula_no_random_s = projpred_formulas_no_random,
+      .export = c("sdivmin", "projpred_random", "dot_args"),
+      .noexport = c(
+        "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
+        "formulas", "projpred_var", "projpred_formulas_no_random"
+      )
+    ) %do_projpred% {
+      do.call(
+        sdivmin,
+        c(list(formula = formula_s,
+               projpred_var = projpred_var_s,
+               projpred_formula_no_random = projpred_formula_no_random_s,
+               projpred_random = projpred_random),
+          dot_args)
+      )
+    })
+  }
 }
 
 fit_glm_ridge_callback <- function(formula, data, projpred_var = 0,
