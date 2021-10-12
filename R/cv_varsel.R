@@ -17,12 +17,12 @@
 #'   is performed, which avoids refitting the reference model `nloo` times (in
 #'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed.
-#' @param nloo Only relevant if `cv_method == "LOO"`. Number of subsampled LOO
-#'   CV folds, i.e., number of observations used for the LOO CV (anything
-#'   between 1 and the original number of observations). Smaller values lead to
-#'   faster computation but higher uncertainty in the evaluation part. If
-#'   `NULL`, all observations are used, but for faster experimentation, one can
-#'   set this to a smaller value.
+#' @param nloo **Caution:** Still experimental. Only relevant if `cv_method ==
+#'   "LOO"`. Number of subsampled LOO CV folds, i.e., number of observations
+#'   used for the LOO CV (anything between 1 and the original number of
+#'   observations). Smaller values lead to faster computation but higher
+#'   uncertainty in the evaluation part. If `NULL`, all observations are used,
+#'   but for faster experimentation, one can set this to a smaller value.
 #' @param K Only relevant if `cv_method == "kfold"`. Number of folds in the
 #'   \eqn{K}-fold CV.
 #' @param validate_search Only relevant if `cv_method == "LOO"`. A single
@@ -351,6 +351,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   if (nloo < 1) {
     stop("nloo must be at least 1")
+  } else if (nloo < n) {
+    warning("Subsampled LOO CV is still experimental.")
   }
 
   ## compute loo summaries for the reference model
