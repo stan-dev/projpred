@@ -30,29 +30,37 @@ if (run_brms && packageVersion("brms") <= package_version("2.16.1")) {
 # `vignette("snapshotting", package = "testthat")`)?:
 # Notes:
 #   * The snapshot tests are at least OS-dependent (perhaps even
-#   machine-dependent), so they only make sense locally.
-#   * The latter of the following two conditions avoids that the snapshot tests
-#   are run by `R CMD check` on CRAN and locally (at least in RStudio). The
-#   reason for avoiding this is that in `R CMD check`, the previous snapshots
-#   are not available (at least as long as they are listed in the
-#   `.Rbuildignore` file), so they would be re-created, which would throw a lot
-#   of test warnings.
+#   machine-dependent), so they only make sense locally. Therefore, we don't run
+#   the snapshot tests on CRAN or continuous integration (CI) systems. The
+#   detection of a CI system by the help of environment variable `CI` needs
+#   special care, see <https://github.com/r-lib/testthat/issues/825> and the
+#   source code of `testthat:::on_ci()`.
+#   * The last of the following conditions avoids that the snapshot tests are
+#   run by a local `R CMD check` (at least in RStudio). The reason for avoiding
+#   this is that in `R CMD check`, the previous snapshots are not available (at
+#   least as long as they are listed in the `.Rbuildignore` file), so they would
+#   be re-created, which would throw a lot of test warnings (which could obscure
+#   potentially important warnings).
 run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
+  !identical(toupper(Sys.getenv("CI")), "TRUE") &&
   identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"), "")
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
 # Run parallel tests (see notes below)?:
 run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
+  !identical(toupper(Sys.getenv("CI")), "TRUE") &&
   !identical(.Platform$OS.type, "windows")
 if (run_prll) {
   # Notes:
-  #   * Currently, parallelization only works reliably for GLMs (because of
-  #   memory issues for more complex models like GLMMs, GAMs and GAMMs).
-  #   Therefore, we only test GLMs here.
+  #   * We don't run the parallel tests on CRAN or continuous integration (CI)
+  #   systems because parallelization might require special care there.
   #   * Currently, parallelization on Windows takes longer than running
   #   sequentially. This makes parallelization impractical on Windows, so we
   #   don't run the tests on Windows by default.
+  #   * Currently, parallelization only works reliably for GLMs (because of
+  #   memory issues for more complex models like GLMMs, GAMs and GAMMs).
+  #   Therefore, we will only test GLMs here.
 
   ncores <- parallel::detectCores(logical = FALSE)
   if (ncores == 1) {
