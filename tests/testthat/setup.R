@@ -26,9 +26,10 @@ if (run_brms && packageVersion("brms") <= package_version("2.16.1")) {
           "newer brms version to run the brms tests.")
   run_brms <- FALSE
 }
-# Run snapshot tests (see, e.g., `?expect_snapshot` and
-# `vignette("snapshotting", package = "testthat")`)?:
+# Run snapshot tests?:
 # Notes:
+#   * For general information about snapshot tests, see, e.g.,
+#   `?expect_snapshot` and `vignette("snapshotting", package = "testthat")`.
 #   * The snapshot tests are at least OS-dependent (perhaps even
 #   machine-dependent), so they only make sense locally. Therefore, we don't run
 #   the snapshot tests on CRAN or continuous integration (CI) systems. The
@@ -47,21 +48,20 @@ run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
-# Run parallel tests (see notes below)?:
+# Run parallel tests?:
+# Notes:
+#   * We don't run the parallel tests on CRAN or continuous integration (CI)
+#   systems because parallelization might require special care there.
+#   * Currently, parallelization on Windows takes longer than running
+#   sequentially. This makes parallelization impractical on Windows, so we
+#   don't run the tests on Windows by default.
+#   * Currently, parallelization only works reliably for GLMs (because of
+#   memory issues for more complex models like GLMMs, GAMs and GAMMs).
+#   Therefore, we will only test GLMs here.
 run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
   !identical(toupper(Sys.getenv("CI")), "TRUE") &&
   !identical(.Platform$OS.type, "windows")
 if (run_prll) {
-  # Notes:
-  #   * We don't run the parallel tests on CRAN or continuous integration (CI)
-  #   systems because parallelization might require special care there.
-  #   * Currently, parallelization on Windows takes longer than running
-  #   sequentially. This makes parallelization impractical on Windows, so we
-  #   don't run the tests on Windows by default.
-  #   * Currently, parallelization only works reliably for GLMs (because of
-  #   memory issues for more complex models like GLMMs, GAMs and GAMMs).
-  #   Therefore, we will only test GLMs here.
-
   ncores <- parallel::detectCores(logical = FALSE)
   if (ncores == 1) {
     warning("Deactivating the parallel tests because only a single worker ",
