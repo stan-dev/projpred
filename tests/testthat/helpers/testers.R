@@ -831,13 +831,12 @@ projection_tester <- function(p,
   }
   y_nms <- paste0(".", y_nm)
   # A preliminary check for `nprjdraws_expected` (doesn't work for "datafit"s
-  # and, because of issue #131, for submodels with multilevel terms which belong
-  # to an additive reference model):
+  # and, because of issue #131, for submodels which are GAMMs):
   sub_formul_crr_rhs <- as.formula(paste(
     "~", paste(sub_trms_crr, collapse = " + ")
   ))
   if (!inherits(p$refmodel, "datafit") &&
-      !(formula_contains_additive_terms(p$refmodel$formula) &&
+      !(formula_contains_additive_terms(sub_formul_crr_rhs) &&
         formula_contains_group_terms(sub_formul_crr_rhs))) {
     # Number of projected draws in as.matrix.projection() (note that more
     # extensive tests for as.matrix.projection() may be found in
