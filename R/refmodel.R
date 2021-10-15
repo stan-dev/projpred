@@ -499,8 +499,13 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   cvfun <- function(folds) {
+    # Use `cores = 1` because of rstanarm issue #551. In fact, this issue only
+    # affects Windows systems, but since `cores = 1` leads to an *inner*
+    # parallelization (i.e., across chains, not across CV folds) with
+    # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
+    # suitable for other systems:
     rstanarm::kfold(object, K = max(folds), save_fits = TRUE,
-                    folds = folds)$fits[, "fit"]
+                    folds = folds, cores = 1)$fits[, "fit"]
   }
 
   # Miscellaneous -----------------------------------------------------------
