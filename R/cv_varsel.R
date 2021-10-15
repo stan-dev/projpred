@@ -722,8 +722,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         })
       } else {
         stop(
-          "For a generic reference model, you must provide either cvfits or ",
-          "cvfun for K-fold cross-validation. See function init_refmodel."
+          "For a generic reference model, you must provide either `cvfits` or ",
+          "`cvfun` for K-fold cross-validation. See function init_refmodel()."
         )
       }
     }
