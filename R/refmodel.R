@@ -498,9 +498,9 @@ get_refmodel.stanreg <- function(object, ...) {
     return(linpred_out)
   }
 
-  cvfun <- function(folds, ...) {
+  cvfun <- function(folds) {
     rstanarm::kfold(object, K = max(folds), save_fits = TRUE,
-                    folds = folds, ...)$fits[, "fit"]
+                    folds = folds)$fits[, "fit"]
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -670,7 +670,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (!proper_model) {
       # This is a dummy definition for cvfun(), but it will lead to standard CV
       # for `datafit`s; see cv_varsel() and .get_kfold():
-      cvfun <- function(folds, ...) {
+      cvfun <- function(folds) {
         lapply(seq_len(max(folds)), function(k) list())
       }
     } else if (is.null(cvfits)) {
