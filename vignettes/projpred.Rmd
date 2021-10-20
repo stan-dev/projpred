@@ -1,5 +1,5 @@
 ---
-title: "**projpred**: Projection predictive feature selection"
+title: "projpred: Projection predictive feature selection"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 params:
@@ -19,7 +19,6 @@ knitr::opts_chunk$set(
   eval = if (exists("params") && !is.null(params$EVAL)) params$EVAL else FALSE,
   dpi = 100
 )
-options(rmarkdown.html_vignette.check_title = FALSE)
 ```
 
 ## Introduction
