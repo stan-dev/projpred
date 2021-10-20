@@ -1,4 +1,4 @@
-# projpred 2.0.5.9000
+# projpred 2.1.0
 
 ## Major changes
 
