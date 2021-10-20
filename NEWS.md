@@ -1,5 +1,3 @@
-# News
-
 ## projpred 2.0.5.9000
 
 ### Major (breaking) changes
