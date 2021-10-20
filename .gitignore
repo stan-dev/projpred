@@ -10,3 +10,6 @@
 
 tests/testthat/bfits
 tests/testthat/_snaps
+inst/doc
+docs/dev
+dev

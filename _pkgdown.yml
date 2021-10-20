@@ -1,5 +1,8 @@
 url: https://mc-stan.org/projpred
 
+development:
+  mode: auto
+
 destination: "."
 
 template:
