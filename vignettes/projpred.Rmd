@@ -124,6 +124,7 @@ The first step after running the variable selection should be the decision for a
 ```{r, fig.asp = 1.5 * (sqrt(5) - 1) / 2}
 plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
 ```
+
 Based on that plot, we would decide for a model size of 8 because that's the point where the performance measures level off.
 ```{r}
 modsize_decided <- 8
@@ -198,6 +199,7 @@ bayesplot_theme_set(ggplot2::theme_bw())
 mcmc_intervals(prj_mat) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
+
 Note that we only visualize the *1-dimensional* marginals of the projected posterior here. To gain a more complete picture, we would at least have to visualize some *2-dimensional* marginals of the projected posterior (i.e., marginals of pairs of parameters), giving 3-dimensional plots.
 
 For comparison, consider the marginal posteriors of the corresponding parameters in the reference model:
@@ -211,6 +213,7 @@ pars_nms_refm <- c(
 mcmc_intervals(refm_mat, pars = pars_nms_refm) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
+
 Here, the reference model's marginal posteriors differ only slightly from the marginals of the projected posterior. This does not necessarily have to be the case, though.
 
 ### Predictions
@@ -237,6 +240,7 @@ prj_predict <- proj_predict(prj, .seed = 762805)
 # Using the 'bayesplot' package:
 ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict, alpha = 0.9, bw = "SJ")
 ```
+
 This PPPC shows that our final projection is able to generate predictions similar to the observed response values, which indicates that this model is reasonable, at least in this regard.
 
 ## Teardown / clean-up
