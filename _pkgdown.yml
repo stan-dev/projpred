@@ -54,6 +54,6 @@ home:
 articles:
   - title: "Getting Started"
     desc: >
-      This vignette provides a quick-start guide to using the projpred package for projection predictive feature selection.
+      This vignette provides a quick-start guide to using the **projpred** package for projection predictive feature selection.
     contents:
       - projpred
