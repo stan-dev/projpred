@@ -1,6 +1,6 @@
-## projpred 2.0.5.9000
+# projpred 2.0.5.9000
 
-### Major (breaking) changes
+## Major (breaking) changes
 
 * The behavior of arguments `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` in `varsel()`, `cv_varsel()`, and `project()` has been changed: Now, `ndraws` and `ndraws_pred` have non-`NULL` defaults and for `ndraws <= 20` or `ndraws_pred <= 20`, the value of `ndraws` or `ndraws_pred` is passed to `nclusters` or `nclusters_pred`, respectively (so that clustering is used). (GitHub: commits babe031, 4ef95d3, and ce7d1e0)
 * For `proj_linpred()` and `proj_predict()`, arguments `nterms`, `ndraws`, and `seed` have been removed to allow the user to pass them to `project()`. New arguments `filter_nterms`, `nresample_clusters`, and `.seed` have been introduced (see the documentation for details). (GitHub: #92, #135)
@@ -18,7 +18,7 @@
 * In case of the Student-*t* family, a warning is thrown when creating the reference model. The reason is that this family has not been tested thoroughly and might be implemented incorrectly (see GitHub issue #233). Use it at your own risk. (GitHub: #233, <INSERT_PR_NUMBER_FOR_warn_student_t>)
 * Subsampled LOO CV (offered by argument `nloo` of `cv_varsel()`) might be implemented incorrectly (see GitHub issue #94). Use it at your own risk. (GitHub: #94, <INSERT_PR_NUMBER_FOR_warn_subsampled_loo>)
 
-## Minor changes
+# Minor changes
 
 * Improved documentation. (GitHub: especially #233)
 * Replaced the two vignettes by a single one which also has new content. (GitHub: #237)
@@ -39,7 +39,7 @@
 * Improved the y-axis label in `plot.vsel()`. (GitHub: #234)
 * Handle **rstanarm**'s GitHub issue #551. This implies that **projpred**'s default `cvfun` for `stanreg` fits will now always use *inner* parallelization in `rstanarm::kfold()` (i.e., across chains, not across CV folds), with `getOption("mc.cores", 1)` cores. We do so on all systems (not only Windows). (GitHub: <INSERT_PR_NUMBER_FOR_cvfun_rstanarm>)
 
-### Bug fixes
+## Bug fixes
 
 * Fixed a bug when using weights or offsets e.g. in `proj_linpred()`. (GitHub: #114)
 * Fixed a bug causing `varsel()`/`make_formula` to fail with multidimensional interaction terms. (GitHub: #102, #103)
@@ -89,14 +89,14 @@
 * Fix a bug causing the internal submodel fitter for GLMMs to not pass arguments `var` (the predictive variances) and `regul` (amount of ridge regularization) to the internal submodel fitter for GLMs. (GitHub: #230)
 * Fix GitHub issue #210. (GitHub: #234)
 
-## projpred 2.0.5
+# projpred 2.0.5
 
-### Minor changes
+## Minor changes
 
 * For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below). (GitHub: #82)
 * Internally, the seed is not fixed to a specific value when `NULL`. (GitHub: #84)
 
-### Bug fixes
+## Bug fixes
 
 * Fixed a bug raising an error when not projecting from a `vsel` object. (GitHub: #79, #80)
 * Fixed a bug in the calculation of the Gaussian deviance. (GitHub: #81)
@@ -111,7 +111,7 @@
 * Fixed an inconsistency in the dimensions of `proj_linpred()`'s output elements `pred` and `lpd` (for `integrated = FALSE`): Now, they are both S x N matrices, with S denoting the number of (possibly clustered) posterior draws and N denoting the number of observations. (GitHub: #107, #112)
 * Fixed a bug causing `proj_predict()`'s output matrix to be transposed in case of `nrow(newdata) == 1`. (GitHub: #112)
 
-## projpred 2.0.4
+# projpred 2.0.4
 
 * Added support for weighted LOO proportional-to-size subsampling based on Magnusson, M., Riis Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out Cross-Validation for Large Data. In International Conference on Machine Learning.
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
@@ -121,19 +121,19 @@
 * For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves. (GitHub: #75)
 * For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects. (GitHub: #74)
 
-### Bug fixes
+## Bug fixes
 
 * Fixed a bug in the handling of arguments `ndraws` and `nclusters` in `varsel()` and `cv_varsel()`. (GitHub: commit bbd0f0a)
 * Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix). (GitHub: #72, #73)
 
-## projpred 2.0.3
+# projpred 2.0.3
 
 * Minor fixes for stability, no new features.
 * The (internally set) default for argument `nclusters` of `varsel()` and `cv_varsel()` was increased from 1 to 10.
 * The (internally set) default for argument `nclusters_pred` of `varsel()` and `cv_varsel()` was increased from 5 to 400.
 * In `varsel()` and `cv_varsel()`, always perform clustering of the posterior draws (argument `ndraws` is effectively ignored). (GitHub: starting with commit 80b10dc)
 
-## projpred 2.0.2
+# projpred 2.0.2
 
 We have fully rewritten the internals in several ways. Most importantly, we now leverage maximum likelihood estimation to third parties depending on the reference model's family. This allows a lot of flexibility and extensibility for various models. Functionality wise, the major updates since the last release are:
 
@@ -143,35 +143,35 @@ We have fully rewritten the internals in several ways. Most importantly, we now 
 * We have added a new argument ```search_terms``` that allows the user to specify custom unit building blocks of the projections. New vignette coming up.
 * We have fully changed the way to define custom reference models. The user now provides projection fitting and prediction functions (more information in a new upcoming vignette).
 
-## projpred 1.1.4
+# projpred 1.1.4
 
 Better validation of function arguments.
 
-## projpred 1.1.3
+# projpred 1.1.3
 
 Added print methods for vsel and cvsel objects. Added AUC statistics for binomial family. A few additional minor patches.
 
-## projpred 1.1.2
+# projpred 1.1.2
 
 Removed the dependency on the **rngtools** package.
 
-## projpred 1.1.1
+# projpred 1.1.1
 
 This version contains only a few patches, no new features to the user.
 
-## projpred 1.1.0
+# projpred 1.1.0
 
-### New features 
+## New features 
 
 * Added support for ```brms``` models. 
 
-### Bug fixes
+## Bug fixes
 * The program crashed with ```rstanarm``` models fitted with syntax like ```stan_glm(log(y) ~ log(x), ...)```, that is, it did not allow transformation for ```y```.
 
 
-## projpred 1.0.0
+# projpred 1.0.0
 
-### New features and improvements ###
+## New features and improvements ###
 
 * Changed the internals so that now all fit objects (such as rstanarm fits) are converted to ```refmodel```-objects using the generic ```get_refmodel```-function, and all the functions use only this object. This makes it much easier to use projpred with other reference models by writing them a new ```get_refmodel```-function. The syntax is now changed so that  ```varsel``` and ```cv_varsel``` both return an object that has similar structure always, and the reference model is stored into this object.
 
@@ -184,17 +184,17 @@ This version contains only a few patches, no new features to the user.
 * Small changes: ```nloo = n``` by default in ```cv_varsel```. ```regul=1e-4``` now by default in all functions.
 
 
-## projpred 0.9.0
+# projpred 0.9.0
 
-### New features and improvements
+## New features and improvements
 
 * Added the ```cv_search``` argument for the main functions (```varsel```,```cv_varsel```,```project``` and the prediction functions). Now it is possible to make predictions also with those parameter estimates that were computed during the L1-penalized search. This change also allows the user to compute the Lasso-solution by providing the observed data as the 'reference fit' for init_refmodel. An example will be added to the vignette.
 
-### Bug fixes
+## Bug fixes
 
 * The projection with a nonzero regularization parameter value did not produce exactly correct result, although the difference to the correct result was often so small that user would not see the difference. Fixed this.
 
 
-## projpred 0.8.0 and earlier
+# projpred 0.8.0 and earlier
 
 Until this version, we did not keep record of the changes between different versions. Started to do this from version 0.9.0 onwards.
