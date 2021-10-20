@@ -6,7 +6,7 @@ output:
     toc: true
     toc_depth: 4
 params:
-  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  EVAL: !r TRUE
 vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteIndexEntry{projpred: Projection predictive feature selection}
