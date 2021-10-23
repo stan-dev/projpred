@@ -1,13 +1,14 @@
+[![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
+[![codecov](https://codecov.io/gh/stan-dev/projpred/branch/master/graph/badge.svg)](https://codecov.io/gh/stan-dev/projpred)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
+
 [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" width=100 alt="Stan Logo"/>](https://mc-stan.org)
 
 # **projpred**
 
-[![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
-[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
-
-An R package to perform the projection predictive variable selection for
-generalized linear models as well as generalized linear and additive multilevel
-models. The package is compatible with the
+**projpred** is an R package to perform the projection predictive variable
+selection for generalized linear models as well as generalized linear and
+additive multilevel models. The package is compatible with the
 [**rstanarm**](https://mc-stan.org/rstanarm/) and
 [**brms**](https://paul-buerkner.github.io/brms/) packages, but custom reference
 models can also be used.
@@ -20,22 +21,12 @@ and Vehtari (2017). Type `citation("projpred")` in R (or see the `CITATION`
 file) for details on how to cite **projpred**.
 
 Currently, the supported response distributions (objects of class `family` in R)
-are `gaussian()`, `binomial()`^[Via the **brms** package, `brms::bernoulli()` is
-supported, too.], and `poisson()`.
+are `gaussian()`, `binomial()` (via the **brms** package, `brms::bernoulli()` is
+also supported), and `poisson()`.
 
 See the [vignette](https://mc-stan.org/projpred/articles/projpred.html) for an
 example application. Details on **projpred**'s functions as well as some shorter
-examples may be found in the documentation (available as a PDF at
-[CRAN](https://cran.r-project.org/web/packages/projpred/projpred.pdf), but note
-that this PDF corresponds to the latest CRAN version and not necessarily to the
-latest GitHub version; section "Installation" below describes the potential
-difference between these two sources).
-
-## Links
-
-* Online documentation, vignette: the [**projpred** site on the Stan homepage](https://mc-stan.org/projpred)
-* Discussions/questions: [The Stan Forums](https://discourse.mc-stan.org)
-* Bug reports, feature requests: the [GitHub issue tracker](https://github.com/stan-dev/projpred/issues)
+examples may be found in the documentation.
 
 ## Installation
 
@@ -52,8 +43,8 @@ install.packages("projpred")
 
 ### From GitHub
 
-This option requires the [**devtools**](https://devtools.r-lib.org/) package, so
-if necessary, the following code will also install **devtools** (from
+This requires the [**devtools**](https://devtools.r-lib.org/) package, so if
+necessary, the following code will also install **devtools** (from
 [CRAN](https://CRAN.R-project.org/package=devtools)):
 ```r
 if (!requireNamespace("devtools", quietly = TRUE)) {
@@ -61,6 +52,7 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 }
 devtools::install_github("stan-dev/projpred", build_vignettes = TRUE)
 ```
+To save time, you may omit `build_vignettes = TRUE`.
 
 ## References
 
