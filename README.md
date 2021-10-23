@@ -39,7 +39,7 @@ difference between these two sources).
 
 ## Installation
 
-There are two options for installing **projpred**: from
+There are two ways for installing **projpred**: from
 [CRAN](https://CRAN.R-project.org/package=projpred) or from
 [GitHub](https://github.com/stan-dev/projpred). The GitHub version might be more
 recent than the CRAN version, but the CRAN version might be more stable.
