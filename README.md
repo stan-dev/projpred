@@ -2,7 +2,7 @@
 
 # **projpred**
 
-[![Build Status](https://travis-ci.com/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
+[![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
 
 An R package to perform the projection predictive variable selection for
