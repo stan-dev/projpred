@@ -1,10 +1,10 @@
+<!-- badges: start -->
 [![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
 [![codecov](https://codecov.io/gh/stan-dev/projpred/branch/master/graph/badge.svg)](https://codecov.io/gh/stan-dev/projpred)
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
+<!-- badges: end -->
 
-[<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" width=100 alt="Stan Logo"/>](https://mc-stan.org)
-
-# **projpred**
+# projpred [<img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width="120" alt="Stan Logo"/>](https://mc-stan.org)
 
 **projpred** is an R package to perform the projection predictive variable
 selection for generalized linear models as well as generalized linear and
