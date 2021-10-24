@@ -1,6 +1,6 @@
 # projpred 2.0.5.9000
 
-## Major (breaking) changes
+## Major changes
 
 * The behavior of arguments `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` in `varsel()`, `cv_varsel()`, and `project()` has been changed: Now, `ndraws` and `ndraws_pred` have non-`NULL` defaults and for `ndraws <= 20` or `ndraws_pred <= 20`, the value of `ndraws` or `ndraws_pred` is passed to `nclusters` or `nclusters_pred`, respectively (so that clustering is used). (GitHub: commits babe031, 4ef95d3, and ce7d1e0)
 * For `proj_linpred()` and `proj_predict()`, arguments `nterms`, `ndraws`, and `seed` have been removed to allow the user to pass them to `project()`. New arguments `filter_nterms`, `nresample_clusters`, and `.seed` have been introduced (see the documentation for details). (GitHub: #92, #135)
@@ -12,18 +12,22 @@
 * Improved handling of errors when fitting multilevel submodels. (GitHub: #201)
 * Some defaults (like for `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` mentioned above) have been changed from `NULL` to a user-visible value (and `NULL` is not allowed anymore).
 * Argument `data` of `get_refmodel.stanreg()` has been removed. (GitHub: #219)
-* The function passed to argument `div_minimizer` of `init_refmodel()` now always needs to return a `list` of submodels (see the documentation for details). Correspondingly, the function passed to argument `proj_predfun` of `init_refmodel()` can now always expect a `list` as input for argument `fit` (see the documentation for details). (GitHub: #230)
+* The function passed to argument `div_minimizer` of `init_refmodel()` now always needs to return a `list` of submodels (see the documentation for details). Correspondingly, the function passed to argument `proj_predfun` of `init_refmodel()` can now always expect a `list` as input for argument `fits` (see the documentation for details). (GitHub: #230)
 * The function passed to argument `proj_predfun` of `init_refmodel()` now always needs to return a matrix (see the documentation for details). (GitHub: #230)
 * The projection can be run in parallel now. However, we cannot recommend this for all kinds of platforms and all kinds of models. For more information, see the general package documentation available at ``?`projpred-package` ``. (GitHub: #235)
-* In case of the Student-*t* family, a warning is thrown when creating the reference model. The reason is that this family has not been tested thoroughly and might be implemented incorrectly (see GitHub issue #233). Use it at your own risk. (GitHub: #233, <INSERT_PR_NUMBER_FOR_warn_student_t>)
-* Subsampled LOO CV (offered by argument `nloo` of `cv_varsel()`) might be implemented incorrectly (see GitHub issue #94). Use it at your own risk. (GitHub: #94, <INSERT_PR_NUMBER_FOR_warn_subsampled_loo>)
+* Support for the `Student_t()` family is regarded as experimental. Therefore, a corresponding warning is thrown when creating the reference model. (GitHub: #233, #252)
+* Subsampled LOO CV (offered by argument `nloo` of `cv_varsel()`) is regarded as experimental. Therefore, a corresponding warning is thrown when calling `cv_varsel()` with `nloo < n` where `n` denotes the number of observations. (GitHub: #94, #252)
+* Support for additive models (i.e., GAMs and GAMMs) is regarded as experimental. Therefore, a corresponding warning is thrown when creating the reference model. (GitHub: #237, #252)
+* Support for the `Gamma()` family is regarded as experimental. Therefore, a corresponding warning is thrown when creating the reference model. (GitHub: paul-buerkner/brms#1255, #240, #252)
+* The previous behavior of `init_refmodel()` in case of argument `dis` being `NULL` (the default) was dangerous for custom reference models with a `family` having a dispersion parameter (in that case, `dis` values of all-zeros were used silently). The new behavior now requires a non-`NULL` argument `dis` in that case. (GitHub: #254)
+* Argument `cv_search` has been renamed to `refit_prj`. (GitHub: #154, #265)
 
 # Minor changes
 
 * Improved documentation. (GitHub: especially #233)
 * Replaced the two vignettes by a single one which also has new content. (GitHub: #237)
-* Updated the `README` file. (GitHub: <INSERT_PR_NUMBER_FOR_upd_readme>)
-* Some error and warning messages have been improved and added. (GitHub: especially #219, #221, #223)
+* Updated the `README` file. (GitHub: #245)
+* Some error and warning messages have been improved and added. (GitHub: especially #219, #221, #223, #252, #263)
 * For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2f)
 * Throw a proper error message for unsupported families. (GitHub: #140)
 * Show the README also on the CRAN website. (GitHub: #140)
@@ -34,10 +38,12 @@
 * Argument `folds` of `init_refmodel()` has been removed as it was effectively unused. (GitHub: #220)
 * Use the S3 system for `solution_terms()`. This allowed the introduction of a `solution_terms.projection()` method. (GitHub: #223)
 * `predict.refmodel()` now uses a default of `newdata = NULL`. (GitHub: #223)
-* Argument `weights` of `init_refmodel()`'s argument `proj_predfun` was removed. (GitHub: #163, #224)
+* Argument `weights` of `init_refmodel()`'s argument `proj_predfun` has been removed. (GitHub: #163, #224)
 * **projpred**'s internal `div_minimizer` functions have been unified into a single `div_minimizer` which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: #230)
-* Improved the y-axis label in `plot.vsel()`. (GitHub: #234)
-* Handle **rstanarm**'s GitHub issue #551. This implies that **projpred**'s default `cvfun` for `stanreg` fits will now always use *inner* parallelization in `rstanarm::kfold()` (i.e., across chains, not across CV folds), with `getOption("mc.cores", 1)` cores. We do so on all systems (not only Windows). (GitHub: <INSERT_PR_NUMBER_FOR_cvfun_rstanarm>)
+* Improve the axis labels in `plot.vsel()`. (GitHub: #234, #270)
+* Handle **rstanarm**'s GitHub issue #551. This implies that **projpred**'s default `cvfun` for `stanreg` fits will now always use *inner* parallelization in `rstanarm::kfold()` (i.e., across chains, not across CV folds), with `getOption("mc.cores", 1)` cores. We do so on all systems (not only Windows). (GitHub: #249)
+* Argument `fit` of `init_refmodel()`'s argument `proj_predfun` was renamed to `fits`. This is a non-breaking change since all calls to `proj_predfun` in **projpred** have that argument unnamed. However, this cannot be guaranteed in the future, so we strongly encourage users with a custom `proj_predfun` to rename argument `fit` to `fits`. (GitHub: #263)
+* `init_refmodel()` has gained argument `cvrefbuilder` which may be a custom function for constructing the K reference models in a K-fold CV. (GitHub: #271)
 
 ## Bug fixes
 
@@ -88,6 +94,15 @@
 * Handle **rstanarm**'s GitHub issue #546. (GitHub: #227)
 * Fix a bug causing the internal submodel fitter for GLMMs to not pass arguments `var` (the predictive variances) and `regul` (amount of ridge regularization) to the internal submodel fitter for GLMs. (GitHub: #230)
 * Fix GitHub issue #210. (GitHub: #234)
+* Fix GitHub issue #242. (GitHub: #253)
+* Fix GitHub issue #244. (GitHub: #255)
+* Fix GitHub issue #243. (GitHub: #262)
+* Fix GitHub issue #213. (GitHub: #264)
+* Fix GitHub issue #215. (GitHub: #266)
+* Fix GitHub issue #212. (GitHub: #267)
+* Fix GitHub issue #156. (GitHub: #269)
+* Revert the behavior (introduced by version 2.0.5) of `init_refmodel()` if neither `cvfun` nor `cvfits` is provided: Do *not* raise an error since such an error is now thrown when trying to run K-fold CV (so a reference model which is never used for K-fold CV does not require `cvfits` or `cvfun`). (GitHub: #270)
+* If the data used for the reference model contains `NA`s, an appropriate error is now thrown. Previously, the reference model was created successfully, but this caused opaque errors in downstream code such as `project()`. (GitHub: #274)
 
 # projpred 2.0.5
 
