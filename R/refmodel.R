@@ -25,8 +25,9 @@
 #'   formulas, see also packages \pkg{mgcv}, in particular [mgcv::gam()], and
 #'   \pkg{gamm4}, in particular [gamm4::gamm4()].
 #' @param ref_predfun Prediction function for the linear predictor of the
-#'   reference model. See section "Details" below. If `object` is `NULL`,
-#'   `ref_predfun` is ignored and an internal default is used instead.
+#'   reference model, including offsets (if applicable). See section "Details"
+#'   below. If `object` is `NULL`, `ref_predfun` is ignored and an internal
+#'   default is used instead.
 #' @param proj_predfun Prediction function for the linear predictor of a
 #'   submodel onto which the reference model is projected. See section "Details"
 #'   below.
@@ -105,8 +106,8 @@
 #'     `regul` of [project()], for example.
 #'
 #' The return value of those functions needs to be:
-#' * `ref_predfun`: a \eqn{N \times S}{N x S} matrix.
-#' * `proj_predfun`: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
+#' * `ref_predfun`: an \eqn{N \times S}{N x S} matrix.
+#' * `proj_predfun`: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 #' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 #' this number of submodel fits.
 #'
@@ -476,11 +477,9 @@ get_refmodel.stanreg <- function(object, ...) {
     linpred_out <- t(
       posterior_linpred(fit, transform = FALSE, newdata = newdata)
     )
-    # Since posterior_linpred() is supposed to include the offsets in its
-    # result, subtract them here and use a workaround for rstanarm issue #541
-    # and rstanarm issue #542. This workaround consists of using `cond_no_offs`
-    # which indicates whether posterior_linpred() excluded (`TRUE`) or included
-    # (`FALSE`) the offsets:
+    # Use a workaround for rstanarm issue #541 and rstanarm issue #542. This
+    # workaround consists of using `cond_no_offs` which indicates whether
+    # posterior_linpred() excluded (`TRUE`) or included (`FALSE`) the offsets:
     cond_no_offs <- (
       fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
         !is.null(attr(terms(fit$formula), "offset"))
@@ -488,12 +487,12 @@ get_refmodel.stanreg <- function(object, ...) {
       fit$stan_function %in% c("stan_lm", "stan_glm") &&
         !is.null(newdata) && length(fit$offset) > 0
     )
-    if (!cond_no_offs) {
+    if (cond_no_offs) {
       # Observation weights are not needed here, so use `wrhs = NULL` to avoid
       # potential conflicts for a non-`NULL` default `wrhs`:
       offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
-      stopifnot(identical(nrow(linpred_out), length(offs)))
-      linpred_out <- linpred_out - offs
+      stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
+      linpred_out <- linpred_out + offs
     }
     return(linpred_out)
   }
@@ -585,13 +584,20 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Functions ---------------------------------------------------------------
 
-  if (proper_model && is.null(ref_predfun)) {
+  if (proper_model) {
+    if (is.null(ref_predfun)) {
+      ref_predfun <- function(fit, newdata = NULL) {
+        t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
+      }
+    }
+    # Since posterior_linpred() is supposed to include any offsets but (at least
+    # currently) projpred expects the final ref_predfun() to exclude any offsets
+    # (see issue #186), the offsets have to be subtracted here by a wrapper
+    # function:
+    ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL) {
-      linpred_out <- t(
-        posterior_linpred(fit, transform = FALSE, newdata = newdata)
-      )
-      # Since posterior_linpred() is supposed to include the offsets in its
-      # result, subtract them here:
+      linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
+
       # Observation weights are not needed here, so use `wrhs = NULL` to avoid
       # potential conflicts for a non-`NULL` default `wrhs`:
       offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
@@ -601,7 +607,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       }
       return(linpred_out)
     }
-  } else if (!proper_model) {
+  } else {
     if (!is.null(ref_predfun)) {
       warning("Ignoring argument `ref_predfun` because `object` is `NULL`.")
     }
