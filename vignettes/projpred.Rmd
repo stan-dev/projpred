@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear models as well as generalized linear and additive multilevel models. What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
+This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models.^[Currently, the implementation for additive models is only experimental in **projpred**.] What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
 
 The projective variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in **projpred** are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017a). Type `citation("projpred")` for details on how to cite **projpred**.
 
@@ -256,7 +256,7 @@ if (!identical(.Platform$OS.type, "windows")) {
 
 ## Supported types of reference models {#refmodtypes}
 
-Apart from the `gaussian()` response family used in this vignette, **projpred** also supports the `binomial()`^[The `binomial()` family includes the `brms::bernoulli()` family as a special case which may only be used via the **brms** package.] and the `poisson()` family. On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and additive^[Additive terms are also known as "smoothing" terms.] terms.
+Apart from the `gaussian()` response family used in this vignette, **projpred** also supports the `binomial()`^[The `binomial()` family includes the `brms::bernoulli()` family as a special case which may only be used via the **brms** package.] and the `poisson()` family. On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and---as an experimental feature---additive^[Additive terms are also known as "smoothing" terms.] terms.
 
 Transferring this vignette to such more complex reference models is straightforward: Basically, only the code for fitting the reference model via **rstanarm** or **brms** needs to be adapted. The **projpred** code stays almost the same. Only note that in case of multilevel or additive reference models, the parallelization of the projection is not recommended and that some **projpred** functions then have slightly different options for a few arguments. See the documentation for details.
 
