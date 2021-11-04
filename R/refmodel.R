@@ -483,7 +483,7 @@ get_refmodel.stanreg <- function(object, ...) {
 
   ref_predfun <- function(fit, newdata = NULL) {
     linpred_out <- t(
-      posterior_linpred(fit, transform = FALSE, newdata = newdata)
+      posterior_linpred(fit, newdata = newdata)
     )
     # Use a workaround for rstanarm issue #541 and rstanarm issue #542. This
     # workaround consists of using `cond_no_offs` which indicates whether
@@ -595,6 +595,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (proper_model) {
     if (is.null(ref_predfun)) {
       ref_predfun <- function(fit, newdata = NULL) {
+        # For backwards compatibility with user-defined posterior_linpred()
+        # methods, keep `transform = FALSE` even though this should be the
+        # default in all posterior_linpred() methods:
         t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
       }
     }
