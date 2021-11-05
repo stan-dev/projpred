@@ -25,7 +25,7 @@
 #'   formulas, see also packages \pkg{mgcv}, in particular [mgcv::gam()], and
 #'   \pkg{gamm4}, in particular [gamm4::gamm4()].
 #' @param ref_predfun Prediction function for the linear predictor of the
-#'   reference model, including offsets (if applicable). See section "Details"
+#'   reference model, including offsets (if existing). See section "Details"
 #'   below. If `object` is `NULL`, `ref_predfun` is ignored and an internal
 #'   default is used instead.
 #' @param proj_predfun Prediction function for the linear predictor of a
@@ -595,9 +595,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (proper_model) {
     if (is.null(ref_predfun)) {
       ref_predfun <- function(fit, newdata = NULL) {
-        # For backwards compatibility with user-defined posterior_linpred()
-        # methods, keep `transform = FALSE` even though this should be the
-        # default in all posterior_linpred() methods:
+        # For safety reasons, keep `transform = FALSE` even though this should
+        # be the default in all posterior_linpred() methods (but we cannot be
+        # sure with regard to user-defined posterior_linpred() methods):
         t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
       }
     }

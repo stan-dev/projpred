@@ -62,7 +62,7 @@ the distributional family for the response).}
 \item{data}{Data used for fitting the reference model.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
-reference model, including offsets (if applicable). See section "Details"
+reference model, including offsets (if existing). See section "Details"
 below. If \code{object} is \code{NULL}, \code{ref_predfun} is ignored and an internal
 default is used instead.}
 
