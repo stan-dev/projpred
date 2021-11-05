@@ -120,6 +120,10 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 
 mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
+### Exclude additive models (GAMs and GAMMs) for now since their implementation
+### is currently only experimental:
+mod_nms <- setNames(nm = setdiff(mod_nms, c("gam", "gamm")))
+###
 
 fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
 
