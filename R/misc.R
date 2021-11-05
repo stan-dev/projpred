@@ -74,6 +74,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   return(bsstat)
 }
 
+# From `?is.integer` (slightly modified):
 .is.wholenumber <- function(x) {
   abs(x - round(x)) < .Machine$double.eps^0.5
 }
