@@ -651,6 +651,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (family$family == "Student_t") {
     warning("Support for the `Student_t` family is still experimental.")
+  } else if (family$family == "Gamma") {
+    warning("Support for the `Gamma` family is still experimental.")
   }
 
   if (!.has_family_extras(family)) {
