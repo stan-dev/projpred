@@ -696,7 +696,7 @@ test_that("`validate_search` works", {
         cvvss[[tstsetup]]$suggested_size
     }
   }
-  sum_as_unexpected <- 0L
+  sum_as_unexpected <- 2L
   expect_true(sum(!suggsize_cond, na.rm = TRUE) <= sum_as_unexpected)
 })
 

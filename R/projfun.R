@@ -88,23 +88,36 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
 .init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
                            wobs, wsample) {
-  ## split b to alpha and beta, add it to submodel and return the result
-  if (family$family == "gaussian") {
-    pobs <- pseudo_data(
-      f = 0, y = p_ref$mu, family = family, weights = wobs,
-      offset = refmodel$offset
-    )
-    ref <- list(mu = pobs$z, var = p_ref$var, wobs = pobs$wobs)
-  } else {
-    ref <- p_ref
+  p_ref$mu <- family$linkinv(family$linkfun(p_ref$mu) + refmodel$offset)
+  if (!(all(p_ref$var == 0) || family$family %in% c("gaussian", "Student_t"))) {
+    stop("For family `", family$family, "()`, .init_submodel() might have to ",
+         "be adapted, depending on whether family$predvar() is invariant with ",
+         "respect to offsets (this would be OK and does not need an ",
+         "adaptation) or not (this would need an adaptation).")
+  }
+  if (family$family == "Student_t") {
+    stop("For the `Student_t()` family, .init_submodel() is not finished yet.")
+    ### TODO (`Student_t()` family): Check if this is needed (perhaps with some
+    ### modifications) or if something completely different is needed (there
+    ### used to be no special handling of the `Student_t()` family here at all):
+    # pobs <- pseudo_data(
+    #   f = 0, y = p_ref$mu, family = family, weights = wobs,
+    #   offset = refmodel$offset
+    # )
+    # ### TODO: Add `dis` and perhaps other elements here?:
+    # p_ref <- list(mu = pobs$z, var = p_ref$var)
+    # ###
+    # p_ref$mu <- family$linkinv(family$linkfun(p_ref$mu) + refmodel$offset)
+    # wobs <- pobs$wobs
+    ###
   }
 
   mu <- family$mu_fun(sub_fit, offset = refmodel$offset)
-  dis <- family$dis_fun(ref, nlist(mu), ref$wobs)
+  dis <- family$dis_fun(p_ref, nlist(mu), wobs)
   kl <- weighted.mean(family$kl(
-    ref, nlist(weights = wobs),
+    p_ref,
+    nlist(weights = wobs),
     nlist(mu, dis)
   ), wsample)
-  weights <- wsample
-  return(nlist(dis, kl, weights, solution_terms, sub_fit))
+  return(nlist(dis, kl, weights = wsample, solution_terms, sub_fit))
 }
