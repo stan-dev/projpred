@@ -51,7 +51,9 @@ extend_family_binomial <- function(family) {
     }
     -2 * weights * (y * log(mu) + (1 - y) * log(1 - mu))
   }
-  ppd_binom <- function(mu, dis, weights = 1) rbinom(length(mu), weights, mu)
+  ppd_binom <- function(mu, dis, weights = 1) {
+    rbinom(length(mu), weights, mu)
+  }
   initialize_binom <- expression({
     if (NCOL(y) == 1) {
       if (is.factor(y)) {
@@ -96,15 +98,18 @@ extend_family_poisson <- function(family) {
   predvar_na <- function(mu, dis, wsample = 1) {
     rep(NA, NROW(mu))
   }
-  ll_poiss <- function(mu, dis, y, weights = 1)
+  ll_poiss <- function(mu, dis, y, weights = 1) {
     weights * dpois(y, mu, log = TRUE)
+  }
   dev_poiss <- function(mu, y, weights = 1, dis = NULL) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
     }
     -2 * weights * (y * log(mu) - mu)
   }
-  ppd_poiss <- function(mu, dis, weights = 1) rpois(length(mu), mu)
+  ppd_poiss <- function(mu, dis, weights = 1) {
+    rpois(length(mu), mu)
+  }
 
   family$kl <- kl_dev
   family$dis_fun <- dis_na
@@ -145,7 +150,9 @@ extend_family_gaussian <- function(family) {
     }
     -2 * weights * (-0.5 / dis^2 * (y - mu)^2 - log(dis))
   }
-  ppd_gauss <- function(mu, dis, weights = 1) rnorm(length(mu), mu, dis)
+  ppd_gauss <- function(mu, dis, weights = 1) {
+    rnorm(length(mu), mu, dis)
+  }
 
   family$kl <- kl_gauss
   family$dis_fun <- dis_gauss
@@ -184,7 +191,9 @@ extend_family_gamma <- function(family) {
     ## dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
     ## weights*dgamma(y, dis, dis/matrix(mu), log= TRUE)
   }
-  ppd_gamma <- function(mu, dis, weights = 1) rgamma(length(mu), dis, dis / mu)
+  ppd_gamma <- function(mu, dis, weights = 1) {
+    rgamma(length(mu), dis, dis / mu)
+  }
 
   family$kl <- kl_gamma
   family$dis_fun <- dis_gamma
@@ -231,8 +240,9 @@ extend_family_student_t <- function(family) {
     (-2 * weights * (-0.5 * (family$nu + 1)
                      * log(1 + 1 / family$nu * ((y - mu) / dis)^2) - log(dis)))
   }
-  ppd_student_t <- function(mu, dis, weights = 1)
+  ppd_student_t <- function(mu, dis, weights = 1) {
     rt(length(mu), family$nu) * dis + mu
+  }
 
   family$kl <- kl_student_t
   family$dis_fun <- dis_student_t
