@@ -116,7 +116,7 @@ extend_family_poisson <- function(family) {
 
 extend_family_gaussian <- function(family) {
   kl_gauss <- function(pref, data, psub) {
-    colSums(data$weights * (psub$mu - pref$mu)^2)
+    colMeans(data$weights * (psub$mu - pref$mu)^2)
   } # not the actual KL but reasonable surrogate..
   dis_gauss <- function(pref, psub, wobs = 1) {
     sqrt(colSums(wobs / sum(wobs) * (pref$var + (pref$mu - psub$mu)^2)))
