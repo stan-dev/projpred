@@ -188,10 +188,11 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 #   each draw/cluster.
 #   * `var`: An \eqn{N \times S}{N x S} matrix of predictive variances for
 #   \eqn{y} for each draw/cluster which are needed for projecting the dispersion
-#   parameter (note that this can be unintuitively zero for those families that
-#   do not have a dispersion parameter).
+#   parameter (the predictive variances are NA for those families that do not
+#   have a dispersion parameter).
 #   * `dis`: A vector of length \eqn{S} containing the reference model's
-#   dispersion parameter value for each draw/cluster. See issue #204.
+#   dispersion parameter value for each draw/cluster (NA for those families that
+#   do not have a dispersion parameter). See issue #204.
 #   * `weights`: A vector of length \eqn{S} containing the weights for the
 #   draws/clusters.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that

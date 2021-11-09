@@ -283,7 +283,7 @@ refmodel_tester <- function(
       expect_identical(refmod$dis, 0, info = info_str)
     }
   } else {
-    expect_identical(refmod$dis, rep(0, nrefdraws_expected), info = info_str)
+    expect_identical(refmod$dis, rep(NA, nrefdraws_expected), info = info_str)
   }
 
   # y
@@ -1176,7 +1176,11 @@ vsel_tester <- function(
   expect_equal(dim(vs$search_path$p_sel$mu), c(nobsv, nclusters_expected),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
-  expect_type(vs$search_path$p_sel$var, "double")
+  if (vs$family$family == "gaussian") {
+    expect_type(vs$search_path$p_sel$var, "double")
+  } else {
+    expect_true(all(is.na(vs$search_path$p_sel$var)), info = info_str)
+  }
   expect_equal(dim(vs$search_path$p_sel$var), c(nobsv, nclusters_expected),
                info = info_str)
   expect_type(vs$search_path$p_sel$weights, "double")

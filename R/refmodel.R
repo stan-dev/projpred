@@ -54,8 +54,9 @@
 #'   \eqn{K} fitted model objects as a `list`. If `object` is `NULL`, `cvfun`
 #'   may be `NULL` for using an internal default. Note that `cvfits` takes
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
-#' @param dis A vector of posterior draws for the dispersion parameter (if such
-#'   a parameter exists; else `dis` may be `NULL`).
+#' @param dis A vector of posterior draws for the dispersion parameter (if
+#'   existing). May be `NULL` if the model has no dispersion parameter or if the
+#'   model does have a dispersion parameter, but `object` is `NULL`.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. Else: ignored.
@@ -688,7 +689,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   ndraws <- ncol(mu)
   if (is.null(dis)) {
-    dis <- rep(0, ndraws)
+    if (!.has_dispersion(family)) {
+      dis <- rep(NA, ndraws)
+    } else {
+      if (proper_model) {
+        stop("Please supply argument `dis`.")
+      } else {
+        if (family$family == "Gamma") {
+          warning("Using all-zeros for `dis`, but not sure whether this is ",
+                  "correct.")
+        }
+        dis <- rep(0, ndraws)
+      }
+    }
   }
 
   if (proper_model) {
