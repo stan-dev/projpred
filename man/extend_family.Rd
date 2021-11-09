@@ -13,6 +13,7 @@ extend_family(family)
 The \code{\link{family}} object extended in the way needed by \pkg{projpred}.
 }
 \description{
-This function adds elements to a \code{\link{family}} object. It is called internally
-by \code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call it yourself.
+This function adds some internally required elements to a \code{\link{family}} object.
+It is called internally by \code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call
+it yourself.
 }

@@ -1,4 +1,4 @@
-# Model-specific helper functions.
+# Family-specific helper functions
 #
 # `extend_family(family)` returns a [`family`] object augmented with auxiliary
 # functions that are needed for computing KL-divergence, log predictive density,
@@ -9,8 +9,9 @@
 
 #' Extend a family
 #'
-#' This function adds elements to a [`family`] object. It is called internally
-#' by [init_refmodel()], so you will rarely need to call it yourself.
+#' This function adds some internally required elements to a [`family`] object.
+#' It is called internally by [init_refmodel()], so you will rarely need to call
+#' it yourself.
 #'
 #' @param family A [`family`] object.
 #'
