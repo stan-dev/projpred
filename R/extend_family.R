@@ -32,14 +32,12 @@ extend_family <- function(family) {
 
 extend_family_binomial <- function(family) {
   kl_dev <- function(pref, data, psub) {
-    if (NCOL(pref$mu) > 1) {
-      w <- rep(data$weights, NCOL(pref$mu))
-      colMeans(family$dev.resids(pref$mu, psub$mu, w)) / 2
-    } else {
-      mean(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
-    }
+    data$weights <- rep(data$weights, ncol(pref$mu))
+    colMeans(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
   }
-  dis_na <- function(pref, psub, wobs = 1) rep(0, ncol(pref$mu))
+  dis_na <- function(pref, psub, wobs = 1) {
+    rep(0, ncol(pref$mu))
+  }
   predvar_na <- function(mu, dis, wsample = 1) {
     rep(0, NROW(mu))
   }
@@ -87,14 +85,12 @@ extend_family_binomial <- function(family) {
 
 extend_family_poisson <- function(family) {
   kl_dev <- function(pref, data, psub) {
-    if (NCOL(pref$mu) > 1) {
-      w <- rep(data$weights, NCOL(pref$mu))
-      colMeans(family$dev.resids(pref$mu, psub$mu, w)) / 2
-    } else {
-      mean(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
-    }
+    data$weights <- rep(data$weights, ncol(pref$mu))
+    colMeans(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
   }
-  dis_na <- function(pref, psub, wobs = 1) rep(0, ncol(pref$mu))
+  dis_na <- function(pref, psub, wobs = 1) {
+    rep(0, ncol(pref$mu))
+  }
   predvar_na <- function(mu, dis, wsample = 1) {
     rep(0, NROW(mu))
   }
