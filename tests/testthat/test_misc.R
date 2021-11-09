@@ -72,3 +72,22 @@ test_that("rstanarm: special formulas work", {
     }
   }
 })
+
+test_that(paste(
+  "`pseudo_data(f = 0, [...], family = extend_family(gaussian()), [...])` is",
+  "essentially an identity function (apart from offsets)."
+), {
+  mu_crr <- matrix(1:12, nrow = 3)
+  wobs_crr <- c(2.5, 6, 4)
+  offs_crr <- c(-4.2, 3.5, 1.1)
+  psdat <- pseudo_data(
+    f = 0,
+    y = mu_crr,
+    family = extend_family(gaussian()),
+    weights = wobs_crr,
+    offset = offs_crr
+  )
+  expect_equal(psdat$z, mu_crr - offs_crr)
+  expect_false(isTRUE(all.equal(psdat$z, mu_crr)))
+  expect_equal(psdat$wobs, wobs_crr)
+})
