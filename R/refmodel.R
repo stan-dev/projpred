@@ -702,6 +702,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         dis <- rep(0, ndraws)
       }
     }
+  } else {
+    stopifnot(length(dis) == ndraws)
   }
 
   if (proper_model) {
