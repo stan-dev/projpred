@@ -250,7 +250,8 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
     cvfun = function(folds, ...) {
       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
                       folds = folds, ...)$fits[, "fit"]
-    }
+    },
+    dis = as.matrix(fit)[, "sigma"]
   )
   # Now, the post-processing functions mentioned above (for example,
   # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
