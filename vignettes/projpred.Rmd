@@ -24,7 +24,7 @@ The projective variable selection is based on the ideas of Goutis and Robert (19
 
 ## Data
 
-For this vignette, we use **projpred**'s `df_gaussian` data. It contains 100 observations of 20 continuous predictor variables `X1`, ..., `X20` and one continuous response variable `y`.
+For this vignette, we use **projpred**'s `df_gaussian` data. It contains 100 observations of 20 continuous predictor variables `X1`, ..., `X20` (originally stored in a sub-matrix; we turn them into separate columns below) and one continuous response variable `y`.
 ```{r}
 data("df_gaussian", package = "projpred")
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
