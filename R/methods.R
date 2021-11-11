@@ -375,7 +375,7 @@ plot.vsel <- function(
     baseline_pretty <- "best submodel"
   }
   if (deltas) {
-    ylab <- paste0("Difference vs.", baseline_pretty)
+    ylab <- paste0("Difference vs. ", baseline_pretty)
   } else {
     ylab <- "Value"
   }
