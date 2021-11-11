@@ -712,7 +712,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (proper_model) {
-    loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
+    loglik <- t(family$ll_fun(
+      family$linkinv(family$linkfun(mu) + offset),
+      dis,
+      y,
+      weights = weights
+    ))
   } else {
     loglik <- NULL
   }
