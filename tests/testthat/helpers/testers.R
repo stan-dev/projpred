@@ -35,7 +35,7 @@ extfam_tester <- function(extfam,
 
   # Now the checks for `extfam` (first starting with the general structure):
   extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
-                      extfam_nms_add2)
+                      "projpred_extended", extfam_nms_add2)
   extfam_nms <- c(names(fam_orig), extfam_nms_add)
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
@@ -52,9 +52,11 @@ extfam_tester <- function(extfam,
                      info = info_str)
   }
 
-  for (el_nm in extfam_nms_add) {
+  for (el_nm in setdiff(extfam_nms_add, "projpred_extended")) {
     expect_type(extfam[[el_nm]], "closure")
   }
+
+  expect_true(extfam$projpred_extended, info = info_str)
 
   # TODO: Add some mathematical checks (i.e., check that the calculations for
   # the objects listed in `extfam_nms_add` are mathematically correct).
