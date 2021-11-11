@@ -91,7 +91,7 @@ Now, **projpred** comes into play.
 library(projpred)
 ```
 
-In **projpred**, the projective variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each model size^[Here, the model size is given by the number of predictor terms.]. The evaluation part determines the predictive performance of the submodels along the solution path. Depending on the search method, these two parts may also be entangled with each other.
+In **projpred**, the projective variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each model size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path. Depending on the search method, these two parts may also be entangled with each other.
 
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is explained in the `?cv_varsel` help) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
 
