@@ -97,7 +97,9 @@ precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is used.
 
 \item{dis}{A vector of posterior draws for the dispersion parameter (if
 existing). May be \code{NULL} if the model has no dispersion parameter or if the
-model does have a dispersion parameter, but \code{object} is \code{NULL}.}
+model does have a dispersion parameter, but \code{object} is \code{NULL}. Note that
+for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation, not the
+variance.}
 }
 \value{
 An object that can be passed to all the functions that take the

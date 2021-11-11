@@ -56,7 +56,9 @@
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
 #' @param dis A vector of posterior draws for the dispersion parameter (if
 #'   existing). May be `NULL` if the model has no dispersion parameter or if the
-#'   model does have a dispersion parameter, but `object` is `NULL`.
+#'   model does have a dispersion parameter, but `object` is `NULL`. Note that
+#'   for the [gaussian()] `family`, `dis` is the standard deviation, not the
+#'   variance.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. Else: ignored.
