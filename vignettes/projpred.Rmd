@@ -18,7 +18,7 @@ vignette: >
 
 ## Introduction
 
-This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models.^[Currently, the implementation for additive models is only experimental in **projpred**.] What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
+This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models.^[Currently, the support for additive models is only experimental in **projpred**.] What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
 
 The projective variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in **projpred** are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017a). Type `citation("projpred")` for details on how to cite **projpred**.
 
