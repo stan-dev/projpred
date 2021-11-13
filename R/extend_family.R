@@ -29,7 +29,7 @@ extend_family <- function(family) {
   }
   extend_family_specific <- get(extend_family_specific, mode = "function")
   family <- extend_family_specific(family)
-  family$projpred_extended <- TRUE
+  family$is_extended <- TRUE
   return(family)
 }
 
@@ -266,5 +266,5 @@ extend_family_student_t <- function(family) {
 # functions, that is, whether it has already been extended (typically by a call
 # to extend_family()):
 .has_family_extras <- function(family) {
-  return(isTRUE(family$projpred_extended))
+  return(isTRUE(family$is_extended))
 }
