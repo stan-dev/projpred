@@ -60,6 +60,8 @@
 #' # Functions
 #'
 #' \describe{
+#'   \item{[init_refmodel()], [get_refmodel()]}{For setting up a reference model
+#'   (only rarely needed explicitly).}
 #'   \item{[varsel()], [cv_varsel()]}{For variable selection, possibly with
 #'   cross-validation (CV).}
 #'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],

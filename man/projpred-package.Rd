@@ -53,6 +53,8 @@ below. See \code{citation(package = "projpred")} for details on citing
 }
 \section{Functions}{
 \describe{
+\item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up a reference model
+(only rarely needed explicitly).}
 \item{\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}}}{For variable selection, possibly with
 cross-validation (CV).}
 \item{\code{\link[=summary.vsel]{summary.vsel()}}, \code{\link[=print.vsel]{print.vsel()}}, \code{\link[=plot.vsel]{plot.vsel()}},
