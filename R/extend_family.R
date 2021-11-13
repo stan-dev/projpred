@@ -32,8 +32,9 @@ extend_family <- function(family) {
 
 extend_family_binomial <- function(family) {
   kl_dev <- function(pref, data, psub) {
+    data$weights <- data$weights / sum(data$weights)
     data$weights <- rep(data$weights, ncol(pref$mu))
-    colMeans(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
+    colSums(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
   }
   dis_na <- function(pref, psub, wobs = 1) {
     rep(0, ncol(pref$mu))
@@ -85,8 +86,9 @@ extend_family_binomial <- function(family) {
 
 extend_family_poisson <- function(family) {
   kl_dev <- function(pref, data, psub) {
+    data$weights <- data$weights / sum(data$weights)
     data$weights <- rep(data$weights, ncol(pref$mu))
-    colMeans(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
+    colSums(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
   }
   dis_na <- function(pref, psub, wobs = 1) {
     rep(0, ncol(pref$mu))
@@ -116,7 +118,8 @@ extend_family_poisson <- function(family) {
 
 extend_family_gaussian <- function(family) {
   kl_gauss <- function(pref, data, psub) {
-    colMeans(data$weights * (psub$mu - pref$mu)^2)
+    data$weights <- data$weights / sum(data$weights)
+    colSums(data$weights * (psub$mu - pref$mu)^2)
   } # not the actual KL but reasonable surrogate..
   dis_gauss <- function(pref, psub, wobs = 1) {
     sqrt(colSums(wobs / sum(wobs) * (pref$var + (pref$mu - psub$mu)^2)))
