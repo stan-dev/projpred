@@ -60,17 +60,17 @@
 #' # Functions
 #'
 #' \describe{
-#'   \item{[varsel()], [cv_varsel()]}{Perform the variable selection, possibly
-#'   with cross-validation (CV).}
+#'   \item{[varsel()], [cv_varsel()]}{For variable selection, possibly with
+#'   cross-validation (CV).}
 #'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
-#'   [suggest_size.vsel()], [solution_terms.vsel()]}{Post-process the results
-#'   from the variable selection.}
-#'   \item{[project()]}{Project the reference model onto submodel(s). Typically,
-#'   this follows the variable selection, but it can also be applied directly
-#'   (without a variable selection).}
-#'   \item{[as.matrix.projection()]}{Extract projected parameter draws.}
-#'   \item{[proj_linpred()], [proj_predict()]}{Make predictions from a submodel
-#'   (after projecting the reference model onto it).}
+#'   [suggest_size.vsel()], [solution_terms.vsel()]}{For post-processing the
+#'   results from the variable selection.}
+#'   \item{[project()]}{For projecting the reference model onto submodel(s).
+#'   Typically, this follows the variable selection, but it can also be applied
+#'   directly (without a variable selection).}
+#'   \item{[as.matrix.projection()]}{For extracting projected parameter draws.}
+#'   \item{[proj_linpred()], [proj_predict()]}{For making predictions from a
+#'   submodel (after projecting the reference model onto it).}
 #' }
 #'
 #' @references
