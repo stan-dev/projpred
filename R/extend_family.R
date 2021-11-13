@@ -28,9 +28,9 @@ extend_family <- function(family) {
     stop("Family '", family$family, "' is not supported by projpred.")
   }
   extend_family_specific <- get(extend_family_specific, mode = "function")
-  extfam <- extend_family_specific(family)
-  extfam$projpred_extended <- TRUE
-  return(extfam)
+  family <- extend_family_specific(family)
+  family$projpred_extended <- TRUE
+  return(family)
 }
 
 extend_family_binomial <- function(family) {
