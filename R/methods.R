@@ -38,8 +38,8 @@
 #'   was projected. If a clustered projection was performed, `.seed` is also
 #'   used for drawing from the set of the projected clusters of posterior draws
 #'   (see argument `nresample_clusters`).
-#' @param ... Additional arguments passed to [project()] if `object` is not
-#'   already an object returned by [project()].
+#' @param ... Arguments passed to [project()] if `object` is not already an
+#'   object returned by [project()].
 #'
 #' @return Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
 #'   clustered) projected posterior draws (short: the number of projected draws)

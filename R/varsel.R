@@ -73,7 +73,7 @@
 #'   therefore, the results are not reproducible. See [set.seed()] for details.
 #'   Here, this seed is used for clustering the reference model's posterior
 #'   draws (if `!is.null(nclusters)`).
-#' @param ... Additional arguments passed to [get_refmodel()].
+#' @param ... Arguments passed to [get_refmodel()].
 #'
 #' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
 #'   are automatically truncated at the number of posterior draws in the

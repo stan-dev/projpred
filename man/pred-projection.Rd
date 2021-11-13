@@ -59,8 +59,8 @@ the inverse-link function (\code{TRUE}) or not (\code{FALSE}).}
 indicating whether the output should be averaged across the projected
 posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
-\item{...}{Additional arguments passed to \code{\link[=project]{project()}} if \code{object} is not
-already an object returned by \code{\link[=project]{project()}}.}
+\item{...}{Arguments passed to \code{\link[=project]{project()}} if \code{object} is not already an
+object returned by \code{\link[=project]{project()}}.}
 
 \item{nresample_clusters}{For \code{\link[=proj_predict]{proj_predict()}} with clustered projection
 only. Number of draws to return from the predictive distribution of the
