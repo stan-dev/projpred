@@ -10,15 +10,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include=FALSE}
-knitr::opts_chunk$set(
-  fig.width = 6.75,
-  fig.asp = (sqrt(5) - 1) / 2,
-  message = FALSE,
-  warning = FALSE,
-  eval = if (exists("params") && !is.null(params$EVAL)) params$EVAL else FALSE,
-  dpi = 100
-)
+```{r child="children/SETTINGS-knitr.Rmd"}
 ```
 
 ## Introduction
@@ -67,7 +59,7 @@ tau0 <- p0 / (D - p0) * 1 / sqrt(N)
 ```
 
 We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of **rstan**'s parallelization, which means to run each chain on a separate CPU core.^[More precisely, the number of chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
-```{r, cache = TRUE, cache.lazy = FALSE}
+```{r, cache=TRUE, cache.lazy=FALSE}
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
 ### Only for technical reasons in this vignette (you can omit this when running
@@ -109,7 +101,7 @@ if (!identical(.Platform$OS.type, "windows")) {
 ```
 
 It is worth taking a look at the documentation of `cv_varsel()` because we cannot explain all arguments here. By modifying argument `cv_method`, we use a K-fold CV instead of a leave-one-out (LOO) CV. We do this here only to make this vignette build faster. In general, this is not recommended since LOO CV is more accurate. By modifying argument `nterms_max`, we impose a limit on the model size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`12`) is based on such a first run (which is not shown here, though).
-```{r, results='hide', cache = TRUE, cache.lazy = FALSE}
+```{r, results='hide', cache=TRUE, cache.lazy=FALSE}
 cvvs <- cv_varsel(
   refm_fit,
   ### Only for the sake of speed (in general, LOO CV is more accurate):
@@ -121,7 +113,7 @@ cvvs <- cv_varsel(
 ```
 
 The first step after running the variable selection should be the decision for a final model size. This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the model size decision dependent on the solution path). To decide for a model size, there are several performance statistics we can plot as a function of the model size. Here, we use the expected log (pointwise) predictive density (for a new dataset) (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation---or "test"---set) and the root mean squared error (RMSE). By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (with regard to the model size decision), we directly plot with `deltas = TRUE` here:
-```{r, fig.asp = 1.5 * (sqrt(5) - 1) / 2}
+```{r, fig.asp=1.5 * 0.618}
 plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
 ```
 
@@ -156,7 +148,7 @@ Combining the decided model size of 8 with the solution path leads to the follow
 ## Post-selection inference
 
 The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference. By the following code, `project()` will project the reference model onto the final submodel once again^[During the forward search, the reference model has already been projected onto all candidate models (this was where arguments `ndraws` and `nclusters` of `cv_varsel()` came into play). During the evaluation of the submodels along the solution path, the reference model has already been projected onto those submodels (this was where arguments `ndraws_pred` and `nclusters_pred` of `cv_varsel()` came into play). In principle, one could use the results from the evaluation part for post-selection inference, but due to a bug in the current implementation (see GitHub issue #168), we currently have to project once again.]:
-```{r, cache = TRUE, cache.lazy = FALSE}
+```{r, cache=TRUE, cache.lazy=FALSE}
 prj <- project(
   refm_fit,
   solution_terms = soltrms_final,
