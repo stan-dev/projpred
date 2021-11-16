@@ -21,7 +21,15 @@
 #' The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
 #' of other packages are welcome to add new [get_refmodel()] methods (which
 #' enable the compatibility of their packages with \pkg{projpred}). Custom
-#' reference models can also be used via [init_refmodel()].
+#' reference models can also be used via [init_refmodel()]. It is via custom
+#' reference models that \pkg{projpred} supports the projection onto candidate
+#' models whose predictor terms are not a subset of the reference model's
+#' predictor terms. However, for \pkg{rstanarm} and \pkg{brms} reference models,
+#' \pkg{projpred} only supports the projection onto *submodels* of the reference
+#' model. For the sake of simplicity, throughout this package, we use the term
+#' "submodel" for all kinds of candidate models onto which the reference model
+#' is projected, even though this term is not always appropriate for custom
+#' reference models.
 #'
 #' Currently, the supported families are [gaussian()], [binomial()] (and---via
 #' [brms::get_refmodel.brmsfit()]---also [brms::bernoulli()]), as well as
