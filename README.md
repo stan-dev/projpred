@@ -9,12 +9,12 @@ An R package to perform projection predictive variable selection for generalized
 
 The method is described in detail in Piironen et al. (2020) and Catalina et al. (2020) and evaluated in comparison to many other methods in Piironen and Vehtari (2017). 
 
-Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [quickstart-vignette][] for examples on GLMs and [quickstart-glmms-vignette][] for examples on GLMMs.
+Currently, the supported models (family objects in R) include Gaussian, Binomial and Poisson families. See the [projpred-vignette][] for an example application. Smaller examples are included in the documentation.
 
 
 ### Resources
 
-* [mc-stan.org/projpred](https://mc-stan.org/projpred) (online documentation, vignettes)
+* [mc-stan.org/projpred](https://mc-stan.org/projpred) (online documentation, vignette)
 * [Ask a question](https://discourse.mc-stan.org) (Stan Forums on Discourse)
 * [Open an issue](https://github.com/stan-dev/projpred/issues) (GitHub issues for bug reports, feature requests)
 
@@ -99,6 +99,5 @@ Catalina, Alejandro, Bürkner, Paul-Christian, Vehtari, Aki (2020). Projection P
   [piironenvehtari]: https://link.springer.com/article/10.1007/s11222-016-9649-y
   [projpred]: https://projecteuclid.org/euclid.ejs/1589335310
   [new-projpred]: https://arxiv.org/abs/2010.06994
-  [quickstart-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart.html
-  [quickstart-glmms-vignette]: https://htmlpreview.github.io/?https://github.com/stan-dev/projpred/blob/master/vignettes/quickstart_glmm.html
+  [projpred-vignette]: https://mc-stan.org/projpred/articles/projpred.html
 
