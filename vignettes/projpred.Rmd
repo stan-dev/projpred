@@ -103,7 +103,7 @@ if (!identical(.Platform$OS.type, "windows")) {
 }
 ```
 
-It is worth taking a look at the documentation of `cv_varsel()` because we cannot explain all arguments here. By modifying argument `cv_method`, we use a K-fold CV instead of a leave-one-out (LOO) CV. We do this here only to make this vignette build faster. In general, this is not recommended since LOO CV is more accurate. By modifying argument `nterms_max`, we impose a limit on the model size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`12`) is based on such a first run (which is not shown here, though).
+Here, we use only some of the available arguments; see the documentation of `cv_varsel()` for the full list of arguments. By modifying argument `cv_method`, we use a K-fold CV instead of a leave-one-out (LOO) CV. We do this here only to make this vignette build faster. When the computation time is not an issue, we recommend using LOO-CV as it is likely to be more accurate. By modifying argument `nterms_max`, we impose a limit on the model size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`12`) is based on such a first run (which is not shown here, though).
 ```{r, results='hide', cache=TRUE, cache.lazy=FALSE}
 cvvs <- cv_varsel(
   refm_fit,
@@ -167,7 +167,7 @@ prj <- project(
 <!--   seed = 15705533 -->
 <!-- ) -->
 <!-- ``` -->
-For more accurate results, we could have increased argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). This increases the runtime, though, which we don't want in this vignette.
+For more accurate results, we could have increased argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). This increases the runtime, which we don't want in this vignette.
 
 Next, we create a matrix containing the projected posterior draws stored in the depths of `project()`'s output:
 ```{r}
@@ -195,7 +195,7 @@ mcmc_intervals(prj_mat) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
 
-Note that we only visualize the *1-dimensional* marginals of the projected posterior here. To gain a more complete picture, we would have to visualize at least some *2-dimensional* marginals of the projected posterior (i.e., marginals for pairs of parameters), giving 3-dimensional plots.
+Note that we only visualize the *1-dimensional* marginals of the projected posterior here. To gain a more complete picture, we would have to visualize at least some *2-dimensional* marginals of the projected posterior (i.e., marginals for pairs of parameters).
 
 For comparison, consider the marginal posteriors of the corresponding parameters in the reference model:
 ```{r}
@@ -209,7 +209,7 @@ mcmc_intervals(refm_mat, pars = pars_nms_refm) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
 
-Here, the reference model's marginal posteriors differ only slightly from the marginals of the projected posterior. This does not necessarily have to be the case, though.
+Here, the reference model's marginal posteriors differ only slightly from the marginals of the projected posterior. This does not necessarily have to be the case.
 
 ### Predictions
 
