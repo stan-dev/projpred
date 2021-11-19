@@ -756,15 +756,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       cvfit$omitted
     )
     default_data <- refmodel$fetch_data(obs = fold)
-    extract_model_data <- function(object, newdata = default_data, ...) {
-      refmodel$extract_model_data(object = object, newdata = newdata, ...)
-    }
     k_refmodel <- init_refmodel(
       object = NULL, data = default_data,
       formula = refmodel$formula, family = refmodel$family,
       div_minimizer = refmodel$div_minimizer,
       proj_predfun = refmodel$proj_predfun,
-      extract_model_data = extract_model_data
+      extract_model_data = refmodel$extract_model_data
     )
   }
   ## k_refmodel$nclusters_pred <- min(NCOL(k_refmodel$mu), 5)
