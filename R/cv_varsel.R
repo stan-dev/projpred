@@ -753,9 +753,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     cvfit$omitted
   )
   default_data <- refmodel$fetch_data(obs = fold)
-  ref_predfun <- function(fit, newdata = default_data) {
-    refmodel$ref_predfun(fit, newdata = newdata)
-  }
   proj_predfun <- function(fit, newdata = default_data) {
     refmodel$proj_predfun(fit, newdata = newdata)
   }
