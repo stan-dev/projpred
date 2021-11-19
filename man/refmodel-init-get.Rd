@@ -138,7 +138,7 @@ the following prototypes:
 typically stored in \code{fit}) or data for new observations (at least in the
 form of a \code{data.frame}).
 }
-\item \code{proj_predfun}: \code{proj_predfun(fit, newdata = NULL)} where:
+\item \code{proj_predfun}: \code{proj_predfun(fit, newdata)} where:
 \itemize{
 \item \code{fit} accepts a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 this number of submodel fits. This \code{list} is the same as that returned by
@@ -146,9 +146,8 @@ this number of submodel fits. This \code{list} is the same as that returned by
 the return value of \code{div_minimizer}, except if \code{\link[=project]{project()}} was used with
 an \code{object} of class \code{vsel} based on an L1 search as well as with
 \code{cv_search = FALSE});
-\item \code{newdata} accepts either \code{NULL} (for using the original dataset,
-typically stored in \code{fit}) or data for new observations (at least in the
-form of a \code{data.frame});
+\item \code{newdata} accepts data for new observations (at least in the form of a
+\code{data.frame});
 }
 \item \code{div_minimizer} does not need to have a specific prototype, but it needs to
 be able to be called with the following arguments:
