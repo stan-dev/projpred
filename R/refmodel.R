@@ -584,7 +584,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (!all(.is.wholenumber(y))) {
       stop("In projpred, the response must contain numbers of successes (not ",
            "proportions of successes), in contrast to glm() where this is ",
-           "the convention for a 1-column response.")
+           "possible for a 1-column response if the multiplication with the ",
+           "weights gives whole numbers.")
     } else if (all(y %in% c(0, 1)) &&
                length(response_name) == 1 &&
                !all(weights == 1)) {
