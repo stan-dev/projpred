@@ -545,6 +545,28 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
                           cvfits = NULL, dis = NULL, ...) {
+  # Family ------------------------------------------------------------------
+
+  if (family$family == "Student_t") {
+    warning("Support for the `Student_t` family is still experimental.")
+  } else if (family$family == "Gamma") {
+    warning("Support for the `Gamma` family is still experimental.")
+  }
+
+  if (!.has_family_extras(family)) {
+    family <- extend_family(family)
+  }
+
+  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL) {
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    if (is.null(offset)) {
+      offset <- rep(0, nrow(newdata))
+    }
+    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
+  }
+
+  # Special case: `datafit` -------------------------------------------------
+
   proper_model <- !is.null(object)
 
   # Formula -----------------------------------------------------------------
@@ -652,26 +674,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   fetch_data_wrapper <- function(obs = NULL) {
     fetch_data(data, obs = obs)
-  }
-
-  # Family ------------------------------------------------------------------
-
-  if (family$family == "Student_t") {
-    warning("Support for the `Student_t` family is still experimental.")
-  } else if (family$family == "Gamma") {
-    warning("Support for the `Gamma` family is still experimental.")
-  }
-
-  if (!.has_family_extras(family)) {
-    family <- extend_family(family)
-  }
-
-  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL) {
-    newdata <- fetch_data(data, obs = obs, newdata = newdata)
-    if (is.null(offset)) {
-      offset <- rep(0, nrow(newdata))
-    }
-    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
   }
 
   # mu ----------------------------------------------------------------------
