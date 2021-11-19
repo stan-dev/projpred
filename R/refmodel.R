@@ -676,8 +676,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # mu ----------------------------------------------------------------------
 
-  ## ref_predfun should already take into account the family of the model
-  ## we leave this here just in case
   if (proper_model) {
     mu <- ref_predfun(object)
     mu <- unname(as.matrix(mu))
