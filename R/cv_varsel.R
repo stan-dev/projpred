@@ -748,20 +748,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 }
 
 .init_kfold_refmodel <- function(cvfit, refmodel, train) {
-  fold <- setdiff(
-    train,
-    cvfit$omitted
-  )
-  default_data <- refmodel$fetch_data(obs = fold)
-  proj_predfun <- function(fit, newdata = default_data) {
-    refmodel$proj_predfun(fit, newdata = newdata)
-  }
-  extract_model_data <- function(object, newdata = default_data, ...) {
-    refmodel$extract_model_data(object = object, newdata = newdata, ...)
-  }
   if (!inherits(refmodel, "datafit")) {
     k_refmodel <- get_refmodel(cvfit)
   } else {
+    fold <- setdiff(
+      train,
+      cvfit$omitted
+    )
+    default_data <- refmodel$fetch_data(obs = fold)
+    proj_predfun <- function(fit, newdata = default_data) {
+      refmodel$proj_predfun(fit, newdata = newdata)
+    }
+    extract_model_data <- function(object, newdata = default_data, ...) {
+      refmodel$extract_model_data(object = object, newdata = newdata, ...)
+    }
     k_refmodel <- init_refmodel(
       object = NULL, data = default_data,
       formula = refmodel$formula, family = refmodel$family,
