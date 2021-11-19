@@ -755,9 +755,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       train,
       cvfit$omitted
     )
-    default_data <- refmodel$fetch_data(obs = fold)
+    data_fold <- refmodel$fetch_data(obs = fold)
     k_refmodel <- init_refmodel(
-      object = NULL, data = default_data,
+      object = NULL, data = data_fold,
       formula = refmodel$formula, family = refmodel$family,
       div_minimizer = refmodel$div_minimizer,
       proj_predfun = refmodel$proj_predfun,
