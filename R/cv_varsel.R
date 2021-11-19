@@ -751,11 +751,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!inherits(refmodel, "datafit")) {
     k_refmodel <- get_refmodel(cvfit)
   } else {
-    fold <- setdiff(
-      train,
-      cvfit$omitted
-    )
-    data_fold <- refmodel$fetch_data(obs = fold)
+    data_fold <- refmodel$fetch_data(obs = setdiff(train, cvfit$omitted))
     k_refmodel <- init_refmodel(
       object = NULL, data = data_fold,
       formula = refmodel$formula, family = refmodel$family,
