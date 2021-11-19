@@ -303,6 +303,13 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
   return(as.data.frame(data_out))
 }
 
+refprd <- function(fit, newdata = NULL) {
+  # For safety reasons, keep `transform = FALSE` even though this should
+  # be the default in all posterior_linpred() methods (but we cannot be
+  # sure with regard to user-defined posterior_linpred() methods):
+  t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
+}
+
 .extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                 orhs = NULL, resp_form = NULL) {
   if (is.null(newdata)) {
@@ -626,12 +633,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (proper_model) {
     if (is.null(ref_predfun)) {
-      ref_predfun <- function(fit, newdata = NULL) {
-        # For safety reasons, keep `transform = FALSE` even though this should
-        # be the default in all posterior_linpred() methods (but we cannot be
-        # sure with regard to user-defined posterior_linpred() methods):
-        t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
-      }
+      ref_predfun <- refprd
     }
     # Since posterior_linpred() is supposed to include any offsets but (at least
     # currently) projpred expects the final ref_predfun() to exclude any offsets
