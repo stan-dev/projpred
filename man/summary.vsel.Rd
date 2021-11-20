@@ -29,7 +29,7 @@ calculate. Available statistics are:
 \itemize{
 \item \code{"elpd"}: (expected) sum of log predictive densities.
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
-number of observations (data points).
+number of observations.
 \item \code{"mse"}: mean squared error.
 \item \code{"rmse"}: root mean squared error.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy

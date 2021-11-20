@@ -123,11 +123,12 @@ for the use of \eqn{K}-fold CV in \pkg{projpred}.
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default. Otherwise, let \eqn{N} denote the number of
-observations (data points), \eqn{S_{\mbox{ref}}}{S_ref} the number of
-posterior draws for the reference model's parameters, and
-\eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly clustered) parameter
-draws for projection (short: the number of projected draws). Then the
-functions supplied to these arguments need to have the following prototypes:
+observations (in case of CV, these may be reduced to each fold),
+\eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
+model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
+clustered) parameter draws for projection (short: the number of projected
+draws). Then the functions supplied to these arguments need to have the
+following prototypes:
 \itemize{
 \item \code{ref_predfun}: \code{ref_predfun(fit, newdata = NULL)} where:
 \itemize{

@@ -71,11 +71,12 @@
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
-#' observations (data points), \eqn{S_{\mbox{ref}}}{S_ref} the number of
-#' posterior draws for the reference model's parameters, and
-#' \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly clustered) parameter
-#' draws for projection (short: the number of projected draws). Then the
-#' functions supplied to these arguments need to have the following prototypes:
+#' observations (in case of CV, these may be reduced to each fold),
+#' \eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
+#' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
+#' clustered) parameter draws for projection (short: the number of projected
+#' draws). Then the functions supplied to these arguments need to have the
+#' following prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in

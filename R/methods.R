@@ -442,7 +442,7 @@ plot.vsel <- function(
 #'   calculate. Available statistics are:
 #'   * `"elpd"`: (expected) sum of log predictive densities.
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
-#'   number of observations (data points).
+#'   number of observations.
 #'   * `"mse"`: mean squared error.
 #'   * `"rmse"`: root mean squared error.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
@@ -1093,7 +1093,7 @@ as.matrix.projection <- function(x, ...) {
 #'
 #' @name cv-indices
 #'
-#' @param n Number of observations (data points).
+#' @param n Number of observations.
 #' @param K Number of folds. Must be at least 2 and not exceed `n`.
 #' @param out Format of the output, either `"foldwise"` or `"indices"`. See
 #'   below for details.
