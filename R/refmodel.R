@@ -104,8 +104,8 @@
 #'     + `weights` accepts either `NULL` (for using a vector of ones as weights)
 #'     or observation weights (at least in the form of a numeric vector);
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
-#'     matrix containing predictive variances (necessary for \pkg{projpred}'s
-#'     internal (G)LM fitter);
+#'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
+#'     GLM fitter);
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'

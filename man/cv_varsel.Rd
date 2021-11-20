@@ -116,8 +116,8 @@ threshold when computing the L1 path. Usually, there is no need to change
 this.}
 
 \item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
-is no need for regularization, but sometimes we need to add some
+projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
+no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
 
 \item{validate_search}{Only relevant if \code{cv_method == "LOO"}. A single
@@ -149,9 +149,9 @@ to be accessed directly but instead via helper functions (see the vignette
 or type \code{?projpred}).
 }
 \description{
-Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-(G)AMs, and (G)AMMs. This variable selection consists of a \emph{search} part and
-an \emph{evaluation} part. The search part determines the solution path, i.e., the
+Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
+and GAMMs. This variable selection consists of a \emph{search} part and an
+\emph{evaluation} part. The search part determines the solution path, i.e., the
 best submodel for each number of predictor terms (model size). The evaluation
 part determines the predictive performance of the submodels along the
 solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a

@@ -1,8 +1,8 @@
 #' Variable selection with cross-validation
 #'
-#' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* part and
-#' an *evaluation* part. The search part determines the solution path, i.e., the
+#' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
+#' and GAMMs. This variable selection consists of a *search* part and an
+#' *evaluation* part. The search part determines the solution path, i.e., the
 #' best submodel for each number of predictor terms (model size). The evaluation
 #' part determines the predictive performance of the submodels along the
 #' solution path. In contrast to [varsel()], [cv_varsel()] performs a

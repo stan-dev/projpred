@@ -57,8 +57,8 @@ Here, this seed is used for clustering the reference model's posterior
 draws (if \code{!is.null(nclusters)}).}
 
 \item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
-is no need for regularization, but sometimes we need to add some
+projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
+no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
 
 \item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} (if \code{\link[=get_refmodel]{get_refmodel()}} is

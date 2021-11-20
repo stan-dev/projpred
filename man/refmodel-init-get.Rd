@@ -162,8 +162,8 @@ each of the response variables separately;
 \item \code{weights} accepts either \code{NULL} (for using a vector of ones as weights)
 or observation weights (at least in the form of a numeric vector);
 \item \code{projpred_var} accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
-matrix containing predictive variances (necessary for \pkg{projpred}'s
-internal (G)LM fitter);
+matrix of predictive variances (necessary for \pkg{projpred}'s internal
+GLM fitter);
 \item \code{projpred_regul} accepts a single numeric value as supplied to argument
 \code{regul} of \code{\link[=project]{project()}}, for example.
 }
