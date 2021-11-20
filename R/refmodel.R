@@ -71,11 +71,11 @@
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
-#' observations (data points), \eqn{S} the number of posterior draws for the
-#' reference model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of
-#' (possibly clustered) parameter draws in the projection (short: the number of
-#' projected draws). Then the functions supplied to these arguments need to have
-#' the following prototypes:
+#' observations (data points), \eqn{S_{\mbox{ref}}}{S_ref} the number of
+#' posterior draws for the reference model's parameters, and
+#' \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly clustered) parameter
+#' draws for projection (short: the number of projected draws). Then the
+#' functions supplied to these arguments need to have the following prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
@@ -110,7 +110,7 @@
 #'     `regul` of [project()], for example.
 #'
 #' The return value of these functions needs to be:
-#' * `ref_predfun`: an \eqn{N \times S}{N x S} matrix.
+#' * `ref_predfun`: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
 #' * `proj_predfun`: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 #' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 #' this number of submodel fits.

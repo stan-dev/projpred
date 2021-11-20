@@ -123,11 +123,11 @@ for the use of \eqn{K}-fold CV in \pkg{projpred}.
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default. Otherwise, let \eqn{N} denote the number of
-observations (data points), \eqn{S} the number of posterior draws for the
-reference model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of
-(possibly clustered) parameter draws in the projection (short: the number of
-projected draws). Then the functions supplied to these arguments need to have
-the following prototypes:
+observations (data points), \eqn{S_{\mbox{ref}}}{S_ref} the number of
+posterior draws for the reference model's parameters, and
+\eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly clustered) parameter
+draws for projection (short: the number of projected draws). Then the
+functions supplied to these arguments need to have the following prototypes:
 \itemize{
 \item \code{ref_predfun}: \code{ref_predfun(fit, newdata = NULL)} where:
 \itemize{
@@ -171,7 +171,7 @@ fitter);
 
 The return value of these functions needs to be:
 \itemize{
-\item \code{ref_predfun}: an \eqn{N \times S}{N x S} matrix.
+\item \code{ref_predfun}: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
 \item \code{proj_predfun}: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 \item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 this number of submodel fits.

@@ -167,7 +167,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 }
 
 # Create the "reference distribution", i.e., reduce the number of posterior
-# draws from the reference model by clustering, thinning, or subsampling them.
+# draws from the reference model by clustering, thinning, or subsampling them
 #
 # @param refmodel An object of class `refmodel`.
 # @param nclusters The desired number of clusters of draws. If
@@ -180,24 +180,24 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 #   subsampled (without replacement).
 #
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
-#   observations, and \eqn{S} either the number of clusters (`nclusters`) or the
-#   number of draws (`ndraws`), depending on which one is used. Then the return
-#   value is a list with elements:
+#   observations, and \eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws
+#   (= either `nclusters` or `ndraws`, depending on which one is used). Then the
+#   return value is a list with elements:
 #
-#   * `mu`: An \eqn{N \times S}{N x S} matrix of expected values for \eqn{y} for
-#   each draw/cluster.
-#   * `var`: An \eqn{N \times S}{N x S} matrix of predictive variances for
-#   \eqn{y} for each draw/cluster which are needed for projecting the dispersion
-#   parameter (the predictive variances are NA for those families that do not
-#   have a dispersion parameter).
-#   * `dis`: A vector of length \eqn{S} containing the reference model's
-#   dispersion parameter value for each draw/cluster (NA for those families that
-#   do not have a dispersion parameter). See issue #204.
-#   * `weights`: A vector of length \eqn{S} containing the weights for the
-#   draws/clusters.
+#   * `mu`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of expected
+#   values for \eqn{y} for each draw/cluster.
+#   * `var`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of predictive
+#   variances for \eqn{y} for each draw/cluster which are needed for projecting
+#   the dispersion parameter (the predictive variances are NA for those families
+#   that do not have a dispersion parameter).
+#   * `dis`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
+#   reference model's dispersion parameter value for each draw/cluster (NA for
+#   those families that do not have a dispersion parameter). See issue #204.
+#   * `weights`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
+#   weights for the draws/clusters.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
-#   integer between 1 and \eqn{S}.
+#   integer between 1 and \eqn{S_{\mbox{prj}}}{S_prj}.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
                          thinning = TRUE) {
   # set random seed but ensure the old RNG state is restored on exit
