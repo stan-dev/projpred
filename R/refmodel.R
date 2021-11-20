@@ -103,9 +103,9 @@
 #'     + `family` accepts a [`family`] object;
 #'     + `weights` accepts either `NULL` (for using a vector of ones as weights)
 #'     or observation weights (at least in the form of a numeric vector);
-#'     + `projpred_var` accepts a numeric vector of length \eqn{N} containing
-#'     predictive variances (necessary for \pkg{projpred}'s internal (G)LM
-#'     fitter);
+#'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+#'     matrix containing predictive variances (necessary for \pkg{projpred}'s
+#'     internal (G)LM fitter);
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'
