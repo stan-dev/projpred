@@ -79,7 +79,7 @@
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
-#'     \eqn{K}-fold CV);
+#'     \eqn{K}-fold CV).
 #'     + `newdata` accepts either `NULL` (for using the original dataset,
 #'     typically stored in `fit`) or data for new observations (at least in the
 #'     form of a `data.frame`).
@@ -89,23 +89,23 @@
 #'     [project()] in its output element `sub_fit` (which in turn is the same as
 #'     the return value of `div_minimizer`, except if [project()] was used with
 #'     an `object` of class `vsel` based on an L1 search as well as with
-#'     `cv_search = FALSE`);
+#'     `cv_search = FALSE`).
 #'     + `newdata` accepts data for new observations (at least in the form of a
-#'     `data.frame`);
+#'     `data.frame`).
 #' * `div_minimizer` does not need to have a specific prototype, but it needs to
 #' be able to be called with the following arguments:
 #'     + `formula` accepts either a standard [`formula`] with a single response
 #'     (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a [`formula`] with
 #'     \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
 #'     the left-hand side in which case the projection has to be performed for
-#'     each of the response variables separately;
-#'     + `data` accepts a `data.frame` to be used for the projection;
-#'     + `family` accepts a [`family`] object;
+#'     each of the response variables separately.
+#'     + `data` accepts a `data.frame` to be used for the projection.
+#'     + `family` accepts a [`family`] object.
 #'     + `weights` accepts either `NULL` (for using a vector of ones as weights)
-#'     or observation weights (at least in the form of a numeric vector);
+#'     or observation weights (at least in the form of a numeric vector).
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
-#'     GLM fitter);
+#'     GLM fitter).
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'
@@ -125,15 +125,15 @@
 #' where:
 #' * `object` accepts the reference model fit as given in argument `object` (but
 #' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
-#' CV);
+#' CV).
 #' * `newdata` accepts data for new observations (at least in the form of a
-#' `data.frame`);
+#' `data.frame`).
 #' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
 #' right-hand side formula consisting only of the variable in `newdata`
-#' containing the weights;
+#' containing the weights.
 #' * `orhs` accepts at least either `NULL` (for using a vector of zeros) or a
 #' right-hand side formula consisting only of the variable in `newdata`
-#' containing the offsets;
+#' containing the offsets.
 #' * `extract_y` accepts a single logical value indicating whether output
 #' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
 #'

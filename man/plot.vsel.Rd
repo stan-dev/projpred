@@ -25,13 +25,13 @@ calculated. Note that \code{nterms_max} does not count the intercept, so use
 \item{stats}{One or more character strings determining which statistics to
 calculate. Available statistics are:
 \itemize{
-\item \code{"elpd"}: (expected) sum of log predictive densities;
+\item \code{"elpd"}: (expected) sum of log predictive densities.
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
-number of observations (data points);
-\item \code{"mse"}: mean squared error;
-\item \code{"rmse"}: root mean squared error;
+number of observations (data points).
+\item \code{"mse"}: mean squared error.
+\item \code{"rmse"}: root mean squared error.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy
-(\code{\link[=binomial]{binomial()}} family only);
+(\code{\link[=binomial]{binomial()}} family only).
 \item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only).
 }}
 
