@@ -101,8 +101,8 @@
 #'     each of the response variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection.
 #'     + `family` accepts a [`family`] object.
-#'     + `weights` accepts either `NULL` (for using a vector of ones as weights)
-#'     or observation weights (at least in the form of a numeric vector).
+#'     + `weights` accepts either observation weights (at least in the form of a
+#'     numeric vector) or `NULL` (for using a vector of ones as weights).
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
 #'     GLM fitter).

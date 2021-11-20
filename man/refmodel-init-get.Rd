@@ -159,8 +159,8 @@ the left-hand side in which case the projection has to be performed for
 each of the response variables separately.
 \item \code{data} accepts a \code{data.frame} to be used for the projection.
 \item \code{family} accepts a \code{\link{family}} object.
-\item \code{weights} accepts either \code{NULL} (for using a vector of ones as weights)
-or observation weights (at least in the form of a numeric vector).
+\item \code{weights} accepts either observation weights (at least in the form of a
+numeric vector) or \code{NULL} (for using a vector of ones as weights).
 \item \code{projpred_var} accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
 matrix of predictive variances (necessary for \pkg{projpred}'s internal
 GLM fitter).
