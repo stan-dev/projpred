@@ -14,7 +14,8 @@ divmin <- function(formula, projpred_var, ...) {
   projpred_formulas_no_random <- NA
   projpred_random <- NA
   if (!has_grp && !has_add) {
-    sdivmin <- fit_glm_ridge_callback
+    sdivmin <- get(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                   mode = "function")
   } else if (has_grp && !has_add) {
     sdivmin <- fit_glmer_callback
   } else if (!has_grp && has_add) {
@@ -109,6 +110,45 @@ fit_glm_ridge_callback <- function(formula, data,
   )
   class(sub) <- "subfit"
   return(sub)
+}
+
+# Alternative to fit_glm_ridge_callback():
+fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
+                             ...) {
+  ### Needed?:
+  # ## make sure correct 'weights' can be found
+  # environment(formula) <- environment()
+  ###
+  tryCatch({
+    if (family$family == "gaussian" && family$link == "identity") {
+      # Exclude arguments from `...` which cannot be passed to stats::lm():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        methods::formalArgs(stats::lm)
+      )]
+      # Use suppressMessages(suppressWarnings()) here?:
+      return(do.call(stats::lm, c(
+        list(formula = formula),
+        dot_args
+      )))
+    } else {
+      # Exclude arguments from `...` which cannot be passed to stats::glm():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        methods::formalArgs(stats::glm)
+      )]
+      # Use suppressMessages(suppressWarnings()) here?:
+      return(do.call(stats::glm, c(
+        list(formula = formula, family = family),
+        dot_args
+      )))
+    }
+  }, error = function(e) {
+    # May be used to handle errors.
+    stop(e)
+  })
 }
 
 # Use package "mgcv" to fit additive non-multilevel submodels:
@@ -208,7 +248,10 @@ fit_glmer_callback <- function(formula, family,
     if (grepl("No random effects", as.character(e))) {
       # This case should not occur anymore, but leave it here for safety
       # reasons.
-      return(fit_glm_ridge_callback(
+      glm_fitter <- get(getOption("projpred.glm_fitter",
+                                  "fit_glm_ridge_callback"),
+                        mode = "function")
+      return(glm_fitter(
         formula, family = family, ...
       ))
     } else if (grepl("not positive definite", as.character(e))) {
