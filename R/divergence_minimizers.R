@@ -115,10 +115,8 @@ fit_glm_ridge_callback <- function(formula, data,
 # Alternative to fit_glm_ridge_callback():
 fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
                              ...) {
-  ### Needed?:
-  # ## make sure correct 'weights' can be found
-  # environment(formula) <- environment()
-  ###
+  ## make sure correct 'weights' can be found
+  environment(formula) <- environment()
   tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
       # Exclude arguments from `...` which cannot be passed to stats::lm():
