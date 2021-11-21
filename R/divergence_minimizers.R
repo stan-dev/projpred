@@ -112,7 +112,8 @@ fit_glm_ridge_callback <- function(formula, data,
   return(sub)
 }
 
-# Alternative to fit_glm_ridge_callback():
+# Alternative to fit_glm_ridge_callback() (may be used via global option
+# `projpred.glm_fitter`):
 fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
                              ...) {
   ## make sure correct 'weights' can be found
