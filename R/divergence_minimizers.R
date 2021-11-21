@@ -124,7 +124,9 @@ fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
       dot_args <- list(...)
       dot_args <- dot_args[intersect(
         names(dot_args),
-        methods::formalArgs(stats::lm)
+        union(methods::formalArgs(stats::lm),
+              union(methods::formalArgs(stats::lm.fit),
+                    methods::formalArgs(stats::lm.wfit)))
       )]
       # Use suppressMessages(suppressWarnings()) here?:
       return(do.call(stats::lm, c(
@@ -136,7 +138,8 @@ fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
       dot_args <- list(...)
       dot_args <- dot_args[intersect(
         names(dot_args),
-        methods::formalArgs(stats::glm)
+        union(methods::formalArgs(stats::glm),
+              methods::formalArgs(stats::glm.control))
       )]
       # Use suppressMessages(suppressWarnings()) here?:
       return(do.call(stats::glm, c(
