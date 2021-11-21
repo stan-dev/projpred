@@ -246,8 +246,9 @@ fit_glmer_callback <- function(formula, family,
     }
   }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
-      # This case should not occur anymore, but leave it here for safety
-      # reasons.
+      # This case should not occur anymore (because divmin() should pick the
+      # correct submodel fitter based on the submodel's formula), but leave it
+      # here in case user-specified divergence minimizers make use of it.
       glm_fitter <- get(getOption("projpred.glm_fitter",
                                   "fit_glm_ridge_callback"),
                         mode = "function")
