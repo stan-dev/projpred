@@ -22,6 +22,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     projpred_regul = regul
   )
 
+  check_conv(sub_fit)
+
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
     family = family, solution_terms = solution_terms, wobs = wobs,

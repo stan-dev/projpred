@@ -1076,7 +1076,7 @@ as.matrix.projection <- function(x, ...) {
   if (!all(sapply(x$sub_fit, inherits, what = get_as.matrix_cls_projpred()))) {
     # Throw an error because in this case, we probably need a new
     # as.matrix.<class_name>() method.
-    stop("This case should not occur. Please notify the package maintainer.")
+    stop("Unrecognized submodel fit. Please notify the package maintainer.")
   }
   res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
