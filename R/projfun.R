@@ -22,7 +22,9 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     projpred_regul = regul
   )
 
-  check_conv(sub_fit)
+  if (isTRUE(getOption("projpred.check_conv", FALSE))) {
+    check_conv(sub_fit)
+  }
 
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
