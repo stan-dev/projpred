@@ -116,8 +116,6 @@ fit_glm_ridge_callback <- function(formula, data,
 # `projpred.glm_fitter`):
 fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
                              ...) {
-  ## make sure correct 'weights' can be found
-  environment(formula) <- environment()
   tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
       # Exclude arguments from `...` which cannot be passed to stats::lm():
@@ -154,8 +152,6 @@ fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
 # Use package "mgcv" to fit additive non-multilevel submodels:
 #' @importFrom mgcv gam
 fit_gam_callback <- function(formula, ...) {
-  # make sure correct 'weights' can be found
-  environment(formula) <- environment()
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -174,8 +170,6 @@ fit_gam_callback <- function(formula, ...) {
 fit_gamm_callback <- function(formula, projpred_formula_no_random,
                               projpred_random, data, family,
                               control = control_callback(family), ...) {
-  # make sure correct 'weights' can be found
-  environment(projpred_formula_no_random) <- environment()
   # Exclude arguments from `...` which cannot be passed to gamm4::gamm4():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -217,8 +211,6 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 # non-additive) submodels):
 fit_glmer_callback <- function(formula, family,
                                control = control_callback(family), ...) {
-  ## make sure correct 'weights' can be found
-  environment(formula) <- environment()
   tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
