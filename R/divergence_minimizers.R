@@ -190,8 +190,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
     if (grepl("not positive definite", as.character(e))) {
       scaled_data <- preprocess_data(data, projpred_formula_no_random)
       fit_gamm_callback(
-        formula, projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random, data = scaled_data, family = family,
+        formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
+        data = scaled_data,
+        family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
@@ -247,7 +250,7 @@ fit_glmer_callback <- function(formula, family,
                                   "fit_glm_ridge_callback"),
                         mode = "function")
       return(glm_fitter(
-        formula, family = family, ...
+        formula = formula, family = family, ...
       ))
     } else if (grepl("not positive definite", as.character(e))) {
       if ("optimx" %in% control$optimizer &&
@@ -258,7 +261,8 @@ fit_glmer_callback <- function(formula, family,
              "anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family,
+        formula = formula,
+        family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
@@ -276,7 +280,11 @@ fit_glmer_callback <- function(formula, family,
              "anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family, control = control, nAGQ = nAGQ_new, ...
+        formula = formula,
+        family = family,
+        control = control,
+        nAGQ = nAGQ_new,
+        ...
       ))
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
@@ -298,7 +306,8 @@ fit_glmer_callback <- function(formula, family,
              "automatically anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family,
+        formula = formula,
+        family = family,
         control = control_callback(family, tolPwrss = tolPwrss_new,
                                    optCtrl = list(maxfun = maxfun_new,
                                                   maxit = maxit_new)),
