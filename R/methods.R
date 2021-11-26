@@ -1058,7 +1058,7 @@ as.matrix.projection <- function(x, ...) {
     warning("Note that projection was performed using clustering and the ",
             "clusters might have different weights.")
   }
-  res <- t(do.call(cbind, lapply(x$sub_fit, get_subparams)))
+  res <- do.call(rbind, lapply(x$sub_fit, get_subparams))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }
