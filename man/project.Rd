@@ -81,9 +81,6 @@ submodel.}
 \item{\code{p_type}}{A single logical value indicating whether the
 reference model's posterior draws have been clustered for the projection
 (\code{TRUE}) or not (\code{FALSE}).}
-\item{\code{intercept}}{A single logical value indicating whether the
-reference model (as well as the submodel) contains an intercept
-(\code{TRUE}) or not (\code{FALSE}).}
 \item{\code{refmodel}}{The reference model object.}
 }
 If the projection is performed onto more than one submodel, the output from

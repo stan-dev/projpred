@@ -793,7 +793,7 @@ projection_tester <- function(p,
   expect_named(
     p,
     c("dis", "kl", "weights", "solution_terms", "sub_fit", "family", "p_type",
-      "intercept", "refmodel"),
+      "refmodel"),
     info = info_str
   )
 
@@ -801,9 +801,6 @@ projection_tester <- function(p,
   # Note: Extensive tests for `"refmodel"`s and `"datafit"`s may be run via
   # refmodel_tester().
   expect_identical(p$refmodel, refmod_expected, info = info_str)
-
-  # intercept
-  expect_identical(p$intercept, p$refmodel$intercept, info = info_str)
 
   # family
   expect_identical(p$family, p$refmodel$family, info = info_str)
@@ -824,7 +821,7 @@ projection_tester <- function(p,
   # sub_fit
   sub_trms_crr <- p$solution_terms
   if (length(sub_trms_crr) == 0) {
-    sub_trms_crr <- as.character(as.numeric(p$intercept))
+    sub_trms_crr <- as.character(as.numeric(p$refmodel$intercept))
   }
   if (!from_vsel_L1_search) {
     y_nm <- as.character(p$refmodel$formula)[2]

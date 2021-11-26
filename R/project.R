@@ -64,9 +64,6 @@
 #'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
 #'     (`TRUE`) or not (`FALSE`).}
-#'     \item{`intercept`}{A single logical value indicating whether the
-#'     reference model (as well as the submodel) contains an intercept
-#'     (`TRUE`) or not (`FALSE`).}
 #'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
@@ -210,8 +207,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   }
 
-  intercept <- refmodel$intercept
-  if (!intercept) {
+  if (!refmodel$intercept) {
     stop("Reference models without an intercept are currently not supported.")
   }
   family <- refmodel$family
@@ -228,13 +224,12 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       sub_fits = object$search_path$sub_fits
     ),
     nterms = nterms, family = family, p_ref = p_ref, refmodel = refmodel,
-    intercept = intercept, regul = regul, cv_search = cv_search
+    intercept = refmodel$intercept, regul = regul, cv_search = cv_search
   )
   ## add family
   proj <- lapply(subm, function(model) {
     model$family <- family
     model$p_type <- !is.null(nclusters)
-    model$intercept <- intercept
     model$refmodel <- refmodel
     class(model) <- "projection"
     return(model)
