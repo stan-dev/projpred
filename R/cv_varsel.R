@@ -149,13 +149,10 @@ cv_varsel.refmodel <- function(
 
   ## arguments specific to this function
   args <- parse_args_cv_varsel(
-    refmodel = refmodel, cv_method = cv_method, K = K, nclusters = nclusters,
-    nclusters_pred = nclusters_pred
+    refmodel = refmodel, cv_method = cv_method, K = K
   )
   cv_method <- args$cv_method
   K <- args$K
-  nclusters <- args$nclusters
-  nclusters_pred <- args$nclusters_pred
 
   ## search options
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
@@ -271,8 +268,7 @@ cv_varsel.refmodel <- function(
 # @param K Number of folds in the K-fold cross validation. Default is 5 for
 #   genuine reference models and 10 for datafits (that is, for penalized
 #   maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method, K, nclusters,
-                                 nclusters_pred) {
+parse_args_cv_varsel <- function(refmodel, cv_method, K) {
   stopifnot(!is.null(cv_method))
   if (cv_method == "loo") {
     cv_method <- toupper(cv_method)
@@ -299,7 +295,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, nclusters,
     }
   }
 
-  return(nlist(cv_method, K, nclusters, nclusters_pred))
+  return(nlist(cv_method, K))
 }
 
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
