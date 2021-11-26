@@ -150,11 +150,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
-  ## use the intercept as indicated by the refmodel
-  intercept <- NULL
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,
-    intercept = intercept, nterms_max = nterms_max, nclusters = nclusters,
+    intercept = NULL, nterms_max = nterms_max, nclusters = nclusters,
     ndraws = ndraws, nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
     search_terms = search_terms
   )
