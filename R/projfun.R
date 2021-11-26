@@ -36,8 +36,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 # Function to project the reference model onto the submodels of given model
 # sizes `nterms`. Returns a list of submodels (each processed by
 # .init_submodel()).
-.get_submodels <- function(search_path, nterms, family, p_ref,
-                           refmodel, intercept, regul, cv_search = FALSE) {
+.get_submodels <- function(search_path, nterms, family, p_ref, refmodel,
+                           intercept, regul, cv_search = FALSE) {
   varorder <- search_path$solution_terms
 
   if (!cv_search) {
@@ -119,10 +119,11 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 
   mu <- family$mu_fun(sub_fit, offset = refmodel$offset)
   dis <- family$dis_fun(p_ref, nlist(mu), wobs)
-  kl <- weighted.mean(family$kl(
-    p_ref,
-    nlist(weights = wobs),
-    nlist(mu, dis)
-  ), wsample)
+  kl <- weighted.mean(
+    family$kl(p_ref,
+              nlist(weights = wobs),
+              nlist(mu, dis)),
+    wsample
+  )
   return(nlist(dis, kl, weights = wsample, solution_terms, sub_fit))
 }
