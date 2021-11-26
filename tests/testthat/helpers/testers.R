@@ -789,7 +789,12 @@ projection_tester <- function(p,
   # Check the names using `ignore.order = FALSE` because an incorrect
   # order would mean that the documentation of project()'s return value
   # would have to be updated:
-  expect_named(p, projection_nms, info = info_str)
+  expect_named(
+    p,
+    c("dis", "kl", "weights", "solution_terms", "sub_fit", "family", "p_type",
+      "intercept", "refmodel"),
+    info = info_str
+  )
 
   # refmodel
   # Note: Extensive tests for `"refmodel"`s and `"datafit"`s may be run via

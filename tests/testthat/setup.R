@@ -998,10 +998,6 @@ if (run_cvvs) {
 
 ## Output names -----------------------------------------------------------
 
-projection_nms <- c(
-  "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
-  "p_type", "intercept", "refmodel"
-)
 vsel_nms <- c(
   "refmodel", "search_path", "d_test", "summaries", "family", "solution_terms",
   "kl", "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
