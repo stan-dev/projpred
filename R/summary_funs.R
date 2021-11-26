@@ -2,16 +2,16 @@
                                search_terms = NULL) {
   has_group_features <- !is.null(search_terms)
   lapply(submodels, function(model) {
-    sub_fit <- model$sub_fit
-    weights <- refmodel$wobs[test_points]
-    mu <- family$mu_fun(sub_fit,
+    mu <- family$mu_fun(model$sub_fit,
                         obs = test_points,
                         offset = refmodel$offset[test_points])
     y <- refmodel$y[test_points]
-    y_test <- nlist(y, weights)
     .weighted_summary_means(
-      y_test, family, model$weights,
-      matrix(mu, NROW(y), NCOL(mu)), model$dis
+      y_test = nlist(y, weights = refmodel$wobs[test_points]),
+      family = family,
+      wsample = model$weights,
+      mu = matrix(mu, NROW(y), NCOL(mu)),
+      dis = model$dis
     )
   })
 }
