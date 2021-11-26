@@ -814,29 +814,29 @@ lhs <- function(x) {
 #   out
 # }
 
-# taken from brms
-## convert a formula to a character string
-## @param formula a model formula
-## @param rm a vector of to elements indicating how many characters
-##   should be removed at the beginning and end of the string respectively
-## @param space how should whitespaces be treated?
-## @return a single character string or NULL
-formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
-  if (is.null(formula)) {
-    return(NULL)
-  }
-  formula <- as.formula(formula)
-  space <- match.arg(space)
-  if (anyNA(rm[2])) rm[2] <- 0
-  x <- Reduce(paste, deparse(formula))
-  x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
-  if (space == "trim") {
-    x <- gsub(" {1,}", " ", x, perl = TRUE)
-  } else {
-    x <- gsub(" ", "", x, perl = TRUE)
-  }
-  substr(x, 1 + rm[1], nchar(x) - rm[2])
-}
+# # taken from brms
+# ## convert a formula to a character string
+# ## @param formula a model formula
+# ## @param rm a vector of to elements indicating how many characters
+# ##   should be removed at the beginning and end of the string respectively
+# ## @param space how should whitespaces be treated?
+# ## @return a single character string or NULL
+# formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
+#   if (is.null(formula)) {
+#     return(NULL)
+#   }
+#   formula <- as.formula(formula)
+#   space <- match.arg(space)
+#   if (anyNA(rm[2])) rm[2] <- 0
+#   x <- Reduce(paste, deparse(formula))
+#   x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
+#   if (space == "trim") {
+#     x <- gsub(" {1,}", " ", x, perl = TRUE)
+#   } else {
+#     x <- gsub(" ", "", x, perl = TRUE)
+#   }
+#   substr(x, 1 + rm[1], nchar(x) - rm[2])
+# }
 
 ## remove intercept from formula
 ## @param formula a model formula
