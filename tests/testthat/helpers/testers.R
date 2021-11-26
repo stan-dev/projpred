@@ -796,10 +796,6 @@ projection_tester <- function(p,
   # refmodel_tester().
   expect_identical(p$refmodel, refmod_expected, info = info_str)
 
-  # extract_model_data
-  expect_identical(p$extract_model_data, p$refmodel$extract_model_data,
-                   info = info_str)
-
   # intercept
   expect_identical(p$intercept, p$refmodel$intercept, info = info_str)
 

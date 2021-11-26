@@ -1000,7 +1000,7 @@ if (run_cvvs) {
 
 projection_nms <- c(
   "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
-  "p_type", "intercept", "extract_model_data", "refmodel"
+  "p_type", "intercept", "refmodel"
 )
 vsel_nms <- c(
   "refmodel", "search_path", "d_test", "summaries", "family", "solution_terms",

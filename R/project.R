@@ -67,8 +67,6 @@
 #'     \item{`intercept`}{A single logical value indicating whether the
 #'     reference model (as well as the submodel) contains an intercept
 #'     (`TRUE`) or not (`FALSE`).}
-#'     \item{`extract_model_data`}{The `extract_model_data` function
-#'     from the reference model (see [init_refmodel()]).}
 #'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
@@ -237,7 +235,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     model$family <- family
     model$p_type <- !is.null(nclusters)
     model$intercept <- intercept
-    model$extract_model_data <- refmodel$extract_model_data
     model$refmodel <- refmodel
     class(model) <- "projection"
     return(model)

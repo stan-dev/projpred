@@ -171,9 +171,10 @@ proj_helper <- function(object, newdata,
   }
 
   preds <- lapply(projs, function(proj) {
-    w_o <- proj$extract_model_data(proj$refmodel$fit, newdata = newdata,
-                                   wrhs = weightsnew, orhs = offsetnew,
-                                   extract_y = FALSE)
+    w_o <- proj$refmodel$extract_model_data(
+      proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,
+      extract_y = FALSE
+    )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
@@ -217,9 +218,10 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
   stopifnot(!is.null(dot_args$extract_y_ind))
-  w_o <- proj$extract_model_data(proj$refmodel$fit, newdata = dot_args$newdata,
-                                 wrhs = weights, orhs = dot_args$offset,
-                                 extract_y = dot_args$extract_y_ind)
+  w_o <- proj$refmodel$extract_model_data(
+    proj$refmodel$fit, newdata = dot_args$newdata, wrhs = weights,
+    orhs = dot_args$offset, extract_y = dot_args$extract_y_ind
+  )
   ynew <- w_o$y
   lpd_out <- compute_lpd(
     ynew = ynew, mu = mu, proj = proj, weights = weights
