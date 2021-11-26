@@ -545,6 +545,7 @@ sub_fit_tester <- function(
         ]
       }
     }
+    subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
     if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
@@ -1084,6 +1085,7 @@ vsel_tester <- function(
 ) {
   # Preparations:
   dtest_type <- "train"
+  dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
     vsel_smmrs_sub_nms <- c("lppd", "mu", "w")
@@ -1123,7 +1125,8 @@ vsel_tester <- function(
 
   # search_path
   expect_type(vs$search_path, "list")
-  expect_named(vs$search_path, searchpth_nms, info = info_str)
+  expect_named(vs$search_path, c("solution_terms", "sub_fits", "p_sel"),
+               info = info_str)
   expect_identical(vs$search_path$solution_terms, vs$solution_terms,
                    info = info_str)
   expect_type(vs$search_path$sub_fits, "list")
@@ -1173,7 +1176,8 @@ vsel_tester <- function(
     )
   }
   expect_type(vs$search_path$p_sel, "list")
-  expect_named(vs$search_path$p_sel, psel_nms, info = info_str)
+  expect_named(vs$search_path$p_sel, c("mu", "var", "weights", "cl"),
+               info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_type(vs$search_path$p_sel$mu, "double")
   expect_equal(dim(vs$search_path$p_sel$mu), c(nobsv, nclusters_expected),

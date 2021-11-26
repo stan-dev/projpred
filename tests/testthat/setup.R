@@ -1029,10 +1029,6 @@ vsel_nms_cv_valsearch_opt <- c("suggested_size")
 vsel_nms_cv_cvfits <- c("refmodel", "d_test", "summaries", "family",
                         "pct_solution_terms_cv", "summary", "suggested_size")
 vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
-subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
-searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
-psel_nms <- c("mu", "var", "weights", "cl")
-dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------
