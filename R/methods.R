@@ -837,32 +837,34 @@ coef.subfit <- function(object, ...) {
   )))
 }
 
-#' @method as.matrix lm
+# An (internal) generic for extracting the coefficients and any other parameter
+# estimates from a submodel fit.
+get_subparams <- function(x, ...) {
+  UseMethod("get_subparams")
+}
+
 #' @keywords internal
 #' @export
-as.matrix.lm <- function(x, ...) {
+get_subparams.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names())
 }
 
-#' @method as.matrix subfit
 #' @keywords internal
 #' @export
-as.matrix.subfit <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.subfit <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
-#' @method as.matrix glm
 #' @keywords internal
 #' @export
-as.matrix.glm <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.glm <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
-#' @method as.matrix lmerMod
 #' @keywords internal
 #' @export
-as.matrix.lmerMod <- function(x, ...) {
+get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names()
 
@@ -973,18 +975,16 @@ as.matrix.lmerMod <- function(x, ...) {
   return(c(population_effects, group_vc, group_ef))
 }
 
-#' @method as.matrix glmerMod
 #' @keywords internal
 #' @export
-as.matrix.glmerMod <- function(x, ...) {
-  return(as.matrix.lmerMod(x, ...))
+get_subparams.glmerMod <- function(x, ...) {
+  return(get_subparams.lmerMod(x, ...))
 }
 
-#' @method as.matrix gamm4
 #' @keywords internal
 #' @export
-as.matrix.gamm4 <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.gamm4 <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
 #' Extract projected parameter draws
@@ -1058,12 +1058,7 @@ as.matrix.projection <- function(x, ...) {
     warning("Note that projection was performed using clustering and the ",
             "clusters might have different weights.")
   }
-  if (!all(sapply(x$sub_fit, inherits, what = get_as.matrix_cls_projpred()))) {
-    # Throw an error because in this case, we probably need a new
-    # as.matrix.<class_name>() method.
-    stop("Unrecognized submodel fit. Please notify the package maintainer.")
-  }
-  res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
+  res <- t(do.call(cbind, lapply(x$sub_fit, get_subparams)))
   if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }

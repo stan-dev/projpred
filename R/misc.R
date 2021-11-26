@@ -440,22 +440,6 @@ magrittr::`%>%`
 # tidyselect:::where():
 where <- "tidyselect" %:::% "where"
 
-get_as.matrix_cls_projpred <- function() {
-  ### Only works when projpred is loaded via devtools::load_all():
-  # as.matrix_meths_projpred <- methods("as.matrix")
-  # as.matrix_meths_projpred <- as.matrix_meths_projpred[
-  #   attr(as.matrix_meths_projpred, "info")$from == "projpred"
-  # ]
-  ###
-  as.matrix_meths_projpred <- grep(
-    "^as\\.matrix\\.",
-    ls(envir = asNamespace("projpred")),
-    value = TRUE
-  )
-  as.matrix_cls_projpred <- sub("^as\\.matrix\\.", "", as.matrix_meths_projpred)
-  return(as.matrix_cls_projpred)
-}
-
 ## Helper function extract and combine mu and lppd from K lists with each
 ## n/K of the elements to one list with n elements
 hf <- function(x) {
