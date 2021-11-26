@@ -68,14 +68,13 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
 
   ## sort the variables according to the order in which they enter the model in
   ## the L1-path
-  entering_indices <- apply(search$beta != 0, 1, function(num)
-    which(num)[1]) # na for those that did not enter
+  entering_indices <- apply(search$beta != 0, 1, function(num) {
+    which(num)[1] # na for those that did not enter
+  })
   ## variables that entered at some point
-  entered_variables <-
-    c(seq_len(NCOL(d_train$x)))[!is.na(entering_indices)]
+  entered_variables <- c(seq_len(NCOL(d_train$x)))[!is.na(entering_indices)]
   ## variables that did not enter at any point
-  notentered_variables <-
-    c(seq_len(NCOL(d_train$x)))[is.na(entering_indices)]
+  notentered_variables <- c(seq_len(NCOL(d_train$x)))[is.na(entering_indices)]
   order_of_entered <- sort(entering_indices, index.return = TRUE)$ix
   order <- c(entered_variables[order_of_entered], notentered_variables)
 
@@ -136,14 +135,11 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
          "reference model.")
   }
   frame <- model.frame(refmodel$formula, refmodel$fetch_data())
-  contrasts_arg <- get_contrasts_arg_list(
-    refmodel$formula,
-    refmodel$fetch_data()
-  )
+  contrasts_arg <- get_contrasts_arg_list(refmodel$formula,
+                                          refmodel$fetch_data())
   x <- model.matrix(delete.intercept(refmodel$formula),
                     data = frame,
-                    contrasts.arg = contrasts_arg
-  )
+                    contrasts.arg = contrasts_arg)
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
@@ -173,8 +169,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
           )
           return(colnames(model.matrix(form,
                                        data = refmodel$fetch_data(),
-                                       contrasts.arg = contrasts_arg
-          )))
+                                       contrasts.arg = contrasts_arg)))
         }
       ))
       indices <- match(variables, colnames(x)[search_path$solution_terms])
@@ -184,18 +179,14 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
       # re-use of `colnames(x)` should provide another sanity check:
       x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
     }
-    sub <- nlist(
-      alpha = search_path$alpha[nterms + 1],
-      beta,
-      w = search_path$w[, nterms + 1],
-      formula,
-      x
-    )
+    sub <- nlist(alpha = search_path$alpha[nterms + 1],
+                 beta,
+                 w = search_path$w[, nterms + 1],
+                 formula,
+                 x)
     class(sub) <- "subfit"
     return(list(sub))
   })
-  return(list(
-    solution_terms = solution_terms[seq_len(nterms_max)],
-    sub_fits = sub_fits[seq_len(nterms_max + 1)]
-  ))
+  return(list(solution_terms = solution_terms[seq_len(nterms_max)],
+              sub_fits = sub_fits[seq_len(nterms_max + 1)]))
 }
