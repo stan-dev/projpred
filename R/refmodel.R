@@ -741,6 +741,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   wsample <- rep(1 / ndraws, ndraws)
 
   intercept <- as.logical(attr(terms(formula), "intercept"))
+  if (!intercept) {
+    stop("Reference models without an intercept are currently not supported.")
+  }
 
   # Output ------------------------------------------------------------------
 

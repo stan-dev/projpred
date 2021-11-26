@@ -127,13 +127,12 @@ cv_varsel.refmodel <- function(
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,
-    intercept = NULL, nterms_max = nterms_max, nclusters = nclusters,
+    nterms_max = nterms_max, nclusters = nclusters,
     ndraws = ndraws, nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
     search_terms = search_terms
   )
   method <- args$method
   cv_search <- args$cv_search
-  intercept <- args$intercept
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   ndraws <- args$ndraws
@@ -160,10 +159,8 @@ cv_varsel.refmodel <- function(
   if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
-      ndraws = ndraws, nclusters = nclusters,
-      ndraws_pred = ndraws_pred,
-      nclusters_pred = nclusters_pred,
-      cv_search = cv_search, intercept = intercept, penalty = penalty,
+      ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
+      nclusters_pred = nclusters_pred, cv_search = cv_search, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
       validate_search = validate_search, seed = seed,
       search_terms = search_terms
@@ -171,12 +168,10 @@ cv_varsel.refmodel <- function(
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
-      ndraws = ndraws, nclusters = nclusters,
-      ndraws_pred = ndraws_pred,
-      nclusters_pred = nclusters_pred,
-      cv_search = cv_search, intercept = intercept,
-      penalty = penalty, verbose = verbose, opt = opt, K = K,
-      seed = seed, search_terms = search_terms
+      ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
+      nclusters_pred = nclusters_pred, cv_search = cv_search, penalty = penalty,
+      verbose = verbose, opt = opt, K = K, seed = seed,
+      search_terms = search_terms
     )
   } else {
     stop(sprintf("Unknown `cv_method`: %s.", method))
@@ -300,7 +295,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K) {
 
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, cv_search,
-                       intercept, penalty, verbose, opt, nloo = NULL,
+                       penalty, verbose, opt, nloo = NULL,
                        validate_search = TRUE, seed = NULL,
                        search_terms = NULL) {
   ##
@@ -533,8 +528,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          nclusters, ndraws_pred, nclusters_pred,
-                         cv_search, intercept, penalty, verbose, opt,
-                         K, seed = NULL, search_terms = NULL) {
+                         cv_search, penalty, verbose, opt, K, seed = NULL,
+                         search_terms = NULL) {
   ## fetch the k_fold list (or compute it now if not already computed)
   k_fold <- .get_kfold(refmodel, K, verbose, seed)
 

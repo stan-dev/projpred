@@ -152,13 +152,12 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, cv_search = cv_search,
-    intercept = NULL, nterms_max = nterms_max, nclusters = nclusters,
-    ndraws = ndraws, nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
+    nterms_max = nterms_max, nclusters = nclusters, ndraws = ndraws,
+    nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
     search_terms = search_terms
   )
   method <- args$method
   cv_search <- args$cv_search
-  intercept <- args$intercept
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   ndraws <- args$ndraws
@@ -284,9 +283,9 @@ select <- function(method, p_sel, refmodel, family, nterms_max, penalty,
   }
 }
 
-parse_args_varsel <- function(refmodel, method, cv_search, intercept,
-                              nterms_max, nclusters, ndraws, nclusters_pred,
-                              ndraws_pred, search_terms) {
+parse_args_varsel <- function(refmodel, method, cv_search, nterms_max,
+                              nclusters, ndraws, nclusters_pred, ndraws_pred,
+                              search_terms) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel.
   ## The arguments specified by the user (or the function calling this function)
@@ -346,13 +345,6 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
-  if (is.null(intercept)) {
-    intercept <- refmodel$intercept
-  }
-  if (!intercept) {
-    stop("Reference models without an intercept are currently not supported.")
-  }
-
   if (!is.null(search_terms)) {
     max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
   } else {
@@ -364,8 +356,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   nterms_max <- min(max_nv_possible, nterms_max + 1)
 
   return(nlist(
-    method, cv_search, intercept, nterms_max, nclusters,
-    ndraws, nclusters_pred, ndraws_pred,
-    search_terms
+    method, cv_search, nterms_max, nclusters, ndraws, nclusters_pred,
+    ndraws_pred, search_terms
   ))
 }
