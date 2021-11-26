@@ -153,8 +153,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## use the intercept as indicated by the refmodel
   intercept <- NULL
   args <- parse_args_varsel(
-    refmodel, method, cv_search, intercept, nterms_max,
-    nclusters, ndraws, nclusters_pred, ndraws_pred, search_terms
+    refmodel = refmodel, method = method, cv_search = cv_search,
+    intercept = intercept, nterms_max = nterms_max, nclusters = nclusters,
+    ndraws = ndraws, nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
+    search_terms = search_terms
   )
   method <- args$method
   cv_search <- args$cv_search
