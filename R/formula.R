@@ -505,13 +505,11 @@ formula_contains_additive_terms <- function(formula) {
 subset_formula_and_data <- function(formula, terms_, data, y = NULL,
                                     split_formula = FALSE) {
   formula <- make_formula(terms_, formula = formula)
-  tt <- extract_terms_response(formula)
-  response_name <- tt$response
+  response_name <- extract_terms_response(formula)$response
 
   response_cols <- paste0(".", response_name)
-  response_ncol <- ncol(y) %||% 1
 
-  if (!is.null(ncol(y)) && ncol(y) > 1) {
+  if (NCOL(y) > 1) {
     response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
     if (!split_formula) {
       response_vector <- paste0(
@@ -531,7 +529,7 @@ subset_formula_and_data <- function(formula, terms_, data, y = NULL,
 
   ## don't overwrite original y name
   data <- data.frame(.z = y, data)
-  colnames(data)[seq_len(response_ncol)] <- response_cols
+  colnames(data)[seq_len(NCOL(y))] <- response_cols
   return(nlist(formula, data))
 }
 
