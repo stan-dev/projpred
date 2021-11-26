@@ -13,6 +13,8 @@ divmin <- function(formula, projpred_var, ...) {
   has_add <- length(trms_all$additive_terms) > 0
   projpred_formulas_no_random <- NA
   projpred_random <- NA
+  # Define sdivmin(), the divergence minimizer for each draw s = 1, ..., S (and
+  # perform other actions, if necessary):
   if (!has_grp && !has_add) {
     sdivmin <- get(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
                    mode = "function")
