@@ -344,7 +344,7 @@ refprd <- function(fit, newdata = NULL) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel <- function(object, ...) {
-  UseMethod("get_refmodel", object)
+  UseMethod("get_refmodel")
 }
 
 #' @rdname refmodel-init-get
