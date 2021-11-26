@@ -383,8 +383,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## fold), and perform the projection then for each submodel size
     search_path <- select(
       method = method, p_sel = p_sel, refmodel = refmodel, family = family,
-      intercept = intercept, nterms_max = nterms_max, penalty = penalty,
-      verbose = FALSE, opt = opt, search_terms = search_terms
+      nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
+      search_terms = search_terms
     )
     solution_terms <- search_path$solution_terms
 
@@ -466,9 +466,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       ## perform selection with the reweighted clusters/samples
       search_path <- select(
-        method = method, p_sel = p_sel, refmodel = refmodel,
-        family = family, intercept = intercept, nterms_max = nterms_max,
-        penalty = penalty, verbose = FALSE, opt = opt,
+        method = method, p_sel = p_sel, refmodel = refmodel, family = family,
+        nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
         search_terms = search_terms
       )
       solution_terms <- search_path$solution_terms
@@ -595,9 +594,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     family <- fold$refmodel$family
     out <- select(
       method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
-      family = family, intercept = intercept, nterms_max = nterms_max,
-      penalty = penalty, verbose = FALSE, opt = opt,
-      search_terms = search_terms
+      family = family, nterms_max = nterms_max, penalty = penalty,
+      verbose = FALSE, opt = opt, search_terms = search_terms
     )
     if (verbose) {
       utils::setTxtProgressBar(pb, fold_index)
