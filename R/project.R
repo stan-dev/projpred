@@ -224,7 +224,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       sub_fits = object$search_path$sub_fits
     ),
     nterms = nterms, family = family, p_ref = p_ref, refmodel = refmodel,
-    intercept = refmodel$intercept, regul = regul, cv_search = cv_search
+    regul = regul, cv_search = cv_search
   )
   ## add family
   proj <- lapply(subm, function(model) {

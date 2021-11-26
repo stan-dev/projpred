@@ -20,7 +20,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     subL <- lapply(full_cands, project_submodel,
                    p_ref = p_ref, refmodel = refmodel, family = family,
-                   intercept = intercept, regul = opt$regul)
+                   regul = opt$regul)
 
     ## select best candidate
     imin <- which.min(sapply(subL, "[[", "kl"))

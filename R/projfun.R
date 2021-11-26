@@ -2,7 +2,7 @@
 # terms given in `solution_terms`. Note that "single submodel" does not refer to
 # a single fit (there are as many fits for this single submodel as there are
 # projected draws).
-project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
+project_submodel <- function(solution_terms, p_ref, refmodel, family,
                              regul = 1e-4) {
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
   wobs <- validparams$wobs
@@ -36,8 +36,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 # Function to project the reference model onto the submodels of given model
 # sizes `nterms`. Returns a list of submodels (each processed by
 # .init_submodel()).
-.get_submodels <- function(search_path, nterms, family, p_ref, refmodel,
-                           intercept, regul, cv_search = FALSE) {
+.get_submodels <- function(search_path, nterms, family, p_ref, refmodel, regul,
+                           cv_search = FALSE) {
   varorder <- search_path$solution_terms
 
   if (!cv_search) {
@@ -65,8 +65,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     fetch_submodel <- function(nterms) {
       project_submodel(
         solution_terms = utils::head(varorder, nterms), p_ref = p_ref,
-        refmodel = refmodel, family = family, intercept = intercept,
-        regul = regul
+        refmodel = refmodel, family = family, regul = regul
       )
     }
   }
