@@ -98,8 +98,7 @@ lambda_grid <- function(x, y, family, offset, weights, intercept, penalty,
   # if such exist)
   init <- glm_ridge(x[, penalty == 0, drop = FALSE], y,
                     family = family, lambda = 0, weights = weights,
-                    offset = offset, obsvar = obsvar, intercept = intercept
-  )
+                    offset = offset, obsvar = obsvar, intercept = intercept)
   f0 <- init$beta0 * rep(1, n)
   if (length(init$beta) > 0) {
     f0 <- f0 + as.vector(x[, penalty == 0, drop = FALSE] %*% init$beta)
@@ -150,8 +149,7 @@ glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
   if (is.null(penalty)) {
     penalty <- rep(1.0, ncol(x))
   } else if (length(penalty) != ncol(x)) {
-    stop(paste0("Incorrect length of penalty vector (should be ",
-                ncol(x), ")."))
+    stop("Incorrect length of penalty vector (should be ", ncol(x), ").")
   }
 
   # standardize the features (notice that the variables are centered only if
@@ -167,8 +165,7 @@ glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
   if (is.null(lambda)) {
     temp <- lambda_grid(x, y, family, offset, weights, intercept, penalty,
                         alpha = alpha, obsvar = obsvar, nlam = nlambda,
-                        lambda_min_ratio = lambda_min_ratio
-    )
+                        lambda_min_ratio = lambda_min_ratio)
     lambda <- temp$lambda
     w0 <- temp$w0
     beta <- temp$beta
