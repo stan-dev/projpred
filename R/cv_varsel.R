@@ -191,7 +191,7 @@ cv_varsel.refmodel <- function(
                   method = method, ndraws = ndraws, nclusters = nclusters,
                   ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
                   cv_search = cv_search, nterms_max = nterms_max - 1,
-                  intercept = intercept, penalty = penalty, verbose = verbose,
+                  penalty = penalty, verbose = verbose,
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
                   regul = regul, search_terms = search_terms, seed = seed)
   } else if (cv_method == "LOO") {
