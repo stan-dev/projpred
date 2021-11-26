@@ -12,13 +12,10 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
   G <- gam.setup(formula, pterms,
                  data = data, knots = knots, sp = NULL, min.sp = NULL,
                  H = NULL, absorb.cons = TRUE, sparse.cons = 0,
-                 gamm.call = TRUE
-  )
+                 gamm.call = TRUE)
   if (!is.null(G$L)) {
-    stop(
-      "gamm can not handle linked smoothing parameters",
-      "(probably from use of `id' or adaptive smooths)"
-    )
+    stop("gamm can not handle linked smoothing parameters",
+         "(probably from use of `id' or adaptive smooths)")
   }
 
   first.f.para <- G$nsdf + 1
@@ -109,7 +106,7 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
   G$random <- random ## named list of random effect matrices
   G$X <- X ## fixed effects model matrix
 
-  G
+  return(G)
 }
 
 ## refactored from gamm4 to return the model matrix for generating predictions
@@ -137,11 +134,11 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
   gam.terms <- attr(gmf, "terms")
 
   if (length(random.vars)) {
-    mf$formula <- as.formula(paste(paste(deparse(gp$fake.formula,
-                                                 backtick = TRUE
-    ), collapse = ""), "+", paste(random.vars,
-                                  collapse = "+"
-    )))
+    mf$formula <- as.formula(paste(
+      paste(deparse(gp$fake.formula, backtick = TRUE), collapse = ""),
+      "+",
+      paste(random.vars, collapse = "+")
+    ))
     mf <- eval(mf, parent.frame())
   } else {
     mf <- gmf
@@ -203,25 +200,20 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
     ## duplication
     for (i in 1:n.sr) {
       mf[[r.name[i]]] <- factor(rep(1:ncol(G$random[[i]]),
-                                    length = nrow(G$random[[i]])
-      ))
+                                    length = nrow(G$random[[i]])))
       lme4.formula <- paste(lme4.formula, "+ (1|", r.name[i], ")")
     }
   }
   if (!is.null(random)) { ## append the regular random effects
     lme4.formula <- paste(
-      lme4.formula, "+",
+      lme4.formula,
+      "+",
       substring(paste(deparse(random, backtick = TRUE), collapse = ""),
-                first = 2
-      )
+                first = 2)
     )
   }
   lme4.formula <- as.formula(lme4.formula)
-  if (family$family == "gaussian" && family$link == "identity") {
-    linear <- TRUE
-  } else {
-    linear <- FALSE
-  }
+  linear <- family$family == "gaussian" && family$link == "identity"
 
   control <- if (linear) {
     lme4::lmerControl()
