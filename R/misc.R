@@ -99,7 +99,6 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 
   recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   binomial_only_stats <- c("acc", "pctcorr", "auc")
-  family <- object$family$family
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
@@ -108,10 +107,11 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     if (!(stat %in% recognized_stats)) {
       stop(sprintf("Statistic '%s' not recognized.", stat))
     }
-    if (stat %in% binomial_only_stats && family != "binomial") {
+    if (stat %in% binomial_only_stats && object$family$family != "binomial") {
       stop("Statistic '", stat, "' available only for the binomial family.")
     }
   }
+  return(invisible(TRUE))
 }
 
 .validate_baseline <- function(refmodel, baseline, deltas) {
