@@ -377,7 +377,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## perform selection only once using all the data (not separately for each
     ## fold), and perform the projection then for each submodel size
     search_path <- select(
-      method = method, p_sel = p_sel, refmodel = refmodel, family = family,
+      method = method, p_sel = p_sel, refmodel = refmodel,
       nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
       search_terms = search_terms
     )
@@ -461,7 +461,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       ## perform selection with the reweighted clusters/samples
       search_path <- select(
-        method = method, p_sel = p_sel, refmodel = refmodel, family = family,
+        method = method, p_sel = p_sel, refmodel = refmodel,
         nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
         search_terms = search_terms
       )
@@ -586,11 +586,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
-    family <- fold$refmodel$family
     out <- select(
       method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
-      family = family, nterms_max = nterms_max, penalty = penalty,
-      verbose = FALSE, opt = opt, search_terms = search_terms
+      nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
+      search_terms = search_terms
     )
     if (verbose) {
       utils::setTxtProgressBar(pb, fold_index)

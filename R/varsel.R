@@ -189,7 +189,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## perform the selection
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   search_path <- select(
-    method = method, p_sel = p_sel, refmodel = refmodel, family = family,
+    method = method, p_sel = p_sel, refmodel = refmodel,
     nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
     search_terms = search_terms
   )
@@ -255,8 +255,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   return(vs)
 }
 
-select <- function(method, p_sel, refmodel, family, nterms_max, penalty,
-                   verbose, opt, search_terms = NULL) {
+select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
+                   search_terms = NULL) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
   ## and returns the search_path, i.e., a list with the followint entries (the
@@ -270,13 +270,13 @@ select <- function(method, p_sel, refmodel, family, nterms_max, penalty,
   ##
   ## routine that can be used with several clusters
   if (method == "l1") {
-    search_path <- search_L1(p_sel, refmodel, family,
+    search_path <- search_L1(p_sel, refmodel, refmodel$family,
                              nterms_max - refmodel$intercept, penalty, opt)
     search_path$p_sel <- p_sel
     return(search_path)
   } else if (method == "forward") {
-    search_path <- search_forward(p_sel, refmodel, family, nterms_max, verbose,
-                                  opt, search_terms = search_terms)
+    search_path <- search_forward(p_sel, refmodel, refmodel$family, nterms_max,
+                                  verbose, opt, search_terms = search_terms)
     search_path$p_sel <- p_sel
     return(search_path)
   }
