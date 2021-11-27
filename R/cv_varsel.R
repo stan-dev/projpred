@@ -230,7 +230,6 @@ cv_varsel.refmodel <- function(
               search_path = sel$search_path,
               d_test = sel_cv$d_test,
               summaries = sel_cv$summaries,
-              family = refmodel$family,
               kl = sel$kl,
               solution_terms = sel$solution_terms,
               pct_solution_terms_cv,

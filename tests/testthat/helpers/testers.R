@@ -1166,7 +1166,7 @@ vsel_tester <- function(
       nprjdraws_expected = nprjdraws_expected,
       sub_formul = sub_formul_crr,
       sub_data = sub_data_crr,
-      sub_fam = vs$family$family,
+      sub_fam = vs$refmodel$family$family,
       wobs_expected = vs$refmodel$wobs,
       solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
       info_str = paste(info_str, i, sep = "__")
@@ -1180,7 +1180,7 @@ vsel_tester <- function(
   expect_equal(dim(vs$search_path$p_sel$mu), c(nobsv, nclusters_expected),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
-  if (vs$family$family == "gaussian") {
+  if (vs$refmodel$family$family == "gaussian") {
     expect_type(vs$search_path$p_sel$var, "double")
   } else {
     expect_true(all(is.na(vs$search_path$p_sel$var)), info = info_str)
@@ -1269,10 +1269,6 @@ vsel_tester <- function(
   } else {
     expect_true(all(is.na(vs$summaries$ref$lppd)), info = info_str)
   }
-
-  # family
-  expect_s3_class(vs$family, "family")
-  expect_identical(vs$family, refmod_expected$family, info = info_str)
 
   # solution_terms
   expect_type(vs$solution_terms, "character")
@@ -1407,12 +1403,14 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   )
 
   for (nm in c(
-    "family", "method", "cv_method", "validate_search", "ndraws", "ndraws_pred",
+    "method", "cv_method", "validate_search", "ndraws", "ndraws_pred",
     "nclusters", "nclusters_pred", pct_solterms_nm, "suggested_size"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))
   }
+  expect_identical(smmry$family, vsel_expected$refmodel$family,
+                   info = info_str)
   expect_identical(smmry$formula, vsel_expected$refmodel$formula,
                    info = info_str)
   expect_null(smmry$fit, info = info_str)

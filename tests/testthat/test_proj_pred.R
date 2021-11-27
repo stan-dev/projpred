@@ -442,7 +442,8 @@ test_that("`transform` works", {
     pl_tester(pl_true,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               info_str = tstsetup)
-    expect_equal(prjs[[!!tstsetup]]$family$linkinv(pl_false$pred), pl_true$pred,
+    expect_equal(prjs[[!!tstsetup]]$refmodel$family$linkinv(pl_false$pred),
+                 pl_true$pred,
                  info = tstsetup)
   }
 })
