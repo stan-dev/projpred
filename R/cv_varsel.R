@@ -304,7 +304,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## each data point)
   ##
 
-  family <- refmodel$family
   mu <- refmodel$mu
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
@@ -402,10 +401,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## compute approximate LOO with PSIS weights
     y <- matrix(refmodel$y, nrow = n)
     for (k in seq_along(submodels)) {
-      mu_k <- family$mu_fun(submodels[[k]]$sub_fit,
-                            obs = inds,
-                            offset = refmodel$offset)
-      log_lik_sub <- t(family$ll_fun(
+      mu_k <- refmodel$family$mu_fun(submodels[[k]]$sub_fit,
+                                     obs = inds,
+                                     offset = refmodel$offset)
+      log_lik_sub <- t(refmodel$family$ll_fun(
         mu_k, submodels[[k]]$dis,
         y[inds], refmodel$wobs[inds]
       ))
@@ -451,11 +450,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
-        family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
+        family = refmodel$family, mu = mu, dis = dis, wsample = exp(lw[, i]),
         cl = cl_sel
       )
       p_pred <- .get_p_clust(
-        family = family, mu = mu, dis = dis, wsample = exp(lw[, i]),
+        family = refmodel$family, mu = mu, dis = dis, wsample = exp(lw[, i]),
         cl = cl_pred
       )
 
@@ -536,7 +535,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## .validate_kfold(refmodel, k_fold, refmodel$nobs)
 
   K <- length(k_fold)
-  family <- refmodel$family
 
   ## extract variables from each fit-object (samples, x, y, etc.)
   ## to a list of size K
@@ -569,7 +567,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     pred <- matrix(
       as.numeric(pred), nrow = NROW(pred), ncol = NCOL(pred)
     )
-    mu_test <- family$linkinv(pred)
+    mu_test <- refmodel$family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test,
           dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg)
   }
@@ -648,8 +646,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ref <- hf(lapply(list_cv, function(fold) {
     data.frame(.weighted_summary_means(
-      y_test = fold$d_test, family = family, wsample = fold$refmodel$wsample,
-      mu = fold$mu_test, dis = fold$refmodel$dis
+      y_test = fold$d_test, family = fold$refmodel$family,
+      wsample = fold$refmodel$wsample, mu = fold$mu_test,
+      dis = fold$refmodel$dis
     ))
   }))
 
