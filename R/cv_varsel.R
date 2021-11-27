@@ -475,8 +475,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         cv_search = cv_search
       )
       summaries_sub <- .get_sub_summaries(
-        submodels = submodels, test_points = c(i), refmodel = refmodel,
-        family = family
+        submodels = submodels, test_points = c(i), refmodel = refmodel
       )
       for (k in seq_along(summaries_sub)) {
         loo_sub[i, k] <- summaries_sub[[k]]$lppd
@@ -634,8 +633,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   get_summaries_submodel_cv <- function(submodels, fold) {
     omitted <- fold$d_test$omitted
     fold_summaries <- .get_sub_summaries(
-      submodels = submodels, test_points = omitted, refmodel = refmodel,
-      family = family
+      submodels = submodels, test_points = omitted, refmodel = refmodel
     )
     summ <- lapply(fold_summaries, data.frame)
     return(summ)

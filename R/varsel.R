@@ -201,7 +201,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                               regul = regul, cv_search = cv_search)
   sub <- .get_sub_summaries(
     submodels = submodels, test_points = seq_along(refmodel$y),
-    refmodel = refmodel, family = family
+    refmodel = refmodel
   )
 
   ## predictive statistics of the reference model on test data. if no test data

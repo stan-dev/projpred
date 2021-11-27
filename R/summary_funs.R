@@ -1,14 +1,14 @@
-.get_sub_summaries <- function(submodels, test_points, refmodel, family,
+.get_sub_summaries <- function(submodels, test_points, refmodel,
                                search_terms = NULL) {
   has_group_features <- !is.null(search_terms)
   lapply(submodels, function(model) {
-    mu <- family$mu_fun(model$sub_fit,
-                        obs = test_points,
-                        offset = refmodel$offset[test_points])
+    mu <- refmodel$family$mu_fun(model$sub_fit,
+                                 obs = test_points,
+                                 offset = refmodel$offset[test_points])
     y <- refmodel$y[test_points]
     .weighted_summary_means(
       y_test = nlist(y, weights = refmodel$wobs[test_points]),
-      family = family,
+      family = refmodel$family,
       wsample = model$weights,
       mu = matrix(mu, NROW(y), NCOL(mu)),
       dis = model$dis
