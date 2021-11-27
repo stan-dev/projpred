@@ -27,8 +27,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
 
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
-    family = refmodel$family, solution_terms = solution_terms, wobs = wobs,
-    wsample = wsample
+    solution_terms = solution_terms, wobs = wobs, wsample = wsample
   ))
 }
 
@@ -55,8 +54,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
 
       return(.init_submodel(
         sub_fit = sub_refit, p_ref = search_path$p_sel, refmodel = refmodel,
-        family = refmodel$family, solution_terms = solution_terms,
-        wobs = wobs, wsample = wsample
+        solution_terms = solution_terms, wobs = wobs, wsample = wsample
       ))
     }
   } else {
@@ -88,39 +86,43 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
   return(nlist(wobs, wsample))
 }
 
-.init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
-                           wobs, wsample) {
-  p_ref$mu <- family$linkinv(family$linkfun(p_ref$mu) + refmodel$offset)
+.init_submodel <- function(sub_fit, p_ref, refmodel, solution_terms, wobs,
+                           wsample) {
+  p_ref$mu <- refmodel$family$linkinv(
+    refmodel$family$linkfun(p_ref$mu) + refmodel$offset
+  )
   if (!(all(is.na(p_ref$var)) ||
-        family$family %in% c("gaussian", "Student_t"))) {
-    stop("For family `", family$family, "()`, .init_submodel() might have to ",
-         "be adapted, depending on whether family$predvar() is invariant with ",
-         "respect to offsets (this would be OK and does not need an ",
-         "adaptation) or not (this would need an adaptation).")
+        refmodel$family$family %in% c("gaussian", "Student_t"))) {
+    stop("For family `", refmodel$family$family, "()`, .init_submodel() might ",
+         "have to be adapted, depending on whether family$predvar() is ",
+         "invariant with respect to offsets (this would be OK and does not ",
+         "need an adaptation) or not (this would need an adaptation).")
   }
-  if (family$family == "Student_t") {
+  if (refmodel$family$family == "Student_t") {
     stop("For the `Student_t()` family, .init_submodel() is not finished yet.")
     ### TODO (`Student_t()` family): Check if this is needed (perhaps with some
     ### modifications) or if something completely different is needed (there
     ### used to be no special handling of the `Student_t()` family here at all):
     # pobs <- pseudo_data(
-    #   f = 0, y = p_ref$mu, family = family, weights = wobs,
+    #   f = 0, y = p_ref$mu, family = refmodel$family, weights = wobs,
     #   offset = refmodel$offset
     # )
     # ### TODO: Add `dis` and perhaps other elements here?:
     # p_ref <- list(mu = pobs$z, var = p_ref$var)
     # ###
-    # p_ref$mu <- family$linkinv(family$linkfun(p_ref$mu) + refmodel$offset)
+    # p_ref$mu <- refmodel$family$linkinv(
+    #   refmodel$family$linkfun(p_ref$mu) + refmodel$offset
+    # )
     # wobs <- pobs$wobs
     ###
   }
 
-  mu <- family$mu_fun(sub_fit, offset = refmodel$offset)
-  dis <- family$dis_fun(p_ref, nlist(mu), wobs)
+  mu <- refmodel$family$mu_fun(sub_fit, offset = refmodel$offset)
+  dis <- refmodel$family$dis_fun(p_ref, nlist(mu), wobs)
   kl <- weighted.mean(
-    family$kl(p_ref,
-              nlist(weights = wobs),
-              nlist(mu, dis)),
+    refmodel$family$kl(p_ref,
+                       nlist(weights = wobs),
+                       nlist(mu, dis)),
     wsample
   )
   return(nlist(dis, kl, weights = wsample, solution_terms, sub_fit))
