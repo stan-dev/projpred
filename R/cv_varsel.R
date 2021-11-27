@@ -387,7 +387,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## the full data
     submodels <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
-      family = family, p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
+      p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
       cv_search = cv_search
     )
 
@@ -471,7 +471,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ## for the left-out point
       submodels <- .get_submodels(
         search_path = search_path, nterms = c(0, seq_along(solution_terms)),
-        family = family, p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
+        p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
         cv_search = cv_search
       )
       summaries_sub <- .get_sub_summaries(
@@ -611,12 +611,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   get_submodels_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
-    family <- fold$refmodel$family
     solution_terms <- search_path$solution_terms
     submodels <- .get_submodels(
       search_path = search_path, nterms = c(0, seq_along(solution_terms)),
-      family = family, p_ref = fold$p_pred, refmodel = fold$refmodel,
-      regul = opt$regul, cv_search = FALSE
+      p_ref = fold$p_pred, refmodel = fold$refmodel, regul = opt$regul,
+      cv_search = FALSE
     )
     if (verbose && cv_search) {
       utils::setTxtProgressBar(pb, fold_index)

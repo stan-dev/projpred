@@ -220,8 +220,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       p_sel = object$search_path$p_sel,
       sub_fits = object$search_path$sub_fits
     ),
-    nterms = nterms, family = family, p_ref = p_ref, refmodel = refmodel,
-    regul = regul, cv_search = cv_search
+    nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
+    cv_search = cv_search
   )
   ## add family
   proj <- lapply(subm, function(model) {

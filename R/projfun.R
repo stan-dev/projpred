@@ -35,7 +35,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
 # Function to project the reference model onto the submodels of given model
 # sizes `nterms`. Returns a list of submodels (each processed by
 # .init_submodel()).
-.get_submodels <- function(search_path, nterms, family, p_ref, refmodel, regul,
+.get_submodels <- function(search_path, nterms, p_ref, refmodel, regul,
                            cv_search = FALSE) {
   varorder <- search_path$solution_terms
 
@@ -55,7 +55,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
 
       return(.init_submodel(
         sub_fit = sub_refit, p_ref = search_path$p_sel, refmodel = refmodel,
-        family = family, solution_terms = solution_terms,
+        family = refmodel$family, solution_terms = solution_terms,
         wobs = wobs, wsample = wsample
       ))
     }
