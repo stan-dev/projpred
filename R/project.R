@@ -207,8 +207,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   }
 
-  family <- refmodel$family
-
   ## get the clustering or subsample
   p_ref <- .get_refdist(refmodel,
                         ndraws = ndraws, nclusters = nclusters, seed = seed)
@@ -223,9 +221,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
     cv_search = cv_search
   )
-  ## add family
+
+  # Output:
   proj <- lapply(subm, function(model) {
-    model$family <- family
+    model$family <- refmodel$family
     model$p_type <- !is.null(nclusters)
     model$refmodel <- refmodel
     class(model) <- "projection"
