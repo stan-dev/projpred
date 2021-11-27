@@ -275,8 +275,8 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
     search_path$p_sel <- p_sel
     return(search_path)
   } else if (method == "forward") {
-    search_path <- search_forward(p_sel, refmodel, refmodel$family, nterms_max,
-                                  verbose, opt, search_terms = search_terms)
+    search_path <- search_forward(p_sel, refmodel, nterms_max, verbose, opt,
+                                  search_terms = search_terms)
     search_path$p_sel <- p_sel
     return(search_path)
   }
