@@ -2,8 +2,7 @@
 # terms given in `solution_terms`. Note that "single submodel" does not refer to
 # a single fit (there are as many fits for this single submodel as there are
 # projected draws).
-project_submodel <- function(solution_terms, p_ref, refmodel, family,
-                             regul = 1e-4) {
+project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
   wobs <- validparams$wobs
   wsample <- validparams$wsample
@@ -16,7 +15,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family,
   sub_fit <- refmodel$div_minimizer(
     formula = flatten_formula(subset$formula),
     data = subset$data,
-    family = family,
+    family = refmodel$family,
     weights = refmodel$wobs,
     projpred_var = p_ref$var,
     projpred_regul = regul
@@ -28,7 +27,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family,
 
   return(.init_submodel(
     sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
-    family = family, solution_terms = solution_terms, wobs = wobs,
+    family = refmodel$family, solution_terms = solution_terms, wobs = wobs,
     wsample = wsample
   ))
 }
@@ -65,7 +64,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family,
     fetch_submodel <- function(nterms) {
       project_submodel(
         solution_terms = utils::head(varorder, nterms), p_ref = p_ref,
-        refmodel = refmodel, family = family, regul = regul
+        refmodel = refmodel, regul = regul
       )
     }
   }
