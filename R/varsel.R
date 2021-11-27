@@ -147,7 +147,6 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, seed = NULL, ...) {
   refmodel <- object
-  family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
@@ -214,15 +213,18 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
   } else {
     if (d_type == "train") {
-      mu_test <- family$linkinv(family$linkfun(refmodel$mu) + refmodel$offset)
+      mu_test <- refmodel$family$linkinv(
+        refmodel$family$linkfun(refmodel$mu) + refmodel$offset
+      )
     } else {
-      mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
-                                                     newdata = d_test$data) +
-                                  d_test$offset)
+      mu_test <- refmodel$family$linkinv(
+        refmodel$ref_predfun(refmodel$fit, newdata = d_test$data) +
+          d_test$offset
+      )
       mu_test <- unname(mu_test)
     }
     ref <- .weighted_summary_means(
-      y_test = d_test, family = family, wsample = refmodel$wsample,
+      y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
       mu = mu_test, dis = refmodel$dis
     )
   }
@@ -233,7 +235,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     search_path,
     d_test,
     summaries = nlist(sub, ref),
-    family,
+    family = refmodel$family,
     solution_terms = search_path$solution_terms,
     kl = sapply(submodels, function(x) x$kl),
     nterms_max,
