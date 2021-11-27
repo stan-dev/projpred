@@ -270,8 +270,8 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
   ##
   ## routine that can be used with several clusters
   if (method == "l1") {
-    search_path <- search_L1(p_sel, refmodel, refmodel$family,
-                             nterms_max - refmodel$intercept, penalty, opt)
+    search_path <- search_L1(p_sel, refmodel, nterms_max - refmodel$intercept,
+                             penalty, opt)
     search_path$p_sel <- p_sel
     return(search_path)
   } else if (method == "forward") {

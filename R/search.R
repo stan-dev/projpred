@@ -127,8 +127,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   return(out)
 }
 
-search_L1 <- function(p_ref, refmodel, family, nterms_max, penalty,
-                      opt) {
+search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
   intercept <- refmodel$intercept
   if (nterms_max == 0) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
@@ -145,7 +144,7 @@ search_L1 <- function(p_ref, refmodel, family, nterms_max, penalty,
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
-    p_ref, nlist(x, weights = refmodel$wobs), family,
+    p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
     intercept, ncol(x), penalty, opt
   )
   solution_terms <- collapse_contrasts_solution_path(
