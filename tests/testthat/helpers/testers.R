@@ -764,8 +764,6 @@ sub_fit_tester <- function(
 #   `p$p_type`.
 # @param seed_expected The seed which was used for clustering the posterior
 #   draws of the reference model.
-# @param fam_expected The expected `"family"` object or `NULL` for not testing
-#   the family object at all.
 # @param prjdraw_weights_expected The expected weights for the projected draws
 #   or `NULL` for not testing these weights at all.
 # @param from_vsel_L1_search A single logical value indicating whether `p` uses
@@ -781,7 +779,6 @@ projection_tester <- function(p,
                               nprjdraws_expected,
                               p_type_expected,
                               seed_expected = seed_tst,
-                              fam_expected = NULL,
                               prjdraw_weights_expected = NULL,
                               from_vsel_L1_search = FALSE,
                               info_str = "") {
@@ -792,7 +789,7 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(
     p,
-    c("dis", "kl", "weights", "solution_terms", "sub_fit", "family", "p_type",
+    c("dis", "kl", "weights", "solution_terms", "sub_fit", "p_type",
       "refmodel"),
     info = info_str
   )
@@ -801,12 +798,6 @@ projection_tester <- function(p,
   # Note: Extensive tests for `"refmodel"`s and `"datafit"`s may be run via
   # refmodel_tester().
   expect_identical(p$refmodel, refmod_expected, info = info_str)
-
-  # family
-  expect_identical(p$family, p$refmodel$family, info = info_str)
-  if (!is.null(fam_expected)) {
-    expect_identical(p$family, fam_expected, info = info_str)
-  }
 
   # solution_terms
   if (is.numeric(solterms_expected)) {
@@ -870,7 +861,7 @@ projection_tester <- function(p,
                  nprjdraws_expected = nprjdraws_expected,
                  sub_formul = sub_formul_crr,
                  sub_data = sub_data_crr,
-                 sub_fam = p$family$family,
+                 sub_fam = p$refmodel$family$family,
                  wobs_expected = p$refmodel$wobs,
                  solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
                  info_str = info_str)

@@ -180,7 +180,8 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
   )
   expect_error(
     proj_linpred(c(prjs, list(dat))),
-    "Invalid object supplied to argument `object`\\."
+    paste("Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.")
   )
 })
 
@@ -766,7 +767,8 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
   )
   expect_error(
     proj_predict(c(prjs, list(dat)), .seed = seed2_tst),
-    "Invalid object supplied to argument `object`\\."
+    paste("Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.")
   )
 })
 

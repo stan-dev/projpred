@@ -118,12 +118,6 @@ proj_helper <- function(object, newdata,
 
   if (!.is_proj_list(projs)) {
     projs <- list(projs)
-  } else {
-    ## projs is some other object, not containing an element called "family" (so
-    ## it could be a `proj_list` but must not necessarily)
-    if (any(sapply(projs, function(x) !("family" %in% names(x))))) {
-      stop("Invalid object supplied to argument `object`.")
-    }
   }
 
   if (is.null(newdata)) {
@@ -183,8 +177,8 @@ proj_helper <- function(object, newdata,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
-    mu <- proj$family$mu_fun(proj$sub_fit,
-                             newdata = newdata, offset = offsetnew)
+    mu <- proj$refmodel$family$mu_fun(proj$sub_fit,
+                                      newdata = newdata, offset = offsetnew)
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
                extract_y_ind = extract_y_ind,
@@ -226,7 +220,7 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   lpd_out <- compute_lpd(
     ynew = ynew, mu = mu, proj = proj, weights = weights
   )
-  pred_out <- if (!dot_args$transform) proj$family$linkfun(mu) else mu
+  pred_out <- if (!dot_args$transform) proj$refmodel$family$linkfun(mu) else mu
   if (dot_args$integrated) {
     ## average over the posterior draws
     pred_out <- pred_out %*% proj$weights
@@ -243,10 +237,10 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
 compute_lpd <- function(ynew, mu, proj, weights) {
   if (!is.null(ynew)) {
     ## compute also the log-density
-    target <- .get_standard_y(ynew, weights, proj$family)
+    target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    return(as.matrix(proj$family$ll_fun(mu, proj$dis, ynew, weights)))
+    return(as.matrix(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights)))
   } else {
     return(NULL)
   }
@@ -287,7 +281,7 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
   }
 
   return(do.call(rbind, lapply(draw_inds, function(i) {
-    proj$family$ppd(mu[, i], proj$dis[i], weights)
+    proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
   })))
 }
 
@@ -1059,7 +1053,7 @@ as.matrix.projection <- function(x, ...) {
             "clusters might have different weights.")
   }
   res <- do.call(rbind, lapply(x$sub_fit, get_subparams))
-  if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }
 

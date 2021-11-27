@@ -60,7 +60,6 @@
 #'     predictor terms, ordered in the way in which the terms were added to the
 #'     submodel.}
 #'     \item{`sub_fit`}{The submodel's fitted model object.}
-#'     \item{`family`}{A modified [`family`] object.}
 #'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
 #'     (`TRUE`) or not (`FALSE`).}
@@ -224,7 +223,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   # Output:
   proj <- lapply(subm, function(model) {
-    model$family <- refmodel$family
     model$p_type <- !is.null(nclusters)
     model$refmodel <- refmodel
     class(model) <- "projection"

@@ -314,7 +314,8 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 }
 
 .is_proj_list <- function(proj) {
-  !("family" %in% names(proj))
+  # Better use a formal class `proj_list`, but for now, use this workaround:
+  is.list(proj) && length(proj) && all(sapply(proj, inherits, "projection"))
 }
 
 .unlist_proj <- function(p) if (length(p) == 1) p[[1]] else p
