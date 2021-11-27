@@ -207,9 +207,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   }
   set.seed(seed)
 
-  family <- refmodel$family
   S <- NCOL(refmodel$mu) # number of draws in the reference model
-
   if (is.null(ndraws)) {
     ndraws <- S
   }
@@ -219,7 +217,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
-      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, cl = cl)
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
@@ -230,7 +228,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
         stop("The number of clusters nclusters cannot exceed the number of ",
              "columns in mu.")
       }
-      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, nclusters = nclusters)
     }
   } else {
@@ -246,7 +244,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     cl <- rep(NA, S)
     cl[s_ind] <- c(1:ndraws)
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
-      family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
+      refmodel$family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
