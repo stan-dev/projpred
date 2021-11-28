@@ -318,7 +318,9 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   is.list(proj) && length(proj) && all(sapply(proj, inherits, "projection"))
 }
 
-.unlist_proj <- function(p) if (length(p) == 1) p[[1]] else p
+.unlist_proj <- function(p) {
+  if (length(p) == 1) p[[1]] else p
+}
 
 ## create a named list using object names
 nlist <- function(...) {
