@@ -107,6 +107,9 @@ proj_helper <- function(object, newdata,
         },
         object
       )
+      if (!length(projs)) {
+        stop("Invalid `filter_nterms`.")
+      }
     } else {
       projs <- object
     }

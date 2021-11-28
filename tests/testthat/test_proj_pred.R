@@ -488,7 +488,7 @@ test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
     for (filter_nterms_crr in nterms_unavail_crr) {
       expect_error(proj_linpred(prjs[[tstsetup]],
                                 filter_nterms = filter_nterms_crr),
-                   "subscript out of bounds",
+                   "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup, filter_nterms_crr, sep = "__"))
     }
     pl <- proj_linpred(prjs[[tstsetup]],
@@ -509,7 +509,7 @@ test_that(paste(
     for (filter_nterms_crr in nterms_unavail) {
       expect_error(proj_linpred(prjs_vs[[tstsetup]],
                                 filter_nterms = filter_nterms_crr),
-                   "subscript out of bounds",
+                   "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup,
                                 paste(filter_nterms_crr, collapse = ","),
                                 sep = "__"))
@@ -1007,7 +1007,7 @@ test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
       expect_error(proj_predict(prjs[[tstsetup]],
                                 filter_nterms = filter_nterms_crr,
                                 .seed = seed2_tst),
-                   "subscript out of bounds",
+                   "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup, filter_nterms_crr, sep = "__"))
     }
     pp <- proj_predict(prjs[[tstsetup]],
@@ -1030,7 +1030,7 @@ test_that(paste(
       expect_error(proj_predict(prjs_vs[[tstsetup]],
                                 filter_nterms = filter_nterms_crr,
                                 .seed = seed2_tst),
-                   "subscript out of bounds",
+                   "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup,
                                 paste(filter_nterms_crr, collapse = ","),
                                 sep = "__"))
