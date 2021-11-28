@@ -139,12 +139,6 @@ cv_varsel.refmodel <- function(
   nclusters_pred <- args$nclusters_pred
   ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
-  has_group_features <- formula_contains_group_terms(refmodel$formula)
-  has_additive_features <- formula_contains_additive_terms(refmodel$formula)
-
-  if (method == "l1" && (has_group_features || has_additive_features)) {
-    stop("L1 search is only supported for GLMs.")
-  }
 
   ## arguments specific to this function
   args <- parse_args_cv_varsel(
