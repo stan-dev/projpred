@@ -95,8 +95,7 @@ proj_helper <- function(object, newdata,
                         onesub_fun, filter_nterms = NULL,
                         transform = NULL, integrated = NULL,
                         nresample_clusters = NULL, ...) {
-  if (inherits(object, "projection") ||
-      (length(object) > 0 && inherits(object[[1]], "projection"))) {
+  if (inherits(object, "projection") || .is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!.is_proj_list(object)) {
         object <- list(object)
