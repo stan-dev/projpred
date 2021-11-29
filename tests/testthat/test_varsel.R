@@ -39,7 +39,9 @@ test_that("invalid `method` fails", {
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(varsel(refmods[[tstsetup]], method = "L1"),
-                   "^L1 search is only supported for GLMs\\.$",
+                   paste("^L1 search is only supported for reference models",
+                         "without multilevel and without additive",
+                         "\\(\"smoothing\"\\) terms\\.$"),
                    info = tstsetup)
     }
   }
@@ -490,7 +492,9 @@ test_that("invalid `method` fails", {
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(cv_varsel(refmods[[tstsetup]], method = "L1"),
-                   "^L1 search is only supported for GLMs\\.$",
+                   paste("^L1 search is only supported for reference models",
+                         "without multilevel and without additive",
+                         "\\(\"smoothing\"\\) terms\\.$"),
                    info = tstsetup)
     }
   }

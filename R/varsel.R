@@ -303,7 +303,8 @@ parse_args_varsel <- function(refmodel, method, cv_search, nterms_max,
   } else {
     method <- tolower(method)
     if (method == "l1" && (has_group_features || has_additive_features)) {
-      stop("L1 search is only supported for GLMs.")
+      stop("L1 search is only supported for reference models without ",
+           "multilevel and without additive (\"smoothing\") terms.")
     }
   }
 
