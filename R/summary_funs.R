@@ -70,9 +70,8 @@
 
     ## reference model statistics
     summ <- summ_ref
-    res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-                    mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w,
-                    alpha = alpha)
+    res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
+                    lppd.bs = lppd.bs, weights = summ$w, alpha = alpha)
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
@@ -89,10 +88,10 @@
         ## results to get more accurate statistic fot the submodel on the actual
         ## scale
         res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$d_test,
-                            varsel$family, stat, mu.bs = NULL, lppd.bs = NULL,
+                            stat, mu.bs = NULL, lppd.bs = NULL,
                             weights = summ_ref$w, alpha = alpha)
-        res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family,
-                             stat, mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
+        res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
+                             mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
                              weights = summ$w, alpha = alpha)
         val <- res_ref$value + res_diff$value
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
@@ -105,10 +104,9 @@
         )
       } else {
         ## normal case
-        res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-                        mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w,
-                        alpha = alpha)
-        diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
+        res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
+                        lppd.bs = lppd.bs, weights = summ$w, alpha = alpha)
+        diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
                          mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
                          weights = summ$w, alpha = alpha)
         row <- data.frame(
@@ -124,9 +122,8 @@
   return(stat_tab)
 }
 
-get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
-                     lppd.bs = NULL, weights = NULL, alpha = 0.1,
-                     seed = 1208499, B = 2000) {
+get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
+                     weights = NULL, alpha = 0.1, seed = 1208499, B = 2000) {
   ##
   ## Calculates given statistic stat with standard error and confidence bounds.
   ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
