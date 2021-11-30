@@ -15,7 +15,7 @@
 
 .weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
   loglik <- family$ll_fun(
-    mu, dis, matrix(y_test$y, nrow = NROW(mu)),
+    mu, dis, y_test$y,
     y_test$weights
   )
   if (length(loglik) == 1) {

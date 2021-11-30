@@ -392,14 +392,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     ## compute approximate LOO with PSIS weights
-    y <- matrix(refmodel$y, nrow = n)
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$sub_fit,
                                      obs = inds,
                                      offset = refmodel$offset)
       log_lik_sub <- t(refmodel$family$ll_fun(
         mu_k, submodels[[k]]$dis,
-        y[inds], refmodel$wobs[inds]
+        refmodel$y[inds], refmodel$wobs[inds]
       ))
       sub_psisloo <- suppressWarnings(
         loo::psis(-log_lik_sub,
