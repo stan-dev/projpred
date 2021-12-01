@@ -195,9 +195,9 @@
 #'       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
 #'       return(projpred:::do_call(projpred:::.extract_model_data, args))
 #'     },
-#'     cvfun = function(folds, ...) {
+#'     cvfun = function(folds) {
 #'       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
-#'                       folds = folds, ...)$fits[, "fit"]
+#'                       folds = folds)$fits[, "fit"]
 #'     },
 #'     dis = as.matrix(fit)[, "sigma"]
 #'   )
