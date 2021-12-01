@@ -23,11 +23,11 @@
 #'   evaluation part.
 #' @param ndraws Number of posterior draws used in the search part. **Caution:**
 #'   For `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
-#'   clustering is used). Ignored if `nclusters` is not `NULL` or if `method`
-#'   turns out as `"L1"` (L1 search uses always one cluster). See also section
+#'   clustering is used). Ignored if `nclusters` is not `NULL` or in case of L1
+#'   search (because L1 search always uses a single cluster). See also section
 #'   "Details" below.
 #' @param nclusters Number of clusters of posterior draws used in the search
-#'   part. Ignored if `method` turns out as `"L1"` (L1 search uses always one
+#'   part. Ignored in case of L1 search (because L1 search always uses a single
 #'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
 #'   section "Details" below.
 #' @param ndraws_pred Only relevant if `cv_search` is `TRUE`. Number of
@@ -43,22 +43,21 @@
 #'   terms in the reference model (or in `search_terms`, if supplied). Note that
 #'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
 #'   intercept-only model.
-#' @param penalty Only relevant if `method` turns out as `"L1"`. A numeric
-#'   vector determining the relative penalties or costs for the predictors. A
-#'   value of `0` means that those predictors have no cost and will therefore be
-#'   selected first, whereas `Inf` means those predictors will never be
-#'   selected. If `NULL`, then `1` is used for each predictor.
-#' @param lambda_min_ratio Only relevant if `method` turns out as `"L1"`. Ratio
-#'   between the smallest and largest lambda in the L1-penalized search. This
-#'   parameter essentially determines how long the search is carried out, i.e.,
-#'   how large submodels are explored. No need to change this unless the program
+#' @param penalty Only relevant for L1 search. A numeric vector determining the
+#'   relative penalties or costs for the predictors. A value of `0` means that
+#'   those predictors have no cost and will therefore be selected first, whereas
+#'   `Inf` means those predictors will never be selected. If `NULL`, then `1` is
+#'   used for each predictor.
+#' @param lambda_min_ratio Only relevant for L1 search. Ratio between the
+#'   smallest and largest lambda in the L1-penalized search. This parameter
+#'   essentially determines how long the search is carried out, i.e., how large
+#'   submodels are explored. No need to change this unless the program gives a
+#'   warning about this.
+#' @param nlambda Only relevant for L1 search. Number of values in the lambda
+#'   grid for L1-penalized search. No need to change this unless the program
 #'   gives a warning about this.
-#' @param nlambda Only relevant if `method` turns out as `"L1"`. Number of
-#'   values in the lambda grid for L1-penalized search. No need to change this
-#'   unless the program gives a warning about this.
-#' @param thresh Only relevant if `method` turns out as `"L1"`. Convergence
-#'   threshold when computing the L1 path. Usually, there is no need to change
-#'   this.
+#' @param thresh Only relevant for L1 search. Convergence threshold when
+#'   computing the L1 path. Usually, there is no need to change this.
 #' @param regul A number giving the amount of ridge regularization when
 #'   projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 #'   no need for regularization, but sometimes we need to add some
