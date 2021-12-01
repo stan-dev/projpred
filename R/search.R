@@ -1,9 +1,8 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
                            search_terms = NULL) {
-  formula <- refmodel$formula
   iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
   if (is.null(search_terms)) {
-    allterms <- split_formula(formula, data = refmodel$fetch_data())
+    allterms <- split_formula(refmodel$formula, data = refmodel$fetch_data())
   } else {
     allterms <- search_terms
   }
