@@ -13,24 +13,34 @@
   })
 }
 
+# Calculate log predictive density values and average them across parameter
+# draws (together with the corresponding expected response values).
+#
+# @param y_test A `list`, at least with elements `y` (response values) and
+#   `weights` (observation weights).
+# @param family A `family` object.
+# @param wsample A vector of weights for the parameter draws.
+# @param mu A matrix of expected values for `y`.
+# @param dis A vector of dispersion parameter draws.
+#
+# @return A `list` with elements `mu` and `lppd` which are both vectors
+#   containing the values for the quantities from the description above.
 .weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
+  if (!is.matrix(mu)) {
+    stop("Unexpected structure for `mu`. Does the return value of ",
+         "`proj_predfun` have the correct structure?")
+  }
   loglik <- family$ll_fun(
     mu, dis, y_test$y,
     y_test$weights
   )
-  if (length(loglik) == 1) {
-    # one observation, one sample
-    return(list(mu = mu, lppd = loglik))
-  } else if (is.null(dim(loglik))) {
-    # loglik is a vector, but not sure if it means one observation with many
-    # samples, or vice versa?
-    stop("Internal error encountered: loglik is a vector, ",
-         "but should be a scalar or matrix")
-  } else {
-    # mu is a matrix, so apply weighted sum over the samples
-    return(list(mu = c(mu %*% wsample),
-                lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)))
+  if (!is.matrix(loglik)) {
+    stop("Unexpected structure for `loglik`. Please notify the package ",
+         "maintainer.")
   }
+  # Average over the draws, taking their weights into account:
+  return(list(mu = c(mu %*% wsample),
+              lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)))
 }
 
 # A function to calculate the desired performance statistics, their standard
