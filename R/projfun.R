@@ -39,8 +39,6 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
   if (!cv_search) {
     ## simply fetch the already computed quantities for each submodel size
     fetch_submodel <- function(nterms) {
-      solution_terms <- utils::head(search_path$solution_terms, nterms)
-
       validparams <- .validate_wobs_wsample(
         refmodel$wobs, search_path$p_sel$weights, search_path$p_sel$mu
       )
@@ -52,16 +50,17 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
 
       return(.init_submodel(
         sub_fit = sub_refit, p_ref = search_path$p_sel, refmodel = refmodel,
-        solution_terms = solution_terms, wobs = wobs, wsample = wsample
+        solution_terms = utils::head(search_path$solution_terms, nterms),
+        wobs = wobs, wsample = wsample
       ))
     }
   } else {
     ## need to project again for each submodel size
     fetch_submodel <- function(nterms) {
-      project_submodel(
+      return(project_submodel(
         solution_terms = utils::head(search_path$solution_terms, nterms),
         p_ref = p_ref, refmodel = refmodel, regul = regul
-      )
+      ))
     }
   }
   return(lapply(nterms, fetch_submodel))
