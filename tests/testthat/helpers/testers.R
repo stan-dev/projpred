@@ -1386,10 +1386,9 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   }
   expect_named(
     smmry,
-    c("formula", "fit", "family", "nobs", "method", "cv_method",
-      "validate_search", "ndraws", "ndraws_pred", "nclusters", "nclusters_pred",
-      "search_included", "nterms", pct_solterms_nm, "suggested_size",
-      "selection"),
+    c("formula", "family", "nobs", "method", "cv_method", "validate_search",
+      "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "search_included",
+      "nterms", pct_solterms_nm, "suggested_size", "selection"),
     info = info_str
   )
 

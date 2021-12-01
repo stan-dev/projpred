@@ -499,7 +499,6 @@ summary.vsel <- function(
   # Initialize output:
   out <- list(
     formula = object$refmodel$formula,
-    fit = object$fit,
     family = object$refmodel$family,
     nobs = NROW(object$refmodel$fetch_data()),
     method = object$method,
