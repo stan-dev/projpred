@@ -538,6 +538,29 @@ test_that(paste(
   }
 })
 
+## Single observation, single draw ----------------------------------------
+
+test_that(paste(
+  "a single observation and a single draw work (which implicitly tests",
+  "this edge case for family$ll_fun(), too)"
+), {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # TODO (GAMMs): Fix this.
+      next
+    }
+    pl1 <- proj_linpred(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                        newdata = head(get_dat(tstsetup), 1),
+                        solution_terms = args_prj[[tstsetup]]$solution_terms,
+                        nclusters = 1L,
+                        seed = seed_tst)
+    pl_tester(pl1,
+              nprjdraws_expected = 1L,
+              nobsv_expected = 1L,
+              info_str = tstsetup)
+  }
+})
+
 # proj_predict() ----------------------------------------------------------
 
 context("proj_predict()")
@@ -1057,5 +1080,30 @@ test_that(paste(
         expect_equal(pp_crr, pp_orig, info = tstsetup)
       }
     }
+  }
+})
+
+## Single observation, single draw ----------------------------------------
+
+test_that(paste(
+  "a single observation and a single draw work (which implicitly tests",
+  "this edge case for family$ppd(), too)"
+), {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # TODO (GAMMs): Fix this.
+      next
+    }
+    pp1 <- proj_predict(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                        newdata = head(get_dat(tstsetup), 1),
+                        nresample_clusters = 1L,
+                        .seed = seed2_tst,
+                        solution_terms = args_prj[[tstsetup]]$solution_terms,
+                        nclusters = 1L,
+                        seed = seed_tst)
+    pp_tester(pp1,
+              nprjdraws_out_expected = 1L,
+              nobsv_expected = 1L,
+              info_str = tstsetup)
   }
 })
