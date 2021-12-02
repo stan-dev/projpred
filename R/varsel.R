@@ -214,7 +214,6 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
         refmodel$ref_predfun(refmodel$fit, newdata = d_test$data) +
           d_test$offset
       )
-      mu_test <- unname(as.matrix(mu_test))
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,

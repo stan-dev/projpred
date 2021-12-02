@@ -557,7 +557,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
     pred <- refmodel$ref_predfun(refmodel$fit, newdata = d_test$newdata) +
       d_test$offset
-    pred <- unname(as.matrix(pred))
     mu_test <- refmodel$family$linkinv(pred)
     nlist(refmodel, p_sel, p_pred, mu_test,
           dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg)

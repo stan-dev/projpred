@@ -268,7 +268,6 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
 
   ## ref_predfun returns link(mu)
   mu <- object$ref_predfun(object$fit, newdata) + offsetnew
-  mu <- unname(as.matrix(mu))
 
   if (is.null(ynew)) {
     pred <- if (type == "link") mu else object$family$linkinv(mu)
@@ -643,6 +642,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL) {
       linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
+      if (!is.matrix(linpred_out)) {
+        stop("Unexpected structure for `linpred_out`. Does the return value ",
+             "of `ref_predfun` have the correct structure?")
+      }
+      linpred_out <- unname(linpred_out)
 
       # Observation weights are not needed here, so use `wrhs = NULL` to avoid
       # potential conflicts for a non-`NULL` default `wrhs`:
@@ -683,7 +687,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (proper_model) {
     mu <- ref_predfun(object)
-    mu <- unname(as.matrix(mu))
     mu <- family$linkinv(mu)
   } else {
     if (family$family != "binomial") {
