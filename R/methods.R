@@ -242,7 +242,7 @@ compute_lpd <- function(ynew, mu, proj, weights) {
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    return(as.matrix(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights)))
+    return(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights))
   } else {
     return(NULL)
   }
