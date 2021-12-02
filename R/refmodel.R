@@ -279,7 +279,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   } else {
     ## evaluate the log predictive density at the given ynew values
     loglik <- object$family$ll_fun(
-      object$family$linkinv(mu), object$dis, ynew,
+      object$family$linkinv(mu),
+      object$dis,
+      ynew,
       weightsnew
     )
     S <- ncol(loglik)

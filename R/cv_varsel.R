@@ -397,8 +397,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                      obs = inds,
                                      offset = refmodel$offset)
       log_lik_sub <- t(refmodel$family$ll_fun(
-        mu_k, submodels[[k]]$dis,
-        refmodel$y[inds], refmodel$wobs[inds]
+        mu_k,
+        submodels[[k]]$dis,
+        refmodel$y[inds],
+        refmodel$wobs[inds]
       ))
       sub_psisloo <- suppressWarnings(
         loo::psis(-log_lik_sub,

@@ -30,10 +30,7 @@
     stop("Unexpected structure for `mu`. Does the return value of ",
          "`proj_predfun` have the correct structure?")
   }
-  loglik <- family$ll_fun(
-    mu, dis, y_test$y,
-    y_test$weights
-  )
+  loglik <- family$ll_fun(mu, dis, y_test$y, y_test$weights)
   if (!is.matrix(loglik)) {
     stop("Unexpected structure for `loglik`. Please notify the package ",
          "maintainer.")
