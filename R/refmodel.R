@@ -268,6 +268,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
 
   ## ref_predfun returns link(mu)
   mu <- object$ref_predfun(object$fit, newdata) + offsetnew
+  mu <- unname(as.matrix(mu))
 
   if (is.null(ynew)) {
     pred <- if (type == "link") mu else object$family$linkinv(mu)
