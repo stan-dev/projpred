@@ -136,7 +136,7 @@ vanilla_vs <- cv_varsel(refmodel,
 # selection order of the variables
 projpred::solution_terms(vanilla_vs)
 # plot results
-plot(vanilla_vs)
+plot(vanilla_vs, stats = c('elpd', 'rmse'))
 ```
 
 ## Time-to-event models
