@@ -39,7 +39,7 @@ Imports:
 LinkingTo: Rcpp, RcppArmadillo
 License: GPL-3
 LazyData: TRUE
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Suggests:
     rstanarm,
     brms,
