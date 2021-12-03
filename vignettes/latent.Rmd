@@ -117,10 +117,10 @@ Now having a reference model where the variate's distribution belongs to the exp
 
 ```{r}
 # perform variable selection on the latent reference model
-latent_vs <- cv_varsel(latent_ref,
-                       method = "forward")
+latent_vs <- varsel(latent_ref,
+                       method = "l1")
 # selection order of the variables
-solution_terms(latent_vs)
+projpred::solution_terms(latent_vs)
 # plot varsel results
 plot(latent_vs, stats = c('elpd', 'rmse'))
 ```
@@ -134,7 +134,7 @@ refmodel <- get_refmodel(model_poisson)
 vanilla_vs <- cv_varsel(refmodel,
                        method = "forward")
 # selection order of the variables
-solution_terms(vanilla_vs)
+projpred::solution_terms(vanilla_vs)
 # plot results
 plot(vanilla_vs)
 ```
@@ -200,7 +200,7 @@ Having now build a reference model belonging to the Exponential family from a mo
 # perform latent projection predictive variable selection on model
 vs <- cv_varsel(latent_ref, method = "forward")
 # selection order of the variables
-solution_terms(vs)
+projpred::solution_terms(vs)
 # plot varsel results
 plot(vs, stats = c('elpd', 'rmse'))
 ```
