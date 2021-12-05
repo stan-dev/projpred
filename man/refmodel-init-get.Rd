@@ -114,7 +114,7 @@ also be used directly without a call to \code{\link[=get_refmodel]{get_refmodel(
 for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see \code{\link[=cv_varsel]{cv_varsel()}}
 for the use of \eqn{K}-fold CV in \pkg{projpred}.
 }
-\section{\code{ref_predfun}, \code{proj_predfun}, \code{div_minimizer}}{
+\section{Arguments \code{ref_predfun}, \code{proj_predfun}, \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default. Otherwise, let \eqn{N} denote the number of
 observations (data points), \eqn{S} the number of posterior draws for the
@@ -173,7 +173,7 @@ this number of submodel fits.
 }
 }
 
-\section{\code{extract_model_data}}{
+\section{Argument \code{extract_model_data}}{
 The function supplied to argument \code{extract_model_data} needs to have the
 prototype\if{html}{\out{<div class="sourceCode r">}}\preformatted{extract_model_data(object, newdata, wrhs = NULL, orhs = NULL, extract_y = TRUE)
 }\if{html}{\out{</div>}}

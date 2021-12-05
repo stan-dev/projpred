@@ -438,29 +438,31 @@ plot.vsel <- function(
 #'   calculated. Note that `nterms_max` does not count the intercept, so use
 #'   `nterms_max = 0` for the intercept-only model. For [plot.vsel()],
 #'   `nterms_max` must be at least `1`.
-#' @param stats One or several strings determining which statistics to
+#' @param stats One or more character strings determining which statistics to
 #'   calculate. Available statistics are:
-#'   * `elpd`: (expected) sum of log predictive densities;
-#'   * `mlpd`: mean log predictive density, that is, `elpd` divided by the
+#'   * `"elpd"`: (expected) sum of log predictive densities;
+#'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations (data points);
-#'   * `mse`: mean squared error;
-#'   * `rmse`: root mean squared error;
-#'   * `acc` (or its alias, `pctcorr`): classification accuracy ([binomial()]
-#'   family only);
-#'   * `auc`: area under the ROC curve ([binomial()] family only).
+#'   * `"mse"`: mean squared error;
+#'   * `"rmse"`: root mean squared error;
+#'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
+#'   ([binomial()] family only);
+#'   * `"auc"`: area under the ROC curve ([binomial()] family only).
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
-#'   `"diff"`, and `"diff.se"` indicating which of these to compute (mean,
-#'   standard error, lower and upper credible bounds, difference to the
-#'   corresponding statistic of the reference model, and standard error of this
-#'   difference, respectively). The credible bounds are determined so that `1 -
-#'   alpha` percent of the probability mass falls between them. Items `"diff"`
-#'   and `"diff.se"` are only supported if `deltas` is `FALSE`.
-#' @param deltas If `TRUE`, the submodel statistics are estimated relative to
-#'   the baseline model (see argument `baseline`) instead of estimating the
+#'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
+#'   item from `stats` (mean, standard error, lower and upper confidence
+#'   interval bounds, mean difference to the corresponding statistic of the
+#'   reference model, and standard error of this difference, respectively). The
+#'   confidence interval bounds belong to normal-approximation confidence
+#'   intervals with (nominal) coverage `1 - alpha`. Items `"diff"` and
+#'   `"diff.se"` are only supported if `deltas` is `FALSE`.
+#' @param deltas If `TRUE`, the submodel statistics are estimated as differences
+#'   from the baseline model (see argument `baseline`) instead of estimating the
 #'   actual values of the statistics.
-#' @param alpha A number giving the desired coverage of the credible intervals.
-#'   For example, `alpha = 0.32` corresponds to 68% probability mass within the
-#'   intervals, that is, one-standard-error intervals.
+#' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
+#'   normal-approximation confidence intervals. For example, `alpha = 0.32`
+#'   corresponds to a coverage of 68%, i.e., one-standard-error intervals
+#'   (because of the normal approximation).
 #' @param baseline Only relevant if `deltas` is `TRUE`. Either `"ref"` or
 #'   `"best"` indicating whether the baseline is the reference model or the best
 #'   submodel (in terms of `stats[1]`), respectively.
@@ -678,36 +680,39 @@ print.vsel <- function(x, ...) {
 #' Suggest model size
 #'
 #' This function can suggest an appropriate model size based on a decision rule
-#' described in section "Details". Note that the decision rule is heuristic and
-#' should only be interpreted as a guideline. It is recommended to examine the
-#' results via [plot.vsel()] and/or [summary.vsel()] and make the final decision
-#' based on what is most appropriate for the given problem.
+#' described in section "Details" below. Note that this decision is quite
+#' heuristic and should be interpreted with caution. It is recommended to
+#' examine the results via [plot.vsel()] and/or [summary.vsel()] and to make the
+#' final decision based on what is most appropriate for the problem at hand.
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Statistic used for the decision. See [summary.vsel()] for
 #'   possible choices.
-#' @param alpha A number giving the desired coverage of the credible intervals
-#'   based on which the decision is made. For example, `alpha = 0.32`
-#'   corresponds to 68% probability mass within the intervals, that is,
-#'   one-standard-error intervals. See section "Details" for more information.
+#' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
+#'   normal-approximation confidence intervals based on which the decision is
+#'   made. For example, `alpha = 0.32` corresponds to a coverage of 68%, i.e.,
+#'   one-standard-error intervals (because of the normal approximation). See
+#'   section "Details" below for more information.
 #' @param pct A number giving the relative proportion (*not* percents) between
 #'   baseline model and null model utilities one is willing to sacrifice. See
-#'   section "Details" for more information.
-#' @param type Either `"upper"` or `"lower"` determining whether the decisions
-#'   are based on the upper or lower credible bounds, respectively. See section
-#'   "Details" for more information.
+#'   section "Details" below for more information.
+#' @param type Either `"upper"` or `"lower"` determining whether the decision is
+#'   based on the upper or lower confidence interval bound, respectively. See
+#'   section "Details" below for more information.
 #' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel (in terms of `stats[1]`),
+#'   the reference model or the best submodel (in terms of `stat[1]`),
 #'   respectively.
-#' @param warnings Whether to give warnings if automatic suggestion fails,
-#'   mainly for internal use. Usually there is no reason to set this to `FALSE`.
+#' @param warnings Mainly for internal use. A single logical value indicating
+#'   whether to throw warnings if automatic suggestion fails. Usually there is
+#'   no reason to set this to `FALSE`.
 #' @param ... Currently ignored.
 #'
 #' @details The suggested model size is the smallest model size for which either
-#'   the lower or upper bound (depending on argument `type`) of the credible
-#'   interval (with coverage `1 - alpha`) for \eqn{u_k - u_{\mbox{base}}}{u_k -
-#'   u_base} (with \eqn{u_k} denoting the \eqn{k}-th submodel's utility and
+#'   the lower or upper bound (depending on argument `type`) of the
+#'   normal-approximation confidence interval (with nominal coverage `1 -
+#'   alpha`) for \eqn{u_k - u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k}
+#'   denoting the \eqn{k}-th submodel's utility and
 #'   \eqn{u_{\mbox{base}}}{u_base} denoting the baseline model's utility) falls
 #'   above (or is equal to) \deqn{\mbox{pct} * (u_0 - u_{\mbox{base}})}{pct *
 #'   (u_0 - u_base)} where \eqn{u_0} denotes the null model utility. The
@@ -715,21 +720,19 @@ print.vsel <- function(x, ...) {
 #'   argument `baseline`).
 #'
 #'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
-#'   select the smallest model size for which the upper bound of the
-#'   corresponding credible interval exceeds (or is equal to) the baseline model
-#'   utility, that is, which is better than the baseline model with a
-#'   probability of at least 0.16 (and consequently, worse with a probability of
-#'   at most 0.84). In other words, the estimated difference between the
-#'   baseline model utility and the submodel utility is at most one standard
-#'   error away from zero, so the two utilities are considered to be close.
+#'   select the smallest model size for which the upper bound of the confidence
+#'   interval for \eqn{u_k - u_{\mbox{base}}}{u_k - u_base} with coverage 68%
+#'   exceeds (or is equal to) zero, that is, for which the submodel's utility is
+#'   at most one standard error smaller than the baseline model's utility.
 #'
 #' @note Loss statistics like the root mean-squared error (RMSE) and the
 #'   mean-squared error (MSE) are converted to utilities by multiplying them by
 #'   `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
-#'   "upper")` finds the smallest model size whose upper credible bound of the
-#'   *negative* RMSE or MSE exceeds the cutoff (or equivalently has the lower
-#'   credible bound of RMSE or MSE below the cutoff). This is done to make the
-#'   interpretation of argument `type` the same regardless of argument `stat`.
+#'   "upper")` finds the smallest model size whose upper confidence interval
+#'   bound for the *negative* RMSE or MSE exceeds the cutoff (or, equivalently,
+#'   has the lower confidence interval bound for the RMSE or MSE below the
+#'   cutoff). This is done to make the interpretation of argument `type` the
+#'   same regardless of argument `stat`.
 #'
 #'   The intercept is not counted by [suggest_size()], so a suggested size of
 #'   zero stands for the intercept-only model.

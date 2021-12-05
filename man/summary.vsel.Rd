@@ -24,33 +24,36 @@ calculated. Note that \code{nterms_max} does not count the intercept, so use
 \code{nterms_max = 0} for the intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}},
 \code{nterms_max} must be at least \code{1}.}
 
-\item{stats}{One or several strings determining which statistics to
+\item{stats}{One or more character strings determining which statistics to
 calculate. Available statistics are:
 \itemize{
-\item \code{elpd}: (expected) sum of log predictive densities;
-\item \code{mlpd}: mean log predictive density, that is, \code{elpd} divided by the
+\item \code{"elpd"}: (expected) sum of log predictive densities;
+\item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations (data points);
-\item \code{mse}: mean squared error;
-\item \code{rmse}: root mean squared error;
-\item \code{acc} (or its alias, \code{pctcorr}): classification accuracy (\code{\link[=binomial]{binomial()}}
-family only);
-\item \code{auc}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only).
+\item \code{"mse"}: mean squared error;
+\item \code{"rmse"}: root mean squared error;
+\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy
+(\code{\link[=binomial]{binomial()}} family only);
+\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only).
 }}
 
 \item{type}{One or more items from \code{"mean"}, \code{"se"}, \code{"lower"}, \code{"upper"},
-\code{"diff"}, and \code{"diff.se"} indicating which of these to compute (mean,
-standard error, lower and upper credible bounds, difference to the
-corresponding statistic of the reference model, and standard error of this
-difference, respectively). The credible bounds are determined so that \code{1 - alpha} percent of the probability mass falls between them. Items \code{"diff"}
-and \code{"diff.se"} are only supported if \code{deltas} is \code{FALSE}.}
+\code{"diff"}, and \code{"diff.se"} indicating which of these to compute for each
+item from \code{stats} (mean, standard error, lower and upper confidence
+interval bounds, mean difference to the corresponding statistic of the
+reference model, and standard error of this difference, respectively). The
+confidence interval bounds belong to normal-approximation confidence
+intervals with (nominal) coverage \code{1 - alpha}. Items \code{"diff"} and
+\code{"diff.se"} are only supported if \code{deltas} is \code{FALSE}.}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative to
-the baseline model (see argument \code{baseline}) instead of estimating the
+\item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
+from the baseline model (see argument \code{baseline}) instead of estimating the
 actual values of the statistics.}
 
-\item{alpha}{A number giving the desired coverage of the credible intervals.
-For example, \code{alpha = 0.32} corresponds to 68\% probability mass within the
-intervals, that is, one-standard-error intervals.}
+\item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
+normal-approximation confidence intervals. For example, \code{alpha = 0.32}
+corresponds to a coverage of 68\%, i.e., one-standard-error intervals
+(because of the normal approximation).}
 
 \item{baseline}{Only relevant if \code{deltas} is \code{TRUE}. Either \code{"ref"} or
 \code{"best"} indicating whether the baseline is the reference model or the best

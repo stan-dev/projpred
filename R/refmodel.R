@@ -61,7 +61,7 @@
 #'
 #' @details
 #'
-#' # `ref_predfun`, `proj_predfun`, `div_minimizer`
+#' # Arguments `ref_predfun`, `proj_predfun`, `div_minimizer`
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
@@ -110,7 +110,7 @@
 #' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 #' this number of submodel fits.
 #'
-#' # `extract_model_data`
+#' # Argument `extract_model_data`
 #'
 #' The function supplied to argument `extract_model_data` needs to have the
 #' prototype
