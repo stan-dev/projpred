@@ -84,7 +84,7 @@
     stat_tab <- rbind(stat_tab, row)
 
     ## submodel statistics
-    for (k in seq_along(varsel$summaries$sub)) {
+    for (k in seq_along(summ_sub)) {
       summ <- summ_sub[[k]]
       if (delta == FALSE && sum(!is.na(summ_ref$mu)) > sum(!is.na(summ$mu))) {
         ## special case (subsampling loo): reference model summaries computed
