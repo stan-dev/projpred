@@ -128,11 +128,10 @@ fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
               union(methods::formalArgs(stats::lm.fit),
                     methods::formalArgs(stats::lm.wfit)))
       )]
-      # Use suppressMessages(suppressWarnings()) here?:
-      return(do.call(stats::lm, c(
+      return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
         list(formula = formula),
         dot_args
-      )))
+      )))))
     } else {
       # Exclude arguments from `...` which cannot be passed to stats::glm():
       dot_args <- list(...)
@@ -141,11 +140,10 @@ fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
         union(methods::formalArgs(stats::glm),
               methods::formalArgs(stats::glm.control))
       )]
-      # Use suppressMessages(suppressWarnings()) here?:
-      return(do.call(stats::glm, c(
+      return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
         list(formula = formula, family = family),
         dot_args
-      )))
+      )))))
     }
   }, error = function(e) {
     # May be used to handle errors.
