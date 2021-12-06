@@ -511,8 +511,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   if (!validate_search) {
     return(nlist(
-      solution_terms_cv = solution_terms_mat,
-      summaries, d_test, sel
+      solution_terms_cv = solution_terms_mat, summaries, d_test, sel
     ))
   } else {
     return(nlist(solution_terms_cv = solution_terms_mat, summaries, d_test))
