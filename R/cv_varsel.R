@@ -583,7 +583,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     out
   })
 
-  solution_terms_cv <- t(sapply(search_path_cv, function(e) e$solution_terms))
+  solution_terms_cv <- do.call(rbind, lapply(search_path_cv, function(e) {
+    e$solution_terms
+  }))
   if (verbose) {
     close(pb)
   }
