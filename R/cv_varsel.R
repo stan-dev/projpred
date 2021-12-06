@@ -712,17 +712,18 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   return(lapply(cvfits,
                 .init_kfold_refmodel,
-                refmodel = refmodel,
-                allobs = seq_along(refmodel$y)))
+                refmodel = refmodel))
 }
 
-.init_kfold_refmodel <- function(cvfit, refmodel, allobs) {
+.init_kfold_refmodel <- function(cvfit, refmodel) {
   if (!inherits(refmodel, "datafit")) {
     k_refmodel <- get_refmodel(cvfit)
   } else {
     k_refmodel <- init_refmodel(
       object = NULL,
-      data = refmodel$fetch_data(obs = setdiff(allobs, cvfit$omitted)),
+      data = refmodel$fetch_data(
+        obs = setdiff(seq_along(refmodel$y), cvfit$omitted)
+      ),
       formula = refmodel$formula,
       family = refmodel$family,
       div_minimizer = refmodel$div_minimizer,
