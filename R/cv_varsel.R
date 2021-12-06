@@ -339,10 +339,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
-  mu_ref <- rep(0, n)
-  for (i in seq_len(n)) {
-    mu_ref[i] <- mu[i, ] %*% exp(lw[, i])
-  }
+  mu_ref <- do.call(c, lapply(seq_len(n), function(i) {
+    mu[i, ] %*% exp(lw[, i])
+  }))
 
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k, seed)
