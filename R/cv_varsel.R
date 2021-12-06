@@ -214,9 +214,9 @@ cv_varsel.refmodel <- function(
   }
   pct_solution_terms_cv <- cbind(
     size = seq_len(nrow(solution_terms_cv_ch)),
-    sapply(sel_solution_terms, function(var_nm) {
+    do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(var_nm) {
       rowMeans(solution_terms_cv_ch == var_nm, na.rm = TRUE)
-    })
+    }))
   )
 
   ## create the object to be returned
