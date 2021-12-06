@@ -409,10 +409,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                   r_eff = rep(1, ncol(log_lik_sub)))
       )
       lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
-      loo_sub[inds, k] <- apply(
-        log_lik_sub[,] + lw_sub[,], 2,
-        log_sum_exp
-      )
+      loo_sub[inds, k] <- apply(log_lik_sub[,] + lw_sub[,], 2, log_sum_exp)
       for (i in seq_along(inds)) {
         mu_sub[inds[i], k] <- mu_k[i, ] %*% exp(lw_sub[, i])
       }
