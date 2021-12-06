@@ -349,6 +349,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   inds <- validset$inds
 
   ## initialize matrices where to store the results
+  # Caution: The columns of `loo_sub` and `mu_sub` correspond to different
+  # submodels, not draws!
   solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1)
   loo_sub <- matrix(nrow = n, ncol = nterms_max)
   mu_sub <- matrix(nrow = n, ncol = nterms_max)
