@@ -193,7 +193,7 @@ cv_varsel.refmodel <- function(
                                    data = refmodel$fetch_data(),
                                    add_main_effects = FALSE)
   candidate_terms <- setdiff(candidate_terms, "1")
-  solution_terms_cv_ch <- do.call(cbind, lapply(
+  solution_terms_cv_chr <- do.call(cbind, lapply(
     seq_len(NROW(sel_cv$solution_terms_cv)),
     function(i) {
       if (!is.character(sel_cv$solution_terms_cv[i, ])) {
@@ -204,18 +204,18 @@ cv_varsel.refmodel <- function(
     }
   ))
   sel_solution_terms <- unlist(sel$solution_terms)
-  if (!is.matrix(solution_terms_cv_ch)) {
-    stop("Unexpected `solution_terms_cv_ch`. Please notify the package ",
+  if (!is.matrix(solution_terms_cv_chr)) {
+    stop("Unexpected `solution_terms_cv_chr`. Please notify the package ",
          "maintainer.")
   }
-  if (!identical(nrow(solution_terms_cv_ch), length(sel_solution_terms))) {
-    stop("Unexpected number of rows in `solution_terms_cv_ch`. Please notify ",
+  if (!identical(nrow(solution_terms_cv_chr), length(sel_solution_terms))) {
+    stop("Unexpected number of rows in `solution_terms_cv_chr`. Please notify ",
          "the package maintainer.")
   }
   pct_solution_terms_cv <- cbind(
-    size = seq_len(nrow(solution_terms_cv_ch)),
+    size = seq_len(nrow(solution_terms_cv_chr)),
     do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(var_nm) {
-      rowMeans(solution_terms_cv_ch == var_nm, na.rm = TRUE)
+      rowMeans(solution_terms_cv_chr == var_nm, na.rm = TRUE)
     }))
   )
 
