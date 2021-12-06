@@ -509,13 +509,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     data = NULL, offset = refmodel$offset
   )
 
+  out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
-    return(nlist(
-      solution_terms_cv = solution_terms_mat, summaries, d_test, sel
-    ))
-  } else {
-    return(nlist(solution_terms_cv = solution_terms_mat, summaries, d_test))
+    out_list <- c(out_list, nlist(sel))
   }
+  return(out_list)
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
