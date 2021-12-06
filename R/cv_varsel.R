@@ -192,7 +192,7 @@ cv_varsel.refmodel <- function(
   candidate_terms <- split_formula(refmodel$formula,
                                    data = refmodel$fetch_data(),
                                    add_main_effects = FALSE)
-  candidate_terms <- unlist(utils::tail(candidate_terms, -1))
+  candidate_terms <- utils::tail(candidate_terms, -1)
   solution_terms_cv_ch <- sapply(
     seq_len(NROW(sel_cv$solution_terms_cv)),
     function(i) {
