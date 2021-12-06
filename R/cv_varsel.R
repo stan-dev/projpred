@@ -348,12 +348,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   validset <- .loo_subsample_pps(nloo, loo_ref, seed)
   inds <- validset$inds
 
-  ## initialize matrices where to store the results
-  # Caution: The columns of `loo_sub` and `mu_sub` correspond to different
-  # submodels, not draws!
+  ## initialize objects where to store the results
   solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1)
-  loo_sub <- matrix(nrow = n, ncol = nterms_max)
-  mu_sub <- matrix(nrow = n, ncol = nterms_max)
+  loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
+  mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
 
   if (verbose) {
     if (validate_search) {
@@ -409,9 +407,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                   r_eff = rep(1, ncol(log_lik_sub)))
       )
       lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
-      loo_sub[inds, k] <- apply(log_lik_sub[,] + lw_sub[,], 2, log_sum_exp)
+      loo_sub[[k]][inds] <- apply(log_lik_sub[,] + lw_sub[,], 2, log_sum_exp)
       for (i in seq_along(inds)) {
-        mu_sub[inds[i], k] <- mu_k[i, ] %*% exp(lw_sub[, i])
+        mu_sub[[k]][inds[i]] <- mu_k[i, ] %*% exp(lw_sub[, i])
       }
 
       if (verbose) {
@@ -469,8 +467,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         submodels = submodels, test_points = c(i), refmodel = refmodel
       )
       for (k in seq_along(summaries_sub)) {
-        loo_sub[i, k] <- summaries_sub[[k]]$lppd
-        mu_sub[i, k] <- summaries_sub[[k]]$mu
+        loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
+        mu_sub[[k]][i] <- summaries_sub[[k]]$mu
       }
 
       candidate_terms <- split_formula(refmodel$formula,
@@ -494,7 +492,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[, k], mu = mu_sub[, k], w = validset$w)
+    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], w = validset$w)
   })
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   summaries <- list(sub = summ_sub, ref = summ_ref)
