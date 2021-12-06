@@ -658,14 +658,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                d_test = c(d_cv, type = "kfold")))
 }
 
-
+## Fetch the k_fold list or compute it now if not already computed. This
+## function will return a list of length K, where each element is a list
+## with fields 'refmodel' (object of type refmodel computed by init_refmodel)
+## and index list 'test_points' that denotes which of the data points were
+## left out for the corresponding fold.
 .get_kfold <- function(refmodel, K, verbose, seed, approximate = FALSE) {
-  ## Fetch the k_fold list or compute it now if not already computed. This
-  ## function will return a list of length K, where each element is a list
-  ## with fields 'refmodel' (object of type refmodel computed by init_refmodel)
-  ## and index list 'test_points' that denotes which of the data points were
-  ## left out for the corresponding fold.
-
   if (is.null(refmodel$cvfits)) {
     if (!is.null(refmodel$cvfun)) {
       # cv-function provided so perform the cross-validation now. In case
@@ -697,10 +695,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
           cvfit
         })
       } else {
-        stop(
-          "For a generic reference model, you must provide either `cvfits` or ",
-          "`cvfun` for K-fold cross-validation. See function init_refmodel()."
-        )
+        stop("For a reference model which is not of class `datafit`, either ",
+             "`cvfits` or `cvfun` needs to be provided for K-fold CV (see ",
+             "`?init_refmodel`.")
       }
     }
   } else {
@@ -713,12 +710,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       cvfit
     })
   }
-
-  train <- seq_along(refmodel$y)
-
-  k_fold <- lapply(cvfits, .init_kfold_refmodel, refmodel, train)
-
-  return(k_fold)
+  return(lapply(cvfits,
+                .init_kfold_refmodel,
+                refmodel = refmodel,
+                train = seq_along(refmodel$y)))
 }
 
 .init_kfold_refmodel <- function(cvfit, refmodel, train) {
