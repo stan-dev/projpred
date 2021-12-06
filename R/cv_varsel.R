@@ -427,7 +427,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                      add_main_effects = FALSE)
     ## with `match` we get the indices of the variables as they enter the
     ## solution path in solution_terms
-    solution <- match(solution_terms, candidate_terms[-1])
+    solution <- match(solution_terms, utils::tail(candidate_terms, -1))
     for (i in seq_len(n)) {
       solution_terms_mat[i, seq_along(solution)] <- solution
     }
@@ -481,7 +481,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                        add_main_effects = FALSE)
       ## with `match` we get the indices of the variables as they enter the
       ## solution path in solution_terms
-      solution <- match(solution_terms, candidate_terms[-1])
+      solution <- match(solution_terms, utils::tail(candidate_terms, -1))
       solution_terms_mat[i, seq_along(solution)] <- solution
 
       if (verbose) {
