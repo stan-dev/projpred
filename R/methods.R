@@ -503,6 +503,7 @@ summary.vsel <- function(
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
+  # Initialize output:
   out <- list(
     formula = object$refmodel$formula,
     fit = object$fit,
@@ -516,24 +517,18 @@ summary.vsel <- function(
     nclusters = object$nclusters,
     nclusters_pred = object$nclusters_pred
   )
-
-  if (!is.null(out$validate_search)) {
-    if (out$validate_search == TRUE) {
-      out$search_included <- "search included"
-    } else {
-      out$search_included <- "search not included"
-    }
+  if (isTRUE(out$validate_search)) {
+    out$search_included <- "search included"
   } else {
     out$search_included <- "search not included"
   }
-
   class(out) <- "vselsummary"
-  ## fetch statistics
+
+  # The full table of the performance statistics from `stats`:
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-    tab <- .tabulate_stats(object, stats,
-                           alpha = alpha, nfeat_baseline = nfeat_baseline
-    )
+    tab <- .tabulate_stats(object, stats, alpha = alpha,
+                           nfeat_baseline = nfeat_baseline)
   } else {
     tab <- .tabulate_stats(object, stats, alpha = alpha)
   }
@@ -541,43 +536,40 @@ summary.vsel <- function(
     dplyr::group_by(.data$statistic) %>%
     dplyr::slice_head(n = length(object$solution_terms) + 1)
 
+  # Get the names of `stats_table` corresponding to all items from `type`, and
+  # set up their suffices in the table to be returned:
   if (deltas) {
     type <- setdiff(type, c("diff", "diff.se"))
   }
-  ## these are the corresponding names for mean, se, upper and lower in the
-  ## stats_table, and their suffices in the table to be returned
   qty <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
            diff = "diff", diff.se = "diff.se")
   }))
   if (!is.null(object$cv_method)) {
     cv_suffix <- unname(switch(object$cv_method,
-                               LOO = ".loo", kfold = ".kfold"
-    ))
+                               LOO = ".loo", kfold = ".kfold"))
   } else {
     cv_suffix <- NULL
   }
-
   if (length(stats) > 1) {
     suffix <- lapply(stats, function(s) {
       unname(sapply(type, function(t) {
-        paste0(
-          s,
-          switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-                 se = ".se", diff = ".diff", diff.se = ".diff.se")
-        )
+        paste0(s,
+               switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
+                      se = ".se", diff = ".diff", diff.se = ".diff.se"))
       }))
     })
   } else {
     suffix <- list(unname(sapply(type, function(t) {
       switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
              lower = "lower", se = "se",
-             diff = "diff", diff.se = "diff.se"
-      )
+             diff = "diff", diff.se = "diff.se")
     })))
   }
 
-  ## loop through all the required statistics
+  # Construct the (almost) final output table by looping over all requested
+  # statistics, reshaping the corresponding data in `stats_table`, and selecting
+  # only the requested `type`s:
   arr <- data.frame(
     size = unique(stats_table$size),
     solution_terms = c(NA, object$solution_terms)
@@ -589,15 +581,14 @@ summary.vsel <- function(
     arr <- cbind(arr, temp)
   }
 
+  # Output (and also cut `arr` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
     nterms_max <- max(stats_table$size)
   }
-
   out$nterms <- nterms_max
   if ("pct_solution_terms_cv" %in% names(object)) {
     out$pct_solution_terms_cv <- object$pct_solution_terms_cv
   }
-
   out$suggested_size <- object$suggested_size
   out$selection <- subset(arr, arr$size <= nterms_max)
   return(out)
