@@ -593,9 +593,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   get_submodels_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
-    solution_terms <- search_path$solution_terms
     submodels <- .get_submodels(
-      search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+      search_path = search_path,
+      nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = fold$p_pred, refmodel = fold$refmodel, regul = opt$regul,
       cv_search = FALSE
     )
