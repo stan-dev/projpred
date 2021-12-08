@@ -615,9 +615,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
   ## one sub_summary-list that contains with all n mu:s and lppd:s.
   get_summaries_submodel_cv <- function(submodels, fold) {
-    omitted <- fold$d_test$omitted
     fold_summaries <- .get_sub_summaries(
-      submodels = submodels, test_points = omitted, refmodel = refmodel
+      submodels = submodels, test_points = fold$d_test$omitted,
+      refmodel = refmodel
     )
     summ <- lapply(fold_summaries, data.frame)
     return(summ)
