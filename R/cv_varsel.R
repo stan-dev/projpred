@@ -522,43 +522,36 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## .validate_kfold(refmodel, k_fold, refmodel$nobs)
 
   K <- length(k_fold)
+  msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
 
-  ## extract variables from each fit-object (samples, x, y, etc.)
-  ## to a list of size K
-  refmodels_cv <- lapply(k_fold, function(fold) fold$refmodel)
-
-  # List of size K with test data for each fold
-  d_test_cv <- lapply(k_fold, function(fold) {
-    list(
+  # Function to create a list of K elements, each containing `d_test`, `p_pred`,
+  # etc. for the corresponding fold:
+  make_list_cv <- function(fold, msg) {
+    d_test <- list(
       newdata = refmodel$fetch_data(obs = fold$omitted),
       y = refmodel$y[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
       offset = refmodel$offset[fold$omitted],
       omitted = fold$omitted
     )
-  })
-
-  ## List of K elements, each containing d_test, p_pred, etc. corresponding
-  ## to each fold.
-  make_list_cv <- function(refmodel, d_test, msg) {
-    if (!is.null(nclusters_pred) || !is.null(refmodel$nclusters_pred)) {
+    if (!is.null(nclusters_pred) || !is.null(fold$refmodel$nclusters_pred)) {
       nclusters_pred <- min(
-        refmodel$nclusters_pred,
+        fold$refmodel$nclusters_pred,
         nclusters_pred
       )
     }
-    p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
-    p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
-    pred <- refmodel$ref_predfun(refmodel$fit, newdata = d_test$newdata) +
-      d_test$offset
-    mu_test <- refmodel$family$linkinv(pred)
-    nlist(refmodel, p_sel, p_pred, mu_test,
-          dis = refmodel$dis, w_test = refmodel$wsample, d_test, msg)
+    p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters, seed = seed)
+    p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
+                           seed = seed)
+    pred <- fold$refmodel$ref_predfun(
+      fold$refmodel$fit, newdata = d_test$newdata
+    ) + d_test$offset
+    mu_test <- fold$refmodel$family$linkinv(pred)
+    nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test,
+          dis = fold$refmodel$dis, w_test = fold$refmodel$wsample, d_test, msg)
   }
 
-  msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
-  list_cv <- mapply(make_list_cv, refmodels_cv, d_test_cv, msgs,
-                    SIMPLIFY = FALSE)
+  list_cv <- mapply(make_list_cv, k_fold, msgs, SIMPLIFY = FALSE)
 
   ## Perform the selection for each of the K folds
   if (verbose) {
@@ -640,11 +633,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## Combine also the K separate test data sets into one list
   ## with n y's and weights's.
-  d_cv <- hf(lapply(d_test_cv, function(fold) {
+  d_cv <- hf(lapply(list_cv, function(fold) {
     data.frame(
-      y = fold$y, weights = fold$weights,
-      test_points = fold$omitted,
-      offset = fold$offset
+      y = fold$d_test$y, weights = fold$d_test$weights,
+      test_points = fold$d_test$omitted,
+      offset = fold$d_test$offset
     )
   }))
 
