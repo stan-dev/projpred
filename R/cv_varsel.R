@@ -396,10 +396,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                      obs = inds,
                                      offset = refmodel$offset)
       log_lik_sub <- t(refmodel$family$ll_fun(
-        mu_k,
-        submodels[[k]]$dis,
-        refmodel$y[inds],
-        refmodel$wobs[inds]
+        mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
       sub_psisloo <- suppressWarnings(
         loo::psis(-log_lik_sub,
@@ -535,10 +532,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters, seed = seed)
     p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
                            seed = seed)
-    pred <- fold$refmodel$ref_predfun(
+    eta_test <- fold$refmodel$ref_predfun(
       fold$refmodel$fit, newdata = refmodel$fetch_data(obs = fold$omitted)
     ) + d_test$offset
-    mu_test <- fold$refmodel$family$linkinv(pred)
+    mu_test <- fold$refmodel$family$linkinv(eta_test)
     nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test, d_test)
   }
   list_cv <- mapply(make_list_cv, k_fold, msgs, SIMPLIFY = FALSE)
