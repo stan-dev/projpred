@@ -92,12 +92,11 @@ selected. If \code{NULL}, then \code{1} is used for each predictor.}
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{nloo}{Only relevant if \code{cv_method == "LOO"}. Number of subsampled LOO
-CV folds, i.e., number of observations used for the LOO CV (anything
-between 1 and the original number of observations). Smaller values lead to
-faster computation but higher uncertainty in the evaluation part. If
-\code{NULL}, all observations are used, but for faster experimentation, one can
-set this to a smaller value.}
+\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method == "LOO"}. Number of subsampled LOO CV folds, i.e., number of observations
+used for the LOO CV (anything between 1 and the original number of
+observations). Smaller values lead to faster computation but higher
+uncertainty in the evaluation part. If \code{NULL}, all observations are used,
+but for faster experimentation, one can set this to a smaller value.}
 
 \item{K}{Only relevant if \code{cv_method == "kfold"}. Number of folds in the
 \eqn{K}-fold CV.}

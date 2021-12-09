@@ -556,6 +556,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
   formula <- update(formula, paste(response_name[1], "~ ."))
+  if (formula_contains_additive_terms(formula)) {
+    warning("Support for additive models is still experimental.")
+  }
 
   # Data --------------------------------------------------------------------
 
@@ -645,6 +648,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   # Family ------------------------------------------------------------------
+
+  if (family$family == "Student_t") {
+    warning("Support for the `Student_t` family is still experimental.")
+  } else if (family$family == "Gamma") {
+    warning("Support for the `Gamma` family is still experimental.")
+  }
 
   if (!.has_family_extras(family)) {
     family <- extend_family(family)

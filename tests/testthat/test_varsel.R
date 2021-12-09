@@ -586,7 +586,8 @@ test_that("setting `nloo` smaller than the number of observations works", {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # diagnostics and also because of the warning concerning subsampled LOO CV
+    # (see issue #94):
     cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
