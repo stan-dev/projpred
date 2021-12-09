@@ -515,17 +515,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          nclusters, ndraws_pred, nclusters_pred,
                          cv_search, penalty, verbose, opt, K, seed = NULL,
                          search_terms = NULL) {
-  ## fetch the k_fold list (or compute it now if not already computed)
+  # Fetch the K reference model fits (or fit them now if not already done) and
+  # create objects of class `refmodel` from them (and also store the `omitted`
+  # indices):
   k_fold <- .get_kfold(refmodel, K, verbose, seed)
-
-  ## check that k_fold has the correct form
-  ## .validate_kfold(refmodel, k_fold, refmodel$nobs)
+  ### Check that `k_fold` has the correct form (currently not possible because
+  ### .validate_kfold() is not defined):
+  # .validate_kfold(refmodel, k_fold, refmodel$nobs)
+  ###
 
   K <- length(k_fold)
   msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
 
-  # Function to create a list of K elements, each containing `refmodel`,
-  # `d_test`, `p_pred`, etc. for the corresponding fold:
+  # Create a list of K elements, each containing `refmodel`, `d_test`, `p_pred`,
+  # etc. for the corresponding fold:
   make_list_cv <- function(fold, msg) {
     d_test <- list(
       y = refmodel$y[fold$omitted],
@@ -542,13 +545,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     mu_test <- fold$refmodel$family$linkinv(pred)
     nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test, d_test)
   }
-
   list_cv <- mapply(make_list_cv, k_fold, msgs, SIMPLIFY = FALSE)
   # Free up some memory:
   rm(k_fold)
   gc(verbose = FALSE, full = FALSE)
 
-  ## Perform the selection for each of the K folds
+  # Perform the search for each fold:
   if (verbose) {
     print("Performing selection for each fold..")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
@@ -565,7 +567,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     out
   })
-
   solution_terms_cv <- do.call(rbind, lapply(search_path_cv, function(e) {
     e$solution_terms
   }))
@@ -573,12 +574,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     close(pb)
   }
 
-  ## Construct submodel projections for each fold
+  # Re-project along the solution path (or fetch the projections from the search
+  # results) for each fold:
   if (verbose && cv_search) {
     print("Computing projections..")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
-
   get_submodels_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
     submodels <- .get_submodels(
@@ -592,16 +593,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     return(submodels)
   }
-
   submodels_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
                          SIMPLIFY = FALSE)
   if (verbose && cv_search) {
     close(pb)
   }
 
-  ## Apply some magic to manipulate the structure of the list so that instead of
-  ## list with K sub_summaries each containing n/K mu:s and lppd:s, we have only
-  ## one sub_summary-list that contains with all n mu:s and lppd:s.
+  # Perform the evaluation of the submodels for each fold (and make sure to
+  # combine the results from the K folds into a single results list):
   get_summaries_submodel_cv <- function(submodels, fold) {
     fold_summaries <- .get_sub_summaries(
       submodels = submodels, test_points = fold$d_test$omitted,
@@ -618,6 +617,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     summ
   })
 
+  # Perform the evaluation of the reference model for each fold:
   ref <- hf(lapply(list_cv, function(fold) {
     data.frame(.weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
@@ -626,11 +626,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     ))
   }))
 
-  ## Combine also the K separate test data sets into one list
-  ## with n y's and weights's.
+  # Combine the K separate test datasets into a single list:
   d_cv <- hf(lapply(list_cv, function(fold) {
     data.frame(
-      y = fold$d_test$y, weights = fold$d_test$weights,
+      y = fold$d_test$y,
+      weights = fold$d_test$weights,
       test_points = fold$d_test$omitted,
       offset = fold$d_test$offset
     )
