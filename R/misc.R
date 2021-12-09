@@ -442,8 +442,7 @@ magrittr::`%>%`
 # tidyselect:::where():
 where <- "tidyselect" %:::% "where"
 
-# Helper function to combine separate `data.frame`s, matrices, etc. to a single
-# `list`:
+# Helper function to combine separate `list`s into a single `list`:
 rbind2list <- function(x) {
-  as.list(do.call(rbind, x))
+  as.list(do.call(rbind, lapply(x, as.data.frame)))
 }

@@ -536,7 +536,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       fold$refmodel$fit, newdata = refmodel$fetch_data(obs = fold$omitted)
     ) + d_test$offset
     mu_test <- fold$refmodel$family$linkinv(eta_test)
-    nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test, d_test)
+    return(nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test, d_test))
   }
   list_cv <- mapply(make_list_cv, k_fold, msgs, SIMPLIFY = FALSE)
   # Free up some memory:
@@ -558,7 +558,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (verbose) {
       utils::setTxtProgressBar(pb, fold_index)
     }
-    out
+    return(out)
   })
   solution_terms_cv <- do.call(rbind, lapply(search_path_cv, function(e) {
     e$solution_terms
@@ -595,42 +595,39 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Perform the evaluation of the submodels for each fold (and make sure to
   # combine the results from the K folds into a single results list):
   get_summaries_submodel_cv <- function(submodels, fold) {
-    fold_summaries <- .get_sub_summaries(
+    .get_sub_summaries(
       submodels = submodels, test_points = fold$d_test$omitted,
       refmodel = refmodel
     )
-    summ <- lapply(fold_summaries, data.frame)
-    return(summ)
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, rbind2list)
   sub <- lapply(sub, function(summ) {
     summ$w <- rep(1, length(summ$mu))
     summ$w <- summ$w / sum(summ$w)
-    summ
+    return(summ)
   })
 
   # Perform the evaluation of the reference model for each fold:
   ref <- rbind2list(lapply(list_cv, function(fold) {
-    data.frame(.weighted_summary_means(
+    .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
       wsample = fold$refmodel$wsample, mu = fold$mu_test,
       dis = fold$refmodel$dis
-    ))
-  }))
-
-  # Combine the K separate test datasets into a single list:
-  d_cv <- rbind2list(lapply(list_cv, function(fold) {
-    data.frame(
-      y = fold$d_test$y,
-      weights = fold$d_test$weights,
-      test_points = fold$d_test$omitted,
-      offset = fold$d_test$offset
     )
   }))
 
+  # Combine the K separate test "datasets" (rather "information objects") into a
+  # single list:
+  d_cv <- rbind2list(lapply(list_cv, function(fold) {
+    list(y = fold$d_test$y,
+         weights = fold$d_test$weights,
+         test_points = fold$d_test$omitted,
+         offset = fold$d_test$offset)
+  }))
+
   return(nlist(solution_terms_cv,
-               summaries = list(sub = sub, ref = ref),
+               summaries = nlist(sub, ref),
                d_test = c(d_cv, type = "kfold")))
 }
 
