@@ -544,6 +544,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   list_cv <- mapply(make_list_cv, k_fold, msgs, SIMPLIFY = FALSE)
+  # Free up some memory:
+  rm(k_fold)
+  gc(verbose = FALSE, full = FALSE)
 
   ## Perform the selection for each of the K folds
   if (verbose) {
