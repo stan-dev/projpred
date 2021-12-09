@@ -442,8 +442,8 @@ magrittr::`%>%`
 # tidyselect:::where():
 where <- "tidyselect" %:::% "where"
 
-## Helper function extract and combine mu and lppd from K lists with each
-## n/K of the elements to one list with n elements
-hf <- function(x) {
+# Helper function to combine separate `data.frame`s, matrices, etc. to a single
+# `list`:
+rbind2list <- function(x) {
   as.list(do.call(rbind, x))
 }

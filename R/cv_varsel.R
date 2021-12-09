@@ -606,7 +606,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     return(summ)
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
-  sub <- apply(sub_cv_summaries, 1, hf)
+  sub <- apply(sub_cv_summaries, 1, rbind2list)
   sub <- lapply(sub, function(summ) {
     summ$w <- rep(1, length(summ$mu))
     summ$w <- summ$w / sum(summ$w)
@@ -614,7 +614,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   })
 
   # Perform the evaluation of the reference model for each fold:
-  ref <- hf(lapply(list_cv, function(fold) {
+  ref <- rbind2list(lapply(list_cv, function(fold) {
     data.frame(.weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
       wsample = fold$refmodel$wsample, mu = fold$mu_test,
@@ -623,7 +623,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }))
 
   # Combine the K separate test datasets into a single list:
-  d_cv <- hf(lapply(list_cv, function(fold) {
+  d_cv <- rbind2list(lapply(list_cv, function(fold) {
     data.frame(
       y = fold$d_test$y,
       weights = fold$d_test$weights,
