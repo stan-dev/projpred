@@ -62,8 +62,9 @@ the distributional family for the response).}
 \item{data}{Data used for fitting the reference model.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
-reference model. See section "Details" below. If \code{object} is \code{NULL},
-\code{ref_predfun} is ignored and an internal default is used instead.}
+reference model, including offsets (if applicable). See section "Details"
+below. If \code{object} is \code{NULL}, \code{ref_predfun} is ignored and an internal
+default is used instead.}
 
 \item{div_minimizer}{A function for minimizing the Kullback-Leibler (KL)
 divergence from a submodel to the reference model (i.e., for performing the
@@ -166,8 +167,8 @@ fitter);
 
 The return value of those functions needs to be:
 \itemize{
-\item \code{ref_predfun}: a \eqn{N \times S}{N x S} matrix.
-\item \code{proj_predfun}: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
+\item \code{ref_predfun}: an \eqn{N \times S}{N x S} matrix.
+\item \code{proj_predfun}: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 \item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 this number of submodel fits.
 }
