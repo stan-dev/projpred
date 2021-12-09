@@ -533,12 +533,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       offset = refmodel$offset[fold$omitted],
       omitted = fold$omitted
     )
-    if (!is.null(nclusters_pred) || !is.null(fold$refmodel$nclusters_pred)) {
-      nclusters_pred <- min(
-        fold$refmodel$nclusters_pred,
-        nclusters_pred
-      )
-    }
     p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters, seed = seed)
     p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
                            seed = seed)
@@ -718,7 +712,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       extract_model_data = refmodel$extract_model_data
     )
   }
-  ## k_refmodel$nclusters_pred <- min(NCOL(k_refmodel$mu), 5)
   return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
 }
 
