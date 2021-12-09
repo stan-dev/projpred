@@ -519,10 +519,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
   k_fold <- .get_kfold(refmodel, K, verbose, seed)
-  ### Check that `k_fold` has the correct form (currently not possible because
-  ### .validate_kfold() is not defined):
-  # .validate_kfold(refmodel, k_fold, refmodel$nobs)
-  ###
 
   K <- length(k_fold)
   msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
