@@ -524,11 +524,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   K <- length(k_fold)
   msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
 
-  # Function to create a list of K elements, each containing `d_test`, `p_pred`,
-  # etc. for the corresponding fold:
+  # Function to create a list of K elements, each containing `refmodel`,
+  # `d_test`, `p_pred`, etc. for the corresponding fold:
   make_list_cv <- function(fold, msg) {
     d_test <- list(
-      newdata = refmodel$fetch_data(obs = fold$omitted),
       y = refmodel$y[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
       offset = refmodel$offset[fold$omitted],
@@ -544,7 +543,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
                            seed = seed)
     pred <- fold$refmodel$ref_predfun(
-      fold$refmodel$fit, newdata = d_test$newdata
+      fold$refmodel$fit, newdata = refmodel$fetch_data(obs = fold$omitted)
     ) + d_test$offset
     mu_test <- fold$refmodel$family$linkinv(pred)
     nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test,
