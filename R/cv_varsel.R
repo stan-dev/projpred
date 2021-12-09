@@ -540,8 +540,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       fold$refmodel$fit, newdata = refmodel$fetch_data(obs = fold$omitted)
     ) + d_test$offset
     mu_test <- fold$refmodel$family$linkinv(pred)
-    nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test,
-          w_test = fold$refmodel$wsample, d_test)
+    nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test, d_test)
   }
 
   list_cv <- mapply(make_list_cv, k_fold, msgs, SIMPLIFY = FALSE)
