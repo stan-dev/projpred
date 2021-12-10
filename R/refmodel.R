@@ -25,21 +25,23 @@
 #'   formulas, see also packages \pkg{mgcv}, in particular [mgcv::gam()], and
 #'   \pkg{gamm4}, in particular [gamm4::gamm4()].
 #' @param ref_predfun Prediction function for the linear predictor of the
-#'   reference model, including offsets (if existing). See section "Details"
-#'   below. If `object` is `NULL`, `ref_predfun` is ignored and an internal
-#'   default is used instead.
+#'   reference model, including offsets (if existing). See also section
+#'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below. If
+#'   `object` is `NULL`, `ref_predfun` is ignored and an internal default is
+#'   used instead.
 #' @param proj_predfun Prediction function for the linear predictor of a
-#'   submodel onto which the reference model is projected. See section "Details"
-#'   below.
+#'   submodel onto which the reference model is projected. See also section
+#'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below.
 #' @param div_minimizer A function for minimizing the Kullback-Leibler (KL)
 #'   divergence from a submodel to the reference model (i.e., for performing the
 #'   projection of the reference model onto a submodel). The output of
-#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fit`. See
-#'   section "Details" below.
+#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fit`. See also
+#'   section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
+#'   below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
-#'   used for fitting the reference model) or from a new dataset. See section
-#'   "Details" below.
+#'   used for fitting the reference model) or from a new dataset. See also
+#'   section "Argument `extract_model_data`" below.
 #' @param family A [`family`] object representing the observational model (i.e.,
 #'   the distributional family for the response).
 #' @param cvfits For \eqn{K}-fold CV only. A `list` with one sub-`list` called
@@ -54,15 +56,18 @@
 #'   \eqn{K} fitted model objects as a `list`. If `object` is `NULL`, `cvfun`
 #'   may be `NULL` for using an internal default. Note that `cvfits` takes
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
-#' @param dis A vector of posterior draws for the dispersion parameter (if such
-#'   a parameter exists; else `dis` may be `NULL`).
+#' @param dis A vector of posterior draws for the dispersion parameter (if
+#'   existing). May be `NULL` if the model has no dispersion parameter or if the
+#'   model does have a dispersion parameter, but `object` is `NULL`. Note that
+#'   for the [gaussian()] `family`, `dis` is the standard deviation, not the
+#'   variance.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. Else: ignored.
 #'
 #' @details
 #'
-#' # Arguments `ref_predfun`, `proj_predfun`, `div_minimizer`
+#' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
@@ -105,7 +110,7 @@
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'
-#' The return value of those functions needs to be:
+#' The return value of these functions needs to be:
 #' * `ref_predfun`: an \eqn{N \times S}{N x S} matrix.
 #' * `proj_predfun`: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 #' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
@@ -193,7 +198,8 @@
 #'     cvfun = function(folds, ...) {
 #'       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
 #'                       folds = folds, ...)$fits[, "fit"]
-#'     }
+#'     },
+#'     dis = as.matrix(fit)[, "sigma"]
 #'   )
 #'   # Now, the post-processing functions mentioned above (for example,
 #'   # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
@@ -688,7 +694,21 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   ndraws <- ncol(mu)
   if (is.null(dis)) {
-    dis <- rep(0, ndraws)
+    if (!.has_dispersion(family)) {
+      dis <- rep(NA, ndraws)
+    } else {
+      if (proper_model) {
+        stop("Please supply argument `dis`.")
+      } else {
+        if (family$family == "Gamma") {
+          warning("Using all-zeros for `dis`, but not sure whether this is ",
+                  "correct.")
+        }
+        dis <- rep(0, ndraws)
+      }
+    }
+  } else {
+    stopifnot(length(dis) == ndraws)
   }
 
   if (proper_model) {

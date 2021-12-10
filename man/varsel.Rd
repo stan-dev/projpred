@@ -36,7 +36,7 @@ varsel(object, ...)
 \code{\link[=init_refmodel]{init_refmodel()}}) or an object that can be passed to argument \code{object} of
 \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{...}{Additional arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
+\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
 
 \item{d_test}{For internal use only. A \code{list} providing information about the
 test set which is used for evaluating the predictive performance of the

@@ -62,24 +62,26 @@ the distributional family for the response).}
 \item{data}{Data used for fitting the reference model.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
-reference model, including offsets (if existing). See section "Details"
-below. If \code{object} is \code{NULL}, \code{ref_predfun} is ignored and an internal
-default is used instead.}
+reference model, including offsets (if existing). See also section
+"Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}" below. If
+\code{object} is \code{NULL}, \code{ref_predfun} is ignored and an internal default is
+used instead.}
 
 \item{div_minimizer}{A function for minimizing the Kullback-Leibler (KL)
 divergence from a submodel to the reference model (i.e., for performing the
 projection of the reference model onto a submodel). The output of
-\code{div_minimizer} is used, e.g., by \code{proj_predfun}'s argument \code{fit}. See
-section "Details" below.}
+\code{div_minimizer} is used, e.g., by \code{proj_predfun}'s argument \code{fit}. See also
+section "Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}"
+below.}
 
 \item{proj_predfun}{Prediction function for the linear predictor of a
-submodel onto which the reference model is projected. See section "Details"
-below.}
+submodel onto which the reference model is projected. See also section
+"Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}" below.}
 
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (i.e., the dataset
-used for fitting the reference model) or from a new dataset. See section
-"Details" below.}
+used for fitting the reference model) or from a new dataset. See also
+section "Argument \code{extract_model_data}" below.}
 
 \item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
 vector, fits the reference model separately for each fold and returns the
@@ -95,8 +97,11 @@ giving the number of folds and \code{folds} has to be an integer vector giving
 the fold indices (one fold index per observation). Note that \code{cvfits} takes
 precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is used.}
 
-\item{dis}{A vector of posterior draws for the dispersion parameter (if such
-a parameter exists; else \code{dis} may be \code{NULL}).}
+\item{dis}{A vector of posterior draws for the dispersion parameter (if
+existing). May be \code{NULL} if the model has no dispersion parameter or if the
+model does have a dispersion parameter, but \code{object} is \code{NULL}. Note that
+for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation, not the
+variance.}
 }
 \value{
 An object that can be passed to all the functions that take the
@@ -115,7 +120,7 @@ also be used directly without a call to \code{\link[=get_refmodel]{get_refmodel(
 for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see \code{\link[=cv_varsel]{cv_varsel()}}
 for the use of \eqn{K}-fold CV in \pkg{projpred}.
 }
-\section{Arguments \code{ref_predfun}, \code{proj_predfun}, \code{div_minimizer}}{
+\section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default. Otherwise, let \eqn{N} denote the number of
 observations (data points), \eqn{S} the number of posterior draws for the
@@ -165,7 +170,7 @@ fitter);
 }
 }
 
-The return value of those functions needs to be:
+The return value of these functions needs to be:
 \itemize{
 \item \code{ref_predfun}: an \eqn{N \times S}{N x S} matrix.
 \item \code{proj_predfun}: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
@@ -249,7 +254,8 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
     cvfun = function(folds, ...) {
       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
                       folds = folds, ...)$fits[, "fit"]
-    }
+    },
+    dis = as.matrix(fit)[, "sigma"]
   )
   # Now, the post-processing functions mentioned above (for example,
   # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.

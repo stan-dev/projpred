@@ -89,7 +89,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
 .init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
                            wobs, wsample) {
   p_ref$mu <- family$linkinv(family$linkfun(p_ref$mu) + refmodel$offset)
-  if (!(all(p_ref$var == 0) || family$family %in% c("gaussian", "Student_t"))) {
+  if (!(all(is.na(p_ref$var)) ||
+        family$family %in% c("gaussian", "Student_t"))) {
     stop("For family `", family$family, "()`, .init_submodel() might have to ",
          "be adapted, depending on whether family$predvar() is invariant with ",
          "respect to offsets (this would be OK and does not need an ",
