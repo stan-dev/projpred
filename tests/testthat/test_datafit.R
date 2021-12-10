@@ -254,6 +254,7 @@ test_that(paste(
       method_expected = meth_exp_crr,
       nclusters_expected = 1L,
       nclusters_pred_expected = 1L,
+      extra_tol = 1.2,
       info_str = tstsetup
     )
   }
@@ -282,6 +283,7 @@ test_that(paste(
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
       nclusters_expected = 1L,
       nclusters_pred_expected = 1L,
+      extra_tol = 1.2,
       info_str = tstsetup
     )
   }
