@@ -216,7 +216,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
   } else {
     if (d_type == "train") {
-      mu_test <- refmodel$mu
+      mu_test <- family$linkinv(family$linkfun(refmodel$mu) + refmodel$offset)
     } else {
       mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
                                                      newdata = d_test$data) +
