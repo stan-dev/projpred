@@ -1,8 +1,8 @@
 #' Variable selection with cross-validation
 #'
-#' Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-#' (G)AMs, and (G)AMMs. This variable selection consists of a *search* part and
-#' an *evaluation* part. The search part determines the solution path, i.e., the
+#' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
+#' and GAMMs. This variable selection consists of a *search* part and an
+#' *evaluation* part. The search part determines the solution path, i.e., the
 #' best submodel for each number of predictor terms (model size). The evaluation
 #' part determines the predictive performance of the submodels along the
 #' solution path. In contrast to [varsel()], [cv_varsel()] performs a
@@ -748,29 +748,17 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 }
 
 .init_kfold_refmodel <- function(cvfit, refmodel, train) {
-  fold <- setdiff(
-    train,
-    cvfit$omitted
-  )
-  default_data <- refmodel$fetch_data(obs = fold)
-  ref_predfun <- function(fit, newdata = default_data) {
-    refmodel$ref_predfun(fit, newdata = newdata)
-  }
-  proj_predfun <- function(fit, newdata = default_data) {
-    refmodel$proj_predfun(fit, newdata = newdata)
-  }
-  extract_model_data <- function(object, newdata = default_data, ...) {
-    refmodel$extract_model_data(object = object, newdata = newdata, ...)
-  }
   if (!inherits(refmodel, "datafit")) {
     k_refmodel <- get_refmodel(cvfit)
   } else {
     k_refmodel <- init_refmodel(
-      object = NULL, data = default_data,
-      formula = refmodel$formula, family = refmodel$family,
+      object = NULL,
+      data = refmodel$fetch_data(obs = setdiff(train, cvfit$omitted)),
+      formula = refmodel$formula,
+      family = refmodel$family,
       div_minimizer = refmodel$div_minimizer,
-      proj_predfun = proj_predfun,
-      extract_model_data = extract_model_data
+      proj_predfun = refmodel$proj_predfun,
+      extract_model_data = refmodel$extract_model_data
     )
   }
   ## k_refmodel$nclusters_pred <- min(NCOL(k_refmodel$mu), 5)

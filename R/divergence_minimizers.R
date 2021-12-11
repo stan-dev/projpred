@@ -294,7 +294,7 @@ control_callback <- function(family, ...) {
 
 # Prediction functions for submodels --------------------------------------
 
-subprd <- function(fit, newdata = NULL) {
+subprd <- function(fit, newdata) {
   return(do.call(cbind, lapply(fit, function(fit) {
     # Only pass argument `allow.new.levels` to the predict() generic if the fit
     # is multilevel:

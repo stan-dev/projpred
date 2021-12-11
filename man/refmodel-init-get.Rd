@@ -123,32 +123,32 @@ for the use of \eqn{K}-fold CV in \pkg{projpred}.
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default. Otherwise, let \eqn{N} denote the number of
-observations (data points), \eqn{S} the number of posterior draws for the
-reference model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of
-(possibly clustered) parameter draws in the projection (short: the number of
-projected draws). Then the functions supplied to these arguments need to have
-the following prototypes:
+observations (in case of CV, these may be reduced to each fold),
+\eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
+model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
+clustered) parameter draws for projection (short: the number of projected
+draws). Then the functions supplied to these arguments need to have the
+following prototypes:
 \itemize{
 \item \code{ref_predfun}: \code{ref_predfun(fit, newdata = NULL)} where:
 \itemize{
 \item \code{fit} accepts the reference model fit as given in argument \code{object}
 (but possibly re-fitted to a subset of the observations, as done in
-\eqn{K}-fold CV);
+\eqn{K}-fold CV).
 \item \code{newdata} accepts either \code{NULL} (for using the original dataset,
 typically stored in \code{fit}) or data for new observations (at least in the
 form of a \code{data.frame}).
 }
-\item \code{proj_predfun}: \code{proj_predfun(fit, newdata = NULL)} where:
+\item \code{proj_predfun}: \code{proj_predfun(fit, newdata)} where:
 \itemize{
 \item \code{fit} accepts a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 this number of submodel fits. This \code{list} is the same as that returned by
 \code{\link[=project]{project()}} in its output element \code{sub_fit} (which in turn is the same as
 the return value of \code{div_minimizer}, except if \code{\link[=project]{project()}} was used with
 an \code{object} of class \code{vsel} based on an L1 search as well as with
-\code{cv_search = FALSE});
-\item \code{newdata} accepts either \code{NULL} (for using the original dataset,
-typically stored in \code{fit}) or data for new observations (at least in the
-form of a \code{data.frame});
+\code{cv_search = FALSE}).
+\item \code{newdata} accepts data for new observations (at least in the form of a
+\code{data.frame}).
 }
 \item \code{div_minimizer} does not need to have a specific prototype, but it needs to
 be able to be called with the following arguments:
@@ -157,14 +157,14 @@ be able to be called with the following arguments:
 (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a \code{\link{formula}} with
 \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables \code{\link[=cbind]{cbind()}}-ed on
 the left-hand side in which case the projection has to be performed for
-each of the response variables separately;
-\item \code{data} accepts a \code{data.frame} to be used for the projection;
-\item \code{family} accepts a \code{\link{family}} object;
-\item \code{weights} accepts either \code{NULL} (for using a vector of ones as weights)
-or observation weights (at least in the form of a numeric vector);
-\item \code{projpred_var} accepts a numeric vector of length \eqn{N} containing
-predictive variances (necessary for \pkg{projpred}'s internal (G)LM
-fitter);
+each of the response variables separately.
+\item \code{data} accepts a \code{data.frame} to be used for the projection.
+\item \code{family} accepts a \code{\link{family}} object.
+\item \code{weights} accepts either observation weights (at least in the form of a
+numeric vector) or \code{NULL} (for using a vector of ones as weights).
+\item \code{projpred_var} accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+matrix of predictive variances (necessary for \pkg{projpred}'s internal
+GLM fitter).
 \item \code{projpred_regul} accepts a single numeric value as supplied to argument
 \code{regul} of \code{\link[=project]{project()}}, for example.
 }
@@ -172,7 +172,7 @@ fitter);
 
 The return value of these functions needs to be:
 \itemize{
-\item \code{ref_predfun}: an \eqn{N \times S}{N x S} matrix.
+\item \code{ref_predfun}: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
 \item \code{proj_predfun}: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 \item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 this number of submodel fits.
@@ -188,15 +188,15 @@ where:
 \itemize{
 \item \code{object} accepts the reference model fit as given in argument \code{object} (but
 possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
-CV);
+CV).
 \item \code{newdata} accepts data for new observations (at least in the form of a
-\code{data.frame});
+\code{data.frame}).
 \item \code{wrhs} accepts at least either \code{NULL} (for using a vector of ones) or a
 right-hand side formula consisting only of the variable in \code{newdata}
-containing the weights;
+containing the weights.
 \item \code{orhs} accepts at least either \code{NULL} (for using a vector of zeros) or a
 right-hand side formula consisting only of the variable in \code{newdata}
-containing the offsets;
+containing the offsets.
 \item \code{extract_y} accepts a single logical value indicating whether output
 element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or not (\code{FALSE}).
 }

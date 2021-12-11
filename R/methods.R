@@ -440,13 +440,13 @@ plot.vsel <- function(
 #'   `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which statistics to
 #'   calculate. Available statistics are:
-#'   * `"elpd"`: (expected) sum of log predictive densities;
+#'   * `"elpd"`: (expected) sum of log predictive densities.
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
-#'   number of observations (data points);
-#'   * `"mse"`: mean squared error;
-#'   * `"rmse"`: root mean squared error;
+#'   number of observations.
+#'   * `"mse"`: mean squared error.
+#'   * `"rmse"`: root mean squared error.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
-#'   ([binomial()] family only);
+#'   ([binomial()] family only).
 #'   * `"auc"`: area under the ROC curve ([binomial()] family only).
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
@@ -1093,7 +1093,7 @@ as.matrix.projection <- function(x, ...) {
 #'
 #' @name cv-indices
 #'
-#' @param n Number of observations (data points).
+#' @param n Number of observations.
 #' @param K Number of folds. Must be at least 2 and not exceed `n`.
 #' @param out Format of the output, either `"foldwise"` or `"indices"`. See
 #'   below for details.
