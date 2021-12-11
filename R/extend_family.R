@@ -28,7 +28,9 @@ extend_family <- function(family) {
     stop("Family '", family$family, "' is not supported by projpred.")
   }
   extend_family_specific <- get(extend_family_specific, mode = "function")
-  extend_family_specific(family)
+  family <- extend_family_specific(family)
+  family$is_extended <- TRUE
+  return(family)
 }
 
 extend_family_binomial <- function(family) {
@@ -260,8 +262,9 @@ extend_family_student_t <- function(family) {
   family$family %in% c("gaussian", "Student_t", "Gamma")
 }
 
+# A function for checking whether a `family` object has the required extra
+# functions, that is, whether it has already been extended (typically by a call
+# to extend_family()):
 .has_family_extras <- function(family) {
-  # check whether the family object has the extra functions, that is, whether it
-  # was created by extend_family
-  !is.null(family$deviance)
+  return(isTRUE(family$is_extended))
 }
