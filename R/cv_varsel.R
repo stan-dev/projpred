@@ -394,7 +394,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$sub_fit,
                                      obs = inds,
-                                     offset = refmodel$offset)
+                                     offset = refmodel$offset[inds])
       log_lik_sub <- t(refmodel$family$ll_fun(
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
