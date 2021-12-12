@@ -64,10 +64,25 @@ extend_family_binomial <- function(family) {
       }
       n <- rep.int(1, nobs)
       y[weights == 0] <- 0
+      if (any(y < 0 | y > 1)) {
+        stop("y values must be 0 <= y <= 1")
+      }
       mustart <- (weights * y + 0.5) / (weights + 1)
       m <- weights * y
+      if ("binomial" == "binomial" && any(abs(m - round(m)) >
+                                          0.001)) {
+        ### Deactivated because in general, this will be the case in 'projpred':
+        # warning(gettextf("non-integer #successes in a %s glm!",
+        #                  "binomial"), domain = NA)
+        ###
+      }
     }
     else if (NCOL(y) == 2) {
+      if ("binomial" == "binomial" && any(abs(y - round(y)) >
+                                          0.001)) {
+        warning(gettextf("non-integer counts in a %s glm!",
+                         "binomial"), domain = NA)
+      }
       n <- (y1 <- y[, 1L]) + y[, 2L]
       y <- y1 / n
       if (any(n0 <- n == 0)) {
@@ -75,6 +90,11 @@ extend_family_binomial <- function(family) {
       }
       weights <- weights * n
       mustart <- (n * y + 0.5) / (n + 1)
+    } else {
+      stop(gettextf(paste("for the '%s' family, y must be a vector of 0 and",
+                          "1's\nor a 2 column matrix where col 1 is no.",
+                          "successes and col 2 is no. failures"),
+                    "binomial"), domain = NA)
     }
   })
 

@@ -336,6 +336,77 @@ control_callback <- function(family, ...) {
   }
 }
 
+# Convergence checker -----------------------------------------------------
+
+check_conv <- function(fit) {
+  conv_info <- do.call(cbind, lapply(fit, function(fit_s) {
+    if (inherits(fit_s, "gam")) {
+      # TODO (GAMs):
+      #   1. For GAMs, there is also `fit_s$mgcv.conv` (see
+      #   `?mgcv::gamObject`). Do we need to take this into account?
+      #   2. If there is a (convenient) way to retrieve warnings, then this
+      #   should be done to get a sensible value for `no_warnings` below.
+      return(c(no_gross_fail = fit_s$converged, no_warnings = TRUE))
+    } else if (inherits(fit_s, "gamm4")) {
+      # TODO (GAMMs): Both, `no_gross_fail` and `no_warnings` need to be
+      # implemented. Return `TRUE` for now.
+      return(c(no_gross_fail = TRUE, no_warnings = TRUE))
+    } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
+      # The following was inferred from the source code of lme4::checkConv() and
+      # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
+      return(c(
+        no_gross_fail = fit_s@optinfo$conv$opt == 0 && (
+          # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
+          # that element might not always exist:
+          (!is.null(fit_s@optinfo$conv$lme4$code) &&
+             fit_s@optinfo$conv$lme4$code >= 0) ||
+            is.null(fit_s@optinfo$conv$lme4$code)
+        ),
+        no_warnings = length(fit_s@optinfo$warnings) &&
+          length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 && (
+            # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
+            # that element might not always exist:
+            (!is.null(fit_s@optinfo$conv$lme4$code) &&
+               fit_s@optinfo$conv$lme4$code == 0) ||
+              is.null(fit_s@optinfo$conv$lme4$code)
+          )
+      ))
+    } else if (inherits(fit_s, "glm")) {
+      # TODO (GLMs): If there is a (convenient) way to retrieve warnings, then
+      # this should be done to get a sensible value for `no_warnings` below.
+      return(c(no_gross_fail = fit_s$converged, no_warnings = TRUE))
+    } else if (inherits(fit_s, "lm")) {
+      # Note: There doesn't seem to be a better way to check for convergence
+      # other than checking `NA` coefficients (see below).
+      # TODO (LMs): If there is a (convenient) way to retrieve warnings, then
+      # this should be done to get a sensible value for `no_warnings` below.
+      return(c(no_gross_fail = all(!is.na(coef(fit_s))), no_warnings = TRUE))
+    } else if (inherits(fit_s, "subfit")) {
+      # Note: There doesn't seem to be any way to check for convergence, so
+      # return `TRUE` for now.
+      # TODO (GLMs with ridge regularization): Add a logical indicating
+      # convergence to objects of class `subfit` (i.e., from glm_ridge())?
+      return(c(no_gross_fail = TRUE, no_warnings = TRUE))
+    } else {
+      stop("Unrecognized submodel fit. Please notify the package maintainer.")
+    }
+  }))
+  is_conv <- conv_info["no_gross_fail", ]
+  if (any(!is_conv)) {
+    warning(sum(!is_conv), " out of ", length(is_conv), " submodel fits ",
+            "(there is one submodel fit per projected draw) did not converge. ",
+            "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
+  }
+  no_warns <- conv_info["no_warnings", ]
+  if (any(!no_warns)) {
+    warning(sum(!no_warns), " out of ", length(no_warns), " submodel fits ",
+            "(there is one submodel fit per projected draw) threw a warning ",
+            "which might be relevant for convergence. ",
+            "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
+  }
+  return(invisible(TRUE))
+}
+
 # Prediction functions for submodels --------------------------------------
 
 subprd <- function(fit, newdata) {
