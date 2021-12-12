@@ -13,7 +13,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r child="children/SETTINGS-knitr.Rmd"}
+```{r child="children/SETTINGS-knitr.txt"}
 ```
 
 ## Introduction
