@@ -14,7 +14,8 @@ divmin <- function(formula, projpred_var, ...) {
   projpred_formulas_no_random <- NA
   projpred_random <- NA
   if (!has_grp && !has_add) {
-    sdivmin <- fit_glm_ridge_callback
+    sdivmin <- get(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                   mode = "function")
   } else if (has_grp && !has_add) {
     sdivmin <- fit_glmer_callback
   } else if (!has_grp && has_add) {
@@ -109,6 +110,45 @@ fit_glm_ridge_callback <- function(formula, data,
   )
   class(sub) <- "subfit"
   return(sub)
+}
+
+# Alternative to fit_glm_ridge_callback() (may be used via global option
+# `projpred.glm_fitter`):
+fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
+                             ...) {
+  ## make sure correct 'weights' can be found
+  environment(formula) <- environment()
+  tryCatch({
+    if (family$family == "gaussian" && family$link == "identity") {
+      # Exclude arguments from `...` which cannot be passed to stats::lm():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        union(methods::formalArgs(stats::lm),
+              union(methods::formalArgs(stats::lm.fit),
+                    methods::formalArgs(stats::lm.wfit)))
+      )]
+      return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
+        list(formula = formula),
+        dot_args
+      )))))
+    } else {
+      # Exclude arguments from `...` which cannot be passed to stats::glm():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        union(methods::formalArgs(stats::glm),
+              methods::formalArgs(stats::glm.control))
+      )]
+      return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
+        list(formula = formula, family = family),
+        dot_args
+      )))))
+    }
+  }, error = function(e) {
+    # May be used to handle errors.
+    stop(e)
+  })
 }
 
 # Use package "mgcv" to fit additive non-multilevel submodels:
@@ -206,9 +246,13 @@ fit_glmer_callback <- function(formula, family,
     }
   }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
-      # This case should not occur anymore, but leave it here for safety
-      # reasons.
-      return(fit_glm_ridge_callback(
+      # This case should not occur anymore (because divmin() should pick the
+      # correct submodel fitter based on the submodel's formula), but leave it
+      # here in case user-specified divergence minimizers make use of it.
+      glm_fitter <- get(getOption("projpred.glm_fitter",
+                                  "fit_glm_ridge_callback"),
+                        mode = "function")
+      return(glm_fitter(
         formula, family = family, ...
       ))
     } else if (grepl("not positive definite", as.character(e))) {
