@@ -419,12 +419,12 @@ refmodel_tester <- function(
 #   projected draw).
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
-# @param has_grp A single logical value indicating whether `submodl_obj` is
-#   expected to be of class `"lmerMod"` or `"glmerMod"` (if, at the same time,
-#   `has_add` is `FALSE`).
-# @param has_add A single logical value indicating whether `submodl_obj` is
-#   expected to be of class `"gam"` or `"gamm4"` (depending on whether the
-#   submodel is non-multilevel or multilevel, respectively).
+# @param has_grp A single logical value indicating whether the fits in
+#   `submodl_totest` are expected to be of class `"lmerMod"` or `"glmerMod"`
+#   (if, at the same time, `has_add` is `FALSE`).
+# @param has_add A single logical value indicating whether the fits in
+#   `submodl_totest` are expected to be of class `"gam"` or `"gamm4"` (depending
+#   on whether the submodel is non-multilevel or multilevel, respectively).
 # @param wobs_expected The expected numeric vector of observation weights.
 # @param solterms_vsel_L1_search If `submodl_totest` comes from the L1
 #   `search_path` of an object of class `"vsel"`, provide here the solution
