@@ -159,13 +159,6 @@ proj_helper <- function(object, newdata,
     count_terms_chosen(proj$solution_terms, add_icpt = TRUE)
   })
 
-  solution_terms <- list(...)$solution_terms
-  if (!is.null(solution_terms) &&
-      length(solution_terms) > NCOL(newdata)) {
-    stop("The number of solution terms is greater than the number of columns ",
-         "in `newdata`.")
-  }
-
   preds <- lapply(projs, function(proj) {
     w_o <- proj$refmodel$extract_model_data(
       proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,

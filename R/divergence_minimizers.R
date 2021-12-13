@@ -446,6 +446,10 @@ predict.subfit <- function(subfit, newdata = NULL) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(x))))
     } else {
+      if (ncol(x) != length(beta) + 1L) {
+        stop("The number of columns in the model matrix (\"X\") doesn't match ",
+             "the number of coefficients.")
+      }
       return(x %*% rbind(alpha, beta))
     }
   }
