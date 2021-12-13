@@ -407,9 +407,8 @@ refmodel_tester <- function(
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of a list of subfits (whose
-# elements must not necessarily be of class `"subfit"`) for the same single
-# submodel
+# A helper function for testing the structure of a list of fits (each fit must
+# not necessarily be of class `"subfit"`) for the same single submodel
 #
 # @param submodl_totest The `submodl` object (a list of fits for a single
 #   submodel, with one fit per projected draw) to test.
@@ -1141,10 +1140,10 @@ vsel_tester <- function(
   for (i in seq_len(nprjdraws_expected)) {
     sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
   }
-  solterms_for_subfits <- c(as.character(as.numeric(vs$refmodel$intercept)),
-                            vs$solution_terms)
+  solterms_for_sub <- c(as.character(as.numeric(vs$refmodel$intercept)),
+                        vs$solution_terms)
   for (i in seq_along(vs$search_path$submodls)) {
-    sub_trms_crr <- head(solterms_for_subfits, i)
+    sub_trms_crr <- head(solterms_for_sub, i)
     if (length(sub_trms_crr) > 1) {
       sub_trms_crr <- setdiff(sub_trms_crr, "1")
     }
