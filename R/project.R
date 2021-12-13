@@ -135,6 +135,11 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     cv_search <- TRUE
   }
 
+  if (!cv_search) {
+    warning("Currently, `cv_search = FALSE` requires some caution, see GitHub ",
+            "issues #168 and #211.")
+  }
+
   if (!is.null(solution_terms)) {
     ## if solution_terms is given, nterms is ignored
     ## (project only onto the given submodel)

@@ -169,11 +169,16 @@ if (run_vs) {
   })
 
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
-    do.call(project, c(
-      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
-           cv_search = FALSE),
-      excl_nonargs(args_prj_vs_i)
-    ))
+    expect_warning(
+      do.call(project, c(
+        list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
+             cv_search = FALSE),
+        excl_nonargs(args_prj_vs_i)
+      )),
+      paste("^Currently, `cv_search = FALSE` requires some caution, see GitHub",
+            "issues #168 and #211\\.$"),
+      info = args_prj_vs_i$tstsetup_vsel
+    )
   })
 }
 
@@ -687,12 +692,17 @@ test_that(paste(
       method = "l1", lambda_min_ratio = lambda_min_ratio,
       nlambda = nlambda, thresh = 1e-12
     ))
-    pred1 <- proj_linpred(vs,
-                          newdata = data.frame(x = x, offset = offset,
-                                               weights = weights),
-                          nterms = 0:nterms, transform = FALSE,
-                          offsetnew = ~offset,
-                          cv_search = FALSE)
+    expect_warning(
+      pred1 <- proj_linpred(vs,
+                            newdata = data.frame(x = x, offset = offset,
+                                                 weights = weights),
+                            nterms = 0:nterms, transform = FALSE,
+                            offsetnew = ~offset,
+                            cv_search = FALSE),
+      paste("^Currently, `cv_search = FALSE` requires some caution, see GitHub",
+            "issues #168 and #211\\.$"),
+      info = fam$family
+    )
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
