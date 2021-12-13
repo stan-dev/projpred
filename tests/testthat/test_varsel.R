@@ -275,17 +275,17 @@ test_that(paste(
       }
       for (m in seq_len(m_max)) {
         # Selection:
-        subfits_jm_regul <- vs_regul$search_path$submodls[[m]]
+        submodl_jm_regul <- vs_regul$search_path$submodls[[m]]
         if (ncl_crr == 1) {
-          subfits_jm_regul <- list(subfits_jm_regul)
+          submodl_jm_regul <- list(submodl_jm_regul)
         } else {
-          stopifnot(identical(ncl_crr, length(subfits_jm_regul)))
+          stopifnot(identical(ncl_crr, length(submodl_jm_regul)))
         }
         for (nn in seq_len(ncl_crr)) {
-          stopifnot(length(subfits_jm_regul[[nn]]$alpha) == 1)
-          ssq_regul_sel_alpha[j, m, nn] <- subfits_jm_regul[[nn]]$alpha^2
-          if (length(subfits_jm_regul[[nn]]$beta) > 0) {
-            ssq_regul_sel_beta[j, m, nn] <- sum(subfits_jm_regul[[nn]]$beta^2)
+          stopifnot(length(submodl_jm_regul[[nn]]$alpha) == 1)
+          ssq_regul_sel_alpha[j, m, nn] <- submodl_jm_regul[[nn]]$alpha^2
+          if (length(submodl_jm_regul[[nn]]$beta) > 0) {
+            ssq_regul_sel_beta[j, m, nn] <- sum(submodl_jm_regul[[nn]]$beta^2)
           }
         }
         # Prediction:
