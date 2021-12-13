@@ -87,7 +87,7 @@
 #' * `proj_predfun`: `proj_predfun(fits, newdata)` where:
 #'     + `fits` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj}
 #'     containing this number of submodel fits. This `list` is the same as that
-#'     returned by [project()] in its output element `sub_fit` (which in turn is
+#'     returned by [project()] in its output element `submodl` (which in turn is
 #'     the same as the return value of `div_minimizer`, except if [project()]
 #'     was used with an `object` of class `vsel` based on an L1 search as well
 #'     as with `cv_search = FALSE`).

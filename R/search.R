@@ -25,7 +25,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     chosen <- c(chosen, cands[imin])
 
     ## append submodels
-    submodels <- c(submodels, list(subL[[imin]]$sub_fit))
+    submodels <- c(submodels, list(subL[[imin]]$submodl))
 
     if (verbose && count_terms_chosen(chosen) %in% iq) {
       print(paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
@@ -35,7 +35,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 
   ## reduce chosen to a list of non-redundant accumulated models
   return(list(solution_terms = setdiff(reduce_models(chosen), "1"),
-              sub_fits = submodels))
+              submodls = submodels))
 }
 
 # copied over from search until we resolve the TODO below
@@ -150,7 +150,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     refmodel$formula, colnames(x)[search_path$solution_terms],
     refmodel$fetch_data()
   )
-  sub_fits <- lapply(0:length(solution_terms), function(nterms) {
+  submodls <- lapply(0:length(solution_terms), function(nterms) {
     if (nterms == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
@@ -186,5 +186,5 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     return(list(sub))
   })
   return(list(solution_terms = solution_terms[seq_len(nterms_max)],
-              sub_fits = sub_fits[seq_len(nterms_max + 1)]))
+              submodls = submodls[seq_len(nterms_max + 1)]))
 }

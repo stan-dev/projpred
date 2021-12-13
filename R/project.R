@@ -59,7 +59,7 @@
 #'     \item{`solution_terms`}{A character vector of the submodel's
 #'     predictor terms, ordered in the way in which the terms were added to the
 #'     submodel.}
-#'     \item{`sub_fit`}{The submodel's fitted model object.}
+#'     \item{`submodl`}{The submodel's fitted model object.}
 #'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
 #'     (`TRUE`) or not (`FALSE`).}
@@ -220,7 +220,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
-      sub_fits = object$search_path$sub_fits
+      submodls = object$search_path$submodls
     ),
     nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
     cv_search = cv_search

@@ -5,7 +5,7 @@
                     weights = refmodel$wobs[test_points]),
       family = refmodel$family,
       wsample = model$weights,
-      mu = refmodel$family$mu_fun(model$sub_fit,
+      mu = refmodel$family$mu_fun(model$submodl,
                                   obs = test_points,
                                   offset = refmodel$offset[test_points]),
       dis = model$dis

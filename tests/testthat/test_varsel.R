@@ -275,7 +275,7 @@ test_that(paste(
       }
       for (m in seq_len(m_max)) {
         # Selection:
-        subfits_jm_regul <- vs_regul$search_path$sub_fits[[m]]
+        subfits_jm_regul <- vs_regul$search_path$submodls[[m]]
         if (ncl_crr == 1) {
           subfits_jm_regul <- list(subfits_jm_regul)
         } else {

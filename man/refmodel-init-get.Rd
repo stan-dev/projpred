@@ -143,7 +143,7 @@ form of a \code{data.frame}).
 \itemize{
 \item \code{fits} accepts a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
 containing this number of submodel fits. This \code{list} is the same as that
-returned by \code{\link[=project]{project()}} in its output element \code{sub_fit} (which in turn is
+returned by \code{\link[=project]{project()}} in its output element \code{submodl} (which in turn is
 the same as the return value of \code{div_minimizer}, except if \code{\link[=project]{project()}}
 was used with an \code{object} of class \code{vsel} based on an L1 search as well
 as with \code{cv_search = FALSE}).

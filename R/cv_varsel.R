@@ -392,7 +392,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     ## compute approximate LOO with PSIS weights
     for (k in seq_along(submodels)) {
-      mu_k <- refmodel$family$mu_fun(submodels[[k]]$sub_fit,
+      mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
                                      obs = inds,
                                      offset = refmodel$offset[inds])
       log_lik_sub <- t(refmodel$family$ll_fun(

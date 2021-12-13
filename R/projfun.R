@@ -12,7 +12,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
     data = refmodel$fetch_data(), y = p_ref$mu
   )
 
-  sub_fit <- refmodel$div_minimizer(
+  submodl <- refmodel$div_minimizer(
     formula = flatten_formula(subset$formula),
     data = subset$data,
     family = refmodel$family,
@@ -22,11 +22,11 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
   )
 
   if (isTRUE(getOption("projpred.check_conv", FALSE))) {
-    check_conv(sub_fit)
+    check_conv(submodl)
   }
 
   return(.init_submodel(
-    sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
+    submodl = submodl, p_ref = p_ref, refmodel = refmodel,
     solution_terms = solution_terms, wobs = wobs, wsample = wsample
   ))
 }
@@ -47,7 +47,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
       wsample <- validparams$wsample
       return(.init_submodel(
         # Re-use the submodel fits from the search:
-        sub_fit = search_path$sub_fits[[nterms + 1]],
+        submodl = search_path$submodls[[nterms + 1]],
         p_ref = search_path$p_sel,
         refmodel = refmodel,
         solution_terms = utils::head(search_path$solution_terms, nterms),
@@ -84,7 +84,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
   return(nlist(wobs, wsample))
 }
 
-.init_submodel <- function(sub_fit, p_ref, refmodel, solution_terms, wobs,
+.init_submodel <- function(submodl, p_ref, refmodel, solution_terms, wobs,
                            wsample) {
   p_ref$mu <- refmodel$family$linkinv(
     refmodel$family$linkfun(p_ref$mu) + refmodel$offset
@@ -115,7 +115,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
     ###
   }
 
-  mu <- refmodel$family$mu_fun(sub_fit, offset = refmodel$offset)
+  mu <- refmodel$family$mu_fun(submodl, offset = refmodel$offset)
   dis <- refmodel$family$dis_fun(p_ref, nlist(mu), wobs)
   kl <- weighted.mean(
     refmodel$family$kl(p_ref,
@@ -123,5 +123,5 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
                        nlist(mu, dis)),
     wsample
   )
-  return(nlist(dis, kl, weights = wsample, solution_terms, sub_fit))
+  return(nlist(dis, kl, weights = wsample, solution_terms, submodl))
 }
