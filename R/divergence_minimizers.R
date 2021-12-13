@@ -412,8 +412,8 @@ check_conv <- function(fit) {
 
 # Prediction functions for submodels --------------------------------------
 
-subprd <- function(fit, newdata) {
-  return(do.call(cbind, lapply(fit, function(fit) {
+subprd <- function(fits, newdata) {
+  return(do.call(cbind, lapply(fits, function(fit) {
     # Only pass argument `allow.new.levels` to the predict() generic if the fit
     # is multilevel:
     has_grp <- inherits(fit, c("lmerMod", "glmerMod"))

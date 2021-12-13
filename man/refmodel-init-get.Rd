@@ -139,14 +139,14 @@ following prototypes:
 typically stored in \code{fit}) or data for new observations (at least in the
 form of a \code{data.frame}).
 }
-\item \code{proj_predfun}: \code{proj_predfun(fit, newdata)} where:
+\item \code{proj_predfun}: \code{proj_predfun(fits, newdata)} where:
 \itemize{
-\item \code{fit} accepts a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj} containing
-this number of submodel fits. This \code{list} is the same as that returned by
-\code{\link[=project]{project()}} in its output element \code{sub_fit} (which in turn is the same as
-the return value of \code{div_minimizer}, except if \code{\link[=project]{project()}} was used with
-an \code{object} of class \code{vsel} based on an L1 search as well as with
-\code{cv_search = FALSE}).
+\item \code{fits} accepts a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
+containing this number of submodel fits. This \code{list} is the same as that
+returned by \code{\link[=project]{project()}} in its output element \code{sub_fit} (which in turn is
+the same as the return value of \code{div_minimizer}, except if \code{\link[=project]{project()}}
+was used with an \code{object} of class \code{vsel} based on an L1 search as well
+as with \code{cv_search = FALSE}).
 \item \code{newdata} accepts data for new observations (at least in the form of a
 \code{data.frame}).
 }
