@@ -372,12 +372,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
       search_terms = search_terms
     )
-    solution_terms <- search_path$solution_terms
 
     ## project onto the selected models and compute the prediction accuracy for
     ## the full data
     submodels <- .get_submodels(
-      search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+      search_path = search_path,
+      nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
       cv_search = cv_search
     )
@@ -418,13 +418,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                      data = refmodel$fetch_data(),
                                      add_main_effects = FALSE)
     ## with `match` we get the indices of the variables as they enter the
-    ## solution path in solution_terms
-    solution <- match(solution_terms, setdiff(candidate_terms, "1"))
+    ## solution path in `search_path$solution_terms`
+    solution <- match(search_path$solution_terms,
+                      setdiff(candidate_terms, "1"))
     for (i in seq_len(n)) {
       solution_terms_mat[i, seq_along(solution)] <- solution
     }
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
-                 solution_terms)
+                 solution_terms = search_path$solution_terms)
   } else {
     if (verbose) {
       print(msg)
@@ -451,12 +452,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
         search_terms = search_terms
       )
-      solution_terms <- search_path$solution_terms
 
       ## project onto the selected models and compute the prediction accuracy
       ## for the left-out point
       submodels <- .get_submodels(
-        search_path = search_path, nterms = c(0, seq_along(solution_terms)),
+        search_path = search_path,
+        nterms = c(0, seq_along(search_path$solution_terms)),
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
         cv_search = cv_search
       )
@@ -472,8 +473,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                        data = refmodel$fetch_data(),
                                        add_main_effects = FALSE)
       ## with `match` we get the indices of the variables as they enter the
-      ## solution path in solution_terms
-      solution <- match(solution_terms, setdiff(candidate_terms, "1"))
+      ## solution path in `search_path$solution_terms`
+      solution <- match(search_path$solution_terms,
+                        setdiff(candidate_terms, "1"))
       solution_terms_mat[i, seq_along(solution)] <- solution
 
       if (verbose) {
