@@ -411,7 +411,8 @@ refmodel_tester <- function(
 # elements must not necessarily be of class `"subfit"`) for the same single
 # submodel
 #
-# @param submodl_totest The list of subfits to test.
+# @param submodl_totest The `submodl` object (a list of fits for a single
+#   submodel, with one fit per projected draw) to test.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
 # @param sub_formul A list of formulas for the submodel (with one element per
