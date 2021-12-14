@@ -90,7 +90,7 @@
 #'     returned by [project()] in its output element `submodl` (which in turn is
 #'     the same as the return value of `div_minimizer`, except if [project()]
 #'     was used with an `object` of class `vsel` based on an L1 search as well
-#'     as with `cv_search = FALSE`).
+#'     as with `refit_prj = FALSE`).
 #'     + `newdata` accepts data for new observations (at least in the form of a
 #'     `data.frame`).
 #' * `div_minimizer` does not need to have a specific prototype, but it needs to

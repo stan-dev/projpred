@@ -108,7 +108,7 @@ cv_varsel.refmodel <- function(
   nclusters = NULL,
   ndraws_pred = 400,
   nclusters_pred = NULL,
-  cv_search = !inherits(object, "datafit"),
+  refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
   penalty = NULL,
   verbose = TRUE,
@@ -126,13 +126,13 @@ cv_varsel.refmodel <- function(
   refmodel <- object
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
-    refmodel = refmodel, method = method, cv_search = cv_search,
+    refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters,
     ndraws = ndraws, nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
     search_terms = search_terms
   )
   method <- args$method
-  cv_search <- args$cv_search
+  refit_prj <- args$refit_prj
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   ndraws <- args$ndraws
@@ -154,7 +154,7 @@ cv_varsel.refmodel <- function(
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
-      nclusters_pred = nclusters_pred, cv_search = cv_search, penalty = penalty,
+      nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
       validate_search = validate_search, seed = seed,
       search_terms = search_terms
@@ -163,7 +163,7 @@ cv_varsel.refmodel <- function(
     sel_cv <- kfold_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
-      nclusters_pred = nclusters_pred, cv_search = cv_search, penalty = penalty,
+      nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, K = K, seed = seed,
       search_terms = search_terms
     )
@@ -179,7 +179,7 @@ cv_varsel.refmodel <- function(
     sel <- varsel(refmodel,
                   method = method, ndraws = ndraws, nclusters = nclusters,
                   ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
-                  cv_search = cv_search, nterms_max = nterms_max - 1,
+                  refit_prj = refit_prj, nterms_max = nterms_max - 1,
                   penalty = penalty, verbose = verbose,
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
                   regul = regul, search_terms = search_terms, seed = seed)
@@ -287,7 +287,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K) {
 }
 
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
-                       nclusters, ndraws_pred, nclusters_pred, cv_search,
+                       nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo = NULL,
                        validate_search = TRUE, seed = NULL,
                        search_terms = NULL) {
@@ -379,7 +379,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
-      cv_search = cv_search
+      refit_prj = refit_prj
     )
 
     if (verbose) {
@@ -459,7 +459,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         search_path = search_path,
         nterms = c(0, seq_along(search_path$solution_terms)),
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
-        cv_search = cv_search
+        refit_prj = refit_prj
       )
       summaries_sub <- .get_sub_summaries(
         submodels = submodels, test_points = c(i), refmodel = refmodel
@@ -512,7 +512,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          nclusters, ndraws_pred, nclusters_pred,
-                         cv_search, penalty, verbose, opt, K, seed = NULL,
+                         refit_prj, penalty, verbose, opt, K, seed = NULL,
                          search_terms = NULL) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
@@ -571,7 +571,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Re-project along the solution path (or fetch the projections from the search
   # results) for each fold:
-  if (verbose && cv_search) {
+  if (verbose && refit_prj) {
     print("Computing projections..")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
@@ -581,16 +581,16 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = fold$p_pred, refmodel = fold$refmodel, regul = opt$regul,
-      cv_search = cv_search
+      refit_prj = refit_prj
     )
-    if (verbose && cv_search) {
+    if (verbose && refit_prj) {
       utils::setTxtProgressBar(pb, fold_index)
     }
     return(submodels)
   }
   submodels_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
                          SIMPLIFY = FALSE)
-  if (verbose && cv_search) {
+  if (verbose && refit_prj) {
     close(pb)
   }
 

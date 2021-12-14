@@ -35,8 +35,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
 # sizes `nterms`. Returns a list of submodels (each processed by
 # .init_submodel()).
 .get_submodels <- function(search_path, nterms, p_ref, refmodel, regul,
-                           cv_search = FALSE) {
-  if (!cv_search) {
+                           refit_prj = FALSE) {
+  if (!refit_prj) {
     # In this case, simply fetch the already computed projections, so don't
     # project again.
     fetch_submodel <- function(nterms) {

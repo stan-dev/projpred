@@ -172,10 +172,10 @@ if (run_vs) {
     expect_warning(
       do.call(project, c(
         list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
-             cv_search = FALSE),
+             refit_prj = FALSE),
         excl_nonargs(args_prj_vs_i)
       )),
-      paste("^Currently, `cv_search = FALSE` requires some caution, see GitHub",
+      paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
             "issues #168 and #211\\.$"),
       info = args_prj_vs_i$tstsetup_vsel
     )
@@ -307,7 +307,7 @@ test_that("project(): `object` of class \"datafit\" fails", {
     expect_error(
       do.call(project, c(
         list(object = datafits[[args_prj_i$tstsetup_ref]],
-             cv_search = FALSE),
+             refit_prj = FALSE),
         excl_nonargs(args_prj_i)
       )),
       paste("^project\\(\\) does not support an `object` of class",
@@ -698,8 +698,8 @@ test_that(paste(
                                                  weights = weights),
                             nterms = 0:nterms, transform = FALSE,
                             offsetnew = ~offset,
-                            cv_search = FALSE),
-      paste("^Currently, `cv_search = FALSE` requires some caution, see GitHub",
+                            refit_prj = FALSE),
+      paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
             "issues #168 and #211\\.$"),
       info = fam$family
     )
