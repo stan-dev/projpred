@@ -29,10 +29,12 @@ calculate. Available statistics are:
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
 \item \code{"mse"}: mean squared error.
-\item \code{"rmse"}: root mean squared error.
+\item \code{"rmse"}: root mean squared error. For the corresponding standard error,
+bootstrapping is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy
 (\code{\link[=binomial]{binomial()}} family only).
-\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only).
+\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only). For the
+corresponding standard error, bootstrapping is used.
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
@@ -48,7 +50,10 @@ corresponds to a coverage of 68\%, i.e., one-standard-error intervals
 the reference model or the best submodel (in terms of \code{stats[1]}),
 respectively.}
 
-\item{...}{Currently ignored.}
+\item{...}{Arguments passed to the internal function which is used for
+bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
+arguments are \code{b} (the number of bootstrap samples, defaulting to \code{2000})
+and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to \code{NULL}).}
 }
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
