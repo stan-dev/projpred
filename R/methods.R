@@ -646,7 +646,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
 #' @param ... Further arguments passed to [summary.vsel()] (apart from
 #'   argument `digits` which is passed to [print.vselsummary()]).
 #'
-#' @return The `data.frame` returned by [summary.vsel()] (invisible).
+#' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
 print.vsel <- function(x, ...) {

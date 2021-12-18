@@ -13,7 +13,7 @@
 argument \code{digits} which is passed to \code{\link[=print.vselsummary]{print.vselsummary()}}).}
 }
 \value{
-The \code{data.frame} returned by \code{\link[=summary.vsel]{summary.vsel()}} (invisible).
+The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).
 }
 \description{
 This is the \code{\link[=print]{print()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
