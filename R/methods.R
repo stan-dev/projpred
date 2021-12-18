@@ -287,9 +287,6 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
-#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel (in terms of `stats[1]`),
-#'   respectively.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -450,9 +447,10 @@ plot.vsel <- function(
 #'   normal-approximation confidence intervals. For example, `alpha = 0.32`
 #'   corresponds to a coverage of 68%, i.e., one-standard-error intervals
 #'   (because of the normal approximation).
-#' @param baseline Only relevant if `deltas` is `TRUE`. Either `"ref"` or
-#'   `"best"` indicating whether the baseline is the reference model or the best
-#'   submodel (in terms of `stats[1]`), respectively.
+#' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
+#'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
+#'   whether the baseline is the reference model or the best submodel found (in
+#'   terms of `stats[1]`), respectively.
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `b` (the number of bootstrap samples, defaulting to `2000`)

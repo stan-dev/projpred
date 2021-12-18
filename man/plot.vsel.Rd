@@ -46,9 +46,10 @@ normal-approximation confidence intervals. For example, \code{alpha = 0.32}
 corresponds to a coverage of 68\%, i.e., one-standard-error intervals
 (because of the normal approximation).}
 
-\item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
-the reference model or the best submodel (in terms of \code{stats[1]}),
-respectively.}
+\item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
+For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
+whether the baseline is the reference model or the best submodel found (in
+terms of \code{stats[1]}), respectively.}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
