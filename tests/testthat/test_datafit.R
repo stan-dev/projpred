@@ -519,7 +519,8 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     smmry <- summary(vss_datafit[[tstsetup]],
                      stats = stats_common,
-                     type = type_tst)
+                     type = type_tst,
+                     seed = seed3_tst)
     smmry_tester(
       smmry,
       vsel_expected = vss_datafit[[tstsetup]],
@@ -555,7 +556,8 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     smmry <- summary(cvvss_datafit[[tstsetup]],
                      stats = stats_common,
-                     type = type_tst)
+                     type = type_tst,
+                     seed = seed3_tst)
     smmry_tester(
       smmry,
       vsel_expected = cvvss_datafit[[tstsetup]],
