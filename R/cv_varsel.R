@@ -404,6 +404,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                   r_eff = rep(1, ncol(log_lik_sub)))
       )
       lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
+      # Take into account that clustered draws usually have different weights:
+      lw_sub <- lw_sub + log(p_pred$weights)
+      # This re-weighting requires a re-normalization (as.array() is applied to
+      # have stricter consistency checks, see `?sweep`):
+      lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       for (i in seq_along(inds)) {
         mu_sub[[k]][inds[i]] <- mu_k[i, ] %*% exp(lw_sub[, i])
