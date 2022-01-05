@@ -82,6 +82,46 @@ divmin <- function(formula, projpred_var, ...) {
   }
 }
 
+linear_mle <- function(formula, data, family, weights = NULL, regul = NULL,
+                       var = 0, ...) {
+  formula <- validate_response_formula(formula)
+  if (inherits(formula, "formula")) {
+    return(fit_glm_ridge_callback(formula, data, family, weights, var, regul))
+  } else if (inherits(formula, "list")) {
+    return(lapply(seq_along(formula), function(s) {
+      fit_glm_ridge_callback(formula[[s]], data, family, weights,
+        regul = regul, var = var[, s, drop = FALSE]
+      )
+    }))
+  } else {
+    stop("The provided formula is neither a formula object nor a list")
+  }
+}
+
+linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
+  if (is.null(weights)) {
+    weights <- 1
+  }
+  if (inherits(fit, "list")) {
+    if (!is.null(newdata)) {
+      return(do.call(cbind, lapply(fit, function(fit) {
+        predict(fit, newdata = newdata, weights = weights)
+      })))
+    } else {
+      return(do.call(cbind, lapply(fit, function(fit) {
+        predict(fit)
+      })))
+    }
+  }
+  else {
+    if (!is.null(newdata)) {
+      return(predict(fit, newdata = newdata, weights = weights))
+    } else {
+      return(predict(fit))
+    }
+  }
+}
+
 fit_glm_ridge_callback <- function(formula, data, projpred_var = 0,
                                    projpred_regul = 1e-4, ...) {
   fr <- model.frame(delete.intercept(formula), data = data)

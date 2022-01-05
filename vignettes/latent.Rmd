@@ -87,8 +87,9 @@ Following the workflow presented above, we begin by fitting some reference model
 ```{r, message=FALSE, warning=FALSE}
 # build complete reference model on the covariate
 poisson_priors <- brms::set_prior("normal(0, 1)", class = "b")
+poisson_formula <- formula(y ~ 1 + x1 + x2)
 model_poisson <- brms::brm(
-  y ~ 1 + x1 + x2,
+  formula = poisson_formula,
   data = pois,
   family = poisson(),
   prior = poisson_priors
@@ -117,8 +118,7 @@ Now having a reference model where the variate's distribution belongs to the exp
 
 ```{r}
 # perform variable selection on the latent reference model
-latent_vs <- varsel(latent_ref,
-                       method = "l1")
+latent_vs <- varsel(latent_ref)
 # selection order of the variables
 projpred::solution_terms(latent_vs)
 # plot varsel results
@@ -137,6 +137,15 @@ vanilla_vs <- cv_varsel(refmodel,
 projpred::solution_terms(vanilla_vs)
 # plot results
 plot(vanilla_vs, stats = c('elpd', 'rmse'))
+```
+
+```{r}
+latent_ref <- init_refmodel(
+  object = model_poisson,
+  data = pois,
+  formula = poisson_formula,
+  latent = TRUE
+  )
 ```
 
 ## Time-to-event models
@@ -178,6 +187,15 @@ fit <- brm(
   prior = prior,
   family = weibull
 )
+```
+
+```{r}
+latent_ref <- init_refmodel(
+  object = fit,
+  data = data,
+  formula = formula,
+  latent = TRUE
+  )
 ```
 
 Repeating the workflow, we first extract the latent predictor posterior draws, and then define a reference model in terms of them. It is at this stage that we enforce our Gaussianity assumption in the default parameter value of the `fit_latent` function.

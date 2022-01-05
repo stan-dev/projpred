@@ -4,6 +4,7 @@
 #' linear models.
 
 # utility function to perform kfolds validation over posterior samples
+#' @export
 .latent_cvfun <- function(folds, ...) {
   cvres <- brms::kfold(
     object,
@@ -16,6 +17,7 @@
   return(fits)
 }
 
+#' @export
 .latent_nlist <- function(...) {
   m <- match.call()
   dots <- list(...)
@@ -36,6 +38,7 @@
   dots
 }
 
+#' @export
 .extract_latent_model_data <- function(object,
                                nlist = projpred:::.latent_nlist,
                                newdata = NULL,
@@ -47,28 +50,29 @@
   } else {
     resp_form <- ~ .y
   }
-  
+
   if (is.null(newdata)) {
     newdata <- data
   }
-  
+
   if (is.null(wrhs) && !is.null(object) &&
       !is.null(object$weights) && length(object$weights) != 0) {
     wrhs <- ~ weights
     newdata <- cbind(newdata, weights = object$weights)
   }
-  
+
   if (is.null(orhs) && !is.null(object) &&
       !is.null(object$offset) && length(object$offset) != 0) {
     orhs <- ~ offset
     newdata <- cbind(newdata, offset = object$offset)
   }
-  
+
   args <- nlist(object, newdata, wrhs, orhs, resp_form)
   return(do_call(projpred:::.extract_model_data, args))
 }
 
 # use the sample predictive function as for the refrence model
+#' @export
 .latent_ref_predfun <- function(fit, newdata = NULL) {
   return(t(posterior_linpred(
     fit, newdata = newdata, transform = FALSE
@@ -130,7 +134,7 @@ extract_eta <- function(fit, data) {
 #'
 #' This function takes in a reference model, the posterior draws of its latent
 #' predictor, and the data on which the reference model was trained to fit a
-#' reference model in terms of the latent predictor using a Gaussianity 
+#' reference model in terms of the latent predictor using a Gaussianity
 #' assumption.
 #'
 #' @param fit A reference model written
@@ -153,10 +157,10 @@ fit_latent <-
            latent_family = brms::brmsfamily("gaussian"),
            latent_div_minimizer = projpred:::linear_mle,
            latent_proj_predfun = projpred:::linear_proj_predfun,
-           dis_latent = rep(1, length(eta_post_draws)), # fixed and uniform
-           extract_model_data = projpred:::.extract_latent_model_data,
-           ref_predfun = projpred:::.latent_ref_predfun,
-           cv_fun = projpred:::.latent_cvfun) {
+           dis_latent = rep(1, 4000), # fixed and uniform
+           extract_model_data = .extract_latent_model_data,
+           ref_predfun = .latent_ref_predfun,
+           cv_fun = .latent_cvfun) {
     # update the reference model's formula to fit to the latent predictor
     latent_formula <- formula(update(fit$formula, ".y ~ ."))
     # add latent predictor to input data

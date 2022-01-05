@@ -341,21 +341,29 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.default <- function(object, formula, family = NULL, ...) {
-  if (is.null(family)) {
-    family <- family(object)
+get_refmodel.default <-
+    function(object, formula, family = NULL, latent = FALSE, ...) {
+
+  if (latent) {
+    family <- gaussian()
+  } else if (!latent) {
+    if (is.null(family)) {
+      family <- family(object)
+    }
+  } else {
+    stop("Please specify whether to use the latent projection technique.")
   }
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = TRUE) {
     resp_form <- if (!extract_y) NULL else lhs(formula)
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(.extract_model_data, args))
+    return(do_call(projpred:::.extract_model_data, args))
   }
 
   refmodel <- init_refmodel(
     object = object, formula = formula, family = family,
-    extract_model_data = extract_model_data, ...
+    extract_model_data = extract_model_data, latent = latent, ...
   )
   return(refmodel)
 }
@@ -431,6 +439,10 @@ get_refmodel.stanreg <- function(object, ...) {
     default_orhs <- NULL
   }
 
+  # Special case: `datafit` -------------------------------------------------
+
+  proper_model <- !is.null(object)
+
   # Formula -----------------------------------------------------------------
 
   if (inherits(object, "gamm4")) {
@@ -469,7 +481,7 @@ get_refmodel.stanreg <- function(object, ...) {
     }
 
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(.extract_model_data, args))
+    return(do_call(projpred:::.extract_model_data, args))
   }
 
   ref_predfun <- function(fit, newdata = NULL) {
@@ -526,7 +538,7 @@ get_refmodel.stanreg <- function(object, ...) {
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, extract_model_data = NULL, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, latent=FALSE, ...) {
+                          cvfits = NULL, dis = NULL, latent = FALSE, ...) {
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
@@ -545,44 +557,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   offset <- model_data$offset
   y <- model_data$y
 
-  if (latent) {
-    y <- rowMeans(ref_predfun(object, newdata = data))
-    ## latent noise is fixed
-    dis <- rep(1, 4000)
-    response_name <- paste0(".", response_name)
-    data[, response_name] <- y
-    response_family <- family
-    family <- gaussian()
-  } else {
-    data[, response_name] <- y
-  }
+  # Special case: `datafit` -------------------------------------------------
 
-  formula <- update(
-    formula,
-    paste(response_name, "~ .")
-  )
-  target <- .get_standard_y(y, weights, family)
-  y <- target$y
-  weights <- target$weights
-
-  if (family$family == "binomial") {
-    if (!all(.is.wholenumber(y))) {
-      stop("In projpred, the response must contain numbers of successes (not ",
-           "proportions of successes), in contrast to glm() where this is ",
-           "the convention for a 1-column response.")
-    } else if (all(y %in% c(0, 1)) &&
-               length(response_name) == 1 &&
-               !all(weights == 1)) {
-      warning(
-        "Assuming that the response contains numbers of successes (not ",
-        "proportions of successes), in contrast to glm()."
-      )
-    }
-  }
-
-  if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
-  }
+  proper_model <- !is.null(object)
 
   # Functions ---------------------------------------------------------------
 
@@ -628,7 +605,53 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fetch_data(data, obs, newdata = NULL)
   }
 
+  # Latent projection -------------------------------------------------------
+
+  if (latent) {
+    y <- rowMeans(ref_predfun(object, newdata = data))
+    ## latent noise is fixed
+    dis <- rep(1, 4000)
+    response_name <- paste0(".", response_name)
+    data[, response_name] <- y
+    family <- gaussian()
+  } else if (!latent) {
+    data[, response_name] <- y
+  } else {
+    stop("Please specify whether to use the latent projection technique.")
+  }
+
+  formula <- update(
+    formula,
+    paste(response_name, "~ .")
+  )
+  target <- .get_standard_y(y, weights, family)
+  y <- target$y
+  weights <- target$weights
+
   # Family ------------------------------------------------------------------
+
+  if (latent && family$family != "gaussian") {
+    stop("Latent projection selection, but family not Gaussian.")
+  }
+
+  if (family$family == "binomial") {
+    if (!all(.is.wholenumber(y))) {
+      stop("In projpred, the response must contain numbers of successes (not ",
+           "proportions of successes), in contrast to glm() where this is ",
+           "the convention for a 1-column response.")
+    } else if (all(y %in% c(0, 1)) &&
+               length(response_name) == 1 &&
+               !all(weights == 1)) {
+      warning(
+        "Assuming that the response contains numbers of successes (not ",
+        "proportions of successes), in contrast to glm()."
+      )
+    }
+  }
+
+  if (is.null(offset)) {
+    offset <- rep(0, NROW(y))
+  }
 
   if (!.has_family_extras(family)) {
     family <- extend_family(family)
