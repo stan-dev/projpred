@@ -126,7 +126,6 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
-        fam_expected = vss[[tstsetup_vs]]$family,
         prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$weights
       )
     }
@@ -189,7 +188,6 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
-        fam_expected = cvvss[[tstsetup_cvvs]]$family,
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$weights
       )
     }

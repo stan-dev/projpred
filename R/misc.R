@@ -99,7 +99,6 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 
   recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   binomial_only_stats <- c("acc", "pctcorr", "auc")
-  family <- object$family$family
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
@@ -108,10 +107,12 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     if (!(stat %in% recognized_stats)) {
       stop(sprintf("Statistic '%s' not recognized.", stat))
     }
-    if (stat %in% binomial_only_stats && family != "binomial") {
+    if (stat %in% binomial_only_stats &&
+        object$refmodel$family$family != "binomial") {
       stop("Statistic '", stat, "' available only for the binomial family.")
     }
   }
+  return(invisible(TRUE))
 }
 
 .validate_baseline <- function(refmodel, baseline, deltas) {
@@ -207,9 +208,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   }
   set.seed(seed)
 
-  family <- refmodel$family
   S <- NCOL(refmodel$mu) # number of draws in the reference model
-
   if (is.null(ndraws)) {
     ndraws <- S
   }
@@ -219,7 +218,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
-      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, cl = cl)
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
@@ -230,7 +229,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
         stop("The number of clusters nclusters cannot exceed the number of ",
              "columns in mu.")
       }
-      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, nclusters = nclusters)
     }
   } else {
@@ -246,7 +245,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     cl <- rep(NA, S)
     cl[s_ind] <- c(1:ndraws)
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
-      family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
+      refmodel$family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
@@ -315,10 +314,13 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 }
 
 .is_proj_list <- function(proj) {
-  !("family" %in% names(proj))
+  # Better use a formal class `proj_list`, but for now, use this workaround:
+  is.list(proj) && length(proj) && all(sapply(proj, inherits, "projection"))
 }
 
-.unlist_proj <- function(p) if (length(p) == 1) p[[1]] else p
+.unlist_proj <- function(p) {
+  if (length(p) == 1) p[[1]] else p
+}
 
 ## create a named list using object names
 nlist <- function(...) {
@@ -440,24 +442,7 @@ magrittr::`%>%`
 # tidyselect:::where():
 where <- "tidyselect" %:::% "where"
 
-get_as.matrix_cls_projpred <- function() {
-  ### Only works when projpred is loaded via devtools::load_all():
-  # as.matrix_meths_projpred <- methods("as.matrix")
-  # as.matrix_meths_projpred <- as.matrix_meths_projpred[
-  #   attr(as.matrix_meths_projpred, "info")$from == "projpred"
-  # ]
-  ###
-  as.matrix_meths_projpred <- grep(
-    "^as\\.matrix\\.",
-    ls(envir = asNamespace("projpred")),
-    value = TRUE
-  )
-  as.matrix_cls_projpred <- sub("^as\\.matrix\\.", "", as.matrix_meths_projpred)
-  return(as.matrix_cls_projpred)
-}
-
-## Helper function extract and combine mu and lppd from K lists with each
-## n/K of the elements to one list with n elements
-hf <- function(x) {
-  as.list(do.call(rbind, x))
+# Helper function to combine separate `list`s into a single `list`:
+rbind2list <- function(x) {
+  as.list(do.call(rbind, lapply(x, as.data.frame)))
 }

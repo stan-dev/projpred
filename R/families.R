@@ -21,7 +21,7 @@ NULL
 #' @export
 Student_t <- function(link = "identity", nu = 3) {
   if (!(link %in% c("identity", "log", "inverse"))) {
-    stop(paste0("Non-supported link: ", link))
+    stop("Non-supported link: ", link)
   }
   if (!is.character(link)) {
     stop("Link must be a string.")

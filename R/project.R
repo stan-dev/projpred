@@ -60,15 +60,9 @@
 #'     predictor terms, ordered in the way in which the terms were added to the
 #'     submodel.}
 #'     \item{`sub_fit`}{The submodel's fitted model object.}
-#'     \item{`family`}{A modified [`family`] object.}
 #'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
 #'     (`TRUE`) or not (`FALSE`).}
-#'     \item{`intercept`}{A single logical value indicating whether the
-#'     reference model (as well as the submodel) contains an intercept
-#'     (`TRUE`) or not (`FALSE`).}
-#'     \item{`extract_model_data`}{The `extract_model_data` function
-#'     from the reference model (see [init_refmodel()]).}
 #'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
@@ -212,12 +206,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   }
 
-  intercept <- refmodel$intercept
-  if (!intercept) {
-    stop("Reference models without an intercept are currently not supported.")
-  }
-  family <- refmodel$family
-
   ## get the clustering or subsample
   p_ref <- .get_refdist(refmodel,
                         ndraws = ndraws, nclusters = nclusters, seed = seed)
@@ -229,15 +217,13 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       p_sel = object$search_path$p_sel,
       sub_fits = object$search_path$sub_fits
     ),
-    nterms = nterms, family = family, p_ref = p_ref, refmodel = refmodel,
-    intercept = intercept, regul = regul, cv_search = cv_search
+    nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
+    cv_search = cv_search
   )
-  ## add family
+
+  # Output:
   proj <- lapply(subm, function(model) {
-    model$family <- family
     model$p_type <- !is.null(nclusters)
-    model$intercept <- intercept
-    model$extract_model_data <- refmodel$extract_model_data
     model$refmodel <- refmodel
     class(model) <- "projection"
     return(model)

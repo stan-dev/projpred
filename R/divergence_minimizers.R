@@ -13,6 +13,8 @@ divmin <- function(formula, projpred_var, ...) {
   has_add <- length(trms_all$additive_terms) > 0
   projpred_formulas_no_random <- NA
   projpred_random <- NA
+  # Define sdivmin(), the divergence minimizer for each draw s = 1, ..., S (and
+  # perform other actions, if necessary):
   if (!has_grp && !has_add) {
     sdivmin <- get(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
                    mode = "function")
@@ -116,8 +118,6 @@ fit_glm_ridge_callback <- function(formula, data,
 # `projpred.glm_fitter`):
 fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
                              ...) {
-  ## make sure correct 'weights' can be found
-  environment(formula) <- environment()
   tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
       # Exclude arguments from `...` which cannot be passed to stats::lm():
@@ -154,8 +154,6 @@ fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
 # Use package "mgcv" to fit additive non-multilevel submodels:
 #' @importFrom mgcv gam
 fit_gam_callback <- function(formula, ...) {
-  # make sure correct 'weights' can be found
-  environment(formula) <- environment()
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -174,8 +172,6 @@ fit_gam_callback <- function(formula, ...) {
 fit_gamm_callback <- function(formula, projpred_formula_no_random,
                               projpred_random, data, family,
                               control = control_callback(family), ...) {
-  # make sure correct 'weights' can be found
-  environment(projpred_formula_no_random) <- environment()
   # Exclude arguments from `...` which cannot be passed to gamm4::gamm4():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -194,8 +190,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
     if (grepl("not positive definite", as.character(e))) {
       scaled_data <- preprocess_data(data, projpred_formula_no_random)
       fit_gamm_callback(
-        formula, projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random, data = scaled_data, family = family,
+        formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
+        data = scaled_data,
+        family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
@@ -217,8 +216,6 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 # non-additive) submodels):
 fit_glmer_callback <- function(formula, family,
                                control = control_callback(family), ...) {
-  ## make sure correct 'weights' can be found
-  environment(formula) <- environment()
   tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
@@ -253,7 +250,7 @@ fit_glmer_callback <- function(formula, family,
                                   "fit_glm_ridge_callback"),
                         mode = "function")
       return(glm_fitter(
-        formula, family = family, ...
+        formula = formula, family = family, ...
       ))
     } else if (grepl("not positive definite", as.character(e))) {
       if ("optimx" %in% control$optimizer &&
@@ -264,7 +261,8 @@ fit_glmer_callback <- function(formula, family,
              "anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family,
+        formula = formula,
+        family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
@@ -282,7 +280,11 @@ fit_glmer_callback <- function(formula, family,
              "anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family, control = control, nAGQ = nAGQ_new, ...
+        formula = formula,
+        family = family,
+        control = control,
+        nAGQ = nAGQ_new,
+        ...
       ))
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
@@ -304,7 +306,8 @@ fit_glmer_callback <- function(formula, family,
              "automatically anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family,
+        formula = formula,
+        family = family,
         control = control_callback(family, tolPwrss = tolPwrss_new,
                                    optCtrl = list(maxfun = maxfun_new,
                                                   maxit = maxit_new)),

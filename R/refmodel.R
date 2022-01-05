@@ -195,9 +195,9 @@
 #'       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
 #'       return(projpred:::do_call(projpred:::.extract_model_data, args))
 #'     },
-#'     cvfun = function(folds, ...) {
+#'     cvfun = function(folds) {
 #'       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
-#'                       folds = folds, ...)$fits[, "fit"]
+#'                       folds = folds)$fits[, "fit"]
 #'     },
 #'     dis = as.matrix(fit)[, "sigma"]
 #'   )
@@ -266,11 +266,11 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     newdata$projpred_internal_offs_stanreg <- offsetnew
   }
 
-  ## ref_predfun returns link(mu)
-  mu <- object$ref_predfun(object$fit, newdata) + offsetnew
+  ## ref_predfun returns eta = link(mu)
+  eta <- object$ref_predfun(object$fit, newdata) + offsetnew
 
   if (is.null(ynew)) {
-    pred <- if (type == "link") mu else object$family$linkinv(mu)
+    pred <- if (type == "link") eta else object$family$linkinv(eta)
     ## integrate over the samples
     if (NCOL(pred) > 1) {
       pred <- rowMeans(pred)
@@ -279,8 +279,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   } else {
     ## evaluate the log predictive density at the given ynew values
     loglik <- object$family$ll_fun(
-      object$family$linkinv(mu), object$dis, ynew,
-      weightsnew
+      object$family$linkinv(eta), object$dis, ynew, weightsnew
     )
     S <- ncol(loglik)
     lpd <- apply(loglik, 1, log_sum_exp) - log(S)
@@ -344,7 +343,7 @@ refprd <- function(fit, newdata = NULL) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel <- function(object, ...) {
-  UseMethod("get_refmodel", object)
+  UseMethod("get_refmodel")
 }
 
 #' @rdname refmodel-init-get
@@ -642,6 +641,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL) {
       linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
+      if (!is.matrix(linpred_out)) {
+        stop("Unexpected structure for `linpred_out`. Does the return value ",
+             "of `ref_predfun` have the correct structure?")
+      }
+      linpred_out <- unname(linpred_out)
 
       # Observation weights are not needed here, so use `wrhs = NULL` to avoid
       # potential conflicts for a non-`NULL` default `wrhs`:
@@ -681,9 +685,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # mu ----------------------------------------------------------------------
 
   if (proper_model) {
-    mu <- ref_predfun(object)
-    mu <- unname(as.matrix(mu))
-    mu <- family$linkinv(mu)
+    eta <- ref_predfun(object)
+    mu <- family$linkinv(eta)
   } else {
     if (family$family != "binomial") {
       mu <- y
@@ -716,10 +719,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (proper_model) {
     loglik <- t(family$ll_fun(
-      family$linkinv(family$linkfun(mu) + offset),
-      dis,
-      y,
-      weights = weights
+      family$linkinv(eta + offset), dis, y, weights = weights
     ))
   } else {
     loglik <- NULL
@@ -741,6 +741,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   wsample <- rep(1 / ndraws, ndraws)
 
   intercept <- as.logical(attr(terms(formula), "intercept"))
+  if (!intercept) {
+    stop("Reference models without an intercept are currently not supported.")
+  }
 
   # Output ------------------------------------------------------------------
 

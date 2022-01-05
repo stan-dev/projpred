@@ -39,7 +39,9 @@ test_that("invalid `method` fails", {
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(varsel(refmods[[tstsetup]], method = "L1"),
-                   "^L1 search is only supported for GLMs\\.$",
+                   paste("^L1 search is only supported for reference models",
+                         "without multilevel and without additive",
+                         "\\(\"smoothing\"\\) terms\\.$"),
                    info = tstsetup)
     }
   }
@@ -202,7 +204,9 @@ test_that(paste(
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
         # here (instead of the coefficients themselves, which would only be
         # accessible from `p_sub`):
-        mu_jm_regul <- vs_regul$family$linkfun(vs_regul$summaries$sub[[m]]$mu)
+        mu_jm_regul <- vs_regul$refmodel$family$linkfun(
+          vs_regul$summaries$sub[[m]]$mu
+        )
         if (grepl("\\.with_offs", tstsetup)) {
           mu_jm_regul <- mu_jm_regul - offs_tst
         }
@@ -288,7 +292,9 @@ test_that(paste(
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
         # here (instead of the coefficients themselves, which would only be
         # accessible from `p_sub`):
-        mu_jm_regul <- vs_regul$family$linkfun(vs_regul$summaries$sub[[m]]$mu)
+        mu_jm_regul <- vs_regul$refmodel$family$linkfun(
+          vs_regul$summaries$sub[[m]]$mu
+        )
         if (grepl("\\.with_offs", tstsetup)) {
           mu_jm_regul <- mu_jm_regul - offs_tst
         }
@@ -486,7 +492,9 @@ test_that("invalid `method` fails", {
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(cv_varsel(refmods[[tstsetup]], method = "L1"),
-                   "^L1 search is only supported for GLMs\\.$",
+                   paste("^L1 search is only supported for reference models",
+                         "without multilevel and without additive",
+                         "\\(\"smoothing\"\\) terms\\.$"),
                    info = tstsetup)
     }
   }

@@ -363,7 +363,6 @@ test_that(paste(
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         nprjdraws_expected = 1L,
         p_type_expected = TRUE,
-        fam_expected = vss_datafit[[tstsetup_vs]]$family,
         prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights,
         from_vsel_L1_search = with_L1
       )

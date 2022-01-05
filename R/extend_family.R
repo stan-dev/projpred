@@ -46,6 +46,7 @@ extend_family_binomial <- function(family) {
     rep(NA, NROW(mu))
   }
   ll_binom <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     dbinom(y, weights, mu, log = TRUE)
   }
   dev_binom <- function(mu, y, weights = 1, dis = NULL) {
@@ -122,6 +123,7 @@ extend_family_poisson <- function(family) {
     rep(NA, NROW(mu))
   }
   ll_poiss <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     weights * dpois(y, mu, log = TRUE)
   }
   dev_poiss <- function(mu, y, weights = 1, dis = NULL) {
@@ -159,6 +161,7 @@ extend_family_gaussian <- function(family) {
     as.vector(sum(wsample * dis^2) + mu_var)
   }
   ll_gauss <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
     weights * dnorm(y, mu, dis, log = TRUE)
   }
@@ -206,6 +209,7 @@ extend_family_gamma <- function(family) {
     stop("Family Gamma not implemented yet.")
   }
   ll_gamma <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
     weights * dgamma(y, dis, dis / matrix(mu), log = TRUE)
   }
@@ -245,10 +249,8 @@ extend_family_student_t <- function(family) {
     as.vector(family$nu / (family$nu - 2) * sum(wsample * dis^2) + mu_var)
   }
   ll_student_t <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
-    if (NCOL(y) < NCOL(mu)) {
-      y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
-    }
     weights * (dt((y - mu) / dis, family$nu, log = TRUE) - log(dis))
   }
   dev_student_t <- function(mu, y, weights = 1, dis = NULL) {

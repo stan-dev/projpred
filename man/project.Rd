@@ -77,15 +77,9 @@ model.}
 predictor terms, ordered in the way in which the terms were added to the
 submodel.}
 \item{\code{sub_fit}}{The submodel's fitted model object.}
-\item{\code{family}}{A modified \code{\link{family}} object.}
 \item{\code{p_type}}{A single logical value indicating whether the
 reference model's posterior draws have been clustered for the projection
 (\code{TRUE}) or not (\code{FALSE}).}
-\item{\code{intercept}}{A single logical value indicating whether the
-reference model (as well as the submodel) contains an intercept
-(\code{TRUE}) or not (\code{FALSE}).}
-\item{\code{extract_model_data}}{The \code{extract_model_data} function
-from the reference model (see \code{\link[=init_refmodel]{init_refmodel()}}).}
 \item{\code{refmodel}}{The reference model object.}
 }
 If the projection is performed onto more than one submodel, the output from

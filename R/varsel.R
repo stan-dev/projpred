@@ -23,11 +23,11 @@
 #'   evaluation part.
 #' @param ndraws Number of posterior draws used in the search part. **Caution:**
 #'   For `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
-#'   clustering is used). Ignored if `nclusters` is not `NULL` or if `method`
-#'   turns out as `"L1"` (L1 search uses always one cluster). See also section
+#'   clustering is used). Ignored if `nclusters` is not `NULL` or in case of L1
+#'   search (because L1 search always uses a single cluster). See also section
 #'   "Details" below.
 #' @param nclusters Number of clusters of posterior draws used in the search
-#'   part. Ignored if `method` turns out as `"L1"` (L1 search uses always one
+#'   part. Ignored in case of L1 search (because L1 search always uses a single
 #'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
 #'   section "Details" below.
 #' @param ndraws_pred Only relevant if `cv_search` is `TRUE`. Number of
@@ -43,22 +43,21 @@
 #'   terms in the reference model (or in `search_terms`, if supplied). Note that
 #'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
 #'   intercept-only model.
-#' @param penalty Only relevant if `method` turns out as `"L1"`. A numeric
-#'   vector determining the relative penalties or costs for the predictors. A
-#'   value of `0` means that those predictors have no cost and will therefore be
-#'   selected first, whereas `Inf` means those predictors will never be
-#'   selected. If `NULL`, then `1` is used for each predictor.
-#' @param lambda_min_ratio Only relevant if `method` turns out as `"L1"`. Ratio
-#'   between the smallest and largest lambda in the L1-penalized search. This
-#'   parameter essentially determines how long the search is carried out, i.e.,
-#'   how large submodels are explored. No need to change this unless the program
+#' @param penalty Only relevant for L1 search. A numeric vector determining the
+#'   relative penalties or costs for the predictors. A value of `0` means that
+#'   those predictors have no cost and will therefore be selected first, whereas
+#'   `Inf` means those predictors will never be selected. If `NULL`, then `1` is
+#'   used for each predictor.
+#' @param lambda_min_ratio Only relevant for L1 search. Ratio between the
+#'   smallest and largest lambda in the L1-penalized search. This parameter
+#'   essentially determines how long the search is carried out, i.e., how large
+#'   submodels are explored. No need to change this unless the program gives a
+#'   warning about this.
+#' @param nlambda Only relevant for L1 search. Number of values in the lambda
+#'   grid for L1-penalized search. No need to change this unless the program
 #'   gives a warning about this.
-#' @param nlambda Only relevant if `method` turns out as `"L1"`. Number of
-#'   values in the lambda grid for L1-penalized search. No need to change this
-#'   unless the program gives a warning about this.
-#' @param thresh Only relevant if `method` turns out as `"L1"`. Convergence
-#'   threshold when computing the L1 path. Usually, there is no need to change
-#'   this.
+#' @param thresh Only relevant for L1 search. Convergence threshold when
+#'   computing the L1 path. Usually, there is no need to change this.
 #' @param regul A number giving the amount of ridge regularization when
 #'   projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 #'   no need for regularization, but sometimes we need to add some
@@ -147,30 +146,22 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, seed = NULL, ...) {
   refmodel <- object
-  family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
-  ## use the intercept as indicated by the refmodel
-  intercept <- NULL
   args <- parse_args_varsel(
-    refmodel, method, cv_search, intercept, nterms_max,
-    nclusters, ndraws, nclusters_pred, ndraws_pred, search_terms
+    refmodel = refmodel, method = method, cv_search = cv_search,
+    nterms_max = nterms_max, nclusters = nclusters, ndraws = ndraws,
+    nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
+    search_terms = search_terms
   )
   method <- args$method
   cv_search <- args$cv_search
-  intercept <- args$intercept
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   ndraws <- args$ndraws
   nclusters_pred <- args$nclusters_pred
   ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
-  has_group_features <- formula_contains_group_terms(refmodel$formula)
-  has_additive_features <- formula_contains_additive_terms(refmodel$formula)
-
-  if (method == "l1" && (has_group_features || has_additive_features)) {
-    stop("L1 search is only supported for GLMs.")
-  }
 
   if (is.null(d_test)) {
     d_type <- "train"
@@ -191,19 +182,19 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   search_path <- select(
     method = method, p_sel = p_sel, refmodel = refmodel,
-    family = family, intercept = intercept, nterms_max = nterms_max,
-    penalty = penalty, verbose = verbose, opt = opt, search_terms = search_terms
+    nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
+    search_terms = search_terms
   )
   solution_terms <- search_path$solution_terms
 
   ## statistics for the selected submodels
-  submodels <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
-                              family = family, p_ref = p_pred,
-                              refmodel = refmodel, intercept = intercept,
+  submodels <- .get_submodels(search_path = search_path,
+                              nterms = c(0, seq_along(solution_terms)),
+                              p_ref = p_pred, refmodel = refmodel,
                               regul = regul, cv_search = cv_search)
   sub <- .get_sub_summaries(
     submodels = submodels, test_points = seq_along(refmodel$y),
-    refmodel = refmodel, family = family
+    refmodel = refmodel
   )
 
   ## predictive statistics of the reference model on test data. if no test data
@@ -216,15 +207,17 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
   } else {
     if (d_type == "train") {
-      mu_test <- family$linkinv(family$linkfun(refmodel$mu) + refmodel$offset)
+      mu_test <- refmodel$family$linkinv(
+        refmodel$family$linkfun(refmodel$mu) + refmodel$offset
+      )
     } else {
-      mu_test <- family$linkinv(refmodel$ref_predfun(refmodel$fit,
-                                                     newdata = d_test$data) +
-                                  d_test$offset)
-      mu_test <- unname(mu_test)
+      mu_test <- refmodel$family$linkinv(
+        refmodel$ref_predfun(refmodel$fit, newdata = d_test$data) +
+          d_test$offset
+      )
     }
     ref <- .weighted_summary_means(
-      y_test = d_test, family = family, wsample = refmodel$wsample,
+      y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
       mu = mu_test, dis = refmodel$dis
     )
   }
@@ -235,7 +228,6 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     search_path,
     d_test,
     summaries = nlist(sub, ref),
-    family,
     solution_terms = search_path$solution_terms,
     kl = sapply(submodels, function(x) x$kl),
     nterms_max,
@@ -257,9 +249,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   return(vs)
 }
 
-
-select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
-                   penalty, verbose, opt, search_terms = NULL) {
+select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
+                   search_terms = NULL) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
   ## and returns the search_path, i.e., a list with the followint entries (the
@@ -273,25 +264,21 @@ select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
   ##
   ## routine that can be used with several clusters
   if (method == "l1") {
-    search_path <- search_L1(
-      p_sel, refmodel, family, intercept,
-      nterms_max - intercept, penalty, opt
-    )
+    search_path <- search_L1(p_sel, refmodel, nterms_max - refmodel$intercept,
+                             penalty, opt)
     search_path$p_sel <- p_sel
     return(search_path)
   } else if (method == "forward") {
-    search_path <- search_forward(p_sel, refmodel, family,
-                                  intercept, nterms_max, verbose, opt,
+    search_path <- search_forward(p_sel, refmodel, nterms_max, verbose, opt,
                                   search_terms = search_terms)
     search_path$p_sel <- p_sel
     return(search_path)
   }
 }
 
-
-parse_args_varsel <- function(refmodel, method, cv_search, intercept,
-                              nterms_max, nclusters, ndraws, nclusters_pred,
-                              ndraws_pred, search_terms) {
+parse_args_varsel <- function(refmodel, method, cv_search, nterms_max,
+                              nclusters, ndraws, nclusters_pred, ndraws_pred,
+                              search_terms) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel.
   ## The arguments specified by the user (or the function calling this function)
@@ -314,6 +301,10 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     }
   } else {
     method <- tolower(method)
+    if (method == "l1" && (has_group_features || has_additive_features)) {
+      stop("L1 search is only supported for reference models without ",
+           "multilevel and without additive (\"smoothing\") terms.")
+    }
   }
 
   if (!(method %in% c("l1", "forward"))) {
@@ -351,13 +342,6 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     nclusters_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
-  if (is.null(intercept)) {
-    intercept <- refmodel$intercept
-  }
-  if (!intercept) {
-    stop("Reference models without an intercept are currently not supported.")
-  }
-
   if (!is.null(search_terms)) {
     max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
   } else {
@@ -369,8 +353,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   nterms_max <- min(max_nv_possible, nterms_max + 1)
 
   return(nlist(
-    method, cv_search, intercept, nterms_max, nclusters,
-    ndraws, nclusters_pred, ndraws_pred,
-    search_terms
+    method, cv_search, nterms_max, nclusters, ndraws, nclusters_pred,
+    ndraws_pred, search_terms
   ))
 }

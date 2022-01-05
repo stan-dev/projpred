@@ -1,9 +1,8 @@
-search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
-                           verbose = TRUE, opt, search_terms = NULL) {
-  formula <- refmodel$formula
+search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
+                           search_terms = NULL) {
   iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
   if (is.null(search_terms)) {
-    allterms <- split_formula(formula, data = refmodel$fetch_data())
+    allterms <- split_formula(refmodel$formula, data = refmodel$fetch_data())
   } else {
     allterms <- search_terms
   }
@@ -19,8 +18,7 @@ search_forward <- function(p_ref, refmodel, family, intercept, nterms_max,
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     subL <- lapply(full_cands, project_submodel,
-                   p_ref = p_ref, refmodel = refmodel, family = family,
-                   intercept = intercept, regul = opt$regul)
+                   p_ref = p_ref, refmodel = refmodel, regul = opt$regul)
 
     ## select best candidate
     imin <- which.min(sapply(subL, "[[", "kl"))
@@ -68,14 +66,13 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
 
   ## sort the variables according to the order in which they enter the model in
   ## the L1-path
-  entering_indices <- apply(search$beta != 0, 1, function(num)
-    which(num)[1]) # na for those that did not enter
+  entering_indices <- apply(search$beta != 0, 1, function(num) {
+    which(num)[1] # na for those that did not enter
+  })
   ## variables that entered at some point
-  entered_variables <-
-    c(seq_len(NCOL(d_train$x)))[!is.na(entering_indices)]
+  entered_variables <- c(seq_len(NCOL(d_train$x)))[!is.na(entering_indices)]
   ## variables that did not enter at any point
-  notentered_variables <-
-    c(seq_len(NCOL(d_train$x)))[is.na(entering_indices)]
+  notentered_variables <- c(seq_len(NCOL(d_train$x)))[is.na(entering_indices)]
   order_of_entered <- sort(entering_indices, index.return = TRUE)$ix
   order <- c(entered_variables[order_of_entered], notentered_variables)
 
@@ -129,27 +126,24 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   return(out)
 }
 
-search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
-                      opt) {
+search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
+  intercept <- refmodel$intercept
   if (nterms_max == 0) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
          "reference model.")
   }
   frame <- model.frame(refmodel$formula, refmodel$fetch_data())
-  contrasts_arg <- get_contrasts_arg_list(
-    refmodel$formula,
-    refmodel$fetch_data()
-  )
+  contrasts_arg <- get_contrasts_arg_list(refmodel$formula,
+                                          refmodel$fetch_data())
   x <- model.matrix(delete.intercept(refmodel$formula),
                     data = frame,
-                    contrasts.arg = contrasts_arg
-  )
+                    contrasts.arg = contrasts_arg)
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
-    p_ref, nlist(x, weights = refmodel$wobs), family,
+    p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
     intercept, ncol(x), penalty, opt
   )
   solution_terms <- collapse_contrasts_solution_path(
@@ -173,8 +167,7 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
           )
           return(colnames(model.matrix(form,
                                        data = refmodel$fetch_data(),
-                                       contrasts.arg = contrasts_arg
-          )))
+                                       contrasts.arg = contrasts_arg)))
         }
       ))
       indices <- match(variables, colnames(x)[search_path$solution_terms])
@@ -184,18 +177,14 @@ search_L1 <- function(p_ref, refmodel, family, intercept, nterms_max, penalty,
       # re-use of `colnames(x)` should provide another sanity check:
       x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
     }
-    sub <- nlist(
-      alpha = search_path$alpha[nterms + 1],
-      beta,
-      w = search_path$w[, nterms + 1],
-      formula,
-      x
-    )
+    sub <- nlist(alpha = search_path$alpha[nterms + 1],
+                 beta,
+                 w = search_path$w[, nterms + 1],
+                 formula,
+                 x)
     class(sub) <- "subfit"
     return(list(sub))
   })
-  return(list(
-    solution_terms = solution_terms[seq_len(nterms_max)],
-    sub_fits = sub_fits[seq_len(nterms_max + 1)]
-  ))
+  return(list(solution_terms = solution_terms[seq_len(nterms_max)],
+              sub_fits = sub_fits[seq_len(nterms_max + 1)]))
 }

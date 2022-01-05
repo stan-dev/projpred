@@ -998,21 +998,17 @@ if (run_cvvs) {
 
 ## Output names -----------------------------------------------------------
 
-projection_nms <- c(
-  "dis", "kl", "weights", "solution_terms", "sub_fit", "family",
-  "p_type", "intercept", "extract_model_data", "refmodel"
-)
 vsel_nms <- c(
-  "refmodel", "search_path", "d_test", "summaries", "family", "solution_terms",
-  "kl", "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
+  "refmodel", "search_path", "d_test", "summaries", "solution_terms", "kl",
+  "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
   "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "suggested_size",
   "summary"
 )
 vsel_nms_cv <- c(
-  "refmodel", "search_path", "d_test", "summaries", "family", "kl",
-  "solution_terms", "pct_solution_terms_cv", "nterms_all", "nterms_max",
-  "method", "cv_method", "validate_search", "nclusters", "nclusters_pred",
-  "ndraws", "ndraws_pred", "suggested_size", "summary"
+  "refmodel", "search_path", "d_test", "summaries", "kl", "solution_terms",
+  "pct_solution_terms_cv", "nterms_all", "nterms_max", "method", "cv_method",
+  "validate_search", "nclusters", "nclusters_pred", "ndraws", "ndraws_pred",
+  "suggested_size", "summary"
 )
 # Related to prediction (in contrast to selection):
 vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
@@ -1030,13 +1026,9 @@ vsel_nms_cv_valsearch <- c("validate_search", "summaries",
                            "summary")
 vsel_nms_cv_valsearch_opt <- c("suggested_size")
 # Related to `cvfits`:
-vsel_nms_cv_cvfits <- c("refmodel", "d_test", "summaries", "family",
+vsel_nms_cv_cvfits <- c("refmodel", "d_test", "summaries",
                         "pct_solution_terms_cv", "summary", "suggested_size")
 vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
-subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
-searchpth_nms <- c("solution_terms", "sub_fits", "p_sel")
-psel_nms <- c("mu", "var", "weights", "cl")
-dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------

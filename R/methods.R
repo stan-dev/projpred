@@ -95,16 +95,21 @@ proj_helper <- function(object, newdata,
                         onesub_fun, filter_nterms = NULL,
                         transform = NULL, integrated = NULL,
                         nresample_clusters = NULL, ...) {
-  if (inherits(object, "projection") ||
-      (length(object) > 0 && inherits(object[[1]], "projection"))) {
+  if (inherits(object, "projection") || .is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!.is_proj_list(object)) {
         object <- list(object)
       }
-      projs <- Filter(function(x) {
-        count_terms_chosen(x$solution_terms, add_icpt = TRUE) %in%
-          (filter_nterms + 1)
-      }, object)
+      projs <- Filter(
+        function(x) {
+          count_terms_chosen(x$solution_terms, add_icpt = TRUE) %in%
+            (filter_nterms + 1)
+        },
+        object
+      )
+      if (!length(projs)) {
+        stop("Invalid `filter_nterms`.")
+      }
     } else {
       projs <- object
     }
@@ -115,12 +120,6 @@ proj_helper <- function(object, newdata,
 
   if (!.is_proj_list(projs)) {
     projs <- list(projs)
-  } else {
-    ## projs is some other object, not containing an element called "family" (so
-    ## it could be a `proj_list` but must not necessarily)
-    if (any(sapply(projs, function(x) !("family" %in% names(x))))) {
-      stop("Invalid object supplied to argument `object`.")
-    }
   }
 
   if (is.null(newdata)) {
@@ -153,7 +152,7 @@ proj_helper <- function(object, newdata,
     #           "It is safer to provide column names.")
     # }
     ###
-    extract_y_ind <- ifelse(y_nm %in% colnames(newdata), TRUE, FALSE)
+    extract_y_ind <- y_nm %in% colnames(newdata)
   }
 
   names(projs) <- sapply(projs, function(proj) {
@@ -168,9 +167,10 @@ proj_helper <- function(object, newdata,
   }
 
   preds <- lapply(projs, function(proj) {
-    w_o <- proj$extract_model_data(proj$refmodel$fit, newdata = newdata,
-                                   wrhs = weightsnew, orhs = offsetnew,
-                                   extract_y = FALSE)
+    w_o <- proj$refmodel$extract_model_data(
+      proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,
+      extract_y = FALSE
+    )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
@@ -179,9 +179,8 @@ proj_helper <- function(object, newdata,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
-    mu <- proj$family$mu_fun(proj$sub_fit,
-                             newdata = newdata, offset = offsetnew)
-
+    mu <- proj$refmodel$family$mu_fun(proj$sub_fit,
+                                      newdata = newdata, offset = offsetnew)
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
                extract_y_ind = extract_y_ind,
@@ -215,14 +214,15 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
   stopifnot(!is.null(dot_args$extract_y_ind))
-  w_o <- proj$extract_model_data(proj$refmodel$fit, newdata = dot_args$newdata,
-                                 wrhs = weights, orhs = dot_args$offset,
-                                 extract_y = dot_args$extract_y_ind)
+  w_o <- proj$refmodel$extract_model_data(
+    proj$refmodel$fit, newdata = dot_args$newdata, wrhs = weights,
+    orhs = dot_args$offset, extract_y = dot_args$extract_y_ind
+  )
   ynew <- w_o$y
   lpd_out <- compute_lpd(
     ynew = ynew, mu = mu, proj = proj, weights = weights
   )
-  pred_out <- if (!dot_args$transform) proj$family$linkfun(mu) else mu
+  pred_out <- if (!dot_args$transform) proj$refmodel$family$linkfun(mu) else mu
   if (dot_args$integrated) {
     ## average over the posterior draws
     pred_out <- pred_out %*% proj$weights
@@ -239,10 +239,10 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
 compute_lpd <- function(ynew, mu, proj, weights) {
   if (!is.null(ynew)) {
     ## compute also the log-density
-    target <- .get_standard_y(ynew, weights, proj$family)
+    target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    return(as.matrix(proj$family$ll_fun(mu, proj$dis, ynew, weights)))
+    return(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights))
   } else {
     return(NULL)
   }
@@ -282,9 +282,9 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
     draw_inds <- seq_along(proj$weights)
   }
 
-  do.call(rbind, lapply(draw_inds, function(i) {
-    proj$family$ppd(mu[, i], proj$dis[i], weights)
-  }))
+  return(do.call(rbind, lapply(draw_inds, function(i) {
+    proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
+  })))
 }
 
 #' Plot summary statistics of a variable selection
@@ -338,8 +338,7 @@ plot.vsel <- function(
   tab <- rbind(
     .tabulate_stats(object, stats,
                     alpha = alpha,
-                    nfeat_baseline = nfeat_baseline
-    ),
+                    nfeat_baseline = nfeat_baseline),
     .tabulate_stats(object, stats, alpha = alpha)
   )
   stats_table <- subset(tab, tab$delta == deltas)
@@ -349,10 +348,8 @@ plot.vsel <- function(
 
 
   if (NROW(stats_sub) == 0) {
-    stop(paste0(
-      ifelse(length(stats) == 1, "Statistics ", "Statistic "),
-      paste0(unique(stats), collapse = ", "), " not available."
-    ))
+    stop(ifelse(length(stats) == 1, "Statistics ", "Statistic "),
+         paste0(unique(stats), collapse = ", "), " not available.")
   }
 
   max_size <- max(stats_sub$size)
@@ -394,10 +391,8 @@ plot.vsel <- function(
   }
 
   # plot submodel results
-  pp <- ggplot(
-    data = subset(stats_sub, stats_sub$size <= nterms_max),
-    mapping = aes_string(x = "size")
-  ) +
+  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
+               mapping = aes_string(x = "size")) +
     geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
     geom_line(aes_string(y = "value")) +
     geom_point(aes_string(y = "value"))
@@ -406,15 +401,13 @@ plot.vsel <- function(
     # add reference model results if they exist
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
                           data = stats_ref,
-                          color = "darkred", linetype = 2
-    )
+                          color = "darkred", linetype = 2)
   }
   if (baseline != "ref") {
     # add the baseline result (if different from the reference model)
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
                           data = stats_bs,
-                          color = "black", linetype = 3
-    )
+                          color = "black", linetype = 3)
   }
   pp <- pp +
     scale_x_continuous(
@@ -506,8 +499,7 @@ summary.vsel <- function(
   # Initialize output:
   out <- list(
     formula = object$refmodel$formula,
-    fit = object$fit,
-    family = object$family,
+    family = object$refmodel$family,
     nobs = NROW(object$refmodel$fetch_data()),
     method = object$method,
     cv_method = object$cv_method,
@@ -570,10 +562,8 @@ summary.vsel <- function(
   # Construct the (almost) final output table by looping over all requested
   # statistics, reshaping the corresponding data in `stats_table`, and selecting
   # only the requested `type`s:
-  arr <- data.frame(
-    size = unique(stats_table$size),
-    solution_terms = c(NA, object$solution_terms)
-  )
+  arr <- data.frame(size = unique(stats_table$size),
+                    solution_terms = c(NA, object$solution_terms))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- suffix[[i]]
@@ -790,8 +780,7 @@ suggest_size.vsel <- function(
   stats <- summary.vsel(object,
                         stats = stat, alpha = alpha,
                         type = c("mean", "upper", "lower"),
-                        baseline = baseline, deltas = TRUE
-  )$selection
+                        baseline = baseline, deltas = TRUE)$selection
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
     paste0(stat, suffix)
@@ -806,11 +795,10 @@ suggest_size.vsel <- function(
     } else {
       suggested_size <- NA
       if (warnings) {
-        warning(paste(
-          "Could not suggest model size. Investigate plot.vsel to identify",
-          "if the search was terminated too early. If this is the case,",
-          "run variable selection with larger value for nterms_max."
-        ))
+        warning("Could not suggest model size. Investigate plot.vsel to ",
+                "identify if the search was terminated too early. If this is ",
+                "the case, run variable selection with larger value for ",
+                "nterms_max.")
       }
     }
   } else {
@@ -844,32 +832,34 @@ coef.subfit <- function(object, ...) {
   )))
 }
 
-#' @method as.matrix lm
+# An (internal) generic for extracting the coefficients and any other parameter
+# estimates from a submodel fit.
+get_subparams <- function(x, ...) {
+  UseMethod("get_subparams")
+}
+
 #' @keywords internal
 #' @export
-as.matrix.lm <- function(x, ...) {
+get_subparams.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names())
 }
 
-#' @method as.matrix subfit
 #' @keywords internal
 #' @export
-as.matrix.subfit <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.subfit <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
-#' @method as.matrix glm
 #' @keywords internal
 #' @export
-as.matrix.glm <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.glm <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
-#' @method as.matrix lmerMod
 #' @keywords internal
 #' @export
-as.matrix.lmerMod <- function(x, ...) {
+get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names()
 
@@ -883,14 +873,14 @@ as.matrix.lmerMod <- function(x, ...) {
     if (!is.null(cor_mat)) {
       # Auxiliary object: A matrix of the same dimension as cor_mat, but
       # containing the paste()-d dimnames:
-      cor_mat_nms <- matrix(apply(expand.grid(
-        rownames(cor_mat),
-        colnames(cor_mat)
-      ),
-      1, paste,
-      collapse = "."
-      ),
-      nrow = nrow(cor_mat), ncol = ncol(cor_mat)
+      cor_mat_nms <- matrix(
+        apply(expand.grid(rownames(cor_mat),
+                          colnames(cor_mat)),
+              1,
+              paste,
+              collapse = "."),
+        nrow = nrow(cor_mat),
+        ncol = ncol(cor_mat)
       )
       # Note: With upper.tri() (and also with lower.tri()), the indexed matrix
       # is coerced to a vector in column-major order:
@@ -917,10 +907,8 @@ as.matrix.lmerMod <- function(x, ...) {
   names(group_vc) <- sub(
     paste0(
       "(",
-      paste(
-        gsub("\\.", "\\\\.", names(group_vc_raw)),
-        collapse = "|"
-      ),
+      paste(gsub("\\.", "\\\\.", names(group_vc_raw)),
+            collapse = "|"),
       ")\\.(sd|cor)\\."
     ),
     "\\2_\\1__",
@@ -933,10 +921,8 @@ as.matrix.lmerMod <- function(x, ...) {
     names(group_vc) <- gsub(
       paste0(
         "(",
-        paste(
-          gsub("\\.", "\\\\.", coef_nms_i),
-          collapse = "|"
-        ),
+        paste(gsub("\\.", "\\\\.", coef_nms_i),
+              collapse = "|"),
         ")\\."
       ),
       "\\1__",
@@ -949,12 +935,12 @@ as.matrix.lmerMod <- function(x, ...) {
     ranef_mat <- as.matrix(ranef_df)
     setNames(
       as.vector(ranef_mat),
-      apply(
-        expand.grid(rownames(ranef_mat), colnames(ranef_mat)),
-        1, function(row_col_nm) {
-          paste(rev(row_col_nm), collapse = ".")
-        }
-      )
+      apply(expand.grid(rownames(ranef_mat),
+                        colnames(ranef_mat)),
+            1,
+            function(row_col_nm) {
+              paste(rev(row_col_nm), collapse = ".")
+            })
     )
   }))
 
@@ -972,10 +958,8 @@ as.matrix.lmerMod <- function(x, ...) {
         "(",
         gsub("\\.", "\\\\.", group_nm_i),
         ")\\.(",
-        paste(
-          gsub("\\.", "\\\\.", coef_nms_i),
-          collapse = "|"
-        ),
+        paste(gsub("\\.", "\\\\.", coef_nms_i),
+              collapse = "|"),
         ")\\.(.*)$"
       ),
       "\\1[\\3,\\2]",
@@ -986,18 +970,16 @@ as.matrix.lmerMod <- function(x, ...) {
   return(c(population_effects, group_vc, group_ef))
 }
 
-#' @method as.matrix glmerMod
 #' @keywords internal
 #' @export
-as.matrix.glmerMod <- function(x, ...) {
-  return(as.matrix.lmerMod(x, ...))
+get_subparams.glmerMod <- function(x, ...) {
+  return(get_subparams.lmerMod(x, ...))
 }
 
-#' @method as.matrix gamm4
 #' @keywords internal
 #' @export
-as.matrix.gamm4 <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.gamm4 <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
 #' Extract projected parameter draws
@@ -1068,18 +1050,11 @@ as.matrix.projection <- function(x, ...) {
          "\"datafit\"s.")
   }
   if (x$p_type) {
-    warning(paste(
-      "Note that projection was performed using",
-      "clustering and the clusters might have different weights."
-    ))
+    warning("Note that projection was performed using clustering and the ",
+            "clusters might have different weights.")
   }
-  if (!all(sapply(x$sub_fit, inherits, what = get_as.matrix_cls_projpred()))) {
-    # Throw an error because in this case, we probably need a new
-    # as.matrix.<class_name>() method.
-    stop("Unrecognized submodel fit. Please notify the package maintainer.")
-  }
-  res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
-  if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  res <- do.call(rbind, lapply(x$sub_fit, get_subparams))
+  if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }
 
