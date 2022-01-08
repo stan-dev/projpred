@@ -192,19 +192,12 @@ test_that("invalid `newdata` fails", {
     proj_linpred(prjs, newdata = dat[, 1]),
     "must be a data\\.frame or a matrix"
   )
-  expect_error(
-    proj_linpred(prjs,
-                 solution_terms = rep_len(solterms_x, length.out = 1e4)),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in `newdata`\\.$")
-  )
   stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_linpred(prjs[[head(grep("\\.glm\\.gauss", names(prjs)), 1)]],
-                 newdata = dat[, 1, drop = FALSE],
-                 solution_terms = solterms_x),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in `newdata`\\.$")
+    proj_linpred(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
+                            1)]],
+                 newdata = dat[, head(solterms_x, -1), drop = FALSE]),
+    "^object 'xco\\.1' not found$"
   )
 })
 
@@ -802,21 +795,14 @@ test_that("invalid `newdata` fails", {
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
   )
-  expect_error(
-    proj_predict(prjs,
-                 .seed = seed2_tst,
-                 solution_terms = rep_len(solterms_x, length.out = 1e4)),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in `newdata`\\.$")
-  )
   stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_predict(prjs[[head(grep("\\.glm\\.gauss", names(prjs)), 1)]],
-                 newdata = dat[, 1, drop = FALSE],
+    proj_predict(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
+                            1)]],
+                 newdata = dat[, head(solterms_x, -1), drop = FALSE],
                  .seed = seed2_tst,
                  solution_terms = solterms_x),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in `newdata`\\.$")
+    "^object 'xco\\.1' not found$"
   )
 })
 

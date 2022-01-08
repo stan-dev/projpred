@@ -412,8 +412,8 @@ check_conv <- function(fit) {
 
 # Prediction functions for submodels --------------------------------------
 
-subprd <- function(fit, newdata) {
-  return(do.call(cbind, lapply(fit, function(fit) {
+subprd <- function(fits, newdata) {
+  return(do.call(cbind, lapply(fits, function(fit) {
     # Only pass argument `allow.new.levels` to the predict() generic if the fit
     # is multilevel:
     has_grp <- inherits(fit, c("lmerMod", "glmerMod"))
@@ -446,6 +446,10 @@ predict.subfit <- function(subfit, newdata = NULL) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(x))))
     } else {
+      if (ncol(x) != length(beta) + 1L) {
+        stop("The number of columns in the model matrix (\"X\") doesn't match ",
+             "the number of coefficients.")
+      }
       return(x %*% rbind(alpha, beta))
     }
   }

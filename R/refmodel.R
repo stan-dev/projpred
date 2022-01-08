@@ -84,13 +84,13 @@
 #'     + `newdata` accepts either `NULL` (for using the original dataset,
 #'     typically stored in `fit`) or data for new observations (at least in the
 #'     form of a `data.frame`).
-#' * `proj_predfun`: `proj_predfun(fit, newdata)` where:
-#'     + `fit` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
-#'     this number of submodel fits. This `list` is the same as that returned by
-#'     [project()] in its output element `sub_fit` (which in turn is the same as
-#'     the return value of `div_minimizer`, except if [project()] was used with
-#'     an `object` of class `vsel` based on an L1 search as well as with
-#'     `cv_search = FALSE`).
+#' * `proj_predfun`: `proj_predfun(fits, newdata)` where:
+#'     + `fits` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj}
+#'     containing this number of submodel fits. This `list` is the same as that
+#'     returned by [project()] in its output element `submodl` (which in turn is
+#'     the same as the return value of `div_minimizer`, except if [project()]
+#'     was used with an `object` of class `vsel` based on an L1 search as well
+#'     as with `cv_search = FALSE`).
 #'     + `newdata` accepts data for new observations (at least in the form of a
 #'     `data.frame`).
 #' * `div_minimizer` does not need to have a specific prototype, but it needs to
@@ -563,14 +563,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     family <- extend_family(family)
   }
 
-  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL) {
+  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL) {
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
       stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
-    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
+    family$linkinv(proj_predfun(fits, newdata = newdata) + offset)
   }
 
   # Special case: `datafit` -------------------------------------------------

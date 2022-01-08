@@ -76,7 +76,8 @@ model.}
 \item{\code{solution_terms}}{A character vector of the submodel's
 predictor terms, ordered in the way in which the terms were added to the
 submodel.}
-\item{\code{sub_fit}}{The submodel's fitted model object.}
+\item{\code{submodl}}{A \code{list} containing the submodel fits (one fit per
+projected draw).}
 \item{\code{p_type}}{A single logical value indicating whether the
 reference model's posterior draws have been clustered for the projection
 (\code{TRUE}) or not (\code{FALSE}).}

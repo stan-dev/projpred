@@ -159,13 +159,6 @@ proj_helper <- function(object, newdata,
     count_terms_chosen(proj$solution_terms, add_icpt = TRUE)
   })
 
-  solution_terms <- list(...)$solution_terms
-  if (!is.null(solution_terms) &&
-      length(solution_terms) > NCOL(newdata)) {
-    stop("The number of solution terms is greater than the number of columns ",
-         "in `newdata`.")
-  }
-
   preds <- lapply(projs, function(proj) {
     w_o <- proj$refmodel$extract_model_data(
       proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,
@@ -179,7 +172,7 @@ proj_helper <- function(object, newdata,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
-    mu <- proj$refmodel$family$mu_fun(proj$sub_fit,
+    mu <- proj$refmodel$family$mu_fun(proj$submodl,
                                       newdata = newdata, offset = offsetnew)
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
@@ -1053,7 +1046,7 @@ as.matrix.projection <- function(x, ...) {
     warning("Note that projection was performed using clustering and the ",
             "clusters might have different weights.")
   }
-  res <- do.call(rbind, lapply(x$sub_fit, get_subparams))
+  res <- do.call(rbind, lapply(x$submodl, get_subparams))
   if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }

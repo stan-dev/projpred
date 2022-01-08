@@ -62,7 +62,7 @@ test_that("all div_minimizer()s work", {
     } else {
       wobs_expected_crr <- NULL
     }
-    sub_fit_tester(divmin_res,
+    submodl_tester(divmin_res,
                    nprjdraws_expected = 1L,
                    sub_formul = list(args_fit_i$formula),
                    sub_data = eval(args_fit_i$data),

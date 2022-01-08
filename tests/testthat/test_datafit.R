@@ -169,11 +169,16 @@ if (run_vs) {
   })
 
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
-    do.call(project, c(
-      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
-           cv_search = FALSE),
-      excl_nonargs(args_prj_vs_i)
-    ))
+    expect_warning(
+      do.call(project, c(
+        list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
+             cv_search = FALSE),
+        excl_nonargs(args_prj_vs_i)
+      )),
+      paste("^Currently, `cv_search = FALSE` requires some caution, see GitHub",
+            "issues #168 and #211\\.$"),
+      info = args_prj_vs_i$tstsetup_vsel
+    )
   })
 }
 
@@ -687,12 +692,17 @@ test_that(paste(
       method = "l1", lambda_min_ratio = lambda_min_ratio,
       nlambda = nlambda, thresh = 1e-12
     ))
-    pred1 <- proj_linpred(vs,
-                          newdata = data.frame(x = x, offset = offset,
-                                               weights = weights),
-                          nterms = 0:nterms, transform = FALSE,
-                          offsetnew = ~offset,
-                          cv_search = FALSE)
+    expect_warning(
+      pred1 <- proj_linpred(vs,
+                            newdata = data.frame(x = x, offset = offset,
+                                                 weights = weights),
+                            nterms = 0:nterms, transform = FALSE,
+                            offsetnew = ~offset,
+                            cv_search = FALSE),
+      paste("^Currently, `cv_search = FALSE` requires some caution, see GitHub",
+            "issues #168 and #211\\.$"),
+      info = fam$family
+    )
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
@@ -720,12 +730,12 @@ test_that(paste(
     # check that the coefficients are similar
     ind <- match(vs$solution_terms, setdiff(split_formula(formula), "1"))
     if (Sys.getenv("NOT_CRAN") == "true") {
-      betas <- sapply(vs$search_path$sub_fits, function(x) x[[1]]$beta %||% 0)
+      betas <- sapply(vs$search_path$submodls, function(x) x[[1]]$beta %||% 0)
       delta <- sapply(seq_len(nterms), function(i) {
         abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
       })
       expect_true(median(unlist(delta)) < 6e-2)
-      expect_true(median(abs(sapply(vs$search_path$sub_fits, function(x) {
+      expect_true(median(abs(sapply(vs$search_path$submodls, function(x) {
         x[[1]]$alpha
       }) - lasso$a0[lambdainds])) < 1.5e-1)
     } else {
