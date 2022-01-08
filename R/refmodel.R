@@ -567,6 +567,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
+    } else {
+      stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
     family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
   }
