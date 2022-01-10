@@ -252,7 +252,7 @@ This PPPC shows that our final projection is able to generate predictions simila
 
 ## Supported types of reference models {#refmodtypes}
 
-Apart from the `gaussian()` response family used in this vignette, **projpred** also supports the `binomial()`^[The `binomial()` family includes the `brms::bernoulli()` family as a special case which may only be used via the **brms** package.] and the `poisson()` family. On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and---as an experimental feature---additive^[Additive terms are also known as *smoothing* terms.] terms.
+Apart from the `gaussian()` response family used in this vignette, **projpred** also supports the `binomial()`^[The `binomial()` family includes the `brms::bernoulli()` family as a special case which may only be used via the **brms** package.] and the `poisson()` family. On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and---as an experimental feature---additive^[Additive terms are also known as *smooth* terms.] terms.
 
 Transferring this vignette to such more complex reference models is straightforward: Basically, only the code for fitting the reference model via **rstanarm** or **brms** needs to be adapted. The **projpred** code stays almost the same. Only note that in case of multilevel or additive reference models,
 <!-- the parallelization of the projection is not recommended and that -->
@@ -274,10 +274,10 @@ As an example for an additive (non-multilevel) reference model, consider the `la
 data("lasrosas.corn", package = "agridat")
 # Convert `year` to a `factor` (this could also be solved by using
 # `factor(year)` in the formula, but we avoid that here to put more emphasis on
-# the demonstration of the smoothing term):
+# the demonstration of the smooth term):
 lasrosas.corn$year <- as.factor(lasrosas.corn$year)
 refm_fit <- stan_gamm4(
-  yield ~ year + topo + s(nitro, bv),
+  yield ~ year + topo + t2(nitro, bv),
   family = gaussian(),
   data = lasrosas.corn,
   seed = 4919670, QR = TRUE, refresh = 0
