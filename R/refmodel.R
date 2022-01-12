@@ -21,9 +21,10 @@
 #' @param data Data used for fitting the reference model.
 #' @param formula Reference model's formula. For general information on formulas
 #'   in \R, see [`formula`]. For multilevel formulas, see also package
-#'   \pkg{lme4}, in particular [lme4::lmer()] and [lme4::glmer()]. For additive
-#'   formulas, see also packages \pkg{mgcv}, in particular [mgcv::gam()], and
-#'   \pkg{gamm4}, in particular [gamm4::gamm4()].
+#'   \pkg{lme4} (in particular, functions [lme4::lmer()] and [lme4::glmer()]).
+#'   For additive formulas, see also packages \pkg{mgcv} (in particular,
+#'   function [mgcv::gam()]) and \pkg{gamm4} (in particular, function
+#'   [gamm4::gamm4()]) as well as the notes in section "Formula terms" below.
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model, including offsets (if existing). See also section
 #'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below. If
@@ -66,6 +67,16 @@
 #'   arguments passed to the appropriate method. Else: ignored.
 #'
 #' @details
+#'
+#' # Formula terms
+#'
+#' For additive models (still an experimental feature), only [mgcv::s()] and
+#' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
+#' to be called without any arguments apart from the predictor names (symbols).
+#' For example, for smoothing the effect of a predictor `x`, only `s(x)` or
+#' `t2(x)` are allowed. As another example, for smoothing the joint effect of
+#' two predictors `x` and `z`, only `s(x, z)` or `t2(x, z)` are allowed (and
+#' analogously for higher-order joint effects, e.g., of three predictors).
 #'
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'

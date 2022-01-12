@@ -52,9 +52,10 @@ arguments passed to the appropriate method. Else: ignored.}
 
 \item{formula}{Reference model's formula. For general information on formulas
 in \R, see \code{\link{formula}}. For multilevel formulas, see also package
-\pkg{lme4}, in particular \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}. For additive
-formulas, see also packages \pkg{mgcv}, in particular \code{\link[mgcv:gam]{mgcv::gam()}}, and
-\pkg{gamm4}, in particular \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.}
+\pkg{lme4} (in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}).
+For additive formulas, see also packages \pkg{mgcv} (in particular,
+function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function
+\code{\link[gamm4:gamm4]{gamm4::gamm4()}}) as well as the notes in section "Formula terms" below.}
 
 \item{family}{A \code{\link{family}} object representing the observational model (i.e.,
 the distributional family for the response).}
@@ -120,6 +121,16 @@ also be used directly without a call to \code{\link[=get_refmodel]{get_refmodel(
 for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see \code{\link[=cv_varsel]{cv_varsel()}}
 for the use of \eqn{K}-fold CV in \pkg{projpred}.
 }
+\section{Formula terms}{
+For additive models (still an experimental feature), only \code{\link[mgcv:s]{mgcv::s()}} and
+\code{\link[mgcv:t2]{mgcv::t2()}} are currently supported as smooth terms. Furthermore, these need
+to be called without any arguments apart from the predictor names (symbols).
+For example, for smoothing the effect of a predictor \code{x}, only \code{s(x)} or
+\code{t2(x)} are allowed. As another example, for smoothing the joint effect of
+two predictors \code{x} and \code{z}, only \code{s(x, z)} or \code{t2(x, z)} are allowed (and
+analogously for higher-order joint effects, e.g., of three predictors).
+}
+
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default. Otherwise, let \eqn{N} denote the number of
