@@ -95,14 +95,14 @@ In **projpred**, the projective variable selection consists of a *search* part a
 
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is explained in the `?cv_varsel` help) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
 
-In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of reference models"](#refmodtypes) below).
-```{r}
-if (!identical(.Platform$OS.type, "windows")) {
-  trigger_default <- options(projpred.prll_prj_trigger = 200)
-  library(doParallel)
-  registerDoParallel(ncores)
-}
-```
+<!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of reference models"](#refmodtypes) below). -->
+<!-- ```{r} -->
+<!-- if (!identical(.Platform$OS.type, "windows")) { -->
+<!--   trigger_default <- options(projpred.prll_prj_trigger = 200) -->
+<!--   library(doParallel) -->
+<!--   registerDoParallel(ncores) -->
+<!-- } -->
+<!-- ``` -->
 
 Here, we use only some of the available arguments; see the documentation of `cv_varsel()` for the full list of arguments. By modifying argument `cv_method`, we use a K-fold CV instead of a leave-one-out (LOO) CV. We do this here only to make this vignette build faster. When the computation time is not an issue, we recommend using LOO-CV as it is likely to be more accurate. By modifying argument `nterms_max`, we impose a limit on the model size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`12`) is based on such a first run (which is not shown here, though).
 ```{r, results='hide', cache=TRUE, cache.lazy=FALSE}
@@ -239,22 +239,24 @@ ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict, alpha = 0.9, bw = "SJ")
 
 This PPPC shows that our final projection is able to generate predictions similar to the observed response values, which indicates that this model is reasonable, at least in this regard.
 
-## Teardown / clean-up
+<!-- ## Teardown / clean-up -->
 
-Finally, we clean up everything we have set up for the parallelization of the projection. This may not always be necessary, but sometimes it is and apart from that, it is simply good practice:
-```{r}
-if (!identical(.Platform$OS.type, "windows")) {
-  stopImplicitCluster()
-  registerDoSEQ()
-  options(projpred.prll_prj_trigger = trigger_default$projpred.prll_prj_trigger)
-}
-```
+<!-- Finally, we clean up everything we have set up for the parallelization of the projection. This may not always be necessary, but sometimes it is and apart from that, it is simply good practice: -->
+<!-- ```{r} -->
+<!-- if (!identical(.Platform$OS.type, "windows")) { -->
+<!--   stopImplicitCluster() -->
+<!--   registerDoSEQ() -->
+<!--   options(projpred.prll_prj_trigger = trigger_default$projpred.prll_prj_trigger) -->
+<!-- } -->
+<!-- ``` -->
 
 ## Supported types of reference models {#refmodtypes}
 
 Apart from the `gaussian()` response family used in this vignette, **projpred** also supports the `binomial()`^[The `binomial()` family includes the `brms::bernoulli()` family as a special case which may only be used via the **brms** package.] and the `poisson()` family. On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and---as an experimental feature---additive^[Additive terms are also known as *smoothing* terms.] terms.
 
-Transferring this vignette to such more complex reference models is straightforward: Basically, only the code for fitting the reference model via **rstanarm** or **brms** needs to be adapted. The **projpred** code stays almost the same. Only note that in case of multilevel or additive reference models, the parallelization of the projection is not recommended and that some **projpred** functions then have slightly different options for a few arguments. See the documentation for details.
+Transferring this vignette to such more complex reference models is straightforward: Basically, only the code for fitting the reference model via **rstanarm** or **brms** needs to be adapted. The **projpred** code stays almost the same. Only note that in case of multilevel or additive reference models,
+<!-- the parallelization of the projection is not recommended and that -->
+some **projpred** functions then have slightly different options for a few arguments. See the documentation for details.
 
 For example, to apply **projpred** to the `VerbAgg` dataset from the **lme4** package, a corresponding multilevel reference model for the binary response `r2` could be created by the following code:
 ```{r, eval=FALSE}

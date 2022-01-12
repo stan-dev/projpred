@@ -581,7 +581,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = fold$p_pred, refmodel = fold$refmodel, regul = opt$regul,
-      cv_search = FALSE
+      cv_search = cv_search
     )
     if (verbose && cv_search) {
       utils::setTxtProgressBar(pb, fold_index)
