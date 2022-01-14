@@ -403,7 +403,7 @@ plot.vsel <- function(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
     ) +
-    labs(x = "Number of terms in the submodel", y = ylab) +
+    labs(x = "Submodel size (number of predictor terms)", y = ylab) +
     theme(legend.position = "none") +
     facet_grid(statistic ~ ., scales = "free_y")
   return(pp)
