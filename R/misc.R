@@ -56,7 +56,7 @@ auc <- function(x) {
 # Bootstrap an arbitrary quantity `fun` that takes the sample `x` as the first
 # input. Other arguments of `fun` can be passed by `...`. Example:
 # `boostrap(x, mean)`.
-bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
+bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
   # set random seed but ensure the old RNG state is restored on exit
   if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed

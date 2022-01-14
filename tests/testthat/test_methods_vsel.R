@@ -154,10 +154,16 @@ test_that(paste(
   skip_if_not(run_vs)
   for (tstsetup in head(names(smmrys_vs), 1)) {
     args_smmry_vs_i <- args_smmry_vs[[tstsetup]]
+    if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
+      smmry_seed <- list(seed = seed3_tst)
+    } else {
+      smmry_seed <- list()
+    }
     expect_output(
       print_obj <- do.call(print, c(
         list(x = vss[[args_smmry_vs_i$tstsetup_vsel]]),
-        excl_nonargs(args_smmry_vs_i)
+        excl_nonargs(args_smmry_vs_i),
+        smmry_seed
       )),
       "Family:.*Link function:.*Formula:.*Observations:",
       info = tstsetup
@@ -173,10 +179,16 @@ test_that(paste(
   skip_if_not(run_cvvs)
   for (tstsetup in head(names(smmrys_cvvs), 1)) {
     args_smmry_cvvs_i <- args_smmry_cvvs[[tstsetup]]
+    if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
+      smmry_seed <- list(seed = seed3_tst)
+    } else {
+      smmry_seed <- list()
+    }
     expect_output(
       print_obj <- do.call(print, c(
         list(x = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
-        excl_nonargs(args_smmry_cvvs_i)
+        excl_nonargs(args_smmry_cvvs_i),
+        smmry_seed
       )),
       "Family:.*Link function:.*Formula:.*Observations:",
       info = tstsetup
@@ -273,10 +285,15 @@ test_that("`stat` works", {
                           "common_stats")
     stat_vec <- stats_tst[[stat_crr_nm]]$stats
     for (stat_crr in stat_vec) {
+      if (stat_crr %in% c("rmse", "auc")) {
+        suggsize_seed <- seed3_tst
+      } else {
+        suggsize_seed <- NULL
+      }
       # Warnings are suppressed, but a suggested size of `NA` (because of a
       # search which was terminated too early) is tested below:
       suggsize <- suppressWarnings(
-        suggest_size(vss[[tstsetup_vs]], stat = stat_crr)
+        suggest_size(vss[[tstsetup_vs]], stat = stat_crr, seed = suggsize_seed)
       )
       expect_type(suggsize, "double")
       expect_length(suggsize, 1)

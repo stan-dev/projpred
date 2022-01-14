@@ -46,7 +46,7 @@
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL) {
+                            nfeat_baseline = NULL, ...) {
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
@@ -75,7 +75,7 @@
     ## reference model statistics
     summ <- summ_ref
     res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
-                    lppd.bs = lppd.bs, weights = summ$w, alpha = alpha)
+                    lppd.bs = lppd.bs, weights = summ$w, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
@@ -93,10 +93,10 @@
         ## scale
         res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$d_test,
                             stat, mu.bs = NULL, lppd.bs = NULL,
-                            weights = summ_ref$w, alpha = alpha)
+                            weights = summ_ref$w, alpha = alpha, ...)
         res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
                              mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                             weights = summ$w, alpha = alpha)
+                             weights = summ$w, alpha = alpha, ...)
         val <- res_ref$value + res_diff$value
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
@@ -109,10 +109,10 @@
       } else {
         ## normal case
         res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
-                        lppd.bs = lppd.bs, weights = summ$w, alpha = alpha)
+                        lppd.bs = lppd.bs, weights = summ$w, alpha = alpha, ...)
         diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
                          mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                         weights = summ$w, alpha = alpha)
+                         weights = summ$w, alpha = alpha, ...)
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
@@ -127,7 +127,7 @@
 }
 
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
-                     weights = NULL, alpha = 0.1, seed = 1208499, B = 2000) {
+                     weights = NULL, alpha = 0.1, ...) {
   ##
   ## Calculates given statistic stat with standard error and confidence bounds.
   ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
@@ -195,16 +195,14 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         function(resid2) {
           sqrt(mean(weights * resid2, na.rm = TRUE))
         },
-        b = B,
-        seed = seed
+        ...
       )
       value.bootstrap2 <- bootstrap(
         (mu.bs - y)^2,
         function(resid2) {
           sqrt(mean(weights * resid2, na.rm = TRUE))
         },
-        b = B,
-        seed = seed
+        ...
       )
       value.se <- sd(value.bootstrap1 - value.bootstrap2)
     } else {
@@ -214,8 +212,7 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         function(resid2) {
           sqrt(mean(weights * resid2, na.rm = TRUE))
         },
-        b = B,
-        seed = seed
+        ...
       )
       value.se <- sd(value.bootstrap)
     }
@@ -240,12 +237,12 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
       auc.data.bs <- cbind(y, mu.bs, weights)
       value <- auc(auc.data) - auc(auc.data.bs)
-      value.bootstrap1 <- bootstrap(auc.data, auc, b = B, seed = seed)
-      value.bootstrap2 <- bootstrap(auc.data.bs, auc, b = B, seed = seed)
+      value.bootstrap1 <- bootstrap(auc.data, auc, ...)
+      value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
       value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
     } else {
       value <- auc(auc.data)
-      value.bootstrap <- bootstrap(auc.data, auc, b = B, seed = seed)
+      value.bootstrap <- bootstrap(auc.data, auc, ...)
       value.se <- sd(value.bootstrap, na.rm = TRUE)
     }
   }

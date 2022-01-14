@@ -621,6 +621,7 @@ type_tst <- c("mean", "lower", "upper", "se")
 
 seed_tst <- 74345
 seed2_tst <- 866028
+seed3_tst <- 1208499
 
 ## Reference model --------------------------------------------------------
 
@@ -965,9 +966,15 @@ if (run_vs) {
   args_smmry_vs <- unlist_cust(args_smmry_vs)
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
+    if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
+      smmry_seed <- list(seed = seed3_tst)
+    } else {
+      smmry_seed <- list()
+    }
     do.call(summary, c(
       list(object = vss[[args_smmry_vs_i$tstsetup_vsel]]),
-      excl_nonargs(args_smmry_vs_i)
+      excl_nonargs(args_smmry_vs_i),
+      smmry_seed
     ))
   })
 }
@@ -989,9 +996,15 @@ if (run_cvvs) {
   args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
+    if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
+      smmry_seed <- list(seed = seed3_tst)
+    } else {
+      smmry_seed <- list()
+    }
     do.call(summary, c(
       list(object = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
-      excl_nonargs(args_smmry_cvvs_i)
+      excl_nonargs(args_smmry_cvvs_i),
+      smmry_seed
     ))
   })
 }

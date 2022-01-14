@@ -287,9 +287,6 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
-#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel (in terms of `stats[1]`),
-#'   respectively.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -329,10 +326,9 @@ plot.vsel <- function(
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
   tab <- rbind(
-    .tabulate_stats(object, stats,
-                    alpha = alpha,
-                    nfeat_baseline = nfeat_baseline),
-    .tabulate_stats(object, stats, alpha = alpha)
+    .tabulate_stats(object, stats, alpha = alpha,
+                    nfeat_baseline = nfeat_baseline, ...),
+    .tabulate_stats(object, stats, alpha = alpha, ...)
   )
   stats_table <- subset(tab, tab$delta == deltas)
   stats_ref <- subset(stats_table, stats_table$size == Inf)
@@ -430,10 +426,12 @@ plot.vsel <- function(
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
 #'   * `"mse"`: mean squared error.
-#'   * `"rmse"`: root mean squared error.
+#'   * `"rmse"`: root mean squared error. For the corresponding standard error,
+#'   bootstrapping is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
 #'   ([binomial()] family only).
-#'   * `"auc"`: area under the ROC curve ([binomial()] family only).
+#'   * `"auc"`: area under the ROC curve ([binomial()] family only). For the
+#'   corresponding standard error, bootstrapping is used.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
@@ -449,10 +447,14 @@ plot.vsel <- function(
 #'   normal-approximation confidence intervals. For example, `alpha = 0.32`
 #'   corresponds to a coverage of 68%, i.e., one-standard-error intervals
 #'   (because of the normal approximation).
-#' @param baseline Only relevant if `deltas` is `TRUE`. Either `"ref"` or
-#'   `"best"` indicating whether the baseline is the reference model or the best
-#'   submodel (in terms of `stats[1]`), respectively.
-#' @param ... Currently ignored.
+#' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
+#'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
+#'   whether the baseline is the reference model or the best submodel found (in
+#'   terms of `stats[1]`), respectively.
+#' @param ... Arguments passed to the internal function which is used for
+#'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
+#'   arguments are `b` (the number of bootstrap samples, defaulting to `2000`)
+#'   and `seed` (see [set.seed()], defaulting to `NULL`).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -513,9 +515,9 @@ summary.vsel <- function(
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
     tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           nfeat_baseline = nfeat_baseline)
+                           nfeat_baseline = nfeat_baseline, ...)
   } else {
-    tab <- .tabulate_stats(object, stats, alpha = alpha)
+    tab <- .tabulate_stats(object, stats, alpha = alpha, ...)
   }
   stats_table <- subset(tab, tab$size != Inf) %>%
     dplyr::group_by(.data$statistic) %>%
@@ -642,12 +644,15 @@ print.vselsummary <- function(x, digits = 1, ...) {
 #' @param ... Further arguments passed to [summary.vsel()] (apart from
 #'   argument `digits` which is passed to [print.vselsummary()]).
 #'
-#' @return The `data.frame` returned by [summary.vsel()] (invisible).
+#' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
 print.vsel <- function(x, ...) {
-  stats <- summary.vsel(x, ...)
-  print(stats, ...)
+  dot_args <- list(...)
+  stats <- do.call(summary.vsel, c(list(object = x),
+                                   dot_args[names(dot_args) != "digits"]))
+  do.call(print, c(list(x = stats),
+                   dot_args[names(dot_args) == "digits"]))
   return(invisible(stats))
 }
 
@@ -663,35 +668,30 @@ print.vsel <- function(x, ...) {
 #'   [cv_varsel()]).
 #' @param stat Statistic used for the decision. See [summary.vsel()] for
 #'   possible choices.
-#' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
-#'   normal-approximation confidence intervals based on which the decision is
-#'   made. For example, `alpha = 0.32` corresponds to a coverage of 68%, i.e.,
-#'   one-standard-error intervals (because of the normal approximation). See
-#'   section "Details" below for more information.
 #' @param pct A number giving the relative proportion (*not* percents) between
 #'   baseline model and null model utilities one is willing to sacrifice. See
 #'   section "Details" below for more information.
 #' @param type Either `"upper"` or `"lower"` determining whether the decision is
 #'   based on the upper or lower confidence interval bound, respectively. See
 #'   section "Details" below for more information.
-#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel (in terms of `stat[1]`),
-#'   respectively.
 #' @param warnings Mainly for internal use. A single logical value indicating
 #'   whether to throw warnings if automatic suggestion fails. Usually there is
 #'   no reason to set this to `FALSE`.
-#' @param ... Currently ignored.
+#' @param ... Arguments passed to [summary.vsel()], except for `object`, `stats`
+#'   (which is set to `stat`), `type`, and `deltas` (which is set to `TRUE`).
+#'   See section "Details" below for some important arguments which may be
+#'   passed here.
 #'
 #' @details The suggested model size is the smallest model size for which either
 #'   the lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
-#'   alpha`) for \eqn{u_k - u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k}
-#'   denoting the \eqn{k}-th submodel's utility and
-#'   \eqn{u_{\mbox{base}}}{u_base} denoting the baseline model's utility) falls
-#'   above (or is equal to) \deqn{\mbox{pct} * (u_0 - u_{\mbox{base}})}{pct *
-#'   (u_0 - u_base)} where \eqn{u_0} denotes the null model utility. The
-#'   baseline is either the reference model or the best submodel found (see
-#'   argument `baseline`).
+#'   alpha`, see argument `alpha` of [summary.vsel()]) for \eqn{u_k -
+#'   u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k} denoting the \eqn{k}-th
+#'   submodel's utility and \eqn{u_{\mbox{base}}}{u_base} denoting the baseline
+#'   model's utility) falls above (or is equal to) \deqn{\mbox{pct} * (u_0 -
+#'   u_{\mbox{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
+#'   model utility. The baseline is either the reference model or the best
+#'   submodel found (see argument `baseline` of [summary.vsel()]).
 #'
 #'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
 #'   select the smallest model size for which the upper bound of the confidence
@@ -742,10 +742,8 @@ suggest_size <- function(object, ...) {
 suggest_size.vsel <- function(
   object,
   stat = "elpd",
-  alpha = 0.32,
   pct = 0,
   type = "upper",
-  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   warnings = TRUE,
   ...
 ) {
@@ -771,9 +769,10 @@ suggest_size.vsel <- function(
   }
   bound <- type
   stats <- summary.vsel(object,
-                        stats = stat, alpha = alpha,
+                        stats = stat,
                         type = c("mean", "upper", "lower"),
-                        baseline = baseline, deltas = TRUE)$selection
+                        deltas = TRUE,
+                        ...)$selection
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
     paste0(stat, suffix)

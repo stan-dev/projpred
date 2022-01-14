@@ -10,10 +10,8 @@ suggest_size(object, ...)
 \method{suggest_size}{vsel}(
   object,
   stat = "elpd",
-  alpha = 0.32,
   pct = 0,
   type = "upper",
-  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   warnings = TRUE,
   ...
 )
@@ -22,16 +20,13 @@ suggest_size(object, ...)
 \item{object}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}).}
 
-\item{...}{Currently ignored.}
+\item{...}{Arguments passed to \code{\link[=summary.vsel]{summary.vsel()}}, except for \code{object}, \code{stats}
+(which is set to \code{stat}), \code{type}, and \code{deltas} (which is set to \code{TRUE}).
+See section "Details" below for some important arguments which may be
+passed here.}
 
 \item{stat}{Statistic used for the decision. See \code{\link[=summary.vsel]{summary.vsel()}} for
 possible choices.}
-
-\item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-normal-approximation confidence intervals based on which the decision is
-made. For example, \code{alpha = 0.32} corresponds to a coverage of 68\%, i.e.,
-one-standard-error intervals (because of the normal approximation). See
-section "Details" below for more information.}
 
 \item{pct}{A number giving the relative proportion (\emph{not} percents) between
 baseline model and null model utilities one is willing to sacrifice. See
@@ -40,10 +35,6 @@ section "Details" below for more information.}
 \item{type}{Either \code{"upper"} or \code{"lower"} determining whether the decision is
 based on the upper or lower confidence interval bound, respectively. See
 section "Details" below for more information.}
-
-\item{baseline}{Either \code{"ref"} or \code{"best"} indicating whether the baseline is
-the reference model or the best submodel (in terms of \code{stat[1]}),
-respectively.}
 
 \item{warnings}{Mainly for internal use. A single logical value indicating
 whether to throw warnings if automatic suggestion fails. Usually there is
@@ -59,13 +50,13 @@ final decision based on what is most appropriate for the problem at hand.
 \details{
 The suggested model size is the smallest model size for which either
 the lower or upper bound (depending on argument \code{type}) of the
-normal-approximation confidence interval (with nominal coverage \code{1 - alpha}) for \eqn{u_k - u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k}
-denoting the \eqn{k}-th submodel's utility and
-\eqn{u_{\mbox{base}}}{u_base} denoting the baseline model's utility) falls
-above (or is equal to) \deqn{\mbox{pct} * (u_0 - u_{\mbox{base}})}{pct *
-  (u_0 - u_base)} where \eqn{u_0} denotes the null model utility. The
-baseline is either the reference model or the best submodel found (see
-argument \code{baseline}).
+normal-approximation confidence interval (with nominal coverage \code{1 - alpha}, see argument \code{alpha} of \code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{u_k -
+  u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k} denoting the \eqn{k}-th
+submodel's utility and \eqn{u_{\mbox{base}}}{u_base} denoting the baseline
+model's utility) falls above (or is equal to) \deqn{\mbox{pct} * (u_0 -
+  u_{\mbox{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
+model utility. The baseline is either the reference model or the best
+submodel found (see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
 
 For example, \code{alpha = 0.32}, \code{pct = 0}, and \code{type = "upper"} means that we
 select the smallest model size for which the upper bound of the confidence
