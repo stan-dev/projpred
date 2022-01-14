@@ -164,7 +164,7 @@ prj <- project(
 <!-- prj <- project( -->
 <!--   cvvs, -->
 <!--   nterms = modsize_decided, -->
-<!--   cv_search = FALSE, -->
+<!--   refit_prj = FALSE, -->
 <!--   seed = 15705533 -->
 <!-- ) -->
 <!-- ``` -->

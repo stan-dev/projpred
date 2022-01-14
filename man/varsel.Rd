@@ -18,7 +18,7 @@ varsel(object, ...)
   nclusters = NULL,
   ndraws_pred = 400,
   nclusters_pred = NULL,
-  cv_search = !inherits(object, "datafit"),
+  refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
   verbose = TRUE,
   lambda_min_ratio = 1e-05,
@@ -58,16 +58,16 @@ part. Ignored in case of L1 search (because L1 search always uses a single
 cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See also
 section "Details" below.}
 
-\item{ndraws_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
+\item{ndraws_pred}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of
 posterior draws used in the evaluation part. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
 clustering is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
 section "Details" below.}
 
-\item{nclusters_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
+\item{nclusters_pred}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of
 clusters of posterior draws used in the evaluation part. For the meaning of
 \code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
-\item{cv_search}{A single logical value indicating whether to fit the
+\item{refit_prj}{A single logical value indicating whether to fit the
 submodels along the solution path again (\code{TRUE}) or to retrieve their fits
 from the search part (\code{FALSE}) before using those (re-)fits in the
 evaluation part.}

@@ -17,7 +17,7 @@
 #'   L1 search and `"forward"` for forward search. If `NULL`, then `"forward"`
 #'   is used if the reference model has multilevel or additive terms and `"L1"`
 #'   otherwise. See also section "Details" below.
-#' @param cv_search A single logical value indicating whether to fit the
+#' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels along the solution path again (`TRUE`) or to retrieve their fits
 #'   from the search part (`FALSE`) before using those (re-)fits in the
 #'   evaluation part.
@@ -30,12 +30,12 @@
 #'   part. Ignored in case of L1 search (because L1 search always uses a single
 #'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
 #'   section "Details" below.
-#' @param ndraws_pred Only relevant if `cv_search` is `TRUE`. Number of
+#' @param ndraws_pred Only relevant if `refit_prj` is `TRUE`. Number of
 #'   posterior draws used in the evaluation part. **Caution:** For `ndraws_pred
 #'   <= 20`, the value of `ndraws_pred` is passed to `nclusters_pred` (so that
 #'   clustering is used). Ignored if `nclusters_pred` is not `NULL`. See also
 #'   section "Details" below.
-#' @param nclusters_pred Only relevant if `cv_search` is `TRUE`. Number of
+#' @param nclusters_pred Only relevant if `refit_prj` is `TRUE`. Number of
 #'   clusters of posterior draws used in the evaluation part. For the meaning of
 #'   `NULL`, see argument `ndraws_pred`. See also section "Details" below.
 #' @param nterms_max Maximum number of predictor terms until which the search is
@@ -140,7 +140,7 @@ varsel.default <- function(object, ...) {
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             ndraws = 20, nclusters = NULL, ndraws_pred = 400,
                             nclusters_pred = NULL,
-                            cv_search = !inherits(object, "datafit"),
+                            refit_prj = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
@@ -149,13 +149,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-    refmodel = refmodel, method = method, cv_search = cv_search,
+    refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, ndraws = ndraws,
     nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
     search_terms = search_terms
   )
   method <- args$method
-  cv_search <- args$cv_search
+  refit_prj <- args$refit_prj
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   ndraws <- args$ndraws
@@ -191,7 +191,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   submodels <- .get_submodels(search_path = search_path,
                               nterms = c(0, seq_along(solution_terms)),
                               p_ref = p_pred, refmodel = refmodel,
-                              regul = regul, cv_search = cv_search)
+                              regul = regul, refit_prj = refit_prj)
   sub <- .get_sub_summaries(
     submodels = submodels, test_points = seq_along(refmodel$y),
     refmodel = refmodel
@@ -276,7 +276,7 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
   }
 }
 
-parse_args_varsel <- function(refmodel, method, cv_search, nterms_max,
+parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
                               nclusters, ndraws, nclusters_pred, ndraws_pred,
                               search_terms) {
   ##
@@ -311,11 +311,11 @@ parse_args_varsel <- function(refmodel, method, cv_search, nterms_max,
     stop("Unknown search method")
   }
 
-  stopifnot(!is.null(cv_search))
-  if (cv_search && inherits(refmodel, "datafit")) {
-    warning("For an `object` of class \"datafit\", `cv_search` is ",
+  stopifnot(!is.null(refit_prj))
+  if (refit_prj && inherits(refmodel, "datafit")) {
+    warning("For an `object` of class \"datafit\", `refit_prj` is ",
             "automatically set to `FALSE`.")
-    cv_search <- FALSE
+    refit_prj <- FALSE
   }
 
   stopifnot(!is.null(ndraws))
@@ -353,7 +353,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, nterms_max,
   nterms_max <- min(max_nv_possible, nterms_max + 1)
 
   return(nlist(
-    method, cv_search, nterms_max, nclusters, ndraws, nclusters_pred,
+    method, refit_prj, nterms_max, nclusters, ndraws, nclusters_pred,
     ndraws_pred, search_terms
   ))
 }

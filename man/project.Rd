@@ -8,7 +8,7 @@ project(
   object,
   nterms = NULL,
   solution_terms = NULL,
-  cv_search = TRUE,
+  refit_prj = TRUE,
   ndraws = 400,
   nclusters = NULL,
   seed = NULL,
@@ -34,18 +34,18 @@ of predictor terms for the submodel onto which the projection will be
 performed. Argument \code{nterms} is ignored in that case. For an \code{object} which
 is not of class \code{vsel}, \code{solution_terms} must not be \code{NULL}.}
 
-\item{cv_search}{A single logical value indicating whether to fit the
+\item{refit_prj}{A single logical value indicating whether to fit the
 submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
 \code{object} (\code{FALSE}). For an \code{object} which is not of class \code{vsel},
-\code{cv_search} must be \code{TRUE}.}
+\code{refit_prj} must be \code{TRUE}.}
 
-\item{ndraws}{Only relevant if \code{cv_search} is \code{TRUE}. Number of posterior
+\item{ndraws}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of posterior
 draws to be projected. \strong{Caution:} For \code{ndraws <= 20}, the value of
 \code{ndraws} is passed to \code{nclusters} (so that clustering is used). Ignored if
 \code{nclusters} is not \code{NULL} or if the reference model is of class \code{datafit}
 (in which case one cluster is used). See also section "Details" below.}
 
-\item{nclusters}{Only relevant if \code{cv_search} is \code{TRUE}. Number of clusters
+\item{nclusters}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of clusters
 of posterior draws to be projected. Ignored if the reference model is of
 class \code{datafit} (in which case one cluster is used). For the meaning of
 \code{NULL}, see argument \code{ndraws}. See also section "Details" below.}
