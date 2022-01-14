@@ -719,11 +719,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (proper_model) {
         stop("Please supply argument `dis`.")
       } else {
-        if (family$family == "Gamma") {
-          warning("Using all-zeros for `dis`, but not sure whether this is ",
-                  "correct.")
-        }
-        dis <- rep(0, ndraws)
+        dis <- 0
       }
     }
   } else {
