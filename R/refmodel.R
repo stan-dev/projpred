@@ -224,7 +224,7 @@ NULL
 #' [get_refmodel()] or [init_refmodel()]). It offers three types of output which
 #' are all based on the reference model and new (or old) observations: Either
 #' the linear predictor on link scale, the linear predictor transformed to
-#' response scale, or the log-predictive density.
+#' response scale, or the log predictive density.
 #'
 #' @template args-newdata
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or

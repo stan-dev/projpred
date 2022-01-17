@@ -151,9 +151,9 @@ or type \code{?projpred}).
 Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
 and GAMMs. This variable selection consists of a \emph{search} part and an
 \emph{evaluation} part. The search part determines the solution path, i.e., the
-best submodel for each number of predictor terms (model size). The evaluation
-part determines the predictive performance of the submodels along the
-solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
+best submodel for each submodel size (number of predictor terms). The
+evaluation part determines the predictive performance of the submodels along
+the solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
 cross-validation (CV) by running the search part with the training data of
 each CV fold separately (an exception is explained in section "Note" below)
 and running the evaluation part on the corresponding test set of each CV

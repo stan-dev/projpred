@@ -124,9 +124,9 @@ or type \code{?projpred}).
 Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
 and GAMMs. This variable selection consists of a \emph{search} part and an
 \emph{evaluation} part. The search part determines the solution path, i.e., the
-best submodel for each number of predictor terms (model size). The evaluation
-part determines the predictive performance of the submodels along the
-solution path.
+best submodel for each submodel size (number of predictor terms). The
+evaluation part determines the predictive performance of the submodels along
+the solution path.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
