@@ -523,13 +523,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
   k_fold <- .get_kfold(refmodel, K, verbose, seed)
-
   K <- length(k_fold)
-  msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
 
   # Create a list of K elements, each containing `refmodel`, `d_test`, `p_pred`,
   # etc. for the corresponding fold:
-  make_list_cv <- function(fold, msg) {
+  make_list_cv <- function(fold) {
     d_test <- list(
       y = refmodel$y[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
@@ -545,7 +543,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     return(nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test, d_test))
   }
-  list_cv <- mapply(make_list_cv, k_fold, msgs, SIMPLIFY = FALSE)
+  list_cv <- mapply(make_list_cv, k_fold, SIMPLIFY = FALSE)
   # Free up some memory:
   rm(k_fold)
   gc(verbose = FALSE, full = FALSE)
