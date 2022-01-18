@@ -525,8 +525,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   k_fold <- .get_kfold(refmodel, K, verbose, seed)
   K <- length(k_fold)
 
-  # Create a list of K elements, each containing `refmodel`, `d_test`, `p_pred`,
-  # etc. for the corresponding fold:
+  # Create a list of K elements, each containing `refmodel` and `d_test` for the
+  # corresponding fold:
   make_list_cv <- function(fold) {
     d_test <- list(
       y = refmodel$y[fold$omitted],
@@ -534,14 +534,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       offset = refmodel$offset[fold$omitted],
       omitted = fold$omitted
     )
-    p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters, seed = seed)
-    p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
-                           seed = seed)
-    eta_test <- fold$refmodel$ref_predfun(
-      fold$refmodel$fit, newdata = refmodel$fetch_data(obs = fold$omitted)
-    ) + d_test$offset
-    mu_test <- fold$refmodel$family$linkinv(eta_test)
-    return(nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test, d_test))
+    return(nlist(refmodel = fold$refmodel, d_test))
   }
   list_cv <- mapply(make_list_cv, k_fold, SIMPLIFY = FALSE)
   # Free up some memory:
@@ -555,8 +548,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
+    p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters, seed = seed)
     out <- select(
-      method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
+      method = method, p_sel = p_sel, refmodel = fold$refmodel,
       nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
       search_terms = search_terms
     )
@@ -580,10 +574,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   get_submodels_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
+    p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
+                           seed = seed)
     submodels <- .get_submodels(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
-      p_ref = fold$p_pred, refmodel = fold$refmodel, regul = opt$regul,
+      p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
       refit_prj = refit_prj
     )
     if (verbose && refit_prj) {
@@ -615,9 +611,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Perform the evaluation of the reference model for each fold:
   ref <- rbind2list(lapply(list_cv, function(fold) {
+    eta_test <- fold$refmodel$ref_predfun(
+      fold$refmodel$fit,
+      newdata = refmodel$fetch_data(obs = fold$d_test$omitted)
+    ) + fold$d_test$offset
+    mu_test <- fold$refmodel$family$linkinv(eta_test)
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
-      wsample = fold$refmodel$wsample, mu = fold$mu_test,
+      wsample = fold$refmodel$wsample, mu = mu_test,
       dis = fold$refmodel$dis
     )
   }))
