@@ -344,16 +344,6 @@ get_refmodel.vsel <- function(object, ...) {
 get_refmodel.default <-
     function(object, formula, family = NULL, latent = FALSE, ...) {
 
-  if (latent) {
-    family <- gaussian()
-  } else if (!latent) {
-    if (is.null(family)) {
-      family <- family(object)
-    }
-  } else {
-    stop("Please specify whether to use the latent projection technique.")
-  }
-
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = TRUE) {
     resp_form <- if (!extract_y) NULL else lhs(formula)
@@ -361,7 +351,7 @@ get_refmodel.default <-
     return(do_call(projpred:::.extract_model_data, args))
   }
 
-  refmodel <- init_refmodel(
+  refmodel <- projpred::init_refmodel(
     object = object, formula = formula, family = family,
     extract_model_data = extract_model_data, latent = latent, ...
   )
