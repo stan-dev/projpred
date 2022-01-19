@@ -522,12 +522,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
-  k_fold <- .get_kfold(refmodel, K, verbose, seed)
-  K <- length(k_fold)
+  list_cv <- .get_kfold(refmodel, K, verbose, seed)
+  K <- length(list_cv)
 
-  # Create a list of K elements, each containing `refmodel` and `d_test` for the
-  # corresponding fold:
-  make_list_cv <- function(fold) {
+  # Extend `list_cv` to also contain `y`, `weights`, and `offset`:
+  extend_list_cv <- function(fold) {
     d_test <- list(
       y = refmodel$y[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
@@ -536,10 +535,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
     return(nlist(refmodel = fold$refmodel, d_test))
   }
-  list_cv <- mapply(make_list_cv, k_fold, SIMPLIFY = FALSE)
-  # Free up some memory:
-  rm(k_fold)
-  gc(verbose = FALSE, full = FALSE)
+  list_cv <- mapply(extend_list_cv, list_cv, SIMPLIFY = FALSE)
 
   # Perform the search for each fold:
   if (verbose) {
