@@ -50,13 +50,17 @@
 #'   model structures are created. The `cvfits` `list` (i.e., the super-`list`)
 #'   needs to have attributes `K` and `folds`: `K` has to be a single integer
 #'   giving the number of folds and `folds` has to be an integer vector giving
-#'   the fold indices (one fold index per observation). Note that `cvfits` takes
-#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#'   the fold indices (one fold index per observation). Only one of `cvfits` and
+#'   `cvfun` needs to be provided (for \eqn{K}-fold CV). Note that `cvfits`
+#'   takes precedence over `cvfun`, i.e., if both are provided, `cvfits` is
+#'   used.
 #' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
 #'   vector, fits the reference model separately for each fold and returns the
 #'   \eqn{K} fitted model objects as a `list`. If `object` is `NULL`, `cvfun`
-#'   may be `NULL` for using an internal default. Note that `cvfits` takes
-#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#'   may be `NULL` for using an internal default. Only one of `cvfits` and
+#'   `cvfun` needs to be provided (for \eqn{K}-fold CV). Note that `cvfits`
+#'   takes precedence over `cvfun`, i.e., if both are provided, `cvfits` is
+#'   used.
 #' @param dis A vector of posterior draws for the dispersion parameter (if
 #'   existing). May be `NULL` if the model has no dispersion parameter or if the
 #'   model does have a dispersion parameter, but `object` is `NULL`. Note that
