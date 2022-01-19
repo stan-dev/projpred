@@ -685,9 +685,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       cvfit
     })
   }
-  return(lapply(cvfits,
-                .init_kfold_refmodel,
-                refmodel = refmodel))
+  return(lapply(cvfits, .init_kfold_refmodel, refmodel = refmodel))
 }
 
 .init_kfold_refmodel <- function(cvfit, refmodel) {
