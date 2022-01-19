@@ -741,8 +741,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       cvfun <- function(folds) {
         lapply(seq_len(max(folds)), function(k) list())
       }
-    } else if (is.null(cvfits)) {
-      stop("Please provide either argument `cvfun` or argument `cvfits`.")
     }
   }
 
