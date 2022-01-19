@@ -637,11 +637,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                d_test = c(d_cv, type = "kfold")))
 }
 
-## Fetch the k_fold list or compute it now if not already computed. This
-## function will return a list of length K, where each element is a list
-## with fields 'refmodel' (object of type refmodel computed by init_refmodel)
-## and index list 'test_points' that denotes which of the data points were
-## left out for the corresponding fold.
+# Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
+# the K reference model fits if already computed (`cvfits` case). This function
+# will return a list of length K, where each element is a list with elements
+# `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
+# those observations which were left out for the corresponding fold).
 .get_kfold <- function(refmodel, K, verbose, seed, approximate = FALSE) {
   if (is.null(refmodel$cvfits)) {
     if (!is.null(refmodel$cvfun)) {
