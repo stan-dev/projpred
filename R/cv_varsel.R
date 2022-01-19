@@ -672,7 +672,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       } else {
         stop("For a reference model which is not of class `datafit`, either ",
              "`cvfits` or `cvfun` needs to be provided for K-fold CV (see ",
-             "`?init_refmodel`.")
+             "`?init_refmodel`).")
       }
     }
   } else {
