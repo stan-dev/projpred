@@ -321,7 +321,7 @@ if (run_brms) {
   pkg_nms <- c(pkg_nms, "brms")
   # For storing "brmsfit"s locally:
   file_pth <- testthat::test_path("bfits")
-  if(!dir.exists(file_pth)) dir.create(file_pth)
+  if (!dir.exists(file_pth)) dir.create(file_pth)
 }
 pkg_nms <- setNames(nm = pkg_nms)
 
