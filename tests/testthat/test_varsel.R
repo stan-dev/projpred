@@ -721,11 +721,18 @@ test_that("invalid `K` fails", {
                "^`K` must be a single integer value\\.$")
 })
 
-test_that("`cvfits` (actually passed to init_refmodel()) works", {
+test_that(paste(
+  "`cvfits` (actually passed to init_refmodel()) works for rstanarm reference",
+  "models"
+), {
   skip_if_not(run_cvvs)
   tstsetups <- grep("^rstanarm.*\\.kfold", names(cvvss), value = TRUE)
   if (!run_cvfits_all) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups_tmp <- head(grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
+    if (length(tstsetups_tmp) == 0) {
+      tstsetups_tmp <- head(tstsetups, 1)
+    }
+    tstsetups <- tstsetups_tmp
   }
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
@@ -740,28 +747,33 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     K_crr <- args_cvvs_i$K
 
     # Refit `K_crr` times:
-    # rstanarm::kfold.stanreg() lacks an argument for setting the seed:
-    set.seed(seed_fit)
+    if (grepl("\\.glmm\\.", tstsetup) && FALSE) {
+      # TODO: Currently, this case is deactivated because of an error thrown by
+      # lme4. When resolved, activate it by removing the ` && FALSE` part inside
+      # of the `if` condition.
+
+      # Perform a grouped K-fold CV to test an edge case where all observations
+      # belonging to the same level of a variable with group-level effects are
+      # in the same fold, so prediction is performed for new levels (see, e.g.,
+      # brms's GitHub issue #1286):
+      set.seed(seed2_tst) # Makes the construction of the CV folds reproducible.
+      folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
+    } else {
+      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
+    }
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
     # test_that()'s `code`):
     kfold_obj <- suppressWarnings(
-      kfold(fit_crr, K = K_crr, save_fits = TRUE)
+      kfold(fit_crr,
+            K = K_crr,
+            folds = folds_vec,
+            save_fits = TRUE,
+            cores = 1)
     )
-
-    # Create the folds vector:
-    folds_vec <- rep(NA, nobsv)
-    for (k_crr in seq_len(K_crr)) {
-      idcs_fold <- kfold_obj$fits[, "omitted"][[k_crr]]
-      stopifnot(identical(
-        idcs_fold,
-        setdiff(seq_len(nobsv),
-                as.integer(rownames(kfold_obj$fits[, "fit"][[k_crr]]$data)))
-      ))
-      folds_vec[idcs_fold] <- k_crr
-    }
-    stopifnot(all(!is.na(folds_vec)))
-    attr(kfold_obj, "folds") <- folds_vec
+    kfold_obj <- structure(list(fits = kfold_obj$fits[, "fit"]),
+                           K = K_crr,
+                           folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
     refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
@@ -784,6 +796,99 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
       warn_expected,
       info = tstsetup
     )
+
+    # Checks:
+    vsel_tester(
+      cvvs_cvfits,
+      with_cv = TRUE,
+      refmod_expected = refmod_crr,
+      solterms_len_expected = args_cvvs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "kfold",
+      valsearch_expected = args_cvvs_i$validate_search,
+      nclusters_expected = args_cvvs_i$nclusters,
+      nclusters_pred_expected = args_cvvs_i$nclusters_pred,
+      info_str = tstsetup
+    )
+    # Note: Unfortunately, it is currently not possible to always ensure exactly
+    # the same seed when performing K-fold CV with `cvfits` or without `cvfits`.
+    # Therefore, the following checks for equality/inequality are quite
+    # restricted.
+    # Expected equality for some components:
+    # TODO: Currently, `check.environment = FALSE` is needed. The reason is
+    # probably that in the divergence minimizers, the projpred-extended family
+    # is passed to argument `family` of the external model fitting functions
+    # like lme4::glmer(). This should be fixed and then `check.environment =
+    # FALSE` should be removed.
+    expect_equal(cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+                 check.environment = FALSE,
+                 info = tstsetup)
+    # Expected inequality for the remaining components (but note that the
+    # components from `vsel_nms_cv_cvfits_opt` can be, but don't need to be
+    # differing):
+    for (vsel_nm in setdiff(vsel_nms_cv_cvfits, vsel_nms_cv_cvfits_opt)) {
+      expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
+                                    cvvss[[tstsetup]][[vsel_nm]])),
+                   info = paste(tstsetup, vsel_nm, sep = "__"))
+    }
+  }
+})
+
+test_that(paste(
+  "`cvfits` (actually passed to init_refmodel()) works for brms reference",
+  "models"
+), {
+  skip_if_not(run_cvvs)
+  skip_if_not(packageVersion("brms") >= "2.16.4")
+  tstsetups <- grep("^brms.*\\.kfold", names(cvvss), value = TRUE)
+  if (!run_cvfits_all) {
+    tstsetups_tmp <- head(grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
+    if (length(tstsetups_tmp) == 0) {
+      tstsetups_tmp <- head(tstsetups, 1)
+    }
+    tstsetups <- tstsetups_tmp
+  }
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    tstsetup_fit <- args_cvvs_i$tstsetup_fit
+    mod_crr <- args_cvvs_i$mod_nm
+    fam_crr <- args_cvvs_i$fam_nm
+    meth_exp_crr <- args_cvvs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
+    fit_crr <- fits[[tstsetup_fit]]
+    K_crr <- args_cvvs_i$K
+
+    # Refit `K_crr` times:
+    if (grepl("\\.glmm\\.", tstsetup) && packageVersion("brms") >= "2.16.4") {
+      # Perform a grouped K-fold CV to test an edge case where all observations
+      # belonging to the same level of a variable with group-level effects are
+      # in the same fold, so prediction is performed for new levels (see, e.g.,
+      # brms's GitHub issue #1286):
+      set.seed(seed2_tst) # Makes the construction of the CV folds reproducible.
+      folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
+    } else {
+      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
+    }
+    kfold_obj <- kfold(fit_crr,
+                       K = K_crr,
+                       folds = folds_vec,
+                       save_fits = TRUE,
+                       seed = seed_fit)
+    kfold_obj <- structure(list(fits = kfold_obj$fits[, "fit"]),
+                           K = K_crr,
+                           folds = folds_vec)
+
+    # Create `"refmodel"` object with `cvfits`:
+    refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
+
+    # Run cv_varsel():
+    cvvs_cvfits <- do.call(cv_varsel, c(
+      list(object = refmod_crr),
+      excl_nonargs(args_cvvs_i, nms_excl_add = "K")
+    ))
 
     # Checks:
     vsel_tester(

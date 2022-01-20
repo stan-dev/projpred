@@ -16,8 +16,9 @@ run_cvvs <- run_vs
 # search (`FALSE`)?:
 run_valsearch_always <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
-# first one (`FALSE`)?:
-run_cvfits_all <- TRUE
+# first one among the GLMMs (`FALSE`; note that if there is no GLMM available in
+# that test, the first test setup among those for K-fold CV is used)?:
+run_cvfits_all <- FALSE
 # Run tests for "brmsfit"s?:
 run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run snapshot tests?:
@@ -395,8 +396,9 @@ for (obj_symb_chr in c(paste0("f_", fam_nms))) {
 }
 
 args_fit <- lapply(pkg_nms, function(pkg_nm) {
-  if (pkg_nm == "brms") {
-    # For speed reasons:
+  if (pkg_nm == "brms" && packageVersion("brms") <= "2.16.3") {
+    # For brms versions <= 2.16.3, there is a reproducibility issue in
+    # kfold.brmsfit(), so exclude model types for which K-fold CV could be run:
     mod_nms <- intersect(mod_nms, "glm")
   }
 
@@ -411,6 +413,10 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
     }
 
     if (mod_nm != "glm") {
+      if (pkg_nm == "brms") {
+        # For speed reasons, do not test all families:
+        fam_nms <- intersect(fam_nms, "binom")
+      }
       # Because of issue #207:
       fam_nms <- setdiff(fam_nms, "poiss")
     }
