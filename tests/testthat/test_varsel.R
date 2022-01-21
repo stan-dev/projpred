@@ -740,13 +740,13 @@ test_that("`cvfits` (actually passed to init_refmodel()) works", {
     K_crr <- args_cvvs_i$K
 
     # Refit `K_crr` times:
-    # rstanarm::kfold() lacks an argument for setting the seed:
+    # rstanarm::kfold.stanreg() lacks an argument for setting the seed:
     set.seed(seed_fit)
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
     # test_that()'s `code`):
     kfold_obj <- suppressWarnings(
-      rstanarm::kfold(fit_crr, K = K_crr, save_fits = TRUE)
+      kfold(fit_crr, K = K_crr, save_fits = TRUE)
     )
 
     # Create the folds vector:

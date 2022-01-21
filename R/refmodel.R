@@ -209,8 +209,9 @@
 #'       return(projpred:::do_call(projpred:::.extract_model_data, args))
 #'     },
 #'     cvfun = function(folds) {
-#'       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
-#'                       folds = folds)$fits[, "fit"]
+#'       kfold(
+#'         fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+#'       )$fits[, "fit"]
 #'     },
 #'     dis = as.matrix(fit)[, "sigma"]
 #'   )
@@ -536,8 +537,9 @@ get_refmodel.stanreg <- function(object, ...) {
     # parallelization (i.e., across chains, not across CV folds) with
     # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
     # suitable for other systems:
-    rstanarm::kfold(object, K = max(folds), save_fits = TRUE, folds = folds,
-                    cores = 1)$fits[, "fit"]
+    kfold(
+      object, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+    )$fits[, "fit"]
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -558,7 +560,6 @@ get_refmodel.stanreg <- function(object, ...) {
 }
 
 #' @rdname refmodel-init-get
-#' @importFrom rstantools posterior_linpred
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,

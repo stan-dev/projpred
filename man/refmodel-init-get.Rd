@@ -265,8 +265,9 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
       return(projpred:::do_call(projpred:::.extract_model_data, args))
     },
     cvfun = function(folds) {
-      rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
-                      folds = folds)$fits[, "fit"]
+      kfold(
+        fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+      )$fits[, "fit"]
     },
     dis = as.matrix(fit)[, "sigma"]
   )
