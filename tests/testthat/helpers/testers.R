@@ -1317,7 +1317,7 @@ vsel_tester <- function(
   }
 
   # nterms_max
-  expect_identical(vs$nterms_max, solterms_len_expected + 1, info = info_str)
+  expect_equal(vs$nterms_max, solterms_len_expected + 1, info = info_str)
 
   # nterms_all
   expect_identical(vs$nterms_all, count_terms_in_formula(vs$refmodel$formula),

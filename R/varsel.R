@@ -42,7 +42,8 @@
 #'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
 #'   terms in the reference model (or in `search_terms`, if supplied). Note that
 #'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
-#'   intercept-only model.
+#'   intercept-only model. (Correspondingly, `D` above does not count the
+#'   intercept.)
 #' @param penalty Only relevant for L1 search. A numeric vector determining the
 #'   relative penalties or costs for the predictors. A value of `0` means that
 #'   those predictors have no cost and will therefore be selected first, whereas
@@ -350,7 +351,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }
-  nterms_max <- min(max_nv_possible, nterms_max + 1)
+  nterms_max <- min(max_nv_possible, nterms_max + refmodel$intercept)
 
   return(nlist(
     method, refit_prj, nterms_max, nclusters, ndraws, nclusters_pred,

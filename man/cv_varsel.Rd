@@ -81,7 +81,8 @@ evaluation part.}
 continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
 terms in the reference model (or in \code{search_terms}, if supplied). Note that
 \code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
-intercept-only model.}
+intercept-only model. (Correspondingly, \code{D} above does not count the
+intercept.)}
 
 \item{penalty}{Only relevant for L1 search. A numeric vector determining the
 relative penalties or costs for the predictors. A value of \code{0} means that
