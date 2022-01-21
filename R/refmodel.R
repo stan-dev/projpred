@@ -536,8 +536,8 @@ get_refmodel.stanreg <- function(object, ...) {
     # parallelization (i.e., across chains, not across CV folds) with
     # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
     # suitable for other systems:
-    rstanarm::kfold(object, K = max(folds), save_fits = TRUE,
-                    folds = folds, cores = 1)$fits[, "fit"]
+    rstanarm::kfold(object, K = max(folds), save_fits = TRUE, folds = folds,
+                    cores = 1)$fits[, "fit"]
   }
 
   # Miscellaneous -----------------------------------------------------------
