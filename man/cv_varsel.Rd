@@ -98,8 +98,10 @@ observations). Smaller values lead to faster computation but higher
 uncertainty in the evaluation part. If \code{NULL}, all observations are used,
 but for faster experimentation, one can set this to a smaller value.}
 
-\item{K}{Only relevant if \code{cv_method == "kfold"}. Number of folds in the
-\eqn{K}-fold CV.}
+\item{K}{Only relevant if \code{cv_method == "kfold"} and if the reference model
+was created with \code{cvfits} being \code{NULL} (which is the case for
+\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} and \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
+folds in \eqn{K}-fold CV.}
 
 \item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter

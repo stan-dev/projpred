@@ -23,8 +23,10 @@
 #'   observations). Smaller values lead to faster computation but higher
 #'   uncertainty in the evaluation part. If `NULL`, all observations are used,
 #'   but for faster experimentation, one can set this to a smaller value.
-#' @param K Only relevant if `cv_method == "kfold"`. Number of folds in the
-#'   \eqn{K}-fold CV.
+#' @param K Only relevant if `cv_method == "kfold"` and if the reference model
+#'   was created with `cvfits` being `NULL` (which is the case for
+#'   [get_refmodel.stanreg()] and [brms::get_refmodel.brmsfit()]). Number of
+#'   folds in \eqn{K}-fold CV.
 #' @param validate_search Only relevant if `cv_method == "LOO"`. A single
 #'   logical value indicating whether to cross-validate also the search part,
 #'   i.e., whether to run the search separately for each CV fold (`TRUE`) or not
