@@ -248,8 +248,10 @@ proj_predict <- function(object, newdata = NULL,
                          filter_nterms = NULL,
                          nresample_clusters = 1000, .seed = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- .Random.seed
-  on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (exists(".Random.seed")) {
+    rng_state_old <- .Random.seed
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
   set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
