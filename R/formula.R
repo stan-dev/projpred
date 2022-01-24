@@ -84,14 +84,8 @@ extract_response <- function(response) {
   return(response_name_ch)
 }
 
-## Parse additive terms from a list of individual terms. These may include
-## individual smoothers s(x), interaction smoothers s(x, z), smooth intercepts
-## s(factor, bs = "re"), group level independent smoothers s(x, by = g), or
-## shared smoothers for low dimensional factors s(x, g, bs = "fs"), interaction
-## group level smoothers with same shape for high dimensional factors t2(x, z,
-## g, bs = c(., ., "re")), interaction group level independent smoothers te(x,
-## z, by = g), population level interaction smoothers te(x, z, bs = c(., .)),
-## s(x, z).
+## Parse additive terms (smooth terms) from a list of individual terms. See
+## `?init_refmodel` for allowed smooth terms.
 ## @param terms list of terms to parse
 ## @return a vector of smooth terms
 parse_additive_terms <- function(terms) {
