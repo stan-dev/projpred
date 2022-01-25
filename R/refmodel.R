@@ -59,11 +59,17 @@
 #'   `NULL` for using an internal default. Only one of `cvfits` and `cvfun`
 #'   needs to be provided (for \eqn{K}-fold CV). Note that `cvfits` takes
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
+#'   reference model fit for fold \eqn{k \in {1, ..., K}}, returns an object of
+#'   the same type as [init_refmodel()] does. This argument may be `NULL` for
+#'   using an internal default: [get_refmodel()] if `object` is not `NULL` and a
+#'   function calling [init_refmodel()] appropriately (with the assumption `dis
+#'   = 0`) if `object` is `NULL`.
 #' @param dis A vector of posterior draws for the dispersion parameter (if
 #'   existing). May be `NULL` if the model has no dispersion parameter or if the
-#'   model does have a dispersion parameter, but `object` is `NULL`. Note that
-#'   for the [gaussian()] `family`, `dis` is the standard deviation, not the
-#'   variance.
+#'   model does have a dispersion parameter, but `object` is `NULL` (in which
+#'   case `0` is used for `dis`). Note that for the [gaussian()] `family`, `dis`
+#'   is the standard deviation, not the variance.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. Else: ignored.
@@ -564,7 +570,7 @@ get_refmodel.stanreg <- function(object, ...) {
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, ...) {
+                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL, ...) {
   # Family ------------------------------------------------------------------
 
   if (family$family == "Student_t") {
@@ -747,6 +753,24 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
+  if (is.null(cvrefbuilder)) {
+    if (proper_model) {
+      cvrefbuilder <- get_refmodel
+    } else {
+      cvrefbuilder <- function(cvfit) {
+        init_refmodel(
+          object = NULL,
+          data = fetch_data_wrapper(obs = setdiff(seq_along(y), cvfit$omitted)),
+          formula = formula,
+          family = family,
+          div_minimizer = div_minimizer,
+          proj_predfun = proj_predfun,
+          extract_model_data = extract_model_data
+        )
+      }
+    }
+  }
+
   # Equal sample (draws) weights by default:
   wsample <- rep(1 / ndraws, ndraws)
 
@@ -760,7 +784,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, mu, dis, y, loglik, intercept,
     proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
-    offset, cvfun, cvfits, extract_model_data, ref_predfun
+    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

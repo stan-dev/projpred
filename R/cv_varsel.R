@@ -654,10 +654,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       folds <- cvfolds(nobs, K = K, seed = seed)
       cvfits <- refmodel$cvfun(folds)
       cvfits <- lapply(seq_along(cvfits), function(k) {
-        # add the 'omitted' indices for the cvfits
         cvfit <- cvfits[[k]]
+        # Add the omitted observation indices for this fold:
         cvfit$omitted <- which(folds == k)
-        cvfit
+        # Add the fold index:
+        cvfit$projpred_k <- k
+        return(cvfit)
       })
     } else {
       ## genuine probabilistic model but no K-fold fits nor cvfun provided,
@@ -666,10 +668,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         nobs <- NROW(refmodel$y)
         folds <- cvfolds(nobs, K = K, seed = seed)
         cvfits <- lapply(seq_len(K), function(k) {
-          ## add the 'omitted' indices for the cvfits
           cvfit <- refmodel$fit
+          # Add the omitted observation indices for this fold:
           cvfit$omitted <- which(folds == k)
-          cvfit
+          # Add the fold index:
+          cvfit$projpred_k <- k
+          return(cvfit)
         })
       } else {
         stop("For a reference model which is not of class `datafit`, either ",
@@ -683,30 +687,19 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     folds <- attr(cvfits, "folds")
     cvfits <- lapply(seq_len(K), function(k) {
       cvfit <- cvfits$fits[[k]]
+      # Add the omitted observation indices for this fold:
       cvfit$omitted <- which(folds == k)
-      cvfit
+      # Add the fold index:
+      cvfit$projpred_k <- k
+      return(cvfit)
     })
   }
   return(lapply(cvfits, .init_kfold_refmodel, refmodel = refmodel))
 }
 
 .init_kfold_refmodel <- function(cvfit, refmodel) {
-  if (!inherits(refmodel, "datafit")) {
-    k_refmodel <- get_refmodel(cvfit)
-  } else {
-    k_refmodel <- init_refmodel(
-      object = NULL,
-      data = refmodel$fetch_data(
-        obs = setdiff(seq_along(refmodel$y), cvfit$omitted)
-      ),
-      formula = refmodel$formula,
-      family = refmodel$family,
-      div_minimizer = refmodel$div_minimizer,
-      proj_predfun = refmodel$proj_predfun,
-      extract_model_data = refmodel$extract_model_data
-    )
-  }
-  return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
+  return(list(refmodel = refmodel$cvrefbuilder(cvfit),
+              omitted = cvfit$omitted))
 }
 
 # .loo_subsample <- function(n, nloo, pareto_k, seed) {

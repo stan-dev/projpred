@@ -32,6 +32,7 @@ init_refmodel(
   cvfun = NULL,
   cvfits = NULL,
   dis = NULL,
+  cvrefbuilder = NULL,
   ...
 )
 }
@@ -102,9 +103,15 @@ precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is used.
 
 \item{dis}{A vector of posterior draws for the dispersion parameter (if
 existing). May be \code{NULL} if the model has no dispersion parameter or if the
-model does have a dispersion parameter, but \code{object} is \code{NULL}. Note that
-for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation, not the
-variance.}
+model does have a dispersion parameter, but \code{object} is \code{NULL} (in which
+case \code{0} is used for \code{dis}). Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis}
+is the standard deviation, not the variance.}
+
+\item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
+reference model fit for fold \eqn{k \in {1, ..., K}}, returns an object of
+the same type as \code{\link[=init_refmodel]{init_refmodel()}} does. This argument may be \code{NULL} for
+using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL} and a
+function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption \code{dis = 0}) if \code{object} is \code{NULL}.}
 }
 \value{
 An object that can be passed to all the functions that take the
