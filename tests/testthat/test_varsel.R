@@ -882,7 +882,12 @@ test_that(paste(
                            folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
-    refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
+    if (packageVersion("brms") >= "2.16.4") {
+      refmod_crr <- get_refmodel(fit_crr, brms_seed = seed2_tst,
+                                 cvfits = kfold_obj)
+    } else {
+      refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
+    }
 
     # Run cv_varsel():
     cvvs_cvfits <- do.call(cv_varsel, c(

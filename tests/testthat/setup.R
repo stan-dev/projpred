@@ -626,7 +626,15 @@ seed3_tst <- 1208499
 ## Reference model --------------------------------------------------------
 
 args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
-  c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
+  if (args_fit[[tstsetup_fit]]$pkg_nm == "brms" &&
+      packageVersion("brms") >= "2.16.4") {
+    pkg_args <- list(brms_seed = seed2_tst)
+  } else {
+    pkg_args <- list()
+  }
+  return(c(nlist(tstsetup_fit),
+           only_nonargs(args_fit[[tstsetup_fit]]),
+           pkg_args))
 })
 
 refmods <- lapply(args_ref, function(args_ref_i) {
