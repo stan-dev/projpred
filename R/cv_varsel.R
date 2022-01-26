@@ -653,14 +653,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       nobs <- NROW(refmodel$y)
       folds <- cvfolds(nobs, K = K, seed = seed)
       cvfits <- refmodel$cvfun(folds)
-      cvfits <- lapply(seq_along(cvfits), function(k) {
-        cvfit <- cvfits[[k]]
-        # Add the omitted observation indices for this fold:
-        cvfit$omitted <- which(folds == k)
-        # Add the fold index:
-        cvfit$projpred_k <- k
-        return(cvfit)
-      })
     } else {
       ## genuine probabilistic model but no K-fold fits nor cvfun provided,
       ## this only works for approximate kfold computation
@@ -668,12 +660,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         nobs <- NROW(refmodel$y)
         folds <- cvfolds(nobs, K = K, seed = seed)
         cvfits <- lapply(seq_len(K), function(k) {
-          cvfit <- refmodel$fit
-          # Add the omitted observation indices for this fold:
-          cvfit$omitted <- which(folds == k)
-          # Add the fold index:
-          cvfit$projpred_k <- k
-          return(cvfit)
+          refmodel$fit
         })
       } else {
         stop("For a reference model which is not of class `datafit`, either ",
@@ -685,15 +672,16 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     cvfits <- refmodel$cvfits
     K <- attr(cvfits, "K")
     folds <- attr(cvfits, "folds")
-    cvfits <- lapply(seq_len(K), function(k) {
-      cvfit <- cvfits$fits[[k]]
-      # Add the omitted observation indices for this fold:
-      cvfit$omitted <- which(folds == k)
-      # Add the fold index:
-      cvfit$projpred_k <- k
-      return(cvfit)
-    })
+    cvfits <- cvfits$fits
   }
+  cvfits <- lapply(seq_len(K), function(k) {
+    cvfit <- cvfits[[k]]
+    # Add the omitted observation indices for this fold:
+    cvfit$omitted <- which(folds == k)
+    # Add the fold index:
+    cvfit$projpred_k <- k
+    return(cvfit)
+  })
   return(lapply(cvfits, .init_kfold_refmodel, refmodel = refmodel))
 }
 
