@@ -3,7 +3,10 @@
 ^\.travis\.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$
-README.md
 ^\.github$
-^vignettes/quickstart_glmm_cache$
-^vignettes/quickstart_cache$
+^man-roxygen$
+^tests/testthat/bfits$
+^tests/testthat/_snaps$
+^vignettes/.*_cache$
+^vignettes/.*_files$
+^vignettes/.*\.html$

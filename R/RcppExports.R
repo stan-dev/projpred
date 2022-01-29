@@ -9,7 +9,3 @@ glm_ridge_c <- function(x, pseudo_obs, lambda, intercept, penalty, beta_init, w_
     .Call('_projpred_glm_ridge_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
 }
 
-glm_forward_c <- function(x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, pmax, w0, ls_iter_max = 50L) {
-    .Call('_projpred_glm_forward_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, pmax, w0, ls_iter_max)
-}
-

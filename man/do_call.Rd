@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{do_call}
 \alias{do_call}
-\title{Execute a Function Call}
+\title{Execute a function call}
 \usage{
 do_call(what, args, pkg = NULL)
 }
@@ -10,17 +10,17 @@ do_call(what, args, pkg = NULL)
 \item{what}{Either a function or a non-empty character string naming the
 function to be called.}
 
-\item{args}{A list of arguments to the function call. The names attribute of
-\code{args} gives the argument names.}
+\item{args}{A \code{list} of arguments to the function call. The \code{\link{names}}
+attribute of \code{args} gives the argument names.}
 
-\item{pkg}{Optional name of the package in which to search for the
-function if \code{what} is a character string.}
+\item{pkg}{Optional name of the package in which to search for the function
+if \code{what} is a character string.}
 }
 \value{
 The result of the (evaluated) function call.
 }
 \description{
-Execute a function call similar to \code{\link{do.call}}, but without
-deparsing function arguments.
+Execute a function call similar to \code{\link[=do.call]{do.call()}}, but without deparsing
+function arguments.
 }
 \keyword{internal}

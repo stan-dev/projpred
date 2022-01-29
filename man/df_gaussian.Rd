@@ -3,21 +3,22 @@
 \docType{data}
 \name{df_gaussian}
 \alias{df_gaussian}
-\title{Gaussian toy example.}
+\title{Gaussian toy example}
 \format{
 A simulated regression dataset containing 100 observations.
 \describe{
-  \item{y}{target, real-valued.}
-  \item{x}{features, 20 in total. Mean and sd approximately 0 and 1.}
+\item{y}{response, real-valued.}
+\item{x}{predictors, 20 in total. Mean and SD are approximately 0 and 1,
+respectively.}
 }
 }
 \source{
-\url{http://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData}
+\url{https://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData}
 }
 \usage{
 df_gaussian
 }
 \description{
-Gaussian toy example.
+Gaussian toy example
 }
 \keyword{datasets}

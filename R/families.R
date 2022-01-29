@@ -1,30 +1,27 @@
-#' Extra family objects.
+#' Extra family objects
 #'
-#' Family objects not in the set of default \link[=family]{family}-objects.
+#' Family objects not in the set of default [`family`] objects.
 #'
 #' @name extra-families
 #'
-#' @param link Specification of the link function, as for the default
-#'   \link[=family]{family}-objects.
-#' @param nu Degrees of freedom for the Student-t distribution.
+#' @param link Name of the link function. In contrast to the default [`family`]
+#'   objects, this has to be a character string here.
+#' @param nu Degrees of freedom for the Student-\eqn{t} distribution.
 #'
-#' @return A family object analogous to those described in
-#'   \link[=family]{family}
+#' @note Support for the [Student_t()] family is still experimental.
+#'
+#' @return A family object analogous to those described in [`family`].
 #'
 NULL
 
-# TODO: uncomment all these documentation lines when Student-t projection ready.
-# Currently disabled because we do not want these to appear before this
-# functionality is ready.
-
-# define a student-t family object. Dispersion is defined to be the scale
-# parameter of the distribution
+# Define a student-t family object. Dispersion is defined to be the scale
+# parameter of the distribution.
 
 #' @rdname extra-families
 #' @export
 Student_t <- function(link = "identity", nu = 3) {
   if (!(link %in% c("identity", "log", "inverse"))) {
-    stop(paste0("Non-supported link: ", link))
+    stop("Non-supported link: ", link)
   }
   if (!is.character(link)) {
     stop("Link must be a string.")

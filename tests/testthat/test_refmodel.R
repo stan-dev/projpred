@@ -1,90 +1,195 @@
-context("refmodel")
+# get_refmodel() ----------------------------------------------------------
 
+context("get_refmodel()")
 
-# tests for generic reference model
-
-if (require(rstanarm)) {
-  seed <- 1235
-  set.seed(seed)
-  n <- 50
-  nterms <- 5
-  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
-  b <- runif(nterms) - 0.5
-  dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = TRUE)
-  chains <- 2
-  iter <- 500
-  offset <- rnorm(n)
-  source(file.path("helpers", "SW.R"))
-
-  f_gauss <- gaussian()
-  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
-  f_binom <- binomial()
-  df_binom <- data.frame(y = rbinom(n, weights, f_binom$linkinv(x %*% b)),
-                         x = x, weights = weights)
-
-  SW({
-    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_gauss, data = df_gauss,
-      chains = chains, seed = seed, iter = iter
+test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
+  for (tstsetup in names(refmods)) {
+    tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
+    with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
+    if (args_ref[[tstsetup]]$fam_nm == "binom" ||
+        grepl("\\.with_wobs", tstsetup)) {
+      wobs_expected_crr <- wobs_tst
+    } else {
+      wobs_expected_crr <- rep(1, nobsv)
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_expected_crr <- offs_tst
+    } else {
+      offs_expected_crr <- rep(0, nobsv)
+    }
+    refmodel_tester(
+      refmods[[tstsetup]],
+      pkg_nm = args_ref[[tstsetup]]$pkg_nm,
+      fit_expected = fits[[tstsetup_fit]],
+      with_spclformul = with_spclformul_crr,
+      wobs_expected = wobs_expected_crr,
+      offs_expected = offs_expected_crr,
+      fam_orig = get(paste0("f_", args_fit[[tstsetup_fit]]$fam_nm)),
+      mod_nm = args_ref[[tstsetup]]$mod_nm,
+      fam_nm = args_ref[[tstsetup]]$fam_nm,
+      info_str = tstsetup
     )
-    fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom,
-      data = df_binom, chains = chains, seed = seed, iter = iter
+  }
+})
+
+test_that("missing `data` fails", {
+  fit_nodata <- suppressWarnings(rstanarm::stan_glm(
+    dat$y_glm_gauss ~ dat$xco.1 + dat$xco.2 + dat$xco.3 +
+      dat$xca.1 + dat$xca.2 + offset(dat$offs_col),
+    family = f_gauss,
+    weights = dat$wobs_col,
+    chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
+    refresh = 0
+  ))
+  expect_error(
+    get_refmodel(fit_nodata),
+    paste("^`object\\$data` must be a `data\\.frame` or a `matrix` \\(but a",
+          "`data\\.frame` is recommended\\)\\.$")
+  )
+})
+
+test_that("`formula` as a character string fails", {
+  # If `formula` is a character string, rstanarm::stan_glm() is not able to find
+  # objects supplied to arguments `weights` or `offset`, at least when using
+  # devtools::test():
+  fit_str <- suppressWarnings(rstanarm::stan_glm(
+    "y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2",
+    family = f_gauss, data = dat,
+    chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
+    refresh = 0
+  ))
+  expect_error(get_refmodel(fit_str),
+               "^inherits\\(formula, \"formula\"\\) is not TRUE$")
+})
+
+test_that("offsets specified via argument `offset` fail", {
+  fit_offs_arg <- suppressWarnings(rstanarm::stan_glm(
+    y_glm_gauss ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2,
+    family = f_gauss, data = dat,
+    weights = wobs_tst, offset = offs_tst,
+    chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
+    refresh = 0
+  ))
+  expect_error(
+    get_refmodel(fit_offs_arg),
+    paste("^It looks like `object` was fitted with offsets specified via",
+          "argument `offset`\\.")
+  )
+})
+
+test_that(paste(
+  "binomial family with 1-column response and weights which are not all ones",
+  "warns"
+), {
+  dat_prop <- within(dat, {
+    ybinprop_glm <- y_glm_binom / wobs_col
+  })
+  fit_binom_1col_wobs <- suppressWarnings(rstanarm::stan_glm(
+    ybinprop_glm ~ xco.1 + xco.2 + xco.3 + xca.1 + xca.2 + offset(offs_col),
+    family = f_binom, data = dat_prop,
+    weights = wobs_tst,
+    chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
+    refresh = 0
+  ))
+  expect_equal(
+    as.matrix(fit_binom_1col_wobs),
+    as.matrix(fits$rstanarm.glm.binom.stdformul.without_wobs.with_offs)
+  )
+  expect_error(
+    get_refmodel(fit_binom_1col_wobs),
+    paste("response must contain numbers of successes")
+  )
+})
+
+test_that("get_refmodel() is idempotent", {
+  for (tstsetup in names(refmods)) {
+    expect_identical(get_refmodel(refmods[[tstsetup]]),
+                     refmods[[tstsetup]],
+                     info = tstsetup)
+  }
+})
+
+# predict.refmodel() ------------------------------------------------------
+
+context("predict.refmodel()")
+
+test_that("invalid `type` fails", {
+  expect_error(predict(refmods[[1]], dat, type = "zzz"),
+               "^type should be one of")
+})
+
+test_that("invalid `ynew` fails", {
+  expect_error(predict(refmods[[1]], dat, ynew = dat),
+               "^Argument `ynew` must be a numeric vector\\.$")
+})
+
+test_that(paste(
+  "`object` of class `\"refmodel\"`, `newdata`, `ynew`, and `type` work"
+), {
+  for (tstsetup in names(refmods)) {
+    pkg_crr <- args_ref[[tstsetup]]$pkg_nm
+    mod_crr <- args_ref[[tstsetup]]$mod_nm
+    fam_crr <- args_ref[[tstsetup]]$fam_nm
+
+    # We expect a warning which in fact should be suppressed, though (see
+    # issue #162):
+    warn_expected <- if (pkg_crr == "rstanarm" &&
+                         mod_crr == "glm" &&
+                         grepl("\\.with_offs", tstsetup)) {
+      paste("^'offset' argument is NULL but it looks like you",
+            "estimated the model using an offset term\\.$")
+    } else {
+      NA
+    }
+
+    y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
+
+    # Without `ynew`:
+    expect_warning(
+      predref_resp <- predict(refmods[[tstsetup]], dat, type = "response"),
+      warn_expected,
+      info = tstsetup
     )
-    ref_gauss <- get_refmodel(fit_gauss)
-    ref_binom <- get_refmodel(fit_binom)
-  })
-
-  test_that("get_refmodel produces sensible results", {
-    expect_s3_class(ref_gauss, "refmodel")
-    expect_s3_class(ref_binom, "refmodel")
-  })
-
-  ## test_that('get_refmode checks for the absence of data', {
-  ##   SW({
-  ##   fit_nodata <- stan_glm(df_gauss$y ~ x, family = f_gauss, QR = TRUE,
-  ##                          weights = weights, offset = offset,
-  ##                          chains = chains, seed = seed, iter = iter)
-  ##   })
-  ##   expect_error(get_refmodel(fit_nodata),
-  ##                'Model was fitted without a \'data\' argument')
-  ## })
-
-  test_that("predict checks the 'type' argument", {
-    expect_error(
-      predict(ref_gauss, df_gauss, type = "zzz"),
-      "type should be one of"
+    expect_warning(
+      predref_link <- predict(refmods[[tstsetup]], dat, type = "link"),
+      warn_expected,
+      info = tstsetup
     )
-  })
 
-  test_that("predict produces sensible results for gaussian models", {
-    out.resp <- predict(ref_gauss, df_gauss, type = "response")
-    expect_vector(out.resp)
-    expect_length(out.resp, nrow(df_gauss))
-
-    out.link <- predict(ref_gauss, df_gauss, type = "link")
-    expect_equal(out.resp, out.link)
-  })
-
-  test_that("predict produces sensible results for binomial models", {
-    out.resp <- predict(ref_binom, df_binom, type = "response")
-    expect_vector(out.resp)
-    expect_length(out.resp, nrow(df_binom))
-    expect_true(all(out.resp >= 0 & out.resp <= 1))
-
-    out.link <- predict(ref_binom, df_binom, type = "link")
-    expect_length(out.resp, nrow(df_binom))
-  })
-
-  test_that("predict produces sensible results when specifying ynew", {
-    out <- predict(ref_gauss, df_gauss, ynew = df_gauss$y)
-    expect_vector(out)
-    expect_length(out, length(df_gauss$y))
-
-    expect_error(
-      predict(ref_gauss, df_gauss, ynew = df_gauss),
-      "must be a numerical vector"
+    # With `ynew`:
+    expect_warning(
+      predref_ynew_resp <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
+                                   type = "response"),
+      warn_expected,
+      info = tstsetup
     )
-  })
-}
+    expect_warning(
+      predref_ynew_link <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
+                                   type = "link"),
+      warn_expected,
+      info = tstsetup
+    )
+
+    # Checks without `ynew`:
+    expect_true(is.vector(predref_resp, "double"), info = tstsetup)
+    expect_length(predref_resp, nobsv)
+    if (fam_crr %in% c("brnll", "binom")) {
+      expect_true(all(predref_resp >= 0 & predref_resp <= 1),
+                  info = tstsetup)
+    }
+    expect_true(is.vector(predref_link, "double"), info = tstsetup)
+    expect_length(predref_link, nobsv)
+    if (fam_crr == "gauss") {
+      expect_equal(predref_resp, predref_link, info = tstsetup)
+    }
+
+    # Checks with `ynew`:
+    expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
+    expect_true(is.vector(predref_ynew_resp, "double"), info = tstsetup)
+    expect_length(predref_ynew_resp, nobsv)
+    expect_false(isTRUE(all.equal(predref_ynew_resp, predref_resp)),
+                 info = tstsetup)
+    expect_false(isTRUE(all.equal(predref_ynew_resp, predref_link)),
+                 info = tstsetup)
+  }
+})

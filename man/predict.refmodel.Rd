@@ -2,11 +2,11 @@
 % Please edit documentation in R/refmodel.R
 \name{predict.refmodel}
 \alias{predict.refmodel}
-\title{Predict method for reference model objects}
+\title{Predictions or log predictive densities from a reference model}
 \usage{
 \method{predict}{refmodel}(
   object,
-  newdata,
+  newdata = NULL,
   ynew = NULL,
   offsetnew = NULL,
   weightsnew = NULL,
@@ -15,36 +15,45 @@
 )
 }
 \arguments{
-\item{object}{The object of class \code{refmodel}.}
+\item{object}{An object of class \code{refmodel} (returned by \code{\link[=get_refmodel]{get_refmodel()}} or
+\code{\link[=init_refmodel]{init_refmodel()}}).}
 
-\item{newdata}{Matrix of predictor values used in the prediction.}
+\item{newdata}{Passed to argument \code{newdata} of the reference model's
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Provides the
+predictor (and possibly also the response) data for the new (or old)
+observations.}
 
-\item{ynew}{New (test) target variables. If given, then the log predictive
-density for the new observations is computed.}
+\item{ynew}{If not \code{NULL}, then this needs to be a vector of new (or old)
+response values. See section "Value" below.}
 
-\item{offsetnew}{Offsets for the new observations. By default a vector of
-zeros. By default we take the weights from newdata as in the original
-model. Either NULL or right hand side formulas.}
+\item{offsetnew}{Passed to argument \code{orhs} of the reference model's
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
+offsets for the new (or old) observations.}
 
-\item{weightsnew}{Weights for the new observations. For binomial model,
-corresponds to the number trials per observation. Has effect only if
-\code{ynew} is specified. By default a vector of ones. By default we take
-the weights from newdata as in the original model. Either NULL or right
-hand side formulas.}
+\item{weightsnew}{Passed to argument \code{wrhs} of the reference model's
+\code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
+weights for the new (or old) observations.}
 
-\item{type}{Scale on which the predictions are returned. Either 'link' (the
-latent function value, from -inf to inf) or 'response' (the scale on which
-the target \code{y} is measured, obtained by taking the inverse-link from
-the latent value).}
+\item{type}{Only relevant if \code{is.null(ynew)}. The scale on which the
+predictions are returned, either \code{"link"} or \code{"response"} (see
+\code{\link[=predict.glm]{predict.glm()}} but note that \code{\link[=predict.refmodel]{predict.refmodel()}} does not adhere to the
+typical \R convention of a default prediction on link scale). For both
+scales, the predictions are averaged across the posterior draws.}
 
 \item{...}{Currently ignored.}
 }
 \value{
-Returns either a vector of predictions, or vector of log predictive
-  densities evaluated at \code{ynew} if \code{ynew} is not \code{NULL}.
+Either a vector of predictions (with the scale depending on argument
+\code{type}) or, if \code{!is.null(ynew)}, a vector of log predictive densities
+evaluated at \code{ynew}.
 }
 \description{
-Compute the predictions using the reference model, that is, compute the
-expected value for the next observation, or evaluate the log-predictive
-density at a given point.
+This is the \code{\link[=predict]{predict()}} method for \code{refmodel} objects (returned by
+\code{\link[=get_refmodel]{get_refmodel()}} or \code{\link[=init_refmodel]{init_refmodel()}}). It offers three types of output which
+are all based on the reference model and new (or old) observations: Either
+the linear predictor on link scale, the linear predictor transformed to
+response scale, or the log-predictive density.
+}
+\details{
+Argument \code{weightsnew} is only relevant if \code{!is.null(ynew)}.
 }

@@ -1,98 +1,70 @@
-## Function handles for the projection
-##
-
-project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
-                             regul = 1e-4) {
-  mu <- p_ref$mu
-
-  validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, mu)
+# Function to project the reference model onto a single submodel with predictor
+# terms given in `solution_terms`. Note that "single submodel" does not refer to
+# a single fit (there are as many fits for this single submodel as there are
+# projected draws).
+project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
+  validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
   wobs <- validparams$wobs
   wsample <- validparams$wsample
 
-  form <- refmodel$formula
+  subset <- subset_formula_and_data(
+    formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
+    data = refmodel$fetch_data(), y = p_ref$mu
+  )
 
-  div_minimizer <- function(formula, data, weights) {
-    refmodel$div_minimizer(formula, data, weights = weights, family = family,
-                           regul = regul, var = p_ref$var)
+  submodl <- refmodel$div_minimizer(
+    formula = flatten_formula(subset$formula),
+    data = subset$data,
+    family = refmodel$family,
+    weights = refmodel$wobs,
+    projpred_var = p_ref$var,
+    projpred_regul = regul
+  )
+
+  if (isTRUE(getOption("projpred.check_conv", FALSE))) {
+    check_conv(submodl)
   }
 
-  subset <- subset_formula_and_data(
-    formula = form, terms_ = unique(unlist(solution_terms)),
-    data = refmodel$fetch_data(), y = mu
-  )
-
-  sub_fit <- div_minimizer(flatten_formula(subset$formula), subset$data,
-    weights = refmodel$wobs
-  )
-
   return(.init_submodel(
-    sub_fit = sub_fit, p_ref = p_ref, refmodel = refmodel,
-    family = family, solution_terms = solution_terms, ref_mu = mu,
-    wobs = wobs, wsample = wsample
+    submodl = submodl, p_ref = p_ref, refmodel = refmodel,
+    solution_terms = solution_terms, wobs = wobs, wsample = wsample
   ))
 }
 
-## function handle for the projection over samples
-.get_proj_handle <- function(refmodel, p_ref, family, regul = 1e-9,
-                             intercept = TRUE) {
-  return(function(solution_terms) {
-    project_submodel(
-      solution_terms = solution_terms, p_ref = p_ref, refmodel = refmodel,
-      family = family, intercept = intercept, regul = regul
-    )
-  })
-}
-
-.get_submodels <- function(search_path, nterms, family, p_ref,
-                           refmodel, intercept, regul, cv_search = FALSE) {
-  ##
-  ##
-  ## Project onto given model sizes nterms. Returns a list of submodels. If
-  ## cv_search=FALSE, submodels parameters will be as they were computed during
-  ## the search, so there is no need to project anything anymore, and this
-  ## function simply fetches the information from the search_path list, which
-  ## contains the parameter values.
-
-  varorder <- search_path$solution_terms
-  p_sel <- search_path$p_sel
-
-  if (!cv_search) {
-    ## simply fetch the already computed quantities for each submodel size
+# Function to project the reference model onto the submodels of given model
+# sizes `nterms`. Returns a list of submodels (each processed by
+# .init_submodel()).
+.get_submodels <- function(search_path, nterms, p_ref, refmodel, regul,
+                           refit_prj = FALSE) {
+  if (!refit_prj) {
+    # In this case, simply fetch the already computed projections, so don't
+    # project again.
     fetch_submodel <- function(nterms) {
-      solution_terms <- utils::head(varorder, nterms)
-
-      ref_mu <- p_sel$mu
-
       validparams <- .validate_wobs_wsample(
-        refmodel$wobs, p_sel$weights, ref_mu
+        refmodel$wobs, search_path$p_sel$weights, search_path$p_sel$mu
       )
       wobs <- validparams$wobs
       wsample <- validparams$wsample
-
-      ## reuse sub_fit as projected during search
-      sub_refit <- search_path$sub_fits[[nterms + 1]]
-
       return(.init_submodel(
-        sub_fit = sub_refit, p_ref = p_sel, refmodel = refmodel,
-        family = family, solution_terms = solution_terms, ref_mu = ref_mu,
-        wobs = wobs, wsample = wsample
+        # Re-use the submodel fits from the search:
+        submodl = search_path$submodls[[nterms + 1]],
+        p_ref = search_path$p_sel,
+        refmodel = refmodel,
+        solution_terms = utils::head(search_path$solution_terms, nterms),
+        wobs = wobs,
+        wsample = wsample
       ))
     }
   } else {
-    ## need to project again for each submodel size
-    projfun <- .get_proj_handle(refmodel, p_ref, family, regul, intercept)
+    # In this case, project again.
     fetch_submodel <- function(nterms) {
-      if (nterms == 0) {
-        ## empty
-        solution_terms <- c("1")
-      } else {
-        solution_terms <- varorder[seq_len(nterms)]
-      }
-      return(projfun(solution_terms))
+      return(project_submodel(
+        solution_terms = utils::head(search_path$solution_terms, nterms),
+        p_ref = p_ref, refmodel = refmodel, regul = regul
+      ))
     }
   }
-  submodels <- lapply(nterms, fetch_submodel)
-  return(submodels)
+  return(lapply(nterms, fetch_submodel))
 }
 
 .validate_wobs_wsample <- function(ref_wobs, ref_wsample, ref_mu) {
@@ -108,32 +80,48 @@ project_submodel <- function(solution_terms, p_ref, refmodel, family, intercept,
     wsample <- ref_wsample
   }
 
-  wobs <- wobs / sum(wobs)
   wsample <- wsample / sum(wsample)
   return(nlist(wobs, wsample))
 }
 
-.init_submodel <- function(sub_fit, p_ref, refmodel, family, solution_terms,
-                           ref_mu, wobs, wsample) {
-  pobs <- pseudo_data(
-    f = 0, y = ref_mu, family = family, weights = wobs,
-    offset = refmodel$offset
+.init_submodel <- function(submodl, p_ref, refmodel, solution_terms, wobs,
+                           wsample) {
+  p_ref$mu <- refmodel$family$linkinv(
+    refmodel$family$linkfun(p_ref$mu) + refmodel$offset
   )
-
-  ## split b to alpha and beta, add it to submodel and return the result
-  if (family$family == "gaussian") {
-    ref <- list(mu = pobs$z, var = p_ref$var, wobs = pobs$wobs)
-  } else {
-    ref <- p_ref
+  if (!(all(is.na(p_ref$var)) ||
+        refmodel$family$family %in% c("gaussian", "Student_t"))) {
+    stop("For family `", refmodel$family$family, "()`, .init_submodel() might ",
+         "have to be adapted, depending on whether family$predvar() is ",
+         "invariant with respect to offsets (this would be OK and does not ",
+         "need an adaptation) or not (this would need an adaptation).")
+  }
+  if (refmodel$family$family == "Student_t") {
+    stop("For the `Student_t()` family, .init_submodel() is not finished yet.")
+    ### TODO (`Student_t()` family): Check if this is needed (perhaps with some
+    ### modifications) or if something completely different is needed (there
+    ### used to be no special handling of the `Student_t()` family here at all):
+    # pobs <- pseudo_data(
+    #   f = 0, y = p_ref$mu, family = refmodel$family, weights = wobs,
+    #   offset = refmodel$offset
+    # )
+    # ### TODO: Add `dis` and perhaps other elements here?:
+    # p_ref <- list(mu = pobs$z, var = p_ref$var)
+    # ###
+    # p_ref$mu <- refmodel$family$linkinv(
+    #   refmodel$family$linkfun(p_ref$mu) + refmodel$offset
+    # )
+    # wobs <- pobs$wobs
+    ###
   }
 
-  mu <- family$mu_fun(sub_fit, offset = refmodel$offset, weights = 1)
-  dis <- family$dis_fun(ref, nlist(mu), ref$wobs)
-  kl <- weighted.mean(family$kl(
-    ref, nlist(weights = wobs),
-    nlist(mu, dis)
-  ), wsample)
-  weights <- wsample
-  submodel <- nlist(dis, kl, weights, solution_terms, sub_fit)
-  return(submodel)
+  mu <- refmodel$family$mu_fun(submodl, offset = refmodel$offset)
+  dis <- refmodel$family$dis_fun(p_ref, nlist(mu), wobs)
+  kl <- weighted.mean(
+    refmodel$family$kl(p_ref,
+                       nlist(weights = wobs),
+                       nlist(mu, dis)),
+    wsample
+  )
+  return(nlist(dis, kl, weights = wsample, solution_terms, submodl))
 }

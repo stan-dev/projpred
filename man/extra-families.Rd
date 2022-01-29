@@ -3,20 +3,22 @@
 \name{extra-families}
 \alias{extra-families}
 \alias{Student_t}
-\title{Extra family objects.}
+\title{Extra family objects}
 \usage{
 Student_t(link = "identity", nu = 3)
 }
 \arguments{
-\item{link}{Specification of the link function, as for the default
-\link[=family]{family}-objects.}
+\item{link}{Name of the link function. In contrast to the default \code{\link{family}}
+objects, this has to be a character string here.}
 
-\item{nu}{Degrees of freedom for the Student-t distribution.}
+\item{nu}{Degrees of freedom for the Student-\eqn{t} distribution.}
 }
 \value{
-A family object analogous to those described in
-  \link[=family]{family}
+A family object analogous to those described in \code{\link{family}}.
 }
 \description{
-Family objects not in the set of default \link[=family]{family}-objects.
+Family objects not in the set of default \code{\link{family}} objects.
+}
+\note{
+Support for the \code{\link[=Student_t]{Student_t()}} family is still experimental.
 }

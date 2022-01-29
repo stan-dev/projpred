@@ -2,78 +2,94 @@
 % Please edit documentation in R/methods.R
 \name{summary.vsel}
 \alias{summary.vsel}
-\title{Summary statistics related to variable selection}
+\title{Summary statistics of a variable selection}
 \usage{
 \method{summary}{vsel}(
   object,
   nterms_max = NULL,
   stats = "elpd",
-  type = c("mean", "se"),
+  type = c("mean", "se", "diff", "diff.se"),
   deltas = FALSE,
   alpha = 0.32,
-  baseline = NULL,
+  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   ...
 )
 }
 \arguments{
-\item{object}{The object returned by \link[=varsel]{varsel} or
-\link[=cv_varsel]{cv_varsel}.}
+\item{object}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}).}
 
 \item{nterms_max}{Maximum submodel size for which the statistics are
-calculated. For \code{plot.vsel} it must be at least 1.}
+calculated. Note that \code{nterms_max} does not count the intercept, so use
+\code{nterms_max = 0} for the intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}},
+\code{nterms_max} must be at least \code{1}.}
 
-\item{stats}{One or several strings determining which statistics to
-  calculate. Available statistics are:
+\item{stats}{One or more character strings determining which statistics to
+calculate. Available statistics are:
 \itemize{
- \item{elpd:} {(Expected) sum of log predictive densities}
- \item{mlpd:} {Mean log predictive density, that is, elpd divided by the
-  number of datapoints.} \item{mse:} {Mean squared error (gaussian family
-  only)}
- \item{rmse:} {Root mean squared error (gaussian family only)}
- \item{acc/pctcorr:} {Classification accuracy (binomial family only)}
- \item{auc:} {Area under the ROC curve (binomial family only)}
-}
-Default is \code{"elpd"}.}
+\item \code{"elpd"}: (expected) sum of log predictive densities.
+\item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
+number of observations.
+\item \code{"mse"}: mean squared error.
+\item \code{"rmse"}: root mean squared error. For the corresponding standard error,
+bootstrapping is used.
+\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy
+(\code{\link[=binomial]{binomial()}} family only).
+\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only). For the
+corresponding standard error, bootstrapping is used.
+}}
 
-\item{type}{One or more items from 'mean', 'se', 'lower' and 'upper'
-indicating which of these to compute (mean, standard error, and lower and
-upper credible bounds). The credible bounds are determined so that
-\code{1-alpha} percent of the mass falls between them.}
+\item{type}{One or more items from \code{"mean"}, \code{"se"}, \code{"lower"}, \code{"upper"},
+\code{"diff"}, and \code{"diff.se"} indicating which of these to compute for each
+item from \code{stats} (mean, standard error, lower and upper confidence
+interval bounds, mean difference to the corresponding statistic of the
+reference model, and standard error of this difference, respectively). The
+confidence interval bounds belong to normal-approximation confidence
+intervals with (nominal) coverage \code{1 - alpha}. Items \code{"diff"} and
+\code{"diff.se"} are only supported if \code{deltas} is \code{FALSE}.}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relative
-to the baseline model (see argument \code{baseline}) instead of estimating
-the actual values of the statistics. Defaults to \code{FALSE}.}
+\item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
+from the baseline model (see argument \code{baseline}) instead of estimating the
+actual values of the statistics.}
 
-\item{alpha}{A number indicating the desired coverage of the credible
-intervals. For example \code{alpha=0.32} corresponds to 68\% probability
-mass within the intervals, that is, one standard error intervals.}
+\item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
+normal-approximation confidence intervals. For example, \code{alpha = 0.32}
+corresponds to a coverage of 68\%, i.e., one-standard-error intervals
+(because of the normal approximation).}
 
-\item{baseline}{Either 'ref' or 'best' indicating whether the baseline is the
-reference model or the best submodel found. Default is 'ref' when the
-reference model exists, and 'best' otherwise.}
+\item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
+For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
+whether the baseline is the reference model or the best submodel found (in
+terms of \code{stats[1]}), respectively.}
 
-\item{...}{Currently ignored.}
+\item{...}{Arguments passed to the internal function which is used for
+bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
+arguments are \code{b} (the number of bootstrap samples, defaulting to \code{2000})
+and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to \code{NULL}).}
 }
 \description{
-Summary statistics related to variable selection
+This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}).
 }
 \examples{
-\donttest{
-if (requireNamespace('rstanarm', quietly=TRUE)) {
-  ### Usage with stanreg objects
-  n <- 30
-  d <- 5
-  x <- matrix(rnorm(n*d), nrow=n)
-  y <- x[,1] + 0.5*rnorm(n)
-  data <- data.frame(x,y)
-  
-  fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data, chains=2, iter=500)
-  vs <- cv_varsel(fit)
-  plot(vs)
-  
-  # print out some stats
-  summary(vs, stats=c('mse'), type = c('mean','se'))
-}
+if (requireNamespace("rstanarm", quietly = TRUE)) {
+  # Data:
+  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+
+  # The "stanreg" fit which will be used as the reference model (with small
+  # values for `chains` and `iter`, but only for technical reasons in this
+  # example; this is not recommended in general):
+  fit <- rstanarm::stan_glm(
+    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+  )
+
+  # Variable selection (here without cross-validation and with small values
+  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+  # sake of speed in this example; this is not recommended in general):
+  vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+               seed = 5555)
+  print(summary(vs))
 }
 
 }
