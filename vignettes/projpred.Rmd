@@ -183,10 +183,12 @@ The **posterior** package provides a general way to deal with posterior distribu
 ```{r}
 library(posterior)
 prj_drws <- as_draws_matrix(prj_mat)
-summarize_draws(
+# In the following call, as.data.frame() is used only because pkgdown
+# versions > 1.6.1 don't print the tibble correctly.
+as.data.frame(summarize_draws(
   prj_drws,
   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-)
+))
 ```
 
 A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function.
