@@ -121,16 +121,16 @@ The first step after running the variable selection should be the decision for a
 plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
 ```
 
-Based on that plot, we would decide for a submodel size of 8 because that's the point where the performance measures level off and are close enough to the reference model's performance.
+Based on that plot, we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance.
 ```{r}
-modsize_decided <- 8
+modsize_decided <- 6
 ```
 
 Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see the `?suggest_size` help).
 ```{r}
 suggest_size(cvvs)
 ```
-Here, we would get the same final submodel size (`8`) as by our manual decision.
+Here, we would get the same final submodel size (`6`) as by our manual decision.
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply `print()` the resulting object:
 ```{r}
@@ -144,7 +144,7 @@ The solution path can be seen in the `print()` output (column `solution_terms`),
 ( soltrms <- solution_terms(cvvs) )
 ```
 
-Combining the decided submodel size of 8 with the solution path leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:
+Combining the decided submodel size of 6 with the solution path leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:
 ```{r}
 ( soltrms_final <- head(soltrms, modsize_decided) )
 ```
