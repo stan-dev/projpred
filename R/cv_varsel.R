@@ -695,8 +695,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #   ## belong to the semi random subsample of validation points)
 #
 #   ## set random seed but ensure the old RNG state is restored on exit
-#   if (exists(".Random.seed")) {
-#     rng_state_old <- .Random.seed
+#   if (exists(".Random.seed", envir = .GlobalEnv)) {
+#     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
 #     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
 #   }
 #   set.seed(seed)
@@ -741,8 +741,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## Learning.
 
   ## set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)

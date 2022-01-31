@@ -248,8 +248,8 @@ proj_predict <- function(object, newdata = NULL,
                          filter_nterms = NULL,
                          nresample_clusters = 1000, .seed = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(.seed)
@@ -1096,8 +1096,8 @@ cvfolds <- function(n, K, seed = NULL) {
   .validate_num_folds(K, n)
 
   ## set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)
@@ -1116,8 +1116,8 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
   out <- match.arg(out)
 
   # set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)
