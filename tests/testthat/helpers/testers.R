@@ -1,5 +1,5 @@
 # A helper function for testing the structure of an expected extended `"family"`
-# object
+# object.
 #
 # @param extfam An object of class `"family"` (at least expected so) which has
 #   been extended by projpred.
@@ -64,7 +64,8 @@ extfam_tester <- function(extfam,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected `"refmodel"` object
+# A helper function for testing the structure of an expected `"refmodel"`
+# object.
 #
 # @param refmod An object of class `"refmodel"` (at least expected so).
 # @param is_datafit A single logical value indicating whether the reference
@@ -412,7 +413,7 @@ refmodel_tester <- function(
 }
 
 # A helper function for testing the structure of a list of fits (each fit must
-# not necessarily be of class `"subfit"`) for the same single submodel
+# not necessarily be of class `"subfit"`) for the same single submodel.
 #
 # @param submodl_totest The `submodl` object (a list of fits for a single
 #   submodel, with one fit per projected draw) to test.
@@ -755,7 +756,7 @@ submodl_tester <- function(
 }
 
 # A helper function for testing the structure of an expected `"projection"`
-# object
+# object.
 #
 # @param p An object of class `"projection"` (at least expected so).
 # @param solterms_expected Either a single numeric value giving the expected
@@ -895,7 +896,7 @@ projection_tester <- function(p,
 }
 
 # A helper function for testing the structure of an expected `"proj_list"`
-# object
+# object.
 #
 # @param p An object of (informal) class `"proj_list"` (at least expected so).
 # @param len_expected The expected length of `p`.
@@ -1027,7 +1028,7 @@ pp_tester <- function(pp,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected `"vsel"` object
+# A helper function for testing the structure of an expected `"vsel"` object.
 #
 # @param vs An object of class `"vsel"` (at least expected so).
 # @param with_cv A single logical value indicating whether `vs` was created by
@@ -1365,7 +1366,7 @@ vsel_tester <- function(
 }
 
 # A helper function for testing the structure of an object as returned by
-# summary.vsel()
+# summary.vsel().
 #
 # @param smmry An object as returned by summary.vsel().
 # @param vsel_expected The `"vsel"` object which was used in the summary.vsel()
@@ -1434,7 +1435,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 }
 
 # A helper function for testing the structure of a `data.frame` as returned by
-# summary.vsel() in its output element `selection`
+# summary.vsel() in its output element `selection`.
 #
 # @param smmry_sel A `data.frame` as returned by summary.vsel() in its output
 #   element `selection`.

@@ -1,4 +1,4 @@
-# A custom unlist() wrapper
+# A custom unlist() wrapper.
 #
 # @param x A list, at a deeper level containing an unnamed sublist or a named
 #   sublist containing the name given in `nm_stop`.
@@ -8,7 +8,6 @@
 # @return The recursively "unlisted" `x` (recursively up to the point where the
 #   next sublist is unnamed or contains an element with name given in
 #   `nm_stop`).
-#
 unlist_cust <- function(x, nm_stop = "mod_nm") {
   stopifnot(is.list(x) && length(x) > 0)
   if (is.null(names(x[[1]])) || nm_stop %in% names(x[[1]])) {
