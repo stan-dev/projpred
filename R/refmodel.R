@@ -342,7 +342,7 @@ get_refmodel.vsel <- function(object, ...) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.default <-
-    function(object, formula, family = NULL, latent = FALSE, ...) {
+    function(object, formula, family = NULL, latent_proj = FALSE, ...) {
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = TRUE) {
@@ -350,10 +350,11 @@ get_refmodel.default <-
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do_call(projpred:::.extract_model_data, args))
   }
+  message(latent_proj)
 
   refmodel <- projpred::init_refmodel(
     object = object, formula = formula, family = family,
-    extract_model_data = extract_model_data, latent = latent, ...
+    extract_model_data = extract_model_data, latent_proj = latent_proj, ...
   )
   return(refmodel)
 }
@@ -528,7 +529,7 @@ get_refmodel.stanreg <- function(object, ...) {
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           folds = NULL, extract_model_data = NULL, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, latent = FALSE, ...) {
+                          cvfits = NULL, dis = NULL, latent_proj = FALSE, ...) {
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
@@ -597,14 +598,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Latent projection -------------------------------------------------------
 
-  if (latent) {
+  if (latent_proj) {
     y <- rowMeans(ref_predfun(object, newdata = data))
     ## latent noise is fixed
     dis <- rep(1, 4000)
     response_name <- paste0(".", response_name)
     data[, response_name] <- y
     family <- gaussian()
-  } else if (!latent) {
+  } else if (!latent_proj) {
     data[, response_name] <- y
   } else {
     stop("Please specify whether to use the latent projection technique.")
@@ -620,8 +621,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Family ------------------------------------------------------------------
 
-  if (latent && family$family != "gaussian") {
-    stop("Latent projection selection, but family not Gaussian.")
+  if (latent_proj && family$family != "gaussian") {
+    stop("latent_proj projection selection, but family not Gaussian.")
   }
 
   if (family$family == "binomial") {
