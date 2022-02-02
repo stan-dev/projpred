@@ -20,7 +20,10 @@ extfam_tester <- function(extfam,
                           extfam_nms_add2 = character(),
                           from_brms = FALSE,
                           info_str) {
-  # Some minimal checks for `fam_orig`:
+  # General structure tests -------------------------------------------------
+
+  ## For `fam_orig` ---------------------------------------------------------
+
   expect_s3_class(fam_orig, "family")
   expect_type(fam_orig, "list")
   fam_orig_nms <- c(
@@ -33,13 +36,18 @@ extfam_tester <- function(extfam,
   }
   expect_named(fam_orig, fam_orig_nms, info = info_str)
 
-  # Now the checks for `extfam` (first starting with the general structure):
+  ## For `extfam` -----------------------------------------------------------
+
   extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
                       "is_extended", extfam_nms_add2)
   extfam_nms <- c(names(fam_orig), extfam_nms_add)
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
   expect_named(extfam, extfam_nms, info = info_str)
+
+  # Detailed tests ----------------------------------------------------------
+
+  ## For `fam_orig` ---------------------------------------------------------
 
   fam_orig_ch <- structure(extfam[names(fam_orig)], class = "family")
   if (extfam$family == "binomial") {
@@ -52,10 +60,11 @@ extfam_tester <- function(extfam,
                      info = info_str)
   }
 
+  ## For `extfam` -----------------------------------------------------------
+
   for (el_nm in setdiff(extfam_nms_add, "is_extended")) {
     expect_type(extfam[[el_nm]], "closure")
   }
-
   expect_true(extfam$is_extended, info = info_str)
 
   # TODO: Add some mathematical checks (i.e., check that the calculations for
