@@ -711,6 +711,34 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fetch_data(data, obs = obs)
   }
 
+  if (is.null(cvfun)) {
+    if (!proper_model) {
+      # This is a dummy definition for cvfun(), but it will lead to standard CV
+      # for `datafit`s; see cv_varsel() and .get_kfold():
+      cvfun <- function(folds) {
+        lapply(seq_len(max(folds)), function(k) list())
+      }
+    }
+  }
+
+  if (is.null(cvrefbuilder)) {
+    if (proper_model) {
+      cvrefbuilder <- get_refmodel
+    } else {
+      cvrefbuilder <- function(cvfit) {
+        init_refmodel(
+          object = NULL,
+          data = fetch_data_wrapper(obs = setdiff(seq_along(y), cvfit$omitted)),
+          formula = formula,
+          family = family,
+          div_minimizer = div_minimizer,
+          proj_predfun = proj_predfun,
+          extract_model_data = extract_model_data
+        )
+      }
+    }
+  }
+
   # mu ----------------------------------------------------------------------
 
   if (proper_model) {
@@ -748,34 +776,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ))
   } else {
     loglik <- NULL
-  }
-
-  if (is.null(cvfun)) {
-    if (!proper_model) {
-      # This is a dummy definition for cvfun(), but it will lead to standard CV
-      # for `datafit`s; see cv_varsel() and .get_kfold():
-      cvfun <- function(folds) {
-        lapply(seq_len(max(folds)), function(k) list())
-      }
-    }
-  }
-
-  if (is.null(cvrefbuilder)) {
-    if (proper_model) {
-      cvrefbuilder <- get_refmodel
-    } else {
-      cvrefbuilder <- function(cvfit) {
-        init_refmodel(
-          object = NULL,
-          data = fetch_data_wrapper(obs = setdiff(seq_along(y), cvfit$omitted)),
-          formula = formula,
-          family = family,
-          div_minimizer = div_minimizer,
-          proj_predfun = proj_predfun,
-          extract_model_data = extract_model_data
-        )
-      }
-    }
   }
 
   # Equal sample (draws) weights by default:
