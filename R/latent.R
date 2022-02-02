@@ -155,8 +155,8 @@ fit_latent <-
            eta_post_draws,
            data,
            latent_family = brms::brmsfamily("gaussian"),
-           latent_div_minimizer = projpred:::linear_mle,
-           latent_proj_predfun = projpred:::linear_proj_predfun,
+           latent_div_minimizer = divmin,
+           latent_proj_predfun = subprd,
            dis_latent = rep(1, 4000), # fixed and uniform
            extract_model_data = .extract_latent_model_data,
            ref_predfun = .latent_ref_predfun,
