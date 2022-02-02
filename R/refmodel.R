@@ -555,6 +555,10 @@ get_refmodel.stanreg <- function(object, ...) {
     )$fits[, "fit"]
   }
 
+  cvrefbuilder <- function(cvfit) {
+    get_refmodel(cvfit, ...)
+  }
+
   # Miscellaneous -----------------------------------------------------------
 
   if (.has_dispersion(family)) {
@@ -568,7 +572,7 @@ get_refmodel.stanreg <- function(object, ...) {
   return(init_refmodel(
     object = object, data = data, formula = formula, family = family,
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
-    dis = dis, cvfun = cvfun, ...
+    dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder, ...
   ))
 }
 
