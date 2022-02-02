@@ -373,8 +373,7 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.default <- function(object, formula, family = NULL,
-                                 latent_proj = FALSE, ...) {
+get_refmodel.default <- function(object, formula, family = NULL, ...) {
   if (is.null(family)) {
     family <- family(object)
   }
@@ -385,11 +384,10 @@ get_refmodel.default <- function(object, formula, family = NULL,
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do_call(.extract_model_data, args))
   }
-  message(latent_proj)
 
   refmodel <- init_refmodel(
     object = object, formula = formula, family = family,
-    extract_model_data = extract_model_data, latent_proj = latent_proj, ...
+    extract_model_data = extract_model_data, ...
   )
   return(refmodel)
 }
