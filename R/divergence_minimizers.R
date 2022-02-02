@@ -125,7 +125,8 @@ linear_proj_predfun <- function(fit, newdata = NULL, weights = NULL) {
   }
 }
 
-fit_glm_ridge_callback <- function(formula, data, projpred_var = 0,
+fit_glm_ridge_callback <- function(formula, data,
+                                   projpred_var = matrix(nrow = nrow(data)),
                                    projpred_regul = 1e-4, ...) {
   fr <- model.frame(delete.intercept(formula), data = data)
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)

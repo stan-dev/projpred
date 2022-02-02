@@ -42,10 +42,6 @@ Imports:
     mgcv,
     gamm4,
     rlang
-LinkingTo: Rcpp, RcppArmadillo
-License: GPL-3
-LazyData: TRUE
-RoxygenNote: 7.1.2
 Suggests:
     rstanarm,
     brms,
