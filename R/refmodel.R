@@ -383,11 +383,11 @@ get_refmodel.default <- function(object, formula, family = NULL,
                                  orhs = NULL, extract_y = TRUE) {
     resp_form <- if (!extract_y) NULL else lhs(formula)
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(projpred:::.extract_model_data, args))
+    return(do_call(.extract_model_data, args))
   }
   message(latent_proj)
 
-  refmodel <- projpred::init_refmodel(
+  refmodel <- init_refmodel(
     object = object, formula = formula, family = family,
     extract_model_data = extract_model_data, latent_proj = latent_proj, ...
   )
@@ -507,7 +507,7 @@ get_refmodel.stanreg <- function(object, ...) {
     }
 
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(projpred:::.extract_model_data, args))
+    return(do_call(.extract_model_data, args))
   }
 
   ref_predfun <- function(fit, newdata = NULL) {
