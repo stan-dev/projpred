@@ -375,6 +375,9 @@ get_refmodel.vsel <- function(object, ...) {
 #' @export
 get_refmodel.default <- function(object, formula, family = NULL,
                                  latent_proj = FALSE, ...) {
+  if (is.null(family)) {
+    family <- family(object)
+  }
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = TRUE) {
