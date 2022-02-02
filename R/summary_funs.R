@@ -1,54 +1,52 @@
-.get_sub_summaries <- function(submodels, test_points, refmodel, family,
-                               search_terms = NULL) {
-  has_group_features <- !is.null(search_terms)
+.get_sub_summaries <- function(submodels, test_points, refmodel) {
   lapply(submodels, function(model) {
-    sub_fit <- model$sub_fit
-    weights <- refmodel$wobs[test_points]
-    mu <- family$mu_fun(sub_fit,
-                        obs = test_points,
-                        offset = refmodel$offset[test_points])
-
-    y <- refmodel$y[test_points]
-    y_test <- nlist(y, weights)
-
     .weighted_summary_means(
-      y_test, family, model$weights,
-      matrix(mu, NROW(y), NCOL(mu)), model$dis
+      y_test = list(y = refmodel$y[test_points],
+                    weights = refmodel$wobs[test_points]),
+      family = refmodel$family,
+      wsample = model$weights,
+      mu = refmodel$family$mu_fun(model$submodl,
+                                  obs = test_points,
+                                  offset = refmodel$offset[test_points]),
+      dis = model$dis
     )
   })
 }
 
+# Calculate log predictive density values and average them across parameter
+# draws (together with the corresponding expected response values).
+#
+# @param y_test A `list`, at least with elements `y` (response values) and
+#   `weights` (observation weights).
+# @param family A `family` object.
+# @param wsample A vector of weights for the parameter draws.
+# @param mu A matrix of expected values for `y`.
+# @param dis A vector of dispersion parameter draws.
+#
+# @return A `list` with elements `mu` and `lppd` which are both vectors
+#   containing the values for the quantities from the description above.
 .weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
-  loglik <- family$ll_fun(
-    mu, dis, matrix(y_test$y, nrow = NROW(mu)),
-    y_test$weights
-  )
-  if (length(loglik) == 1) {
-    # one observation, one sample
-    list(mu = mu, lppd = loglik)
-  } else if (is.null(dim(loglik))) {
-    # loglik is a vector, but not sure if it means one observation with many
-    # samples, or vice versa?
-    stop("Internal error encountered: loglik is a vector, ",
-         "but should be a scalar or matrix")
-  } else {
-    # mu is a matrix, so apply weighted sum over the samples
-    list(
-      mu = c(mu %*% wsample),
-      lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
-    )
+  if (!is.matrix(mu)) {
+    stop("Unexpected structure for `mu`. Does the return value of ",
+         "`proj_predfun` have the correct structure?")
   }
+  loglik <- family$ll_fun(mu, dis, y_test$y, y_test$weights)
+  if (!is.matrix(loglik)) {
+    stop("Unexpected structure for `loglik`. Please notify the package ",
+         "maintainer.")
+  }
+  # Average over the draws, taking their weights into account:
+  return(list(mu = c(mu %*% wsample),
+              lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)))
 }
 
-# copied from summary_funs to remove duplicated code
+# A function to calculate the desired performance statistics, their standard
+# errors, and confidence intervals with coverage `1 - alpha` based on the
+# variable selection output. If `nfeat_baseline` is given, then compute the
+# statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
+# means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL) {
-  ##
-  ## Calculates the desired statistics, their standard errors and credible
-  ## bounds with given credible level alpha based on the variable selection
-  ## information. If nfeat_baseline is given, then compute the statistics
-  ## relative to the baseline model with that size (nfeat_baseline = Inf means
-  ## reference model).
+                            nfeat_baseline = NULL, ...) {
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
@@ -76,10 +74,8 @@
 
     ## reference model statistics
     summ <- summ_ref
-    res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-                    mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w,
-                    alpha = alpha
-    )
+    res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
+                    lppd.bs = lppd.bs, weights = summ$w, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
@@ -88,7 +84,7 @@
     stat_tab <- rbind(stat_tab, row)
 
     ## submodel statistics
-    for (k in seq_along(varsel$summaries$sub)) {
+    for (k in seq_along(summ_sub)) {
       summ <- summ_sub[[k]]
       if (delta == FALSE && sum(!is.na(summ_ref$mu)) > sum(!is.na(summ$mu))) {
         ## special case (subsampling loo): reference model summaries computed
@@ -96,11 +92,11 @@
         ## results to get more accurate statistic fot the submodel on the actual
         ## scale
         res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$d_test,
-                            varsel$family, stat, mu.bs = NULL, lppd.bs = NULL,
-                            weights = summ_ref$w, alpha = alpha)
-        res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family,
-                             stat, mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                             weights = summ$w, alpha = alpha)
+                            stat, mu.bs = NULL, lppd.bs = NULL,
+                            weights = summ_ref$w, alpha = alpha, ...)
+        res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
+                             mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
+                             weights = summ$w, alpha = alpha, ...)
         val <- res_ref$value + res_diff$value
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
@@ -108,32 +104,30 @@
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = val, lq = lq, uq = uq, se = val.se,
-          diff = res_diff$value, diff.se = res_diff$se)
+          diff = res_diff$value, diff.se = res_diff$se
+        )
       } else {
         ## normal case
-        res <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
-                        mu.bs = mu.bs, lppd.bs = lppd.bs, weights = summ$w,
-                        alpha = alpha
-        )
-        diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, varsel$family, stat,
+        res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
+                        lppd.bs = lppd.bs, weights = summ$w, alpha = alpha, ...)
+        diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
                          mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                         weights = summ$w, alpha = alpha
-        )
+                         weights = summ$w, alpha = alpha, ...)
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
-          se = res$se, diff = diff$value, diff.se = diff$se)
+          se = res$se, diff = diff$value, diff.se = diff$se
+        )
       }
       stat_tab <- rbind(stat_tab, row)
     }
   }
 
-  stat_tab
+  return(stat_tab)
 }
 
-get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
-                     lppd.bs = NULL, weights = NULL, alpha = 0.1,
-                     seed = 1208499, B = 2000) {
+get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
+                     weights = NULL, alpha = 0.1, ...) {
   ##
   ## Calculates given statistic stat with standard error and confidence bounds.
   ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
@@ -142,7 +136,6 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
   ## the actual (non-relative) value is computed.
 
   n <- length(mu)
-
   if (stat %in% c("mlpd", "elpd")) {
     n_notna <- sum(!is.na(lppd))
   } else {
@@ -156,36 +149,37 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
   ## ensure the weights sum to n_notna
   weights <- n_notna * weights / sum(weights)
 
-
   if (stat == "mlpd") {
     if (!is.null(lppd.bs)) {
       value <- mean((lppd - lppd.bs) * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd - lppd.bs, weights,
-                              na.rm = TRUE) / sqrt(n_notna)
+      value.se <- weighted.sd(lppd - lppd.bs, weights, na.rm = TRUE) /
+        sqrt(n_notna)
     } else {
       value <- mean(lppd * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd, weights,
-                              na.rm = TRUE) / sqrt(n_notna)
+      value.se <- weighted.sd(lppd, weights, na.rm = TRUE) /
+        sqrt(n_notna)
     }
   } else if (stat == "elpd") {
     if (!is.null(lppd.bs)) {
       value <- sum((lppd - lppd.bs) * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd - lppd.bs, weights,
-                              na.rm = TRUE) / sqrt(n_notna) * n_notna
+      value.se <- weighted.sd(lppd - lppd.bs, weights, na.rm = TRUE) /
+        sqrt(n_notna) * n_notna
     } else {
       value <- sum(lppd * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd, weights,
-                              na.rm = TRUE) / sqrt(n_notna) * n_notna
+      value.se <- weighted.sd(lppd, weights, na.rm = TRUE) /
+        sqrt(n_notna) * n_notna
     }
   } else if (stat == "mse") {
     y <- d_test$y
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
       value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, weights,
-                              na.rm = TRUE) / sqrt(n_notna)
+                              na.rm = TRUE) /
+        sqrt(n_notna)
     } else {
       value <- mean(weights * (mu - y)^2, na.rm = TRUE)
-      value.se <- weighted.sd((mu - y)^2, weights, na.rm = TRUE) / sqrt(n_notna)
+      value.se <- weighted.sd((mu - y)^2, weights, na.rm = TRUE) /
+        sqrt(n_notna)
     }
   } else if (stat == "rmse") {
     y <- d_test$y
@@ -194,17 +188,32 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
       ## which
       mu.bs[is.na(mu)] <- NA
       mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
-      value <- (sqrt(mean(weights * (mu - y)^2, na.rm = TRUE))
-                - sqrt(mean(weights * (mu.bs - y)^2, na.rm = TRUE)))
-      value.bootstrap1 <- bootstrap((mu - y)^2, function(resid2)
-        sqrt(mean(weights * resid2, na.rm = TRUE)), b = B, seed = seed)
-      value.bootstrap2 <- bootstrap((mu.bs - y)^2, function(resid2)
-        sqrt(mean(weights * resid2, na.rm = TRUE)), b = B, seed = seed)
+      value <- sqrt(mean(weights * (mu - y)^2, na.rm = TRUE)) -
+        sqrt(mean(weights * (mu.bs - y)^2, na.rm = TRUE))
+      value.bootstrap1 <- bootstrap(
+        (mu - y)^2,
+        function(resid2) {
+          sqrt(mean(weights * resid2, na.rm = TRUE))
+        },
+        ...
+      )
+      value.bootstrap2 <- bootstrap(
+        (mu.bs - y)^2,
+        function(resid2) {
+          sqrt(mean(weights * resid2, na.rm = TRUE))
+        },
+        ...
+      )
       value.se <- sd(value.bootstrap1 - value.bootstrap2)
     } else {
       value <- sqrt(mean(weights * (mu - y)^2, na.rm = TRUE))
-      value.bootstrap <- bootstrap((mu - y)^2, function(resid2)
-        sqrt(mean(weights * resid2, na.rm = TRUE)), b = B, seed = seed)
+      value.bootstrap <- bootstrap(
+        (mu - y)^2,
+        function(resid2) {
+          sqrt(mean(weights * resid2, na.rm = TRUE))
+        },
+        ...
+      )
       value.se <- sd(value.bootstrap)
     }
   } else if (stat == "acc" || stat == "pctcorr") {
@@ -212,12 +221,13 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((round(mu) == y) - (round(mu.bs) == y)),
                     na.rm = TRUE)
-      value.se <- weighted.sd((round(mu) == y) - (round(mu.bs) == y),
-                              weights, na.rm = TRUE) / sqrt(n_notna)
+      value.se <- weighted.sd((round(mu) == y) - (round(mu.bs) == y), weights,
+                              na.rm = TRUE) /
+        sqrt(n_notna)
     } else {
       value <- mean(weights * (round(mu) == y), na.rm = TRUE)
-      value.se <- weighted.sd(round(mu) == y, weights,
-                              na.rm = TRUE) / sqrt(n_notna)
+      value.se <- weighted.sd(round(mu) == y, weights, na.rm = TRUE) /
+        sqrt(n_notna)
     }
   } else if (stat == "auc") {
     y <- d_test$y
@@ -227,12 +237,12 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
       mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
       auc.data.bs <- cbind(y, mu.bs, weights)
       value <- auc(auc.data) - auc(auc.data.bs)
-      value.bootstrap1 <- bootstrap(auc.data, auc, b = B, seed = seed)
-      value.bootstrap2 <- bootstrap(auc.data.bs, auc, b = B, seed = seed)
+      value.bootstrap1 <- bootstrap(auc.data, auc, ...)
+      value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
       value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
     } else {
       value <- auc(auc.data)
-      value.bootstrap <- bootstrap(auc.data, auc, b = B, seed = seed)
+      value.bootstrap <- bootstrap(auc.data, auc, ...)
       value.se <- sd(value.bootstrap, na.rm = TRUE)
     }
   }
@@ -247,12 +257,7 @@ get_stat <- function(mu, lppd, d_test, family, stat, mu.bs = NULL,
   ## a simple function to determine whether a given statistic (string) is
   ## a utility (we want to maximize) or loss (we want to minimize)
   ## by the time we get here, stat should have already been validated
-
-  if (stat %in% c("rmse", "mse")) {
-    return(FALSE)
-  } else {
-    return(TRUE)
-  }
+  return(!stat %in% c("rmse", "mse"))
 }
 
 .get_nfeat_baseline <- function(object, baseline, stat) {

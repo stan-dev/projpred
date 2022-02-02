@@ -90,9 +90,8 @@ break_up_matrix_term <- function(formula, data) {
   }
 
   tryCatch(model.matrix(formula, data = new_data),
-           error = function(e) print(e)
-  )
-  list(formula = formula, data = new_data)
+           error = function(e) print(e))
+  return(list(formula = formula, data = new_data))
 }
 
 ## Splits a linear term into individual predictors.
@@ -110,5 +109,5 @@ split_linear_term <- function(term, data) {
   } else {
     split_term <- term
   }
-  split_term
+  return(split_term)
 }

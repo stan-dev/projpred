@@ -13,8 +13,11 @@ divmin <- function(formula, projpred_var, ...) {
   has_add <- length(trms_all$additive_terms) > 0
   projpred_formulas_no_random <- NA
   projpred_random <- NA
+  # Define sdivmin(), the divergence minimizer for each draw s = 1, ..., S (and
+  # perform other actions, if necessary):
   if (!has_grp && !has_add) {
-    sdivmin <- fit_glm_ridge_callback
+    sdivmin <- get(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                   mode = "function")
   } else if (has_grp && !has_add) {
     sdivmin <- fit_glmer_callback
   } else if (!has_grp && has_add) {
@@ -150,11 +153,46 @@ fit_glm_ridge_callback <- function(formula, data, projpred_var = 0,
   return(sub)
 }
 
+# Alternative to fit_glm_ridge_callback() (may be used via global option
+# `projpred.glm_fitter`):
+fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
+                             ...) {
+  tryCatch({
+    if (family$family == "gaussian" && family$link == "identity") {
+      # Exclude arguments from `...` which cannot be passed to stats::lm():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        union(methods::formalArgs(stats::lm),
+              union(methods::formalArgs(stats::lm.fit),
+                    methods::formalArgs(stats::lm.wfit)))
+      )]
+      return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
+        list(formula = formula),
+        dot_args
+      )))))
+    } else {
+      # Exclude arguments from `...` which cannot be passed to stats::glm():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        union(methods::formalArgs(stats::glm),
+              methods::formalArgs(stats::glm.control))
+      )]
+      return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
+        list(formula = formula, family = family),
+        dot_args
+      )))))
+    }
+  }, error = function(e) {
+    # May be used to handle errors.
+    stop(e)
+  })
+}
+
 # Use package "mgcv" to fit additive non-multilevel submodels:
 #' @importFrom mgcv gam
 fit_gam_callback <- function(formula, ...) {
-  # make sure correct 'weights' can be found
-  environment(formula) <- environment()
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -173,8 +211,6 @@ fit_gam_callback <- function(formula, ...) {
 fit_gamm_callback <- function(formula, projpred_formula_no_random,
                               projpred_random, data, family,
                               control = control_callback(family), ...) {
-  # make sure correct 'weights' can be found
-  environment(projpred_formula_no_random) <- environment()
   # Exclude arguments from `...` which cannot be passed to gamm4::gamm4():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -193,8 +229,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
     if (grepl("not positive definite", as.character(e))) {
       scaled_data <- preprocess_data(data, projpred_formula_no_random)
       fit_gamm_callback(
-        formula, projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random, data = scaled_data, family = family,
+        formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
+        data = scaled_data,
+        family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
@@ -216,8 +255,6 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 # non-additive) submodels):
 fit_glmer_callback <- function(formula, family,
                                control = control_callback(family), ...) {
-  ## make sure correct 'weights' can be found
-  environment(formula) <- environment()
   tryCatch({
     if (family$family == "gaussian" && family$link == "identity") {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
@@ -245,10 +282,14 @@ fit_glmer_callback <- function(formula, family,
     }
   }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
-      # This case should not occur anymore, but leave it here for safety
-      # reasons.
-      return(fit_glm_ridge_callback(
-        formula, family = family, ...
+      # This case should not occur anymore (because divmin() should pick the
+      # correct submodel fitter based on the submodel's formula), but leave it
+      # here in case user-specified divergence minimizers make use of it.
+      glm_fitter <- get(getOption("projpred.glm_fitter",
+                                  "fit_glm_ridge_callback"),
+                        mode = "function")
+      return(glm_fitter(
+        formula = formula, family = family, ...
       ))
     } else if (grepl("not positive definite", as.character(e))) {
       if ("optimx" %in% control$optimizer &&
@@ -259,7 +300,8 @@ fit_glmer_callback <- function(formula, family,
              "anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family,
+        formula = formula,
+        family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
@@ -277,7 +319,11 @@ fit_glmer_callback <- function(formula, family,
              "anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family, control = control, nAGQ = nAGQ_new, ...
+        formula = formula,
+        family = family,
+        control = control,
+        nAGQ = nAGQ_new,
+        ...
       ))
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
@@ -299,7 +345,8 @@ fit_glmer_callback <- function(formula, family,
              "automatically anymore.")
       }
       return(fit_glmer_callback(
-        formula, family = family,
+        formula = formula,
+        family = family,
         control = control_callback(family, tolPwrss = tolPwrss_new,
                                    optCtrl = list(maxfun = maxfun_new,
                                                   maxit = maxit_new)),
@@ -331,10 +378,81 @@ control_callback <- function(family, ...) {
   }
 }
 
+# Convergence checker -----------------------------------------------------
+
+check_conv <- function(fit) {
+  conv_info <- do.call(cbind, lapply(fit, function(fit_s) {
+    if (inherits(fit_s, "gam")) {
+      # TODO (GAMs):
+      #   1. For GAMs, there is also `fit_s$mgcv.conv` (see
+      #   `?mgcv::gamObject`). Do we need to take this into account?
+      #   2. If there is a (convenient) way to retrieve warnings, then this
+      #   should be done to get a sensible value for `no_warnings` below.
+      return(c(no_gross_fail = fit_s$converged, no_warnings = TRUE))
+    } else if (inherits(fit_s, "gamm4")) {
+      # TODO (GAMMs): Both, `no_gross_fail` and `no_warnings` need to be
+      # implemented. Return `TRUE` for now.
+      return(c(no_gross_fail = TRUE, no_warnings = TRUE))
+    } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
+      # The following was inferred from the source code of lme4::checkConv() and
+      # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
+      return(c(
+        no_gross_fail = fit_s@optinfo$conv$opt == 0 && (
+          # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
+          # that element might not always exist:
+          (!is.null(fit_s@optinfo$conv$lme4$code) &&
+             fit_s@optinfo$conv$lme4$code >= 0) ||
+            is.null(fit_s@optinfo$conv$lme4$code)
+        ),
+        no_warnings = length(fit_s@optinfo$warnings) &&
+          length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 && (
+            # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
+            # that element might not always exist:
+            (!is.null(fit_s@optinfo$conv$lme4$code) &&
+               fit_s@optinfo$conv$lme4$code == 0) ||
+              is.null(fit_s@optinfo$conv$lme4$code)
+          )
+      ))
+    } else if (inherits(fit_s, "glm")) {
+      # TODO (GLMs): If there is a (convenient) way to retrieve warnings, then
+      # this should be done to get a sensible value for `no_warnings` below.
+      return(c(no_gross_fail = fit_s$converged, no_warnings = TRUE))
+    } else if (inherits(fit_s, "lm")) {
+      # Note: There doesn't seem to be a better way to check for convergence
+      # other than checking `NA` coefficients (see below).
+      # TODO (LMs): If there is a (convenient) way to retrieve warnings, then
+      # this should be done to get a sensible value for `no_warnings` below.
+      return(c(no_gross_fail = all(!is.na(coef(fit_s))), no_warnings = TRUE))
+    } else if (inherits(fit_s, "subfit")) {
+      # Note: There doesn't seem to be any way to check for convergence, so
+      # return `TRUE` for now.
+      # TODO (GLMs with ridge regularization): Add a logical indicating
+      # convergence to objects of class `subfit` (i.e., from glm_ridge())?
+      return(c(no_gross_fail = TRUE, no_warnings = TRUE))
+    } else {
+      stop("Unrecognized submodel fit. Please notify the package maintainer.")
+    }
+  }))
+  is_conv <- conv_info["no_gross_fail", ]
+  if (any(!is_conv)) {
+    warning(sum(!is_conv), " out of ", length(is_conv), " submodel fits ",
+            "(there is one submodel fit per projected draw) did not converge. ",
+            "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
+  }
+  no_warns <- conv_info["no_warnings", ]
+  if (any(!no_warns)) {
+    warning(sum(!no_warns), " out of ", length(no_warns), " submodel fits ",
+            "(there is one submodel fit per projected draw) threw a warning ",
+            "which might be relevant for convergence. ",
+            "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
+  }
+  return(invisible(TRUE))
+}
+
 # Prediction functions for submodels --------------------------------------
 
-subprd <- function(fit, newdata = NULL) {
-  return(do.call(cbind, lapply(fit, function(fit) {
+subprd <- function(fits, newdata) {
+  return(do.call(cbind, lapply(fits, function(fit) {
     # Only pass argument `allow.new.levels` to the predict() generic if the fit
     # is multilevel:
     has_grp <- inherits(fit, c("lmerMod", "glmerMod"))
@@ -367,6 +485,10 @@ predict.subfit <- function(subfit, newdata = NULL) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(x))))
     } else {
+      if (ncol(x) != length(beta) + 1L) {
+        stop("The number of columns in the model matrix (\"X\") doesn't match ",
+             "the number of coefficients.")
+      }
       return(x %*% rbind(alpha, beta))
     }
   }

@@ -21,24 +21,28 @@
 #' @param data Data used for fitting the reference model.
 #' @param formula Reference model's formula. For general information on formulas
 #'   in \R, see [`formula`]. For multilevel formulas, see also package
-#'   \pkg{lme4}, in particular [lme4::lmer()] and [lme4::glmer()]. For additive
-#'   formulas, see also packages \pkg{mgcv}, in particular [mgcv::gam()], and
-#'   \pkg{gamm4}, in particular [gamm4::gamm4()].
+#'   \pkg{lme4} (in particular, functions [lme4::lmer()] and [lme4::glmer()]).
+#'   For additive formulas, see also packages \pkg{mgcv} (in particular,
+#'   function [mgcv::gam()]) and \pkg{gamm4} (in particular, function
+#'   [gamm4::gamm4()]) as well as the notes in section "Formula terms" below.
 #' @param ref_predfun Prediction function for the linear predictor of the
-#'   reference model. See section "Details" below. If `object` is `NULL`,
-#'   `ref_predfun` is ignored and an internal default is used instead.
+#'   reference model, including offsets (if existing). See also section
+#'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below. If
+#'   `object` is `NULL`, `ref_predfun` is ignored and an internal default is
+#'   used instead.
 #' @param proj_predfun Prediction function for the linear predictor of a
-#'   submodel onto which the reference model is projected. See section "Details"
-#'   below.
+#'   submodel onto which the reference model is projected. See also section
+#'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below.
 #' @param div_minimizer A function for minimizing the Kullback-Leibler (KL)
 #'   divergence from a submodel to the reference model (i.e., for performing the
 #'   projection of the reference model onto a submodel). The output of
-#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fit`. See
-#'   section "Details" below.
+#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fit`. See also
+#'   section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
+#'   below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
-#'   used for fitting the reference model) or from a new dataset. See section
-#'   "Details" below.
+#'   used for fitting the reference model) or from a new dataset. See also
+#'   section "Argument `extract_model_data`" below.
 #' @param family A [`family`] object representing the observational model (i.e.,
 #'   the distributional family for the response).
 #' @param cvfits For \eqn{K}-fold CV only. A `list` with one sub-`list` called
@@ -53,64 +57,77 @@
 #'   \eqn{K} fitted model objects as a `list`. If `object` is `NULL`, `cvfun`
 #'   may be `NULL` for using an internal default. Note that `cvfits` takes
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
-#' @param dis A vector of posterior draws for the dispersion parameter (if such
-#'   a parameter exists; else `dis` may be `NULL`).
+#' @param dis A vector of posterior draws for the dispersion parameter (if
+#'   existing). May be `NULL` if the model has no dispersion parameter or if the
+#'   model does have a dispersion parameter, but `object` is `NULL`. Note that
+#'   for the [gaussian()] `family`, `dis` is the standard deviation, not the
+#'   variance.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. Else: ignored.
 #'
 #' @details
 #'
-#' # `ref_predfun`, `proj_predfun`, `div_minimizer`
+#' # Formula terms
+#'
+#' For additive models (still an experimental feature), only [mgcv::s()] and
+#' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
+#' to be called without any arguments apart from the predictor names (symbols).
+#' For example, for smoothing the effect of a predictor `x`, only `s(x)` or
+#' `t2(x)` are allowed. As another example, for smoothing the joint effect of
+#' two predictors `x` and `z`, only `s(x, z)` or `t2(x, z)` are allowed (and
+#' analogously for higher-order joint effects, e.g., of three predictors).
+#'
+#' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
-#' observations (data points), \eqn{S} the number of posterior draws for the
-#' reference model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of
-#' (possibly clustered) parameter draws in the projection (short: the number of
-#' projected draws). Then the functions supplied to these arguments need to have
-#' the following prototypes:
+#' observations (in case of CV, these may be reduced to each fold),
+#' \eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
+#' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
+#' clustered) parameter draws for projection (short: the number of projected
+#' draws). Then the functions supplied to these arguments need to have the
+#' following prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
-#'     \eqn{K}-fold CV);
+#'     \eqn{K}-fold CV).
 #'     + `newdata` accepts either `NULL` (for using the original dataset,
 #'     typically stored in `fit`) or data for new observations (at least in the
 #'     form of a `data.frame`).
-#' * `proj_predfun`: `proj_predfun(fit, newdata = NULL)` where:
-#'     + `fit` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
-#'     this number of submodel fits. This `list` is the same as that returned by
-#'     [project()] in its output element `sub_fit` (which in turn is the same as
-#'     the return value of `div_minimizer`, except if [project()] was used with
-#'     an `object` of class `vsel` based on an L1 search as well as with
-#'     `cv_search = FALSE`);
-#'     + `newdata` accepts either `NULL` (for using the original dataset,
-#'     typically stored in `fit`) or data for new observations (at least in the
-#'     form of a `data.frame`);
+#' * `proj_predfun`: `proj_predfun(fits, newdata)` where:
+#'     + `fits` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj}
+#'     containing this number of submodel fits. This `list` is the same as that
+#'     returned by [project()] in its output element `submodl` (which in turn is
+#'     the same as the return value of `div_minimizer`, except if [project()]
+#'     was used with an `object` of class `vsel` based on an L1 search as well
+#'     as with `refit_prj = FALSE`).
+#'     + `newdata` accepts data for new observations (at least in the form of a
+#'     `data.frame`).
 #' * `div_minimizer` does not need to have a specific prototype, but it needs to
 #' be able to be called with the following arguments:
 #'     + `formula` accepts either a standard [`formula`] with a single response
 #'     (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a [`formula`] with
 #'     \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
 #'     the left-hand side in which case the projection has to be performed for
-#'     each of the response variables separately;
-#'     + `data` accepts a `data.frame` to be used for the projection;
-#'     + `family` accepts a [`family`] object;
-#'     + `weights` accepts either `NULL` (for using a vector of ones as weights)
-#'     or observation weights (at least in the form of a numeric vector);
-#'     + `projpred_var` accepts a numeric vector of length \eqn{N} containing
-#'     predictive variances (necessary for \pkg{projpred}'s internal (G)LM
-#'     fitter);
+#'     each of the response variables separately.
+#'     + `data` accepts a `data.frame` to be used for the projection.
+#'     + `family` accepts a [`family`] object.
+#'     + `weights` accepts either observation weights (at least in the form of a
+#'     numeric vector) or `NULL` (for using a vector of ones as weights).
+#'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+#'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
+#'     GLM fitter).
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'
-#' The return value of those functions needs to be:
-#' * `ref_predfun`: a \eqn{N \times S}{N x S} matrix.
-#' * `proj_predfun`: a \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
+#' The return value of these functions needs to be:
+#' * `ref_predfun`: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
+#' * `proj_predfun`: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
 #' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 #' this number of submodel fits.
 #'
-#' # `extract_model_data`
+#' # Argument `extract_model_data`
 #'
 #' The function supplied to argument `extract_model_data` needs to have the
 #' prototype
@@ -120,15 +137,15 @@
 #' where:
 #' * `object` accepts the reference model fit as given in argument `object` (but
 #' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
-#' CV);
+#' CV).
 #' * `newdata` accepts data for new observations (at least in the form of a
-#' `data.frame`);
+#' `data.frame`).
 #' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
 #' right-hand side formula consisting only of the variable in `newdata`
-#' containing the weights;
+#' containing the weights.
 #' * `orhs` accepts at least either `NULL` (for using a vector of zeros) or a
 #' right-hand side formula consisting only of the variable in `newdata`
-#' containing the offsets;
+#' containing the offsets.
 #' * `extract_y` accepts a single logical value indicating whether output
 #' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
 #'
@@ -189,10 +206,11 @@
 #'       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
 #'       return(projpred:::do_call(projpred:::.extract_model_data, args))
 #'     },
-#'     cvfun = function(folds, ...) {
+#'     cvfun = function(folds) {
 #'       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
-#'                       folds = folds, ...)$fits[, "fit"]
-#'     }
+#'                       folds = folds)$fits[, "fit"]
+#'     },
+#'     dis = as.matrix(fit)[, "sigma"]
 #'   )
 #'   # Now, the post-processing functions mentioned above (for example,
 #'   # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
@@ -250,12 +268,20 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (length(offsetnew) == 0) {
     offsetnew <- rep(0, length(w_o$y))
   }
+  if (inherits(object$fit, "stanreg") && length(object$offset) > 0) {
+    if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
+      stop("Need to write to column `projpred_internal_offs_stanreg` of ",
+           "`newdata`, but that column already exists. Please rename this ",
+           "column in `newdata` and try again.")
+    }
+    newdata$projpred_internal_offs_stanreg <- offsetnew
+  }
 
-  ## ref_predfun returns link(mu)
-  mu <- object$ref_predfun(object$fit, newdata) + offsetnew
+  ## ref_predfun returns eta = link(mu)
+  eta <- object$ref_predfun(object$fit, newdata) + offsetnew
 
   if (is.null(ynew)) {
-    pred <- if (type == "link") mu else object$family$linkinv(mu)
+    pred <- if (type == "link") eta else object$family$linkinv(eta)
     ## integrate over the samples
     if (NCOL(pred) > 1) {
       pred <- rowMeans(pred)
@@ -264,8 +290,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   } else {
     ## evaluate the log predictive density at the given ynew values
     loglik <- object$family$ll_fun(
-      object$family$linkinv(mu), object$dis, ynew,
-      weightsnew
+      object$family$linkinv(eta), object$dis, ynew, weightsnew
     )
     S <- ncol(loglik)
     lpd <- apply(loglik, 1, log_sum_exp) - log(S)
@@ -286,6 +311,13 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
     data_out <- newdata[obs, , drop = FALSE]
   }
   return(as.data.frame(data_out))
+}
+
+refprd <- function(fit, newdata = NULL) {
+  # For safety reasons, keep `transform = FALSE` even though this should
+  # be the default in all posterior_linpred() methods (but we cannot be
+  # sure with regard to user-defined posterior_linpred() methods):
+  t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
 }
 
 .extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
@@ -322,7 +354,7 @@ fetch_data <- function(data, obs = NULL, newdata = NULL) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel <- function(object, ...) {
-  UseMethod("get_refmodel", object)
+  UseMethod("get_refmodel")
 }
 
 #' @rdname refmodel-init-get
@@ -477,13 +509,11 @@ get_refmodel.stanreg <- function(object, ...) {
 
   ref_predfun <- function(fit, newdata = NULL) {
     linpred_out <- t(
-      posterior_linpred(fit, transform = FALSE, newdata = newdata)
+      posterior_linpred(fit, newdata = newdata)
     )
-    # Since posterior_linpred() is supposed to include the offsets in its
-    # result, subtract them here and use a workaround for rstanarm issue #541
-    # and rstanarm issue #542. This workaround consists of using `cond_no_offs`
-    # which indicates whether posterior_linpred() excluded (`TRUE`) or included
-    # (`FALSE`) the offsets:
+    # Use a workaround for rstanarm issue #541 and rstanarm issue #542. This
+    # workaround consists of using `cond_no_offs` which indicates whether
+    # posterior_linpred() excluded (`TRUE`) or included (`FALSE`) the offsets:
     cond_no_offs <- (
       fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
         !is.null(attr(terms(fit$formula), "offset"))
@@ -491,19 +521,24 @@ get_refmodel.stanreg <- function(object, ...) {
       fit$stan_function %in% c("stan_lm", "stan_glm") &&
         !is.null(newdata) && length(fit$offset) > 0
     )
-    if (!cond_no_offs) {
+    if (cond_no_offs) {
       # Observation weights are not needed here, so use `wrhs = NULL` to avoid
       # potential conflicts for a non-`NULL` default `wrhs`:
       offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
-      stopifnot(identical(nrow(linpred_out), length(offs)))
-      linpred_out <- linpred_out - offs
+      stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
+      linpred_out <- linpred_out + offs
     }
     return(linpred_out)
   }
 
-  cvfun <- function(folds, ...) {
+  cvfun <- function(folds) {
+    # Use `cores = 1` because of rstanarm issue #551. In fact, this issue only
+    # affects Windows systems, but since `cores = 1` leads to an *inner*
+    # parallelization (i.e., across chains, not across CV folds) with
+    # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
+    # suitable for other systems:
     rstanarm::kfold(object, K = max(folds), save_fits = TRUE,
-                    folds = folds, ...)$fits[, "fit"]
+                    folds = folds, cores = 1)$fits[, "fit"]
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -554,13 +589,23 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Functions ---------------------------------------------------------------
 
-  if (proper_model && is.null(ref_predfun)) {
+  if (proper_model) {
+    if (is.null(ref_predfun)) {
+      ref_predfun <- refprd
+    }
+    # Since posterior_linpred() is supposed to include any offsets but (at least
+    # currently) projpred expects the final ref_predfun() to exclude any offsets
+    # (see issue #186), the offsets have to be subtracted here by a wrapper
+    # function:
+    ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL) {
-      linpred_out <- t(
-        posterior_linpred(fit, transform = FALSE, newdata = newdata)
-      )
-      # Since posterior_linpred() is supposed to include the offsets in its
-      # result, subtract them here:
+      linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
+      if (!is.matrix(linpred_out)) {
+        stop("Unexpected structure for `linpred_out`. Does the return value ",
+             "of `ref_predfun` have the correct structure?")
+      }
+      linpred_out <- unname(linpred_out)
+
       # Observation weights are not needed here, so use `wrhs = NULL` to avoid
       # potential conflicts for a non-`NULL` default `wrhs`:
       offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
@@ -570,7 +615,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       }
       return(linpred_out)
     }
-  } else if (!proper_model) {
+  } else {
     if (!is.null(ref_predfun)) {
       warning("Ignoring argument `ref_predfun` because `object` is `NULL`.")
     }
@@ -658,12 +703,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # mu ----------------------------------------------------------------------
 
-  ## ref_predfun should already take into account the family of the model
-  ## we leave this here just in case
   if (proper_model) {
-    mu <- ref_predfun(object)
-    mu <- unname(as.matrix(mu))
-    mu <- family$linkinv(mu)
+    eta <- ref_predfun(object)
+    mu <- family$linkinv(eta)
   } else {
     if (family$family != "binomial") {
       mu <- y
@@ -677,11 +719,27 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   ndraws <- ncol(mu)
   if (is.null(dis)) {
-    dis <- rep(0, ndraws)
+    if (!.has_dispersion(family)) {
+      dis <- rep(NA, ndraws)
+    } else {
+      if (proper_model) {
+        stop("Please supply argument `dis`.")
+      } else {
+        if (family$family == "Gamma") {
+          warning("Using all-zeros for `dis`, but not sure whether this is ",
+                  "correct.")
+        }
+        dis <- rep(0, ndraws)
+      }
+    }
+  } else {
+    stopifnot(length(dis) == ndraws)
   }
 
   if (proper_model) {
-    loglik <- t(family$ll_fun(mu, dis, y, weights = weights))
+    loglik <- t(family$ll_fun(
+      family$linkinv(eta + offset), dis, y, weights = weights
+    ))
   } else {
     loglik <- NULL
   }
@@ -690,7 +748,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (!proper_model) {
       # This is a dummy definition for cvfun(), but it will lead to standard CV
       # for `datafit`s; see cv_varsel() and .get_kfold():
-      cvfun <- function(folds, ...) {
+      cvfun <- function(folds) {
         lapply(seq_len(max(folds)), function(k) list())
       }
     } else if (is.null(cvfits)) {
@@ -702,6 +760,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   wsample <- rep(1 / ndraws, ndraws)
 
   intercept <- as.logical(attr(terms(formula), "intercept"))
+  if (!intercept) {
+    stop("Reference models without an intercept are currently not supported.")
+  }
 
   # Output ------------------------------------------------------------------
 

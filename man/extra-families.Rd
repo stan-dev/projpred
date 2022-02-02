@@ -19,3 +19,6 @@ A family object analogous to those described in \code{\link{family}}.
 \description{
 Family objects not in the set of default \code{\link{family}} objects.
 }
+\note{
+Support for the \code{\link[=Student_t]{Student_t()}} family is still experimental.
+}

@@ -19,16 +19,16 @@
 #'   of predictor terms for the submodel onto which the projection will be
 #'   performed. Argument `nterms` is ignored in that case. For an `object` which
 #'   is not of class `vsel`, `solution_terms` must not be `NULL`.
-#' @param cv_search A single logical value indicating whether to fit the
+#' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
-#'   `cv_search` must be `TRUE`.
-#' @param ndraws Only relevant if `cv_search` is `TRUE`. Number of posterior
+#'   `refit_prj` must be `TRUE`.
+#' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
 #'   draws to be projected. **Caution:** For `ndraws <= 20`, the value of
 #'   `ndraws` is passed to `nclusters` (so that clustering is used). Ignored if
 #'   `nclusters` is not `NULL` or if the reference model is of class `datafit`
 #'   (in which case one cluster is used). See also section "Details" below.
-#' @param nclusters Only relevant if `cv_search` is `TRUE`. Number of clusters
+#' @param nclusters Only relevant if `refit_prj` is `TRUE`. Number of clusters
 #'   of posterior draws to be projected. Ignored if the reference model is of
 #'   class `datafit` (in which case one cluster is used). For the meaning of
 #'   `NULL`, see argument `ndraws`. See also section "Details" below.
@@ -59,16 +59,11 @@
 #'     \item{`solution_terms`}{A character vector of the submodel's
 #'     predictor terms, ordered in the way in which the terms were added to the
 #'     submodel.}
-#'     \item{`sub_fit`}{The submodel's fitted model object.}
-#'     \item{`family`}{A modified [`family`] object.}
+#'     \item{`submodl`}{A `list` containing the submodel fits (one fit per
+#'     projected draw).}
 #'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
 #'     (`TRUE`) or not (`FALSE`).}
-#'     \item{`intercept`}{A single logical value indicating whether the
-#'     reference model (as well as the submodel) contains an intercept
-#'     (`TRUE`) or not (`FALSE`).}
-#'     \item{`extract_model_data`}{The `extract_model_data` function
-#'     from the reference model (see [init_refmodel()]).}
 #'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
@@ -108,7 +103,7 @@
 #'
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
-                    cv_search = TRUE, ndraws = 400, nclusters = NULL,
+                    refit_prj = TRUE, ndraws = 400, nclusters = NULL,
                     seed = NULL, regul = 1e-4, ...) {
   if (inherits(object, "datafit")) {
     stop("project() does not support an `object` of class \"datafit\".")
@@ -117,28 +112,33 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     stop("Please provide an `object` of class \"vsel\" or use argument ",
          "`solution_terms`.")
   }
-  if (!inherits(object, "vsel") && !cv_search) {
+  if (!inherits(object, "vsel") && !refit_prj) {
     stop("Please provide an `object` of class \"vsel\" or use ",
-         "`cv_search = TRUE`.")
+         "`refit_prj = TRUE`.")
   }
 
   refmodel <- get_refmodel(object, ...)
 
-  if (cv_search && inherits(refmodel, "datafit")) {
-    warning("Automatically setting `cv_search` to `FALSE` since the reference ",
+  if (refit_prj && inherits(refmodel, "datafit")) {
+    warning("Automatically setting `refit_prj` to `FALSE` since the reference ",
             "model is of class \"datafit\".")
-    cv_search <- FALSE
+    refit_prj <- FALSE
   }
 
-  if (!cv_search &&
+  if (!refit_prj &&
       !is.null(solution_terms) &&
       any(
         solution_terms(object)[seq_along(solution_terms)] != solution_terms
       )) {
     warning("The given `solution_terms` are not part of the solution path ",
-            "(from `solution_terms(object)`), so `cv_search` is automatically ",
+            "(from `solution_terms(object)`), so `refit_prj` is automatically ",
             "set to `TRUE`.")
-    cv_search <- TRUE
+    refit_prj <- TRUE
+  }
+
+  if (!refit_prj) {
+    warning("Currently, `refit_prj = FALSE` requires some caution, see GitHub ",
+            "issues #168 and #211.")
   }
 
   if (!is.null(solution_terms)) {
@@ -212,12 +212,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   }
 
-  intercept <- refmodel$intercept
-  if (!intercept) {
-    stop("Reference models without an intercept are currently not supported.")
-  }
-  family <- refmodel$family
-
   ## get the clustering or subsample
   p_ref <- .get_refdist(refmodel,
                         ndraws = ndraws, nclusters = nclusters, seed = seed)
@@ -227,17 +221,15 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
-      sub_fits = object$search_path$sub_fits
+      submodls = object$search_path$submodls
     ),
-    nterms = nterms, family = family, p_ref = p_ref, refmodel = refmodel,
-    intercept = intercept, regul = regul, cv_search = cv_search
+    nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
+    refit_prj = refit_prj
   )
-  ## add family
+
+  # Output:
   proj <- lapply(subm, function(model) {
-    model <- c(model, nlist(family))
     model$p_type <- !is.null(nclusters)
-    model$intercept <- intercept
-    model$extract_model_data <- refmodel$extract_model_data
     model$refmodel <- refmodel
     class(model) <- "projection"
     return(model)

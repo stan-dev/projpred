@@ -38,8 +38,8 @@
 #'   was projected. If a clustered projection was performed, `.seed` is also
 #'   used for drawing from the set of the projected clusters of posterior draws
 #'   (see argument `nresample_clusters`).
-#' @param ... Additional arguments passed to [project()] if `object` is not
-#'   already an object returned by [project()].
+#' @param ... Arguments passed to [project()] if `object` is not already an
+#'   object returned by [project()].
 #'
 #' @return Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
 #'   clustered) projected posterior draws (short: the number of projected draws)
@@ -95,16 +95,21 @@ proj_helper <- function(object, newdata,
                         onesub_fun, filter_nterms = NULL,
                         transform = NULL, integrated = NULL,
                         nresample_clusters = NULL, ...) {
-  if (inherits(object, "projection") ||
-      (length(object) > 0 && inherits(object[[1]], "projection"))) {
+  if (inherits(object, "projection") || .is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!.is_proj_list(object)) {
         object <- list(object)
       }
-      projs <- Filter(function(x) {
-        count_terms_chosen(x$solution_terms, add_icpt = TRUE) %in%
-          (filter_nterms + 1)
-      }, object)
+      projs <- Filter(
+        function(x) {
+          count_terms_chosen(x$solution_terms, add_icpt = TRUE) %in%
+            (filter_nterms + 1)
+        },
+        object
+      )
+      if (!length(projs)) {
+        stop("Invalid `filter_nterms`.")
+      }
     } else {
       projs <- object
     }
@@ -115,12 +120,6 @@ proj_helper <- function(object, newdata,
 
   if (!.is_proj_list(projs)) {
     projs <- list(projs)
-  } else {
-    ## projs is some other object, not containing an element called "family" (so
-    ## it could be a `proj_list` but must not necessarily)
-    if (any(sapply(projs, function(x) !("family" %in% names(x))))) {
-      stop("Invalid object supplied to argument `object`.")
-    }
   }
 
   if (is.null(newdata)) {
@@ -153,24 +152,18 @@ proj_helper <- function(object, newdata,
     #           "It is safer to provide column names.")
     # }
     ###
-    extract_y_ind <- ifelse(y_nm %in% colnames(newdata), TRUE, FALSE)
+    extract_y_ind <- y_nm %in% colnames(newdata)
   }
 
   names(projs) <- sapply(projs, function(proj) {
     count_terms_chosen(proj$solution_terms, add_icpt = TRUE)
   })
 
-  solution_terms <- list(...)$solution_terms
-  if (!is.null(solution_terms) &&
-      length(solution_terms) > NCOL(newdata)) {
-    stop("The number of solution terms is greater than the number of columns ",
-         "in `newdata`.")
-  }
-
   preds <- lapply(projs, function(proj) {
-    w_o <- proj$extract_model_data(proj$refmodel$fit, newdata = newdata,
-                                   wrhs = weightsnew, orhs = offsetnew,
-                                   extract_y = FALSE)
+    w_o <- proj$refmodel$extract_model_data(
+      proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,
+      extract_y = FALSE
+    )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
@@ -179,9 +172,8 @@ proj_helper <- function(object, newdata,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
-    mu <- proj$family$mu_fun(proj$sub_fit,
-                             newdata = newdata, offset = offsetnew)
-
+    mu <- proj$refmodel$family$mu_fun(proj$submodl,
+                                      newdata = newdata, offset = offsetnew)
     onesub_fun(proj, mu, weightsnew,
                offset = offsetnew, newdata = newdata,
                extract_y_ind = extract_y_ind,
@@ -215,14 +207,15 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
   stopifnot(!is.null(dot_args$extract_y_ind))
-  w_o <- proj$extract_model_data(proj$refmodel$fit, newdata = dot_args$newdata,
-                                 wrhs = weights, orhs = dot_args$offset,
-                                 extract_y = dot_args$extract_y_ind)
+  w_o <- proj$refmodel$extract_model_data(
+    proj$refmodel$fit, newdata = dot_args$newdata, wrhs = weights,
+    orhs = dot_args$offset, extract_y = dot_args$extract_y_ind
+  )
   ynew <- w_o$y
   lpd_out <- compute_lpd(
     ynew = ynew, mu = mu, proj = proj, weights = weights
   )
-  pred_out <- if (!dot_args$transform) proj$family$linkfun(mu) else mu
+  pred_out <- if (!dot_args$transform) proj$refmodel$family$linkfun(mu) else mu
   if (dot_args$integrated) {
     ## average over the posterior draws
     pred_out <- pred_out %*% proj$weights
@@ -239,10 +232,10 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
 compute_lpd <- function(ynew, mu, proj, weights) {
   if (!is.null(ynew)) {
     ## compute also the log-density
-    target <- .get_standard_y(ynew, weights, proj$family)
+    target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    return(as.matrix(proj$family$ll_fun(mu, proj$dis, ynew, weights)))
+    return(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights))
   } else {
     return(NULL)
   }
@@ -282,9 +275,9 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
     draw_inds <- seq_along(proj$weights)
   }
 
-  do.call(rbind, lapply(draw_inds, function(i) {
-    proj$family$ppd(mu[, i], proj$dis[i], weights)
-  }))
+  return(do.call(rbind, lapply(draw_inds, function(i) {
+    proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
+  })))
 }
 
 #' Plot summary statistics of a variable selection
@@ -294,9 +287,6 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
-#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel (in terms of `stats[1]`),
-#'   respectively.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -336,11 +326,9 @@ plot.vsel <- function(
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
   tab <- rbind(
-    .tabulate_stats(object, stats,
-                    alpha = alpha,
-                    nfeat_baseline = nfeat_baseline
-    ),
-    .tabulate_stats(object, stats, alpha = alpha)
+    .tabulate_stats(object, stats, alpha = alpha,
+                    nfeat_baseline = nfeat_baseline, ...),
+    .tabulate_stats(object, stats, alpha = alpha, ...)
   )
   stats_table <- subset(tab, tab$delta == deltas)
   stats_ref <- subset(stats_table, stats_table$size == Inf)
@@ -349,10 +337,8 @@ plot.vsel <- function(
 
 
   if (NROW(stats_sub) == 0) {
-    stop(paste0(
-      ifelse(length(stats) == 1, "Statistics ", "Statistic "),
-      paste0(unique(stats), collapse = ", "), " not available."
-    ))
+    stop(ifelse(length(stats) == 1, "Statistics ", "Statistic "),
+         paste0(unique(stats), collapse = ", "), " not available.")
   }
 
   max_size <- max(stats_sub$size)
@@ -375,7 +361,7 @@ plot.vsel <- function(
     baseline_pretty <- "best submodel"
   }
   if (deltas) {
-    ylab <- paste0("Difference vs.", baseline_pretty)
+    ylab <- paste0("Difference vs. ", baseline_pretty)
   } else {
     ylab <- "Value"
   }
@@ -394,10 +380,8 @@ plot.vsel <- function(
   }
 
   # plot submodel results
-  pp <- ggplot(
-    data = subset(stats_sub, stats_sub$size <= nterms_max),
-    mapping = aes_string(x = "size")
-  ) +
+  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
+               mapping = aes_string(x = "size")) +
     geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
     geom_line(aes_string(y = "value")) +
     geom_point(aes_string(y = "value"))
@@ -406,15 +390,13 @@ plot.vsel <- function(
     # add reference model results if they exist
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
                           data = stats_ref,
-                          color = "darkred", linetype = 2
-    )
+                          color = "darkred", linetype = 2)
   }
   if (baseline != "ref") {
     # add the baseline result (if different from the reference model)
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
                           data = stats_bs,
-                          color = "black", linetype = 3
-    )
+                          color = "black", linetype = 3)
   }
   pp <- pp +
     scale_x_continuous(
@@ -438,33 +420,41 @@ plot.vsel <- function(
 #'   calculated. Note that `nterms_max` does not count the intercept, so use
 #'   `nterms_max = 0` for the intercept-only model. For [plot.vsel()],
 #'   `nterms_max` must be at least `1`.
-#' @param stats One or several strings determining which statistics to
+#' @param stats One or more character strings determining which statistics to
 #'   calculate. Available statistics are:
-#'   * `elpd`: (expected) sum of log predictive densities;
-#'   * `mlpd`: mean log predictive density, that is, `elpd` divided by the
-#'   number of observations (data points);
-#'   * `mse`: mean squared error;
-#'   * `rmse`: root mean squared error;
-#'   * `acc` (or its alias, `pctcorr`): classification accuracy ([binomial()]
-#'   family only);
-#'   * `auc`: area under the ROC curve ([binomial()] family only).
+#'   * `"elpd"`: (expected) sum of log predictive densities.
+#'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
+#'   number of observations.
+#'   * `"mse"`: mean squared error.
+#'   * `"rmse"`: root mean squared error. For the corresponding standard error,
+#'   bootstrapping is used.
+#'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
+#'   ([binomial()] family only).
+#'   * `"auc"`: area under the ROC curve ([binomial()] family only). For the
+#'   corresponding standard error, bootstrapping is used.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
-#'   `"diff"`, and `"diff.se"` indicating which of these to compute (mean,
-#'   standard error, lower and upper credible bounds, difference to the
-#'   corresponding statistic of the reference model, and standard error of this
-#'   difference, respectively). The credible bounds are determined so that `1 -
-#'   alpha` percent of the probability mass falls between them. Items `"diff"`
-#'   and `"diff.se"` are only supported if `deltas` is `FALSE`.
-#' @param deltas If `TRUE`, the submodel statistics are estimated relative to
-#'   the baseline model (see argument `baseline`) instead of estimating the
+#'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
+#'   item from `stats` (mean, standard error, lower and upper confidence
+#'   interval bounds, mean difference to the corresponding statistic of the
+#'   reference model, and standard error of this difference, respectively). The
+#'   confidence interval bounds belong to normal-approximation confidence
+#'   intervals with (nominal) coverage `1 - alpha`. Items `"diff"` and
+#'   `"diff.se"` are only supported if `deltas` is `FALSE`.
+#' @param deltas If `TRUE`, the submodel statistics are estimated as differences
+#'   from the baseline model (see argument `baseline`) instead of estimating the
 #'   actual values of the statistics.
-#' @param alpha A number giving the desired coverage of the credible intervals.
-#'   For example, `alpha = 0.32` corresponds to 68% probability mass within the
-#'   intervals, that is, one-standard-error intervals.
-#' @param baseline Only relevant if `deltas` is `TRUE`. Either `"ref"` or
-#'   `"best"` indicating whether the baseline is the reference model or the best
-#'   submodel (in terms of `stats[1]`), respectively.
-#' @param ... Currently ignored.
+#' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
+#'   normal-approximation confidence intervals. For example, `alpha = 0.32`
+#'   corresponds to a coverage of 68%, i.e., one-standard-error intervals
+#'   (because of the normal approximation).
+#' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
+#'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
+#'   whether the baseline is the reference model or the best submodel found (in
+#'   terms of `stats[1]`), respectively.
+#' @param ... Arguments passed to the internal function which is used for
+#'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
+#'   arguments are `b` (the number of bootstrap samples, defaulting to `2000`)
+#'   and `seed` (see [set.seed()], defaulting to `NULL`).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -501,10 +491,10 @@ summary.vsel <- function(
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
+  # Initialize output:
   out <- list(
     formula = object$refmodel$formula,
-    fit = object$fit,
-    family = object$family,
+    family = object$refmodel$family,
     nobs = NROW(object$refmodel$fetch_data()),
     method = object$method,
     cv_method = object$cv_method,
@@ -514,72 +504,61 @@ summary.vsel <- function(
     nclusters = object$nclusters,
     nclusters_pred = object$nclusters_pred
   )
-
-  if (!is.null(out$validate_search)) {
-    if (out$validate_search == TRUE) {
-      out$search_included <- "search included"
-    } else {
-      out$search_included <- "search not included"
-    }
+  if (isTRUE(out$validate_search)) {
+    out$search_included <- "search included"
   } else {
     out$search_included <- "search not included"
   }
-
   class(out) <- "vselsummary"
-  ## fetch statistics
+
+  # The full table of the performance statistics from `stats`:
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
-    tab <- .tabulate_stats(object, stats,
-                           alpha = alpha, nfeat_baseline = nfeat_baseline
-    )
+    tab <- .tabulate_stats(object, stats, alpha = alpha,
+                           nfeat_baseline = nfeat_baseline, ...)
   } else {
-    tab <- .tabulate_stats(object, stats, alpha = alpha)
+    tab <- .tabulate_stats(object, stats, alpha = alpha, ...)
   }
   stats_table <- subset(tab, tab$size != Inf) %>%
     dplyr::group_by(.data$statistic) %>%
     dplyr::slice_head(n = length(object$solution_terms) + 1)
 
+  # Get the names of `stats_table` corresponding to all items from `type`, and
+  # set up their suffices in the table to be returned:
   if (deltas) {
     type <- setdiff(type, c("diff", "diff.se"))
   }
-  ## these are the corresponding names for mean, se, upper and lower in the
-  ## stats_table, and their suffices in the table to be returned
   qty <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
            diff = "diff", diff.se = "diff.se")
   }))
   if (!is.null(object$cv_method)) {
     cv_suffix <- unname(switch(object$cv_method,
-                               LOO = ".loo", kfold = ".kfold"
-    ))
+                               LOO = ".loo", kfold = ".kfold"))
   } else {
     cv_suffix <- NULL
   }
-
   if (length(stats) > 1) {
     suffix <- lapply(stats, function(s) {
       unname(sapply(type, function(t) {
-        paste0(
-          s,
-          switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-                 se = ".se", diff = ".diff", diff.se = ".diff.se")
-        )
+        paste0(s,
+               switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
+                      se = ".se", diff = ".diff", diff.se = ".diff.se"))
       }))
     })
   } else {
     suffix <- list(unname(sapply(type, function(t) {
       switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
              lower = "lower", se = "se",
-             diff = "diff", diff.se = "diff.se"
-      )
+             diff = "diff", diff.se = "diff.se")
     })))
   }
 
-  ## loop through all the required statistics
-  arr <- data.frame(
-    size = unique(stats_table$size),
-    solution_terms = c(NA, object$solution_terms)
-  )
+  # Construct the (almost) final output table by looping over all requested
+  # statistics, reshaping the corresponding data in `stats_table`, and selecting
+  # only the requested `type`s:
+  arr <- data.frame(size = unique(stats_table$size),
+                    solution_terms = c(NA, object$solution_terms))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- suffix[[i]]
@@ -587,15 +566,14 @@ summary.vsel <- function(
     arr <- cbind(arr, temp)
   }
 
+  # Output (and also cut `arr` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
     nterms_max <- max(stats_table$size)
   }
-
   out$nterms <- nterms_max
   if ("pct_solution_terms_cv" %in% names(object)) {
     out$pct_solution_terms_cv <- object$pct_solution_terms_cv
   }
-
   out$suggested_size <- object$suggested_size
   out$selection <- subset(arr, arr$size <= nterms_max)
   return(out)
@@ -666,70 +644,69 @@ print.vselsummary <- function(x, digits = 1, ...) {
 #' @param ... Further arguments passed to [summary.vsel()] (apart from
 #'   argument `digits` which is passed to [print.vselsummary()]).
 #'
-#' @return The `data.frame` returned by [summary.vsel()] (invisible).
+#' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
 print.vsel <- function(x, ...) {
-  stats <- summary.vsel(x, ...)
-  print(stats, ...)
+  dot_args <- list(...)
+  stats <- do.call(summary.vsel, c(list(object = x),
+                                   dot_args[names(dot_args) != "digits"]))
+  do.call(print, c(list(x = stats),
+                   dot_args[names(dot_args) == "digits"]))
   return(invisible(stats))
 }
 
 #' Suggest model size
 #'
 #' This function can suggest an appropriate model size based on a decision rule
-#' described in section "Details". Note that the decision rule is heuristic and
-#' should only be interpreted as a guideline. It is recommended to examine the
-#' results via [plot.vsel()] and/or [summary.vsel()] and make the final decision
-#' based on what is most appropriate for the given problem.
+#' described in section "Details" below. Note that this decision is quite
+#' heuristic and should be interpreted with caution. It is recommended to
+#' examine the results via [plot.vsel()] and/or [summary.vsel()] and to make the
+#' final decision based on what is most appropriate for the problem at hand.
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Statistic used for the decision. See [summary.vsel()] for
 #'   possible choices.
-#' @param alpha A number giving the desired coverage of the credible intervals
-#'   based on which the decision is made. For example, `alpha = 0.32`
-#'   corresponds to 68% probability mass within the intervals, that is,
-#'   one-standard-error intervals. See section "Details" for more information.
 #' @param pct A number giving the relative proportion (*not* percents) between
 #'   baseline model and null model utilities one is willing to sacrifice. See
-#'   section "Details" for more information.
-#' @param type Either `"upper"` or `"lower"` determining whether the decisions
-#'   are based on the upper or lower credible bounds, respectively. See section
-#'   "Details" for more information.
-#' @param baseline Either `"ref"` or `"best"` indicating whether the baseline is
-#'   the reference model or the best submodel (in terms of `stats[1]`),
-#'   respectively.
-#' @param warnings Whether to give warnings if automatic suggestion fails,
-#'   mainly for internal use. Usually there is no reason to set this to `FALSE`.
-#' @param ... Currently ignored.
+#'   section "Details" below for more information.
+#' @param type Either `"upper"` or `"lower"` determining whether the decision is
+#'   based on the upper or lower confidence interval bound, respectively. See
+#'   section "Details" below for more information.
+#' @param warnings Mainly for internal use. A single logical value indicating
+#'   whether to throw warnings if automatic suggestion fails. Usually there is
+#'   no reason to set this to `FALSE`.
+#' @param ... Arguments passed to [summary.vsel()], except for `object`, `stats`
+#'   (which is set to `stat`), `type`, and `deltas` (which is set to `TRUE`).
+#'   See section "Details" below for some important arguments which may be
+#'   passed here.
 #'
 #' @details The suggested model size is the smallest model size for which either
-#'   the lower or upper bound (depending on argument `type`) of the credible
-#'   interval (with coverage `1 - alpha`) for \eqn{u_k - u_{\mbox{base}}}{u_k -
-#'   u_base} (with \eqn{u_k} denoting the \eqn{k}-th submodel's utility and
-#'   \eqn{u_{\mbox{base}}}{u_base} denoting the baseline model's utility) falls
-#'   above (or is equal to) \deqn{\mbox{pct} * (u_0 - u_{\mbox{base}})}{pct *
-#'   (u_0 - u_base)} where \eqn{u_0} denotes the null model utility. The
-#'   baseline is either the reference model or the best submodel found (see
-#'   argument `baseline`).
+#'   the lower or upper bound (depending on argument `type`) of the
+#'   normal-approximation confidence interval (with nominal coverage `1 -
+#'   alpha`, see argument `alpha` of [summary.vsel()]) for \eqn{u_k -
+#'   u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k} denoting the \eqn{k}-th
+#'   submodel's utility and \eqn{u_{\mbox{base}}}{u_base} denoting the baseline
+#'   model's utility) falls above (or is equal to) \deqn{\mbox{pct} * (u_0 -
+#'   u_{\mbox{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
+#'   model utility. The baseline is either the reference model or the best
+#'   submodel found (see argument `baseline` of [summary.vsel()]).
 #'
 #'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
-#'   select the smallest model size for which the upper bound of the
-#'   corresponding credible interval exceeds (or is equal to) the baseline model
-#'   utility, that is, which is better than the baseline model with a
-#'   probability of at least 0.16 (and consequently, worse with a probability of
-#'   at most 0.84). In other words, the estimated difference between the
-#'   baseline model utility and the submodel utility is at most one standard
-#'   error away from zero, so the two utilities are considered to be close.
+#'   select the smallest model size for which the upper bound of the confidence
+#'   interval for \eqn{u_k - u_{\mbox{base}}}{u_k - u_base} with coverage 68%
+#'   exceeds (or is equal to) zero, that is, for which the submodel's utility is
+#'   at most one standard error smaller than the baseline model's utility.
 #'
 #' @note Loss statistics like the root mean-squared error (RMSE) and the
 #'   mean-squared error (MSE) are converted to utilities by multiplying them by
 #'   `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
-#'   "upper")` finds the smallest model size whose upper credible bound of the
-#'   *negative* RMSE or MSE exceeds the cutoff (or equivalently has the lower
-#'   credible bound of RMSE or MSE below the cutoff). This is done to make the
-#'   interpretation of argument `type` the same regardless of argument `stat`.
+#'   "upper")` finds the smallest model size whose upper confidence interval
+#'   bound for the *negative* RMSE or MSE exceeds the cutoff (or, equivalently,
+#'   has the lower confidence interval bound for the RMSE or MSE below the
+#'   cutoff). This is done to make the interpretation of argument `type` the
+#'   same regardless of argument `stat`.
 #'
 #'   The intercept is not counted by [suggest_size()], so a suggested size of
 #'   zero stands for the intercept-only model.
@@ -765,10 +742,8 @@ suggest_size <- function(object, ...) {
 suggest_size.vsel <- function(
   object,
   stat = "elpd",
-  alpha = 0.32,
   pct = 0,
   type = "upper",
-  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   warnings = TRUE,
   ...
 ) {
@@ -794,10 +769,10 @@ suggest_size.vsel <- function(
   }
   bound <- type
   stats <- summary.vsel(object,
-                        stats = stat, alpha = alpha,
+                        stats = stat,
                         type = c("mean", "upper", "lower"),
-                        baseline = baseline, deltas = TRUE
-  )$selection
+                        deltas = TRUE,
+                        ...)$selection
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
     paste0(stat, suffix)
@@ -812,11 +787,10 @@ suggest_size.vsel <- function(
     } else {
       suggested_size <- NA
       if (warnings) {
-        warning(paste(
-          "Could not suggest model size. Investigate plot.vsel to identify",
-          "if the search was terminated too early. If this is the case,",
-          "run variable selection with larger value for nterms_max."
-        ))
+        warning("Could not suggest model size. Investigate plot.vsel to ",
+                "identify if the search was terminated too early. If this is ",
+                "the case, run variable selection with larger value for ",
+                "nterms_max.")
       }
     }
   } else {
@@ -850,32 +824,34 @@ coef.subfit <- function(object, ...) {
   )))
 }
 
-#' @method as.matrix lm
+# An (internal) generic for extracting the coefficients and any other parameter
+# estimates from a submodel fit.
+get_subparams <- function(x, ...) {
+  UseMethod("get_subparams")
+}
+
 #' @keywords internal
 #' @export
-as.matrix.lm <- function(x, ...) {
+get_subparams.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names())
 }
 
-#' @method as.matrix subfit
 #' @keywords internal
 #' @export
-as.matrix.subfit <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.subfit <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
-#' @method as.matrix glm
 #' @keywords internal
 #' @export
-as.matrix.glm <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.glm <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
-#' @method as.matrix lmerMod
 #' @keywords internal
 #' @export
-as.matrix.lmerMod <- function(x, ...) {
+get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names()
 
@@ -889,14 +865,14 @@ as.matrix.lmerMod <- function(x, ...) {
     if (!is.null(cor_mat)) {
       # Auxiliary object: A matrix of the same dimension as cor_mat, but
       # containing the paste()-d dimnames:
-      cor_mat_nms <- matrix(apply(expand.grid(
-        rownames(cor_mat),
-        colnames(cor_mat)
-      ),
-      1, paste,
-      collapse = "."
-      ),
-      nrow = nrow(cor_mat), ncol = ncol(cor_mat)
+      cor_mat_nms <- matrix(
+        apply(expand.grid(rownames(cor_mat),
+                          colnames(cor_mat)),
+              1,
+              paste,
+              collapse = "."),
+        nrow = nrow(cor_mat),
+        ncol = ncol(cor_mat)
       )
       # Note: With upper.tri() (and also with lower.tri()), the indexed matrix
       # is coerced to a vector in column-major order:
@@ -923,10 +899,8 @@ as.matrix.lmerMod <- function(x, ...) {
   names(group_vc) <- sub(
     paste0(
       "(",
-      paste(
-        gsub("\\.", "\\\\.", names(group_vc_raw)),
-        collapse = "|"
-      ),
+      paste(gsub("\\.", "\\\\.", names(group_vc_raw)),
+            collapse = "|"),
       ")\\.(sd|cor)\\."
     ),
     "\\2_\\1__",
@@ -939,10 +913,8 @@ as.matrix.lmerMod <- function(x, ...) {
     names(group_vc) <- gsub(
       paste0(
         "(",
-        paste(
-          gsub("\\.", "\\\\.", coef_nms_i),
-          collapse = "|"
-        ),
+        paste(gsub("\\.", "\\\\.", coef_nms_i),
+              collapse = "|"),
         ")\\."
       ),
       "\\1__",
@@ -955,12 +927,12 @@ as.matrix.lmerMod <- function(x, ...) {
     ranef_mat <- as.matrix(ranef_df)
     setNames(
       as.vector(ranef_mat),
-      apply(
-        expand.grid(rownames(ranef_mat), colnames(ranef_mat)),
-        1, function(row_col_nm) {
-          paste(rev(row_col_nm), collapse = ".")
-        }
-      )
+      apply(expand.grid(rownames(ranef_mat),
+                        colnames(ranef_mat)),
+            1,
+            function(row_col_nm) {
+              paste(rev(row_col_nm), collapse = ".")
+            })
     )
   }))
 
@@ -978,10 +950,8 @@ as.matrix.lmerMod <- function(x, ...) {
         "(",
         gsub("\\.", "\\\\.", group_nm_i),
         ")\\.(",
-        paste(
-          gsub("\\.", "\\\\.", coef_nms_i),
-          collapse = "|"
-        ),
+        paste(gsub("\\.", "\\\\.", coef_nms_i),
+              collapse = "|"),
         ")\\.(.*)$"
       ),
       "\\1[\\3,\\2]",
@@ -992,18 +962,16 @@ as.matrix.lmerMod <- function(x, ...) {
   return(c(population_effects, group_vc, group_ef))
 }
 
-#' @method as.matrix glmerMod
 #' @keywords internal
 #' @export
-as.matrix.glmerMod <- function(x, ...) {
-  return(as.matrix.lmerMod(x, ...))
+get_subparams.glmerMod <- function(x, ...) {
+  return(get_subparams.lmerMod(x, ...))
 }
 
-#' @method as.matrix gamm4
 #' @keywords internal
 #' @export
-as.matrix.gamm4 <- function(x, ...) {
-  return(as.matrix.lm(x, ...))
+get_subparams.gamm4 <- function(x, ...) {
+  return(get_subparams.lm(x, ...))
 }
 
 #' Extract projected parameter draws
@@ -1074,18 +1042,11 @@ as.matrix.projection <- function(x, ...) {
          "\"datafit\"s.")
   }
   if (x$p_type) {
-    warning(paste(
-      "Note that projection was performed using",
-      "clustering and the clusters might have different weights."
-    ))
+    warning("Note that projection was performed using clustering and the ",
+            "clusters might have different weights.")
   }
-  if (!all(sapply(x$sub_fit, inherits, what = get_as.matrix_cls_projpred()))) {
-    # Throw an error because in this case, we probably need a new
-    # as.matrix.<class_name>() method.
-    stop("This case should not occur. Please notify the package maintainer.")
-  }
-  res <- t(do.call(cbind, lapply(x$sub_fit, as.matrix)))
-  if (x$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  res <- do.call(rbind, lapply(x$submodl, get_subparams))
+  if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }
 
@@ -1099,7 +1060,7 @@ as.matrix.projection <- function(x, ...) {
 #'
 #' @name cv-indices
 #'
-#' @param n Number of observations (data points).
+#' @param n Number of observations.
 #' @param K Number of folds. Must be at least 2 and not exceed `n`.
 #' @param out Format of the output, either `"foldwise"` or `"indices"`. See
 #'   below for details.

@@ -56,7 +56,7 @@ auc <- function(x) {
 # Bootstrap an arbitrary quantity `fun` that takes the sample `x` as the first
 # input. Other arguments of `fun` can be passed by `...`. Example:
 # `boostrap(x, mean)`.
-bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
+bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
   # set random seed but ensure the old RNG state is restored on exit
   if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed
@@ -74,6 +74,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   return(bsstat)
 }
 
+# From `?is.integer` (slightly modified):
 .is.wholenumber <- function(x) {
   abs(x - round(x)) < .Machine$double.eps^0.5
 }
@@ -98,7 +99,6 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 
   recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   binomial_only_stats <- c("acc", "pctcorr", "auc")
-  family <- object$family$family
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
@@ -107,10 +107,12 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     if (!(stat %in% recognized_stats)) {
       stop(sprintf("Statistic '%s' not recognized.", stat))
     }
-    if (stat %in% binomial_only_stats && family != "binomial") {
+    if (stat %in% binomial_only_stats &&
+        object$refmodel$family$family != "binomial") {
       stop("Statistic '", stat, "' available only for the binomial family.")
     }
   }
+  return(invisible(TRUE))
 }
 
 .validate_baseline <- function(refmodel, baseline, deltas) {
@@ -165,24 +167,40 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   return(nlist(y, weights))
 }
 
+# Create the "reference distribution", i.e., reduce the number of posterior
+# draws from the reference model by clustering, thinning, or subsampling them
+#
+# @param refmodel An object of class `refmodel`.
+# @param nclusters The desired number of clusters of draws. If
+#   `!is.null(nclusters)`, then clustering is used and `ndraws` is ignored.
+# @param ndraws The desired number of draws. If `!is.null(nclusters)`, then
+#   clustering is used and `ndraws` is ignored.
+# @param seed The seed for (P)RNG (see `?set.seed`, for example).
+# @param thinning A single logical value indicating whether in the case where
+#   `ndraws` is used, the reference model's draws should be thinned or
+#   subsampled (without replacement).
+#
+# @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
+#   observations, and \eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws
+#   (= either `nclusters` or `ndraws`, depending on which one is used). Then the
+#   return value is a list with elements:
+#
+#   * `mu`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of expected
+#   values for \eqn{y} for each draw/cluster.
+#   * `var`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of predictive
+#   variances for \eqn{y} for each draw/cluster which are needed for projecting
+#   the dispersion parameter (the predictive variances are NA for those families
+#   that do not have a dispersion parameter).
+#   * `dis`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
+#   reference model's dispersion parameter value for each draw/cluster (NA for
+#   those families that do not have a dispersion parameter). See issue #204.
+#   * `weights`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
+#   weights for the draws/clusters.
+#   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
+#   has length equal to the number of posterior draws and each value is an
+#   integer between 1 and \eqn{S_{\mbox{prj}}}{S_prj}.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
                          thinning = TRUE) {
-  # Creates the reference distribution based on the refmodel-object, and the
-  # desired number of clusters (nclusters) or number of subsamples (ndraws). If
-  # nclusters is specified, then clustering is used and ndraws is ignored.
-  # Returns a list with fields:
-  #
-  #   mu: n-by-s matrix, vector of expected values for y for each draw/cluster.
-  #       here s means either the number of draws ndraws or clusters nclusters
-  #       used, depending on which one is used.
-  #   var: n-by-s matrix, vector of predictive variances for y for each
-  #         draw/cluster which which are needed for projecting the dispersion
-  #         parameter (note that this can be unintuitively zero for those
-  #         families that do not have dispersion) weights: s-element vector of
-  #   weights for the draws/clusters
-  #   cl: cluster assignment for each posterior draw, that is, a vector that has
-  #       length equal to the number of posterior draws and each value is an
-  #       integer between 1 and s
   # set random seed but ensure the old RNG state is restored on exit
   if (exists(".Random.seed")) {
     rng_state_old <- .Random.seed
@@ -190,9 +208,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
   }
   set.seed(seed)
 
-  family <- refmodel$family
   S <- NCOL(refmodel$mu) # number of draws in the reference model
-
   if (is.null(ndraws)) {
     ndraws <- S
   }
@@ -202,7 +218,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
-      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, cl = cl)
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
@@ -213,12 +229,10 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
         stop("The number of clusters nclusters cannot exceed the number of ",
              "columns in mu.")
       }
-      p_ref <- .get_p_clust(family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, nclusters = nclusters)
     }
   } else {
-    # Perform thinning or subsampling (depending on argument `thinning`) from
-    # the reference model.
     if (ndraws > NCOL(refmodel$mu)) {
       stop("The number of draws ndraws cannot exceed the number of ",
            "columns in mu.")
@@ -231,7 +245,7 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
     cl <- rep(NA, S)
     cl[s_ind] <- c(1:ndraws)
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
-      family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
+      refmodel$family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
@@ -300,10 +314,13 @@ bootstrap <- function(x, fun = mean, b = 1000, seed = NULL, ...) {
 }
 
 .is_proj_list <- function(proj) {
-  !("family" %in% names(proj))
+  # Better use a formal class `proj_list`, but for now, use this workaround:
+  is.list(proj) && length(proj) && all(sapply(proj, inherits, "projection"))
 }
 
-.unlist_proj <- function(p) if (length(p) == 1) p[[1]] else p
+.unlist_proj <- function(p) {
+  if (length(p) == 1) p[[1]] else p
+}
 
 ## create a named list using object names
 nlist <- function(...) {
@@ -425,24 +442,7 @@ magrittr::`%>%`
 # tidyselect:::where():
 where <- "tidyselect" %:::% "where"
 
-get_as.matrix_cls_projpred <- function() {
-  ### Only works when projpred is loaded via devtools::load_all():
-  # as.matrix_meths_projpred <- methods("as.matrix")
-  # as.matrix_meths_projpred <- as.matrix_meths_projpred[
-  #   attr(as.matrix_meths_projpred, "info")$from == "projpred"
-  # ]
-  ###
-  as.matrix_meths_projpred <- grep(
-    "^as\\.matrix\\.",
-    ls(envir = asNamespace("projpred")),
-    value = TRUE
-  )
-  as.matrix_cls_projpred <- sub("^as\\.matrix\\.", "", as.matrix_meths_projpred)
-  return(as.matrix_cls_projpred)
-}
-
-## Helper function extract and combine mu and lppd from K lists with each
-## n/K of the elements to one list with n elements
-hf <- function(x) {
-  as.list(do.call(rbind, x))
+# Helper function to combine separate `list`s into a single `list`:
+rbind2list <- function(x) {
+  as.list(do.call(rbind, lapply(x, as.data.frame)))
 }

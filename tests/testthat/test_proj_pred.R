@@ -180,7 +180,8 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
   )
   expect_error(
     proj_linpred(c(prjs, list(dat))),
-    "Invalid object supplied to argument `object`\\."
+    paste("Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.")
   )
 })
 
@@ -191,19 +192,12 @@ test_that("invalid `newdata` fails", {
     proj_linpred(prjs, newdata = dat[, 1]),
     "must be a data\\.frame or a matrix"
   )
-  expect_error(
-    proj_linpred(prjs,
-                 solution_terms = rep_len(solterms_x, length.out = 1e4)),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in `newdata`\\.$")
-  )
   stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_linpred(prjs[[head(grep("\\.glm\\.gauss", names(prjs)), 1)]],
-                 newdata = dat[, 1, drop = FALSE],
-                 solution_terms = solterms_x),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in `newdata`\\.$")
+    proj_linpred(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
+                            1)]],
+                 newdata = dat[, head(solterms_x, -1), drop = FALSE]),
+    "^object 'xco\\.1' not found$"
   )
 })
 
@@ -442,7 +436,8 @@ test_that("`transform` works", {
     pl_tester(pl_true,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               info_str = tstsetup)
-    expect_equal(prjs[[!!tstsetup]]$family$linkinv(pl_false$pred), pl_true$pred,
+    expect_equal(prjs[[!!tstsetup]]$refmodel$family$linkinv(pl_false$pred),
+                 pl_true$pred,
                  info = tstsetup)
   }
 })
@@ -486,7 +481,7 @@ test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
     for (filter_nterms_crr in nterms_unavail_crr) {
       expect_error(proj_linpred(prjs[[tstsetup]],
                                 filter_nterms = filter_nterms_crr),
-                   "subscript out of bounds",
+                   "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup, filter_nterms_crr, sep = "__"))
     }
     pl <- proj_linpred(prjs[[tstsetup]],
@@ -507,7 +502,7 @@ test_that(paste(
     for (filter_nterms_crr in nterms_unavail) {
       expect_error(proj_linpred(prjs_vs[[tstsetup]],
                                 filter_nterms = filter_nterms_crr),
-                   "subscript out of bounds",
+                   "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup,
                                 paste(filter_nterms_crr, collapse = ","),
                                 sep = "__"))
@@ -533,6 +528,29 @@ test_that(paste(
         expect_equal(pl_crr, pl_orig, info = tstsetup)
       }
     }
+  }
+})
+
+## Single observation, single draw ----------------------------------------
+
+test_that(paste(
+  "a single observation and a single draw work (which implicitly tests",
+  "this edge case for family$ll_fun(), too)"
+), {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # TODO (GAMMs): Fix this.
+      next
+    }
+    pl1 <- proj_linpred(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                        newdata = head(get_dat(tstsetup), 1),
+                        solution_terms = args_prj[[tstsetup]]$solution_terms,
+                        nclusters = 1L,
+                        seed = seed_tst)
+    pl_tester(pl1,
+              nprjdraws_expected = 1L,
+              nobsv_expected = 1L,
+              info_str = tstsetup)
   }
 })
 
@@ -765,7 +783,8 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
   )
   expect_error(
     proj_predict(c(prjs, list(dat)), .seed = seed2_tst),
-    "Invalid object supplied to argument `object`\\."
+    paste("Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.")
   )
 })
 
@@ -776,21 +795,14 @@ test_that("invalid `newdata` fails", {
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
   )
-  expect_error(
-    proj_predict(prjs,
-                 .seed = seed2_tst,
-                 solution_terms = rep_len(solterms_x, length.out = 1e4)),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in `newdata`\\.$")
-  )
   stopifnot(length(solterms_x) > 1)
   expect_error(
-    proj_predict(prjs[[head(grep("\\.glm\\.gauss", names(prjs)), 1)]],
-                 newdata = dat[, 1, drop = FALSE],
+    proj_predict(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
+                            1)]],
+                 newdata = dat[, head(solterms_x, -1), drop = FALSE],
                  .seed = seed2_tst,
                  solution_terms = solterms_x),
-    paste("^The number of solution terms is greater than the number of",
-          "columns in `newdata`\\.$")
+    "^object 'xco\\.1' not found$"
   )
 })
 
@@ -1004,7 +1016,7 @@ test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
       expect_error(proj_predict(prjs[[tstsetup]],
                                 filter_nterms = filter_nterms_crr,
                                 .seed = seed2_tst),
-                   "subscript out of bounds",
+                   "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup, filter_nterms_crr, sep = "__"))
     }
     pp <- proj_predict(prjs[[tstsetup]],
@@ -1027,7 +1039,7 @@ test_that(paste(
       expect_error(proj_predict(prjs_vs[[tstsetup]],
                                 filter_nterms = filter_nterms_crr,
                                 .seed = seed2_tst),
-                   "subscript out of bounds",
+                   "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup,
                                 paste(filter_nterms_crr, collapse = ","),
                                 sep = "__"))
@@ -1054,5 +1066,30 @@ test_that(paste(
         expect_equal(pp_crr, pp_orig, info = tstsetup)
       }
     }
+  }
+})
+
+## Single observation, single draw ----------------------------------------
+
+test_that(paste(
+  "a single observation and a single draw work (which implicitly tests",
+  "this edge case for family$ppd(), too)"
+), {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # TODO (GAMMs): Fix this.
+      next
+    }
+    pp1 <- proj_predict(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                        newdata = head(get_dat(tstsetup), 1),
+                        nresample_clusters = 1L,
+                        .seed = seed2_tst,
+                        solution_terms = args_prj[[tstsetup]]$solution_terms,
+                        nclusters = 1L,
+                        seed = seed_tst)
+    pp_tester(pp1,
+              nprjdraws_out_expected = 1L,
+              nobsv_expected = 1L,
+              info_str = tstsetup)
   }
 })

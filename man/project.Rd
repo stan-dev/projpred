@@ -8,7 +8,7 @@ project(
   object,
   nterms = NULL,
   solution_terms = NULL,
-  cv_search = TRUE,
+  refit_prj = TRUE,
   ndraws = 400,
   nclusters = NULL,
   seed = NULL,
@@ -34,18 +34,18 @@ of predictor terms for the submodel onto which the projection will be
 performed. Argument \code{nterms} is ignored in that case. For an \code{object} which
 is not of class \code{vsel}, \code{solution_terms} must not be \code{NULL}.}
 
-\item{cv_search}{A single logical value indicating whether to fit the
+\item{refit_prj}{A single logical value indicating whether to fit the
 submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
 \code{object} (\code{FALSE}). For an \code{object} which is not of class \code{vsel},
-\code{cv_search} must be \code{TRUE}.}
+\code{refit_prj} must be \code{TRUE}.}
 
-\item{ndraws}{Only relevant if \code{cv_search} is \code{TRUE}. Number of posterior
+\item{ndraws}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of posterior
 draws to be projected. \strong{Caution:} For \code{ndraws <= 20}, the value of
 \code{ndraws} is passed to \code{nclusters} (so that clustering is used). Ignored if
 \code{nclusters} is not \code{NULL} or if the reference model is of class \code{datafit}
 (in which case one cluster is used). See also section "Details" below.}
 
-\item{nclusters}{Only relevant if \code{cv_search} is \code{TRUE}. Number of clusters
+\item{nclusters}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of clusters
 of posterior draws to be projected. Ignored if the reference model is of
 class \code{datafit} (in which case one cluster is used). For the meaning of
 \code{NULL}, see argument \code{ndraws}. See also section "Details" below.}
@@ -57,8 +57,8 @@ Here, this seed is used for clustering the reference model's posterior
 draws (if \code{!is.null(nclusters)}).}
 
 \item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
-is no need for regularization, but sometimes we need to add some
+projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
+no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
 
 \item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} (if \code{\link[=get_refmodel]{get_refmodel()}} is
@@ -76,16 +76,11 @@ model.}
 \item{\code{solution_terms}}{A character vector of the submodel's
 predictor terms, ordered in the way in which the terms were added to the
 submodel.}
-\item{\code{sub_fit}}{The submodel's fitted model object.}
-\item{\code{family}}{A modified \code{\link{family}} object.}
+\item{\code{submodl}}{A \code{list} containing the submodel fits (one fit per
+projected draw).}
 \item{\code{p_type}}{A single logical value indicating whether the
 reference model's posterior draws have been clustered for the projection
 (\code{TRUE}) or not (\code{FALSE}).}
-\item{\code{intercept}}{A single logical value indicating whether the
-reference model (as well as the submodel) contains an intercept
-(\code{TRUE}) or not (\code{FALSE}).}
-\item{\code{extract_model_data}}{The \code{extract_model_data} function
-from the reference model (see \code{\link[=init_refmodel]{init_refmodel()}}).}
 \item{\code{refmodel}}{The reference model object.}
 }
 If the projection is performed onto more than one submodel, the output from

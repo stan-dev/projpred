@@ -21,7 +21,7 @@
 
 #' Mesquite data set
 #'
-#' The mesquite bushes yields data set from Gelman and Hill (2007)
+#' The mesquite bushes yields dataset from Gelman and Hill (2006)
 #' (<http://www.stat.columbia.edu/~gelman/arm/>).
 #'
 #' @format The response variable is the total weight (in grams) of
@@ -37,6 +37,8 @@
 #'   \item{group}{group of measurements (0 for the first group, 1 for the second
 #'   group).}
 #' }
-#'
+#' @references Gelman, A. and Hill, J. (2006). *Data Analysis Using Regression
+#'   and Multilevel/Hierarchical Models*. Cambridge University Press. DOI:
+#'   [10.1017/CBO9780511790942](https://doi.org/10.1017/CBO9780511790942).
 #' @source <http://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat>
 "mesquite"

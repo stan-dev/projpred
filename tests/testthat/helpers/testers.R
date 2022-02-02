@@ -35,7 +35,7 @@ extfam_tester <- function(extfam,
 
   # Now the checks for `extfam` (first starting with the general structure):
   extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
-                      extfam_nms_add2)
+                      "is_extended", extfam_nms_add2)
   extfam_nms <- c(names(fam_orig), extfam_nms_add)
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
@@ -52,9 +52,11 @@ extfam_tester <- function(extfam,
                      info = info_str)
   }
 
-  for (el_nm in extfam_nms_add) {
+  for (el_nm in setdiff(extfam_nms_add, "is_extended")) {
     expect_type(extfam[[el_nm]], "closure")
   }
+
+  expect_true(extfam$is_extended, info = info_str)
 
   # TODO: Add some mathematical checks (i.e., check that the calculations for
   # the objects listed in `extfam_nms_add` are mathematically correct).
@@ -283,7 +285,7 @@ refmodel_tester <- function(
       expect_identical(refmod$dis, 0, info = info_str)
     }
   } else {
-    expect_identical(refmod$dis, rep(0, nrefdraws_expected), info = info_str)
+    expect_identical(refmod$dis, rep(NA, nrefdraws_expected), info = info_str)
   }
 
   # y
@@ -405,35 +407,35 @@ refmodel_tester <- function(
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of a list of subfits (whose
-# elements must not necessarily be of class `"subfit"`) for the same single
-# submodel
+# A helper function for testing the structure of a list of fits (each fit must
+# not necessarily be of class `"subfit"`) for the same single submodel
 #
-# @param sub_fit_totest The list of subfits to test.
+# @param submodl_totest The `submodl` object (a list of fits for a single
+#   submodel, with one fit per projected draw) to test.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
 # @param sub_formul A list of formulas for the submodel (with one element per
 #   projected draw).
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
-# @param has_grp A single logical value indicating whether `sub_fit_obj` is
-#   expected to be of class `"lmerMod"` or `"glmerMod"` (if, at the same time,
-#   `has_add` is `FALSE`).
-# @param has_add A single logical value indicating whether `sub_fit_obj` is
-#   expected to be of class `"gam"` or `"gamm4"` (depending on whether the
-#   submodel is non-multilevel or multilevel, respectively).
+# @param has_grp A single logical value indicating whether the fits in
+#   `submodl_totest` are expected to be of class `"lmerMod"` or `"glmerMod"`
+#   (if, at the same time, `has_add` is `FALSE`).
+# @param has_add A single logical value indicating whether the fits in
+#   `submodl_totest` are expected to be of class `"gam"` or `"gamm4"` (depending
+#   on whether the submodel is non-multilevel or multilevel, respectively).
 # @param wobs_expected The expected numeric vector of observation weights.
-# @param solterms_vsel_L1_search If `sub_fit_totest` comes from the L1
+# @param solterms_vsel_L1_search If `submodl_totest` comes from the L1
 #   `search_path` of an object of class `"vsel"`, provide here the solution
 #   terms. Otherwise, use `NULL`.
-# @param with_offs A single logical value indicating whether `sub_fit_totest` is
+# @param with_offs A single logical value indicating whether `submodl_totest` is
 #   expected to include offsets (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-sub_fit_tester <- function(
-  sub_fit_totest,
+submodl_tester <- function(
+  submodl_totest,
   nprjdraws_expected,
   sub_formul,
   sub_data,
@@ -445,14 +447,14 @@ sub_fit_tester <- function(
   with_offs = FALSE,
   info_str
 ) {
-  expect_type(sub_fit_totest, "list")
-  expect_length(sub_fit_totest, nprjdraws_expected)
+  expect_type(submodl_totest, "list")
+  expect_length(submodl_totest, nprjdraws_expected)
 
   from_vsel_L1_search <- !is.null(solterms_vsel_L1_search)
 
   seq_extensive_tests <- unique(round(
-    seq(1, length(sub_fit_totest),
-        length.out = min(length(sub_fit_totest), nclusters_pred_tst))
+    seq(1, length(submodl_totest),
+        length.out = min(length(submodl_totest), nclusters_pred_tst))
   ))
 
   if (!has_grp && !has_add) {
@@ -543,73 +545,74 @@ sub_fit_tester <- function(
         ]
       }
     }
+    subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
     if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
-    for (j in seq_along(sub_fit_totest)) {
-      expect_s3_class(sub_fit_totest[[!!j]], "subfit")
-      expect_type(sub_fit_totest[[!!j]], "list")
-      expect_named(sub_fit_totest[[!!j]], subfit_nms, info = info_str)
+    for (j in seq_along(submodl_totest)) {
+      expect_s3_class(submodl_totest[[!!j]], "subfit")
+      expect_type(submodl_totest[[!!j]], "list")
+      expect_named(submodl_totest[[!!j]], subfit_nms, info = info_str)
 
       if (j %in% seq_extensive_tests) {
-        expect_true(is.vector(sub_fit_totest[[!!j]]$alpha, "double"),
+        expect_true(is.vector(submodl_totest[[!!j]]$alpha, "double"),
                     info = info_str)
-        expect_length(sub_fit_totest[[!!j]]$alpha, 1)
+        expect_length(submodl_totest[[!!j]]$alpha, 1)
 
         if (length(sub_trms) > 0 || !from_vsel_L1_search) {
-          expect_true(is.matrix(sub_fit_totest[[!!j]]$beta), info = info_str)
-          expect_true(is.numeric(sub_fit_totest[[!!j]]$beta), info = info_str)
-          expect_identical(dim(sub_fit_totest[[!!j]]$beta), c(ncoefs, 1L),
+          expect_true(is.matrix(submodl_totest[[!!j]]$beta), info = info_str)
+          expect_true(is.numeric(submodl_totest[[!!j]]$beta), info = info_str)
+          expect_identical(dim(submodl_totest[[!!j]]$beta), c(ncoefs, 1L),
                            info = info_str)
         } else if (length(sub_trms) == 0) {
-          expect_null(sub_fit_totest[[!!j]]$beta, info = info_str)
+          expect_null(submodl_totest[[!!j]]$beta, info = info_str)
         }
 
         if (!from_vsel_L1_search) {
-          expect_true(is.matrix(sub_fit_totest[[!!j]]$w), info = info_str)
-          expect_type(sub_fit_totest[[!!j]]$w, "double")
-          expect_identical(dim(sub_fit_totest[[!!j]]$w), c(nobsv, 1L),
+          expect_true(is.matrix(submodl_totest[[!!j]]$w), info = info_str)
+          expect_type(submodl_totest[[!!j]]$w, "double")
+          expect_identical(dim(submodl_totest[[!!j]]$w), c(nobsv, 1L),
                            info = info_str)
         } else {
-          expect_true(is.vector(sub_fit_totest[[!!j]]$w, "double"),
+          expect_true(is.vector(submodl_totest[[!!j]]$w, "double"),
                       info = info_str)
-          expect_length(sub_fit_totest[[!!j]]$w, nobsv)
+          expect_length(submodl_totest[[!!j]]$w, nobsv)
         }
-        expect_true(all(sub_fit_totest[[!!j]]$w > 0), info = info_str)
+        expect_true(all(submodl_totest[[!!j]]$w > 0), info = info_str)
 
-        expect_s3_class(sub_fit_totest[[!!j]]$formula, "formula")
-        if (!grepl(":", as.character(sub_fit_totest[[j]]$formula)[3])) {
-          expect_equal(sub_fit_totest[[!!j]]$formula, sub_formul[[!!j]],
+        expect_s3_class(submodl_totest[[!!j]]$formula, "formula")
+        if (!grepl(":", as.character(submodl_totest[[j]]$formula)[3])) {
+          expect_equal(submodl_totest[[!!j]]$formula, sub_formul[[!!j]],
                        info = info_str)
         } else {
           # The order of interactions might be changed in the reference model:
-          expect_equal(sub_fit_totest[[!!j]]$formula[[2]],
+          expect_equal(submodl_totest[[!!j]]$formula[[2]],
                        sub_formul[[!!j]][[2]],
                        info = info_str)
-          expect_equal(labels(terms(sub_fit_totest[[!!j]]$formula)),
+          expect_equal(labels(terms(submodl_totest[[!!j]]$formula)),
                        labels(terms(sub_formul[[!!j]])),
                        info = info_str)
         }
 
-        expect_identical(sub_fit_totest[[!!j]]$x, sub_x_expected,
+        expect_identical(submodl_totest[[!!j]]$x, sub_x_expected,
                          info = info_str)
 
         if (!from_vsel_L1_search) {
           y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
                                 sub_data),
                            seq_len(nobsv))
-          expect_identical(sub_fit_totest[[!!j]]$y, y_ch, info = info_str)
+          expect_identical(submodl_totest[[!!j]]$y, y_ch, info = info_str)
         }
       }
     }
   } else if (has_grp && !has_add) {
     if (sub_fam == "gaussian") {
-      for (j in seq_along(sub_fit_totest)) {
-        expect_s4_class(sub_fit_totest[[!!j]], "lmerMod")
+      for (j in seq_along(submodl_totest)) {
+        expect_s4_class(submodl_totest[[!!j]], "lmerMod")
       }
     } else {
-      for (j in seq_along(sub_fit_totest)) {
-        expect_s4_class(sub_fit_totest[[!!j]], "glmerMod")
+      for (j in seq_along(submodl_totest)) {
+        expect_s4_class(submodl_totest[[!!j]], "glmerMod")
       }
     }
 
@@ -643,7 +646,7 @@ sub_fit_tester <- function(
       } else {
         sub_formul_expected <- sub_formul[[j]]
       }
-      expect_equal(sub_fit_totest[[!!j]]@call[["formula"]],
+      expect_equal(submodl_totest[[!!j]]@call[["formula"]],
                    sub_formul_expected,
                    info = info_str)
 
@@ -653,73 +656,73 @@ sub_fit_tester <- function(
       } else {
         offs_expected <- offs_tst
       }
-      expect_identical(sub_fit_totest[[!!j]]@resp$offset,
+      expect_identical(submodl_totest[[!!j]]@resp$offset,
                        offs_expected,
                        info = info_str)
       if (!is.null(wobs_expected)) {
-        expect_equal(sub_fit_totest[[!!j]]@resp$weights,
+        expect_equal(submodl_totest[[!!j]]@resp$weights,
                      wobs_expected,
                      info = info_str)
       } else {
-        expect_equal(sub_fit_totest[[!!j]]@resp$weights,
+        expect_equal(submodl_totest[[!!j]]@resp$weights,
                      rep(1, nobsv),
                      info = info_str)
       }
-      expect_equal(sub_fit_totest[[!!j]]@resp$y,
+      expect_equal(submodl_totest[[!!j]]@resp$y,
                    eval(str2lang(as.character(sub_formul[[!!j]])[2]),
                         sub_data),
                    info = info_str)
 
       # frame
-      expect_identical(sub_fit_totest[[!!j]]@frame,
-                       model.frame(sub_fit_totest[[!!j]]),
+      expect_identical(submodl_totest[[!!j]]@frame,
+                       model.frame(submodl_totest[[!!j]]),
                        info = info_str)
       expect_equal(
-        sub_fit_totest[[!!j]]@frame[[
-          grep("y_|ybinprop", names(sub_fit_totest[[!!j]]@frame), value = TRUE)
+        submodl_totest[[!!j]]@frame[[
+          grep("y_|ybinprop", names(submodl_totest[[!!j]]@frame), value = TRUE)
         ]],
-        sub_fit_totest[[!!j]]@resp$y,
+        submodl_totest[[!!j]]@resp$y,
         info = info_str
       )
       if (!is.null(wobs_expected)) {
-        expect_equal(sub_fit_totest[[!!j]]@frame$`(weights)`,
-                     sub_fit_totest[[!!j]]@resp$weights,
+        expect_equal(submodl_totest[[!!j]]@frame$`(weights)`,
+                     submodl_totest[[!!j]]@resp$weights,
                      info = info_str)
       } else {
-        expect_null(sub_fit_totest[[!!j]]@frame$`(weights)`,
+        expect_null(submodl_totest[[!!j]]@frame$`(weights)`,
                     info = info_str)
       }
       if (with_offs) {
-        expect_equal(sub_fit_totest[[!!j]]@frame$`offset(offs_col)`,
+        expect_equal(submodl_totest[[!!j]]@frame$`offset(offs_col)`,
                      offs_expected,
                      info = info_str)
       }
       frame_nms <- grep("y_|ybinprop|^\\(weights\\)$|^offset\\(.*\\)$",
-                        names(sub_fit_totest[[j]]@frame),
+                        names(submodl_totest[[j]]@frame),
                         value = TRUE,
                         invert = TRUE)
       expect_setequal(frame_nms, names(sub_mf_expected))
       expect_equal(
-        sub_fit_totest[[!!j]]@frame[frame_nms],
+        submodl_totest[[!!j]]@frame[frame_nms],
         sub_mf_expected[frame_nms],
         info = info_str
       )
 
       # model.matrix()
-      expect_identical(model.matrix(sub_fit_totest[[!!j]]), mm_expected,
+      expect_identical(model.matrix(submodl_totest[[!!j]]), mm_expected,
                        info = info_str)
 
       # flist
-      expect_type(sub_fit_totest[[!!j]]@flist, "list")
-      expect_length(sub_fit_totest[[!!j]]@flist, length(nlvl_ran))
-      z_nms <- intersect(names(sub_fit_totest[[j]]@flist),
-                         names(sub_fit_totest[[j]]@frame))
-      expect_identical(sub_fit_totest[[!!j]]@flist[z_nms],
-                       as.list(sub_fit_totest[[!!j]]@frame[z_nms]),
+      expect_type(submodl_totest[[!!j]]@flist, "list")
+      expect_length(submodl_totest[[!!j]]@flist, length(nlvl_ran))
+      z_nms <- intersect(names(submodl_totest[[j]]@flist),
+                         names(submodl_totest[[j]]@frame))
+      expect_identical(submodl_totest[[!!j]]@flist[z_nms],
+                       as.list(submodl_totest[[!!j]]@frame[z_nms]),
                        info = info_str)
 
       # coef()
-      coefs_crr <- coef(sub_fit_totest[[!!j]])
+      coefs_crr <- coef(submodl_totest[[!!j]])
       expect_type(coefs_crr, "list")
       expect_length(coefs_crr, length(nlvl_ran))
       for (zz in seq_len(length(nlvl_ran))) {
@@ -733,13 +736,13 @@ sub_fit_tester <- function(
       }
     }
   } else if (!has_grp && has_add) {
-    for (j in seq_along(sub_fit_totest)) {
-      expect_s3_class(sub_fit_totest[[!!j]], "gam")
+    for (j in seq_along(submodl_totest)) {
+      expect_s3_class(submodl_totest[[!!j]], "gam")
     }
     # TODO (GAMs): Add more expectations for GAMs.
   } else if (has_grp && has_add) {
-    for (j in seq_along(sub_fit_totest)) {
-      expect_s3_class(sub_fit_totest[[!!j]], "gamm4")
+    for (j in seq_along(submodl_totest)) {
+      expect_s3_class(submodl_totest[[!!j]], "gamm4")
     }
     # TODO (GAMMs): Add more expectations for GAMMs.
   }
@@ -761,8 +764,6 @@ sub_fit_tester <- function(
 #   `p$p_type`.
 # @param seed_expected The seed which was used for clustering the posterior
 #   draws of the reference model.
-# @param fam_expected The expected `"family"` object or `NULL` for not testing
-#   the family object at all.
 # @param prjdraw_weights_expected The expected weights for the projected draws
 #   or `NULL` for not testing these weights at all.
 # @param from_vsel_L1_search A single logical value indicating whether `p` uses
@@ -778,7 +779,6 @@ projection_tester <- function(p,
                               nprjdraws_expected,
                               p_type_expected,
                               seed_expected = seed_tst,
-                              fam_expected = NULL,
                               prjdraw_weights_expected = NULL,
                               from_vsel_L1_search = FALSE,
                               info_str = "") {
@@ -787,25 +787,17 @@ projection_tester <- function(p,
   # Check the names using `ignore.order = FALSE` because an incorrect
   # order would mean that the documentation of project()'s return value
   # would have to be updated:
-  expect_named(p, projection_nms, info = info_str)
+  expect_named(
+    p,
+    c("dis", "kl", "weights", "solution_terms", "submodl", "p_type",
+      "refmodel"),
+    info = info_str
+  )
 
   # refmodel
   # Note: Extensive tests for `"refmodel"`s and `"datafit"`s may be run via
   # refmodel_tester().
   expect_identical(p$refmodel, refmod_expected, info = info_str)
-
-  # extract_model_data
-  expect_identical(p$extract_model_data, p$refmodel$extract_model_data,
-                   info = info_str)
-
-  # intercept
-  expect_identical(p$intercept, p$refmodel$intercept, info = info_str)
-
-  # family
-  expect_identical(p$family, p$refmodel$family, info = info_str)
-  if (!is.null(fam_expected)) {
-    expect_identical(p$family, fam_expected, info = info_str)
-  }
 
   # solution_terms
   if (is.numeric(solterms_expected)) {
@@ -817,10 +809,10 @@ projection_tester <- function(p,
     expect_identical(p$solution_terms, solterms_expected, info = info_str)
   }
 
-  # sub_fit
+  # submodl
   sub_trms_crr <- p$solution_terms
   if (length(sub_trms_crr) == 0) {
-    sub_trms_crr <- as.character(as.numeric(p$intercept))
+    sub_trms_crr <- as.character(as.numeric(p$refmodel$intercept))
   }
   if (!from_vsel_L1_search) {
     y_nm <- as.character(p$refmodel$formula)[2]
@@ -831,13 +823,12 @@ projection_tester <- function(p,
   }
   y_nms <- paste0(".", y_nm)
   # A preliminary check for `nprjdraws_expected` (doesn't work for "datafit"s
-  # and, because of issue #131, for submodels with multilevel terms which belong
-  # to an additive reference model):
+  # and, because of issue #131, for submodels which are GAMMs):
   sub_formul_crr_rhs <- as.formula(paste(
     "~", paste(sub_trms_crr, collapse = " + ")
   ))
   if (!inherits(p$refmodel, "datafit") &&
-      !(formula_contains_additive_terms(p$refmodel$formula) &&
+      !(formula_contains_additive_terms(sub_formul_crr_rhs) &&
         formula_contains_group_terms(sub_formul_crr_rhs))) {
     # Number of projected draws in as.matrix.projection() (note that more
     # extensive tests for as.matrix.projection() may be found in
@@ -866,11 +857,11 @@ projection_tester <- function(p,
   for (i in seq_len(nprjdraws_expected)) {
     sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
   }
-  sub_fit_tester(p$sub_fit,
+  submodl_tester(p$submodl,
                  nprjdraws_expected = nprjdraws_expected,
                  sub_formul = sub_formul_crr,
                  sub_data = sub_data_crr,
-                 sub_fam = p$family$family,
+                 sub_fam = p$refmodel$family$family,
                  wobs_expected = p$refmodel$wobs,
                  solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
                  info_str = info_str)
@@ -1082,6 +1073,7 @@ vsel_tester <- function(
 ) {
   # Preparations:
   dtest_type <- "train"
+  dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
     vsel_smmrs_sub_nms <- c("lppd", "mu", "w")
@@ -1121,11 +1113,12 @@ vsel_tester <- function(
 
   # search_path
   expect_type(vs$search_path, "list")
-  expect_named(vs$search_path, searchpth_nms, info = info_str)
+  expect_named(vs$search_path, c("solution_terms", "submodls", "p_sel"),
+               info = info_str)
   expect_identical(vs$search_path$solution_terms, vs$solution_terms,
                    info = info_str)
-  expect_type(vs$search_path$sub_fits, "list")
-  expect_length(vs$search_path$sub_fits, solterms_len_expected + 1)
+  expect_type(vs$search_path$submodls, "list")
+  expect_length(vs$search_path$submodls, solterms_len_expected + 1)
   from_vsel_L1_search <- method_expected == "l1"
   clust_ref <- .get_refdist(vs$refmodel,
                             ndraws = ndraws_expected,
@@ -1147,10 +1140,10 @@ vsel_tester <- function(
   for (i in seq_len(nprjdraws_expected)) {
     sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
   }
-  solterms_for_subfits <- c(as.character(as.numeric(vs$refmodel$intercept)),
-                            vs$solution_terms)
-  for (i in seq_along(vs$search_path$sub_fits)) {
-    sub_trms_crr <- head(solterms_for_subfits, i)
+  solterms_for_sub <- c(as.character(as.numeric(vs$refmodel$intercept)),
+                        vs$solution_terms)
+  for (i in seq_along(vs$search_path$submodls)) {
+    sub_trms_crr <- head(solterms_for_sub, i)
     if (length(sub_trms_crr) > 1) {
       sub_trms_crr <- setdiff(sub_trms_crr, "1")
     }
@@ -1159,25 +1152,30 @@ vsel_tester <- function(
         y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
       ))
     })
-    sub_fit_tester(
-      vs$search_path$sub_fits[[i]],
+    submodl_tester(
+      vs$search_path$submodls[[i]],
       nprjdraws_expected = nprjdraws_expected,
       sub_formul = sub_formul_crr,
       sub_data = sub_data_crr,
-      sub_fam = vs$family$family,
+      sub_fam = vs$refmodel$family$family,
       wobs_expected = vs$refmodel$wobs,
       solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
       info_str = paste(info_str, i, sep = "__")
     )
   }
   expect_type(vs$search_path$p_sel, "list")
-  expect_named(vs$search_path$p_sel, psel_nms, info = info_str)
+  expect_named(vs$search_path$p_sel, c("mu", "var", "weights", "cl"),
+               info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_type(vs$search_path$p_sel$mu, "double")
   expect_equal(dim(vs$search_path$p_sel$mu), c(nobsv, nclusters_expected),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
-  expect_type(vs$search_path$p_sel$var, "double")
+  if (vs$refmodel$family$family == "gaussian") {
+    expect_type(vs$search_path$p_sel$var, "double")
+  } else {
+    expect_true(all(is.na(vs$search_path$p_sel$var)), info = info_str)
+  }
   expect_equal(dim(vs$search_path$p_sel$var), c(nobsv, nclusters_expected),
                info = info_str)
   expect_type(vs$search_path$p_sel$weights, "double")
@@ -1262,10 +1260,6 @@ vsel_tester <- function(
   } else {
     expect_true(all(is.na(vs$summaries$ref$lppd)), info = info_str)
   }
-
-  # family
-  expect_s3_class(vs$family, "family")
-  expect_identical(vs$family, refmod_expected$family, info = info_str)
 
   # solution_terms
   expect_type(vs$solution_terms, "character")
@@ -1392,20 +1386,21 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   }
   expect_named(
     smmry,
-    c("formula", "fit", "family", "nobs", "method", "cv_method",
-      "validate_search", "ndraws", "ndraws_pred", "nclusters", "nclusters_pred",
-      "search_included", "nterms", pct_solterms_nm, "suggested_size",
-      "selection"),
+    c("formula", "family", "nobs", "method", "cv_method", "validate_search",
+      "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "search_included",
+      "nterms", pct_solterms_nm, "suggested_size", "selection"),
     info = info_str
   )
 
   for (nm in c(
-    "family", "method", "cv_method", "validate_search", "ndraws", "ndraws_pred",
+    "method", "cv_method", "validate_search", "ndraws", "ndraws_pred",
     "nclusters", "nclusters_pred", pct_solterms_nm, "suggested_size"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))
   }
+  expect_identical(smmry$family, vsel_expected$refmodel$family,
+                   info = info_str)
   expect_identical(smmry$formula, vsel_expected$refmodel$formula,
                    info = info_str)
   expect_null(smmry$fit, info = info_str)

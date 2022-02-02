@@ -18,7 +18,7 @@ cv_varsel(object, ...)
   nclusters = NULL,
   ndraws_pred = 400,
   nclusters_pred = NULL,
-  cv_search = !inherits(object, "datafit"),
+  refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
   penalty = NULL,
   verbose = TRUE,
@@ -39,7 +39,7 @@ cv_varsel(object, ...)
 \code{\link[=init_refmodel]{init_refmodel()}}) or an object that can be passed to argument \code{object} of
 \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{...}{Additional arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
+\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
@@ -54,25 +54,25 @@ performed.}
 
 \item{ndraws}{Number of posterior draws used in the search part. \strong{Caution:}
 For \code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
-clustering is used). Ignored if \code{nclusters} is not \code{NULL} or if \code{method}
-turns out as \code{"L1"} (L1 search uses always one cluster). See also section
+clustering is used). Ignored if \code{nclusters} is not \code{NULL} or in case of L1
+search (because L1 search always uses a single cluster). See also section
 "Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws used in the search
-part. Ignored if \code{method} turns out as \code{"L1"} (L1 search uses always one
+part. Ignored in case of L1 search (because L1 search always uses a single
 cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See also
 section "Details" below.}
 
-\item{ndraws_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
+\item{ndraws_pred}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of
 posterior draws used in the evaluation part. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
 clustering is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
 section "Details" below.}
 
-\item{nclusters_pred}{Only relevant if \code{cv_search} is \code{TRUE}. Number of
+\item{nclusters_pred}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of
 clusters of posterior draws used in the evaluation part. For the meaning of
 \code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
-\item{cv_search}{A single logical value indicating whether to fit the
+\item{refit_prj}{A single logical value indicating whether to fit the
 submodels along the solution path again (\code{TRUE}) or to retrieve their fits
 from the search part (\code{FALSE}) before using those (re-)fits in the
 evaluation part.}
@@ -83,42 +83,40 @@ terms in the reference model (or in \code{search_terms}, if supplied). Note that
 \code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
 intercept-only model.}
 
-\item{penalty}{Only relevant if \code{method} turns out as \code{"L1"}. A numeric
-vector determining the relative penalties or costs for the predictors. A
-value of \code{0} means that those predictors have no cost and will therefore be
-selected first, whereas \code{Inf} means those predictors will never be
-selected. If \code{NULL}, then \code{1} is used for each predictor.}
+\item{penalty}{Only relevant for L1 search. A numeric vector determining the
+relative penalties or costs for the predictors. A value of \code{0} means that
+those predictors have no cost and will therefore be selected first, whereas
+\code{Inf} means those predictors will never be selected. If \code{NULL}, then \code{1} is
+used for each predictor.}
 
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{nloo}{Only relevant if \code{cv_method == "LOO"}. Number of subsampled LOO
-CV folds, i.e., number of observations used for the LOO CV (anything
-between 1 and the original number of observations). Smaller values lead to
-faster computation but higher uncertainty in the evaluation part. If
-\code{NULL}, all observations are used, but for faster experimentation, one can
-set this to a smaller value.}
+\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method == "LOO"}. Number of subsampled LOO CV folds, i.e., number of observations
+used for the LOO CV (anything between 1 and the original number of
+observations). Smaller values lead to faster computation but higher
+uncertainty in the evaluation part. If \code{NULL}, all observations are used,
+but for faster experimentation, one can set this to a smaller value.}
 
 \item{K}{Only relevant if \code{cv_method == "kfold"}. Number of folds in the
 \eqn{K}-fold CV.}
 
-\item{lambda_min_ratio}{Only relevant if \code{method} turns out as \code{"L1"}. Ratio
-between the smallest and largest lambda in the L1-penalized search. This
-parameter essentially determines how long the search is carried out, i.e.,
-how large submodels are explored. No need to change this unless the program
+\item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
+smallest and largest lambda in the L1-penalized search. This parameter
+essentially determines how long the search is carried out, i.e., how large
+submodels are explored. No need to change this unless the program gives a
+warning about this.}
+
+\item{nlambda}{Only relevant for L1 search. Number of values in the lambda
+grid for L1-penalized search. No need to change this unless the program
 gives a warning about this.}
 
-\item{nlambda}{Only relevant if \code{method} turns out as \code{"L1"}. Number of
-values in the lambda grid for L1-penalized search. No need to change this
-unless the program gives a warning about this.}
-
-\item{thresh}{Only relevant if \code{method} turns out as \code{"L1"}. Convergence
-threshold when computing the L1 path. Usually, there is no need to change
-this.}
+\item{thresh}{Only relevant for L1 search. Convergence threshold when
+computing the L1 path. Usually, there is no need to change this.}
 
 \item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are (G)LMs. Usually there
-is no need for regularization, but sometimes we need to add some
+projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
+no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
 
 \item{validate_search}{Only relevant if \code{cv_method == "LOO"}. A single
@@ -146,13 +144,13 @@ considers all the terms in the reference model's formula.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
-to be accessed directly but instead via helper functions (see the vignettes
+to be accessed directly but instead via helper functions (see the vignette
 or type \code{?projpred}).
 }
 \description{
-Perform the projection predictive variable selection for (G)LMs, (G)LMMs,
-(G)AMs, and (G)AMMs. This variable selection consists of a \emph{search} part and
-an \emph{evaluation} part. The search part determines the solution path, i.e., the
+Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
+and GAMMs. This variable selection consists of a \emph{search} part and an
+\emph{evaluation} part. The search part determines the solution path, i.e., the
 best submodel for each number of predictor terms (model size). The evaluation
 part determines the predictive performance of the submodels along the
 solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a

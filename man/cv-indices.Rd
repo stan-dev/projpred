@@ -11,7 +11,7 @@ cvfolds(n, K, seed = NULL)
 cv_ids(n, K, out = c("foldwise", "indices"), seed = NULL)
 }
 \arguments{
-\item{n}{Number of observations (data points).}
+\item{n}{Number of observations.}
 
 \item{K}{Number of folds. Must be at least 2 and not exceed \code{n}.}
 

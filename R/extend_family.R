@@ -1,4 +1,4 @@
-# Model-specific helper functions.
+# Family-specific helper functions
 #
 # `extend_family(family)` returns a [`family`] object augmented with auxiliary
 # functions that are needed for computing KL-divergence, log predictive density,
@@ -9,8 +9,9 @@
 
 #' Extend a family
 #'
-#' This function adds elements to a [`family`] object. It is called internally
-#' by [init_refmodel()], so you will rarely need to call it yourself.
+#' This function adds some internally required elements to a [`family`] object.
+#' It is called internally by [init_refmodel()], so you will rarely need to call
+#' it yourself.
 #'
 #' @param family A [`family`] object.
 #'
@@ -27,23 +28,25 @@ extend_family <- function(family) {
     stop("Family '", family$family, "' is not supported by projpred.")
   }
   extend_family_specific <- get(extend_family_specific, mode = "function")
-  extend_family_specific(family)
+  family <- extend_family_specific(family)
+  family$is_extended <- TRUE
+  return(family)
 }
 
 extend_family_binomial <- function(family) {
   kl_dev <- function(pref, data, psub) {
-    if (NCOL(pref$mu) > 1) {
-      w <- rep(data$weights, NCOL(pref$mu))
-      colMeans(family$dev.resids(pref$mu, psub$mu, w)) / 2
-    } else {
-      mean(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
-    }
+    data$weights <- data$weights / sum(data$weights)
+    data$weights <- rep(data$weights, ncol(pref$mu))
+    colSums(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
   }
-  dis_na <- function(pref, psub, wobs = 1) rep(0, ncol(pref$mu))
+  dis_na <- function(pref, psub, wobs = 1) {
+    rep(NA, ncol(pref$mu))
+  }
   predvar_na <- function(mu, dis, wsample = 1) {
-    rep(0, NROW(mu))
+    rep(NA, NROW(mu))
   }
   ll_binom <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     dbinom(y, weights, mu, log = TRUE)
   }
   dev_binom <- function(mu, y, weights = 1, dis = NULL) {
@@ -52,7 +55,9 @@ extend_family_binomial <- function(family) {
     }
     -2 * weights * (y * log(mu) + (1 - y) * log(1 - mu))
   }
-  ppd_binom <- function(mu, dis, weights = 1) rbinom(length(mu), weights, mu)
+  ppd_binom <- function(mu, dis, weights = 1) {
+    rbinom(length(mu), weights, mu)
+  }
   initialize_binom <- expression({
     if (NCOL(y) == 1) {
       if (is.factor(y)) {
@@ -60,10 +65,25 @@ extend_family_binomial <- function(family) {
       }
       n <- rep.int(1, nobs)
       y[weights == 0] <- 0
+      if (any(y < 0 | y > 1)) {
+        stop("y values must be 0 <= y <= 1")
+      }
       mustart <- (weights * y + 0.5) / (weights + 1)
       m <- weights * y
+      if ("binomial" == "binomial" && any(abs(m - round(m)) >
+                                          0.001)) {
+        ### Deactivated because in general, this will be the case in 'projpred':
+        # warning(gettextf("non-integer #successes in a %s glm!",
+        #                  "binomial"), domain = NA)
+        ###
+      }
     }
     else if (NCOL(y) == 2) {
+      if ("binomial" == "binomial" && any(abs(y - round(y)) >
+                                          0.001)) {
+        warning(gettextf("non-integer counts in a %s glm!",
+                         "binomial"), domain = NA)
+      }
       n <- (y1 <- y[, 1L]) + y[, 2L]
       y <- y1 / n
       if (any(n0 <- n == 0)) {
@@ -71,6 +91,11 @@ extend_family_binomial <- function(family) {
       }
       weights <- weights * n
       mustart <- (n * y + 0.5) / (n + 1)
+    } else {
+      stop(gettextf(paste("for the '%s' family, y must be a vector of 0 and",
+                          "1's\nor a 2 column matrix where col 1 is no.",
+                          "successes and col 2 is no. failures"),
+                    "binomial"), domain = NA)
     }
   })
 
@@ -87,26 +112,29 @@ extend_family_binomial <- function(family) {
 
 extend_family_poisson <- function(family) {
   kl_dev <- function(pref, data, psub) {
-    if (NCOL(pref$mu) > 1) {
-      w <- rep(data$weights, NCOL(pref$mu))
-      colMeans(family$dev.resids(pref$mu, psub$mu, w)) / 2
-    } else {
-      mean(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
-    }
+    data$weights <- data$weights / sum(data$weights)
+    data$weights <- rep(data$weights, ncol(pref$mu))
+    colSums(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
   }
-  dis_na <- function(pref, psub, wobs = 1) rep(0, ncol(pref$mu))
+  dis_na <- function(pref, psub, wobs = 1) {
+    rep(NA, ncol(pref$mu))
+  }
   predvar_na <- function(mu, dis, wsample = 1) {
-    rep(0, NROW(mu))
+    rep(NA, NROW(mu))
   }
-  ll_poiss <- function(mu, dis, y, weights = 1)
+  ll_poiss <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     weights * dpois(y, mu, log = TRUE)
+  }
   dev_poiss <- function(mu, y, weights = 1, dis = NULL) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
     }
     -2 * weights * (y * log(mu) - mu)
   }
-  ppd_poiss <- function(mu, dis, weights = 1) rpois(length(mu), mu)
+  ppd_poiss <- function(mu, dis, weights = 1) {
+    rpois(length(mu), mu)
+  }
 
   family$kl <- kl_dev
   family$dis_fun <- dis_na
@@ -120,6 +148,7 @@ extend_family_poisson <- function(family) {
 
 extend_family_gaussian <- function(family) {
   kl_gauss <- function(pref, data, psub) {
+    data$weights <- data$weights / sum(data$weights)
     colSums(data$weights * (psub$mu - pref$mu)^2)
   } # not the actual KL but reasonable surrogate..
   dis_gauss <- function(pref, psub, wobs = 1) {
@@ -132,6 +161,7 @@ extend_family_gaussian <- function(family) {
     as.vector(sum(wsample * dis^2) + mu_var)
   }
   ll_gauss <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
     weights * dnorm(y, mu, dis, log = TRUE)
   }
@@ -146,7 +176,9 @@ extend_family_gaussian <- function(family) {
     }
     -2 * weights * (-0.5 / dis^2 * (y - mu)^2 - log(dis))
   }
-  ppd_gauss <- function(mu, dis, weights = 1) rnorm(length(mu), mu, dis)
+  ppd_gauss <- function(mu, dis, weights = 1) {
+    rnorm(length(mu), mu, dis)
+  }
 
   family$kl <- kl_gauss
   family$dis_fun <- dis_gauss
@@ -177,6 +209,7 @@ extend_family_gamma <- function(family) {
     stop("Family Gamma not implemented yet.")
   }
   ll_gamma <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
     weights * dgamma(y, dis, dis / matrix(mu), log = TRUE)
   }
@@ -185,7 +218,9 @@ extend_family_gamma <- function(family) {
     ## dis <- matrix(rep(dis, each=length(y)), ncol=NCOL(mu))
     ## weights*dgamma(y, dis, dis/matrix(mu), log= TRUE)
   }
-  ppd_gamma <- function(mu, dis, weights = 1) rgamma(length(mu), dis, dis / mu)
+  ppd_gamma <- function(mu, dis, weights = 1) {
+    rgamma(length(mu), dis, dis / mu)
+  }
 
   family$kl <- kl_gamma
   family$dis_fun <- dis_gamma
@@ -214,10 +249,8 @@ extend_family_student_t <- function(family) {
     as.vector(family$nu / (family$nu - 2) * sum(wsample * dis^2) + mu_var)
   }
   ll_student_t <- function(mu, dis, y, weights = 1) {
+    y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
-    if (NCOL(y) < NCOL(mu)) {
-      y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
-    }
     weights * (dt((y - mu) / dis, family$nu, log = TRUE) - log(dis))
   }
   dev_student_t <- function(mu, y, weights = 1, dis = NULL) {
@@ -232,8 +265,9 @@ extend_family_student_t <- function(family) {
     (-2 * weights * (-0.5 * (family$nu + 1)
                      * log(1 + 1 / family$nu * ((y - mu) / dis)^2) - log(dis)))
   }
-  ppd_student_t <- function(mu, dis, weights = 1)
+  ppd_student_t <- function(mu, dis, weights = 1) {
     rt(length(mu), family$nu) * dis + mu
+  }
 
   family$kl <- kl_student_t
   family$dis_fun <- dis_student_t
@@ -250,8 +284,9 @@ extend_family_student_t <- function(family) {
   family$family %in% c("gaussian", "Student_t", "Gamma")
 }
 
+# A function for checking whether a `family` object has the required extra
+# functions, that is, whether it has already been extended (typically by a call
+# to extend_family()):
 .has_family_extras <- function(family) {
-  # check whether the family object has the extra functions, that is, whether it
-  # was created by extend_family
-  !is.null(family$deviance)
+  return(isTRUE(family$is_extended))
 }

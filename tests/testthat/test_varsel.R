@@ -39,7 +39,9 @@ test_that("invalid `method` fails", {
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(varsel(refmods[[tstsetup]], method = "L1"),
-                   "^L1 search is only supported for GLMs\\.$",
+                   paste("^L1 search is only supported for reference models",
+                         "without multilevel and without additive",
+                         "\\(\"smoothing\"\\) terms\\.$"),
                    info = tstsetup)
     }
   }
@@ -202,7 +204,9 @@ test_that(paste(
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
         # here (instead of the coefficients themselves, which would only be
         # accessible from `p_sub`):
-        mu_jm_regul <- vs_regul$family$linkfun(vs_regul$summaries$sub[[m]]$mu)
+        mu_jm_regul <- vs_regul$refmodel$family$linkfun(
+          vs_regul$summaries$sub[[m]]$mu
+        )
         if (grepl("\\.with_offs", tstsetup)) {
           mu_jm_regul <- mu_jm_regul - offs_tst
         }
@@ -271,24 +275,26 @@ test_that(paste(
       }
       for (m in seq_len(m_max)) {
         # Selection:
-        subfits_jm_regul <- vs_regul$search_path$sub_fits[[m]]
+        submodl_jm_regul <- vs_regul$search_path$submodls[[m]]
         if (ncl_crr == 1) {
-          subfits_jm_regul <- list(subfits_jm_regul)
+          submodl_jm_regul <- list(submodl_jm_regul)
         } else {
-          stopifnot(identical(ncl_crr, length(subfits_jm_regul)))
+          stopifnot(identical(ncl_crr, length(submodl_jm_regul)))
         }
         for (nn in seq_len(ncl_crr)) {
-          stopifnot(length(subfits_jm_regul[[nn]]$alpha) == 1)
-          ssq_regul_sel_alpha[j, m, nn] <- subfits_jm_regul[[nn]]$alpha^2
-          if (length(subfits_jm_regul[[nn]]$beta) > 0) {
-            ssq_regul_sel_beta[j, m, nn] <- sum(subfits_jm_regul[[nn]]$beta^2)
+          stopifnot(length(submodl_jm_regul[[nn]]$alpha) == 1)
+          ssq_regul_sel_alpha[j, m, nn] <- submodl_jm_regul[[nn]]$alpha^2
+          if (length(submodl_jm_regul[[nn]]$beta) > 0) {
+            ssq_regul_sel_beta[j, m, nn] <- sum(submodl_jm_regul[[nn]]$beta^2)
           }
         }
         # Prediction:
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
         # here (instead of the coefficients themselves, which would only be
         # accessible from `p_sub`):
-        mu_jm_regul <- vs_regul$family$linkfun(vs_regul$summaries$sub[[m]]$mu)
+        mu_jm_regul <- vs_regul$refmodel$family$linkfun(
+          vs_regul$summaries$sub[[m]]$mu
+        )
         if (grepl("\\.with_offs", tstsetup)) {
           mu_jm_regul <- mu_jm_regul - offs_tst
         }
@@ -486,7 +492,9 @@ test_that("invalid `method` fails", {
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(cv_varsel(refmods[[tstsetup]], method = "L1"),
-                   "^L1 search is only supported for GLMs\\.$",
+                   paste("^L1 search is only supported for reference models",
+                         "without multilevel and without additive",
+                         "\\(\"smoothing\"\\) terms\\.$"),
                    info = tstsetup)
     }
   }
@@ -586,7 +594,8 @@ test_that("setting `nloo` smaller than the number of observations works", {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # diagnostics and also because of the warning concerning subsampled LOO CV
+    # (see issue #94):
     cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
@@ -695,7 +704,7 @@ test_that("`validate_search` works", {
         cvvss[[tstsetup]]$suggested_size
     }
   }
-  sum_as_unexpected <- 0L
+  sum_as_unexpected <- 2L
   expect_true(sum(!suggsize_cond, na.rm = TRUE) <= sum_as_unexpected)
 })
 

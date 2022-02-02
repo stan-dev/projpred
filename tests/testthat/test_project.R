@@ -33,6 +33,17 @@ test_that("invalid `solution_terms` warns or fails", {
             "`solution_terms`\\.$"),
       info = tstsetup
     )
+    expect_error(
+      do.call(project, c(
+        list(object = refmods[[args_prj_i$tstsetup_ref]],
+             solution_terms = rep_len(args_prj_i$solution_terms,
+                                      length.out = 1e4)),
+        excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+      )),
+      paste("^Argument 'solution_terms' contains more terms than the number of",
+            "terms in the reference model\\.$"),
+      info = tstsetup
+    )
     for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
       tstsetup_crr <- paste(tstsetup, paste(solterms_crr, collapse = ","),
                             sep = "__")
@@ -126,7 +137,6 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
-        fam_expected = vss[[tstsetup_vs]]$family,
         prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$weights
       )
     }
@@ -189,7 +199,6 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
-        fam_expected = cvvss[[tstsetup_cvvs]]$family,
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$weights
       )
     }

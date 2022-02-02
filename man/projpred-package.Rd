@@ -10,13 +10,22 @@
 variable (or "feature") selection for generalized linear models (GLMs),
 generalized linear multilevel (or "mixed") models (GLMMs), generalized
 additive models (GAMs), and generalized additive multilevel (or "mixed")
-models (GAMMs). Note that the term "generalized" includes the Gaussian family
+models (GAMMs), with the support for additive models still being
+experimental. Note that the term "generalized" includes the Gaussian family
 as well.
 
 The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
 of other packages are welcome to add new \code{\link[=get_refmodel]{get_refmodel()}} methods (which
 enable the compatibility of their packages with \pkg{projpred}). Custom
-reference models can also be used via \code{\link[=init_refmodel]{init_refmodel()}}.
+reference models can also be used via \code{\link[=init_refmodel]{init_refmodel()}}. It is via custom
+reference models that \pkg{projpred} supports the projection onto candidate
+models whose predictor terms are not a subset of the reference model's
+predictor terms. However, for \pkg{rstanarm} and \pkg{brms} reference models,
+\pkg{projpred} only supports the projection onto \emph{submodels} of the reference
+model. For the sake of simplicity, throughout this package, we use the term
+"submodel" for all kinds of candidate models onto which the reference model
+is projected, even though this term is not always appropriate for custom
+reference models.
 
 Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and---via
 \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as
@@ -42,11 +51,9 @@ big, which---when running in parallel---may lead to an excessive memory usage
 which in turn may crash the R session. Thus, we currently cannot recommend
 the parallelization for GLMMs, GAMs, and GAMMs.
 
-See the vignettes
-(\href{https://mc-stan.org/projpred/articles/quickstart.html}{quickstart-vignette}
-and
-\href{https://mc-stan.org/projpred/articles/quickstart_glmm.html}{quickstart-glmm-vignette})
-for example applications. Shorter examples are included here in the documentation.
+See the \href{https://mc-stan.org/projpred/articles/projpred.html}{vignette} for
+an example application (which also demonstrates the use of parallelization).
+Shorter examples are included here in the documentation.
 
 Some references relevant for this package are given in section "References"
 below. See \code{citation(package = "projpred")} for details on citing
@@ -54,17 +61,19 @@ below. See \code{citation(package = "projpred")} for details on citing
 }
 \section{Functions}{
 \describe{
-\item{\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}}}{Perform the variable selection, possibly
-with cross-validation (CV).}
+\item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up a reference model
+(only rarely needed explicitly).}
+\item{\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}}}{For variable selection, possibly with
+cross-validation (CV).}
 \item{\code{\link[=summary.vsel]{summary.vsel()}}, \code{\link[=print.vsel]{print.vsel()}}, \code{\link[=plot.vsel]{plot.vsel()}},
-\code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}}{Post-process the results
-from the variable selection.}
-\item{\code{\link[=project]{project()}}}{Project the reference model onto submodel(s). Typically,
-this follows the variable selection, but it can also be applied directly
-(without a variable selection).}
-\item{\code{\link[=as.matrix.projection]{as.matrix.projection()}}}{Extract projected parameter draws.}
-\item{\code{\link[=proj_linpred]{proj_linpred()}}, \code{\link[=proj_predict]{proj_predict()}}}{Make predictions from a submodel
-(after projecting the reference model onto it).}
+\code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}}{For post-processing the
+results from the variable selection.}
+\item{\code{\link[=project]{project()}}}{For projecting the reference model onto submodel(s).
+Typically, this follows the variable selection, but it can also be applied
+directly (without a variable selection).}
+\item{\code{\link[=as.matrix.projection]{as.matrix.projection()}}}{For extracting projected parameter draws.}
+\item{\code{\link[=proj_linpred]{proj_linpred()}}, \code{\link[=proj_predict]{proj_predict()}}}{For making predictions from a
+submodel (after projecting the reference model onto it).}
 }
 }
 
