@@ -463,10 +463,6 @@ get_refmodel.stanreg <- function(object, ...) {
     default_orhs <- NULL
   }
 
-  # Special case: `datafit` -------------------------------------------------
-
-  proper_model <- !is.null(object)
-
   # Formula -----------------------------------------------------------------
 
   if (inherits(object, "gamm4")) {
