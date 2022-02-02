@@ -560,7 +560,7 @@ get_refmodel.stanreg <- function(object, ...) {
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
-                          folds = NULL, extract_model_data = NULL, cvfun = NULL,
+                          extract_model_data, cvfun = NULL,
                           cvfits = NULL, dis = NULL, latent_proj = FALSE, ...) {
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
