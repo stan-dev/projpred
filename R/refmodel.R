@@ -373,8 +373,8 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.default <-
-    function(object, formula, family = NULL, latent_proj = FALSE, ...) {
+get_refmodel.default <- function(object, formula, family = NULL,
+                                 latent_proj = FALSE, ...) {
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = TRUE) {
