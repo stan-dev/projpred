@@ -562,6 +562,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
                           cvfits = NULL, dis = NULL, latent_proj = FALSE, ...) {
+  # Special case: `datafit` -------------------------------------------------
+
+  proper_model <- !is.null(object)
+
+  # Formula -----------------------------------------------------------------
+
   stopifnot(inherits(formula, "formula"))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
@@ -574,15 +580,20 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
+  if (formula_contains_additive_terms(formula)) {
+    warning("Support for additive models is still experimental.")
+  }
+
+  # Data --------------------------------------------------------------------
 
   model_data <- extract_model_data(object, newdata = data)
   weights <- model_data$weights
   offset <- model_data$offset
   y <- model_data$y
 
-  # Special case: `datafit` -------------------------------------------------
-
-  proper_model <- !is.null(object)
+  if (is.null(offset)) {
+    offset <- rep(0, NROW(y))
+  }
 
   # Functions ---------------------------------------------------------------
 
@@ -671,7 +682,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (!all(.is.wholenumber(y))) {
       stop("In projpred, the response must contain numbers of successes (not ",
            "proportions of successes), in contrast to glm() where this is ",
-           "the convention for a 1-column response.")
+           "possible for a 1-column response if the multiplication with the ",
+           "weights gives whole numbers.")
     } else if (all(y %in% c(0, 1)) &&
                length(response_name) == 1 &&
                !all(weights == 1)) {
@@ -680,10 +692,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         "proportions of successes), in contrast to glm()."
       )
     }
-  }
-
-  if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
   }
 
   if (!.has_family_extras(family)) {
