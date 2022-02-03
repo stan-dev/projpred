@@ -614,44 +614,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     warning("Support for additive models is still experimental.")
   }
 
-  # Data --------------------------------------------------------------------
-
-  model_data <- extract_model_data(object, newdata = data)
-  weights <- model_data$weights
-  offset <- model_data$offset
-  y <- model_data$y
-
-  if (latent_proj) {
-    y <- rowMeans(ref_predfun(object, newdata = data))
-  }
-
-  # Add (transformed) response under the (possibly) new name:
-  data[, response_name] <- y
-
-  target <- .get_standard_y(y, weights, family)
-  y <- target$y
-  weights <- target$weights
-
-  if (family$family == "binomial") {
-    if (!all(.is.wholenumber(y))) {
-      stop("In projpred, the response must contain numbers of successes (not ",
-           "proportions of successes), in contrast to glm() where this is ",
-           "possible for a 1-column response if the multiplication with the ",
-           "weights gives whole numbers.")
-    } else if (all(y %in% c(0, 1)) &&
-               length(response_name) == 1 &&
-               !all(weights == 1)) {
-      warning(
-        "Assuming that the response contains numbers of successes (not ",
-        "proportions of successes), in contrast to glm()."
-      )
-    }
-  }
-
-  if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
-  }
-
   # Functions ---------------------------------------------------------------
 
   if (proper_model) {
@@ -704,6 +666,44 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   fetch_data_wrapper <- function(obs = NULL) {
     fetch_data(data, obs = obs)
+  }
+
+  # Data --------------------------------------------------------------------
+
+  model_data <- extract_model_data(object, newdata = data)
+  weights <- model_data$weights
+  offset <- model_data$offset
+  y <- model_data$y
+
+  if (latent_proj) {
+    y <- rowMeans(ref_predfun(object, newdata = data))
+  }
+
+  # Add (transformed) response under the (possibly) new name:
+  data[, response_name] <- y
+
+  target <- .get_standard_y(y, weights, family)
+  y <- target$y
+  weights <- target$weights
+
+  if (family$family == "binomial") {
+    if (!all(.is.wholenumber(y))) {
+      stop("In projpred, the response must contain numbers of successes (not ",
+           "proportions of successes), in contrast to glm() where this is ",
+           "possible for a 1-column response if the multiplication with the ",
+           "weights gives whole numbers.")
+    } else if (all(y %in% c(0, 1)) &&
+               length(response_name) == 1 &&
+               !all(weights == 1)) {
+      warning(
+        "Assuming that the response contains numbers of successes (not ",
+        "proportions of successes), in contrast to glm()."
+      )
+    }
+  }
+
+  if (is.null(offset)) {
+    offset <- rep(0, NROW(y))
   }
 
   # mu ----------------------------------------------------------------------
