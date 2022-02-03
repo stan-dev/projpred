@@ -672,10 +672,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Family ------------------------------------------------------------------
 
-  if (latent_proj && family$family != "gaussian") {
-    stop("latent_proj projection selection, but family not Gaussian.")
-  }
-
   if (family$family == "binomial") {
     if (!all(.is.wholenumber(y))) {
       stop("In projpred, the response must contain numbers of successes (not ",
