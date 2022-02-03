@@ -658,10 +658,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     response_name <- paste0(".", response_name)
     data[, response_name] <- y
     family <- gaussian()
-  } else if (!latent_proj) {
-    data[, response_name] <- y
   } else {
-    stop("Please specify whether to use the latent projection technique.")
+    data[, response_name] <- y
   }
 
   formula <- update(
