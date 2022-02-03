@@ -123,11 +123,11 @@ Now having a reference model where the variate's distribution belongs to the exp
 
 ```{r}
 # perform variable selection on the latent reference model
-latent_vs <- varsel(latent_ref)
+latent_vs <- varsel(latent_ref, seed = 95930)
 # selection order of the variables
 solution_terms(latent_vs)
 # plot varsel results
-plot(latent_vs, stats = c('elpd', 'rmse'))
+plot(latent_vs, stats = c('elpd', 'rmse'), seed = 4537)
 ```
 
 Note that as explained in @latent-projpred, this method on a GLM with variate having distribution belonging to the exponential family does not result in any significant improvement, as is shown below simply applying variable selection directly on the reference model.
@@ -136,11 +136,11 @@ Note that as explained in @latent-projpred, this method on a GLM with variate ha
 # get reference model from BRMS object
 refmodel <- get_refmodel(model_poisson)
 # perform variable selection
-vanilla_vs <- varsel(refmodel)
+vanilla_vs <- varsel(refmodel, seed = 95930)
 # selection order of the variables
 solution_terms(vanilla_vs)
 # plot results
-plot(vanilla_vs, stats = c('elpd', 'rmse'))
+plot(vanilla_vs, stats = c('elpd', 'rmse'), seed = 4537)
 ```
 
 ## Time-to-event models
