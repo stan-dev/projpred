@@ -673,10 +673,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   model_data <- extract_model_data(object, newdata = data)
   weights <- model_data$weights
   offset <- model_data$offset
-  y <- model_data$y
-
   if (latent_proj) {
     y <- rowMeans(ref_predfun(object))
+  } else {
+    y <- model_data$y
   }
 
   # Add (transformed) response under the (possibly) new name:
