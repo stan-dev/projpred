@@ -646,7 +646,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   fetch_data_wrapper <- function(obs = NULL) {
-    fetch_data(data, obs, newdata = NULL)
+    fetch_data(data, obs = obs)
   }
 
   # Latent projection -------------------------------------------------------
