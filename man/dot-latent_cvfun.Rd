@@ -2,11 +2,11 @@
 % Please edit documentation in R/latent.R
 \name{.latent_cvfun}
 \alias{.latent_cvfun}
-\title{Latent projection predictive inference for generalised linear models}
+\title{Latent projection predictive inference for generalized linear models}
 \usage{
 .latent_cvfun(folds, ...)
 }
 \description{
-Perform latent projection predictive variable selection for generalised
+Perform latent projection predictive variable selection for generalized
 linear models.
 }

@@ -1,6 +1,6 @@
-#' Latent projection predictive inference for generalised linear models
+#' Latent projection predictive inference for generalized linear models
 #'
-#' Perform latent projection predictive variable selection for generalised
+#' Perform latent projection predictive variable selection for generalized
 #' linear models.
 
 # utility function to perform kfolds validation over posterior samples
