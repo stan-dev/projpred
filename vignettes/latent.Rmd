@@ -207,11 +207,11 @@ Having now build a reference model belonging to the Exponential family from a mo
 
 ```{r}
 # perform latent projection predictive variable selection on model
-vs <- cv_varsel(latent_ref, method = "forward")
+vs <- varsel(latent_ref, seed = 456942)
 # selection order of the variables
-projpred::solution_terms(vs)
+solution_terms(vs)
 # plot varsel results
-plot(vs, stats = c('elpd', 'rmse'))
+plot(vs, stats = c('elpd', 'rmse'), seed = 842032)
 ```
 
 We thus discover an ordering of variables in this non-Exponential family model using latent projection predictive inference.
