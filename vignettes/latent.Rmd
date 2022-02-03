@@ -100,18 +100,20 @@ model_poisson <- brms::brm(
 We now proceed to extract the latent predictor posterior draws from this reference model.
 
 ```{r}
-# extract posterior draws of latent predictor
-eta_post_draws <- extract_eta(model_poisson, pois)
+### Currently, extract_eta() is not necessary. (But perhaps in the future? The
+### body of extract_eta() hints at plans for extending this).
+# # extract posterior draws of latent predictor
+# eta_post_draws <- extract_eta(model_poisson, pois)
+###
 ```
 
 And using these, we fit a new reference model in terms of the latent predictor, and using the default Gaussianity assumption.
 
 ```{r}
 # define new reference model for latent predictor
-latent_ref <- fit_latent(
+latent_ref <- get_refmodel(
   model_poisson,
-  eta_post_draws,
-  pois
+  latent_proj = TRUE
 )
 ```
 
@@ -203,14 +205,16 @@ latent_ref <- init_refmodel(
 Repeating the workflow, we first extract the latent predictor posterior draws, and then define a reference model in terms of them. It is at this stage that we enforce our Gaussianity assumption in the default parameter value of the `fit_latent` function.
 
 ```{r}
-# extract posterior draws of latent predictor
-eta_post_draws <- extract_eta(fit, data)
+### Currently, extract_eta() is not necessary. (But perhaps in the future? The
+### body of extract_eta() hints at plans for extending this).
+# # extract posterior draws of latent predictor
+# eta_post_draws <- extract_eta(fit, data)
+###
 
 # define new reference model for latent predictor
-latent_ref <- fit_latent(
+latent_ref <- get_refmodel(
   fit,
-  eta_post_draws,
-  data
+  latent_proj = TRUE
 )
 ```
 
