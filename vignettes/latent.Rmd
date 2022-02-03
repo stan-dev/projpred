@@ -19,13 +19,12 @@ This vignette shows how to implement the latent projection predictive inference 
 
 ```{r, message=FALSE, warning=FALSE}
 # import necessary libraries for the vignette
-library(projpred)
-library(survival)
 library(tidyverse)
 library(dplyr)
 library(brms)
+library(projpred)
 # set number of cores
-options(mc.cores = parallel::detectCores())
+options(mc.cores = parallel::detectCores(logical = FALSE))
 ```
 
 ## General idea
@@ -123,7 +122,7 @@ Now having a reference model where the variate's distribution belongs to the exp
 # perform variable selection on the latent reference model
 latent_vs <- varsel(latent_ref)
 # selection order of the variables
-projpred::solution_terms(latent_vs)
+solution_terms(latent_vs)
 # plot varsel results
 plot(latent_vs, stats = c('elpd', 'rmse'))
 ```
@@ -137,7 +136,7 @@ refmodel <- get_refmodel(model_poisson)
 vanilla_vs <- cv_varsel(refmodel,
                        method = "forward")
 # selection order of the variables
-projpred::solution_terms(vanilla_vs)
+solution_terms(vanilla_vs)
 # plot results
 plot(vanilla_vs, stats = c('elpd', 'rmse'))
 ```
