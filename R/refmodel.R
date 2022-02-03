@@ -687,7 +687,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun <- function(fit, newdata = NULL) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
-        return(matrix(rep(NA, NROW(y))))
+        return(matrix(rep(NA, NROW(data))))
       } else {
         return(matrix(rep(NA, NROW(newdata))))
       }
