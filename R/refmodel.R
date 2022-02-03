@@ -598,7 +598,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
-    if (family$family != "binomial") {
+    if (!latent_proj && family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
     }
   } else if (length(response_name) > 2) {
@@ -607,7 +607,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
   if (latent_proj) {
-    response_name <- paste0(".", response_name)
+    response_name <- paste0(".", response_name[1])
   }
   formula <- update(formula, paste(response_name[1], "~ ."))
   if (formula_contains_additive_terms(formula)) {
