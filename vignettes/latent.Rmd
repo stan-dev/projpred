@@ -170,7 +170,8 @@ D <- length(xtags)
 We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor). We then fit the model accordingly.
 
 ```{r, message=FALSE, warning=FALSE}
-### Comment by FW: I haven't checked whether the model actually makes sense.
+### Comment by FW: I haven't checked whether the model actually makes sense. The
+### brm() call below fails on my machine. Perhaps `1 - status` is incorrect?
 # build model formula of the form
 formula <- formula(paste("time | cens(1 - status) ~",
                          paste0(xtags, collapse = " + ")))
