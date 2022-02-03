@@ -623,8 +623,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (latent_proj) {
     y <- rowMeans(ref_predfun(object, newdata = data))
-    ## latent noise is fixed
-    dis <- rep(1, 4000)
   }
 
   # Add (transformed) response under the (possibly) new name:
@@ -725,7 +723,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Miscellaneous -----------------------------------------------------------
 
   ndraws <- ncol(mu)
-  if (is.null(dis)) {
+  if (latent_proj) {
+    ## latent noise is fixed
+    dis <- rep(1, ndraws)
+  } else if (is.null(dis)) {
     if (!.has_dispersion(family)) {
       dis <- rep(NA, ndraws)
     } else {
