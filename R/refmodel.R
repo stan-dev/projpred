@@ -568,16 +568,24 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     family <- gaussian()
   }
 
+  if (family$family == "Student_t") {
+    warning("Support for the `Student_t` family is still experimental.")
+  } else if (family$family == "Gamma") {
+    warning("Support for the `Gamma` family is still experimental.")
+  }
+
   if (!.has_family_extras(family)) {
     family <- extend_family(family)
   }
 
-  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL) {
+  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL) {
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
+    } else {
+      stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
-    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
+    family$linkinv(proj_predfun(fits, newdata = newdata) + offset)
   }
 
   # Special case: `datafit` -------------------------------------------------
