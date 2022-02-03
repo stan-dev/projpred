@@ -141,15 +141,6 @@ solution_terms(vanilla_vs)
 plot(vanilla_vs, stats = c('elpd', 'rmse'))
 ```
 
-```{r}
-latent_ref <- init_refmodel(
-  object = model_poisson,
-  data = pois,
-  formula = poisson_formula,
-  latent = TRUE
-  )
-```
-
 ## Time-to-event models
 
 We now turn to a non-Exponential family distributed variate. Specifically, we will be working with a time-to-event model in BRMS where the variate is Weibull distributed according to 
