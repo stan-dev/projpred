@@ -92,7 +92,8 @@ model_poisson <- brms::brm(
   formula = poisson_formula,
   data = pois,
   family = poisson(),
-  prior = poisson_priors
+  prior = poisson_priors,
+  seed = 346347
 )
 ```
 
@@ -185,7 +186,8 @@ fit <- brm(
   formula,
   data = data,
   prior = prior,
-  family = weibull
+  family = weibull,
+  seed = 5559369
 )
 ```
 
