@@ -606,6 +606,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
+  if (latent_proj) {
+    response_name <- paste0(".", response_name)
+  }
+  formula <- update(formula, paste(response_name[1], "~ ."))
   if (formula_contains_additive_terms(formula)) {
     warning("Support for additive models is still experimental.")
   }
@@ -617,24 +621,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   offset <- model_data$offset
   y <- model_data$y
 
-  # Latent projection -------------------------------------------------------
-
   if (latent_proj) {
     y <- rowMeans(ref_predfun(object, newdata = data))
     ## latent noise is fixed
     dis <- rep(1, 4000)
-    response_name <- paste0(".", response_name)
-    data[, response_name] <- y
-  } else {
-    data[, response_name] <- y
   }
 
-  formula <- update(
-    formula,
-    paste(response_name, "~ .")
-  )
-
-  # Data (continued) ---------------------------------------------------------
+  # Add (transformed) response under the (possibly) new name:
+  data[, response_name] <- y
 
   target <- .get_standard_y(y, weights, family)
   y <- target$y
