@@ -13,7 +13,7 @@ fit_latent(
   latent_proj_predfun = subprd,
   dis_latent = rep(1, 4000),
   extract_model_data = .extract_latent_model_data,
-  ref_predfun = .latent_ref_predfun,
+  ref_predfun = refprd,
   cv_fun = .latent_cvfun
 )
 }

@@ -71,14 +71,6 @@
   return(do_call(projpred:::.extract_model_data, args))
 }
 
-# use the sample predictive function as for the refrence model
-#' @export
-.latent_ref_predfun <- function(fit, newdata = NULL) {
-  return(t(posterior_linpred(
-    fit, newdata = newdata, transform = FALSE
-  )))
-}
-
 #' Extract the posterior draws of the latent predictor
 #'
 #' @param fit A reference model written
@@ -159,7 +151,7 @@ fit_latent <-
            latent_proj_predfun = subprd,
            dis_latent = rep(1, 4000), # fixed and uniform
            extract_model_data = .extract_latent_model_data,
-           ref_predfun = .latent_ref_predfun,
+           ref_predfun = refprd,
            cv_fun = .latent_cvfun) {
     # update the reference model's formula to fit to the latent predictor
     latent_formula <- formula(update(fit$formula, ".y ~ ."))
