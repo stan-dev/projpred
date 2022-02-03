@@ -79,6 +79,7 @@ generate_fake_poisson_data <-
     rownames(fake) <- NULL
     return(fake)
   }
+set.seed(1234)
 pois <- generate_fake_poisson_data()
 ```
 
