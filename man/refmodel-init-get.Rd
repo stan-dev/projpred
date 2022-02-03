@@ -104,6 +104,9 @@ existing). May be \code{NULL} if the model has no dispersion parameter or if the
 model does have a dispersion parameter, but \code{object} is \code{NULL}. Note that
 for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation, not the
 variance.}
+
+\item{latent_proj}{A single logical value indicating whether to use the
+latent projection (\code{TRUE}) or not (\code{FALSE}).}
 }
 \value{
 An object that can be passed to all the functions that take the
