@@ -88,7 +88,7 @@ Following the workflow presented above, we begin by fitting some reference model
 ### Comment by FW: I haven't checked whether the model actually makes sense.
 # build complete reference model on the covariate
 poisson_priors <- brms::set_prior("normal(0, 1)", class = "b")
-poisson_formula <- formula(y ~ 1 + x1 + x2)
+poisson_formula <- y ~ 1 + x1 + x2
 model_poisson <- brms::brm(
   formula = poisson_formula,
   data = pois,
