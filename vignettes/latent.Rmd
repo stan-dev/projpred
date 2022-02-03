@@ -87,9 +87,9 @@ Following the workflow presented above, we begin by fitting some reference model
 ```{r, message=FALSE, warning=FALSE}
 ### Comment by FW: I haven't checked whether the model actually makes sense.
 # build complete reference model on the covariate
-poisson_priors <- brms::set_prior("normal(0, 1)", class = "b")
+poisson_priors <- set_prior("normal(0, 1)", class = "b")
 poisson_formula <- y ~ 1 + x1 + x2
-model_poisson <- brms::brm(
+model_poisson <- brm(
   formula = poisson_formula,
   data = pois,
   family = poisson(),
