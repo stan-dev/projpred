@@ -676,7 +676,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   y <- model_data$y
 
   if (latent_proj) {
-    y <- rowMeans(ref_predfun(object, newdata = data))
+    y <- rowMeans(ref_predfun(object))
   }
 
   # Add (transformed) response under the (possibly) new name:
