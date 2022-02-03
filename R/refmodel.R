@@ -591,6 +591,60 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   offset <- model_data$offset
   y <- model_data$y
 
+  # Latent projection -------------------------------------------------------
+
+  if (latent_proj) {
+    y <- rowMeans(ref_predfun(object, newdata = data))
+    ## latent noise is fixed
+    dis <- rep(1, 4000)
+    response_name <- paste0(".", response_name)
+    data[, response_name] <- y
+    family <- gaussian()
+  } else {
+    data[, response_name] <- y
+  }
+
+  formula <- update(
+    formula,
+    paste(response_name, "~ .")
+  )
+
+  # Family ------------------------------------------------------------------
+
+  if (!.has_family_extras(family)) {
+    family <- extend_family(family)
+  }
+
+  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL) {
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    if (is.null(offset)) {
+      offset <- rep(0, nrow(newdata))
+    }
+    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
+  }
+
+  # Data (continued) ---------------------------------------------------------
+
+  target <- .get_standard_y(y, weights, family)
+  y <- target$y
+  weights <- target$weights
+
+  if (family$family == "binomial") {
+    if (!all(.is.wholenumber(y))) {
+      stop("In projpred, the response must contain numbers of successes (not ",
+           "proportions of successes), in contrast to glm() where this is ",
+           "possible for a 1-column response if the multiplication with the ",
+           "weights gives whole numbers.")
+    } else if (all(y %in% c(0, 1)) &&
+               length(response_name) == 1 &&
+               !all(weights == 1)) {
+      warning(
+        "Assuming that the response contains numbers of successes (not ",
+        "proportions of successes), in contrast to glm()."
+      )
+    }
+  }
+
   if (is.null(offset)) {
     offset <- rep(0, NROW(y))
   }
@@ -647,60 +701,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   fetch_data_wrapper <- function(obs = NULL) {
     fetch_data(data, obs = obs)
-  }
-
-  # Latent projection -------------------------------------------------------
-
-  if (latent_proj) {
-    y <- rowMeans(ref_predfun(object, newdata = data))
-    ## latent noise is fixed
-    dis <- rep(1, 4000)
-    response_name <- paste0(".", response_name)
-    data[, response_name] <- y
-    family <- gaussian()
-  } else {
-    data[, response_name] <- y
-  }
-
-  formula <- update(
-    formula,
-    paste(response_name, "~ .")
-  )
-
-  # Family ------------------------------------------------------------------
-
-  if (!.has_family_extras(family)) {
-    family <- extend_family(family)
-  }
-
-  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL) {
-    newdata <- fetch_data(data, obs = obs, newdata = newdata)
-    if (is.null(offset)) {
-      offset <- rep(0, nrow(newdata))
-    }
-    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
-  }
-
-  # Data (continued) ---------------------------------------------------------
-
-  target <- .get_standard_y(y, weights, family)
-  y <- target$y
-  weights <- target$weights
-
-  if (family$family == "binomial") {
-    if (!all(.is.wholenumber(y))) {
-      stop("In projpred, the response must contain numbers of successes (not ",
-           "proportions of successes), in contrast to glm() where this is ",
-           "possible for a 1-column response if the multiplication with the ",
-           "weights gives whole numbers.")
-    } else if (all(y %in% c(0, 1)) &&
-               length(response_name) == 1 &&
-               !all(weights == 1)) {
-      warning(
-        "Assuming that the response contains numbers of successes (not ",
-        "proportions of successes), in contrast to glm()."
-      )
-    }
   }
 
   # mu ----------------------------------------------------------------------
