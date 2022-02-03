@@ -186,15 +186,6 @@ fit <- brm(
 )
 ```
 
-```{r}
-latent_ref <- init_refmodel(
-  object = fit,
-  data = data,
-  formula = formula,
-  latent = TRUE
-  )
-```
-
 Repeating the workflow, we first extract the latent predictor posterior draws, and then define a reference model in terms of them. It is at this stage that we enforce our Gaussianity assumption in the default parameter value of the `fit_latent` function.
 
 ```{r}
