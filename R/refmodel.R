@@ -666,11 +666,26 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     formula,
     paste(response_name, "~ .")
   )
+
+  # Family ------------------------------------------------------------------
+
+  if (!.has_family_extras(family)) {
+    family <- extend_family(family)
+  }
+
+  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL) {
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    if (is.null(offset)) {
+      offset <- rep(0, nrow(newdata))
+    }
+    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
+  }
+
+  # Data (continued) ---------------------------------------------------------
+
   target <- .get_standard_y(y, weights, family)
   y <- target$y
   weights <- target$weights
-
-  # Family ------------------------------------------------------------------
 
   if (family$family == "binomial") {
     if (!all(.is.wholenumber(y))) {
@@ -686,18 +701,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         "proportions of successes), in contrast to glm()."
       )
     }
-  }
-
-  if (!.has_family_extras(family)) {
-    family <- extend_family(family)
-  }
-
-  family$mu_fun <- function(fit, obs = NULL, newdata = NULL, offset = NULL) {
-    newdata <- fetch_data(data, obs = obs, newdata = newdata)
-    if (is.null(offset)) {
-      offset <- rep(0, nrow(newdata))
-    }
-    family$linkinv(proj_predfun(fit, newdata = newdata) + offset)
   }
 
   # mu ----------------------------------------------------------------------
