@@ -9,12 +9,12 @@ fit_latent(
   eta_post_draws,
   data,
   latent_family = brms::brmsfamily("gaussian"),
-  latent_div_minimizer = projpred:::linear_mle,
-  latent_proj_predfun = projpred:::linear_proj_predfun,
-  dis_latent = rep(1, length(eta_post_draws)),
-  extract_model_data = projpred:::.extract_latent_model_data,
-  ref_predfun = projpred:::.latent_ref_predfun,
-  cv_fun = projpred:::.latent_cvfun
+  latent_div_minimizer = divmin,
+  latent_proj_predfun = subprd,
+  dis_latent = rep(1, 4000),
+  extract_model_data = .extract_latent_model_data,
+  ref_predfun = .latent_ref_predfun,
+  cv_fun = .latent_cvfun
 )
 }
 \arguments{
@@ -44,6 +44,6 @@ A latent predictor reference model
 \description{
 This function takes in a reference model, the posterior draws of its latent
 predictor, and the data on which the reference model was trained to fit a
-reference model in terms of the latent predictor using a Gaussianity 
+reference model in terms of the latent predictor using a Gaussianity
 assumption.
 }

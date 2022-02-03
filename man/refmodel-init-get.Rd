@@ -32,6 +32,7 @@ init_refmodel(
   cvfun = NULL,
   cvfits = NULL,
   dis = NULL,
+  latent_proj = FALSE,
   ...
 )
 }

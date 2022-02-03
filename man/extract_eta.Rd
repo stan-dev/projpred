@@ -4,7 +4,7 @@
 \alias{extract_eta}
 \title{Extract the posterior draws of the latent predictor}
 \usage{
-extract_eta(fit, data, ref_predfun = .ref_predfun)
+extract_eta(fit, data)
 }
 \arguments{
 \item{fit}{A reference model written}
