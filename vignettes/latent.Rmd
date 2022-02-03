@@ -51,6 +51,8 @@ In the case of an exponential variate distribution, it has been shown in @latent
 To begin with, we generate some fake Poisson GLM data.
 
 ```{r}
+### Comment by FW: I haven't checked whether the code in
+### generate_fake_poisson_data() actually makes sense.
 # generate random data
 generate_fake_poisson_data <-
   function(N = 100,
@@ -84,6 +86,7 @@ pois <- generate_fake_poisson_data()
 Following the workflow presented above, we begin by fitting some reference model we believe to be a good fit to the data in BRMS.
 
 ```{r, message=FALSE, warning=FALSE}
+### Comment by FW: I haven't checked whether the model actually makes sense.
 # build complete reference model on the covariate
 poisson_priors <- brms::set_prior("normal(0, 1)", class = "b")
 poisson_formula <- formula(y ~ 1 + x1 + x2)
@@ -155,7 +158,7 @@ We repeat the workflow already presented, first processing our data as follows.
 data("cancer", package = "survival")
 # build dataset
 data <- cancer %>%
-  drop_na()
+  tidyr::drop_na()
 # identify covariate labels
 xtags <- data %>%
   dplyr::select(-status, -time) %>%
@@ -167,6 +170,7 @@ D <- length(xtags)
 We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor). We then fit the model accordingly.
 
 ```{r, message=FALSE, warning=FALSE}
+### Comment by FW: I haven't checked whether the model actually makes sense.
 # build model formula of the form
 formula <- formula(paste("time | cens(1 - status) ~",
                          paste0(xtags, collapse = " + ")))
