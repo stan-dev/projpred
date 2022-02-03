@@ -133,8 +133,7 @@ Note that as explained in @latent-projpred, this method on a GLM with variate ha
 # get reference model from BRMS object
 refmodel <- get_refmodel(model_poisson)
 # perform variable selection
-vanilla_vs <- cv_varsel(refmodel,
-                       method = "forward")
+vanilla_vs <- varsel(refmodel)
 # selection order of the variables
 solution_terms(vanilla_vs)
 # plot results
