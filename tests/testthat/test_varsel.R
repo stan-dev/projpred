@@ -862,7 +862,7 @@ test_that(paste(
     K_crr <- args_cvvs_i$K
 
     # Refit `K_crr` times:
-    if (grepl("\\.glmm\\.", tstsetup) && packageVersion("brms") >= "2.16.4") {
+    if (grepl("\\.glmm\\.", tstsetup)) {
       # Perform a grouped K-fold CV to test an edge case where all observations
       # belonging to the same level of a variable with group-level effects are
       # in the same fold, so prediction is performed for new levels (see, e.g.,
@@ -882,12 +882,8 @@ test_that(paste(
                            folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
-    if (packageVersion("brms") >= "2.16.4") {
-      refmod_crr <- get_refmodel(fit_crr, brms_seed = seed2_tst,
-                                 cvfits = kfold_obj)
-    } else {
-      refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
-    }
+    refmod_crr <- get_refmodel(fit_crr, brms_seed = seed2_tst,
+                               cvfits = kfold_obj)
 
     # Run cv_varsel():
     cvvs_cvfits <- do.call(cv_varsel, c(
