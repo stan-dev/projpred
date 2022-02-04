@@ -54,16 +54,18 @@ test_that("rstanarm: special formulas work", {
 
     tstsetup_stdformul <- sub("\\.spclformul", ".stdformul", tstsetup)
     stopifnot(tstsetup_stdformul != tstsetup)
-    stopifnot(tstsetup_stdformul %in% names(fits))
-    mf_stdformul <- fits[[tstsetup_stdformul]]$model
-    nms_stdformul <- setdiff(
-      grep("y_|xco", names(mf_stdformul), value = TRUE),
-      "xco.1"
-    )
-
-    expect_equal(mf_spclformul[, setdiff(names(mf_spclformul), nms_spclformul)],
-                 mf_stdformul[, setdiff(names(mf_stdformul), nms_stdformul)],
-                 info = tstsetup)
+    if (tstsetup_stdformul %in% names(fits)) {
+      mf_stdformul <- fits[[tstsetup_stdformul]]$model
+      nms_stdformul <- setdiff(
+        grep("y_|xco", names(mf_stdformul), value = TRUE),
+        "xco.1"
+      )
+      expect_equal(mf_spclformul[, setdiff(names(mf_spclformul),
+                                           nms_spclformul)],
+                   mf_stdformul[, setdiff(names(mf_stdformul),
+                                          nms_stdformul)],
+                   info = tstsetup)
+    }
     # Check arithmetic expressions:
     for (nm_spclformul in nms_spclformul) {
       expect_equal(mf_spclformul[, nm_spclformul],
