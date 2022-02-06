@@ -494,12 +494,6 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
           # the cbind() syntax (indirectly, because the number of trials is the
           # sum of the two columns)):
           wobss_nms <- "without_wobs"
-        } else if (pkg_nm == "rstanarm" && mod_nm == "glm" &&
-                   fam_nm == "gauss" && formul_nm != "spclformul") {
-          # Here, rstanarm:::kfold.stanreg() is applied, so we also need the
-          # model without observation weights (because
-          # rstanarm:::kfold.stanreg() doesn't support observation weights):
-          wobss_nms <- c("with_wobs", "without_wobs")
         } else {
           wobss_nms <- "with_wobs"
         }
@@ -650,11 +644,7 @@ refmods <- lapply(args_ref, function(args_ref_i) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  # Exclude the case which was added for K-fold CV only:
-  tstsetups_vs_ref <- setNames(
-    nm = grep("\\.gauss\\..*\\.without_wobs", names(refmods), value = TRUE,
-              invert = TRUE)
-  )
+  tstsetups_vs_ref <- setNames(nm = names(refmods))
   args_vs <- lapply(tstsetups_vs_ref, function(tstsetup_ref) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
@@ -697,6 +687,9 @@ if (run_cvvs) {
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     meth <- meth_tst["default_meth"]
     if (grepl("\\.without_wobs", tstsetup_ref)) {
+      # In principle, we want to use K-fold CV here and LOO CV else because
+      # rstanarm:::kfold.stanreg() doesn't support observation weights. However,
+      # there are some special cases to take care of:
       if (mod_crr == "gamm" && fam_crr == "brnll") {
         # In this case, K-fold CV leads to an error in pwrssUpdate()
         # ("(maxstephalfit) PIRLS step-halvings failed to reduce deviance in
@@ -752,11 +745,7 @@ if (run_cvvs) {
 
 ### From "refmodel" -------------------------------------------------------
 
-# Exclude the case which was added for K-fold CV only:
-tstsetups_prj_ref <- setNames(
-  nm = grep("\\.glm\\.gauss\\.stdformul\\.without_wobs", names(refmods),
-            value = TRUE, invert = TRUE)
-)
+tstsetups_prj_ref <- setNames(nm = names(refmods))
 args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
   pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
   mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
