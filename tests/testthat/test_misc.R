@@ -37,16 +37,23 @@ test_that(paste(
 })
 
 test_that("rstanarm: special formulas work", {
-  # Note: This test only tests that **rstanarm** handles special formulas
-  # correctly. Within projpred, arithmetic expressions on the left-hand side of
-  # a formula are handled by get_refmodel() and init_refmodel(); arithmetic
-  # expressions on the right-hand side of a formula are handled by the
-  # `div_minimizer`.
+  # Skip this on CRAN to avoid depending too strongly on rstanarm internals:
+  skip_on_cran()
+  # Note: This test only tests that rstanarm handles special formulas correctly.
+  # Within projpred, arithmetic expressions on the left-hand side of a formula
+  # are handled by get_refmodel() and init_refmodel(); arithmetic expressions on
+  # the right-hand side of a formula are handled by the `div_minimizer`.
   tstsetups <- grep("^rstanarm.*\\.spclformul", names(fits), value = TRUE)
   # Compare the "special formula" fit with the corresponding "standard formula"
   # fit (which does not have the special formula elements):
   for (tstsetup in tstsetups) {
     mf_spclformul <- fits[[tstsetup]]$model
+    if (grepl("\\.glmm\\.", tstsetup)) {
+      expect_null(mf_spclformul, info = tstsetup)
+      mf_spclformul <- fits[[tstsetup]]$glmod$fr
+    } else {
+      expect_false(is.null(mf_spclformul), info = tstsetup)
+    }
     nms_spclformul <- setdiff(
       grep("y_|xco", names(mf_spclformul), value = TRUE),
       "xco.1"
@@ -56,6 +63,12 @@ test_that("rstanarm: special formulas work", {
     stopifnot(tstsetup_stdformul != tstsetup)
     if (tstsetup_stdformul %in% names(fits)) {
       mf_stdformul <- fits[[tstsetup_stdformul]]$model
+      if (grepl("\\.glmm\\.", tstsetup_stdformul)) {
+        expect_null(mf_stdformul, info = tstsetup_stdformul)
+        mf_stdformul <- fits[[tstsetup_stdformul]]$glmod$fr
+      } else {
+        expect_false(is.null(mf_stdformul), info = tstsetup_stdformul)
+      }
       nms_stdformul <- setdiff(
         grep("y_|xco", names(mf_stdformul), value = TRUE),
         "xco.1"
