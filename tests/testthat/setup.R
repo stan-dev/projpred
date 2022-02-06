@@ -401,12 +401,8 @@ for (obj_symb_chr in c(paste0("f_", fam_nms))) {
 }
 
 args_fit <- lapply(pkg_nms, function(pkg_nm) {
-  if (pkg_nm == "brms" && packageVersion("brms") <= "2.16.3") {
-    # For brms versions <= 2.16.3, there is a reproducibility issue in
-    # kfold.brmsfit(), so exclude model types for which K-fold CV could be run:
-    mod_nms <- intersect(mod_nms, "glm")
-  }
-
+  # Depending on the package used for fitting the reference model, `mod_nms`
+  # could be restricted here.
   mod_nms <- setNames(nm = mod_nms)
   lapply(mod_nms, function(mod_nm) {
     if (pkg_nm == "rstanarm") {
@@ -696,6 +692,7 @@ if (run_vs) {
 if (run_cvvs) {
   tstsetups_cvvs_ref <- setNames(nm = names(refmods))
   args_cvvs <- lapply(tstsetups_cvvs_ref, function(tstsetup_ref) {
+    pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     meth <- meth_tst["default_meth"]
@@ -706,6 +703,11 @@ if (run_cvvs) {
         # pwrssUpdate"). Therefore, use LOO CV:
         cvmeth <- cvmeth_tst["default_cvmeth"]
         # TODO (GAMMs): Fix this.
+      } else if (pkg_crr == "brms" && packageVersion("brms") <= "2.16.3") {
+        # For brms versions <= 2.16.3, there is a reproducibility issue when
+        # using K-fold CV in conjunction with a `brmsfit` reference model fit,
+        # so use LOO CV:
+        cvmeth <- cvmeth_tst["default_cvmeth"]
       } else {
         cvmeth <- cvmeth_tst["kfold"]
       }
