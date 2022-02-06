@@ -698,14 +698,7 @@ if (run_cvvs) {
   args_cvvs <- lapply(tstsetups_cvvs_ref, function(tstsetup_ref) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
-    if (mod_crr == "glm" && fam_crr == "gauss" &&
-        !grepl("\\.spclformul", tstsetup_ref)) {
-      # Here, we test the default `method` (which is L1 search here) as well
-      # as forward search:
-      meth <- meth_tst[c("default_meth", "forward")]
-    } else {
-      meth <- meth_tst["default_meth"]
-    }
+    meth <- meth_tst["default_meth"]
     if (grepl("\\.without_wobs", tstsetup_ref)) {
       if (mod_crr == "gamm" && fam_crr == "brnll") {
         # In this case, K-fold CV leads to an error in pwrssUpdate()
