@@ -715,7 +715,7 @@ if (run_cvvs) {
       }
     } else {
       meth <- meth_tst["default_meth"]
-      if (mod_crr != "glm" && grepl("\\.without_wobs", tstsetup_ref)) {
+      if (grepl("\\.without_wobs", tstsetup_ref)) {
         cvmeth <- cvmeth_tst["kfold"]
         if (mod_crr == "gamm" && fam_crr == "brnll") {
           # In this case, K-fold CV leads to an error in pwrssUpdate()
