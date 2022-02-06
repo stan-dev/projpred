@@ -633,7 +633,7 @@ test_that("`validate_search` works", {
   tstsetups <- grep("\\.default_cvmeth", names(cvvss), value = TRUE)
   if (!run_valsearch_always) {
     tstsetups <- grep("\\.glm\\.", tstsetups, value = TRUE)
-    tstsetups <- grep("\\.forward", tstsetups, value = TRUE, invert = TRUE)
+    tstsetups <- grep("\\.forward\\.", tstsetups, value = TRUE, invert = TRUE)
   }
   suggsize_cond <- setNames(rep(NA, length(tstsetups)), nm = tstsetups)
   for (tstsetup in tstsetups) {
@@ -676,6 +676,18 @@ test_that("`validate_search` works", {
     # Expected inequality for the exceptions (but note that the components from
     # `vsel_nms_cv_valsearch_opt` can be, but don't need to be differing):
     for (vsel_nm in setdiff(vsel_nms_cv_valsearch, vsel_nms_cv_valsearch_opt)) {
+      if (vsel_nm == "pct_solution_terms_cv" &&
+          all(cvvss[[tstsetup]][[vsel_nm]][
+            , colnames(cvvss[[tstsetup]][[vsel_nm]]) != "size", drop = FALSE
+          ] %in% c(0, 1))) {
+        # In this case, a comparison will most likely give the same
+        # `pct_solution_terms_cv` element for `validate_search = TRUE` and
+        # `validate_search = FALSE`. In fact, `pct_solution_terms_cv` could
+        # therefore be added to `vsel_nms_cv_valsearch_opt`, but most of the
+        # time, `pct_solution_terms_cv` will differ, so we don't include it in
+        # `vsel_nms_cv_valsearch_opt` and skip here:
+        next
+      }
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
