@@ -157,6 +157,7 @@ if (run_snaps) {
   test_that(paste(
     "as.matrix.projection() works for projections based on varsel() output"
   ), {
+    skip_if_not(run_vs)
     for (tstsetup in names(prjs_vs)) {
       if (args_prj_vs[[tstsetup]]$mod_nm == "gam") {
         # Skipping GAMs because of issue #150 and issue #151. Note that for
@@ -202,6 +203,7 @@ if (run_snaps) {
   test_that(paste(
     "as.matrix.projection() works for projections based on cv_varsel() output"
   ), {
+    skip_if_not(run_cvvs)
     for (tstsetup in names(prjs_cvvs)) {
       if (args_prj_cvvs[[tstsetup]]$mod_nm == "gam") {
         # Skipping GAMs because of issue #150 and issue #151. Note that for
