@@ -88,7 +88,7 @@ in the call to \code{\link[=project]{project()}}):
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions) and
 \code{lpd} (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
   \times N}{S_prj x N} matrices.
-\item \code{\link[=proj_predict]{proj_predict()}} returns a \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
+\item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
 matrix of predictions.
 }
 
