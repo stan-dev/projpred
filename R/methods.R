@@ -50,7 +50,8 @@
 #'   `lpd` (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
 #'   \times N}{S_prj x N} matrices.
 #'   * [proj_predict()] returns an \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
-#'   matrix of predictions.
+#'   matrix of predictions where \eqn{S_{\mbox{prj}}}{S_prj} denotes
+#'   `nresample_clusters` in case of clustered projection.
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for

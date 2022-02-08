@@ -89,7 +89,8 @@ in the call to \code{\link[=project]{project()}}):
 \code{lpd} (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
   \times N}{S_prj x N} matrices.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
-matrix of predictions.
+matrix of predictions where \eqn{S_{\mbox{prj}}}{S_prj} denotes
+\code{nresample_clusters} in case of clustered projection.
 }
 
 If the prediction is done for more than one submodel, the output from above
