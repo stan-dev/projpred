@@ -1,7 +1,6 @@
 context("div_minimizer")
 
-test_that("all div_minimizer()s work", {
-  divmin_fun <- "divmin"
+test_that("`divmin` works", {
   for (tstsetup in names(fits)) {
     args_fit_i <- args_fit[[tstsetup]]
     pkg_crr <- args_fit_i$pkg_nm
@@ -51,7 +50,7 @@ test_that("all div_minimizer()s work", {
     }
 
     divmin_res <- do.call(
-      divmin_fun,
+      divmin,
       args_fit_i[intersect(c("formula", "data", "family", "weights",
                              "projpred_var", "projpred_regul"),
                            names(args_fit_i))]
