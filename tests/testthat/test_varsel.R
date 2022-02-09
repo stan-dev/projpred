@@ -513,7 +513,10 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   # .get_refdist().
   skip_if_not(run_cvvs)
   # To save time:
-  tstsetups <- grep("\\.glm\\.gauss", names(cvvss), value = TRUE)
+  tstsetups <- union(
+    grep("\\.glm\\.gauss", names(cvvss), value = TRUE),
+    grep("^brms\\.(glmm|gamm)\\..*\\.kfold", names(cvvss), value = TRUE)
+  )
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     cvvs_orig <- cvvss[[tstsetup]]
