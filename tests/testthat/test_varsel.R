@@ -827,10 +827,6 @@ test_that(paste(
       nclusters_pred_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
-    # Note: Unfortunately, it is currently not possible to always ensure exactly
-    # the same seed when performing K-fold CV with `cvfits` or without `cvfits`.
-    # Therefore, the following checks for equality/inequality are quite
-    # restricted.
     # Expected equality for some components:
     # TODO: Currently, `check.environment = FALSE` is needed. The reason is
     # probably that in the divergence minimizers, the projpred-extended family
@@ -925,10 +921,6 @@ test_that(paste(
       nclusters_pred_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
-    # Note: Unfortunately, it is currently not possible to always ensure exactly
-    # the same seed when performing K-fold CV with `cvfits` or without `cvfits`.
-    # Therefore, the following checks for equality/inequality are quite
-    # restricted.
     # Expected equality for some components:
     # TODO: Currently, `check.environment = FALSE` is needed. The reason is
     # probably that in the divergence minimizers, the projpred-extended family
