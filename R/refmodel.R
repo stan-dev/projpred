@@ -516,7 +516,7 @@ get_refmodel.stanreg <- function(object, ...) {
     # posterior_linpred() excluded (`TRUE`) or included (`FALSE`) the offsets:
     cond_no_offs <- (
       fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
-        !is.null(attr(terms(fit$formula), "offset"))
+        !is.null(attr(terms(formula), "offset"))
     ) || (
       fit$stan_function %in% c("stan_lm", "stan_glm") &&
         !is.null(newdata) && length(fit$offset) > 0
