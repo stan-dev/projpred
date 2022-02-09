@@ -539,10 +539,8 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     .Random.seed_repr2 <- .Random.seed
     # Expected equality:
     expect_equal(cvvs_repr, cvvs_orig, info = tstsetup)
-    if (!identical(args_cvvs_i$cv_method, "kfold")) {
-      expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
-      expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
-    }
+    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
+    expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     # Expected inequality:
     expect_false(isTRUE(all.equal(cvvs_new, cvvs_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
