@@ -440,7 +440,7 @@ get_refmodel.stanreg <- function(object, ...) {
          "package maintainer.")
   }
   if (length(object$offset) > 0) {
-    if (is.null(attr(terms(formula(object)), "offset"))) {
+    if (is.null(attr(terms(formula(object), data = data), "offset"))) {
       # In this case, we would have to use argument `offset` of
       # posterior_linpred.stanreg() to allow for new offsets, requiring changes
       # in all ref_predfun() calls. Furthermore, there is rstanarm issue #541.
