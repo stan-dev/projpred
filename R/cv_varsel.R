@@ -3,9 +3,9 @@
 #' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
 #' and GAMMs. This variable selection consists of a *search* part and an
 #' *evaluation* part. The search part determines the solution path, i.e., the
-#' best submodel for each number of predictor terms (model size). The evaluation
-#' part determines the predictive performance of the submodels along the
-#' solution path. In contrast to [varsel()], [cv_varsel()] performs a
+#' best submodel for each submodel size (number of predictor terms). The
+#' evaluation part determines the predictive performance of the submodels along
+#' the solution path. In contrast to [varsel()], [cv_varsel()] performs a
 #' cross-validation (CV) by running the search part with the training data of
 #' each CV fold separately (an exception is explained in section "Note" below)
 #' and running the evaluation part on the corresponding test set of each CV
@@ -23,8 +23,10 @@
 #'   observations). Smaller values lead to faster computation but higher
 #'   uncertainty in the evaluation part. If `NULL`, all observations are used,
 #'   but for faster experimentation, one can set this to a smaller value.
-#' @param K Only relevant if `cv_method == "kfold"`. Number of folds in the
-#'   \eqn{K}-fold CV.
+#' @param K Only relevant if `cv_method == "kfold"` and if the reference model
+#'   was created with `cvfits` being `NULL` (which is the case for
+#'   [get_refmodel.stanreg()] and [brms::get_refmodel.brmsfit()]). Number of
+#'   folds in \eqn{K}-fold CV.
 #' @param validate_search Only relevant if `cv_method == "LOO"`. A single
 #'   logical value indicating whether to cross-validate also the search part,
 #'   i.e., whether to run the search separately for each CV fold (`TRUE`) or not
@@ -403,7 +405,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                   cores = 1,
                   r_eff = rep(1, ncol(log_lik_sub)))
       )
-      lw_sub <- suppressWarnings(loo::weights.importance_sampling(sub_psisloo))
+      lw_sub <- suppressWarnings(weights(sub_psisloo))
       # Take into account that clustered draws usually have different weights:
       lw_sub <- lw_sub + log(p_pred$weights)
       # This re-weighting requires a re-normalization (as.array() is applied to
@@ -522,33 +524,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
-  k_fold <- .get_kfold(refmodel, K, verbose, seed)
+  list_cv <- .get_kfold(refmodel, K, verbose, seed)
+  K <- length(list_cv)
 
-  K <- length(k_fold)
-  msgs <- paste0(method, " search for fold ", 1:K, "/", K, ".")
-
-  # Create a list of K elements, each containing `refmodel`, `d_test`, `p_pred`,
-  # etc. for the corresponding fold:
-  make_list_cv <- function(fold, msg) {
+  # Extend `list_cv` to also contain `y`, `weights`, and `offset`:
+  extend_list_cv <- function(fold) {
     d_test <- list(
       y = refmodel$y[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
       offset = refmodel$offset[fold$omitted],
       omitted = fold$omitted
     )
-    p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters, seed = seed)
-    p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
-                           seed = seed)
-    eta_test <- fold$refmodel$ref_predfun(
-      fold$refmodel$fit, newdata = refmodel$fetch_data(obs = fold$omitted)
-    ) + d_test$offset
-    mu_test <- fold$refmodel$family$linkinv(eta_test)
-    return(nlist(refmodel = fold$refmodel, p_sel, p_pred, mu_test, d_test))
+    return(nlist(refmodel = fold$refmodel, d_test))
   }
-  list_cv <- mapply(make_list_cv, k_fold, msgs, SIMPLIFY = FALSE)
-  # Free up some memory:
-  rm(k_fold)
-  gc(verbose = FALSE, full = FALSE)
+  list_cv <- mapply(extend_list_cv, list_cv, SIMPLIFY = FALSE)
 
   # Perform the search for each fold:
   if (verbose) {
@@ -557,8 +546,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
+    p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters, seed = seed)
     out <- select(
-      method = method, p_sel = fold$p_sel, refmodel = fold$refmodel,
+      method = method, p_sel = p_sel, refmodel = fold$refmodel,
       nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
       search_terms = search_terms
     )
@@ -582,10 +572,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   get_submodels_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
+    p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
+                           seed = seed)
     submodels <- .get_submodels(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
-      p_ref = fold$p_pred, refmodel = fold$refmodel, regul = opt$regul,
+      p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
       refit_prj = refit_prj
     )
     if (verbose && refit_prj) {
@@ -617,9 +609,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Perform the evaluation of the reference model for each fold:
   ref <- rbind2list(lapply(list_cv, function(fold) {
+    eta_test <- fold$refmodel$ref_predfun(
+      fold$refmodel$fit,
+      newdata = refmodel$fetch_data(obs = fold$d_test$omitted)
+    ) + fold$d_test$offset
+    mu_test <- fold$refmodel$family$linkinv(eta_test)
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
-      wsample = fold$refmodel$wsample, mu = fold$mu_test,
+      wsample = fold$refmodel$wsample, mu = mu_test,
       dis = fold$refmodel$dis
     )
   }))
@@ -638,11 +635,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                d_test = c(d_cv, type = "kfold")))
 }
 
-## Fetch the k_fold list or compute it now if not already computed. This
-## function will return a list of length K, where each element is a list
-## with fields 'refmodel' (object of type refmodel computed by init_refmodel)
-## and index list 'test_points' that denotes which of the data points were
-## left out for the corresponding fold.
+# Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
+# the K reference model fits if already computed (`cvfits` case). This function
+# will return a list of length K, where each element is a list with elements
+# `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
+# those observations which were left out for the corresponding fold).
 .get_kfold <- function(refmodel, K, verbose, seed, approximate = FALSE) {
   if (is.null(refmodel$cvfits)) {
     if (!is.null(refmodel$cvfun)) {
@@ -677,7 +674,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       } else {
         stop("For a reference model which is not of class `datafit`, either ",
              "`cvfits` or `cvfun` needs to be provided for K-fold CV (see ",
-             "`?init_refmodel`.")
+             "`?init_refmodel`).")
       }
     }
   } else {
@@ -690,9 +687,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       cvfit
     })
   }
-  return(lapply(cvfits,
-                .init_kfold_refmodel,
-                refmodel = refmodel))
+  return(lapply(cvfits, .init_kfold_refmodel, refmodel = refmodel))
 }
 
 .init_kfold_refmodel <- function(cvfit, refmodel) {

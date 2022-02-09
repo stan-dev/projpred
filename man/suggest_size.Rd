@@ -3,7 +3,7 @@
 \name{suggest_size}
 \alias{suggest_size}
 \alias{suggest_size.vsel}
-\title{Suggest model size}
+\title{Suggest submodel size}
 \usage{
 suggest_size(object, ...)
 
@@ -41,8 +41,8 @@ whether to throw warnings if automatic suggestion fails. Usually there is
 no reason to set this to \code{FALSE}.}
 }
 \description{
-This function can suggest an appropriate model size based on a decision rule
-described in section "Details" below. Note that this decision is quite
+This function can suggest an appropriate submodel size based on a decision
+rule described in section "Details" below. Note that this decision is quite
 heuristic and should be interpreted with caution. It is recommended to
 examine the results via \code{\link[=plot.vsel]{plot.vsel()}} and/or \code{\link[=summary.vsel]{summary.vsel()}} and to make the
 final decision based on what is most appropriate for the problem at hand.

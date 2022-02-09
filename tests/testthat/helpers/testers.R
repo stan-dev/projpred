@@ -200,6 +200,8 @@ refmodel_tester <- function(
     # mu_expected_ch <- unname(t(posterior_linpred(refmod$fit)))
     ###
     if (pkg_nm == "rstanarm") {
+      # In this case, the linear predictors are calculated manually because of
+      # the offset issues in rstanarm.
       drws <- as.matrix(refmod$fit)
       drws_icpt <- drws[, "(Intercept)"]
       drws_beta_cont <- drws[
@@ -251,10 +253,6 @@ refmodel_tester <- function(
       }
       mu_expected <- unname(mu_expected)
     } else if (pkg_nm == "brms") {
-      # TODO (brms): Do this manually (but posterior_linpred.brmsfit() should
-      # already be tested extensively in brms, so perhaps we don't need a manual
-      # calculation here (the reason for the manual calculation for "stanreg"s
-      # were the offset issues in rstanarm)):
       mu_expected <- posterior_linpred(refmod$fit) - matrix(
         offs_expected,
         nrow = nrefdraws_expected,
@@ -347,7 +345,10 @@ refmodel_tester <- function(
         expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
                      info = info_str)
       } else {
-        # TODO: The check in this case is not perfect yet.
+        # TODO: The check in this case is not optimal yet because it subsets
+        # `refmod$fetch_data()` to only those columns which also exist in the
+        # rebuilt dataset. It would be more desirable to check *all* columns of
+        # `refmod$fetch_data()`.
         refdat_ch <- model.frame(formul_expected, data = data_expected)
         if (!all(wobs_expected == 1)) {
           refdat_ch <- cbind(refdat_ch, wobs_col = data_expected$wobs_col)
@@ -1316,7 +1317,7 @@ vsel_tester <- function(
   }
 
   # nterms_max
-  expect_identical(vs$nterms_max, solterms_len_expected + 1, info = info_str)
+  expect_equal(vs$nterms_max, solterms_len_expected + 1, info = info_str)
 
   # nterms_all
   expect_identical(vs$nterms_all, count_terms_in_formula(vs$refmodel$formula),

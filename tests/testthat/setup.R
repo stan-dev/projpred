@@ -20,12 +20,6 @@ run_valsearch_always <- FALSE
 run_cvfits_all <- TRUE
 # Run tests for "brmsfit"s?:
 run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
-if (run_brms && packageVersion("brms") <= package_version("2.16.1")) {
-  warning("Deactivating the brms tests because brms version <= 2.16.1 calls ",
-          "init_refmodel() with the now omitted argument `folds`. Install a ",
-          "newer brms version to run the brms tests.")
-  run_brms <- FALSE
-}
 # Run snapshot tests?:
 # Notes:
 #   * For general information about snapshot tests, see, e.g.,
@@ -327,7 +321,7 @@ if (run_brms) {
   pkg_nms <- c(pkg_nms, "brms")
   # For storing "brmsfit"s locally:
   file_pth <- testthat::test_path("bfits")
-  if(!dir.exists(file_pth)) dir.create(file_pth)
+  if (!dir.exists(file_pth)) dir.create(file_pth)
 }
 pkg_nms <- setNames(nm = pkg_nms)
 

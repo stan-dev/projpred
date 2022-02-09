@@ -61,7 +61,7 @@ N <- nrow(dat_gauss)
 tau0 <- p0 / (D - p0) * 1 / sqrt(N)
 ```
 
-We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of **rstan**'s parallelization, which means to run each chain on a separate CPU core.^[More precisely, the number of chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
+We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of **rstan**'s parallelization, which means to run each chain on a separate CPU core.^[More generally, the number of chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
 ```{r, cache=TRUE, cache.lazy=FALSE}
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
@@ -91,7 +91,7 @@ Now, **projpred** comes into play.
 library(projpred)
 ```
 
-In **projpred**, the projective variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each model size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path. Depending on the search method, these two parts may also be entangled with each other.
+In **projpred**, the projective variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each submodel size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.
 
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is explained in the `?cv_varsel` help) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
 
@@ -104,35 +104,36 @@ There are two functions for performing the variable selection: `varsel()` and `c
 <!-- } -->
 <!-- ``` -->
 
-Here, we use only some of the available arguments; see the documentation of `cv_varsel()` for the full list of arguments. By modifying argument `cv_method`, we use a K-fold CV instead of a leave-one-out (LOO) CV. We do this here only to make this vignette build faster. When the computation time is not an issue, we recommend using LOO-CV as it is likely to be more accurate. By modifying argument `nterms_max`, we impose a limit on the model size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`12`) is based on such a first run (which is not shown here, though).
+Here, we use only some of the available arguments; see the documentation of `cv_varsel()` for the full list of arguments. By modifying argument `cv_method`, we use a K-fold CV instead of a leave-one-out (LOO) CV. We do this here only to make this vignette build faster. When the computation time is not an issue, we recommend using LOO-CV as it is likely to be more accurate. Similarly, we set `nclusters_pred` to a low value of `20` only to speed up the building of the vignette. By modifying argument `nterms_max`, we impose a limit on the submodel size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`9`) is based on such a first run (which is not shown here, though).
 ```{r, results='hide', cache=TRUE, cache.lazy=FALSE}
 cvvs <- cv_varsel(
   refm_fit,
-  ### Only for the sake of speed (in general, LOO CV is more accurate):
+  ### Only for the sake of speed (not recommended in general):
   cv_method = "kfold",
+  nclusters_pred = 20,
   ###
-  nterms_max = 12,
+  nterms_max = 9,
   seed = 411183
 )
 ```
 
-The first step after running the variable selection should be the decision for a final model size. This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the model size decision dependent on the solution path). To decide for a model size, there are several performance statistics we can plot as a function of the model size. Here, we use the expected log (pointwise) predictive density (for a new dataset) (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation---or "test"---set) and the root mean squared error (RMSE). By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (with regard to the model size decision), we directly plot with `deltas = TRUE` here:
+The first step after running the variable selection should be the decision for a final submodel size. This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the submodel size decision dependent on the solution path). To decide for a submodel size, there are several performance statistics we can plot as a function of the submodel size. Here, we use the expected log (pointwise) predictive density (for a new dataset) (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation---or "test"---set) and the root mean squared error (RMSE). By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (with regard to the submodel size decision), we directly plot with `deltas = TRUE` here:
 ```{r, fig.asp=1.5 * 0.618}
 plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
 ```
 
-Based on that plot, we would decide for a model size of 8 because that's the point where the performance measures level off and are close enough to the reference model's performance.
+Based on that plot, we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance.
 ```{r}
-modsize_decided <- 8
+modsize_decided <- 6
 ```
 
-Note that **projpred** offers the `suggest_size()` function which may help in the decision for a model size, but this is a rather heuristic method and needs to be interpreted with caution (see the `?suggest_size` help).
+Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see the `?suggest_size` help).
 ```{r}
 suggest_size(cvvs)
 ```
-Here, we would get the same final model size (`8`) as by our manual decision.
+Here, we would get the same final submodel size (`6`) as by our manual decision.
 
-Only now, after we have made a decision for the model size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply `print()` the resulting object:
+Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply `print()` the resulting object:
 ```{r}
 cvvs
 ### Alternative modifying the number of printed decimal places:
@@ -144,7 +145,7 @@ The solution path can be seen in the `print()` output (column `solution_terms`),
 ( soltrms <- solution_terms(cvvs) )
 ```
 
-Combining the decided model size of 8 with the solution path leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:
+Combining the decided submodel size of 6 with the solution path leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:
 ```{r}
 ( soltrms_final <- head(soltrms, modsize_decided) )
 ```
@@ -182,10 +183,12 @@ The **posterior** package provides a general way to deal with posterior distribu
 ```{r}
 library(posterior)
 prj_drws <- as_draws_matrix(prj_mat)
-summarize_draws(
+# In the following call, as.data.frame() is used only because pkgdown
+# versions > 1.6.1 don't print the tibble correctly.
+as.data.frame(summarize_draws(
   prj_drws,
   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-)
+))
 ```
 
 A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function.
@@ -298,7 +301,7 @@ refm_fit <- stan_gamm4(
 
 ## Troubleshooting
 
-Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing model size, the performance measures of the projections do not approach that of the reference model. There are different reasons that can explain this behavior (the following list might not be exhaustive, though):
+Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing submodel size, the performance measures of the projections do not approach that of the reference model. There are different reasons that can explain this behavior (the following list might not be exhaustive, though):
 
 1. The reference model's posterior may be so wide that the default `ndraws_pred` could be too small. Usually, this comes in combination with a difference in predictive performance which is comparatively small. Increasing `ndraws_pred` should help, but it also increases the computational cost. Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
 1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues (Catalina et al., 2021). In this case, the latent-space approach by Catalina et al. (2021) might help.

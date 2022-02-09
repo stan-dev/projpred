@@ -36,8 +36,8 @@
 #' @param div_minimizer A function for minimizing the Kullback-Leibler (KL)
 #'   divergence from a submodel to the reference model (i.e., for performing the
 #'   projection of the reference model onto a submodel). The output of
-#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fit`. See also
-#'   section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
+#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fits`. See
+#'   also section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
 #'   below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
@@ -46,16 +46,18 @@
 #' @param family A [`family`] object representing the observational model (i.e.,
 #'   the distributional family for the response).
 #' @param cvfits For \eqn{K}-fold CV only. A `list` with one sub-`list` called
-#'   `fits` containing the \eqn{K} fitted model objects from which reference
-#'   model structures are created. The `cvfits` `list` (i.e., the super-`list`)
-#'   needs to have attributes `K` and `folds`: `K` has to be a single integer
-#'   giving the number of folds and `folds` has to be an integer vector giving
-#'   the fold indices (one fold index per observation). Note that `cvfits` takes
+#'   `fits` containing the \eqn{K} model fits from which reference model
+#'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
+#'   to have attributes `K` and `folds`: `K` has to be a single integer giving
+#'   the number of folds and `folds` has to be an integer vector giving the fold
+#'   indices (one fold index per observation). Only one of `cvfits` and `cvfun`
+#'   needs to be provided (for \eqn{K}-fold CV). Note that `cvfits` takes
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
 #' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
 #'   vector, fits the reference model separately for each fold and returns the
-#'   \eqn{K} fitted model objects as a `list`. If `object` is `NULL`, `cvfun`
-#'   may be `NULL` for using an internal default. Note that `cvfits` takes
+#'   \eqn{K} model fits as a `list`. If `object` is `NULL`, `cvfun` may be
+#'   `NULL` for using an internal default. Only one of `cvfits` and `cvfun`
+#'   needs to be provided (for \eqn{K}-fold CV). Note that `cvfits` takes
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
 #' @param dis A vector of posterior draws for the dispersion parameter (if
 #'   existing). May be `NULL` if the model has no dispersion parameter or if the
@@ -207,8 +209,9 @@
 #'       return(projpred:::do_call(projpred:::.extract_model_data, args))
 #'     },
 #'     cvfun = function(folds) {
-#'       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
-#'                       folds = folds)$fits[, "fit"]
+#'       kfold(
+#'         fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+#'       )$fits[, "fit"]
 #'     },
 #'     dis = as.matrix(fit)[, "sigma"]
 #'   )
@@ -224,7 +227,7 @@ NULL
 #' [get_refmodel()] or [init_refmodel()]). It offers three types of output which
 #' are all based on the reference model and new (or old) observations: Either
 #' the linear predictor on link scale, the linear predictor transformed to
-#' response scale, or the log-predictive density.
+#' response scale, or the log predictive density.
 #'
 #' @template args-newdata
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
@@ -534,8 +537,9 @@ get_refmodel.stanreg <- function(object, ...) {
     # parallelization (i.e., across chains, not across CV folds) with
     # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
     # suitable for other systems:
-    rstanarm::kfold(object, K = max(folds), save_fits = TRUE,
-                    folds = folds, cores = 1)$fits[, "fit"]
+    kfold(
+      object, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+    )$fits[, "fit"]
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -556,7 +560,6 @@ get_refmodel.stanreg <- function(object, ...) {
 }
 
 #' @rdname refmodel-init-get
-#' @importFrom rstantools posterior_linpred
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
@@ -719,11 +722,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (proper_model) {
         stop("Please supply argument `dis`.")
       } else {
-        if (family$family == "Gamma") {
-          warning("Using all-zeros for `dis`, but not sure whether this is ",
-                  "correct.")
-        }
-        dis <- rep(0, ndraws)
+        dis <- 0
       }
     }
   } else {
@@ -745,8 +744,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       cvfun <- function(folds) {
         lapply(seq_len(max(folds)), function(k) list())
       }
-    } else if (is.null(cvfits)) {
-      stop("Please provide either argument `cvfun` or argument `cvfits`.")
     }
   }
 

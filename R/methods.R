@@ -248,8 +248,10 @@ proj_predict <- function(object, newdata = NULL,
                          filter_nterms = NULL,
                          nresample_clusters = 1000, .seed = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- .Random.seed
-  on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (exists(".Random.seed")) {
+    rng_state_old <- .Random.seed
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
   set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
@@ -403,7 +405,7 @@ plot.vsel <- function(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
     ) +
-    labs(x = "Number of terms in the submodel", y = ylab) +
+    labs(x = "Submodel size (number of predictor terms)", y = ylab) +
     theme(legend.position = "none") +
     facet_grid(statistic ~ ., scales = "free_y")
   return(pp)
@@ -656,10 +658,10 @@ print.vsel <- function(x, ...) {
   return(invisible(stats))
 }
 
-#' Suggest model size
+#' Suggest submodel size
 #'
-#' This function can suggest an appropriate model size based on a decision rule
-#' described in section "Details" below. Note that this decision is quite
+#' This function can suggest an appropriate submodel size based on a decision
+#' rule described in section "Details" below. Note that this decision is quite
 #' heuristic and should be interpreted with caution. It is recommended to
 #' examine the results via [plot.vsel()] and/or [summary.vsel()] and to make the
 #' final decision based on what is most appropriate for the problem at hand.

@@ -76,7 +76,8 @@ evaluation part.}
 continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
 terms in the reference model (or in \code{search_terms}, if supplied). Note that
 \code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
-intercept-only model.}
+intercept-only model. (Correspondingly, \code{D} above does not count the
+intercept.)}
 
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
@@ -124,9 +125,9 @@ or type \code{?projpred}).
 Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
 and GAMMs. This variable selection consists of a \emph{search} part and an
 \emph{evaluation} part. The search part determines the solution path, i.e., the
-best submodel for each number of predictor terms (model size). The evaluation
-part determines the predictive performance of the submodels along the
-solution path.
+best submodel for each submodel size (number of predictor terms). The
+evaluation part determines the predictive performance of the submodels along
+the solution path.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
