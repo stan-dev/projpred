@@ -907,8 +907,16 @@ test_that(paste(
       list(object = refmod_crr),
       excl_nonargs(args_cvvs_i, nms_excl_add = "K")
     ))
+    # Test the reproducibility of ref_predfun() when applied to new observations
+    # (should be ensured by get_refmodel.brmsfit()'s internal `refprd_seed`):
+    runif(1)
+    cvvs_cvfits_repr <- do.call(cv_varsel, c(
+      list(object = refmod_crr),
+      excl_nonargs(args_cvvs_i, nms_excl_add = "K")
+    ))
 
     # Checks:
+    expect_identical(cvvs_cvfits, cvvs_cvfits_repr, info = tstsetup)
     vsel_tester(
       cvvs_cvfits,
       with_cv = TRUE,
