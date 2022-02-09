@@ -515,6 +515,9 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   # To save time:
   tstsetups <- union(
     grep("\\.glm\\.gauss", names(cvvss), value = TRUE),
+    # Important for testing get_refmodel.brmsfit()'s internal `kfold_seed` (and
+    # also `refprd_seed` if we are lucky and get a fold which separates out at
+    # least one group):
     grep("^brms\\.(glmm|gamm)\\..*\\.kfold", names(cvvss), value = TRUE)
   )
   for (tstsetup in tstsetups) {
