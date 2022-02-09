@@ -292,9 +292,6 @@ test_that("non-clustered projection does not require a seed", {
   # don't expect it to be necessary.
   tstsetups <- grep("\\.noclust$|\\.default_ndr_ncl$", names(prjs),
                     value = TRUE)
-  # Be completely random here (should not be necessary, though, when advancing
-  # `.Random.seed[2]` as done further below):
-  set.seed(NULL)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]

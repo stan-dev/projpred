@@ -109,6 +109,10 @@ if (run_prll) {
     }
   }
 }
+# Run all test scripts (following this setup script) in a completely random RNG
+# state? (The tests should still pass then, because in all situations where RNG
+# is used, a specific seed is supposed to be set.):
+run_randRNG <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run tests for additive models (GAMs and GAMMs)?:
 run_additive <- TRUE
 
@@ -1100,3 +1104,9 @@ ndraws_default <- 20L # Adapt this if the default is changed.
 ndraws_pred_default <- 400L # Adapt this if the default is changed.
 nresample_clusters_default <- 1000L # Adapt this if the default is changed.
 regul_default <- 1e-4 # Adapt this if the default is changed.
+
+# Seed --------------------------------------------------------------------
+
+if (run_randRNG) {
+  set.seed(NULL)
+}

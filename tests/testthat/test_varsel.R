@@ -769,8 +769,12 @@ test_that(paste(
       # belonging to the same level of a variable with group-level effects are
       # in the same fold, so prediction is performed for new levels (see, e.g.,
       # brms's GitHub issue #1286):
+      if (exists(".Random.seed", envir = .GlobalEnv)) {
+        rng_old <- get(".Random.seed", envir = .GlobalEnv)
+      }
       set.seed(seed2_tst) # Makes the construction of the CV folds reproducible.
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
+      if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else {
       folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
     }
@@ -880,8 +884,12 @@ test_that(paste(
       # belonging to the same level of a variable with group-level effects are
       # in the same fold, so prediction is performed for new levels (see, e.g.,
       # brms's GitHub issue #1286):
+      if (exists(".Random.seed", envir = .GlobalEnv)) {
+        rng_old <- get(".Random.seed", envir = .GlobalEnv)
+      }
       set.seed(seed2_tst) # Makes the construction of the CV folds reproducible.
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
+      if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else {
       folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
     }

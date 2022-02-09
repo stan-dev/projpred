@@ -594,6 +594,9 @@ test_that(paste(
   "L1-projection with data reference gives the same results as",
   "Lasso from glmnet."
 ), {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
   suppressWarnings(RNGversion("3.5.0"))
   set.seed(1235)
   n <- 100
@@ -747,4 +750,5 @@ test_that(paste(
     }
   }
   RNGversion(paste(R.Version()$major, R.Version()$minor, sep = "."))
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
