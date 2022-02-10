@@ -570,7 +570,7 @@ test_that(paste(
 
 test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
-  nloo_tst <- nobsv - 1L
+  nloo_tst <- nobsv %/% 5L
   tstsetups <- grep("\\.glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
                     value = TRUE)
   for (tstsetup in tstsetups) {
