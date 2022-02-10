@@ -246,11 +246,6 @@ test_that(paste(
     } else {
       ncl_crr <- 1L
     }
-    if (!grepl("\\.spclformul", tstsetup)) {
-      tol_alpha <- 3e-1
-    } else {
-      tol_alpha <- 5e-1
-    }
     ssq_regul_sel_alpha <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_sel_beta <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_prd <- array(dim = c(length(regul_tst), m_max))
@@ -309,16 +304,6 @@ test_that(paste(
     # For the intercept-only model:
     for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
       expect_length(unique(ssq_regul_sel_alpha[, 1, !!nn]), 1)
-    }
-    # All other (i.e., not intercept-only) models:
-    for (j in seq_len(dim(ssq_regul_sel_alpha)[1])[-1]) {
-      for (m in seq_len(dim(ssq_regul_sel_alpha)[2])[-1]) {
-        for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
-          expect_equal(ssq_regul_sel_alpha[!!j, !!m, !!nn],
-                       ssq_regul_sel_alpha[j - 1, m, nn],
-                       tolerance = tol_alpha)
-        }
-      }
     }
     # For the intercept-only model:
     expect_true(all(is.na(ssq_regul_sel_beta[, 1, ])), info = tstsetup)
