@@ -815,12 +815,17 @@ args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
     } else if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
                fam_crr == "gauss" && solterms_nm_i == "empty") {
       ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust", "clust1")]
-    } else if ((pkg_crr == "rstanarm" && mod_crr == "glmm" &&
-                fam_crr == "brnll" && solterms_nm_i == "solterms_xz") ||
-               (pkg_crr == "rstanarm" && mod_crr == "gam" &&
-                fam_crr == "binom" && solterms_nm_i == "solterms_xs") ||
-               (pkg_crr == "rstanarm" && mod_crr == "gamm" &&
-                fam_crr == "brnll" && solterms_nm_i == "solterms_xsz")) {
+    } else if (
+      (run_more && (
+        (pkg_crr == "rstanarm" && mod_crr == "glmm" &&
+         fam_crr == "brnll" && solterms_nm_i == "solterms_xz") ||
+        (pkg_crr == "rstanarm" && mod_crr == "gam" &&
+         fam_crr == "binom" && solterms_nm_i == "solterms_xs") ||
+        (pkg_crr == "rstanarm" && mod_crr == "gamm" &&
+         fam_crr == "brnll" && solterms_nm_i == "solterms_xsz")
+      )) ||
+      (!run_more && mod_crr %in% c("glmm", "gam", "gamm"))
+    ) {
       ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust")]
     } else {
       ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust")]
