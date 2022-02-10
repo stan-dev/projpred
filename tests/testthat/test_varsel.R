@@ -241,11 +241,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
-    if (identical(args_vs_i$method, "forward")) {
-      ncl_crr <- args_vs_i$nclusters
-    } else {
-      ncl_crr <- 1L
-    }
+    ncl_crr <- args_vs_i$nclusters
     ssq_regul_sel_alpha <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_sel_beta <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_prd <- array(dim = c(length(regul_tst), m_max))
