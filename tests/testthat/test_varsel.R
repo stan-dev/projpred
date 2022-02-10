@@ -727,7 +727,7 @@ test_that(paste(
   "models"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("^rstanarm.*\\.kfold", names(cvvss), value = TRUE)
+  tstsetups <- grep("^rstanarm\\..*\\.kfold", names(cvvss), value = TRUE)
   if (!run_cvfits_all) {
     tstsetups_tmp <- head(grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
     if (length(tstsetups_tmp) == 0) {
@@ -842,7 +842,7 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   skip_if_not(packageVersion("brms") >= "2.16.4")
-  tstsetups <- grep("^brms.*\\.kfold", names(cvvss), value = TRUE)
+  tstsetups <- grep("^brms\\..*\\.kfold", names(cvvss), value = TRUE)
   if (!run_cvfits_all) {
     tstsetups_tmp <- head(grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
     if (length(tstsetups_tmp) == 0) {
