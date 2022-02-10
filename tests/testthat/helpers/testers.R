@@ -156,7 +156,7 @@ refmodel_tester <- function(
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "mu", "dis", "y", "loglik",
     "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
-    "cvfun", "cvfits", "extract_model_data", "ref_predfun"
+    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -404,6 +404,9 @@ refmodel_tester <- function(
 
   # ref_predfun
   expect_type(refmod$ref_predfun, "closure")
+
+  # cvrefbuilder
+  expect_type(refmod$cvrefbuilder, "closure")
 
   return(invisible(TRUE))
 }

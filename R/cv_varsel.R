@@ -653,12 +653,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       nobs <- NROW(refmodel$y)
       folds <- cvfolds(nobs, K = K, seed = seed)
       cvfits <- refmodel$cvfun(folds)
-      cvfits <- lapply(seq_along(cvfits), function(k) {
-        # add the 'omitted' indices for the cvfits
-        cvfit <- cvfits[[k]]
-        cvfit$omitted <- which(folds == k)
-        cvfit
-      })
     } else {
       ## genuine probabilistic model but no K-fold fits nor cvfun provided,
       ## this only works for approximate kfold computation
@@ -666,10 +660,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         nobs <- NROW(refmodel$y)
         folds <- cvfolds(nobs, K = K, seed = seed)
         cvfits <- lapply(seq_len(K), function(k) {
-          ## add the 'omitted' indices for the cvfits
-          cvfit <- refmodel$fit
-          cvfit$omitted <- which(folds == k)
-          cvfit
+          refmodel$fit
         })
       } else {
         stop("For a reference model which is not of class `datafit`, either ",
@@ -681,32 +672,22 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     cvfits <- refmodel$cvfits
     K <- attr(cvfits, "K")
     folds <- attr(cvfits, "folds")
-    cvfits <- lapply(seq_len(K), function(k) {
-      cvfit <- cvfits$fits[[k]]
-      cvfit$omitted <- which(folds == k)
-      cvfit
-    })
+    cvfits <- cvfits$fits
   }
+  cvfits <- lapply(seq_len(K), function(k) {
+    cvfit <- cvfits[[k]]
+    # Add the omitted observation indices for this fold:
+    cvfit$omitted <- which(folds == k)
+    # Add the fold index:
+    cvfit$projpred_k <- k
+    return(cvfit)
+  })
   return(lapply(cvfits, .init_kfold_refmodel, refmodel = refmodel))
 }
 
 .init_kfold_refmodel <- function(cvfit, refmodel) {
-  if (!inherits(refmodel, "datafit")) {
-    k_refmodel <- get_refmodel(cvfit)
-  } else {
-    k_refmodel <- init_refmodel(
-      object = NULL,
-      data = refmodel$fetch_data(
-        obs = setdiff(seq_along(refmodel$y), cvfit$omitted)
-      ),
-      formula = refmodel$formula,
-      family = refmodel$family,
-      div_minimizer = refmodel$div_minimizer,
-      proj_predfun = refmodel$proj_predfun,
-      extract_model_data = refmodel$extract_model_data
-    )
-  }
-  return(nlist(refmodel = k_refmodel, omitted = cvfit$omitted))
+  return(list(refmodel = refmodel$cvrefbuilder(cvfit),
+              omitted = cvfit$omitted))
 }
 
 # .loo_subsample <- function(n, nloo, pareto_k, seed) {
@@ -714,8 +695,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #   ## belong to the semi random subsample of validation points)
 #
 #   ## set random seed but ensure the old RNG state is restored on exit
-#   if (exists(".Random.seed")) {
-#     rng_state_old <- .Random.seed
+#   if (exists(".Random.seed", envir = .GlobalEnv)) {
+#     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
 #     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
 #   }
 #   set.seed(seed)
@@ -760,8 +741,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## Learning.
 
   ## set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)

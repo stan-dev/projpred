@@ -58,8 +58,8 @@ auc <- function(x) {
 # `boostrap(x, mean)`.
 bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
   # set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)
@@ -202,8 +202,8 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
                          thinning = TRUE) {
   # set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)
