@@ -191,5 +191,20 @@ test_that(paste(
                  info = tstsetup)
     expect_false(isTRUE(all.equal(predref_ynew_resp, predref_link)),
                  info = tstsetup)
+
+    # Snapshots:
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(predref_resp))
+        print(rlang::hash(predref_link))
+        print(rlang::hash(predref_ynew_resp))
+        print(rlang::hash(predref_ynew_link))
+      })
+      options(width = width_orig$width)
+      if (testthat_ed_max2) local_edition(2)
+    }
   }
 })
