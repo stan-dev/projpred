@@ -826,6 +826,8 @@ args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
       )) ||
       (!run_more && mod_crr %in% c("glmm", "gam", "gamm"))
     ) {
+      # The `noclust` setting is important for the test "non-clustered
+      # projection does not require a seed" in `test_project.R`.
       ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust")]
     } else {
       ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust")]
