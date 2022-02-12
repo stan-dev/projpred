@@ -852,8 +852,6 @@ prjs <- lapply(args_prj, function(args_prj_i) {
 
 ### From "vsel" -----------------------------------------------------------
 
-#### varsel() -------------------------------------------------------------
-
 # A helper function to create the argument list for project() for a given
 # character vector of test setups (referring to either `vss` or `cvvss`):
 cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
@@ -879,6 +877,8 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
     })
   })
 }
+
+#### varsel() -------------------------------------------------------------
 
 if (run_vs) {
   tstsetups_prj_vs <- setNames(
@@ -976,8 +976,6 @@ if (run_cvvs) {
 
 ## summary.vsel() ---------------------------------------------------------
 
-### varsel() --------------------------------------------------------------
-
 cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
   vsel_type <- deparse(substitute(tstsetups_smmry_vsel))
   args_obj <- switch(vsel_type,
@@ -1014,6 +1012,8 @@ cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
     })
   })
 }
+
+### varsel() --------------------------------------------------------------
 
 if (run_vs) {
   tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
