@@ -435,7 +435,11 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
     if (mod_nm != "glm") {
       if (pkg_nm == "brms") {
         # For speed reasons, do not test all families:
-        fam_nms <- intersect(fam_nms, "binom")
+        if (mod_nm == "glmm") {
+          fam_nms <- intersect(fam_nms, "brnll")
+        } else {
+          fam_nms <- intersect(fam_nms, "binom")
+        }
       }
       # Because of issue #207:
       fam_nms <- setdiff(fam_nms, "poiss")
@@ -583,7 +587,7 @@ if (!run_more) {
     "rstanarm.gam.gauss.spclformul.with_wobs.without_offs",
     "rstanarm.gamm.brnll.stdformul.without_wobs.without_offs",
     "brms.glm.poiss.stdformul.with_wobs.with_offs",
-    "brms.glmm.binom.stdformul.without_wobs.with_offs",
+    "brms.glmm.brnll.stdformul.without_wobs.without_offs",
     # "brms.gam.binom.stdformul.without_wobs.with_offs",
     "brms.gamm.binom.stdformul.without_wobs.with_offs"
   )
