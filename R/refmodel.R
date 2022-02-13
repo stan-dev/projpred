@@ -219,7 +219,7 @@
 #'       }
 #'
 #'       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
-#'       return(projpred:::do_call(projpred:::.extract_model_data, args))
+#'       return(projpred::do_call(projpred:::.extract_model_data, args))
 #'     },
 #'     cvfun = function(folds) {
 #'       kfold(
