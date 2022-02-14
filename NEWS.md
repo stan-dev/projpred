@@ -152,7 +152,7 @@
 
 We have fully rewritten the internals in several ways. Most importantly, we now leverage maximum likelihood estimation to third parties depending on the reference model's family. This allows a lot of flexibility and extensibility for various models. Functionality wise, the major updates since the last release are:
 
-* Added support for GLMMs and GAMMs via ```lme4``` and ```gamm4```.
+* Added support for GLMMs and GAMMs via **lme4** and **gamm4**.
 * Formula syntax support internally that allows for easier building upon projections.
 * Thanks to the above point, we save some computation by only considering sensible projections during forward search instead of fitting every possible submodel.
 * We have added a new argument ```search_terms``` that allows the user to specify custom unit building blocks of the projections. New vignette coming up.
@@ -178,11 +178,11 @@ This version contains only a few patches, no new features to the user.
 
 ## New features 
 
-* Added support for ```brms``` models. 
+* Added support for **brms** models. 
 
 ## Bug fixes
 
-* The program crashed with ```rstanarm``` models fitted with syntax like ```stan_glm(log(y) ~ log(x), ...)```, that is, it did not allow transformation for ```y```.
+* The program crashed with **rstanarm** models fitted with syntax like ```stan_glm(log(y) ~ log(x), ...)```, that is, it did not allow transformation for ```y```.
 
 # projpred 1.0.0
 
