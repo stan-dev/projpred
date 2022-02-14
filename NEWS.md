@@ -22,7 +22,7 @@
 * The previous behavior of `init_refmodel()` in case of argument `dis` being `NULL` (the default) was dangerous for custom reference models with a `family` having a dispersion parameter (in that case, `dis` values of all-zeros were used silently). The new behavior now requires a non-`NULL` argument `dis` in that case. (GitHub: #254)
 * Argument `cv_search` has been renamed to `refit_prj`. (GitHub: #154, #265)
 
-# Minor changes
+## Minor changes
 
 * Improved documentation. (GitHub: especially #233)
 * Replaced the two vignettes by a single one which also has new content. (GitHub: #237)
