@@ -39,9 +39,15 @@ run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
 #   least as long as they are listed in the `.Rbuildignore` file), so they would
 #   be re-created, which would throw a lot of test warnings (which could obscure
 #   potentially important warnings).
-run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
-  !identical(toupper(Sys.getenv("CI")), "TRUE") &&
-  identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"), "")
+run_snaps <- Sys.getenv("RUN_SNAPS")
+if (identical(run_snaps, "")) {
+  run_snaps <- identical(Sys.getenv("NOT_CRAN"), "true") &&
+    !identical(toupper(Sys.getenv("CI")), "TRUE") &&
+    identical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_"), "")
+} else {
+  run_snaps <- as.logical(toupper(run_snaps))
+  stopifnot(isTRUE(run_snaps) || isFALSE(run_snaps))
+}
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
