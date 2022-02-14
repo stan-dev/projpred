@@ -5,8 +5,9 @@
 #'
 #' @import stats
 #' @import ggplot2
-#' @importFrom loo psis
 #' @importFrom rlang .data
+#' @importFrom rstantools posterior_linpred
+#' @importFrom loo kfold
 #'
 #' @description
 #'

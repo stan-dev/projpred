@@ -3,9 +3,9 @@
 #' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
 #' and GAMMs. This variable selection consists of a *search* part and an
 #' *evaluation* part. The search part determines the solution path, i.e., the
-#' best submodel for each number of predictor terms (model size). The evaluation
-#' part determines the predictive performance of the submodels along the
-#' solution path.
+#' best submodel for each submodel size (number of predictor terms). The
+#' evaluation part determines the predictive performance of the submodels along
+#' the solution path.
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
@@ -42,7 +42,8 @@
 #'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
 #'   terms in the reference model (or in `search_terms`, if supplied). Note that
 #'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
-#'   intercept-only model.
+#'   intercept-only model. (Correspondingly, `D` above does not count the
+#'   intercept.)
 #' @param penalty Only relevant for L1 search. A numeric vector determining the
 #'   relative penalties or costs for the predictors. A value of `0` means that
 #'   those predictors have no cost and will therefore be selected first, whereas
@@ -350,7 +351,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }
-  nterms_max <- min(max_nv_possible, nterms_max + 1)
+  nterms_max <- min(max_nv_possible, nterms_max + refmodel$intercept)
 
   return(nlist(
     method, refit_prj, nterms_max, nclusters, ndraws, nclusters_pred,

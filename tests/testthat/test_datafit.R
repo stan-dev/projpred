@@ -41,9 +41,12 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
 ## Reference model --------------------------------------------------------
 ## (actually "datafit"s)
 
-# Exclude the case which was added for K-fold CV only:
+# Exclude the rstanarm case which was added for K-fold CV only and also exclude
+# brms fits (since `datafit`s don't make use of a reference model fit, it
+# doesn't make a difference if rstanarm or brms is used as the basis here for
+# retrieving the formula, data, and family):
 args_datafit <- lapply(setNames(
-  nm = grep("\\.glm\\.gauss\\.stdformul\\.without_wobs", names(fits),
+  nm = grep("^brms\\.|\\.glm\\.gauss\\.stdformul\\.without_wobs", names(fits),
             value = TRUE, invert = TRUE)
 ), function(tstsetup_fit) {
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
@@ -304,6 +307,7 @@ test_that("project(): `object` of class \"datafit\" fails", {
   tstsetups <- grep("\\.solterms_x.*\\.clust$", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
+    if (!args_prj_i$tstsetup_ref %in% names(datafits)) next
     expect_error(
       do.call(project, c(
         list(object = datafits[[args_prj_i$tstsetup_ref]],

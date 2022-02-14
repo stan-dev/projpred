@@ -18,7 +18,7 @@
 * Improved documentation.
 * Minor improvements of error messages.
 * For K-fold cross-validation, an internally hard-coded value of 5 for `nclusters_pred` was removed. (GitHub: commit 5062f2f)
-* Throw a proper error message for nonsupported families. (GitHub: #140)
+* Throw a proper error message for unsupported families. (GitHub: #140)
 * Show the README also on the CRAN website. (GitHub: #140)
 * `project()`: Warn in case of `solution_terms` not being found in the reference model (and therefore getting ignored). (GitHub: #140)
 * Set defaults for `get_refmodel.default()`'s arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`. (GitHub: #140)
@@ -128,7 +128,7 @@ This version contains only a few patches, no new features to the user.
 
 ### New features and improvements ###
 
-* Changed the internals so that now all fit objects (such as rstanarm fits) are converted to ```refmodel```-objects using the generict ```get_refmodel```-function, and all the functions use only this object. This makes it much easier to use projpred with other reference models by writing them a new ```get_refmodel```-function. The syntax is now changed so that  ```varsel``` and ```cv_varsel``` both return an object that has similar structure always, and the reference model is stored into this object.
+* Changed the internals so that now all fit objects (such as rstanarm fits) are converted to ```refmodel```-objects using the generic ```get_refmodel```-function, and all the functions use only this object. This makes it much easier to use projpred with other reference models by writing them a new ```get_refmodel```-function. The syntax is now changed so that  ```varsel``` and ```cv_varsel``` both return an object that has similar structure always, and the reference model is stored into this object.
 
 * Added more examples to the vignette.
 

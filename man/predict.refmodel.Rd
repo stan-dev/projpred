@@ -52,7 +52,7 @@ This is the \code{\link[=predict]{predict()}} method for \code{refmodel} objects
 \code{\link[=get_refmodel]{get_refmodel()}} or \code{\link[=init_refmodel]{init_refmodel()}}). It offers three types of output which
 are all based on the reference model and new (or old) observations: Either
 the linear predictor on link scale, the linear predictor transformed to
-response scale, or the log-predictive density.
+response scale, or the log predictive density.
 }
 \details{
 Argument \code{weightsnew} is only relevant if \code{!is.null(ynew)}.

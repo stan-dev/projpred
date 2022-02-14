@@ -49,8 +49,9 @@
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
 #'   `lpd` (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
 #'   \times N}{S_prj x N} matrices.
-#'   * [proj_predict()] returns a \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
-#'   matrix of predictions.
+#'   * [proj_predict()] returns an \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
+#'   matrix of predictions where \eqn{S_{\mbox{prj}}}{S_prj} denotes
+#'   `nresample_clusters` in case of clustered projection.
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
@@ -248,8 +249,10 @@ proj_predict <- function(object, newdata = NULL,
                          filter_nterms = NULL,
                          nresample_clusters = 1000, .seed = NULL, ...) {
   ## set random seed but ensure the old RNG state is restored on exit
-  rng_state_old <- .Random.seed
-  on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
   set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
@@ -403,7 +406,7 @@ plot.vsel <- function(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
     ) +
-    labs(x = "Number of terms in the submodel", y = ylab) +
+    labs(x = "Submodel size (number of predictor terms)", y = ylab) +
     theme(legend.position = "none") +
     facet_grid(statistic ~ ., scales = "free_y")
   return(pp)
@@ -656,10 +659,10 @@ print.vsel <- function(x, ...) {
   return(invisible(stats))
 }
 
-#' Suggest model size
+#' Suggest submodel size
 #'
-#' This function can suggest an appropriate model size based on a decision rule
-#' described in section "Details" below. Note that this decision is quite
+#' This function can suggest an appropriate submodel size based on a decision
+#' rule described in section "Details" below. Note that this decision is quite
 #' heuristic and should be interpreted with caution. It is recommended to
 #' examine the results via [plot.vsel()] and/or [summary.vsel()] and to make the
 #' final decision based on what is most appropriate for the problem at hand.
@@ -1094,8 +1097,8 @@ cvfolds <- function(n, K, seed = NULL) {
   .validate_num_folds(K, n)
 
   ## set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)
@@ -1114,8 +1117,8 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
   out <- match.arg(out)
 
   # set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed")) {
-    rng_state_old <- .Random.seed
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)

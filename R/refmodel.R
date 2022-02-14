@@ -36,8 +36,8 @@
 #' @param div_minimizer A function for minimizing the Kullback-Leibler (KL)
 #'   divergence from a submodel to the reference model (i.e., for performing the
 #'   projection of the reference model onto a submodel). The output of
-#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fit`. See also
-#'   section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
+#'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fits`. See
+#'   also section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
 #'   below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
@@ -45,23 +45,38 @@
 #'   section "Argument `extract_model_data`" below.
 #' @param family A [`family`] object representing the observational model (i.e.,
 #'   the distributional family for the response).
-#' @param cvfits For \eqn{K}-fold CV only. A `list` with one sub-`list` called
-#'   `fits` containing the \eqn{K} fitted model objects from which reference
-#'   model structures are created. The `cvfits` `list` (i.e., the super-`list`)
-#'   needs to have attributes `K` and `folds`: `K` has to be a single integer
-#'   giving the number of folds and `folds` has to be an integer vector giving
-#'   the fold indices (one fold index per observation). Note that `cvfits` takes
-#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
+#'   called `fits` containing the \eqn{K} model fits from which reference model
+#'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
+#'   to have attributes `K` and `folds`: `K` has to be a single integer giving
+#'   the number of folds and `folds` has to be an integer vector giving the fold
+#'   indices (one fold index per observation). Each element of `cvfits$fits`
+#'   (i.e., each of the \eqn{K} model fits) needs to be a list. Only one of
+#'   `cvfits` and `cvfun` needs to be provided (for \eqn{K}-fold CV). Note that
+#'   `cvfits` takes precedence over `cvfun`, i.e., if both are provided,
+#'   `cvfits` is used.
 #' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
 #'   vector, fits the reference model separately for each fold and returns the
-#'   \eqn{K} fitted model objects as a `list`. If `object` is `NULL`, `cvfun`
-#'   may be `NULL` for using an internal default. Note that `cvfits` takes
-#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#'   \eqn{K} model fits as a `list`. Each of the \eqn{K} model fits needs to be
+#'   a `list`. If `object` is `NULL`, `cvfun` may be `NULL` for using an
+#'   internal default. Only one of `cvfits` and `cvfun` needs to be provided
+#'   (for \eqn{K}-fold CV). Note that `cvfits` takes precedence over `cvfun`,
+#'   i.e., if both are provided, `cvfits` is used.
+#' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
+#'   reference model fit for fold \eqn{k \in \{1, ..., K\}} (this model fit is
+#'   the \eqn{k}-th element of the return value of `cvfun` or the \eqn{k}-th
+#'   element of `cvfits$fits`, extended by elements `omitted` (containing the
+#'   indices of the left-out observations in that fold) and `projpred_k`
+#'   (containing the integer \eqn{k})), returns an object of the same type as
+#'   [init_refmodel()] does. Argument `cvrefbuilder` may be `NULL` for using an
+#'   internal default: [get_refmodel()] if `object` is not `NULL` and a function
+#'   calling [init_refmodel()] appropriately (with the assumption `dis = 0`) if
+#'   `object` is `NULL`.
 #' @param dis A vector of posterior draws for the dispersion parameter (if
 #'   existing). May be `NULL` if the model has no dispersion parameter or if the
-#'   model does have a dispersion parameter, but `object` is `NULL`. Note that
-#'   for the [gaussian()] `family`, `dis` is the standard deviation, not the
-#'   variance.
+#'   model does have a dispersion parameter, but `object` is `NULL` (in which
+#'   case `0` is used for `dis`). Note that for the [gaussian()] `family`, `dis`
+#'   is the standard deviation, not the variance.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. Else: ignored.
@@ -204,11 +219,12 @@
 #'       }
 #'
 #'       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
-#'       return(projpred:::do_call(projpred:::.extract_model_data, args))
+#'       return(projpred::do_call(projpred:::.extract_model_data, args))
 #'     },
 #'     cvfun = function(folds) {
-#'       rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
-#'                       folds = folds)$fits[, "fit"]
+#'       kfold(
+#'         fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+#'       )$fits[, "fit"]
 #'     },
 #'     dis = as.matrix(fit)[, "sigma"]
 #'   )
@@ -224,7 +240,7 @@ NULL
 #' [get_refmodel()] or [init_refmodel()]). It offers three types of output which
 #' are all based on the reference model and new (or old) observations: Either
 #' the linear predictor on link scale, the linear predictor transformed to
-#' response scale, or the log-predictive density.
+#' response scale, or the log predictive density.
 #'
 #' @template args-newdata
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
@@ -437,7 +453,7 @@ get_refmodel.stanreg <- function(object, ...) {
          "package maintainer.")
   }
   if (length(object$offset) > 0) {
-    if (is.null(attr(terms(formula(object)), "offset"))) {
+    if (is.null(attr(terms(formula(object), data = data), "offset"))) {
       # In this case, we would have to use argument `offset` of
       # posterior_linpred.stanreg() to allow for new offsets, requiring changes
       # in all ref_predfun() calls. Furthermore, there is rstanarm issue #541.
@@ -513,7 +529,7 @@ get_refmodel.stanreg <- function(object, ...) {
     # posterior_linpred() excluded (`TRUE`) or included (`FALSE`) the offsets:
     cond_no_offs <- (
       fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
-        !is.null(attr(terms(fit$formula), "offset"))
+        !is.null(attr(terms(formula), "offset"))
     ) || (
       fit$stan_function %in% c("stan_lm", "stan_glm") &&
         !is.null(newdata) && length(fit$offset) > 0
@@ -534,8 +550,13 @@ get_refmodel.stanreg <- function(object, ...) {
     # parallelization (i.e., across chains, not across CV folds) with
     # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
     # suitable for other systems:
-    rstanarm::kfold(object, K = max(folds), save_fits = TRUE,
-                    folds = folds, cores = 1)$fits[, "fit"]
+    kfold(
+      object, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+    )$fits[, "fit"]
+  }
+
+  cvrefbuilder <- function(cvfit) {
+    get_refmodel(cvfit, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -551,17 +572,16 @@ get_refmodel.stanreg <- function(object, ...) {
   return(init_refmodel(
     object = object, data = data, formula = formula, family = family,
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
-    dis = dis, cvfun = cvfun, ...
+    dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder, ...
   ))
 }
 
 #' @rdname refmodel-init-get
-#' @importFrom rstantools posterior_linpred
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, ...) {
+                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL, ...) {
   # Family ------------------------------------------------------------------
 
   if (family$family == "Student_t") {
@@ -591,6 +611,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Formula -----------------------------------------------------------------
 
   stopifnot(inherits(formula, "formula"))
+  data <- na.fail(data)
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
@@ -695,6 +716,34 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fetch_data(data, obs = obs)
   }
 
+  if (is.null(cvfun)) {
+    if (!proper_model) {
+      # This is a dummy definition for cvfun(), but it will lead to standard CV
+      # for `datafit`s; see cv_varsel() and .get_kfold():
+      cvfun <- function(folds) {
+        lapply(seq_len(max(folds)), function(k) list())
+      }
+    }
+  }
+
+  if (is.null(cvrefbuilder)) {
+    if (proper_model) {
+      cvrefbuilder <- get_refmodel
+    } else {
+      cvrefbuilder <- function(cvfit) {
+        init_refmodel(
+          object = NULL,
+          data = fetch_data_wrapper(obs = setdiff(seq_along(y), cvfit$omitted)),
+          formula = formula,
+          family = family,
+          div_minimizer = div_minimizer,
+          proj_predfun = proj_predfun,
+          extract_model_data = extract_model_data
+        )
+      }
+    }
+  }
+
   # mu ----------------------------------------------------------------------
 
   if (proper_model) {
@@ -719,11 +768,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (proper_model) {
         stop("Please supply argument `dis`.")
       } else {
-        if (family$family == "Gamma") {
-          warning("Using all-zeros for `dis`, but not sure whether this is ",
-                  "correct.")
-        }
-        dis <- rep(0, ndraws)
+        dis <- 0
       }
     }
   } else {
@@ -736,18 +781,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ))
   } else {
     loglik <- NULL
-  }
-
-  if (is.null(cvfun)) {
-    if (!proper_model) {
-      # This is a dummy definition for cvfun(), but it will lead to standard CV
-      # for `datafit`s; see cv_varsel() and .get_kfold():
-      cvfun <- function(folds) {
-        lapply(seq_len(max(folds)), function(k) list())
-      }
-    } else if (is.null(cvfits)) {
-      stop("Please provide either argument `cvfun` or argument `cvfits`.")
-    }
   }
 
   # Equal sample (draws) weights by default:
@@ -763,7 +796,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, mu, dis, y, loglik, intercept,
     proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
-    offset, cvfun, cvfits, extract_model_data, ref_predfun
+    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

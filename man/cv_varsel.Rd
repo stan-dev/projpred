@@ -81,7 +81,8 @@ evaluation part.}
 continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
 terms in the reference model (or in \code{search_terms}, if supplied). Note that
 \code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
-intercept-only model.}
+intercept-only model. (Correspondingly, \code{D} above does not count the
+intercept.)}
 
 \item{penalty}{Only relevant for L1 search. A numeric vector determining the
 relative penalties or costs for the predictors. A value of \code{0} means that
@@ -98,8 +99,10 @@ observations). Smaller values lead to faster computation but higher
 uncertainty in the evaluation part. If \code{NULL}, all observations are used,
 but for faster experimentation, one can set this to a smaller value.}
 
-\item{K}{Only relevant if \code{cv_method == "kfold"}. Number of folds in the
-\eqn{K}-fold CV.}
+\item{K}{Only relevant if \code{cv_method == "kfold"} and if the reference model
+was created with \code{cvfits} being \code{NULL} (which is the case for
+\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} and \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
+folds in \eqn{K}-fold CV.}
 
 \item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter
@@ -151,9 +154,9 @@ or type \code{?projpred}).
 Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
 and GAMMs. This variable selection consists of a \emph{search} part and an
 \emph{evaluation} part. The search part determines the solution path, i.e., the
-best submodel for each number of predictor terms (model size). The evaluation
-part determines the predictive performance of the submodels along the
-solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
+best submodel for each submodel size (number of predictor terms). The
+evaluation part determines the predictive performance of the submodels along
+the solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
 cross-validation (CV) by running the search part with the training data of
 each CV fold separately (an exception is explained in section "Note" below)
 and running the evaluation part on the corresponding test set of each CV

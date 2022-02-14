@@ -32,6 +32,7 @@ init_refmodel(
   cvfun = NULL,
   cvfits = NULL,
   dis = NULL,
+  cvrefbuilder = NULL,
   ...
 )
 }
@@ -71,8 +72,8 @@ used instead.}
 \item{div_minimizer}{A function for minimizing the Kullback-Leibler (KL)
 divergence from a submodel to the reference model (i.e., for performing the
 projection of the reference model onto a submodel). The output of
-\code{div_minimizer} is used, e.g., by \code{proj_predfun}'s argument \code{fit}. See also
-section "Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}"
+\code{div_minimizer} is used, e.g., by \code{proj_predfun}'s argument \code{fits}. See
+also section "Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}"
 below.}
 
 \item{proj_predfun}{Prediction function for the linear predictor of a
@@ -86,23 +87,39 @@ section "Argument \code{extract_model_data}" below.}
 
 \item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
 vector, fits the reference model separately for each fold and returns the
-\eqn{K} fitted model objects as a \code{list}. If \code{object} is \code{NULL}, \code{cvfun}
-may be \code{NULL} for using an internal default. Note that \code{cvfits} takes
-precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is used.}
+\eqn{K} model fits as a \code{list}. Each of the \eqn{K} model fits needs to be
+a \code{list}. If \code{object} is \code{NULL}, \code{cvfun} may be \code{NULL} for using an
+internal default. Only one of \code{cvfits} and \code{cvfun} needs to be provided
+(for \eqn{K}-fold CV). Note that \code{cvfits} takes precedence over \code{cvfun},
+i.e., if both are provided, \code{cvfits} is used.}
 
-\item{cvfits}{For \eqn{K}-fold CV only. A \code{list} with one sub-\code{list} called
-\code{fits} containing the \eqn{K} fitted model objects from which reference
-model structures are created. The \code{cvfits} \code{list} (i.e., the super-\code{list})
-needs to have attributes \code{K} and \code{folds}: \code{K} has to be a single integer
-giving the number of folds and \code{folds} has to be an integer vector giving
-the fold indices (one fold index per observation). Note that \code{cvfits} takes
-precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is used.}
+\item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing a sub-\code{list}
+called \code{fits} containing the \eqn{K} model fits from which reference model
+structures are created. The \code{cvfits} \code{list} (i.e., the super-\code{list}) needs
+to have attributes \code{K} and \code{folds}: \code{K} has to be a single integer giving
+the number of folds and \code{folds} has to be an integer vector giving the fold
+indices (one fold index per observation). Each element of \code{cvfits$fits}
+(i.e., each of the \eqn{K} model fits) needs to be a list. Only one of
+\code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold CV). Note that
+\code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provided,
+\code{cvfits} is used.}
 
 \item{dis}{A vector of posterior draws for the dispersion parameter (if
 existing). May be \code{NULL} if the model has no dispersion parameter or if the
-model does have a dispersion parameter, but \code{object} is \code{NULL}. Note that
-for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation, not the
-variance.}
+model does have a dispersion parameter, but \code{object} is \code{NULL} (in which
+case \code{0} is used for \code{dis}). Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis}
+is the standard deviation, not the variance.}
+
+\item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
+reference model fit for fold \eqn{k \in \{1, ..., K\}} (this model fit is
+the \eqn{k}-th element of the return value of \code{cvfun} or the \eqn{k}-th
+element of \code{cvfits$fits}, extended by elements \code{omitted} (containing the
+indices of the left-out observations in that fold) and \code{projpred_k}
+(containing the integer \eqn{k})), returns an object of the same type as
+\code{\link[=init_refmodel]{init_refmodel()}} does. Argument \code{cvrefbuilder} may be \code{NULL} for using an
+internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL} and a function
+calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption \code{dis = 0}) if
+\code{object} is \code{NULL}.}
 }
 \value{
 An object that can be passed to all the functions that take the
@@ -260,11 +277,12 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
       }
 
       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
-      return(projpred:::do_call(projpred:::.extract_model_data, args))
+      return(projpred::do_call(projpred:::.extract_model_data, args))
     },
     cvfun = function(folds) {
-      rstanarm::kfold(fit, K = max(folds), save_fits = TRUE,
-                      folds = folds)$fits[, "fit"]
+      kfold(
+        fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+      )$fits[, "fit"]
     },
     dis = as.matrix(fit)[, "sigma"]
   )
