@@ -181,23 +181,18 @@ This version contains only a few patches, no new features to the user.
 * Added support for ```brms``` models. 
 
 ## Bug fixes
-* The program crashed with ```rstanarm``` models fitted with syntax like ```stan_glm(log(y) ~ log(x), ...)```, that is, it did not allow transformation for ```y```.
 
+* The program crashed with ```rstanarm``` models fitted with syntax like ```stan_glm(log(y) ~ log(x), ...)```, that is, it did not allow transformation for ```y```.
 
 # projpred 1.0.0
 
-## New features and improvements ###
+## New features and improvements
 
 * Changed the internals so that now all fit objects (such as rstanarm fits) are converted to ```refmodel```-objects using the generic ```get_refmodel```-function, and all the functions use only this object. This makes it much easier to use projpred with other reference models by writing them a new ```get_refmodel```-function. The syntax is now changed so that  ```varsel``` and ```cv_varsel``` both return an object that has similar structure always, and the reference model is stored into this object.
-
 * Added more examples to the vignette.
-
 * Added possibility to change the baseline in ```plot/summary```. Now it is possible to compare also to the best submodel found, not only to the reference model.
-
 * Bug fix: RMSE was previously computed wrong, this is now fixed.
-
 * Small changes: ```nloo = n``` by default in ```cv_varsel```. ```regul=1e-4``` now by default in all functions.
-
 
 # projpred 0.9.0
 
@@ -208,7 +203,6 @@ This version contains only a few patches, no new features to the user.
 ## Bug fixes
 
 * The projection with a nonzero regularization parameter value did not produce exactly correct result, although the difference to the correct result was often so small that user would not see the difference. Fixed this.
-
 
 # projpred 0.8.0 and earlier
 
