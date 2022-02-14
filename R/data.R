@@ -39,6 +39,6 @@
 #' }
 #' @references Gelman, A. and Hill, J. (2006). *Data Analysis Using Regression
 #'   and Multilevel/Hierarchical Models*. Cambridge University Press. DOI:
-#'   [10.1017/CBO9780511790942](https://doi.org/10.1017/CBO9780511790942).
+#'   \doi{10.1017/CBO9780511790942}.
 #' @source <http://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat>
 "mesquite"
