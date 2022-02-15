@@ -203,8 +203,8 @@ nterms_z <- length(nlvl_ran) * 2L
 z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
   z <- gl(n = nlvl_ran_i, k = floor(nobsv / nlvl_ran_i), length = nobsv,
           labels = paste0("lvl", seq_len(nlvl_ran_i)))
-  r_icpts <- rnorm(nlvl_ran_i, sd = 0.8)
-  r_xco1 <- rnorm(nlvl_ran_i, sd = 0.8)
+  r_icpts <- rnorm(nlvl_ran_i, sd = 2.8)
+  r_xco1 <- rnorm(nlvl_ran_i, sd = 2.8)
   eta_z <- r_icpts[z] + r_xco1[z] * x_cont[, 1]
   return(nlist(z, eta_z, r_icpts, r_xco1))
 })
