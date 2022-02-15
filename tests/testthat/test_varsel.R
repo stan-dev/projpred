@@ -57,29 +57,18 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- vss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
-    .Random.seed_new1 <- .Random.seed
-    vs_new <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$tstsetup_ref]],
-           seed = args_vs_i$seed + 1L),
-      excl_nonargs(args_vs_i, nms_excl_add = "seed")
-    ))
-    .Random.seed_new2 <- .Random.seed
-    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
     vs_repr <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]]),
       excl_nonargs(args_vs_i)
     ))
     .Random.seed_repr2 <- .Random.seed
+    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     # Expected equality:
     expect_equal(vs_repr, vs_orig, info = tstsetup)
-    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
     expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     # Expected inequality:
-    expect_false(isTRUE(all.equal(vs_new, vs_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
-    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
-                 info = tstsetup)
   }
 })
 
@@ -505,31 +494,18 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     cvvs_orig <- cvvss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
-    .Random.seed_new1 <- .Random.seed
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
-    cvvs_new <- suppressWarnings(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
-           seed = args_cvvs_i$seed + 1L),
-      excl_nonargs(args_cvvs_i, nms_excl_add = "seed")
-    )))
-    .Random.seed_new2 <- .Random.seed
-    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
     cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
     )))
     .Random.seed_repr2 <- .Random.seed
+    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     # Expected equality:
     expect_equal(cvvs_repr, cvvs_orig, info = tstsetup)
-    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
     expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     # Expected inequality:
-    expect_false(isTRUE(all.equal(cvvs_new, cvvs_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
-    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
-                 info = tstsetup)
   }
 })
 
