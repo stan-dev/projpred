@@ -1,5 +1,5 @@
 # A helper function for testing the structure of an expected extended `"family"`
-# object
+# object.
 #
 # @param extfam An object of class `"family"` (at least expected so) which has
 #   been extended by projpred.
@@ -20,26 +20,34 @@ extfam_tester <- function(extfam,
                           extfam_nms_add2 = character(),
                           from_brms = FALSE,
                           info_str) {
-  # Some minimal checks for `fam_orig`:
+  # General structure tests -------------------------------------------------
+
+  ## For `fam_orig` ---------------------------------------------------------
+
   expect_s3_class(fam_orig, "family")
   expect_type(fam_orig, "list")
-  fam_orig_nms <- fam_orig_nms_common <- c(
+  fam_orig_nms <- c(
     "family", "link", "linkfun", "linkinv", "variance", "dev.resids", "aic",
     "mu.eta", "initialize", "validmu", "valideta"
   )
-  expect_true(all(fam_orig_nms_common %in% names(fam_orig)), info = info_str)
+  expect_true("family" %in% names(fam_orig), info = info_str)
   if (fam_orig$family %in% c("binomial", "poisson")) {
     fam_orig_nms <- c(fam_orig_nms, "simulate")
   }
   expect_named(fam_orig, fam_orig_nms, info = info_str)
 
-  # Now the checks for `extfam` (first starting with the general structure):
+  ## For `extfam` -----------------------------------------------------------
+
   extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
                       "is_extended", extfam_nms_add2)
   extfam_nms <- c(names(fam_orig), extfam_nms_add)
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
   expect_named(extfam, extfam_nms, info = info_str)
+
+  # Detailed tests ----------------------------------------------------------
+
+  ## For `fam_orig` ---------------------------------------------------------
 
   fam_orig_ch <- structure(extfam[names(fam_orig)], class = "family")
   if (extfam$family == "binomial") {
@@ -52,10 +60,11 @@ extfam_tester <- function(extfam,
                      info = info_str)
   }
 
+  ## For `extfam` -----------------------------------------------------------
+
   for (el_nm in setdiff(extfam_nms_add, "is_extended")) {
     expect_type(extfam[[el_nm]], "closure")
   }
-
   expect_true(extfam$is_extended, info = info_str)
 
   # TODO: Add some mathematical checks (i.e., check that the calculations for
@@ -64,7 +73,8 @@ extfam_tester <- function(extfam,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected `"refmodel"` object
+# A helper function for testing the structure of an expected `"refmodel"`
+# object.
 #
 # @param refmod An object of class `"refmodel"` (at least expected so).
 # @param is_datafit A single logical value indicating whether the reference
@@ -412,7 +422,7 @@ refmodel_tester <- function(
 }
 
 # A helper function for testing the structure of a list of fits (each fit must
-# not necessarily be of class `"subfit"`) for the same single submodel
+# not necessarily be of class `"subfit"`) for the same single submodel.
 #
 # @param submodl_totest The `submodl` object (a list of fits for a single
 #   submodel, with one fit per projected draw) to test.
@@ -755,7 +765,7 @@ submodl_tester <- function(
 }
 
 # A helper function for testing the structure of an expected `"projection"`
-# object
+# object.
 #
 # @param p An object of class `"projection"` (at least expected so).
 # @param solterms_expected Either a single numeric value giving the expected
@@ -895,7 +905,7 @@ projection_tester <- function(p,
 }
 
 # A helper function for testing the structure of an expected `"proj_list"`
-# object
+# object.
 #
 # @param p An object of (informal) class `"proj_list"` (at least expected so).
 # @param len_expected The expected length of `p`.
@@ -1027,7 +1037,7 @@ pp_tester <- function(pp,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected `"vsel"` object
+# A helper function for testing the structure of an expected `"vsel"` object.
 #
 # @param vs An object of class `"vsel"` (at least expected so).
 # @param with_cv A single logical value indicating whether `vs` was created by
@@ -1365,7 +1375,7 @@ vsel_tester <- function(
 }
 
 # A helper function for testing the structure of an object as returned by
-# summary.vsel()
+# summary.vsel().
 #
 # @param smmry An object as returned by summary.vsel().
 # @param vsel_expected The `"vsel"` object which was used in the summary.vsel()
@@ -1434,7 +1444,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 }
 
 # A helper function for testing the structure of a `data.frame` as returned by
-# summary.vsel() in its output element `selection`
+# summary.vsel() in its output element `selection`.
 #
 # @param smmry_sel A `data.frame` as returned by summary.vsel() in its output
 #   element `selection`.

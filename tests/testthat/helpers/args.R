@@ -1,5 +1,5 @@
 # A helper function for picking only those elements from an argument list which
-# are not arguments in the narrower sense
+# are not arguments in the narrower sense.
 #
 # @param args_i A list of arguments.
 #
@@ -14,7 +14,7 @@ only_nonargs <- function(args_i) {
 }
 
 # A helper function for excluding elements from an argument list which are not
-# arguments in the narrower sense
+# arguments in the narrower sense.
 #
 # @param args_i A list of arguments.
 # @param nms_excl_add A character vector of element names which should also be
@@ -32,7 +32,7 @@ excl_nonargs <- function(args_i, nms_excl_add = character()) {
 }
 
 # A helper function for retrieving details about the actually used `ndraws` or
-# `nclusters` argument as well as about associated objects
+# `nclusters` argument as well as about associated objects.
 #
 # @param args_i A list of arguments supplied to a function with arguments
 #   `ndraws` and `nclusters` (project(), varsel(), etc.).

@@ -624,7 +624,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
   formula <- update(formula, paste(response_name[1], "~ ."))
-  if (formula_contains_additive_terms(formula)) {
+  if (formula_contains_additive_terms(formula) &&
+      isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
     warning("Support for additive models is still experimental.")
   }
 
