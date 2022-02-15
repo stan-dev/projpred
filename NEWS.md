@@ -106,9 +106,12 @@
 
 # projpred 2.0.5
 
-## Minor changes
+## Major changes
 
 * For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below). (GitHub: #82)
+
+## Minor changes
+
 * Internally, the seed is not fixed to a specific value when `NULL`. (GitHub: #84)
 
 ## Bug fixes
