@@ -900,7 +900,7 @@ test_that(paste(
     ))
 
     # Checks:
-    expect_identical(cvvs_cvfits, cvvs_cvfits_repr, info = tstsetup)
+    expect_equal(cvvs_cvfits, cvvs_cvfits_repr, info = tstsetup)
     vsel_tester(
       cvvs_cvfits,
       with_cv = TRUE,
