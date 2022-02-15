@@ -173,7 +173,7 @@ For more accurate results, we could have increased argument `ndraws` of `project
 
 Next, we create a matrix containing the projected posterior draws stored in the depths of `project()`'s output:
 ```{r}
-prj_mat <- as.matrix(prj)
+prj_mat <- as.matrix(prj, nm_scheme = "brms")
 ```
 This matrix is all we need for post-selection inference. It can be used like any matrix of draws from MCMC procedures, except that it doesn't reflect a typical posterior distribution, but rather a projected posterior distribution, i.e., the distribution arising from the deterministic projection of the reference model's posterior distribution onto the parameter space of the final submodel.
 

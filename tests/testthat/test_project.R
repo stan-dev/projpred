@@ -381,7 +381,7 @@ test_that("for GLMs, `regul` has an expected effect", {
       } else {
         warn_prjmat_expect <- NA
       }
-      expect_warning(prjmat <- as.matrix(prj_regul),
+      expect_warning(prjmat <- as.matrix(prj_regul, nm_scheme = "brms"),
                      warn_prjmat_expect, info = tstsetup)
 
       # Reduce to only those columns which are necessary here:
