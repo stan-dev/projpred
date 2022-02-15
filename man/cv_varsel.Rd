@@ -39,7 +39,9 @@ cv_varsel(object, ...)
 \code{\link[=init_refmodel]{init_refmodel()}}) or an object that can be passed to argument \code{object} of
 \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
+\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as well as to the divergence
+minimizer (during a forward search and also during the evaluation part, but
+the latter only if \code{refit_prj} is \code{TRUE}).}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
