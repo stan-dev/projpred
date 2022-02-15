@@ -63,7 +63,7 @@ regularization to avoid numerical problems.}
 
 \item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} (if \code{\link[=get_refmodel]{get_refmodel()}} is
 actually used; see argument \code{object}) as well as to the divergence
-minimizer.}
+minimizer (if \code{refit_prj} is \code{TRUE}).}
 }
 \value{
 If the projection is performed onto a single submodel (i.e.,

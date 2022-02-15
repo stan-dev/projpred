@@ -40,7 +40,7 @@
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
-#'   minimizer.
+#'   minimizer (if `refit_prj` is `TRUE`).
 #'
 #' @details Arguments `ndraws` and `nclusters` are automatically truncated at
 #'   the number of posterior draws in the reference model (which is `1` for
