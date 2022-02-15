@@ -812,7 +812,7 @@ args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
                     nlist(solterms_sz = c(solterms_s, solterms_z),
                           solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
     }
-    if (fam_crr != "gauss") {
+    if (!run_more && fam_crr != "gauss") {
       solterms <- tail(solterms, 1)
     }
   } else {
