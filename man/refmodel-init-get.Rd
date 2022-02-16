@@ -195,6 +195,7 @@ matrix of predictive variances (necessary for \pkg{projpred}'s internal
 GLM fitter).
 \item \code{projpred_regul} accepts a single numeric value as supplied to argument
 \code{regul} of \code{\link[=project]{project()}}, for example.
+\item \code{...} accepts further arguments specified by the user.
 }
 }
 

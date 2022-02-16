@@ -1,5 +1,5 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
-                           search_terms = NULL) {
+                           search_terms = NULL, ...) {
   iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
   if (is.null(search_terms)) {
     allterms <- split_formula(refmodel$formula, data = refmodel$fetch_data())
@@ -18,7 +18,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     subL <- lapply(full_cands, project_submodel,
-                   p_ref = p_ref, refmodel = refmodel, regul = opt$regul)
+                   p_ref = p_ref, refmodel = refmodel, regul = opt$regul, ...)
 
     ## select best candidate
     imin <- which.min(sapply(subL, "[[", "kl"))

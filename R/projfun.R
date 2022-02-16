@@ -2,7 +2,8 @@
 # terms given in `solution_terms`. Note that "single submodel" does not refer to
 # a single fit (there are as many fits for this single submodel as there are
 # projected draws).
-project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
+project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
+                             ...) {
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
   wobs <- validparams$wobs
   wsample <- validparams$wsample
@@ -18,7 +19,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
     family = refmodel$family,
     weights = refmodel$wobs,
     projpred_var = p_ref$var,
-    projpred_regul = regul
+    projpred_regul = regul,
+    ...
   )
 
   if (isTRUE(getOption("projpred.check_conv", FALSE))) {
@@ -35,11 +37,11 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
 # sizes `nterms`. Returns a list of submodels (each processed by
 # .init_submodel()).
 .get_submodels <- function(search_path, nterms, p_ref, refmodel, regul,
-                           refit_prj = FALSE) {
+                           refit_prj = FALSE, ...) {
   if (!refit_prj) {
     # In this case, simply fetch the already computed projections, so don't
     # project again.
-    fetch_submodel <- function(nterms) {
+    fetch_submodel <- function(nterms, ...) {
       validparams <- .validate_wobs_wsample(
         refmodel$wobs, search_path$p_sel$weights, search_path$p_sel$mu
       )
@@ -57,14 +59,14 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4) {
     }
   } else {
     # In this case, project again.
-    fetch_submodel <- function(nterms) {
+    fetch_submodel <- function(nterms, ...) {
       return(project_submodel(
         solution_terms = utils::head(search_path$solution_terms, nterms),
-        p_ref = p_ref, refmodel = refmodel, regul = regul
+        p_ref = p_ref, refmodel = refmodel, regul = regul, ...
       ))
     }
   }
-  return(lapply(nterms, fetch_submodel))
+  return(lapply(nterms, fetch_submodel, ...))
 }
 
 .validate_wobs_wsample <- function(ref_wobs, ref_wsample, ref_mu) {

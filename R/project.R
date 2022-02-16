@@ -39,7 +39,8 @@
 #'   draws (if `!is.null(nclusters)`).
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
-#'   actually used; see argument `object`).
+#'   actually used; see argument `object`) as well as to the divergence
+#'   minimizer (if `refit_prj` is `TRUE`).
 #'
 #' @details Arguments `ndraws` and `nclusters` are automatically truncated at
 #'   the number of posterior draws in the reference model (which is `1` for
@@ -224,7 +225,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       submodls = object$search_path$submodls
     ),
     nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
-    refit_prj = refit_prj
+    refit_prj = refit_prj, ...
   )
 
   # Output:
