@@ -150,7 +150,7 @@ We now define a simple GLM formula with censored data, and some Gaussian prior o
 
 ```{r, message=FALSE, warning=FALSE}
 # build model formula of the form
-formula <- formula(paste("time | cens(1 - status) ~",
+formula <- formula(paste("time | cens(2 - status) ~",
                          paste0(xtags, collapse = " + ")))
 # define prior assumption of variate
 prior <- set_prior("normal(0, 1)", class = "b")
