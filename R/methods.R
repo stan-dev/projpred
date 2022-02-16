@@ -829,16 +829,18 @@ replace_population_names <- function(population_effects, nm_scheme) {
 # Make the parameter names for variance components adhere to the naming scheme
 # `nm_scheme`:
 mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
+  grp_nms <- names(coef_nms)
+  # We will have to search for the substrings "\\sd\\." and "\\cor\\.", so make
+  # sure that they don't occur in the coefficient or group names:
+  stopifnot(!any(grepl("\\.sd\\.|\\.cor\\.", grp_nms)))
+  stopifnot(!any(unlist(lapply(
+    coef_nms, grepl, pattern = "\\.sd\\.|\\.cor\\."
+  ))))
   if (nm_scheme == "brms") {
-    grp_nms <- names(coef_nms)
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
-
-    # We will have to move the substrings "sd\\." and "cor\\." up front (i.e. in
-    # front of the group name), so make sure that they don't occur in the group
-    # names:
-    stopifnot(!any(grepl("\\.sd\\.|\\.cor\\.", grp_nms)))
-    # Move the substrings "sd\\." and "cor\\." up front and replace the dot
-    # following the group name by double underscores:
+    # Move the substrings "\\.sd\\." and "\\.cor\\." up front (i.e. in front of
+    # the group name), replace their dots, and replace the dot following the
+    # group name by double underscores:
     nms <- sub(
       paste0(
         "(",
@@ -864,8 +866,22 @@ mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
       )
     }
   } else if (nm_scheme == "rstanarm") {
-    nms <- sub("\\.sd\\.(.*)$", ":\\1,\\1", nms)
-    nms <- sub("\\.cor\\.(.*)\\.(.*)$", ":\\2,\\1", nms)
+    for (coef_nms_i in coef_nms) {
+      coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
+                                   gsub("\\(", "\\\\(",
+                                        gsub("\\.", "\\\\.", coef_nms_i))),
+                              collapse = "|")
+      # For the substring "\\.sd\\.":
+      nms <- sub(paste0("\\.sd\\.(", coef_nms_i_esc, ")$"),
+                 ":\\1,\\1",
+                 nms)
+      # For the substring "\\.cor\\.":
+      nms <- sub(
+        paste0("\\.cor\\.(", coef_nms_i_esc, ")\\.(", coef_nms_i_esc, ")$"),
+        ":\\2,\\1",
+        nms
+      )
+    }
     nms <- paste0("Sigma[", nms, "]")
   }
   return(nms)
