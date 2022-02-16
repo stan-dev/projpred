@@ -849,25 +849,23 @@ mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
     nms <- sub(paste0("(", grp_nms_esc, ")\\.(sd|cor)\\."),
                "\\2_\\1__",
                nms)
-    for (coef_nms_i in coef_nms) {
+  }
+  for (coef_nms_i in coef_nms) {
+    if (nm_scheme == "brms") {
       coef_nms_i <- mknms_icpt(coef_nms_i, nm_scheme = nm_scheme)
-      # Escape special characters in the coefficient names and collapse them
-      # with "|":
-      coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
-                                   gsub("\\(", "\\\\(",
-                                        gsub("\\.", "\\\\.", coef_nms_i))),
-                              collapse = "|")
+    }
+    # Escape special characters in the coefficient names and collapse them
+    # with "|":
+    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
+                                 gsub("\\(", "\\\\(",
+                                      gsub("\\.", "\\\\.", coef_nms_i))),
+                            collapse = "|")
+    if (nm_scheme == "brms") {
       # Replace dots between coefficient names by double underscores:
       nms <- gsub(paste0("(", coef_nms_i_esc, ")\\."),
                   "\\1__",
                   nms)
-    }
-  } else if (nm_scheme == "rstanarm") {
-    for (coef_nms_i in coef_nms) {
-      coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
-                                   gsub("\\(", "\\\\(",
-                                        gsub("\\.", "\\\\.", coef_nms_i))),
-                              collapse = "|")
+    } else if (nm_scheme == "rstanarm") {
       # For the substring "\\.sd\\.":
       nms <- sub(paste0("\\.sd\\.(", coef_nms_i_esc, ")$"),
                  ":\\1,\\1",
@@ -879,6 +877,8 @@ mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
         nms
       )
     }
+  }
+  if (nm_scheme == "rstanarm") {
     nms <- paste0("Sigma[", nms, "]")
   }
   return(nms)
