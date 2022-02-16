@@ -838,32 +838,29 @@ mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
   ))))
   if (nm_scheme == "brms") {
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
+    # Escape special characters in the group names and collapse them with "|":
+    grp_nms_esc <- paste(gsub("\\)", "\\\\)",
+                              gsub("\\(", "\\\\(",
+                                   gsub("\\.", "\\\\.", grp_nms))),
+                         collapse = "|")
     # Move the substrings "\\.sd\\." and "\\.cor\\." up front (i.e. in front of
     # the group name), replace their dots, and replace the dot following the
     # group name by double underscores:
-    nms <- sub(
-      paste0(
-        "(",
-        paste(gsub("\\.", "\\\\.", grp_nms),
-              collapse = "|"),
-        ")\\.(sd|cor)\\."
-      ),
-      "\\2_\\1__",
-      nms
-    )
-    # Replace dots between coefficient names by double underscores:
+    nms <- sub(paste0("(", grp_nms_esc, ")\\.(sd|cor)\\."),
+               "\\2_\\1__",
+               nms)
     for (coef_nms_i in coef_nms) {
       coef_nms_i <- mknms_icpt(coef_nms_i, nm_scheme = nm_scheme)
-      nms <- gsub(
-        paste0(
-          "(",
-          paste(gsub("\\.", "\\\\.", coef_nms_i),
-                collapse = "|"),
-          ")\\."
-        ),
-        "\\1__",
-        nms
-      )
+      # Escape special characters in the coefficient names and collapse them
+      # with "|":
+      coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
+                                   gsub("\\(", "\\\\(",
+                                        gsub("\\.", "\\\\.", coef_nms_i))),
+                              collapse = "|")
+      # Replace dots between coefficient names by double underscores:
+      nms <- gsub(paste0("(", coef_nms_i_esc, ")\\."),
+                  "\\1__",
+                  nms)
     }
   } else if (nm_scheme == "rstanarm") {
     for (coef_nms_i in coef_nms) {
