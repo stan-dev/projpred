@@ -1017,7 +1017,8 @@ get_subparams.gamm4 <- function(x, ...) {
 #'   as elements of a `list`).
 #' @param nm_scheme The naming scheme for the columns of the output matrix.
 #'   Either `"auto"`, `"rstanarm"`, or `"brms"`, where `"auto"` chooses
-#'   `"rstanarm"` or `"brms"` based on the class of the reference model fit.
+#'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
+#'   uses `"rstanarm"` if the reference model fit is of an unknown class).
 #' @param ... Currently ignored.
 #'
 #' @return An \eqn{S_{\mbox{prj}} \times Q}{S_prj x Q} matrix of projected
@@ -1082,10 +1083,10 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
             "clusters might have different weights.")
   }
   if (identical(nm_scheme, "auto")) {
-    if (inherits(x$refmodel$fit, "stanreg")) {
-      nm_scheme <- "rstanarm"
-    } else if (inherits(x$refmodel$fit, "brmsfit")) {
+    if (inherits(x$refmodel$fit, "brmsfit")) {
       nm_scheme <- "brms"
+    } else {
+      nm_scheme <- "rstanarm"
     }
   }
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))

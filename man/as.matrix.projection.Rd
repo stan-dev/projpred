@@ -12,7 +12,8 @@ as elements of a \code{list}).}
 
 \item{nm_scheme}{The naming scheme for the columns of the output matrix.
 Either \code{"auto"}, \code{"rstanarm"}, or \code{"brms"}, where \code{"auto"} chooses
-\code{"rstanarm"} or \code{"brms"} based on the class of the reference model fit.}
+\code{"rstanarm"} or \code{"brms"} based on the class of the reference model fit (and
+uses \code{"rstanarm"} if the reference model fit is of an unknown class).}
 
 \item{...}{Currently ignored.}
 }
