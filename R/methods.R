@@ -836,7 +836,7 @@ mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
     # We will have to move the substrings "sd\\." and "cor\\." up front (i.e. in
     # front of the group name), so make sure that they don't occur in the group
     # names:
-    stopifnot(!any(grepl("sd\\.|cor\\.", grp_nms)))
+    stopifnot(!any(grepl("\\.sd\\.|\\.cor\\.", grp_nms)))
     # Move the substrings "sd\\." and "cor\\." up front and replace the dot
     # following the group name by double underscores:
     nms <- sub(
