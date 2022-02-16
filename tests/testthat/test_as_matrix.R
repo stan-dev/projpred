@@ -18,6 +18,7 @@ test_that("as.matrix.projection() works", {
     tstsetup_ref <- args_prj[[tstsetup]]$tstsetup_ref
     mod_crr <- args_prj[[tstsetup]]$mod_nm
     fam_crr <- args_prj[[tstsetup]]$fam_nm
+    pkg_crr <- args_prj[[tstsetup]]$pkg_nm
     solterms <- args_prj[[tstsetup]]$solution_terms
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
@@ -38,8 +39,12 @@ test_that("as.matrix.projection() works", {
       npars_fam <- character()
     }
 
+    icpt_nm <- "Intercept"
+    if (pkg_crr == "rstanarm") {
+      icpt_nm <- paste0("(", icpt_nm, ")")
+    }
     colnms_prjmat_expect <- c(
-      "Intercept",
+      icpt_nm,
       grep("\\|", grep("x(co|ca)\\.[[:digit:]]", solterms, value = TRUE),
            value = TRUE, invert = TRUE)
     )
@@ -71,7 +76,9 @@ test_that("as.matrix.projection() works", {
         }))
       )
     }
-    colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
+    if (pkg_crr == "brms") {
+      colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
+    }
     if ("(1 | z.1)" %in% solterms) {
       colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__Intercept")
       colnms_prjmat_expect <- c(
