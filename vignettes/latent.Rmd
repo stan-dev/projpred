@@ -18,6 +18,7 @@ params:
 This vignette shows how to implement the latent projection predictive inference from @latent-projpred in `projpred`.
 
 ```{r, message=FALSE, warning=FALSE}
+devtools::install_github("stan-dev/projpred", ref = "latent_projection")
 # import necessary libraries for the vignette
 library(magrittr)
 library(brms)
@@ -28,30 +29,21 @@ options(mc.cores = parallel::detectCores(logical = FALSE))
 
 ## General idea
 
-For non-exponential distributions, there is no equivalency ingeneral between minimising the KL divergence and ML estimates, which is of course the foundational idea of projection predictive inference. In order to bypass this issue, we solve the KL minimisation in the latent predictive space $p(\tilde{\eta}|\lambda_*)$ under the general model formulation for data $\mathcal{D}=\{\boldsymbol X | y\}$
+For generalised linear models whose variate's distribution does not belong to the exponential family, the KL divergence minimisation problem solved in projection is not analytically easy to compute in general. This is the foundational idea of efficient projection predictive inference. In order to bypass this issue, we solve the KL minimisation in the latent predictive space $p(\tilde{\eta}|\lambda_*)$ under the general model formulation for data $\mathcal{D}=\{\boldsymbol X | y\}$
 $$
 y\sim p(\mu, \phi),\quad\mu = g(\eta),\quad \eta\sim p(\lambda|\boldsymbol X),
 $$
 where we have regressions parameters $\lambda$, inverse link function $g(\cdot)$, and $\eta$ is called the latent predictor.
 
-Importantly, we make the assumption in this setting that the latent predictor has Gaussian distribution. We do so since it is the linear combination of our data and our regressors, and thus has infinite support. In the case where $\eta$ has two finite moments, then we know from @cover-thomas that over all distributions with two finite moments and infinite support, the Gaussian distribution has the higher differential entropy. If the first two moments of $p(\lambda|\boldsymbol X)$ are not finite, we still make this Gaussianity assumption given they share the same support, and that $\eta$ results from an additive process, which can be approximated by a Gaussian.
-
-Implemented in `projpred`, we follow the following workflow:
-
-1. Fit reference model;
-2. Extract latent predictor posterior draws;
-3. Redefine reference model in terms of the latent predictor with Gaussianty assumption;
-4. Run vanilla variable selection from `projpred` on new reference model.
+We make the assumption in this setting that the latent predictor has a Gaussian distribution, since it is the linear combination of our data and our regressors and has infinite support. In the case where $\eta$ has two finite moments, then we know from @cover-thomas that over all distributions with two finite moments and infinite support, the Gaussian distribution has the higher differential entropy. In doing so, we return to the "easy" exponential family case, and can implement the original `projpred` workflow once more.
 
 ## Exponential GLM example
 
-In the case of an exponential variate distribution, it has been shown in @latent-projpred that no real advantage is gained from employing this methodology, but it can serve as an informative introduction for us.
+In the case of an exponential variate distribution, it has been shown in @latent-projpred this Gaussian approximation can improve training times and occasionally identify superior search paths to vanilla `projpred`.
 
 To begin with, we generate some fake Poisson GLM data.
 
 ```{r}
-### Comment by FW: I haven't checked whether the code in
-### generate_fake_poisson_data() actually makes sense.
 # generate random data
 generate_fake_poisson_data <-
   function(N = 100,
@@ -79,15 +71,14 @@ generate_fake_poisson_data <-
     rownames(fake) <- NULL
     return(fake)
   }
-set.seed(1234)
+set.seed(300416)
 pois <- generate_fake_poisson_data()
 ```
 
-Following the workflow presented above, we begin by fitting some reference model we believe to be a good fit to the data in BRMS.
+We begin by fitting some reference model we believe to be a good fit to the data in BRMS.
 
 ```{r, message=FALSE, warning=FALSE}
-### Comment by FW: I haven't checked whether the model actually makes sense.
-# build complete reference model on the covariate
+# build complete reference model on the variate
 poisson_priors <- set_prior("normal(0, 1)", class = "b")
 poisson_formula <- y ~ 1 + x1 + x2
 model_poisson <- brm(
@@ -95,21 +86,11 @@ model_poisson <- brm(
   data = pois,
   family = poisson(),
   prior = poisson_priors,
-  seed = 346347
+  seed = 300416
 )
 ```
 
-We now proceed to extract the latent predictor posterior draws from this reference model.
-
-```{r}
-### Currently, extract_eta() is not necessary. (But perhaps in the future? The
-### body of extract_eta() hints at plans for extending this).
-# # extract posterior draws of latent predictor
-# eta_post_draws <- extract_eta(model_poisson, pois)
-###
-```
-
-And using these, we fit a new reference model in terms of the latent predictor, and using the default Gaussianity assumption.
+We now extract a reference model in terms of the latent predictor under the Gaussianity assumption. This is done in `projpred` by setting `latent_proj = TRUE`.
 
 ```{r}
 # define new reference model for latent predictor
@@ -130,7 +111,7 @@ solution_terms(latent_vs)
 plot(latent_vs, stats = c('elpd', 'rmse'), seed = 4537)
 ```
 
-Note that as explained in @latent-projpred, this method on a GLM with variate having distribution belonging to the exponential family does not result in any significant improvement, as is shown below simply applying variable selection directly on the reference model.
+We can compare this implementation of latent projection predictive variable selection to vanilla `projpred` since the underlying covariate does in fact have distribution belonging to the exponential family. This is done below.
 
 ```{r}
 # get reference model from BRMS object
@@ -149,9 +130,9 @@ We now turn to a non-Exponential family distributed variate. Specifically, we wi
 $$
 f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1}  \exp\left(-\left(\frac{y}{s}\right)^\alpha\right),
 $$
-and is dealin with censored data from the lung cancer dataset from @lung. We note that in general, the Weibull distribution is not Exponential. In fact this is only the case when the shape parameter $\alpha$ is known and fixed.
+and is dealing with censored data from the lung cancer dataset from @lung. We note that in general, the Weibull distribution is not a member of the exponential family In fact this is only the case when the shape parameter $\alpha$ is known and fixed.
 
-We repeat the workflow already presented, first processing our data as follows.
+We first process our data as follows.
 
 ```{r}
 # read data from `survival` library
@@ -163,15 +144,11 @@ data <- cancer %>%
 xtags <- data %>%
   dplyr::select(-status, -time) %>%
   colnames()
-# retrieve the number of covariates
-D <- length(xtags)
 ```
 
-We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor). We then fit the model accordingly.
+We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor) and fit it accordingly in BRMS.
 
 ```{r, message=FALSE, warning=FALSE}
-### Comment by FW: I haven't checked whether the model actually makes sense. The
-### brm() call below fails on my machine. Perhaps `1 - status` is incorrect?
 # build model formula of the form
 formula <- formula(paste("time | cens(1 - status) ~",
                          paste0(xtags, collapse = " + ")))
@@ -183,19 +160,13 @@ fit <- brm(
   data = data,
   prior = prior,
   family = weibull,
-  seed = 5559369
+  seed = 300416
 )
 ```
 
 Repeating the workflow, we first extract the latent predictor posterior draws, and then define a reference model in terms of them. It is at this stage that we enforce our Gaussianity assumption in the default parameter value of the `fit_latent` function.
 
 ```{r}
-### Currently, extract_eta() is not necessary. (But perhaps in the future? The
-### body of extract_eta() hints at plans for extending this).
-# # extract posterior draws of latent predictor
-# eta_post_draws <- extract_eta(fit, data)
-###
-
 # define new reference model for latent predictor
 latent_ref <- get_refmodel(
   fit,
@@ -203,7 +174,7 @@ latent_ref <- get_refmodel(
 )
 ```
 
-Having now build a reference model belonging to the Exponential family from a model originally Weibull-distributed, we can employ vanilla variable selection with `projpred`.
+Having now build a reference model belonging to the Exponential family from a model originally Weibull-distributed, we can employ variable selection with `projpred`.
 
 ```{r}
 # perform latent projection predictive variable selection on model
@@ -214,6 +185,6 @@ solution_terms(vs)
 plot(vs, stats = c('elpd', 'rmse'), seed = 842032)
 ```
 
-We thus discover an ordering of variables in this non-Exponential family model using latent projection predictive inference.
+We thus discover an ordering of variables in this non-exponential family model using latent projection predictive inference.
 
 ## References
