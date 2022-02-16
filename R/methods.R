@@ -889,29 +889,40 @@ mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
 mknms_ranef <- function(nms, nm_scheme, coef_nms) {
   if (nm_scheme == "brms") {
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
-    nms <- paste0("r_", nms)
-    for (coef_nms_idx in seq_along(coef_nms)) {
-      group_nm_i <- names(coef_nms)[coef_nms_idx]
-      coef_nms_i <- coef_nms[[coef_nms_idx]]
+  }
+  for (coef_nms_idx in seq_along(coef_nms)) {
+    coef_nms_i <- coef_nms[[coef_nms_idx]]
+    if (nm_scheme == "brms") {
       coef_nms_i <- mknms_icpt(coef_nms_i, nm_scheme = nm_scheme)
-      # Put the part following the group name in square brackets, reorder its
-      # two subparts (coefficient name and group level) and separate them by
-      # comma:
-      nms <- sub(
-        paste0(
-          "(",
-          gsub("\\.", "\\\\.", group_nm_i),
-          ")\\.(",
-          paste(gsub("\\.", "\\\\.", coef_nms_i),
-                collapse = "|"),
-          ")\\.(.*)$"
-        ),
-        "\\1[\\3,\\2]",
-        nms
-      )
     }
+    # Escape special characters in the coefficient names and collapse them with
+    # "|":
+    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
+                                 gsub("\\(", "\\\\(",
+                                      gsub("\\.", "\\\\.", coef_nms_i))),
+                            collapse = "|")
+    if (nm_scheme == "brms") {
+      # Put the part following the group name in square brackets, reorder its
+      # two subparts (coefficient name and group level), and separate them by
+      # comma:
+      nms <- sub(paste0("\\.(", coef_nms_i_esc, ")\\.(.*)$"),
+                 "[\\2,\\1]",
+                 nms)
+    } else if (nm_scheme == "rstanarm") {
+      grp_nm_i <- names(coef_nms)[coef_nms_idx]
+      # Escape special characters in the group name:
+      grp_nm_i_esc <- gsub("\\)", "\\\\)",
+                           gsub("\\(", "\\\\(",
+                                gsub("\\.", "\\\\.", grp_nm_i)))
+      # Re-arrange as required:
+      nms <- sub(paste0("^(", grp_nm_i_esc, ")\\.(", coef_nms_i_esc, ")\\."),
+                 "\\2 \\1:",
+                 nms)
+    }
+  }
+  if (nm_scheme == "brms") {
+    nms <- paste0("r_", nms)
   } else if (nm_scheme == "rstanarm") {
-    nms <- sub("^(.*)\\.(.*)\\.", "\\2 \\1:", nms)
     nms <- paste0("b[", nms, "]")
   }
   return(nms)
