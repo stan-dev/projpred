@@ -803,17 +803,21 @@ suggest_size.vsel <- function(
   return(suggested_size - 1) ## substract the intercept
 }
 
-replace_intercept_name <- function(nms, nm_scheme) {
+# Make the parameter name(s) for the intercept(s) adhere to the naming scheme
+# `nm_scheme`:
+mknms_icpt <- function(nms, nm_scheme) {
   if (nm_scheme == "brms") {
     nms <- gsub("\\(Intercept\\)", "Intercept", nms)
   }
   return(nms)
 }
 
+# Replace the names of an object containing population-level effects so that
+# these names adhere to the naming scheme `nm_scheme`:
 replace_population_names <- function(population_effects, nm_scheme) {
   if (nm_scheme == "brms") {
     # Use brms's naming convention:
-    names(population_effects) <- replace_intercept_name(
+    names(population_effects) <- mknms_icpt(
       names(population_effects),
       nm_scheme = nm_scheme
     )
@@ -822,10 +826,12 @@ replace_population_names <- function(population_effects, nm_scheme) {
   return(population_effects)
 }
 
-replace_VarCorr_names <- function(nms, nm_scheme, coef_nms) {
+# Make the parameter names for variance components adhere to the naming scheme
+# `nm_scheme`:
+mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
   if (nm_scheme == "brms") {
     grp_nms <- names(coef_nms)
-    nms <- replace_intercept_name(nms, nm_scheme = nm_scheme)
+    nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
 
     # We will have to move the substrings "sd\\." and "cor\\." up front (i.e. in
     # front of the group name), so make sure that they don't occur in the group
@@ -845,7 +851,7 @@ replace_VarCorr_names <- function(nms, nm_scheme, coef_nms) {
     )
     # Replace dots between coefficient names by double underscores:
     for (coef_nms_i in coef_nms) {
-      coef_nms_i <- replace_intercept_name(coef_nms_i, nm_scheme = nm_scheme)
+      coef_nms_i <- mknms_icpt(coef_nms_i, nm_scheme = nm_scheme)
       nms <- gsub(
         paste0(
           "(",
@@ -865,14 +871,16 @@ replace_VarCorr_names <- function(nms, nm_scheme, coef_nms) {
   return(nms)
 }
 
-replace_ranef_names <- function(nms, nm_scheme, coef_nms) {
+# Make the parameter names for group-level effects adhere to the naming scheme
+# `nm_scheme`:
+mknms_ranef <- function(nms, nm_scheme, coef_nms) {
   if (nm_scheme == "brms") {
-    nms <- replace_intercept_name(nms, nm_scheme = nm_scheme)
+    nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
     nms <- paste0("r_", nms)
     for (coef_nms_idx in seq_along(coef_nms)) {
       group_nm_i <- names(coef_nms)[coef_nms_idx]
       coef_nms_i <- coef_nms[[coef_nms_idx]]
-      coef_nms_i <- replace_intercept_name(coef_nms_i, nm_scheme = nm_scheme)
+      coef_nms_i <- mknms_icpt(coef_nms_i, nm_scheme = nm_scheme)
       # Put the part following the group name in square brackets, reorder its
       # two subparts (coefficient name and group level) and separate them by
       # comma:
@@ -967,7 +975,7 @@ get_subparams.lmerMod <- function(x, ...) {
     }
     return(vc_out)
   }))
-  names(group_vc) <- replace_VarCorr_names(
+  names(group_vc) <- mknms_VarCorr(
     names(group_vc),
     coef_nms = lapply(group_vc_raw, rownames),
     ...
@@ -986,7 +994,7 @@ get_subparams.lmerMod <- function(x, ...) {
             })
     )
   }))
-  names(group_ef) <- replace_ranef_names(
+  names(group_ef) <- mknms_ranef(
     names(group_ef),
     coef_nms = lapply(group_vc_raw, rownames),
     ...
