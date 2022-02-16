@@ -29,7 +29,7 @@ test_that("as.matrix.projection() works", {
     } else {
       warn_prjmat_expect <- NA
     }
-    expect_warning(m <- as.matrix(prjs[[tstsetup]], nm_scheme = "brms"),
+    expect_warning(m <- as.matrix(prjs[[tstsetup]]),
                    warn_prjmat_expect, info = tstsetup)
 
     if (fam_crr == "gauss") {
@@ -188,7 +188,7 @@ if (run_snaps) {
         prjs_vs_l <- list(prjs_vs_l)
       }
       res_vs <- lapply(prjs_vs_l, function(prjs_vs_i) {
-        expect_warning(m <- as.matrix(prjs_vs_i, nm_scheme = "brms"),
+        expect_warning(m <- as.matrix(prjs_vs_i),
                        warn_prjmat_expect, info = tstsetup)
         expect_snapshot({
           print(tstsetup)
@@ -234,7 +234,7 @@ if (run_snaps) {
         prjs_cvvs_l <- list(prjs_cvvs_l)
       }
       res_cvvs <- lapply(prjs_cvvs_l, function(prjs_cvvs_i) {
-        expect_warning(m <- as.matrix(prjs_cvvs_i, nm_scheme = "brms"),
+        expect_warning(m <- as.matrix(prjs_cvvs_i),
                        warn_prjmat_expect, info = tstsetup)
         expect_snapshot({
           print(tstsetup)
