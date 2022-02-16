@@ -204,12 +204,7 @@ Note that we only visualize the *1-dimensional* marginals of the projected poste
 For comparison, consider the marginal posteriors of the corresponding parameters in the reference model:
 ```{r}
 refm_mat <- as.matrix(refm_fit)
-pars_nms_refm <- c(
-  "(Intercept)",
-  sub("^b_", "", grep("^b_X", colnames(prj_mat), value = TRUE)),
-  "sigma"
-)
-mcmc_intervals(refm_mat, pars = pars_nms_refm) +
+mcmc_intervals(refm_mat, pars = colnames(prj_mat)) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
 ```
 

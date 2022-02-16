@@ -797,26 +797,26 @@ args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
   pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
   mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
   fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
+  if (grepl("\\.spclformul", tstsetup_ref)) {
+    solterms_x <- solterms_spcl
+  }
   solterms <- nlist(empty = character(), solterms_x)
-  if (!grepl("\\.spclformul", tstsetup_ref)) {
-    if (mod_crr %in% c("glmm", "gamm")) {
-      solterms <- c(solterms,
-                    nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
-    }
-    if (mod_crr %in% c("gam", "gamm")) {
-      solterms <- c(solterms,
-                    nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
-    }
-    if (mod_crr == "gamm") {
-      solterms <- c(solterms,
-                    nlist(solterms_sz = c(solterms_s, solterms_z),
-                          solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
-    }
-    if (!run_more && fam_crr != "gauss") {
-      solterms <- tail(solterms, 1)
-    }
-  } else {
-    solterms <- nlist(solterms_spcl)
+  if (mod_crr %in% c("glmm", "gamm")) {
+    solterms <- c(solterms,
+                  nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
+  }
+  if (mod_crr %in% c("gam", "gamm")) {
+    solterms <- c(solterms,
+                  nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
+  }
+  if (mod_crr == "gamm") {
+    solterms <- c(solterms,
+                  nlist(solterms_sz = c(solterms_s, solterms_z),
+                        solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
+  }
+  if (!run_more &&
+      (fam_crr != "gauss" || grepl("\\.spclformul", tstsetup_ref))) {
+    solterms <- tail(solterms, 1)
   }
   lapply(setNames(nm = names(solterms)), function(solterms_nm_i) {
     if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
