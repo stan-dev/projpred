@@ -80,22 +80,45 @@ test_that("as.matrix.projection() works", {
       colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
     }
     if ("(1 | z.1)" %in% solterms) {
-      colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__Intercept")
-      colnms_prjmat_expect <- c(
-        colnms_prjmat_expect,
-        paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
-      )
+      if (pkg_crr == "brms") {
+        colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__Intercept")
+        colnms_prjmat_expect <- c(
+          colnms_prjmat_expect,
+          paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
+        )
+      } else if (pkg_crr == "rstanarm") {
+        colnms_prjmat_expect <- c(colnms_prjmat_expect,
+                                  "Sigma[z.1:(Intercept),(Intercept)]")
+        colnms_prjmat_expect <- c(
+          colnms_prjmat_expect,
+          paste0("b[(Intercept) z.1:lvl", seq_len(nlvl_ran[1]), "]")
+        )
+      }
     }
     if ("(xco.1 | z.1)" %in% solterms) {
-      colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__xco.1")
-      colnms_prjmat_expect <- c(
-        colnms_prjmat_expect,
-        paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
-      )
+      if (pkg_crr == "brms") {
+        colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__xco.1")
+        colnms_prjmat_expect <- c(
+          colnms_prjmat_expect,
+          paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
+        )
+      } else if (pkg_crr == "rstanarm") {
+        colnms_prjmat_expect <- c(colnms_prjmat_expect,
+                                  "Sigma[z.1:xco.1,xco.1]")
+        colnms_prjmat_expect <- c(
+          colnms_prjmat_expect,
+          paste0("b[xco.1 z.1:lvl", seq_len(nlvl_ran[1]), "]")
+        )
+      }
     }
     if (all(c("(1 | z.1)", "(xco.1 | z.1)") %in% solterms)) {
-      colnms_prjmat_expect <- c(colnms_prjmat_expect,
-                                "cor_z.1__Intercept__xco.1")
+      if (pkg_crr == "brms") {
+        colnms_prjmat_expect <- c(colnms_prjmat_expect,
+                                  "cor_z.1__Intercept__xco.1")
+      } else if (pkg_crr == "rstanarm") {
+        colnms_prjmat_expect <- c(colnms_prjmat_expect,
+                                  "Sigma[z.1:xco.1,(Intercept)]")
+      }
     }
     s_nms <- sub("\\)$", "",
                  sub("^s\\(", "",
