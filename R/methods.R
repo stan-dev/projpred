@@ -803,11 +803,11 @@ suggest_size.vsel <- function(
   return(suggested_size - 1) ## substract the intercept
 }
 
-replace_intercept_name <- function(names, nm_scheme) {
+replace_intercept_name <- function(nms, nm_scheme) {
   if (nm_scheme == "brms") {
-    names <- gsub("\\(Intercept\\)", "Intercept", names)
+    nms <- gsub("\\(Intercept\\)", "Intercept", nms)
   }
-  return(names)
+  return(nms)
 }
 
 replace_population_names <- function(population_effects, nm_scheme) {
