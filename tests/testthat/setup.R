@@ -652,7 +652,7 @@ stats_common <- c("elpd", "mlpd", "mse", "rmse")
 stats_tst <- list(
   default_stats = list(),
   common_stats = list(stats = stats_common),
-  binom_stats = list(stats = c(stats_common, c("acc", "auc")))
+  binom_stats = list(stats = c(stats_common, "acc", "auc"))
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
