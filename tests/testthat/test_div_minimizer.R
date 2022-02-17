@@ -13,7 +13,7 @@ test_that("`divmin` works", {
       var_crr <- mean(as.matrix(fits[[tstsetup]])[, "sigma"]^2) +
         (colMeans(mu_crr^2) - colMeans(mu_crr)^2)
     } else {
-      var_crr <- rep(0, nobsv)
+      var_crr <- rep(NA, nobsv)
     }
     args_fit_i$projpred_var <- matrix(var_crr)
     args_fit_i$projpred_regul <- regul_default
