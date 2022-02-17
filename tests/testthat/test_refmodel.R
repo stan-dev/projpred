@@ -79,7 +79,7 @@ test_that("offsets specified via argument `offset` fail", {
 
 test_that(paste(
   "binomial family with 1-column response and weights which are not all ones",
-  "warns"
+  "errors"
 ), {
   dat_prop <- within(dat, {
     ybinprop_glm <- y_glm_binom / wobs_col
@@ -91,14 +91,14 @@ test_that(paste(
     chains = chains_tst, seed = seed_fit, iter = iter_tst, QR = TRUE,
     refresh = 0
   ))
-  expect_equal(
-    as.matrix(fit_binom_1col_wobs),
-    as.matrix(fits$rstanarm.glm.binom.stdformul.without_wobs.with_offs)
-  )
-  expect_error(
-    get_refmodel(fit_binom_1col_wobs),
-    paste("response must contain numbers of successes")
-  )
+  if ("rstanarm.glm.binom.stdformul.without_wobs.with_offs" %in% names(fits)) {
+    expect_equal(
+      as.matrix(fit_binom_1col_wobs),
+      as.matrix(fits$rstanarm.glm.binom.stdformul.without_wobs.with_offs)
+    )
+  }
+  expect_error(get_refmodel(fit_binom_1col_wobs),
+               "response must contain numbers of successes")
 })
 
 test_that("get_refmodel() is idempotent", {
@@ -191,5 +191,20 @@ test_that(paste(
                  info = tstsetup)
     expect_false(isTRUE(all.equal(predref_ynew_resp, predref_link)),
                  info = tstsetup)
+
+    # Snapshots:
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(predref_resp))
+        print(rlang::hash(predref_link))
+        print(rlang::hash(predref_ynew_resp))
+        print(rlang::hash(predref_ynew_link))
+      })
+      options(width = width_orig$width)
+      if (testthat_ed_max2) local_edition(2)
+    }
   }
 })

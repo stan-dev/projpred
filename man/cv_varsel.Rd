@@ -39,7 +39,9 @@ cv_varsel(object, ...)
 \code{\link[=init_refmodel]{init_refmodel()}}) or an object that can be passed to argument \code{object} of
 \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}}.}
+\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as well as to the divergence
+minimizer (during a forward search and also during the evaluation part, but
+the latter only if \code{refit_prj} is \code{TRUE}).}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
@@ -218,8 +220,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
 \references{
 Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
 evaluation using leave-one-out cross-validation and WAIC. \emph{Statistics and
-Computing}, \strong{27}(5), 1413-1432. DOI:
-\href{https://doi.org/10.1007/s11222-016-9696-4}{10.1007/s11222-016-9696-4}.
+Computing}, \strong{27}(5), 1413-1432. DOI: \doi{10.1007/s11222-016-9696-4}.
 
 Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
 smoothed importance sampling. \emph{arXiv:1507.02646}. URL:

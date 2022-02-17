@@ -10,6 +10,9 @@ context("ridge")
 # Needed to clean up the workspace afterwards (i.e, after this test file):
 ls_bu <- ls()
 
+if (exists(".Random.seed", envir = .GlobalEnv)) {
+  rng_old <- get(".Random.seed", envir = .GlobalEnv)
+}
 set.seed(1235)
 n <- 40
 nterms <- 10
@@ -269,5 +272,6 @@ test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
 #                tolerance = tol)
 # })
 
+if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 # Clean up the workspace:
 rm(list = setdiff(ls(), ls_bu))

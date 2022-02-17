@@ -135,6 +135,7 @@
 #'     GLM fitter).
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
+#'     + `...` accepts further arguments specified by the user.
 #'
 #' The return value of these functions needs to be:
 #' * `ref_predfun`: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
@@ -624,7 +625,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
   formula <- update(formula, paste(response_name[1], "~ ."))
-  if (formula_contains_additive_terms(formula)) {
+  if (formula_contains_additive_terms(formula) &&
+      isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
     warning("Support for additive models is still experimental.")
   }
 

@@ -10,7 +10,7 @@ bibentry(
   author = authors,
   year = year,
   note = note,
-  url = "https://mc-stan.org/projpred",
+  url = "https://mc-stan.org/projpred/",
   header = "To cite the 'projpred' R package:",
   encoding = "UTF-8"
 )

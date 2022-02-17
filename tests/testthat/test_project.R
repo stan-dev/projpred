@@ -239,15 +239,15 @@ test_that("invalid `nterms` fails", {
 # ndraws and nclusters ----------------------------------------------------
 
 test_that("invalid `ndraws` fails", {
-  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
-                    names(prjs), value = TRUE)
+  tstsetups <- head(grep("\\.glm\\.gauss.*\\.solterms_x\\.", names(prjs),
+                         value = TRUE), 1)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     expect_error(
       do.call(project, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
              ndraws = NULL),
-        excl_nonargs(args_prj_i)
+        excl_nonargs(args_prj_i, nms_excl_add = c("ndraws", "nclusters"))
       )),
       "^!is\\.null\\(ndraws\\) is not TRUE$",
       info = tstsetup
@@ -259,8 +259,8 @@ test_that(paste(
   "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
   "of posterior draws in the reference model"
 ), {
-  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.default_ndr_ncl$",
-                    names(prjs), value = TRUE)
+  tstsetups <- head(grep("\\.glm\\.gauss.*\\.solterms_x\\.", names(prjs),
+                         value = TRUE), 1)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     S <- nrow(as.matrix(fits[[args_prj_i$tstsetup_fit]]))
@@ -270,7 +270,7 @@ test_that(paste(
           list(object = refmods[[args_prj_i$tstsetup_ref]],
                ndraws = ndraws_crr,
                nclusters = nclusters_crr),
-          excl_nonargs(args_prj_i)
+          excl_nonargs(args_prj_i, nms_excl_add = c("ndraws", "nclusters"))
         ))
         projection_tester(
           p,
@@ -292,9 +292,6 @@ test_that("non-clustered projection does not require a seed", {
   # don't expect it to be necessary.
   tstsetups <- grep("\\.noclust$|\\.default_ndr_ncl$", names(prjs),
                     value = TRUE)
-  # Be completely random here (should not be necessary, though, when advancing
-  # `.Random.seed[2]` as done further below):
-  set.seed(NULL)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]
@@ -384,7 +381,7 @@ test_that("for GLMs, `regul` has an expected effect", {
       } else {
         warn_prjmat_expect <- NA
       }
-      expect_warning(prjmat <- as.matrix(prj_regul),
+      expect_warning(prjmat <- as.matrix(prj_regul, nm_scheme = "brms"),
                      warn_prjmat_expect, info = tstsetup)
 
       # Reduce to only those columns which are necessary here:

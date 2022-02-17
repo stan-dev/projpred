@@ -57,29 +57,18 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     args_vs_i <- args_vs[[tstsetup]]
     vs_orig <- vss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
-    .Random.seed_new1 <- .Random.seed
-    vs_new <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$tstsetup_ref]],
-           seed = args_vs_i$seed + 1L),
-      excl_nonargs(args_vs_i, nms_excl_add = "seed")
-    ))
-    .Random.seed_new2 <- .Random.seed
-    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
     vs_repr <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]]),
       excl_nonargs(args_vs_i)
     ))
     .Random.seed_repr2 <- .Random.seed
+    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     # Expected equality:
     expect_equal(vs_repr, vs_orig, info = tstsetup)
-    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
     expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     # Expected inequality:
-    expect_false(isTRUE(all.equal(vs_new, vs_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
-    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
-                 info = tstsetup)
   }
 })
 
@@ -241,16 +230,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
-    if (identical(args_vs_i$method, "forward")) {
-      ncl_crr <- args_vs_i$nclusters
-    } else {
-      ncl_crr <- 1L
-    }
-    if (!grepl("\\.spclformul", tstsetup)) {
-      tol_alpha <- 3e-1
-    } else {
-      tol_alpha <- 5e-1
-    }
+    ncl_crr <- args_vs_i$nclusters
     ssq_regul_sel_alpha <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_sel_beta <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_prd <- array(dim = c(length(regul_tst), m_max))
@@ -309,16 +289,6 @@ test_that(paste(
     # For the intercept-only model:
     for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
       expect_length(unique(ssq_regul_sel_alpha[, 1, !!nn]), 1)
-    }
-    # All other (i.e., not intercept-only) models:
-    for (j in seq_len(dim(ssq_regul_sel_alpha)[1])[-1]) {
-      for (m in seq_len(dim(ssq_regul_sel_alpha)[2])[-1]) {
-        for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
-          expect_equal(ssq_regul_sel_alpha[!!j, !!m, !!nn],
-                       ssq_regul_sel_alpha[j - 1, m, nn],
-                       tolerance = tol_alpha)
-        }
-      }
     }
     # For the intercept-only model:
     expect_true(all(is.na(ssq_regul_sel_beta[, 1, ])), info = tstsetup)
@@ -513,38 +483,29 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   # .get_refdist().
   skip_if_not(run_cvvs)
   # To save time:
-  tstsetups <- grep("\\.glm\\.gauss", names(cvvss), value = TRUE)
+  tstsetups <- union(
+    grep("\\.glm\\.gauss", names(cvvss), value = TRUE),
+    # Important for testing get_refmodel.brmsfit()'s internal `kfold_seed` (and
+    # also `refprd_seed` if we are lucky and get a fold which separates out at
+    # least one group):
+    grep("^brms\\.(glmm|gamm)\\..*\\.kfold", names(cvvss), value = TRUE)
+  )
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     cvvs_orig <- cvvss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
-    .Random.seed_new1 <- .Random.seed
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
-    cvvs_new <- suppressWarnings(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
-           seed = args_cvvs_i$seed + 1L),
-      excl_nonargs(args_cvvs_i, nms_excl_add = "seed")
-    )))
-    .Random.seed_new2 <- .Random.seed
-    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
     cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
     )))
     .Random.seed_repr2 <- .Random.seed
+    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     # Expected equality:
     expect_equal(cvvs_repr, cvvs_orig, info = tstsetup)
-    if (!identical(args_cvvs_i$cv_method, "kfold")) {
-      expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
-      expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
-    }
+    expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     # Expected inequality:
-    expect_false(isTRUE(all.equal(cvvs_new, cvvs_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
-    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
-                 info = tstsetup)
   }
 })
 
@@ -581,7 +542,7 @@ test_that(paste(
 
 test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
-  nloo_tst <- nobsv - 1L
+  nloo_tst <- nobsv %/% 5L
   tstsetups <- grep("\\.glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -633,7 +594,7 @@ test_that("`validate_search` works", {
   tstsetups <- grep("\\.default_cvmeth", names(cvvss), value = TRUE)
   if (!run_valsearch_always) {
     tstsetups <- grep("\\.glm\\.", tstsetups, value = TRUE)
-    tstsetups <- grep("\\.forward", tstsetups, value = TRUE, invert = TRUE)
+    tstsetups <- grep("\\.forward\\.", tstsetups, value = TRUE, invert = TRUE)
   }
   suggsize_cond <- setNames(rep(NA, length(tstsetups)), nm = tstsetups)
   for (tstsetup in tstsetups) {
@@ -676,6 +637,18 @@ test_that("`validate_search` works", {
     # Expected inequality for the exceptions (but note that the components from
     # `vsel_nms_cv_valsearch_opt` can be, but don't need to be differing):
     for (vsel_nm in setdiff(vsel_nms_cv_valsearch, vsel_nms_cv_valsearch_opt)) {
+      if (vsel_nm == "pct_solution_terms_cv" &&
+          all(cvvss[[tstsetup]][[vsel_nm]][
+            , colnames(cvvss[[tstsetup]][[vsel_nm]]) != "size", drop = FALSE
+          ] %in% c(0, 1))) {
+        # In this case, a comparison will most likely give the same
+        # `pct_solution_terms_cv` element for `validate_search = TRUE` and
+        # `validate_search = FALSE`. In fact, `pct_solution_terms_cv` could
+        # therefore be added to `vsel_nms_cv_valsearch_opt`, but most of the
+        # time, `pct_solution_terms_cv` will differ, so we don't include it in
+        # `vsel_nms_cv_valsearch_opt` and skip here:
+        next
+      }
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
@@ -726,7 +699,7 @@ test_that(paste(
   "models"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep("^rstanarm.*\\.kfold", names(cvvss), value = TRUE)
+  tstsetups <- grep("^rstanarm\\..*\\.kfold", names(cvvss), value = TRUE)
   if (!run_cvfits_all) {
     tstsetups_tmp <- head(grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
     if (length(tstsetups_tmp) == 0) {
@@ -756,8 +729,12 @@ test_that(paste(
       # belonging to the same level of a variable with group-level effects are
       # in the same fold, so prediction is performed for new levels (see, e.g.,
       # brms's GitHub issue #1286):
+      if (exists(".Random.seed", envir = .GlobalEnv)) {
+        rng_old <- get(".Random.seed", envir = .GlobalEnv)
+      }
       set.seed(seed2_tst) # Makes the construction of the CV folds reproducible.
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
+      if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else {
       folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
     }
@@ -810,10 +787,6 @@ test_that(paste(
       nclusters_pred_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
-    # Note: Unfortunately, it is currently not possible to always ensure exactly
-    # the same seed when performing K-fold CV with `cvfits` or without `cvfits`.
-    # Therefore, the following checks for equality/inequality are quite
-    # restricted.
     # Expected equality for some components:
     # TODO: Currently, `check.environment = FALSE` is needed. The reason is
     # probably that in the divergence minimizers, the projpred-extended family
@@ -841,7 +814,7 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   skip_if_not(packageVersion("brms") >= "2.16.4")
-  tstsetups <- grep("^brms.*\\.kfold", names(cvvss), value = TRUE)
+  tstsetups <- grep("^brms\\..*\\.kfold", names(cvvss), value = TRUE)
   if (!run_cvfits_all) {
     tstsetups_tmp <- head(grep("\\.glmm\\.", tstsetups, value = TRUE), 1)
     if (length(tstsetups_tmp) == 0) {
@@ -862,13 +835,17 @@ test_that(paste(
     K_crr <- args_cvvs_i$K
 
     # Refit `K_crr` times:
-    if (grepl("\\.glmm\\.", tstsetup) && packageVersion("brms") >= "2.16.4") {
+    if (grepl("\\.glmm\\.", tstsetup)) {
       # Perform a grouped K-fold CV to test an edge case where all observations
       # belonging to the same level of a variable with group-level effects are
       # in the same fold, so prediction is performed for new levels (see, e.g.,
       # brms's GitHub issue #1286):
+      if (exists(".Random.seed", envir = .GlobalEnv)) {
+        rng_old <- get(".Random.seed", envir = .GlobalEnv)
+      }
       set.seed(seed2_tst) # Makes the construction of the CV folds reproducible.
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
+      if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else {
       folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
     }
@@ -882,20 +859,24 @@ test_that(paste(
                            folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
-    if (packageVersion("brms") >= "2.16.4") {
-      refmod_crr <- get_refmodel(fit_crr, brms_seed = seed2_tst,
-                                 cvfits = kfold_obj)
-    } else {
-      refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
-    }
+    refmod_crr <- get_refmodel(fit_crr, brms_seed = seed2_tst,
+                               cvfits = kfold_obj)
 
     # Run cv_varsel():
     cvvs_cvfits <- do.call(cv_varsel, c(
       list(object = refmod_crr),
       excl_nonargs(args_cvvs_i, nms_excl_add = "K")
     ))
+    # Test the reproducibility of ref_predfun() when applied to new observations
+    # (should be ensured by get_refmodel.brmsfit()'s internal `refprd_seed`):
+    runif(1)
+    cvvs_cvfits_repr <- do.call(cv_varsel, c(
+      list(object = refmod_crr),
+      excl_nonargs(args_cvvs_i, nms_excl_add = "K")
+    ))
 
     # Checks:
+    expect_equal(cvvs_cvfits, cvvs_cvfits_repr, info = tstsetup)
     vsel_tester(
       cvvs_cvfits,
       with_cv = TRUE,
@@ -908,10 +889,6 @@ test_that(paste(
       nclusters_pred_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
-    # Note: Unfortunately, it is currently not possible to always ensure exactly
-    # the same seed when performing K-fold CV with `cvfits` or without `cvfits`.
-    # Therefore, the following checks for equality/inequality are quite
-    # restricted.
     # Expected equality for some components:
     # TODO: Currently, `check.environment = FALSE` is needed. The reason is
     # probably that in the divergence minimizers, the projpred-extended family

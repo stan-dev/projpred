@@ -55,8 +55,7 @@
 #'
 #' Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
 #' evaluation using leave-one-out cross-validation and WAIC. *Statistics and
-#' Computing*, **27**(5), 1413-1432. DOI:
-#' [10.1007/s11222-016-9696-4](https://doi.org/10.1007/s11222-016-9696-4).
+#' Computing*, **27**(5), 1413-1432. DOI: \doi{10.1007/s11222-016-9696-4}.
 #'
 #' Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
 #' smoothed importance sampling. *arXiv:1507.02646*. URL:
@@ -159,7 +158,7 @@ cv_varsel.refmodel <- function(
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
       validate_search = validate_search, seed = seed,
-      search_terms = search_terms
+      search_terms = search_terms, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
@@ -167,7 +166,7 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, K = K, seed = seed,
-      search_terms = search_terms
+      search_terms = search_terms, ...
     )
   } else {
     stop(sprintf("Unknown `cv_method`: %s.", method))
@@ -184,7 +183,7 @@ cv_varsel.refmodel <- function(
                   refit_prj = refit_prj, nterms_max = nterms_max - 1,
                   penalty = penalty, verbose = verbose,
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
-                  regul = regul, search_terms = search_terms, seed = seed)
+                  regul = regul, search_terms = search_terms, seed = seed, ...)
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
   }
@@ -292,7 +291,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo = NULL,
                        validate_search = TRUE, seed = NULL,
-                       search_terms = NULL) {
+                       search_terms = NULL, ...) {
   ##
   ## Perform the validation of the searching process using LOO. validate_search
   ## indicates whether the selection is performed separately for each fold (for
@@ -372,7 +371,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     search_path <- select(
       method = method, p_sel = p_sel, refmodel = refmodel,
       nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
-      search_terms = search_terms
+      search_terms = search_terms, ...
     )
 
     ## project onto the selected models and compute the prediction accuracy for
@@ -381,7 +380,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
-      refit_prj = refit_prj
+      refit_prj = refit_prj, ...
     )
 
     if (verbose) {
@@ -457,7 +456,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       search_path <- select(
         method = method, p_sel = p_sel, refmodel = refmodel,
         nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
-        search_terms = search_terms
+        search_terms = search_terms, ...
       )
 
       ## project onto the selected models and compute the prediction accuracy
@@ -466,7 +465,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         search_path = search_path,
         nterms = c(0, seq_along(search_path$solution_terms)),
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
-        refit_prj = refit_prj
+        refit_prj = refit_prj, ...
       )
       summaries_sub <- .get_sub_summaries(
         submodels = submodels, test_points = c(i), refmodel = refmodel
@@ -520,7 +519,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          nclusters, ndraws_pred, nclusters_pred,
                          refit_prj, penalty, verbose, opt, K, seed = NULL,
-                         search_terms = NULL) {
+                         search_terms = NULL, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
@@ -550,7 +549,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     out <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
       nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
-      search_terms = search_terms
+      search_terms = search_terms, ...
     )
     if (verbose) {
       utils::setTxtProgressBar(pb, fold_index)
@@ -578,7 +577,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
-      refit_prj = refit_prj
+      refit_prj = refit_prj, ...
     )
     if (verbose && refit_prj) {
       utils::setTxtProgressBar(pb, fold_index)

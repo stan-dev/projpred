@@ -41,13 +41,11 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
 ## Reference model --------------------------------------------------------
 ## (actually "datafit"s)
 
-# Exclude the rstanarm case which was added for K-fold CV only and also exclude
-# brms fits (since `datafit`s don't make use of a reference model fit, it
-# doesn't make a difference if rstanarm or brms is used as the basis here for
+# Exclude brms fits (since `datafit`s don't make use of a reference model fit,
+# it doesn't make a difference if rstanarm or brms is used as the basis here for
 # retrieving the formula, data, and family):
 args_datafit <- lapply(setNames(
-  nm = grep("^brms\\.|\\.glm\\.gauss\\.stdformul\\.without_wobs", names(fits),
-            value = TRUE, invert = TRUE)
+  nm = grep("^brms\\.", names(fits), value = TRUE, invert = TRUE)
 ), function(tstsetup_fit) {
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
@@ -596,6 +594,9 @@ test_that(paste(
   "L1-projection with data reference gives the same results as",
   "Lasso from glmnet."
 ), {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
   suppressWarnings(RNGversion("3.5.0"))
   set.seed(1235)
   n <- 100
@@ -749,4 +750,5 @@ test_that(paste(
     }
   }
   RNGversion(paste(R.Version()$major, R.Version()$minor, sep = "."))
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })

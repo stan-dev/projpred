@@ -803,26 +803,136 @@ suggest_size.vsel <- function(
   return(suggested_size - 1) ## substract the intercept
 }
 
-replace_intercept_name <- function(names) {
-  return(gsub(
-    "\\(Intercept\\)",
-    "Intercept",
-    names
-  ))
+# Make the parameter name(s) for the intercept(s) adhere to the naming scheme
+# `nm_scheme`:
+mknms_icpt <- function(nms, nm_scheme) {
+  if (nm_scheme == "brms") {
+    nms <- gsub("\\(Intercept\\)", "Intercept", nms)
+  }
+  return(nms)
 }
 
-replace_population_names <- function(population_effects) {
-  # Use brms's naming convention:
-  names(population_effects) <- replace_intercept_name(names(population_effects))
-  names(population_effects) <- paste0("b_", names(population_effects))
+# Replace the names of an object containing population-level effects so that
+# these names adhere to the naming scheme `nm_scheme`:
+replace_population_names <- function(population_effects, nm_scheme) {
+  if (nm_scheme == "brms") {
+    # Use brms's naming convention:
+    names(population_effects) <- mknms_icpt(
+      names(population_effects),
+      nm_scheme = nm_scheme
+    )
+    names(population_effects) <- paste0("b_", names(population_effects))
+  }
   return(population_effects)
+}
+
+# Make the parameter names for variance components adhere to the naming scheme
+# `nm_scheme`:
+mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
+  grp_nms <- names(coef_nms)
+  # We will have to search for the substrings "\\sd\\." and "\\cor\\.", so make
+  # sure that they don't occur in the coefficient or group names:
+  stopifnot(!any(grepl("\\.sd\\.|\\.cor\\.", grp_nms)))
+  stopifnot(!any(unlist(lapply(
+    coef_nms, grepl, pattern = "\\.sd\\.|\\.cor\\."
+  ))))
+  if (nm_scheme == "brms") {
+    nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
+    # Escape special characters in the group names and collapse them with "|":
+    grp_nms_esc <- paste(gsub("\\)", "\\\\)",
+                              gsub("\\(", "\\\\(",
+                                   gsub("\\.", "\\\\.", grp_nms))),
+                         collapse = "|")
+    # Move the substrings "\\.sd\\." and "\\.cor\\." up front (i.e. in front of
+    # the group name), replace their dots, and replace the dot following the
+    # group name by double underscores:
+    nms <- sub(paste0("(", grp_nms_esc, ")\\.(sd|cor)\\."),
+               "\\2_\\1__",
+               nms)
+  }
+  for (coef_nms_i in coef_nms) {
+    if (nm_scheme == "brms") {
+      coef_nms_i <- mknms_icpt(coef_nms_i, nm_scheme = nm_scheme)
+    }
+    # Escape special characters in the coefficient names and collapse them
+    # with "|":
+    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
+                                 gsub("\\(", "\\\\(",
+                                      gsub("\\.", "\\\\.", coef_nms_i))),
+                            collapse = "|")
+    if (nm_scheme == "brms") {
+      # Replace dots between coefficient names by double underscores:
+      nms <- gsub(paste0("(", coef_nms_i_esc, ")\\."),
+                  "\\1__",
+                  nms)
+    } else if (nm_scheme == "rstanarm") {
+      # For the substring "\\.sd\\.":
+      nms <- sub(paste0("\\.sd\\.(", coef_nms_i_esc, ")$"),
+                 ":\\1,\\1",
+                 nms)
+      # For the substring "\\.cor\\.":
+      nms <- sub(
+        paste0("\\.cor\\.(", coef_nms_i_esc, ")\\.(", coef_nms_i_esc, ")$"),
+        ":\\2,\\1",
+        nms
+      )
+    }
+  }
+  if (nm_scheme == "rstanarm") {
+    nms <- paste0("Sigma[", nms, "]")
+  }
+  return(nms)
+}
+
+# Make the parameter names for group-level effects adhere to the naming scheme
+# `nm_scheme`:
+mknms_ranef <- function(nms, nm_scheme, coef_nms) {
+  if (nm_scheme == "brms") {
+    nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
+  }
+  for (coef_nms_idx in seq_along(coef_nms)) {
+    coef_nms_i <- coef_nms[[coef_nms_idx]]
+    if (nm_scheme == "brms") {
+      coef_nms_i <- mknms_icpt(coef_nms_i, nm_scheme = nm_scheme)
+    }
+    # Escape special characters in the coefficient names and collapse them with
+    # "|":
+    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
+                                 gsub("\\(", "\\\\(",
+                                      gsub("\\.", "\\\\.", coef_nms_i))),
+                            collapse = "|")
+    if (nm_scheme == "brms") {
+      # Put the part following the group name in square brackets, reorder its
+      # two subparts (coefficient name and group level), and separate them by
+      # comma:
+      nms <- sub(paste0("\\.(", coef_nms_i_esc, ")\\.(.*)$"),
+                 "[\\2,\\1]",
+                 nms)
+    } else if (nm_scheme == "rstanarm") {
+      grp_nm_i <- names(coef_nms)[coef_nms_idx]
+      # Escape special characters in the group name:
+      grp_nm_i_esc <- gsub("\\)", "\\\\)",
+                           gsub("\\(", "\\\\(",
+                                gsub("\\.", "\\\\.", grp_nm_i)))
+      # Re-arrange as required:
+      nms <- sub(paste0("^(", grp_nm_i_esc, ")\\.(", coef_nms_i_esc, ")\\."),
+                 "\\2 \\1:",
+                 nms)
+    }
+  }
+  if (nm_scheme == "brms") {
+    nms <- paste0("r_", nms)
+  } else if (nm_scheme == "rstanarm") {
+    nms <- paste0("b[", nms, "]")
+  }
+  return(nms)
 }
 
 #' @keywords internal
 #' @export
 coef.subfit <- function(object, ...) {
   return(with(object, c(
-    "Intercept" = alpha,
+    "(Intercept)" = alpha,
     setNames(beta, colnames(x))
   )))
 }
@@ -837,7 +947,7 @@ get_subparams <- function(x, ...) {
 #' @export
 get_subparams.lm <- function(x, ...) {
   return(coef(x) %>%
-           replace_population_names())
+           replace_population_names(...))
 }
 
 #' @keywords internal
@@ -856,7 +966,7 @@ get_subparams.glm <- function(x, ...) {
 #' @export
 get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
-    replace_population_names()
+    replace_population_names(...)
 
   # Extract variance components:
   group_vc_raw <- lme4::VarCorr(x)
@@ -889,41 +999,11 @@ get_subparams.lmerMod <- function(x, ...) {
     }
     return(vc_out)
   }))
-
-  # Use brms's naming convention:
-  names(group_vc) <- replace_intercept_name(names(group_vc))
-
-  # We will have to move the substrings "sd\\." and "cor\\." up front (i.e. in
-  # front of the group name), so make sure that they don't occur in the group
-  # names:
-  stopifnot(!any(grepl("sd\\.|cor\\.", names(group_vc_raw))))
-  # Move the substrings "sd\\." and "cor\\." up front and replace the dot
-  # following the group name by double underscores:
-  names(group_vc) <- sub(
-    paste0(
-      "(",
-      paste(gsub("\\.", "\\\\.", names(group_vc_raw)),
-            collapse = "|"),
-      ")\\.(sd|cor)\\."
-    ),
-    "\\2_\\1__",
-    names(group_vc)
+  names(group_vc) <- mknms_VarCorr(
+    names(group_vc),
+    coef_nms = lapply(group_vc_raw, rownames),
+    ...
   )
-  # Replace dots between coefficient names by double underscores:
-  coef_nms <- lapply(group_vc_raw, rownames)
-  for (coef_nms_i in coef_nms) {
-    coef_nms_i <- replace_intercept_name(coef_nms_i)
-    names(group_vc) <- gsub(
-      paste0(
-        "(",
-        paste(gsub("\\.", "\\\\.", coef_nms_i),
-              collapse = "|"),
-        ")\\."
-      ),
-      "\\1__",
-      names(group_vc)
-    )
-  }
 
   # Extract the group-level effects themselves:
   group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df) {
@@ -938,29 +1018,11 @@ get_subparams.lmerMod <- function(x, ...) {
             })
     )
   }))
-
-  # Use brms's naming convention:
-  names(group_ef) <- replace_intercept_name(names(group_ef))
-  names(group_ef) <- paste0("r_", names(group_ef))
-  for (coef_nms_idx in seq_along(coef_nms)) {
-    group_nm_i <- names(coef_nms)[coef_nms_idx]
-    coef_nms_i <- coef_nms[[coef_nms_idx]]
-    coef_nms_i <- replace_intercept_name(coef_nms_i)
-    # Put the part following the group name in square brackets, reorder its two
-    # subparts (coefficient name and group level) and separate them by comma:
-    names(group_ef) <- sub(
-      paste0(
-        "(",
-        gsub("\\.", "\\\\.", group_nm_i),
-        ")\\.(",
-        paste(gsub("\\.", "\\\\.", coef_nms_i),
-              collapse = "|"),
-        ")\\.(.*)$"
-      ),
-      "\\1[\\3,\\2]",
-      names(group_ef)
-    )
-  }
+  names(group_ef) <- mknms_ranef(
+    names(group_ef),
+    coef_nms = lapply(group_vc_raw, rownames),
+    ...
+  )
 
   return(c(population_effects, group_vc, group_ef))
 }
@@ -985,6 +1047,10 @@ get_subparams.gamm4 <- function(x, ...) {
 #'
 #' @param x An object of class `projection` (returned by [project()], possibly
 #'   as elements of a `list`).
+#' @param nm_scheme The naming scheme for the columns of the output matrix.
+#'   Either `"auto"`, `"rstanarm"`, or `"brms"`, where `"auto"` chooses
+#'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
+#'   uses `"rstanarm"` if the reference model fit is of an unknown class).
 #' @param ... Currently ignored.
 #'
 #' @return An \eqn{S_{\mbox{prj}} \times Q}{S_prj x Q} matrix of projected
@@ -1039,7 +1105,7 @@ get_subparams.gamm4 <- function(x, ...) {
 #'
 #' @method as.matrix projection
 #' @export
-as.matrix.projection <- function(x, ...) {
+as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
   if (inherits(x$refmodel, "datafit")) {
     stop("as.matrix.projection() does not work for objects based on ",
          "\"datafit\"s.")
@@ -1048,7 +1114,15 @@ as.matrix.projection <- function(x, ...) {
     warning("Note that projection was performed using clustering and the ",
             "clusters might have different weights.")
   }
-  res <- do.call(rbind, lapply(x$submodl, get_subparams))
+  if (identical(nm_scheme, "auto")) {
+    if (inherits(x$refmodel$fit, "brmsfit")) {
+      nm_scheme <- "brms"
+    } else {
+      nm_scheme <- "rstanarm"
+    }
+  }
+  stopifnot(nm_scheme %in% c("rstanarm", "brms"))
+  res <- do.call(rbind, lapply(x$submodl, get_subparams, nm_scheme = nm_scheme))
   if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }

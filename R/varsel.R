@@ -73,7 +73,9 @@
 #'   therefore, the results are not reproducible. See [set.seed()] for details.
 #'   Here, this seed is used for clustering the reference model's posterior
 #'   draws (if `!is.null(nclusters)`).
-#' @param ... Arguments passed to [get_refmodel()].
+#' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
+#'   minimizer (during a forward search and also during the evaluation part, but
+#'   the latter only if `refit_prj` is `TRUE`).
 #'
 #' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
 #'   are automatically truncated at the number of posterior draws in the
@@ -184,7 +186,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   search_path <- select(
     method = method, p_sel = p_sel, refmodel = refmodel,
     nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
-    search_terms = search_terms
+    search_terms = search_terms, ...
   )
   solution_terms <- search_path$solution_terms
 
@@ -192,7 +194,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   submodels <- .get_submodels(search_path = search_path,
                               nterms = c(0, seq_along(solution_terms)),
                               p_ref = p_pred, refmodel = refmodel,
-                              regul = regul, refit_prj = refit_prj)
+                              regul = regul, refit_prj = refit_prj, ...)
   sub <- .get_sub_summaries(
     submodels = submodels, test_points = seq_along(refmodel$y),
     refmodel = refmodel
@@ -251,7 +253,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 }
 
 select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
-                   search_terms = NULL) {
+                   search_terms = NULL, ...) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
   ## and returns the search_path, i.e., a list with the followint entries (the
@@ -271,7 +273,7 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
     return(search_path)
   } else if (method == "forward") {
     search_path <- search_forward(p_sel, refmodel, nterms_max, verbose, opt,
-                                  search_terms = search_terms)
+                                  search_terms = search_terms, ...)
     search_path$p_sel <- p_sel
     return(search_path)
   }

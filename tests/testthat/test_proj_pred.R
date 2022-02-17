@@ -868,6 +868,7 @@ test_that("`weightsnew` works", {
     pp_orig <- pps[[tstsetup]]
     if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
           args_prj[[tstsetup]]$fam_nm == "binom")) {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       pp_ones <- proj_predict(prjs[[tstsetup]],
                               newdata = dat_wobs_ones,
                               weightsnew = ~ wobs_col_ones,
@@ -885,6 +886,7 @@ test_that("`weightsnew` works", {
               info_str = tstsetup)
     if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
           args_prj[[tstsetup]]$fam_nm == "binom")) {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       ppw <- proj_predict(prjs[[tstsetup]],
                           newdata = dat_wobs_new,
                           weightsnew = ~ wobs_col_new,
