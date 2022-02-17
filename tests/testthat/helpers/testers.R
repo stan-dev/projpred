@@ -593,6 +593,15 @@ submodl_tester <- function(
           expect_length(submodl_totest[[!!j]]$w, nobsv)
         }
         expect_true(all(submodl_totest[[!!j]]$w > 0), info = info_str)
+        if (sub_fam == "gaussian") {
+          # Note: For non-Gaussian families, a comparison of
+          # `submodl_totest[[j]]$w` with `wobs_expected` doesn't make sense
+          # since `glm_ridge(<...>)$w` contains the weights of the
+          # pseudo-Gaussian observations as calculated in pseudo_data().
+          expect_equal(as.vector(submodl_totest[[!!j]]$w),
+                       wobs_expected %||% rep(1, nobsv),
+                       info = info_str)
+        }
 
         expect_s3_class(submodl_totest[[!!j]]$formula, "formula")
         if (!grepl(":", as.character(submodl_totest[[j]]$formula)[3])) {
