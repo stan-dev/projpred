@@ -70,6 +70,8 @@ extfam_tester <- function(extfam,
   # TODO: Add some mathematical checks (i.e., check that the calculations for
   # the objects listed in `extfam_nms_add` are mathematically correct).
 
+  # Output ------------------------------------------------------------------
+
   return(invisible(TRUE))
 }
 
