@@ -1,6 +1,6 @@
 context("div_minimizer")
 
-test_that("`divmin` works", {
+test_that("divmin() works", {
   for (tstsetup in names(fits)) {
     args_fit_i <- args_fit[[tstsetup]]
     pkg_crr <- args_fit_i$pkg_nm
@@ -18,7 +18,7 @@ test_that("`divmin` works", {
     args_fit_i$projpred_var <- matrix(var_crr)
     args_fit_i$projpred_regul <- regul_default
 
-    if (args_fit_i$pkg_nm == "brms" && grepl("\\.with_wobs", tstsetup)) {
+    if (pkg_crr == "brms" && grepl("\\.with_wobs", tstsetup)) {
       args_fit_i$formula <- rm_addresp(args_fit_i$formula)
       args_fit_i$weights <- eval(args_fit_i$data)$wobs_col
     }
