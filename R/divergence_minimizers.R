@@ -128,9 +128,9 @@ fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
     dot_args <- list(...)
     dot_args <- dot_args[intersect(
       names(dot_args),
-      union(methods::formalArgs(stats::lm),
-            union(methods::formalArgs(stats::lm.fit),
-                  methods::formalArgs(stats::lm.wfit)))
+      c(methods::formalArgs(stats::lm),
+        methods::formalArgs(stats::lm.fit),
+        methods::formalArgs(stats::lm.wfit))
     )]
     # Call the submodel fitter:
     return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
@@ -142,8 +142,8 @@ fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
     dot_args <- list(...)
     dot_args <- dot_args[intersect(
       names(dot_args),
-      union(methods::formalArgs(stats::glm),
-            methods::formalArgs(stats::glm.control))
+      c(methods::formalArgs(stats::glm),
+        methods::formalArgs(stats::glm.control))
     )]
     # Call the submodel fitter:
     return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
@@ -160,8 +160,8 @@ fit_gam_callback <- function(formula, ...) {
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
     names(dot_args),
-    union(methods::formalArgs(gam),
-          methods::formalArgs(mgcv::gam.fit))
+    c(methods::formalArgs(gam),
+      methods::formalArgs(mgcv::gam.fit))
   )]
   # Call the submodel fitter:
   return(suppressMessages(suppressWarnings(do.call(gam, c(
@@ -179,9 +179,9 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
     names(dot_args),
-    union(union(methods::formalArgs(gamm4),
-                methods::formalArgs(lme4::lFormula)),
-          methods::formalArgs(lme4::glFormula))
+    c(methods::formalArgs(gamm4),
+      methods::formalArgs(lme4::lFormula),
+      methods::formalArgs(lme4::glFormula))
   )]
   # Call the submodel fitter:
   fit <- tryCatch({
