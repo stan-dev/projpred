@@ -413,20 +413,19 @@ check_conv <- function(fit) {
 # Prediction functions for submodels --------------------------------------
 
 subprd <- function(fits, newdata) {
-  return(do.call(cbind, lapply(fits, function(fit) {
-    # Only pass argument `allow.new.levels` to the predict() generic if the fit
-    # is multilevel:
-    has_grp <- inherits(fit, c("lmerMod", "glmerMod"))
-    has_add <- inherits(fit, c("gam", "gamm4"))
-    if (has_add && !is.null(newdata)) {
+  prd_list <- lapply(fits, function(fit) {
+    is_glmm <- inherits(fit, c("lmerMod", "glmerMod"))
+    is_gam_gamm <- inherits(fit, c("gam", "gamm4"))
+    if (is_gam_gamm && !is.null(newdata)) {
       newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
     }
-    if (!has_grp) {
-      return(predict(fit, newdata = newdata))
-    } else {
+    if (is_glmm) {
       return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
+    } else {
+      return(predict(fit, newdata = newdata))
     }
-  })))
+  })
+  return(do.call(cbind, prd_list))
 }
 
 ## FIXME: find a way that allows us to remove this
