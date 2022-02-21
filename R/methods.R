@@ -626,6 +626,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
+  where <- "tidyselect" %:::% "where"
   print(
     x$selection %>% dplyr::mutate(dplyr::across(
       where(is.numeric),
