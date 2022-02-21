@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://mc-stan.org/projpred/404.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/articles/projpred.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/authors.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/index.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/news/index.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/as.matrix.projection.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/break_up_matrix_term.html</loc>
@@ -28,10 +46,7 @@
     <loc>https://mc-stan.org/projpred/reference/extra-families.html</loc>
   </url>
   <url>
-    <loc>https://mc-stan.org/projpred/reference/get-refmodel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/helper_formula.html</loc>
+    <loc>https://mc-stan.org/projpred/reference/index.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/mesquite.html</loc>
@@ -40,39 +55,39 @@
     <loc>https://mc-stan.org/projpred/reference/plot.vsel.html</loc>
   </url>
   <url>
+    <loc>https://mc-stan.org/projpred/reference/pred-projection.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/reference/predict.refmodel.html</loc>
   </url>
   <url>
-    <loc>https://mc-stan.org/projpred/reference/print-vsel.html</loc>
+    <loc>https://mc-stan.org/projpred/reference/print.vsel.html</loc>
   </url>
   <url>
-    <loc>https://mc-stan.org/projpred/reference/proj-pred.html</loc>
+    <loc>https://mc-stan.org/projpred/reference/print.vselsummary.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/project.html</loc>
   </url>
   <url>
-    <loc>https://mc-stan.org/projpred/reference/projpred.html</loc>
+    <loc>https://mc-stan.org/projpred/reference/projpred-package.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/reexports.html</loc>
   </url>
   <url>
+    <loc>https://mc-stan.org/projpred/reference/refmodel-init-get.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/reference/solution_terms.html</loc>
   </url>
   <url>
-    <loc>https://mc-stan.org/projpred/reference/suggest_size.vsel.html</loc>
+    <loc>https://mc-stan.org/projpred/reference/suggest_size.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/summary.vsel.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/varsel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/articles/quickstart.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/articles/quickstart_glmm.html</loc>
   </url>
 </urlset>
