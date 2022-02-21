@@ -123,39 +123,34 @@ fit_glm_ridge_callback <- function(formula, data,
 # `projpred.glm_fitter`):
 fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
                              ...) {
-  tryCatch({
-    if (family$family == "gaussian" && family$link == "identity") {
-      # Exclude arguments from `...` which cannot be passed to stats::lm():
-      dot_args <- list(...)
-      dot_args <- dot_args[intersect(
-        names(dot_args),
-        union(methods::formalArgs(stats::lm),
-              union(methods::formalArgs(stats::lm.fit),
-                    methods::formalArgs(stats::lm.wfit)))
-      )]
-      # Call the submodel fitter:
-      return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
-        list(formula = formula),
-        dot_args
-      )))))
-    } else {
-      # Exclude arguments from `...` which cannot be passed to stats::glm():
-      dot_args <- list(...)
-      dot_args <- dot_args[intersect(
-        names(dot_args),
-        union(methods::formalArgs(stats::glm),
-              methods::formalArgs(stats::glm.control))
-      )]
-      # Call the submodel fitter:
-      return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
-        list(formula = formula, family = family),
-        dot_args
-      )))))
-    }
-  }, error = function(e) {
-    # May be used to handle errors.
-    stop(e)
-  })
+  if (family$family == "gaussian" && family$link == "identity") {
+    # Exclude arguments from `...` which cannot be passed to stats::lm():
+    dot_args <- list(...)
+    dot_args <- dot_args[intersect(
+      names(dot_args),
+      union(methods::formalArgs(stats::lm),
+            union(methods::formalArgs(stats::lm.fit),
+                  methods::formalArgs(stats::lm.wfit)))
+    )]
+    # Call the submodel fitter:
+    return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
+      list(formula = formula),
+      dot_args
+    )))))
+  } else {
+    # Exclude arguments from `...` which cannot be passed to stats::glm():
+    dot_args <- list(...)
+    dot_args <- dot_args[intersect(
+      names(dot_args),
+      union(methods::formalArgs(stats::glm),
+            methods::formalArgs(stats::glm.control))
+    )]
+    # Call the submodel fitter:
+    return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
+      list(formula = formula, family = family),
+      dot_args
+    )))))
+  }
 }
 
 # Use package "mgcv" to fit additive non-multilevel submodels:
