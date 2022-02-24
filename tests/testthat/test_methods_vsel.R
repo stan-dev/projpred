@@ -119,7 +119,7 @@ test_that("`x` of class \"vselsummary\" (based on varsel()) works", {
         print(tstsetup)
         print(smmrys_vs[[tstsetup]], digits = 6)
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -141,7 +141,7 @@ test_that("`x` of class \"vselsummary\" (based on cv_varsel())  works", {
         print(tstsetup)
         print(smmrys_cvvs[[tstsetup]], digits = 6)
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
