@@ -18,7 +18,8 @@
 #'   additionally to the properties required for [init_refmodel()]. For
 #'   non-default methods of [get_refmodel()], an object of the corresponding
 #'   class.
-#' @param data Data used for fitting the reference model.
+#' @param data Data used for fitting the reference model. Any `contrasts`
+#'   attributes of the dataset's columns are silently removed.
 #' @param formula Reference model's formula. For general information on formulas
 #'   in \R, see [`formula`]. For multilevel formulas, see also package
 #'   \pkg{lme4} (in particular, functions [lme4::lmer()] and [lme4::glmer()]).
@@ -662,6 +663,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (is.null(offset)) {
     offset <- rep(0, NROW(y))
+  }
+
+  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
+  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
+  has_contr <- sapply(data, function(data_col) {
+    !is.null(attr(data_col, "contrasts"))
+  })
+  for (idx_col in which(has_contr)) {
+    attr(data[[idx_col]], "contrasts") <- NULL
   }
 
   # Functions ---------------------------------------------------------------
