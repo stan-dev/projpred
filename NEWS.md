@@ -47,6 +47,7 @@
 * `init_refmodel()` has gained argument `cvrefbuilder` which may be a custom function for constructing the K reference models in a K-fold CV. (GitHub: #271)
 * Allow arguments to be passed from `project()`, `varsel()`, and `cv_varsel()` to the divergence minimizer. (GitHub: #278)
 * In `init_refmodel()`, any `contrasts` attributes of the dataset's columns are silently removed. (GitHub: #284)
+* `NA`s in data supplied to `newdata` arguments now trigger an error. (GitHub: #285)
 
 ## Bug fixes
 
