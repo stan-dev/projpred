@@ -277,7 +277,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Argument `ynew` must be a numeric vector.")
   }
 
-  if (!is.null(newdata)) {
+  if (is.null(newdata)) {
+    newdata <- object$fetch_data()
+  } else {
     newdata <- na.fail(newdata)
   }
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
