@@ -108,6 +108,7 @@
 * Fix GitHub issue #156. (GitHub: #269)
 * Revert the behavior (introduced by version 2.0.5) of `init_refmodel()` if neither `cvfun` nor `cvfits` is provided: Do *not* raise an error since such an error is now thrown when trying to run K-fold CV (so a reference model which is never used for K-fold CV does not require `cvfits` or `cvfun`). (GitHub: #270)
 * If the data used for the reference model contains `NA`s, an appropriate error is now thrown. Previously, the reference model was created successfully, but this caused opaque errors in downstream code such as `project()`. (GitHub: #274)
+* Fix GitHub issue #268. (GitHub: #268, #287)
 
 # projpred 2.0.5
 
