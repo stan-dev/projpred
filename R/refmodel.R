@@ -155,7 +155,8 @@
 #' * `object` accepts the reference model fit as given in argument `object` (but
 #' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 #' CV).
-#' * `newdata` accepts data for new observations (at least in the form of a
+#' * `newdata` accepts either `NULL` (for using the original dataset, typically
+#' stored in `object`) or data for new observations (at least in the form of a
 #' `data.frame`).
 #' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
 #' right-hand side formula consisting only of the variable in `newdata`
