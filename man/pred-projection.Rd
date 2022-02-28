@@ -35,7 +35,8 @@ passed to argument \code{object} of \code{\link[=project]{project()}}.}
 \item{newdata}{Passed to argument \code{newdata} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Provides the
 predictor (and possibly also the response) data for the new (or old)
-observations.}
+observations. May also be \code{NULL} (see argument \code{extract_model_data} of
+\code{\link[=init_refmodel]{init_refmodel()}}).}
 
 \item{offsetnew}{Passed to argument \code{orhs} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
