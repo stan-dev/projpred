@@ -257,7 +257,7 @@ test_that("`nterms_max` is capped to the maximum model size", {
 context("suggest_size()")
 
 test_that("`stat` of invalid length fails", {
-  stopifnot(length(stats_common) > 0)
+  stopifnot(length(stats_common) > 1)
   skip_if_not(run_vs)
   for (tstsetup in head(names(vss), 1)) {
     expect_error(
