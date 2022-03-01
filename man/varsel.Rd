@@ -27,7 +27,7 @@ varsel(object, ...)
   regul = 1e-04,
   penalty = NULL,
   search_terms = NULL,
-  seed = NULL,
+  seed = sample.int(.Machine$integer.max, 1),
   ...
 )
 }

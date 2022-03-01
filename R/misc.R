@@ -56,8 +56,9 @@ auc <- function(x) {
 # Bootstrap an arbitrary quantity `fun` that takes the sample `x` as the first
 # input. Other arguments of `fun` can be passed by `...`. Example:
 # `boostrap(x, mean)`.
-bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
-  # set random seed but ensure the old RNG state is restored on exit
+bootstrap <- function(x, fun = mean, b = 2000,
+                      seed = sample.int(.Machine$integer.max, 1), ...) {
+  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
@@ -199,9 +200,10 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mbox{prj}}}{S_prj}.
-.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
+.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
+                         seed = sample.int(.Machine$integer.max, 1),
                          thinning = TRUE) {
-  # set random seed but ensure the old RNG state is restored on exit
+  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
@@ -222,7 +224,7 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
                             wobs = refmodel$wobs, cl = cl)
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ndraws = nclusters, seed = seed))
+      return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
       if (nclusters > NCOL(refmodel$mu)) {

@@ -120,10 +120,17 @@ cv_varsel.refmodel <- function(
   thresh = 1e-6,
   regul = 1e-4,
   validate_search = TRUE,
-  seed = NULL,
+  seed = sample.int(.Machine$integer.max, 1),
   search_terms = NULL,
   ...
 ) {
+  # Set seed, but ensure the old RNG state is restored on exit:
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(seed)
+
   refmodel <- object
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
@@ -157,16 +164,14 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
-      validate_search = validate_search, seed = seed,
-      search_terms = search_terms, ...
+      validate_search = validate_search, search_terms = search_terms, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-      verbose = verbose, opt = opt, K = K, seed = seed,
-      search_terms = search_terms, ...
+      verbose = verbose, opt = opt, K = K, search_terms = search_terms, ...
     )
   } else {
     stop(sprintf("Unknown `cv_method`: %s.", method))
@@ -183,7 +188,7 @@ cv_varsel.refmodel <- function(
                   refit_prj = refit_prj, nterms_max = nterms_max - 1,
                   penalty = penalty, verbose = verbose,
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
-                  regul = regul, search_terms = search_terms, seed = seed, ...)
+                  regul = regul, search_terms = search_terms, ...)
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
   }
@@ -290,8 +295,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K) {
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo = NULL,
-                       validate_search = TRUE, seed = NULL,
-                       search_terms = NULL, ...) {
+                       validate_search = TRUE, search_terms = NULL, ...) {
   ##
   ## Perform the validation of the searching process using LOO. validate_search
   ## indicates whether the selection is performed separately for each fold (for
@@ -301,17 +305,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu <- refmodel$mu
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
-  p_sel <- .get_refdist(refmodel,
-                        ndraws = ndraws,
-                        nclusters = nclusters,
-                        seed = seed)
+  p_sel <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   cl_sel <- p_sel$cl # clustering information
 
   ## the clustering/subsampling used for prediction
-  p_pred <- .get_refdist(refmodel,
-                         ndraws = ndraws_pred,
-                         nclusters = nclusters_pred,
-                         seed = seed)
+  p_pred <- .get_refdist(refmodel, ndraws = ndraws_pred,
+                         nclusters = nclusters_pred)
   cl_pred <- p_pred$cl
 
   ## fetch the log-likelihood for the reference model to obtain the LOO weights
@@ -345,8 +344,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }))
 
   ## decide which points form the validation set based on the k-values
-  ## validset <- .loo_subsample(n, nloo, pareto_k, seed)
-  validset <- .loo_subsample_pps(nloo, loo_ref, seed)
+  ## validset <- .loo_subsample(n, nloo, pareto_k)
+  validset <- .loo_subsample_pps(nloo, loo_ref)
   inds <- validset$inds
 
   ## initialize objects where to store the results
@@ -518,12 +517,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          nclusters, ndraws_pred, nclusters_pred,
-                         refit_prj, penalty, verbose, opt, K, seed = NULL,
+                         refit_prj, penalty, verbose, opt, K,
                          search_terms = NULL, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
-  list_cv <- .get_kfold(refmodel, K, verbose, seed)
+  list_cv <- .get_kfold(refmodel, K, verbose)
   K <- length(list_cv)
 
   # Extend `list_cv` to also contain `y`, `weights`, and `offset`:
@@ -545,7 +544,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
-    p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters, seed = seed)
+    p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters)
     out <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
       nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
@@ -571,8 +570,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   get_submodels_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
-    p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred,
-                           seed = seed)
+    p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
     submodels <- .get_submodels(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
@@ -639,7 +637,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 # will return a list of length K, where each element is a list with elements
 # `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
 # those observations which were left out for the corresponding fold).
-.get_kfold <- function(refmodel, K, verbose, seed, approximate = FALSE) {
+.get_kfold <- function(refmodel, K, verbose, approximate = FALSE) {
   if (is.null(refmodel$cvfits)) {
     if (!is.null(refmodel$cvfun)) {
       # cv-function provided so perform the cross-validation now. In case
@@ -650,14 +648,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
         print("Performing cross-validation for the reference model..")
       }
       nobs <- NROW(refmodel$y)
-      folds <- cvfolds(nobs, K = K, seed = seed)
+      folds <- cvfolds(nobs, K = K)
       cvfits <- refmodel$cvfun(folds)
     } else {
       ## genuine probabilistic model but no K-fold fits nor cvfun provided,
       ## this only works for approximate kfold computation
       if (approximate) {
         nobs <- NROW(refmodel$y)
-        folds <- cvfolds(nobs, K = K, seed = seed)
+        folds <- cvfolds(nobs, K = K)
         cvfits <- lapply(seq_len(K), function(k) {
           refmodel$fit
         })
@@ -689,11 +687,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
               omitted = cvfit$omitted))
 }
 
-# .loo_subsample <- function(n, nloo, pareto_k, seed) {
+# .loo_subsample <- function(n, nloo, pareto_k,
+#                            seed = sample.int(.Machine$integer.max, 1)) {
 #   ## decide which points to go through in the validation (i.e., which points
 #   ## belong to the semi random subsample of validation points)
 #
-#   ## set random seed but ensure the old RNG state is restored on exit
+#   # Set seed, but ensure the old RNG state is restored on exit:
 #   if (exists(".Random.seed", envir = .GlobalEnv)) {
 #     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
 #     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
@@ -732,19 +731,21 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #   return(nlist(inds, w))
 # }
 
-.loo_subsample_pps <- function(nloo, lppd, seed) {
+.loo_subsample_pps <- function(nloo, lppd,
+                               seed = sample.int(.Machine$integer.max, 1)) {
   ## decide which points to go through in the validation based on
   ## proportional-to-size subsampling as implemented in Magnusson, M., Riis
   ## Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
   ## Cross-Validation for Large Data. In International Conference on Machine
   ## Learning.
 
-  ## set random seed but ensure the old RNG state is restored on exit
+  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed)
+
   if (nloo > length(lppd)) {
     stop("Argument `nloo` must not be larger than the number of observations.")
   } else if (nloo == length(lppd)) {

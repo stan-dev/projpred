@@ -24,7 +24,7 @@ proj_predict(
   weightsnew = NULL,
   filter_nterms = NULL,
   nresample_clusters = 1000,
-  .seed = NULL,
+  .seed = sample.int(.Machine$integer.max, 1),
   ...
 )
 }
