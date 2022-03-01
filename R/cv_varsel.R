@@ -188,7 +188,7 @@ cv_varsel.refmodel <- function(
                   refit_prj = refit_prj, nterms_max = nterms_max - 1,
                   penalty = penalty, verbose = verbose,
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
-                  regul = regul, search_terms = search_terms, ...)
+                  regul = regul, search_terms = search_terms, seed = seed, ...)
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
   }
