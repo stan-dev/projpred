@@ -14,6 +14,7 @@ proj_linpred(
   filter_nterms = NULL,
   transform = FALSE,
   integrated = FALSE,
+  .seed = sample.int(.Machine$integer.max, 1),
   ...
 )
 
@@ -60,6 +61,16 @@ the inverse-link function (\code{TRUE}) or not (\code{FALSE}).}
 indicating whether the output should be averaged across the projected
 posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
+\item{.seed}{Pseudorandom number generation (PRNG) seed by which the same
+results can be obtained again if needed. If \code{NULL}, no seed is set and
+therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
+Here, this seed is used for drawing new group-level effects in case of a
+multilevel submodel (however, not yet in case of a GAMM) and for drawing
+from the predictive distribution of the submodel(s) in case of
+\code{\link[=proj_predict]{proj_predict()}}. If a clustered projection was performed, then in
+\code{\link[=proj_predict]{proj_predict()}}, \code{.seed} is also used for drawing from the set of the
+projected clusters of posterior draws (see argument \code{nresample_clusters}).}
+
 \item{...}{Arguments passed to \code{\link[=project]{project()}} if \code{object} is not already an
 object returned by \code{\link[=project]{project()}}.}
 
@@ -69,15 +80,6 @@ submodel. Not to be confused with argument \code{nclusters} of \code{\link[=proj
 \code{nresample_clusters} gives the number of draws (\emph{with} replacement) from
 the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
-
-\item{.seed}{For \code{\link[=proj_predict]{proj_predict()}} only. Pseudorandom number generation (PRNG)
-seed by which the same results can be obtained again if needed. If \code{NULL},
-no seed is set and therefore, the results are not reproducible. See
-\code{\link[=set.seed]{set.seed()}} for details. Here, this seed is used for drawing from the
-predictive distribution of the submodel(s) onto which the reference model
-was projected. If a clustered projection was performed, \code{.seed} is also
-used for drawing from the set of the projected clusters of posterior draws
-(see argument \code{nresample_clusters}).}
 }
 \value{
 Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
