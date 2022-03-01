@@ -323,7 +323,7 @@ draws_subsample <- function(S, ndraws,
   }
   set.seed(seed)
 
-  return(sample(seq_len(S), size = ndraws))
+  return(sample.int(S, size = ndraws))
 }
 
 .is_proj_list <- function(proj) {
