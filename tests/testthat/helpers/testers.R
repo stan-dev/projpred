@@ -876,8 +876,7 @@ projection_tester <- function(p,
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
     set.seed(seed_expected)
-    clust_ref <- .get_refdist(p$refmodel, nclusters = nprjdraws_expected,
-                              seed = sample.int(.Machine$integer.max, 1))
+    clust_ref <- .get_refdist(p$refmodel, nclusters = nprjdraws_expected)
   } else {
     clust_ref <- .get_refdist(p$refmodel, ndraws = nprjdraws_expected)
   }
@@ -1154,8 +1153,7 @@ vsel_tester <- function(
   set.seed(seed_expected)
   clust_ref <- .get_refdist(vs$refmodel,
                             ndraws = ndraws_expected,
-                            nclusters = nclusters_expected,
-                            seed = sample.int(.Machine$integer.max, 1))
+                            nclusters = nclusters_expected)
   nprjdraws_expected <- ncol(clust_ref$mu)
   if (!from_vsel_L1_search) {
     y_nm <- as.character(vs$refmodel$formula)[2]

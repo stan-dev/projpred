@@ -48,8 +48,6 @@ test_that("invalid `method` fails", {
 })
 
 test_that("`seed` works (and restores the RNG state afterwards)", {
-  # Note: Extensive tests for reproducibility may be found among the tests for
-  # .get_refdist().
   skip_if_not(run_vs)
   # To save time:
   tstsetups <- grep("\\.glm\\.gauss\\.", names(vss), value = TRUE)
@@ -479,8 +477,6 @@ test_that("invalid `cv_method` fails", {
 })
 
 test_that("`seed` works (and restores the RNG state afterwards)", {
-  # Note: Extensive tests for reproducibility may be found among the tests for
-  # .get_refdist().
   skip_if_not(run_cvvs)
   # To save time:
   tstsetups <- union(

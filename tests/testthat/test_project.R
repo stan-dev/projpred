@@ -305,8 +305,6 @@ test_that("non-clustered projection does not require a seed", {
 })
 
 test_that("`seed` works (and restores the RNG state afterwards)", {
-  # Note: Extensive tests for reproducibility may be found among the tests for
-  # .get_refdist().
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
