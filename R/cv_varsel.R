@@ -687,17 +687,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
               omitted = cvfit$omitted))
 }
 
-# .loo_subsample <- function(n, nloo, pareto_k,
-#                            seed = sample.int(.Machine$integer.max, 1)) {
-#   ## decide which points to go through in the validation (i.e., which points
-#   ## belong to the semi random subsample of validation points)
-#
-#   # Set seed, but ensure the old RNG state is restored on exit:
-#   if (exists(".Random.seed", envir = .GlobalEnv)) {
-#     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-#     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-#   }
-#   set.seed(seed)
+# ## decide which points to go through in the validation (i.e., which points
+# ## belong to the semi random subsample of validation points)
+# .loo_subsample <- function(n, nloo, pareto_k) {
+#   # Note: A seed is not set here because this function is not exported and has
+#   # a calling stack at the beginning of which a seed is set.
 #
 #   resample <- function(x, ...) x[sample.int(length(x), ...)]
 #
@@ -731,20 +725,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #   return(nlist(inds, w))
 # }
 
-.loo_subsample_pps <- function(nloo, lppd,
-                               seed = sample.int(.Machine$integer.max, 1)) {
-  ## decide which points to go through in the validation based on
-  ## proportional-to-size subsampling as implemented in Magnusson, M., Riis
-  ## Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
-  ## Cross-Validation for Large Data. In International Conference on Machine
-  ## Learning.
-
-  # Set seed, but ensure the old RNG state is restored on exit:
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-  }
-  set.seed(seed)
+## decide which points to go through in the validation based on
+## proportional-to-size subsampling as implemented in Magnusson, M., Riis
+## Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
+## Cross-Validation for Large Data. In International Conference on Machine
+## Learning.
+.loo_subsample_pps <- function(nloo, lppd) {
+  # Note: A seed is not set here because this function is not exported and has a
+  # calling stack at the beginning of which a seed is set.
 
   if (nloo > length(lppd)) {
     stop("Argument `nloo` must not be larger than the number of observations.")
