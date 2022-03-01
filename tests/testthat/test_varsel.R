@@ -503,18 +503,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     # Expected equality:
     expect_equal(cvvs_repr, cvvs_orig, info = tstsetup)
-    if (args_cvvs_i$pkg_nm == "brms" &&
-        identical(args_cvvs_i$cv_method, "kfold") &&
-        packageVersion("future") >= "1.24.0") {
-      # From the `NEWS` of `future` v1.24.0:
-      # > Now future(..., seed = TRUE) forwards the RNG state in the calling R
-      # > session. Previously, it would leave it intact.
-      expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_repr1)),
-                   info = tstsetup)
-      # TODO (brms/future): Is there a way around that?
-    } else {
-      expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
-    }
+    expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     # Expected inequality:
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
   }
