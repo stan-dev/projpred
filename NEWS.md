@@ -22,6 +22,7 @@
 * The previous behavior of `init_refmodel()` in case of argument `dis` being `NULL` (the default) was dangerous for custom reference models with a `family` having a dispersion parameter (in that case, `dis` values of all-zeros were used silently). The new behavior now requires a non-`NULL` argument `dis` in that case. (GitHub: #254)
 * Argument `cv_search` has been renamed to `refit_prj`. (GitHub: #154, #265)
 * `as.matrix.projection()` has gained a new argument `nm_scheme` which allows to choose the naming scheme for the column names of the returned matrix. The default (`"auto"`) follows the naming scheme of the reference model fit (and uses `"rstanarm"` if the reference model fit is of an unknown class). See also section "Major changes" for version 2.0.5 below. (GitHub: #279)
+* `seed` (and `.seed`) arguments now have a default of `sample.int(.Machine$integer.max, 1)` instead of `NULL`. Furthermore, the value supplied to these arguments is now used to generate new seeds internally on-the-fly. In many cases, this will change results compared to older **projpred** versions. (GitHub: #286)
 
 ## Minor changes
 
