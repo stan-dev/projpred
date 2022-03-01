@@ -656,7 +656,7 @@ stats_tst <- list(
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
-seed_tst <- 74345
+seed_tst <- 74341
 seed2_tst <- 866028
 seed3_tst <- 1208499
 
