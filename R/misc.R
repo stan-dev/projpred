@@ -430,17 +430,17 @@ deparse_combine <- function(x, max_char = NULL) {
 #' @export
 magrittr::`%>%`
 
+# `R CMD check` throws a note when using <package>:::<function>() (for accessing
+# <function> which is not exported by its <package>). Of course, usage of
+# non-exported functions should be avoided, but sometimes there's no way around
+# that. Thus, with the following helper operator, it is possible to redefine
+# such functions here in projpred:
 `%:::%` <- function(pkg, fun) {
   # Note: `utils::getFromNamespace(fun, pkg)` could probably be used, too (but
   # its documentation is unclear about the inheritance from parent
   # environments).
   get(fun, envir = asNamespace(pkg), inherits = FALSE)
 }
-
-# Function where() is not exported by package tidyselect, so redefine it here to
-# avoid a note in R CMD check which would occur for usage of
-# tidyselect:::where():
-where <- "tidyselect" %:::% "where"
 
 # Helper function to combine separate `list`s into a single `list`:
 rbind2list <- function(x) {

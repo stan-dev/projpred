@@ -244,7 +244,7 @@ This PPPC shows that our final projection is able to generate predictions simila
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
 <!--   stopImplicitCluster() -->
 <!--   registerDoSEQ() -->
-<!--   options(projpred.prll_prj_trigger = trigger_default$projpred.prll_prj_trigger) -->
+<!--   options(trigger_default) -->
 <!-- } -->
 <!-- ``` -->
 

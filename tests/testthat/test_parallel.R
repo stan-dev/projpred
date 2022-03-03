@@ -81,12 +81,12 @@ if (run_prll) {
     doParallel::stopImplicitCluster()
   } else if (dopar_backend == "doFuture") {
     future::plan(future::sequential)
-    options(doFuture.foreach.export = export_default$doFuture.foreach.export)
+    options(export_default)
     rm(export_default)
   } else {
     stop("Unrecognized `dopar_backend`.")
   }
 
-  options(projpred.prll_prj_trigger = trigger_default$projpred.prll_prj_trigger)
+  options(trigger_default)
   rm(trigger_default)
 }

@@ -16,7 +16,7 @@ test_that("pl: `object` of class \"projection\" works", {
         print(tstsetup)
         print(rlang::hash(pls[[tstsetup]]))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -44,7 +44,7 @@ test_that(paste(
         print(tstsetup)
         print(rlang::hash(pls_vs[[tstsetup]]))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -72,7 +72,7 @@ test_that(paste(
         print(tstsetup)
         print(rlang::hash(pls_cvvs[[tstsetup]]))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -615,7 +615,7 @@ test_that("pp: `object` of class \"projection\" works", {
         print(tstsetup)
         print(rlang::hash(pps[[tstsetup]]))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -643,7 +643,7 @@ test_that(paste(
         print(tstsetup)
         print(rlang::hash(pps_vs[[tstsetup]]))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -671,7 +671,7 @@ test_that(paste(
         print(tstsetup)
         print(rlang::hash(pps_cvvs[[tstsetup]]))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }

@@ -85,9 +85,12 @@ divmin <- function(formula, projpred_var, ...) {
   }
 }
 
+# Use projpred's own implementation to fit non-multilevel non-additive
+# submodels:
 fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
                                    projpred_regul = 1e-4, ...) {
+  # Preparations:
   fr <- model.frame(delete.intercept(formula), data = data)
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
@@ -98,10 +101,12 @@ fit_glm_ridge_callback <- function(formula, data,
     names(dot_args),
     methods::formalArgs(glm_ridge)
   )]
+  # Call the submodel fitter:
   fit <- do.call(glm_ridge, c(
     list(x = x, y = y, lambda = projpred_regul, obsvar = projpred_var),
     dot_args
   ))
+  # Post-processing:
   rownames(fit$beta) <- colnames(x)
   sub <- nlist(
     alpha = fit$beta0,
@@ -118,37 +123,34 @@ fit_glm_ridge_callback <- function(formula, data,
 # `projpred.glm_fitter`):
 fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
                              ...) {
-  tryCatch({
-    if (family$family == "gaussian" && family$link == "identity") {
-      # Exclude arguments from `...` which cannot be passed to stats::lm():
-      dot_args <- list(...)
-      dot_args <- dot_args[intersect(
-        names(dot_args),
-        union(methods::formalArgs(stats::lm),
-              union(methods::formalArgs(stats::lm.fit),
-                    methods::formalArgs(stats::lm.wfit)))
-      )]
-      return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
-        list(formula = formula),
-        dot_args
-      )))))
-    } else {
-      # Exclude arguments from `...` which cannot be passed to stats::glm():
-      dot_args <- list(...)
-      dot_args <- dot_args[intersect(
-        names(dot_args),
-        union(methods::formalArgs(stats::glm),
-              methods::formalArgs(stats::glm.control))
-      )]
-      return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
-        list(formula = formula, family = family),
-        dot_args
-      )))))
-    }
-  }, error = function(e) {
-    # May be used to handle errors.
-    stop(e)
-  })
+  if (family$family == "gaussian" && family$link == "identity") {
+    # Exclude arguments from `...` which cannot be passed to stats::lm():
+    dot_args <- list(...)
+    dot_args <- dot_args[intersect(
+      names(dot_args),
+      c(methods::formalArgs(stats::lm),
+        methods::formalArgs(stats::lm.fit),
+        methods::formalArgs(stats::lm.wfit))
+    )]
+    # Call the submodel fitter:
+    return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
+      list(formula = formula),
+      dot_args
+    )))))
+  } else {
+    # Exclude arguments from `...` which cannot be passed to stats::glm():
+    dot_args <- list(...)
+    dot_args <- dot_args[intersect(
+      names(dot_args),
+      c(methods::formalArgs(stats::glm),
+        methods::formalArgs(stats::glm.control))
+    )]
+    # Call the submodel fitter:
+    return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
+      list(formula = formula, family = family),
+      dot_args
+    )))))
+  }
 }
 
 # Use package "mgcv" to fit additive non-multilevel submodels:
@@ -158,9 +160,10 @@ fit_gam_callback <- function(formula, ...) {
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
     names(dot_args),
-    union(methods::formalArgs(gam),
-          methods::formalArgs(mgcv::gam.fit))
+    c(methods::formalArgs(gam),
+      methods::formalArgs(mgcv::gam.fit))
   )]
+  # Call the submodel fitter:
   return(suppressMessages(suppressWarnings(do.call(gam, c(
     list(formula = formula),
     dot_args
@@ -176,10 +179,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
     names(dot_args),
-    union(union(methods::formalArgs(gamm4),
-                methods::formalArgs(lme4::lFormula)),
-          methods::formalArgs(lme4::glFormula))
+    c(methods::formalArgs(gamm4),
+      methods::formalArgs(lme4::lFormula),
+      methods::formalArgs(lme4::glFormula))
   )]
+  # Call the submodel fitter:
   fit <- tryCatch({
     suppressMessages(suppressWarnings(do.call(gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
@@ -211,9 +215,7 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   return(fit)
 }
 
-# Use package "lme4" to fit submodels for multilevel reference models (with a
-# fallback to "projpred"'s own implementation for fitting non-multilevel (and
-# non-additive) submodels):
+# Use package "lme4" to fit multilevel submodels:
 fit_glmer_callback <- function(formula, family,
                                control = control_callback(family), ...) {
   tryCatch({
@@ -224,6 +226,7 @@ fit_glmer_callback <- function(formula, family,
         names(dot_args),
         methods::formalArgs(lme4::lmer)
       )]
+      # Call the submodel fitter:
       return(suppressMessages(suppressWarnings(do.call(lme4::lmer, c(
         list(formula = formula, control = control),
         dot_args
@@ -235,6 +238,7 @@ fit_glmer_callback <- function(formula, family,
         names(dot_args),
         methods::formalArgs(lme4::glmer)
       )]
+      # Call the submodel fitter:
       return(suppressMessages(suppressWarnings(do.call(lme4::glmer, c(
         list(formula = formula, family = family,
              control = control),
@@ -413,20 +417,19 @@ check_conv <- function(fit) {
 # Prediction functions for submodels --------------------------------------
 
 subprd <- function(fits, newdata) {
-  return(do.call(cbind, lapply(fits, function(fit) {
-    # Only pass argument `allow.new.levels` to the predict() generic if the fit
-    # is multilevel:
-    has_grp <- inherits(fit, c("lmerMod", "glmerMod"))
-    has_add <- inherits(fit, c("gam", "gamm4"))
-    if (has_add && !is.null(newdata)) {
+  prd_list <- lapply(fits, function(fit) {
+    is_glmm <- inherits(fit, c("lmerMod", "glmerMod"))
+    is_gam_gamm <- inherits(fit, c("gam", "gamm4"))
+    if (is_gam_gamm && !is.null(newdata)) {
       newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
     }
-    if (!has_grp) {
-      return(predict(fit, newdata = newdata))
-    } else {
+    if (is_glmm) {
       return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
+    } else {
+      return(predict(fit, newdata = newdata))
     }
-  })))
+  })
+  return(do.call(cbind, prd_list))
 }
 
 ## FIXME: find a way that allows us to remove this

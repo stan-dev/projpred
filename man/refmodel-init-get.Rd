@@ -61,7 +61,8 @@ function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, fu
 \item{family}{A \code{\link{family}} object representing the observational model (i.e.,
 the distributional family for the response).}
 
-\item{data}{Data used for fitting the reference model.}
+\item{data}{Data used for fitting the reference model. Any \code{contrasts}
+attributes of the dataset's columns are silently removed.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section

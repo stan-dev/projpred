@@ -31,7 +31,7 @@ The mesquite bushes yields dataset from Gelman and Hill (2006)
 }
 \references{
 Gelman, A. and Hill, J. (2006). \emph{Data Analysis Using Regression
-and Multilevel/Hierarchical Models}. Cambridge University Press. DOI:
+and Multilevel/Hierarchical Models}. Cambridge University Press.
 \doi{10.1017/CBO9780511790942}.
 }
 \keyword{datasets}
