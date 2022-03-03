@@ -155,7 +155,8 @@
 #' * `object` accepts the reference model fit as given in argument `object` (but
 #' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 #' CV).
-#' * `newdata` accepts data for new observations (at least in the form of a
+#' * `newdata` accepts either `NULL` (for using the original dataset, typically
+#' stored in `object`) or data for new observations (at least in the form of a
 #' `data.frame`).
 #' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
 #' right-hand side formula consisting only of the variable in `newdata`
@@ -276,6 +277,11 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Argument `ynew` must be a numeric vector.")
   }
 
+  if (is.null(newdata)) {
+    newdata <- object$fetch_data()
+  } else {
+    newdata <- na.fail(newdata)
+  }
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
                                    wrhs = weightsnew, orhs = offsetnew)
   weightsnew <- w_o$weights
@@ -296,7 +302,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   ## ref_predfun returns eta = link(mu)
-  eta <- object$ref_predfun(object$fit, newdata) + offsetnew
+  eta <- object$ref_predfun(object$fit, newdata = newdata) + offsetnew
 
   if (is.null(ynew)) {
     pred <- if (type == "link") eta else object$family$linkinv(eta)

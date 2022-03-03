@@ -131,6 +131,7 @@ proj_helper <- function(object, newdata,
     if (!inherits(newdata, c("matrix", "data.frame"))) {
       stop("newdata must be a data.frame or a matrix")
     }
+    newdata <- na.fail(newdata)
     y_nm <- extract_terms_response(projs[[1]]$refmodel$formula)$response
     # Note: At this point, even for the binomial family with > 1 trials, we
     # expect only one response column name (the one for the successes), as

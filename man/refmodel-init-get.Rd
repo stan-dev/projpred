@@ -219,7 +219,8 @@ where:
 \item \code{object} accepts the reference model fit as given in argument \code{object} (but
 possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 CV).
-\item \code{newdata} accepts data for new observations (at least in the form of a
+\item \code{newdata} accepts either \code{NULL} (for using the original dataset, typically
+stored in \code{object}) or data for new observations (at least in the form of a
 \code{data.frame}).
 \item \code{wrhs} accepts at least either \code{NULL} (for using a vector of ones) or a
 right-hand side formula consisting only of the variable in \code{newdata}
