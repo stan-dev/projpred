@@ -1006,7 +1006,7 @@ get_subparams.lmerMod <- function(x, ...) {
   )
 
   # Extract the group-level effects themselves:
-  group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df) {
+  group_ef <- unlist(lapply(lme4::ranef(x, condVar = FALSE), function(ranef_df) {
     ranef_mat <- as.matrix(ranef_df)
     setNames(
       as.vector(ranef_mat),
