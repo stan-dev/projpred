@@ -871,13 +871,14 @@ projection_tester <- function(p,
   })
   sub_data_crr <- p$refmodel$fetch_data()
   if (p_type_expected) {
-    clust_ref <- .get_refdist(p$refmodel,
-                              nclusters = nprjdraws_expected,
-                              seed = seed_expected)
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed_expected)
+    clust_ref <- .get_refdist(p$refmodel, nclusters = nprjdraws_expected)
   } else {
-    clust_ref <- .get_refdist(p$refmodel,
-                              ndraws = nprjdraws_expected,
-                              seed = seed_expected)
+    clust_ref <- .get_refdist(p$refmodel, ndraws = nprjdraws_expected)
   }
   for (i in seq_len(nprjdraws_expected)) {
     sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
@@ -1145,10 +1146,14 @@ vsel_tester <- function(
   expect_type(vs$search_path$submodls, "list")
   expect_length(vs$search_path$submodls, solterms_len_expected + 1)
   from_vsel_L1_search <- method_expected == "l1"
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(seed_expected)
   clust_ref <- .get_refdist(vs$refmodel,
                             ndraws = ndraws_expected,
-                            nclusters = nclusters_expected,
-                            seed = seed_expected)
+                            nclusters = nclusters_expected)
   nprjdraws_expected <- ncol(clust_ref$mu)
   if (!from_vsel_L1_search) {
     y_nm <- as.character(vs$refmodel$formula)[2]

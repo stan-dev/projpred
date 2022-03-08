@@ -56,8 +56,9 @@ auc <- function(x) {
 # Bootstrap an arbitrary quantity `fun` that takes the sample `x` as the first
 # input. Other arguments of `fun` can be passed by `...`. Example:
 # `boostrap(x, mean)`.
-bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
-  # set random seed but ensure the old RNG state is restored on exit
+bootstrap <- function(x, fun = mean, b = 2000,
+                      seed = sample.int(.Machine$integer.max, 1), ...) {
+  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
@@ -175,7 +176,6 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
 #   `!is.null(nclusters)`, then clustering is used and `ndraws` is ignored.
 # @param ndraws The desired number of draws. If `!is.null(nclusters)`, then
 #   clustering is used and `ndraws` is ignored.
-# @param seed The seed for (P)RNG (see `?set.seed`, for example).
 # @param thinning A single logical value indicating whether in the case where
 #   `ndraws` is used, the reference model's draws should be thinned or
 #   subsampled (without replacement).
@@ -199,15 +199,8 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mbox{prj}}}{S_prj}.
-.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL, seed = NULL,
+.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE) {
-  # set random seed but ensure the old RNG state is restored on exit
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-  }
-  set.seed(seed)
-
   S <- NCOL(refmodel$mu) # number of draws in the reference model
   if (is.null(ndraws)) {
     ndraws <- S
@@ -222,7 +215,7 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
                             wobs = refmodel$wobs, cl = cl)
     } else if (nclusters == NCOL(refmodel$mu)) {
       # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ndraws = nclusters, seed = seed))
+      return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
       if (nclusters > NCOL(refmodel$mu)) {
@@ -240,7 +233,7 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
     if (thinning) {
       s_ind <- round(seq(from = 1, to = S, length.out = ndraws))
     } else {
-      s_ind <- sample(seq_len(S), size = ndraws)
+      s_ind <- draws_subsample(S = S, ndraws = ndraws)
     }
     cl <- rep(NA, S)
     cl[s_ind] <- c(1:ndraws)
@@ -256,13 +249,15 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
   return(p_ref)
 }
 
+# Function for clustering the parameter draws:
 .get_p_clust <- function(family, mu, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
                          wsample = rep(1, dim(mu)[2]), cl = NULL) {
-  # Function for perfoming the clustering over the samples.
-  #
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
+    # Note: A seed is not set here because this function is not exported and has
+    # a calling stack at the beginning of which a seed is set.
+
     f <- family$linkfun(mu)
     out <- kmeans(t(f), nclusters, iter.max = 50)
     cl <- out$cluster # cluster indices for each sample
@@ -311,6 +306,13 @@ bootstrap <- function(x, fun = mean, b = 2000, seed = NULL, ...) {
     cl = cl
   )
   return(p)
+}
+
+draws_subsample <- function(S, ndraws) {
+  # Note: A seed is not set here because this function is not exported and has a
+  # calling stack at the beginning of which a seed is set.
+
+  return(sample.int(S, size = ndraws))
 }
 
 .is_proj_list <- function(proj) {
