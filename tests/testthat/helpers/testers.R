@@ -305,7 +305,9 @@ refmodel_tester <- function(
   ###
   if (!with_spclformul) {
     y_expected <- dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
-    if (!is_datafit && pkg_nm == "brms" && fam_nm == "brnll") {
+    if (!is_datafit && pkg_nm == "brms" && packageVersion("brms") < "2.16.11" &&
+        fam_nm == "brnll") {
+      # Fixed (as a side effect) by brms PR #1314:
       y_expected <- as.numeric(y_expected)
     }
   } else {
