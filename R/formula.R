@@ -837,22 +837,6 @@ delete.intercept <- function(formula) {
   return(update(formula, . ~ . - 1))
 }
 
-## construct contrasts.arg list argument for model.matrix based on the current
-## model's formula.
-## @param formula a formula object
-## @param data model's data
-## @return a named list with each factor and its contrasts
-get_contrasts_arg_list <- function(formula, data) {
-  ## extract model frame
-  ## check categorical variables
-  ## add contrasts for those
-  frame <- model.frame(delete.response(terms(formula)), data = data)
-  factors <- sapply(frame, is.factor)
-  return(lapply(setNames(nm = names(factors)[factors]), function(v) {
-    stats::contrasts(frame[, v])
-  }))
-}
-
 ## collapse a list of terms including contrasts
 ## @param formula model's formula
 ## @param path list of terms possibly including contrasts
