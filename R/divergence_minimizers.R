@@ -93,9 +93,6 @@ fit_glm_ridge_callback <- function(formula, data,
                                    ...) {
   # Preparations:
   fr <- model.frame(formula, data = data)
-  if (is.null(contrasts)) {
-    contrasts <- get_contrasts_arg_list(formula, data = data)
-  }
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts)
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   y <- model.response(fr)
