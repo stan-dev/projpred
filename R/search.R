@@ -132,11 +132,11 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
          "reference model.")
   }
   frame <- model.frame(refmodel$formula, refmodel$fetch_data())
-  contrasts_arg <- get_contrasts_arg_list(refmodel$formula,
-                                          refmodel$fetch_data())
-  x <- model.matrix(delete.intercept(refmodel$formula),
+  x <- model.matrix(refmodel$formula,
                     data = frame,
-                    contrasts.arg = contrasts_arg)
+                    # TODO: Allow user-specified contrasts here:
+                    contrasts.arg = NULL)
+  x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
@@ -159,14 +159,12 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
       variables <- unlist(lapply(
         solution_terms[seq_len(nterms)],
         function(term) {
-          form <- as.formula(paste("~ 0 +", term))
-          contrasts_arg <- get_contrasts_arg_list(
-            form,
-            refmodel$fetch_data()
-          )
-          return(colnames(model.matrix(form,
-                                       data = refmodel$fetch_data(),
-                                       contrasts.arg = contrasts_arg)))
+          form <- as.formula(paste("~ 1 +", term))
+          mm <- model.matrix(form,
+                             data = refmodel$fetch_data(),
+                             # TODO: Allow user-specified contrasts here:
+                             contrasts.arg = NULL)
+          return(setdiff(colnames(mm), "(Intercept)"))
         }
       ))
       indices <- match(variables, colnames(x)[search_path$solution_terms])
