@@ -848,11 +848,9 @@ get_contrasts_arg_list <- function(formula, data) {
   ## add contrasts for those
   frame <- model.frame(delete.response(terms(formula)), data = data)
   factors <- sapply(frame, is.factor)
-  contrasts_arg <- lapply(names(factors)[as.logical(factors)], function(v) {
+  return(lapply(setNames(nm = names(factors)[factors]), function(v) {
     stats::contrasts(frame[, v], contrasts = FALSE)
-  })
-  contrasts_arg <- setNames(contrasts_arg, names(factors)[as.logical(factors)])
-  return(contrasts_arg)
+  }))
 }
 
 ## collapse a list of terms including contrasts
