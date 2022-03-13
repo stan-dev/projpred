@@ -89,11 +89,12 @@ divmin <- function(formula, projpred_var, ...) {
 # submodels:
 fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
-                                   projpred_regul = 1e-4, contrasts = NULL,
-                                   ...) {
+                                   projpred_regul = 1e-4, ...) {
   # Preparations:
   fr <- model.frame(formula, data = data)
-  x <- model.matrix(fr, data = data, contrasts.arg = contrasts)
+  x <- model.matrix(fr, data = data,
+                    # TODO: Allow user-specified contrasts here:
+                    contrasts.arg = NULL)
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   y <- model.response(fr)
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
