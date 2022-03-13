@@ -862,12 +862,13 @@ collapse_contrasts_solution_path <- function(formula, path, data) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
   for (term in terms_) {
-    current_form <- as.formula(paste("~ 0 +", term))
-    contrasts_arg <- get_contrasts_arg_list(current_form, data)
-    if (length(contrasts_arg) == 0) {
+    current_form <- as.formula(paste("~ 1 +", term))
+    if (length(get_contrasts_arg_list(current_form, data)) == 0) {
       next
     }
-    x <- model.matrix(current_form, data, contrasts.arg = contrasts_arg)
+    # TODO: Allow user-specified contrasts here:
+    x <- model.matrix(current_form, data, contrasts.arg = NULL)
+    x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
     path <- Reduce(
       function(current, pattern) {
         pattern <- gsub("\\+", "\\\\+", pattern)
