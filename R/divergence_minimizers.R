@@ -91,9 +91,10 @@ fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
                                    projpred_regul = 1e-4, ...) {
   # Preparations:
-  fr <- model.frame(delete.intercept(formula), data = data)
+  fr <- model.frame(formula, data = data)
   contrasts_arg <- get_contrasts_arg_list(formula, data = data)
   x <- model.matrix(fr, data = data, contrasts.arg = contrasts_arg)
+  x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   y <- model.response(fr)
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
   dot_args <- list(...)

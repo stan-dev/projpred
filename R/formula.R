@@ -849,7 +849,7 @@ get_contrasts_arg_list <- function(formula, data) {
   frame <- model.frame(delete.response(terms(formula)), data = data)
   factors <- sapply(frame, is.factor)
   return(lapply(setNames(nm = names(factors)[factors]), function(v) {
-    stats::contrasts(frame[, v], contrasts = FALSE)
+    stats::contrasts(frame[, v])
   }))
 }
 
