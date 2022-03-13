@@ -444,9 +444,9 @@ predict.subfit <- function(subfit, newdata = NULL) {
       return(subfit$x %*% rbind(alpha, beta))
     }
   } else {
-    contrasts_arg <- get_contrasts_arg_list(subfit$formula, newdata)
     x <- model.matrix(delete.response(terms(subfit$formula)), newdata,
-                      contrasts.arg = contrasts_arg)
+                      # TODO: Allow user-specified contrasts here:
+                      contrasts.arg = NULL)
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(x))))
     } else {
