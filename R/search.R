@@ -159,8 +159,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
       variables <- unlist(lapply(
         solution_terms[seq_len(nterms)],
         function(term) {
-          form <- as.formula(paste("~ 1 +", term))
-          mm <- model.matrix(form,
+          mm <- model.matrix(as.formula(paste("~ 1 +", term)),
                              data = refmodel$fetch_data(),
                              # TODO: Allow user-specified contrasts here:
                              contrasts.arg = NULL)
