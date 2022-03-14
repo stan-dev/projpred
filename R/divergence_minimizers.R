@@ -92,7 +92,7 @@ fit_glm_ridge_callback <- function(formula, data,
                                    projpred_regul = 1e-4, ...) {
   # Preparations:
   fr <- model.frame(formula, data = data)
-  x <- model.matrix(fr, data = data,
+  x <- model.matrix(formula, data = fr,
                     # TODO: Allow user-specified contrasts here:
                     contrasts.arg = NULL)
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
