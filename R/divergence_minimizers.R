@@ -453,7 +453,7 @@ predict.subfit <- function(subfit, newdata = NULL) {
     # (`NULL`) uses `options("contrasts")` internally, but it might be more
     # convenient to let users specify contrasts directly. At that occasion,
     # contrasts should also be tested thoroughly (not done until now).
-    x <- model.matrix(subfit$formula, data = newdata)
+    x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata)
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(x))))
     } else {
