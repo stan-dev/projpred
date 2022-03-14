@@ -288,9 +288,9 @@ test_that(paste(
     for (nn in seq_len(dim(ssq_regul_sel_alpha)[3])) {
       expect_length(unique(ssq_regul_sel_alpha[, 1, !!nn]), 1)
     }
-    # For the intercept-only model:
     expect_true(all(is.na(ssq_regul_sel_beta[, 1, ])), info = tstsetup)
-    # All other (i.e., not intercept-only) models:
+    # All other (i.e., not intercept-only) models (note: as discussed at issue
+    # #169, the intercept is not tested here to stay the same):
     ssq_regul_sel_beta_cond <- array(
       dim = dim(ssq_regul_sel_beta) + c(-1L, -1L, 0L)
     )
