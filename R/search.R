@@ -131,9 +131,8 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
          "reference model.")
   }
-  frame <- model.frame(refmodel$formula, refmodel$fetch_data())
   x <- model.matrix(refmodel$formula,
-                    data = frame,
+                    data = refmodel$fetch_data(),
                     # TODO: Allow user-specified contrasts here:
                     contrasts.arg = NULL)
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
