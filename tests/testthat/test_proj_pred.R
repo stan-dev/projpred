@@ -197,7 +197,7 @@ test_that("invalid `newdata` fails", {
     proj_linpred(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
                             1)]],
                  newdata = dat[, head(solterms_x, -1), drop = FALSE]),
-    "^object 'xco\\.1' not found$"
+    "^object '.*' not found$"
   )
 })
 
@@ -802,7 +802,7 @@ test_that("invalid `newdata` fails", {
                  newdata = dat[, head(solterms_x, -1), drop = FALSE],
                  .seed = seed2_tst,
                  solution_terms = solterms_x),
-    "^object 'xco\\.1' not found$"
+    "^object '.*' not found$"
   )
 })
 
