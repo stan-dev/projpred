@@ -423,8 +423,8 @@ refmodel_tester <- function(
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of a list of fits (each fit must
-# not necessarily be of class `"subfit"`) for the same single submodel.
+# A helper function for testing the structure of a list of fits for the same
+# single submodel.
 #
 # @param submodl_totest The `submodl` object (a list of fits for a single
 #   submodel, with one fit per projected draw) to test.
