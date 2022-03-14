@@ -92,9 +92,12 @@ fit_glm_ridge_callback <- function(formula, data,
                                    projpred_regul = 1e-4, ...) {
   # Preparations:
   fr <- model.frame(formula, data = data)
-  x <- model.matrix(formula, data = fr,
-                    # TODO: Allow user-specified contrasts here:
-                    contrasts.arg = NULL)
+  # TODO: In the following model.matrix() call, allow user-specified contrasts
+  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+  # (`NULL`) uses `options("contrasts")` internally, but it might be more
+  # convenient to let users specify contrasts directly. At that occasion,
+  # contrasts should also be tested thoroughly (not done until now).
+  x <- model.matrix(formula, data = fr)
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   y <- model.response(fr)
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
@@ -445,9 +448,12 @@ predict.subfit <- function(subfit, newdata = NULL) {
       return(subfit$x %*% rbind(alpha, beta))
     }
   } else {
-    x <- model.matrix(subfit$formula, newdata,
-                      # TODO: Allow user-specified contrasts here:
-                      contrasts.arg = NULL)
+    # TODO: In the following model.matrix() call, allow user-specified contrasts
+    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+    # (`NULL`) uses `options("contrasts")` internally, but it might be more
+    # convenient to let users specify contrasts directly. At that occasion,
+    # contrasts should also be tested thoroughly (not done until now).
+    x <- model.matrix(subfit$formula, data = newdata)
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(x))))
     } else {

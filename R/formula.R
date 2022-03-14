@@ -846,9 +846,12 @@ collapse_contrasts_solution_path <- function(formula, path, data) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
   for (term in terms_) {
-    x <- model.matrix(as.formula(paste("~ 1 +", term)), data,
-                      # TODO: Allow user-specified contrasts here:
-                      contrasts.arg = NULL)
+    # TODO: In the following model.matrix() call, allow user-specified contrasts
+    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+    # (`NULL`) uses `options("contrasts")` internally, but it might be more
+    # convenient to let users specify contrasts directly. At that occasion,
+    # contrasts should also be tested thoroughly (not done until now).
+    x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
     if (length(attr(x, "contrasts")) == 0) {
       next
     }
