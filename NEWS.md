@@ -2,6 +2,11 @@
 
 ## Major changes
 
+* Added support for weighted LOO proportional-to-size subsampling based on [Magnusson et al. (2019)](https://proceedings.mlr.press/v97/magnusson19a.html). However, subsampled LOO CV is now regarded as experimental. Therefore, a corresponding warning is thrown when calling `cv_varsel()` with `nloo < n` where `n` denotes the number of observations. (GitHub: commit feea39e, #94, #252)
+* Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart.
+* Fast approximate LOO computation for `validate_search = FALSE` in `cv_varsel()`.
+* The (formerly internally set) default for argument `nclusters` of `varsel()` and `cv_varsel()` was increased from 1 to 20.
+* The (formerly internally set) default for argument `nclusters_pred` of `varsel()` and `cv_varsel()` was increased from 5 to 400.
 * The behavior of arguments `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` in `varsel()`, `cv_varsel()`, and `project()` has been changed: Now, `ndraws` and `ndraws_pred` have non-`NULL` defaults and for `ndraws <= 20` or `ndraws_pred <= 20`, the value of `ndraws` or `ndraws_pred` is passed to `nclusters` or `nclusters_pred`, respectively (so that clustering is used). (GitHub: commits babe031, 4ef95d3, and ce7d1e0)
 * For `proj_linpred()` and `proj_predict()`, arguments `nterms`, `ndraws`, and `seed` have been removed to allow the user to pass them to `project()`. New arguments `filter_nterms`, `nresample_clusters`, and `.seed` have been introduced (see the documentation for details). (GitHub: #92, #135)
 * Reference models lacking an intercept are not supported anymore (actually, the previous implementation for such models was incomplete). Support might be re-introduced in the future (when fixed), but for now it is withdrawn as it requires some larger changes. (GitHub: #124, but see also #96 and #100)
@@ -16,16 +21,18 @@
 * The function passed to argument `proj_predfun` of `init_refmodel()` now always needs to return a matrix (see the documentation for details). (GitHub: #230)
 * The projection can be run in parallel now. However, we cannot recommend this for all kinds of platforms and all kinds of models. For more information, see the general package documentation available at ``?`projpred-package` ``. (GitHub: #235)
 * Support for the `Student_t()` family is regarded as experimental. Therefore, a corresponding warning is thrown when creating the reference model. (GitHub: #233, #252)
-* Subsampled LOO CV (offered by argument `nloo` of `cv_varsel()`) is regarded as experimental. Therefore, a corresponding warning is thrown when calling `cv_varsel()` with `nloo < n` where `n` denotes the number of observations. (GitHub: #94, #252)
 * Support for additive models (i.e., GAMs and GAMMs) is regarded as experimental. Therefore, a corresponding warning is thrown when creating the reference model. (GitHub: #237, #252)
 * Support for the `Gamma()` family is regarded as experimental. Therefore, a corresponding warning is thrown when creating the reference model. (GitHub: paul-buerkner/brms#1255, #240, #252)
 * The previous behavior of `init_refmodel()` in case of argument `dis` being `NULL` (the default) was dangerous for custom reference models with a `family` having a dispersion parameter (in that case, `dis` values of all-zeros were used silently). The new behavior now requires a non-`NULL` argument `dis` in that case. (GitHub: #254)
 * Argument `cv_search` has been renamed to `refit_prj`. (GitHub: #154, #265)
-* `as.matrix.projection()` has gained a new argument `nm_scheme` which allows to choose the naming scheme for the column names of the returned matrix. The default (`"auto"`) follows the naming scheme of the reference model fit (and uses `"rstanarm"` if the reference model fit is of an unknown class). See also section "Major changes" for version 2.0.5 below. (GitHub: #279)
-* `seed` (and `.seed`) arguments now have a default of `sample.int(.Machine$integer.max, 1)` instead of `NULL`. Furthermore, the value supplied to these arguments is now used to generate new seeds internally on-the-fly. In many cases, this will change results compared to older **projpred** versions. (GitHub: #286)
+* `as.matrix.projection()` has gained a new argument `nm_scheme` which allows to choose the naming scheme for the column names of the returned matrix. The default (`"auto"`) follows the naming scheme of the reference model fit (and uses the `"rstanarm"` naming scheme if the reference model fit is of an unknown class). (GitHub: #82, #279)
+* `seed` (and `.seed`) arguments now have a default of `sample.int(.Machine$integer.max, 1)` instead of `NULL`. Furthermore, the value supplied to these arguments is now used to generate new seeds internally on-the-fly. In many cases, this will change results compared to older **projpred** versions. Also note that now, the internal seeds are never fixed to a specific value if `seed` (and `.seed`) arguments are set to `NULL`. (GitHub: #84, #286)
 
 ## Minor changes
 
+* Improved summary output with important details.
+* For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves. (GitHub: #75)
+* For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects. (GitHub: #74)
 * Improved documentation. (GitHub: especially #233)
 * Replaced the two vignettes by a single one which also has new content. (GitHub: #237)
 * Updated the `README` file. (GitHub: #245)
@@ -52,6 +59,7 @@
 
 ## Bug fixes
 
+* Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix). (GitHub: #72, #73)
 * Fixed a bug when using weights or offsets e.g. in `proj_linpred()`. (GitHub: #114)
 * Fixed a bug causing `varsel()`/`make_formula` to fail with multidimensional interaction terms. (GitHub: #102, #103)
 * Fixed an indexing bug in `cv_varsel()` for models with a single predictor. (GitHub: #115)
@@ -106,27 +114,17 @@
 * Fix GitHub issue #215. (GitHub: #266)
 * Fix GitHub issue #212. (GitHub: #267)
 * Fix GitHub issue #156. (GitHub: #269)
-* Revert the behavior (introduced by version 2.0.5) of `init_refmodel()` if neither `cvfun` nor `cvfits` is provided: Do *not* raise an error since such an error is now thrown when trying to run K-fold CV (so a reference model which is never used for K-fold CV does not require `cvfits` or `cvfun`). (GitHub: #270)
 * If the data used for the reference model contains `NA`s, an appropriate error is now thrown. Previously, the reference model was created successfully, but this caused opaque errors in downstream code such as `project()`. (GitHub: #274)
 * Fix GitHub issue #268. (GitHub: #287)
 * Fix GitHub issue #149. (GitHub: #288)
 
 # projpred 2.0.5
 
-## Major changes
-
-* For GLMMs, the column names of the matrix returned by the `as.matrix.projection()` method follow [**brms**](https://paul-buerkner.github.io/brms/)'s naming convention, also for the new columns introduced by **projpred** version 2.0.4 (see below). (GitHub: #82)
-
-## Minor changes
-
-* Internally, the seed is not fixed to a specific value when `NULL`. (GitHub: #84)
-
 ## Bug fixes
 
 * Fixed a bug raising an error when not projecting from a `vsel` object. (GitHub: #79, #80)
 * Fixed a bug in the calculation of the Gaussian deviance. (GitHub: #81)
 * Fixed a bug in the calculation of the predictive statistics of the reference model on test data in `varsel()`. (GitHub #90)
-* In `init_refmodel()`: Raise an error if neither `cvfun` nor `cvfits` is provided (in cases where at least one of them is necessary). (GitHub: #91)
 * Fixed a bug in an input check for argument `nloo` of `cv_varsel()`. (GitHub: #93)
 * Fixed a bug in `cv_varsel()`, causing an error in case of `!validate_search && cv_method != "LOO"`. (GitHub: #95)
 * Fixed bugs related to the setting of the seed. (GitHub: commit 02cd50d)
@@ -135,28 +133,6 @@
 * Fixed bugs in `proj_linpred()`'s calculation of output element `lpd` (for `integrated = TRUE`). (GitHub: #106, #112)
 * Fixed an inconsistency in the dimensions of `proj_linpred()`'s output elements `pred` and `lpd` (for `integrated = FALSE`): Now, they are both S x N matrices, with S denoting the number of (possibly clustered) posterior draws and N denoting the number of observations. (GitHub: #107, #112)
 * Fixed a bug causing `proj_predict()`'s output matrix to be transposed in case of `nrow(newdata) == 1`. (GitHub: #112)
-
-# projpred 2.0.4
-
-* Added support for weighted LOO proportional-to-size subsampling based on Magnusson, M., Riis Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out Cross-Validation for Large Data. In International Conference on Machine Learning.
-* Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart. 
-* Fast approximate LOO computation for `validate_search = FALSE` calls in `cv_varsel(...)`.
-* Improved summary output with important details.
-* The (internally set) default for argument `nclusters` of `varsel()` and `cv_varsel()` was increased from 10 to 20.
-* For group-level effects, the `as.matrix.projection()` method now also returns the estimated group-level effects themselves. (GitHub: #75)
-* For group-level effects, the `as.matrix.projection()` method now returns the variance components (population SD(s) and population correlation(s)) instead of the empirical SD(s) of the group-level effects. (GitHub: #74)
-
-## Bug fixes
-
-* Fixed a bug in the handling of arguments `ndraws` and `nclusters` in `varsel()` and `cv_varsel()`. (GitHub: commit bbd0f0a)
-* Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix). (GitHub: #72, #73)
-
-# projpred 2.0.3
-
-* Minor fixes for stability, no new features.
-* The (internally set) default for argument `nclusters` of `varsel()` and `cv_varsel()` was increased from 1 to 10.
-* The (internally set) default for argument `nclusters_pred` of `varsel()` and `cv_varsel()` was increased from 5 to 400.
-* In `varsel()` and `cv_varsel()`, always perform clustering of the posterior draws (argument `ndraws` is effectively ignored). (GitHub: starting with commit 80b10dc)
 
 # projpred 2.0.2
 
@@ -188,11 +164,11 @@ This version contains only a few patches, no new features to the user.
 
 ## New features 
 
-* Added support for **brms** models. 
+* Added support for [**brms**](https://paul-buerkner.github.io/brms/) models. 
 
 ## Bug fixes
 
-* The program crashed with **rstanarm** models fitted with syntax like `stan_glm(log(y) ~ log(x), ...)`, that is, it did not allow transformation for `y`.
+* The program crashed with [**rstanarm**](https://mc-stan.org/rstanarm/) models fitted with syntax like `stan_glm(log(y) ~ log(x), ...)`, that is, it did not allow transformation for `y`.
 
 # projpred 1.0.0
 

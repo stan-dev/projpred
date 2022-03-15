@@ -219,6 +219,11 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
 \dontshow{\}) # examplesIf}
 }
 \references{
+Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
+leave-one-out cross-validation for large data. In \emph{Proceedings of the 36th
+International Conference on Machine Learning}, 4244–4253. URL:
+\url{https://proceedings.mlr.press/v97/magnusson19a.html}.
+
 Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
 evaluation using leave-one-out cross-validation and WAIC. \emph{Statistics and
 Computing}, \strong{27}(5), 1413-1432. \doi{10.1007/s11222-016-9696-4}.
