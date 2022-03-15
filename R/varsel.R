@@ -143,7 +143,7 @@ varsel.default <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
-                            ndraws = 20, nclusters = NULL, ndraws_pred = 400,
+                            ndraws = NULL, nclusters = 20, ndraws_pred = 400,
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
