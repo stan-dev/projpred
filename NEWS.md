@@ -5,7 +5,7 @@
 * Added support for weighted LOO proportional-to-size subsampling based on [Magnusson et al. (2019)](https://proceedings.mlr.press/v97/magnusson19a.html). However, subsampled LOO CV is now regarded as experimental. Therefore, a corresponding warning is thrown when calling `cv_varsel()` with `nloo < n` where `n` denotes the number of observations. (GitHub: #94, #252, commit feea39e)
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart.
 * Fast approximate LOO computation for `validate_search = FALSE` in `cv_varsel()`.
-* Formerly, the defaults for arguments `nclusters` (= `1`) and `nclusters_pred` (= `5`) of `varsel()` and `cv_varsel()` were set internally (the user-visible defaults were `NULL`). Now, `nclusters` and `ndraws_pred` (note the `ndraws_pred`, not `nclusters_pred`) have non-`NULL` user-visible defaults of `20` and `400`, respectively. In general, this increases the runtime of these functions a lot. Furthermore, for `ndraws <= 20` or `ndraws_pred <= 20`, a warning is thrown. This warning is also thrown for argument `ndraws` of `project()`. (GitHub: <INSERT_PR_NUMBER_FOR_ndr_ncl> and several commits beforehand, in particular babe031, 4ef95d3, and ce7d1e0)
+* Formerly, the defaults for arguments `nclusters` (= `1`) and `nclusters_pred` (= `5`) of `varsel()` and `cv_varsel()` were set internally (the user-visible defaults were `NULL`). Now, `nclusters` and `ndraws_pred` (note the `ndraws_pred`, not `nclusters_pred`) have non-`NULL` user-visible defaults of `20` and `400`, respectively. In general, this increases the runtime of these functions a lot. Furthermore, for `ndraws <= 20` or `ndraws_pred <= 20`, a warning is thrown. This warning is also thrown for argument `ndraws` of `project()`. (GitHub: <INSERT_PR_NUMBER_FOR_ndr_ncl> and several commits beforehand, in particular bbd0f0a, babe031, 4ef95d3, and ce7d1e0)
 * For `proj_linpred()` and `proj_predict()`, arguments `nterms`, `ndraws`, and `seed` have been removed to allow the user to pass them to `project()`. New arguments `filter_nterms`, `nresample_clusters`, and `.seed` have been introduced (see the documentation for details). (GitHub: #92, #135)
 * Reference models lacking an intercept are not supported anymore (actually, the previous implementation for such models was incomplete). Support might be re-introduced in the future (when fixed), but for now it is withdrawn as it requires some larger changes. (GitHub: #124, but see also #96 and #100)
 * In the output of `proj_linpred()`, dimensions are not dropped anymore (i.e., output elements `pred` and `lpd` are always S x N matrices now). (GitHub: #143)
@@ -58,6 +58,17 @@
 ## Bug fixes
 
 * Fixed a bug in `as.matrix.projection()` (causing incorrect column names for the returned matrix). (GitHub: #72, #73)
+* Fixed a bug raising an error when not projecting from a `vsel` object. (GitHub: #79, #80)
+* Fixed a bug in the calculation of the Gaussian deviance. (GitHub: #81)
+* Fixed a bug in the calculation of the predictive statistics of the reference model on test data in `varsel()`. (GitHub #90)
+* Fixed a bug in an input check for argument `nloo` of `cv_varsel()`. (GitHub: #93)
+* Fixed a bug in `cv_varsel()`, causing an error in case of `!validate_search && cv_method != "LOO"`. (GitHub: #95)
+* Fixed bugs related to the setting of the seed. (GitHub: commit 02cd50d)
+* Fixed a bug causing `proj_linpred()` to raise an error if argument `newdata` was `NULL`. (GitHub: #97)
+* Fixed an incorrect usage of the dispersion parameter values when calculating output element `lpd` in `proj_linpred()` (for `integrated = TRUE` as well as for `integrated = FALSE`). (GitHub: #105)
+* Fixed bugs in `proj_linpred()`'s calculation of output element `lpd` (for `integrated = TRUE`). (GitHub: #106, #112)
+* Fixed an inconsistency in the dimensions of `proj_linpred()`'s output elements `pred` and `lpd` (for `integrated = FALSE`): Now, they are both S x N matrices, with S denoting the number of (possibly clustered) posterior draws and N denoting the number of observations. (GitHub: #107, #112)
+* Fixed a bug causing `proj_predict()`'s output matrix to be transposed in case of `nrow(newdata) == 1`. (GitHub: #112)
 * Fixed a bug when using weights or offsets e.g. in `proj_linpred()`. (GitHub: #114)
 * Fixed a bug causing `varsel()`/`make_formula` to fail with multidimensional interaction terms. (GitHub: #102, #103)
 * Fixed an indexing bug in `cv_varsel()` for models with a single predictor. (GitHub: #115)
@@ -115,22 +126,6 @@
 * If the data used for the reference model contains `NA`s, an appropriate error is now thrown. Previously, the reference model was created successfully, but this caused opaque errors in downstream code such as `project()`. (GitHub: #274)
 * Fix GitHub issue #268. (GitHub: #287)
 * Fix GitHub issue #149. (GitHub: #288)
-
-# projpred 2.0.5
-
-## Bug fixes
-
-* Fixed a bug raising an error when not projecting from a `vsel` object. (GitHub: #79, #80)
-* Fixed a bug in the calculation of the Gaussian deviance. (GitHub: #81)
-* Fixed a bug in the calculation of the predictive statistics of the reference model on test data in `varsel()`. (GitHub #90)
-* Fixed a bug in an input check for argument `nloo` of `cv_varsel()`. (GitHub: #93)
-* Fixed a bug in `cv_varsel()`, causing an error in case of `!validate_search && cv_method != "LOO"`. (GitHub: #95)
-* Fixed bugs related to the setting of the seed. (GitHub: commit 02cd50d)
-* Fixed a bug causing `proj_linpred()` to raise an error if argument `newdata` was `NULL`. (GitHub: #97)
-* Fixed an incorrect usage of the dispersion parameter values when calculating output element `lpd` in `proj_linpred()` (for `integrated = TRUE` as well as for `integrated = FALSE`). (GitHub: #105)
-* Fixed bugs in `proj_linpred()`'s calculation of output element `lpd` (for `integrated = TRUE`). (GitHub: #106, #112)
-* Fixed an inconsistency in the dimensions of `proj_linpred()`'s output elements `pred` and `lpd` (for `integrated = FALSE`): Now, they are both S x N matrices, with S denoting the number of (possibly clustered) posterior draws and N denoting the number of observations. (GitHub: #107, #112)
-* Fixed a bug causing `proj_predict()`'s output matrix to be transposed in case of `nrow(newdata) == 1`. (GitHub: #112)
 
 # projpred 2.0.2
 
