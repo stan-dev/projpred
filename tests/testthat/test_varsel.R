@@ -20,8 +20,8 @@ test_that(paste(
       refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nclusters_expected = args_vs[[tstsetup]]$nclusters,
-      nclusters_pred_expected = args_vs[[tstsetup]]$nclusters_pred,
+      nprjdraws_search_expected = args_vs[[tstsetup]]$nclusters,
+      nprjdraws_eval_expected = args_vs[[tstsetup]]$nclusters_pred,
       info_str = tstsetup
     )
   }
@@ -119,8 +119,8 @@ test_that("`d_test` works", {
       dtest_expected = d_test_crr,
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
-      nclusters_expected = args_vs_i$nclusters,
-      nclusters_pred_expected = args_vs_i$nclusters_pred,
+      nprjdraws_search_expected = args_vs_i$nclusters,
+      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       info_str = tstsetup
     )
     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
@@ -167,8 +167,8 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "L1",
-          nclusters_expected = args_vs_i$nclusters,
-          nclusters_pred_expected = args_vs_i$nclusters_pred,
+          nprjdraws_search_expected = args_vs_i$nclusters,
+          nprjdraws_eval_expected = args_vs_i$nclusters_pred,
           info_str = tstsetup
         )
         # Expect equality for all components not related to prediction:
@@ -246,8 +246,8 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "forward",
-          nclusters_expected = args_vs_i$nclusters,
-          nclusters_pred_expected = args_vs_i$nclusters_pred,
+          nprjdraws_search_expected = args_vs_i$nclusters,
+          nprjdraws_eval_expected = args_vs_i$nclusters_pred,
           info_str = tstsetup
         )
       }
@@ -403,8 +403,8 @@ test_that("for L1 search, `penalty` has an expected effect", {
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
       solterms_len_expected = nterms_max_crr,
       method_expected = "L1",
-      nclusters_expected = args_vs_i$nclusters,
-      nclusters_pred_expected = args_vs_i$nclusters_pred,
+      nprjdraws_search_expected = args_vs_i$nclusters,
+      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       info_str = tstsetup
     )
     # Check that the variables with no cost are selected first and the ones
@@ -443,8 +443,8 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
-      nclusters_expected = args_cvvs[[tstsetup]]$nclusters,
-      nclusters_pred_expected = args_cvvs[[tstsetup]]$nclusters_pred,
+      nprjdraws_search_expected = args_cvvs[[tstsetup]]$nclusters,
+      nprjdraws_eval_expected = args_cvvs[[tstsetup]]$nclusters_pred,
       info_str = tstsetup
     )
   }
@@ -568,8 +568,8 @@ test_that("setting `nloo` smaller than the number of observations works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = args_cvvs_i$validate_search,
-      nclusters_expected = args_cvvs_i$nclusters,
-      nclusters_pred_expected = args_cvvs_i$nclusters_pred,
+      nprjdraws_search_expected = args_cvvs_i$nclusters,
+      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       nloo_expected = nloo_tst,
       info_str = tstsetup
     )
@@ -621,8 +621,8 @@ test_that("`validate_search` works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
-      nclusters_expected = args_cvvs_i$nclusters,
-      nclusters_pred_expected = args_cvvs_i$nclusters_pred,
+      nprjdraws_search_expected = args_cvvs_i$nclusters,
+      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
@@ -781,8 +781,8 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
-      nclusters_expected = args_cvvs_i$nclusters,
-      nclusters_pred_expected = args_cvvs_i$nclusters_pred,
+      nprjdraws_search_expected = args_cvvs_i$nclusters,
+      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
     # Expected equality for some components:
@@ -883,8 +883,8 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
-      nclusters_expected = args_cvvs_i$nclusters,
-      nclusters_pred_expected = args_cvvs_i$nclusters_pred,
+      nprjdraws_search_expected = args_cvvs_i$nclusters,
+      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       info_str = tstsetup
     )
     # Expected equality for some components:

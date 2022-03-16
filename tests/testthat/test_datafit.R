@@ -258,8 +258,8 @@ test_that(paste(
         datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
       solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nclusters_expected = 1L,
-      nclusters_pred_expected = 1L,
+      nprjdraws_search_expected = 1L,
+      nprjdraws_eval_expected = 1L,
       extra_tol = 1.2,
       info_str = tstsetup
     )
@@ -287,8 +287,8 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
-      nclusters_expected = 1L,
-      nclusters_pred_expected = 1L,
+      nprjdraws_search_expected = 1L,
+      nprjdraws_eval_expected = 1L,
       extra_tol = 1.2,
       info_str = tstsetup
     )
