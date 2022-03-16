@@ -24,7 +24,7 @@ Description:
     'rstanarm' and 'brms' packages, but other reference models can also be used.
     See the documentation as well as the package vignette for more information
     and examples.
-License: GPL-3
+License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
 Depends:

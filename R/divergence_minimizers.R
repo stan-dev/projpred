@@ -502,9 +502,10 @@ repair_re <- function(object, newdata) {
 # random effects for new group levels from a (multivariate) Gaussian
 # distribution.
 #
-# License/copyright notice: repair_re.merMod() is inspired by (i.e., it uses
-# code snippets from) lme4:::predict.merMod() from lme4 version 1.1-28 (see
-# <https://CRAN.R-project.org/package=lme4>).
+# License/copyright notice: repair_re.merMod() is inspired by and uses code
+# snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
+# <https://CRAN.R-project.org/package=lme4>). See the `LICENSE` file in
+# projpred's root directory for details.
 #
 # The copyright statement for lme4 version 1.1-28 is:
 # Copyright (C) 2003-2022 The LME4 Authors (see
