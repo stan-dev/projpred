@@ -624,11 +624,14 @@ if (!run_more) {
   ndr_ncl_pred_tst <- list(default_ndr_ncl = list())
 }
 ndr_ncl_pred_tst <- c(ndr_ncl_pred_tst, list(
-  noclust = list(ndraws = 25L),
+  noclust = list(ndraws = nclusters_pred_tst),
   clust = list(nclusters = nclusters_pred_tst),
-  clust_draws = list(ndraws = nclusters_pred_tst),
   clust1 = list(nclusters = 1L)
 ))
+if (any(unlist(lapply(ndr_ncl_pred_tst, "[[", "ndraws")) <= 20)) {
+  # Suppress the warning concerning small `ndraws` or `ndraws_pred` values:
+  options(projpred.warn_ndraws = FALSE)
+}
 nresample_clusters_tst <- c(1L, 100L)
 
 meth_tst <- list(
@@ -1117,10 +1120,10 @@ vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------
 
-ndraws_default <- 20L # Adapt this if the default is changed.
-ndraws_pred_default <- 400L # Adapt this if the default is changed.
-nresample_clusters_default <- 1000L # Adapt this if the default is changed.
-regul_default <- 1e-4 # Adapt this if the default is changed.
+nclusters_default <- 20L
+ndraws_pred_default <- 400L
+nresample_clusters_default <- 1000L
+regul_default <- 1e-4
 
 # Seed --------------------------------------------------------------------
 

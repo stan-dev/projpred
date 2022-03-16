@@ -59,7 +59,7 @@ ndr_ncl_dtls <- function(args_i,
     stopifnot(length(ndr_ncl_nm) == 1)
     nprjdraws <- args_i[[ndr_ncl_nm]]
   }
-  clust_used <- ndr_ncl_nm == "nclusters" || nprjdraws <= 20
+  clust_used <- ndr_ncl_nm == "nclusters"
   if (clust_used) {
     nprjdraws_out <- nresample_clusters_crr
   } else {
