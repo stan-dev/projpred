@@ -201,24 +201,23 @@ bootstrap <- function(x, fun = mean, b = 2000,
 #   integer between 1 and \eqn{S_{\mbox{prj}}}{S_prj}.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE) {
-  S <- NCOL(refmodel$mu) # number of draws in the reference model
-  if (is.null(ndraws)) {
-    ndraws <- S
-  }
+  # Number of draws in the reference model:
+  S <- NCOL(refmodel$mu)
 
   if (!is.null(nclusters)) {
     # use clustering (ignore ndraws argument)
+    nclusters <- min(S, nclusters)
     if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
       p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, cl = cl)
-    } else if (nclusters == NCOL(refmodel$mu)) {
+    } else if (nclusters == S) {
       # number of clusters equal to the number of samples, so return the samples
       return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
-      if (nclusters > NCOL(refmodel$mu)) {
+      if (nclusters > S) {
         stop("The number of clusters nclusters cannot exceed the number of ",
              "columns in mu.")
       }
@@ -226,9 +225,10 @@ bootstrap <- function(x, fun = mean, b = 2000,
                             wobs = refmodel$wobs, nclusters = nclusters)
     }
   } else {
-    if (ndraws > NCOL(refmodel$mu)) {
-      stop("The number of draws ndraws cannot exceed the number of ",
-           "columns in mu.")
+    ndraws <- min(S, ndraws)
+    if (ndraws != S && ndraws <= 20) {
+      warning("The number of draws to project is quite small (<= 20). In such ",
+              "cases, it is usually better to use clustering.")
     }
     if (thinning) {
       s_ind <- round(seq(from = 1, to = S, length.out = ndraws))
