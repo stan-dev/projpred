@@ -22,6 +22,7 @@
 * The previous behavior of `init_refmodel()` in case of argument `dis` being `NULL` (the default) was dangerous for custom reference models with a `family` having a dispersion parameter (in that case, `dis` values of all-zeros were used silently). The new behavior now requires a non-`NULL` argument `dis` in that case. (GitHub: #254)
 * Argument `cv_search` has been renamed to `refit_prj`. (GitHub: #154, #265)
 * `as.matrix.projection()` has gained a new argument `nm_scheme` which allows to choose the naming scheme for the column names of the returned matrix. The default (`"auto"`) follows the naming scheme of the reference model fit (and uses `"rstanarm"` if the reference model fit is of an unknown class). See also section "Major changes" for version 2.0.5 below. (GitHub: #279)
+* `seed` (and `.seed`) arguments now have a default of `sample.int(.Machine$integer.max, 1)` instead of `NULL`. Furthermore, the value supplied to these arguments is now used to generate new seeds internally on-the-fly. In many cases, this will change results compared to older **projpred** versions. (GitHub: #286)
 
 ## Minor changes
 
@@ -46,6 +47,8 @@
 * Argument `fit` of `init_refmodel()`'s argument `proj_predfun` was renamed to `fits`. This is a non-breaking change since all calls to `proj_predfun` in **projpred** have that argument unnamed. However, this cannot be guaranteed in the future, so we strongly encourage users with a custom `proj_predfun` to rename argument `fit` to `fits`. (GitHub: #263)
 * `init_refmodel()` has gained argument `cvrefbuilder` which may be a custom function for constructing the K reference models in a K-fold CV. (GitHub: #271)
 * Allow arguments to be passed from `project()`, `varsel()`, and `cv_varsel()` to the divergence minimizer. (GitHub: #278)
+* In `init_refmodel()`, any `contrasts` attributes of the dataset's columns are silently removed. (GitHub: #284)
+* `NA`s in data supplied to `newdata` arguments now trigger an error. (GitHub: #285)
 
 ## Bug fixes
 

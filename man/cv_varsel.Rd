@@ -29,7 +29,7 @@ cv_varsel(object, ...)
   thresh = 1e-06,
   regul = 1e-04,
   validate_search = TRUE,
-  seed = NULL,
+  seed = sample.int(.Machine$integer.max, 1),
   search_terms = NULL,
   ...
 )
@@ -220,7 +220,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
 \references{
 Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
 evaluation using leave-one-out cross-validation and WAIC. \emph{Statistics and
-Computing}, \strong{27}(5), 1413-1432. DOI: \doi{10.1007/s11222-016-9696-4}.
+Computing}, \strong{27}(5), 1413-1432. \doi{10.1007/s11222-016-9696-4}.
 
 Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
 smoothed importance sampling. \emph{arXiv:1507.02646}. URL:

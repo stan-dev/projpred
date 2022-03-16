@@ -21,7 +21,8 @@
 \item{newdata}{Passed to argument \code{newdata} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Provides the
 predictor (and possibly also the response) data for the new (or old)
-observations.}
+observations. May also be \code{NULL} (see argument \code{extract_model_data} of
+\code{\link[=init_refmodel]{init_refmodel()}}). If not \code{NULL}, any \code{NA}s will trigger an error.}
 
 \item{ynew}{If not \code{NULL}, then this needs to be a vector of new (or old)
 response values. See section "Value" below.}

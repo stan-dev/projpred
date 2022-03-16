@@ -147,7 +147,15 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL, seed = NULL, ...) {
+                            search_terms = NULL,
+                            seed = sample.int(.Machine$integer.max, 1), ...) {
+  # Set seed, but ensure the old RNG state is restored on exit:
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(seed)
+
   refmodel <- object
 
   ## fetch the default arguments or replace them by the user defined values
@@ -178,8 +186,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   }
 
   ## reference distributions for selection and prediction after selection
-  p_sel <- .get_refdist(refmodel, ndraws, nclusters, seed = seed)
-  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred, seed = seed)
+  p_sel <- .get_refdist(refmodel, ndraws, nclusters)
+  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
 
   ## perform the selection
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)

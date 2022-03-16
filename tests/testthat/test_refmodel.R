@@ -203,7 +203,7 @@ test_that(paste(
         print(rlang::hash(predref_ynew_resp))
         print(rlang::hash(predref_ynew_link))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }

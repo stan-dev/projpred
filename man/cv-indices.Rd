@@ -6,9 +6,14 @@
 \alias{cv_ids}
 \title{Create cross-validation folds}
 \usage{
-cvfolds(n, K, seed = NULL)
+cvfolds(n, K, seed = sample.int(.Machine$integer.max, 1))
 
-cv_ids(n, K, out = c("foldwise", "indices"), seed = NULL)
+cv_ids(
+  n,
+  K,
+  out = c("foldwise", "indices"),
+  seed = sample.int(.Machine$integer.max, 1)
+)
 }
 \arguments{
 \item{n}{Number of observations.}

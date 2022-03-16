@@ -435,7 +435,7 @@ test_that(paste(
         print(tstsetup)
         print(rlang::hash(pl_with_args))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -476,7 +476,7 @@ test_that(paste(
         print(tstsetup)
         print(rlang::hash(pp_with_args))
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -538,7 +538,7 @@ test_that(paste(
         print(tstsetup)
         print(smmry, digits = 6)
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -577,7 +577,7 @@ test_that(paste(
         print(tstsetup)
         print(smmry, digits = 6)
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }

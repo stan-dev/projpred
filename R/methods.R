@@ -131,6 +131,7 @@ proj_helper <- function(object, newdata,
     if (!inherits(newdata, c("matrix", "data.frame"))) {
       stop("newdata must be a data.frame or a matrix")
     }
+    newdata <- na.fail(newdata)
     y_nm <- extract_terms_response(projs[[1]]$refmodel$formula)$response
     # Note: At this point, even for the binomial family with > 1 trials, we
     # expect only one response column name (the one for the successes), as
@@ -247,8 +248,9 @@ compute_lpd <- function(ynew, mu, proj, weights) {
 proj_predict <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
                          filter_nterms = NULL,
-                         nresample_clusters = 1000, .seed = NULL, ...) {
-  ## set random seed but ensure the old RNG state is restored on exit
+                         nresample_clusters = 1000,
+                         .seed = sample.int(.Machine$integer.max, 1), ...) {
+  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
@@ -457,7 +459,8 @@ plot.vsel <- function(
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `b` (the number of bootstrap samples, defaulting to `2000`)
-#'   and `seed` (see [set.seed()], defaulting to `NULL`).
+#'   and `seed` (see [set.seed()], defaulting to
+#'   `sample.int(.Machine$integer.max, 1)`).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -626,6 +629,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
+  where <- "tidyselect" %:::% "where"
   print(
     x$selection %>% dplyr::mutate(dplyr::across(
       where(is.numeric),
@@ -1006,7 +1010,7 @@ get_subparams.lmerMod <- function(x, ...) {
   )
 
   # Extract the group-level effects themselves:
-  group_ef <- unlist(lapply(lme4::ranef(x), function(ranef_df) {
+  group_ef <- unlist(lapply(lme4::ranef(x, condVar = FALSE), function(ranef_df) {
     ranef_mat <- as.matrix(ranef_df)
     setNames(
       as.vector(ranef_mat),
@@ -1167,10 +1171,10 @@ NULL
 
 #' @rdname cv-indices
 #' @export
-cvfolds <- function(n, K, seed = NULL) {
+cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
   .validate_num_folds(K, n)
 
-  ## set random seed but ensure the old RNG state is restored on exit
+  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
@@ -1186,11 +1190,12 @@ cvfolds <- function(n, K, seed = NULL) {
 
 #' @rdname cv-indices
 #' @export
-cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NULL) {
+cv_ids <- function(n, K, out = c("foldwise", "indices"),
+                   seed = sample.int(.Machine$integer.max, 1)) {
   .validate_num_folds(K, n)
   out <- match.arg(out)
 
-  # set random seed but ensure the old RNG state is restored on exit
+  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))

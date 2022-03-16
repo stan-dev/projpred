@@ -92,15 +92,15 @@
 #'
 #' Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
 #' models via an entropic explanatory power. *Journal of Statistical Planning
-#' and Inference*, **111**(1-2):77–94. DOI: \doi{10.1016/S0378-3758(02)00286-0}.
+#' and Inference*, **111**(1-2):77–94. \doi{10.1016/S0378-3758(02)00286-0}.
 #'
 #' Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
 #' methods for model selection. *Statistics and Computing*, **27**(3):711-735.
-#' DOI: \doi{10.1007/s11222-016-9649-y}.
+#' \doi{10.1007/s11222-016-9649-y}.
 #'
 #' Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
 #' high-dimensional problems: Prediction and feature selection. *Electronic
-#' Journal of Statistics*, **14**(1):2155-2197. DOI: \doi{10.1214/20-EJS1711}.
+#' Journal of Statistics*, **14**(1):2155-2197. \doi{10.1214/20-EJS1711}.
 #'
 #' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
 #' inference for generalized linear and additive multilevel models.

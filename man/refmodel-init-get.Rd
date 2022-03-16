@@ -61,7 +61,8 @@ function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, fu
 \item{family}{A \code{\link{family}} object representing the observational model (i.e.,
 the distributional family for the response).}
 
-\item{data}{Data used for fitting the reference model.}
+\item{data}{Data used for fitting the reference model. Any \code{contrasts}
+attributes of the dataset's columns are silently removed.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section
@@ -218,7 +219,8 @@ where:
 \item \code{object} accepts the reference model fit as given in argument \code{object} (but
 possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 CV).
-\item \code{newdata} accepts data for new observations (at least in the form of a
+\item \code{newdata} accepts either \code{NULL} (for using the original dataset, typically
+stored in \code{object}) or data for new observations (at least in the form of a
 \code{data.frame}).
 \item \code{wrhs} accepts at least either \code{NULL} (for using a vector of ones) or a
 right-hand side formula consisting only of the variable in \code{newdata}

@@ -174,7 +174,7 @@ test_that("as.matrix.projection() works", {
         print(tstsetup)
         print(rlang::hash(m)) # cat(m)
       })
-      options(width = width_orig$width)
+      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -276,6 +276,6 @@ if (run_snaps) {
     }
   })
 
-  options(width = width_orig$width)
+  options(width_orig)
   if (testthat_ed_max2) local_edition(2)
 }

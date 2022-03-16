@@ -652,11 +652,11 @@ stats_common <- c("elpd", "mlpd", "mse", "rmse")
 stats_tst <- list(
   default_stats = list(),
   common_stats = list(stats = stats_common),
-  binom_stats = list(stats = c(stats_common, c("acc", "auc")))
+  binom_stats = list(stats = c(stats_common, "acc", "auc"))
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
-seed_tst <- 74345
+seed_tst <- 74341
 seed2_tst <- 866028
 seed3_tst <- 1208499
 
@@ -745,8 +745,11 @@ if (run_cvvs) {
         # TODO (GAMMs): Fix this.
       } else if (pkg_crr == "brms" && packageVersion("brms") <= "2.16.3") {
         # For brms versions <= 2.16.3, there is a reproducibility issue when
-        # using K-fold CV in conjunction with a `brmsfit` reference model fit,
-        # so use LOO CV:
+        # using K-fold CV, so use LOO CV:
+        cvmeth <- cvmeth_tst["default_cvmeth"]
+      } else if (pkg_crr == "brms" && mod_crr == "gamm") {
+        # For GAMMs fitted by brms, there is a (random, i.e., only occasional)
+        # reproducibility issue when using K-fold CV, so use LOO CV:
         cvmeth <- cvmeth_tst["default_cvmeth"]
       } else {
         cvmeth <- cvmeth_tst["kfold"]

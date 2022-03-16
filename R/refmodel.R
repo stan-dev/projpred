@@ -18,7 +18,8 @@
 #'   additionally to the properties required for [init_refmodel()]. For
 #'   non-default methods of [get_refmodel()], an object of the corresponding
 #'   class.
-#' @param data Data used for fitting the reference model.
+#' @param data Data used for fitting the reference model. Any `contrasts`
+#'   attributes of the dataset's columns are silently removed.
 #' @param formula Reference model's formula. For general information on formulas
 #'   in \R, see [`formula`]. For multilevel formulas, see also package
 #'   \pkg{lme4} (in particular, functions [lme4::lmer()] and [lme4::glmer()]).
@@ -154,7 +155,8 @@
 #' * `object` accepts the reference model fit as given in argument `object` (but
 #' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 #' CV).
-#' * `newdata` accepts data for new observations (at least in the form of a
+#' * `newdata` accepts either `NULL` (for using the original dataset, typically
+#' stored in `object`) or data for new observations (at least in the form of a
 #' `data.frame`).
 #' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
 #' right-hand side formula consisting only of the variable in `newdata`
@@ -275,6 +277,11 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Argument `ynew` must be a numeric vector.")
   }
 
+  if (is.null(newdata)) {
+    newdata <- object$fetch_data()
+  } else {
+    newdata <- na.fail(newdata)
+  }
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
                                    wrhs = weightsnew, orhs = offsetnew)
   weightsnew <- w_o$weights
@@ -295,7 +302,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   ## ref_predfun returns eta = link(mu)
-  eta <- object$ref_predfun(object$fit, newdata) + offsetnew
+  eta <- object$ref_predfun(object$fit, newdata = newdata) + offsetnew
 
   if (is.null(ynew)) {
     pred <- if (type == "link") eta else object$family$linkinv(eta)
@@ -662,6 +669,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (is.null(offset)) {
     offset <- rep(0, NROW(y))
+  }
+
+  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
+  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
+  has_contr <- sapply(data, function(data_col) {
+    !is.null(attr(data_col, "contrasts"))
+  })
+  for (idx_col in which(has_contr)) {
+    attr(data[[idx_col]], "contrasts") <- NULL
   }
 
   # Functions ---------------------------------------------------------------
