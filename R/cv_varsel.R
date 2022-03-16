@@ -239,10 +239,10 @@ cv_varsel.refmodel <- function(
               method,
               cv_method,
               validate_search,
-              nclusters,
-              nclusters_pred,
-              ndraws,
-              ndraws_pred)
+              clust_used_search = sel$clust_used_search,
+              clust_used_eval = sel$clust_used_eval,
+              nprjdraws_search = sel$nprjdraws_search,
+              nprjdraws_eval = sel$nprjdraws_eval)
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
   summary <- summary(vs)
@@ -431,7 +431,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       solution_terms_mat[i, seq_along(solution)] <- solution
     }
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
-                 solution_terms = search_path$solution_terms)
+                 solution_terms = search_path$solution_terms,
+                 clust_used_search = p_sel$clust_used,
+                 clust_used_eval = p_pred$clust_used,
+                 nprjdraws_search = NCOL(p_sel$mu),
+                 nprjdraws_eval = NCOL(p_pred$mu))
   } else {
     if (verbose) {
       print(msg)

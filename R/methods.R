@@ -514,25 +514,11 @@ summary.vsel <- function(
     method = object$method,
     cv_method = object$cv_method,
     validate_search = object$validate_search,
-    ndraws = object$ndraws,
-    ndraws_pred = object$ndraws_pred,
-    nclusters = object$nclusters,
-    nclusters_pred = object$nclusters_pred
+    clust_used_search = object$clust_used_search,
+    clust_used_eval = object$clust_used_eval,
+    nprjdraws_search = object$nprjdraws_search,
+    nprjdraws_eval = object$nprjdraws_eval
   )
-  # Handle `ndraws`, `nclusters`, `ndraws_pred`, `nclusters_pred` as in
-  # .get_refdist():
-  S <- NCOL(object$refmodel$mu)
-  if (!is.null(out$nclusters)) {
-    out$nclusters <- min(S, out$nclusters)
-  } else {
-    out$ndraws <- min(S, out$ndraws)
-  }
-  if (!is.null(out$nclusters_pred)) {
-    out$nclusters_pred <- min(S, out$nclusters_pred)
-  } else {
-    out$ndraws_pred <- min(S, out$ndraws_pred)
-  }
-  # Add `search_included`:
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included"
   } else {
@@ -631,22 +617,22 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              max(x$selection$size), "\n"))
-  if (!is.null(x$nclusters)) {
+  if (x$clust_used_search) {
     cat(paste0(
-      "Number of clusters used for selection: ", x$nclusters, "\n"
+      "Number of clusters used for selection: ", x$nprjdraws_search, "\n"
     ))
   } else {
     cat(paste0(
-      "Number of draws used for selection: ", x$ndraws, "\n"
+      "Number of draws used for selection: ", x$nprjdraws_search, "\n"
     ))
   }
-  if (!is.null(x$nclusters_pred)) {
+  if (x$clust_used_eval) {
     cat(paste0(
-      "Number of clusters used for prediction: ", x$nclusters_pred, "\n"
+      "Number of clusters used for prediction: ", x$nprjdraws_eval, "\n"
     ))
   } else {
     cat(paste0(
-      "Number of draws used for prediction: ", x$ndraws_pred, "\n"
+      "Number of draws used for prediction: ", x$nprjdraws_eval, "\n"
     ))
   }
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))

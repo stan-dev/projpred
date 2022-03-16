@@ -217,10 +217,6 @@ bootstrap <- function(x, fun = mean, b = 2000,
       return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
-      if (nclusters > S) {
-        stop("The number of clusters nclusters cannot exceed the number of ",
-             "columns in mu.")
-      }
       p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, nclusters = nclusters)
     }
@@ -243,7 +239,8 @@ bootstrap <- function(x, fun = mean, b = 2000,
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
-      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl
+      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
+      clust_used = FALSE
     )
   }
 
@@ -304,7 +301,8 @@ bootstrap <- function(x, fun = mean, b = 2000,
     mu = unname(t(centers)),
     var = predvar,
     weights = wcluster,
-    cl = cl
+    cl = cl,
+    clust_used = TRUE
   )
   return(p)
 }
