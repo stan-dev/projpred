@@ -163,15 +163,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
-    nterms_max = nterms_max, search_terms = search_terms
+    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
   )
   method <- args$method
   refit_prj <- args$refit_prj
   nterms_max <- args$nterms_max
+  nclusters <- args$nclusters
   search_terms <- args$search_terms
-  if (method == "l1") {
-    nclusters <- 1
-  }
 
   if (is.null(d_test)) {
     d_type <- "train"
@@ -287,7 +285,7 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
 }
 
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              search_terms) {
+                              nclusters, search_terms) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel.
   ## The arguments specified by the user (or the function calling this function)
@@ -327,6 +325,10 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     refit_prj <- FALSE
   }
 
+  if (method == "l1") {
+    nclusters <- 1
+  }
+
   if (!is.null(search_terms)) {
     max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
   } else {
@@ -337,5 +339,5 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   }
   nterms_max <- min(max_nv_possible, nterms_max + refmodel$intercept)
 
-  return(nlist(method, refit_prj, nterms_max, search_terms))
+  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
 }

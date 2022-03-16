@@ -141,15 +141,13 @@ cv_varsel.refmodel <- function(
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
-    nterms_max = nterms_max, search_terms = search_terms
+    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
   )
   method <- args$method
   refit_prj <- args$refit_prj
   nterms_max <- args$nterms_max
+  nclusters <- args$nclusters
   search_terms <- args$search_terms
-  if (method == "l1") {
-    nclusters <- 1
-  }
 
   ## arguments specific to this function
   args <- parse_args_cv_varsel(
