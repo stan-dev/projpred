@@ -617,24 +617,10 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              max(x$selection$size), "\n"))
-  if (x$clust_used_search) {
-    cat(paste0(
-      "Number of clusters used for selection: ", x$nprjdraws_search, "\n"
-    ))
-  } else {
-    cat(paste0(
-      "Number of draws used for selection: ", x$nprjdraws_search, "\n"
-    ))
-  }
-  if (x$clust_used_eval) {
-    cat(paste0(
-      "Number of clusters used for prediction: ", x$nprjdraws_eval, "\n"
-    ))
-  } else {
-    cat(paste0(
-      "Number of draws used for prediction: ", x$nprjdraws_eval, "\n"
-    ))
-  }
+  cat("Number of ", ifelse(x$clust_used_search, "clusters", "draws"),
+      " used for selection: ", x$nprjdraws_search, "\n", sep = "")
+  cat("Number of ", ifelse(x$clust_used_eval, "clusters", "draws"),
+      " used for prediction: ", x$nprjdraws_eval, "\n", sep = "")
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")
