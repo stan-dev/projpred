@@ -62,7 +62,7 @@
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
@@ -130,9 +130,10 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>projpred: Projection predictive feature selection</h1>
+      <h1 data-toc-skip>projpred: Projection predictive feature
+selection</h1>
             
-            <h4 data-toc-skip class="date">2022-02-21</h4>
+            <h4 data-toc-skip class="date">2022-03-16</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/projpred.Rmd" class="external-link"><code>vignettes/projpred.Rmd</code></a></small>
       <div class="hidden name"><code>projpred.Rmd</code></div>
@@ -144,13 +145,29 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>This vignette shows the main functionalities of the <strong>projpred</strong> package, which implements the projective variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.</p>
-<p>The projective variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in <strong>projpred</strong> are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017a). Type <code>citation("projpred")</code> for details on how to cite <strong>projpred</strong>.</p>
+<p>This vignette shows the main functionalities of the
+<strong>projpred</strong> package, which implements the projective
+variable selection for generalized linear and additive models as well as
+for generalized linear and additive multilevel models.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> What is special about
+the projective variable selection is that it not only performs a
+variable selection, but also allows for valid post-selection
+inference.</p>
+<p>The projective variable selection is based on the ideas of Goutis and
+Robert (1998) and Dupuis and Robert (2003). The methods implemented in
+<strong>projpred</strong> are described in detail in Piironen et
+al. (2020) and Catalina et al. (2020). They are evaluated in comparison
+to many other methods in Piironen and Vehtari (2017a). Type
+<code>citation("projpred")</code> for details on how to cite
+<strong>projpred</strong>.</p>
 </div>
 <div class="section level2">
 <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a>
 </h2>
-<p>For this vignette, we use <strong>projpred</strong>’s <code>df_gaussian</code> data. It contains 100 observations of 20 continuous predictor variables <code>X1</code>, …, <code>X20</code> (originally stored in a sub-matrix; we turn them into separate columns below) and one continuous response variable <code>y</code>.</p>
+<p>For this vignette, we use <strong>projpred</strong>’s
+<code>df_gaussian</code> data. It contains 100 observations of 20
+continuous predictor variables <code>X1</code>, …, <code>X20</code>
+(originally stored in a sub-matrix; we turn them into separate columns
+below) and one continuous response variable <code>y</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"df_gaussian"</span>, package <span class="op">=</span> <span class="st">"projpred"</span><span class="op">)</span>
 <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></code></pre></div>
@@ -158,13 +175,50 @@
 <div class="section level2">
 <h2 id="reference-model">Reference model<a class="anchor" aria-label="anchor" href="#reference-model"></a>
 </h2>
-<p>First, we have to construct a reference model for the projective variable selection. This model is considered as the best (“reference”) solution to the prediction task. The aim of the projective variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.</p>
-<p>The <strong>projpred</strong> package is compatible with reference models fit by the <strong>rstanarm</strong> and <strong>brms</strong> packages. To our knowledge, <strong>rstanarm</strong> and <strong>brms</strong> are currently the only packages for which a <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> method (which establishes the compatibility with <strong>projpred</strong>) exists. Custom reference models can be constructed via <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>, as shown in section “Examples” in the <code><a href="../reference/refmodel-init-get.html">?init_refmodel</a></code> help.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> For both, <strong>rstanarm</strong> and <strong>brms</strong> reference models, all candidate models are <em>submodels</em> of the reference model. In principle, this is not a necessary assumption for a projective variable selection (see, e.g., Piironen et al., 2020) and custom reference models allow to avoid this assumption, but for <strong>rstanarm</strong> and <strong>brms</strong> reference models, this is a reasonable assumption which simplifies implementation in <strong>projpred</strong> a lot.</p>
-<p>Here, we use the <strong>rstanarm</strong> package to fit the reference model. If you want to use the <strong>brms</strong> package, you simply have to replace the <strong>rstanarm</strong> fit (of class <code>stanreg</code>) in all the code below by your <strong>brms</strong> fit (of class <code>brmsfit</code>). Only note that in case of a <strong>brms</strong> fit, argument <code>brms_seed</code> of <code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> is necessary to ensure reproducible results in a K-fold CV.</p>
+<p>First, we have to construct a reference model for the projective
+variable selection. This model is considered as the best (“reference”)
+solution to the prediction task. The aim of the projective variable
+selection is to find a subset of a set of candidate predictors which is
+as small as possible but achieves a predictive performance as close as
+possible to that of the reference model.</p>
+<p>The <strong>projpred</strong> package is compatible with reference
+models fit by the <strong>rstanarm</strong> and <strong>brms</strong>
+packages. To our knowledge, <strong>rstanarm</strong> and
+<strong>brms</strong> are currently the only packages for which a
+<code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> method (which establishes the compatibility
+with <strong>projpred</strong>) exists. Custom reference models can be
+constructed via <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>, as shown in section
+“Examples” in the <code><a href="../reference/refmodel-init-get.html">?init_refmodel</a></code> help.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> For both,
+<strong>rstanarm</strong> and <strong>brms</strong> reference models,
+all candidate models are <em>submodels</em> of the reference model. In
+principle, this is not a necessary assumption for a projective variable
+selection (see, e.g., Piironen et al., 2020) and custom reference models
+allow to avoid this assumption, but for <strong>rstanarm</strong> and
+<strong>brms</strong> reference models, this is a reasonable assumption
+which simplifies implementation in <strong>projpred</strong> a lot.</p>
+<p>Here, we use the <strong>rstanarm</strong> package to fit the
+reference model. If you want to use the <strong>brms</strong> package,
+you simply have to replace the <strong>rstanarm</strong> fit (of class
+<code>stanreg</code>) in all the code below by your
+<strong>brms</strong> fit (of class <code>brmsfit</code>). Only note
+that in case of a <strong>brms</strong> fit, argument
+<code>brms_seed</code> of <code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> is
+necessary to ensure reproducible results in a K-fold CV.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/rstanarm/" class="external-link">rstanarm</a></span><span class="op">)</span></code></pre></div>
-<p>For our <strong>rstanarm</strong> reference model, we use the Gaussian distribution as the <code>family</code> for our response. With respect to the predictors, we only include the linear main effects of all 20 predictor variables. Compared to the more complex types of reference models supported by <strong>projpred</strong> (see section <a href="#refmodtypes">“Supported types of reference models”</a> below), this is a quite simple reference model which is sufficient, however, to demonstrate the interplay of <strong>projpred</strong>’s functions.</p>
-<p>We use <strong>rstanarm</strong>’s default priors in our reference model, except for the regression coefficients for which we use a regularized horseshoe prior (Piironen and Vehtari, 2017c) with the hyperprior for its global shrinkage parameter following Piironen and Vehtari (2017b,c). In R code, these are the preparation steps for the regularized horseshoe prior:</p>
+<p>For our <strong>rstanarm</strong> reference model, we use the
+Gaussian distribution as the <code>family</code> for our response. With
+respect to the predictors, we only include the linear main effects of
+all 20 predictor variables. Compared to the more complex types of
+reference models supported by <strong>projpred</strong> (see section <a href="#refmodtypes">“Supported types of reference models”</a> below),
+this is a quite simple reference model which is sufficient, however, to
+demonstrate the interplay of <strong>projpred</strong>’s functions.</p>
+<p>We use <strong>rstanarm</strong>’s default priors in our reference
+model, except for the regression coefficients for which we use a
+regularized horseshoe prior (Piironen and Vehtari, 2017c) with the
+hyperprior for its global shrinkage parameter following Piironen and
+Vehtari (2017b,c). In R code, these are the preparation steps for the
+regularized horseshoe prior:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Number of regression coefficients:</span>
 <span class="op">(</span> <span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^X"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dat_gauss</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">)</span></code></pre></div>
@@ -179,7 +233,16 @@
 <span class="co"># Gaussian family, 'rstanarm' will automatically scale this by the residual</span>
 <span class="co"># standard deviation):</span>
 <span class="va">tau0</span> <span class="op">&lt;-</span> <span class="va">p0</span> <span class="op">/</span> <span class="op">(</span><span class="va">D</span> <span class="op">-</span> <span class="va">p0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span></code></pre></div>
-<p>We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of <strong>rstan</strong>’s parallelization, which means to run each chain on a separate CPU core.<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the <code><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">parallel::detectCores()</a></code> function shown below) or adapt <code>ncores</code> manually to your system.</p>
+<p>We now fit the reference model to the data. To make this vignette
+build faster, we use only 2 MCMC chains and 500 iterations per chain
+(with half of them being discarded as warmup draws). In practice, 4
+chains and 2000 iterations per chain are reasonable defaults.
+Furthermore, we make use of <strong>rstan</strong>’s parallelization,
+which means to run each chain on a separate CPU core.<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> If you run the
+following code yourself, you can either rely on an automatic mechanism
+to detect the number of CPU cores (like the
+<code><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">parallel::detectCores()</a></code> function shown below) or adapt
+<code>ncores</code> manually to your system.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Set this manually if desired:</span>
 <span class="va">ncores</span> <span class="op">&lt;-</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span>logical <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
@@ -199,7 +262,11 @@
   <span class="co">###</span>
   seed <span class="op">=</span> <span class="fl">2052109</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span>
 <span class="op">)</span></code></pre></div>
-<p>Usually, we would now have to check the convergence diagnostics (see, e.g., <code><a href="https://mc-stan.org/posterior/reference/diagnostics.html" class="external-link">?posterior::diagnostics</a></code> and <code><a href="https://mc-stan.org/posterior/reference/draws_summary.html" class="external-link">?posterior::default_convergence_measures</a></code>). However, due to the technical reasons for which we reduced <code>chains</code> and <code>iter</code>, we skip this step here.</p>
+<p>Usually, we would now have to check the convergence diagnostics (see,
+e.g., <code><a href="https://mc-stan.org/posterior/reference/diagnostics.html" class="external-link">?posterior::diagnostics</a></code> and
+<code><a href="https://mc-stan.org/posterior/reference/draws_summary.html" class="external-link">?posterior::default_convergence_measures</a></code>). However, due to
+the technical reasons for which we reduced <code>chains</code> and
+<code>iter</code>, we skip this step here.</p>
 </div>
 <div class="section level2">
 <h2 id="variable-selection">Variable selection<a class="anchor" aria-label="anchor" href="#variable-selection"></a>
@@ -207,8 +274,25 @@
 <p>Now, <strong>projpred</strong> comes into play.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/projpred/">projpred</a></span><span class="op">)</span></code></pre></div>
-<p>In <strong>projpred</strong>, the projective variable selection consists of a <em>search</em> part and an <em>evaluation</em> part. The search part determines the solution path, i.e., the best submodel for each submodel size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.</p>
-<p>There are two functions for performing the variable selection: <code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. In contrast to <code><a href="../reference/varsel.html">varsel()</a></code>, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is explained in the <code><a href="../reference/cv_varsel.html">?cv_varsel</a></code> help) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> is recommended over <code><a href="../reference/varsel.html">varsel()</a></code>. Thus, we use <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> here. Nonetheless, running <code><a href="../reference/varsel.html">varsel()</a></code> first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled <strong>projpred</strong> workflow is work under progress.</p>
+<p>In <strong>projpred</strong>, the projective variable selection
+consists of a <em>search</em> part and an <em>evaluation</em> part. The
+search part determines the solution path, i.e., the best submodel for
+each submodel size (number of predictor terms). The evaluation part
+determines the predictive performance of the submodels along the
+solution path.</p>
+<p>There are two functions for performing the variable selection:
+<code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. In contrast to
+<code><a href="../reference/varsel.html">varsel()</a></code>, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> performs a
+cross-validation (CV) by running the search part with the training data
+of each CV fold separately (an exception is explained in the
+<code><a href="../reference/cv_varsel.html">?cv_varsel</a></code> help) and running the evaluation part on the
+corresponding test set of each CV fold. Because of this CV,
+<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> is recommended over <code><a href="../reference/varsel.html">varsel()</a></code>.
+Thus, we use <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> here. Nonetheless, running
+<code><a href="../reference/varsel.html">varsel()</a></code> first can offer a rough idea of the performance of
+the projections (i.e., of the submodels after projecting the reference
+model onto them). A more principled <strong>projpred</strong> workflow
+is work under progress.</p>
 <!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of reference models"](#refmodtypes) below). -->
 <!-- ```{r} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
@@ -217,7 +301,22 @@
 <!--   registerDoParallel(ncores) -->
 <!-- } -->
 <!-- ``` -->
-<p>Here, we use only some of the available arguments; see the documentation of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> for the full list of arguments. By modifying argument <code>cv_method</code>, we use a K-fold CV instead of a leave-one-out (LOO) CV. We do this here only to make this vignette build faster. When the computation time is not an issue, we recommend using LOO-CV as it is likely to be more accurate. Similarly, we set <code>nclusters_pred</code> to a low value of <code>20</code> only to speed up the building of the vignette. By modifying argument <code>nterms_max</code>, we impose a limit on the submodel size until which the search is continued. Typically, one has to run the variable selection with a large <code>nterms_max</code> first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable <code>nterms_max</code> in subsequent runs. The value we are using here (<code>9</code>) is based on such a first run (which is not shown here, though).</p>
+<p>Here, we use only some of the available arguments; see the
+documentation of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> for the full list of
+arguments. By modifying argument <code>cv_method</code>, we use a K-fold
+CV instead of a leave-one-out (LOO) CV. We do this here only to make
+this vignette build faster. When the computation time is not an issue,
+we recommend using LOO-CV as it is likely to be more accurate.
+Similarly, we set <code>nclusters_pred</code> to a low value of
+<code>20</code> only to speed up the building of the vignette. By
+modifying argument <code>nterms_max</code>, we impose a limit on the
+submodel size until which the search is continued. Typically, one has to
+run the variable selection with a large <code>nterms_max</code> first
+(the default value may not even be large enough) and only after
+inspecting the results from this first run, one is able to set a
+reasonable <code>nterms_max</code> in subsequent runs. The value we are
+using here (<code>9</code>) is based on such a first run (which is not
+shown here, though).</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span>
   <span class="va">refm_fit</span>,
@@ -228,19 +327,43 @@
   nterms_max <span class="op">=</span> <span class="fl">9</span>,
   seed <span class="op">=</span> <span class="fl">411183</span>
 <span class="op">)</span></code></pre></div>
-<p>The first step after running the variable selection should be the decision for a final submodel size. This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the submodel size decision dependent on the solution path). To decide for a submodel size, there are several performance statistics we can plot as a function of the submodel size. Here, we use the expected log (pointwise) predictive density (for a new dataset) (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation—or “test”—set) and the root mean squared error (RMSE). By default, the performance statistics are plotted on their original scale, but with <code>deltas = TRUE</code>, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (with regard to the submodel size decision), we directly plot with <code>deltas = TRUE</code> here:</p>
+<p>The first step after running the variable selection should be the
+decision for a final submodel size. This should be the first step (in
+particular, before inspecting the solution path) in order to avoid a
+user-induced selection bias (which could occur if the user made the
+submodel size decision dependent on the solution path). To decide for a
+submodel size, there are several performance statistics we can plot as a
+function of the submodel size. Here, we use the expected log (pointwise)
+predictive density (for a new dataset) (ELPD; empirically, this is the
+sum of the log predictive densities of the observations in the
+evaluation—or “test”—set) and the root mean squared error (RMSE). By
+default, the performance statistics are plotted on their original scale,
+but with <code>deltas = TRUE</code>, they are calculated as differences
+from a baseline model (which is the reference model by default, at least
+in the most common cases). Since the differences are usually of more
+interest (with regard to the submodel size decision), we directly plot
+with <code>deltas = TRUE</code> here:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"elpd"</span>, <span class="st">"rmse"</span><span class="op">)</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-9-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>Based on that plot, we would decide for a submodel size of 6 because that’s the point where the performance measures level off and are close enough to the reference model’s performance.</p>
+<p>Based on that plot, we would decide for a submodel size of 6 because
+that’s the point where the performance measures level off and are close
+enough to the reference model’s performance.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">modsize_decided</span> <span class="op">&lt;-</span> <span class="fl">6</span></code></pre></div>
-<p>Note that <strong>projpred</strong> offers the <code><a href="../reference/suggest_size.html">suggest_size()</a></code> function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see the <code><a href="../reference/suggest_size.html">?suggest_size</a></code> help).</p>
+<p>Note that <strong>projpred</strong> offers the
+<code><a href="../reference/suggest_size.html">suggest_size()</a></code> function which may help in the decision for
+a submodel size, but this is a rather heuristic method and needs to be
+interpreted with caution (see the <code><a href="../reference/suggest_size.html">?suggest_size</a></code> help).</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span></code></pre></div>
 <pre><code>[1] 6</code></pre>
-<p>Here, we would get the same final submodel size (<code>6</code>) as by our manual decision.</p>
-<p>Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> the resulting object:</p>
+<p>Here, we would get the same final submodel size (<code>6</code>) as
+by our manual decision.</p>
+<p>Only now, after we have made a decision for the submodel size, we
+inspect further results from the variable selection and, in particular,
+the solution path. For example, we can simply <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> the
+resulting object:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">cvvs</span></code></pre></div>
 <pre><code>
@@ -258,25 +381,29 @@ Suggested Projection Size: 6
 
 Selection Summary:
  size solution_terms elpd.kfold  se  diff diff.se
-    0           &lt;NA&gt;     -250.9 6.0 -96.5     8.8
-    1             X1     -234.9 6.7 -80.5     9.7
-    2            X14     -209.2 6.5 -54.8     8.4
-    3             X5     -202.5 6.5 -48.1     8.2
-    4            X20     -189.6 6.5 -35.2     7.2
-    5             X6     -175.2 6.1 -20.8     7.0
-    6             X3     -152.7 5.4   1.7     5.3
-    7             X8     -145.0 4.9   9.4     3.9
-    8            X11     -144.8 5.3   9.6     2.9
-    9            X10     -147.9 5.6   6.5     2.4</code></pre>
+    0           &lt;NA&gt;     -252.3 6.0 -99.3     7.9
+    1             X1     -234.0 6.5 -81.0     8.1
+    2            X14     -217.1 7.3 -64.2     7.7
+    3             X5     -207.1 7.0 -54.1     7.5
+    4            X20     -196.6 7.4 -43.7     7.8
+    5             X6     -177.1 6.3 -24.2     6.8
+    6             X3     -155.3 5.7  -2.4     5.0
+    7             X8     -147.5 4.8   5.4     3.5
+    8            X11     -143.8 4.8   9.2     2.5
+    9            X10     -146.8 5.4   6.1     2.3</code></pre>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">### Alternative modifying the number of printed decimal places:</span>
 <span class="co"># print(cvvs, digits = 2)</span>
 <span class="co">### </span></code></pre></div>
-<p>The solution path can be seen in the <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> output (column <code>solution_terms</code>), but it is also accessible through the <code><a href="../reference/solution_terms.html">solution_terms()</a></code> function:</p>
+<p>The solution path can be seen in the <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> output
+(column <code>solution_terms</code>), but it is also accessible through
+the <code><a href="../reference/solution_terms.html">solution_terms()</a></code> function:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="op">(</span> <span class="va">soltrms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span> <span class="op">)</span></code></pre></div>
 <pre><code>[1] "X1"  "X14" "X5"  "X20" "X6"  "X3"  "X8"  "X11" "X10"</code></pre>
-<p>Combining the decided submodel size of 6 with the solution path leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:</p>
+<p>Combining the decided submodel size of 6 with the solution path leads
+to the following terms (as well as the intercept) as the predictor terms
+of the final submodel:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="op">(</span> <span class="va">soltrms_final</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">soltrms</span>, <span class="va">modsize_decided</span><span class="op">)</span> <span class="op">)</span></code></pre></div>
 <pre><code>[1] "X1"  "X14" "X5"  "X20" "X6"  "X3" </code></pre>
@@ -284,7 +411,10 @@ Selection Summary:
 <div class="section level2">
 <h2 id="post-selection-inference">Post-selection inference<a class="anchor" aria-label="anchor" href="#post-selection-inference"></a>
 </h2>
-<p>The <code><a href="../reference/project.html">project()</a></code> function returns an object of class <code>projection</code> which forms the basis for convenient post-selection inference. By the following code, <code><a href="../reference/project.html">project()</a></code> will project the reference model onto the final submodel once again<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>:</p>
+<p>The <code><a href="../reference/project.html">project()</a></code> function returns an object of class
+<code>projection</code> which forms the basis for convenient
+post-selection inference. By the following code, <code><a href="../reference/project.html">project()</a></code>
+will project the reference model onto the final submodel once again<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span>
   <span class="va">refm_fit</span>,
@@ -300,15 +430,27 @@ Selection Summary:
 <!--   seed = 15705533 -->
 <!-- ) -->
 <!-- ``` -->
-<p>For more accurate results, we could have increased argument <code>ndraws</code> of <code><a href="../reference/project.html">project()</a></code> (up to the number of posterior draws in the reference model). This increases the runtime, which we don’t want in this vignette.</p>
-<p>Next, we create a matrix containing the projected posterior draws stored in the depths of <code><a href="../reference/project.html">project()</a></code>’s output:</p>
+<p>For more accurate results, we could have increased argument
+<code>ndraws</code> of <code><a href="../reference/project.html">project()</a></code> (up to the number of
+posterior draws in the reference model). This increases the runtime,
+which we don’t want in this vignette.</p>
+<p>Next, we create a matrix containing the projected posterior draws
+stored in the depths of <code><a href="../reference/project.html">project()</a></code>’s output:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">prj_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">prj</span><span class="op">)</span></code></pre></div>
-<p>This matrix is all we need for post-selection inference. It can be used like any matrix of draws from MCMC procedures, except that it doesn’t reflect a typical posterior distribution, but rather a projected posterior distribution, i.e., the distribution arising from the deterministic projection of the reference model’s posterior distribution onto the parameter space of the final submodel.</p>
+<p>This matrix is all we need for post-selection inference. It can be
+used like any matrix of draws from MCMC procedures, except that it
+doesn’t reflect a typical posterior distribution, but rather a projected
+posterior distribution, i.e., the distribution arising from the
+deterministic projection of the reference model’s posterior distribution
+onto the parameter space of the final submodel.</p>
 <div class="section level3">
 <h3 id="marginals-of-the-projected-posterior">Marginals of the projected posterior<a class="anchor" aria-label="anchor" href="#marginals-of-the-projected-posterior"></a>
 </h3>
-<p>The <strong>posterior</strong> package provides a general way to deal with posterior distributions, so it can also be applied to our projected posterior. For example, to calculate summary statistics for the marginals of the projected posterior:</p>
+<p>The <strong>posterior</strong> package provides a general way to deal
+with posterior distributions, so it can also be applied to our projected
+posterior. For example, to calculate summary statistics for the
+marginals of the projected posterior:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/posterior/" class="external-link">posterior</a></span><span class="op">)</span>
 <span class="va">prj_drws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/posterior/reference/draws_matrix.html" class="external-link">as_draws_matrix</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span>
@@ -327,27 +469,37 @@ Selection Summary:
 6          X6  0.5432313 0.08889976  0.3473669  0.7299743
 7          X3  0.7752932 0.10697483  0.5729812  0.9749985
 8       sigma  1.1275936 0.07841493  0.9807185  1.3078808</code></pre>
-<p>A visualization of the projected posterior can be achieved with the <strong>bayesplot</strong> package, for example using its <code><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals()</a></code> function.</p>
+<p>A visualization of the projected posterior can be achieved with the
+<strong>bayesplot</strong> package, for example using its
+<code><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals()</a></code> function.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/bayesplot/" class="external-link">bayesplot</a></span><span class="op">)</span>
 <span class="fu"><a href="https://mc-stan.org/bayesplot/reference/bayesplot_theme_get.html" class="external-link">bayesplot_theme_set</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="fl">1.6</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-18-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>Note that we only visualize the <em>1-dimensional</em> marginals of the projected posterior here. To gain a more complete picture, we would have to visualize at least some <em>2-dimensional</em> marginals of the projected posterior (i.e., marginals for pairs of parameters).</p>
-<p>For comparison, consider the marginal posteriors of the corresponding parameters in the reference model:</p>
+<p>Note that we only visualize the <em>1-dimensional</em> marginals of
+the projected posterior here. To gain a more complete picture, we would
+have to visualize at least some <em>2-dimensional</em> marginals of the
+projected posterior (i.e., marginals for pairs of parameters).</p>
+<p>For comparison, consider the marginal posteriors of the corresponding
+parameters in the reference model:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">refm_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">refm_fit</span><span class="op">)</span>
 <span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals</a></span><span class="op">(</span><span class="va">refm_mat</span>, pars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="fl">1.6</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-19-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>Here, the reference model’s marginal posteriors differ only slightly from the marginals of the projected posterior. This does not necessarily have to be the case.</p>
+<p>Here, the reference model’s marginal posteriors differ only slightly
+from the marginals of the projected posterior. This does not necessarily
+have to be the case.</p>
 </div>
 <div class="section level3">
 <h3 id="predictions">Predictions<a class="anchor" aria-label="anchor" href="#predictions"></a>
 </h3>
-<p>Predictions from the final submodel can be made by <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> and <code><a href="../reference/pred-projection.html">proj_predict()</a></code>.</p>
-<p>We start with <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>. For example, suppose we have the following new observations:</p>
+<p>Predictions from the final submodel can be made by
+<code><a href="../reference/pred-projection.html">proj_linpred()</a></code> and <code><a href="../reference/pred-projection.html">proj_predict()</a></code>.</p>
+<p>We start with <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>. For example, suppose we
+have the following new observations:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="op">(</span> <span class="va">dat_gauss_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span>
   <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">soltrms_final</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,
@@ -357,7 +509,13 @@ Selection Summary:
 1 -1  -1 -1  -1 -1 -1
 2  0   0  0   0  0  0
 3  1   1  1   1  1  1</code></pre>
-<p>Then <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> can calculate the linear predictors<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a> for all new observations from <code>dat_gauss_new</code>. Depending on argument <code>integrated</code>, these linear predictors can be averaged across the projected draws (within each new observation). For instance, the following computes the expected values of the new observations’ predictive distributions:<a href="#fn6" class="footnote-ref" id="fnref6"><sup>6</sup></a></p>
+<p>Then <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> can calculate the linear
+predictors<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a> for all new observations from
+<code>dat_gauss_new</code>. Depending on argument
+<code>integrated</code>, these linear predictors can be averaged across
+the projected draws (within each new observation). For instance, the
+following computes the expected values of the new observations’
+predictive distributions:<a href="#fn6" class="footnote-ref" id="fnref6"><sup>6</sup></a></p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">prj_linpred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_linpred</a></span><span class="op">(</span><span class="va">prj</span>, newdata <span class="op">=</span> <span class="va">dat_gauss_new</span>, integrated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">dat_gauss_new</span>, linpred <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">prj_linpred</span><span class="op">$</span><span class="va">pred</span><span class="op">)</span><span class="op">)</span></code></pre></div>
@@ -365,21 +523,32 @@ Selection Summary:
 1 -1  -1 -1  -1 -1 -1  0.5145220
 2  0   0  0   0  0  0  0.0386343
 3  1   1  1   1  1  1 -0.4372534</code></pre>
-<p>If <code>dat_gauss_new</code> also contained response values (i.e., <code>y</code> values in this example), then <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> would also evaluate the log predictive density at these.</p>
-<p>With <code><a href="../reference/pred-projection.html">proj_predict()</a></code>, we can obtain draws from predictive distributions based on the final submodel. In contrast to <code>proj_linpred(&lt;...&gt;, integrated = FALSE)</code>, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or “sampling”) model for the response.<a href="#fn7" class="footnote-ref" id="fnref7"><sup>7</sup></a> This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projected predictive check (PPPC) here.</p>
+<p>If <code>dat_gauss_new</code> also contained response values (i.e.,
+<code>y</code> values in this example), then <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>
+would also evaluate the log predictive density at these.</p>
+<p>With <code><a href="../reference/pred-projection.html">proj_predict()</a></code>, we can obtain draws from predictive
+distributions based on the final submodel. In contrast to
+<code>proj_linpred(&lt;...&gt;, integrated = FALSE)</code>, this
+encompasses not only the uncertainty arising from parameter estimation,
+but also the uncertainty arising from the observational (or “sampling”)
+model for the response.<a href="#fn7" class="footnote-ref" id="fnref7"><sup>7</sup></a> This is useful for what is usually termed a
+posterior predictive check (PPC), but would have to be termed something
+like a posterior-projected predictive check (PPPC) here.</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">prj_predict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_predict</a></span><span class="op">(</span><span class="va">prj</span>, .seed <span class="op">=</span> <span class="fl">762805</span><span class="op">)</span>
 <span class="co"># Using the 'bayesplot' package:</span>
 <span class="fu"><a href="https://mc-stan.org/bayesplot/reference/PPC-distributions.html" class="external-link">ppc_dens_overlay</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">dat_gauss</span><span class="op">$</span><span class="va">y</span>, yrep <span class="op">=</span> <span class="va">prj_predict</span>, alpha <span class="op">=</span> <span class="fl">0.9</span>, bw <span class="op">=</span> <span class="st">"SJ"</span><span class="op">)</span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-22-1.png" width="60%" style="display: block; margin: auto;"></p>
-<p>This PPPC shows that our final projection is able to generate predictions similar to the observed response values, which indicates that this model is reasonable, at least in this regard.</p>
+<p>This PPPC shows that our final projection is able to generate
+predictions similar to the observed response values, which indicates
+that this model is reasonable, at least in this regard.</p>
 <!-- ## Teardown / clean-up -->
 <!-- Finally, we clean up everything we have set up for the parallelization of the projection. This may not always be necessary, but sometimes it is and apart from that, it is simply good practice: -->
 <!-- ```{r} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
 <!--   stopImplicitCluster() -->
 <!--   registerDoSEQ() -->
-<!--   options(projpred.prll_prj_trigger = trigger_default$projpred.prll_prj_trigger) -->
+<!--   options(trigger_default) -->
 <!-- } -->
 <!-- ``` -->
 </div>
@@ -387,9 +556,25 @@ Selection Summary:
 <div class="section level2">
 <h2 id="refmodtypes">Supported types of reference models<a class="anchor" aria-label="anchor" href="#refmodtypes"></a>
 </h2>
-<p>Apart from the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> response family used in this vignette, <strong>projpred</strong> also supports the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code><a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a> and the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family. On the side of the predictors, <strong>projpred</strong> not only supports linear main effects as shown in this vignette, but also interactions, multilevel<a href="#fn9" class="footnote-ref" id="fnref9"><sup>9</sup></a>, and—as an experimental feature—additive<a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a> terms.</p>
-<p>Transferring this vignette to such more complex reference models is straightforward: Basically, only the code for fitting the reference model via <strong>rstanarm</strong> or <strong>brms</strong> needs to be adapted. The <strong>projpred</strong> code stays almost the same. Only note that in case of multilevel or additive reference models, <!-- the parallelization of the projection is not recommended and that --> some <strong>projpred</strong> functions then have slightly different options for a few arguments. See the documentation for details.</p>
-<p>For example, to apply <strong>projpred</strong> to the <code>VerbAgg</code> dataset from the <strong>lme4</strong> package, a corresponding multilevel reference model for the binary response <code>r2</code> could be created by the following code:</p>
+<p>Apart from the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> response family used in this
+vignette, <strong>projpred</strong> also supports the
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code><a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a> and the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family. On
+the side of the predictors, <strong>projpred</strong> not only supports
+linear main effects as shown in this vignette, but also interactions,
+multilevel<a href="#fn9" class="footnote-ref" id="fnref9"><sup>9</sup></a>, and—as an experimental feature—additive<a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a>
+terms.</p>
+<p>Transferring this vignette to such more complex reference models is
+straightforward: Basically, only the code for fitting the reference
+model via <strong>rstanarm</strong> or <strong>brms</strong> needs to be
+adapted. The <strong>projpred</strong> code stays almost the same. Only
+note that in case of multilevel or additive reference models,
+<!-- the parallelization of the projection is not recommended and that -->
+some <strong>projpred</strong> functions then have slightly different
+options for a few arguments. See the documentation for details.</p>
+<p>For example, to apply <strong>projpred</strong> to the
+<code>VerbAgg</code> dataset from the <strong>lme4</strong> package, a
+corresponding multilevel reference model for the binary response
+<code>r2</code> could be created by the following code:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"VerbAgg"</span>, package <span class="op">=</span> <span class="st">"lme4"</span><span class="op">)</span>
 <span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glmer.html" class="external-link">stan_glmer</a></span><span class="op">(</span>
@@ -398,7 +583,12 @@ Selection Summary:
   data <span class="op">=</span> <span class="va">VerbAgg</span>,
   seed <span class="op">=</span> <span class="fl">82616169</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span>
 <span class="op">)</span></code></pre></div>
-<p>As an example for an additive (non-multilevel) reference model, consider the <code>lasrosas.corn</code> dataset from the <strong>agridat</strong> package. A corresponding reference model for the continuous response <code>yield</code> could be created by the following code (note that <code>pp_check(refm_fit)</code> gives a bad PPC in this case, so there’s still room for improvement):</p>
+<p>As an example for an additive (non-multilevel) reference model,
+consider the <code>lasrosas.corn</code> dataset from the
+<strong>agridat</strong> package. A corresponding reference model for
+the continuous response <code>yield</code> could be created by the
+following code (note that <code>pp_check(refm_fit)</code> gives a bad
+PPC in this case, so there’s still room for improvement):</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"lasrosas.corn"</span>, package <span class="op">=</span> <span class="st">"agridat"</span><span class="op">)</span>
 <span class="co"># Convert `year` to a `factor` (this could also be solved by using</span>
@@ -411,7 +601,11 @@ Selection Summary:
   data <span class="op">=</span> <span class="va">lasrosas.corn</span>,
   seed <span class="op">=</span> <span class="fl">4919670</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span>
 <span class="op">)</span></code></pre></div>
-<p>As an example for an additive multilevel reference model, consider the <code>gumpertz.pepper</code> dataset from the <strong>agridat</strong> package. A corresponding reference model for the binary response <code>disease</code> could be created by the following code:</p>
+<p>As an example for an additive multilevel reference model, consider
+the <code>gumpertz.pepper</code> dataset from the
+<strong>agridat</strong> package. A corresponding reference model for
+the binary response <code>disease</code> could be created by the
+following code:</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"gumpertz.pepper"</span>, package <span class="op">=</span> <span class="st">"agridat"</span><span class="op">)</span>
 <span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">stan_gamm4</a></span><span class="op">(</span>
@@ -425,38 +619,101 @@ Selection Summary:
 <div class="section level2">
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
 </h2>
-<p>Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing submodel size, the performance measures of the projections do not approach that of the reference model. There are different reasons that can explain this behavior (the following list might not be exhaustive, though):</p>
+<p>Sometimes, the ordering of the predictor terms in the solution path
+makes sense, but for increasing submodel size, the performance measures
+of the projections do not approach that of the reference model. There
+are different reasons that can explain this behavior (the following list
+might not be exhaustive, though):</p>
 <ol style="list-style-type: decimal">
-<li>The reference model’s posterior may be so wide that the default <code>ndraws_pred</code> could be too small. Usually, this comes in combination with a difference in predictive performance which is comparatively small. Increasing <code>ndraws_pred</code> should help, but it also increases the computational cost. Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.</li>
-<li>For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues (Catalina et al., 2021). In this case, the latent-space approach by Catalina et al. (2021) might help.</li>
-<li>If you are using <code><a href="../reference/varsel.html">varsel()</a></code>, then the lack of the CV in <code><a href="../reference/varsel.html">varsel()</a></code> may lead to overconfident and overfitted results. In this case, try running <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> instead of <code><a href="../reference/varsel.html">varsel()</a></code> (which you should in any case for your final results).</li>
+<li>The reference model’s posterior may be so wide that the default
+<code>ndraws_pred</code> could be too small. Usually, this comes in
+combination with a difference in predictive performance which is
+comparatively small. Increasing <code>ndraws_pred</code> should help,
+but it also increases the computational cost. Re-fitting the reference
+model and thereby ensuring a narrower posterior (usually by employing a
+stronger sparsifying prior) should have a similar effect.</li>
+<li>For non-Gaussian models, the discrepancy may be due to the fact that
+the penalized iteratively reweighted least squares (PIRLS) algorithm
+might have convergence issues (Catalina et al., 2021). In this case, the
+latent-space approach by Catalina et al. (2021) might help.</li>
+<li>If you are using <code><a href="../reference/varsel.html">varsel()</a></code>, then the lack of the CV in
+<code><a href="../reference/varsel.html">varsel()</a></code> may lead to overconfident and overfitted results.
+In this case, try running <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> instead of
+<code><a href="../reference/varsel.html">varsel()</a></code> (which you should in any case for your final
+results).</li>
 </ol>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<p>Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inference for generalized linear and additive multilevel models. <em>arXiv:2010.06994</em>. URL: <a href="https://arxiv.org/abs/2010.06994" class="external-link uri">https://arxiv.org/abs/2010.06994</a>.</p>
-<p>Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection predictive inference. <em>arXiv:2109.04702</em>. URL: <a href="https://arxiv.org/abs/2109.04702" class="external-link uri">https://arxiv.org/abs/2109.04702</a>.</p>
-<p>Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. <em>Journal of Statistical Planning and Inference</em>, <strong>111</strong>(1-2):77–94. DOI: <a href="https://doi.org/10.1016/S0378-3758(02)00286-0" class="external-link">10.1016/S0378-3758(02)00286-0</a>.</p>
-<p>Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: A Bayesian approach via Kullback–Leibler projections. <em>Biometrika</em>, <strong>85</strong>(1):29–37.</p>
-<p>Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in high-dimensional problems: Prediction and feature selection. <em>Electronic Journal of Statistics</em>, <strong>14</strong>(1):2155-2197. DOI: <a href="https://doi.org/10.1214/20-EJS1711" class="external-link">10.1214/20-EJS1711</a>.</p>
-<p>Piironen, J. and Vehtari, A. (2017a). Comparison of Bayesian predictive methods for model selection. <em>Statistics and Computing</em>, <strong>27</strong>(3):711-735. DOI: <a href="https://doi.org/10.1007/s11222-016-9649-y" class="external-link">10.1007/s11222-016-9649-y</a>.</p>
-<p>Piironen, J. and Vehtari, A. (2017b). On the hyperprior choice for the global shrinkage parameter in the horseshoe prior. In <em>Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)</em>, PMLR 54:905-913, 2017. URL: <a href="https://proceedings.mlr.press/v54/piironen17a.html" class="external-link uri">https://proceedings.mlr.press/v54/piironen17a.html</a>.</p>
-<p>Piironen, J. and Vehtari, A. (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. <em>Electronic Journal of Statistics</em>, <strong>11</strong>(2): 5018-5051. DOI: <a href="https://doi.org/10.1214/17-EJS1337SI" class="external-link">10.1214/17-EJS1337SI</a>.</p>
+<p>Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection
+predictive inference for generalized linear and additive multilevel
+models. <em>arXiv:2010.06994</em>. URL: <a href="https://arxiv.org/abs/2010.06994" class="external-link uri">https://arxiv.org/abs/2010.06994</a>.</p>
+<p>Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space
+projection predictive inference. <em>arXiv:2109.04702</em>. URL: <a href="https://arxiv.org/abs/2109.04702" class="external-link uri">https://arxiv.org/abs/2109.04702</a>.</p>
+<p>Dupuis, J. A. and Robert, C. P. (2003). Variable selection in
+qualitative models via an entropic explanatory power. <em>Journal of
+Statistical Planning and Inference</em>,
+<strong>111</strong>(1-2):77–94. DOI: <a href="https://doi.org/10.1016/S0378-3758(02)00286-0" class="external-link">10.1016/S0378-3758(02)00286-0</a>.</p>
+<p>Goutis, C. and Robert, C. P. (1998). Model choice in generalised
+linear models: A Bayesian approach via Kullback–Leibler projections.
+<em>Biometrika</em>, <strong>85</strong>(1):29–37.</p>
+<p>Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective
+inference in high-dimensional problems: Prediction and feature
+selection. <em>Electronic Journal of Statistics</em>,
+<strong>14</strong>(1):2155-2197. DOI: <a href="https://doi.org/10.1214/20-EJS1711" class="external-link">10.1214/20-EJS1711</a>.</p>
+<p>Piironen, J. and Vehtari, A. (2017a). Comparison of Bayesian
+predictive methods for model selection. <em>Statistics and
+Computing</em>, <strong>27</strong>(3):711-735. DOI: <a href="https://doi.org/10.1007/s11222-016-9649-y" class="external-link">10.1007/s11222-016-9649-y</a>.</p>
+<p>Piironen, J. and Vehtari, A. (2017b). On the hyperprior choice for
+the global shrinkage parameter in the horseshoe prior. In
+<em>Proceedings of the 20th International Conference on Artificial
+Intelligence and Statistics (AISTATS)</em>, PMLR 54:905-913, 2017. URL:
+<a href="https://proceedings.mlr.press/v54/piironen17a.html" class="external-link uri">https://proceedings.mlr.press/v54/piironen17a.html</a>.</p>
+<p>Piironen, J. and Vehtari, A. (2017c). Sparsity information and
+regularization in the horseshoe and other shrinkage priors.
+<em>Electronic Journal of Statistics</em>, <strong>11</strong>(2):
+5018-5051. DOI: <a href="https://doi.org/10.1214/17-EJS1337SI" class="external-link">10.1214/17-EJS1337SI</a>.</p>
 </div>
-<div class="footnotes">
+<div class="footnotes footnotes-end-of-document">
 <hr>
 <ol>
-<li id="fn1"><p>Currently, the support for additive models is only experimental in <strong>projpred</strong>.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
-<li id="fn2"><p>We will cover custom reference models more deeply in a future vignette.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
-<li id="fn3"><p>More generally, the number of chains is split up as evenly as possible among the number of CPU cores.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
-<li id="fn4"><p>During the forward search, the reference model has already been projected onto all candidate models (this was where arguments <code>ndraws</code> and <code>nclusters</code> of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> came into play). During the evaluation of the submodels along the solution path, the reference model has already been projected onto those submodels (this was where arguments <code>ndraws_pred</code> and <code>nclusters_pred</code> of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> came into play). In principle, one could use the results from the evaluation part for post-selection inference, but due to a bug in the current implementation (see GitHub issue #168), we currently have to project once again.<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
-<li id="fn5"><p><code><a href="../reference/pred-projection.html">proj_linpred()</a></code> can also transform the linear predictor to response scale, but here, this is the same as the linear predictor scale (because of the identity link function).<a href="#fnref5" class="footnote-back">↩︎</a></p></li>
-<li id="fn6"><p>Beware that this statement is correct here because of the Gaussian family with the identity link function. For other families (which usually come in combination with a different link function), one would typically have to use <code>transform = TRUE</code> in order to make this statement correct.<a href="#fnref6" class="footnote-back">↩︎</a></p></li>
-<li id="fn7"><p>In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.<a href="#fnref7" class="footnote-back">↩︎</a></p></li>
-<li id="fn8"><p>The <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family includes the <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family as a special case which may only be used via the <strong>brms</strong> package.<a href="#fnref8" class="footnote-back">↩︎</a></p></li>
-<li id="fn9"><p>Multilevel models are also known as <em>hierarchical</em> models or models with <em>partially pooled</em>, <em>group-level</em>, or—in frequentist terms—<em>random</em> effects.<a href="#fnref9" class="footnote-back">↩︎</a></p></li>
-<li id="fn10"><p>Additive terms are also known as <em>smooth</em> terms.<a href="#fnref10" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p>Currently, the support for additive models is only
+experimental in <strong>projpred</strong>.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>We will cover custom reference models more deeply in a
+future vignette.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>More generally, the number of chains is split up as
+evenly as possible among the number of CPU cores.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>During the forward search, the reference model has
+already been projected onto all candidate models (this was where
+arguments <code>ndraws</code> and <code>nclusters</code> of
+<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> came into play). During the evaluation of the
+submodels along the solution path, the reference model has already been
+projected onto those submodels (this was where arguments
+<code>ndraws_pred</code> and <code>nclusters_pred</code> of
+<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> came into play). In principle, one could use
+the results from the evaluation part for post-selection inference, but
+due to a bug in the current implementation (see GitHub issue #168), we
+currently have to project once again.<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
+<li id="fn5"><p><code><a href="../reference/pred-projection.html">proj_linpred()</a></code> can also transform the
+linear predictor to response scale, but here, this is the same as the
+linear predictor scale (because of the identity link function).<a href="#fnref5" class="footnote-back">↩︎</a></p></li>
+<li id="fn6"><p>Beware that this statement is correct here because of
+the Gaussian family with the identity link function. For other families
+(which usually come in combination with a different link function), one
+would typically have to use <code>transform = TRUE</code> in order to
+make this statement correct.<a href="#fnref6" class="footnote-back">↩︎</a></p></li>
+<li id="fn7"><p>In case of the Gaussian family we are using here, the
+uncertainty arising from the observational model is the uncertainty due
+to the residual standard deviation.<a href="#fnref7" class="footnote-back">↩︎</a></p></li>
+<li id="fn8"><p>The <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family includes the
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family as a special case which may only
+be used via the <strong>brms</strong> package.<a href="#fnref8" class="footnote-back">↩︎</a></p></li>
+<li id="fn9"><p>Multilevel models are also known as
+<em>hierarchical</em> models or models with <em>partially pooled</em>,
+<em>group-level</em>, or—in frequentist terms—<em>random</em> effects.<a href="#fnref9" class="footnote-back">↩︎</a></p></li>
+<li id="fn10"><p>Additive terms are also known as <em>smooth</em>
+terms.<a href="#fnref10" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
   </div>
@@ -473,12 +730,14 @@ Selection Summary:
 
       <footer><div class="copyright">
   <p></p>
-<p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Aki Vehtari.</p>
+<p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
+Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
+2.0.2.</p>
 </div>
 
       </footer>

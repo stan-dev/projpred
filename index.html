@@ -69,7 +69,7 @@
   <a href="news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
@@ -142,14 +142,34 @@
 <div class="page-header"><h1 id="projpred-">projpred <a href="https://mc-stan.org" class="external-link"><img src="https://raw.githubusercontent.com/stan-dev/logos/master/logo_tm.png" align="right" width="120" alt="Stan Logo"></a>
 <a class="anchor" aria-label="anchor" href="#projpred-"></a>
 </h1></div>
-<p>The <strong>projpred</strong> R package performs the projection predictive variable selection for generalized linear models as well as generalized linear and additive multilevel models. The package is compatible with the <a href="https://mc-stan.org/rstanarm/" class="external-link"><strong>rstanarm</strong></a> and <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a> packages, but custom reference models can also be used.</p>
-<p>The projection predictive variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in <strong>projpred</strong> are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017). Type <code>citation("projpred")</code> in R (or see the <code>CITATION</code> file) for details on how to cite <strong>projpred</strong>.</p>
-<p>Currently, the supported response distributions (objects of class <code>family</code> in R) are <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code>, <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> (via the <strong>brms</strong> package, <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> is also supported), and <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>.</p>
-<p>See the <a href="https://mc-stan.org/projpred/articles/projpred.html">vignette</a> for an example application. Details on <strong>projpred</strong>’s functions as well as some shorter examples may be found in the documentation.</p>
+<p>The <strong>projpred</strong> R package performs the projection
+predictive variable selection for generalized linear models as well as
+generalized linear and additive multilevel models. The package is
+compatible with the <a href="https://mc-stan.org/rstanarm/" class="external-link"><strong>rstanarm</strong></a> and
+<a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a>
+packages, but custom reference models can also be used.</p>
+<p>The projection predictive variable selection is based on the ideas of
+Goutis and Robert (1998) and Dupuis and Robert (2003). The methods
+implemented in <strong>projpred</strong> are described in detail in
+Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in
+comparison to many other methods in Piironen and Vehtari (2017). Type
+<code>citation("projpred")</code> in R (or see the <code>CITATION</code>
+file) for details on how to cite <strong>projpred</strong>.</p>
+<p>Currently, the supported response distributions (objects of class
+<code>family</code> in R) are <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code>,
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> (via the <strong>brms</strong> package,
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> is also supported), and
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>.</p>
+<p>See the <a href="https://mc-stan.org/projpred/articles/projpred.html">vignette</a>
+for an example application. Details on <strong>projpred</strong>’s
+functions as well as some shorter examples may be found in the
+documentation.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>There are two ways for installing <strong>projpred</strong>: from <a href="https://CRAN.R-project.org/package=projpred" class="external-link">CRAN</a> or from <a href="https://github.com/stan-dev/projpred" class="external-link">GitHub</a>. The GitHub version might be more recent than the CRAN version, but the CRAN version might be more stable.</p>
+<p>There are two ways for installing <strong>projpred</strong>: from <a href="https://CRAN.R-project.org/package=projpred" class="external-link">CRAN</a> or from <a href="https://github.com/stan-dev/projpred" class="external-link">GitHub</a>. The GitHub
+version might be more recent than the CRAN version, but the CRAN version
+might be more stable.</p>
 <div class="section level3">
 <h3 id="from-cran">From CRAN<a class="anchor" aria-label="anchor" href="#from-cran"></a>
 </h3>
@@ -159,7 +179,9 @@
 <div class="section level3">
 <h3 id="from-github">From GitHub<a class="anchor" aria-label="anchor" href="#from-github"></a>
 </h3>
-<p>This requires the <a href="https://devtools.r-lib.org/" class="external-link"><strong>devtools</strong></a> package, so if necessary, the following code will also install <strong>devtools</strong> (from <a href="https://CRAN.R-project.org/package=devtools" class="external-link">CRAN</a>):</p>
+<p>This requires the <a href="https://devtools.r-lib.org/" class="external-link"><strong>devtools</strong></a>
+package, so if necessary, the following code will also install
+<strong>devtools</strong> (from <a href="https://CRAN.R-project.org/package=devtools" class="external-link">CRAN</a>):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"devtools"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
   <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span>
@@ -171,11 +193,23 @@
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<p>Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inference for generalized linear and additive multilevel models. <em>arXiv:2010.06994</em>. URL: <a href="https://arxiv.org/abs/2010.06994" class="external-link uri">https://arxiv.org/abs/2010.06994</a>.</p>
-<p>Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. <em>Journal of Statistical Planning and Inference</em>, <strong>111</strong>(1-2):77–94. DOI: <a href="https://doi.org/10.1016/S0378-3758(02)00286-0" class="external-link">10.1016/S0378-3758(02)00286-0</a>.</p>
-<p>Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: A Bayesian approach via Kullback–Leibler projections. <em>Biometrika</em>, <strong>85</strong>(1):29–37.</p>
-<p>Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive methods for model selection. <em>Statistics and Computing</em>, <strong>27</strong>(3):711-735. DOI: <a href="https://doi.org/10.1007/s11222-016-9649-y" class="external-link">10.1007/s11222-016-9649-y</a>.</p>
-<p>Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in high-dimensional problems: Prediction and feature selection. <em>Electronic Journal of Statistics</em>, <strong>14</strong>(1):2155-2197. DOI: <a href="https://doi.org/10.1214/20-EJS1711" class="external-link">10.1214/20-EJS1711</a>.</p>
+<p>Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection
+predictive inference for generalized linear and additive multilevel
+models. <em>arXiv:2010.06994</em>. URL: <a href="https://arxiv.org/abs/2010.06994" class="external-link uri">https://arxiv.org/abs/2010.06994</a>.</p>
+<p>Dupuis, J. A. and Robert, C. P. (2003). Variable selection in
+qualitative models via an entropic explanatory power. <em>Journal of
+Statistical Planning and Inference</em>,
+<strong>111</strong>(1-2):77–94. DOI: <a href="https://doi.org/10.1016/S0378-3758(02)00286-0" class="external-link">10.1016/S0378-3758(02)00286-0</a>.</p>
+<p>Goutis, C. and Robert, C. P. (1998). Model choice in generalised
+linear models: A Bayesian approach via Kullback–Leibler projections.
+<em>Biometrika</em>, <strong>85</strong>(1):29–37.</p>
+<p>Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian
+predictive methods for model selection. <em>Statistics and
+Computing</em>, <strong>27</strong>(3):711-735. DOI: <a href="https://doi.org/10.1007/s11222-016-9649-y" class="external-link">10.1007/s11222-016-9649-y</a>.</p>
+<p>Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective
+inference in high-dimensional problems: Prediction and feature
+selection. <em>Electronic Journal of Statistics</em>,
+<strong>14</strong>(1):2155-2197. DOI: <a href="https://doi.org/10.1214/20-EJS1711" class="external-link">10.1214/20-EJS1711</a>.</p>
 </div>
 </div>
 
@@ -233,12 +267,14 @@
 
       <footer><div class="copyright">
   <p></p>
-<p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Aki Vehtari.</p>
+<p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
+Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
+2.0.2.</p>
 </div>
 
       </footer>

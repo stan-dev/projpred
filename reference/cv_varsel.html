@@ -47,7 +47,7 @@ fold.'><meta property="og:image" content="https://mc-stan.org/projpred/logo.png"
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
@@ -151,7 +151,7 @@ fold.</p>
   thresh <span class="op">=</span> <span class="fl">1e-06</span>,
   regul <span class="op">=</span> <span class="fl">1e-04</span>,
   validate_search <span class="op">=</span> <span class="cn">TRUE</span>,
-  seed <span class="op">=</span> <span class="cn">NULL</span>,
+  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,
   search_terms <span class="op">=</span> <span class="cn">NULL</span>,
   <span class="va">...</span>
 <span class="op">)</span></code></pre></div>
@@ -308,7 +308,7 @@ evaluation part is based on a PSIS-LOO CV.</p>
     <h2>References</h2>
     <p>Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
 evaluation using leave-one-out cross-validation and WAIC. <em>Statistics and
-Computing</em>, <strong>27</strong>(5), 1413-1432. DOI: doi: <a href="https://doi.org/10.1007/s11222-016-9696-4" class="external-link">10.1007/s11222-016-9696-4</a>
+Computing</em>, <strong>27</strong>(5), 1413-1432. doi: <a href="https://doi.org/10.1007/s11222-016-9696-4" class="external-link">10.1007/s11222-016-9696-4</a>
 .</p>
 <p>Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
 smoothed importance sampling. <em>arXiv:1507.02646</em>. URL:
@@ -353,11 +353,13 @@ smoothed importance sampling. <em>arXiv:1507.02646</em>. URL:
 
 
       <footer><div class="copyright">
-  <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Aki Vehtari.</p>
+  <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
+Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
+2.0.2.</p>
 </div>
 
       </footer></div>

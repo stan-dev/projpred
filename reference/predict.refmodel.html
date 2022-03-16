@@ -42,7 +42,7 @@ response scale, or the log predictive density."><meta property="og:image" conten
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
@@ -137,7 +137,8 @@ response scale, or the log predictive density.</p>
 <dd><p>Passed to argument <code>newdata</code> of the reference model's
 <code>extract_model_data</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). Provides the
 predictor (and possibly also the response) data for the new (or old)
-observations.</p></dd>
+observations. May also be <code>NULL</code> (see argument <code>extract_model_data</code> of
+<code><a href="refmodel-init-get.html">init_refmodel()</a></code>). If not <code>NULL</code>, any <code>NA</code>s will trigger an error.</p></dd>
 <dt>ynew</dt>
 <dd><p>If not <code>NULL</code>, then this needs to be a vector of new (or old)
 response values. See section "Value" below.</p></dd>
@@ -177,11 +178,13 @@ evaluated at <code>ynew</code>.</p>
 
 
       <footer><div class="copyright">
-  <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Aki Vehtari.</p>
+  <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
+Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
+2.0.2.</p>
 </div>
 
       </footer></div>

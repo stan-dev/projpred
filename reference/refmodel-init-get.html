@@ -43,7 +43,7 @@ for the use of \(K\)-fold CV in projpred."><meta property="og:image" content="ht
   <a href="../news/index.html">News</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Other Packages
      
     <span class="caret"></span>
@@ -176,7 +176,8 @@ function <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-l
 <dd><p>A <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">family</a></code> object representing the observational model (i.e.,
 the distributional family for the response).</p></dd>
 <dt>data</dt>
-<dd><p>Data used for fitting the reference model.</p></dd>
+<dd><p>Data used for fitting the reference model. Any <code>contrasts</code>
+attributes of the dataset's columns are silently removed.</p></dd>
 <dt>ref_predfun</dt>
 <dd><p>Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section
@@ -309,7 +310,8 @@ prototype</p><div class="sourceCode r"><pre><code><span class="fu">extract_model
 <p>where:</p><ul><li><p><code>object</code> accepts the reference model fit as given in argument <code>object</code> (but
 possibly re-fitted to a subset of the observations, as done in \(K\)-fold
 CV).</p></li>
-<li><p><code>newdata</code> accepts data for new observations (at least in the form of a
+<li><p><code>newdata</code> accepts either <code>NULL</code> (for using the original dataset, typically
+stored in <code>object</code>) or data for new observations (at least in the form of a
 <code>data.frame</code>).</p></li>
 <li><p><code>wrhs</code> accepts at least either <code>NULL</code> (for using a vector of ones) or a
 right-hand side formula consisting only of the variable in <code>newdata</code>
@@ -392,11 +394,13 @@ exception is that <code>y</code> may also be <code>NULL</code> (depending on arg
 
 
       <footer><div class="copyright">
-  <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Aki Vehtari.</p>
+  <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
+Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
+2.0.2.</p>
 </div>
 
       </footer></div>
