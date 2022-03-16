@@ -519,6 +519,20 @@ summary.vsel <- function(
     nclusters = object$nclusters,
     nclusters_pred = object$nclusters_pred
   )
+  # Handle `ndraws`, `nclusters`, `ndraws_pred`, `nclusters_pred` as in
+  # .get_refdist():
+  S <- NCOL(object$refmodel$mu)
+  if (!is.null(out$nclusters)) {
+    out$nclusters <- min(S, out$nclusters)
+  } else {
+    out$ndraws <- min(S, out$ndraws)
+  }
+  if (!is.null(out$nclusters_pred)) {
+    out$nclusters_pred <- min(S, out$nclusters_pred)
+  } else {
+    out$ndraws_pred <- min(S, out$ndraws_pred)
+  }
+  # Add `search_included`:
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included"
   } else {

@@ -54,11 +54,11 @@ is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed.}
 
-\item{ndraws}{Number of posterior draws used in the search part. \strong{Caution:}
-For \code{ndraws <= 20}, the value of \code{ndraws} is passed to \code{nclusters} (so that
-clustering is used). Ignored if \code{nclusters} is not \code{NULL} or in case of L1
-search (because L1 search always uses a single cluster). See also section
-"Details" below.}
+\item{ndraws}{Number of posterior draws used in the search part. Ignored if
+\code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
+uses a single cluster). If both (\code{nclusters} and \code{ndraws}) are \code{NULL}, the
+number of posterior draws from the reference model is used for \code{ndraws}.
+See also section "Details" below.}
 
 \item{nclusters}{Number of clusters of posterior draws used in the search
 part. Ignored in case of L1 search (because L1 search always uses a single
@@ -66,9 +66,10 @@ cluster). For the meaning of \code{NULL}, see argument \code{ndraws}. See also
 section "Details" below.}
 
 \item{ndraws_pred}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of
-posterior draws used in the evaluation part. \strong{Caution:} For \code{ndraws_pred <= 20}, the value of \code{ndraws_pred} is passed to \code{nclusters_pred} (so that
-clustering is used). Ignored if \code{nclusters_pred} is not \code{NULL}. See also
-section "Details" below.}
+posterior draws used in the evaluation part. Ignored if \code{nclusters_pred} is
+not \code{NULL}. If both (\code{nclusters_pred} and \code{ndraws_pred}) are \code{NULL}, the
+number of posterior draws from the reference model is used for
+\code{ndraws_pred}. See also section "Details" below.}
 
 \item{nclusters_pred}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of
 clusters of posterior draws used in the evaluation part. For the meaning of
