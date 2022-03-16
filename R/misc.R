@@ -222,9 +222,8 @@ bootstrap <- function(x, fun = mean, b = 2000,
     }
   } else {
     ndraws <- min(S, ndraws)
-    if (ndraws != S && ndraws <= 20 &&
-        isTRUE(getOption("projpred.warn_ndraws", TRUE))) {
-      warning("The number of draws to project is quite small (<= 20). In such ",
+    if (ndraws <= 20 && isTRUE(getOption("projpred.mssg_ndraws", TRUE))) {
+      message("The number of draws to project is quite small (<= 20). In such ",
               "cases, it is usually better to use clustering.")
     }
     if (thinning) {

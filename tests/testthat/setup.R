@@ -629,8 +629,8 @@ ndr_ncl_pred_tst <- c(ndr_ncl_pred_tst, list(
   clust1 = list(nclusters = 1L)
 ))
 if (any(unlist(lapply(ndr_ncl_pred_tst, "[[", "ndraws")) <= 20)) {
-  # Suppress the warning concerning small `ndraws` or `ndraws_pred` values:
-  options(projpred.warn_ndraws = FALSE)
+  # Suppress the message concerning small `ndraws` or `ndraws_pred` values:
+  options(projpred.mssg_ndraws = FALSE)
 }
 nresample_clusters_tst <- c(1L, 100L)
 
