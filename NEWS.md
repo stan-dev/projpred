@@ -2,12 +2,10 @@
 
 ## Major changes
 
-* Added support for weighted LOO proportional-to-size subsampling based on [Magnusson et al. (2019)](https://proceedings.mlr.press/v97/magnusson19a.html). However, subsampled LOO CV is now regarded as experimental. Therefore, a corresponding warning is thrown when calling `cv_varsel()` with `nloo < n` where `n` denotes the number of observations. (GitHub: commit feea39e, #94, #252)
+* Added support for weighted LOO proportional-to-size subsampling based on [Magnusson et al. (2019)](https://proceedings.mlr.press/v97/magnusson19a.html). However, subsampled LOO CV is now regarded as experimental. Therefore, a corresponding warning is thrown when calling `cv_varsel()` with `nloo < n` where `n` denotes the number of observations. (GitHub: #94, #252, commit feea39e)
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart.
 * Fast approximate LOO computation for `validate_search = FALSE` in `cv_varsel()`.
-* The (formerly internally set) default for argument `nclusters` of `varsel()` and `cv_varsel()` was increased from 1 to 20.
-* The (formerly internally set) default for argument `nclusters_pred` of `varsel()` and `cv_varsel()` was increased from 5 to 400.
-* The behavior of arguments `ndraws`, `nclusters`, `ndraws_pred`, and `nclusters_pred` in `varsel()`, `cv_varsel()`, and `project()` has been changed: Now, `ndraws` and `ndraws_pred` have non-`NULL` defaults and for `ndraws <= 20` or `ndraws_pred <= 20`, the value of `ndraws` or `ndraws_pred` is passed to `nclusters` or `nclusters_pred`, respectively (so that clustering is used). (GitHub: commits babe031, 4ef95d3, and ce7d1e0)
+* Formerly, the defaults for arguments `nclusters` (= `1`) and `nclusters_pred` (= `5`) of `varsel()` and `cv_varsel()` were set internally (the user-visible defaults were `NULL`). Now, `nclusters` and `ndraws_pred` (note the `ndraws_pred`, not `nclusters_pred`) have non-`NULL` user-visible defaults of `20` and `400`, respectively. In general, this increases the runtime of these functions a lot. Furthermore, for `ndraws <= 20` or `ndraws_pred <= 20`, a warning is thrown. This warning is also thrown for argument `ndraws` of `project()`. (GitHub: <INSERT_PR_NUMBER_FOR_ndr_ncl> and several commits beforehand, in particular babe031, 4ef95d3, and ce7d1e0)
 * For `proj_linpred()` and `proj_predict()`, arguments `nterms`, `ndraws`, and `seed` have been removed to allow the user to pass them to `project()`. New arguments `filter_nterms`, `nresample_clusters`, and `.seed` have been introduced (see the documentation for details). (GitHub: #92, #135)
 * Reference models lacking an intercept are not supported anymore (actually, the previous implementation for such models was incomplete). Support might be re-introduced in the future (when fixed), but for now it is withdrawn as it requires some larger changes. (GitHub: #124, but see also #96 and #100)
 * In the output of `proj_linpred()`, dimensions are not dropped anymore (i.e., output elements `pred` and `lpd` are always S x N matrices now). (GitHub: #143)
@@ -92,7 +90,7 @@
 * Fix a bug in the default `proj_predfun()` for `datafit`s. (GitHub: #177)
 * Fix the names of `summary.vsel()$selection` for objects of class `vsel` created by `varsel()`. (GitHub: #179)
 * Fix forward search when `search_terms` are not consecutive in size. (GitHub: commit 34e24de)
-* Fix a bug in `cv_varsel()$pct_solution_terms_cv`. (GitHub: commit e529ec1, #188)
+* Fix a bug in `cv_varsel()$pct_solution_terms_cv`. (GitHub: #188, commit e529ec1)
 * Fix GitHub issue #185. (GitHub: #193, #194)
 * Fix a bug in forward searches with interaction terms. (GitHub: #191)
 * Fix offset issues. (GitHub: #196, #203, #228)
