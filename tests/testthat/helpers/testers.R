@@ -730,6 +730,35 @@ submodl_tester <- function(
   return(invisible(TRUE))
 }
 
+# A helper function for testing the structure of .get_refdist()'s output.
+#
+# @param refd Output of .get_refdist().
+# @param nprjdraws_expected A single numeric value giving the expected number of
+#   projected draws.
+# @param clust_expected A single logical value giving the expected value for
+#   `refd$clust_used`.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+refdist_tester <- function(refd,
+                           nprjdraws_expected = nclusters_pred_tst,
+                           clust_expected = TRUE,
+                           info_str) {
+  expect_identical(dim(refd$mu), c(nobsv, nprjdraws_expected), info = info_str)
+  expect_identical(dim(refd$var), c(nobsv, nprjdraws_expected), info = info_str)
+  expect_true(is.vector(refd$dis) && is.atomic(refd$dis),
+              info = info_str)
+  expect_length(refd$dis, nprjdraws_expected)
+  expect_true(is.vector(refd$weights) && is.atomic(refd$weights),
+              info = info_str)
+  expect_length(refd$weights, nprjdraws_expected)
+  expect_true(is.vector(refd$cl, "integer"), info = info_str)
+  expect_length(refd$cl, nprjdraws_expected)
+  expect_identical(refd$clust_used, clust_expected, info = info_str)
+  return(invisible(TRUE))
+}
+
 # A helper function for testing the structure of an expected `"projection"`
 # object.
 #
