@@ -207,17 +207,14 @@ bootstrap <- function(x, fun = mean, b = 2000,
   if (!is.null(nclusters)) {
     # use clustering (ignore ndraws argument)
     nclusters <- min(S, nclusters)
-    if (nclusters == 1) {
+    if (nclusters == S) {
+      # number of clusters equal to the number of samples, so return the samples
+      return(.get_refdist(refmodel, ndraws = nclusters))
+    } else if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
       p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, cl = cl)
-      if (S == 1) {
-        p_ref$clust_used <- FALSE
-      }
-    } else if (nclusters == S) {
-      # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
       p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,

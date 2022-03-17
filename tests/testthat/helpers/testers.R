@@ -1135,7 +1135,7 @@ vsel_tester <- function(
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed_expected)
-  if (cl_search_expected || from_datafit) {
+  if (cl_search_expected) {
     clust_ref <- .get_refdist(vs$refmodel,
                               nclusters = nprjdraws_search_expected)
   } else {
@@ -1181,9 +1181,16 @@ vsel_tester <- function(
     )
   }
   expect_type(vs$search_path$p_sel, "list")
-  expect_named(vs$search_path$p_sel,
-               c("mu", "var", "weights", "cl", "clust_used"),
-               info = info_str)
+  if (from_datafit) {
+    # Due to issue #204:
+    expect_named(vs$search_path$p_sel,
+                 c("mu", "var", "dis", "weights", "cl", "clust_used"),
+                 info = info_str)
+  } else {
+    expect_named(vs$search_path$p_sel,
+                 c("mu", "var", "weights", "cl", "clust_used"),
+                 info = info_str)
+  }
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_type(vs$search_path$p_sel$mu, "double")
   expect_equal(dim(vs$search_path$p_sel$mu),
@@ -1198,6 +1205,12 @@ vsel_tester <- function(
   expect_equal(dim(vs$search_path$p_sel$var),
                c(nobsv, nprjdraws_search_expected),
                info = info_str)
+  if ("dis" %in% names(vs$search_path$p_sel)) {
+    expect_true(is.vector(vs$search_path$p_sel$dis) &&
+                  is.atomic(vs$search_path$p_sel$dis),
+                info = info_str)
+    expect_length(vs$search_path$p_sel$dis, nprjdraws_search_expected)
+  }
   expect_type(vs$search_path$p_sel$weights, "double")
   expect_length(vs$search_path$p_sel$weights, nprjdraws_search_expected)
   expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)
