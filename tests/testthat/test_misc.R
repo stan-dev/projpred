@@ -12,7 +12,6 @@ test_that(paste(
     rng_old <- get(".Random.seed", envir = .GlobalEnv)
   }
   set.seed(seed2_tst)
-  nrefdraws <- chains_tst * as.integer(floor(iter_tst / 2))
   for (tstsetup in names(refmods)) {
     refdist <- .get_refdist(refmods[[tstsetup]])
     # The following refdist_tester() call runs more expectations than necessary
@@ -36,7 +35,6 @@ test_that(paste(
     rng_old <- get(".Random.seed", envir = .GlobalEnv)
   }
   set.seed(seed2_tst)
-  nrefdraws <- chains_tst * as.integer(floor(iter_tst / 2))
   for (tstsetup in names(refmods)) {
     for (ndraws_crr in list(nrefdraws + 1L)) {
       for (nclusters_crr in list(NULL, nrefdraws + 1L)) {

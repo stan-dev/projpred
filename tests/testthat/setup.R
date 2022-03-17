@@ -352,6 +352,7 @@ pkg_nms <- setNames(nm = pkg_nms)
 
 chains_tst <- 2L
 iter_tst <- 500L
+nrefdraws <- chains_tst * iter_tst %/% 2L
 seed_fit <- 74345
 
 ### Formula ---------------------------------------------------------------
