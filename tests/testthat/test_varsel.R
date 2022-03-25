@@ -734,7 +734,9 @@ test_that(paste(
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
       if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else {
-      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
+      # Change seed to avoid unfavorable CV folds causing an `nAGQ` error by
+      # lme4 during projection:
+      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst + 1L)
     }
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
