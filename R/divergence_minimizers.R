@@ -424,7 +424,8 @@ subprd <- function(fits, newdata) {
       newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
     }
     if (is_glmm) {
-      return(predict(fit, newdata = newdata, allow.new.levels = TRUE))
+      return(predict(fit, newdata = newdata, allow.new.levels = TRUE) +
+               repair_re(fit, newdata = newdata))
     } else {
       return(predict(fit, newdata = newdata))
     }
@@ -485,4 +486,72 @@ predict.gamm4 <- function(fit, newdata = NULL) {
     gamm_pred <- gamm_pred + r_pred
   }
   return(as.matrix(unname(gamm_pred)))
+}
+
+## Random-effects adjustments ---------------------------------------------
+
+empty_intersection_comb <- function(x) {
+  length(intersect(x[[1]]$comb, x[[2]]$comb)) == 0
+}
+
+repair_re <- function(object, newdata) {
+  UseMethod("repair_re")
+}
+
+# For objects of class `merMod`, the following repair_re() method will draw the
+# random effects for new group levels from a (multivariate) Gaussian
+# distribution.
+#
+# License/copyright notice: repair_re.merMod() is inspired by and uses code
+# snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
+# <https://CRAN.R-project.org/package=lme4>). See the `LICENSE` file in
+# projpred's root directory for details.
+#
+# The copyright statement for lme4 version 1.1-28 is:
+# Copyright (C) 2003-2022 The LME4 Authors (see
+# <https://CRAN.R-project.org/package=lme4>).
+#
+# The license of lme4 version 1.1-28 is:
+# "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+repair_re.merMod <- function(object, newdata) {
+  stopifnot(!is.null(newdata))
+  ranef_tmp <- lme4::ranef(object, condVar = FALSE)
+  vnms <- names(ranef_tmp)
+  lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
+    from_fit <- rownames(ranef_tmp[[vnm]])
+    from_new <- levels(as.factor(newdata[, vnm]))
+    list(comb = union(from_fit, from_new),
+         exist = intersect(from_new, from_fit),
+         new = setdiff(from_new, from_fit))
+  })
+  # In case of duplicated levels across group variables, later code would have
+  # to be adapted:
+  if (length(lvls_list) >= 2 &&
+      !all(utils::combn(lvls_list, 2, empty_intersection_comb))) {
+    stop("Currently, projpred requires all variables with group-level effects ",
+         "to have disjoint level sets.")
+  }
+  re_fml <- ("lme4" %:::% "reOnly")(formula(object))
+  # Note: Calling lme4::mkNewReTrms() with `re.form = NULL` fails.
+  ranefs_prep <- lme4::mkNewReTrms(object,
+                                   newdata = newdata,
+                                   re.form = re_fml,
+                                   allow.new.levels = TRUE)
+  names(ranefs_prep$b) <- rownames(ranefs_prep$Zt)
+
+  VarCorr_tmp <- lme4::VarCorr(object)
+  for (vnm in vnms) {
+    lvls_exist <- lvls_list[[vnm]]$exist
+    lvls_new <- lvls_list[[vnm]]$new
+    ranefs_prep$b[names(ranefs_prep$b) %in% lvls_exist] <- 0
+    if (length(lvls_new) > 0) {
+      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+        n = length(lvls_new),
+        # Add `[, , drop = FALSE]` to drop attributes:
+        sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
+        checkSymmetry = FALSE
+      ))
+    }
+  }
+  return(drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
 }

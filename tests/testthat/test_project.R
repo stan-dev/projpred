@@ -1,4 +1,4 @@
-context("project")
+context("project()")
 
 # object, solution_terms, ndraws / nclusters, nterms ----------------------
 

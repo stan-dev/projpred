@@ -30,14 +30,15 @@
 #'   `nresample_clusters` gives the number of draws (*with* replacement) from
 #'   the set of clustered posterior draws after projection (with this set being
 #'   determined by argument `nclusters` of [project()]).
-#' @param .seed For [proj_predict()] only. Pseudorandom number generation (PRNG)
-#'   seed by which the same results can be obtained again if needed. If `NULL`,
-#'   no seed is set and therefore, the results are not reproducible. See
-#'   [set.seed()] for details. Here, this seed is used for drawing from the
-#'   predictive distribution of the submodel(s) onto which the reference model
-#'   was projected. If a clustered projection was performed, `.seed` is also
-#'   used for drawing from the set of the projected clusters of posterior draws
-#'   (see argument `nresample_clusters`).
+#' @param .seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   Here, this seed is used for drawing new group-level effects in case of a
+#'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
+#'   from the predictive distribution of the submodel(s) in case of
+#'   [proj_predict()]. If a clustered projection was performed, then in
+#'   [proj_predict()], `.seed` is also used for drawing from the set of the
+#'   projected clusters of posterior draws (see argument `nresample_clusters`).
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
@@ -191,7 +192,15 @@ proj_helper <- function(object, newdata,
 proj_linpred <- function(object, newdata = NULL,
                          offsetnew = NULL, weightsnew = NULL,
                          filter_nterms = NULL,
-                         transform = FALSE, integrated = FALSE, ...) {
+                         transform = FALSE, integrated = FALSE,
+                         .seed = sample.int(.Machine$integer.max, 1), ...) {
+  # Set seed, but ensure the old RNG state is restored on exit:
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(.seed)
+
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata,
