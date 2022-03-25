@@ -347,7 +347,6 @@ test_that("for GLMs, `regul` has an expected effect", {
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
-    tol_alpha <- 5e-1
 
     # Calculate the objects for which to run checks:
     ssq_regul_alpha <- rep(NA, length(regul_tst))
@@ -402,11 +401,8 @@ test_that("for GLMs, `regul` has an expected effect", {
       expect_length(unique(ssq_regul_alpha), 1)
       stopifnot(all(is.na(ssq_regul_beta)))
     } else {
-      # All other (i.e., not intercept-only) models:
-      for (j in seq_along(ssq_regul_alpha)[-1]) {
-        expect_equal(ssq_regul_alpha[!!j], ssq_regul_alpha[j - 1],
-                     tolerance = tol_alpha, info = tstsetup)
-      }
+      # All other (i.e., not intercept-only) models (note: as discussed at issue
+      # #169, the intercept is not tested here to stay the same):
       for (j in seq_along(ssq_regul_beta)[-1]) {
         expect_lt(ssq_regul_beta[!!j], ssq_regul_beta[j - 1])
       }
