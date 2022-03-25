@@ -1192,7 +1192,7 @@ vsel_tester <- function(
                  info = info_str)
   }
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
-  expect_type(vs$search_path$p_sel$mu, "double")
+  expect_true(is.numeric(vs$search_path$p_sel$mu), info = info_str)
   expect_equal(dim(vs$search_path$p_sel$mu),
                c(nobsv, nprjdraws_search_expected),
                info = info_str)
