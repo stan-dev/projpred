@@ -42,8 +42,9 @@
 #'   therefore, the results are not reproducible. See [set.seed()] for details.
 #'   Here, this seed is used for clustering the reference model's posterior
 #'   draws (if `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo`
-#'   is smaller than the number of observations), and for sampling the folds in
-#'   K-fold CV.
+#'   is smaller than the number of observations), for sampling the folds in
+#'   K-fold CV, and for drawing new group-level effects when predicting from a
+#'   multilevel submodel (however, not yet in case of a GAMM).
 #'
 #' @inherit varsel details return
 #'

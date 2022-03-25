@@ -305,7 +305,9 @@ refmodel_tester <- function(
   ###
   if (!with_spclformul) {
     y_expected <- dat[[paste("y", mod_nm, fam_nm, sep = "_")]]
-    if (!is_datafit && pkg_nm == "brms" && fam_nm == "brnll") {
+    if (!is_datafit && pkg_nm == "brms" && packageVersion("brms") < "2.16.11" &&
+        fam_nm == "brnll") {
+      # Fixed (as a side effect) by brms PR #1314:
       y_expected <- as.numeric(y_expected)
     }
   } else {
@@ -423,8 +425,8 @@ refmodel_tester <- function(
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of a list of fits (each fit must
-# not necessarily be of class `"subfit"`) for the same single submodel.
+# A helper function for testing the structure of a list of fits for the same
+# single submodel.
 #
 # @param submodl_totest The `submodl` object (a list of fits for a single
 #   submodel, with one fit per projected draw) to test.
@@ -474,68 +476,21 @@ submodl_tester <- function(
   ))
 
   if (!has_grp && !has_add) {
-    sub_trms <- labels(terms(sub_formul[[1]]))
-    if (length(sub_trms) > 0) {
-      ncoefs <- sum(sapply(sub_trms, function(trm_i) {
-        ncol(model.matrix(
-          as.formula(paste("~ 0 +", trm_i)),
-          data = sub_data
-        ))
-      }))
-      ### As discussed in issue #149, the following might be more appropriate:
-      # ncoefs <- ncol(model.matrix(
-      #   as.formula(paste("~", paste(sub_trms, collapse = " + "))),
-      #   data = sub_data
-      # )) - 1L
-      ###
-    } else {
-      ncoefs <- 0L
-    }
-    formul_for_mm <- sub_formul[[1]]
-    sub_trms_for_mm <- labels(terms(formul_for_mm))
-    if (length(sub_trms_for_mm) > 0) {
-      if (any(grepl("xca\\.", sub_trms_for_mm))) {
-        sub_contr <- lapply(
-          setNames(nm = grep("xca\\.", sub_trms_for_mm, value = TRUE)),
-          function(x_nm) {
-            contrasts(get(x_nm, envir = as.environment(sub_data)),
-                      contrasts = FALSE)
-          }
-        )
-      } else {
-        sub_contr <- NULL
-      }
-    } else {
-      sub_contr <- NULL
-    }
-    sub_x_expected <- model.matrix(update(formul_for_mm, NULL ~ . + 0),
-                                   data = sub_data,
-                                   contrasts.arg = sub_contr)
+    sub_x_expected <- model.matrix(sub_formul[[1]], data = sub_data)
+    sub_x_expected <- sub_x_expected[
+      , colnames(sub_x_expected) != "(Intercept)", drop = FALSE
+    ]
+    ncoefs <- ncol(sub_x_expected)
     if (from_vsel_L1_search) {
-      attr(sub_x_expected, "assign") <- NULL
-      attr(sub_x_expected, "contrasts") <- NULL
       # Unfortunately, model.matrix() uses terms() and there seems to be no way
       # to set `keep.order = TRUE` in that internal terms() call. Thus, we have
       # to reorder the columns manually:
       if (length(solterms_vsel_L1_search) > 0) {
-        contr_list <- get_contrasts_arg_list(
-          as.formula(paste("~",
-                           paste(solterms_vsel_L1_search, collapse = " + "))),
-          data = sub_data
-        )
-        terms_contr <- names(contr_list)
         terms_contr_expd <- lapply(solterms_vsel_L1_search, function(term_crr) {
-          if (!term_crr %in% terms_contr) {
+          if (!is.factor(sub_data[[term_crr]])) {
             return(term_crr)
           } else {
-            if (sum(terms_contr == term_crr) != 1) {
-              stop("The following code is not general enough. It needs to be ",
-                   "adapted.")
-            }
-            return(paste0(
-              terms_contr[terms_contr == term_crr],
-              rownames(contr_list[[which(terms_contr == term_crr)]])
-            ))
+            return(paste0(term_crr, levels(sub_data[[term_crr]])[-1]))
           }
         })
         terms_contr_expd <- unlist(terms_contr_expd)
@@ -575,12 +530,12 @@ submodl_tester <- function(
                     info = info_str)
         expect_length(submodl_totest[[!!j]]$alpha, 1)
 
-        if (length(sub_trms) > 0 || !from_vsel_L1_search) {
+        if (ncoefs > 0 || !from_vsel_L1_search) {
           expect_true(is.matrix(submodl_totest[[!!j]]$beta), info = info_str)
           expect_true(is.numeric(submodl_totest[[!!j]]$beta), info = info_str)
           expect_identical(dim(submodl_totest[[!!j]]$beta), c(ncoefs, 1L),
                            info = info_str)
-        } else if (length(sub_trms) == 0) {
+        } else if (ncoefs == 0) {
           expect_null(submodl_totest[[!!j]]$beta, info = info_str)
         }
 

@@ -131,12 +131,13 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
          "reference model.")
   }
-  frame <- model.frame(refmodel$formula, refmodel$fetch_data())
-  contrasts_arg <- get_contrasts_arg_list(refmodel$formula,
-                                          refmodel$fetch_data())
-  x <- model.matrix(delete.intercept(refmodel$formula),
-                    data = frame,
-                    contrasts.arg = contrasts_arg)
+  # TODO: In the following model.matrix() call, allow user-specified contrasts
+  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+  # (`NULL`) uses `options("contrasts")` internally, but it might be more
+  # convenient to let users specify contrasts directly. At that occasion,
+  # contrasts should also be tested thoroughly (not done until now).
+  x <- model.matrix(refmodel$formula, data = refmodel$fetch_data())
+  x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
   tt <- terms(refmodel$formula)
@@ -159,14 +160,15 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
       variables <- unlist(lapply(
         solution_terms[seq_len(nterms)],
         function(term) {
-          form <- as.formula(paste("~ 0 +", term))
-          contrasts_arg <- get_contrasts_arg_list(
-            form,
-            refmodel$fetch_data()
-          )
-          return(colnames(model.matrix(form,
-                                       data = refmodel$fetch_data(),
-                                       contrasts.arg = contrasts_arg)))
+          # TODO: In the following model.matrix() call, allow user-specified
+          # contrasts to be passed to argument `contrasts.arg`. The
+          # `contrasts.arg` default (`NULL`) uses `options("contrasts")`
+          # internally, but it might be more convenient to let users specify
+          # contrasts directly. At that occasion, contrasts should also be
+          # tested thoroughly (not done until now).
+          mm <- model.matrix(as.formula(paste("~ 1 +", term)),
+                             data = refmodel$fetch_data())
+          return(setdiff(colnames(mm), "(Intercept)"))
         }
       ))
       indices <- match(variables, colnames(x)[search_path$solution_terms])

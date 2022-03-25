@@ -28,7 +28,7 @@ break_up_matrix_term <- function(formula, data) {
 
   term_labels <- attr(tt, "term.labels")
 
-  mm <- model.matrix(formula, data)
+  mm <- model.matrix(formula, data = data)
   assign <- attr(mm, "assign")
 
   new_data <- data

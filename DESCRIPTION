@@ -2,7 +2,7 @@ Package: projpred
 Encoding: UTF-8
 Title: Projection Predictive Feature Selection
 Version: 2.1.0
-Date: 2022-02-17
+Date: 2022-03-16
 Authors@R: c(person("Juho", "Piironen", role = c("aut"),
                     email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
@@ -24,7 +24,7 @@ Description:
     'rstanarm' and 'brms' packages, but other reference models can also be used.
     See the documentation as well as the package vignette for more information
     and examples.
-License: GPL-3
+License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
 Depends:
@@ -35,6 +35,7 @@ Imports:
     loo (>= 2.0.0),
     rstantools (>= 2.0.0),
     lme4,
+    mvtnorm,
     ggplot2,
     Rcpp,
     utils,

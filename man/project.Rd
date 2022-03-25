@@ -54,7 +54,9 @@ class \code{datafit} (in which case one cluster is used). For the meaning of
 results can be obtained again if needed. If \code{NULL}, no seed is set and
 therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
 Here, this seed is used for clustering the reference model's posterior
-draws (if \code{!is.null(nclusters)}).}
+draws (if \code{!is.null(nclusters)}) and for drawing new group-level effects
+when predicting from a multilevel submodel (however, not yet in case of a
+GAMM).}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is

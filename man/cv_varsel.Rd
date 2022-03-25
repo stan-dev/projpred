@@ -140,8 +140,9 @@ results can be obtained again if needed. If \code{NULL}, no seed is set and
 therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
 Here, this seed is used for clustering the reference model's posterior
 draws (if \code{!is.null(nclusters)}), for subsampling LOO CV folds (if \code{nloo}
-is smaller than the number of observations), and for sampling the folds in
-K-fold CV.}
+is smaller than the number of observations), for sampling the folds in
+K-fold CV, and for drawing new group-level effects when predicting from a
+multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{search_terms}{A custom character vector of terms to consider for the
 search. The intercept (\code{"1"}) needs to be included explicitly. The default

@@ -4,6 +4,10 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+^LICENSE\.md$
+^README\.Rmd$
+^cran-comments\.md$
+^CRAN-RELEASE$
 ^man-roxygen$
 ^tests/testthat/bfits$
 ^tests/testthat/_snaps$

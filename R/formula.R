@@ -837,24 +837,6 @@ delete.intercept <- function(formula) {
   return(update(formula, . ~ . - 1))
 }
 
-## construct contrasts.arg list argument for model.matrix based on the current
-## model's formula.
-## @param formula a formula object
-## @param data model's data
-## @return a named list with each factor and its contrasts
-get_contrasts_arg_list <- function(formula, data) {
-  ## extract model frame
-  ## check categorical variables
-  ## add contrasts for those
-  frame <- model.frame(delete.response(terms(formula)), data = data)
-  factors <- sapply(frame, is.factor)
-  contrasts_arg <- lapply(names(factors)[as.logical(factors)], function(v) {
-    stats::contrasts(frame[, v], contrasts = FALSE)
-  })
-  contrasts_arg <- setNames(contrasts_arg, names(factors)[as.logical(factors)])
-  return(contrasts_arg)
-}
-
 ## collapse a list of terms including contrasts
 ## @param formula model's formula
 ## @param path list of terms possibly including contrasts
@@ -864,12 +846,16 @@ collapse_contrasts_solution_path <- function(formula, path, data) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
   for (term in terms_) {
-    current_form <- as.formula(paste("~ 0 +", term))
-    contrasts_arg <- get_contrasts_arg_list(current_form, data)
-    if (length(contrasts_arg) == 0) {
+    # TODO: In the following model.matrix() call, allow user-specified contrasts
+    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+    # (`NULL`) uses `options("contrasts")` internally, but it might be more
+    # convenient to let users specify contrasts directly. At that occasion,
+    # contrasts should also be tested thoroughly (not done until now).
+    x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
+    if (length(attr(x, "contrasts")) == 0) {
       next
     }
-    x <- model.matrix(current_form, data, contrasts.arg = contrasts_arg)
+    x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
     path <- Reduce(
       function(current, pattern) {
         pattern <- gsub("\\+", "\\\\+", pattern)
