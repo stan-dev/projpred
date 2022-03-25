@@ -128,6 +128,7 @@ also handle multiple submodels at once (if the input <code>object</code> is of c
   filter_nterms <span class="op">=</span> <span class="cn">NULL</span>,
   transform <span class="op">=</span> <span class="cn">FALSE</span>,
   integrated <span class="op">=</span> <span class="cn">FALSE</span>,
+  .seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,
   <span class="va">...</span>
 <span class="op">)</span>
 
@@ -176,6 +177,16 @@ the inverse-link function (<code>TRUE</code>) or not (<code>FALSE</code>).</p></
 <dd><p>For <code>proj_linpred()</code> only. A single logical value
 indicating whether the output should be averaged across the projected
 posterior draws (<code>TRUE</code>) or not (<code>FALSE</code>).</p></dd>
+<dt>.seed</dt>
+<dd><p>Pseudorandom number generation (PRNG) seed by which the same
+results can be obtained again if needed. If <code>NULL</code>, no seed is set and
+therefore, the results are not reproducible. See <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details.
+Here, this seed is used for drawing new group-level effects in case of a
+multilevel submodel (however, not yet in case of a GAMM) and for drawing
+from the predictive distribution of the submodel(s) in case of
+<code>proj_predict()</code>. If a clustered projection was performed, then in
+<code>proj_predict()</code>, <code>.seed</code> is also used for drawing from the set of the
+projected clusters of posterior draws (see argument <code>nresample_clusters</code>).</p></dd>
 <dt>...</dt>
 <dd><p>Arguments passed to <code><a href="project.html">project()</a></code> if <code>object</code> is not already an
 object returned by <code><a href="project.html">project()</a></code>.</p></dd>
@@ -186,15 +197,6 @@ submodel. Not to be confused with argument <code>nclusters</code> of <code><a hr
 <code>nresample_clusters</code> gives the number of draws (<em>with</em> replacement) from
 the set of clustered posterior draws after projection (with this set being
 determined by argument <code>nclusters</code> of <code><a href="project.html">project()</a></code>).</p></dd>
-<dt>.seed</dt>
-<dd><p>For <code>proj_predict()</code> only. Pseudorandom number generation (PRNG)
-seed by which the same results can be obtained again if needed. If <code>NULL</code>,
-no seed is set and therefore, the results are not reproducible. See
-<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details. Here, this seed is used for drawing from the
-predictive distribution of the submodel(s) onto which the reference model
-was projected. If a clustered projection was performed, <code>.seed</code> is also
-used for drawing from the set of the projected clusters of posterior draws
-(see argument <code>nresample_clusters</code>).</p></dd>
 </dl></div>
     <div id="value">
     <h2>Value</h2>

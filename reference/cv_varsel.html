@@ -265,8 +265,9 @@ results can be obtained again if needed. If <code>NULL</code>, no seed is set an
 therefore, the results are not reproducible. See <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details.
 Here, this seed is used for clustering the reference model's posterior
 draws (if <code>!is.null(nclusters)</code>), for subsampling LOO CV folds (if <code>nloo</code>
-is smaller than the number of observations), and for sampling the folds in
-K-fold CV.</p></dd>
+is smaller than the number of observations), for sampling the folds in
+K-fold CV, and for drawing new group-level effects when predicting from a
+multilevel submodel (however, not yet in case of a GAMM).</p></dd>
 <dt>search_terms</dt>
 <dd><p>A custom character vector of terms to consider for the
 search. The intercept (<code>"1"</code>) needs to be included explicitly. The default

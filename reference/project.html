@@ -167,7 +167,9 @@ class <code>datafit</code> (in which case one cluster is used). For the meaning 
 results can be obtained again if needed. If <code>NULL</code>, no seed is set and
 therefore, the results are not reproducible. See <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details.
 Here, this seed is used for clustering the reference model's posterior
-draws (if <code>!is.null(nclusters)</code>).</p></dd>
+draws (if <code>!is.null(nclusters)</code>) and for drawing new group-level effects
+when predicting from a multilevel submodel (however, not yet in case of a
+GAMM).</p></dd>
 <dt>regul</dt>
 <dd><p>A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is

@@ -233,7 +233,9 @@ considers all the terms in the reference model's formula.</p></dd>
 results can be obtained again if needed. If <code>NULL</code>, no seed is set and
 therefore, the results are not reproducible. See <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details.
 Here, this seed is used for clustering the reference model's posterior
-draws (if <code>!is.null(nclusters)</code>).</p></dd>
+draws (if <code>!is.null(nclusters)</code>) and for drawing new group-level effects
+when predicting from a multilevel submodel (however, not yet in case of a
+GAMM).</p></dd>
 </dl></div>
     <div id="value">
     <h2>Value</h2>
