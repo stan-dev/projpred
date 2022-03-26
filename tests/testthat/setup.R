@@ -352,6 +352,7 @@ pkg_nms <- setNames(nm = pkg_nms)
 
 chains_tst <- 2L
 iter_tst <- 500L
+nrefdraws <- chains_tst * iter_tst %/% 2L
 seed_fit <- 74345
 
 ### Formula ---------------------------------------------------------------
@@ -624,11 +625,14 @@ if (!run_more) {
   ndr_ncl_pred_tst <- list(default_ndr_ncl = list())
 }
 ndr_ncl_pred_tst <- c(ndr_ncl_pred_tst, list(
-  noclust = list(ndraws = 25L),
+  noclust = list(ndraws = nclusters_pred_tst),
   clust = list(nclusters = nclusters_pred_tst),
-  clust_draws = list(ndraws = nclusters_pred_tst),
   clust1 = list(nclusters = 1L)
 ))
+if (any(unlist(lapply(ndr_ncl_pred_tst, "[[", "ndraws")) <= 20)) {
+  # Suppress the message concerning small `ndraws` or `ndraws_pred` values:
+  options(projpred.mssg_ndraws = FALSE)
+}
 nresample_clusters_tst <- c(1L, 100L)
 
 meth_tst <- list(
@@ -1085,14 +1089,14 @@ if (run_cvvs) {
 vsel_nms <- c(
   "refmodel", "search_path", "d_test", "summaries", "solution_terms", "kl",
   "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
-  "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "suggested_size",
-  "summary"
+  "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
+  "suggested_size", "summary"
 )
 vsel_nms_cv <- c(
   "refmodel", "search_path", "d_test", "summaries", "kl", "solution_terms",
   "pct_solution_terms_cv", "nterms_all", "nterms_max", "method", "cv_method",
-  "validate_search", "nclusters", "nclusters_pred", "ndraws", "ndraws_pred",
-  "suggested_size", "summary"
+  "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
+  "nprjdraws_eval", "suggested_size", "summary"
 )
 # Related to prediction (in contrast to selection):
 vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
@@ -1117,10 +1121,10 @@ vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------
 
-ndraws_default <- 20L # Adapt this if the default is changed.
-ndraws_pred_default <- 400L # Adapt this if the default is changed.
-nresample_clusters_default <- 1000L # Adapt this if the default is changed.
-regul_default <- 1e-4 # Adapt this if the default is changed.
+nclusters_default <- 20L
+ndraws_pred_default <- 400L
+nresample_clusters_default <- 1000L
+regul_default <- 1e-4
 
 # Seed --------------------------------------------------------------------
 

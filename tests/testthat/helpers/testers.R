@@ -730,6 +730,35 @@ submodl_tester <- function(
   return(invisible(TRUE))
 }
 
+# A helper function for testing the structure of .get_refdist()'s output.
+#
+# @param refd Output of .get_refdist().
+# @param nprjdraws_expected A single numeric value giving the expected number of
+#   projected draws.
+# @param clust_expected A single logical value giving the expected value for
+#   `refd$clust_used`.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+refdist_tester <- function(refd,
+                           nprjdraws_expected = nclusters_pred_tst,
+                           clust_expected = TRUE,
+                           info_str) {
+  expect_identical(dim(refd$mu), c(nobsv, nprjdraws_expected), info = info_str)
+  expect_identical(dim(refd$var), c(nobsv, nprjdraws_expected), info = info_str)
+  expect_true(is.vector(refd$dis) && is.atomic(refd$dis),
+              info = info_str)
+  expect_length(refd$dis, nprjdraws_expected)
+  expect_true(is.vector(refd$weights) && is.atomic(refd$weights),
+              info = info_str)
+  expect_length(refd$weights, nprjdraws_expected)
+  expect_true(is.vector(refd$cl, "integer"), info = info_str)
+  expect_length(refd$cl, nprjdraws_expected)
+  expect_identical(refd$clust_used, clust_expected, info = info_str)
+  return(invisible(TRUE))
+}
+
 # A helper function for testing the structure of an expected `"projection"`
 # object.
 #
@@ -1017,11 +1046,10 @@ pp_tester <- function(pp,
 # @param method_expected The expected `vs$method` object.
 # @param cv_method_expected The expected `vs$cv_method` object.
 # @param valsearch_expected The expected `vs$validate_search` object.
-# @param ndraws_expected The expected `vs$ndraws` object.
-# @param ndraws_pred_expected The expected `vs$ndraws_pred` object.
-# @param nclusters_expected The expected `vs$nclusters` object (not adapted for
-#   L1 search).
-# @param nclusters_pred_expected The expected `vs$nclusters_pred` object.
+# @param cl_search_expected The expected `vs$clust_used_search` object.
+# @param cl_eval_expected The expected `vs$clust_used_eval` object.
+# @param nprjdraws_search_expected The expected `vs$nprjdraws_search` object.
+# @param nprjdraws_eval_expected The expected `vs$nprjdraws_eval` object.
 # @param seed_expected The seed which was used for clustering the posterior
 #   draws of the reference model.
 # @param nloo_expected Only relevant if `with_cv` is `TRUE`. The value which was
@@ -1043,10 +1071,10 @@ vsel_tester <- function(
   method_expected,
   cv_method_expected = NULL,
   valsearch_expected = NULL,
-  ndraws_expected = if (!from_datafit) ndraws_default else 1L,
-  ndraws_pred_expected = if (!from_datafit) ndraws_pred_default else 1L,
-  nclusters_expected = NULL,
-  nclusters_pred_expected = NULL,
+  cl_search_expected = !from_datafit,
+  cl_eval_expected = !from_datafit,
+  nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
+  nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
   seed_expected = seed_tst,
   nloo_expected = NULL,
   extra_tol = 1.1,
@@ -1081,7 +1109,8 @@ vsel_tester <- function(
   }
   method_expected <- tolower(method_expected)
   if (method_expected == "l1") {
-    nclusters_expected <- 1
+    cl_search_expected <- !from_datafit
+    nprjdraws_search_expected <- 1
   }
 
   # Test the general structure of the object:
@@ -1106,10 +1135,13 @@ vsel_tester <- function(
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
   set.seed(seed_expected)
-  clust_ref <- .get_refdist(vs$refmodel,
-                            ndraws = ndraws_expected,
-                            nclusters = nclusters_expected)
-  nprjdraws_expected <- ncol(clust_ref$mu)
+  if (cl_search_expected) {
+    clust_ref <- .get_refdist(vs$refmodel,
+                              nclusters = nprjdraws_search_expected)
+  } else {
+    clust_ref <- .get_refdist(vs$refmodel,
+                              ndraws = nprjdraws_search_expected)
+  }
   if (!from_vsel_L1_search) {
     y_nm <- as.character(vs$refmodel$formula)[2]
     solterms_vsel_L1_search_crr <- NULL
@@ -1118,11 +1150,11 @@ vsel_tester <- function(
     solterms_vsel_L1_search_crr <- vs$solution_terms
   }
   y_nms <- paste0(".", y_nm)
-  if (nprjdraws_expected > 1) {
-    y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
+  if (nprjdraws_search_expected > 1) {
+    y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_search_expected))
   }
   sub_data_crr <- vs$refmodel$fetch_data()
-  for (i in seq_len(nprjdraws_expected)) {
+  for (i in seq_len(nprjdraws_search_expected)) {
     sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
   }
   solterms_for_sub <- c(as.character(as.numeric(vs$refmodel$intercept)),
@@ -1139,7 +1171,7 @@ vsel_tester <- function(
     })
     submodl_tester(
       vs$search_path$submodls[[i]],
-      nprjdraws_expected = nprjdraws_expected,
+      nprjdraws_expected = nprjdraws_search_expected,
       sub_formul = sub_formul_crr,
       sub_data = sub_data_crr,
       sub_fam = vs$refmodel$family$family,
@@ -1149,11 +1181,20 @@ vsel_tester <- function(
     )
   }
   expect_type(vs$search_path$p_sel, "list")
-  expect_named(vs$search_path$p_sel, c("mu", "var", "weights", "cl"),
-               info = info_str)
+  if (from_datafit) {
+    # Due to issue #204:
+    expect_named(vs$search_path$p_sel,
+                 c("mu", "var", "dis", "weights", "cl", "clust_used"),
+                 info = info_str)
+  } else {
+    expect_named(vs$search_path$p_sel,
+                 c("mu", "var", "weights", "cl", "clust_used"),
+                 info = info_str)
+  }
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
-  expect_type(vs$search_path$p_sel$mu, "double")
-  expect_equal(dim(vs$search_path$p_sel$mu), c(nobsv, nclusters_expected),
+  expect_true(is.numeric(vs$search_path$p_sel$mu), info = info_str)
+  expect_equal(dim(vs$search_path$p_sel$mu),
+               c(nobsv, nprjdraws_search_expected),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
   if (vs$refmodel$family$family == "gaussian") {
@@ -1161,12 +1202,21 @@ vsel_tester <- function(
   } else {
     expect_true(all(is.na(vs$search_path$p_sel$var)), info = info_str)
   }
-  expect_equal(dim(vs$search_path$p_sel$var), c(nobsv, nclusters_expected),
+  expect_equal(dim(vs$search_path$p_sel$var),
+               c(nobsv, nprjdraws_search_expected),
                info = info_str)
+  if ("dis" %in% names(vs$search_path$p_sel)) {
+    expect_true(is.vector(vs$search_path$p_sel$dis) &&
+                  is.atomic(vs$search_path$p_sel$dis),
+                info = info_str)
+    expect_length(vs$search_path$p_sel$dis, nprjdraws_search_expected)
+  }
   expect_type(vs$search_path$p_sel$weights, "double")
-  expect_length(vs$search_path$p_sel$weights, nclusters_expected)
+  expect_length(vs$search_path$p_sel$weights, nprjdraws_search_expected)
   expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)
   expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
+  expect_identical(vs$search_path$p_sel$clust_used, cl_search_expected,
+                   info = info_str)
 
   # d_test
   if (is.null(dtest_expected)) {
@@ -1316,17 +1366,17 @@ vsel_tester <- function(
   # validate_search
   expect_identical(vs$validate_search, valsearch_expected, info = info_str)
 
-  # ndraws
-  expect_equal(vs$ndraws, ndraws_expected, info = info_str)
+  # clust_used_search
+  expect_equal(vs$clust_used_search, cl_search_expected, info = info_str)
 
-  # ndraws_pred
-  expect_equal(vs$ndraws_pred, ndraws_pred_expected, info = info_str)
+  # clust_used_eval
+  expect_equal(vs$clust_used_eval, cl_eval_expected, info = info_str)
 
-  # nclusters
-  expect_equal(vs$nclusters, nclusters_expected, info = info_str)
+  # nprjdraws_search
+  expect_equal(vs$nprjdraws_search, nprjdraws_search_expected, info = info_str)
 
-  # nclusters_pred
-  expect_equal(vs$nclusters_pred, nclusters_pred_expected, info = info_str)
+  # nprjdraws_eval
+  expect_equal(vs$nprjdraws_eval, nprjdraws_eval_expected, info = info_str)
 
   # suggested_size
   expect_type(vs$suggested_size, "double")
@@ -1372,14 +1422,16 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_named(
     smmry,
     c("formula", "family", "nobs", "method", "cv_method", "validate_search",
-      "ndraws", "ndraws_pred", "nclusters", "nclusters_pred", "search_included",
-      "nterms", pct_solterms_nm, "suggested_size", "selection"),
+      "clust_used_search", "clust_used_eval", "nprjdraws_search",
+      "nprjdraws_eval", "search_included", "nterms", pct_solterms_nm,
+      "suggested_size", "selection"),
     info = info_str
   )
 
   for (nm in c(
-    "method", "cv_method", "validate_search", "ndraws", "ndraws_pred",
-    "nclusters", "nclusters_pred", pct_solterms_nm, "suggested_size"
+    "method", "cv_method", "validate_search", "clust_used_search",
+    "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", pct_solterms_nm,
+    "suggested_size"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))

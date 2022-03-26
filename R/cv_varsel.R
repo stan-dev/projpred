@@ -54,6 +54,11 @@
 #'
 #' @references
 #'
+#' Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
+#' leave-one-out cross-validation for large data. In *Proceedings of the 36th
+#' International Conference on Machine Learning*, 4244–4253. URL:
+#' <https://proceedings.mlr.press/v97/magnusson19a.html>.
+#'
 #' Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
 #' evaluation using leave-one-out cross-validation and WAIC. *Statistics and
 #' Computing*, **27**(5), 1413-1432. \doi{10.1007/s11222-016-9696-4}.
@@ -106,8 +111,8 @@ cv_varsel.refmodel <- function(
   object,
   method = NULL,
   cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
-  ndraws = 20,
-  nclusters = NULL,
+  ndraws = NULL,
+  nclusters = 20,
   ndraws_pred = 400,
   nclusters_pred = NULL,
   refit_prj = !inherits(object, "datafit"),
@@ -136,17 +141,12 @@ cv_varsel.refmodel <- function(
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
-    nterms_max = nterms_max, nclusters = nclusters,
-    ndraws = ndraws, nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
-    search_terms = search_terms
+    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
   )
   method <- args$method
   refit_prj <- args$refit_prj
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
-  ndraws <- args$ndraws
-  nclusters_pred <- args$nclusters_pred
-  ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
 
   ## arguments specific to this function
@@ -239,10 +239,10 @@ cv_varsel.refmodel <- function(
               method,
               cv_method,
               validate_search,
-              nclusters,
-              nclusters_pred,
-              ndraws,
-              ndraws_pred)
+              clust_used_search = sel$clust_used_search,
+              clust_used_eval = sel$clust_used_eval,
+              nprjdraws_search = sel$nprjdraws_search,
+              nprjdraws_eval = sel$nprjdraws_eval)
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
   summary <- summary(vs)
@@ -431,7 +431,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       solution_terms_mat[i, seq_along(solution)] <- solution
     }
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
-                 solution_terms = search_path$solution_terms)
+                 solution_terms = search_path$solution_terms,
+                 clust_used_search = p_sel$clust_used,
+                 clust_used_eval = p_pred$clust_used,
+                 nprjdraws_search = NCOL(p_sel$mu),
+                 nprjdraws_eval = NCOL(p_pred$mu))
   } else {
     if (verbose) {
       print(msg)

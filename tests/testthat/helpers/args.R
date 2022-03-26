@@ -31,11 +31,11 @@ excl_nonargs <- function(args_i, nms_excl_add = character()) {
   return(args_i[setdiff(names(args_i), nms_excl)])
 }
 
-# A helper function for retrieving details about the actually used `ndraws` or
-# `nclusters` argument as well as about associated objects.
+# A helper function for creating expectations for the actually used `ndraws` or
+# `nclusters` argument of project() as well as for argument `nresample_clusters`
+# of proj_predict().
 #
-# @param args_i A list of arguments supplied to a function with arguments
-#   `ndraws` and `nclusters` (project(), varsel(), etc.).
+# @param args_i A list of arguments supplied to project().
 # @param nresample_clusters_crr The value of proj_predict()'s argument
 #   `nresample_clusters` which should be used for calculating `nprjdraws_out`.
 #
@@ -44,8 +44,7 @@ excl_nonargs <- function(args_i, nms_excl_add = character()) {
 #     `nclusters`).
 #   * `nprjdraws`: The value of the actually used argument.
 #   * `clust_used`: A single logical value indicating whether in fact,
-#     clustering is used or not. In contrast to `ndr_ncl_nm`, this also takes
-#     into account that `ndraws <= 20` leads to clustering.
+#     clustering is used or not.
 #   * `nprjdraws_out`: The number of projected draws in the output. In contrast
 #     to `nprjdraws`, this also takes proj_predict()'s argument
 #     `nresample_clusters` into account.
@@ -59,7 +58,7 @@ ndr_ncl_dtls <- function(args_i,
     stopifnot(length(ndr_ncl_nm) == 1)
     nprjdraws <- args_i[[ndr_ncl_nm]]
   }
-  clust_used <- ndr_ncl_nm == "nclusters" || nprjdraws <= 20
+  clust_used <- ndr_ncl_nm == "nclusters"
   if (clust_used) {
     nprjdraws_out <- nresample_clusters_crr
   } else {

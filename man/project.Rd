@@ -40,10 +40,11 @@ submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
 \code{refit_prj} must be \code{TRUE}.}
 
 \item{ndraws}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of posterior
-draws to be projected. \strong{Caution:} For \code{ndraws <= 20}, the value of
-\code{ndraws} is passed to \code{nclusters} (so that clustering is used). Ignored if
-\code{nclusters} is not \code{NULL} or if the reference model is of class \code{datafit}
-(in which case one cluster is used). See also section "Details" below.}
+draws to be projected. Ignored if \code{nclusters} is not \code{NULL} or if the
+reference model is of class \code{datafit} (in which case one cluster is used).
+If both (\code{nclusters} and \code{ndraws}) are \code{NULL}, the number of posterior
+draws from the reference model is used for \code{ndraws}. See also section
+"Details" below.}
 
 \item{nclusters}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of clusters
 of posterior draws to be projected. Ignored if the reference model is of

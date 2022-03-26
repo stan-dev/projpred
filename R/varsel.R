@@ -21,20 +21,20 @@
 #'   submodels along the solution path again (`TRUE`) or to retrieve their fits
 #'   from the search part (`FALSE`) before using those (re-)fits in the
 #'   evaluation part.
-#' @param ndraws Number of posterior draws used in the search part. **Caution:**
-#'   For `ndraws <= 20`, the value of `ndraws` is passed to `nclusters` (so that
-#'   clustering is used). Ignored if `nclusters` is not `NULL` or in case of L1
-#'   search (because L1 search always uses a single cluster). See also section
-#'   "Details" below.
+#' @param ndraws Number of posterior draws used in the search part. Ignored if
+#'   `nclusters` is not `NULL` or in case of L1 search (because L1 search always
+#'   uses a single cluster). If both (`nclusters` and `ndraws`) are `NULL`, the
+#'   number of posterior draws from the reference model is used for `ndraws`.
+#'   See also section "Details" below.
 #' @param nclusters Number of clusters of posterior draws used in the search
 #'   part. Ignored in case of L1 search (because L1 search always uses a single
 #'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
 #'   section "Details" below.
 #' @param ndraws_pred Only relevant if `refit_prj` is `TRUE`. Number of
-#'   posterior draws used in the evaluation part. **Caution:** For `ndraws_pred
-#'   <= 20`, the value of `ndraws_pred` is passed to `nclusters_pred` (so that
-#'   clustering is used). Ignored if `nclusters_pred` is not `NULL`. See also
-#'   section "Details" below.
+#'   posterior draws used in the evaluation part. Ignored if `nclusters_pred` is
+#'   not `NULL`. If both (`nclusters_pred` and `ndraws_pred`) are `NULL`, the
+#'   number of posterior draws from the reference model is used for
+#'   `ndraws_pred`. See also section "Details" below.
 #' @param nclusters_pred Only relevant if `refit_prj` is `TRUE`. Number of
 #'   clusters of posterior draws used in the evaluation part. For the meaning of
 #'   `NULL`, see argument `ndraws_pred`. See also section "Details" below.
@@ -143,7 +143,7 @@ varsel.default <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
-                            ndraws = 20, nclusters = NULL, ndraws_pred = 400,
+                            ndraws = NULL, nclusters = 20, ndraws_pred = 400,
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
@@ -163,17 +163,12 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
-    nterms_max = nterms_max, nclusters = nclusters, ndraws = ndraws,
-    nclusters_pred = nclusters_pred, ndraws_pred = ndraws_pred,
-    search_terms = search_terms
+    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
   )
   method <- args$method
   refit_prj <- args$refit_prj
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
-  ndraws <- args$ndraws
-  nclusters_pred <- args$nclusters_pred
-  ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
 
   if (is.null(d_test)) {
@@ -248,10 +243,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     method = method,
     cv_method = NULL,
     validate_search = NULL,
-    ndraws,
-    ndraws_pred,
-    nclusters,
-    nclusters_pred
+    clust_used_search = p_sel$clust_used,
+    clust_used_eval = p_pred$clust_used,
+    nprjdraws_search = NCOL(p_sel$mu),
+    nprjdraws_eval = NCOL(p_pred$mu)
   )
   ## suggest model size
   class(vs) <- "vsel"
@@ -290,8 +285,7 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
 }
 
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              nclusters, ndraws, nclusters_pred, ndraws_pred,
-                              search_terms) {
+                              nclusters, search_terms) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel.
   ## The arguments specified by the user (or the function calling this function)
@@ -331,28 +325,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     refit_prj <- FALSE
   }
 
-  stopifnot(!is.null(ndraws))
-  ndraws <- min(NCOL(refmodel$mu), ndraws)
-
-  if (is.null(nclusters) && ndraws <= 20) {
-    nclusters <- ndraws
-  }
-  if (!is.null(nclusters)) {
-    nclusters <- min(NCOL(refmodel$mu), nclusters)
-  }
-
   if (method == "l1") {
     nclusters <- 1
-  }
-
-  stopifnot(!is.null(ndraws_pred))
-  ndraws_pred <- min(NCOL(refmodel$mu), ndraws_pred)
-
-  if (is.null(nclusters_pred) && ndraws_pred <= 20) {
-    nclusters_pred <- ndraws_pred
-  }
-  if (!is.null(nclusters_pred)) {
-    nclusters_pred <- min(NCOL(refmodel$mu), nclusters_pred)
   }
 
   if (!is.null(search_terms)) {
@@ -365,8 +339,5 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   }
   nterms_max <- min(max_nv_possible, nterms_max + refmodel$intercept)
 
-  return(nlist(
-    method, refit_prj, nterms_max, nclusters, ndraws, nclusters_pred,
-    ndraws_pred, search_terms
-  ))
+  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
 }
