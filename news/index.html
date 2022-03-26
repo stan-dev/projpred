@@ -106,16 +106,28 @@
 <h2 class="page-header" data-toc-text="2.1.0" id="projpred-210">projpred 2.1.0<a class="anchor" aria-label="anchor" href="#projpred-210"></a></h2>
 <div class="section level3">
 <h3 id="major-changes-2-1-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-1-0"></a></h3>
-<ul><li>The behavior of arguments <code>ndraws</code>,
-<code>nclusters</code>, <code>ndraws_pred</code>, and
-<code>nclusters_pred</code> in <code><a href="../reference/varsel.html">varsel()</a></code>,
-<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>, and <code><a href="../reference/project.html">project()</a></code> has been changed:
-Now, <code>ndraws</code> and <code>ndraws_pred</code> have
-non-<code>NULL</code> defaults and for <code>ndraws &lt;= 20</code> or
-<code>ndraws_pred &lt;= 20</code>, the value of <code>ndraws</code> or
-<code>ndraws_pred</code> is passed to <code>nclusters</code> or
-<code>nclusters_pred</code>, respectively (so that clustering is used).
-(GitHub: commits babe031, 4ef95d3, and ce7d1e0)</li>
+<ul><li>Added support for weighted LOO proportional-to-size subsampling
+based on <a href="https://proceedings.mlr.press/v97/magnusson19a.html" class="external-link">Magnusson et
+al. (2019)</a>. However, subsampled LOO CV is now regarded as
+experimental. Therefore, a corresponding warning is thrown when calling
+<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> with <code>nloo &lt; n</code> where
+<code>n</code> denotes the number of observations. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/94" class="external-link">#94</a>, <a href="https://github.com/stan-dev/projpred/issues/252" class="external-link">#252</a>,
+commit feea39e)</li>
+<li>Automatically explore both linear and smooths components in GAM
+models. This allows the user to gauge the impact of the smooth term
+against its linear counterpart.</li>
+<li>Fast approximate LOO computation for
+<code>validate_search = FALSE</code> in <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>.</li>
+<li>Formerly, the defaults for arguments <code>nclusters</code> (=
+<code>1</code>) and <code>nclusters_pred</code> (= <code>5</code>) of
+<code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> were set internally
+(the user-visible defaults were <code>NULL</code>). Now,
+<code>nclusters</code> and <code>ndraws_pred</code> (note the
+<code>ndraws_pred</code>, not <code>nclusters_pred</code>) have
+non-<code>NULL</code> user-visible defaults of <code>20</code> and
+<code>400</code>, respectively. In general, this increases the runtime
+of these functions a lot. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/291" class="external-link">#291</a> and several commits beforehand,
+in particular bbd0f0a, babe031, 4ef95d3, and ce7d1e0)</li>
 <li>For <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> and <code><a href="../reference/pred-projection.html">proj_predict()</a></code>,
 arguments <code>nterms</code>, <code>ndraws</code>, and
 <code>seed</code> have been removed to allow the user to pass them to
@@ -144,10 +156,8 @@ specified via an <code><a href="https://rdrr.io/r/stats/offset.html" class="exte
 not via argument <code>offset</code>).</li>
 <li>Improved handling of errors when fitting multilevel submodels.
 (GitHub: <a href="https://github.com/stan-dev/projpred/issues/201" class="external-link">#201</a>)</li>
-<li>Some defaults (like for <code>ndraws</code>, <code>nclusters</code>,
-<code>ndraws_pred</code>, and <code>nclusters_pred</code> mentioned
-above) have been changed from <code>NULL</code> to a user-visible value
-(and <code>NULL</code> is not allowed anymore).</li>
+<li>Some defaults have been changed from <code>NULL</code> to a
+user-visible value (and <code>NULL</code> is not allowed anymore).</li>
 <li>Argument <code>data</code> of <code><a href="../reference/refmodel-init-get.html">get_refmodel.stanreg()</a></code>
 has been removed. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/219" class="external-link">#219</a>)</li>
 <li>The function passed to argument <code>div_minimizer</code> of
@@ -167,11 +177,6 @@ more information, see the general package documentation available at
 <li>Support for the <code><a href="../reference/extra-families.html">Student_t()</a></code> family is regarded as
 experimental. Therefore, a corresponding warning is thrown when creating
 the reference model. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/233" class="external-link">#233</a>, <a href="https://github.com/stan-dev/projpred/issues/252" class="external-link">#252</a>)</li>
-<li>Subsampled LOO CV (offered by argument <code>nloo</code> of
-<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>) is regarded as experimental. Therefore, a
-corresponding warning is thrown when calling <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>
-with <code>nloo &lt; n</code> where <code>n</code> denotes the number of
-observations. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/94" class="external-link">#94</a>, <a href="https://github.com/stan-dev/projpred/issues/252" class="external-link">#252</a>)</li>
 <li>Support for additive models (i.e., GAMs and GAMMs) is regarded as
 experimental. Therefore, a corresponding warning is thrown when creating
 the reference model. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/237" class="external-link">#237</a>, <a href="https://github.com/stan-dev/projpred/issues/252" class="external-link">#252</a>)</li>
@@ -191,21 +196,30 @@ non-<code>NULL</code> argument <code>dis</code> in that case. (GitHub:
 <code><a href="../reference/as.matrix.projection.html">as.matrix.projection()</a></code> has gained a new argument
 <code>nm_scheme</code> which allows to choose the naming scheme for the
 column names of the returned matrix. The default (<code>"auto"</code>)
-follows the naming scheme of the reference model fit (and uses
-<code>"rstanarm"</code> if the reference model fit is of an unknown
-class). See also section “Major changes” for version 2.0.5 below.
-(GitHub: <a href="https://github.com/stan-dev/projpred/issues/279" class="external-link">#279</a>)</li>
+follows the naming scheme of the reference model fit (and uses the
+<code>"rstanarm"</code> naming scheme if the reference model fit is of
+an unknown class). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/82" class="external-link">#82</a>, <a href="https://github.com/stan-dev/projpred/issues/279" class="external-link">#279</a>)</li>
 <li>
 <code>seed</code> (and <code>.seed</code>) arguments now have a
 default of <code>sample.int(.Machine$integer.max, 1)</code> instead of
 <code>NULL</code>. Furthermore, the value supplied to these arguments is
 now used to generate new seeds internally on-the-fly. In many cases,
 this will change results compared to older <strong>projpred</strong>
-versions. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/286" class="external-link">#286</a>)</li>
+versions. Also note that now, the internal seeds are never fixed to a
+specific value if <code>seed</code> (and <code>.seed</code>) arguments
+are set to <code>NULL</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/84" class="external-link">#84</a>, <a href="https://github.com/stan-dev/projpred/issues/286" class="external-link">#286</a>)</li>
 </ul></div>
 <div class="section level3">
 <h3 id="minor-changes-2-1-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-1-0"></a></h3>
-<ul><li>Improved documentation. (GitHub: especially <a href="https://github.com/stan-dev/projpred/issues/233" class="external-link">#233</a>)</li>
+<ul><li>Improved summary output with important details.</li>
+<li>For group-level effects, the <code><a href="../reference/as.matrix.projection.html">as.matrix.projection()</a></code>
+method now also returns the estimated group-level effects themselves.
+(GitHub: <a href="https://github.com/stan-dev/projpred/issues/75" class="external-link">#75</a>)</li>
+<li>For group-level effects, the <code><a href="../reference/as.matrix.projection.html">as.matrix.projection()</a></code>
+method now returns the variance components (population SD(s) and
+population correlation(s)) instead of the empirical SD(s) of the
+group-level effects. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/74" class="external-link">#74</a>)</li>
+<li>Improved documentation. (GitHub: especially <a href="https://github.com/stan-dev/projpred/issues/233" class="external-link">#233</a>)</li>
 <li>Replaced the two vignettes by a single one which also has new
 content. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/237" class="external-link">#237</a>)</li>
 <li>Updated the <code>README</code> file. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/245" class="external-link">#245</a>)</li>
@@ -280,7 +294,40 @@ now trigger an error. (GitHub: <a href="https://github.com/stan-dev/projpred/iss
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-2-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-1-0"></a></h3>
-<ul><li>Fixed a bug when using weights or offsets e.g. in
+<ul><li>Fixed a bug in <code><a href="../reference/as.matrix.projection.html">as.matrix.projection()</a></code> (causing
+incorrect column names for the returned matrix). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/72" class="external-link">#72</a>, <a href="https://github.com/stan-dev/projpred/issues/73" class="external-link">#73</a>)</li>
+<li>Fixed a bug raising an error when not projecting from a
+<code>vsel</code> object. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/79" class="external-link">#79</a>, <a href="https://github.com/stan-dev/projpred/issues/80" class="external-link">#80</a>)</li>
+<li>Fixed a bug in the calculation of the Gaussian deviance. (GitHub:
+<a href="https://github.com/stan-dev/projpred/issues/81" class="external-link">#81</a>)</li>
+<li>Fixed a bug in the calculation of the predictive statistics of the
+reference model on test data in <code><a href="../reference/varsel.html">varsel()</a></code>. (GitHub <a href="https://github.com/stan-dev/projpred/issues/90" class="external-link">#90</a>)</li>
+<li>Fixed a bug in an input check for argument <code>nloo</code> of
+<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/93" class="external-link">#93</a>)</li>
+<li>Fixed a bug in <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>, causing an error in case of
+<code>!validate_search &amp;&amp; cv_method != "LOO"</code>. (GitHub:
+<a href="https://github.com/stan-dev/projpred/issues/95" class="external-link">#95</a>)</li>
+<li>Fixed bugs related to the setting of the seed. (GitHub: commit
+02cd50d)</li>
+<li>Fixed a bug causing <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> to raise an error if
+argument <code>newdata</code> was <code>NULL</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/97" class="external-link">#97</a>)</li>
+<li>Fixed an incorrect usage of the dispersion parameter values when
+calculating output element <code>lpd</code> in
+<code><a href="../reference/pred-projection.html">proj_linpred()</a></code> (for <code>integrated = TRUE</code> as well
+as for <code>integrated = FALSE</code>). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/105" class="external-link">#105</a>)</li>
+<li>Fixed bugs in <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>’s calculation of output
+element <code>lpd</code> (for <code>integrated = TRUE</code>). (GitHub:
+<a href="https://github.com/stan-dev/projpred/issues/106" class="external-link">#106</a>, <a href="https://github.com/stan-dev/projpred/issues/112" class="external-link">#112</a>)</li>
+<li>Fixed an inconsistency in the dimensions of
+<code><a href="../reference/pred-projection.html">proj_linpred()</a></code>’s output elements <code>pred</code> and
+<code>lpd</code> (for <code>integrated = FALSE</code>): Now, they are
+both S x N matrices, with S denoting the number of (possibly clustered)
+posterior draws and N denoting the number of observations. (GitHub:
+<a href="https://github.com/stan-dev/projpred/issues/107" class="external-link">#107</a>, <a href="https://github.com/stan-dev/projpred/issues/112" class="external-link">#112</a>)</li>
+<li>Fixed a bug causing <code><a href="../reference/pred-projection.html">proj_predict()</a></code>’s output matrix to
+be transposed in case of <code>nrow(newdata) == 1</code>. (GitHub:
+<a href="https://github.com/stan-dev/projpred/issues/112" class="external-link">#112</a>)</li>
+<li>Fixed a bug when using weights or offsets e.g. in
 <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/114" class="external-link">#114</a>)</li>
 <li>Fixed a bug causing <code><a href="../reference/varsel.html">varsel()</a></code>/<code>make_formula</code>
 to fail with multidimensional interaction terms. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/102" class="external-link">#102</a>,
@@ -340,7 +387,7 @@ of class <code>vsel</code> created by <code><a href="../reference/varsel.html">v
 <li>Fix forward search when <code>search_terms</code> are not
 consecutive in size. (GitHub: commit 34e24de)</li>
 <li>Fix a bug in <code>cv_varsel()$pct_solution_terms_cv</code>.
-(GitHub: commit e529ec1, <a href="https://github.com/stan-dev/projpred/issues/188" class="external-link">#188</a>)</li>
+(GitHub: <a href="https://github.com/stan-dev/projpred/issues/188" class="external-link">#188</a>, commit e529ec1)</li>
 <li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/185" class="external-link">#185</a>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/193" class="external-link">#193</a>, <a href="https://github.com/stan-dev/projpred/issues/194" class="external-link">#194</a>)</li>
 <li>Fix a bug in forward searches with interaction terms. (GitHub:
 <a href="https://github.com/stan-dev/projpred/issues/191" class="external-link">#191</a>)</li>
@@ -386,12 +433,6 @@ submodel fitter for GLMs. (GitHub: <a href="https://github.com/stan-dev/projpred
 <li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/215" class="external-link">#215</a>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/266" class="external-link">#266</a>)</li>
 <li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/212" class="external-link">#212</a>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/267" class="external-link">#267</a>)</li>
 <li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/156" class="external-link">#156</a>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/269" class="external-link">#269</a>)</li>
-<li>Revert the behavior (introduced by version 2.0.5) of
-<code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code> if neither <code>cvfun</code> nor
-<code>cvfits</code> is provided: Do <em>not</em> raise an error since
-such an error is now thrown when trying to run K-fold CV (so a reference
-model which is never used for K-fold CV does not require
-<code>cvfits</code> or <code>cvfun</code>). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/270" class="external-link">#270</a>)</li>
 <li>If the data used for the reference model contains <code>NA</code>s,
 an appropriate error is now thrown. Previously, the reference model was
 created successfully, but this caused opaque errors in downstream code
@@ -400,103 +441,6 @@ such as <code><a href="../reference/project.html">project()</a></code>. (GitHub:
 <li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/149" class="external-link">#149</a>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/288" class="external-link">#288</a>)</li>
 </ul></div>
 </div>
-    <div class="section level2">
-<h2 class="page-header" data-toc-text="2.0.5" id="projpred-205">projpred 2.0.5<a class="anchor" aria-label="anchor" href="#projpred-205"></a></h2>
-<div class="section level3">
-<h3 id="major-changes-2-0-5">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-0-5"></a></h3>
-<ul><li>For GLMMs, the column names of the matrix returned by the
-<code><a href="../reference/as.matrix.projection.html">as.matrix.projection()</a></code> method follow <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a>’s
-naming convention, also for the new columns introduced by
-<strong>projpred</strong> version 2.0.4 (see below). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/82" class="external-link">#82</a>)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="minor-changes-2-0-5">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-0-5"></a></h3>
-<ul><li>Internally, the seed is not fixed to a specific value when
-<code>NULL</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/84" class="external-link">#84</a>)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="bug-fixes-2-0-5">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-0-5"></a></h3>
-<ul><li>Fixed a bug raising an error when not projecting from a
-<code>vsel</code> object. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/79" class="external-link">#79</a>, <a href="https://github.com/stan-dev/projpred/issues/80" class="external-link">#80</a>)</li>
-<li>Fixed a bug in the calculation of the Gaussian deviance. (GitHub:
-<a href="https://github.com/stan-dev/projpred/issues/81" class="external-link">#81</a>)</li>
-<li>Fixed a bug in the calculation of the predictive statistics of the
-reference model on test data in <code><a href="../reference/varsel.html">varsel()</a></code>. (GitHub <a href="https://github.com/stan-dev/projpred/issues/90" class="external-link">#90</a>)</li>
-<li>In <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>: Raise an error if neither
-<code>cvfun</code> nor <code>cvfits</code> is provided (in cases where
-at least one of them is necessary). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/91" class="external-link">#91</a>)</li>
-<li>Fixed a bug in an input check for argument <code>nloo</code> of
-<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/93" class="external-link">#93</a>)</li>
-<li>Fixed a bug in <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>, causing an error in case of
-<code>!validate_search &amp;&amp; cv_method != "LOO"</code>. (GitHub:
-<a href="https://github.com/stan-dev/projpred/issues/95" class="external-link">#95</a>)</li>
-<li>Fixed bugs related to the setting of the seed. (GitHub: commit
-02cd50d)</li>
-<li>Fixed a bug causing <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> to raise an error if
-argument <code>newdata</code> was <code>NULL</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/97" class="external-link">#97</a>)</li>
-<li>Fixed an incorrect usage of the dispersion parameter values when
-calculating output element <code>lpd</code> in
-<code><a href="../reference/pred-projection.html">proj_linpred()</a></code> (for <code>integrated = TRUE</code> as well
-as for <code>integrated = FALSE</code>). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/105" class="external-link">#105</a>)</li>
-<li>Fixed bugs in <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>’s calculation of output
-element <code>lpd</code> (for <code>integrated = TRUE</code>). (GitHub:
-<a href="https://github.com/stan-dev/projpred/issues/106" class="external-link">#106</a>, <a href="https://github.com/stan-dev/projpred/issues/112" class="external-link">#112</a>)</li>
-<li>Fixed an inconsistency in the dimensions of
-<code><a href="../reference/pred-projection.html">proj_linpred()</a></code>’s output elements <code>pred</code> and
-<code>lpd</code> (for <code>integrated = FALSE</code>): Now, they are
-both S x N matrices, with S denoting the number of (possibly clustered)
-posterior draws and N denoting the number of observations. (GitHub:
-<a href="https://github.com/stan-dev/projpred/issues/107" class="external-link">#107</a>, <a href="https://github.com/stan-dev/projpred/issues/112" class="external-link">#112</a>)</li>
-<li>Fixed a bug causing <code><a href="../reference/pred-projection.html">proj_predict()</a></code>’s output matrix to
-be transposed in case of <code>nrow(newdata) == 1</code>. (GitHub:
-<a href="https://github.com/stan-dev/projpred/issues/112" class="external-link">#112</a>)</li>
-</ul></div>
-</div>
-    <div class="section level2">
-<h2 class="page-header" data-toc-text="2.0.4" id="projpred-204">projpred 2.0.4<a class="anchor" aria-label="anchor" href="#projpred-204"></a></h2>
-<ul><li>Added support for weighted LOO proportional-to-size subsampling
-based on Magnusson, M., Riis Andersen, M., Jonasson, J. and Vehtari, A.
-(2019). Leave-One-Out Cross-Validation for Large Data. In International
-Conference on Machine Learning.</li>
-<li>Automatically explore both linear and smooths components in GAM
-models. This allows the user to gauge the impact of the smooth term
-against its linear counterpart.</li>
-<li>Fast approximate LOO computation for
-<code>validate_search = FALSE</code> calls in
-<code>cv_varsel(...)</code>.</li>
-<li>Improved summary output with important details.</li>
-<li>The (internally set) default for argument <code>nclusters</code> of
-<code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> was increased from 10
-to 20.</li>
-<li>For group-level effects, the <code><a href="../reference/as.matrix.projection.html">as.matrix.projection()</a></code>
-method now also returns the estimated group-level effects themselves.
-(GitHub: <a href="https://github.com/stan-dev/projpred/issues/75" class="external-link">#75</a>)</li>
-<li>For group-level effects, the <code><a href="../reference/as.matrix.projection.html">as.matrix.projection()</a></code>
-method now returns the variance components (population SD(s) and
-population correlation(s)) instead of the empirical SD(s) of the
-group-level effects. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/74" class="external-link">#74</a>)</li>
-</ul><div class="section level3">
-<h3 id="bug-fixes-2-0-4">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-0-4"></a></h3>
-<ul><li>Fixed a bug in the handling of arguments <code>ndraws</code> and
-<code>nclusters</code> in <code><a href="../reference/varsel.html">varsel()</a></code> and
-<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. (GitHub: commit bbd0f0a)</li>
-<li>Fixed a bug in <code><a href="../reference/as.matrix.projection.html">as.matrix.projection()</a></code> (causing
-incorrect column names for the returned matrix). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/72" class="external-link">#72</a>, <a href="https://github.com/stan-dev/projpred/issues/73" class="external-link">#73</a>)</li>
-</ul></div>
-</div>
-    <div class="section level2">
-<h2 class="page-header" data-toc-text="2.0.3" id="projpred-203">projpred 2.0.3<a class="anchor" aria-label="anchor" href="#projpred-203"></a></h2>
-<ul><li>Minor fixes for stability, no new features.</li>
-<li>The (internally set) default for argument <code>nclusters</code> of
-<code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> was increased from 1
-to 10.</li>
-<li>The (internally set) default for argument
-<code>nclusters_pred</code> of <code><a href="../reference/varsel.html">varsel()</a></code> and
-<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> was increased from 5 to 400.</li>
-<li>In <code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>, always
-perform clustering of the posterior draws (argument <code>ndraws</code>
-is effectively ignored). (GitHub: starting with commit 80b10dc)</li>
-</ul></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="2.0.2" id="projpred-202">projpred 2.0.2<small>2020-10-28</small><a class="anchor" aria-label="anchor" href="#projpred-202"></a></h2>
 <p>We have fully rewritten the internals in several ways. Most
@@ -540,13 +484,15 @@ user.</p>
 <h2 class="page-header" data-toc-text="1.1.0" id="projpred-110">projpred 1.1.0<small>2018-10-23</small><a class="anchor" aria-label="anchor" href="#projpred-110"></a></h2>
 <div class="section level3">
 <h3 id="new-features-1-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-1-0"></a></h3>
-<ul><li>Added support for <strong>brms</strong> models.</li>
+<ul><li>Added support for <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a>
+models.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
-<ul><li>The program crashed with <strong>rstanarm</strong> models fitted
-with syntax like <code>stan_glm(log(y) ~ log(x), ...)</code>, that is,
-it did not allow transformation for <code>y</code>.</li>
+<ul><li>The program crashed with <a href="https://mc-stan.org/rstanarm/" class="external-link"><strong>rstanarm</strong></a>
+models fitted with syntax like
+<code>stan_glm(log(y) ~ log(x), ...)</code>, that is, it did not allow
+transformation for <code>y</code>.</li>
 </ul></div>
 </div>
     <div class="section level2">

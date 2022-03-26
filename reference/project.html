@@ -153,10 +153,11 @@ submodels (again) (<code>TRUE</code>) or to retrieve the fitted submodels from
 <code>refit_prj</code> must be <code>TRUE</code>.</p></dd>
 <dt>ndraws</dt>
 <dd><p>Only relevant if <code>refit_prj</code> is <code>TRUE</code>. Number of posterior
-draws to be projected. <strong>Caution:</strong> For <code>ndraws &lt;= 20</code>, the value of
-<code>ndraws</code> is passed to <code>nclusters</code> (so that clustering is used). Ignored if
-<code>nclusters</code> is not <code>NULL</code> or if the reference model is of class <code>datafit</code>
-(in which case one cluster is used). See also section "Details" below.</p></dd>
+draws to be projected. Ignored if <code>nclusters</code> is not <code>NULL</code> or if the
+reference model is of class <code>datafit</code> (in which case one cluster is used).
+If both (<code>nclusters</code> and <code>ndraws</code>) are <code>NULL</code>, the number of posterior
+draws from the reference model is used for <code>ndraws</code>. See also section
+"Details" below.</p></dd>
 <dt>nclusters</dt>
 <dd><p>Only relevant if <code>refit_prj</code> is <code>TRUE</code>. Number of clusters
 of posterior draws to be projected. Ignored if the reference model is of

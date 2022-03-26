@@ -128,8 +128,8 @@ the solution path.</p>
   <span class="va">object</span>,
   d_test <span class="op">=</span> <span class="cn">NULL</span>,
   method <span class="op">=</span> <span class="cn">NULL</span>,
-  ndraws <span class="op">=</span> <span class="fl">20</span>,
-  nclusters <span class="op">=</span> <span class="cn">NULL</span>,
+  ndraws <span class="op">=</span> <span class="cn">NULL</span>,
+  nclusters <span class="op">=</span> <span class="fl">20</span>,
   ndraws_pred <span class="op">=</span> <span class="fl">400</span>,
   nclusters_pred <span class="op">=</span> <span class="cn">NULL</span>,
   refit_prj <span class="op">=</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span>,
@@ -166,11 +166,11 @@ L1 search and <code>"forward"</code> for forward search. If <code>NULL</code>, t
 is used if the reference model has multilevel or additive terms and <code>"L1"</code>
 otherwise. See also section "Details" below.</p></dd>
 <dt>ndraws</dt>
-<dd><p>Number of posterior draws used in the search part. <strong>Caution:</strong>
-For <code>ndraws &lt;= 20</code>, the value of <code>ndraws</code> is passed to <code>nclusters</code> (so that
-clustering is used). Ignored if <code>nclusters</code> is not <code>NULL</code> or in case of L1
-search (because L1 search always uses a single cluster). See also section
-"Details" below.</p></dd>
+<dd><p>Number of posterior draws used in the search part. Ignored if
+<code>nclusters</code> is not <code>NULL</code> or in case of L1 search (because L1 search always
+uses a single cluster). If both (<code>nclusters</code> and <code>ndraws</code>) are <code>NULL</code>, the
+number of posterior draws from the reference model is used for <code>ndraws</code>.
+See also section "Details" below.</p></dd>
 <dt>nclusters</dt>
 <dd><p>Number of clusters of posterior draws used in the search
 part. Ignored in case of L1 search (because L1 search always uses a single
@@ -178,9 +178,10 @@ cluster). For the meaning of <code>NULL</code>, see argument <code>ndraws</code>
 section "Details" below.</p></dd>
 <dt>ndraws_pred</dt>
 <dd><p>Only relevant if <code>refit_prj</code> is <code>TRUE</code>. Number of
-posterior draws used in the evaluation part. <strong>Caution:</strong> For <code>ndraws_pred &lt;= 20</code>, the value of <code>ndraws_pred</code> is passed to <code>nclusters_pred</code> (so that
-clustering is used). Ignored if <code>nclusters_pred</code> is not <code>NULL</code>. See also
-section "Details" below.</p></dd>
+posterior draws used in the evaluation part. Ignored if <code>nclusters_pred</code> is
+not <code>NULL</code>. If both (<code>nclusters_pred</code> and <code>ndraws_pred</code>) are <code>NULL</code>, the
+number of posterior draws from the reference model is used for
+<code>ndraws_pred</code>. See also section "Details" below.</p></dd>
 <dt>nclusters_pred</dt>
 <dd><p>Only relevant if <code>refit_prj</code> is <code>TRUE</code>. Number of
 clusters of posterior draws used in the evaluation part. For the meaning of

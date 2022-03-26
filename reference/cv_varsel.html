@@ -136,8 +136,8 @@ fold.</p>
   <span class="va">object</span>,
   method <span class="op">=</span> <span class="cn">NULL</span>,
   cv_method <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span><span class="op">)</span> <span class="st">"LOO"</span> <span class="kw">else</span> <span class="st">"kfold"</span>,
-  ndraws <span class="op">=</span> <span class="fl">20</span>,
-  nclusters <span class="op">=</span> <span class="cn">NULL</span>,
+  ndraws <span class="op">=</span> <span class="cn">NULL</span>,
+  nclusters <span class="op">=</span> <span class="fl">20</span>,
   ndraws_pred <span class="op">=</span> <span class="fl">400</span>,
   nclusters_pred <span class="op">=</span> <span class="cn">NULL</span>,
   refit_prj <span class="op">=</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span>,
@@ -179,11 +179,11 @@ is performed, which avoids refitting the reference model <code>nloo</code> times
 contrast to a standard LOO CV). In the <code>"kfold"</code> case, a \(K\)-fold CV is
 performed.</p></dd>
 <dt>ndraws</dt>
-<dd><p>Number of posterior draws used in the search part. <strong>Caution:</strong>
-For <code>ndraws &lt;= 20</code>, the value of <code>ndraws</code> is passed to <code>nclusters</code> (so that
-clustering is used). Ignored if <code>nclusters</code> is not <code>NULL</code> or in case of L1
-search (because L1 search always uses a single cluster). See also section
-"Details" below.</p></dd>
+<dd><p>Number of posterior draws used in the search part. Ignored if
+<code>nclusters</code> is not <code>NULL</code> or in case of L1 search (because L1 search always
+uses a single cluster). If both (<code>nclusters</code> and <code>ndraws</code>) are <code>NULL</code>, the
+number of posterior draws from the reference model is used for <code>ndraws</code>.
+See also section "Details" below.</p></dd>
 <dt>nclusters</dt>
 <dd><p>Number of clusters of posterior draws used in the search
 part. Ignored in case of L1 search (because L1 search always uses a single
@@ -191,9 +191,10 @@ cluster). For the meaning of <code>NULL</code>, see argument <code>ndraws</code>
 section "Details" below.</p></dd>
 <dt>ndraws_pred</dt>
 <dd><p>Only relevant if <code>refit_prj</code> is <code>TRUE</code>. Number of
-posterior draws used in the evaluation part. <strong>Caution:</strong> For <code>ndraws_pred &lt;= 20</code>, the value of <code>ndraws_pred</code> is passed to <code>nclusters_pred</code> (so that
-clustering is used). Ignored if <code>nclusters_pred</code> is not <code>NULL</code>. See also
-section "Details" below.</p></dd>
+posterior draws used in the evaluation part. Ignored if <code>nclusters_pred</code> is
+not <code>NULL</code>. If both (<code>nclusters_pred</code> and <code>ndraws_pred</code>) are <code>NULL</code>, the
+number of posterior draws from the reference model is used for
+<code>ndraws_pred</code>. See also section "Details" below.</p></dd>
 <dt>nclusters_pred</dt>
 <dd><p>Only relevant if <code>refit_prj</code> is <code>TRUE</code>. Number of
 clusters of posterior draws used in the evaluation part. For the meaning of
@@ -307,7 +308,11 @@ evaluation part is based on a PSIS-LOO CV.</p>
     </div>
     <div id="references">
     <h2>References</h2>
-    <p>Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
+    <p>Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
+leave-one-out cross-validation for large data. In <em>Proceedings of the 36th
+International Conference on Machine Learning</em>, 4244–4253. URL:
+<a href="https://proceedings.mlr.press/v97/magnusson19a.html" class="external-link">https://proceedings.mlr.press/v97/magnusson19a.html</a>.</p>
+<p>Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
 evaluation using leave-one-out cross-validation and WAIC. <em>Statistics and
 Computing</em>, <strong>27</strong>(5), 1413-1432. doi: <a href="https://doi.org/10.1007/s11222-016-9696-4" class="external-link">10.1007/s11222-016-9696-4</a>
 .</p>
