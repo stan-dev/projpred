@@ -1,5 +1,60 @@
 context("miscellaneous")
 
+# .get_refdist() ----------------------------------------------------------
+
+## ndraws and nclusters ---------------------------------------------------
+
+test_that(paste(
+  ".get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
+  "`ndraws = S` (and `nclusters = NULL`)"
+), {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
+  set.seed(seed2_tst)
+  for (tstsetup in names(refmods)) {
+    refdist <- .get_refdist(refmods[[tstsetup]])
+    # The following refdist_tester() call runs more expectations than necessary
+    # for this test (only the one for `refdist$clust_used` and the dim() test
+    # for `refdist$mu` are actually necessary):
+    refdist_tester(
+      refdist,
+      nprjdraws_expected = nrefdraws,
+      clust_expected = FALSE,
+      info_str = tstsetup
+    )
+  }
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
+})
+
+test_that(paste(
+  "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
+  "of posterior draws in the reference model"
+), {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
+  set.seed(seed2_tst)
+  for (tstsetup in names(refmods)) {
+    for (ndraws_crr in list(nrefdraws + 1L)) {
+      for (nclusters_crr in list(NULL, nrefdraws + 1L)) {
+        refdist <- .get_refdist(refmods[[tstsetup]],
+                                ndraws = ndraws_crr,
+                                nclusters = nclusters_crr)
+        refdist_tester(
+          refdist,
+          nprjdraws_expected = nrefdraws,
+          clust_expected = FALSE,
+          info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")
+        )
+      }
+    }
+  }
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
+})
+
+# rstanarm: special formulas ----------------------------------------------
+
 test_that("rstanarm: special formulas work", {
   # Skip this on CRAN to avoid depending too strongly on rstanarm internals:
   skip_on_cran()
@@ -51,6 +106,8 @@ test_that("rstanarm: special formulas work", {
     }
   }
 })
+
+# pseudo_data() -----------------------------------------------------------
 
 test_that(paste(
   "`pseudo_data(f = 0, [...], family = extend_family(gaussian()), [...])` is",

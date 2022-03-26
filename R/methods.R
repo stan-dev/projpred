@@ -514,10 +514,10 @@ summary.vsel <- function(
     method = object$method,
     cv_method = object$cv_method,
     validate_search = object$validate_search,
-    ndraws = object$ndraws,
-    ndraws_pred = object$ndraws_pred,
-    nclusters = object$nclusters,
-    nclusters_pred = object$nclusters_pred
+    clust_used_search = object$clust_used_search,
+    clust_used_eval = object$clust_used_eval,
+    nprjdraws_search = object$nprjdraws_search,
+    nprjdraws_eval = object$nprjdraws_eval
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included"
@@ -617,24 +617,10 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              max(x$selection$size), "\n"))
-  if (!is.null(x$nclusters)) {
-    cat(paste0(
-      "Number of clusters used for selection: ", x$nclusters, "\n"
-    ))
-  } else {
-    cat(paste0(
-      "Number of draws used for selection: ", x$ndraws, "\n"
-    ))
-  }
-  if (!is.null(x$nclusters_pred)) {
-    cat(paste0(
-      "Number of clusters used for prediction: ", x$nclusters_pred, "\n"
-    ))
-  } else {
-    cat(paste0(
-      "Number of draws used for prediction: ", x$ndraws_pred, "\n"
-    ))
-  }
+  cat("Number of ", ifelse(x$clust_used_search, "clusters", "draws"),
+      " used for selection: ", x$nprjdraws_search, "\n", sep = "")
+  cat("Number of ", ifelse(x$clust_used_eval, "clusters", "draws"),
+      " used for prediction: ", x$nprjdraws_eval, "\n", sep = "")
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   cat("Selection Summary:\n")

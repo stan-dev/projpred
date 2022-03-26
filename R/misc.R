@@ -201,34 +201,30 @@ bootstrap <- function(x, fun = mean, b = 2000,
 #   integer between 1 and \eqn{S_{\mbox{prj}}}{S_prj}.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE) {
-  S <- NCOL(refmodel$mu) # number of draws in the reference model
-  if (is.null(ndraws)) {
-    ndraws <- S
-  }
+  # Number of draws in the reference model:
+  S <- NCOL(refmodel$mu)
 
   if (!is.null(nclusters)) {
     # use clustering (ignore ndraws argument)
-    if (nclusters == 1) {
+    nclusters <- min(S, nclusters)
+    if (nclusters == S) {
+      # number of clusters equal to the number of samples, so return the samples
+      return(.get_refdist(refmodel, ndraws = nclusters))
+    } else if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
       p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, cl = cl)
-    } else if (nclusters == NCOL(refmodel$mu)) {
-      # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ndraws = nclusters))
     } else {
       # several clusters
-      if (nclusters > NCOL(refmodel$mu)) {
-        stop("The number of clusters nclusters cannot exceed the number of ",
-             "columns in mu.")
-      }
       p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
                             wobs = refmodel$wobs, nclusters = nclusters)
     }
   } else {
-    if (ndraws > NCOL(refmodel$mu)) {
-      stop("The number of draws ndraws cannot exceed the number of ",
-           "columns in mu.")
+    ndraws <- min(S, ndraws)
+    if (ndraws <= 20 && isTRUE(getOption("projpred.mssg_ndraws", TRUE))) {
+      message("The number of draws to project is quite small (<= 20). In such ",
+              "cases, it is usually better to use clustering.")
     }
     if (thinning) {
       s_ind <- round(seq(from = 1, to = S, length.out = ndraws))
@@ -242,7 +238,8 @@ bootstrap <- function(x, fun = mean, b = 2000,
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
-      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl
+      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
+      clust_used = FALSE
     )
   }
 
@@ -303,7 +300,8 @@ bootstrap <- function(x, fun = mean, b = 2000,
     mu = unname(t(centers)),
     var = predvar,
     weights = wcluster,
-    cl = cl
+    cl = cl,
+    clust_used = TRUE
   )
   return(p)
 }

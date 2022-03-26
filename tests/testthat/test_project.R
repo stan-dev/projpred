@@ -236,55 +236,6 @@ test_that("invalid `nterms` fails", {
   }
 })
 
-# ndraws and nclusters ----------------------------------------------------
-
-test_that("invalid `ndraws` fails", {
-  tstsetups <- head(grep("\\.glm\\.gauss.*\\.solterms_x\\.", names(prjs),
-                         value = TRUE), 1)
-  for (tstsetup in tstsetups) {
-    args_prj_i <- args_prj[[tstsetup]]
-    expect_error(
-      do.call(project, c(
-        list(object = refmods[[args_prj_i$tstsetup_ref]],
-             ndraws = NULL),
-        excl_nonargs(args_prj_i, nms_excl_add = c("ndraws", "nclusters"))
-      )),
-      "^!is\\.null\\(ndraws\\) is not TRUE$",
-      info = tstsetup
-    )
-  }
-})
-
-test_that(paste(
-  "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
-  "of posterior draws in the reference model"
-), {
-  tstsetups <- head(grep("\\.glm\\.gauss.*\\.solterms_x\\.", names(prjs),
-                         value = TRUE), 1)
-  for (tstsetup in tstsetups) {
-    args_prj_i <- args_prj[[tstsetup]]
-    S <- nrow(as.matrix(fits[[args_prj_i$tstsetup_fit]]))
-    for (ndraws_crr in list(S + 1L)) {
-      for (nclusters_crr in list(NULL, S + 1L)) {
-        p <- do.call(project, c(
-          list(object = refmods[[args_prj_i$tstsetup_ref]],
-               ndraws = ndraws_crr,
-               nclusters = nclusters_crr),
-          excl_nonargs(args_prj_i, nms_excl_add = c("ndraws", "nclusters"))
-        ))
-        projection_tester(
-          p,
-          refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
-          solterms_expected = args_prj_i$solution_terms,
-          nprjdraws_expected = S,
-          p_type_expected = !is.null(nclusters_crr),
-          info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")
-        )
-      }
-    }
-  }
-})
-
 # seed --------------------------------------------------------------------
 
 test_that("non-clustered projection does not require a seed", {

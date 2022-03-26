@@ -24,10 +24,11 @@
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
 #'   `refit_prj` must be `TRUE`.
 #' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
-#'   draws to be projected. **Caution:** For `ndraws <= 20`, the value of
-#'   `ndraws` is passed to `nclusters` (so that clustering is used). Ignored if
-#'   `nclusters` is not `NULL` or if the reference model is of class `datafit`
-#'   (in which case one cluster is used). See also section "Details" below.
+#'   draws to be projected. Ignored if `nclusters` is not `NULL` or if the
+#'   reference model is of class `datafit` (in which case one cluster is used).
+#'   If both (`nclusters` and `ndraws`) are `NULL`, the number of posterior
+#'   draws from the reference model is used for `ndraws`. See also section
+#'   "Details" below.
 #' @param nclusters Only relevant if `refit_prj` is `TRUE`. Number of clusters
 #'   of posterior draws to be projected. Ignored if the reference model is of
 #'   class `datafit` (in which case one cluster is used). For the meaning of
@@ -207,16 +208,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         ))
       }
     }
-  }
-
-  stopifnot(!is.null(ndraws))
-  ndraws <- min(NCOL(refmodel$mu), ndraws)
-
-  if (is.null(nclusters) && ndraws <= 20) {
-    nclusters <- ndraws
-  }
-  if (!is.null(nclusters)) {
-    nclusters <- min(NCOL(refmodel$mu), nclusters)
   }
 
   if (inherits(refmodel, "datafit")) {
