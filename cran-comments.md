@@ -14,7 +14,7 @@ the maintainer change.
     + R 4.1.3 on Windows 10 x64 (build 19044) system (platform:
       x86_64-w64-mingw32/x64 (64-bit))
 * win-builder:
-    + R-devel (R version 4.2.0 alpha (2022-03-24 r81978 ucrt))
+    + R-devel (R version 4.2.0 alpha (2022-03-30 r82039 ucrt))
     + R-release (R version 4.1.3 (2022-03-10))
     + R-oldrelease (R version 4.0.5 (2021-03-31))
 
