@@ -15,8 +15,6 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person("Marco", "Colombo", role = "ctb"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
              person("Hamada S.", "Badr", role = "ctb"))
-Maintainer:
-    Frank Weber <fweber144@protonmail.com>
 Description:
     Performs projection predictive feature selection for generalized linear
     models and generalized linear and additive multilevel models (see Piironen,
