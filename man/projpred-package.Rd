@@ -51,9 +51,9 @@ big, which---when running in parallel---may lead to an excessive memory usage
 which in turn may crash the R session. Thus, we currently cannot recommend
 the parallelization for GLMMs, GAMs, and GAMMs.
 
-See the \href{https://mc-stan.org/projpred/articles/projpred.html}{vignette} for
-an example application (which also demonstrates the use of parallelization).
-Shorter examples are included here in the documentation.
+The \href{https://mc-stan.org/projpred/articles/}{vignettes} (currently, there is
+only a single one) illustrate how to use the \pkg{projpred} functions in
+conjunction. Shorter examples are included here in the documentation.
 
 Some references relevant for this package are given in section "References"
 below. See \code{citation(package = "projpred")} for details on citing
