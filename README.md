@@ -1,5 +1,5 @@
 <!-- badges: start -->
-[![codecov](https://codecov.io/gh/stan-dev/projpred/branch/master/graph/badge.svg)](https://app.codecov.io/gh/stan-dev/projpred)
+<!-- [![codecov](https://codecov.io/gh/stan-dev/projpred/branch/master/graph/badge.svg)](https://app.codecov.io/gh/stan-dev/projpred) -->
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
 <!-- badges: end -->
 
