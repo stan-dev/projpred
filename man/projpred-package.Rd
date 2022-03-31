@@ -108,12 +108,13 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Alejandro Catalina \email{alecatfel@gmail.com}
+\strong{Maintainer}: Frank Weber \email{fweber144@protonmail.com}
 
 Authors:
 \itemize{
   \item Juho Piironen \email{juho.t.piironen@gmail.com}
   \item Markus Paasiniemi
+  \item Alejandro Catalina \email{alecatfel@gmail.com}
   \item Aki Vehtari
 }
 
@@ -123,7 +124,6 @@ Other contributors:
   \item Marco Colombo [contributor]
   \item Paul-Christian Bürkner [contributor]
   \item Hamada S. Badr [contributor]
-  \item Frank Weber [contributor]
 }
 
 }
