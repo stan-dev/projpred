@@ -103,7 +103,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="2.1.0" id="projpred-210">projpred 2.1.0<a class="anchor" aria-label="anchor" href="#projpred-210"></a></h2>
+<h2 class="page-header" data-toc-text="2.1.0" id="projpred-210">projpred 2.1.0<small>2022-04-01</small><a class="anchor" aria-label="anchor" href="#projpred-210"></a></h2>
 <div class="section level3">
 <h3 id="major-changes-2-1-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-1-0"></a></h3>
 <ul><li>Added support for weighted LOO proportional-to-size subsampling
@@ -126,8 +126,14 @@ against its linear counterpart.</li>
 <code>ndraws_pred</code>, not <code>nclusters_pred</code>) have
 non-<code>NULL</code> user-visible defaults of <code>20</code> and
 <code>400</code>, respectively. In general, this increases the runtime
-of these functions a lot. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/291" class="external-link">#291</a> and several commits beforehand,
-in particular bbd0f0a, babe031, 4ef95d3, and ce7d1e0)</li>
+of these functions a lot. With respect to <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>, the
+new vignette (see <a href="https://mc-stan.org/projpred/articles/">vignettes</a>) mentions
+two ways to quickly obtain some rough preliminary results which in
+general should not be used as final results, though: (i)
+<code><a href="../reference/varsel.html">varsel()</a></code> and (ii) <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> with
+<code>validate_search = FALSE</code> (which only takes effect for
+<code>cv_method = "LOO"</code>). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/291" class="external-link">#291</a> and several commits
+beforehand, in particular bbd0f0a, babe031, 4ef95d3, and ce7d1e0)</li>
 <li>For <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> and <code><a href="../reference/pred-projection.html">proj_predict()</a></code>,
 arguments <code>nterms</code>, <code>ndraws</code>, and
 <code>seed</code> have been removed to allow the user to pass them to
@@ -553,7 +559,7 @@ different versions. Started to do this from version 0.9.0 onwards.</p>
 
       <footer><div class="copyright">
   <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
-Aki Vehtari.</p>
+Aki Vehtari, Frank Weber.</p>
 </div>
 
 <div class="pkgdown">

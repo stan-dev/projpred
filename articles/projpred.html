@@ -133,7 +133,7 @@
       <h1 data-toc-skip>projpred: Projection predictive feature
 selection</h1>
             
-            <h4 data-toc-skip class="date">2022-03-26</h4>
+            <h4 data-toc-skip class="date">2022-04-01</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/projpred.Rmd" class="external-link"><code>vignettes/projpred.Rmd</code></a></small>
       <div class="hidden name"><code>projpred.Rmd</code></div>
@@ -284,15 +284,18 @@ solution path.</p>
 <code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. In contrast to
 <code><a href="../reference/varsel.html">varsel()</a></code>, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> performs a
 cross-validation (CV) by running the search part with the training data
-of each CV fold separately (an exception is explained in the
-<code><a href="../reference/cv_varsel.html">?cv_varsel</a></code> help) and running the evaluation part on the
-corresponding test set of each CV fold. Because of this CV,
-<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> is recommended over <code><a href="../reference/varsel.html">varsel()</a></code>.
-Thus, we use <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> here. Nonetheless, running
-<code><a href="../reference/varsel.html">varsel()</a></code> first can offer a rough idea of the performance of
-the projections (i.e., of the submodels after projecting the reference
-model onto them). A more principled <strong>projpred</strong> workflow
-is work under progress.</p>
+of each CV fold separately (an exception is
+<code>validate_search = FALSE</code>, see <code><a href="../reference/cv_varsel.html">?cv_varsel</a></code>) and
+running the evaluation part on the corresponding test set of each CV
+fold. Because of this CV, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> is recommended over
+<code><a href="../reference/varsel.html">varsel()</a></code>. Thus, we use <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> here.
+Nonetheless, running <code><a href="../reference/varsel.html">varsel()</a></code> first can offer a rough idea
+of the performance of the projections (i.e., of the submodels after
+projecting the reference model onto them). The same holds for
+<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> with <code>validate_search = FALSE</code>
+(which only takes effect for <code>cv_method = "LOO"</code>). A more
+principled <strong>projpred</strong> workflow is work under
+progress.</p>
 <!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of reference models"](#refmodtypes) below). -->
 <!-- ```{r} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
@@ -354,7 +357,7 @@ enough to the reference model’s performance.</p>
 <p>Note that <strong>projpred</strong> offers the
 <code><a href="../reference/suggest_size.html">suggest_size()</a></code> function which may help in the decision for
 a submodel size, but this is a rather heuristic method and needs to be
-interpreted with caution (see the <code><a href="../reference/suggest_size.html">?suggest_size</a></code> help).</p>
+interpreted with caution (see <code><a href="../reference/suggest_size.html">?suggest_size</a></code>).</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span></code></pre></div>
 <pre><code>[1] 6</code></pre>
@@ -731,7 +734,7 @@ terms.<a href="#fnref10" class="footnote-back">↩︎</a></p></li>
       <footer><div class="copyright">
   <p></p>
 <p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
-Aki Vehtari.</p>
+Aki Vehtari, Frank Weber.</p>
 </div>
 
 <div class="pkgdown">
