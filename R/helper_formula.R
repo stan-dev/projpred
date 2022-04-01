@@ -1,16 +1,19 @@
-#' Utilities to handle formulas for the external user
-#' @name helper_formula
-NULL
-
+#' Break up matrix terms
+#'
 #' Sometimes there can be terms in a formula that refer to a matrix instead of a
-#' single predictor. Because we can handle search_terms of predictors, this
-#' function breaks the matrix term into individual predictors to handle
-#' separately, as that is probably the intention of the user.
-#' @param formula A formula for a valid model.
-#' @param data The original data frame with a matrix as predictor.
-#' @return a  list containing the expanded formula and the expanded data frame.
+#' single predictor. This function breaks up the matrix term into individual
+#' predictors to handle separately, as that is probably the intention of the
+#' user.
+#'
+#' @param formula A [`formula`] for a valid model.
+#' @param data The original `data.frame` with a matrix as predictor.
+#'
+#' @return A `list` containing the expanded [`formula`] and the expanded
+#'   `data.frame`.
+#'
 #' @export
 break_up_matrix_term <- function(formula, data) {
+  formula <- expand_formula(formula, data)
   tt <- terms(formula)
   response <- attr(tt, "response")
   ## when converting the variables to a list the first element is
@@ -25,7 +28,7 @@ break_up_matrix_term <- function(formula, data) {
 
   term_labels <- attr(tt, "term.labels")
 
-  mm <- model.matrix(formula, data)
+  mm <- model.matrix(formula, data = data)
   assign <- attr(mm, "assign")
 
   new_data <- data
@@ -87,9 +90,8 @@ break_up_matrix_term <- function(formula, data) {
   }
 
   tryCatch(model.matrix(formula, data = new_data),
-    error = function(e) print(e)
-  )
-  list(formula = formula, data = new_data)
+           error = function(e) print(e))
+  return(list(formula = formula, data = new_data))
 }
 
 ## Splits a linear term into individual predictors.
@@ -107,5 +109,5 @@ split_linear_term <- function(term, data) {
   } else {
     split_term <- term
   }
-  split_term
+  return(split_term)
 }

@@ -1,141 +1,182 @@
-#' Variable selection for generalized linear models
+#' Variable selection (without cross-validation)
 #'
-#' Perform the projection predictive variable selection for generalized linear
-#' models, generalized linear and additive multilevel models using generic
-#' reference models.
+#' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
+#' and GAMMs. This variable selection consists of a *search* part and an
+#' *evaluation* part. The search part determines the solution path, i.e., the
+#' best submodel for each submodel size (number of predictor terms). The
+#' evaluation part determines the predictive performance of the submodels along
+#' the solution path.
 #'
-#' @param object Either a \code{refmodel}-type object created by
-#'   \link[=get_refmodel]{get_refmodel}, a \link[=init_refmodel]{init_refmodel},
-#'   an object which can be converted to a reference model using
-#'   \link[=get_refmodel]{get_refmodel} or a \code{vsel} object resulting from
-#'   \code{varsel} or \code{cv_varsel}.
-#' @param d_test A test dataset, which is used to evaluate model performance. If
-#'   not provided, training data is used. Currently this argument is for
-#'   internal use only.
-#' @param method The method used in the variable selection. Possible options are
-#'   \code{'L1'} for L1-search and \code{'forward'} for forward selection.
-#'   Default is 'forward' if the number of variables in the full data is at most
-#'   20,' and \code{'L1'} otherwise.
-#' @param cv_search If TRUE, then the projected coefficients after L1-selection
-#'   are computed without any penalization (or using only the regularization
-#'   determined by \code{regul}). If FALSE, then the coefficients are the
-#'   solution from the' L1-penalized projection. This option is relevant only if
-#'   \code{method}='L1'. Default is TRUE for genuine reference models and FALSE
-#'   if \code{object} is datafit (see \link[=init_refmodel]{init_refmodel}).
-#' @param ndraws Number of posterior draws used in the variable selection.
-#'   Cannot be larger than the number of draws in the reference model. Ignored
-#'   if nclusters is set.
-#' @param nclusters Number of clusters to use in the clustered projection.
-#'   Overrides the \code{ndraws} argument. Defaults to 1.
-#' @param ndraws_pred Number of projected draws used for prediction (after
-#'   selection). Ignored if nclusters_pred is given. Note that setting less
-#'   draws or clusters than posterior draws in the reference model may result in
-#'   slightly inaccurate projection performance, although increasing this
-#'   argument linearly affects the computation time.
-#' @param nclusters_pred Number of clusters used for prediction (after
-#'   selection). Default is 5.
-#' @param nterms_max Maximum number of varibles until which the selection is
-#'   continued. Defaults to min(20, D, floor(0.4*n)) where n is the number of
-#'   observations and D the number of variables.
-#' @param intercept Whether to use intercept in the submodels. Defaults to TRUE.
-#' @param penalty Vector determining the relative penalties or costs for the
-#'   variables. Zero means that those variables have no cost and will therefore
-#'   be selected first, whereas Inf means those variables will never be
-#'   selected. Currently works only if method == 'L1'. By default 1 for each
-#'   variable.
-#' @param verbose If TRUE, may print out some information during the selection.
-#'   Defaults to FALSE.
-#' @param lambda_min_ratio Ratio between the smallest and largest lambda in the
-#'   L1-penalized search. This parameter essentially determines how long the
-#'   search is carried out, i.e., how large submodels are explored. No need to
-#'   change the default value unless the program gives a warning about this.
-#' @param nlambda Number of values in the lambda grid for L1-penalized search.
-#'   No need to change unless the program gives a warning about this.
-#' @param thresh Convergence threshold when computing L1-path. Usually no need
-#'   to change this.
-#' @param regul Amount of regularization in the projection. Usually there is no
-#'   need for regularization, but sometimes for some models the projection can
-#'   be ill-behaved and we need to add some regularization to avoid numerical
-#'   problems.
-#' @param search_terms A custom list of terms to evaluate for variable
-#'   selection. By default considers all the terms in the reference model's
-#'   formula.
-#' @param ... Additional arguments to be passed to the
-#'   \code{get_refmodel}-function.
+#' @param object An object of class `refmodel` (returned by [get_refmodel()] or
+#'   [init_refmodel()]) or an object that can be passed to argument `object` of
+#'   [get_refmodel()].
+#' @param d_test For internal use only. A `list` providing information about the
+#'   test set which is used for evaluating the predictive performance of the
+#'   reference model. If not provided, the training set is used.
+#' @param method The method for the search part. Possible options are `"L1"` for
+#'   L1 search and `"forward"` for forward search. If `NULL`, then `"forward"`
+#'   is used if the reference model has multilevel or additive terms and `"L1"`
+#'   otherwise. See also section "Details" below.
+#' @param refit_prj A single logical value indicating whether to fit the
+#'   submodels along the solution path again (`TRUE`) or to retrieve their fits
+#'   from the search part (`FALSE`) before using those (re-)fits in the
+#'   evaluation part.
+#' @param ndraws Number of posterior draws used in the search part. Ignored if
+#'   `nclusters` is not `NULL` or in case of L1 search (because L1 search always
+#'   uses a single cluster). If both (`nclusters` and `ndraws`) are `NULL`, the
+#'   number of posterior draws from the reference model is used for `ndraws`.
+#'   See also section "Details" below.
+#' @param nclusters Number of clusters of posterior draws used in the search
+#'   part. Ignored in case of L1 search (because L1 search always uses a single
+#'   cluster). For the meaning of `NULL`, see argument `ndraws`. See also
+#'   section "Details" below.
+#' @param ndraws_pred Only relevant if `refit_prj` is `TRUE`. Number of
+#'   posterior draws used in the evaluation part. Ignored if `nclusters_pred` is
+#'   not `NULL`. If both (`nclusters_pred` and `ndraws_pred`) are `NULL`, the
+#'   number of posterior draws from the reference model is used for
+#'   `ndraws_pred`. See also section "Details" below.
+#' @param nclusters_pred Only relevant if `refit_prj` is `TRUE`. Number of
+#'   clusters of posterior draws used in the evaluation part. For the meaning of
+#'   `NULL`, see argument `ndraws_pred`. See also section "Details" below.
+#' @param nterms_max Maximum number of predictor terms until which the search is
+#'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
+#'   terms in the reference model (or in `search_terms`, if supplied). Note that
+#'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
+#'   intercept-only model. (Correspondingly, `D` above does not count the
+#'   intercept.)
+#' @param penalty Only relevant for L1 search. A numeric vector determining the
+#'   relative penalties or costs for the predictors. A value of `0` means that
+#'   those predictors have no cost and will therefore be selected first, whereas
+#'   `Inf` means those predictors will never be selected. If `NULL`, then `1` is
+#'   used for each predictor.
+#' @param lambda_min_ratio Only relevant for L1 search. Ratio between the
+#'   smallest and largest lambda in the L1-penalized search. This parameter
+#'   essentially determines how long the search is carried out, i.e., how large
+#'   submodels are explored. No need to change this unless the program gives a
+#'   warning about this.
+#' @param nlambda Only relevant for L1 search. Number of values in the lambda
+#'   grid for L1-penalized search. No need to change this unless the program
+#'   gives a warning about this.
+#' @param thresh Only relevant for L1 search. Convergence threshold when
+#'   computing the L1 path. Usually, there is no need to change this.
+#' @param regul A number giving the amount of ridge regularization when
+#'   projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
+#'   no need for regularization, but sometimes we need to add some
+#'   regularization to avoid numerical problems.
+#' @param search_terms A custom character vector of terms to consider for the
+#'   search. The intercept (`"1"`) needs to be included explicitly. The default
+#'   considers all the terms in the reference model's formula.
+#' @param verbose A single logical value indicating whether to print out
+#'   additional information during the computations.
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. If `NULL`, no seed is set and
+#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   Here, this seed is used for clustering the reference model's posterior
+#'   draws (if `!is.null(nclusters)`) and for drawing new group-level effects
+#'   when predicting from a multilevel submodel (however, not yet in case of a
+#'   GAMM).
+#' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
+#'   minimizer (during a forward search and also during the evaluation part, but
+#'   the latter only if `refit_prj` is `TRUE`).
 #'
-#' @return An object of type \code{vsel} that contains information about the
-#'   feature selection. The fields are not meant to be accessed directly by
-#'   the user but instead via the helper functions (see the vignettes or type
-#'   ?projpred to see the main functions in the package.)
+#' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
+#'   are automatically truncated at the number of posterior draws in the
+#'   reference model (which is `1` for `datafit`s). Using less draws or clusters
+#'   in `ndraws`, `nclusters`, `nclusters_pred`, or `ndraws_pred` than posterior
+#'   draws in the reference model may result in slightly inaccurate projection
+#'   performance. Increasing these arguments affects the computation time
+#'   linearly.
+#'
+#'   For argument `method`, there are some restrictions: For a reference model
+#'   with multilevel or additive formula terms, only the forward search is
+#'   available.
+#'
+#'   L1 search is faster than forward search, but forward search may be more
+#'   accurate. Furthermore, forward search may find a sparser model with
+#'   comparable performance to that found by L1 search, but it may also start
+#'   overfitting when more predictors are added.
+#'
+#'   An L1 search may select interaction terms before the corresponding main
+#'   terms are selected. If this is undesired, choose the forward search
+#'   instead.
+#'
+#' @return An object of class `vsel`. The elements of this object are not meant
+#'   to be accessed directly but instead via helper functions (see the vignette
+#'   or type `?projpred`).
+#'
+#' @seealso [cv_varsel()]
 #'
 #' @examples
-#' \donttest{
-#' if (requireNamespace('rstanarm', quietly=TRUE)) {
-#'   ### Usage with stanreg objects
-#'   n <- 30
-#'   d <- 5
-#'   x <- matrix(rnorm(n*d), nrow=n)
-#'   y <- x[,1] + 0.5*rnorm(n)
-#'   data <- data.frame(x,y)
-#'   fit <- rstanarm::stan_glm(y ~ X1 + X2 + X3 + X4 + X5, gaussian(), data=data,
-#'     chains=2, iter=500)
-#'   vs <- varsel(fit)
-#'   plot(vs)
-#' }
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Variable selection (here without cross-validation and with small values
+#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+#'   # sake of speed in this example; this is not recommended in general):
+#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                seed = 5555)
+#'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#'   # and `?solution_terms.vsel` for possible post-processing functions.
 #' }
 #'
 #' @export
 varsel <- function(object, ...) {
-    UseMethod("varsel")
+  UseMethod("varsel")
 }
 
 #' @rdname varsel
 #' @export
 varsel.default <- function(object, ...) {
-    refmodel <- get_refmodel(object)
-    return(varsel(refmodel, ...))
+  refmodel <- get_refmodel(object, ...)
+  return(varsel(refmodel, ...))
 }
 
 #' @rdname varsel
 #' @export
 varsel.refmodel <- function(object, d_test = NULL, method = NULL,
-    ndraws = NULL, nclusters = NULL, ndraws_pred = NULL,
-                            nclusters_pred = NULL, cv_search = TRUE,
-                            nterms_max = NULL, intercept = TRUE, verbose = TRUE,
+                            ndraws = NULL, nclusters = 20, ndraws_pred = 400,
+                            nclusters_pred = NULL,
+                            refit_prj = !inherits(object, "datafit"),
+                            nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL, ...) {
+                            search_terms = NULL,
+                            seed = sample.int(.Machine$integer.max, 1), ...) {
+  # Set seed, but ensure the old RNG state is restored on exit:
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  }
+  set.seed(seed)
+
   refmodel <- object
-  family <- refmodel$family
 
   ## fetch the default arguments or replace them by the user defined values
   args <- parse_args_varsel(
-    refmodel, method, cv_search, intercept, nterms_max,
-    nclusters, ndraws, nclusters_pred, ndraws_pred, search_terms
+    refmodel = refmodel, method = method, refit_prj = refit_prj,
+    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
   )
   method <- args$method
-  cv_search <- args$cv_search
-  intercept <- args$intercept
+  refit_prj <- args$refit_prj
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
-  ndraws <- args$ndraws
-  nclusters_pred <- args$nclusters_pred
-  ndraws_pred <- args$ndraws_pred
   search_terms <- args$search_terms
-  has_group_features <- formula_contains_group_terms(refmodel$formula)
-
-  if (method == "l1" && has_group_features) {
-    stop(
-      "l1 search is not supported for multilevel models",
-    )
-  }
 
   if (is.null(d_test)) {
     d_type <- "train"
     test_points <- seq_len(NROW(refmodel$y))
     d_test <- nlist(
       y = refmodel$y, test_points, data = NULL, weights = refmodel$wobs,
-      type = d_type
+      type = d_type, offset = refmodel$offset
     )
   } else {
     d_type <- d_test$type
@@ -149,58 +190,44 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   search_path <- select(
     method = method, p_sel = p_sel, refmodel = refmodel,
-    family = family, intercept = intercept, nterms_max = nterms_max,
-    penalty = penalty, verbose = verbose, opt = opt, search_terms = search_terms
+    nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
+    search_terms = search_terms, ...
   )
   solution_terms <- search_path$solution_terms
 
   ## statistics for the selected submodels
-  p_sub <- .get_submodels(search_path, c(0, seq_along(solution_terms)),
-    family = family, p_ref = p_pred, refmodel = refmodel, intercept = intercept,
-    regul = regul, cv_search = cv_search
-  )
+  submodels <- .get_submodels(search_path = search_path,
+                              nterms = c(0, seq_along(solution_terms)),
+                              p_ref = p_pred, refmodel = refmodel,
+                              regul = regul, refit_prj = refit_prj, ...)
   sub <- .get_sub_summaries(
-    submodels = p_sub, test_points = seq_along(refmodel$y), refmodel = refmodel,
-    family = family
+    submodels = submodels, test_points = seq_along(refmodel$y),
+    refmodel = refmodel
   )
 
   ## predictive statistics of the reference model on test data. if no test data
   ## are provided,
   ## simply fetch the statistics on the train data
-  if ("datafit" %in% class(refmodel)) {
+  if (inherits(refmodel, "datafit")) {
     ## no actual reference model, so we don't know how to predict test
     ## observations
     ntest <- NROW(refmodel$y)
     ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
   } else {
     if (d_type == "train") {
-      mu_test <- refmodel$mu
+      mu_test <- refmodel$family$linkinv(
+        refmodel$family$linkfun(refmodel$mu) + refmodel$offset
+      )
     } else {
-      mu_test <- refmodel$ref_predfun(refmodel$fit, newdata = d_test$data)
+      mu_test <- refmodel$family$linkinv(
+        refmodel$ref_predfun(refmodel$fit, newdata = d_test$data) +
+          d_test$offset
+      )
     }
     ref <- .weighted_summary_means(
-      y_test = d_test, family = family, wsample = refmodel$wsample,
+      y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
       mu = mu_test, dis = refmodel$dis
     )
-  }
-
-  ## warn the user if the projection performance does not match the reference
-  ## model's.
-  ref_elpd <- get_stat(ref$mu, ref$lppd, d_test, family, "elpd",
-    weights = ref$w
-  )
-  summ <- sub[[length(sub)]]
-  proj_elpd <- get_stat(summ$mu, summ$lppd, d_test, family, "elpd",
-    weights = summ$w
-  )
-
-  if ((ref_elpd$value > (proj_elpd$value + proj_elpd$se) ||
-       ref_elpd$value < (proj_elpd$value - proj_elpd$se)) &&
-      !inherits(refmodel, "datafit")) {
-    warning("The performance of the projected model seems to be misleading, we",
-            " recommend checking the reference model as well as running ",
-            "`varsel` with a larger `ndraws_pred` or `cv_varsel` for a more",
-            " robust estimation.")
   }
 
   ## store the relevant fields into the object to be returned
@@ -209,57 +236,56 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     search_path,
     d_test,
     summaries = nlist(sub, ref),
-    family,
     solution_terms = search_path$solution_terms,
-    kl = sapply(p_sub, function(x) x$kl),
+    kl = sapply(submodels, function(x) x$kl),
     nterms_max,
-    nterms_all = count_terms_in_formula(refmodel$formula)
+    nterms_all = count_terms_in_formula(refmodel$formula),
+    method = method,
+    cv_method = NULL,
+    validate_search = NULL,
+    clust_used_search = p_sel$clust_used,
+    clust_used_eval = p_pred$clust_used,
+    nprjdraws_search = NCOL(p_sel$mu),
+    nprjdraws_eval = NCOL(p_pred$mu)
   )
   ## suggest model size
   class(vs) <- "vsel"
-  vs$suggested_size <- suggest_size(vs,
-    warnings = FALSE
-  )
+  vs$suggested_size <- suggest_size(vs, warnings = FALSE)
+  summary <- summary(vs)
+  vs$summary <- summary$selection
 
   return(vs)
 }
 
-
-select <- function(method, p_sel, refmodel, family, intercept, nterms_max,
-                   penalty, verbose, opt, search_terms = NULL) {
+select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
+                   search_terms = NULL, ...) {
   ##
   ## Auxiliary function, performs variable selection with the given method,
   ## and returns the search_path, i.e., a list with the followint entries (the
   ## last three
   ## are returned only if one cluster projection is used for selection):
   ##   solution_terms: the variable ordering
-  ##   beta: coefficients along the search path
-  ##   alpha: intercepts along the search path
+  ##   beta: coefficients along the solution path
+  ##   alpha: intercepts along the solution path
   ##   p_sel: the reference distribution used in the selection (the input
   ##   argument p_sel)
   ##
   ## routine that can be used with several clusters
   if (method == "l1") {
-    search_path <- search_L1(
-      p_sel, refmodel, family, intercept,
-      nterms_max - intercept, penalty, opt
-    )
+    search_path <- search_L1(p_sel, refmodel, nterms_max - refmodel$intercept,
+                             penalty, opt)
     search_path$p_sel <- p_sel
     return(search_path)
   } else if (method == "forward") {
-    search_path <- search_forward(p_sel, refmodel, family,
-      intercept, nterms_max, verbose, opt,
-      search_terms = search_terms
-    )
+    search_path <- search_forward(p_sel, refmodel, nterms_max, verbose, opt,
+                                  search_terms = search_terms, ...)
     search_path$p_sel <- p_sel
     return(search_path)
   }
 }
 
-
-parse_args_varsel <- function(refmodel, method, cv_search, intercept,
-                              nterms_max, nclusters, ndraws, nclusters_pred,
-                              ndraws_pred, search_terms) {
+parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
+                              nclusters, search_terms) {
   ##
   ## Auxiliary function for parsing the input arguments for varsel.
   ## The arguments specified by the user (or the function calling this function)
@@ -269,8 +295,7 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
   ##
   if (is.null(search_terms)) {
     search_terms <- split_formula(refmodel$formula,
-      data = refmodel$fetch_data()
-    )
+                                  data = refmodel$fetch_data())
   }
   has_group_features <- formula_contains_group_terms(refmodel$formula)
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
@@ -283,38 +308,36 @@ parse_args_varsel <- function(refmodel, method, cv_search, intercept,
     }
   } else {
     method <- tolower(method)
+    if (method == "l1" && (has_group_features || has_additive_features)) {
+      stop("L1 search is only supported for reference models without ",
+           "multilevel and without additive (\"smoothing\") terms.")
+    }
   }
 
   if (!(method %in% c("l1", "forward"))) {
     stop("Unknown search method")
   }
 
-  if (is.null(cv_search)) {
-    cv_search <- !inherits(refmodel, "datafit")
+  stopifnot(!is.null(refit_prj))
+  if (refit_prj && inherits(refmodel, "datafit")) {
+    warning("For an `object` of class \"datafit\", `refit_prj` is ",
+            "automatically set to `FALSE`.")
+    refit_prj <- FALSE
   }
 
-  if ((is.null(ndraws) && is.null(nclusters)) || method == "l1") {
-    ## use one cluster for selection by default, and always with L1-search
+  if (method == "l1") {
     nclusters <- 1
   }
-  if (is.null(ndraws_pred) && is.null(nclusters_pred)) {
-    ## use 5 clusters for prediction by default
-    nclusters_pred <- min(NCOL(refmodel$mu), 5)
-  }
 
-  max_nv_possible <- count_terms_in_formula(refmodel$formula)
-  if (is.null(intercept)) {
-    intercept <- refmodel$intercept
+  if (!is.null(search_terms)) {
+    max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
+  } else {
+    max_nv_possible <- count_terms_in_formula(refmodel$formula)
   }
   if (is.null(nterms_max)) {
-    nterms_max <- min(max_nv_possible, 20)
-  } else {
-    nterms_max <- min(max_nv_possible, nterms_max + 1)
+    nterms_max <- 19
   }
+  nterms_max <- min(max_nv_possible, nterms_max + refmodel$intercept)
 
-  return(nlist(
-    method, cv_search, intercept, nterms_max, nclusters,
-    ndraws, nclusters_pred, ndraws_pred,
-    search_terms
-  ))
+  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
 }

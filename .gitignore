@@ -1,12 +1,14 @@
 *~
 *.o
 *.so
-*.Rproj
 .Rhistory
 .DS_Store
 .Rproj.user
 .Rapp.history
 .RData
+/src/projpred.dll
 
-vignettes/quickstart_cache
-*cache/
+tests/testthat/bfits
+tests/testthat/_snaps
+docs/dev
+dev

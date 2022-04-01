@@ -1,493 +1,1097 @@
-context("proj_linpred")
+# proj_linpred() ----------------------------------------------------------
 
+context("proj_linpred()")
 
-# tests for proj_linpred and proj_predict
+## object -----------------------------------------------------------------
 
-if (require(rstanarm) && Sys.getenv("NOT_CRAN") == "true") {
-  seed <- 1235
-  set.seed(seed)
-  n <- 40
-  nterms <- 5
-  x <- matrix(rnorm(n * nterms, 0, 1), n, nterms)
-  b <- runif(nterms) - 0.5
-  dis <- runif(1, 1, 2)
-  weights <- sample(1:4, n, replace = TRUE)
-  offset <- rnorm(n)
-  chains <- 2
-  iter <- 500
-  source(file.path("helpers", "SW.R"))
+test_that("pl: `object` of class \"projection\" works", {
+  for (tstsetup in names(prjs)) {
+    pl_tester(pls[[tstsetup]],
+              nprjdraws_expected = ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws,
+              info_str = tstsetup)
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(pls[[tstsetup]]))
+      })
+      options(width_orig)
+      if (testthat_ed_max2) local_edition(2)
+    }
+  }
+})
 
-  f_gauss <- gaussian()
-  df_gauss <- data.frame(y = rnorm(n, f_gauss$linkinv(x %*% b), dis), x = x)
-  f_binom <- binomial()
-  df_binom <- data.frame(
-    y = rbinom(n, weights, f_binom$linkinv(x %*% b)), x = x,
-    weights = weights
+test_that(paste(
+  "pl: `object` of (informal) class \"proj_list\" (based on varsel()) works"
+), {
+  skip_if_not(run_vs)
+  for (tstsetup in names(prjs_vs)) {
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
+    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
+    }
+    pl_tester(pls_vs[[tstsetup]],
+              len_expected = length(nterms_crr),
+              nprjdraws_expected =
+                ndr_ncl_dtls(args_prj_vs[[tstsetup]])$nprjdraws,
+              info_str = tstsetup)
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(pls_vs[[tstsetup]]))
+      })
+      options(width_orig)
+      if (testthat_ed_max2) local_edition(2)
+    }
+  }
+})
+
+test_that(paste(
+  "pl: `object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
+), {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(prjs_cvvs)) {
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
+    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
+    }
+    pl_tester(pls_cvvs[[tstsetup]],
+              len_expected = length(nterms_crr),
+              nprjdraws_expected =
+                ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])$nprjdraws,
+              info_str = tstsetup)
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(pls_cvvs[[tstsetup]]))
+      })
+      options(width_orig)
+      if (testthat_ed_max2) local_edition(2)
+    }
+  }
+})
+
+test_that(paste(
+  "`object` of (informal) class \"proj_list\" (created manually) works"
+), {
+  tstsetups <- grep("\\.glm\\.gauss\\..*\\.clust$", names(prjs), value = TRUE)
+  stopifnot(length(tstsetups) > 1)
+  pl <- proj_linpred(prjs[tstsetups])
+  pl_tester(pl,
+            len_expected = length(tstsetups),
+            info_str = paste(tstsetups, collapse = ","))
+})
+
+test_that(paste(
+  "`object` of class \"refmodel\" and passing arguments to project() works"
+), {
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    pl_from_refmod <- do.call(proj_linpred, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      excl_nonargs(args_prj_i)
+    ))
+    pl_from_prj <- pls[[tstsetup]]
+    expect_equal(pl_from_refmod, pl_from_prj, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"stanreg\" or \"brmsfit\" and passing arguments to",
+  "project() works"
+), {
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    pl_from_fit <- do.call(proj_linpred, c(
+      list(object = fits[[args_prj_i$tstsetup_fit]]),
+      excl_nonargs(args_prj_i)
+    ))
+    pl_from_prj <- pls[[tstsetup]]
+    expect_equal(pl_from_fit, pl_from_prj, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"vsel\" (created by varsel()) and passing arguments",
+  "to project() works"
+), {
+  skip_if_not(run_vs)
+  tstsetups <- head(grep("\\.glm\\.gauss.*\\.default_meth\\.subvec",
+                         names(prjs_vs), value = TRUE),
+                    1)
+  for (tstsetup in tstsetups) {
+    args_prj_vs_i <- args_prj_vs[[tstsetup]]
+    pl_from_vsel <- do.call(proj_linpred, c(
+      list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
+      excl_nonargs(args_prj_vs_i)
+    ))
+    pl_from_prj <- pls_vs[[tstsetup]]
+    expect_equal(pl_from_vsel, pl_from_prj, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"vsel\" (created by cv_varsel()) and passing arguments",
+  "to project() works"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- head(
+    grep("\\.glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
+         names(prjs_cvvs), value = TRUE),
+    1
   )
-  f_poiss <- poisson()
-  df_poiss <- data.frame(y = rpois(n, f_poiss$linkinv(x %*% b)), x = x)
-  ys <- list()
-  ys[[1]] <- df_gauss$y
-  ys[[2]] <- df_binom$y
-  ys[[3]] <- df_poiss$y
+  for (tstsetup in tstsetups) {
+    args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
+    pl_from_vsel <- do.call(proj_linpred, c(
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
+      excl_nonargs(args_prj_cvvs_i)
+    ))
+    pl_from_prj <- pls_cvvs[[tstsetup]]
+    expect_equal(pl_from_vsel, pl_from_prj, info = tstsetup)
+  }
+})
 
-  SW({
-    fit_gauss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_gauss, data = df_gauss,
-      chains = chains, seed = seed, iter = iter
-    )
-    fit_binom <- stan_glm(cbind(y, weights - y) ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_binom, data = df_binom, weights = weights,
-      chains = chains, seed = seed, iter = iter
-    )
-    fit_poiss <- stan_glm(y ~ x.1 + x.2 + x.3 + x.4 + x.5,
-      family = f_poiss, data = df_poiss,
-      chains = chains, seed = seed, iter = iter
-    )
-    fit_list <- list(
-      gauss = fit_gauss,
-      binom = fit_binom,
-      poiss = fit_poiss
-    )
-    vs_list <- lapply(fit_list, varsel,
-      nterms_max = nterms + 1,
-      verbose = FALSE
-    )
-    proj_solution_terms_list <- lapply(vs_list, project,
-      solution_terms = c(2, 3),
-      seed = seed
-    )
-    proj_all_list <- lapply(vs_list, project,
-      seed = seed,
-      nterms = 0:nterms
-    )
-  })
+test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
+  expect_error(
+    proj_linpred(1),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_linpred(fits[[1]]),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_linpred(refmods[[1]]),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_linpred(c(prjs, list(dat))),
+    paste("Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.")
+  )
+})
 
-  test_that("proj_linpred: newdata is specified correctly", {
-    expect_error(
-      proj_linpred(proj_solution_terms_list),
-      'argument "newdata" is missing, with no default'
-    )
-    expect_error(
-      proj_linpred(proj_solution_terms_list, newdata = NULL),
-      "must be a data.frame or a matrix"
-    )
-    expect_error(
-      proj_linpred(proj_solution_terms_list, newdata = x[, 1]),
-      "must be a data.frame or a matrix"
-    )
-    expect_error(
-      proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x),
-                   solution_terms = 1:10000),
-      "number of columns in newdata does not match"
-    )
-    expect_error(
-      proj_linpred(proj_solution_terms_list, newdata = data.frame(x = x)[, 1:2],
-                   solution_terms = 1:3),
-      "number of columns in newdata does not match"
-    )
-  })
+## newdata and integrated -------------------------------------------------
 
-  test_that("output of proj_linpred is sensible with fit-object as input", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
-      y <- vs_list[[i]]$refmodel$y
-      pl <- proj_linpred(vs_list[[i]], newdata = data.frame(y = y, x = x),
-                         nterms = 0:nterms)
-      expect_length(pl, nterms + 1)
+test_that("invalid `newdata` fails", {
+  expect_error(
+    proj_linpred(prjs, newdata = dat[, 1]),
+    "must be a data\\.frame or a matrix"
+  )
+  stopifnot(length(solterms_x) > 1)
+  expect_error(
+    proj_linpred(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
+                            1)]],
+                 newdata = dat[, head(solterms_x, -1), drop = FALSE]),
+    "^object '.*' not found$"
+  )
+})
+
+test_that("`newdata` and `integrated` work (even in edge cases)", {
+  for (tstsetup in names(prjs)) {
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    dat_crr <- get_dat(tstsetup)
+    for (nobsv_crr in nobsv_tst) {
+      if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+        # TODO (GAMMs): Fix this.
+        next
+      }
+      pl_false <- proj_linpred(prjs[[tstsetup]],
+                               newdata = head(dat_crr, nobsv_crr))
+      pl_tester(pl_false,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                nobsv_expected = nobsv_crr,
+                info_str = paste(tstsetup, nobsv_crr, sep = "__"))
+      pl_true <- proj_linpred(prjs[[tstsetup]],
+                              newdata = head(dat_crr, nobsv_crr),
+                              integrated = TRUE)
+      pl_tester(pl_true,
+                nprjdraws_expected = 1L,
+                nobsv_expected = nobsv_crr,
+                info_str = paste(tstsetup, nobsv_crr, "integrated", sep = "__"))
+      expect_equal(prjs[[!!tstsetup]]$weights %*% pl_false$pred, pl_true$pred,
+                   info = nobsv_crr)
     }
-  })
+  }
+})
 
-  test_that("output of proj_linpred is sensible with project-object as input", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      y <- proj_solution_terms_list[[i]]$refmodel$y
-      pl <- proj_linpred(proj_solution_terms_list[[i]],
-        newdata = data.frame(y = y, x = x)
-      )
+test_that("`newdata` set to the original dataset doesn't change results", {
+  for (tstsetup in names(prjs)) {
+    dat_crr <- get_dat(tstsetup)
+    pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr)
+    pl_orig <- pls[[tstsetup]]
+    expect_equal(pl_newdata, pl_orig, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "omitting the response in `newdata` (not possible for `\"brmsfit\"`-based",
+  "reference models) causes output element `lpd` to be `NULL` but doesn't",
+  "change results otherwise"
+), {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+      next
     }
-    for (i in 1:length(proj_all_list)) {
-      i_inf <- names(proj_all_list)[i]
-      y <- proj_all_list[[i]][[1]]$refmodel$y
-      pl <- proj_linpred(proj_all_list[[i]],
-        newdata = data.frame(y = y, x = x)
-      )
-      expect_length(pl, nterms + 1)
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    resp_nm <- extract_terms_response(
+      prjs[[tstsetup]]$refmodel$formula
+    )$response
+    stopifnot(!exists(resp_nm))
+    dat_crr <- get_dat(tstsetup)
+    pl_noresp <- proj_linpred(
+      prjs[[tstsetup]],
+      newdata = dat_crr[, setdiff(names(dat_crr), resp_nm)]
+    )
+    pl_tester(pl_noresp,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              lpd_null_expected = TRUE,
+              info_str = tstsetup)
+    pl_orig <- pls[[tstsetup]]
+    expect_equal(pl_noresp$pred, pl_orig$pred, info = tstsetup)
+  }
+})
+
+## weightsnew -------------------------------------------------------------
+
+test_that("`weightsnew` works", {
+  for (tstsetup in names(prjs)) {
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    pl_orig <- pls[[tstsetup]]
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      pl_ones <- proj_linpred(prjs[[tstsetup]],
+                              newdata = get_dat(tstsetup, dat_wobs_ones),
+                              weightsnew = ~ wobs_col_ones)
+      pl_tester(pl_ones,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                info_str = tstsetup)
     }
-  })
-
-  test_that(paste("proj_linpred: error when varsel has not been performed on",
-                  "the object"), {
-    expect_error(
-      proj_linpred(1, newdata = data.frame(x = x)),
-      "is not a variable selection -object"
-    )
-    expect_error(
-      proj_linpred(fit_gauss, newdata = data.frame(x = x)),
-      "is not a variable selection -object"
-    )
-    expect_error(
-      proj_linpred(c(proj_solution_terms_list, list(x)), newdata = x),
-      "only works with objects returned by"
-    )
-  })
-
-  ## test_that("proj_linpred: specifying ynew incorrectly produces an error", {
-  ##   expect_error(
-  ##     proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
-  ##                  ynew = x[, 1:3]),
-  ##     "y cannot have more than two columns"
-  ##   )
-  ##   expect_error(
-  ##     proj_linpred(vs_list[["gauss"]], newdata = data.frame(x = x),
-  ##                  ynew = factor(ys[[1]])),
-  ##     "cannot be a factor"
-  ##   )
-  ##   expect_error(
-  ##     proj_linpred(vs_list[["poiss"]], newdata = data.frame(x = x),
-  ##                  ynew = factor(ys[[3]])),
-  ##     "cannot be a factor"
-  ##   )
-  ##   expect_error(
-  ##     proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
-  ##                  ynew = factor(ys[[1]])),
-  ##     "y cannot contain more than two classes"
-  ##   )
-  ## })
-
-  ## test_that("proj_linpred: specifying ynew has an expected effect", {
-  ##   for (i in 1:length(vs_list)) {
-  ##     i_inf <- names(vs_list)[i]
-  ##     pl <- proj_linpred(vs_list[[i]],
-  ##       newdata = df_binom, ynew = ys[[i]],
-  ##       weightsnew = ~weights, nterms = 0:nterms
-  ##     )
-  ##     pl2 <- proj_linpred(vs_list[[i]],
-  ##       newdata = data.frame(x = x, weights = weights),
-  ##       weightsnew = ~weights, nterms = 0:nterms
-  ##     )
-  ##     for (j in 1:length(pl)) {
-  ##       expect_named(pl[[j]], c("pred", "lpd"))
-  ##       expect_equal(ncol(pl[[j]]$pred), n, info = i_inf)
-  ##       expect_equal(nrow(pl[[j]]$lpd), n, info = i_inf)
-  ##     }
-  ##   }
-  ## })
-
-  ## test_that(paste("proj_linpred: specifying ynew as a factor works in a",
-  ##                 "binomial model"), {
-  ##   yfactor <- factor(rbinom(n, 1, 0.5))
-  ##   pl <- proj_linpred(vs_list[["binom"]], newdata = data.frame(x = x),
-  ##                      ynew = yfactor)
-  ##   expect_named(pl, c("pred", "lpd"))
-  ##   expect_equal(ncol(pl$pred), n)
-  ##   expect_equal(nrow(pl$lpd), n)
-  ## })
-
-  test_that("proj_linpred: specifying weights has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      # for binomial models weights have to be specified
-      if (proj_solution_terms_list[[i]]$family$family != "binomial") {
-        i_inf <- names(proj_solution_terms_list)[i]
-        weightsnew <- sample(1:4, n, replace = TRUE)
-        plw <- proj_linpred(proj_solution_terms_list[[i]],
-          newdata = data.frame(y = ys[[i]], x = x, weights = weightsnew),
-          weightsnew = ~weights
-        )
-        pl <- proj_linpred(proj_solution_terms_list[[i]],
-          newdata = data.frame(y = ys[[i]], x = x, weights = weights),
-          weightsnew = ~weights
-        )
-        expect_named(plw, c("pred", "lpd"))
-        expect_equal(ncol(plw$pred), n, info = i_inf)
-        expect_equal(nrow(plw$lpd), n, info = i_inf)
-        expect_false(all(plw$lpd == pl$lpd))
+    pl <- proj_linpred(prjs[[tstsetup]],
+                       newdata = get_dat(tstsetup, dat),
+                       weightsnew = ~ wobs_col)
+    pl_tester(pl,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      plw <- proj_linpred(prjs[[tstsetup]],
+                          newdata = get_dat(tstsetup, dat_wobs_new),
+                          weightsnew = ~ wobs_col_new)
+      pl_tester(plw,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                info_str = tstsetup)
+    }
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
+    }
+    expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
+    }
+    if (grepl("\\.with_wobs", tstsetup)) {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
+        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        ###
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_false(isTRUE(all.equal(pl_ones$lpd, pl_orig$lpd)),
+                     info = tstsetup)
+        expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
+      }
+      expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
+      expect_false(isTRUE(all.equal(pl$lpd, pl_ones$lpd)), info = tstsetup)
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_false(isTRUE(all.equal(plw$lpd, pl_ones$lpd)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
+      }
+      expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
+    } else {
+      if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+            args_prj[[tstsetup]]$fam_nm == "binom")) {
+        expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
+      }
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(pl$lpd, pl_ones$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plw$lpd, pl_ones$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
+        if (args_prj[[tstsetup]]$fam_nm != "binom") {
+          expect_equal(plw$lpd, pl_orig$lpd, info = tstsetup)
+          expect_equal(pl$lpd, pl_ones$lpd, info = tstsetup)
+          expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
+          expect_equal(plw$lpd, pl$lpd, info = tstsetup)
+        }
+        ###
       }
     }
-  })
+  }
+})
 
-  test_that("proj_linpred: specifying offset has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      plo <- proj_linpred(proj_solution_terms_list[[i]],
-        newdata = data.frame(
-          y = ys[[i]], x = x, weights = weights,
-          offset = offset
-        ),
-        weightsnew = ~weights, offsetnew = ~offset
-      )
-      pl <- proj_linpred(proj_solution_terms_list[[i]],
-        newdata = data.frame(y = ys[[i]], x = x, weights = weights),
-        weightsnew = ~weights
-      )
-      expect_named(plo, c("pred", "lpd"))
-      expect_equal(ncol(plo$pred), n, info = i_inf)
-      expect_equal(nrow(plo$lpd), n, info = i_inf)
-      expect_equal(t(plo$pred) - offset, t(pl$pred), tol = 1e-8)
+## offsetnew --------------------------------------------------------------
+
+test_that("`offsetnew` works", {
+  for (tstsetup in names(prjs)) {
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    pl_orig <- pls[[tstsetup]]
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      pl_zeros <- proj_linpred(prjs[[tstsetup]],
+                               newdata = get_dat(tstsetup, dat_offs_zeros),
+                               offsetnew = ~ offs_col_zeros)
+      pl_tester(pl_zeros,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                info_str = tstsetup)
     }
-  })
-
-  test_that("proj_linpred: specifying transform has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      y <- proj_solution_terms_list[[i]]$refmodel$y
-      plt <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(y = y, x = x), transform = TRUE)
-      plf <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(y = y, x = x), transform = FALSE)
-      expect_equal(proj_solution_terms_list[[i]]$family$linkinv(plf$pred),
-                   plt$pred, info = i_inf)
+    pl <- proj_linpred(prjs[[tstsetup]],
+                       newdata = get_dat(tstsetup, dat),
+                       offsetnew = ~ offs_col)
+    pl_tester(pl,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      plo <- proj_linpred(prjs[[tstsetup]],
+                          newdata = get_dat(tstsetup, dat_offs_new),
+                          offsetnew = ~ offs_col_new)
+      pl_tester(plo,
+                nprjdraws_expected = ndr_ncl$nprjdraws,
+                info_str = tstsetup)
     }
-  })
-
-  test_that("proj_linpred: specifying integrated has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      y <- proj_solution_terms_list[[i]]$refmodel$y
-      plt <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(y = y, x = x), integrated = TRUE)
-      plf <- proj_linpred(proj_solution_terms_list[[i]],
-                          newdata = data.frame(y = y, x = x), integrated = FALSE)
-      expect_equal(as.vector(proj_solution_terms_list[[i]]$weights %*%
-                             plf$pred),
-                   plt$pred, info = i_inf)
-    }
-  })
-
-  test_that("proj_linpred: adding more regularization has an expected effect", {
-    regul <- c(1e-6, 1e-1, 1e2)
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
-      norms <- rep(0, length(regul))
-      for (j in 1:length(regul)) {
-        y <- vs_list[[i]]$refmodel$y
-        pred <- proj_linpred(vs_list[[i]],
-          newdata = data.frame(y = y, x = x), nterms = 2, transform = FALSE,
-          integrated = TRUE, regul = regul[j]
-        )
-        norms[j] <- sum(pred$pred^2)
+    if (grepl("\\.with_offs", tstsetup)) {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pl_zeros, pl_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
+        expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
+                     info = tstsetup)
+        expect_equal(t(plo$pred) - dat_offs_new$offs_col_new, t(pl_orig$pred),
+                     info = tstsetup)
+        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        ###
+        expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_equal(pl, pl_orig, info = tstsetup)
       }
-      for (j in 1:(length(regul) - 1)) {
-        expect_true(all(norms[j] >= norms[j + 1]), info = i_inf)
+    } else {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_equal(pl_zeros, pl_orig, info = tstsetup)
+        if (args_prj[[tstsetup]]$fam_nm %in% c("brnll", "binom")) {
+          # To avoid failing tests due to numerical inaccuracies for extreme
+          # values:
+          is_extreme <- which(abs(pl_orig$pred) > f_binom$linkfun(1 - 1e-12),
+                              arr.ind = TRUE)
+          pl_orig$pred[is_extreme] <- NA
+          pl$pred[is_extreme] <- NA
+          plo$pred[is_extreme] <- NA
+        }
+        expect_equal(t(pl$pred) - dat$offs_col, t(pl_orig$pred),
+                     info = tstsetup)
+        expect_equal(t(plo$pred) - dat_offs_new$offs_col_new, t(pl_orig$pred),
+                     info = tstsetup)
+        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pl, pl_orig, info = tstsetup)
+        ###
       }
     }
-  })
+  }
+})
 
+## transform --------------------------------------------------------------
 
-  test_that("proj_linpred: arguments passed to project work accordingly", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
-      y <- vs_list[[i]]$refmodel$y
-      SW(pr <- project(vs_list[[i]],
-        nterms = c(2, 4), nclusters = 2, ndraws = 20,
-        intercept = FALSE, regul = 1e-8, seed = 12
+test_that("`transform` works", {
+  for (tstsetup in names(prjs)) {
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    pl_false <- pls[[tstsetup]]
+    pl_true <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
+    pl_tester(pl_true,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              info_str = tstsetup)
+    expect_equal(prjs[[!!tstsetup]]$refmodel$family$linkinv(pl_false$pred),
+                 pl_true$pred,
+                 info = tstsetup)
+  }
+})
+
+## regul ------------------------------------------------------------------
+
+test_that("`regul` works", {
+  regul_tst <- c(1e-6, 1e-1, 1e2)
+  stopifnot(identical(regul_tst, sort(regul_tst)))
+  tstsetups <- grep("\\.glm\\..*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    norms <- sapply(regul_tst, function(regul_crr) {
+      pl <- do.call(proj_linpred, c(
+        list(object = refmods[[args_prj_i$tstsetup_ref]],
+             integrated = TRUE,
+             regul = regul_crr),
+        excl_nonargs(args_prj_i)
       ))
-      prl1 <- proj_linpred(pr, newdata = data.frame(y = y, x = x))
-      SW(prl2 <- proj_linpred(vs_list[[i]],
-        newdata = data.frame(y = y, x = x), nterms = c(2, 4), nclusters = 2,
-        ndraws = 20, intercept = FALSE, regul = 1e-8, seed = 12
-      ))
-      expect_equal(prl1$pred, prl2$pred, info = i_inf)
+      pl_tester(pl,
+                nprjdraws_expected = 1L,
+                info_str = tstsetup)
+      return(sum(pl$pred^2))
+    })
+    for (j in head(seq_along(regul_tst), -1)) {
+      expect_true(all(norms[!!j] >= norms[!!(j + 1)]), info = tstsetup)
     }
-  })
+  }
+})
 
-  test_that("proj_linpred: providing newdata as a data frame works as expected",
-  {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      y <- proj_solution_terms_list[[i]]$refmodel$y
-      pl <- proj_predict(proj_solution_terms_list[[i]],
-        newdata = data.frame(y = y, x = x)
-      )
-      expect_equal(ncol(pl), n, info = i_inf)
+## filter_nterms ----------------------------------------------------------
+
+test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
+    nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
+    stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
+    for (filter_nterms_crr in nterms_unavail_crr) {
+      expect_error(proj_linpred(prjs[[tstsetup]],
+                                filter_nterms = filter_nterms_crr),
+                   "Invalid `filter_nterms`\\.",
+                   info = paste(tstsetup, filter_nterms_crr, sep = "__"))
     }
-    SW(
-      fit_form <- stan_glm(mpg ~ (drat + wt)^2,
-        data = mtcars, QR = TRUE,
-        chains = chains, seed = seed, iter = iter
-      )
-    )
-    vs_form <- varsel(fit_form)
-    p1 <- proj_linpred(vs_form, newdata = mtcars, nterms = 3, seed = 2)
-    x <- get_x(fit_form)[, -1]
-    newdata <- data.frame(mpg = get_y(fit_form), x)
-    p2 <- proj_linpred(vs_form,
-      newdata = newdata, nterms = 3,
-      seed = 2
-    )
-    expect_equal(p1$pred, p2$pred)
-  })
+    pl <- proj_linpred(prjs[[tstsetup]],
+                       filter_nterms = nterms_avail_crr)
+    pl_orig <- pls[[tstsetup]]
+    expect_equal(pl, pl_orig, info = tstsetup)
+  }
+})
 
-
-  # -------------------------------------------------------------
-  context("proj_predict")
-
-  test_that("proj_predict: newdata is specified correctly", {
-    expect_error(
-      proj_predict(proj_solution_terms_list),
-      'argument "newdata" is missing, with no default'
+test_that(paste(
+  "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
+), {
+  skip_if_not(run_vs)
+  tstsetups <- grep("\\.glm\\.gauss.*\\.default_meth\\.full$", names(prjs_vs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    # Unavailable number(s) of terms:
+    for (filter_nterms_crr in nterms_unavail) {
+      expect_error(proj_linpred(prjs_vs[[tstsetup]],
+                                filter_nterms = filter_nterms_crr),
+                   "Invalid `filter_nterms`\\.",
+                   info = paste(tstsetup,
+                                paste(filter_nterms_crr, collapse = ","),
+                                sep = "__"))
+    }
+    # Available number(s) of terms:
+    nterms_avail_filter <- c(
+      nterms_avail,
+      list(partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L))
     )
-    expect_error(
-      proj_predict(proj_solution_terms_list, newdata = NULL),
-      "must be a data.frame or a matrix"
-    )
-    expect_error(
-      proj_predict(proj_solution_terms_list, newdata = x[, 1]),
-      "must be a data.frame or a matrix"
-    )
-    expect_error(
-      proj_predict(proj_solution_terms_list, newdata = data.frame(x = x),
-                   solution_terms = 1:1000),
-      "number of columns in newdata does not match"
-    )
-    expect_error(
-      proj_predict(proj_solution_terms_list,
-        newdata = data.frame(x = x)[, 1:2],
-        solution_terms = 1:3
-      ),
-      "number of columns in newdata does not match"
-    )
-  })
-
-  test_that("output of proj_predict is sensible with fit-object as input", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
-      pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
-                         nterms = 0:nterms)
-      expect_length(pl, nterms + 1)
-      for (j in 1:length(pl)) {
-        expect_equal(ncol(pl[[j]]), n, info = i_inf)
+    for (filter_nterms_crr in nterms_avail_filter) {
+      pl_crr <- proj_linpred(prjs_vs[[tstsetup]],
+                             filter_nterms = filter_nterms_crr)
+      if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
+      nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
+      pl_tester(pl_crr,
+                len_expected = nhits_nterms,
+                info_str = paste(tstsetup,
+                                 paste(filter_nterms_crr, collapse = ","),
+                                 sep = "__"))
+      if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
+        # The special case of all possible numbers of terms:
+        pl_orig <- pls_vs[[tstsetup]]
+        expect_equal(pl_crr, pl_orig, info = tstsetup)
       }
     }
-  })
+  }
+})
 
-  test_that("output of proj_predict is sensible with project-object as input", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      y <- proj_solution_terms_list[[i]]$refmodel$y
-      pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(y = y, x = x))
-      expect_equal(ncol(pl), n, info = i_inf)
+## Single observation, single draw ----------------------------------------
+
+test_that(paste(
+  "a single observation and a single draw work (which implicitly tests",
+  "this edge case for family$ll_fun(), too)"
+), {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # TODO (GAMMs): Fix this.
+      next
     }
-    for (i in 1:length(proj_all_list)) {
-      i_inf <- names(proj_all_list)[i]
-      pl <- proj_predict(proj_all_list[[i]], newdata = data.frame(x = x))
-      expect_length(pl, nterms + 1)
-      for (j in 1:length(pl)) {
-        expect_equal(ncol(pl[[j]]), n, info = i_inf)
+    pl1 <- proj_linpred(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                        newdata = head(get_dat(tstsetup), 1),
+                        solution_terms = args_prj[[tstsetup]]$solution_terms,
+                        nclusters = 1L,
+                        seed = seed_tst)
+    pl_tester(pl1,
+              nprjdraws_expected = 1L,
+              nobsv_expected = 1L,
+              info_str = tstsetup)
+  }
+})
+
+# proj_predict() ----------------------------------------------------------
+
+context("proj_predict()")
+
+## seed -------------------------------------------------------------------
+
+test_that("`.seed` works (and restores the RNG state afterwards)", {
+  for (tstsetup in names(prjs)) {
+    .Random.seed_orig1 <- .Random.seed
+    pp_orig <- pps[[tstsetup]]
+    .Random.seed_orig2 <- .Random.seed
+    rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_new1 <- .Random.seed
+    pp_new <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst + 1L)
+    .Random.seed_new2 <- .Random.seed
+    rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_repr1 <- .Random.seed
+    pp_repr <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst)
+    .Random.seed_repr2 <- .Random.seed
+    rand_repr <- runif(1) # Just to advance `.Random.seed[2]`.
+    .Random.seed_null1 <- .Random.seed
+    pp_null <- proj_predict(prjs[[tstsetup]])
+    .Random.seed_null2 <- .Random.seed
+
+    expect_equal(pp_orig, pp_repr, info = tstsetup)
+    expect_false(isTRUE(all.equal(pp_orig, pp_new)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pp_orig, pp_null)), info = tstsetup)
+    expect_false(isTRUE(all.equal(pp_new, pp_null)), info = tstsetup)
+
+    expect_equal(.Random.seed_orig2, .Random.seed_orig1, info = tstsetup)
+    expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
+    expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
+    expect_equal(.Random.seed_null2, .Random.seed_null1, info = tstsetup)
+
+    expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
+    expect_false(isTRUE(all.equal(rand_repr, rand_orig)), info = tstsetup)
+    expect_false(isTRUE(all.equal(rand_repr, rand_new)), info = tstsetup)
+    expect_false(isTRUE(all.equal(.Random.seed_new2, .Random.seed_orig2)),
+                 info = tstsetup)
+    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_orig2)),
+                 info = tstsetup)
+    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
+                 info = tstsetup)
+  }
+})
+
+## object -----------------------------------------------------------------
+
+test_that("pp: `object` of class \"projection\" works", {
+  for (tstsetup in names(prjs)) {
+    pp_tester(pps[[tstsetup]],
+              nprjdraws_out_expected =
+                ndr_ncl_dtls(args_prj[[tstsetup]])$nprjdraws_out,
+              info_str = tstsetup)
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(pps[[tstsetup]]))
+      })
+      options(width_orig)
+      if (testthat_ed_max2) local_edition(2)
+    }
+  }
+})
+
+test_that(paste(
+  "pp: `object` of (informal) class \"proj_list\" (based on varsel()) works"
+), {
+  skip_if_not(run_vs)
+  for (tstsetup in names(prjs_vs)) {
+    tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
+    nterms_crr <- args_prj_vs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
+    }
+    pp_tester(pps_vs[[tstsetup]],
+              len_expected = length(nterms_crr),
+              nprjdraws_out_expected =
+                ndr_ncl_dtls(args_prj_vs[[tstsetup]])$nprjdraws_out,
+              info_str = tstsetup)
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(pps_vs[[tstsetup]]))
+      })
+      options(width_orig)
+      if (testthat_ed_max2) local_edition(2)
+    }
+  }
+})
+
+test_that(paste(
+  "pp: `object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
+), {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(prjs_cvvs)) {
+    tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
+    nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
+    if (is.null(nterms_crr)) {
+      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
+    }
+    pp_tester(pps_cvvs[[tstsetup]],
+              len_expected = length(nterms_crr),
+              nprjdraws_out_expected =
+                ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])$nprjdraws_out,
+              info_str = tstsetup)
+    if (run_snaps) {
+      if (testthat_ed_max2) local_edition(3)
+      width_orig <- options(width = 145)
+      expect_snapshot({
+        print(tstsetup)
+        print(rlang::hash(pps_cvvs[[tstsetup]]))
+      })
+      options(width_orig)
+      if (testthat_ed_max2) local_edition(2)
+    }
+  }
+})
+
+test_that(paste(
+  "`object` of (informal) class \"proj_list\" (created manually) works"
+), {
+  tstsetups <- grep("\\.glm\\.gauss\\..*\\.clust$", names(prjs), value = TRUE)
+  stopifnot(length(tstsetups) > 1)
+  pp <- proj_predict(prjs[tstsetups], .seed = seed2_tst)
+  pp_tester(pp,
+            len_expected = length(tstsetups),
+            info_str = paste(tstsetups, collapse = ","))
+})
+
+test_that(paste(
+  "`object` of class \"refmodel\" and passing arguments to project() works"
+), {
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    pp_from_refmod <- do.call(proj_predict, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]],
+           .seed = seed2_tst),
+      excl_nonargs(args_prj_i)
+    ))
+    pp_from_prj <- pps[[tstsetup]]
+    expect_equal(pp_from_refmod, pp_from_prj, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"stanreg\" or \"brmsfit\" and passing arguments to",
+  "project() works"
+), {
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_prj_i <- args_prj[[tstsetup]]
+    pp_from_fit <- do.call(proj_predict, c(
+      list(object = fits[[args_prj_i$tstsetup_fit]],
+           .seed = seed2_tst),
+      excl_nonargs(args_prj_i)
+    ))
+    pp_from_prj <- pps[[tstsetup]]
+    expect_equal(pp_from_fit, pp_from_prj, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"vsel\" (created by varsel()) and passing arguments",
+  "to project() works"
+), {
+  skip_if_not(run_vs)
+  tstsetups <- head(grep("\\.glm\\.gauss.*\\.default_meth\\.subvec",
+                         names(prjs_vs), value = TRUE),
+                    1)
+  for (tstsetup in tstsetups) {
+    args_prj_vs_i <- args_prj_vs[[tstsetup]]
+    pp_from_vsel <- do.call(proj_predict, c(
+      list(object = vss[[args_prj_vs_i$tstsetup_vsel]],
+           .seed = seed2_tst),
+      excl_nonargs(args_prj_vs_i)
+    ))
+    pp_from_prj <- pps_vs[[tstsetup]]
+    expect_equal(pp_from_vsel, pp_from_prj, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`object` of class \"vsel\" (created by cv_varsel()) and passing arguments",
+  "to project() works"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- head(
+    grep("\\.glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
+         names(prjs_cvvs), value = TRUE),
+    1
+  )
+  for (tstsetup in tstsetups) {
+    args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
+    pp_from_vsel <- do.call(proj_predict, c(
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]],
+           .seed = seed2_tst),
+      excl_nonargs(args_prj_cvvs_i)
+    ))
+    pp_from_prj <- pps_cvvs[[tstsetup]]
+    expect_equal(pp_from_vsel, pp_from_prj, info = tstsetup)
+  }
+})
+
+test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
+  expect_error(
+    proj_predict(1, .seed = seed2_tst),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_predict(fits[[1]], .seed = seed2_tst),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_predict(refmods[[1]], .seed = seed2_tst),
+    paste("^Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.$")
+  )
+  expect_error(
+    proj_predict(c(prjs, list(dat)), .seed = seed2_tst),
+    paste("Please provide an `object` of class \"vsel\" or use argument",
+          "`solution_terms`\\.")
+  )
+})
+
+## newdata and nresample_clusters -----------------------------------------
+
+test_that("invalid `newdata` fails", {
+  expect_error(
+    proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
+    "must be a data\\.frame or a matrix"
+  )
+  stopifnot(length(solterms_x) > 1)
+  expect_error(
+    proj_predict(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
+                            1)]],
+                 newdata = dat[, head(solterms_x, -1), drop = FALSE],
+                 .seed = seed2_tst,
+                 solution_terms = solterms_x),
+    "^object '.*' not found$"
+  )
+})
+
+test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
+  for (tstsetup in names(prjs)) {
+    for (nobsv_crr in nobsv_tst) {
+      if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+        # TODO (GAMMs): Fix this.
+        next
+      }
+      for (nresample_clusters_crr in nresample_clusters_tst) {
+        pp <- proj_predict(prjs[[tstsetup]],
+                           newdata = head(dat, nobsv_crr),
+                           nresample_clusters = nresample_clusters_crr,
+                           .seed = seed2_tst)
+        ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]],
+                                nresample_clusters_crr = nresample_clusters_crr)
+        pp_tester(pp,
+                  nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                  nobsv_expected = nobsv_crr,
+                  info_str = paste(tstsetup, nobsv_crr, nresample_clusters_crr,
+                                   sep = "__"))
       }
     }
-  })
+  }
+})
 
-  test_that(paste("proj_predict: error when varsel has not been performed on",
-                  "the object"), {
-    expect_error(
-      proj_predict(1, newdata = data.frame(x = x)),
-      "is not a variable selection -object"
-    )
-    expect_error(
-      proj_predict(fit_gauss, newdata = data.frame(x = x)),
-      "is not a variable selection -object"
-    )
-    expect_error(
-      proj_predict(c(proj_solution_terms_list, list(x)),
-                   newdata = data.frame(x = x)),
-      "only works with objects returned by"
-    )
-  })
+test_that("`newdata` set to the original dataset doesn't change results", {
+  for (tstsetup in names(prjs)) {
+    pp_newdata <- proj_predict(prjs[[tstsetup]],
+                               newdata = dat,
+                               .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
+    expect_equal(pp_newdata, pp_orig, info = tstsetup)
+  }
+})
 
-  ## test_that("proj_predict: specifying ynew has an expected effect", {
-  ##   for (i in seq_along(vs_list)) {
-  ##     pl <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
-  ##                        ynew = ys[[i]], nterms = 0:3)
-  ##     pl2 <- proj_predict(vs_list[[i]], newdata = data.frame(x = x),
-  ##                         nterms = 0:3)
-  ##     for (j in seq_len(length(pl))) {
-  ##       expect_equal(dim(pl[[j]]), dim(pl2[[j]]))
-  ##     }
-  ##   }
-  ## })
-
-  ## test_that(paste("proj_predict: specifying ynew as a factor works in a",
-  ##                 "binomial model"), {
-  ##   yfactor <- factor(rbinom(n, 1, 0.5))
-  ##   pl <- proj_predict(vs_list[["binom"]], newdata = data.frame(x = x),
-  ##                      ynew = yfactor)
-  ##   expect_equal(ncol(pl), n)
-  ##   expect_true(all(pl %in% c(0, 1)))
-  ## })
-
-  test_that("proj_predict: specifying weightsnew has an expected effect", {
-    pl <- proj_predict(proj_solution_terms_list[["binom"]],
-      newdata = data.frame(x = x, weights = rep(1, NROW(x))),
-      seed = seed
-    )
-    plw <- proj_predict(proj_solution_terms_list[["binom"]],
-      newdata = data.frame(x = x, weights = weights), seed = seed,
-      weightsnew = ~weights
-    )
-    expect_true(sum(pl != plw) > 0)
-  })
-
-  test_that("proj_predict: specifying offsetnew has an expected effect", {
-    for (i in seq_len(length(proj_solution_terms_list))) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      pl <- proj_predict(proj_solution_terms_list[[i]],
-        newdata = data.frame(x = x), ndraws = iter,
-        seed = seed
-      )
-      plo <- proj_predict(proj_solution_terms_list[[i]],
-        newdata = data.frame(x = x, offset = offset), ndraws = iter,
-        seed = seed, offsetnew = ~offset
-      )
-      expect_true(sum(pl != plo) > 0, info = i_inf)
+test_that(paste(
+  "omitting the response in `newdata` (not possible for `\"brmsfit\"`-based",
+  "reference models) doesn't change results"
+), {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+      next
     }
-  })
+    resp_nm <- extract_terms_response(
+      prjs[[tstsetup]]$refmodel$formula
+    )$response
+    stopifnot(!exists(resp_nm))
+    pp_noresp <- proj_predict(prjs[[tstsetup]],
+                              newdata = dat[, setdiff(names(dat), resp_nm)],
+                              .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
+    expect_equal(pp_noresp, pp_orig, info = tstsetup)
+  }
+})
 
-  test_that("proj_predict: specifying ndraws has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      pl <- proj_predict(proj_solution_terms_list[[i]],
-                         newdata = data.frame(x = x), ndraws = iter)
-      expect_equal(dim(pl), c(iter, n))
-    }
-  })
+## weightsnew -------------------------------------------------------------
 
-  test_that("proj_predict: specifying seed_sam has an expected effect", {
-    for (i in 1:length(proj_solution_terms_list)) {
-      i_inf <- names(proj_solution_terms_list)[i]
-      pl1 <- proj_predict(proj_solution_terms_list[[i]],
-                          newdata = data.frame(x = x), seed = seed)
-      pl2 <- proj_predict(proj_solution_terms_list[[i]],
-                          newdata = data.frame(x = x), seed = seed)
-      expect_equal(pl1, pl2, info = i_inf)
+test_that("`weightsnew` works", {
+  for (tstsetup in names(prjs)) {
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    pp_orig <- pps[[tstsetup]]
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      pp_ones <- proj_predict(prjs[[tstsetup]],
+                              newdata = dat_wobs_ones,
+                              weightsnew = ~ wobs_col_ones,
+                              .seed = seed2_tst)
+      pp_tester(pp_ones,
+                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                info_str = tstsetup)
     }
-  })
+    pp <- proj_predict(prjs[[tstsetup]],
+                       newdata = dat,
+                       weightsnew = ~ wobs_col,
+                       .seed = seed2_tst)
+    pp_tester(pp,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              info_str = tstsetup)
+    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
+          args_prj[[tstsetup]]$fam_nm == "binom")) {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      ppw <- proj_predict(prjs[[tstsetup]],
+                          newdata = dat_wobs_new,
+                          weightsnew = ~ wobs_col_new,
+                          .seed = seed2_tst)
+      pp_tester(ppw,
+                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                info_str = tstsetup)
+    }
+    # Weights are only relevant for the binomial() family:
+    if (!args_prj[[tstsetup]]$fam_nm %in% c("brnll", "binom")) {
+      expect_equal(pp_ones, pp_orig, info = tstsetup)
+      expect_equal(pp, pp_orig, info = tstsetup)
+      expect_equal(ppw, pp_orig, info = tstsetup)
+    } else if (args_prj[[tstsetup]]$fam_nm == "brnll") {
+      expect_equal(pp_ones, pp_orig, info = tstsetup)
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+        expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
+        expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pp, pp_orig, info = tstsetup)
+        expect_equal(ppw, pp_orig, info = tstsetup)
+        expect_equal(ppw, pp, info = tstsetup)
+        ###
+      }
+    } else if (args_prj[[tstsetup]]$fam_nm == "binom") {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pp_ones, pp_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+        ###
+        expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
+        expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_equal(pp, pp_orig, info = tstsetup)
+      }
+    }
+  }
+})
 
-  test_that("proj_predict: arguments passed to project work accordingly", {
-    for (i in 1:length(vs_list)) {
-      i_inf <- names(vs_list)[i]
-      prp1 <- proj_predict(vs_list[[i]],
-        newdata = data.frame(x = x), ndraws = 100,
-        seed = 12, nterms = c(2, 4), nclusters = 2,
-        regul = 1e-08
-      )
-      prp2 <- proj_predict(vs_list[[i]],
-        newdata = data.frame(x = x), ndraws = 100,
-        nterms = c(2, 4), nclusters = 2, regul = 1e-8,
-        seed = 12
-      )
-      prp3 <- proj_predict(vs_list[[i]],
-        newdata = data.frame(x = x), ndraws = 100,
-        seed = 120, nterms = c(2, 4), nclusters = 2,
-        regul = 1e-08
-      )
-      expect_equal(prp1, prp2, info = i_inf)
-      expect_false(all(unlist(lapply(seq_along(prp1), function(i) {
-        all(prp1[[i]] == prp3[[i]])
-      }))),
-      info = i_inf
-      )
+## offsetnew --------------------------------------------------------------
+
+test_that("`offsetnew` works", {
+  for (tstsetup in names(prjs)) {
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    pp_orig <- pps[[tstsetup]]
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      pp_zeros <- proj_predict(prjs[[tstsetup]],
+                               newdata = dat_offs_zeros,
+                               offsetnew = ~ offs_col_zeros,
+                               .seed = seed2_tst)
+      pp_tester(pp_zeros,
+                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                info_str = tstsetup)
     }
-  })
-}
+    pp <- proj_predict(prjs[[tstsetup]],
+                       newdata = dat,
+                       offsetnew = ~ offs_col,
+                       .seed = seed2_tst)
+    pp_tester(pp,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              info_str = tstsetup)
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      ppo <- proj_predict(prjs[[tstsetup]],
+                          newdata = dat_offs_new,
+                          offsetnew = ~ offs_col_new,
+                          .seed = seed2_tst)
+      pp_tester(ppo,
+                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+                info_str = tstsetup)
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pp_zeros, pp_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+        ###
+        # For the gaussian() family, we can perform an easy check (because of
+        # the identity link):
+        if (args_prj[[tstsetup]]$fam_nm == "gauss") {
+          ### TODO: This might in fact be undesired (see above):
+          expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
+          expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
+                       info = tstsetup)
+          ###
+        } else {
+          expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
+          expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
+        }
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        expect_equal(pp, pp_orig, info = tstsetup)
+      }
+    } else {
+      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+        expect_equal(pp_zeros, pp_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
+        # For the gaussian() family, we can perform an easy check (because of
+        # the identity link):
+        if (args_prj[[tstsetup]]$fam_nm == "gauss") {
+          expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
+          expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
+                       info = tstsetup)
+        } else {
+          expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
+          expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
+        }
+      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+        ### TODO: This might in fact be undesired:
+        expect_equal(pp, pp_orig, info = tstsetup)
+        ###
+      }
+    }
+  }
+})
+
+## filter_nterms ----------------------------------------------------------
+
+test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
+  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
+    nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
+    stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
+    for (filter_nterms_crr in nterms_unavail_crr) {
+      expect_error(proj_predict(prjs[[tstsetup]],
+                                filter_nterms = filter_nterms_crr,
+                                .seed = seed2_tst),
+                   "Invalid `filter_nterms`\\.",
+                   info = paste(tstsetup, filter_nterms_crr, sep = "__"))
+    }
+    pp <- proj_predict(prjs[[tstsetup]],
+                       filter_nterms = nterms_avail_crr,
+                       .seed = seed2_tst)
+    pp_orig <- pps[[tstsetup]]
+    expect_equal(pp, pp_orig, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
+), {
+  skip_if_not(run_vs)
+  tstsetups <- grep("\\.glm\\.gauss.*\\.default_meth\\.full$", names(prjs_vs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    # Unavailable number(s) of terms:
+    for (filter_nterms_crr in nterms_unavail) {
+      expect_error(proj_predict(prjs_vs[[tstsetup]],
+                                filter_nterms = filter_nterms_crr,
+                                .seed = seed2_tst),
+                   "Invalid `filter_nterms`\\.",
+                   info = paste(tstsetup,
+                                paste(filter_nterms_crr, collapse = ","),
+                                sep = "__"))
+    }
+    # Available number(s) of terms:
+    nterms_avail_filter <- c(
+      nterms_avail,
+      list(partvec = c(nterms_max_tst %/% 2L, nterms_max_tst + 130L))
+    )
+    for (filter_nterms_crr in nterms_avail_filter) {
+      pp_crr <- proj_predict(prjs_vs[[tstsetup]],
+                             filter_nterms = filter_nterms_crr,
+                             .seed = seed2_tst)
+      if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
+      nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
+      pp_tester(pp_crr,
+                len_expected = nhits_nterms,
+                info_str = paste(tstsetup,
+                                 paste(filter_nterms_crr, collapse = ","),
+                                 sep = "__"))
+      if (identical(filter_nterms_crr, 0:nterms_max_tst)) {
+        # The special case of all possible numbers of terms:
+        pp_orig <- pps_vs[[tstsetup]]
+        expect_equal(pp_crr, pp_orig, info = tstsetup)
+      }
+    }
+  }
+})
+
+## Single observation, single draw ----------------------------------------
+
+test_that(paste(
+  "a single observation and a single draw work (which implicitly tests",
+  "this edge case for family$ppd(), too)"
+), {
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # TODO (GAMMs): Fix this.
+      next
+    }
+    pp1 <- proj_predict(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                        newdata = head(get_dat(tstsetup), 1),
+                        nresample_clusters = 1L,
+                        .seed = seed2_tst,
+                        solution_terms = args_prj[[tstsetup]]$solution_terms,
+                        nclusters = 1L,
+                        seed = seed_tst)
+    pp_tester(pp1,
+              nprjdraws_out_expected = 1L,
+              nobsv_expected = 1L,
+              info_str = tstsetup)
+  }
+})

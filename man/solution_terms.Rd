@@ -2,17 +2,59 @@
 % Please edit documentation in R/methods.R
 \name{solution_terms}
 \alias{solution_terms}
-\title{Recovers solution path from a variable selection object.}
+\alias{solution_terms.vsel}
+\alias{solution_terms.projection}
+\title{Retrieve predictor solution path or predictor combination}
 \usage{
-solution_terms(object)
+solution_terms(object, ...)
+
+\method{solution_terms}{vsel}(object, ...)
+
+\method{solution_terms}{projection}(object, ...)
 }
 \arguments{
-\item{object}{A vsel object returned by \link[=varsel]{varsel} or
-\link[=cv_varsel]{cv_varsel}.}
+\item{object}{The object from which to retrieve the solution terms. Possible
+classes may be inferred from the names of the corresponding methods (see
+also the description).}
+
+\item{...}{Currently ignored.}
 }
 \value{
-Variable selection solution path
+A character vector of solution terms.
 }
 \description{
-Recovers solution path from a variable selection object.
+This function retrieves the "solution terms" from an object. For \code{vsel}
+objects (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}), this is the predictor
+solution path of the variable selection. For \code{projection} objects (returned
+by \code{\link[=project]{project()}}, possibly as elements of a \code{list}), this is the predictor
+combination onto which the projection was performed.
+}
+\examples{
+if (requireNamespace("rstanarm", quietly = TRUE)) {
+  # Data:
+  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+
+  # The "stanreg" fit which will be used as the reference model (with small
+  # values for `chains` and `iter`, but only for technical reasons in this
+  # example; this is not recommended in general):
+  fit <- rstanarm::stan_glm(
+    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+  )
+
+  # Variable selection (here without cross-validation and with small values
+  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
+  # sake of speed in this example; this is not recommended in general):
+  vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+               seed = 5555)
+  print(solution_terms(vs))
+
+  # Projection onto an arbitrary combination of predictor terms (with a small
+  # value for `nclusters`, but only for the sake of speed in this example;
+  # this is not recommended in general):
+  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+                 seed = 9182)
+  print(solution_terms(prj)) # gives `c("X1", "X3", "X5")`
+}
+
 }

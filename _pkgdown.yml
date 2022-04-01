@@ -1,5 +1,8 @@
 url: https://mc-stan.org/projpred
 
+development:
+  mode: auto
+
 destination: "."
 
 template:
@@ -10,11 +13,13 @@ navbar:
   title: "projpred"
   left:
     - icon: fa-home fa-lg
-      href: index.html 
+      href: index.html
     - text: "Vignettes"
       href: articles/index.html
     - text: "Functions"
       href: reference/index.html
+    - text: "News"
+      href: news/index.html
     - text: "Other Packages"
       menu:
         - text: "rstan"
@@ -47,15 +52,10 @@ home:
   links:
   - text: Ask a question
     href: https://discourse.mc-stan.org/
-    
+
 articles:
   - title: "Getting Started"
     desc: >
-      This vignette provides a quick-start guide to using the projpred package for projection predictive feature selection.
+      This vignette provides a quick-start guide to using the **projpred** package for projection predictive feature selection.
     contents:
-      - quickstart
-  - title: "Performing variable and structure selection on Generalize Linear Multilevel Models"
-    desc: >
-      This vignette provides a quick-start guide to using the projpred package for projection predictive variale and structure selection for GLMMs.
-    contents:
-      - quickstart_glmm
+      - projpred
