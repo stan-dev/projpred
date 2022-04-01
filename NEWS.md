@@ -4,6 +4,7 @@
 
 * Fix the order of the package authors.
 * Fix failing CRAN checks.
+* Add an input check for argument `solution_terms` of `project()` to fix a test failure on R versions > 4.1.
 
 # projpred 2.1.0
 

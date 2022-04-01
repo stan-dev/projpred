@@ -25,6 +25,8 @@ test_that("invalid `solution_terms` warns or fails", {
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
+
+    # Non-`vsel` object combined with `solution_terms = NULL`:
     expect_error(
       do.call(project, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
@@ -35,6 +37,8 @@ test_that("invalid `solution_terms` warns or fails", {
             "`solution_terms`\\.$"),
       info = tstsetup
     )
+
+    # Invalid length:
     expect_error(
       do.call(project, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
@@ -46,11 +50,29 @@ test_that("invalid `solution_terms` warns or fails", {
             "terms in the reference model\\.$"),
       info = tstsetup
     )
-    for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
-      if (as.numeric(R.version$major) >= 4 && as.numeric(R.version$minor) > 1) {
-        # TODO: Fix this in R > 4.1:
-        if (is.list(solterms_crr)) next
-      }
+
+    # Invalid type:
+    for (solterms_crr in list(2, 1:3, list(solterms_x, solterms_x))) {
+      tstsetup_crr <- paste(tstsetup, paste(solterms_crr, collapse = ","),
+                            sep = "__")
+      expect_error(
+        do.call(project, c(
+          list(object = refmods[[args_prj_i$tstsetup_ref]],
+               solution_terms = solterms_crr),
+          excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+        )),
+        paste(
+          "^is\\.null\\(solution_terms\\) \\|\\| is\\.vector\\(solution_terms,",
+          "\"character\"\\) is not TRUE$"
+        ),
+        info = tstsetup_crr
+      )
+    }
+
+    # Should be working, but result in a projection onto the intercept-only
+    # submodel:
+    for (solterms_crr in list("1",
+                              c("some_dummy_string", "another_dummy_string"))) {
       tstsetup_crr <- paste(tstsetup, paste(solterms_crr, collapse = ","),
                             sep = "__")
       expect_warning(
