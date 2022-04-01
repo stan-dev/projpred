@@ -6,9 +6,14 @@ test_that("invalid `object` fails", {
   objs_invalid <- nlist(
     NULL,
     fit = fits[[1]],
-    refmod = refmods[[1]],
-    prj = prjs[[1]]
+    refmod = refmods[[1]]
   )
+  if (run_prj) {
+    objs_invalid <- c(
+      objs_invalid,
+      list(prj = prjs[[1]])
+    )
+  }
   if (run_vs) {
     objs_invalid <- c(objs_invalid, list(prj_vs = prjs_vs[[1]]))
   }

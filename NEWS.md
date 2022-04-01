@@ -3,6 +3,7 @@
 ## Bug fixes
 
 * Fix the order of the package authors.
+* Fix failing CRAN checks.
 
 # projpred 2.1.0
 

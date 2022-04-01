@@ -6,6 +6,7 @@ test_that(paste(
   "`object` of class \"refmodel\", `solution_terms`, and `ndraws` (or",
   "`nclusters`) work"
 ), {
+  skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
@@ -19,6 +20,7 @@ test_that(paste(
 })
 
 test_that("invalid `solution_terms` warns or fails", {
+  skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -72,6 +74,7 @@ test_that("invalid `solution_terms` warns or fails", {
 })
 
 test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
+  skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -243,6 +246,7 @@ test_that("invalid `nterms` fails", {
 # seed --------------------------------------------------------------------
 
 test_that("non-clustered projection does not require a seed", {
+  skip_if_not(run_prj)
   # This test is important to ensure that we don't have to set a seed where we
   # don't expect it to be necessary.
   tstsetups <- grep("\\.noclust$|\\.default_ndr_ncl$", names(prjs),
@@ -260,6 +264,7 @@ test_that("non-clustered projection does not require a seed", {
 })
 
 test_that("`seed` works (and restores the RNG state afterwards)", {
+  skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -295,6 +300,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 # regul -------------------------------------------------------------------
 
 test_that("for GLMs, `regul` has an expected effect", {
+  skip_if_not(run_prj)
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
