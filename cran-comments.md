@@ -1,3 +1,8 @@
+## Resubmission
+
+This is a resubmission for which we have fixed the failing 'R CMD check' on
+R-devel.
+
 ## Maintainer change
 
 With this submission, we would like to change the 'projpred' maintainer from
@@ -30,11 +35,6 @@ Furthermore, for the R-devel and the R-release win-builder checks, we get
 another NOTE at `checking CRAN incoming feasibility ...` concerning inaccessible
 URLs and DOIs. These URLs are created from DOIs and they are in fact accessible
 (just like the DOIs themselves), so we think this can be safely ignored.
-
-Additionally, the R-devel win-builder check gave an ERROR because of a unit test
-failure. In local tests, we have never gotten this failure before, so we hope it
-will not occur anymore in future R-devel versions or in the final R 4.2.0
-version.
 
 ## Downstream dependencies
 
