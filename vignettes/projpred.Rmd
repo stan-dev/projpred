@@ -93,7 +93,7 @@ library(projpred)
 
 In **projpred**, the projective variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each submodel size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.
 
-There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is explained in the `?cv_varsel` help) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
+There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is `validate_search = FALSE`, see `?cv_varsel`) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). The same holds for `cv_varsel()` with `validate_search = FALSE` (which only takes effect for `cv_method = "LOO"`). A more principled **projpred** workflow is work under progress.
 
 <!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of reference models"](#refmodtypes) below). -->
 <!-- ```{r} -->
@@ -127,7 +127,7 @@ Based on that plot, we would decide for a submodel size of 6 because that's the 
 modsize_decided <- 6
 ```
 
-Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see the `?suggest_size` help).
+Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`).
 ```{r}
 suggest_size(cvvs)
 ```

@@ -2,20 +2,19 @@ Package: projpred
 Encoding: UTF-8
 Title: Projection Predictive Feature Selection
 Version: 2.1.0
-Date: 2022-03-17
+Date: 2022-03-31
 Authors@R: c(person("Juho", "Piironen", role = c("aut"),
                     email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
-             person("Alejandro", "Catalina", role = c("cre", "aut"),
+             person("Alejandro", "Catalina", role = "aut",
                     email = "alecatfel@gmail.com"),
              person("Aki", "Vehtari", role = "aut"),
+             person("Frank", "Weber", role = c("cre", "aut"),
+                    email = "fweber144@protonmail.com"),
              person("Jonah", "Gabry", role = "ctb"),
              person("Marco", "Colombo", role = "ctb"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
-             person("Hamada S.", "Badr", role = "ctb"),
-             person("Frank", "Weber", role = "ctb"))
-Maintainer:
-    Alejandro Catalina <alecatfel@gmail.com>
+             person("Hamada S.", "Badr", role = "ctb"))
 Description:
     Performs projection predictive feature selection for generalized linear
     models and generalized linear and additive multilevel models (see Piironen,

@@ -1,6 +1,5 @@
 <!-- badges: start -->
-[![Build Status](https://travis-ci.org/stan-dev/projpred.svg?branch=master)](https://travis-ci.org/stan-dev/projpred)
-[![codecov](https://codecov.io/gh/stan-dev/projpred/branch/master/graph/badge.svg)](https://app.codecov.io/gh/stan-dev/projpred)
+<!-- [![codecov](https://codecov.io/gh/stan-dev/projpred/branch/master/graph/badge.svg)](https://app.codecov.io/gh/stan-dev/projpred) -->
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
 <!-- badges: end -->
 
@@ -24,8 +23,9 @@ Currently, the supported response distributions (objects of class `family` in R)
 are `gaussian()`, `binomial()` (via the **brms** package, `brms::bernoulli()` is
 also supported), and `poisson()`.
 
-See the [vignette](https://mc-stan.org/projpred/articles/projpred.html) for an
-example application. Details on **projpred**'s functions as well as some shorter
+The [vignettes](https://mc-stan.org/projpred/articles/) (currently, there is
+only a single one) illustrate how to use the **projpred** functions in
+conjunction. Details on the **projpred** functions as well as some shorter
 examples may be found in the documentation.
 
 ## Installation
