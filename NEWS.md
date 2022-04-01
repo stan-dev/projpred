@@ -1,5 +1,9 @@
 # projpred 2.1.0.9000
 
+## Bug fixes
+
+* Fix the order of the package authors.
+
 # projpred 2.1.0
 
 ## Major changes
