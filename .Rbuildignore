@@ -13,3 +13,4 @@
 ^vignettes/.*_cache$
 ^vignettes/.*_files$
 ^vignettes/.*\.html$
+^CRAN-SUBMISSION$
