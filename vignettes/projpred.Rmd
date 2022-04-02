@@ -16,8 +16,6 @@ vignette: >
 ```{r child="children/SETTINGS-knitr.txt"}
 ```
 
-**Note:** The output of this vignette is shown [here](https://mc-stan.org/projpred/articles/projpred.html).
-
 ## Introduction
 
 This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models.^[Currently, the support for additive models is only experimental in **projpred**.] What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
