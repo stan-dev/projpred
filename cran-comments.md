@@ -12,14 +12,7 @@
 
 ## R CMD check results
 
-The local check on Linux gave no ERRORs or WARNINGs, but a NOTE:
-
-* checking installed package size ... NOTE
-  installed size is  5.1Mb
-  sub-directories of 1Mb or more:
-    libs   4.2Mb
-
-The local check on Windows gave no ERRORs, WARNINGs, or NOTEs.
+The local checks gave no ERRORs, WARNINGs, or NOTEs.
 
 For all three win-builder checks, we get a NOTE at
 `checking CRAN incoming feasibility ...` concerning the maintainer change (see
