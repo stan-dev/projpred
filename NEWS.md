@@ -1,4 +1,4 @@
-# projpred 2.1.0.9000
+# projpred 2.1.1
 
 ## Bug fixes
 
