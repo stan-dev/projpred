@@ -298,6 +298,7 @@ test_that(paste(
 ## Projection -------------------------------------------------------------
 
 test_that("project(): `object` of class \"datafit\" fails", {
+  skip_if_not(run_prj)
   # A prerequisite for this project() test (otherwise, it would have to be
   # adapted):
   stopifnot(all(names(args_datafit) %in% names(args_ref)))

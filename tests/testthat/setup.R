@@ -10,6 +10,8 @@ options(warn = 1)
 # interactively):
 # Run more tests, at the downside of increased runtime?:
 run_more <- FALSE
+# Run project()?:
+run_prj <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run varsel()?:
 run_vs <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run cv_varsel()?:
@@ -796,73 +798,75 @@ if (run_cvvs) {
 
 ### From "refmodel" -------------------------------------------------------
 
-tstsetups_prj_ref <- setNames(nm = names(refmods))
-args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
-  pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
-  mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
-  fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
-  if (grepl("\\.spclformul", tstsetup_ref)) {
-    solterms_x <- solterms_spcl
-  }
-  solterms <- nlist(empty = character(), solterms_x)
-  if (mod_crr %in% c("glmm", "gamm")) {
-    solterms <- c(solterms,
-                  nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
-  }
-  if (mod_crr %in% c("gam", "gamm")) {
-    solterms <- c(solterms,
-                  nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
-  }
-  if (mod_crr == "gamm") {
-    solterms <- c(solterms,
-                  nlist(solterms_sz = c(solterms_s, solterms_z),
-                        solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
-  }
-  if (!run_more &&
-      (fam_crr != "gauss" || grepl("\\.spclformul", tstsetup_ref))) {
-    solterms <- tail(solterms, 1)
-  }
-  lapply(setNames(nm = names(solterms)), function(solterms_nm_i) {
-    if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
-        fam_crr == "gauss" && solterms_nm_i == "solterms_x") {
-      ndr_ncl_pred <- ndr_ncl_pred_tst
-    } else if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
-               fam_crr == "gauss" && solterms_nm_i == "empty") {
-      ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust", "clust1")]
-    } else if (
-      (run_more && (
-        (pkg_crr == "rstanarm" && mod_crr == "glmm" &&
-         fam_crr == "brnll" && solterms_nm_i == "solterms_xz") ||
-        (pkg_crr == "rstanarm" && mod_crr == "gam" &&
-         fam_crr == "binom" && solterms_nm_i == "solterms_xs") ||
-        (pkg_crr == "rstanarm" && mod_crr == "gamm" &&
-         fam_crr == "brnll" && solterms_nm_i == "solterms_xsz")
-      )) ||
-      (!run_more && mod_crr %in% c("glmm", "gam", "gamm"))
-    ) {
-      # The `noclust` setting is important for the test "non-clustered
-      # projection does not require a seed" in `test_project.R`.
-      ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust")]
-    } else {
-      ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust")]
+if (run_prj) {
+  tstsetups_prj_ref <- setNames(nm = names(refmods))
+  args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
+    pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
+    mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
+    fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
+    if (grepl("\\.spclformul", tstsetup_ref)) {
+      solterms_x <- solterms_spcl
     }
-    lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
-      return(c(
-        nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-        list(solution_terms = solterms[[solterms_nm_i]], seed = seed_tst),
-        ndr_ncl_pred_i
-      ))
+    solterms <- nlist(empty = character(), solterms_x)
+    if (mod_crr %in% c("glmm", "gamm")) {
+      solterms <- c(solterms,
+                    nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
+    }
+    if (mod_crr %in% c("gam", "gamm")) {
+      solterms <- c(solterms,
+                    nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
+    }
+    if (mod_crr == "gamm") {
+      solterms <- c(solterms,
+                    nlist(solterms_sz = c(solterms_s, solterms_z),
+                          solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
+    }
+    if (!run_more &&
+        (fam_crr != "gauss" || grepl("\\.spclformul", tstsetup_ref))) {
+      solterms <- tail(solterms, 1)
+    }
+    lapply(setNames(nm = names(solterms)), function(solterms_nm_i) {
+      if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
+          fam_crr == "gauss" && solterms_nm_i == "solterms_x") {
+        ndr_ncl_pred <- ndr_ncl_pred_tst
+      } else if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
+                 fam_crr == "gauss" && solterms_nm_i == "empty") {
+        ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust", "clust1")]
+      } else if (
+        (run_more && (
+          (pkg_crr == "rstanarm" && mod_crr == "glmm" &&
+           fam_crr == "brnll" && solterms_nm_i == "solterms_xz") ||
+          (pkg_crr == "rstanarm" && mod_crr == "gam" &&
+           fam_crr == "binom" && solterms_nm_i == "solterms_xs") ||
+          (pkg_crr == "rstanarm" && mod_crr == "gamm" &&
+           fam_crr == "brnll" && solterms_nm_i == "solterms_xsz")
+        )) ||
+        (!run_more && mod_crr %in% c("glmm", "gam", "gamm"))
+      ) {
+        # The `noclust` setting is important for the test "non-clustered
+        # projection does not require a seed" in `test_project.R`.
+        ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust")]
+      } else {
+        ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust")]
+      }
+      lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
+        return(c(
+          nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+          list(solution_terms = solterms[[solterms_nm_i]], seed = seed_tst),
+          ndr_ncl_pred_i
+        ))
+      })
     })
   })
-})
-args_prj <- unlist_cust(args_prj)
+  args_prj <- unlist_cust(args_prj)
 
-prjs <- lapply(args_prj, function(args_prj_i) {
-  do.call(project, c(
-    list(object = refmods[[args_prj_i$tstsetup_ref]]),
-    excl_nonargs(args_prj_i)
-  ))
-})
+  prjs <- lapply(args_prj, function(args_prj_i) {
+    do.call(project, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      excl_nonargs(args_prj_i)
+    ))
+  })
+}
 
 ### From "vsel" -----------------------------------------------------------
 
@@ -969,8 +973,10 @@ if (run_cvvs) {
 
 ### From "projection" -----------------------------------------------------
 
-pls <- lapply(prjs, proj_linpred)
-pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
+if (run_prj) {
+  pls <- lapply(prjs, proj_linpred)
+  pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
+}
 
 ### From "proj_list" ------------------------------------------------------
 
