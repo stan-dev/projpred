@@ -1,4 +1,10 @@
-# projpred 2.1.0.9000
+# projpred 2.1.1
+
+## Bug fixes
+
+* Fix the order of the package authors.
+* Fix failing CRAN checks.
+* Add an input check for argument `solution_terms` of `project()` to fix a test failure on R versions > 4.1.
 
 # projpred 2.1.0
 

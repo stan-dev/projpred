@@ -137,6 +137,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     refit_prj <- FALSE
   }
 
+  stopifnot(is.null(solution_terms) || is.vector(solution_terms, "character"))
   if (!refit_prj &&
       !is.null(solution_terms) &&
       any(

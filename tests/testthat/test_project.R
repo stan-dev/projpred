@@ -6,6 +6,7 @@ test_that(paste(
   "`object` of class \"refmodel\", `solution_terms`, and `ndraws` (or",
   "`nclusters`) work"
 ), {
+  skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
@@ -19,10 +20,13 @@ test_that(paste(
 })
 
 test_that("invalid `solution_terms` warns or fails", {
+  skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
+
+    # Non-`vsel` object combined with `solution_terms = NULL`:
     expect_error(
       do.call(project, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
@@ -33,6 +37,8 @@ test_that("invalid `solution_terms` warns or fails", {
             "`solution_terms`\\.$"),
       info = tstsetup
     )
+
+    # Invalid length:
     expect_error(
       do.call(project, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
@@ -44,11 +50,29 @@ test_that("invalid `solution_terms` warns or fails", {
             "terms in the reference model\\.$"),
       info = tstsetup
     )
-    for (solterms_crr in list(2, 1:3, "1", list(solterms_x, solterms_x))) {
-      if (as.numeric(R.version$major) >= 4 && as.numeric(R.version$minor) > 1) {
-        # TODO: Fix this in R > 4.1:
-        if (is.list(solterms_crr)) next
-      }
+
+    # Invalid type:
+    for (solterms_crr in list(2, 1:3, list(solterms_x, solterms_x))) {
+      tstsetup_crr <- paste(tstsetup, paste(solterms_crr, collapse = ","),
+                            sep = "__")
+      expect_error(
+        do.call(project, c(
+          list(object = refmods[[args_prj_i$tstsetup_ref]],
+               solution_terms = solterms_crr),
+          excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+        )),
+        paste(
+          "^is\\.null\\(solution_terms\\) \\|\\| is\\.vector\\(solution_terms,",
+          "\"character\"\\) is not TRUE$"
+        ),
+        info = tstsetup_crr
+      )
+    }
+
+    # Should be working, but result in a projection onto the intercept-only
+    # submodel:
+    for (solterms_crr in list("1",
+                              c("some_dummy_string", "another_dummy_string"))) {
       tstsetup_crr <- paste(tstsetup, paste(solterms_crr, collapse = ","),
                             sep = "__")
       expect_warning(
@@ -72,6 +96,7 @@ test_that("invalid `solution_terms` warns or fails", {
 })
 
 test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
+  skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -243,6 +268,7 @@ test_that("invalid `nterms` fails", {
 # seed --------------------------------------------------------------------
 
 test_that("non-clustered projection does not require a seed", {
+  skip_if_not(run_prj)
   # This test is important to ensure that we don't have to set a seed where we
   # don't expect it to be necessary.
   tstsetups <- grep("\\.noclust$|\\.default_ndr_ncl$", names(prjs),
@@ -260,6 +286,7 @@ test_that("non-clustered projection does not require a seed", {
 })
 
 test_that("`seed` works (and restores the RNG state afterwards)", {
+  skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -295,6 +322,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
 # regul -------------------------------------------------------------------
 
 test_that("for GLMs, `regul` has an expected effect", {
+  skip_if_not(run_prj)
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))

@@ -1,6 +1,7 @@
 context("div_minimizer")
 
 test_that("divmin() works", {
+  skip_on_cran()
   for (tstsetup in names(fits)) {
     args_fit_i <- args_fit[[tstsetup]]
     pkg_crr <- args_fit_i$pkg_nm
