@@ -1,16 +1,3 @@
-## Resubmission
-
-This is a resubmission for which we have fixed the failing 'R CMD check' on
-R-devel.
-
-## Maintainer change
-
-With this submission, we would like to change the 'projpred' maintainer from
-Alejandro Catalina (<alecatfel@gmail.com>) to Frank Weber
-(<fweber144@protonmail.com>). Alejandro has sent an e-mail to
-<CRAN-submissions@R-project.org> on March 31, 2022, stating that he agrees with
-the maintainer change.
-
 ## Test environments
 
 * Local:
@@ -46,6 +33,4 @@ URLs and DOIs. These URLs are created from DOIs and they are in fact accessible
 ## Downstream dependencies
 
 There are two downstream dependencies for this package: 'brms' and 'parameters'.
-Both have been checked with respect to the 'projpred' features they use. While
-doing so, we discovered some long-standing 'projpred'-related bugs in the
-'parameters' package which we have reported on the 'parameters' issue tracker.
+Both have been checked with respect to the 'projpred' features they use.
