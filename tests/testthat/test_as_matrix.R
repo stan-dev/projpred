@@ -1,6 +1,7 @@
 context("as.matrix.projection()")
 
 test_that("as.matrix.projection() works", {
+  skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     if (args_prj[[tstsetup]]$mod_nm == "gam") {
       # Skipping GAMs because of issue #150 and issue #151. Note that for GAMs,

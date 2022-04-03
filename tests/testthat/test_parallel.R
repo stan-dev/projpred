@@ -29,6 +29,7 @@ if (run_prll) {
 
 test_that("project() in parallel gives the same results as sequentially", {
   skip_if_not(run_prll)
+  skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.", names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
