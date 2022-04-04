@@ -10,7 +10,7 @@
 
 ## R CMD check results
 
-The local checks gave no ERRORs, WARNINGs, or NOTEs.
+The local check gave no ERRORs, WARNINGs, or NOTEs.
 
 For all three win-builder checks, we get a NOTE at
 `checking CRAN incoming feasibility ...`:
