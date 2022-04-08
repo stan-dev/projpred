@@ -59,7 +59,9 @@ function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, fu
 \code{\link[gamm4:gamm4]{gamm4::gamm4()}}) as well as the notes in section "Formula terms" below.}
 
 \item{family}{A \code{\link{family}} object representing the observational model (i.e.,
-the distributional family for the response).}
+the distributional family for the response). May be \code{NULL} for
+\code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
+\code{object}.}
 
 \item{data}{Data used for fitting the reference model. Any \code{contrasts}
 attributes of the dataset's columns are silently removed.}

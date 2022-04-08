@@ -45,7 +45,9 @@
 #'   used for fitting the reference model) or from a new dataset. See also
 #'   section "Argument `extract_model_data`" below.
 #' @param family A [`family`] object representing the observational model (i.e.,
-#'   the distributional family for the response).
+#'   the distributional family for the response). May be `NULL` for
+#'   [get_refmodel.default()] in which case the family is retrieved from
+#'   `object`.
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
 #'   called `fits` containing the \eqn{K} model fits from which reference model
 #'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
@@ -660,10 +662,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     } else if (all(y %in% c(0, 1)) &&
                length(response_name) == 1 &&
                !all(weights == 1)) {
-      warning(
-        "Assuming that the response contains numbers of successes (not ",
-        "proportions of successes), in contrast to glm()."
-      )
+      warning("Assuming that the response contains numbers of successes (not ",
+              "proportions of successes), in contrast to glm().")
     }
   }
 
