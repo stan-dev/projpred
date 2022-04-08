@@ -662,10 +662,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     } else if (all(y %in% c(0, 1)) &&
                length(response_name) == 1 &&
                !all(weights == 1)) {
-      warning(
-        "Assuming that the response contains numbers of successes (not ",
-        "proportions of successes), in contrast to glm()."
-      )
+      warning("Assuming that the response contains numbers of successes (not ",
+              "proportions of successes), in contrast to glm().")
     }
   }
 
