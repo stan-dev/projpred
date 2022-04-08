@@ -45,7 +45,9 @@
 #'   used for fitting the reference model) or from a new dataset. See also
 #'   section "Argument `extract_model_data`" below.
 #' @param family A [`family`] object representing the observational model (i.e.,
-#'   the distributional family for the response).
+#'   the distributional family for the response). May be `NULL` for
+#'   [get_refmodel.default()] in which case the family is retrieved from
+#'   `object`.
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
 #'   called `fits` containing the \eqn{K} model fits from which reference model
 #'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
