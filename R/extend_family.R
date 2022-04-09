@@ -14,21 +14,198 @@
 #' it yourself.
 #'
 #' @param family A [`family`] object.
+#' @param augdat_y_unqs Only relevant for augmented-data projection, in which
+#'   case this needs to be the vector of unique response values or may be left
+#'   at `NULL` if `family$cats` is already non-`NULL`. See also section
+#'   "Augmented-data projection" below.
+#' @param augdat_link Only relevant for augmented-data projection, in which case
+#'   this needs to be the link function (supplied as a function, not a character
+#'   string, for example). Use `NULL` for the traditional (non-augmented-data)
+#'   projection. See also section "Augmented-data projection" below.
+#' @param augdat_ilink Only relevant for augmented-data projection, in which
+#'   case this needs to be the inverse-link function (supplied as a function,
+#'   not a character string, for example). Use `NULL` for the traditional
+#'   (non-augmented-data) projection. See also section "Augmented-data
+#'   projection" below.
+#' @param augdat_args_link Only relevant for augmented-data projection, in which
+#'   case this may be a named `list` of arguments to pass to the function
+#'   supplied to `augdat_link`.
+#' @param augdat_args_ilink Only relevant for augmented-data projection, in
+#'   which case this may be a named `list` of arguments to pass to the function
+#'   supplied to `augdat_ilink`.
+#' @param ... Ignored (exists only to swallow up further arguments which might
+#'   be passed to this function).
+#'
+#' @details
+#'
+#' # Augmented-data projection
+#'
+#' In the following, \eqn{N}, \eqn{C_{\mbox{cat}}}{C_cat},
+#' \eqn{C_{\mbox{lat}}}{C_lat}, \eqn{S_{\mbox{ref}}}{S_ref}, and
+#' \eqn{S_{\mbox{prj}}}{S_prj} from help topic [refmodel-init-get] are used.
+#' Furthermore, let \eqn{S} denote either \eqn{S_{\mbox{ref}}}{S_ref} or
+#' \eqn{S_{\mbox{prj}}}{S_prj}, whichever is appropriate in the context where it
+#' is used.
+#'
+#' Then, as their first input, the functions supplied to arguments `augdat_link`
+#' and `augdat_ilink` have to accept:
+#' * For `augdat_link`: an \eqn{S \times N \times C_{\mbox{cat}}}{S x N x C_cat}
+#' array containing the probabilities for the response categories. The order of
+#' the response categories is the same as in `family$cats` (see argument
+#' `augdat_y_unqs`).
+#' * For `augdat_ilink`: an \eqn{S \times N \times C_{\mbox{lat}}}{S x N x
+#' C_lat} array containing the linear predictors.
+#'
+#' The return value of these functions needs to be:
+#' * For `augdat_link`: an \eqn{S \times N \times C_{\mbox{lat}}}{S x N x C_lat}
+#' array containing the linear predictors.
+#' * For `augdat_ilink`: an \eqn{S \times N \times C_{\mbox{cat}}}{S x N x
+#' C_cat} array containing the probabilities for the response categories. The
+#' order of the response categories has to be the same as in `family$cats` (see
+#' argument `augdat_y_unqs`).
+#'
+#' For the augmented-data projection, the response vector resulting from
+#' `extract_model_data` (see [init_refmodel()]) is coerced to a `factor` (using
+#' [as.factor()]). Inside of [init_refmodel()], the levels of this `factor` have
+#' to be identical to `family$cats`. Everywhere else, they have to be a subset
+#' of `family$cats`. See argument `augdat_y_unqs` for how to control
+#' `family$cats`.
+#'
+#' For ordinal \pkg{brms} families, be aware that the submodels (onto which the
+#' reference model is projected) currently have the following restrictions:
+#' * The discrimination parameter `disc` is not supported (i.e., it is a
+#' constant with value 1).
+#' * The thresholds are `"flexible"` (see [brms::brmsfamily()]).
+#' * The thresholds do not vary across the levels of a `factor`-like variable
+#' (see argument `gr` of [brms::resp_thres()]).
+#' * The `"probit_approx"` link is replaced by `"probit"`.
+#'
+#' For the [brms::categorical()] family, be aware that:
+#' * For multilevel submodels, the group-level effects are allowed to be
+#' correlated between different response categories.
+#' * For multilevel submodels, \pkg{mclogit} versions < 0.9.4 may throw the
+#' error \code{'a' (<number> x 1) must be square}. Updating \pkg{mclogit} to a
+#' version >= 0.9.4 should fix this.
 #'
 #' @return The [`family`] object extended in the way needed by \pkg{projpred}.
 #'
 #' @export
-extend_family <- function(family) {
+extend_family <- function(family,
+                          augdat_y_unqs = NULL,
+                          augdat_link = NULL,
+                          augdat_ilink = NULL,
+                          augdat_args_link = list(),
+                          augdat_args_ilink = list(),
+                          ...) {
   if (.has_family_extras(family)) {
     ## if the object already was created using this function, then return
     return(family)
   }
-  extend_family_specific <- paste0("extend_family_", tolower(family$family))
-  if (!exists(extend_family_specific, mode = "function")) {
-    stop("Family '", family$family, "' is not supported by projpred.")
+  aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink)
+  if (!aug_data) {
+    extend_family_specific <- paste0("extend_family_", tolower(family$family))
+    if (!exists(extend_family_specific, mode = "function")) {
+      stop("Family '", family$family, "' is not supported by projpred.")
+    }
+    extend_family_specific <- get(extend_family_specific, mode = "function")
+    family <- extend_family_specific(family)
+    family$for_augdat <- FALSE
+    # If `family$cats` weren't `NULL`, then downstream code in projpred would
+    # have to be adapted:
+    stopifnot(is.null(family$cats))
+  } else {
+    if (!is.null(augdat_y_unqs)) {
+      family$cats <- augdat_y_unqs
+    } else if (is.null(family$cats)) {
+      stop("Please supply argument `augdat_y_unqs` or ensure that ",
+           "`family$cats` is not `NULL`.")
+    }
+
+    # Checks for special 'brms' features (currently only necessary for argument
+    # `refcat` of the brms::categorical() family):
+    if (!(is.null(family$refcat) ||
+          identical(family$refcat, utils::head(family$cats, 1)))) {
+      stop("Currently, the first category must be the reference category.")
+    }
+
+    family$linkfun <- function(mu) {
+      mu_arr <- augmat2arr(mu, margin_draws = 1)
+      eta_arr <- do.call(augdat_link, c(list(mu_arr), augdat_args_link))
+      return(arr2augmat(eta_arr, margin_draws = 1))
+    }
+    family$linkinv <- function(eta) {
+      eta_arr <- augmat2arr(eta, margin_draws = 1)
+      mu_arr <- do.call(augdat_ilink, c(list(eta_arr), augdat_args_ilink))
+      return(arr2augmat(mu_arr, margin_draws = 1))
+    }
+    family$kl_ptwise <- function(mu_ref, mu_sub, w_obs = 1) {
+      mu_ref_arr <- augmat2arr(mu_ref)
+      mu_sub_arr <- augmat2arr(mu_sub)
+      stopifnot(identical(dim(mu_ref_arr), dim(mu_sub_arr)))
+      n_obs <- dim(mu_ref_arr)[1]
+      n_prjdraws <- dim(mu_ref_arr)[3]
+      if (length(w_obs) == 0) {
+        w_obs <- rep(1, n_obs)
+      } else if (length(w_obs) == 1) {
+        w_obs <- rep(w_obs, n_obs)
+      } else if (length(w_obs) != n_obs) {
+        stop("Argument `w_obs` needs to be of length 0, 1, or `n_obs`.")
+      }
+      return(do.call(rbind, lapply(seq_len(n_obs), function(i_obs) {
+        do.call(c, lapply(seq_len(n_prjdraws), function(i_prjdraws) {
+          # In analogy to `extend_family(binomial())$kl()`,
+          # `extend_family(poisson())$kl()`, and
+          # `extend_family(gaussian())$kl()`, multiply by the observation
+          # weight:
+          return(w_obs[i_obs] * sum(
+            mu_ref_arr[i_obs, , i_prjdraws] *
+              (log(mu_ref_arr[i_obs, , i_prjdraws]) -
+                 log(mu_sub_arr[i_obs, , i_prjdraws]))
+          ))
+        }))
+      })))
+    }
+    family$kl <- function(pref, data, psub) {
+      data$weights <- data$weights / sum(data$weights)
+      return(colSums(
+        family$kl_ptwise(mu_ref = pref$mu,
+                         mu_sub = psub$mu,
+                         w_obs = data$weights)
+      ))
+    }
+    family$dis_fun <- function(pref, psub, wobs = 1) {
+      return(rep(NA, ncol(pref$mu)))
+    }
+    family$predvar <- function(mu, dis, wsample = 1) {
+      return(rep(NA, NROW(mu)))
+    }
+    family$ll_fun <- function(mu, dis = NULL, y, weights = 1) {
+      mu_arr <- augmat2arr(mu)
+      stopifnot(
+        is.factor(y) &&
+          identical(length(y), dim(mu_arr)[1]) &&
+          identical(nlevels(y), dim(mu_arr)[2])
+      )
+      if (length(weights) == 0) {
+        weights <- rep(1, length(y))
+      } else if (length(weights) == 1) {
+        weights <- rep(weights, length(y))
+      } else if (length(weights) != length(y)) {
+        stop("Argument `weights` needs to be of length 0, 1, or `length(y)`.")
+      }
+      return(do.call(rbind, lapply(seq_along(y), function(i_obs) {
+        weights[i_obs] * log(mu_arr[i_obs, y[i_obs], ])
+      })))
+    }
+    family$ppd <- function(mu, dis, weights = 1) {
+      mu_arr <- augmat2arr(augvec2augmat(mu))
+      n_cat <- dim(mu_arr)[2]
+      return(do.call(c, lapply(seq_len(dim(mu_arr)[1]), function(i_obs) {
+        sample.int(n_cat, size = 1L, prob = mu_arr[i_obs, , 1])
+      })))
+    }
+    family$for_augdat <- TRUE
   }
-  extend_family_specific <- get(extend_family_specific, mode = "function")
-  family <- extend_family_specific(family)
   family$is_extended <- TRUE
   return(family)
 }

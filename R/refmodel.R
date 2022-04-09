@@ -82,7 +82,8 @@
 #'   is the standard deviation, not the variance.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
-#'   arguments passed to the appropriate method. Else: ignored.
+#'   arguments passed to the appropriate method. For [init_refmodel()]:
+#'   arguments passed to [extend_family()].
 #'
 #' @details
 #'
@@ -104,8 +105,14 @@
 #' \eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
 #' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
-#' draws). Then the functions supplied to these arguments need to have the
-#' following prototypes:
+#' draws). For the augmented-data projection, let \eqn{C_{\mbox{cat}}}{C_cat}
+#' denote the number of response categories, \eqn{C_{\mbox{lat}}}{C_lat} the
+#' number of latent response categories (which typically equals
+#' \eqn{C_{\mbox{cat}} - 1}{C_cat - 1}), and define \eqn{N_{\mbox{augcat}} := N
+#' \cdot C_{\mbox{cat}}}{N_augcat := N * C_cat} as well as
+#' \eqn{N_{\mbox{auglat}} := N \cdot C_{\mbox{lat}}}{N_auglat := N * C_lat}.
+#' Then the functions supplied to these arguments need to have the following
+#' prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
@@ -125,24 +132,43 @@
 #' * `div_minimizer` does not need to have a specific prototype, but it needs to
 #' be able to be called with the following arguments:
 #'     + `formula` accepts either a standard [`formula`] with a single response
-#'     (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a [`formula`] with
-#'     \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
-#'     the left-hand side in which case the projection has to be performed for
-#'     each of the response variables separately.
-#'     + `data` accepts a `data.frame` to be used for the projection.
+#'     (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1} or in case of the augmented-data
+#'     projection) or a [`formula`] with \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}
+#'     response variables [cbind()]-ed on the left-hand side in which case the
+#'     projection has to be performed for each of the response variables
+#'     separately.
+#'     + `data` accepts a `data.frame` to be used for the projection. In case of
+#'     the traditional (non-augmented-data) projection, this dataset has \eqn{N}
+#'     rows. In case of the augmented-data projection, this dataset has
+#'     \eqn{N_{\mbox{augcat}}}{N_augcat} rows.
 #'     + `family` accepts a [`family`] object.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
-#'     GLM fitter).
+#'     GLM fitter) in case of the traditional projection and an
+#'     \eqn{N_{\mbox{augcat}} \times S_{\mbox{prj}}}{N_augcat x S_prj} matrix of
+#'     `NA`s in case of the augmented-data projection.
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
+#'     + `projpred_ws_aug` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+#'     matrix of expected values for the response in case of the traditional
+#'     projection and an \eqn{N_{\mbox{augcat}} \times S_{\mbox{prj}}}{N_augcat
+#'     x S_prj} matrix of probabilities for the response categories in case of
+#'     the augmented-data projection.
 #'     + `...` accepts further arguments specified by the user.
 #'
 #' The return value of these functions needs to be:
-#' * `ref_predfun`: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
-#' * `proj_predfun`: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
+#' * `ref_predfun`: for the traditional projection, an \eqn{N \times
+#' S_{\mbox{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
+#' \eqn{S_{\mbox{ref}} \times N \times C_{\mbox{lat}}}{S_ref x N x C_lat} array
+#' (the only exception is the augmented-data projection for the [binomial()]
+#' family in which case `ref_predfun` needs to return an \eqn{N \times
+#' S_{\mbox{ref}}}{N x S_ref} matrix just like for the traditional projection
+#' because the array is constructed by an internal wrapper function).
+#' * `proj_predfun`: for the traditional projection, an \eqn{N \times
+#' S_{\mbox{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
+#' \eqn{N \times C_{\mbox{lat}} \times S_{\mbox{prj}}}{N x C_lat x S_prj} array.
 #' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 #' this number of submodel fits.
 #'
@@ -173,6 +199,20 @@
 #' `y`, `weights`, and `offset`, each being a numeric vector containing the data
 #' for the response, the observation weights, and the offsets, respectively. An
 #' exception is that `y` may also be `NULL` (depending on argument `extract_y`).
+#'
+#' # Augmented-data projection
+#'
+#' If a custom reference model for an augmented-data projection is needed, see
+#' also [extend_family()].
+#'
+#' For the augmented-data projection, the response vector resulting from
+#' `extract_model_data` is internally coerced to a `factor` (using
+#' [as.factor()]). The levels of this `factor` have to be identical to
+#' `family$cats` (see [extend_family()]'s argument `augdat_y_unqs`).
+#'
+#' Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
+#' per response category) are not supported by \pkg{projpred} yet. So far, only
+#' offsets which are the same across all response categories are supported.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
@@ -251,7 +291,10 @@ NULL
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]).
 #' @param ynew If not `NULL`, then this needs to be a vector of new (or old)
-#'   response values. See section "Value" below.
+#'   response values. See also section "Value" below. In case of the
+#'   augmented-data projection, `ynew` is internally coerced to a `factor`
+#'   (using [as.factor()]). The levels of this `factor` have to be a subset of
+#'   `object$family$cats` (see [extend_family()]'s argument `augdat_y_unqs`).
 #' @param type Only relevant if `is.null(ynew)`. The scale on which the
 #'   predictions are returned, either `"link"` or `"response"` (see
 #'   [predict.glm()] but note that [predict.refmodel()] does not adhere to the
@@ -261,9 +304,16 @@ NULL
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
 #'
-#' @return Either a vector of predictions (with the scale depending on argument
-#'   `type`) or, if `!is.null(ynew)`, a vector of log predictive densities
-#'   evaluated at `ynew`.
+#' @return In the following, \eqn{N}, \eqn{C_{\mbox{cat}}}{C_cat}, and
+#'   \eqn{C_{\mbox{lat}}}{C_lat} from help topic [refmodel-init-get] are used.
+#'   Furthermore, let \eqn{C} denote either \eqn{C_{\mbox{cat}}}{C_cat} (if
+#'   `type = "response"`) or \eqn{C_{\mbox{lat}}}{C_lat} (if `type = "link"`).
+#'   Then, if `is.null(ynew)`, the returned object contains the reference
+#'   model's predictions (with the scale depending on argument `type`) as a
+#'   length-\eqn{N} vector in case of the traditional projection and as an
+#'   \eqn{N \times C}{N x C} matrix in case of the augmented-data projection. If
+#'   `!is.null(ynew)`, the returned object is a length-\eqn{N} vector of log
+#'   predictive densities evaluated at `ynew`.
 #'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
@@ -275,8 +325,20 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (inherits(object, "datafit")) {
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
-  if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1)) {
+  if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1) &&
+      !object$family$for_augdat) {
     stop("Argument `ynew` must be a numeric vector.")
+  }
+  if (!is.null(ynew) && object$family$for_augdat) {
+    ynew <- as.factor(ynew)
+    if (!all(levels(ynew) %in% object$family$cats)) {
+      stop("The levels of the response variable (after coercing it to a ",
+           "`factor`) have to be a subset of `family$cats`. Either modify ",
+           "`ynew` accordingly or see the documentation for extend_family()'s ",
+           "argument `augdat_y_unqs` to solve this.")
+    }
+    # Re-assign the original levels because some levels might be missing:
+    ynew <- factor(ynew, levels = object$family$cats)
   }
 
   if (is.null(newdata)) {
@@ -293,6 +355,10 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
   if (length(offsetnew) == 0) {
     offsetnew <- rep(0, length(w_o$y))
+  }
+  if (object$family$for_augdat && !all(weightsnew == 1)) {
+    stop("Currently, the augmented-data projection may not be combined with ",
+         "observation weights (other than 1).")
   }
   if (inherits(object$fit, "stanreg") && length(object$offset) > 0) {
     if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
@@ -311,6 +377,13 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     ## integrate over the samples
     if (NCOL(pred) > 1) {
       pred <- rowMeans(pred)
+    }
+    if (object$family$for_augdat) {
+      pred <- structure(pred,
+                        nobs_orig = nrow(newdata),
+                        class = "augvec")
+      pred <- augmat2arr(augvec2augmat(pred))
+      pred <- matrix(pred, nrow = dim(pred)[1], ncol = dim(pred)[2])
     }
     return(pred)
   } else {
@@ -343,7 +416,19 @@ refprd <- function(fit, newdata = NULL) {
   # For safety reasons, keep `transform = FALSE` even though this should
   # be the default in all posterior_linpred() methods (but we cannot be
   # sure with regard to user-defined posterior_linpred() methods):
-  t(posterior_linpred(fit, transform = FALSE, newdata = newdata))
+  linpred_out <- posterior_linpred(
+    fit, transform = FALSE, newdata = newdata
+  )
+  if (length(dim(linpred_out)) == 2) {
+    linpred_out <- t(linpred_out)
+  } else if (length(dim(linpred_out)) != 3) {
+    # A 3-dimensional array would be ok for the augmented-data projection
+    # (and doesn't need any transposition or permutation of its
+    # dimensions). Everything else is unexpected.
+    stop("Unexpected structure for posterior_linpred()'s output. Please ",
+         "notify the package maintainer.")
+  }
+  return(linpred_out)
 }
 
 .extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
@@ -428,6 +513,27 @@ get_refmodel.stanreg <- function(object, ...) {
   # Family ------------------------------------------------------------------
 
   family <- family(object)
+  if (object$stan_function == "stan_polr") {
+    # Currently, we need brms for the special link and inverse link function.
+    # It shouldn't be hard to implement these separately so that brms is not
+    # needed here, but that would introduce redundancies and for now, relying
+    # on brms (>= 2.16.3) is the quickest solution and not too demanding.
+    if (!requireNamespace("brms", quietly = TRUE)) {
+      stop("Package \"brms\" needed. Please install it.",
+           call. = FALSE)
+    }
+    stopifnot(utils::packageVersion("brms") >= "2.16.3")
+    if (family == "logistic") {
+      family <- "logit"
+    } else if (family == "loglog") {
+      stop("Currently, the \"", family, "\" link is not supported by ",
+           "projpred.")
+    }
+    family <- structure(list(family = "cumulative_rstanarm",
+                             link = family,
+                             cats = levels(object$y)),
+                        class = "family")
+  }
 
   # Data --------------------------------------------------------------------
 
@@ -541,7 +647,25 @@ get_refmodel.stanreg <- function(object, ...) {
       stop("Unexpected length of element `offset` returned by ",
            "extract_model_data() (see `?init_refmodel`).")
     }
-    return(t(posterior_linpred(fit, newdata = newdata, offset = offs)))
+    linpred_out <- posterior_linpred(fit, newdata = newdata, offset = offs)
+    stopifnot(length(dim(linpred_out)) == 2)
+    if (fit$stan_function == "stan_polr") {
+      # Since rstanarm::posterior_linpred.stanreg() doesn't offer an argument
+      # like `incl_thres` of brms::posterior_linpred.brmsfit(), we need to
+      # incorporate the thresholds into the linear predictors by hand:
+      linpred_out <- apply(
+        as.matrix(fit)[, names(fit$zeta), drop = FALSE],
+        2,
+        function(x) {
+          x - linpred_out
+        },
+        simplify = FALSE
+      )
+      linpred_out <- abind::abind(linpred_out, rev.along = 0)
+    } else {
+      linpred_out <- t(linpred_out)
+    }
+    return(linpred_out)
   }
 
   cvfun <- function(folds) {
@@ -567,13 +691,28 @@ get_refmodel.stanreg <- function(object, ...) {
     dis <- NULL
   }
 
+
+  # Augmented-data projection -----------------------------------------------
+
+  if (object$stan_function == "stan_polr") {
+    args_augdat <- list(
+      augdat_link = "brms" %:::% "link_cumulative",
+      augdat_ilink = "brms" %:::% "inv_link_cumulative",
+      augdat_args_link = list(link = family$link),
+      augdat_args_ilink = list(link = family$link)
+    )
+  } else {
+    args_augdat <- list()
+  }
+
   # Output ------------------------------------------------------------------
 
-  return(init_refmodel(
+  args_basic <- list(
     object = object, data = data, formula = formula, family = family,
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
-    dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder, ...
-  ))
+    dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder
+  )
+  return(do.call(init_refmodel, args = c(args_basic, args_augdat, list(...))))
 }
 
 #' @rdname refmodel-init-get
@@ -591,7 +730,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (!.has_family_extras(family)) {
-    family <- extend_family(family)
+    family <- extend_family(family, ...)
+  }
+  aug_data <- family$for_augdat
+  if (aug_data &&
+      isTRUE(getOption("projpred.warn_augdat_experimental", TRUE))) {
+    warning("The augmented-data projection is still experimental.")
   }
 
   family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL) {
@@ -604,9 +748,18 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     family$linkinv(proj_predfun(fits, newdata = newdata) + offset)
   }
 
+  if (family$family == "categorical" && family$link != "logit") {
+    stop("For the brms::categorical() family, projpred only supports the ",
+         "logit link.")
+  }
+
   # Special case: `datafit` -------------------------------------------------
 
   proper_model <- !is.null(object)
+  if (!proper_model && aug_data) {
+    stop("Currently, the augmented-data projection may not be combined with ",
+         "`object = NULL` (i.e., a `datafit`).")
+  }
 
   # Formula -----------------------------------------------------------------
 
@@ -617,6 +770,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
+    } else if (aug_data) {
+      stop("Currently, the augmented-data projection may not be combined with ",
+           "a 2-column response.")
     }
   } else if (length(response_name) > 2) {
     stop("The response is not allowed to have more than two columns.")
@@ -624,9 +780,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
   formula <- update(formula, paste(response_name[1], "~ ."))
-  if (formula_contains_additive_terms(formula) &&
-      isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
-    warning("Support for additive models is still experimental.")
+  if (formula_contains_additive_terms(formula)) {
+    if (aug_data) {
+      stop("Currently, the augmented-data projection may not be combined with ",
+           "additive models.")
+    } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
+      warning("Support for additive models is still experimental.")
+    }
   }
 
   # Data --------------------------------------------------------------------
@@ -643,7 +803,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   y <- target$y
   weights <- target$weights
 
-  if (family$family == "binomial") {
+  if (aug_data) {
+    y <- as.factor(y)
+    stopifnot(nlevels(y) >= 2)
+    if (!identical(levels(y), family$cats)) {
+      stop("The levels of the response variable (after coercing it to a ",
+           "`factor`) have to be identical to `family$cats`. See the ",
+           "documentation for extend_family()'s argument `augdat_y_unqs` to ",
+           "solve this.")
+    }
+  } else if (family$family == "binomial") {
     if (!all(.is.wholenumber(y))) {
       stop("In projpred, the response must contain numbers of successes (not ",
            "proportions of successes), in contrast to glm() where this is ",
@@ -655,6 +824,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       warning("Assuming that the response contains numbers of successes (not ",
               "proportions of successes), in contrast to glm().")
     }
+  }
+
+  if (aug_data && !all(weights == 1)) {
+    stop("Currently, the augmented-data projection may not be combined with ",
+         "observation weights (other than 1).")
   }
 
   if (is.null(offset)) {
@@ -676,14 +850,33 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (is.null(ref_predfun)) {
       ref_predfun <- refprd
     }
+    if (aug_data && family$family == "binomial") {
+      ref_predfun_mat <- ref_predfun
+      ref_predfun <- function(fit, newdata = NULL) {
+        linpred1 <- ref_predfun_mat(fit = fit, newdata = newdata)
+        linpred1 <- t(linpred1)
+        return(array(linpred1, dim = c(dim(linpred1), 1L)))
+      }
+    }
     # Since posterior_linpred() is supposed to include any offsets but (at least
     # currently) projpred expects the final ref_predfun() to exclude any offsets
     # (see issue #186), the offsets have to be subtracted here by a wrapper
-    # function:
+    # function. This wrapper function also performs some preparations for the
+    # augmented-data projection:
     ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL) {
       linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
-      if (!is.matrix(linpred_out)) {
+      if (length(dim(linpred_out)) == 2) {
+        n_obs <- nrow(linpred_out)
+      } else if (length(dim(linpred_out)) == 3) {
+        # For the augmented-data projection, `linpred_out` is expected to be a
+        # 3-dimensional array with dimensions S_ref x N x C_lat (see
+        # `?init_refmodel` for a definition of these dimensions). Therefore, it
+        # is converted to an augmented-rows matrix (see file "augdat.R" for a
+        # definition):
+        linpred_out <- arr2augmat(linpred_out, margin_draws = 1)
+        n_obs <- attr(linpred_out, "nobs_orig")
+      } else {
         stop("Unexpected structure for `linpred_out`. Does the return value ",
              "of `ref_predfun` have the correct structure?")
       }
@@ -693,7 +886,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       # potential conflicts for a non-`NULL` default `wrhs`:
       offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
       if (length(offs) > 0) {
-        stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
+        stopifnot(length(offs) %in% c(1L, n_obs))
         linpred_out <- linpred_out - offs
       }
       return(linpred_out)
@@ -713,11 +906,28 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(div_minimizer)) {
-    div_minimizer <- divmin
+    if (!aug_data) {
+      div_minimizer <- divmin
+    } else {
+      div_minimizer <- divmin_augdat
+    }
   }
 
   if (is.null(proj_predfun)) {
-    proj_predfun <- subprd
+    if (!aug_data) {
+      proj_predfun <- subprd
+    } else if (family$family == "binomial") {
+      proj_predfun <- subprd_augdat_binom
+    } else {
+      proj_predfun <- subprd_augdat
+    }
+  }
+  if (aug_data) {
+    proj_predfun_usr <- proj_predfun
+    proj_predfun <- function(fits, newdata) {
+      augprd_arr <- proj_predfun_usr(fits, newdata = newdata)
+      return(arr2augmat(augprd_arr))
+    }
   }
 
   fetch_data_wrapper <- function(obs = NULL) {
@@ -754,6 +964,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # mu ----------------------------------------------------------------------
 
+  # Note: For the augmented-data projection, in particular for nominal and
+  # ordinal families with more than 2 categories, the final matrix `mu` is an
+  # augmented-rows matrix containing the probabilities for each of the response
+  # categories (at each observation and each posterior draw).
   if (proper_model) {
     eta <- ref_predfun(object)
     mu <- family$linkinv(eta)
