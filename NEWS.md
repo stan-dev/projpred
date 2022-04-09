@@ -1,5 +1,8 @@
 # projpred 2.1.2.9000
 
+## Major changes
+
+* Introduction of the augmented-data projection which adds support for the `brms::categorical()` and `brms::cumulative()` response families as well as `rstanarm::stan_polr()` fits. More **brms** families might be supported in the future. The augmented-data projection may also be used for the `binomial()` or the `brms::bernoulli()` family (see `?extend_family` as well as `?augdat_link_binom` and `?augdat_ilink_binom`). Note that the augmented-data projection is currently considered as an experimental feature since it has not been tested thoroughly yet and is also subject to some more theoretical investigations. For the augmented-data projection based on a **brms** reference model, **brms** version 2.17.0 or later is needed. (GitHub: #70, #322)
 
 # projpred 2.1.2
 

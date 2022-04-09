@@ -18,11 +18,11 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person(family = "The LME4 Authors", role = "cph",
                     comment = "see file 'LICENSE' for details"))
 Description:
-    Performs projection predictive feature selection for generalized linear and
-    additive models as well as for generalized linear and additive multilevel
-    models (see Piironen, Paasiniemi and Vehtari, 2020,
-    <doi:10.1214/20-EJS1711>; Catalina, Bürkner and Vehtari, 2020,
-    <arXiv:2010.06994>). The package is compatible with the 'rstanarm' and
+    Performs projection predictive feature selection for various regression
+    models, in particular, generalized linear and additive models as well as
+    generalized linear and additive multilevel models (see Piironen, Paasiniemi
+    and Vehtari, 2020, <doi:10.1214/20-EJS1711>; Catalina, Bürkner and Vehtari,
+    2020, <arXiv:2010.06994>). The package is compatible with the 'rstanarm' and
     'brms' packages, but other reference models can also be used. See the
     documentation as well as the package vignette for more information and
     examples.

@@ -1,11 +1,10 @@
 #' Variable selection (without cross-validation)
 #'
-#' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
-#' and GAMMs. This variable selection consists of a *search* part and an
-#' *evaluation* part. The search part determines the solution path, i.e., the
-#' best submodel for each submodel size (number of predictor terms). The
-#' evaluation part determines the predictive performance of the submodels along
-#' the solution path.
+#' Perform the projection predictive variable selection. This variable selection
+#' consists of a *search* part and an *evaluation* part. The search part
+#' determines the solution path, i.e., the best submodel for each submodel size
+#' (number of predictor terms). The evaluation part determines the predictive
+#' performance of the submodels along the solution path.
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of

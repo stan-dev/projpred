@@ -17,7 +17,9 @@
 #' additive models (GAMs), and generalized additive multilevel (or "mixed")
 #' models (GAMMs), with the support for additive models still being
 #' experimental. Note that the term "generalized" includes the Gaussian family
-#' as well.
+#' as well. Some regression models whose response family is not an exponential
+#' family are supported by the (currently still experimental) augmented-data
+#' projection (see below).
 #'
 #' The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
 #' of other packages are welcome to add new [get_refmodel()] methods (which
@@ -32,9 +34,19 @@
 #' is projected, even though this term is not always appropriate for custom
 #' reference models.
 #'
-#' Currently, the supported families are [gaussian()], [binomial()] (and---via
+#' Currently, the families supported by the traditional (non-augmented-data)
+#' projection are [gaussian()], [binomial()] (and---via
 #' [brms::get_refmodel.brmsfit()]---also [brms::bernoulli()]), as well as
-#' [poisson()].
+#' [poisson()]. The families supported by the augmented-data projection are
+#' [binomial()] (again also [brms::bernoulli()]), [brms::cumulative()], and
+#' [brms::categorical()]. For the augmented-data projection with the
+#' [binomial()] (or [brms::bernoulli()]) family, see [extend_family()] as well
+#' as [augdat_link_binom()] and [augdat_ilink_binom()]. As soon as possible, a
+#' reference for the augmented-data projection will be provided here. For now,
+#' [this GitHub issue](https://github.com/stan-dev/projpred/issues/70) provides
+#' some basic information. Note that the augmented-data projection is currently
+#' considered as an experimental feature since it has not been tested thoroughly
+#' yet and is also subject to some more theoretical investigations.
 #'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the
@@ -51,10 +63,10 @@
 #' parallelizing the projection on Windows because in our experience, the
 #' parallelization overhead is larger there, causing a parallel run to take
 #' longer than a sequential run. Also note that the parallelization works well
-#' for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
-#' big, which---when running in parallel---may lead to an excessive memory usage
-#' which in turn may crash the R session. Thus, we currently cannot recommend
-#' the parallelization for GLMMs, GAMs, and GAMMs.
+#' for GLMs, but for all other models, the fitted model objects are quite big,
+#' which---when running in parallel---may lead to excessive memory usage which
+#' in turn may crash the R session. Thus, we currently cannot recommend the
+#' parallelization for models other than GLMs.
 #'
 #' The [vignettes](https://mc-stan.org/projpred/articles/) (currently, there is
 #' only a single one) illustrate how to use the \pkg{projpred} functions in
