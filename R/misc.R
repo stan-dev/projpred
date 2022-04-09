@@ -454,5 +454,22 @@ magrittr::`%>%`
 
 # Helper function to combine separate `list`s into a single `list`:
 rbind2list <- function(x) {
-  as.list(do.call(rbind, lapply(x, as.data.frame)))
+  is_augeval <- any(sapply(x, function(x_i) {
+    is.list(x_i) &&
+      identical(names(x_i), c("mu", "lppd")) &&
+      inherits(x_i$mu, "augvec")
+  }))
+  if (is_augeval) {
+    mu_arr <- abind::abind(
+      lapply(x, function(x_i) {
+        augmat2arr(augvec2augmat(x_i$mu))
+      }),
+      along = 1
+    )
+    return(c(
+      list(mu = augmat2augvec(arr2augmat(mu_arr))),
+      rbind2list(lapply(x, "[", "lppd"))
+    ))
+  }
+  return(as.list(do.call(rbind, lapply(x, as.data.frame))))
 }

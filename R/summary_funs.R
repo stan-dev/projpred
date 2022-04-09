@@ -36,8 +36,12 @@
          "maintainer.")
   }
   # Average over the draws, taking their weights into account:
-  return(list(mu = c(mu %*% wsample),
-              lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)))
+  return(list(
+    mu = structure(c(mu %*% wsample),
+                   nobs_orig = attr(mu, "nobs_orig"),
+                   class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
+    lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
+  ))
 }
 
 # A function to calculate the desired performance statistics, their standard

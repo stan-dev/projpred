@@ -332,7 +332,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
   if (is.null(method)) {
-    if (has_group_features || has_additive_features || !search_terms_was_null) {
+    if (has_group_features || has_additive_features || !search_terms_was_null ||
+        refmodel$family$for_augdat) {
       method <- "forward"
     } else {
       method <- "l1"
@@ -347,6 +348,10 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
       if (!search_terms_was_null) {
         warning("Argument `search_terms` only takes effect if ",
                 "`method = \"forward\"`.")
+      }
+      if (refmodel$family$for_augdat) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with an L1 search.")
       }
     }
   }

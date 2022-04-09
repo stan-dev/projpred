@@ -338,14 +338,34 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
+    if (refmodel$family$for_augdat) {
+      # Disallow subsampled LOO CV for the augmented-data projection (for now)
+      # because `.tabulate_stats()` would probably have to be adapted in that
+      # case:
+      stop("Currently, the augmented-data projection may not be combined with ",
+           "subsampled LOO CV.")
+    }
     warning("Subsampled LOO CV is still experimental.")
   }
 
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
-  mu_ref <- do.call(c, lapply(seq_len(n), function(i) {
-    mu[i, ] %*% exp(lw[, i])
+  mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
+    # For the augmented-data projection, `mu` is an augmented-rows matrix
+    # whereas the columns of `lw` refer to the original (non-augmented)
+    # observations. Since `i` refers to the rows of `mu`, the index for `lw`
+    # needs to be adapted:
+    i_nonaug <- i %% n
+    if (i_nonaug == 0) {
+      i_nonaug <- n
+    }
+    mu[i, ] %*% exp(lw[, i_nonaug])
   }))
+  mu_ref <- structure(
+    mu_ref,
+    nobs_orig = attr(mu, "nobs_orig"),
+    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)
+  )
 
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k)
@@ -355,7 +375,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## initialize objects where to store the results
   solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1)
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
-  mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
+  mu_sub <- replicate(
+    nterms_max,
+    structure(rep(NA, nrow(mu)),
+              nobs_orig = attr(mu, "nobs_orig"),
+              class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
+    simplify = FALSE
+  )
 
   if (verbose) {
     if (validate_search) {
@@ -414,8 +440,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # have stricter consistency checks, see `?sweep`):
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
-      for (i in seq_along(inds)) {
-        mu_sub[[k]][inds[i]] <- mu_k[i, ] %*% exp(lw_sub[, i])
+      for (run_index in seq_along(inds)) {
+        i_aug <- inds[run_index]
+        run_index_aug <- run_index
+        if (refmodel$family$for_augdat) {
+          i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
+          run_index_aug <- run_index_aug +
+            (seq_along(refmodel$family$cats) - 1L) * nloo
+        }
+        mu_sub[[k]][i_aug] <- mu_k[run_index_aug, ] %*% exp(lw_sub[, run_index])
       }
 
       if (verbose) {
@@ -477,9 +510,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       summaries_sub <- .get_sub_summaries(
         submodels = submodels, test_points = c(i), refmodel = refmodel
       )
+      i_aug <- i
+      if (refmodel$family$for_augdat) {
+        i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
+      }
       for (k in seq_along(summaries_sub)) {
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
-        mu_sub[[k]][i] <- summaries_sub[[k]]$mu
+        mu_sub[[k]][i_aug] <- summaries_sub[[k]]$mu
       }
 
       candidate_terms <- split_formula(refmodel$formula,
@@ -607,7 +644,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
   sub <- apply(sub_cv_summaries, 1, rbind2list)
   sub <- lapply(sub, function(summ) {
-    summ$w <- rep(1, length(summ$mu))
+    summ$w <- rep(1, length(summ$lppd))
     summ$w <- summ$w / sum(summ$w)
     return(summ)
   })
