@@ -10,7 +10,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
   subset <- subset_formula_and_data(
     formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
-    data = refmodel$fetch_data(), y = p_ref$mu
+    data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = refmodel$family$cats
   )
 
   submodl <- refmodel$div_minimizer(
@@ -20,6 +20,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     weights = refmodel$wobs,
     projpred_var = p_ref$var,
     projpred_regul = regul,
+    projpred_ws_aug = p_ref$mu,
     ...
   )
 

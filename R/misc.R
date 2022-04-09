@@ -181,12 +181,15 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   subsampled (without replacement).
 #
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
-#   observations, and \eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws
-#   (= either `nclusters` or `ndraws`, depending on which one is used). Then the
-#   return value is a list with elements:
+#   observations (for non-augmented-data projection) or the number of augmented
+#   observations (for augmented-data projection), and
+#   \eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws (= either
+#   `nclusters` or `ndraws`, depending on which one is used). Then the return
+#   value is a list with elements:
 #
 #   * `mu`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of expected
-#   values for \eqn{y} for each draw/cluster.
+#   values for \eqn{y} (probabilities for the response categories in case of the
+#   augmented-data projection) for each draw/cluster.
 #   * `var`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of predictive
 #   variances for \eqn{y} for each draw/cluster which are needed for projecting
 #   the dispersion parameter (the predictive variances are NA for those families
@@ -237,7 +240,10 @@ bootstrap <- function(x, fun = mean, B = 2000,
       refmodel$family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     }))
     p_ref <- list(
-      mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
+      mu = refmodel$mu[, s_ind, drop = FALSE],
+      var = structure(predvar,
+                      nobs_orig = attr(refmodel$mu, "nobs_orig"),
+                      class = oldClass(refmodel$mu)),
       dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
       clust_used = FALSE
     )
@@ -297,8 +303,12 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
   # combine the results
   p <- list(
-    mu = unname(t(centers)),
-    var = predvar,
+    mu = structure(unname(t(centers)),
+                   nobs_orig = attr(mu, "nobs_orig"),
+                   class = oldClass(mu)),
+    var = structure(predvar,
+                    nobs_orig = attr(mu, "nobs_orig"),
+                    class = oldClass(mu)),
     weights = wcluster,
     cl = cl,
     clust_used = TRUE
