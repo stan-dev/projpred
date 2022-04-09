@@ -14,7 +14,9 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person("Jonah", "Gabry", role = "ctb"),
              person("Marco", "Colombo", role = "ctb"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
-             person("Hamada S.", "Badr", role = "ctb"))
+             person("Hamada S.", "Badr", role = "ctb"),
+             person(family = "The LME4 Authors", role = "cph",
+                    comment = "see file 'LICENSE' for details"))
 Description:
     Performs projection predictive feature selection for generalized linear and
     additive models as well as for generalized linear and additive multilevel
@@ -39,9 +41,15 @@ Imports:
     ggplot2,
     Rcpp,
     utils,
+    abind,
     magrittr,
     mgcv,
     gamm4,
+    MASS,
+    ordinal,
+    ucminf,
+    nnet,
+    mclogit,
     rlang
 Suggests:
     rstanarm,

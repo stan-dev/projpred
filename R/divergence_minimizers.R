@@ -1,5 +1,7 @@
 # Divergence minimizers ---------------------------------------------------
 
+## Traditional (non-augmented-data) projection ----------------------------
+
 # Needed to avoid a NOTE in `R CMD check`:
 if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("formula_s")
@@ -348,6 +350,312 @@ control_callback <- function(family, ...) {
   }
 }
 
+## Augmented-data projection ----------------------------------------------
+
+# Needed to avoid a NOTE in `R CMD check`:
+if (getRversion() >= package_version("2.15.1")) {
+  utils::globalVariables("s")
+  utils::globalVariables("projpred_internal_w_aug")
+}
+
+divmin_augdat <- function(formula, data, family, weights, projpred_var,
+                          projpred_ws_aug, ...) {
+  trms_all <- extract_terms_response(formula)
+  has_grp <- length(trms_all$group_terms) > 0
+  projpred_formula_no_random <- NA
+  projpred_random <- NA
+  if (family$family == "binomial") {
+    # Switch back to the traditionally extended binomial family (so that the
+    # original link and inverse-link functions are used, for example):
+    family <- extend_family(
+      get(family$family, mode = "function")(link = family$link)
+    )
+    if (!has_grp) {
+      sdivmin <- get(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                     mode = "function")
+      if (getOption("projpred.glm_fitter", "fit_glm_ridge_callback") ==
+          "fit_glm_ridge_callback") {
+        # glm_ridge() cannot handle `factor` responses:
+        response_name <- extract_terms_response(formula)$response
+        stopifnot(is.factor(data[[response_name]]))
+        data[[response_name]] <- as.integer(data[[response_name]]) - 1L
+      }
+    } else {
+      sdivmin <- fit_glmer_callback
+    }
+  } else if (family$family %in% c("cumulative", "cumulative_rstanarm")) {
+    if (!has_grp) {
+      sdivmin <- fit_cumul
+    } else {
+      sdivmin <- fit_cumul_mlvl
+    }
+  } else if (family$family == "categorical") {
+    if (!has_grp) {
+      sdivmin <- fit_categ
+    } else {
+      sdivmin <- fit_categ_mlvl
+      formula_random <- split_formula_random_gamm4(formula)
+      projpred_formula_no_random <- formula_random$formula
+      projpred_random <- formula_random$random
+    }
+  } else {
+    stop("Family `", family$family, "` is not supported by divmin_augdat().")
+  }
+
+  if (ncol(projpred_ws_aug) < getOption("projpred.prll_prj_trigger", Inf)) {
+    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+    # foreach::`%do%`` here and then proceed as in the parallel case, but that
+    # would require adding more "hard" dependencies (because packages 'foreach'
+    # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+    return(lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
+      sdivmin(
+        formula = formula,
+        data = data,
+        family = family,
+        weights = projpred_ws_aug[, s],
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
+        ...
+      )
+    }))
+  } else {
+    # Parallel case.
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+      stop("Please install the 'foreach' package.")
+    }
+    # Unfortunately, iterators::iter() seems to conflict with augmented-data
+    # matrices (see note below). Thus, `requireNamespace("iterators")` is not
+    # necessary here.
+    dot_args <- list(...)
+    `%do_projpred%` <- foreach::`%dopar%`
+    return(foreach::foreach(
+      # Unfortunately, iterators::iter() seems to conflict with augmented-data
+      # matrices, even if using unclass(). Thus, iterate over the indices:
+      s = seq_len(ncol(projpred_ws_aug)),
+      .export = c(
+        "sdivmin", "formula", "data", "family", "projpred_ws_aug",
+        "projpred_formula_no_random", "projpred_random", "dot_args"
+      ),
+      .noexport = c(
+        "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
+        "linkobjs"
+      )
+    ) %do_projpred% {
+      do.call(
+        sdivmin,
+        c(list(formula = formula,
+               data = data,
+               family = family,
+               weights = projpred_ws_aug[, s],
+               projpred_formula_no_random = projpred_formula_no_random,
+               projpred_random = projpred_random),
+          dot_args)
+      )
+    })
+  }
+}
+
+# Use MASS::polr() to fit submodels for the brms::cumulative() family:
+fit_cumul <- function(formula, data, family, weights, ...) {
+  # Argument `weights` of MASS::polr() expects a column name (as a symbol):
+  if ("projpred_internal_w_aug" %in% names(data)) {
+    stop("Need to write to column `projpred_internal_w_aug` of `data`, but ",
+         "that column already exists. Please rename this column in `data` and ",
+         "try again.")
+  }
+  stopifnot(length(weights) == nrow(data))
+  data$projpred_internal_w_aug <- weights
+  # Exclude arguments from `...` which cannot be passed to MASS::polr():
+  dot_args <- list(...)
+  dot_args <- dot_args[intersect(
+    names(dot_args),
+    c(methods::formalArgs(MASS::polr),
+      methods::formalArgs(stats::optim))
+  )]
+  # Adapt `link`:
+  link_nm <- family$link
+  if (link_nm == "logit") {
+    link_nm <- "logistic"
+  } else if (link_nm == "probit_approx") {
+    link_nm <- "probit"
+  }
+  # For catching warnings via capture.output() (which is necessary to filter out
+  # the warning "non-integer #successes in a binomial glm!"):
+  warn_orig <- options(warn = 1)
+  on.exit(options(warn_orig))
+  # Call the submodel fitter:
+  warn_capt <- utils::capture.output({
+    fitobj <- try(do.call(MASS::polr, c(
+      list(formula = formula,
+           data = data,
+           weights = quote(projpred_internal_w_aug),
+           model = FALSE,
+           method = link_nm),
+      dot_args
+    )), silent = TRUE)
+  }, type = "message")
+  if (inherits(fitobj, "try-error")) {
+    stop(attr(fitobj, "condition")$message)
+  }
+  warn_capt <- setdiff(
+    warn_capt,
+    c("Warning in eval(family$initialize) :",
+      "  non-integer #successes in a binomial glm!")
+  )
+  if (length(warn_capt) > 0) {
+    warning(warn_capt)
+  }
+  return(fitobj)
+}
+
+# Use ordinal::clmm() to fit multilevel submodels for the brms::cumulative()
+# family:
+fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
+  # Argument `weights` of ordinal::clmm() expects a column name (as a symbol):
+  if ("projpred_internal_w_aug" %in% names(data)) {
+    stop("Need to write to column `projpred_internal_w_aug` of `data`, but ",
+         "that column already exists. Please rename this column in `data` and ",
+         "try again.")
+  }
+  stopifnot(length(weights) == nrow(data))
+  data$projpred_internal_w_aug <- weights
+  # Exclude arguments from `...` which cannot be passed to ordinal::clmm():
+  dot_args <- list(...)
+  dot_args <- dot_args[intersect(
+    names(dot_args),
+    c(methods::formalArgs(ordinal::clmm),
+      methods::formalArgs(ordinal::clm.control),
+      methods::formalArgs(ucminf::ucminf),
+      methods::formalArgs(stats::nlminb),
+      methods::formalArgs(stats::optim))
+  )]
+  # Since ordinal::clmm() sometimes seems to have issues with formulas lacking
+  # an intercept, add it here (note that this is a quite "hacky" solution;
+  # perhaps reformulate() could be used instead):
+  stopifnot(attr(terms(formula), "intercept") == 1)
+  formula[[3]] <- str2lang(paste0("1 + ", as.character(formula)[[3]]))
+  # Adapt `link`:
+  link_nm <- family$link
+  if (link_nm == "probit_approx") {
+    link_nm <- "probit"
+  }
+  # For catching warnings via capture.output() (which is necessary to filter out
+  # the warning "Using formula(x) is deprecated when x is a character vector of
+  # length > 1. [...]"):
+  warn_orig <- options(warn = 1)
+  on.exit(options(warn_orig))
+  # Call the submodel fitter:
+  warn_capt <- utils::capture.output({
+    fitobj <- try(do.call(ordinal::clmm, c(
+      list(formula = formula,
+           data = data,
+           weights = quote(projpred_internal_w_aug),
+           contrasts = NULL,
+           Hess = FALSE,
+           model = FALSE,
+           link = link_nm),
+      dot_args
+    )), silent = TRUE)
+  }, type = "message")
+  if (inherits(fitobj, "try-error")) {
+    stop(attr(fitobj, "condition")$message)
+  }
+  warn_capt <- setdiff(
+    warn_capt,
+    c(paste("Warning: Using formula(x) is deprecated when x is a character",
+            "vector of length > 1."),
+      "  Consider formula(paste(x, collapse = \" \")) instead.")
+  )
+  if (length(warn_capt) > 0) {
+    warning(warn_capt)
+  }
+  # Needed for the ordinal:::predict.clm() workaround (the value `"negative"` is
+  # the default, see `?ordinal::clm.control`):
+  fitobj$control$sign.location <- "negative"
+  return(fitobj)
+}
+
+# Use nnet::multinom() to fit submodels for the brms::categorical() family:
+fit_categ <- function(formula, data, family, weights, ...) {
+  # Exclude arguments from `...` which cannot be passed to nnet::multinom():
+  dot_args <- list(...)
+  dot_args <- dot_args[intersect(
+    names(dot_args),
+    c(methods::formalArgs(nnet::multinom),
+      methods::formalArgs(nnet::nnet))
+  )]
+  # Adapt `link`:
+  link_nm <- family$link
+  if (link_nm != "logit") {
+    stop("For the brms::categorical() family, projpred only supports the ",
+         "logit link.")
+  }
+  # Call the submodel fitter:
+  out_capt <- utils::capture.output({
+    fitobj <- do.call(nnet::multinom, c(
+      list(formula = formula,
+           data = data,
+           weights = weights),
+      dot_args
+    ))
+  })
+  if (utils::tail(out_capt, 1) != "converged") {
+    warning("The nnet::multinom() submodel fit did not converge.")
+  }
+  return(fitobj)
+}
+
+# Use mclogit::mblogit() to fit multilevel submodels for the brms::categorical()
+# family:
+fit_categ_mlvl <- function(formula, projpred_formula_no_random,
+                           projpred_random, data, family, weights, ...) {
+  # Exclude arguments from `...` which cannot be passed to mclogit::mblogit():
+  dot_args <- list(...)
+  dot_args <- dot_args[intersect(
+    names(dot_args),
+    c(methods::formalArgs(mclogit::mblogit),
+      methods::formalArgs(mclogit::mmclogit.control))
+  )]
+  # Adapt `link`:
+  link_nm <- family$link
+  if (link_nm != "logit") {
+    stop("For the brms::categorical() family, projpred only supports the ",
+         "logit link.")
+  }
+  # Strip parentheses from group-level terms:
+  random_trms <- labels(terms(projpred_random))
+  if (utils::packageVersion("mclogit") < "0.9" && length(random_trms) > 1) {
+    stop("'mclogit' versions < 0.9 can only handle a single group-level term.")
+  }
+  random_fmls <- lapply(random_trms, function(random_trm) {
+    as.formula(paste("~", random_trm))
+  })
+  if (length(random_fmls) == 1) {
+    random_fmls <- random_fmls[[1]]
+  }
+  # Call the submodel fitter:
+  out_capt <- utils::capture.output({
+    fitobj <- do.call(mclogit::mblogit, c(
+      list(formula = projpred_formula_no_random,
+           data = data,
+           random = random_fmls,
+           weights = weights,
+           model = FALSE,
+           x = FALSE,
+           y = FALSE,
+           estimator = "ML",
+           dispersion = FALSE,
+           from.table = FALSE,
+           groups = NULL),
+      dot_args
+    ))
+  })
+  if (utils::tail(out_capt, 1) != "converged") {
+    warning("The mclogit::mblogit() submodel fit did not converge.")
+  }
+  return(fitobj)
+}
+
 # Convergence checker -----------------------------------------------------
 
 check_conv <- function(fit) {
@@ -438,6 +746,78 @@ subprd <- function(fits, newdata) {
   return(do.call(cbind, prd_list))
 }
 
+subprd_augdat <- function(fits, newdata) {
+  if (inherits(fits[[1]], "clmm")) {
+    y_nm <- extract_terms_response(formula(fits[[1]]))$response
+  }
+  prd_list <- lapply(fits, function(fit) {
+    # Basic predictions (if possible, these should be already on link scale; if
+    # this is not possible, the transformation to link scale has to follow):
+    if (inherits(fit, "polr")) {
+      prbs <- predict(fit, newdata = newdata, type = "probs")
+      if (nrow(newdata) == 1) {
+        prbs <- t(prbs)
+      }
+      link_nm <- fit$method
+    } else if (inherits(fit, "clmm")) {
+      # A predict() method for objects of class `clmm` does not seem to exist,
+      # so use a workaround based on ordinal:::predict.clm().
+      # Note: There is also `type = "linear.predictor"`, but that returns the
+      # predictions for each j and j - 1 (with j = 1, ..., C_cat indexing the
+      # response categories), so performs redundant calculations.
+      prbs <- predict(structure(fit, class = c(oldClass(fit), "clm")),
+                      # Remove the response so ordinal:::predict.clm() returns
+                      # predictions for *all* response categories:
+                      newdata = within(newdata, assign(y_nm, NULL)),
+                      type = "prob")$fit
+      link_nm <- fit$link
+    } else if (inherits(fit, "multinom")) {
+      prbs <- predict(fit, newdata = newdata, type = "probs")
+      if (nrow(newdata) == 1) {
+        prbs <- t(prbs)
+      }
+    } else if (inherits(fit, "mmblogit")) {
+      # Note: `conditional = FALSE` is used here because
+      # mclogit:::predict.mmblogit() doesn't work for new group levels. Instead,
+      # repair_re() handles both, existing and new group levels.
+      lpreds <- predict(fit, newdata = newdata, conditional = FALSE) +
+        repair_re(fit, newdata = newdata)
+    } else {
+      stop("Unknown `fit`.")
+    }
+    # Where necessary, transform probabilities to link scale (i.e., to linear
+    # predictors):
+    if (inherits(fit, c("polr", "clmm"))) {
+      prbs <- do.call(rbind, apply(prbs, 1, cumsum, simplify = FALSE))
+      prbs <- prbs[, -ncol(prbs), drop = FALSE]
+      if (link_nm %in% c("logistic", "logit")) {
+        linkfun_raw <- function(x) qlogis(x)
+      } else if (link_nm == "probit") {
+        linkfun_raw <- function(x) qnorm(x)
+      } else if (link_nm == "cloglog") {
+        linkfun_raw <- function(x) log(-log1p(-x))
+      } else if (link_nm == "cauchit") {
+        linkfun_raw <- function(x) qcauchy(x)
+      } else {
+        stop("Unknown `link_nm`.")
+      }
+      lpreds <- linkfun_raw(prbs)
+      if (inherits(fit, "clmm")) {
+        lpreds <- lpreds + repair_re(fit, newdata = newdata)
+      }
+    } else if (inherits(fit, "multinom")) {
+      lpreds <- log(sweep(prbs[, -1, drop = FALSE], 1, prbs[, 1], "/"))
+    }
+    return(lpreds)
+  })
+  return(do.call(abind::abind, list(prd_list, rev.along = 0)))
+}
+
+subprd_augdat_binom <- function(fits, newdata) {
+  augprd <- subprd(fits, newdata = newdata)
+  return(array(augprd, dim = c(nrow(augprd), 1L, ncol(augprd))))
+}
+
 ## FIXME: find a way that allows us to remove this
 predict.subfit <- function(subfit, newdata = NULL) {
   beta <- subfit$beta
@@ -500,6 +880,66 @@ predict.gamm4 <- function(fit, newdata = NULL) {
 
 empty_intersection_comb <- function(x) {
   length(intersect(x[[1]]$comb, x[[2]]$comb)) == 0
+}
+
+empty_intersection_new <- function(x) {
+  length(intersect(x[[1]]$new, x[[2]]$new)) == 0
+}
+
+# License/copyright notice: mkNewReTrms_man() is strongly based on (i.e., it was
+# only slightly modified from) lme4::mkNewReTrms() from lme4 version 1.1-28 (see
+# <https://CRAN.R-project.org/package=lme4>).
+#
+# The copyright statement for lme4 version 1.1-28 is:
+# Copyright (C) 2003-2022 The LME4 Authors (see
+# <https://CRAN.R-project.org/package=lme4>).
+#
+# The license of lme4 version 1.1-28 is:
+# "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
+  stopifnot(!is.null(newdata))
+  tt <- terms(lme4::subbars(re.form))
+  rfd <- suppressWarnings(
+    model.frame(tt, newdata, na.action = na.pass, xlev = xlevels)
+  )
+  ReTrms <- lme4::mkReTrms(lme4::findbars(re.form[[2]]), rfd)
+  ns.re <- names(re)
+  nRnms <- names(Rcnms <- ReTrms$cnms)
+  if (!all(nRnms %in% ns.re)) {
+    stop("grouping factors specified in re.form that were not present in ",
+         "original model")
+  }
+  if (!is.null(D)) {
+    # categorical() case
+    Zt_old_rnms <- rownames(ReTrms$Zt)
+    ReTrms$Zt <- as(ReTrms$Zt %x% t(D[-1, , drop = FALSE]), class(ReTrms$Zt))
+    rownames(ReTrms$Zt) <- rep(Zt_old_rnms, each = ncol(D))
+    for (vnm in nRnms) {
+      ReTrms$cnms[[vnm]] <- names(re[[vnm]])
+    }
+    Rcnms <- ReTrms$cnms
+  }
+  new_levels <- lapply(ReTrms$flist, function(x) levels(factor(x)))
+  re_x <- Map(
+    function(r, n) {
+      ("lme4" %:::% "levelfun")(r, n, allow.new.levels = TRUE)
+    },
+    re[names(new_levels)],
+    new_levels
+  )
+  get_re <- function(rname, cnms) {
+    nms <- names(re[[rname]])
+    miss_names <- setdiff(cnms, nms)
+    if (length(miss_names) > 0) {
+      stop("random effects specified in re.form that were not present in ",
+           "original model ", paste(miss_names, collapse = ", "))
+    }
+    t(re_x[[rname]][, cnms])
+  }
+  re_new <- unlist(Map(get_re, nRnms, Rcnms))
+  Zt <- ReTrms$Zt
+  attr(Zt, "na.action") <- attr(re_new, "na.action") <- NULL
+  list(Zt = Zt, b = re_new)
 }
 
 repair_re <- function(object, newdata) {
@@ -572,4 +1012,184 @@ repair_re.merMod <- function(object, newdata) {
     }
   }
   return(drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
+}
+
+# For objects of class `clmm`, the following repair_re() method will re-use the
+# estimated random effects for existing group levels and will draw the random
+# effects for new group levels from a (multivariate) Gaussian distribution.
+#
+# License/copyright notice: repair_re.clmm() is inspired by and uses code
+# snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
+# <https://CRAN.R-project.org/package=lme4>). See the `LICENSE` file in
+# projpred's root directory for details.
+#
+# The copyright statement for lme4 version 1.1-28 is:
+# Copyright (C) 2003-2022 The LME4 Authors (see
+# <https://CRAN.R-project.org/package=lme4>).
+#
+# The license of lme4 version 1.1-28 is:
+# "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+repair_re.clmm <- function(object, newdata) {
+  stopifnot(!is.null(newdata))
+  ranef_tmp <- ordinal::ranef(object)
+  vnms <- names(ranef_tmp)
+  lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
+    from_fit <- rownames(ranef_tmp[[vnm]])
+    if (!vnm %in% names(newdata)) {
+      if (any(grepl("\\|.+/", labels(terms(formula(object)))))) {
+        stop("The `/` syntax for nested group-level terms is currently not ",
+             "supported. Please try to write out the interaction term implied ",
+             "by the `/` syntax (see Table 2 in lme4's vignette called ",
+             "\"Fitting Linear Mixed-Effects Models Using lme4\").")
+      } else {
+        stop("Could not find column `", vnm, "` in `newdata`.")
+      }
+    }
+    from_new <- levels(as.factor(newdata[, vnm]))
+    list(comb = union(from_fit, from_new),
+         new = setdiff(from_new, from_fit))
+  })
+  # In case of duplicated levels across group variables, later code would have
+  # to be adapted:
+  if (length(lvls_list) >= 2 &&
+      !all(utils::combn(lvls_list, 2, empty_intersection_new))) {
+    stop("Currently, projpred requires all variables with group-level effects ",
+         "to have disjoint level sets.")
+  }
+  re_fml <- ("lme4" %:::% "reOnly")(formula(object))
+  ranefs_prep <- mkNewReTrms_man(re.form = re_fml,
+                                 newdata = newdata,
+                                 xlevels = c(lapply(lvls_list, "[[", "comb"),
+                                             object$xlevels),
+                                 re = ranef_tmp)
+  names(ranefs_prep$b) <- rownames(ranefs_prep$Zt)
+
+  VarCorr_tmp <- ordinal::VarCorr(object)
+  for (vnm in vnms) {
+    lvls_new <- lvls_list[[vnm]]$new
+    if (length(lvls_new) > 0) {
+      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+        n = length(lvls_new),
+        # Add `[, , drop = FALSE]` to drop attributes:
+        sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
+        checkSymmetry = FALSE
+      ))
+    }
+  }
+  return(-drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
+}
+
+# For objects of class `mmblogit`, the following repair_re() method will re-use
+# the estimated random effects for existing group levels and will draw the
+# random effects for new group levels from a (multivariate) Gaussian
+# distribution.
+#
+# License/copyright notice: repair_re.mmblogit() is inspired by and uses code
+# snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
+# <https://CRAN.R-project.org/package=lme4>). See the `LICENSE` file in
+# projpred's root directory for details.
+#
+# The copyright statement for lme4 version 1.1-28 is:
+# Copyright (C) 2003-2022 The LME4 Authors (see
+# <https://CRAN.R-project.org/package=lme4>).
+#
+# The license of lme4 version 1.1-28 is:
+# "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+repair_re.mmblogit <- function(object, newdata) {
+  stopifnot(!is.null(newdata))
+  vnms <- names(object$groups)
+  stopifnot(length(vnms) == length(object$random.effects))
+  if (utils::packageVersion("mclogit") < "0.9") {
+    stopifnot(length(vnms) == 1)
+  } else if (length(vnms) < length(object$random)) {
+    stop("The length of `<mmblogit_object>$random` is greater than that of ",
+         "`vnms = c(\"", paste(vnms, collapse = "\", \""), "\")`.")
+  }
+  # The number of latent response categories:
+  nlats <- ncol(object$D)
+  # Coerce the random effects into the same format as the output of ranef() from
+  # packages 'lme4' and 'ordinal':
+  ranef_tmp <- lapply(
+    setNames(seq_along(object$random.effects), vnms),
+    function(grp_idx) {
+      if (utils::packageVersion("mclogit") < "0.9") {
+        obj_rand <- object$random
+        VarCov_idx <- 1
+      } else {
+        if (length(object$random) < grp_idx) {
+          stop("Unexpected length of `<mmblogit_object>$random`.")
+        }
+        obj_rand <- object$random[[grp_idx]]
+        VarCov_idx <- vnms[grp_idx]
+      }
+      if (length(obj_rand$groups) > 1) {
+        stop("It seems like you fitted a model with a nested group-level ",
+             "term. Currently, these are not supported.")
+      }
+      # The number of "random slopes", including the intercept (the intercept is
+      # the reason for `+ 1L`):
+      ncoefs <- length(all.vars(obj_rand$formula)) + 1L
+      # The coercion itself:
+      ranef_i <- matrix(
+        object$random.effects[[grp_idx]],
+        nrow = nlats * ncoefs,
+        ncol = nlevels(object$groups[[vnms[grp_idx]]]),
+        dimnames = list(colnames(object$VarCov[[VarCov_idx]]),
+                        levels(object$groups[[vnms[grp_idx]]]))
+      )
+      return(as.data.frame(t(ranef_i)))
+    }
+  )
+  lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
+    from_fit <- levels(object$groups[[vnm]])
+    if (!vnm %in% names(newdata)) {
+      stop("Could not find column `", vnm, "` in `newdata`.")
+    }
+    from_new <- levels(as.factor(newdata[, vnm]))
+    list(comb = union(from_fit, from_new),
+         new = setdiff(from_new, from_fit))
+  })
+  # Create the lme4-type random-effects formula needed by mkNewReTrms_man():
+  if (utils::packageVersion("mclogit") < "0.9") {
+    re_fml <- update(object$random$formula,
+                     paste("~ . |", object$random$groups))
+  } else {
+    for (grp_idx in seq_along(object$random)) {
+      re_fml_i <- update(object$random[[grp_idx]]$formula,
+                         paste("~ . |", object$random[[grp_idx]]$groups))
+      if (grp_idx == 1) {
+        re_fml <- re_fml_i
+      } else {
+        re_fml <- update(re_fml, paste("~ . +", as.character(re_fml_i[2])))
+      }
+    }
+  }
+  # Get random effects for existing group levels (and zero for new group levels)
+  # as well as the random-effects model matrix:
+  ranefs_prep <- mkNewReTrms_man(re.form = re_fml,
+                                 newdata = newdata,
+                                 xlevels = c(lapply(lvls_list, "[[", "comb"),
+                                             object$xlevels),
+                                 re = ranef_tmp,
+                                 D = object$D)
+  names(ranefs_prep$b) <- rownames(ranefs_prep$Zt)
+
+  VarCorr_tmp <- object$VarCov
+  if (utils::packageVersion("mclogit") < "0.9") {
+    VarCorr_tmp <- setNames(VarCorr_tmp, vnms)
+  }
+  for (vnm in vnms) {
+    lvls_new <- lvls_list[[vnm]]$new
+    if (length(lvls_new) > 0) {
+      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+        n = length(lvls_new),
+        sigma = VarCorr_tmp[[vnm]],
+        checkSymmetry = FALSE
+      ))
+    }
+  }
+  re_vec <- drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix"))
+  re_mat <- matrix(re_vec, nrow = nlats, ncol = nrow(newdata),
+                   dimnames = list(colnames(object$D), NULL))
+  return(t(re_mat))
 }
