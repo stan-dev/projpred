@@ -54,6 +54,18 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
+  if (varsel$refmodel$family$for_augdat &&
+      any(stats %in% c("acc", "pctcorr"))) {
+    summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
+    summ_sub <- lapply(summ_sub, function(summ_sub_k) {
+      summ_sub_k$mu <- catmaxprb(summ_sub_k$mu,
+                                 lvls = varsel$refmodel$family$cats)
+      return(summ_sub_k)
+    })
+    # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
+    # would need to be ordered; however, unordered is the simpler type):
+    varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
+  }
 
   ## fetch the mu and lppd for the baseline model
   if (is.null(nfeat_baseline)) {
@@ -139,10 +151,11 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   ## for example the relative elpd. If these arguments are not given (NULL) then
   ## the actual (non-relative) value is computed.
 
-  n <- length(mu)
   if (stat %in% c("mlpd", "elpd")) {
+    n <- length(lppd)
     n_notna <- sum(!is.na(lppd))
   } else {
+    n <- length(mu)
     n_notna <- sum(!is.na(mu))
   }
 
@@ -222,16 +235,25 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else if (stat == "acc" || stat == "pctcorr") {
     y <- d_test$y
+
+    # Find out whether each observation was classified correctly or not:
+    if (!is.factor(mu)) {
+      mu <- round(mu)
+    }
+    crrct <- mu == y
+
     if (!is.null(mu.bs)) {
-      value <- mean(weights * ((round(mu) == y) - (round(mu.bs) == y)),
-                    na.rm = TRUE)
-      value.se <- weighted.sd((round(mu) == y) - (round(mu.bs) == y), weights,
-                              na.rm = TRUE) /
+      if (!is.factor(mu.bs)) {
+        mu.bs <- round(mu.bs)
+      }
+      crrct.bs <- mu.bs == y
+
+      value <- mean(weights * (crrct - crrct.bs), na.rm = TRUE)
+      value.se <- weighted.sd(crrct - crrct.bs, weights, na.rm = TRUE) /
         sqrt(n_notna)
     } else {
-      value <- mean(weights * (round(mu) == y), na.rm = TRUE)
-      value.se <- weighted.sd(round(mu) == y, weights, na.rm = TRUE) /
-        sqrt(n_notna)
+      value <- mean(weights * crrct, na.rm = TRUE)
+      value.se <- weighted.sd(crrct, weights, na.rm = TRUE) / sqrt(n_notna)
     }
   } else if (stat == "auc") {
     y <- d_test$y

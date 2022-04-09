@@ -474,13 +474,15 @@ plot.vsel <- function(
 #'   * `"elpd"`: (expected) sum of log predictive densities.
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
-#'   * `"mse"`: mean squared error.
-#'   * `"rmse"`: root mean squared error. For the corresponding standard error,
-#'   bootstrapping is used.
-#'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
-#'   ([binomial()] family only).
-#'   * `"auc"`: area under the ROC curve ([binomial()] family only). For the
+#'   * `"mse"`: mean squared error (traditional projection only).
+#'   * `"rmse"`: root mean squared error (traditional projection only). For the
 #'   corresponding standard error, bootstrapping is used.
+#'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (for the
+#'   traditional projection: [binomial()] family only; for the augmented-data
+#'   projection: all families).
+#'   * `"auc"`: area under the ROC curve ([binomial()] family for the
+#'   traditional projection only). For the corresponding standard error,
+#'   bootstrapping is used.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence

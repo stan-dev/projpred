@@ -98,19 +98,29 @@ bootstrap <- function(x, fun = mean, B = 2000,
          "selection first")
   }
 
-  recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
-  binomial_only_stats <- c("acc", "pctcorr", "auc")
+  trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
+  trad_stats_binom_only <- c("acc", "pctcorr", "auc")
+  augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
   }
   for (stat in stats) {
-    if (!(stat %in% recognized_stats)) {
-      stop(sprintf("Statistic '%s' not recognized.", stat))
-    }
-    if (stat %in% binomial_only_stats &&
-        object$refmodel$family$family != "binomial") {
-      stop("Statistic '", stat, "' available only for the binomial family.")
+    if (object$refmodel$family$for_augdat) {
+      if (!stat %in% augdat_stats) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with performance statistic `\"", stat, "\"`.")
+      }
+    } else {
+      if (!stat %in% trad_stats) {
+        stop(sprintf("Statistic '%s' not recognized.", stat))
+      }
+      if (stat %in% trad_stats_binom_only &&
+          object$refmodel$family$family != "binomial") {
+        stop("In case of the traditional (non-augmented-data) projection, the",
+             "performance statistic `\"", stat, "\"` is available only for ",
+             "the binomial family.")
+      }
     }
   }
   return(invisible(TRUE))
