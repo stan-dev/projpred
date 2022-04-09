@@ -1,0 +1,477 @@
+context("augmented-data projection")
+
+# Setup -------------------------------------------------------------------
+
+# Needed to clean up the workspace afterwards (i.e, after this test file):
+ls_bu <- ls()
+
+# augdat.R ----------------------------------------------------------------
+
+nobs_orig_tst <- 4L
+ncat_tst <- 2L
+ndraws_tst <- 5L
+xtst <- seq_len(nobs_orig_tst * ncat_tst * ndraws_tst)
+arrtst <- array(xtst, dim = c(nobs_orig_tst, ncat_tst, ndraws_tst))
+augmtst <- arr2augmat(arrtst)
+
+## arr2augmat(), augmat2arr() ---------------------------------------------
+
+test_that("arr2augmat(), augmat2arr()", {
+  expect_identical(augmtst, structure(matrix(xtst, ncol = ndraws_tst),
+                                      nobs_orig = nobs_orig_tst,
+                                      class = "augmat"))
+
+  # With "margin_draws = 3":
+  xtst_m3 <- 0.1
+  stopifnot(length(xtst_m3) == 1)
+  arr_m3 <- array(xtst_m3, dim = c(1, 1, 1))
+  augmat_m3 <- arr2augmat(arr_m3)
+  augmat_m3_ch <- structure(matrix(xtst_m3),
+                            nobs_orig = 1L,
+                            class = "augmat")
+  expect_identical(augmat_m3, augmat_m3_ch)
+  arr_m3_ch <- augmat2arr(augmat_m3)
+  expect_identical(arr_m3_ch, arr_m3)
+
+  # With "margin_draws = 1":
+  xtst_m1 <- seq(-1, 1, by = 0.1)
+  stopifnot(length(xtst_m1) == 21)
+  arr_m1 <- array(xtst_m1, dim = c(7, 3, 1))
+  augmat_m1 <- arr2augmat(arr_m1, margin_draws = 1)
+  augmat_m1_ch <- structure(matrix(xtst_m1, ncol = 7, byrow = TRUE),
+                            nobs_orig = 3L,
+                            class = "augmat")
+  expect_identical(augmat_m1, augmat_m1_ch)
+  arr_m1_ch <- augmat2arr(augmat_m1, margin_draws = 1)
+  expect_identical(arr_m1_ch, arr_m1)
+})
+
+## t.augmat() -------------------------------------------------------------
+
+test_that("t.augmat()", {
+  expect_identical(t(augmtst), matrix(xtst, nrow = ndraws_tst, byrow = TRUE))
+})
+
+## `[.augmat`() -----------------------------------------------------------
+
+test_that("`[.augmat`()", {
+  expect_identical(augmtst[], augmtst)
+  # Subsetting columns:
+  expect_identical(augmtst[, 1:2],
+                   structure(matrix(head(xtst, nobs_orig_tst * ncat_tst * 2),
+                                    ncol = 2),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augmat"))
+  expect_identical(augmtst[, 1, drop = FALSE],
+                   structure(matrix(head(xtst, nobs_orig_tst * ncat_tst)),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augmat"))
+  expect_identical(augmtst[, 1],
+                   structure(head(xtst, nobs_orig_tst * ncat_tst),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augvec"))
+  # Subsetting rows (in fact, this is not of interest, at least currently):
+  xrow1 <- xtst[nobs_orig_tst * ncat_tst * (seq_len(ndraws_tst) - 1L) + 1L]
+  expect_identical(augmtst[1, , drop = FALSE],
+                   structure(t(xrow1),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augmat"))
+  expect_identical(augmtst[1, ],
+                   structure(xrow1,
+                             nobs_orig = nobs_orig_tst,
+                             class = "augvec"))
+  # Subsetting rows and columns:
+  expect_identical(augmtst[1:2, 1:2],
+                   structure(arrtst[1:2, 1, 1:2],
+                             nobs_orig = nobs_orig_tst,
+                             class = "augmat"))
+  expect_identical(augmtst[1, 1],
+                   structure(head(xtst, 1),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augvec"))
+
+  # Assigning:
+  augmtst[1, 1] <- 0
+  expect_identical(augmtst, structure(matrix(c(0, xtst[-1]), ncol = ndraws_tst),
+                                      nobs_orig = nobs_orig_tst,
+                                      class = "augmat"))
+})
+
+## augmat2augvec(), augvec2augmat() ---------------------------------------
+
+augmtst_1col <- augmtst[, 1, drop = FALSE]
+augvtst <- augmat2augvec(augmtst_1col)
+
+test_that("augmat2augvec(), augvec2augmat()", {
+  # The structure of `augmtst[, 1]` has already been tested above, so simply use
+  # `augmtst[, 1]` as expectation here:
+  expect_identical(augvtst, augmtst[, 1])
+  expect_identical(augvec2augmat(augvtst), augmtst_1col)
+})
+
+## t.augvec() -------------------------------------------------------------
+
+test_that("t.augvec()", {
+  expect_identical(t(augvtst),
+                   matrix(head(xtst, nobs_orig_tst * ncat_tst), nrow = 1))
+})
+
+## `[.augvec`() -----------------------------------------------------------
+
+test_that("`[.augvec`()", {
+  expect_identical(augvtst[], augvtst)
+  expect_identical(augvtst[1:2],
+                   structure(head(xtst, 2),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augvec"))
+  expect_identical(augvtst[1],
+                   structure(head(xtst, 1),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augvec"))
+  expect_identical(augvtst[integer()],
+                   structure(head(xtst, 0),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augvec"))
+
+  # Assigning:
+  augvtst[1] <- 0
+  expect_identical(augvtst,
+                   structure(c(0, head(xtst, nobs_orig_tst * ncat_tst)[-1]),
+                             nobs_orig = nobs_orig_tst,
+                             class = "augvec"))
+})
+
+## catmaxprb() ------------------------------------------------------------
+
+test_that("catmaxprb()", {
+  stopifnot(ncat_tst == 2)
+  expect_identical(catmaxprb(augvtst, lvls = c("0", "1")),
+                   factor(rep("1", nobs_orig_tst), levels = c("0", "1")))
+
+  # With probabilities (and a single observation):
+  augvtst_pr <- structure(c(0.7, 0.3),
+                          nobs_orig = 1L,
+                          class = "augvec")
+  expect_identical(catmaxprb(augvtst_pr, lvls = c("lvl1", "lvl2")),
+                   factor("lvl1", levels = c("lvl1", "lvl2")))
+})
+
+## augdat_link_binom(), augdat_ilink_binom() ------------------------------
+
+test_that("augdat_link_binom(), augdat_ilink_binom()", {
+  arr_pr <- array(c(0.7, 0.3), dim = c(1, 1, 2))
+  arr_lat <- augdat_link_binom(arr_pr)
+  expect_equal(arr_lat, array(log(0.3 / 0.7), dim = c(1, 1, 1)))
+  expect_equal(augdat_ilink_binom(arr_lat), arr_pr)
+})
+
+# Comparison with traditional projection ----------------------------------
+
+## Clustering -------------------------------------------------------------
+
+test_that(paste(
+  "clustering `<refmodel_object>$mu` in case of the `brnll` family is the same",
+  "no matter whether `<refmodel_object>` was set up for the augmented-data or",
+  "the traditional projection"
+), {
+  skip_if_not(run_prj)
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(prjs), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
+    if (!tstsetup_trad %in% names(prjs)) next
+
+    args_prj_i <- args_prj[[tstsetup]]
+    args_prj_i_trad <- args_prj[[tstsetup_trad]]
+    refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
+    refmod_crr_trad <- refmods[[args_prj_i_trad$tstsetup_ref]]
+    set.seed(args_prj_i$seed)
+    pref_aug <- .get_refdist(refmod_crr,
+                             ndraws = args_prj_i$ndraws,
+                             nclusters = args_prj_i$nclusters)
+    set.seed(args_prj_i_trad$seed)
+    pref_trad <- .get_refdist(refmod_crr_trad,
+                              ndraws = args_prj_i_trad$ndraws,
+                              nclusters = args_prj_i_trad$nclusters)
+
+    eta_aug <- refmod_crr$family$linkfun(pref_aug$mu)
+    eta_trad <- refmod_crr_trad$family$linkfun(pref_trad$mu)
+    expect_identical(structure(unclass(eta_aug), nobs_orig = NULL), eta_trad,
+                     info = tstsetup)
+  }
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
+})
+
+## Projection -------------------------------------------------------------
+
+test_that(paste(
+  "augmented-data and traditional projection give similar results (in case of",
+  "the `brnll` family and the default `regul` for submodels fitted by",
+  "fit_glm_ridge_callback())"
+), {
+  skip_if_not(run_prj)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(prjs), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
+    if (!tstsetup_trad %in% names(prjs)) next
+
+    prjmat <- suppressWarnings(as.matrix(prjs[[tstsetup]]))
+    prjmat_trad <- suppressWarnings(as.matrix(prjs[[tstsetup_trad]]))
+
+    tol_coefs <- ifelse(
+      args_prj[[tstsetup]]$mod_nm == "glmm" &&
+        any(grepl("^\\(.*\\)$", args_prj[[tstsetup]]$solution_terms)),
+      1e-3, 1e-6
+    )
+    expect_equal(prjmat, prjmat_trad, tolerance = tol_coefs, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "augmented-data and traditional projection give (almost) the same results",
+  "for submodels fitted by fit_glm_ridge_callback() if `regul = 0` is used (in",
+  "case of the `brnll` family)"
+), {
+  skip_if_not(run_prj)
+  tstsetups <- grep("\\.glm\\.brnll\\..*\\.augdat\\.", names(prjs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
+    if (!tstsetup_trad %in% names(prjs)) next
+
+    args_prj_i <- args_prj[[tstsetup]]
+    args_prj_i_trad <- args_prj[[tstsetup_trad]]
+    prj <- do.call(project, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]], regul = 0),
+      excl_nonargs(args_prj_i)
+    ))
+    prj_trad <- do.call(project, c(
+      list(object = refmods[[args_prj_i_trad$tstsetup_ref]], regul = 0),
+      excl_nonargs(args_prj_i_trad)
+    ))
+    prjmat <- suppressWarnings(as.matrix(prj))
+    prjmat_trad <- suppressWarnings(as.matrix(prj_trad))
+
+    tol_coefs <- ifelse(ndr_ncl_dtls(args_prj_i)$clust_used,
+                        1e-9, 1e-14)
+    expect_equal(prjmat, prjmat_trad, tolerance = tol_coefs, info = tstsetup)
+  }
+})
+
+## Prediction -------------------------------------------------------------
+
+test_that(paste(
+  "proj_linpred() gives similar results for the augmented-data and the",
+  "traditional projection (in case of the `brnll` family and the default",
+  "`regul` for submodels fitted by fit_glm_ridge_callback())"
+), {
+  skip_if_not(run_prj)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(pls), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
+    if (!tstsetup_trad %in% names(pls)) next
+
+    pl <- pls[[tstsetup]]
+    expect_length(dim(pl$pred), 3)
+    expect_identical(dim(pl$pred)[3], 1L)
+    pl$pred <- matrix(pl$pred,
+                      nrow = dim(pl$pred)[1],
+                      ncol = dim(pl$pred)[2])
+    dimnames(pl$pred) <- list(NULL, as.character(seq_len(ncol(pl$pred))))
+    dimnames(pl$lpd) <- list(NULL, as.character(seq_len(ncol(pl$lpd))))
+    pl_trad <- pls[[tstsetup_trad]]
+
+    tol_lpreds <- ifelse(
+      args_prj[[tstsetup]]$mod_nm == "glmm" &&
+        any(grepl("^\\(.*\\)$", args_prj[[tstsetup]]$solution_terms)),
+      1e-4, 1e-6
+    )
+    expect_equal(pl, pl_trad, tolerance = tol_lpreds, info = tstsetup)
+  }
+})
+
+## Variable selection -----------------------------------------------------
+
+test_that(paste(
+  "varsel() gives similar results for the augmented-data and the traditional",
+  "projection (in case of the `brnll` family and the default `regul` for",
+  "submodels fitted by fit_glm_ridge_callback())"
+), {
+  skip_if_not(run_vs)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(smmrys_vs), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
+                         tstsetup)
+    if (!tstsetup_trad %in% names(smmrys_vs)) next
+
+    smmry_vs <- smmrys_vs[[tstsetup]]
+    smmry_vs_trad <- smmrys_vs[[tstsetup_trad]]
+
+    expect_equal(
+      smmry_vs[setdiff(names(smmry_vs), c("family", "selection"))],
+      smmry_vs_trad[setdiff(names(smmry_vs_trad), c("family", "selection"))],
+      info = tstsetup
+    )
+    expect_identical(
+      smmry_vs$selection[, c("size", "solution_terms")],
+      smmry_vs_trad$selection[, c("size", "solution_terms")],
+      info = tstsetup
+    )
+    expect_equal(smmry_vs$selection, smmry_vs_trad$selection, tolerance = 1e-6,
+                 info = tstsetup)
+  }
+})
+
+# The `stats = "acc"` case is excluded in the test above, so test it separately
+# here:
+test_that(paste(
+  "varsel() gives similar results for the augmented-data and the traditional",
+  "projection when using `stats = \"acc\"` (in case of the `brnll` family and",
+  "the default `regul` for submodels fitted by fit_glm_ridge_callback())"
+), {
+  skip_if_not(run_vs)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(smmrys_vs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
+                         tstsetup)
+    tstsetup_trad <- sub("\\.augdat_stats\\.", ".binom_stats.", tstsetup_trad)
+    if (!tstsetup_trad %in% names(smmrys_vs)) next
+
+    smmry_vs <- smmrys_vs[[tstsetup]]
+    smmry_vs_trad <- smmrys_vs[[tstsetup_trad]]
+
+    expect_equal(
+      smmry_vs[setdiff(names(smmry_vs), c("family", "selection"))],
+      smmry_vs_trad[setdiff(names(smmry_vs_trad),
+                            c("family", "selection"))],
+      info = tstsetup
+    )
+    expect_identical(
+      smmry_vs$selection[, c("size", "solution_terms")],
+      smmry_vs_trad$selection[, c("size", "solution_terms")],
+      info = tstsetup
+    )
+    # Exclude statistics which are not supported for the augmented-data
+    # projection:
+    smmry_vs_trad$selection <- smmry_vs_trad$selection[
+      , -grep("mse|auc", names(smmry_vs_trad$selection)), drop = FALSE
+    ]
+    expect_equal(smmry_vs$selection, smmry_vs_trad$selection,
+                 tolerance = 1e-6, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "cv_varsel() gives similar results for the augmented-data and the",
+  "traditional projection (in case of the `brnll` family and the default",
+  "`regul` for submodels fitted by fit_glm_ridge_callback())"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(smmrys_cvvs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
+                         tstsetup)
+    if (!tstsetup_trad %in% names(smmrys_cvvs)) next
+
+    smmry_cvvs <- smmrys_cvvs[[tstsetup]]
+    smmry_cvvs_trad <- smmrys_cvvs[[tstsetup_trad]]
+
+    expect_equal(
+      smmry_cvvs[setdiff(names(smmry_cvvs), c("family", "selection"))],
+      smmry_cvvs_trad[setdiff(names(smmry_cvvs_trad),
+                              c("family", "selection"))],
+      info = tstsetup
+    )
+    expect_identical(
+      smmry_cvvs$selection[, c("size", "solution_terms")],
+      smmry_cvvs_trad$selection[, c("size", "solution_terms")],
+      info = tstsetup
+    )
+    tol_smmry <- ifelse(args_smmry_cvvs[[tstsetup]]$mod_nm == "glmm",
+                        1e-3, 1e-6)
+    args_cvvs_crr <- args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]
+    if (args_smmry_cvvs[[tstsetup]]$pkg_nm == "brms" &&
+        args_smmry_cvvs[[tstsetup]]$mod_nm == "glmm" &&
+        args_smmry_cvvs[[tstsetup]]$fam_nm == "brnll" &&
+        identical(args_cvvs_crr$cv_method, "kfold") &&
+        (is.null(args_cvvs_crr$nterms_max) || args_cvvs_crr$nterms_max >= 5)) {
+      # This is a special case with strange results for model size 5 (see
+      # `plot(cvvss[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]])`).
+      # Interestingly, the corresponding rstanarm K-fold CV behaves fine. The
+      # discrepancy between rstanarm and brms at `nterms_max = 5` might be
+      # caused by the small `K = 2` and `nobsv = 41` here in the tests, in
+      # combination with the way how these two packages perform prediction for
+      # new group levels in multilevel models: rstanarm treats all new levels as
+      # a single one which is not the case for brms (see
+      # `brms:::get_new_rdraws()`).
+      # Furthermore, when debugging kfold_varsel() in this case for the
+      # augmented-data and the traditional approach, one can see that although
+      # `refmodel$mu` is the same (apart from formatting) for the augmented-data
+      # and the traditional approach, the projected submodels in fold 1 (out of
+      # K = 2) differ (more strongly than for other submodels) between the
+      # augmented-data and the traditional approach. (Fold 1 leads to a solution
+      # path which includes the terms `(1 | z.1)` and `(xco.1 | z.1)`.) Thus,
+      # the difference between augmented-data and traditional approach could be
+      # caused by numerical inaccuracies in lme4::glmer() in this case.
+      # Because of all these peculiarities which don't seem be under our
+      # (projpred) control (apart from the rather extreme test settings),
+      # exclude model size 5 in this special case. Nevertheless, `tol_smmry`
+      # needs to be increased, too.
+      smmry_cvvs$selection <- subset(smmry_cvvs$selection, size <= 4)
+      smmry_cvvs_trad$selection <- subset(smmry_cvvs_trad$selection, size <= 4)
+      tol_smmry <- 1e-2
+    }
+    expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
+                 tolerance = tol_smmry, info = tstsetup)
+  }
+})
+
+# The `stats = "acc"` case is excluded in the test above, so test it separately
+# here:
+test_that(paste(
+  "cv_varsel() gives similar results for the augmented-data and the",
+  "traditional projection when using `stats = \"acc\"` (in case of the `brnll`",
+  "family and the default `regul` for submodels fitted by",
+  "fit_glm_ridge_callback())"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(smmrys_cvvs),
+                    value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
+                         tstsetup)
+    tstsetup_trad <- sub("\\.augdat_stats\\.", ".binom_stats.", tstsetup_trad)
+    if (!tstsetup_trad %in% names(smmrys_cvvs)) next
+
+    smmry_cvvs <- smmrys_cvvs[[tstsetup]]
+    smmry_cvvs_trad <- smmrys_cvvs[[tstsetup_trad]]
+
+    expect_equal(
+      smmry_cvvs[setdiff(names(smmry_cvvs), c("family", "selection"))],
+      smmry_cvvs_trad[setdiff(names(smmry_cvvs_trad),
+                              c("family", "selection"))],
+      info = tstsetup
+    )
+    expect_identical(
+      smmry_cvvs$selection[, c("size", "solution_terms")],
+      smmry_cvvs_trad$selection[, c("size", "solution_terms")],
+      info = tstsetup
+    )
+    # Exclude statistics which are not supported for the augmented-data
+    # projection:
+    smmry_cvvs_trad$selection <- smmry_cvvs_trad$selection[
+      , -grep("mse\\.|auc\\.", names(smmry_cvvs_trad$selection)), drop = FALSE
+    ]
+    expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
+                 tolerance = 1e-6, info = tstsetup)
+  }
+})
+
+# Teardown ----------------------------------------------------------------
+
+# Clean up the workspace:
+rm(list = setdiff(ls(), ls_bu))

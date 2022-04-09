@@ -97,13 +97,14 @@ test_that("invalid `solution_terms` warns or fails", {
 
 test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_fit <- do.call(project, c(
       list(object = fits[[args_prj_i$tstsetup_fit]]),
-      excl_nonargs(args_prj_i)
+      excl_nonargs(args_prj_i),
+      excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]])
     ))
     expect_identical(p_fit, prjs[[tstsetup]], ignore.environment = TRUE,
                      info = tstsetup)
@@ -148,7 +149,8 @@ test_that(paste(
         value = TRUE
       )
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
-        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
+        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms) &&
+          args_prj_vs[[tstsetup]]$prj_nm == args_prj[[tstsetup_try]]$prj_nm
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
@@ -210,7 +212,8 @@ test_that(paste(
         value = TRUE
       )
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
-        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
+        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms) &&
+          args_prj_cvvs[[tstsetup]]$prj_nm == args_prj[[tstsetup_try]]$prj_nm
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {

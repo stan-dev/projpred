@@ -214,7 +214,7 @@ context("plot()")
 
 test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
-  for (tstsetup in head(names(vss), 1)) {
+  for (tstsetup in grep("\\.brnll\\.", names(vss), value = TRUE)) {
     plot_obj <- plot(vss[[tstsetup]], nterms_max = nterms_avail$single)
     expect_s3_class(plot_obj, "ggplot")
     expect_visible(plot_obj, label = tstsetup)
@@ -223,7 +223,7 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
 
 test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in head(names(cvvss), 1)) {
+  for (tstsetup in grep("\\.brnll\\.", names(cvvss), value = TRUE)) {
     plot_obj <- plot(cvvss[[tstsetup]], nterms_max = nterms_avail$single)
     expect_s3_class(plot_obj, "ggplot")
     expect_visible(plot_obj, label = tstsetup)
@@ -287,13 +287,19 @@ test_that("`stat` works", {
                 value = TRUE), 1)
     }))
   })))
+  tstsetups <- union(tstsetups,
+                     grep("\\.augdat\\..*\\.default_stats\\.",
+                          names(args_smmry_vs), value = TRUE))
   for (tstsetup in tstsetups) {
     tstsetup_vs <- args_smmry_vs[[tstsetup]]$tstsetup_vsel
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
-    stat_crr_nm <- switch(fam_crr,
-                          "brnll" = "binom_stats",
-                          "binom" = "binom_stats",
-                          "common_stats")
+    prj_crr <- args_vs[[tstsetup_vs]]$prj_nm
+    stat_crr_nm <- switch(prj_crr,
+                          "augdat" = "augdat_stats",
+                          switch(fam_crr,
+                                 "brnll" = "binom_stats",
+                                 "binom" = "binom_stats",
+                                 "common_stats"))
     stat_vec <- stats_tst[[stat_crr_nm]]$stats
     for (stat_crr in stat_vec) {
       if (stat_crr %in% c("rmse", "auc")) {

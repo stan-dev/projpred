@@ -41,14 +41,17 @@ if (!requireNamespace("glmnet", quietly = TRUE)) {
 ## Reference model --------------------------------------------------------
 ## (actually "datafit"s)
 
-# Exclude brms fits (since `datafit`s don't make use of a reference model fit,
-# it doesn't make a difference if rstanarm or brms is used as the basis here for
-# retrieving the formula, data, and family):
+# Exclude brms reference models (since `datafit`s don't make use of a reference
+# model fit, it doesn't make a difference if rstanarm or brms is used as the
+# basis here for retrieving the formula, data, and family):
 args_datafit <- lapply(setNames(
-  nm = grep("^brms\\.", names(fits), value = TRUE, invert = TRUE)
-), function(tstsetup_fit) {
+  nm = grep("^brms\\.", names(refmods), value = TRUE, invert = TRUE)
+), function(tstsetup_ref) {
+  tstsetup_fit <- args_ref[[tstsetup_ref]]$tstsetup_fit
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
+# The augmented-data projection is not supported yet for `datafit`s:
+args_datafit <- args_datafit[!grepl("\\.augdat", names(args_datafit))]
 
 datafits <- lapply(args_datafit, function(args_datafit_i) {
   formul_crr <- args_fit[[args_datafit_i$tstsetup_fit]]$formula

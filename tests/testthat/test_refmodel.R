@@ -27,6 +27,7 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
       fam_orig = get(paste0("f_", args_fit[[tstsetup_fit]]$fam_nm)),
       mod_nm = args_ref[[tstsetup]]$mod_nm,
       fam_nm = args_ref[[tstsetup]]$fam_nm,
+      augdat_expected = args_ref[[tstsetup]]$prj_nm == "augdat",
       info_str = tstsetup
     )
   }
@@ -149,6 +150,7 @@ test_that(paste(
     pkg_crr <- args_ref[[tstsetup]]$pkg_nm
     mod_crr <- args_ref[[tstsetup]]$mod_nm
     fam_crr <- args_ref[[tstsetup]]$fam_nm
+    prj_crr <- args_ref[[tstsetup]]$prj_nm
 
     y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
 
@@ -163,16 +165,29 @@ test_that(paste(
                                  type = "link")
 
     # Checks without `ynew`:
-    expect_true(is.vector(predref_resp, "double"), info = tstsetup)
-    expect_length(predref_resp, nobsv)
-    if (fam_crr %in% c("brnll", "binom")) {
-      expect_true(all(predref_resp >= 0 & predref_resp <= 1),
-                  info = tstsetup)
-    }
-    expect_true(is.vector(predref_link, "double"), info = tstsetup)
-    expect_length(predref_link, nobsv)
-    if (fam_crr == "gauss") {
-      expect_equal(predref_resp, predref_link, info = tstsetup)
+    if (prj_crr == "augdat") {
+      expect_identical(dim(predref_resp),
+                       c(nobsv, length(refmods[[tstsetup]]$family$cats)),
+                       info = tstsetup)
+      if (fam_crr %in% c("brnll", "binom")) {
+        expect_true(all(predref_resp >= 0 & predref_resp <= 1),
+                    info = tstsetup)
+      }
+      expect_identical(dim(predref_link),
+                       c(nobsv, length(refmods[[tstsetup]]$family$cats) - 1L),
+                       info = tstsetup)
+    } else {
+      expect_true(is.vector(predref_resp, "double"), info = tstsetup)
+      expect_length(predref_resp, nobsv)
+      if (fam_crr %in% c("brnll", "binom")) {
+        expect_true(all(predref_resp >= 0 & predref_resp <= 1),
+                    info = tstsetup)
+      }
+      expect_true(is.vector(predref_link, "double"), info = tstsetup)
+      expect_length(predref_link, nobsv)
+      if (fam_crr == "gauss") {
+        expect_equal(predref_resp, predref_link, info = tstsetup)
+      }
     }
 
     # Checks with `ynew`:
