@@ -42,17 +42,26 @@
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
-#' @return Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
-#'   clustered) projected posterior draws (short: the number of projected draws)
-#'   and \eqn{N} the number of observations. Then, if the prediction is done for
-#'   one submodel only (i.e., `length(nterms) == 1 || !is.null(solution_terms)`
-#'   in the call to [project()]):
+#' @return In the following, \eqn{S_{\mbox{prj}}}{S_prj}, \eqn{N},
+#'   \eqn{C_{\mbox{cat}}}{C_cat}, and \eqn{C_{\mbox{lat}}}{C_lat} from help
+#'   topic [refmodel-init-get] are used. Furthermore, let \eqn{C} denote either
+#'   \eqn{C_{\mbox{cat}}}{C_cat} (if `transform = TRUE`) or
+#'   \eqn{C_{\mbox{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
+#'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
+#'   !is.null(solution_terms)` in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
-#'   `lpd` (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
-#'   \times N}{S_prj x N} matrices.
+#'   `lpd` (log predictive densities). In case of the traditional projection,
+#'   both elements are \eqn{S_{\mbox{prj}} \times N}{S_prj x N} matrices. In
+#'   case of the augmented-data projection, `pred` is an \eqn{S_{\mbox{prj}}
+#'   \times N \times C}{S_prj x N x C} array and `lpd` is an \eqn{S_{\mbox{prj}}
+#'   \times N}{S_prj x N} matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mbox{prj}}}{S_prj} denotes
-#'   `nresample_clusters` in case of clustered projection.
+#'   `nresample_clusters` in case of clustered projection. In case of the
+#'   augmented-data projection, this matrix has an attribute called `cats` (the
+#'   character vector of response categories) and the values of the matrix are
+#'   the predicted indices of the response categories (with the order of the
+#'   response categories being that from attribute `cats`).
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
@@ -175,6 +184,10 @@ proj_helper <- function(object, newdata,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
+    if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
+      stop("Currently, the augmented-data projection may not be combined with ",
+           "observation weights (other than 1).")
+    }
     mu <- proj$refmodel$family$mu_fun(proj$submodl,
                                       newdata = newdata, offset = offsetnew)
     onesub_fun(proj, mu, weightsnew,
@@ -229,14 +242,21 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
   pred_out <- if (!dot_args$transform) proj$refmodel$family$linkfun(mu) else mu
   if (dot_args$integrated) {
     ## average over the posterior draws
-    pred_out <- pred_out %*% proj$weights
+    pred_out <- structure(pred_out %*% proj$weights,
+                          nobs_orig = attr(pred_out, "nobs_orig"),
+                          class = oldClass(pred_out))
     if (!is.null(lpd_out)) {
       lpd_out <- as.matrix(
         apply(lpd_out, 1, log_weighted_mean_exp, proj$weights)
       )
     }
   }
-  return(nlist(pred = t(pred_out),
+  if (inherits(pred_out, "augmat")) {
+    pred_out <- augmat2arr(pred_out, margin_draws = 1)
+  } else {
+    pred_out <- t(pred_out)
+  }
+  return(nlist(pred = pred_out,
                lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
@@ -246,6 +266,18 @@ compute_lpd <- function(ynew, mu, proj, weights) {
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
+    if (proj$refmodel$family$for_augdat) {
+      ynew <- as.factor(ynew)
+      if (!all(levels(ynew) %in% proj$refmodel$family$cats)) {
+        stop("The levels of the response variable (after coercing it to a ",
+             "`factor`) have to be a subset of `family$cats`. Either modify ",
+             "`newdata` or the function supplied to `extract_model_data` in ",
+             "init_refmodel() accordingly or see the documentation for ",
+             "extend_family()'s argument `augdat_y_unqs` to solve this.")
+      }
+      # Re-assign the original levels because some levels might be missing:
+      ynew <- factor(ynew, levels = proj$refmodel$family$cats)
+    }
     return(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights))
   } else {
     return(NULL)
@@ -289,9 +321,12 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
     draw_inds <- seq_along(proj$weights)
   }
 
-  return(do.call(rbind, lapply(draw_inds, function(i) {
-    proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
-  })))
+  return(structure(
+    do.call(rbind, lapply(draw_inds, function(i) {
+      proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
+    })),
+    cats = proj$refmodel$family$cats
+  ))
 }
 
 #' Plot summary statistics of a variable selection
