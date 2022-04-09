@@ -28,13 +28,15 @@ calculate. Available statistics are:
 \item \code{"elpd"}: (expected) sum of log predictive densities.
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
-\item \code{"mse"}: mean squared error.
-\item \code{"rmse"}: root mean squared error. For the corresponding standard error,
-bootstrapping is used.
-\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy
-(\code{\link[=binomial]{binomial()}} family only).
-\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only). For the
+\item \code{"mse"}: mean squared error (traditional projection only).
+\item \code{"rmse"}: root mean squared error (traditional projection only). For the
 corresponding standard error, bootstrapping is used.
+\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (for the
+traditional projection: \code{\link[=binomial]{binomial()}} family only; for the augmented-data
+projection: all families).
+\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family for the
+traditional projection only). For the corresponding standard error,
+bootstrapping is used.
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences

@@ -12,7 +12,9 @@ generalized linear multilevel (or "mixed") models (GLMMs), generalized
 additive models (GAMs), and generalized additive multilevel (or "mixed")
 models (GAMMs), with the support for additive models still being
 experimental. Note that the term "generalized" includes the Gaussian family
-as well.
+as well. Some regression models whose response family is not an exponential
+family are supported by the (currently still experimental) augmented-data
+projection (see below).
 
 The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
 of other packages are welcome to add new \code{\link[=get_refmodel]{get_refmodel()}} methods (which
@@ -27,9 +29,19 @@ model. For the sake of simplicity, throughout this package, we use the term
 is projected, even though this term is not always appropriate for custom
 reference models.
 
-Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and---via
+Currently, the families supported by the traditional (non-augmented-data)
+projection are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and---via
 \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as
-\code{\link[=poisson]{poisson()}}.
+\code{\link[=poisson]{poisson()}}. The families supported by the augmented-data projection are
+\code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), \code{\link[brms:brmsfamily]{brms::cumulative()}}, and
+\code{\link[brms:brmsfamily]{brms::categorical()}}. For the augmented-data projection with the
+\code{\link[=binomial]{binomial()}} (or \code{\link[brms:brmsfamily]{brms::bernoulli()}}) family, see \code{\link[=extend_family]{extend_family()}} as well
+as \code{\link[=augdat_link_binom]{augdat_link_binom()}} and \code{\link[=augdat_ilink_binom]{augdat_ilink_binom()}}. As soon as possible, a
+reference for the augmented-data projection will be provided here. For now,
+\href{https://github.com/stan-dev/projpred/issues/70}{this GitHub issue} provides
+some basic information. Note that the augmented-data projection is currently
+considered as an experimental feature since it has not been tested thoroughly
+yet and is also subject to some more theoretical investigations.
 
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
@@ -46,10 +58,10 @@ option \code{projpred.prll_prj_trigger}. Note that we cannot recommend
 parallelizing the projection on Windows because in our experience, the
 parallelization overhead is larger there, causing a parallel run to take
 longer than a sequential run. Also note that the parallelization works well
-for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
-big, which---when running in parallel---may lead to an excessive memory usage
-which in turn may crash the R session. Thus, we currently cannot recommend
-the parallelization for GLMMs, GAMs, and GAMMs.
+for GLMs, but for all other models, the fitted model objects are quite big,
+which---when running in parallel---may lead to excessive memory usage which
+in turn may crash the R session. Thus, we currently cannot recommend the
+parallelization for models other than GLMs.
 
 The \href{https://mc-stan.org/projpred/articles/}{vignettes} (currently, there is
 only a single one) illustrate how to use the \pkg{projpred} functions in
@@ -124,6 +136,7 @@ Other contributors:
   \item Marco Colombo [contributor]
   \item Paul-Christian Bürkner [contributor]
   \item Hamada S. Badr [contributor]
+  \item  The LME4 Authors (see file 'LICENSE' for details) [copyright holder]
 }
 
 }

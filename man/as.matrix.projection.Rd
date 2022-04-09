@@ -27,6 +27,13 @@ This is the \code{\link[=as.matrix]{as.matrix()}} method for \code{projection} o
 \code{\link[=project]{project()}}, possibly as elements of a \code{list}). It extracts the projected
 parameter draws and returns them as a matrix.
 }
+\details{
+In case of the augmented-data projection for a multilevel submodel
+of a \code{\link[brms:brmsfamily]{brms::categorical()}} reference model, the multilevel parameters (and
+therefore also their names) slightly differ from those in the \pkg{brms}
+reference model fit (see section "Augmented-data projection" in
+\code{\link[=extend_family]{extend_family()}}'s documentation).
+}
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
   # Data:

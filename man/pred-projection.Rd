@@ -82,18 +82,26 @@ the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
 }
 \value{
-Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
-clustered) projected posterior draws (short: the number of projected draws)
-and \eqn{N} the number of observations. Then, if the prediction is done for
-one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)}
-in the call to \code{\link[=project]{project()}}):
+In the following, \eqn{S_{\mbox{prj}}}{S_prj}, \eqn{N},
+\eqn{C_{\mbox{cat}}}{C_cat}, and \eqn{C_{\mbox{lat}}}{C_lat} from help
+topic \link{refmodel-init-get} are used. Furthermore, let \eqn{C} denote either
+\eqn{C_{\mbox{cat}}}{C_cat} (if \code{transform = TRUE}) or
+\eqn{C_{\mbox{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
+prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the call to \code{\link[=project]{project()}}):
 \itemize{
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions) and
-\code{lpd} (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
-  \times N}{S_prj x N} matrices.
+\code{lpd} (log predictive densities). In case of the traditional projection,
+both elements are \eqn{S_{\mbox{prj}} \times N}{S_prj x N} matrices. In
+case of the augmented-data projection, \code{pred} is an \eqn{S_{\mbox{prj}}
+  \times N \times C}{S_prj x N x C} array and \code{lpd} is an \eqn{S_{\mbox{prj}}
+  \times N}{S_prj x N} matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mbox{prj}}}{S_prj} denotes
-\code{nresample_clusters} in case of clustered projection.
+\code{nresample_clusters} in case of clustered projection. In case of the
+augmented-data projection, this matrix has an attribute called \code{cats} (the
+character vector of response categories) and the values of the matrix are
+the predicted indices of the response categories (with the order of the
+response categories being that from attribute \code{cats}).
 }
 
 If the prediction is done for more than one submodel, the output from above

@@ -49,7 +49,8 @@ class.}
 
 \item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
-arguments passed to the appropriate method. Else: ignored.}
+arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
+arguments passed to \code{\link[=extend_family]{extend_family()}}.}
 
 \item{formula}{Reference model's formula. For general information on formulas
 in \R, see \code{\link{formula}}. For multilevel formulas, see also package
@@ -158,8 +159,14 @@ observations (in case of CV, these may be reduced to each fold),
 \eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
 model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
 clustered) parameter draws for projection (short: the number of projected
-draws). Then the functions supplied to these arguments need to have the
-following prototypes:
+draws). For the augmented-data projection, let \eqn{C_{\mbox{cat}}}{C_cat}
+denote the number of response categories, \eqn{C_{\mbox{lat}}}{C_lat} the
+number of latent response categories (which typically equals
+\eqn{C_{\mbox{cat}} - 1}{C_cat - 1}), and define \eqn{N_{\mbox{augcat}} := N
+\cdot C_{\mbox{cat}}}{N_augcat := N * C_cat} as well as
+\eqn{N_{\mbox{auglat}} := N \cdot C_{\mbox{lat}}}{N_auglat := N * C_lat}.
+Then the functions supplied to these arguments need to have the following
+prototypes:
 \itemize{
 \item \code{ref_predfun}: \code{ref_predfun(fit, newdata = NULL)} where:
 \itemize{
@@ -185,27 +192,46 @@ as with \code{refit_prj = FALSE}).
 be able to be called with the following arguments:
 \itemize{
 \item \code{formula} accepts either a standard \code{\link{formula}} with a single response
-(if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a \code{\link{formula}} with
-\eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables \code{\link[=cbind]{cbind()}}-ed on
-the left-hand side in which case the projection has to be performed for
-each of the response variables separately.
-\item \code{data} accepts a \code{data.frame} to be used for the projection.
+(if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1} or in case of the augmented-data
+projection) or a \code{\link{formula}} with \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}
+response variables \code{\link[=cbind]{cbind()}}-ed on the left-hand side in which case the
+projection has to be performed for each of the response variables
+separately.
+\item \code{data} accepts a \code{data.frame} to be used for the projection. In case of
+the traditional (non-augmented-data) projection, this dataset has \eqn{N}
+rows. In case of the augmented-data projection, this dataset has
+\eqn{N_{\mbox{augcat}}}{N_augcat} rows.
 \item \code{family} accepts a \code{\link{family}} object.
 \item \code{weights} accepts either observation weights (at least in the form of a
 numeric vector) or \code{NULL} (for using a vector of ones as weights).
 \item \code{projpred_var} accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
 matrix of predictive variances (necessary for \pkg{projpred}'s internal
-GLM fitter).
+GLM fitter) in case of the traditional projection and an
+\eqn{N_{\mbox{augcat}} \times S_{\mbox{prj}}}{N_augcat x S_prj} matrix of
+\code{NA}s in case of the augmented-data projection.
 \item \code{projpred_regul} accepts a single numeric value as supplied to argument
 \code{regul} of \code{\link[=project]{project()}}, for example.
+\item \code{projpred_ws_aug} accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+matrix of expected values for the response in case of the traditional
+projection and an \eqn{N_{\mbox{augcat}} \times S_{\mbox{prj}}}{N_augcat
+    x S_prj} matrix of probabilities for the response categories in case of
+the augmented-data projection.
 \item \code{...} accepts further arguments specified by the user.
 }
 }
 
 The return value of these functions needs to be:
 \itemize{
-\item \code{ref_predfun}: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
-\item \code{proj_predfun}: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
+\item \code{ref_predfun}: for the traditional projection, an \eqn{N \times
+S_{\mbox{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
+\eqn{S_{\mbox{ref}} \times N \times C_{\mbox{lat}}}{S_ref x N x C_lat} array
+(the only exception is the augmented-data projection for the \code{\link[=binomial]{binomial()}}
+family in which case \code{ref_predfun} needs to return an \eqn{N \times
+S_{\mbox{ref}}}{N x S_ref} matrix just like for the traditional projection
+because the array is constructed by an internal wrapper function).
+\item \code{proj_predfun}: for the traditional projection, an \eqn{N \times
+S_{\mbox{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
+\eqn{N \times C_{\mbox{lat}} \times S_{\mbox{prj}}}{N x C_lat x S_prj} array.
 \item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj} containing
 this number of submodel fits.
 }
@@ -240,6 +266,20 @@ The return value of \code{extract_model_data} needs to be a \code{list} with ele
 \code{y}, \code{weights}, and \code{offset}, each being a numeric vector containing the data
 for the response, the observation weights, and the offsets, respectively. An
 exception is that \code{y} may also be \code{NULL} (depending on argument \code{extract_y}).
+}
+
+\section{Augmented-data projection}{
+If a custom reference model for an augmented-data projection is needed, see
+also \code{\link[=extend_family]{extend_family()}}.
+
+For the augmented-data projection, the response vector resulting from
+\code{extract_model_data} is internally coerced to a \code{factor} (using
+\code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be identical to
+\code{family$cats} (see \code{\link[=extend_family]{extend_family()}}'s argument \code{augdat_y_unqs}).
+
+Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
+per response category) are not supported by \pkg{projpred} yet. So far, only
+offsets which are the same across all response categories are supported.
 }
 
 \examples{
