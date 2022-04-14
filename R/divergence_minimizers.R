@@ -527,6 +527,16 @@ repair_re.merMod <- function(object, newdata) {
   vnms <- names(ranef_tmp)
   lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
     from_fit <- rownames(ranef_tmp[[vnm]])
+    if (!vnm %in% names(newdata)) {
+      if (any(grepl("\\|.+/", labels(terms(formula(object)))))) {
+        stop("The `/` syntax for nested group-level terms is currently not ",
+             "supported. Please try to write out the interaction term implied ",
+             "by the `/` syntax (see Table 2 in lme4's vignette called ",
+             "\"Fitting Linear Mixed-Effects Models Using lme4\").")
+      } else {
+        stop("Could not find column `", vnm, "` in `newdata`.")
+      }
+    }
     from_new <- levels(as.factor(newdata[, vnm]))
     list(comb = union(from_fit, from_new),
          exist = intersect(from_new, from_fit),
