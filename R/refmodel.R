@@ -531,9 +531,18 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   ref_predfun <- function(fit, newdata = NULL) {
-    linpred_out <- t(
-      posterior_linpred(fit, newdata = newdata)
-    )
+    if (fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
+        utils::packageVersion("rstanarm") >= "2.21.3" &&
+        !is.null(newdata) && length(fit$offset) > 0) {
+      linpred_out <- t(
+        posterior_linpred(fit, newdata = newdata,
+                          offset = rep(0, nrow(newdata)))
+      )
+    } else {
+      linpred_out <- t(
+        posterior_linpred(fit, newdata = newdata)
+      )
+    }
     # Use a workaround for rstanarm issue #541 and rstanarm issue #542. This
     # workaround consists of using `cond_no_offs` which indicates whether
     # posterior_linpred() excluded (`TRUE`) or included (`FALSE`) the offsets:
@@ -542,7 +551,9 @@ get_refmodel.stanreg <- function(object, ...) {
         !is.null(attr(terms(formula), "offset")) &&
         utils::packageVersion("rstanarm") <= "2.21.2"
     ) || (
-      fit$stan_function %in% c("stan_lm", "stan_glm") &&
+      (fit$stan_function %in% c("stan_lm", "stan_glm") ||
+         fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
+         utils::packageVersion("rstanarm") >= "2.21.3") &&
         !is.null(newdata) && length(fit$offset) > 0
     )
     if (cond_no_offs) {
