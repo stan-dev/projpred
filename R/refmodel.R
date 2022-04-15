@@ -455,23 +455,14 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   # Offsets:
-  # Element `stan_function` (needed for handling the offsets) is not documented
-  # in `?rstanarm::`stanreg-objects``, so check at least its length and type:
-  if (length(object$stan_function) != 1 ||
-      !is.vector(object$stan_function, mode = "character")) {
-    stop("Unexpected value of `object$stan_function`. Please notify the ",
-         "package maintainer.")
-  }
   if (length(object$offset) > 0) {
-    if (is.null(attr(terms(formula(object), data = data), "offset"))) {
-      # In this case, we would have to use argument `offset` of
-      # posterior_linpred.stanreg() to allow for new offsets, requiring changes
-      # in all ref_predfun() calls. Furthermore, there is rstanarm issue #541.
-      # Thus, throw an error:
-      stop("It looks like `object` was fitted with offsets specified via ",
-           "argument `offset`. Currently, projpred does not support offsets ",
-           "specified this way. Please use an `offset()` term in the model ",
-           "formula instead.")
+    # Element `stan_function` (needed here for handling rstanarm issue #546) is
+    # not documented in `?rstanarm::`stanreg-objects``, so check at least its
+    # length and type:
+    if (length(object$stan_function) != 1 ||
+        !is.vector(object$stan_function, mode = "character")) {
+      stop("Unexpected value of `object$stan_function`. Please notify the ",
+           "package maintainer.")
     }
     if (object$stan_function == "stan_gamm4") {
       stop("Because of rstanarm issue #546 (see GitHub), projpred cannot ",
@@ -531,35 +522,16 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   ref_predfun <- function(fit, newdata = NULL) {
-    if (fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
-        utils::packageVersion("rstanarm") >= "2.21.3" &&
-        !is.null(newdata) && length(fit$offset) > 0) {
-      linpred_out <- t(
-        posterior_linpred(fit, newdata = newdata,
-                          offset = rep(0, nrow(newdata)))
-      )
-    } else {
-      linpred_out <- t(
-        posterior_linpred(fit, newdata = newdata)
-      )
-    }
-    # Use a workaround for rstanarm issue #541 and rstanarm issue #542. This
-    # workaround consists of using `cond_no_offs` which indicates whether
-    # posterior_linpred() excluded (`TRUE`) or included (`FALSE`) the offsets:
-    cond_no_offs <- (
-      fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
-        !is.null(attr(terms(formula), "offset")) &&
-        utils::packageVersion("rstanarm") <= "2.21.2"
-    ) || (
-      (fit$stan_function %in% c("stan_lm", "stan_glm") ||
-         fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
-         utils::packageVersion("rstanarm") >= "2.21.3") &&
-        !is.null(newdata) && length(fit$offset) > 0
-    )
-    if (cond_no_offs) {
-      # Observation weights are not needed here, so use `wrhs = NULL` to avoid
-      # potential conflicts for a non-`NULL` default `wrhs`:
-      offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+    # The easiest way to deal with rstanarm issue #541 and rstanarm issue #542
+    # (and changes between rstanarm versions 2.21.2 and 2.21.3 with respect to
+    # these issues) is to exclude offsets here and add them manually afterwards:
+    linpred_out <- posterior_linpred(fit, newdata = newdata,
+                                     offset = rep(0, nrow(newdata %||% data)))
+    linpred_out <- t(linpred_out)
+    # Observation weights are not needed here, so use `wrhs = NULL` to avoid
+    # potential conflicts for a non-`NULL` default `wrhs`:
+    offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+    if (length(offs) > 0) {
       stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
       linpred_out <- linpred_out + offs
     }
