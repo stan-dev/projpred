@@ -277,7 +277,7 @@ refmodel_tester <- function(
     }
     if (!(has_grp &&
           as.numeric(R.version$major) >= 4 &&
-          as.numeric(R.version$minor) > 1)) {
+          as.numeric(R.version$minor) >= 2)) {
       # TODO: This causes a test failure on R-devel (> 4.1) which can't be
       # reproduced locally. Thus, this is skipped in this special case for now.
       expect_equal(refmod$mu, t(mu_expected), info = info_str)
