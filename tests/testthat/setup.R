@@ -360,11 +360,10 @@ seed_fit <- 74345
 ### Formula ---------------------------------------------------------------
 
 # Notes:
-#   * Argument `offset` has an issue for rstanarm::stan_glmer() (see rstanarm
-#     issue #541). Instead, use offset() in the formula.
 #   * Argument `offset` is not supported by rstanarm::stan_gamm4(). Instead, use
-#     offset() in the formula. However, because of rstanarm issue #546 and
-#     rstanarm issue #253, omit the offsets in GAMs and GAMMs.
+#     offset() in the formula (like for all other models). However, because of
+#     rstanarm issue #546 and rstanarm issue #253, omit the offsets in GAMs and
+#     GAMMs.
 #   * In rstanarm::stan_gamm4(), multilevel terms are specified via argument
 #     `random`.
 
