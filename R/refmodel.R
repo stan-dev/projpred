@@ -522,20 +522,26 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   ref_predfun <- function(fit, newdata = NULL) {
-    # The easiest way to deal with rstanarm issue #541 and rstanarm issue #542
-    # (and changes between rstanarm versions 2.21.2 and 2.21.3 with respect to
-    # these issues) is to exclude offsets here and add them manually afterwards:
-    linpred_out <- posterior_linpred(fit, newdata = newdata,
-                                     offset = rep(0, nrow(newdata %||% data)))
-    linpred_out <- t(linpred_out)
+    # The easiest way to deal with rstanarm issue #541 and rstanarm issue #542,
+    # changes between rstanarm versions 2.21.2 and 2.21.3 with respect to these
+    # issues, and the fact that offsets may be specified via argument `offset`
+    # of the respective model-fitting function (e.g., rstanarm::stan_glm()) is
+    # to include offsets explicitly in the call to
+    # rstanarm:::posterior_linpred.stanreg().
+
     # Observation weights are not needed here, so use `wrhs = NULL` to avoid
     # potential conflicts for a non-`NULL` default `wrhs`:
     offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
-    if (length(offs) > 0) {
-      stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
-      linpred_out <- linpred_out + offs
+    n_obs <- nrow(newdata %||% data)
+    if (length(offs) == 0) {
+      offs <- rep(0, n_obs)
+    } else if (length(offs) == 1) {
+      offs <- rep(offs, n_obs)
+    } else if (length(offs) != n_obs) {
+      stop("Unexpected length of element `offset` returned by ",
+           "extract_model_data() (see `?init_refmodel`).")
     }
-    return(linpred_out)
+    return(t(posterior_linpred(fit, newdata = newdata, offset = offs)))
   }
 
   cvfun <- function(folds) {
