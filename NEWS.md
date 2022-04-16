@@ -1,6 +1,8 @@
 # projpred 2.1.1.9000
 
+## Bug fixes
 
+* Throw a more informative error message in case of special group-level terms which are currently not supported (in particular, nested ones).
 
 # projpred 2.1.1
 
