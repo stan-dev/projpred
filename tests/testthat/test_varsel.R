@@ -91,24 +91,10 @@ test_that("`d_test` works", {
       type = "test",
       offset = refmod_crr$offset
     )
-    # We expect a warning which in fact should be suppressed, though (see
-    # issue #162):
-    warn_expected <- if (pkg_crr == "rstanarm" &&
-                         mod_crr == "glm" &&
-                         grepl("\\.with_offs", tstsetup)) {
-      paste("^'offset' argument is NULL but it looks like you estimated the",
-            "model using an offset term\\.$")
-    } else {
-      NA
-    }
-    expect_warning(
-      vs_repr <- do.call(varsel, c(
-        list(object = refmod_crr, d_test = d_test_crr),
-        excl_nonargs(args_vs_i)
-      )),
-      warn_expected,
-      info = tstsetup
-    )
+    vs_repr <- do.call(varsel, c(
+      list(object = refmod_crr, d_test = d_test_crr),
+      excl_nonargs(args_vs_i)
+    ))
     meth_exp_crr <- args_vs_i$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
@@ -756,23 +742,10 @@ test_that(paste(
     refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
 
     # Run cv_varsel():
-    # We expect a warning which in fact should be suppressed, though (see
-    # issue #162):
-    warn_expected <- if (mod_crr == "glm" &&
-                         grepl("\\.with_offs", tstsetup)) {
-      paste("^'offset' argument is NULL but it looks like you estimated the",
-            "model using an offset term\\.$")
-    } else {
-      NA
-    }
-    expect_warning(
-      cvvs_cvfits <- do.call(cv_varsel, c(
-        list(object = refmod_crr),
-        excl_nonargs(args_cvvs_i, nms_excl_add = "K")
-      )),
-      warn_expected,
-      info = tstsetup
-    )
+    cvvs_cvfits <- do.call(cv_varsel, c(
+      list(object = refmod_crr),
+      excl_nonargs(args_cvvs_i, nms_excl_add = "K")
+    ))
 
     # Checks:
     vsel_tester(
