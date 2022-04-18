@@ -1,5 +1,9 @@
 # projpred 2.1.1.9000
 
+## Minor changes
+
+* Account for changes concerning the handling of offsets in **rstanarm** version 2.21.3. In particular, issue stan-dev/rstanarm#542 was fixed in **rstanarm** 2.21.3.
+
 ## Bug fixes
 
 * Throw a more informative error message in case of special group-level terms which are currently not supported (in particular, nested ones).
@@ -10,7 +14,7 @@
 
 * Fix the order of the package authors.
 * Fix failing CRAN checks.
-* Add an input check for argument `solution_terms` of `project()` to fix a test failure on R versions > 4.1.
+* Add an input check for argument `solution_terms` of `project()` to fix a test failure in R versions >= 4.2.
 
 # projpred 2.1.0
 
