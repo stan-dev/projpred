@@ -786,11 +786,21 @@ if (run_cvvs) {
   # diagnostics. Additionally to suppressWarnings(), suppressMessages() could be
   # used here (because of the refits in K-fold CV):
   cvvss <- suppressWarnings(lapply(args_cvvs, function(args_cvvs_i) {
-    do.call(cv_varsel, c(
+    cvvs_expr <- expression(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
-    ))
+    )))
+    if (args_cvvs_i$mod_nm == "gamm" &&
+        !identical(args_cvvs_i$cv_method, "kfold")) {
+      # Due to issue #239, we have to wrap the call to cv_varsel() in try():
+      return(try(eval(cvvs_expr), silent = TRUE))
+    } else {
+      return(eval(cvvs_expr))
+    }
   }))
+  success_cvvs <- !sapply(cvvss, inherits, "try-error")
+  cvvss <- cvvss[success_cvvs]
+  args_cvvs <- args_cvvs[success_cvvs]
 }
 
 ## Projection -------------------------------------------------------------
