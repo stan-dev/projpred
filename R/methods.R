@@ -927,7 +927,7 @@ mknms_ranef <- function(nms, nm_scheme, coef_nms) {
   return(nms)
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 coef.subfit <- function(object, ...) {
   return(with(object, c(
@@ -942,26 +942,26 @@ get_subparams <- function(x, ...) {
   UseMethod("get_subparams")
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names(...))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.subfit <- function(x, ...) {
   return(get_subparams.lm(x, ...))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.glm <- function(x, ...) {
   return(get_subparams.lm(x, ...))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
@@ -1026,13 +1026,13 @@ get_subparams.lmerMod <- function(x, ...) {
   return(c(population_effects, group_vc, group_ef))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.glmerMod <- function(x, ...) {
   return(get_subparams.lmerMod(x, ...))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {
   return(get_subparams.lm(x, ...))
