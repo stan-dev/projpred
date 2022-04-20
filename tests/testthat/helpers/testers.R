@@ -275,13 +275,7 @@ refmodel_tester <- function(
     if (refmod$family$family != "gaussian") {
       mu_expected <- fam_orig$linkinv(mu_expected)
     }
-    if (!(has_grp &&
-          as.numeric(R.version$major) >= 4 &&
-          as.numeric(R.version$minor) > 1)) {
-      # TODO: This causes a test failure on R-devel (> 4.1) which can't be
-      # reproduced locally. Thus, this is skipped in this special case for now.
-      expect_equal(refmod$mu, t(mu_expected), info = info_str)
-    }
+    expect_equal(refmod$mu, t(mu_expected), info = info_str)
   } else {
     if (refmod$family$family != "binomial") {
       expect_identical(refmod$mu, as.matrix(refmod$y), info = info_str)
