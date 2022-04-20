@@ -799,6 +799,15 @@ if (run_cvvs) {
     }
   }))
   success_cvvs <- !sapply(cvvss, inherits, "try-error")
+  err_ok <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
+    attr(cvvs_err, "condition")$message ==
+      "Not enough (non-NA) data to do anything meaningful"
+  })
+  expect_true(
+    all(err_ok),
+    info = paste("Unexpected error for",
+                 paste(names(cvvss[!success_cvvs])[!err_ok], collapse = ", "))
+  )
   cvvss <- cvvss[success_cvvs]
   args_cvvs <- args_cvvs[success_cvvs]
 }
