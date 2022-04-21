@@ -750,6 +750,6 @@ test_that(paste(
       expect_true(sum(ind == solution_terms_lasso[[i]]) >= nterms / 2)
     }
   }
-  RNGversion(paste(R.Version()$major, R.Version()$minor, sep = "."))
+  RNGversion(getRversion())
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
