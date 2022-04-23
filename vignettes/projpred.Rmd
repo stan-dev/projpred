@@ -228,7 +228,7 @@ cbind(dat_gauss_new, linpred = as.vector(prj_linpred$pred))
 ```
 If `dat_gauss_new` also contained response values (i.e., `y` values in this example), then `proj_linpred()` would also evaluate the log predictive density at these.
 
-With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response.^[In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.] This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projected predictive check (PPPC) here.
+With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response.^[In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.] This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projection predictive check (PPPC) here.
 ```{r}
 prj_predict <- proj_predict(prj, .seed = 762805)
 # Using the 'bayesplot' package:
