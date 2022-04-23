@@ -373,7 +373,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
     penal_crr[idx_penal_Inf] <- Inf
     # TODO: This test should be extended to also test the case where a
     # categorical predictor (more precisely, one of its dummy variables) gets
-    # zero or infinite penalty. Until then, the following check ensures that no
+    # zero or infinite penalty. For now, the following check ensures that no
     # categorical predictors get zero or infinite penalty:
     stopifnot(all(grep("^xca\\.", penal_possbl) >= max(c(idx_penal_0,
                                                          idx_penal_Inf))))
