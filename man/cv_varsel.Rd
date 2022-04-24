@@ -145,9 +145,10 @@ is smaller than the number of observations), for sampling the folds in
 K-fold CV, and for drawing new group-level effects when predicting from a
 multilevel submodel (however, not yet in case of a GAMM).}
 
-\item{search_terms}{A custom character vector of terms to consider for the
-search. The intercept (\code{"1"}) needs to be included explicitly. The default
-considers all the terms in the reference model's formula.}
+\item{search_terms}{Only relevant for forward search. A custom character
+vector of terms to consider for the search. The intercept (\code{"1"}) needs to
+be included explicitly. The default considers all the terms in the
+reference model's formula.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant

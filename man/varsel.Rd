@@ -109,9 +109,10 @@ those predictors have no cost and will therefore be selected first, whereas
 \code{Inf} means those predictors will never be selected. If \code{NULL}, then \code{1} is
 used for each predictor.}
 
-\item{search_terms}{A custom character vector of terms to consider for the
-search. The intercept (\code{"1"}) needs to be included explicitly. The default
-considers all the terms in the reference model's formula.}
+\item{search_terms}{Only relevant for forward search. A custom character
+vector of terms to consider for the search. The intercept (\code{"1"}) needs to
+be included explicitly. The default considers all the terms in the
+reference model's formula.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If \code{NULL}, no seed is set and

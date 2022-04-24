@@ -63,9 +63,10 @@
 #'   projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 #'   no need for regularization, but sometimes we need to add some
 #'   regularization to avoid numerical problems.
-#' @param search_terms A custom character vector of terms to consider for the
-#'   search. The intercept (`"1"`) needs to be included explicitly. The default
-#'   considers all the terms in the reference model's formula.
+#' @param search_terms Only relevant for forward search. A custom character
+#'   vector of terms to consider for the search. The intercept (`"1"`) needs to
+#'   be included explicitly. The default considers all the terms in the
+#'   reference model's formula.
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
