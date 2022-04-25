@@ -222,7 +222,7 @@ exception where the search part is not cross-validated. In that case, the
 evaluation part is based on a PSIS-LOO CV.
 }
 \examples{
-\dontshow{if (TRUE) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # Note: The code from this example is not executed when called via example().
 # To execute it, you have to copy and paste it manually to the console.
 if (requireNamespace("rstanarm", quietly = TRUE)) {
