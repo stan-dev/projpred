@@ -671,9 +671,9 @@ select_possible_terms_size <- function(chosen, terms, size) {
           x <- paste0("(", x, ")")
         }
       }
-      x
+      return(x)
     } else {
-      NA
+      return(NA)
     }
   })
   valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
