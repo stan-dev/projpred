@@ -292,7 +292,8 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
 ## avoid repeating the same code both in varsel and cv_varsel.
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
                               nclusters, search_terms) {
-  if (is.null(search_terms)) {
+  search_terms_was_null <- is.null(search_terms)
+  if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
                                   data = refmodel$fetch_data())
   }
@@ -300,16 +301,22 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
   if (is.null(method)) {
-    if (has_group_features || has_additive_features) {
+    if (has_group_features || has_additive_features || !search_terms_was_null) {
       method <- "forward"
     } else {
       method <- "l1"
     }
   } else {
     method <- tolower(method)
-    if (method == "l1" && (has_group_features || has_additive_features)) {
-      stop("L1 search is only supported for reference models without ",
-           "multilevel and without additive (\"smoothing\") terms.")
+    if (method == "l1") {
+      if (has_group_features || has_additive_features) {
+        stop("L1 search is only supported for reference models without ",
+             "multilevel and without additive (\"smoothing\") terms.")
+      }
+      if (!search_terms_was_null) {
+        warning("Argument `search_terms` only takes effect if ",
+                "`method = \"forward\"`.")
+      }
     }
   }
 
