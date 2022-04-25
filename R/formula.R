@@ -661,14 +661,9 @@ select_possible_terms_size <- function(chosen, terms, size) {
     linear <- terms_new$individual_terms
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
-    ## if model is straight redundant
-    not_redundant <- (
-      count_terms_chosen(c(chosen, x), duplicates = TRUE) -
-        length(dups)
-    ) == size
-    ## if already_chosen is not NA it means we have already chosen the linear
-    ## term
-    if (not_redundant) {
+    size_crr <- count_terms_chosen(c(chosen, x), duplicates = TRUE) -
+      length(dups)
+    if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
         x <- setdiff(attr(tt, "term.labels"), chosen)
