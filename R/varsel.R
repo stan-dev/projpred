@@ -285,15 +285,13 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
   }
 }
 
+## Auxiliary function for parsing the input arguments for varsel.
+## The arguments specified by the user (or the function calling this function)
+## are treated as they are, but if some are not given, then this function
+## fills them in with the default values. The purpose of this function is to
+## avoid repeating the same code both in varsel and cv_varsel.
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
                               nclusters, search_terms) {
-  ##
-  ## Auxiliary function for parsing the input arguments for varsel.
-  ## The arguments specified by the user (or the function calling this function)
-  ## are treated as they are, but if some are not given, then this function
-  ## fills them in with the default values. The purpose of this function is to
-  ## avoid repeating the same code both in varsel and cv_varsel.
-  ##
   if (is.null(search_terms)) {
     search_terms <- split_formula(refmodel$formula,
                                   data = refmodel$fetch_data())
