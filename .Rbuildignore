@@ -12,3 +12,5 @@
 ^vignettes/.*_files$
 ^vignettes/.*\.html$
 ^CRAN-SUBMISSION$
+^docs$
+^_pkgdown\.yml$
