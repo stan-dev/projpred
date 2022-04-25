@@ -335,7 +335,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nclusters <- 1
   }
 
-  if (!is.null(search_terms)) {
+  if (length(search_terms) > 0) {
     max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
   } else {
     max_nv_possible <- count_terms_in_formula(refmodel$formula)
