@@ -66,15 +66,15 @@
 #'   (for \eqn{K}-fold CV). Note that `cvfits` takes precedence over `cvfun`,
 #'   i.e., if both are provided, `cvfits` is used.
 #' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
-#'   reference model fit for fold \eqn{k \in \{1, ..., K\}} (this model fit is
-#'   the \eqn{k}-th element of the return value of `cvfun` or the \eqn{k}-th
-#'   element of `cvfits$fits`, extended by elements `omitted` (containing the
-#'   indices of the left-out observations in that fold) and `projpred_k`
-#'   (containing the integer \eqn{k})), returns an object of the same type as
-#'   [init_refmodel()] does. Argument `cvrefbuilder` may be `NULL` for using an
-#'   internal default: [get_refmodel()] if `object` is not `NULL` and a function
-#'   calling [init_refmodel()] appropriately (with the assumption `dis = 0`) if
-#'   `object` is `NULL`.
+#'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
+#'   model fit is the \eqn{k}-th element of the return value of `cvfun` or the
+#'   \eqn{k}-th element of `cvfits$fits`, extended by elements `omitted`
+#'   (containing the indices of the left-out observations in that fold) and
+#'   `projpred_k` (containing the integer \eqn{k})), returns an object of the
+#'   same type as [init_refmodel()] does. Argument `cvrefbuilder` may be `NULL`
+#'   for using an internal default: [get_refmodel()] if `object` is not `NULL`
+#'   and a function calling [init_refmodel()] appropriately (with the assumption
+#'   `dis = 0`) if `object` is `NULL`.
 #' @param dis A vector of posterior draws for the dispersion parameter (if
 #'   existing). May be `NULL` if the model has no dispersion parameter or if the
 #'   model does have a dispersion parameter, but `object` is `NULL` (in which
