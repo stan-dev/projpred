@@ -64,9 +64,10 @@
 #'   no need for regularization, but sometimes we need to add some
 #'   regularization to avoid numerical problems.
 #' @param search_terms Only relevant for forward search. A custom character
-#'   vector of terms to consider for the search. The intercept (`"1"`) needs to
-#'   be included explicitly. The default considers all the terms in the
-#'   reference model's formula.
+#'   vector of terms to consider for the search. The intercept (`"1"`) is always
+#'   included internally via `union()`, so there's no difference between
+#'   including it explicitly or omitting it. The default `search_terms`
+#'   considers all the terms in the reference model's formula.
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
@@ -299,6 +300,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     search_terms <- split_formula(refmodel$formula,
                                   data = refmodel$fetch_data())
   }
+  search_terms <- union("1", search_terms)
   has_group_features <- formula_contains_group_terms(refmodel$formula)
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
@@ -337,11 +339,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nclusters <- 1
   }
 
-  if (length(search_terms) > 0) {
-    max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
-  } else {
-    max_nv_possible <- count_terms_in_formula(refmodel$formula)
-  }
+  max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }

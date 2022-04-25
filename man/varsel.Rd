@@ -110,9 +110,10 @@ those predictors have no cost and will therefore be selected first, whereas
 used for each predictor.}
 
 \item{search_terms}{Only relevant for forward search. A custom character
-vector of terms to consider for the search. The intercept (\code{"1"}) needs to
-be included explicitly. The default considers all the terms in the
-reference model's formula.}
+vector of terms to consider for the search. The intercept (\code{"1"}) is always
+included internally via \code{union()}, so there's no difference between
+including it explicitly or omitting it. The default \code{search_terms}
+considers all the terms in the reference model's formula.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If \code{NULL}, no seed is set and
