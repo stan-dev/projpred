@@ -64,10 +64,12 @@
 #'   no need for regularization, but sometimes we need to add some
 #'   regularization to avoid numerical problems.
 #' @param search_terms Only relevant for forward search. A custom character
-#'   vector of terms to consider for the search. The intercept (`"1"`) is always
-#'   included internally via `union()`, so there's no difference between
-#'   including it explicitly or omitting it. The default `search_terms`
-#'   considers all the terms in the reference model's formula.
+#'   vector of predictor term blocks to consider for the search. Section
+#'   "Details" below describes more precisely what "predictor term block" means.
+#'   The intercept (`"1"`) is always included internally via `union()`, so
+#'   there's no difference between including it explicitly or omitting it. The
+#'   default `search_terms` considers all the terms in the reference model's
+#'   formula.
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
@@ -102,6 +104,31 @@
 #'   An L1 search may select interaction terms before the corresponding main
 #'   terms are selected. If this is undesired, choose the forward search
 #'   instead.
+#'
+#'   The elements of the `search_terms` character vector don't need to be
+#'   individual predictor terms. Instead, they can be building blocks consisting
+#'   of several predictor terms connected by the `+` symbol. To understand how
+#'   these building blocks works, it is important to know how \pkg{projpred}'s
+#'   forward search works: It starts with an empty vector `chosen` which will
+#'   later contain already selected predictor terms. Then, the search iterates
+#'   over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
+#'   models at model size \eqn{j} are constructed from those elements from
+#'   `search_terms` which yield model size \eqn{j} when combined with the
+#'   `chosen` predictor terms. Note that sometimes, there may be no candidate
+#'   models for model size \eqn{j}. Also note that internally, `search_terms` is
+#'   expanded to include the intercept (`"1"`), so the first step of the search
+#'   (model size 1) always consists of the intercept-only model as the only
+#'   candidate.
+#'
+#'   As a `search_terms` example, consider a reference model with formula `y ~
+#'   x1 + x2 + x3`. Then, to ensure that `x1` is always included in the
+#'   candidate models, specify `search_terms = c("x1", "x1 + x2", "x1 + x3",
+#'   "x1 + x2 + x3")`. This search would start with `y ~ 1` as the only
+#'   candidate at model size 1. At model size 2, `y ~ x1` would be the only
+#'   candidate. At model size 3, `y ~ x1 + x2` and `y ~ x1 + x3` would be the
+#'   two candidates. At the last model size of 4, `y ~ x1 + x2 + x3` would be
+#'   the only candidate. As another example, to exclude `x1` from the search,
+#'   specify `search_terms = c("x2", "x3", "x2 + x3")`.
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the vignette
