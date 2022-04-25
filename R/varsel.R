@@ -195,13 +195,14 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
     search_terms = search_terms, ...
   )
-  solution_terms <- search_path$solution_terms
 
   ## statistics for the selected submodels
-  submodels <- .get_submodels(search_path = search_path,
-                              nterms = c(0, seq_along(solution_terms)),
-                              p_ref = p_pred, refmodel = refmodel,
-                              regul = regul, refit_prj = refit_prj, ...)
+  submodels <- .get_submodels(
+    search_path = search_path,
+    nterms = c(0, seq_along(search_path$solution_terms)),
+    p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    ...
+  )
   sub <- .get_sub_summaries(
     submodels = submodels, test_points = seq_along(refmodel$y),
     refmodel = refmodel
