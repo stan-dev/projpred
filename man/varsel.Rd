@@ -45,9 +45,9 @@ test set which is used for evaluating the predictive performance of the
 reference model. If not provided, the training set is used.}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
-L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
-is used if the reference model has multilevel or additive terms and \code{"L1"}
-otherwise. See also section "Details" below.}
+L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
+\code{"L1"} is used, except if the reference model has multilevel or additive
+terms or if \code{!is.null(search_terms)}. See also section "Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -146,7 +146,8 @@ linearly.
 
 For argument \code{method}, there are some restrictions: For a reference model
 with multilevel or additive formula terms, only the forward search is
-available.
+available. Furthermore, argument \code{search_terms} requires a forward search
+to take effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
