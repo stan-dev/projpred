@@ -648,8 +648,6 @@ select_possible_terms_size <- function(chosen, terms, size) {
   }
 
   valid_submodels <- lapply(terms, function(x) {
-    current <- count_terms_chosen(chosen)
-    increment <- size - current
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
     terms <- extract_terms_response(make_formula(c(chosen)))
@@ -666,9 +664,8 @@ select_possible_terms_size <- function(chosen, terms, size) {
     ## if model is straight redundant
     not_redundant <- (
       count_terms_chosen(c(chosen, x), duplicates = TRUE) -
-        current -
         length(dups)
-    ) == increment
+    ) == size
     ## if already_chosen is not NA it means we have already chosen the linear
     ## term
     if (not_redundant) {
