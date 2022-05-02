@@ -138,6 +138,8 @@ cv_varsel.refmodel <- function(
   set.seed(seed)
 
   refmodel <- object
+  # Needed to avoid a warning when calling varsel() later:
+  search_terms_usr <- search_terms
   ## resolve the arguments similar to varsel
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
@@ -189,7 +191,8 @@ cv_varsel.refmodel <- function(
                   refit_prj = refit_prj, nterms_max = nterms_max - 1,
                   penalty = penalty, verbose = verbose,
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
-                  regul = regul, search_terms = search_terms, seed = seed, ...)
+                  regul = regul, search_terms = search_terms_usr, seed = seed,
+                  ...)
   } else if (cv_method == "LOO") {
     sel <- sel_cv$sel
   }
