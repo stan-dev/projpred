@@ -738,24 +738,6 @@ is_next_submodel_redundant <- function(current, new) {
   }
 }
 
-## Utility to remove redundant models to consider
-## @param refmodel The reference model's formula.
-## @param chosen A list of included terms at a given point of the search.
-## @return a vector of incremental non redundant submodels for all the possible
-##   terms included.
-reduce_models <- function(chosen) {
-  Reduce(
-    function(chosen, x) {
-      if (is_next_submodel_redundant(chosen, x)) {
-        chosen
-      } else {
-        c(chosen, x)
-      }
-    },
-    chosen
-  )
-}
-
 ## Helper function to evaluate right hand side formulas in a context
 ## @param formula Formula to evaluate.
 ## @param data Data with which to evaluate.

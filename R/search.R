@@ -33,8 +33,13 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     }
   }
 
-  ## reduce chosen to a list of non-redundant accumulated models
-  return(list(solution_terms = setdiff(reduce_models(chosen), "1"),
+  # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
+  # `chosen`. However, `reduce_models(chosen)` and `chosen` should be identical
+  # at this place because select_possible_terms_size() already avoids redundant
+  # models. Thus, use `chosen` here because it matches `submodels` (this
+  # matching is necessary because later in .get_submodels()'s `!refit_prj` case,
+  # `submodls` is indexed with integers which are based on `solution_terms`):
+  return(list(solution_terms = setdiff(chosen, "1"),
               submodls = submodels))
 }
 
