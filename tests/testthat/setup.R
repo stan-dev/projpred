@@ -306,12 +306,9 @@ if (!run_more) {
 nterms_avail <- c(nterms_avail, list(
   empty = 0L,
   single = nterms_max_tst %/% 2L,
-  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 3))),
+  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 2))),
   full = 0:nterms_max_tst
 ))
-if (identical(nterms_avail$subvec, nterms_avail$full)) {
-  nterms_avail <- nterms_avail[setdiff(names(nterms_avail), "full")]
-}
 
 ## Modified datasets ------------------------------------------------------
 
