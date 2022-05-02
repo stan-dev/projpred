@@ -22,6 +22,9 @@ test_that(paste(
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs[[tstsetup]]$nclusters,
       nprjdraws_eval_expected = args_vs[[tstsetup]]$nclusters_pred,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
       info_str = tstsetup
     )
   }
@@ -107,6 +110,9 @@ test_that("`d_test` works", {
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,
       nprjdraws_eval_expected = args_vs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_vs_i$search_terms) &&
+        all(grepl("\\+", args_vs_i$search_terms)),
       info_str = tstsetup
     )
     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
@@ -214,6 +220,10 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
+    if (length(args_vs_i$search_terms) &&
+        all(grepl("\\+", args_vs_i$search_terms))) {
+      m_max <- m_max - 1L
+    }
     ncl_crr <- args_vs_i$nclusters
     ssq_regul_sel_alpha <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_sel_beta <- array(dim = c(length(regul_tst), m_max, ncl_crr))
@@ -234,6 +244,9 @@ test_that(paste(
           method_expected = "forward",
           nprjdraws_search_expected = args_vs_i$nclusters,
           nprjdraws_eval_expected = args_vs_i$nclusters_pred,
+          search_trms_empty_size =
+            length(args_vs_i$search_terms) &&
+            all(grepl("\\+", args_vs_i$search_terms)),
           info_str = tstsetup
         )
       }

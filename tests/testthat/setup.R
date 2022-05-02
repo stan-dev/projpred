@@ -642,6 +642,15 @@ meth_tst <- list(
   forward = list(method = "forward")
 )
 
+search_trms_tst <- list(
+  default_search_trms = list(),
+  fixed = list(search_terms = c("xco.1", "xco.1 + xco.2", "xco.1 + xco.3",
+                                "xco.1 + xco.2 + xco.3")),
+  excluded = list(search_terms = c("xco.2", "xco.3", "xco.2 + xco.3")),
+  empty_size = list(search_terms = c("xco.1 + xco.2", "xco.1 + xco.3",
+                                     "xco.2 + xco.3", "xco.1 + xco.2 + xco.3"))
+)
+
 K_tst <- 2L
 cvmeth_tst <- list(
   default_cvmeth = list(),
@@ -701,17 +710,34 @@ if (run_vs) {
       meth <- meth_tst["default_meth"]
     }
     lapply(meth, function(meth_i) {
-      return(c(
-        nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-        list(
-          nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
-          nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
-        ),
-        meth_i
-      ))
+      if (mod_crr == "glm" && fam_crr == "gauss" &&
+          grepl("\\.stdformul\\.", tstsetup_ref) &&
+          identical(meth_i$method, "forward")) {
+        # Here, we test non-NULL `search_terms`:
+        search_trms <- search_trms_tst[setdiff(names(search_trms_tst),
+                                               "default_search_trms")]
+      } else {
+        search_trms <- search_trms_tst["default_search_trms"]
+      }
+      lapply(search_trms, function(search_trms_i) {
+        if (length(search_trms_i)) {
+          nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) - 1L
+        }
+        return(c(
+          nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+          list(
+            nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+            nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
+          ),
+          meth_i, search_trms_i
+        ))
+      })
     })
   })
   args_vs <- unlist_cust(args_vs)
+  stopifnot(sum(sapply(args_vs, function(args_vs_i) {
+    !is.null(args_vs_i$search_terms)
+  })) >= 1)
 
   vss <- lapply(args_vs, function(args_vs_i) {
     do.call(varsel, c(

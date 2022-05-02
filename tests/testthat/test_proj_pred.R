@@ -131,7 +131,7 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- head(grep("\\.glm\\.gauss.*\\.default_meth\\.subvec",
+  tstsetups <- head(grep("\\.glm\\.gauss.*\\.default_meth\\..*\\.subvec",
                          names(prjs_vs), value = TRUE),
                     1)
   for (tstsetup in tstsetups) {
@@ -510,8 +510,8 @@ test_that(paste(
   "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.glm\\.gauss.*\\.default_meth\\.full$", names(prjs_vs),
-                    value = TRUE)
+  tstsetups <- grep("\\.glm\\.gauss.*\\.default_meth\\..*\\.full$",
+                    names(prjs_vs), value = TRUE)
   for (tstsetup in tstsetups) {
     # Unavailable number(s) of terms:
     for (filter_nterms_crr in nterms_unavail) {
@@ -749,7 +749,7 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- head(grep("\\.glm\\.gauss.*\\.default_meth\\.subvec",
+  tstsetups <- head(grep("\\.glm\\.gauss.*\\.default_meth\\..*\\.subvec",
                          names(prjs_vs), value = TRUE),
                     1)
   for (tstsetup in tstsetups) {
@@ -1063,8 +1063,8 @@ test_that(paste(
   "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.glm\\.gauss.*\\.default_meth\\.full$", names(prjs_vs),
-                    value = TRUE)
+  tstsetups <- grep("\\.glm\\.gauss.*\\.default_meth\\..*\\.full$",
+                    names(prjs_vs), value = TRUE)
   for (tstsetup in tstsetups) {
     # Unavailable number(s) of terms:
     for (filter_nterms_crr in nterms_unavail) {

@@ -260,6 +260,9 @@ test_that(paste(
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = 1L,
       nprjdraws_eval_expected = 1L,
+      search_trms_empty_size =
+        length(args_vs_datafit[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
       extra_tol = 1.2,
       info_str = tstsetup
     )
@@ -527,6 +530,9 @@ test_that(paste(
     smmry_tester(
       smmry,
       vsel_expected = vss_datafit[[tstsetup]],
+      search_trms_empty_size =
+        length(args_vs_datafit[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
       info_str = tstsetup,
       stats_expected = stats_common,
       type_expected = type_tst,

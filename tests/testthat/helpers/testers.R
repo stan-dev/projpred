@@ -1054,6 +1054,9 @@ pp_tester <- function(pp,
 #   draws of the reference model.
 # @param nloo_expected Only relevant if `with_cv` is `TRUE`. The value which was
 #   used for argument `nloo` of cv_varsel().
+# @param search_trms_empty_size A single logical value indicating whether
+#   `search_terms` was constructed in a way that causes a model size to be
+#   without candidate models.
 # @param extra_tol A single numeric value giving the relative tolerance when
 #   checking the monotonicity of the KL divergences. Because this is a
 #   *relative* tolerance, 1 is the neutral value.
@@ -1077,6 +1080,7 @@ vsel_tester <- function(
   nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
   seed_expected = seed_tst,
   nloo_expected = NULL,
+  search_trms_empty_size = FALSE,
   extra_tol = 1.1,
   info_str = ""
 ) {
@@ -1111,6 +1115,9 @@ vsel_tester <- function(
   if (method_expected == "l1") {
     cl_search_expected <- !from_datafit
     nprjdraws_search_expected <- 1
+  }
+  if (search_trms_empty_size) {
+    solterms_len_expected <- solterms_len_expected - 1L
   }
 
   # Test the general structure of the object:
@@ -1165,9 +1172,9 @@ vsel_tester <- function(
       sub_trms_crr <- setdiff(sub_trms_crr, "1")
     }
     sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
-      as.formula(paste(
+      flatten_formula(as.formula(paste(
         y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
-      ))
+      )))
     })
     submodl_tester(
       vs$search_path$submodls[[i]],
@@ -1299,9 +1306,14 @@ vsel_tester <- function(
   # solution_terms
   expect_type(vs$solution_terms, "character")
   expect_length(vs$solution_terms, solterms_len_expected)
+  soltrms <- vs$solution_terms
+  for (soltrms_plus in grep("\\+", soltrms, value = TRUE)) {
+    soltrms <- setdiff(soltrms, soltrms_plus)
+    soltrms <- c(soltrms, labels(terms(as.formula(paste(". ~", soltrms_plus)))))
+  }
   expect_true(
-    all(vs$solution_terms %in% split_formula(vs$refmodel$formula,
-                                             add_main_effects = FALSE)),
+    all(soltrms %in% split_formula(vs$refmodel$formula,
+                                   add_main_effects = FALSE)),
     info = info_str
   )
 
@@ -1351,7 +1363,11 @@ vsel_tester <- function(
   }
 
   # nterms_max
-  expect_equal(vs$nterms_max, solterms_len_expected + 1, info = info_str)
+  nterms_max_expected <- solterms_len_expected + 1
+  if (search_trms_empty_size) {
+    nterms_max_expected <- nterms_max_expected + 1
+  }
+  expect_equal(vs$nterms_max, nterms_max_expected, info = info_str)
 
   # nterms_all
   expect_identical(vs$nterms_all, count_terms_in_formula(vs$refmodel$formula),
@@ -1403,6 +1419,9 @@ vsel_tester <- function(
 #   call.
 # @param nterms_max_expected A single numeric value as supplied to
 #   summary.vsel()'s argument `nterms_max`.
+# @param search_trms_empty_size A single logical value indicating whether
+#   `search_terms` was constructed in a way that causes a model size to be
+#   without candidate models.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to smmry_sel_tester(), apart from
@@ -1411,7 +1430,7 @@ vsel_tester <- function(
 #
 # @return `TRUE` (invisible).
 smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
-                         info_str, ...) {
+                         search_trms_empty_size = FALSE, info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
   pct_solterms_nm <- if ("pct_solution_terms_cv" %in% names(vsel_expected)) {
@@ -1449,6 +1468,9 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     nterms_ch <- vsel_expected$nterms_max - 1
   } else {
     nterms_ch <- nterms_max_expected
+  }
+  if (search_trms_empty_size) {
+    nterms_ch <- nterms_ch - 1
   }
   expect_identical(smmry$nterms, nterms_ch,
                    info = info_str)
