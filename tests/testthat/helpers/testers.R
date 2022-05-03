@@ -833,9 +833,9 @@ projection_tester <- function(p,
   y_nms <- paste0(".", y_nm)
   # A preliminary check for `nprjdraws_expected` (doesn't work for "datafit"s
   # and, because of issue #131, for submodels which are GAMMs):
-  sub_formul_crr_rhs <- as.formula(paste(
+  sub_formul_crr_rhs <- flatten_formula(as.formula(paste(
     "~", paste(sub_trms_crr, collapse = " + ")
-  ))
+  )))
   if (!inherits(p$refmodel, "datafit") &&
       !(formula_contains_additive_terms(sub_formul_crr_rhs) &&
         formula_contains_group_terms(sub_formul_crr_rhs))) {
@@ -849,9 +849,9 @@ projection_tester <- function(p,
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
   }
   sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
-    as.formula(paste(
+    flatten_formula(as.formula(paste(
       y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
-    ))
+    )))
   })
   sub_data_crr <- p$refmodel$fetch_data()
   if (p_type_expected) {
