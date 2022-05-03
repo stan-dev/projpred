@@ -310,6 +310,11 @@ nterms_avail <- c(nterms_avail, list(
   full = 0:nterms_max_tst
 ))
 
+nterms_max_smmry <- list(
+  default_nterms_max_smmry = NULL,
+  halfway = nterms_max_tst %/% 2L
+)
+
 ## Modified datasets ------------------------------------------------------
 
 dat_wobs_ones <- within(dat, {
@@ -1093,17 +1098,18 @@ cre_args_smmry_vsel <- function(args_obj) {
     lapply(stats_tst, function(stats_crr) {
       if (!run_more) {
         if (!is.null(args_obj[[tstsetup_vsel]]$search_terms)) {
-          nterms_tst <- nterms_avail["default_nterms"]
+          nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         } else {
-          nterms_tst <- nterms_avail["single"]
+          nterms_tst <- nterms_max_smmry["halfway"]
         }
       } else {
         if (mod_crr == "glm" && fam_crr == "gauss" &&
             is.null(args_obj[[tstsetup_vsel]]$search_terms) &&
             length(stats_crr) == 0) {
-          nterms_tst <- nterms_avail[c("default_nterms", "single")]
+          nterms_tst <- nterms_max_smmry[c("default_nterms_max_smmry",
+                                           "halfway")]
         } else {
-          nterms_tst <- nterms_avail["default_nterms"]
+          nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         }
       }
       lapply(nterms_tst, function(nterms_crr) {
