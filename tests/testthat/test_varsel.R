@@ -418,6 +418,54 @@ test_that("for L1 search, `penalty` has an expected effect", {
   }
 })
 
+# search_terms ------------------------------------------------------------
+
+test_that(paste(
+  "including all terms in `search_terms` gives the same results as the default",
+  "`search_terms`"
+), {
+  tstsetups <- grep("\\.alltrms", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_default <- sub("\\.alltrms", "\\.default_search_trms", tstsetup)
+    if (!tstsetup_default %in% names(vss)) next
+    expect_identical(vss[[tstsetup]], vss[[tstsetup_default]], info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "forcing the inclusion of a term in the candidate models via `search_terms`",
+  "works as expected"
+), {
+  tstsetups <- grep("\\.fixed", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    # In principle, `search_trms_tst$fixed$search_terms[1]` could be used
+    # instead of `"xco.1"`, but that would seem like the forced term always has
+    # to come first in `search_terms` (which is not the case):
+    expect_identical(solution_terms(vss[[tstsetup]])[1], "xco.1",
+                     info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "forcing the exclusion of a term in the candidate models via `search_terms`",
+  "works as expected"
+), {
+  tstsetups <- grep("\\.excluded", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    expect_false("xco.1" %in% solution_terms(vss[[tstsetup]]), info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "forcing the skipping of a model size via `search_terms` works as expected"
+), {
+  tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    expect_true(all(grepl("\\+", solution_terms(vss[[tstsetup]]))),
+                info = tstsetup)
+  }
+})
+
 # cv_varsel() -------------------------------------------------------------
 
 context("cv_varsel()")
