@@ -1076,7 +1076,10 @@ cre_args_smmry_vsel <- function(args_obj) {
   tstsetups_smmry_vsel <- union(
     tstsetups_smmry_vsel,
     unlist(lapply(mods_fams_missing, function(mod_fam) {
-      head(grep(paste0("\\.", mod_fam, "\\."), tstsetups, value = TRUE), 1)
+      head(
+        grep(paste0(".", mod_fam, "."), tstsetups, value = TRUE, fixed = TRUE),
+        1
+      )
     }))
   )
 
