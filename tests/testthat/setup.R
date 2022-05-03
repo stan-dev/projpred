@@ -933,6 +933,7 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
       list(nclusters = nclusters_pred_tst, seed = seed_tst)
     )
     if (args_obj[[tstsetup_vsel]]$mod_nm != "glm" ||
+        !is.null(args_obj[[tstsetup_vsel]]$search_terms) ||
         grepl("\\.spclformul", tstsetup_vsel)) {
       nterms_avail <- nterms_avail["subvec"]
     }
@@ -965,6 +966,10 @@ if (run_vs) {
     }
     return(tstsetups_out)
   }))
+  tstsetups_prj_vs <- union(
+    tstsetups_prj_vs,
+    grep("\\.default_search_trms", names(vss), value = TRUE, invert = TRUE)
+  )
   tstsetups_prj_vs <- setNames(nm = tstsetups_prj_vs)
   stopifnot(length(tstsetups_prj_vs) > 0)
   args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
@@ -999,6 +1004,10 @@ if (run_cvvs) {
     }
     return(tstsetups_out)
   }))
+  tstsetups_prj_cvvs <- union(
+    tstsetups_prj_cvvs,
+    grep("\\.default_search_trms", names(cvvss), value = TRUE, invert = TRUE)
+  )
   tstsetups_prj_cvvs <- setNames(nm = tstsetups_prj_cvvs)
   stopifnot(length(tstsetups_prj_cvvs) > 0)
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
