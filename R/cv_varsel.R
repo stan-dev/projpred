@@ -108,27 +108,27 @@ cv_varsel.default <- function(object, ...) {
 #' @rdname cv_varsel
 #' @export
 cv_varsel.refmodel <- function(
-  object,
-  method = NULL,
-  cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
-  ndraws = NULL,
-  nclusters = 20,
-  ndraws_pred = 400,
-  nclusters_pred = NULL,
-  refit_prj = !inherits(object, "datafit"),
-  nterms_max = NULL,
-  penalty = NULL,
-  verbose = TRUE,
-  nloo = NULL,
-  K = if (!inherits(object, "datafit")) 5 else 10,
-  lambda_min_ratio = 1e-5,
-  nlambda = 150,
-  thresh = 1e-6,
-  regul = 1e-4,
-  validate_search = TRUE,
-  seed = sample.int(.Machine$integer.max, 1),
-  search_terms = NULL,
-  ...
+    object,
+    method = NULL,
+    cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
+    ndraws = NULL,
+    nclusters = 20,
+    ndraws_pred = 400,
+    nclusters_pred = NULL,
+    refit_prj = !inherits(object, "datafit"),
+    nterms_max = NULL,
+    penalty = NULL,
+    verbose = TRUE,
+    nloo = NULL,
+    K = if (!inherits(object, "datafit")) 5 else 10,
+    lambda_min_ratio = 1e-5,
+    nlambda = 150,
+    thresh = 1e-6,
+    regul = 1e-4,
+    validate_search = TRUE,
+    seed = sample.int(.Machine$integer.max, 1),
+    search_terms = NULL,
+    ...
 ) {
   # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {

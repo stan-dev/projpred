@@ -108,21 +108,21 @@ extfam_tester <- function(extfam,
 #
 # @return `TRUE` (invisible).
 refmodel_tester <- function(
-  refmod,
-  is_datafit = FALSE,
-  pkg_nm,
-  fit_expected,
-  formul_expected = get_formul_from_fit(fit_expected),
-  data_expected = dat,
-  with_spclformul = FALSE,
-  nobsv_expected = nobsv,
-  wobs_expected = wobs_tst,
-  offs_expected = offs_tst,
-  nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
-  fam_orig,
-  mod_nm,
-  fam_nm,
-  info_str
+    refmod,
+    is_datafit = FALSE,
+    pkg_nm,
+    fit_expected,
+    formul_expected = get_formul_from_fit(fit_expected),
+    data_expected = dat,
+    with_spclformul = FALSE,
+    nobsv_expected = nobsv,
+    wobs_expected = wobs_tst,
+    offs_expected = offs_tst,
+    nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
+    fam_orig,
+    mod_nm,
+    fam_nm,
+    info_str
 ) {
   # Preparations:
   needs_wobs_added <- !is_datafit && pkg_nm == "rstanarm" &&
@@ -453,17 +453,17 @@ refmodel_tester <- function(
 #
 # @return `TRUE` (invisible).
 submodl_tester <- function(
-  submodl_totest,
-  nprjdraws_expected,
-  sub_formul,
-  sub_data,
-  sub_fam,
-  has_grp = formula_contains_group_terms(sub_formul[[1]]),
-  has_add = formula_contains_additive_terms(sub_formul[[1]]),
-  wobs_expected = wobs_tst,
-  solterms_vsel_L1_search = NULL,
-  with_offs = FALSE,
-  info_str
+    submodl_totest,
+    nprjdraws_expected,
+    sub_formul,
+    sub_data,
+    sub_fam,
+    has_grp = formula_contains_group_terms(sub_formul[[1]]),
+    has_add = formula_contains_additive_terms(sub_formul[[1]]),
+    wobs_expected = wobs_tst,
+    solterms_vsel_L1_search = NULL,
+    with_offs = FALSE,
+    info_str
 ) {
   expect_type(submodl_totest, "list")
   expect_length(submodl_totest, nprjdraws_expected)
@@ -1065,24 +1065,24 @@ pp_tester <- function(pp,
 #
 # @return `TRUE` (invisible).
 vsel_tester <- function(
-  vs,
-  with_cv = FALSE,
-  from_datafit = FALSE,
-  refmod_expected,
-  dtest_expected = NULL,
-  solterms_len_expected,
-  method_expected,
-  cv_method_expected = NULL,
-  valsearch_expected = NULL,
-  cl_search_expected = !from_datafit,
-  cl_eval_expected = !from_datafit,
-  nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
-  nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
-  seed_expected = seed_tst,
-  nloo_expected = NULL,
-  search_trms_empty_size = FALSE,
-  extra_tol = 1.1,
-  info_str = ""
+    vs,
+    with_cv = FALSE,
+    from_datafit = FALSE,
+    refmod_expected,
+    dtest_expected = NULL,
+    solterms_len_expected,
+    method_expected,
+    cv_method_expected = NULL,
+    valsearch_expected = NULL,
+    cl_search_expected = !from_datafit,
+    cl_eval_expected = !from_datafit,
+    nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
+    nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
+    seed_expected = seed_tst,
+    nloo_expected = NULL,
+    search_trms_empty_size = FALSE,
+    extra_tol = 1.1,
+    info_str = ""
 ) {
   # Preparations:
   dtest_type <- "train"
@@ -1514,15 +1514,15 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 #
 # @return `TRUE` (invisible).
 smmry_sel_tester <- function(
-  smmry_sel,
-  summaries_ref,
-  stats_expected = NULL,
-  type_expected = NULL,
-  nterms_max_expected = NULL,
-  cv_method_expected = character(),
-  solterms_expected,
-  from_datafit = FALSE,
-  info_str
+    smmry_sel,
+    summaries_ref,
+    stats_expected = NULL,
+    type_expected = NULL,
+    nterms_max_expected = NULL,
+    cv_method_expected = character(),
+    solterms_expected,
+    from_datafit = FALSE,
+    info_str
 ) {
   if (is.null(stats_expected)) {
     stats_expected <- "elpd"

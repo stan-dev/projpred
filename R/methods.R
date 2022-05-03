@@ -325,13 +325,13 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'
 #' @export
 plot.vsel <- function(
-  x,
-  nterms_max = NULL,
-  stats = "elpd",
-  deltas = FALSE,
-  alpha = 0.32,
-  baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
-  ...
+    x,
+    nterms_max = NULL,
+    stats = "elpd",
+    deltas = FALSE,
+    alpha = 0.32,
+    baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
+    ...
 ) {
   object <- x
   .validate_vsel_object_stats(object, stats)
@@ -494,14 +494,14 @@ plot.vsel <- function(
 #'
 #' @export
 summary.vsel <- function(
-  object,
-  nterms_max = NULL,
-  stats = "elpd",
-  type = c("mean", "se", "diff", "diff.se"),
-  deltas = FALSE,
-  alpha = 0.32,
-  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
-  ...
+    object,
+    nterms_max = NULL,
+    stats = "elpd",
+    type = c("mean", "se", "diff", "diff.se"),
+    deltas = FALSE,
+    alpha = 0.32,
+    baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+    ...
 ) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
@@ -742,12 +742,12 @@ suggest_size <- function(object, ...) {
 #' @rdname suggest_size
 #' @export
 suggest_size.vsel <- function(
-  object,
-  stat = "elpd",
-  pct = 0,
-  type = "upper",
-  warnings = TRUE,
-  ...
+    object,
+    stat = "elpd",
+    pct = 0,
+    type = "upper",
+    warnings = TRUE,
+    ...
 ) {
   .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
