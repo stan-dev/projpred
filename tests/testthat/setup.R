@@ -644,6 +644,7 @@ meth_tst <- list(
 
 search_trms_tst <- list(
   default_search_trms = list(),
+  alltrms = list(search_terms = setdiff(trms_common, "offset(offs_col)")),
   fixed = list(search_terms = c("xco.1", "xco.1 + xco.2", "xco.1 + xco.3",
                                 "xco.1 + xco.2 + xco.3")),
   excluded = list(search_terms = c("xco.2", "xco.3", "xco.2 + xco.3")),
@@ -713,14 +714,15 @@ if (run_vs) {
       if (mod_crr == "glm" && fam_crr == "gauss" &&
           grepl("\\.stdformul\\.", tstsetup_ref) &&
           identical(meth_i$method, "forward")) {
-        # Here, we test non-NULL `search_terms`:
-        search_trms <- search_trms_tst[setdiff(names(search_trms_tst),
-                                               "default_search_trms")]
+        # Here, we also test non-NULL `search_terms`:
+        search_trms <- search_trms_tst
       } else {
         search_trms <- search_trms_tst["default_search_trms"]
       }
       lapply(search_trms, function(search_trms_i) {
-        if (length(search_trms_i)) {
+        if (length(search_trms_i) &&
+            !identical(search_trms_i$search_terms,
+                       search_trms_tst$alltrms$search_terms)) {
           nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) - 1L
         }
         return(c(
