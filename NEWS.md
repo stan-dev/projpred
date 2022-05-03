@@ -3,10 +3,14 @@
 ## Minor changes
 
 * Account for changes concerning the handling of offsets in **rstanarm** version 2.21.3. In particular, issue stan-dev/rstanarm#542 was fixed in **rstanarm** 2.21.3.
+* Improve the documentation for argument `search_terms` of `varsel()` and `cv_varsel()`. (GitHub: #155, #308)
+* In case of user-specified (non-`NULL`) `search_terms`, `method = NULL` is internally changed to `method = "forward"` and `method = "L1"` throws a warning. This is done because `search_terms` only takes effect in case of a forward search. (GitHub: #155, #308)
+* Internally, the intercept is now always included in `search_terms`. This is necessary to prevent a bug described below. (GitHub: #308)
 
 ## Bug fixes
 
 * Throw a more informative error message in case of special group-level terms which are currently not supported (in particular, nested ones).
+* Previously, using a `search_terms` vector which excluded the intercept in conjunction with `refit_prj = FALSE` (the latter in `project()`, `varsel()`, or `cv_varsel()`) led to incorrect submodels being fetched from the search or to an error while doing so. This has been fixed now by internally forcing the inclusion of the intercept in `search_terms`. (GitHub: #308)
 
 # projpred 2.1.1
 
