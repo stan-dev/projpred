@@ -492,6 +492,9 @@ test_that(paste(
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
       nprjdraws_search_expected = args_cvvs[[tstsetup]]$nclusters,
       nprjdraws_eval_expected = args_cvvs[[tstsetup]]$nclusters_pred,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
       info_str = tstsetup
     )
   }
@@ -618,6 +621,9 @@ test_that("setting `nloo` smaller than the number of observations works", {
       nprjdraws_search_expected = args_cvvs_i$nclusters,
       nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       nloo_expected = nloo_tst,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
@@ -670,6 +676,9 @@ test_that("`validate_search` works", {
       valsearch_expected = FALSE,
       nprjdraws_search_expected = args_cvvs_i$nclusters,
       nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
@@ -819,6 +828,9 @@ test_that(paste(
       valsearch_expected = args_cvvs_i$validate_search,
       nprjdraws_search_expected = args_cvvs_i$nclusters,
       nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
     # Expected equality for some components:
@@ -921,6 +933,9 @@ test_that(paste(
       valsearch_expected = args_cvvs_i$validate_search,
       nprjdraws_search_expected = args_cvvs_i$nclusters,
       nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
     # Expected equality for some components:

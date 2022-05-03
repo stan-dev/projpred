@@ -292,6 +292,9 @@ test_that(paste(
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
       nprjdraws_search_expected = 1L,
       nprjdraws_eval_expected = 1L,
+      search_trms_empty_size =
+        length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),
       extra_tol = 1.2,
       info_str = tstsetup
     )
@@ -570,6 +573,9 @@ test_that(paste(
     smmry_tester(
       smmry,
       vsel_expected = cvvss_datafit[[tstsetup]],
+      search_trms_empty_size =
+        length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),
       info_str = tstsetup,
       stats_expected = stats_common,
       type_expected = type_tst,
