@@ -1086,10 +1086,17 @@ cre_args_smmry_vsel <- function(args_obj) {
                                        "binom" = "binom_stats",
                                        "common_stats"),
                         character())
+    if (!run_more && !is.null(args_obj[[tstsetup_vsel]]$search_terms)) {
+      add_stats <- character()
+    }
     stats_tst <- stats_tst[c("default_stats", add_stats)]
     lapply(stats_tst, function(stats_crr) {
       if (!run_more) {
-        nterms_tst <- nterms_avail["single"]
+        if (!is.null(args_obj[[tstsetup_vsel]]$search_terms)) {
+          nterms_tst <- nterms_avail["default_nterms"]
+        } else {
+          nterms_tst <- nterms_avail["single"]
+        }
       } else {
         if (mod_crr == "glm" && fam_crr == "gauss" &&
             is.null(args_obj[[tstsetup_vsel]]$search_terms) &&
