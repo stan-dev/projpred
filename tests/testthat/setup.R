@@ -797,14 +797,17 @@ if (run_cvvs) {
           # `validate_search = FALSE`:
           meth_i <- c(meth_i, list(validate_search = FALSE))
         }
-        return(c(
-          nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-          list(
-            nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
-            nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
-          ),
-          meth_i, cvmeth_i
-        ))
+        search_trms <- search_trms_tst["default_search_trms"]
+        lapply(search_trms, function(search_trms_i) {
+          return(c(
+            nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+            list(
+              nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+              nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
+            ),
+            meth_i, cvmeth_i, search_trms_i
+          ))
+        })
       })
     })
   })

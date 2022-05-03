@@ -151,7 +151,7 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   tstsetups <- head(
-    grep("\\.glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
+    grep("\\.glm\\.gauss.*\\.default_meth\\.default_cvmeth\\..*\\.subvec",
          names(prjs_cvvs), value = TRUE),
     1
   )
@@ -770,7 +770,7 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   tstsetups <- head(
-    grep("\\.glm\\.gauss.*\\.default_meth\\.default_cvmeth\\.subvec",
+    grep("\\.glm\\.gauss.*\\.default_meth\\.default_cvmeth\\..*\\.subvec",
          names(prjs_cvvs), value = TRUE),
     1
   )
