@@ -306,9 +306,14 @@ if (!run_more) {
 nterms_avail <- c(nterms_avail, list(
   empty = 0L,
   single = nterms_max_tst %/% 2L,
-  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 3))),
+  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 2))),
   full = 0:nterms_max_tst
 ))
+
+nterms_max_smmry <- list(
+  default_nterms_max_smmry = NULL,
+  halfway = nterms_max_tst %/% 2L
+)
 
 ## Modified datasets ------------------------------------------------------
 
@@ -642,6 +647,16 @@ meth_tst <- list(
   forward = list(method = "forward")
 )
 
+search_trms_tst <- list(
+  default_search_trms = list(),
+  alltrms = list(search_terms = setdiff(trms_common, "offset(offs_col)")),
+  fixed = list(search_terms = c("xco.1", "xco.1 + xco.2", "xco.1 + xco.3",
+                                "xco.1 + xco.2 + xco.3")),
+  excluded = list(search_terms = c("xco.2", "xco.3", "xco.2 + xco.3")),
+  empty_size = list(search_terms = c("xco.1 + xco.2", "xco.1 + xco.3",
+                                     "xco.2 + xco.3", "xco.1 + xco.2 + xco.3"))
+)
+
 K_tst <- 2L
 cvmeth_tst <- list(
   default_cvmeth = list(),
@@ -701,17 +716,35 @@ if (run_vs) {
       meth <- meth_tst["default_meth"]
     }
     lapply(meth, function(meth_i) {
-      return(c(
-        nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-        list(
-          nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
-          nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
-        ),
-        meth_i
-      ))
+      if (mod_crr == "glm" && fam_crr == "gauss" &&
+          grepl("\\.stdformul\\.", tstsetup_ref) &&
+          identical(meth_i$method, "forward")) {
+        # Here, we also test non-NULL `search_terms`:
+        search_trms <- search_trms_tst
+      } else {
+        search_trms <- search_trms_tst["default_search_trms"]
+      }
+      lapply(search_trms, function(search_trms_i) {
+        if (length(search_trms_i) &&
+            !identical(search_trms_i$search_terms,
+                       search_trms_tst$alltrms$search_terms)) {
+          nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) - 1L
+        }
+        return(c(
+          nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+          list(
+            nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+            nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
+          ),
+          meth_i, search_trms_i
+        ))
+      })
     })
   })
   args_vs <- unlist_cust(args_vs)
+  stopifnot(sum(sapply(args_vs, function(args_vs_i) {
+    !is.null(args_vs_i$search_terms)
+  })) >= 1)
 
   vss <- lapply(args_vs, function(args_vs_i) {
     do.call(varsel, c(
@@ -769,14 +802,17 @@ if (run_cvvs) {
           # `validate_search = FALSE`:
           meth_i <- c(meth_i, list(validate_search = FALSE))
         }
-        return(c(
-          nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-          list(
-            nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
-            nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
-          ),
-          meth_i, cvmeth_i
-        ))
+        search_trms <- search_trms_tst["default_search_trms"]
+        lapply(search_trms, function(search_trms_i) {
+          return(c(
+            nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+            list(
+              nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+              nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
+            ),
+            meth_i, cvmeth_i, search_trms_i
+          ))
+        })
       })
     })
   })
@@ -902,6 +938,7 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
       list(nclusters = nclusters_pred_tst, seed = seed_tst)
     )
     if (args_obj[[tstsetup_vsel]]$mod_nm != "glm" ||
+        !is.null(args_obj[[tstsetup_vsel]]$search_terms) ||
         grepl("\\.spclformul", tstsetup_vsel)) {
       nterms_avail <- nterms_avail["subvec"]
     }
@@ -917,25 +954,28 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
 #### varsel() -------------------------------------------------------------
 
 if (run_vs) {
-  tstsetups_prj_vs <- setNames(
-    nm = unlist(lapply(mod_nms, function(mod_nm) {
-      if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(vss)))) {
-        tstsetups_out <- grep(
-          paste0("\\.", mod_nm, "\\.gauss\\..*\\.default_meth"), names(vss),
-          value = TRUE
-        )
-      } else {
-        tstsetups_out <- grep(
-          paste0("\\.", mod_nm, "\\..*\\.default_meth"), names(vss),
-          value = TRUE
-        )
-      }
-      if (!run_more) {
-        tstsetups_out <- head(tstsetups_out, 1)
-      }
-      return(tstsetups_out)
-    }))
+  tstsetups_prj_vs <- unlist(lapply(mod_nms, function(mod_nm) {
+    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(vss)))) {
+      tstsetups_out <- grep(
+        paste0("\\.", mod_nm, "\\.gauss\\..*\\.default_meth"), names(vss),
+        value = TRUE
+      )
+    } else {
+      tstsetups_out <- grep(
+        paste0("\\.", mod_nm, "\\..*\\.default_meth"), names(vss),
+        value = TRUE
+      )
+    }
+    if (!run_more) {
+      tstsetups_out <- head(tstsetups_out, 1)
+    }
+    return(tstsetups_out)
+  }))
+  tstsetups_prj_vs <- union(
+    tstsetups_prj_vs,
+    grep("\\.default_search_trms", names(vss), value = TRUE, invert = TRUE)
   )
+  tstsetups_prj_vs <- setNames(nm = tstsetups_prj_vs)
   stopifnot(length(tstsetups_prj_vs) > 0)
   args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
   args_prj_vs <- unlist_cust(args_prj_vs)
@@ -951,26 +991,29 @@ if (run_vs) {
 #### cv_varsel() ----------------------------------------------------------
 
 if (run_cvvs) {
-  tstsetups_prj_cvvs <- setNames(
-    nm = unlist(lapply(mod_nms, function(mod_nm) {
-      if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(cvvss)))) {
-        tstsetups_out <- grep(
-          paste0("\\.", mod_nm,
-                 "\\.gauss\\..*\\.default_meth\\.default_cvmeth"),
-          names(cvvss), value = TRUE
-        )
-      } else {
-        tstsetups_out <- grep(
-          paste0("\\.", mod_nm, "\\..*\\.default_meth\\.default_cvmeth"),
-          names(cvvss), value = TRUE
-        )
-      }
-      if (!run_more) {
-        tstsetups_out <- head(tstsetups_out, 1)
-      }
-      return(tstsetups_out)
-    }))
+  tstsetups_prj_cvvs <- unlist(lapply(mod_nms, function(mod_nm) {
+    if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(cvvss)))) {
+      tstsetups_out <- grep(
+        paste0("\\.", mod_nm,
+               "\\.gauss\\..*\\.default_meth\\.default_cvmeth"),
+        names(cvvss), value = TRUE
+      )
+    } else {
+      tstsetups_out <- grep(
+        paste0("\\.", mod_nm, "\\..*\\.default_meth\\.default_cvmeth"),
+        names(cvvss), value = TRUE
+      )
+    }
+    if (!run_more) {
+      tstsetups_out <- head(tstsetups_out, 1)
+    }
+    return(tstsetups_out)
+  }))
+  tstsetups_prj_cvvs <- union(
+    tstsetups_prj_cvvs,
+    grep("\\.default_search_trms", names(cvvss), value = TRUE, invert = TRUE)
   )
+  tstsetups_prj_cvvs <- setNames(nm = tstsetups_prj_cvvs)
   stopifnot(length(tstsetups_prj_cvvs) > 0)
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
   args_prj_cvvs <- unlist_cust(args_prj_cvvs)
@@ -1014,12 +1057,34 @@ if (run_cvvs) {
 
 ## summary.vsel() ---------------------------------------------------------
 
-cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
-  vsel_type <- deparse(substitute(tstsetups_smmry_vsel))
-  args_obj <- switch(vsel_type,
-                     "tstsetups_smmry_vs" = args_vs,
-                     "tstsetups_smmry_cvvs" = args_cvvs,
-                     stop("Unexpected `vsel_type`."))
+cre_args_smmry_vsel <- function(args_obj) {
+  tstsetups <- names(args_obj)
+  # Choose all test setups which are for special `search_terms` settings:
+  tstsetups_smmry_vsel <- tstsetups[sapply(tstsetups, function(tstsetup_vsel) {
+    !is.null(args_obj[[tstsetup_vsel]]$search_terms)
+  })]
+
+  # Ensure that from each model type (`mod_nm`) and each family (`fam_nm`), we
+  # have at least one test setup:
+  mods_fams_existing <- sapply(tstsetups_smmry_vsel, function(tstsetup_vsel) {
+    paste0(args_obj[[tstsetup_vsel]]$mod_nm, ".",
+           args_obj[[tstsetup_vsel]]$fam_nm)
+  })
+  mods_fams_possible <- apply(expand.grid(mod_nms, fam_nms), 1, paste,
+                              collapse = ".")
+  mods_fams_missing <- setdiff(mods_fams_possible, mods_fams_existing)
+  tstsetups_smmry_vsel <- union(
+    tstsetups_smmry_vsel,
+    unlist(lapply(mods_fams_missing, function(mod_fam) {
+      head(
+        grep(paste0(".", mod_fam, "."), tstsetups, value = TRUE, fixed = TRUE),
+        1
+      )
+    }))
+  )
+
+  tstsetups_smmry_vsel <- setNames(nm = tstsetups_smmry_vsel)
+  stopifnot(length(tstsetups_smmry_vsel) > 0)
   lapply(tstsetups_smmry_vsel, function(tstsetup_vsel) {
     mod_crr <- args_obj[[tstsetup_vsel]]$mod_nm
     fam_crr <- args_obj[[tstsetup_vsel]]$fam_nm
@@ -1029,15 +1094,25 @@ cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
                                        "binom" = "binom_stats",
                                        "common_stats"),
                         character())
+    if (!run_more && !is.null(args_obj[[tstsetup_vsel]]$search_terms)) {
+      add_stats <- character()
+    }
     stats_tst <- stats_tst[c("default_stats", add_stats)]
     lapply(stats_tst, function(stats_crr) {
       if (!run_more) {
-        nterms_tst <- nterms_avail["single"]
-      } else {
-        if (mod_crr == "glm" && fam_crr == "gauss" && length(stats_crr) == 0) {
-          nterms_tst <- nterms_avail[c("default_nterms", "single")]
+        if (!is.null(args_obj[[tstsetup_vsel]]$search_terms)) {
+          nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         } else {
-          nterms_tst <- nterms_avail["default_nterms"]
+          nterms_tst <- nterms_max_smmry["halfway"]
+        }
+      } else {
+        if (mod_crr == "glm" && fam_crr == "gauss" &&
+            is.null(args_obj[[tstsetup_vsel]]$search_terms) &&
+            length(stats_crr) == 0) {
+          nterms_tst <- nterms_max_smmry[c("default_nterms_max_smmry",
+                                           "halfway")]
+        } else {
+          nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         }
       }
       lapply(nterms_tst, function(nterms_crr) {
@@ -1054,14 +1129,7 @@ cre_args_smmry_vsel <- function(tstsetups_smmry_vsel) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  tstsetups_smmry_vs <- setNames(nm = unlist(lapply(mod_nms, function(mod_nm) {
-    unlist(lapply(fam_nms, function(fam_nm) {
-      head(grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(vss), value = TRUE),
-           1)
-    }))
-  })))
-  stopifnot(length(tstsetups_smmry_vs) > 0)
-  args_smmry_vs <- cre_args_smmry_vsel(tstsetups_smmry_vs)
+  args_smmry_vs <- cre_args_smmry_vsel(args_vs)
   args_smmry_vs <- unlist_cust(args_smmry_vs)
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
@@ -1081,17 +1149,7 @@ if (run_vs) {
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  tstsetups_smmry_cvvs <- setNames(
-    nm = unlist(lapply(mod_nms, function(mod_nm) {
-      unlist(lapply(fam_nms, function(fam_nm) {
-        head(grep(paste0("\\.", mod_nm, "\\.", fam_nm), names(cvvss),
-                  value = TRUE),
-             1)
-      }))
-    }))
-  )
-  stopifnot(length(tstsetups_smmry_cvvs) > 0)
-  args_smmry_cvvs <- cre_args_smmry_vsel(tstsetups_smmry_cvvs)
+  args_smmry_cvvs <- cre_args_smmry_vsel(args_cvvs)
   args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {

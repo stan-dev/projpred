@@ -648,8 +648,6 @@ select_possible_terms_size <- function(chosen, terms, size) {
   }
 
   valid_submodels <- lapply(terms, function(x) {
-    current <- count_terms_chosen(chosen)
-    increment <- size - current
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
     terms <- extract_terms_response(make_formula(c(chosen)))
@@ -663,15 +661,9 @@ select_possible_terms_size <- function(chosen, terms, size) {
     linear <- terms_new$individual_terms
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
-    ## if model is straight redundant
-    not_redundant <- (
-      count_terms_chosen(c(chosen, x), duplicates = TRUE) -
-        current -
-        length(dups)
-    ) == increment
-    ## if already_chosen is not NA it means we have already chosen the linear
-    ## term
-    if (not_redundant) {
+    size_crr <- count_terms_chosen(c(chosen, x), duplicates = TRUE) -
+      length(dups)
+    if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
         x <- setdiff(attr(tt, "term.labels"), chosen)
@@ -679,9 +671,9 @@ select_possible_terms_size <- function(chosen, terms, size) {
           x <- paste0("(", x, ")")
         }
       }
-      x
+      return(x)
     } else {
-      NA
+      return(NA)
     }
   })
   valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
@@ -744,24 +736,6 @@ is_next_submodel_redundant <- function(current, new) {
   } else {
     return(TRUE)
   }
-}
-
-## Utility to remove redundant models to consider
-## @param refmodel The reference model's formula.
-## @param chosen A list of included terms at a given point of the search.
-## @return a vector of incremental non redundant submodels for all the possible
-##   terms included.
-reduce_models <- function(chosen) {
-  Reduce(
-    function(chosen, x) {
-      if (is_next_submodel_redundant(chosen, x)) {
-        chosen
-      } else {
-        c(chosen, x)
-      }
-    },
-    chosen
-  )
 }
 
 ## Helper function to evaluate right hand side formulas in a context

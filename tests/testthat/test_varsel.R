@@ -22,6 +22,9 @@ test_that(paste(
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs[[tstsetup]]$nclusters,
       nprjdraws_eval_expected = args_vs[[tstsetup]]$nclusters_pred,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
       info_str = tstsetup
     )
   }
@@ -107,6 +110,9 @@ test_that("`d_test` works", {
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,
       nprjdraws_eval_expected = args_vs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_vs_i$search_terms) &&
+        all(grepl("\\+", args_vs_i$search_terms)),
       info_str = tstsetup
     )
     expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
@@ -214,6 +220,10 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
+    if (length(args_vs_i$search_terms) &&
+        all(grepl("\\+", args_vs_i$search_terms))) {
+      m_max <- m_max - 1L
+    }
     ncl_crr <- args_vs_i$nclusters
     ssq_regul_sel_alpha <- array(dim = c(length(regul_tst), m_max, ncl_crr))
     ssq_regul_sel_beta <- array(dim = c(length(regul_tst), m_max, ncl_crr))
@@ -234,6 +244,9 @@ test_that(paste(
           method_expected = "forward",
           nprjdraws_search_expected = args_vs_i$nclusters,
           nprjdraws_eval_expected = args_vs_i$nclusters_pred,
+          search_trms_empty_size =
+            length(args_vs_i$search_terms) &&
+            all(grepl("\\+", args_vs_i$search_terms)),
           info_str = tstsetup
         )
       }
@@ -405,6 +418,54 @@ test_that("for L1 search, `penalty` has an expected effect", {
   }
 })
 
+# search_terms ------------------------------------------------------------
+
+test_that(paste(
+  "including all terms in `search_terms` gives the same results as the default",
+  "`search_terms`"
+), {
+  tstsetups <- grep("\\.alltrms", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_default <- sub("\\.alltrms", "\\.default_search_trms", tstsetup)
+    if (!tstsetup_default %in% names(vss)) next
+    expect_identical(vss[[tstsetup]], vss[[tstsetup_default]], info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "forcing the inclusion of a term in the candidate models via `search_terms`",
+  "works as expected"
+), {
+  tstsetups <- grep("\\.fixed", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    # In principle, `search_trms_tst$fixed$search_terms[1]` could be used
+    # instead of `"xco.1"`, but that would seem like the forced term always has
+    # to come first in `search_terms` (which is not the case):
+    expect_identical(solution_terms(vss[[tstsetup]])[1], "xco.1",
+                     info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "forcing the exclusion of a term in the candidate models via `search_terms`",
+  "works as expected"
+), {
+  tstsetups <- grep("\\.excluded", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    expect_false("xco.1" %in% solution_terms(vss[[tstsetup]]), info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "forcing the skipping of a model size via `search_terms` works as expected"
+), {
+  tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    expect_true(all(grepl("\\+", solution_terms(vss[[tstsetup]]))),
+                info = tstsetup)
+  }
+})
+
 # cv_varsel() -------------------------------------------------------------
 
 context("cv_varsel()")
@@ -431,6 +492,9 @@ test_that(paste(
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
       nprjdraws_search_expected = args_cvvs[[tstsetup]]$nclusters,
       nprjdraws_eval_expected = args_cvvs[[tstsetup]]$nclusters_pred,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
       info_str = tstsetup
     )
   }
@@ -557,6 +621,9 @@ test_that("setting `nloo` smaller than the number of observations works", {
       nprjdraws_search_expected = args_cvvs_i$nclusters,
       nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       nloo_expected = nloo_tst,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
@@ -609,6 +676,9 @@ test_that("`validate_search` works", {
       valsearch_expected = FALSE,
       nprjdraws_search_expected = args_cvvs_i$nclusters,
       nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
@@ -758,6 +828,9 @@ test_that(paste(
       valsearch_expected = args_cvvs_i$validate_search,
       nprjdraws_search_expected = args_cvvs_i$nclusters,
       nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
     # Expected equality for some components:
@@ -860,6 +933,9 @@ test_that(paste(
       valsearch_expected = args_cvvs_i$validate_search,
       nprjdraws_search_expected = args_cvvs_i$nclusters,
       nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
     # Expected equality for some components:
