@@ -804,6 +804,12 @@ if (run_cvvs) {
         }
         search_trms <- search_trms_tst["default_search_trms"]
         lapply(search_trms, function(search_trms_i) {
+          if (length(search_trms_i) &&
+              !identical(search_trms_i$search_terms,
+                         search_trms_tst$alltrms$search_terms)) {
+            nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) -
+              1L
+          }
           return(c(
             nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
             list(
