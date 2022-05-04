@@ -651,6 +651,8 @@ type_tst <- c("mean", "lower", "upper", "se")
 ntermss <- sapply(mod_nms, function(mod_nm) {
   get(paste("nterms", mod_nm, sep = "_"))
 })
+# The `nterms_max` setting which will be used throughout the tests, except for
+# the special `search_terms` tests:
 nterms_max_tst <- min(ntermss)
 if (!run_more) {
   nterms_max_tst <- min(nterms_max_tst, 2L)
