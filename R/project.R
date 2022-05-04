@@ -194,12 +194,12 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         ## by default, project onto the suggested model size
         nterms <- min(object$suggested_size, length(solution_terms))
       } else {
-        stop("No suggested model size found, please specify nterms or solution",
-             "terms")
+        stop("No suggested model size found, please specify `nterms` or ",
+             "`solution_terms`.")
       }
     } else {
       if (!is.numeric(nterms) || any(nterms < 0)) {
-        stop("nterms must contain non-negative values.")
+        stop("Argument `nterms` must contain non-negative values.")
       }
       if (max(nterms) > length(solution_terms)) {
         stop(paste(
