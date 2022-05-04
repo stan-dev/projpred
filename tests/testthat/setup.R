@@ -948,6 +948,17 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
         grepl("\\.spclformul", tstsetup_vsel)) {
       nterms_avail <- nterms_avail["subvec"]
     }
+    if (!is.null(args_obj[[tstsetup_vsel]]$search_terms)) {
+      nterms_max_cut <- args_obj[[tstsetup_vsel]]$nterms_max
+      if (all(grepl("\\+", args_obj[[tstsetup_vsel]]$search_terms))) {
+        # This is the "empty_size" setting, so we have to subtract the skipped
+        # model size (see issue #307):
+        nterms_max_cut <- nterms_max_cut - 1L
+      }
+      nterms_avail <- lapply(nterms_avail, function(nterms_avail_i) {
+        pmin(nterms_avail_i, nterms_max_cut)
+      })
+    }
     lapply(nterms_avail, function(nterms_crr) {
       if (!is.null(nterms_crr)) {
         args_out <- c(args_out, list(nterms = nterms_crr))
