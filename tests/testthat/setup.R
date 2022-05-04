@@ -284,37 +284,6 @@ if (ncol(s_mat) == 1) {
   names(dat)[names(dat) == "s"] <- "s.1"
 }
 
-## nterms -----------------------------------------------------------------
-
-ntermss <- sapply(mod_nms, function(mod_nm) {
-  get(paste("nterms", mod_nm, sep = "_"))
-})
-nterms_max_tst <- min(ntermss)
-if (!run_more) {
-  nterms_max_tst <- min(nterms_max_tst, 2L)
-}
-
-nterms_unavail <- list(
-  single = nterms_max_tst + 130L,
-  vec = c(nterms_max_tst + 130L, nterms_max_tst + 290L)
-)
-if (!run_more) {
-  nterms_avail <- list()
-} else {
-  nterms_avail <- list(default_nterms = NULL)
-}
-nterms_avail <- c(nterms_avail, list(
-  empty = 0L,
-  single = nterms_max_tst %/% 2L,
-  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 2))),
-  full = 0:nterms_max_tst
-))
-
-nterms_max_smmry <- list(
-  default_nterms_max_smmry = NULL,
-  halfway = nterms_max_tst %/% 2L
-)
-
 ## Modified datasets ------------------------------------------------------
 
 dat_wobs_ones <- within(dat, {
@@ -623,6 +592,10 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
 
 ## Setup ------------------------------------------------------------------
 
+seed_tst <- 74341
+seed2_tst <- 866028
+seed3_tst <- 1208499
+
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 if (!run_more) {
@@ -673,9 +646,36 @@ stats_tst <- list(
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
-seed_tst <- 74341
-seed2_tst <- 866028
-seed3_tst <- 1208499
+### nterms ----------------------------------------------------------------
+
+ntermss <- sapply(mod_nms, function(mod_nm) {
+  get(paste("nterms", mod_nm, sep = "_"))
+})
+nterms_max_tst <- min(ntermss)
+if (!run_more) {
+  nterms_max_tst <- min(nterms_max_tst, 2L)
+}
+
+nterms_unavail <- list(
+  single = nterms_max_tst + 130L,
+  vec = c(nterms_max_tst + 130L, nterms_max_tst + 290L)
+)
+if (!run_more) {
+  nterms_avail <- list()
+} else {
+  nterms_avail <- list(default_nterms = NULL)
+}
+nterms_avail <- c(nterms_avail, list(
+  empty = 0L,
+  single = nterms_max_tst %/% 2L,
+  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 2))),
+  full = 0:nterms_max_tst
+))
+
+nterms_max_smmry <- list(
+  default_nterms_max_smmry = NULL,
+  halfway = nterms_max_tst %/% 2L
+)
 
 ## Reference model --------------------------------------------------------
 
