@@ -833,9 +833,13 @@ projection_tester <- function(p,
   y_nms <- paste0(".", y_nm)
   # A preliminary check for `nprjdraws_expected` (doesn't work for "datafit"s
   # and, because of issue #131, for submodels which are GAMMs):
-  sub_formul_crr_rhs <- flatten_formula(as.formula(paste(
+  sub_formul_crr_rhs <- as.formula(paste(
     "~", paste(sub_trms_crr, collapse = " + ")
-  )))
+  ))
+  if (all(grepl("\\+", sub_trms_crr))) {
+    # Avoid duplicated terms in the "empty_size" `search_terms` setting:
+    sub_formul_crr_rhs <- update(sub_formul_crr_rhs, . ~ .)
+  }
   if (!inherits(p$refmodel, "datafit") &&
       !(formula_contains_additive_terms(sub_formul_crr_rhs) &&
         formula_contains_group_terms(sub_formul_crr_rhs))) {
@@ -849,9 +853,14 @@ projection_tester <- function(p,
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
   }
   sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
-    flatten_formula(as.formula(paste(
+    fml_tmp <- as.formula(paste(
       y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
-    )))
+    ))
+    if (all(grepl("\\+", sub_trms_crr))) {
+      # Avoid duplicated terms in the "empty_size" `search_terms` setting:
+      fml_tmp <- update(fml_tmp, . ~ .)
+    }
+    return(fml_tmp)
   })
   sub_data_crr <- p$refmodel$fetch_data()
   if (p_type_expected) {
@@ -1117,6 +1126,8 @@ vsel_tester <- function(
     nprjdraws_search_expected <- 1
   }
   if (search_trms_empty_size) {
+    # This is the "empty_size" setting, so we have to subtract the skipped model
+    # size (see issue #307):
     solterms_len_expected <- solterms_len_expected - 1L
   }
 
@@ -1172,9 +1183,14 @@ vsel_tester <- function(
       sub_trms_crr <- setdiff(sub_trms_crr, "1")
     }
     sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
-      flatten_formula(as.formula(paste(
+      fml_tmp <- as.formula(paste(
         y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
-      )))
+      ))
+      if (all(grepl("\\+", sub_trms_crr))) {
+        # Avoid duplicated terms in the "empty_size" `search_terms` setting:
+        fml_tmp <- update(fml_tmp, . ~ .)
+      }
+      return(fml_tmp)
     })
     submodl_tester(
       vs$search_path$submodls[[i]],
@@ -1470,6 +1486,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     nterms_ch <- nterms_max_expected
   }
   if (search_trms_empty_size) {
+    # This is the "empty_size" setting, so we have to subtract the skipped model
+    # size (see issue #307):
     nterms_ch <- nterms_ch - 1
   }
   expect_identical(smmry$nterms, nterms_ch,

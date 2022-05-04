@@ -284,37 +284,6 @@ if (ncol(s_mat) == 1) {
   names(dat)[names(dat) == "s"] <- "s.1"
 }
 
-## nterms -----------------------------------------------------------------
-
-ntermss <- sapply(mod_nms, function(mod_nm) {
-  get(paste("nterms", mod_nm, sep = "_"))
-})
-nterms_max_tst <- min(ntermss)
-if (!run_more) {
-  nterms_max_tst <- min(nterms_max_tst, 2L)
-}
-
-nterms_unavail <- list(
-  single = nterms_max_tst + 130L,
-  vec = c(nterms_max_tst + 130L, nterms_max_tst + 290L)
-)
-if (!run_more) {
-  nterms_avail <- list()
-} else {
-  nterms_avail <- list(default_nterms = NULL)
-}
-nterms_avail <- c(nterms_avail, list(
-  empty = 0L,
-  single = nterms_max_tst %/% 2L,
-  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 2))),
-  full = 0:nterms_max_tst
-))
-
-nterms_max_smmry <- list(
-  default_nterms_max_smmry = NULL,
-  halfway = nterms_max_tst %/% 2L
-)
-
 ## Modified datasets ------------------------------------------------------
 
 dat_wobs_ones <- within(dat, {
@@ -623,6 +592,10 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
 
 ## Setup ------------------------------------------------------------------
 
+seed_tst <- 74341
+seed2_tst <- 866028
+seed3_tst <- 1208499
+
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
 if (!run_more) {
@@ -673,9 +646,38 @@ stats_tst <- list(
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
-seed_tst <- 74341
-seed2_tst <- 866028
-seed3_tst <- 1208499
+### nterms ----------------------------------------------------------------
+
+ntermss <- sapply(mod_nms, function(mod_nm) {
+  get(paste("nterms", mod_nm, sep = "_"))
+})
+# The `nterms_max` setting which will be used throughout the tests, except for
+# the special `search_terms` tests:
+nterms_max_tst <- min(ntermss)
+if (!run_more) {
+  nterms_max_tst <- min(nterms_max_tst, 2L)
+}
+
+nterms_unavail <- list(
+  single = nterms_max_tst + 130L,
+  vec = c(nterms_max_tst + 130L, nterms_max_tst + 290L)
+)
+if (!run_more) {
+  nterms_avail <- list()
+} else {
+  nterms_avail <- list(default_nterms = NULL)
+}
+nterms_avail <- c(nterms_avail, list(
+  empty = 0L,
+  single = nterms_max_tst %/% 2L,
+  subvec = as.integer(round(seq(0, nterms_max_tst, length.out = 2))),
+  full = 0:nterms_max_tst
+))
+
+nterms_max_smmry <- list(
+  default_nterms_max_smmry = NULL,
+  halfway = nterms_max_tst %/% 2L
+)
 
 ## Reference model --------------------------------------------------------
 
@@ -804,6 +806,12 @@ if (run_cvvs) {
         }
         search_trms <- search_trms_tst["default_search_trms"]
         lapply(search_trms, function(search_trms_i) {
+          if (length(search_trms_i) &&
+              !identical(search_trms_i$search_terms,
+                         search_trms_tst$alltrms$search_terms)) {
+            nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) -
+              1L
+          }
           return(c(
             nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
             list(
@@ -942,6 +950,17 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
         grepl("\\.spclformul", tstsetup_vsel)) {
       nterms_avail <- nterms_avail["subvec"]
     }
+    if (!is.null(args_obj[[tstsetup_vsel]]$search_terms)) {
+      nterms_max_cut <- args_obj[[tstsetup_vsel]]$nterms_max
+      if (all(grepl("\\+", args_obj[[tstsetup_vsel]]$search_terms))) {
+        # This is the "empty_size" setting, so we have to subtract the skipped
+        # model size (see issue #307):
+        nterms_max_cut <- nterms_max_cut - 1L
+      }
+      nterms_avail <- lapply(nterms_avail, function(nterms_avail_i) {
+        pmin(nterms_avail_i, nterms_max_cut)
+      })
+    }
     lapply(nterms_avail, function(nterms_crr) {
       if (!is.null(nterms_crr)) {
         args_out <- c(args_out, list(nterms = nterms_crr))
@@ -981,6 +1000,9 @@ if (run_vs) {
   args_prj_vs <- unlist_cust(args_prj_vs)
 
   prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
+    if (is.na(vss[[args_prj_vs_i$tstsetup_vsel]]$suggested_size)) {
+      args_prj_vs_i$nterms <- nterms_avail$single
+    }
     do.call(project, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_prj_vs_i)
@@ -1022,6 +1044,9 @@ if (run_cvvs) {
   prjs_cvvs <- suppressWarnings(lapply(
     args_prj_cvvs,
     function(args_prj_cvvs_i) {
+      if (is.na(cvvss[[args_prj_cvvs_i$tstsetup_vsel]]$suggested_size)) {
+        args_prj_cvvs_i$nterms <- nterms_avail$single
+      }
       do.call(project, c(
         list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
         excl_nonargs(args_prj_cvvs_i)

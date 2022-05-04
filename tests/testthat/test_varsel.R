@@ -222,6 +222,8 @@ test_that(paste(
     m_max <- args_vs_i$nterms_max + 1L
     if (length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms))) {
+      # This is the "empty_size" setting, so we have to subtract the skipped
+      # model size (see issue #307):
       m_max <- m_max - 1L
     }
     ncl_crr <- args_vs_i$nclusters
