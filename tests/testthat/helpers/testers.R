@@ -1117,6 +1117,8 @@ vsel_tester <- function(
     nprjdraws_search_expected <- 1
   }
   if (search_trms_empty_size) {
+    # This is the "empty_size" setting, so we have to subtract the skipped model
+    # size (see issue #307):
     solterms_len_expected <- solterms_len_expected - 1L
   }
 
@@ -1470,6 +1472,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     nterms_ch <- nterms_max_expected
   }
   if (search_trms_empty_size) {
+    # This is the "empty_size" setting, so we have to subtract the skipped model
+    # size (see issue #307):
     nterms_ch <- nterms_ch - 1
   }
   expect_identical(smmry$nterms, nterms_ch,
