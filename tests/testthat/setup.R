@@ -1000,9 +1000,6 @@ if (run_vs) {
   args_prj_vs <- unlist_cust(args_prj_vs)
 
   prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
-    if (is.na(vss[[args_prj_vs_i$tstsetup_vsel]]$suggested_size)) {
-      args_prj_vs_i$nterms <- nterms_avail$single
-    }
     do.call(project, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_prj_vs_i)
@@ -1044,9 +1041,6 @@ if (run_cvvs) {
   prjs_cvvs <- suppressWarnings(lapply(
     args_prj_cvvs,
     function(args_prj_cvvs_i) {
-      if (is.na(cvvss[[args_prj_cvvs_i$tstsetup_vsel]]$suggested_size)) {
-        args_prj_cvvs_i$nterms <- nterms_avail$single
-      }
       do.call(project, c(
         list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
         excl_nonargs(args_prj_cvvs_i)
