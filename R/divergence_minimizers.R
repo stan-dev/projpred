@@ -197,18 +197,24 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
     ))))
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
-      scaled_data <- preprocess_data(data, projpred_formula_no_random)
-      fit_gamm_callback(
+      if ("optimx" %in% control$optimizer &&
+          length(control$optCtrl$method) > 0 &&
+          control$optCtrl$method == "nlminb") {
+        stop("Encountering the `not positive definite` error while running ",
+             "the lme4 fitting procedure, but cannot fix this automatically ",
+             "anymore.")
+      }
+      return(fit_gamm_callback(
         formula = formula,
         projpred_formula_no_random = projpred_formula_no_random,
         projpred_random = projpred_random,
-        data = scaled_data,
+        data = data,
         family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
         ...
-      )
+      ))
     } else {
       stop(e)
     }
@@ -326,16 +332,6 @@ fit_glmer_callback <- function(formula, family,
       stop(e)
     }
   })
-}
-
-preprocess_data <- function(data, formula) {
-  tt <- extract_terms_response(formula)
-  non_group_terms <- c(tt$individual_terms, tt$interaction_terms)
-  X <- data %>%
-    dplyr::select(non_group_terms) %>%
-    scale()
-  data[, non_group_terms] <- X
-  return(data)
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
