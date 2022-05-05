@@ -13,6 +13,7 @@
 
 * Throw a more informative error message in case of special group-level terms which are currently not supported (in particular, nested ones).
 * Previously, using a `search_terms` vector which excluded the intercept in conjunction with `refit_prj = FALSE` (the latter in `project()`, `varsel()`, or `cv_varsel()`) led to incorrect submodels being fetched from the search or to an error while doing so. This has been fixed now by internally forcing the inclusion of the intercept in `search_terms`. (GitHub: #308)
+* Fix GitHub issues #147 and #202. (GitHub: #312)
 
 # projpred 2.1.1
 
