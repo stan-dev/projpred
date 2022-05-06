@@ -202,7 +202,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
           control$optCtrl$method == "nlminb") {
         stop("Encountering the `not positive definite` error while running ",
              "the lme4 fitting procedure, but cannot fix this automatically ",
-             "anymore.")
+             "anymore. You will probably have to tweak gamm4 tuning ",
+             "parameters manually (via `...`).")
       }
       return(fit_gamm_callback(
         formula = formula,
@@ -273,7 +274,8 @@ fit_glmer_callback <- function(formula, family,
           control$optCtrl$method == "nlminb") {
         stop("Encountering the `not positive definite` error while running ",
              "the lme4 fitting procedure, but cannot fix this automatically ",
-             "anymore.")
+             "anymore. You will probably have to tweak lme4 tuning parameters ",
+             "manually (via `...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
@@ -291,7 +293,9 @@ fit_glmer_callback <- function(formula, family,
       }
       if (nAGQ_new > 30L) {
         stop("Encountering a PIRLS error while running the lme4 fitting ",
-             "procedure, but cannot fix this automatically anymore.")
+             "procedure, but cannot fix this automatically anymore. You will ",
+             "probably have to tweak lme4 tuning parameters manually (via ",
+             "`...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
@@ -317,7 +321,8 @@ fit_glmer_callback <- function(formula, family,
         stop("Encountering the ",
              "`pwrssUpdate did not converge in (maxit) iterations` error ",
              "while running the lme4 fitting procedure, but cannot fix this ",
-             "automatically anymore.")
+             "automatically anymore. You will probably have to tweak lme4 ",
+             "tuning parameters manually (via `...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
