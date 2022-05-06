@@ -8,7 +8,7 @@
 * Improve the documentation for argument `search_terms` of `varsel()` and `cv_varsel()`. (GitHub: #155, #308)
 * In case of user-specified (non-`NULL`) `search_terms`, `method = NULL` is internally changed to `method = "forward"` and `method = "L1"` throws a warning. This is done because `search_terms` only takes effect in case of a forward search. (GitHub: #155, #308)
 * Internally, the intercept is now always included in `search_terms`. This is necessary to prevent a bug described below. (GitHub: #308)
-* When fitting multilevel submodels via **lme4**, **projpred** now tries to handle `PIRLS loop resulted in NaN value` errors automatically.
+* When fitting multilevel submodels via **lme4**, **projpred** now tries to handle `PIRLS loop resulted in NaN value` errors automatically. (GitHub: #314)
 
 ## Bug fixes
 
