@@ -202,7 +202,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
           control$optCtrl$method == "nlminb") {
         stop("Encountering the `not positive definite` error while running ",
              "the lme4 fitting procedure, but cannot fix this automatically ",
-             "anymore.")
+             "anymore. You will probably have to tweak gamm4 tuning ",
+             "parameters manually (via `...`).")
       }
       return(fit_gamm_callback(
         formula = formula,
@@ -273,7 +274,8 @@ fit_glmer_callback <- function(formula, family,
           control$optCtrl$method == "nlminb") {
         stop("Encountering the `not positive definite` error while running ",
              "the lme4 fitting procedure, but cannot fix this automatically ",
-             "anymore.")
+             "anymore. You will probably have to tweak lme4 tuning parameters ",
+             "manually (via `...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
@@ -283,16 +285,17 @@ fit_glmer_callback <- function(formula, family,
                                    optCtrl = list(method = "nlminb")),
         ...
       ))
-    } else if (grepl("PIRLS step-halvings", as.character(e))) {
+    } else if (grepl("PIRLS", as.character(e))) {
       if (length(dot_args$nAGQ) > 0) {
         nAGQ_new <- dot_args$nAGQ + 1L
       } else {
         nAGQ_new <- 20L
       }
       if (nAGQ_new > 30L) {
-        stop("Encountering the `PIRLS step-halvings` error while running the ",
-             "lme4 fitting procedure, but cannot fix this automatically ",
-             "anymore.")
+        stop("Encountering a PIRLS error while running the lme4 fitting ",
+             "procedure, but cannot fix this automatically anymore. You will ",
+             "probably have to tweak lme4 tuning parameters manually (via ",
+             "`...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
@@ -318,7 +321,8 @@ fit_glmer_callback <- function(formula, family,
         stop("Encountering the ",
              "`pwrssUpdate did not converge in (maxit) iterations` error ",
              "while running the lme4 fitting procedure, but cannot fix this ",
-             "automatically anymore.")
+             "automatically anymore. You will probably have to tweak lme4 ",
+             "tuning parameters manually (via `...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
