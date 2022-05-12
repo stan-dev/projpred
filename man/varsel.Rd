@@ -45,9 +45,9 @@ test set which is used for evaluating the predictive performance of the
 reference model. If not provided, the training set is used.}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
-L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
-is used if the reference model has multilevel or additive terms and \code{"L1"}
-otherwise. See also section "Details" below.}
+L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
+\code{"L1"} is used, except if the reference model has multilevel or additive
+terms or if \code{!is.null(search_terms)}. See also section "Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -109,9 +109,13 @@ those predictors have no cost and will therefore be selected first, whereas
 \code{Inf} means those predictors will never be selected. If \code{NULL}, then \code{1} is
 used for each predictor.}
 
-\item{search_terms}{A custom character vector of terms to consider for the
-search. The intercept (\code{"1"}) needs to be included explicitly. The default
-considers all the terms in the reference model's formula.}
+\item{search_terms}{Only relevant for forward search. A custom character
+vector of predictor term blocks to consider for the search. Section
+"Details" below describes more precisely what "predictor term block" means.
+The intercept (\code{"1"}) is always included internally via \code{union()}, so
+there's no difference between including it explicitly or omitting it. The
+default \code{search_terms} considers all the terms in the reference model's
+formula.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If \code{NULL}, no seed is set and
@@ -145,7 +149,8 @@ linearly.
 
 For argument \code{method}, there are some restrictions: For a reference model
 with multilevel or additive formula terms, only the forward search is
-available.
+available. Furthermore, argument \code{search_terms} requires a forward search
+to take effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
@@ -155,6 +160,29 @@ overfitting when more predictors are added.
 An L1 search may select interaction terms before the corresponding main
 terms are selected. If this is undesired, choose the forward search
 instead.
+
+The elements of the \code{search_terms} character vector don't need to be
+individual predictor terms. Instead, they can be building blocks consisting
+of several predictor terms connected by the \code{+} symbol. To understand how
+these building blocks works, it is important to know how \pkg{projpred}'s
+forward search works: It starts with an empty vector \code{chosen} which will
+later contain already selected predictor terms. Then, the search iterates
+over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
+models at model size \eqn{j} are constructed from those elements from
+\code{search_terms} which yield model size \eqn{j} when combined with the
+\code{chosen} predictor terms. Note that sometimes, there may be no candidate
+models for model size \eqn{j}. Also note that internally, \code{search_terms} is
+expanded to include the intercept (\code{"1"}), so the first step of the search
+(model size 1) always consists of the intercept-only model as the only
+candidate.
+
+As a \code{search_terms} example, consider a reference model with formula \code{y ~ x1 + x2 + x3}. Then, to ensure that \code{x1} is always included in the
+candidate models, specify \code{search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")}. This search would start with \code{y ~ 1} as the only
+candidate at model size 1. At model size 2, \code{y ~ x1} would be the only
+candidate. At model size 3, \code{y ~ x1 + x2} and \code{y ~ x1 + x3} would be the
+two candidates. At the last model size of 4, \code{y ~ x1 + x2 + x3} would be
+the only candidate. As another example, to exclude \code{x1} from the search,
+specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

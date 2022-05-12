@@ -14,9 +14,9 @@
 #'   test set which is used for evaluating the predictive performance of the
 #'   reference model. If not provided, the training set is used.
 #' @param method The method for the search part. Possible options are `"L1"` for
-#'   L1 search and `"forward"` for forward search. If `NULL`, then `"forward"`
-#'   is used if the reference model has multilevel or additive terms and `"L1"`
-#'   otherwise. See also section "Details" below.
+#'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
+#'   `"L1"` is used, except if the reference model has multilevel or additive
+#'   terms or if `!is.null(search_terms)`. See also section "Details" below.
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels along the solution path again (`TRUE`) or to retrieve their fits
 #'   from the search part (`FALSE`) before using those (re-)fits in the
@@ -63,9 +63,13 @@
 #'   projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 #'   no need for regularization, but sometimes we need to add some
 #'   regularization to avoid numerical problems.
-#' @param search_terms A custom character vector of terms to consider for the
-#'   search. The intercept (`"1"`) needs to be included explicitly. The default
-#'   considers all the terms in the reference model's formula.
+#' @param search_terms Only relevant for forward search. A custom character
+#'   vector of predictor term blocks to consider for the search. Section
+#'   "Details" below describes more precisely what "predictor term block" means.
+#'   The intercept (`"1"`) is always included internally via `union()`, so
+#'   there's no difference between including it explicitly or omitting it. The
+#'   default `search_terms` considers all the terms in the reference model's
+#'   formula.
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
@@ -89,7 +93,8 @@
 #'
 #'   For argument `method`, there are some restrictions: For a reference model
 #'   with multilevel or additive formula terms, only the forward search is
-#'   available.
+#'   available. Furthermore, argument `search_terms` requires a forward search
+#'   to take effect.
 #'
 #'   L1 search is faster than forward search, but forward search may be more
 #'   accurate. Furthermore, forward search may find a sparser model with
@@ -99,6 +104,31 @@
 #'   An L1 search may select interaction terms before the corresponding main
 #'   terms are selected. If this is undesired, choose the forward search
 #'   instead.
+#'
+#'   The elements of the `search_terms` character vector don't need to be
+#'   individual predictor terms. Instead, they can be building blocks consisting
+#'   of several predictor terms connected by the `+` symbol. To understand how
+#'   these building blocks works, it is important to know how \pkg{projpred}'s
+#'   forward search works: It starts with an empty vector `chosen` which will
+#'   later contain already selected predictor terms. Then, the search iterates
+#'   over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
+#'   models at model size \eqn{j} are constructed from those elements from
+#'   `search_terms` which yield model size \eqn{j} when combined with the
+#'   `chosen` predictor terms. Note that sometimes, there may be no candidate
+#'   models for model size \eqn{j}. Also note that internally, `search_terms` is
+#'   expanded to include the intercept (`"1"`), so the first step of the search
+#'   (model size 1) always consists of the intercept-only model as the only
+#'   candidate.
+#'
+#'   As a `search_terms` example, consider a reference model with formula `y ~
+#'   x1 + x2 + x3`. Then, to ensure that `x1` is always included in the
+#'   candidate models, specify `search_terms = c("x1", "x1 + x2", "x1 + x3",
+#'   "x1 + x2 + x3")`. This search would start with `y ~ 1` as the only
+#'   candidate at model size 1. At model size 2, `y ~ x1` would be the only
+#'   candidate. At model size 3, `y ~ x1 + x2` and `y ~ x1 + x3` would be the
+#'   two candidates. At the last model size of 4, `y ~ x1 + x2 + x3` would be
+#'   the only candidate. As another example, to exclude `x1` from the search,
+#'   specify `search_terms = c("x2", "x3", "x2 + x3")`.
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the vignette
@@ -193,13 +223,14 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
     search_terms = search_terms, ...
   )
-  solution_terms <- search_path$solution_terms
 
   ## statistics for the selected submodels
-  submodels <- .get_submodels(search_path = search_path,
-                              nterms = c(0, seq_along(solution_terms)),
-                              p_ref = p_pred, refmodel = refmodel,
-                              regul = regul, refit_prj = refit_prj, ...)
+  submodels <- .get_submodels(
+    search_path = search_path,
+    nterms = c(0, seq_along(search_path$solution_terms)),
+    p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    ...
+  )
   sub <- .get_sub_summaries(
     submodels = submodels, test_points = seq_along(refmodel$y),
     refmodel = refmodel
@@ -284,33 +315,39 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
   }
 }
 
+## Auxiliary function for parsing the input arguments for varsel.
+## The arguments specified by the user (or the function calling this function)
+## are treated as they are, but if some are not given, then this function
+## fills them in with the default values. The purpose of this function is to
+## avoid repeating the same code both in varsel and cv_varsel.
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
                               nclusters, search_terms) {
-  ##
-  ## Auxiliary function for parsing the input arguments for varsel.
-  ## The arguments specified by the user (or the function calling this function)
-  ## are treated as they are, but if some are not given, then this function
-  ## fills them in with the default values. The purpose of this function is to
-  ## avoid repeating the same code both in varsel and cv_varsel.
-  ##
-  if (is.null(search_terms)) {
+  search_terms_was_null <- is.null(search_terms)
+  if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
                                   data = refmodel$fetch_data())
   }
+  search_terms <- union("1", search_terms)
   has_group_features <- formula_contains_group_terms(refmodel$formula)
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
   if (is.null(method)) {
-    if (has_group_features || has_additive_features) {
+    if (has_group_features || has_additive_features || !search_terms_was_null) {
       method <- "forward"
     } else {
       method <- "l1"
     }
   } else {
     method <- tolower(method)
-    if (method == "l1" && (has_group_features || has_additive_features)) {
-      stop("L1 search is only supported for reference models without ",
-           "multilevel and without additive (\"smoothing\") terms.")
+    if (method == "l1") {
+      if (has_group_features || has_additive_features) {
+        stop("L1 search is only supported for reference models without ",
+             "multilevel and without additive (\"smoothing\") terms.")
+      }
+      if (!search_terms_was_null) {
+        warning("Argument `search_terms` only takes effect if ",
+                "`method = \"forward\"`.")
+      }
     }
   }
 
@@ -329,11 +366,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nclusters <- 1
   }
 
-  if (!is.null(search_terms)) {
-    max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
-  } else {
-    max_nv_possible <- count_terms_in_formula(refmodel$formula)
-  }
+  max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }

@@ -59,7 +59,9 @@ function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, fu
 \code{\link[gamm4:gamm4]{gamm4::gamm4()}}) as well as the notes in section "Formula terms" below.}
 
 \item{family}{A \code{\link{family}} object representing the observational model (i.e.,
-the distributional family for the response).}
+the distributional family for the response). May be \code{NULL} for
+\code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
+\code{object}.}
 
 \item{data}{Data used for fitting the reference model. Any \code{contrasts}
 attributes of the dataset's columns are silently removed.}
@@ -112,15 +114,15 @@ case \code{0} is used for \code{dis}). Note that for the \code{\link[=gaussian]{
 is the standard deviation, not the variance.}
 
 \item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
-reference model fit for fold \eqn{k \in \{1, ..., K\}} (this model fit is
-the \eqn{k}-th element of the return value of \code{cvfun} or the \eqn{k}-th
-element of \code{cvfits$fits}, extended by elements \code{omitted} (containing the
-indices of the left-out observations in that fold) and \code{projpred_k}
-(containing the integer \eqn{k})), returns an object of the same type as
-\code{\link[=init_refmodel]{init_refmodel()}} does. Argument \code{cvrefbuilder} may be \code{NULL} for using an
-internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL} and a function
-calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption \code{dis = 0}) if
-\code{object} is \code{NULL}.}
+reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
+model fit is the \eqn{k}-th element of the return value of \code{cvfun} or the
+\eqn{k}-th element of \code{cvfits$fits}, extended by elements \code{omitted}
+(containing the indices of the left-out observations in that fold) and
+\code{projpred_k} (containing the integer \eqn{k})), returns an object of the
+same type as \code{\link[=init_refmodel]{init_refmodel()}} does. Argument \code{cvrefbuilder} may be \code{NULL}
+for using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL}
+and a function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption
+\code{dis = 0}) if \code{object} is \code{NULL}.}
 }
 \value{
 An object that can be passed to all the functions that take the

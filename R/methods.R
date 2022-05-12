@@ -325,13 +325,13 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #'
 #' @export
 plot.vsel <- function(
-  x,
-  nterms_max = NULL,
-  stats = "elpd",
-  deltas = FALSE,
-  alpha = 0.32,
-  baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
-  ...
+    x,
+    nterms_max = NULL,
+    stats = "elpd",
+    deltas = FALSE,
+    alpha = 0.32,
+    baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
+    ...
 ) {
   object <- x
   .validate_vsel_object_stats(object, stats)
@@ -467,7 +467,7 @@ plot.vsel <- function(
 #'   terms of `stats[1]`), respectively.
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
-#'   arguments are `b` (the number of bootstrap samples, defaulting to `2000`)
+#'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
 #'   and `seed` (see [set.seed()], defaulting to
 #'   `sample.int(.Machine$integer.max, 1)`).
 #'
@@ -494,14 +494,14 @@ plot.vsel <- function(
 #'
 #' @export
 summary.vsel <- function(
-  object,
-  nterms_max = NULL,
-  stats = "elpd",
-  type = c("mean", "se", "diff", "diff.se"),
-  deltas = FALSE,
-  alpha = 0.32,
-  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
-  ...
+    object,
+    nterms_max = NULL,
+    stats = "elpd",
+    type = c("mean", "se", "diff", "diff.se"),
+    deltas = FALSE,
+    alpha = 0.32,
+    baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+    ...
 ) {
   .validate_vsel_object_stats(object, stats)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
@@ -742,12 +742,12 @@ suggest_size <- function(object, ...) {
 #' @rdname suggest_size
 #' @export
 suggest_size.vsel <- function(
-  object,
-  stat = "elpd",
-  pct = 0,
-  type = "upper",
-  warnings = TRUE,
-  ...
+    object,
+    stat = "elpd",
+    pct = 0,
+    type = "upper",
+    warnings = TRUE,
+    ...
 ) {
   .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
@@ -927,7 +927,7 @@ mknms_ranef <- function(nms, nm_scheme, coef_nms) {
   return(nms)
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 coef.subfit <- function(object, ...) {
   return(with(object, c(
@@ -942,26 +942,26 @@ get_subparams <- function(x, ...) {
   UseMethod("get_subparams")
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.lm <- function(x, ...) {
   return(coef(x) %>%
            replace_population_names(...))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.subfit <- function(x, ...) {
   return(get_subparams.lm(x, ...))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.glm <- function(x, ...) {
   return(get_subparams.lm(x, ...))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
@@ -1026,13 +1026,13 @@ get_subparams.lmerMod <- function(x, ...) {
   return(c(population_effects, group_vc, group_ef))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.glmerMod <- function(x, ...) {
   return(get_subparams.lmerMod(x, ...))
 }
 
-#' @keywords internal
+#' @noRd
 #' @export
 get_subparams.gamm4 <- function(x, ...) {
   return(get_subparams.lm(x, ...))

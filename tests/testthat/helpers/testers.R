@@ -108,21 +108,21 @@ extfam_tester <- function(extfam,
 #
 # @return `TRUE` (invisible).
 refmodel_tester <- function(
-  refmod,
-  is_datafit = FALSE,
-  pkg_nm,
-  fit_expected,
-  formul_expected = get_formul_from_fit(fit_expected),
-  data_expected = dat,
-  with_spclformul = FALSE,
-  nobsv_expected = nobsv,
-  wobs_expected = wobs_tst,
-  offs_expected = offs_tst,
-  nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
-  fam_orig,
-  mod_nm,
-  fam_nm,
-  info_str
+    refmod,
+    is_datafit = FALSE,
+    pkg_nm,
+    fit_expected,
+    formul_expected = get_formul_from_fit(fit_expected),
+    data_expected = dat,
+    with_spclformul = FALSE,
+    nobsv_expected = nobsv,
+    wobs_expected = wobs_tst,
+    offs_expected = offs_tst,
+    nrefdraws_expected = chains_tst * (iter_tst %/% 2L),
+    fam_orig,
+    mod_nm,
+    fam_nm,
+    info_str
 ) {
   # Preparations:
   needs_wobs_added <- !is_datafit && pkg_nm == "rstanarm" &&
@@ -257,7 +257,7 @@ refmodel_tester <- function(
           drop = FALSE
         ]
         ### TODO (GAMs and GAMMs): Do this manually:
-        mm_s <- ("rstanarm" %:::% "pp_data")(refmod$fit)$x
+        mm_s <- rstanarm:::pp_data(refmod$fit)$x
         mm_s <- mm_s[, grep("^s\\(", colnames(mm_s), value = TRUE),
                      drop = FALSE]
         ###
@@ -275,13 +275,7 @@ refmodel_tester <- function(
     if (refmod$family$family != "gaussian") {
       mu_expected <- fam_orig$linkinv(mu_expected)
     }
-    if (!(has_grp &&
-          as.numeric(R.version$major) >= 4 &&
-          as.numeric(R.version$minor) > 1)) {
-      # TODO: This causes a test failure on R-devel (> 4.1) which can't be
-      # reproduced locally. Thus, this is skipped in this special case for now.
-      expect_equal(refmod$mu, t(mu_expected), info = info_str)
-    }
+    expect_equal(refmod$mu, t(mu_expected), info = info_str)
   } else {
     if (refmod$family$family != "binomial") {
       expect_identical(refmod$mu, as.matrix(refmod$y), info = info_str)
@@ -459,17 +453,17 @@ refmodel_tester <- function(
 #
 # @return `TRUE` (invisible).
 submodl_tester <- function(
-  submodl_totest,
-  nprjdraws_expected,
-  sub_formul,
-  sub_data,
-  sub_fam,
-  has_grp = formula_contains_group_terms(sub_formul[[1]]),
-  has_add = formula_contains_additive_terms(sub_formul[[1]]),
-  wobs_expected = wobs_tst,
-  solterms_vsel_L1_search = NULL,
-  with_offs = FALSE,
-  info_str
+    submodl_totest,
+    nprjdraws_expected,
+    sub_formul,
+    sub_data,
+    sub_fam,
+    has_grp = formula_contains_group_terms(sub_formul[[1]]),
+    has_add = formula_contains_additive_terms(sub_formul[[1]]),
+    wobs_expected = wobs_tst,
+    solterms_vsel_L1_search = NULL,
+    with_offs = FALSE,
+    info_str
 ) {
   expect_type(submodl_totest, "list")
   expect_length(submodl_totest, nprjdraws_expected)
@@ -842,6 +836,10 @@ projection_tester <- function(p,
   sub_formul_crr_rhs <- as.formula(paste(
     "~", paste(sub_trms_crr, collapse = " + ")
   ))
+  if (all(grepl("\\+", sub_trms_crr))) {
+    # Avoid duplicated terms in the "empty_size" `search_terms` setting:
+    sub_formul_crr_rhs <- update(sub_formul_crr_rhs, . ~ .)
+  }
   if (!inherits(p$refmodel, "datafit") &&
       !(formula_contains_additive_terms(sub_formul_crr_rhs) &&
         formula_contains_group_terms(sub_formul_crr_rhs))) {
@@ -855,9 +853,14 @@ projection_tester <- function(p,
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
   }
   sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
-    as.formula(paste(
+    fml_tmp <- as.formula(paste(
       y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
     ))
+    if (all(grepl("\\+", sub_trms_crr))) {
+      # Avoid duplicated terms in the "empty_size" `search_terms` setting:
+      fml_tmp <- update(fml_tmp, . ~ .)
+    }
+    return(fml_tmp)
   })
   sub_data_crr <- p$refmodel$fetch_data()
   if (p_type_expected) {
@@ -1060,6 +1063,9 @@ pp_tester <- function(pp,
 #   draws of the reference model.
 # @param nloo_expected Only relevant if `with_cv` is `TRUE`. The value which was
 #   used for argument `nloo` of cv_varsel().
+# @param search_trms_empty_size A single logical value indicating whether
+#   `search_terms` was constructed in a way that causes a model size to be
+#   without candidate models.
 # @param extra_tol A single numeric value giving the relative tolerance when
 #   checking the monotonicity of the KL divergences. Because this is a
 #   *relative* tolerance, 1 is the neutral value.
@@ -1068,23 +1074,24 @@ pp_tester <- function(pp,
 #
 # @return `TRUE` (invisible).
 vsel_tester <- function(
-  vs,
-  with_cv = FALSE,
-  from_datafit = FALSE,
-  refmod_expected,
-  dtest_expected = NULL,
-  solterms_len_expected,
-  method_expected,
-  cv_method_expected = NULL,
-  valsearch_expected = NULL,
-  cl_search_expected = !from_datafit,
-  cl_eval_expected = !from_datafit,
-  nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
-  nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
-  seed_expected = seed_tst,
-  nloo_expected = NULL,
-  extra_tol = 1.1,
-  info_str = ""
+    vs,
+    with_cv = FALSE,
+    from_datafit = FALSE,
+    refmod_expected,
+    dtest_expected = NULL,
+    solterms_len_expected,
+    method_expected,
+    cv_method_expected = NULL,
+    valsearch_expected = NULL,
+    cl_search_expected = !from_datafit,
+    cl_eval_expected = !from_datafit,
+    nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
+    nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
+    seed_expected = seed_tst,
+    nloo_expected = NULL,
+    search_trms_empty_size = FALSE,
+    extra_tol = 1.1,
+    info_str = ""
 ) {
   # Preparations:
   dtest_type <- "train"
@@ -1117,6 +1124,11 @@ vsel_tester <- function(
   if (method_expected == "l1") {
     cl_search_expected <- !from_datafit
     nprjdraws_search_expected <- 1
+  }
+  if (search_trms_empty_size) {
+    # This is the "empty_size" setting, so we have to subtract the skipped model
+    # size (see issue #307):
+    solterms_len_expected <- solterms_len_expected - 1L
   }
 
   # Test the general structure of the object:
@@ -1171,9 +1183,14 @@ vsel_tester <- function(
       sub_trms_crr <- setdiff(sub_trms_crr, "1")
     }
     sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
-      as.formula(paste(
+      fml_tmp <- as.formula(paste(
         y_nm_i, "~", paste(sub_trms_crr, collapse = " + ")
       ))
+      if (all(grepl("\\+", sub_trms_crr))) {
+        # Avoid duplicated terms in the "empty_size" `search_terms` setting:
+        fml_tmp <- update(fml_tmp, . ~ .)
+      }
+      return(fml_tmp)
     })
     submodl_tester(
       vs$search_path$submodls[[i]],
@@ -1305,9 +1322,14 @@ vsel_tester <- function(
   # solution_terms
   expect_type(vs$solution_terms, "character")
   expect_length(vs$solution_terms, solterms_len_expected)
+  soltrms <- vs$solution_terms
+  for (soltrms_plus in grep("\\+", soltrms, value = TRUE)) {
+    soltrms <- setdiff(soltrms, soltrms_plus)
+    soltrms <- c(soltrms, labels(terms(as.formula(paste(". ~", soltrms_plus)))))
+  }
   expect_true(
-    all(vs$solution_terms %in% split_formula(vs$refmodel$formula,
-                                             add_main_effects = FALSE)),
+    all(soltrms %in% split_formula(vs$refmodel$formula,
+                                   add_main_effects = FALSE)),
     info = info_str
   )
 
@@ -1357,7 +1379,11 @@ vsel_tester <- function(
   }
 
   # nterms_max
-  expect_equal(vs$nterms_max, solterms_len_expected + 1, info = info_str)
+  nterms_max_expected <- solterms_len_expected + 1
+  if (search_trms_empty_size) {
+    nterms_max_expected <- nterms_max_expected + 1
+  }
+  expect_equal(vs$nterms_max, nterms_max_expected, info = info_str)
 
   # nterms_all
   expect_identical(vs$nterms_all, count_terms_in_formula(vs$refmodel$formula),
@@ -1409,6 +1435,9 @@ vsel_tester <- function(
 #   call.
 # @param nterms_max_expected A single numeric value as supplied to
 #   summary.vsel()'s argument `nterms_max`.
+# @param search_trms_empty_size A single logical value indicating whether
+#   `search_terms` was constructed in a way that causes a model size to be
+#   without candidate models.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to smmry_sel_tester(), apart from
@@ -1417,7 +1446,7 @@ vsel_tester <- function(
 #
 # @return `TRUE` (invisible).
 smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
-                         info_str, ...) {
+                         search_trms_empty_size = FALSE, info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
   pct_solterms_nm <- if ("pct_solution_terms_cv" %in% names(vsel_expected)) {
@@ -1455,6 +1484,11 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     nterms_ch <- vsel_expected$nterms_max - 1
   } else {
     nterms_ch <- nterms_max_expected
+  }
+  if (search_trms_empty_size) {
+    # This is the "empty_size" setting, so we have to subtract the skipped model
+    # size (see issue #307):
+    nterms_ch <- nterms_ch - 1
   }
   expect_identical(smmry$nterms, nterms_ch,
                    info = info_str)
@@ -1498,15 +1532,15 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 #
 # @return `TRUE` (invisible).
 smmry_sel_tester <- function(
-  smmry_sel,
-  summaries_ref,
-  stats_expected = NULL,
-  type_expected = NULL,
-  nterms_max_expected = NULL,
-  cv_method_expected = character(),
-  solterms_expected,
-  from_datafit = FALSE,
-  info_str
+    smmry_sel,
+    summaries_ref,
+    stats_expected = NULL,
+    type_expected = NULL,
+    nterms_max_expected = NULL,
+    cv_method_expected = character(),
+    solterms_expected,
+    from_datafit = FALSE,
+    info_str
 ) {
   if (is.null(stats_expected)) {
     stats_expected <- "elpd"

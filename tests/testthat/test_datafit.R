@@ -260,6 +260,9 @@ test_that(paste(
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = 1L,
       nprjdraws_eval_expected = 1L,
+      search_trms_empty_size =
+        length(args_vs_datafit[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
       extra_tol = 1.2,
       info_str = tstsetup
     )
@@ -289,6 +292,9 @@ test_that(paste(
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
       nprjdraws_search_expected = 1L,
       nprjdraws_eval_expected = 1L,
+      search_trms_empty_size =
+        length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),
       extra_tol = 1.2,
       info_str = tstsetup
     )
@@ -527,6 +533,9 @@ test_that(paste(
     smmry_tester(
       smmry,
       vsel_expected = vss_datafit[[tstsetup]],
+      search_trms_empty_size =
+        length(args_vs_datafit[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
       info_str = tstsetup,
       stats_expected = stats_common,
       type_expected = type_tst,
@@ -564,6 +573,9 @@ test_that(paste(
     smmry_tester(
       smmry,
       vsel_expected = cvvss_datafit[[tstsetup]],
+      search_trms_empty_size =
+        length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),
       info_str = tstsetup,
       stats_expected = stats_common,
       type_expected = type_tst,
@@ -750,6 +762,6 @@ test_that(paste(
       expect_true(sum(ind == solution_terms_lasso[[i]]) >= nterms / 2)
     }
   }
-  RNGversion(paste(R.Version()$major, R.Version()$minor, sep = "."))
+  RNGversion(getRversion())
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })

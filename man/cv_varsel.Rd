@@ -44,9 +44,9 @@ minimizer (during a forward search and also during the evaluation part, but
 the latter only if \code{refit_prj} is \code{TRUE}).}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
-L1 search and \code{"forward"} for forward search. If \code{NULL}, then \code{"forward"}
-is used if the reference model has multilevel or additive terms and \code{"L1"}
-otherwise. See also section "Details" below.}
+L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
+\code{"L1"} is used, except if the reference model has multilevel or additive
+terms or if \code{!is.null(search_terms)}. See also section "Details" below.}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
@@ -145,9 +145,13 @@ is smaller than the number of observations), for sampling the folds in
 K-fold CV, and for drawing new group-level effects when predicting from a
 multilevel submodel (however, not yet in case of a GAMM).}
 
-\item{search_terms}{A custom character vector of terms to consider for the
-search. The intercept (\code{"1"}) needs to be included explicitly. The default
-considers all the terms in the reference model's formula.}
+\item{search_terms}{Only relevant for forward search. A custom character
+vector of predictor term blocks to consider for the search. Section
+"Details" below describes more precisely what "predictor term block" means.
+The intercept (\code{"1"}) is always included internally via \code{union()}, so
+there's no difference between including it explicitly or omitting it. The
+default \code{search_terms} considers all the terms in the reference model's
+formula.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
@@ -177,7 +181,8 @@ linearly.
 
 For argument \code{method}, there are some restrictions: For a reference model
 with multilevel or additive formula terms, only the forward search is
-available.
+available. Furthermore, argument \code{search_terms} requires a forward search
+to take effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
@@ -187,6 +192,29 @@ overfitting when more predictors are added.
 An L1 search may select interaction terms before the corresponding main
 terms are selected. If this is undesired, choose the forward search
 instead.
+
+The elements of the \code{search_terms} character vector don't need to be
+individual predictor terms. Instead, they can be building blocks consisting
+of several predictor terms connected by the \code{+} symbol. To understand how
+these building blocks works, it is important to know how \pkg{projpred}'s
+forward search works: It starts with an empty vector \code{chosen} which will
+later contain already selected predictor terms. Then, the search iterates
+over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
+models at model size \eqn{j} are constructed from those elements from
+\code{search_terms} which yield model size \eqn{j} when combined with the
+\code{chosen} predictor terms. Note that sometimes, there may be no candidate
+models for model size \eqn{j}. Also note that internally, \code{search_terms} is
+expanded to include the intercept (\code{"1"}), so the first step of the search
+(model size 1) always consists of the intercept-only model as the only
+candidate.
+
+As a \code{search_terms} example, consider a reference model with formula \code{y ~ x1 + x2 + x3}. Then, to ensure that \code{x1} is always included in the
+candidate models, specify \code{search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")}. This search would start with \code{y ~ 1} as the only
+candidate at model size 1. At model size 2, \code{y ~ x1} would be the only
+candidate. At model size 3, \code{y ~ x1 + x2} and \code{y ~ x1 + x3} would be the
+two candidates. At the last model size of 4, \code{y ~ x1 + x2 + x3} would be
+the only candidate. As another example, to exclude \code{x1} from the search,
+specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 }
 \note{
 The case \code{cv_method == "LOO" && !validate_search} constitutes an

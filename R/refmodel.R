@@ -45,7 +45,9 @@
 #'   used for fitting the reference model) or from a new dataset. See also
 #'   section "Argument `extract_model_data`" below.
 #' @param family A [`family`] object representing the observational model (i.e.,
-#'   the distributional family for the response).
+#'   the distributional family for the response). May be `NULL` for
+#'   [get_refmodel.default()] in which case the family is retrieved from
+#'   `object`.
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
 #'   called `fits` containing the \eqn{K} model fits from which reference model
 #'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
@@ -64,15 +66,15 @@
 #'   (for \eqn{K}-fold CV). Note that `cvfits` takes precedence over `cvfun`,
 #'   i.e., if both are provided, `cvfits` is used.
 #' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
-#'   reference model fit for fold \eqn{k \in \{1, ..., K\}} (this model fit is
-#'   the \eqn{k}-th element of the return value of `cvfun` or the \eqn{k}-th
-#'   element of `cvfits$fits`, extended by elements `omitted` (containing the
-#'   indices of the left-out observations in that fold) and `projpred_k`
-#'   (containing the integer \eqn{k})), returns an object of the same type as
-#'   [init_refmodel()] does. Argument `cvrefbuilder` may be `NULL` for using an
-#'   internal default: [get_refmodel()] if `object` is not `NULL` and a function
-#'   calling [init_refmodel()] appropriately (with the assumption `dis = 0`) if
-#'   `object` is `NULL`.
+#'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
+#'   model fit is the \eqn{k}-th element of the return value of `cvfun` or the
+#'   \eqn{k}-th element of `cvfits$fits`, extended by elements `omitted`
+#'   (containing the indices of the left-out observations in that fold) and
+#'   `projpred_k` (containing the integer \eqn{k})), returns an object of the
+#'   same type as [init_refmodel()] does. Argument `cvrefbuilder` may be `NULL`
+#'   for using an internal default: [get_refmodel()] if `object` is not `NULL`
+#'   and a function calling [init_refmodel()] appropriately (with the assumption
+#'   `dis = 0`) if `object` is `NULL`.
 #' @param dis A vector of posterior draws for the dispersion parameter (if
 #'   existing). May be `NULL` if the model has no dispersion parameter or if the
 #'   model does have a dispersion parameter, but `object` is `NULL` (in which
@@ -453,23 +455,14 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   # Offsets:
-  # Element `stan_function` (needed for handling the offsets) is not documented
-  # in `?rstanarm::`stanreg-objects``, so check at least its length and type:
-  if (length(object$stan_function) != 1 ||
-      !is.vector(object$stan_function, mode = "character")) {
-    stop("Unexpected value of `object$stan_function`. Please notify the ",
-         "package maintainer.")
-  }
   if (length(object$offset) > 0) {
-    if (is.null(attr(terms(formula(object), data = data), "offset"))) {
-      # In this case, we would have to use argument `offset` of
-      # posterior_linpred.stanreg() to allow for new offsets, requiring changes
-      # in all ref_predfun() calls. Furthermore, there is rstanarm issue #541.
-      # Thus, throw an error:
-      stop("It looks like `object` was fitted with offsets specified via ",
-           "argument `offset`. Currently, projpred does not support offsets ",
-           "specified this way. Please use an `offset()` term in the model ",
-           "formula instead.")
+    # Element `stan_function` (needed here for handling rstanarm issue #546) is
+    # not documented in `?rstanarm::`stanreg-objects``, so check at least its
+    # length and type:
+    if (length(object$stan_function) != 1 ||
+        !is.vector(object$stan_function, mode = "character")) {
+      stop("Unexpected value of `object$stan_function`. Please notify the ",
+           "package maintainer.")
     }
     if (object$stan_function == "stan_gamm4") {
       stop("Because of rstanarm issue #546 (see GitHub), projpred cannot ",
@@ -529,27 +522,26 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   ref_predfun <- function(fit, newdata = NULL) {
-    linpred_out <- t(
-      posterior_linpred(fit, newdata = newdata)
-    )
-    # Use a workaround for rstanarm issue #541 and rstanarm issue #542. This
-    # workaround consists of using `cond_no_offs` which indicates whether
-    # posterior_linpred() excluded (`TRUE`) or included (`FALSE`) the offsets:
-    cond_no_offs <- (
-      fit$stan_function %in% c("stan_lmer", "stan_glmer") &&
-        !is.null(attr(terms(formula), "offset"))
-    ) || (
-      fit$stan_function %in% c("stan_lm", "stan_glm") &&
-        !is.null(newdata) && length(fit$offset) > 0
-    )
-    if (cond_no_offs) {
-      # Observation weights are not needed here, so use `wrhs = NULL` to avoid
-      # potential conflicts for a non-`NULL` default `wrhs`:
-      offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
-      stopifnot(length(offs) %in% c(1L, nrow(linpred_out)))
-      linpred_out <- linpred_out + offs
+    # The easiest way to deal with rstanarm issue #541 and rstanarm issue #542,
+    # changes between rstanarm versions 2.21.2 and 2.21.3 with respect to these
+    # issues, and the fact that offsets may be specified via argument `offset`
+    # of the respective model-fitting function (e.g., rstanarm::stan_glm()) is
+    # to include offsets explicitly in the call to
+    # rstanarm:::posterior_linpred.stanreg().
+
+    # Observation weights are not needed here, so use `wrhs = NULL` to avoid
+    # potential conflicts for a non-`NULL` default `wrhs`:
+    offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+    n_obs <- nrow(newdata %||% data)
+    if (length(offs) == 0) {
+      offs <- rep(0, n_obs)
+    } else if (length(offs) == 1) {
+      offs <- rep(offs, n_obs)
+    } else if (length(offs) != n_obs) {
+      stop("Unexpected length of element `offset` returned by ",
+           "extract_model_data() (see `?init_refmodel`).")
     }
-    return(linpred_out)
+    return(t(posterior_linpred(fit, newdata = newdata, offset = offs)))
   }
 
   cvfun <- function(folds) {
@@ -660,10 +652,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     } else if (all(y %in% c(0, 1)) &&
                length(response_name) == 1 &&
                !all(weights == 1)) {
-      warning(
-        "Assuming that the response contains numbers of successes (not ",
-        "proportions of successes), in contrast to glm()."
-      )
+      warning("Assuming that the response contains numbers of successes (not ",
+              "proportions of successes), in contrast to glm().")
     }
   }
 

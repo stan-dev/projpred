@@ -197,18 +197,25 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
     ))))
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
-      scaled_data <- preprocess_data(data, projpred_formula_no_random)
-      fit_gamm_callback(
+      if ("optimx" %in% control$optimizer &&
+          length(control$optCtrl$method) > 0 &&
+          control$optCtrl$method == "nlminb") {
+        stop("Encountering the `not positive definite` error while running ",
+             "the lme4 fitting procedure, but cannot fix this automatically ",
+             "anymore. You will probably have to tweak gamm4 tuning ",
+             "parameters manually (via `...`).")
+      }
+      return(fit_gamm_callback(
         formula = formula,
         projpred_formula_no_random = projpred_formula_no_random,
         projpred_random = projpred_random,
-        data = scaled_data,
+        data = data,
         family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
                                    optCtrl = list(method = "nlminb")),
         ...
-      )
+      ))
     } else {
       stop(e)
     }
@@ -267,7 +274,8 @@ fit_glmer_callback <- function(formula, family,
           control$optCtrl$method == "nlminb") {
         stop("Encountering the `not positive definite` error while running ",
              "the lme4 fitting procedure, but cannot fix this automatically ",
-             "anymore.")
+             "anymore. You will probably have to tweak lme4 tuning parameters ",
+             "manually (via `...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
@@ -277,16 +285,17 @@ fit_glmer_callback <- function(formula, family,
                                    optCtrl = list(method = "nlminb")),
         ...
       ))
-    } else if (grepl("PIRLS step-halvings", as.character(e))) {
+    } else if (grepl("PIRLS", as.character(e))) {
       if (length(dot_args$nAGQ) > 0) {
         nAGQ_new <- dot_args$nAGQ + 1L
       } else {
         nAGQ_new <- 20L
       }
       if (nAGQ_new > 30L) {
-        stop("Encountering the `PIRLS step-halvings` error while running the ",
-             "lme4 fitting procedure, but cannot fix this automatically ",
-             "anymore.")
+        stop("Encountering a PIRLS error while running the lme4 fitting ",
+             "procedure, but cannot fix this automatically anymore. You will ",
+             "probably have to tweak lme4 tuning parameters manually (via ",
+             "`...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
@@ -312,7 +321,8 @@ fit_glmer_callback <- function(formula, family,
         stop("Encountering the ",
              "`pwrssUpdate did not converge in (maxit) iterations` error ",
              "while running the lme4 fitting procedure, but cannot fix this ",
-             "automatically anymore.")
+             "automatically anymore. You will probably have to tweak lme4 ",
+             "tuning parameters manually (via `...`).")
       }
       return(fit_glmer_callback(
         formula = formula,
@@ -326,16 +336,6 @@ fit_glmer_callback <- function(formula, family,
       stop(e)
     }
   })
-}
-
-preprocess_data <- function(data, formula) {
-  tt <- extract_terms_response(formula)
-  non_group_terms <- c(tt$individual_terms, tt$interaction_terms)
-  X <- data %>%
-    dplyr::select(non_group_terms) %>%
-    scale()
-  data[, non_group_terms] <- X
-  return(data)
 }
 
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
@@ -527,6 +527,16 @@ repair_re.merMod <- function(object, newdata) {
   vnms <- names(ranef_tmp)
   lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
     from_fit <- rownames(ranef_tmp[[vnm]])
+    if (!vnm %in% names(newdata)) {
+      if (any(grepl("\\|.+/", labels(terms(formula(object)))))) {
+        stop("The `/` syntax for nested group-level terms is currently not ",
+             "supported. Please try to write out the interaction term implied ",
+             "by the `/` syntax (see Table 2 in lme4's vignette called ",
+             "\"Fitting Linear Mixed-Effects Models Using lme4\").")
+      } else {
+        stop("Could not find column `", vnm, "` in `newdata`.")
+      }
+    }
     from_new <- levels(as.factor(newdata[, vnm]))
     list(comb = union(from_fit, from_new),
          exist = intersect(from_new, from_fit),
