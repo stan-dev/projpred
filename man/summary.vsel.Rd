@@ -64,7 +64,7 @@ terms of \code{stats[1]}), respectively.}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
-arguments are \code{b} (the number of bootstrap samples, defaulting to \code{2000})
+arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
 and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
 \code{sample.int(.Machine$integer.max, 1)}).}
 }
