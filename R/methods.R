@@ -467,7 +467,7 @@ plot.vsel <- function(
 #'   terms of `stats[1]`), respectively.
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
-#'   arguments are `b` (the number of bootstrap samples, defaulting to `2000`)
+#'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
 #'   and `seed` (see [set.seed()], defaulting to
 #'   `sample.int(.Machine$integer.max, 1)`).
 #'

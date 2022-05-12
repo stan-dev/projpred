@@ -56,7 +56,7 @@ auc <- function(x) {
 # Bootstrap an arbitrary quantity `fun` that takes the sample `x` as the first
 # input. Other arguments of `fun` can be passed by `...`. Example:
 # `boostrap(x, mean)`.
-bootstrap <- function(x, fun = mean, b = 2000,
+bootstrap <- function(x, fun = mean, B = 2000,
                       seed = sample.int(.Machine$integer.max, 1), ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -67,8 +67,8 @@ bootstrap <- function(x, fun = mean, b = 2000,
 
   seq_x <- seq_len(NROW(x))
   is_vector <- NCOL(x) == 1
-  bsstat <- rep(NA, b)
-  for (i in 1:b) {
+  bsstat <- rep(NA, B)
+  for (i in 1:B) {
     bsind <- sample(seq_x, replace = TRUE)
     bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
   }
