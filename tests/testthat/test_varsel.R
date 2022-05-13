@@ -426,6 +426,7 @@ test_that(paste(
   "including all terms in `search_terms` gives the same results as the default",
   "`search_terms`"
 ), {
+  skip_if_not(run_vs)
   tstsetups <- grep("\\.alltrms", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_default <- sub("\\.alltrms", "\\.default_search_trms", tstsetup)
@@ -438,6 +439,7 @@ test_that(paste(
   "forcing the inclusion of a term in the candidate models via `search_terms`",
   "works as expected"
 ), {
+  skip_if_not(run_vs)
   tstsetups <- grep("\\.fixed", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     # In principle, `search_trms_tst$fixed$search_terms[1]` could be used
@@ -452,6 +454,7 @@ test_that(paste(
   "forcing the exclusion of a term in the candidate models via `search_terms`",
   "works as expected"
 ), {
+  skip_if_not(run_vs)
   tstsetups <- grep("\\.excluded", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     expect_false("xco.1" %in% solution_terms(vss[[tstsetup]]), info = tstsetup)
@@ -461,6 +464,7 @@ test_that(paste(
 test_that(paste(
   "forcing the skipping of a model size via `search_terms` works as expected"
 ), {
+  skip_if_not(run_vs)
   tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     expect_true(all(grepl("\\+", solution_terms(vss[[tstsetup]]))),
