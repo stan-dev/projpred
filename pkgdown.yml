@@ -3,7 +3,7 @@ pkgdown: 2.0.3
 pkgdown_sha: ~
 articles:
   projpred: projpred.html
-last_built: 2022-05-13T08:13Z
+last_built: 2022-05-13T19:13Z
 urls:
   reference: https://mc-stan.org/projpred/reference
   article: https://mc-stan.org/projpred/articles
