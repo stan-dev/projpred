@@ -19,7 +19,7 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="projpred: Projection predictive feature selection">
 <meta property="og:description" content="projpred">
-<meta property="og:image" content="https://mc-stan.org/projpred/logo.png">
+<meta property="og:image" content="https://mc-stan.org/projpred/logo.svg">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
       </span>
     </div>
 
@@ -133,7 +133,7 @@
       <h1 data-toc-skip>projpred: Projection predictive feature
 selection</h1>
             
-            <h4 data-toc-skip class="date">2022-04-04</h4>
+            <h4 data-toc-skip class="date">2022-05-13</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/projpred.Rmd" class="external-link"><code>vignettes/projpred.Rmd</code></a></small>
       <div class="hidden name"><code>projpred.Rmd</code></div>
@@ -182,7 +182,7 @@ selection is to find a subset of a set of candidate predictors which is
 as small as possible but achieves a predictive performance as close as
 possible to that of the reference model.</p>
 <p>The <strong>projpred</strong> package is compatible with reference
-models fit by the <strong>rstanarm</strong> and <strong>brms</strong>
+models fitted by the <strong>rstanarm</strong> and <strong>brms</strong>
 packages. To our knowledge, <strong>rstanarm</strong> and
 <strong>brms</strong> are currently the only packages for which a
 <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> method (which establishes the compatibility
@@ -198,12 +198,12 @@ allow to avoid this assumption, but for <strong>rstanarm</strong> and
 which simplifies implementation in <strong>projpred</strong> a lot.</p>
 <p>Here, we use the <strong>rstanarm</strong> package to fit the
 reference model. If you want to use the <strong>brms</strong> package,
-you simply have to replace the <strong>rstanarm</strong> fit (of class
+simply replace the <strong>rstanarm</strong> fit (of class
 <code>stanreg</code>) in all the code below by your
 <strong>brms</strong> fit (of class <code>brmsfit</code>). Only note
-that in case of a <strong>brms</strong> fit, argument
-<code>brms_seed</code> of <code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> is
-necessary to ensure reproducible results in a K-fold CV.</p>
+that in case of a <strong>brms</strong> fit, we recommend to specify
+argument <code>brms_seed</code> of
+<code>brms:::get_refmodel.brmsfit()</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/rstanarm/" class="external-link">rstanarm</a></span><span class="op">)</span></code></pre></div>
 <p>For our <strong>rstanarm</strong> reference model, we use the
@@ -285,17 +285,15 @@ solution path.</p>
 <code><a href="../reference/varsel.html">varsel()</a></code>, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> performs a
 cross-validation (CV) by running the search part with the training data
 of each CV fold separately (an exception is
-<code>validate_search = FALSE</code>, see <code><a href="../reference/cv_varsel.html">?cv_varsel</a></code>) and
-running the evaluation part on the corresponding test set of each CV
-fold. Because of this CV, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> is recommended over
-<code><a href="../reference/varsel.html">varsel()</a></code>. Thus, we use <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> here.
-Nonetheless, running <code><a href="../reference/varsel.html">varsel()</a></code> first can offer a rough idea
-of the performance of the projections (i.e., of the submodels after
-projecting the reference model onto them). The same holds for
-<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> with <code>validate_search = FALSE</code>
-(which only takes effect for <code>cv_method = "LOO"</code>). A more
-principled <strong>projpred</strong> workflow is work under
-progress.</p>
+<code>validate_search = FALSE</code>, see <code><a href="../reference/cv_varsel.html">?cv_varsel</a></code> and
+below) and running the evaluation part on the corresponding test set of
+each CV fold. Because of this CV, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> is
+recommended over <code><a href="../reference/varsel.html">varsel()</a></code>. Thus, we use
+<code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> here. Nonetheless, running
+<code><a href="../reference/varsel.html">varsel()</a></code> first can offer a rough idea of the performance of
+the projections (i.e., of the submodels after projecting the reference
+model onto them). A more principled <strong>projpred</strong> workflow
+is work under progress.</p>
 <!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of reference models"](#refmodtypes) below). -->
 <!-- ```{r} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
@@ -306,25 +304,28 @@ progress.</p>
 <!-- ``` -->
 <p>Here, we use only some of the available arguments; see the
 documentation of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> for the full list of
-arguments. By modifying argument <code>cv_method</code>, we use a K-fold
-CV instead of a leave-one-out (LOO) CV. We do this here only to make
-this vignette build faster. When the computation time is not an issue,
-we recommend using LOO-CV as it is likely to be more accurate.
-Similarly, we set <code>nclusters_pred</code> to a low value of
-<code>20</code> only to speed up the building of the vignette. By
-modifying argument <code>nterms_max</code>, we impose a limit on the
-submodel size until which the search is continued. Typically, one has to
-run the variable selection with a large <code>nterms_max</code> first
-(the default value may not even be large enough) and only after
-inspecting the results from this first run, one is able to set a
-reasonable <code>nterms_max</code> in subsequent runs. The value we are
-using here (<code>9</code>) is based on such a first run (which is not
-shown here, though).</p>
+arguments. By default, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> runs a leave-one-out
+(LOO) CV (see argument <code>cv_method</code>) which also
+cross-validates the search (see argument <code>validate_search</code>).
+Here, we set argument <code>validate_search</code> to <code>FALSE</code>
+to obtain rough preliminary results and make this vignette build faster.
+If possible (in terms of computation time), we recommend using the
+default of <code>validate_search = TRUE</code> to avoid overfitting in
+the selection of the submodel size. Here, we also set
+<code>nclusters_pred</code> to a low value of <code>20</code> only to
+speed up the building of the vignette. By modifying argument
+<code>nterms_max</code>, we impose a limit on the submodel size until
+which the search is continued. Typically, one has to run the variable
+selection with a large <code>nterms_max</code> first (the default value
+may not even be large enough) and only after inspecting the results from
+this first run, one is able to set a reasonable <code>nterms_max</code>
+in subsequent runs. The value we are using here (<code>9</code>) is
+based on such a first run (which is not shown here, though).</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span>
   <span class="va">refm_fit</span>,
   <span class="co">### Only for the sake of speed (not recommended in general):</span>
-  cv_method <span class="op">=</span> <span class="st">"kfold"</span>,
+  validate_search <span class="op">=</span> <span class="cn">FALSE</span>,
   nclusters_pred <span class="op">=</span> <span class="fl">20</span>,
   <span class="co">###</span>
   nterms_max <span class="op">=</span> <span class="fl">9</span>,
@@ -345,13 +346,17 @@ but with <code>deltas = TRUE</code>, they are calculated as differences
 from a baseline model (which is the reference model by default, at least
 in the most common cases). Since the differences are usually of more
 interest (with regard to the submodel size decision), we directly plot
-with <code>deltas = TRUE</code> here:</p>
+with <code>deltas = TRUE</code> here (note that as
+<code>validate_search = FALSE</code>, this result is slightly
+optimistic, and the plot looks different when
+<code>validate_search = TRUE</code> is used):</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"elpd"</span>, <span class="st">"rmse"</span><span class="op">)</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-9-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Based on that plot, we would decide for a submodel size of 6 because
 that’s the point where the performance measures level off and are close
-enough to the reference model’s performance.</p>
+enough to the reference model’s performance (this is also affected by
+<code>validate_search = FALSE</code>).</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">modsize_decided</span> <span class="op">&lt;-</span> <span class="fl">6</span></code></pre></div>
 <p>Note that <strong>projpred</strong> offers the
@@ -362,7 +367,8 @@ interpreted with caution (see <code><a href="../reference/suggest_size.html">?su
 <code class="sourceCode R"><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span></code></pre></div>
 <pre><code>[1] 6</code></pre>
 <p>Here, we would get the same final submodel size (<code>6</code>) as
-by our manual decision.</p>
+by our manual decision (<code><a href="../reference/suggest_size.html">suggest_size()</a></code> is also affected by
+<code>validate_search = FALSE</code>).</p>
 <p>Only now, after we have made a decision for the submodel size, we
 inspect further results from the variable selection and, in particular,
 the solution path. For example, we can simply <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> the
@@ -376,24 +382,24 @@ Link function: identity
 Formula: y ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 + X10 + X11 + 
     X12 + X13 + X14 + X15 + X16 + X17 + X18 + X19 + X20
 Observations: 100
-CV method: kfold search included 
+CV method: LOO search not included 
 Search method: l1, maximum number of terms 9
 Number of clusters used for selection: 1
 Number of clusters used for prediction: 20
 Suggested Projection Size: 6
 
 Selection Summary:
- size solution_terms elpd.kfold  se  diff diff.se
-    0           &lt;NA&gt;     -252.3 6.0 -99.3     7.9
-    1             X1     -234.0 6.5 -81.0     8.1
-    2            X14     -217.1 7.3 -64.2     7.7
-    3             X5     -207.1 7.0 -54.1     7.5
-    4            X20     -196.6 7.4 -43.7     7.8
-    5             X6     -177.1 6.3 -24.2     6.8
-    6             X3     -155.3 5.7  -2.4     5.0
-    7             X8     -147.5 4.8   5.4     3.5
-    8            X11     -143.8 4.8   9.2     2.5
-    9            X10     -146.8 5.4   6.1     2.3</code></pre>
+ size solution_terms elpd.loo  se   diff diff.se
+    0           &lt;NA&gt;   -249.2 5.6 -100.8     7.8
+    1             X1   -230.6 6.1  -82.2     8.3
+    2            X14   -205.1 6.2  -56.7     7.5
+    3             X5   -196.5 7.3  -48.2     7.6
+    4            X20   -177.8 5.9  -29.4     6.4
+    5             X6   -168.8 5.0  -20.4     6.2
+    6             X3   -146.4 5.2    1.9     4.6
+    7             X8   -138.2 4.5   10.2     3.5
+    8            X11   -135.2 4.4   13.1     2.5
+    9            X10   -134.8 4.4   13.6     2.4</code></pre>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">### Alternative modifying the number of printed decimal places:</span>
 <span class="co"># print(cvvs, digits = 2)</span>
@@ -463,15 +469,15 @@ marginals of the projected posterior:</p>
   <span class="va">prj_drws</span>,
   <span class="st">"median"</span>, <span class="st">"mad"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">x</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span>
 <span class="op">)</span><span class="op">)</span></code></pre></div>
-<pre><code>     variable     median        mad       2.5%      97.5%
-1 (Intercept)  0.0431398 0.09753603 -0.1651161  0.2414998
-2          X1  1.3815332 0.09095395  1.1814195  1.5621514
-3         X14 -1.1073574 0.07753817 -1.2947740 -0.9411840
-4          X5 -0.9210807 0.10470661 -1.1390071 -0.7174917
-5         X20 -1.1375582 0.12359746 -1.3723576 -0.8913235
-6          X6  0.5432313 0.08889976  0.3473669  0.7299743
-7          X3  0.7752932 0.10697483  0.5729812  0.9749985
-8       sigma  1.1275936 0.07841493  0.9807185  1.3078808</code></pre>
+<pre><code>     variable      median        mad       2.5%      97.5%
+1 (Intercept)  0.04648206 0.09668587 -0.1488236  0.2385997
+2          X1  1.37787022 0.08877716  1.1748630  1.5602974
+3         X14 -1.11470328 0.08589042 -1.2963313 -0.9215542
+4          X5 -0.92397042 0.11238732 -1.1436158 -0.7046140
+5         X20 -1.11797985 0.12002328 -1.3301804 -0.9110209
+6          X6  0.54013371 0.09038704  0.3710599  0.7248236
+7          X3  0.77514379 0.09488453  0.5881578  0.9547983
+8       sigma  1.12599091 0.08129363  0.9889443  1.2994112</code></pre>
 <p>A visualization of the projected posterior can be achieved with the
 <strong>bayesplot</strong> package, for example using its
 <code><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals()</a></code> function.</p>
@@ -522,10 +528,10 @@ predictive distributions:<a href="#fn6" class="footnote-ref" id="fnref6"><sup>6<
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">prj_linpred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_linpred</a></span><span class="op">(</span><span class="va">prj</span>, newdata <span class="op">=</span> <span class="va">dat_gauss_new</span>, integrated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">dat_gauss_new</span>, linpred <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">prj_linpred</span><span class="op">$</span><span class="va">pred</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<pre><code>  X1 X14 X5 X20 X6 X3    linpred
-1 -1  -1 -1  -1 -1 -1  0.5145220
-2  0   0  0   0  0  0  0.0386343
-3  1   1  1   1  1  1 -0.4372534</code></pre>
+<pre><code>  X1 X14 X5 X20 X6 X3     linpred
+1 -1  -1 -1  -1 -1 -1  0.50689656
+2  0   0  0   0  0  0  0.04246826
+3  1   1  1   1  1  1 -0.42196003</code></pre>
 <p>If <code>dat_gauss_new</code> also contained response values (i.e.,
 <code>y</code> values in this example), then <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>
 would also evaluate the log predictive density at these.</p>
@@ -536,7 +542,7 @@ encompasses not only the uncertainty arising from parameter estimation,
 but also the uncertainty arising from the observational (or “sampling”)
 model for the response.<a href="#fn7" class="footnote-ref" id="fnref7"><sup>7</sup></a> This is useful for what is usually termed a
 posterior predictive check (PPC), but would have to be termed something
-like a posterior-projected predictive check (PPPC) here.</p>
+like a posterior-projection predictive check (PPPC) here.</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">prj_predict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_predict</a></span><span class="op">(</span><span class="va">prj</span>, .seed <span class="op">=</span> <span class="fl">762805</span><span class="op">)</span>
 <span class="co"># Using the 'bayesplot' package:</span>
@@ -733,14 +739,12 @@ terms.<a href="#fnref10" class="footnote-back">↩︎</a></p></li>
 
       <footer><div class="copyright">
   <p></p>
-<p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
-Frank Weber, Aki Vehtari.</p>
+<p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Frank Weber, Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
-2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
 </div>
 
       </footer>

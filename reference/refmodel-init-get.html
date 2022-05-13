@@ -4,7 +4,7 @@ model structure from a specific object. The methods for get_refmodel()
 usually call init_refmodel() which is the underlying workhorse (and may
 also be used directly without a call to get_refmodel()). Some arguments are
 for \(K\)-fold cross-validation (\(K\)-fold CV) only; see cv_varsel()
-for the use of \(K\)-fold CV in projpred."><meta property="og:image" content="https://mc-stan.org/projpred/logo.png"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+for the use of \(K\)-fold CV in projpred."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]--></head><body data-spy="scroll" data-target="#toc">
@@ -22,7 +22,7 @@ for the use of \(K\)-fold CV in projpred."><meta property="og:image" content="ht
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
       </span>
     </div>
 
@@ -174,7 +174,9 @@ function <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-l
 <code><a href="https://rdrr.io/pkg/gamm4/man/gamm4.html" class="external-link">gamm4::gamm4()</a></code>) as well as the notes in section "Formula terms" below.</p></dd>
 <dt>family</dt>
 <dd><p>A <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">family</a></code> object representing the observational model (i.e.,
-the distributional family for the response).</p></dd>
+the distributional family for the response). May be <code>NULL</code> for
+<code>get_refmodel.default()</code> in which case the family is retrieved from
+<code>object</code>.</p></dd>
 <dt>data</dt>
 <dd><p>Data used for fitting the reference model. Any <code>contrasts</code>
 attributes of the dataset's columns are silently removed.</p></dd>
@@ -227,15 +229,15 @@ case <code>0</code> is used for <code>dis</code>). Note that for the <code><a hr
 is the standard deviation, not the variance.</p></dd>
 <dt>cvrefbuilder</dt>
 <dd><p>For \(K\)-fold CV only. A function that, given a
-reference model fit for fold \(k \in \{1, ..., K\}\) (this model fit is
-the \(k\)-th element of the return value of <code>cvfun</code> or the \(k\)-th
-element of <code>cvfits$fits</code>, extended by elements <code>omitted</code> (containing the
-indices of the left-out observations in that fold) and <code>projpred_k</code>
-(containing the integer \(k\))), returns an object of the same type as
-<code>init_refmodel()</code> does. Argument <code>cvrefbuilder</code> may be <code>NULL</code> for using an
-internal default: <code>get_refmodel()</code> if <code>object</code> is not <code>NULL</code> and a function
-calling <code>init_refmodel()</code> appropriately (with the assumption <code>dis = 0</code>) if
-<code>object</code> is <code>NULL</code>.</p></dd>
+reference model fit for fold \(k \in \{1, ..., K\}\) (this
+model fit is the \(k\)-th element of the return value of <code>cvfun</code> or the
+\(k\)-th element of <code>cvfits$fits</code>, extended by elements <code>omitted</code>
+(containing the indices of the left-out observations in that fold) and
+<code>projpred_k</code> (containing the integer \(k\))), returns an object of the
+same type as <code>init_refmodel()</code> does. Argument <code>cvrefbuilder</code> may be <code>NULL</code>
+for using an internal default: <code>get_refmodel()</code> if <code>object</code> is not <code>NULL</code>
+and a function calling <code>init_refmodel()</code> appropriately (with the assumption
+<code>dis = 0</code>) if <code>object</code> is <code>NULL</code>.</p></dd>
 </dl></div>
     <div id="value">
     <h2>Value</h2>
@@ -394,13 +396,11 @@ exception is that <code>y</code> may also be <code>NULL</code> (depending on arg
 
 
       <footer><div class="copyright">
-  <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina,
-Frank Weber, Aki Vehtari.</p>
+  <p></p><p>Developed by Juho Piironen, Markus Paasiniemi, Alejandro Catalina, Frank Weber, Aki Vehtari.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
-2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
 </div>
 
       </footer></div>
