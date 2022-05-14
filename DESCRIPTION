@@ -16,13 +16,14 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
              person("Hamada S.", "Badr", role = "ctb"))
 Description:
-    Performs projection predictive feature selection for generalized linear
-    models and generalized linear and additive multilevel models (see Piironen,
-    Paasiniemi and Vehtari, 2020, <doi:10.1214/20-EJS1711>; Catalina, Bürkner
-    and Vehtari, 2020, <arXiv:2010.06994>). The package is compatible with the
-    'rstanarm' and 'brms' packages, but other reference models can also be used.
-    See the documentation as well as the package vignette for more information
-    and examples.
+    Performs projection predictive feature selection for generalized linear and
+    additive models as well as for generalized linear and additive multilevel
+    models (see Piironen, Paasiniemi and Vehtari, 2020,
+    <doi:10.1214/20-EJS1711>; Catalina, Bürkner and Vehtari, 2020,
+    <arXiv:2010.06994>). The package is compatible with the 'rstanarm' and
+    'brms' packages, but other reference models can also be used. See the
+    documentation as well as the package vignette for more information and
+    examples.
 License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
