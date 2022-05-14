@@ -63,5 +63,5 @@ Suggests:
 LinkingTo: Rcpp, RcppArmadillo
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 VignetteBuilder: knitr, rmarkdown
