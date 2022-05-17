@@ -197,8 +197,10 @@ cv_varsel.refmodel <- function(
     sel <- sel_cv$sel
   }
 
-  # Find out how many CV folds select the same variables as the selection with
-  # all the data (assuming all CV folds have equal weight):
+  # Create `pct_solution_terms_cv`, a summary table of the fold-wise solution
+  # paths. For the column names (and therefore the order of the solution terms
+  # in the columns), the solution path from the full-data search is used. Note
+  # that the following code assumes that all CV folds have equal weight.
   candidate_terms <- split_formula(refmodel$formula,
                                    data = refmodel$fetch_data(),
                                    add_main_effects = FALSE)
