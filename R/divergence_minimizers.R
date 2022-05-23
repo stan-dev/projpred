@@ -449,7 +449,7 @@ predict.subfit <- function(subfit, newdata = NULL) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(subfit$x))))
     } else {
-      return(subfit$x %*% rbind(alpha, beta))
+      return(cbind(1, subfit$x) %*% rbind(alpha, beta))
     }
   } else {
     # TODO: In the following model.matrix() call, allow user-specified contrasts
