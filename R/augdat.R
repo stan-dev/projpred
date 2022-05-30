@@ -2,27 +2,33 @@
 # Helper functions for the augmented-data projection
 #__________________________________________________________________________
 
-# The augmented-data projection makes extensive use of *augmented-rows matrices*
-# and *augmented-length vectors*. In the following, \eqn{N},
-# \eqn{C_{\mbox{cat}}}{C_cat}, \eqn{C_{\mbox{lat}}}{C_lat},
-# \eqn{S_{\mbox{ref}}}{S_ref}, and \eqn{S_{\mbox{prj}}}{S_prj} from help topic
-# [refmodel-init-get] are used. Furthermore, let \eqn{C} denote either
-# \eqn{C_{\mbox{cat}}}{C_cat} or \eqn{C_{\mbox{lat}}}{C_lat}, whichever is
-# appropriate in the context where it is used (e.g., for `ref_predfun`'s output,
-# \eqn{C = C_{\mbox{lat}}}{C = C_lat}). Similarly, let \eqn{S} denote either
-# \eqn{S_{\mbox{ref}}}{S_ref} or \eqn{S_{\mbox{prj}}}{S_prj}, whichever is
-# appropriate in the context where it is used. Then an augmented-rows matrix is
-# a matrix with \eqn{N \cdot C}{N * C} rows in \eqn{C} blocks of \eqn{N} rows,
-# i.e., with the \eqn{N} observations nested in the \eqn{C} (latent) response
-# categories. For ordered response categories, the \eqn{C} (latent) response
-# categories (i.e., the row blocks) have to be sorted increasingly. The columns
-# of an augmented-rows matrix have to correspond to the \eqn{S} parameter draws,
-# just like for the non-augmented-data projection. An augmented-rows matrix is
-# of class `augmat` (inheriting from classes `matrix` and `array`) and needs to
-# have the value of \eqn{N} stored in an attribute called `nobs_orig`. An
-# augmented-length vector (class `augvec`) is the vector resulting from
-# subsetting an augmented-rows matrix to extract a single column and thereby
-# dropping dimensions.
+#' Augmented-data projection: Internals
+#'
+#' The augmented-data projection makes extensive use of *augmented-rows matrices*
+#' and *augmented-length vectors*. In the following, \eqn{N},
+#' \eqn{C_{\mbox{cat}}}{C_cat}, \eqn{C_{\mbox{lat}}}{C_lat},
+#' \eqn{S_{\mbox{ref}}}{S_ref}, and \eqn{S_{\mbox{prj}}}{S_prj} from help topic
+#' [refmodel-init-get] are used. Furthermore, let \eqn{C} denote either
+#' \eqn{C_{\mbox{cat}}}{C_cat} or \eqn{C_{\mbox{lat}}}{C_lat}, whichever is
+#' appropriate in the context where it is used (e.g., for `ref_predfun`'s output,
+#' \eqn{C = C_{\mbox{lat}}}{C = C_lat}). Similarly, let \eqn{S} denote either
+#' \eqn{S_{\mbox{ref}}}{S_ref} or \eqn{S_{\mbox{prj}}}{S_prj}, whichever is
+#' appropriate in the context where it is used. Then an augmented-rows matrix is
+#' a matrix with \eqn{N \cdot C}{N * C} rows in \eqn{C} blocks of \eqn{N} rows,
+#' i.e., with the \eqn{N} observations nested in the \eqn{C} (latent) response
+#' categories. For ordered response categories, the \eqn{C} (latent) response
+#' categories (i.e., the row blocks) have to be sorted increasingly. The columns
+#' of an augmented-rows matrix have to correspond to the \eqn{S} parameter draws,
+#' just like for the non-augmented-data projection. An augmented-rows matrix is
+#' of class `augmat` (inheriting from classes `matrix` and `array`) and needs to
+#' have the value of \eqn{N} stored in an attribute called `nobs_orig`. An
+#' augmented-length vector (class `augvec`) is the vector resulting from
+#' subsetting an augmented-rows matrix to extract a single column and thereby
+#' dropping dimensions.
+#'
+#' @name augdat-internals
+#' @keywords internal
+NULL
 
 # Convert a 3-dimensional array to an augmented-rows matrix.
 #
