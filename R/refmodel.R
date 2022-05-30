@@ -600,7 +600,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
-    if (!latent_proj && family$family != "binomial") {
+    if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
     }
   } else if (length(response_name) > 2) {
