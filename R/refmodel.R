@@ -440,7 +440,7 @@ refprd <- function(fit, newdata = NULL) {
   if (inherits(wrhs, "formula")) {
     weights <- eval_rhs(wrhs, newdata)
   } else if (is.null(wrhs)) {
-    weights <- rep(1, NROW(newdata))
+    weights <- rep(1, nrow(newdata))
   } else {
     weights <- wrhs
   }
@@ -448,7 +448,7 @@ refprd <- function(fit, newdata = NULL) {
   if (inherits(orhs, "formula")) {
     offset <- eval_rhs(orhs, newdata)
   } else if (is.null(orhs)) {
-    offset <- rep(0, NROW(newdata))
+    offset <- rep(0, nrow(newdata))
   } else {
     offset <- orhs
   }
@@ -843,9 +843,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun <- function(fit, newdata = NULL) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
-        return(matrix(rep(NA, NROW(data))))
+        return(matrix(rep(NA, nrow(data))))
       } else {
-        return(matrix(rep(NA, NROW(newdata))))
+        return(matrix(rep(NA, nrow(newdata))))
       }
     }
   }
@@ -951,7 +951,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
+    offset <- rep(0, length(y))
   }
 
   # For avoiding the warning "contrasts dropped from factor <factor_name>" when
