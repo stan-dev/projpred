@@ -432,10 +432,7 @@ get_refmodel.stanreg <- function(object, ...) {
   # Data --------------------------------------------------------------------
 
   data <- object$data
-  if (!is.data.frame(data) && !is.matrix(data)) {
-    stop("`object$data` must be a `data.frame` or a `matrix` (but a ",
-         "`data.frame` is recommended).")
-  }
+  stopifnot(is.data.frame(data))
 
   # Weights (for the observations):
   if (family$family == "binomial" && length(object$weights) > 0) {
