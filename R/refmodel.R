@@ -789,61 +789,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  # Data --------------------------------------------------------------------
-
-  model_data <- extract_model_data(object, newdata = data)
-  weights <- model_data$weights
-  offset <- model_data$offset
-  y <- model_data$y
-
-  # Add (transformed) response under the (possibly) new name:
-  data[, response_name] <- y
-
-  target <- .get_standard_y(y, weights, family)
-  y <- target$y
-  weights <- target$weights
-
-  if (aug_data) {
-    y <- as.factor(y)
-    stopifnot(nlevels(y) >= 2)
-    if (!identical(levels(y), family$cats)) {
-      stop("The levels of the response variable (after coercing it to a ",
-           "`factor`) have to be identical to `family$cats`. See the ",
-           "documentation for extend_family()'s argument `augdat_y_unqs` to ",
-           "solve this.")
-    }
-  } else if (family$family == "binomial") {
-    if (!all(.is.wholenumber(y))) {
-      stop("In projpred, the response must contain numbers of successes (not ",
-           "proportions of successes), in contrast to glm() where this is ",
-           "possible for a 1-column response if the multiplication with the ",
-           "weights gives whole numbers.")
-    } else if (all(y %in% c(0, 1)) &&
-               length(response_name) == 1 &&
-               !all(weights == 1)) {
-      warning("Assuming that the response contains numbers of successes (not ",
-              "proportions of successes), in contrast to glm().")
-    }
-  }
-
-  if (aug_data && !all(weights == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-
-  if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
-  }
-
-  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
-  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
-  has_contr <- sapply(data, function(data_col) {
-    !is.null(attr(data_col, "contrasts"))
-  })
-  for (idx_col in which(has_contr)) {
-    attr(data[[idx_col]], "contrasts") <- NULL
-  }
-
   # Functions ---------------------------------------------------------------
 
   if (proper_model) {
@@ -898,7 +843,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun <- function(fit, newdata = NULL) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
-        return(matrix(rep(NA, NROW(y))))
+        return(matrix(rep(NA, NROW(data))))
       } else {
         return(matrix(rep(NA, NROW(newdata))))
       }
@@ -951,7 +896,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       cvrefbuilder <- function(cvfit) {
         init_refmodel(
           object = NULL,
-          data = fetch_data_wrapper(obs = setdiff(seq_along(y), cvfit$omitted)),
+          data = fetch_data_wrapper(obs = setdiff(seq_len(nrow(data)),
+                                                  cvfit$omitted)),
           formula = formula,
           family = family,
           div_minimizer = div_minimizer,
@@ -960,6 +906,61 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         )
       }
     }
+  }
+
+  # Data --------------------------------------------------------------------
+
+  model_data <- extract_model_data(object, newdata = data)
+  weights <- model_data$weights
+  offset <- model_data$offset
+  y <- model_data$y
+
+  # Add (transformed) response under the (possibly) new name:
+  data[, response_name] <- y
+
+  target <- .get_standard_y(y, weights, family)
+  y <- target$y
+  weights <- target$weights
+
+  if (aug_data) {
+    y <- as.factor(y)
+    stopifnot(nlevels(y) >= 2)
+    if (!identical(levels(y), family$cats)) {
+      stop("The levels of the response variable (after coercing it to a ",
+           "`factor`) have to be identical to `family$cats`. See the ",
+           "documentation for extend_family()'s argument `augdat_y_unqs` to ",
+           "solve this.")
+    }
+  } else if (family$family == "binomial") {
+    if (!all(.is.wholenumber(y))) {
+      stop("In projpred, the response must contain numbers of successes (not ",
+           "proportions of successes), in contrast to glm() where this is ",
+           "possible for a 1-column response if the multiplication with the ",
+           "weights gives whole numbers.")
+    } else if (all(y %in% c(0, 1)) &&
+               length(response_name) == 1 &&
+               !all(weights == 1)) {
+      warning("Assuming that the response contains numbers of successes (not ",
+              "proportions of successes), in contrast to glm().")
+    }
+  }
+
+  if (aug_data && !all(weights == 1)) {
+    stop("Currently, the augmented-data projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+
+  if (is.null(offset)) {
+    offset <- rep(0, NROW(y))
+  }
+
+  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
+  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
+  has_contr <- sapply(data, function(data_col) {
+    !is.null(attr(data_col, "contrasts"))
+  })
+  for (idx_col in which(has_contr)) {
+    attr(data[[idx_col]], "contrasts") <- NULL
   }
 
   # mu ----------------------------------------------------------------------
