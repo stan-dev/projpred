@@ -33,6 +33,7 @@ init_refmodel(
   cvfits = NULL,
   dis = NULL,
   cvrefbuilder = NULL,
+  latent_proj = FALSE,
   ...
 )
 }
@@ -124,6 +125,9 @@ same type as \code{\link[=init_refmodel]{init_refmodel()}} does. Argument \code{
 for using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL}
 and a function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption
 \code{dis = 0}) if \code{object} is \code{NULL}.}
+
+\item{latent_proj}{A single logical value indicating whether to use the
+latent projection (\code{TRUE}) or not (\code{FALSE}).}
 }
 \value{
 An object that can be passed to all the functions that take the

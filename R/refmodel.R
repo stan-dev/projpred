@@ -80,6 +80,8 @@
 #'   model does have a dispersion parameter, but `object` is `NULL` (in which
 #'   case `0` is used for `dis`). Note that for the [gaussian()] `family`, `dis`
 #'   is the standard deviation, not the variance.
+#' @param latent_proj A single logical value indicating whether to use the
+#'   latent projection (`TRUE`) or not (`FALSE`).
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. For [init_refmodel()]:
@@ -720,8 +722,13 @@ get_refmodel.stanreg <- function(object, ...) {
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL, ...) {
+                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL,
+                          latent_proj = FALSE, ...) {
   # Family ------------------------------------------------------------------
+
+  if (latent_proj) {
+    family <- gaussian()
+  }
 
   if (family$family == "Student_t") {
     warning("Support for the `Student_t` family is still experimental.")
@@ -779,6 +786,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
+  if (latent_proj) {
+    response_name <- paste0(".", response_name[1])
+  }
   formula <- update(formula, paste(response_name[1], "~ ."))
   if (formula_contains_additive_terms(formula)) {
     if (aug_data) {
@@ -913,7 +923,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   model_data <- extract_model_data(object, newdata = data)
   weights <- model_data$weights
   offset <- model_data$offset
-  y <- model_data$y
+  if (latent_proj) {
+    y <- rowMeans(ref_predfun(object))
+  } else {
+    y <- model_data$y
+  }
 
   # Add (transformed) response under the (possibly) new name:
   data[, response_name] <- y
@@ -984,7 +998,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Miscellaneous -----------------------------------------------------------
 
   ndraws <- ncol(mu)
-  if (is.null(dis)) {
+  if (latent_proj) {
+    ## latent noise is fixed
+    dis <- rep(1, ndraws)
+  } else if (is.null(dis)) {
     if (!.has_dispersion(family)) {
       dis <- rep(NA, ndraws)
     } else {
