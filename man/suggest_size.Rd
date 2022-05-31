@@ -25,8 +25,8 @@ suggest_size(object, ...)
 See section "Details" below for some important arguments which may be
 passed here.}
 
-\item{stat}{Statistic used for the decision. See \code{\link[=summary.vsel]{summary.vsel()}} for
-possible choices.}
+\item{stat}{Statistic used for the decision. See argument \code{stats} of
+\code{\link[=summary.vsel]{summary.vsel()}} for possible choices.}
 
 \item{pct}{A number giving the relative proportion (\emph{not} percents) between
 baseline model and null model utilities one is willing to sacrifice. See
@@ -48,21 +48,25 @@ examine the results via \code{\link[=plot.vsel]{plot.vsel()}} and/or \code{\link
 final decision based on what is most appropriate for the problem at hand.
 }
 \details{
-The suggested model size is the smallest model size for which either
+The suggested model size is the smallest model size \eqn{k \in \{0,
+  1, ..., \texttt{nterms\_max\}}}{k = 0, 1, ..., nterms_max} for which either
 the lower or upper bound (depending on argument \code{type}) of the
-normal-approximation confidence interval (with nominal coverage \code{1 - alpha}, see argument \code{alpha} of \code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{u_k -
-  u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k} denoting the \eqn{k}-th
-submodel's utility and \eqn{u_{\mbox{base}}}{u_base} denoting the baseline
-model's utility) falls above (or is equal to) \deqn{\mbox{pct} \cdot (u_0 -
-  u_{\mbox{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
-model utility. The baseline is either the reference model or the best
-submodel found (see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
+normal-approximation confidence interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of \code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_k -
+  U_{\mbox{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
+submodel's true utility and \eqn{U_{\mbox{base}}}{U_base} denoting the
+baseline model's true utility) falls above (or is equal to)
+\deqn{\texttt{pct} \cdot (u_0 - u_{\mbox{base}})}{pct * (u_0 - u_base)}
+where \eqn{u_0} denotes the null model's estimated utility and
+\eqn{u_{\mbox{base}}}{u_base} the baseline model's estimated utility. The
+baseline is either the reference model or the best submodel found (see
+argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
 
 For example, \code{alpha = 0.32}, \code{pct = 0}, and \code{type = "upper"} means that we
-select the smallest model size for which the upper bound of the confidence
-interval for \eqn{u_k - u_{\mbox{base}}}{u_k - u_base} with coverage 68\%
-exceeds (or is equal to) zero, that is, for which the submodel's utility is
-at most one standard error smaller than the baseline model's utility.
+select the smallest model size for which the upper bound of the 68\%
+confidence interval for \eqn{U_k - U_{\mbox{base}}}{U_k - U_base} exceeds
+(or is equal to) zero, that is, for which the submodel's utility estimate
+is at most one standard error smaller than the baseline model's utility
+estimate.
 }
 \note{
 Loss statistics like the root mean-squared error (RMSE) and the
