@@ -515,7 +515,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   # Family ------------------------------------------------------------------
 
   family <- family(object)
-  if (object$stan_function == "stan_polr") {
+  if (object$stan_function == "stan_polr" && !latent_proj) {
     # Currently, we need brms for the special link and inverse link function.
     # It shouldn't be hard to implement these separately so that brms is not
     # needed here, but that would introduce redundancies and for now, relying
@@ -696,7 +696,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
 
   # Augmented-data projection -----------------------------------------------
 
-  if (object$stan_function == "stan_polr") {
+  if (object$stan_function == "stan_polr" && !latent_proj) {
     args_augdat <- list(
       augdat_link = "brms" %:::% "link_cumulative",
       augdat_ilink = "brms" %:::% "inv_link_cumulative",
