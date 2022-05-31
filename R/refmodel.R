@@ -507,7 +507,7 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.stanreg <- function(object, ...) {
+get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("Please install the 'rstanarm' package.")
   }
@@ -651,7 +651,7 @@ get_refmodel.stanreg <- function(object, ...) {
     }
     linpred_out <- posterior_linpred(fit, newdata = newdata, offset = offs)
     stopifnot(length(dim(linpred_out)) == 2)
-    if (fit$stan_function == "stan_polr") {
+    if (fit$stan_function == "stan_polr" && !latent_proj) {
       # Since rstanarm::posterior_linpred.stanreg() doesn't offer an argument
       # like `incl_thres` of brms::posterior_linpred.brmsfit(), we need to
       # incorporate the thresholds into the linear predictors by hand:
@@ -682,7 +682,7 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, ...)
+    get_refmodel(cvfit, latent_proj = latent_proj, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -712,7 +712,8 @@ get_refmodel.stanreg <- function(object, ...) {
   args_basic <- list(
     object = object, data = data, formula = formula, family = family,
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
-    dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder
+    dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder,
+    latent_proj = latent_proj
   )
   return(do.call(init_refmodel, args = c(args_basic, args_augdat, list(...))))
 }
