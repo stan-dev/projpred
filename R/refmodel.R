@@ -535,6 +535,9 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
                              link = family,
                              cats = levels(object$y)),
                         class = "family")
+  } else if (latent_proj) {
+    family <- structure(list(family = "latent_rstanarm"),
+                        class = "family")
   }
 
   # Data --------------------------------------------------------------------
@@ -692,7 +695,6 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   } else {
     dis <- NULL
   }
-
 
   # Augmented-data projection -----------------------------------------------
 
