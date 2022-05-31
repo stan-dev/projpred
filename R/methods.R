@@ -690,7 +690,7 @@ print.vsel <- function(x, ...) {
 #'   alpha`, see argument `alpha` of [summary.vsel()]) for \eqn{u_k -
 #'   u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k} denoting the \eqn{k}-th
 #'   submodel's utility and \eqn{u_{\mbox{base}}}{u_base} denoting the baseline
-#'   model's utility) falls above (or is equal to) \deqn{\mbox{pct} * (u_0 -
+#'   model's utility) falls above (or is equal to) \deqn{\mbox{pct} \cdot (u_0 -
 #'   u_{\mbox{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 #'   model utility. The baseline is either the reference model or the best
 #'   submodel found (see argument `baseline` of [summary.vsel()]).
