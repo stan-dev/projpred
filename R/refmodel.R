@@ -727,7 +727,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Family ------------------------------------------------------------------
 
   if (latent_proj) {
-    family <- gaussian()
+    family <- extend_family(gaussian())
   }
 
   if (family$family == "Student_t") {
