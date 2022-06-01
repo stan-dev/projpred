@@ -1,5 +1,12 @@
 # projpred 2.1.2.9000
 
+## Minor changes
+
+* Minor improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
+
+## Bug fixes
+
+* Fix GitHub issue #324 (large `search_terms` caused the R session to crash).
 
 # projpred 2.1.2
 
