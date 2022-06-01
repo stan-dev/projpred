@@ -609,6 +609,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
+  stopifnot(is.data.frame(data))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
