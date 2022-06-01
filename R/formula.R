@@ -722,22 +722,6 @@ count_terms_chosen <- function(list_of_terms, duplicates = TRUE,
   )
 }
 
-## Utility that checks if the next submodel is redundant with the current one.
-## @param formula The reference models' formula.
-## @param current A list of terms included in the current submodel.
-## @param new The new term to add to the submodel.
-## @return TRUE if the new term results in a redundant model, FALSE otherwise.
-is_next_submodel_redundant <- function(current, new) {
-  old_submodel <- current
-  new_submodel <- c(current, new)
-  if (count_terms_chosen(new_submodel) >
-      count_terms_chosen(old_submodel)) {
-    return(FALSE)
-  } else {
-    return(TRUE)
-  }
-}
-
 ## Helper function to evaluate right hand side formulas in a context
 ## @param formula Formula to evaluate.
 ## @param data Data with which to evaluate.
