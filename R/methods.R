@@ -351,7 +351,7 @@ plot.vsel <- function(
 
 
   if (NROW(stats_sub) == 0) {
-    stop(ifelse(length(stats) == 1, "Statistics ", "Statistic "),
+    stop(ifelse(length(stats) > 1, "Statistics ", "Statistic "),
          paste0(unique(stats), collapse = ", "), " not available.")
   }
 
