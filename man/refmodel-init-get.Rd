@@ -18,7 +18,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{default}(object, formula, family = NULL, ...)
 
-\method{get_refmodel}{stanreg}(object, ...)
+\method{get_refmodel}{stanreg}(object, latent_proj = FALSE, ...)
 
 init_refmodel(
   object,
@@ -64,6 +64,9 @@ function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, fu
 the distributional family for the response). May be \code{NULL} for
 \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
 \code{object}.}
+
+\item{latent_proj}{A single logical value indicating whether to use the
+latent projection (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{data}{Data used for fitting the reference model. Any \code{contrasts}
 attributes of the dataset's columns are silently removed.}
@@ -125,9 +128,6 @@ same type as \code{\link[=init_refmodel]{init_refmodel()}} does. Argument \code{
 for using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL}
 and a function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption
 \code{dis = 0}) if \code{object} is \code{NULL}.}
-
-\item{latent_proj}{A single logical value indicating whether to use the
-latent projection (\code{TRUE}) or not (\code{FALSE}).}
 }
 \value{
 An object that can be passed to all the functions that take the
