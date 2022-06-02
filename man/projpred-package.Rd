@@ -136,6 +136,7 @@ Other contributors:
   \item Marco Colombo [contributor]
   \item Paul-Christian Bürkner [contributor]
   \item Hamada S. Badr [contributor]
+  \item Yann McLatchie [contributor]
   \item  The LME4 Authors (see file 'LICENSE' for details) [copyright holder]
 }
 
