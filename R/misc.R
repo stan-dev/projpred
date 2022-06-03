@@ -254,12 +254,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
     } else if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
-      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
-                            wobs = refmodel$wobs, cl = cl)
+      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
+                            dis = refmodel$dis, wobs = refmodel$wobs, cl = cl)
     } else {
       # several clusters
-      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
-                            wobs = refmodel$wobs, nclusters = nclusters)
+      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
+                            dis = refmodel$dis, wobs = refmodel$wobs,
+                            nclusters = nclusters)
     }
   } else {
     ndraws <- min(S, ndraws)
