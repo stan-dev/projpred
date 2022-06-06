@@ -318,18 +318,19 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   cl_pred <- p_pred$cl
 
   ## fetch the log-likelihood for the reference model to obtain the LOO weights
-  if (is.null(refmodel$loglik)) {
+  if (inherits(refmodel, "datafit")) {
     ## case where log-likelihood not available, i.e., the reference model is not
     ## a genuine model => cannot compute LOO
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
-  } else {
-    ## log-likelihood available
-    loglik <- refmodel$loglik
   }
-  n <- ncol(loglik)
+  loglik_forPSIS <- refmodel$loglik_forPSIS
+  if (is.null(loglik_forPSIS)) {
+    loglik_forPSIS <- refmodel$loglik
+  }
+  n <- ncol(loglik_forPSIS)
   ## TODO: should take r_eff:s into account
-  psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1, n))
+  psisloo <- loo::psis(-loglik_forPSIS, cores = 1, r_eff = rep(1, n))
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
   ## by default use all observations
@@ -349,6 +350,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   ## compute loo summaries for the reference model
+  loglik <- refmodel$loglik
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
   mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
     # For the augmented-data projection, `mu` is an augmented-rows matrix

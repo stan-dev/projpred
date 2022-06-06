@@ -7,6 +7,7 @@
 #' @import ggplot2
 #' @importFrom rlang .data
 #' @importFrom rstantools posterior_linpred
+#' @importFrom rstantools log_lik
 #' @importFrom loo kfold
 #'
 #' @description
