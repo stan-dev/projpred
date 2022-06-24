@@ -515,7 +515,8 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   # Family ------------------------------------------------------------------
 
   family <- family(object)
-  if (object$stan_function == "stan_polr" && !latent_proj) {
+  aug_data <- object$stan_function == "stan_polr" && !latent_proj
+  if (aug_data) {
     # Currently, we need brms for the special link and inverse link function.
     # It shouldn't be hard to implement these separately so that brms is not
     # needed here, but that would introduce redundancies and for now, relying
@@ -654,7 +655,8 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
     }
     linpred_out <- posterior_linpred(fit, newdata = newdata, offset = offs)
     stopifnot(length(dim(linpred_out)) == 2)
-    if (fit$stan_function == "stan_polr" && !latent_proj) {
+    aug_data <- fit$stan_function == "stan_polr" && !latent_proj
+    if (aug_data) {
       # Since rstanarm::posterior_linpred.stanreg() doesn't offer an argument
       # like `incl_thres` of brms::posterior_linpred.brmsfit(), we need to
       # incorporate the thresholds into the linear predictors by hand:
@@ -698,7 +700,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
 
   # Augmented-data projection -----------------------------------------------
 
-  if (object$stan_function == "stan_polr" && !latent_proj) {
+  if (aug_data) {
     args_augdat <- list(
       augdat_link = "brms" %:::% "link_cumulative",
       augdat_ilink = "brms" %:::% "inv_link_cumulative",
