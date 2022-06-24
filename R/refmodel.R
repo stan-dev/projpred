@@ -550,8 +550,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   }
 
   # Weights (for the observations):
-  if (family$family == "binomial" && length(object$weights) > 0 &&
-      !latent_proj) {
+  if (family$family == "binomial" && length(object$weights) > 0) {
     stop("In case of the binomial family, projpred cannot handle observation ",
          "weights (apart from the numbers of trials).")
   }
@@ -605,7 +604,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
-    if (family$family != "binomial" || latent_proj) {
+    if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
     }
     default_wrhs <- as.formula(paste(
@@ -967,6 +966,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (aug_data && !all(weights == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+  if (latent_proj && !all(weights == 1)) {
+    stop("Currently, the latent projection may not be combined with ",
          "observation weights (other than 1).")
   }
 
