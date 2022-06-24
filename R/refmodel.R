@@ -515,6 +515,19 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   # Family ------------------------------------------------------------------
 
   family <- family(object)
+  if (object$stan_function == "stan_polr") {
+    # Create a custom family (in particular, to have `family$family`):
+    if (family == "logistic") {
+      family <- "logit"
+    } else if (family == "loglog") {
+      stop("Currently, the \"", family, "\" link is not supported by ",
+           "projpred.")
+    }
+    family <- structure(list(family = "cumulative_rstanarm",
+                             link = family,
+                             cats = levels(object$y)),
+                        class = "family")
+  }
   aug_data <- object$stan_function == "stan_polr" && !latent_proj
   if (aug_data) {
     # Currently, we need brms for the special link and inverse link function.
@@ -526,19 +539,6 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
            call. = FALSE)
     }
     stopifnot(utils::packageVersion("brms") >= "2.16.3")
-    if (family == "logistic") {
-      family <- "logit"
-    } else if (family == "loglog") {
-      stop("Currently, the \"", family, "\" link is not supported by ",
-           "projpred.")
-    }
-    family <- structure(list(family = "cumulative_rstanarm",
-                             link = family,
-                             cats = levels(object$y)),
-                        class = "family")
-  } else if (latent_proj) {
-    family <- structure(list(family = "latent_rstanarm"),
-                        class = "family")
   }
 
   # Data --------------------------------------------------------------------
@@ -550,7 +550,8 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   }
 
   # Weights (for the observations):
-  if (family$family == "binomial" && length(object$weights) > 0) {
+  if (family$family == "binomial" && length(object$weights) > 0 &&
+      !latent_proj) {
     stop("In case of the binomial family, projpred cannot handle observation ",
          "weights (apart from the numbers of trials).")
   }
@@ -604,7 +605,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
-    if (family$family != "binomial") {
+    if (family$family != "binomial" || latent_proj) {
       stop("For non-binomial families, a two-column response is not allowed.")
     }
     default_wrhs <- as.formula(paste(
