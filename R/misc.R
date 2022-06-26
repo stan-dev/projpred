@@ -273,6 +273,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
   nclusters <- max(cl, na.rm = TRUE)
   centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
   wcluster <- rep(0, nclusters) # cluster weights
+  # Dispersion parameter draws aggregated within each cluster:
+  dis_agg <- rep(NA_real_, nclusters)
   eps <- 1e-10
   for (j in 1:nclusters) {
     # compute normalized weights within the cluster, 1-eps is for numerical
@@ -280,9 +282,12 @@ bootstrap <- function(x, fun = mean, B = 2000,
     ind <- which(cl == j)
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
 
-    # cluster centers and their weights
+    # Center of the j-th cluster:
     centers[j, ] <- mu[, ind, drop = FALSE] %*% ws
-    wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
+    # Unnormalized weight for the j-th cluster:
+    wcluster[j] <- sum(wsample[ind])
+    # Aggregated dispersion parameter for the j-th cluster:
+    dis_agg[j] <- dis[ind] %*% ws
   }
   wcluster <- wcluster / sum(wcluster)
 
@@ -292,6 +297,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     # stability
     ind <- which(cl == j)
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
+    # The predictive variances themselves:
     family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
   }))
 
@@ -299,6 +305,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
   p <- list(
     mu = unname(t(centers)),
     var = predvar,
+    dis = dis_agg,
     weights = wcluster,
     cl = cl,
     clust_used = TRUE
