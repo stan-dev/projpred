@@ -287,7 +287,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     # Unnormalized weight for the j-th cluster:
     wcluster[j] <- sum(wsample[ind])
     # Aggregated dispersion parameter for the j-th cluster:
-    dis_agg[j] <- dis[ind] %*% ws
+    dis_agg[j] <- crossprod(dis[ind], ws)
   }
   wcluster <- wcluster / sum(wcluster)
 
