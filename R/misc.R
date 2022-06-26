@@ -269,17 +269,21 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
-  # number of clusters (assumes labeling 1,...,nclusters)
+  # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
+  # Cluster centers:
   centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
-  wcluster <- rep(0, nclusters) # cluster weights
+  # Cluster weights:
+  wcluster <- rep(0, nclusters)
   # Dispersion parameter draws aggregated within each cluster:
   dis_agg <- rep(NA_real_, nclusters)
+  # Predictive variances:
+  predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
   eps <- 1e-10
   for (j in 1:nclusters) {
-    # compute normalized weights within the cluster, 1-eps is for numerical
-    # stability
     ind <- which(cl == j)
+    # Compute normalized weights within the j-th cluster; `1 - eps` is for
+    # numerical stability:
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
 
     # Center of the j-th cluster:
@@ -288,18 +292,10 @@ bootstrap <- function(x, fun = mean, B = 2000,
     wcluster[j] <- sum(wsample[ind])
     # Aggregated dispersion parameter for the j-th cluster:
     dis_agg[j] <- crossprod(dis[ind], ws)
+    # Predictive variance for the j-th cluster:
+    predvar[, j] <- family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
   }
   wcluster <- wcluster / sum(wcluster)
-
-  # predictive variances
-  predvar <- do.call(cbind, lapply(1:nclusters, function(j) {
-    # compute normalized weights within the cluster, 1-eps is for numerical
-    # stability
-    ind <- which(cl == j)
-    ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
-    # The predictive variances themselves:
-    family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
-  }))
 
   # combine the results
   p <- list(
