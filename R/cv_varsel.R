@@ -397,6 +397,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     ## compute approximate LOO with PSIS weights
+    log_lik_ref <- t(refmodel$family$ll_fun(
+      p_pred$mu[inds, , drop = FALSE], p_pred$dis, refmodel$y[inds],
+      refmodel$wobs[inds]
+    ))
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
                                      obs = inds,
@@ -405,9 +409,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
       sub_psisloo <- suppressWarnings(
-        loo::psis(-log_lik_sub,
+        loo::psis(-log_lik_ref,
                   cores = 1,
-                  r_eff = rep(1, ncol(log_lik_sub)))
+                  r_eff = rep(1, ncol(log_lik_ref)))
       )
       lw_sub <- suppressWarnings(weights(sub_psisloo))
       # Take into account that clustered draws usually have different weights:
