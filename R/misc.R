@@ -193,7 +193,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   that do not have a dispersion parameter).
 #   * `dis`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
 #   reference model's dispersion parameter value for each draw/cluster (NA for
-#   those families that do not have a dispersion parameter). See issue #204.
+#   those families that do not have a dispersion parameter).
 #   * `weights`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
 #   weights for the draws/clusters.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
