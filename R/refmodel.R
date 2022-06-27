@@ -1055,7 +1055,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun, cvrefbuilder
   )
   if (proper_model) {
-    refmodel <- c(refmodel, nlist(eta))
     class(refmodel) <- "refmodel"
   } else {
     class(refmodel) <- c("datafit", "refmodel")
