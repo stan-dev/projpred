@@ -424,9 +424,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## compute approximate LOO with PSIS weights
     inds_aug <- inds
     if (refmodel$family$for_augdat) {
-      inds_aug <- do.call(c, lapply(inds_aug, function(i_aug) {
+      inds_aug <- as.vector(do.call(rbind, lapply(inds_aug, function(i_aug) {
         i_aug + (seq_along(refmodel$family$cats) - 1L) * n
-      }))
+      })))
     }
     log_lik_ref <- t(refmodel$family$ll_fun(
       p_pred$mu[inds_aug, , drop = FALSE], p_pred$dis, refmodel$y[inds],
