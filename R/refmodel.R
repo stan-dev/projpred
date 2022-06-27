@@ -870,8 +870,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         # For the augmented-data projection, `linpred_out` is expected to be a
         # 3-dimensional array with dimensions S_ref x N x C_lat (see
         # `?init_refmodel` for a definition of these dimensions). Therefore, it
-        # is converted to an augmented-rows matrix (see file "augdat.R" for a
-        # definition):
+        # is converted to an augmented-rows matrix (see `?`augdat-internals``
+        # for a definition):
         linpred_out <- arr2augmat(linpred_out, margin_draws = 1)
         n_obs <- attr(linpred_out, "nobs_orig")
       } else {
