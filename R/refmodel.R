@@ -216,6 +216,14 @@
 #' per response category) are not supported by \pkg{projpred} yet. So far, only
 #' offsets which are the same across all response categories are supported.
 #'
+#' # Latent projection
+#'
+#' In case of the latent projection (see argument `latent_proj`), the
+#' [rstantools::log_lik()] generic is applied to `object` (inside of
+#' [init_refmodel()]), so there needs to be an appropriate method (which does
+#' exist in packages \pkg{rstanarm} and \pkg{brms} for `stanreg`s and
+#' `brmsfit`s, respectively).
+#'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
 #'   [cv_varsel()], [project()], [proj_linpred()], and [proj_predict()].
