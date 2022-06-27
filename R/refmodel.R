@@ -538,10 +538,7 @@ get_refmodel.stanreg <- function(object, ...) {
   # Data --------------------------------------------------------------------
 
   data <- object$data
-  if (!is.data.frame(data) && !is.matrix(data)) {
-    stop("`object$data` must be a `data.frame` or a `matrix` (but a ",
-         "`data.frame` is recommended).")
-  }
+  stopifnot(is.data.frame(data))
 
   # Weights (for the observations):
   if (family$family == "binomial" && length(object$weights) > 0) {
@@ -765,6 +762,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
+  stopifnot(is.data.frame(data))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {

@@ -213,7 +213,8 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
     )
   }
   lme4.formula <- as.formula(lme4.formula)
-  linear <- family$family == "gaussian" && family$link == "identity"
+  linear <- family$family == "gaussian" && family$link == "identity" &&
+    getOption("projpred.gaussian_not_as_generalized", TRUE)
 
   control <- if (linear) {
     lme4::lmerControl()

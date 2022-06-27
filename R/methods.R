@@ -386,7 +386,7 @@ plot.vsel <- function(
 
 
   if (NROW(stats_sub) == 0) {
-    stop(ifelse(length(stats) == 1, "Statistics ", "Statistic "),
+    stop(ifelse(length(stats) > 1, "Statistics ", "Statistic "),
          paste0(unique(stats), collapse = ", "), " not available.")
   }
 
@@ -705,8 +705,8 @@ print.vsel <- function(x, ...) {
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
-#' @param stat Statistic used for the decision. See [summary.vsel()] for
-#'   possible choices.
+#' @param stat Statistic used for the decision. See argument `stats` of
+#'   [summary.vsel()] for possible choices.
 #' @param pct A number giving the relative proportion (*not* percents) between
 #'   baseline model and null model utilities one is willing to sacrifice. See
 #'   section "Details" below for more information.
@@ -721,22 +721,26 @@ print.vsel <- function(x, ...) {
 #'   See section "Details" below for some important arguments which may be
 #'   passed here.
 #'
-#' @details The suggested model size is the smallest model size for which either
+#' @details The suggested model size is the smallest model size \eqn{k \in \{0,
+#'   1, ..., \texttt{nterms\_max\}}}{k = 0, 1, ..., nterms_max} for which either
 #'   the lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
-#'   alpha`, see argument `alpha` of [summary.vsel()]) for \eqn{u_k -
-#'   u_{\mbox{base}}}{u_k - u_base} (with \eqn{u_k} denoting the \eqn{k}-th
-#'   submodel's utility and \eqn{u_{\mbox{base}}}{u_base} denoting the baseline
-#'   model's utility) falls above (or is equal to) \deqn{\mbox{pct} * (u_0 -
-#'   u_{\mbox{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
-#'   model utility. The baseline is either the reference model or the best
-#'   submodel found (see argument `baseline` of [summary.vsel()]).
+#'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
+#'   U_{\mbox{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
+#'   submodel's true utility and \eqn{U_{\mbox{base}}}{U_base} denoting the
+#'   baseline model's true utility) falls above (or is equal to)
+#'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mbox{base}})}{pct * (u_0 - u_base)}
+#'   where \eqn{u_0} denotes the null model's estimated utility and
+#'   \eqn{u_{\mbox{base}}}{u_base} the baseline model's estimated utility. The
+#'   baseline is either the reference model or the best submodel found (see
+#'   argument `baseline` of [summary.vsel()]).
 #'
 #'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
-#'   select the smallest model size for which the upper bound of the confidence
-#'   interval for \eqn{u_k - u_{\mbox{base}}}{u_k - u_base} with coverage 68%
-#'   exceeds (or is equal to) zero, that is, for which the submodel's utility is
-#'   at most one standard error smaller than the baseline model's utility.
+#'   select the smallest model size for which the upper bound of the 68%
+#'   confidence interval for \eqn{U_k - U_{\mbox{base}}}{U_k - U_base} exceeds
+#'   (or is equal to) zero, that is, for which the submodel's utility estimate
+#'   is at most one standard error smaller than the baseline model's utility
+#'   estimate.
 #'
 #' @note Loss statistics like the root mean-squared error (RMSE) and the
 #'   mean-squared error (MSE) are converted to utilities by multiplying them by

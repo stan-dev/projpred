@@ -130,7 +130,8 @@ fit_glm_ridge_callback <- function(formula, data,
 # `projpred.glm_fitter`):
 fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
                              ...) {
-  if (family$family == "gaussian" && family$link == "identity") {
+  if (family$family == "gaussian" && family$link == "identity" &&
+      getOption("projpred.gaussian_not_as_generalized", TRUE)) {
     # Exclude arguments from `...` which cannot be passed to stats::lm():
     dot_args <- list(...)
     dot_args <- dot_args[intersect(
@@ -233,7 +234,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 fit_glmer_callback <- function(formula, family,
                                control = control_callback(family), ...) {
   tryCatch({
-    if (family$family == "gaussian" && family$link == "identity") {
+    if (family$family == "gaussian" && family$link == "identity" &&
+        getOption("projpred.gaussian_not_as_generalized", TRUE)) {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
       dot_args <- list(...)
       dot_args <- dot_args[intersect(
@@ -343,7 +345,8 @@ fit_glmer_callback <- function(formula, family,
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
 # appropriate control options depending on the family:
 control_callback <- function(family, ...) {
-  if (family$family == "gaussian" && family$link == "identity") {
+  if (family$family == "gaussian" && family$link == "identity" &&
+      getOption("projpred.gaussian_not_as_generalized", TRUE)) {
     return(lme4::lmerControl(...))
   } else {
     return(lme4::glmerControl(...))
@@ -826,7 +829,7 @@ predict.subfit <- function(subfit, newdata = NULL) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(subfit$x))))
     } else {
-      return(subfit$x %*% rbind(alpha, beta))
+      return(cbind(1, subfit$x) %*% rbind(alpha, beta))
     }
   } else {
     # TODO: In the following model.matrix() call, allow user-specified contrasts

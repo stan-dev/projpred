@@ -370,7 +370,10 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nclusters <- 1
   }
 
-  max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
+  search_terms_unq <- unique(unlist(
+    strsplit(search_terms, split = "+", fixed = TRUE)
+  ))
+  max_nv_possible <- count_terms_chosen(search_terms_unq, duplicates = TRUE)
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }
