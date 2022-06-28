@@ -166,9 +166,10 @@ refmodel_tester <- function(
 
   # Test the general structure of the object:
   refmod_nms <- c(
-    "fit", "formula", "div_minimizer", "family", "mu", "dis", "y", "loglik",
-    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
-    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder"
+    "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
+    "loglik", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample",
+    "offset", "cvfun", "cvfits", "extract_model_data", "ref_predfun",
+    "cvrefbuilder"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -284,6 +285,20 @@ refmodel_tester <- function(
                        info = info_str)
     }
   }
+
+  # eta
+  eta_cut <- refmod$eta
+  mu_cut <- refmod$mu
+  if (refmod$family$family %in% c("binomial")) {
+    # To avoid failing tests due to numerical inaccuracies for extreme
+    # values:
+    tol_ex <- 1e-12
+    eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
+    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <- f_binom$linkfun(1 - tol_ex)
+    mu_cut[mu_cut < tol_ex] <- tol_ex
+    mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
+  }
+  expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
 
   # dis
   if (refmod$family$family == "gaussian") {
