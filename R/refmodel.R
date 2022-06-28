@@ -514,6 +514,7 @@ get_refmodel.stanreg <- function(object, ...) {
 
   family <- family(object)
   if (object$stan_function == "stan_polr") {
+    # Create a custom family (in particular, to have `family$family`):
     if (family == "logistic") {
       family <- "logit"
     } else if (family == "loglog") {
