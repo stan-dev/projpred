@@ -43,16 +43,11 @@ NULL
 arr2augmat <- function(arr, margin_draws = 3) {
   stopifnot(is.array(arr))
   stopifnot(margin_draws %in% c(1, 3))
-  ### Option 1 (clearer):
-  # if (margin_draws == 1) {
-  #   margin_obs <- 2
-  # } else if (margin_draws == 3) {
-  #   margin_obs <- 1
-  # }
-  ###
-  ### Option 2 (shorter):
-  margin_obs <- switch(margin_draws, 2, NA, 1)
-  ###
+  if (margin_draws == 1) {
+    margin_obs <- 2
+  } else if (margin_draws == 3) {
+    margin_obs <- 1
+  }
   augmat <- apply(arr, margin_draws, as.vector, simplify = FALSE)
   augmat <- do.call(cbind, augmat)
   attr(augmat, "nobs_orig") <- dim(arr)[margin_obs]
