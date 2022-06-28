@@ -793,18 +793,7 @@ subprd_augdat <- function(fits, newdata) {
     if (inherits(fit, c("polr", "clmm"))) {
       prbs <- do.call(rbind, apply(prbs, 1, cumsum, simplify = FALSE))
       prbs <- prbs[, -ncol(prbs), drop = FALSE]
-      if (link_nm %in% c("logistic", "logit")) {
-        linkfun_raw <- function(x) qlogis(x)
-      } else if (link_nm == "probit") {
-        linkfun_raw <- function(x) qnorm(x)
-      } else if (link_nm == "cloglog") {
-        linkfun_raw <- function(x) log(-log1p(-x))
-      } else if (link_nm == "cauchit") {
-        linkfun_raw <- function(x) qcauchy(x)
-      } else {
-        stop("Unknown `link_nm`.")
-      }
-      lpreds <- linkfun_raw(prbs)
+      lpreds <- linkfun_raw(prbs, link_nm = link_nm)
       if (inherits(fit, "clmm")) {
         lpreds <- lpreds + repair_re(fit, newdata = newdata)
       }

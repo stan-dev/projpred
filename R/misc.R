@@ -26,6 +26,20 @@ log_sum_exp <- function(x) {
   max_x + log(sum(exp(x - max_x)))
 }
 
+linkfun_raw <- function(x, link_nm) {
+  if (link_nm %in% c("logistic", "logit")) {
+    return(qlogis(x))
+  } else if (link_nm == "probit") {
+    return(qnorm(x))
+  } else if (link_nm == "cloglog") {
+    return(log(-log1p(-x)))
+  } else if (link_nm == "cauchit") {
+    return(qcauchy(x))
+  } else {
+    stop("Unknown `link_nm`.")
+  }
+}
+
 auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]

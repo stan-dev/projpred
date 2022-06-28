@@ -201,17 +201,17 @@ test_that("repair_re() works for multilevel cumulative() models", {
   prbs <- do.call(rbind, apply(prbs, 1, cumsum, simplify = FALSE))
   prbs <- prbs[, -ncol(prbs), drop = FALSE]
   if (link_nm %in% c("logistic", "logit")) {
-    linkfun_raw <- function(x) qlogis(x)
+    linkfun_raw_man <- function(x) qlogis(x)
   } else if (link_nm == "probit") {
-    linkfun_raw <- function(x) qnorm(x)
+    linkfun_raw_man <- function(x) qnorm(x)
   } else if (link_nm == "cloglog") {
-    linkfun_raw <- function(x) log(-log1p(-x))
+    linkfun_raw_man <- function(x) log(-log1p(-x))
   } else if (link_nm == "cauchit") {
-    linkfun_raw <- function(x) qcauchy(x)
+    linkfun_raw_man <- function(x) qcauchy(x)
   } else {
     stop("Unknown `link_nm`.")
   }
-  lpreds_orig <- linkfun_raw(prbs)
+  lpreds_orig <- linkfun_raw_man(prbs)
 
   fixnms_b <- c("periodpd1", "carry", "treat")
   inhaler_new_ch <- within(inhaler_new, {
