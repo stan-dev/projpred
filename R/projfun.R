@@ -89,9 +89,12 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
 .init_submodel <- function(submodl, p_ref, refmodel, solution_terms, wobs,
                            wsample) {
-  p_ref$mu <- refmodel$family$linkinv(
-    refmodel$family$linkfun(p_ref$mu) + refmodel$offset
-  )
+  # Take offsets into account (the `if ()` condition is added for efficiency):
+  if (!all(refmodel$offset == 0)) {
+    p_ref$mu <- refmodel$family$linkinv(
+      refmodel$family$linkfun(p_ref$mu) + refmodel$offset
+    )
+  }
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {
     stop("For family `", refmodel$family$family, "()`, .init_submodel() might ",
@@ -111,9 +114,11 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     # ### TODO: Add `dis` and perhaps other elements here?:
     # p_ref <- list(mu = pobs$z, var = p_ref$var)
     # ###
-    # p_ref$mu <- refmodel$family$linkinv(
-    #   refmodel$family$linkfun(p_ref$mu) + refmodel$offset
-    # )
+    # if (!all(refmodel$offset == 0)) {
+    #   p_ref$mu <- refmodel$family$linkinv(
+    #     refmodel$family$linkfun(p_ref$mu) + refmodel$offset
+    #   )
+    # }
     # wobs <- pobs$wobs
     ###
   }
