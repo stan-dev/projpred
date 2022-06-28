@@ -40,6 +40,20 @@ linkfun_raw <- function(x, link_nm) {
   }
 }
 
+ilinkfun_raw <- function(x, link_nm) {
+  if (link_nm %in% c("logistic", "logit")) {
+    return(plogis(x))
+  } else if (link_nm == "probit") {
+    return(pnorm(x))
+  } else if (link_nm == "cloglog") {
+    return(1 - exp(-exp(x)))
+  } else if (link_nm == "cauchit") {
+    return(pcauchy(x))
+  } else {
+    stop("Unknown `link_nm`.")
+  }
+}
+
 auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]

@@ -514,15 +514,6 @@ get_refmodel.stanreg <- function(object, ...) {
 
   family <- family(object)
   if (object$stan_function == "stan_polr") {
-    # Currently, we need brms for the special link and inverse link function.
-    # It shouldn't be hard to implement these separately so that brms is not
-    # needed here, but that would introduce redundancies and for now, relying
-    # on brms (>= 2.16.3) is the quickest solution and not too demanding.
-    if (!requireNamespace("brms", quietly = TRUE)) {
-      stop("Package \"brms\" needed. Please install it.",
-           call. = FALSE)
-    }
-    stopifnot(utils::packageVersion("brms") >= "2.16.3")
     if (family == "logistic") {
       family <- "logit"
     } else if (family == "loglog") {
@@ -693,8 +684,8 @@ get_refmodel.stanreg <- function(object, ...) {
 
   if (object$stan_function == "stan_polr") {
     args_augdat <- list(
-      augdat_link = "brms" %:::% "link_cumulative",
-      augdat_ilink = "brms" %:::% "inv_link_cumulative",
+      augdat_link = augdat_link_cumul,
+      augdat_ilink = augdat_ilink_cumul,
       augdat_args_link = list(link = family$link),
       augdat_args_ilink = list(link = family$link)
     )

@@ -181,6 +181,8 @@ catmaxprb <- function(augvec, lvls) {
   return(factor(lvls[idxmaxprb], levels = lvls))
 }
 
+# Link and inverse-link functions with array as input and output ----------
+
 #' Link function for augmented-data projection with binomial family
 #'
 #' This is the function which has to be supplied to [extend_family()]'s argument
@@ -221,4 +223,28 @@ augdat_ilink_binom <- function(eta_arr, link = "logit") {
   stopifnot(identical(dim(prb_arr0), dim(prb_arr1)))
   stopifnot(identical(dim(prb_arr1)[3], 1L))
   return(array(c(prb_arr0, prb_arr1), dim = c(dim(prb_arr1)[-3], 2L)))
+}
+
+## From brms --------------------------------------------------------------
+## The functions from this (sub-)section are copied over from brms (with consent
+## by Paul Buerkner) to avoid loading brms just for these special link and
+## inverse-link functions. (After copying over, they have been slightly modified
+## here to avoid dependencies on other brms-internal functions.)
+
+augdat_link_cumul <- function(prb_arr, link) {
+  ncat <- utils::tail(dim(prb_arr), 1)
+  cumprb_arr <- apply(prb_arr[, , -ncat, drop = FALSE], c(1, 2), cumsum)
+  cumprb_arr <- array(cumprb_arr,
+                      dim = c(ncat - 1, utils::head(dim(prb_arr), -1)))
+  cumprb_arr <- aperm(cumprb_arr, perm = c(c(1, 2) + 1, 1))
+  return(linkfun_raw(cumprb_arr, link_nm = link))
+}
+
+augdat_ilink_cumul <- function(eta_arr, link) {
+  cumprb_arr <- ilinkfun_raw(eta_arr, link_nm = link)
+  dim_noncat <- utils::head(dim(cumprb_arr), -1)
+  ones_arr <- array(1, dim = c(dim_noncat, 1))
+  zeros_arr <- array(0, dim = c(dim_noncat, 1))
+  return(abind::abind(cumprb_arr, ones_arr) -
+           abind::abind(zeros_arr, cumprb_arr))
 }
