@@ -298,9 +298,10 @@ refmodel_tester <- function(
 
   # Test the general structure of the object:
   refmod_nms <- c(
-    "fit", "formula", "div_minimizer", "family", "mu", "dis", "y", "loglik",
-    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
-    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder"
+    "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
+    "loglik", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample",
+    "offset", "cvfun", "cvfits", "extract_model_data", "ref_predfun",
+    "cvrefbuilder"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -428,6 +429,20 @@ refmodel_tester <- function(
                        info = info_str)
     }
   }
+
+  # eta
+  eta_cut <- refmod$eta
+  mu_cut <- refmod$mu
+  if (refmod$family$family %in% c("binomial")) {
+    # To avoid failing tests due to numerical inaccuracies for extreme
+    # values:
+    tol_ex <- 1e-12
+    eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
+    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <- f_binom$linkfun(1 - tol_ex)
+    mu_cut[mu_cut < tol_ex] <- tol_ex
+    mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
+  }
+  expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
 
   # dis
   if (refmod$family$family == "gaussian") {
@@ -1468,16 +1483,9 @@ vsel_tester <- function(
   }
   nobsv_aug <- nobsv * ncats
   expect_type(vs$search_path$p_sel, "list")
-  if (from_datafit) {
-    # Due to issue #204:
-    expect_named(vs$search_path$p_sel,
-                 c("mu", "var", "dis", "weights", "cl", "clust_used"),
-                 info = info_str)
-  } else {
-    expect_named(vs$search_path$p_sel,
-                 c("mu", "var", "weights", "cl", "clust_used"),
-                 info = info_str)
-  }
+  expect_named(vs$search_path$p_sel,
+               c("mu", "var", "dis", "weights", "cl", "clust_used"),
+               info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_true(is.numeric(vs$search_path$p_sel$mu), info = info_str)
   expect_equal(dim(vs$search_path$p_sel$mu),
@@ -1498,12 +1506,10 @@ vsel_tester <- function(
   if (vs$refmodel$family$for_augdat) {
     expect_s3_class(vs$search_path$p_sel$var, "augmat")
   }
-  if ("dis" %in% names(vs$search_path$p_sel)) {
-    expect_true(is.vector(vs$search_path$p_sel$dis) &&
-                  is.atomic(vs$search_path$p_sel$dis),
-                info = info_str)
-    expect_length(vs$search_path$p_sel$dis, nprjdraws_search_expected)
-  }
+  expect_true(is.vector(vs$search_path$p_sel$dis) &&
+                is.atomic(vs$search_path$p_sel$dis),
+              info = info_str)
+  expect_length(vs$search_path$p_sel$dis, nprjdraws_search_expected)
   expect_type(vs$search_path$p_sel$weights, "double")
   expect_length(vs$search_path$p_sel$weights, nprjdraws_search_expected)
   expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)

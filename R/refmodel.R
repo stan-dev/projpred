@@ -552,10 +552,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   # Data --------------------------------------------------------------------
 
   data <- object$data
-  if (!is.data.frame(data) && !is.matrix(data)) {
-    stop("`object$data` must be a `data.frame` or a `matrix` (but a ",
-         "`data.frame` is recommended).")
-  }
+  stopifnot(is.data.frame(data))
 
   # Weights (for the observations):
   if (family$family == "binomial" && length(object$weights) > 0) {
@@ -710,8 +707,8 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
 
   if (aug_data) {
     args_augdat <- list(
-      augdat_link = "brms" %:::% "link_cumulative",
-      augdat_ilink = "brms" %:::% "inv_link_cumulative",
+      augdat_link = augdat_link_cumul,
+      augdat_ilink = augdat_ilink_cumul,
       augdat_args_link = list(link = family$link),
       augdat_args_ilink = list(link = family$link)
     )
@@ -785,6 +782,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
+  stopifnot(is.data.frame(data))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
@@ -840,8 +838,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         # For the augmented-data projection, `linpred_out` is expected to be a
         # 3-dimensional array with dimensions S_ref x N x C_lat (see
         # `?init_refmodel` for a definition of these dimensions). Therefore, it
-        # is converted to an augmented-rows matrix (see file "augdat.R" for a
-        # definition):
+        # is converted to an augmented-rows matrix (see `?`augdat-internals``
+        # for a definition):
         linpred_out <- arr2augmat(linpred_out, margin_draws = 1)
         n_obs <- attr(linpred_out, "nobs_orig")
       } else {

@@ -245,9 +245,12 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
   } else {
     if (d_type == "train") {
-      mu_test <- refmodel$family$linkinv(
-        refmodel$family$linkfun(refmodel$mu) + refmodel$offset
-      )
+      mu_test <- refmodel$mu
+      if (!all(refmodel$offset == 0)) {
+        mu_test <- refmodel$family$linkinv(
+          refmodel$family$linkfun(mu_test) + refmodel$offset
+        )
+      }
     } else {
       mu_test <- refmodel$family$linkinv(
         refmodel$ref_predfun(refmodel$fit, newdata = d_test$data) +
@@ -370,7 +373,10 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nclusters <- 1
   }
 
-  max_nv_possible <- count_terms_chosen(search_terms, duplicates = TRUE)
+  search_terms_unq <- unique(unlist(
+    strsplit(search_terms, split = "+", fixed = TRUE)
+  ))
+  max_nv_possible <- count_terms_chosen(search_terms_unq, duplicates = TRUE)
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }

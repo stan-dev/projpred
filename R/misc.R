@@ -26,6 +26,34 @@ log_sum_exp <- function(x) {
   max_x + log(sum(exp(x - max_x)))
 }
 
+linkfun_raw <- function(x, link_nm) {
+  if (link_nm %in% c("logistic", "logit")) {
+    return(qlogis(x))
+  } else if (link_nm == "probit") {
+    return(qnorm(x))
+  } else if (link_nm == "cloglog") {
+    return(log(-log1p(-x)))
+  } else if (link_nm == "cauchit") {
+    return(qcauchy(x))
+  } else {
+    stop("Unknown `link_nm`.")
+  }
+}
+
+ilinkfun_raw <- function(x, link_nm) {
+  if (link_nm %in% c("logistic", "logit")) {
+    return(plogis(x))
+  } else if (link_nm == "probit") {
+    return(pnorm(x))
+  } else if (link_nm == "cloglog") {
+    return(1 - exp(-exp(x)))
+  } else if (link_nm == "cauchit") {
+    return(pcauchy(x))
+  } else {
+    stop("Unknown `link_nm`.")
+  }
+}
+
 auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
@@ -206,7 +234,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   that do not have a dispersion parameter).
 #   * `dis`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
 #   reference model's dispersion parameter value for each draw/cluster (NA for
-#   those families that do not have a dispersion parameter). See issue #204.
+#   those families that do not have a dispersion parameter).
 #   * `weights`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
 #   weights for the draws/clusters.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
@@ -286,31 +314,33 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
-  # number of clusters (assumes labeling 1,...,nclusters)
+  # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
+  # Cluster centers:
   centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
-  wcluster <- rep(0, nclusters) # cluster weights
+  # Cluster weights:
+  wcluster <- rep(0, nclusters)
+  # Dispersion parameter draws aggregated within each cluster:
+  dis_agg <- rep(NA_real_, nclusters)
+  # Predictive variances:
+  predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
   eps <- 1e-10
   for (j in 1:nclusters) {
-    # compute normalized weights within the cluster, 1-eps is for numerical
-    # stability
     ind <- which(cl == j)
+    # Compute normalized weights within the j-th cluster; `1 - eps` is for
+    # numerical stability:
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
 
-    # cluster centers and their weights
+    # Center of the j-th cluster:
     centers[j, ] <- mu[, ind, drop = FALSE] %*% ws
-    wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
+    # Unnormalized weight for the j-th cluster:
+    wcluster[j] <- sum(wsample[ind])
+    # Aggregated dispersion parameter for the j-th cluster:
+    dis_agg[j] <- crossprod(dis[ind], ws)
+    # Predictive variance for the j-th cluster:
+    predvar[, j] <- family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
   }
   wcluster <- wcluster / sum(wcluster)
-
-  # predictive variances
-  predvar <- do.call(cbind, lapply(1:nclusters, function(j) {
-    # compute normalized weights within the cluster, 1-eps is for numerical
-    # stability
-    ind <- which(cl == j)
-    ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
-    family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
-  }))
 
   # combine the results
   p <- list(
@@ -320,6 +350,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     var = structure(predvar,
                     nobs_orig = attr(mu, "nobs_orig"),
                     class = oldClass(mu)),
+    dis = dis_agg,
     weights = wcluster,
     cl = cl,
     clust_used = TRUE

@@ -196,8 +196,10 @@ cv_varsel.refmodel <- function(
     sel <- sel_cv$sel
   }
 
-  # Find out how many CV folds select the same variables as the selection with
-  # all the data (assuming all CV folds have equal weight):
+  # Create `pct_solution_terms_cv`, a summary table of the fold-wise solution
+  # paths. For the column names (and therefore the order of the solution terms
+  # in the columns), the solution path from the full-data search is used. Note
+  # that the following code assumes that all CV folds have equal weight.
   candidate_terms <- split_formula(refmodel$formula,
                                    data = refmodel$fetch_data(),
                                    add_main_effects = FALSE)
@@ -423,6 +425,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     ## compute approximate LOO with PSIS weights
+    inds_aug <- inds
+    if (refmodel$family$for_augdat) {
+      inds_aug <- as.vector(do.call(rbind, lapply(inds_aug, function(i_aug) {
+        i_aug + (seq_along(refmodel$family$cats) - 1L) * n
+      })))
+    }
+    log_lik_ref <- t(refmodel$family$ll_fun(
+      p_pred$mu[inds_aug, , drop = FALSE], p_pred$dis, refmodel$y[inds],
+      refmodel$wobs[inds]
+    ))
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
                                      obs = inds,
@@ -431,9 +443,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
       sub_psisloo <- suppressWarnings(
-        loo::psis(-log_lik_sub,
+        loo::psis(-log_lik_ref,
                   cores = 1,
-                  r_eff = rep(1, ncol(log_lik_sub)))
+                  r_eff = rep(1, ncol(log_lik_ref)))
       )
       lw_sub <- suppressWarnings(weights(sub_psisloo))
       # Take into account that clustered draws usually have different weights:

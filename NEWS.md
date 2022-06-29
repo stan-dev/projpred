@@ -5,6 +5,16 @@
 * Introduction of the latent projection [(Catalina et al., 2021)](https://arxiv.org/abs/2109.04702) which adds support for more response families [**TODO**: more details needed here]. Note that the latent projection is currently considered as an experimental feature since it has not been tested thoroughly yet. For the latent projection based on a **brms** reference model, **brms** version [**TODO**: X.X.X] or later is needed. (GitHub: [**TODO**: insert PR number])
 * Introduction of the augmented-data projection which adds support for the `brms::categorical()` and `brms::cumulative()` response families as well as `rstanarm::stan_polr()` fits. More **brms** families might be supported in the future. The augmented-data projection may also be used for the `binomial()` or the `brms::bernoulli()` family (see `?extend_family` as well as `?augdat_link_binom` and `?augdat_ilink_binom`). Note that the augmented-data projection is currently considered as an experimental feature since it has not been tested thoroughly yet and is also subject to some more theoretical investigations. For the augmented-data projection based on a **brms** reference model, **brms** version 2.17.0 or later is needed. (GitHub: #70, #322, [**TODO** (if necessary): insert PR number])
 
+## Minor changes
+
+* Minor improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
+
+## Bug fixes
+
+* Fix GitHub issue #324 (large `search_terms` caused the R session to crash).
+* Fix GitHub issue #204. (GitHub: #325)
+* In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
+
 # projpred 2.1.2
 
 ## Minor changes
@@ -83,7 +93,7 @@
 * Argument `weights` of `init_refmodel()`'s argument `proj_predfun` has been removed. (GitHub: #163, #224)
 * **projpred**'s internal `div_minimizer` functions have been unified into a single `div_minimizer` which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: #230)
 * Improve the axis labels in `plot.vsel()`. (GitHub: #234, #270)
-* Handle **rstanarm**'s GitHub issue #551. This implies that **projpred**'s default `cvfun` for `stanreg` fits will now always use *inner* parallelization in `rstanarm::kfold()` (i.e., across chains, not across CV folds), with `getOption("mc.cores", 1)` cores. We do so on all systems (not only Windows). (GitHub: #249)
+* Handle **rstanarm**'s GitHub issue #551. This implies that **projpred**'s default `cvfun` for `stanreg` fits will now always use *inner* parallelization in `rstanarm::kfold.stanreg()` (i.e., across chains, not across CV folds), with `getOption("mc.cores", 1)` cores. We do so on all systems (not only Windows). (GitHub: #249)
 * Argument `fit` of `init_refmodel()`'s argument `proj_predfun` was renamed to `fits`. This is a non-breaking change since all calls to `proj_predfun` in **projpred** have that argument unnamed. However, this cannot be guaranteed in the future, so we strongly encourage users with a custom `proj_predfun` to rename argument `fit` to `fits`. (GitHub: #263)
 * `init_refmodel()` has gained argument `cvrefbuilder` which may be a custom function for constructing the K reference models in a K-fold CV. (GitHub: #271)
 * Allow arguments to be passed from `project()`, `varsel()`, and `cv_varsel()` to the divergence minimizer. (GitHub: #278)
