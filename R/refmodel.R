@@ -536,7 +536,6 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
                              cats = levels(object$y)),
                         class = "family")
   }
-  aug_data <- object$stan_function == "stan_polr" && !latent_proj
 
   # Data --------------------------------------------------------------------
 
@@ -694,6 +693,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
 
   # Augmented-data projection -----------------------------------------------
 
+  aug_data <- object$stan_function == "stan_polr" && !latent_proj
   if (aug_data) {
     args_augdat <- list(
       augdat_link = augdat_link_cumul,
