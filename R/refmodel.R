@@ -537,17 +537,6 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
                         class = "family")
   }
   aug_data <- object$stan_function == "stan_polr" && !latent_proj
-  if (aug_data) {
-    # Currently, we need brms for the special link and inverse link function.
-    # It shouldn't be hard to implement these separately so that brms is not
-    # needed here, but that would introduce redundancies and for now, relying
-    # on brms (>= 2.16.3) is the quickest solution and not too demanding.
-    if (!requireNamespace("brms", quietly = TRUE)) {
-      stop("Package \"brms\" needed. Please install it.",
-           call. = FALSE)
-    }
-    stopifnot(utils::packageVersion("brms") >= "2.16.3")
-  }
 
   # Data --------------------------------------------------------------------
 
