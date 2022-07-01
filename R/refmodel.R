@@ -101,8 +101,8 @@
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
 #' observations (in case of CV, these may be reduced to each fold),
-#' \eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
-#' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
+#' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
+#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
 #' draws). Then the functions supplied to these arguments need to have the
 #' following prototypes:
@@ -114,7 +114,7 @@
 #'     typically stored in `fit`) or data for new observations (at least in the
 #'     form of a `data.frame`).
 #' * `proj_predfun`: `proj_predfun(fits, newdata)` where:
-#'     + `fits` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj}
+#'     + `fits` accepts a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
 #'     containing this number of submodel fits. This `list` is the same as that
 #'     returned by [project()] in its output element `submodl` (which in turn is
 #'     the same as the return value of `div_minimizer`, except if [project()]
@@ -125,15 +125,15 @@
 #' * `div_minimizer` does not need to have a specific prototype, but it needs to
 #' be able to be called with the following arguments:
 #'     + `formula` accepts either a standard [`formula`] with a single response
-#'     (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a [`formula`] with
-#'     \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
+#'     (if \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}) or a [`formula`] with
+#'     \eqn{S_{\mathrm{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
 #'     the left-hand side in which case the projection has to be performed for
 #'     each of the response variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection.
 #'     + `family` accepts a [`family`] object.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
-#'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+#'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
 #'     GLM fitter).
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
@@ -141,9 +141,9 @@
 #'     + `...` accepts further arguments specified by the user.
 #'
 #' The return value of these functions needs to be:
-#' * `ref_predfun`: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
-#' * `proj_predfun`: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
-#' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
+#' * `ref_predfun`: an \eqn{N \times S_{\mathrm{ref}}}{N x S_ref} matrix.
+#' * `proj_predfun`: an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix.
+#' * `div_minimizer`: a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj} containing
 #' this number of submodel fits.
 #'
 #' # Argument `extract_model_data`
