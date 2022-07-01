@@ -47,10 +47,10 @@ scales, the predictions are averaged across the posterior draws.}
 \item{...}{Currently ignored.}
 }
 \value{
-In the following, \eqn{N}, \eqn{C_{\mbox{cat}}}{C_cat}, and
-\eqn{C_{\mbox{lat}}}{C_lat} from help topic \link{refmodel-init-get} are used.
-Furthermore, let \eqn{C} denote either \eqn{C_{\mbox{cat}}}{C_cat} (if
-\code{type = "response"}) or \eqn{C_{\mbox{lat}}}{C_lat} (if \code{type = "link"}).
+In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat}, and
+\eqn{C_{\mathrm{lat}}}{C_lat} from help topic \link{refmodel-init-get} are used.
+Furthermore, let \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if
+\code{type = "response"}) or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{type = "link"}).
 Then, if \code{is.null(ynew)}, the returned object contains the reference
 model's predictions (with the scale depending on argument \code{type}) as a
 length-\eqn{N} vector in case of the traditional projection and as an

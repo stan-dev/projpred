@@ -221,14 +221,14 @@ bootstrap <- function(x, fun = mean, B = 2000,
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
 #   observations (for non-augmented-data projection) or the number of augmented
 #   observations (for augmented-data projection), and
-#   \eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws (= either
+#   \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected draws (= either
 #   `nclusters` or `ndraws`, depending on which one is used). Then the return
 #   value is a list with elements:
 #
-#   * `mu`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of expected
+#   * `mu`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of expected
 #   values for \eqn{y} (probabilities for the response categories in case of the
 #   augmented-data projection) for each draw/cluster.
-#   * `var`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of predictive
+#   * `var`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of predictive
 #   variances for \eqn{y} for each draw/cluster which are needed for projecting
 #   the dispersion parameter (the predictive variances are NA for those families
 #   that do not have a dispersion parameter).

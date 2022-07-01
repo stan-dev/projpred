@@ -6,13 +6,13 @@
 #'
 #' The augmented-data projection makes extensive use of *augmented-rows
 #' matrices* and *augmented-length vectors*. In the following, \eqn{N},
-#' \eqn{C_{\mbox{cat}}}{C_cat}, \eqn{C_{\mbox{lat}}}{C_lat},
-#' \eqn{S_{\mbox{ref}}}{S_ref}, and \eqn{S_{\mbox{prj}}}{S_prj} from help topic
+#' \eqn{C_{\mathrm{cat}}}{C_cat}, \eqn{C_{\mathrm{lat}}}{C_lat},
+#' \eqn{S_{\mathrm{ref}}}{S_ref}, and \eqn{S_{\mathrm{prj}}}{S_prj} from help topic
 #' [refmodel-init-get] are used. Furthermore, let \eqn{C} denote either
-#' \eqn{C_{\mbox{cat}}}{C_cat} or \eqn{C_{\mbox{lat}}}{C_lat}, whichever is
+#' \eqn{C_{\mathrm{cat}}}{C_cat} or \eqn{C_{\mathrm{lat}}}{C_lat}, whichever is
 #' appropriate in the context where it is used (e.g., for `ref_predfun`'s
-#' output, \eqn{C = C_{\mbox{lat}}}{C = C_lat}). Similarly, let \eqn{S} denote
-#' either \eqn{S_{\mbox{ref}}}{S_ref} or \eqn{S_{\mbox{prj}}}{S_prj}, whichever
+#' output, \eqn{C = C_{\mathrm{lat}}}{C = C_lat}). Similarly, let \eqn{S} denote
+#' either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj}, whichever
 #' is appropriate in the context where it is used. Then an augmented-rows matrix
 #' is a matrix with \eqn{N \cdot C}{N * C} rows in \eqn{C} blocks of \eqn{N}
 #' rows, i.e., with the \eqn{N} observations nested in the \eqn{C} (latent)
