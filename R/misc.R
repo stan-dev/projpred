@@ -181,9 +181,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   subsampled (without replacement).
 #
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
-#   observations, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected draws
-#   (= either `nclusters` or `ndraws`, depending on which one is used). Then the
-#   return value is a list with elements:
+#   observations, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected
+#   draws (= either `nclusters` or `ndraws`, depending on which one is used).
+#   Then the return value is a list with elements:
 #
 #   * `mu`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of expected
 #   values for \eqn{y} for each draw/cluster.

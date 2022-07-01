@@ -206,8 +206,8 @@ The return value of these functions needs to be:
 \itemize{
 \item \code{ref_predfun}: an \eqn{N \times S_{\mathrm{ref}}}{N x S_ref} matrix.
 \item \code{proj_predfun}: an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix.
-\item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mathrm{prj}}}{S_prj} containing
-this number of submodel fits.
+\item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mathrm{prj}}}{S_prj}
+containing this number of submodel fits.
 }
 }
 

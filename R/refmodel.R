@@ -143,8 +143,8 @@
 #' The return value of these functions needs to be:
 #' * `ref_predfun`: an \eqn{N \times S_{\mathrm{ref}}}{N x S_ref} matrix.
 #' * `proj_predfun`: an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix.
-#' * `div_minimizer`: a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj} containing
-#' this number of submodel fits.
+#' * `div_minimizer`: a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
+#' containing this number of submodel fits.
 #'
 #' # Argument `extract_model_data`
 #'
