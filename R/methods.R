@@ -42,21 +42,21 @@
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
-#' @return In the following, \eqn{S_{\mbox{prj}}}{S_prj}, \eqn{N},
-#'   \eqn{C_{\mbox{cat}}}{C_cat}, and \eqn{C_{\mbox{lat}}}{C_lat} from help
+#' @return In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
+#'   \eqn{C_{\mathrm{cat}}}{C_cat}, and \eqn{C_{\mathrm{lat}}}{C_lat} from help
 #'   topic [refmodel-init-get] are used. Furthermore, let \eqn{C} denote either
-#'   \eqn{C_{\mbox{cat}}}{C_cat} (if `transform = TRUE`) or
-#'   \eqn{C_{\mbox{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
+#'   \eqn{C_{\mathrm{cat}}}{C_cat} (if `transform = TRUE`) or
+#'   \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
 #'   !is.null(solution_terms)` in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
 #'   `lpd` (log predictive densities). In case of the traditional projection,
-#'   both elements are \eqn{S_{\mbox{prj}} \times N}{S_prj x N} matrices. In
-#'   case of the augmented-data projection, `pred` is an \eqn{S_{\mbox{prj}}
-#'   \times N \times C}{S_prj x N x C} array and `lpd` is an \eqn{S_{\mbox{prj}}
-#'   \times N}{S_prj x N} matrix.
-#'   * [proj_predict()] returns an \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
-#'   matrix of predictions where \eqn{S_{\mbox{prj}}}{S_prj} denotes
+#'   both elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
+#'   case of the augmented-data projection, `pred` is an \eqn{S_{\mathrm{prj}}
+#'   \times N \times C}{S_prj x N x C} array and `lpd` is an
+#'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
+#'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
+#'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of the
 #'   augmented-data projection, this matrix has an attribute called `cats` (the
 #'   character vector of response categories) and the values of the matrix are
@@ -726,18 +726,18 @@ print.vsel <- function(x, ...) {
 #'   the lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
 #'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
-#'   U_{\mbox{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
-#'   submodel's true utility and \eqn{U_{\mbox{base}}}{U_base} denoting the
+#'   U_{\mathrm{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
+#'   submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
 #'   baseline model's true utility) falls above (or is equal to)
-#'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mbox{base}})}{pct * (u_0 - u_base)}
+#'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})}{pct * (u_0 - u_base)}
 #'   where \eqn{u_0} denotes the null model's estimated utility and
-#'   \eqn{u_{\mbox{base}}}{u_base} the baseline model's estimated utility. The
+#'   \eqn{u_{\mathrm{base}}}{u_base} the baseline model's estimated utility. The
 #'   baseline is either the reference model or the best submodel found (see
 #'   argument `baseline` of [summary.vsel()]).
 #'
 #'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
 #'   select the smallest model size for which the upper bound of the 68%
-#'   confidence interval for \eqn{U_k - U_{\mbox{base}}}{U_k - U_base} exceeds
+#'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
 #'   (or is equal to) zero, that is, for which the submodel's utility estimate
 #'   is at most one standard error smaller than the baseline model's utility
 #'   estimate.
@@ -1261,8 +1261,8 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   reference model fit (see section "Augmented-data projection" in
 #'   [extend_family()]'s documentation).
 #'
-#' @return An \eqn{S_{\mbox{prj}} \times Q}{S_prj x Q} matrix of projected
-#'   draws, with \eqn{S_{\mbox{prj}}}{S_prj} denoting the number of projected
+#' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
+#'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
 #'   draws and \eqn{Q} the number of parameters.
 #'
 #' @examples

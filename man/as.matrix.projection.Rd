@@ -18,8 +18,8 @@ uses \code{"rstanarm"} if the reference model fit is of an unknown class).}
 \item{...}{Currently ignored.}
 }
 \value{
-An \eqn{S_{\mbox{prj}} \times Q}{S_prj x Q} matrix of projected
-draws, with \eqn{S_{\mbox{prj}}}{S_prj} denoting the number of projected
+An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
+draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
 draws and \eqn{Q} the number of parameters.
 }
 \description{

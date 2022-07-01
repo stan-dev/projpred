@@ -160,15 +160,15 @@ analogously for higher-order joint effects, e.g., of three predictors).
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default. Otherwise, let \eqn{N} denote the number of
 observations (in case of CV, these may be reduced to each fold),
-\eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
-model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
+\eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
+model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 clustered) parameter draws for projection (short: the number of projected
-draws). For the augmented-data projection, let \eqn{C_{\mbox{cat}}}{C_cat}
-denote the number of response categories, \eqn{C_{\mbox{lat}}}{C_lat} the
+draws). For the augmented-data projection, let \eqn{C_{\mathrm{cat}}}{C_cat}
+denote the number of response categories, \eqn{C_{\mathrm{lat}}}{C_lat} the
 number of latent response categories (which typically equals
-\eqn{C_{\mbox{cat}} - 1}{C_cat - 1}), and define \eqn{N_{\mbox{augcat}} := N
-\cdot C_{\mbox{cat}}}{N_augcat := N * C_cat} as well as
-\eqn{N_{\mbox{auglat}} := N \cdot C_{\mbox{lat}}}{N_auglat := N * C_lat}.
+\eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define \eqn{N_{\mathrm{augcat}}
+:= N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat} as well as
+\eqn{N_{\mathrm{auglat}} := N \cdot C_{\mathrm{lat}}}{N_auglat := N * C_lat}.
 Then the functions supplied to these arguments need to have the following
 prototypes:
 \itemize{
@@ -183,7 +183,7 @@ form of a \code{data.frame}).
 }
 \item \code{proj_predfun}: \code{proj_predfun(fits, newdata)} where:
 \itemize{
-\item \code{fits} accepts a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj}
+\item \code{fits} accepts a \code{list} of length \eqn{S_{\mathrm{prj}}}{S_prj}
 containing this number of submodel fits. This \code{list} is the same as that
 returned by \code{\link[=project]{project()}} in its output element \code{submodl} (which in turn is
 the same as the return value of \code{div_minimizer}, except if \code{\link[=project]{project()}}
@@ -196,30 +196,30 @@ as with \code{refit_prj = FALSE}).
 be able to be called with the following arguments:
 \itemize{
 \item \code{formula} accepts either a standard \code{\link{formula}} with a single response
-(if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1} or in case of the augmented-data
-projection) or a \code{\link{formula}} with \eqn{S_{\mbox{prj}} > 1}{S_prj > 1}
-response variables \code{\link[=cbind]{cbind()}}-ed on the left-hand side in which case the
-projection has to be performed for each of the response variables
-separately.
+(if \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1} or in case of the
+augmented-data projection) or a \code{\link{formula}} with \eqn{S_{\mathrm{prj}} >
+    1}{S_prj > 1} response variables \code{\link[=cbind]{cbind()}}-ed on the left-hand side in
+which case the projection has to be performed for each of the response
+variables separately.
 \item \code{data} accepts a \code{data.frame} to be used for the projection. In case of
 the traditional (non-augmented-data) projection, this dataset has \eqn{N}
 rows. In case of the augmented-data projection, this dataset has
-\eqn{N_{\mbox{augcat}}}{N_augcat} rows.
+\eqn{N_{\mathrm{augcat}}}{N_augcat} rows.
 \item \code{family} accepts a \code{\link{family}} object.
 \item \code{weights} accepts either observation weights (at least in the form of a
 numeric vector) or \code{NULL} (for using a vector of ones as weights).
-\item \code{projpred_var} accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+\item \code{projpred_var} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 matrix of predictive variances (necessary for \pkg{projpred}'s internal
 GLM fitter) in case of the traditional projection and an
-\eqn{N_{\mbox{augcat}} \times S_{\mbox{prj}}}{N_augcat x S_prj} matrix of
-\code{NA}s in case of the augmented-data projection.
+\eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
+matrix of \code{NA}s in case of the augmented-data projection.
 \item \code{projpred_regul} accepts a single numeric value as supplied to argument
 \code{regul} of \code{\link[=project]{project()}}, for example.
-\item \code{projpred_ws_aug} accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+\item \code{projpred_ws_aug} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 matrix of expected values for the response in case of the traditional
-projection and an \eqn{N_{\mbox{augcat}} \times S_{\mbox{prj}}}{N_augcat
-    x S_prj} matrix of probabilities for the response categories in case of
-the augmented-data projection.
+projection and an \eqn{N_{\mathrm{augcat}} \times
+    S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
+response categories in case of the augmented-data projection.
 \item \code{...} accepts further arguments specified by the user.
 }
 }
@@ -227,17 +227,18 @@ the augmented-data projection.
 The return value of these functions needs to be:
 \itemize{
 \item \code{ref_predfun}: for the traditional projection, an \eqn{N \times
-S_{\mbox{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
-\eqn{S_{\mbox{ref}} \times N \times C_{\mbox{lat}}}{S_ref x N x C_lat} array
-(the only exception is the augmented-data projection for the \code{\link[=binomial]{binomial()}}
-family in which case \code{ref_predfun} needs to return an \eqn{N \times
-S_{\mbox{ref}}}{N x S_ref} matrix just like for the traditional projection
-because the array is constructed by an internal wrapper function).
+S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
+\eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref x N x C_lat}
+array (the only exception is the augmented-data projection for the
+\code{\link[=binomial]{binomial()}} family in which case \code{ref_predfun} needs to return an \eqn{N
+\times S_{\mathrm{ref}}}{N x S_ref} matrix just like for the traditional
+projection because the array is constructed by an internal wrapper function).
 \item \code{proj_predfun}: for the traditional projection, an \eqn{N \times
-S_{\mbox{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
-\eqn{N \times C_{\mbox{lat}} \times S_{\mbox{prj}}}{N x C_lat x S_prj} array.
-\item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mbox{prj}}}{S_prj} containing
-this number of submodel fits.
+S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
+\eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x C_lat x S_prj}
+array.
+\item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mathrm{prj}}}{S_prj}
+containing this number of submodel fits.
 }
 }
 
