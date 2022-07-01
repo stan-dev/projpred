@@ -42,16 +42,16 @@
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
-#' @return Let \eqn{S_{\mbox{prj}}}{S_prj} denote the number of (possibly
+#' @return Let \eqn{S_{\mathrm{prj}}}{S_prj} denote the number of (possibly
 #'   clustered) projected posterior draws (short: the number of projected draws)
 #'   and \eqn{N} the number of observations. Then, if the prediction is done for
 #'   one submodel only (i.e., `length(nterms) == 1 || !is.null(solution_terms)`
 #'   in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
-#'   `lpd` (log predictive densities). Both elements are \eqn{S_{\mbox{prj}}
+#'   `lpd` (log predictive densities). Both elements are \eqn{S_{\mathrm{prj}}
 #'   \times N}{S_prj x N} matrices.
-#'   * [proj_predict()] returns an \eqn{S_{\mbox{prj}} \times N}{S_prj x N}
-#'   matrix of predictions where \eqn{S_{\mbox{prj}}}{S_prj} denotes
+#'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
+#'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection.
 #'
 #'   If the prediction is done for more than one submodel, the output from above
@@ -689,18 +689,18 @@ print.vsel <- function(x, ...) {
 #'   the lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
 #'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
-#'   U_{\mbox{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
-#'   submodel's true utility and \eqn{U_{\mbox{base}}}{U_base} denoting the
+#'   U_{\mathrm{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
+#'   submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
 #'   baseline model's true utility) falls above (or is equal to)
-#'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mbox{base}})}{pct * (u_0 - u_base)}
+#'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})}{pct * (u_0 - u_base)}
 #'   where \eqn{u_0} denotes the null model's estimated utility and
-#'   \eqn{u_{\mbox{base}}}{u_base} the baseline model's estimated utility. The
+#'   \eqn{u_{\mathrm{base}}}{u_base} the baseline model's estimated utility. The
 #'   baseline is either the reference model or the best submodel found (see
 #'   argument `baseline` of [summary.vsel()]).
 #'
 #'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
 #'   select the smallest model size for which the upper bound of the 68%
-#'   confidence interval for \eqn{U_k - U_{\mbox{base}}}{U_k - U_base} exceeds
+#'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
 #'   (or is equal to) zero, that is, for which the submodel's utility estimate
 #'   is at most one standard error smaller than the baseline model's utility
 #'   estimate.
@@ -1056,8 +1056,8 @@ get_subparams.gamm4 <- function(x, ...) {
 #'   uses `"rstanarm"` if the reference model fit is of an unknown class).
 #' @param ... Currently ignored.
 #'
-#' @return An \eqn{S_{\mbox{prj}} \times Q}{S_prj x Q} matrix of projected
-#'   draws, with \eqn{S_{\mbox{prj}}}{S_prj} denoting the number of projected
+#' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
+#'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
 #'   draws and \eqn{Q} the number of parameters.
 #'
 #' @examples
