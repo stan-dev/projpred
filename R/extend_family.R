@@ -44,21 +44,21 @@
 #' \eqn{C_{\mathrm{lat}}}{C_lat}, \eqn{S_{\mathrm{ref}}}{S_ref}, and
 #' \eqn{S_{\mathrm{prj}}}{S_prj} from help topic [refmodel-init-get] are used.
 #' Furthermore, let \eqn{S} denote either \eqn{S_{\mathrm{ref}}}{S_ref} or
-#' \eqn{S_{\mathrm{prj}}}{S_prj}, whichever is appropriate in the context where it
-#' is used.
+#' \eqn{S_{\mathrm{prj}}}{S_prj}, whichever is appropriate in the context where
+#' it is used.
 #'
 #' Then, as their first input, the functions supplied to arguments `augdat_link`
 #' and `augdat_ilink` have to accept:
-#' * For `augdat_link`: an \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x C_cat}
-#' array containing the probabilities for the response categories. The order of
-#' the response categories is the same as in `family$cats` (see argument
-#' `augdat_y_unqs`).
+#' * For `augdat_link`: an \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x
+#' C_cat} array containing the probabilities for the response categories. The
+#' order of the response categories is the same as in `family$cats` (see
+#' argument `augdat_y_unqs`).
 #' * For `augdat_ilink`: an \eqn{S \times N \times C_{\mathrm{lat}}}{S x N x
 #' C_lat} array containing the linear predictors.
 #'
 #' The return value of these functions needs to be:
-#' * For `augdat_link`: an \eqn{S \times N \times C_{\mathrm{lat}}}{S x N x C_lat}
-#' array containing the linear predictors.
+#' * For `augdat_link`: an \eqn{S \times N \times C_{\mathrm{lat}}}{S x N x
+#' C_lat} array containing the linear predictors.
 #' * For `augdat_ilink`: an \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x
 #' C_cat} array containing the probabilities for the response categories. The
 #' order of the response categories has to be the same as in `family$cats` (see

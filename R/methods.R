@@ -53,8 +53,8 @@
 #'   `lpd` (log predictive densities). In case of the traditional projection,
 #'   both elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
 #'   case of the augmented-data projection, `pred` is an \eqn{S_{\mathrm{prj}}
-#'   \times N \times C}{S_prj x N x C} array and `lpd` is an \eqn{S_{\mathrm{prj}}
-#'   \times N}{S_prj x N} matrix.
+#'   \times N \times C}{S_prj x N x C} array and `lpd` is an
+#'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of the

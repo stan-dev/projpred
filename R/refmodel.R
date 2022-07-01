@@ -108,8 +108,8 @@
 #' draws). For the augmented-data projection, let \eqn{C_{\mathrm{cat}}}{C_cat}
 #' denote the number of response categories, \eqn{C_{\mathrm{lat}}}{C_lat} the
 #' number of latent response categories (which typically equals
-#' \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define \eqn{N_{\mathrm{augcat}} := N
-#' \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat} as well as
+#' \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define \eqn{N_{\mathrm{augcat}}
+#' := N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat} as well as
 #' \eqn{N_{\mathrm{auglat}} := N \cdot C_{\mathrm{lat}}}{N_auglat := N * C_lat}.
 #' Then the functions supplied to these arguments need to have the following
 #' prototypes:
@@ -132,11 +132,11 @@
 #' * `div_minimizer` does not need to have a specific prototype, but it needs to
 #' be able to be called with the following arguments:
 #'     + `formula` accepts either a standard [`formula`] with a single response
-#'     (if \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1} or in case of the augmented-data
-#'     projection) or a [`formula`] with \eqn{S_{\mathrm{prj}} > 1}{S_prj > 1}
-#'     response variables [cbind()]-ed on the left-hand side in which case the
-#'     projection has to be performed for each of the response variables
-#'     separately.
+#'     (if \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1} or in case of the
+#'     augmented-data projection) or a [`formula`] with \eqn{S_{\mathrm{prj}} >
+#'     1}{S_prj > 1} response variables [cbind()]-ed on the left-hand side in
+#'     which case the projection has to be performed for each of the response
+#'     variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection. In case of
 #'     the traditional (non-augmented-data) projection, this dataset has \eqn{N}
 #'     rows. In case of the augmented-data projection, this dataset has
@@ -147,30 +147,31 @@
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
 #'     GLM fitter) in case of the traditional projection and an
-#'     \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of
-#'     `NA`s in case of the augmented-data projection.
+#'     \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
+#'     matrix of `NA`s in case of the augmented-data projection.
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'     + `projpred_ws_aug` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of expected values for the response in case of the traditional
-#'     projection and an \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat
-#'     x S_prj} matrix of probabilities for the response categories in case of
-#'     the augmented-data projection.
+#'     projection and an \eqn{N_{\mathrm{augcat}} \times
+#'     S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
+#'     response categories in case of the augmented-data projection.
 #'     + `...` accepts further arguments specified by the user.
 #'
 #' The return value of these functions needs to be:
 #' * `ref_predfun`: for the traditional projection, an \eqn{N \times
 #' S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
-#' \eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref x N x C_lat} array
-#' (the only exception is the augmented-data projection for the [binomial()]
-#' family in which case `ref_predfun` needs to return an \eqn{N \times
-#' S_{\mathrm{ref}}}{N x S_ref} matrix just like for the traditional projection
-#' because the array is constructed by an internal wrapper function).
+#' \eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref x N x C_lat}
+#' array (the only exception is the augmented-data projection for the
+#' [binomial()] family in which case `ref_predfun` needs to return an \eqn{N
+#' \times S_{\mathrm{ref}}}{N x S_ref} matrix just like for the traditional
+#' projection because the array is constructed by an internal wrapper function).
 #' * `proj_predfun`: for the traditional projection, an \eqn{N \times
 #' S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
-#' \eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x C_lat x S_prj} array.
-#' * `div_minimizer`: a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj} containing
-#' this number of submodel fits.
+#' \eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x C_lat x S_prj}
+#' array.
+#' * `div_minimizer`: a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
+#' containing this number of submodel fits.
 #'
 #' # Argument `extract_model_data`
 #'

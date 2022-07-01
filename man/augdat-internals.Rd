@@ -7,23 +7,23 @@
 The augmented-data projection makes extensive use of \emph{augmented-rows
 matrices} and \emph{augmented-length vectors}. In the following, \eqn{N},
 \eqn{C_{\mathrm{cat}}}{C_cat}, \eqn{C_{\mathrm{lat}}}{C_lat},
-\eqn{S_{\mathrm{ref}}}{S_ref}, and \eqn{S_{\mathrm{prj}}}{S_prj} from help topic
-\link{refmodel-init-get} are used. Furthermore, let \eqn{C} denote either
+\eqn{S_{\mathrm{ref}}}{S_ref}, and \eqn{S_{\mathrm{prj}}}{S_prj} from help
+topic \link{refmodel-init-get} are used. Furthermore, let \eqn{C} denote either
 \eqn{C_{\mathrm{cat}}}{C_cat} or \eqn{C_{\mathrm{lat}}}{C_lat}, whichever is
 appropriate in the context where it is used (e.g., for \code{ref_predfun}'s
 output, \eqn{C = C_{\mathrm{lat}}}{C = C_lat}). Similarly, let \eqn{S} denote
-either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj}, whichever
-is appropriate in the context where it is used. Then an augmented-rows matrix
-is a matrix with \eqn{N \cdot C}{N * C} rows in \eqn{C} blocks of \eqn{N}
-rows, i.e., with the \eqn{N} observations nested in the \eqn{C} (latent)
-response categories. For ordered response categories, the \eqn{C} (latent)
-response categories (i.e., the row blocks) have to be sorted increasingly.
-The columns of an augmented-rows matrix have to correspond to the \eqn{S}
-parameter draws, just like for the non-augmented-data projection. An
-augmented-rows matrix is of class \code{augmat} (inheriting from classes \code{matrix}
-and \code{array}) and needs to have the value of \eqn{N} stored in an attribute
-called \code{nobs_orig}. An augmented-length vector (class \code{augvec}) is the vector
-resulting from subsetting an augmented-rows matrix to extract a single column
-and thereby dropping dimensions.
+either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
+whichever is appropriate in the context where it is used. Then an
+augmented-rows matrix is a matrix with \eqn{N \cdot C}{N * C} rows in \eqn{C}
+blocks of \eqn{N} rows, i.e., with the \eqn{N} observations nested in the
+\eqn{C} (latent) response categories. For ordered response categories, the
+\eqn{C} (latent) response categories (i.e., the row blocks) have to be sorted
+increasingly. The columns of an augmented-rows matrix have to correspond to
+the \eqn{S} parameter draws, just like for the non-augmented-data projection.
+An augmented-rows matrix is of class \code{augmat} (inheriting from classes
+\code{matrix} and \code{array}) and needs to have the value of \eqn{N} stored in an
+attribute called \code{nobs_orig}. An augmented-length vector (class \code{augvec}) is
+the vector resulting from subsetting an augmented-rows matrix to extract a
+single column and thereby dropping dimensions.
 }
 \keyword{internal}
