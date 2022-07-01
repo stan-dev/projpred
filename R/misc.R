@@ -232,14 +232,14 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   variances for \eqn{y} for each draw/cluster which are needed for projecting
 #   the dispersion parameter (the predictive variances are NA for those families
 #   that do not have a dispersion parameter).
-#   * `dis`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
+#   * `dis`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing the
 #   reference model's dispersion parameter value for each draw/cluster (NA for
 #   those families that do not have a dispersion parameter).
-#   * `weights`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
+#   * `weights`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing the
 #   weights for the draws/clusters.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
-#   integer between 1 and \eqn{S_{\mbox{prj}}}{S_prj}.
+#   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE) {
   # Number of draws in the reference model:

@@ -102,8 +102,8 @@
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
 #' observations (in case of CV, these may be reduced to each fold),
-#' \eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
-#' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
+#' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
+#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
 #' draws). For the augmented-data projection, let \eqn{C_{\mbox{cat}}}{C_cat}
 #' denote the number of response categories, \eqn{C_{\mbox{lat}}}{C_lat} the
@@ -121,7 +121,7 @@
 #'     typically stored in `fit`) or data for new observations (at least in the
 #'     form of a `data.frame`).
 #' * `proj_predfun`: `proj_predfun(fits, newdata)` where:
-#'     + `fits` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj}
+#'     + `fits` accepts a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
 #'     containing this number of submodel fits. This `list` is the same as that
 #'     returned by [project()] in its output element `submodl` (which in turn is
 #'     the same as the return value of `div_minimizer`, except if [project()]
@@ -144,7 +144,7 @@
 #'     + `family` accepts a [`family`] object.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
-#'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+#'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
 #'     GLM fitter) in case of the traditional projection and an
 #'     \eqn{N_{\mbox{augcat}} \times S_{\mbox{prj}}}{N_augcat x S_prj} matrix of
