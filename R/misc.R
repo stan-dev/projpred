@@ -36,7 +36,7 @@ auc <- function(x) {
   pred <- pred[ord]
   weights <- weights[ord]
   w0 <- w1 <- weights
-  w0[resp == 1] <- 0 # true negative weights
+  w0[resp == 1] <- 0 # false positive weights
   w1[resp == 0] <- 0 # true positive weights
   cum_w0 <- cumsum(w0)
   cum_w1 <- cumsum(w1)
