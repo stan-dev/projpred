@@ -565,16 +565,29 @@ submodl_tester <- function(
           expect_equal(submodl_totest[[!!j]]$formula, sub_formul[[!!j]],
                        info = info_str)
         } else {
-          # The order of interactions might be changed in the reference model:
+          # The order of terms as well as the order of individual terms within
+          # ":" interaction terms might be changed in the reference model:
           expect_equal(submodl_totest[[!!j]]$formula[[2]],
                        sub_formul[[!!j]][[2]],
                        info = info_str)
-          expect_equal(labels(terms(submodl_totest[[!!j]]$formula)),
-                       labels(terms(sub_formul[[!!j]])),
-                       info = info_str)
+          trms_to_test <- labels(terms(submodl_totest[[j]]$formula))
+          trms_ch <- labels(terms(sub_formul[[j]]))
+          expect_true(setequal(c(trms_to_test, revIA(trms_to_test)),
+                               c(trms_ch, revIA(trms_ch))),
+                      info = info_str)
         }
 
-        expect_identical(submodl_totest[[!!j]]$x, sub_x_expected,
+        x_to_test <- submodl_totest[[j]]$x
+        x_ch <- sub_x_expected
+        if (!identical(dimnames(x_to_test)[[2]],
+                       dimnames(x_ch)[[2]])) {
+          # Try reversing the order of individual terms within ":" interaction
+          # terms:
+          dimnames(x_ch)[[2]][grep(":", dimnames(x_ch)[[2]])] <- revIA(
+            dimnames(x_ch)[[2]]
+          )
+        }
+        expect_identical(x_to_test, x_ch,
                          info = info_str)
 
         if (!from_vsel_L1_search) {

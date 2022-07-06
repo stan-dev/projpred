@@ -129,6 +129,7 @@ source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
+source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
 
 mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
 if (run_additive) {

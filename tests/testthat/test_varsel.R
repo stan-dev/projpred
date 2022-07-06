@@ -779,12 +779,11 @@ test_that(paste(
     fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
 
-    # Refit `K_crr` times:
-    if (grepl("\\.glmm\\.", tstsetup) && FALSE) {
-      # TODO: Currently, this case is deactivated because of an error thrown by
-      # lme4. When resolved, activate it by removing the ` && FALSE` part inside
-      # of the `if` condition.
-
+    # Refit `K_crr` times (note: below, the seed for constructing `folds_vec`
+    # had to be changed in some cases to avoid unfavorable PRNG situations,
+    # leading to technical issues such as nonconvergence of the submodel fitter;
+    # this is also tied to the value of `seed_tst`):
+    if (grepl("\\.glmm\\.", tstsetup)) {
       # Perform a grouped K-fold CV to test an edge case where all observations
       # belonging to the same level of a variable with group-level effects are
       # in the same fold, so prediction is performed for new levels (see, e.g.,
@@ -792,13 +791,12 @@ test_that(paste(
       if (exists(".Random.seed", envir = .GlobalEnv)) {
         rng_old <- get(".Random.seed", envir = .GlobalEnv)
       }
-      set.seed(seed2_tst) # Makes the construction of the CV folds reproducible.
+      # Make the construction of the CV folds reproducible:
+      set.seed(seed2_tst * 3L)
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
       if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else {
-      # Change seed to avoid unfavorable CV folds causing an `nAGQ` error by
-      # lme4 during projection:
-      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst + 1L)
+      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
     }
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
@@ -886,7 +884,10 @@ test_that(paste(
     fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
 
-    # Refit `K_crr` times:
+    # Refit `K_crr` times (note: below, the seed for constructing `folds_vec`
+    # had to be changed in some cases to avoid unfavorable PRNG situations,
+    # leading to technical issues such as nonconvergence of the submodel fitter;
+    # this is also tied to the value of `seed_tst`):
     if (grepl("\\.glmm\\.", tstsetup)) {
       # Perform a grouped K-fold CV to test an edge case where all observations
       # belonging to the same level of a variable with group-level effects are
@@ -895,9 +896,12 @@ test_that(paste(
       if (exists(".Random.seed", envir = .GlobalEnv)) {
         rng_old <- get(".Random.seed", envir = .GlobalEnv)
       }
-      set.seed(seed2_tst) # Makes the construction of the CV folds reproducible.
+      # Make the construction of the CV folds reproducible:
+      set.seed(seed2_tst + 10L)
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
       if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
+    } else if (grepl("\\.gam\\.", tstsetup)) {
+      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst + 10L)
     } else {
       folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
     }
