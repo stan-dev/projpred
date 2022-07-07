@@ -325,7 +325,8 @@ if (run_brms) {
   file_pth <- testthat::test_path("bfits")
   if (!dir.exists(file_pth)) dir.create(file_pth)
   # Backend:
-  if (requireNamespace("cmdstanr", quietly = TRUE)) {
+  if (requireNamespace("cmdstanr", quietly = TRUE) &&
+      !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
     options(brms.backend = "cmdstanr")
   }
 }
