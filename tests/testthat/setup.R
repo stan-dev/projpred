@@ -328,8 +328,8 @@ if (run_brms) {
   if (requireNamespace("cmdstanr", quietly = TRUE) &&
       !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
     options(brms.backend = "cmdstanr")
-    # Relative file paths currently don't work for option
-    # `cmdstanr_write_stan_file_dir`, so use the full path:
+    # Relative file paths currently (UPDATE: fixed by cmdstanr PR #665) don't
+    # work for option `cmdstanr_write_stan_file_dir`, so use the full path:
     options(cmdstanr_write_stan_file_dir = file.path(getwd(), file_pth))
   }
 }
