@@ -11,6 +11,7 @@
 * In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
 * Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on.
 * Fix GitHub issue #329.
+* Fix GitHub issue #331.
 
 # projpred 2.1.2
 
