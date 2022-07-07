@@ -1133,6 +1133,10 @@ cre_args_smmry_vsel <- function(args_obj) {
           nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         }
       }
+      if (fam_crr == "binom") {
+        # Due to issue #330:
+        stats_crr$stats <- setdiff(stats_crr$stats, "auc")
+      }
       lapply(nterms_tst, function(nterms_crr) {
         return(c(
           nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
