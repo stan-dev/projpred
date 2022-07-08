@@ -122,7 +122,7 @@ The first step after running the variable selection should be the decision for a
 plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
 ```
 
-Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (this is also affected by `validate_search = FALSE`):
+Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (note that since the plot is affected by `validate_search = FALSE`, this manual decision based on the plot is affected, too):
 ```{r}
 modsize_decided <- 6
 ```
