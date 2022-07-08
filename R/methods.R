@@ -393,25 +393,60 @@ plot.vsel <- function(
     NULL
   }
 
+  # Table of thresholds used in extended suggest_size() heuristics (only in
+  # case of ELPD and MLPD):
+  thres_tab_basic <- data.frame(statistic = c("elpd", "mlpd"),
+                                thres = c(-4, -4 / NROW(object$refmodel$y)))
+
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
                mapping = aes_string(x = "size"))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
-    pp <- pp + geom_hline(aes_string(yintercept = "value"),
-                          data = stats_ref,
-                          color = "darkred", linetype = 2)
+
+    # Incorporate the value for the reference model's statistic into the
+    # thresholds used in extended suggest_size() heuristics:
+    thres_tab_ref <- merge(thres_tab_basic,
+                           stats_ref[, c("statistic", "value")],
+                           by = "statistic")
+    thres_tab_ref <- within(thres_tab_ref, thres <- value + thres)
+
+    pp <- pp +
+      # The reference model's dashed red horizontal line:
+      geom_hline(aes_string(yintercept = "value"),
+                 data = stats_ref,
+                 color = "darkred", linetype = 2) +
+      # The thresholds used in extended suggest_size() heuristics:
+      geom_hline(aes_string(yintercept = "thres"),
+                 data = thres_tab_ref,
+                 color = "gray50", linetype = 3)
   }
   if (baseline != "ref") {
-    # add the baseline result (if different from the reference model)
-    pp <- pp + geom_hline(aes_string(yintercept = "value"),
-                          data = stats_bs,
-                          color = "black", linetype = 3)
+    # add baseline model results (if different from the reference model)
+
+    # Incorporate the value for the baseline model's statistic into the
+    # thresholds used in extended suggest_size() heuristics:
+    thres_tab_bs <- merge(thres_tab_basic,
+                          stats_bs[, c("statistic", "value")],
+                          by = "statistic")
+    thres_tab_bs <- within(thres_tab_bs, thres <- value + thres)
+
+    pp <- pp +
+      # The baseline model's dotted black horizontal line:
+      geom_hline(aes_string(yintercept = "value"),
+                 data = stats_bs,
+                 color = "black", linetype = 3) +
+      # The thresholds used in extended suggest_size() heuristics:
+      geom_hline(aes_string(yintercept = "thres"),
+                 data = thres_tab_bs,
+                 color = "darkgreen", linetype = 3)
   }
   pp <- pp +
+    # The submodel-specific graphical elements:
     geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
     geom_line(aes_string(y = "value")) +
     geom_point(aes_string(y = "value")) +
+    # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
