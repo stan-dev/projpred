@@ -793,10 +793,10 @@ suggest_size.vsel <- function(
     } else {
       suggested_size <- NA
       if (warnings) {
-        warning("Could not suggest model size. Investigate plot.vsel to ",
+        warning("Could not suggest model size. Investigate plot.vsel() to ",
                 "identify if the search was terminated too early. If this is ",
                 "the case, run variable selection with larger value for ",
-                "nterms_max.")
+                "`nterms_max`.")
       }
     }
   } else {
