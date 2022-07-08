@@ -52,6 +52,12 @@
 #'   exception where the search part is not cross-validated. In that case, the
 #'   evaluation part is based on a PSIS-LOO CV.
 #'
+#'   For all PSIS-LOO CVs, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`.
+#'   This is only a problem if there was extreme autocorrelation between the
+#'   MCMC iterations when the reference model was built. In those cases however,
+#'   the reference model should not have been used anyway, so we don't expect
+#'   \pkg{projpred}'s `r_eff = NA` to be a problem.
+#'
 #' @references
 #'
 #' Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
@@ -330,8 +336,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     loglik <- refmodel$loglik
   }
   n <- ncol(loglik)
-  ## TODO: should take r_eff:s into account
-  psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1, n))
+  psisloo <- loo::psis(-loglik, cores = 1, r_eff = NA)
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
   ## by default use all observations
@@ -409,9 +414,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
       sub_psisloo <- suppressWarnings(
-        loo::psis(-log_lik_ref,
-                  cores = 1,
-                  r_eff = rep(1, ncol(log_lik_ref)))
+        loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
       )
       lw_sub <- suppressWarnings(weights(sub_psisloo))
       # Take into account that clustered draws usually have different weights:
