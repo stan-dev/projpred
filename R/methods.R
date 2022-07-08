@@ -667,8 +667,8 @@ print.vsel <- function(x, ...) {
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
-#' @param stat Statistic used for the decision. See argument `stats` of
-#'   [summary.vsel()] for possible choices.
+#' @param stat Statistic (i.e., utility or loss) used for the decision. See
+#'   argument `stats` of [summary.vsel()] for possible choices.
 #' @param pct A number giving the relative proportion (*not* percents) between
 #'   baseline model and null model utilities one is willing to sacrifice. See
 #'   section "Details" below for more information.
@@ -683,9 +683,10 @@ print.vsel <- function(x, ...) {
 #'   See section "Details" below for some important arguments which may be
 #'   passed here.
 #'
-#' @details The suggested model size is the smallest model size \eqn{k \in \{0,
-#'   1, ..., \texttt{nterms\_max\}}}{k = 0, 1, ..., nterms_max} for which either
-#'   the lower or upper bound (depending on argument `type`) of the
+#' @details In general (beware of special extensions below), the suggested model
+#'   size is the smallest model size \eqn{k \in \{0, 1, ...,
+#'   \texttt{nterms\_max\}}}{k = 0, 1, ..., nterms_max} for which either the
+#'   lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
 #'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
 #'   U_{\mathrm{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
@@ -694,11 +695,20 @@ print.vsel <- function(x, ...) {
 #'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})}{pct * (u_0 - u_base)}
 #'   where \eqn{u_0} denotes the null model's estimated utility and
 #'   \eqn{u_{\mathrm{base}}}{u_base} the baseline model's estimated utility. The
-#'   baseline is either the reference model or the best submodel found (see
-#'   argument `baseline` of [summary.vsel()]).
+#'   baseline model is either the reference model or the best submodel found
+#'   (see argument `baseline` of [summary.vsel()]).
 #'
-#'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
-#'   select the smallest model size for which the upper bound of the 68%
+#'   In case of `stat = "elpd"`, the decision rule above is extended: The
+#'   suggested model size is then the smallest model size \eqn{k} fulfilling the
+#'   rule above *or* \eqn{u_k - u_{\mathrm{base}} > -4}{u_k - u_base > -4}.
+#'   Correspondingly, in case of `stat = "mlpd"`, the suggested model size is
+#'   the smallest model size \eqn{k} fulfilling the rule above *or* \eqn{u_k -
+#'   u_{\mathrm{base}} > -\frac{4}{N}}{u_k - u_base > -4 / N} with \eqn{N}
+#'   denoting the number of observations.
+#'
+#'   For example (disregarding the special extensions in case of `stat = "elpd"`
+#'   or `stat = "mlpd"`), `alpha = 0.32`, `pct = 0`, and `type = "upper"` means
+#'   that we select the smallest model size for which the upper bound of the 68%
 #'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
 #'   (or is equal to) zero, that is, for which the submodel's utility estimate
 #'   is at most one standard error smaller than the baseline model's utility
@@ -777,13 +787,21 @@ suggest_size.vsel <- function(
                         stats = stat,
                         type = c("mean", "upper", "lower"),
                         deltas = TRUE,
-                        ...)$selection
+                        ...)
+  nobs <- stats$nobs
+  stats <- stats$selection
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
     paste0(stat, suffix)
   )))
   util_cutoff <- pct * util_null
-  res <- subset(stats, sgn * stats[, bound] >= util_cutoff, "size")
+  res <- subset(
+    stats,
+    (sgn * stats[, bound] >= util_cutoff) |
+      (stat == "elpd" & stats[, paste0(stat, suffix)] > -4) |
+      (stat == "mlpd" & stats[, paste0(stat, suffix)] > -4 / nobs),
+    "size"
+  )
 
   if (nrow(res) == 0) {
     ## no submodel satisfying the criterion found
