@@ -310,7 +310,8 @@ test_that("`stat` works", {
       suggsize <- suppressWarnings(
         suggest_size(vss[[tstsetup_vs]], stat = stat_crr, seed = suggsize_seed)
       )
-      expect_type(suggsize, "double")
+      expect_true(is.vector(suggsize, "numeric"),
+                  info = paste(tstsetup, stat_crr, sep = "__"))
       expect_length(suggsize, 1)
       if (!is.na(suggsize)) {
         expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))

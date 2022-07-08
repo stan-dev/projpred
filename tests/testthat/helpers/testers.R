@@ -1402,7 +1402,7 @@ vsel_tester <- function(
   expect_equal(vs$nprjdraws_eval, nprjdraws_eval_expected, info = info_str)
 
   # suggested_size
-  expect_type(vs$suggested_size, "double")
+  expect_true(is.vector(vs$suggested_size, "numeric"), info = info_str)
   expect_length(vs$suggested_size, 1)
 
   # summary

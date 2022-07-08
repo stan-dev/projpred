@@ -800,10 +800,12 @@ suggest_size.vsel <- function(
       }
     }
   } else {
-    suggested_size <- min(res) + 1
+    # Above, `object$nterms_max` includes the intercept (if present), so we need
+    # to include it here, too:
+    suggested_size <- min(res) + object$refmodel$intercept
   }
 
-  return(suggested_size - 1) ## substract the intercept
+  return(suggested_size - object$refmodel$intercept)
 }
 
 # Make the parameter name(s) for the intercept(s) adhere to the naming scheme
