@@ -302,6 +302,15 @@ proj_predict_aux <- function(proj, mu, weights, ...) {
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #'
+#' @details As long as the reference model's performance is computable, it is
+#'   always shown in the plot as a dashed red horizontal line. If `baseline =
+#'   "best"`, the baseline model's performance is shown as a dotted black
+#'   horizontal line. If `"elpd" %in% stats` or `"mlpd" %in% stats`, the
+#'   threshold used for the corresponding extension of the [suggest_size()]
+#'   heuristic is shown as a dot-dashed gray horizontal line for the reference
+#'   model and, if `baseline = "best"`, as a long-dashed green horizontal line
+#'   for the baseline model.
+#'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:

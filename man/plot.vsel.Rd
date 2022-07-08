@@ -61,6 +61,15 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}).
 }
+\details{
+As long as the reference model's performance is computable, it is
+always shown in the plot as a dashed red horizontal line. If \code{baseline = "best"}, the baseline model's performance is shown as a dotted black
+horizontal line. If \code{"elpd" \%in\% stats} or \code{"mlpd" \%in\% stats}, the
+threshold used for the corresponding extension of the \code{\link[=suggest_size]{suggest_size()}}
+heuristic is shown as a dot-dashed gray horizontal line for the reference
+model and, if \code{baseline = "best"}, as a long-dashed green horizontal line
+for the baseline model.
+}
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
   # Data:
