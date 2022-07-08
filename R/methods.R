@@ -395,11 +395,7 @@ plot.vsel <- function(
 
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
-               mapping = aes_string(x = "size")) +
-    geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
-    geom_line(aes_string(y = "value")) +
-    geom_point(aes_string(y = "value"))
-
+               mapping = aes_string(x = "size"))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
@@ -413,6 +409,9 @@ plot.vsel <- function(
                           color = "black", linetype = 3)
   }
   pp <- pp +
+    geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
+    geom_line(aes_string(y = "value")) +
+    geom_point(aes_string(y = "value")) +
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
