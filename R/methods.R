@@ -419,7 +419,7 @@ plot.vsel <- function(
       # The thresholds used in extended suggest_size() heuristics:
       geom_hline(aes_string(yintercept = "thres"),
                  data = thres_tab_ref,
-                 color = "gray50", linetype = 3)
+                 color = "gray50", linetype = "dotdash")
   }
   if (baseline != "ref") {
     # add baseline model results (if different from the reference model)
@@ -439,7 +439,7 @@ plot.vsel <- function(
       # The thresholds used in extended suggest_size() heuristics:
       geom_hline(aes_string(yintercept = "thres"),
                  data = thres_tab_bs,
-                 color = "darkgreen", linetype = 3)
+                 color = "darkgreen", linetype = "longdash")
   }
   pp <- pp +
     # The submodel-specific graphical elements:
