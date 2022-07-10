@@ -324,6 +324,15 @@ if (run_brms) {
   # For storing "brmsfit"s locally:
   file_pth <- testthat::test_path("bfits")
   if (!dir.exists(file_pth)) dir.create(file_pth)
+  # Backend:
+  if (identical(Sys.getenv("TESTS_BRMS_BACKEND"), "cmdstanr") &&
+      requireNamespace("cmdstanr", quietly = TRUE) &&
+      !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+    options(brms.backend = "cmdstanr")
+    # Relative file paths currently (UPDATE: fixed by cmdstanr PR #665) don't
+    # work for option `cmdstanr_write_stan_file_dir`, so use the full path:
+    options(cmdstanr_write_stan_file_dir = file.path(getwd(), file_pth))
+  }
 }
 pkg_nms <- setNames(nm = pkg_nms)
 
@@ -522,7 +531,11 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
                             random_arg)
             } else if (pkg_nm == "brms") {
               pkg_args <- list(file = file_pth,
-                               file_refit = "on_change") # , silent = 2
+                               file_refit = "on_change",
+                               silent = 2)
+              if (identical(getOption("brms.backend", "rstan"), "cmdstanr")) {
+                pkg_args <- c(pkg_args, list(diagnostics = NULL))
+              }
             }
 
             return(c(
