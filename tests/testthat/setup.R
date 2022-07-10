@@ -532,8 +532,10 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
             } else if (pkg_nm == "brms") {
               pkg_args <- list(file = file_pth,
                                file_refit = "on_change",
-                               silent = 2,
-                               diagnostics = NULL)
+                               silent = 2)
+              if (identical(getOption("brms.backend", "rstan"), "cmdstanr")) {
+                pkg_args <- c(pkg_args, list(diagnostics = NULL))
+              }
             }
 
             return(c(
