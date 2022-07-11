@@ -95,8 +95,7 @@ NULL
 proj_helper <- function(object, newdata,
                         offsetnew, weightsnew,
                         onesub_fun, filter_nterms = NULL,
-                        transform = NULL, integrated = NULL,
-                        nresample_clusters = NULL, ...) {
+                        ...) {
   if (inherits(object, "projection") || .is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!.is_proj_list(object)) {
@@ -176,9 +175,7 @@ proj_helper <- function(object, newdata,
       offsetnew <- rep(0, NROW(newdata))
     }
     onesub_fun(proj, weights = weightsnew, offset = offsetnew,
-               newdata = newdata, extract_y_ind = extract_y_ind,
-               transform = transform, integrated = integrated,
-               nresample_clusters = nresample_clusters)
+               newdata = newdata, extract_y_ind = extract_y_ind, ...)
   })
 
   return(.unlist_proj(preds))
@@ -208,10 +205,9 @@ proj_linpred <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
-proj_linpred_aux <- function(proj, weights, ...) {
+proj_linpred_aux <- function(proj, weights, transform = FALSE,
+                             integrated = FALSE, ...) {
   dot_args <- list(...)
-  stopifnot(!is.null(dot_args$transform))
-  stopifnot(!is.null(dot_args$integrated))
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
   stopifnot(!is.null(dot_args$extract_y_ind))
@@ -226,8 +222,8 @@ proj_linpred_aux <- function(proj, weights, ...) {
   lpd_out <- compute_lpd(
     ynew = ynew, mu = mu, proj = proj, weights = weights
   )
-  pred_out <- if (!dot_args$transform) proj$refmodel$family$linkfun(mu) else mu
-  if (dot_args$integrated) {
+  pred_out <- if (!transform) proj$refmodel$family$linkfun(mu) else mu
+  if (integrated) {
     ## average over the posterior draws
     pred_out <- pred_out %*% proj$weights
     if (!is.null(lpd_out)) {
@@ -276,7 +272,7 @@ proj_predict <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, weights, ...) {
+proj_predict_aux <- function(proj, weights, nresample_clusters = 1000, ...) {
   dot_args <- list(...)
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
@@ -285,11 +281,8 @@ proj_predict_aux <- function(proj, weights, ...) {
                                     offset = dot_args$offset)
   if (proj$p_type) {
     # In this case, the posterior draws have been clustered.
-    stopifnot(!is.null(dot_args$nresample_clusters))
-    draw_inds <- sample(
-      x = seq_along(proj$weights), size = dot_args$nresample_clusters,
-      replace = TRUE, prob = proj$weights
-    )
+    draw_inds <- sample(x = seq_along(proj$weights), size = nresample_clusters,
+                        replace = TRUE, prob = proj$weights)
   } else {
     draw_inds <- seq_along(proj$weights)
   }
