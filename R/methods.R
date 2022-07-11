@@ -205,17 +205,13 @@ proj_linpred <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
-proj_linpred_aux <- function(proj, weights, transform = FALSE,
+proj_linpred_aux <- function(proj, weights, offset, newdata, transform = FALSE,
                              integrated = FALSE, extract_y_ind = TRUE, ...) {
-  dot_args <- list(...)
-  stopifnot(!is.null(dot_args$newdata))
-  stopifnot(!is.null(dot_args$offset))
-  mu <- proj$refmodel$family$mu_fun(proj$submodl,
-                                    newdata = dot_args$newdata,
-                                    offset = dot_args$offset)
+  mu <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
+                                    offset = offset)
   w_o <- proj$refmodel$extract_model_data(
-    proj$refmodel$fit, newdata = dot_args$newdata, wrhs = weights,
-    orhs = dot_args$offset, extract_y = extract_y_ind
+    proj$refmodel$fit, newdata = newdata, wrhs = weights,
+    orhs = offset, extract_y = extract_y_ind
   )
   ynew <- w_o$y
   lpd_out <- compute_lpd(
@@ -271,13 +267,11 @@ proj_predict <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, weights, nresample_clusters = 1000, ...) {
-  dot_args <- list(...)
-  stopifnot(!is.null(dot_args$newdata))
-  stopifnot(!is.null(dot_args$offset))
+proj_predict_aux <- function(proj, weights, offset, newdata,
+                             nresample_clusters = 1000, ...) {
   mu <- proj$refmodel$family$mu_fun(proj$submodl,
-                                    newdata = dot_args$newdata,
-                                    offset = dot_args$offset)
+                                    newdata = newdata,
+                                    offset = offset)
   if (proj$p_type) {
     # In this case, the posterior draws have been clustered.
     draw_inds <- sample(x = seq_along(proj$weights), size = nresample_clusters,
