@@ -175,9 +175,8 @@ proj_helper <- function(object, newdata,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
-    onesub_fun(proj, weightsnew,
-               offset = offsetnew, newdata = newdata,
-               extract_y_ind = extract_y_ind,
+    onesub_fun(proj, weights = weightsnew, offset = offsetnew,
+               newdata = newdata, extract_y_ind = extract_y_ind,
                transform = transform, integrated = integrated,
                nresample_clusters = nresample_clusters)
   })
