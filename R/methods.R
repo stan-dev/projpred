@@ -206,17 +206,16 @@ proj_linpred <- function(object, newdata = NULL,
 
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, weights, transform = FALSE,
-                             integrated = FALSE, ...) {
+                             integrated = FALSE, extract_y_ind = TRUE, ...) {
   dot_args <- list(...)
   stopifnot(!is.null(dot_args$newdata))
   stopifnot(!is.null(dot_args$offset))
-  stopifnot(!is.null(dot_args$extract_y_ind))
   mu <- proj$refmodel$family$mu_fun(proj$submodl,
                                     newdata = dot_args$newdata,
                                     offset = dot_args$offset)
   w_o <- proj$refmodel$extract_model_data(
     proj$refmodel$fit, newdata = dot_args$newdata, wrhs = weights,
-    orhs = dot_args$offset, extract_y = dot_args$extract_y_ind
+    orhs = dot_args$offset, extract_y = extract_y_ind
   )
   ynew <- w_o$y
   lpd_out <- compute_lpd(
