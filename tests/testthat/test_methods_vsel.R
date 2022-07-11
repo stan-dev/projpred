@@ -301,6 +301,10 @@ test_that("`stat` works", {
                                  "binom" = "binom_stats",
                                  "common_stats"))
     stat_vec <- stats_tst[[stat_crr_nm]]$stats
+    if (fam_crr == "binom") {
+      # Due to issue #330:
+      stat_vec <- setdiff(stat_vec, "auc")
+    }
     for (stat_crr in stat_vec) {
       if (stat_crr %in% c("rmse", "auc")) {
         suggsize_seed <- seed3_tst
@@ -312,7 +316,8 @@ test_that("`stat` works", {
       suggsize <- suppressWarnings(
         suggest_size(vss[[tstsetup_vs]], stat = stat_crr, seed = suggsize_seed)
       )
-      expect_type(suggsize, "double")
+      expect_true(is.vector(suggsize, "numeric"),
+                  info = paste(tstsetup, stat_crr, sep = "__"))
       expect_length(suggsize, 1)
       if (!is.na(suggsize)) {
         expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))

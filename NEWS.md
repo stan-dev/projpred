@@ -14,6 +14,10 @@
 * Fix GitHub issue #324 (large `search_terms` caused the R session to crash).
 * Fix GitHub issue #204. (GitHub: #325)
 * In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
+* Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on.
+* Fix GitHub issue #329.
+* Fix GitHub issue #331.
+* `plot.vsel()` now draws the dashed red horizontal line for the reference model (and---if present---the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.
 
 # projpred 2.1.2
 

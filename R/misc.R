@@ -59,13 +59,39 @@ auc <- function(x) {
   pred <- x[, 2]
   weights <- x[, 3]
   n <- nrow(x)
+  if (!all(weights == 1)) {
+    # Several checks which should in fact not be necessary because auc() is only
+    # used in case of the binomial family:
+    if (!all(.is.wholenumber(weights))) {
+      stop("Currently, projpred:::auc() does not support non-integer ",
+           "observation weights.")
+    }
+    if (!all(.is.wholenumber(resp))) {
+      stop("Currently, projpred:::auc() does not support non-integer response ",
+           "values in case of nontrivial observation weights.")
+    }
+    if (!all(0 <= resp & resp <= weights)) {
+      stop("Currently, projpred:::auc() does not support response values ",
+           "smaller than zero or larger than the observation weights.")
+    }
+    x <- do.call(rbind, lapply(seq_len(n), function(i_short) {
+      cbind(c(rep(0L, weights[i_short] - resp[i_short]),
+              rep(1L, resp[i_short])),
+            pred[i_short],
+            1)
+    }))
+    resp <- x[, 1]
+    pred <- x[, 2]
+    weights <- x[, 3]
+    n <- nrow(x)
+  }
   ord <- order(pred, decreasing = TRUE)
   resp <- resp[ord]
   pred <- pred[ord]
-  weights <- weights[ord]
-  w0 <- w1 <- weights
-  w0[resp == 1] <- 0 # true negative weights
-  w1[resp == 0] <- 0 # true positive weights
+  w0 <- w1 <- rep(1, n)
+  stopifnot(all(resp %in% c(0, 1)))
+  w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
+  w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)
   cum_w0 <- cumsum(w0)
   cum_w1 <- cumsum(w1)
 
