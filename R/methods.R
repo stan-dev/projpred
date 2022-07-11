@@ -204,7 +204,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                              integrated = FALSE, extract_y_ind = TRUE, ...) {
-  pred_out <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
+  pred_sub <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
                                           offset = offset,
                                           transform = transform)
   w_o <- proj$refmodel$extract_model_data(
@@ -212,18 +212,18 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
     orhs = offset, extract_y = extract_y_ind
   )
   ynew <- w_o$y
-  lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_out, proj = proj,
+  lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
                          weights = weights, transformed = transform)
   if (integrated) {
     ## average over the posterior draws
-    pred_out <- pred_out %*% proj$weights
+    pred_sub <- pred_sub %*% proj$weights
     if (!is.null(lpd_out)) {
       lpd_out <- as.matrix(
         apply(lpd_out, 1, log_weighted_mean_exp, proj$weights)
       )
     }
   }
-  return(nlist(pred = t(pred_out),
+  return(nlist(pred = t(pred_sub),
                lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
