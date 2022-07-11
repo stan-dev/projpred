@@ -817,15 +817,6 @@ if (run_cvvs) {
   if (!run_more) {
     tstsetups_cvvs_ref <- grep("\\.gam\\.", tstsetups_cvvs_ref, value = TRUE,
                                invert = TRUE)
-  } else {
-    # On some machines, the error described in issue #147 (which is now "fixed",
-    # but that only means that a more informative error is thrown) can occur for
-    # the following test setup, so skip it for now:
-    tstsetups_cvvs_ref <- setdiff(
-      tstsetups_cvvs_ref,
-      "rstanarm.gamm.brnll.stdformul.without_wobs.without_offs.trad"
-    )
-    # TODO (GAMMs): Fix this.
   }
   # Under the special test settings used here, Bernoulli GAMMs often seem to run
   # into lme4 errors. However, since these Bernoulli GAMMs are basically
