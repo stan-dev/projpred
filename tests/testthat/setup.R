@@ -851,7 +851,7 @@ if (run_cvvs) {
       } else if (mod_crr == "glm" && fam_crr == "brnll" &&
                  prj_crr %in% c("augdat", "trad_compare")) {
         # We also want to test the augmented-data projection with LOO CV:
-        cvmeth <- cvmeth_tst["default_cvmeth"]
+        cvmeth <- cvmeth_tst[c("default_cvmeth", "kfold")]
       } else {
         cvmeth <- cvmeth_tst["kfold"]
       }

@@ -134,7 +134,7 @@ if (run_cvvs) {
   })
   names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                    names(args_cvvs_datafit))
-  stopifnot(!any(duplicated(names(args_cvvs_datafit))))
+  args_cvvs_datafit <- args_cvvs_datafit[unique(names(args_cvvs_datafit))]
   # For `"datafit"`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
