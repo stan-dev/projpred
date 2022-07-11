@@ -133,6 +133,7 @@ source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
+source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
 
 mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
 if (run_additive) {
@@ -331,6 +332,15 @@ if (run_brms) {
   # For storing "brmsfit"s locally:
   file_pth <- testthat::test_path("bfits")
   if (!dir.exists(file_pth)) dir.create(file_pth)
+  # Backend:
+  if (identical(Sys.getenv("TESTS_BRMS_BACKEND"), "cmdstanr") &&
+      requireNamespace("cmdstanr", quietly = TRUE) &&
+      !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+    options(brms.backend = "cmdstanr")
+    # Relative file paths currently (UPDATE: fixed by cmdstanr PR #665) don't
+    # work for option `cmdstanr_write_stan_file_dir`, so use the full path:
+    options(cmdstanr_write_stan_file_dir = file.path(getwd(), file_pth))
+  }
 }
 pkg_nms <- setNames(nm = pkg_nms)
 
@@ -529,7 +539,11 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
                             random_arg)
             } else if (pkg_nm == "brms") {
               pkg_args <- list(file = file_pth,
-                               file_refit = "on_change") # , silent = 2
+                               file_refit = "on_change",
+                               silent = 2)
+              if (identical(getOption("brms.backend", "rstan"), "cmdstanr")) {
+                pkg_args <- c(pkg_args, list(diagnostics = NULL))
+              }
             }
 
             return(c(
@@ -813,6 +827,11 @@ if (run_cvvs) {
     )
     # TODO (GAMMs): Fix this.
   }
+  # Under the special test settings used here, Bernoulli GAMMs often seem to run
+  # into lme4 errors. However, since these Bernoulli GAMMs are basically
+  # redundant given the other tested models, we can simply skip them:
+  tstsetups_cvvs_ref <- grep("\\.gamm\\.brnll\\.", tstsetups_cvvs_ref,
+                             value = TRUE, invert = TRUE)
   tstsetups_cvvs_ref <- setNames(nm = tstsetups_cvvs_ref)
   args_cvvs <- lapply(tstsetups_cvvs_ref, function(tstsetup_ref) {
     pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
@@ -1225,6 +1244,10 @@ cre_args_smmry_vsel <- function(args_obj) {
         } else {
           nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         }
+      }
+      if (fam_crr == "binom") {
+        # Due to issue #330:
+        stats_crr$stats <- setdiff(stats_crr$stats, "auc")
       }
       lapply(nterms_tst, function(nterms_crr) {
         return(c(

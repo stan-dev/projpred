@@ -58,6 +58,7 @@ Suggests:
     knitr,
     rmarkdown,
     glmnet,
+    cmdstanr,
     bayesplot (>= 1.5.0),
     optimx,
     posterior,
@@ -69,6 +70,8 @@ Suggests:
     future.callr,
     doFuture
 LinkingTo: Rcpp, RcppArmadillo
+Additional_repositories:
+    https://mc-stan.org/r-packages/
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0

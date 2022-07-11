@@ -654,6 +654,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
+  if (is.null(dim(sub_cv_summaries))) {
+    summ_dim <- dim(solution_terms_cv)
+    summ_dim[2] <- summ_dim[2] + 1L # +1 is for the empty model
+    dim(sub_cv_summaries) <- rev(summ_dim)
+  }
   sub <- apply(sub_cv_summaries, 1, rbind2list)
   sub <- lapply(sub, function(summ) {
     summ$w <- rep(1, length(summ$lppd))

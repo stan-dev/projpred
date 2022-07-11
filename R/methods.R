@@ -430,11 +430,7 @@ plot.vsel <- function(
 
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
-               mapping = aes_string(x = "size")) +
-    geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
-    geom_line(aes_string(y = "value")) +
-    geom_point(aes_string(y = "value"))
-
+               mapping = aes_string(x = "size"))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
@@ -448,6 +444,9 @@ plot.vsel <- function(
                           color = "black", linetype = 3)
   }
   pp <- pp +
+    geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
+    geom_line(aes_string(y = "value")) +
+    geom_point(aes_string(y = "value")) +
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
@@ -830,17 +829,19 @@ suggest_size.vsel <- function(
     } else {
       suggested_size <- NA
       if (warnings) {
-        warning("Could not suggest model size. Investigate plot.vsel to ",
+        warning("Could not suggest model size. Investigate plot.vsel() to ",
                 "identify if the search was terminated too early. If this is ",
                 "the case, run variable selection with larger value for ",
-                "nterms_max.")
+                "`nterms_max`.")
       }
     }
   } else {
-    suggested_size <- min(res) + 1
+    # Above, `object$nterms_max` includes the intercept (if present), so we need
+    # to include it here, too:
+    suggested_size <- min(res) + object$refmodel$intercept
   }
 
-  return(suggested_size - 1) ## substract the intercept
+  return(suggested_size - object$refmodel$intercept)
 }
 
 # Make the parameter name(s) for the intercept(s) adhere to the naming scheme
