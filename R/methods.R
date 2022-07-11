@@ -174,8 +174,8 @@ proj_helper <- function(object, newdata,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
-    onesub_fun(proj, weights = weightsnew, offset = offsetnew,
-               newdata = newdata, extract_y_ind = extract_y_ind, ...)
+    onesub_fun(proj, newdata = newdata, offset = offsetnew,
+               weights = weightsnew, extract_y_ind = extract_y_ind, ...)
   })
 
   return(.unlist_proj(preds))
@@ -205,7 +205,7 @@ proj_linpred <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
-proj_linpred_aux <- function(proj, weights, offset, newdata, transform = FALSE,
+proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                              integrated = FALSE, extract_y_ind = TRUE, ...) {
   mu <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
                                     offset = offset)
@@ -267,7 +267,7 @@ proj_predict <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, weights, offset, newdata,
+proj_predict_aux <- function(proj, newdata, offset, weights,
                              nresample_clusters = 1000, ...) {
   mu <- proj$refmodel$family$mu_fun(proj$submodl,
                                     newdata = newdata,
