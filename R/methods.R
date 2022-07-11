@@ -204,15 +204,16 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                              integrated = FALSE, extract_y_ind = TRUE, ...) {
-  mu <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
-                                    offset = offset)
+  pred_out <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
+                                          offset = offset,
+                                          transform = transform)
   w_o <- proj$refmodel$extract_model_data(
     proj$refmodel$fit, newdata = newdata, wrhs = weights,
     orhs = offset, extract_y = extract_y_ind
   )
   ynew <- w_o$y
-  lpd_out <- compute_lpd(ynew = ynew, mu = mu, proj = proj, weights = weights)
-  pred_out <- if (!transform) proj$refmodel$family$linkfun(mu) else mu
+  lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_out, proj = proj,
+                         weights = weights, transformed = transform)
   if (integrated) {
     ## average over the posterior draws
     pred_out <- pred_out %*% proj$weights
@@ -226,13 +227,16 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
-compute_lpd <- function(ynew, mu, proj, weights) {
+compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    return(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights))
+    if (!transformed) {
+      pred_sub <- proj$refmodel$family$linkinv(pred_sub)
+    }
+    return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
   } else {
     return(NULL)
   }
