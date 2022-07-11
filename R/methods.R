@@ -92,10 +92,8 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata,
-                        offsetnew, weightsnew,
-                        onesub_fun, filter_nterms = NULL,
-                        ...) {
+proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
+                        filter_nterms = NULL, ...) {
   if (inherits(object, "projection") || .is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!.is_proj_list(object)) {
@@ -183,9 +181,8 @@ proj_helper <- function(object, newdata,
 
 #' @rdname pred-projection
 #' @export
-proj_linpred <- function(object, newdata = NULL,
-                         offsetnew = NULL, weightsnew = NULL,
-                         filter_nterms = NULL,
+proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, filter_nterms = NULL,
                          transform = FALSE, integrated = FALSE,
                          .seed = sample.int(.Machine$integer.max, 1), ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
@@ -214,9 +211,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
     orhs = offset, extract_y = extract_y_ind
   )
   ynew <- w_o$y
-  lpd_out <- compute_lpd(
-    ynew = ynew, mu = mu, proj = proj, weights = weights
-  )
+  lpd_out <- compute_lpd(ynew = ynew, mu = mu, proj = proj, weights = weights)
   pred_out <- if (!transform) proj$refmodel$family$linkfun(mu) else mu
   if (integrated) {
     ## average over the posterior draws
@@ -245,9 +240,8 @@ compute_lpd <- function(ynew, mu, proj, weights) {
 
 #' @rdname pred-projection
 #' @export
-proj_predict <- function(object, newdata = NULL,
-                         offsetnew = NULL, weightsnew = NULL,
-                         filter_nterms = NULL,
+proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, filter_nterms = NULL,
                          nresample_clusters = 1000,
                          .seed = sample.int(.Machine$integer.max, 1), ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
@@ -279,7 +273,6 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   } else {
     draw_inds <- seq_along(proj$weights)
   }
-
   return(do.call(rbind, lapply(draw_inds, function(i) {
     proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
   })))
