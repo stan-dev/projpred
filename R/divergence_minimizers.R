@@ -845,7 +845,7 @@ predict.gamm4 <- function(fit, newdata = NULL) {
   }
   formula <- fit$formula
   random <- fit$random
-  gamm_struct <- model.matrix.gamm4(delete.response(terms(formula)),
+  gamm_struct <- model.matrix_gamm4(delete.response(terms(formula)),
                                     random = random, data = newdata)
   ranef <- lme4::ranef(fit$mer) # TODO (GAMMs): Add `, condVar = FALSE` here?
   b <- gamm_struct$b
@@ -953,6 +953,8 @@ repair_re <- function(object, newdata) {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
 repair_re.merMod <- function(object, newdata) {
   stopifnot(!is.null(newdata))
   ranef_tmp <- lme4::ranef(object, condVar = FALSE)
@@ -1021,6 +1023,8 @@ repair_re.merMod <- function(object, newdata) {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
 repair_re.clmm <- function(object, newdata) {
   stopifnot(!is.null(newdata))
   ranef_tmp <- ordinal::ranef(object)
@@ -1087,6 +1091,8 @@ repair_re.clmm <- function(object, newdata) {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
 repair_re.mmblogit <- function(object, newdata) {
   stopifnot(!is.null(newdata))
   vnms <- names(object$groups)
