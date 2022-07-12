@@ -470,8 +470,6 @@ predict.subfit <- function(subfit, newdata = NULL) {
   }
 }
 
-#' @noRd
-#' @export
 predict.gamm4 <- function(fit, newdata = NULL) {
   if (is.null(newdata)) {
     newdata <- model.frame(fit$mer)
