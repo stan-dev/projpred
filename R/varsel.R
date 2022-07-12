@@ -202,10 +202,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   if (is.null(d_test)) {
     d_type <- "train"
-    test_points <- seq_len(NROW(refmodel$y))
-    d_test <- nlist(
-      y = refmodel$y, test_points, data = NULL, weights = refmodel$wobs,
-      type = d_type, offset = refmodel$offset
+    d_test <- list(
+      y = refmodel$y, test_points = seq_len(NROW(refmodel$y)), data = NULL,
+      weights = refmodel$wobs, type = d_type, offset = refmodel$offset
     )
   } else {
     d_type <- d_test$type
