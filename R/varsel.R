@@ -201,13 +201,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   search_terms <- args$search_terms
 
   if (is.null(d_test)) {
-    d_type <- "train"
     d_test <- list(
       y = refmodel$y, test_points = seq_len(NROW(refmodel$y)), data = NULL,
-      weights = refmodel$wobs, type = d_type, offset = refmodel$offset
+      weights = refmodel$wobs, type = "train", offset = refmodel$offset
     )
-  } else {
-    d_type <- d_test$type
   }
 
   ## reference distributions for selection and prediction after selection
@@ -243,7 +240,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ntest <- NROW(refmodel$y)
     ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
   } else {
-    if (d_type == "train") {
+    if (d_test$type == "train") {
       mu_test <- refmodel$mu
       if (!all(refmodel$offset == 0)) {
         mu_test <- refmodel$family$linkinv(
