@@ -101,11 +101,8 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata,
-                        offsetnew, weightsnew,
-                        onesub_fun, filter_nterms = NULL,
-                        transform = NULL, integrated = NULL,
-                        nresample_clusters = NULL, ...) {
+proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
+                        filter_nterms = NULL, ...) {
   if (inherits(object, "projection") || .is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!.is_proj_list(object)) {
@@ -188,13 +185,8 @@ proj_helper <- function(object, newdata,
       stop("Currently, the augmented-data projection may not be combined with ",
            "observation weights (other than 1).")
     }
-    mu <- proj$refmodel$family$mu_fun(proj$submodl,
-                                      newdata = newdata, offset = offsetnew)
-    onesub_fun(proj, mu, weightsnew,
-               offset = offsetnew, newdata = newdata,
-               extract_y_ind = extract_y_ind,
-               transform = transform, integrated = integrated,
-               nresample_clusters = nresample_clusters)
+    onesub_fun(proj, newdata = newdata, offset = offsetnew,
+               weights = weightsnew, extract_y_ind = extract_y_ind, ...)
   })
 
   return(.unlist_proj(preds))
@@ -202,9 +194,8 @@ proj_helper <- function(object, newdata,
 
 #' @rdname pred-projection
 #' @export
-proj_linpred <- function(object, newdata = NULL,
-                         offsetnew = NULL, weightsnew = NULL,
-                         filter_nterms = NULL,
+proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, filter_nterms = NULL,
                          transform = FALSE, integrated = FALSE,
                          .seed = sample.int(.Machine$integer.max, 1), ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
@@ -224,27 +215,23 @@ proj_linpred <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
-proj_linpred_aux <- function(proj, mu, weights, ...) {
-  dot_args <- list(...)
-  stopifnot(!is.null(dot_args$transform))
-  stopifnot(!is.null(dot_args$integrated))
-  stopifnot(!is.null(dot_args$newdata))
-  stopifnot(!is.null(dot_args$offset))
-  stopifnot(!is.null(dot_args$extract_y_ind))
+proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
+                             integrated = FALSE, extract_y_ind = TRUE, ...) {
+  pred_sub <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
+                                          offset = offset,
+                                          transform = transform)
   w_o <- proj$refmodel$extract_model_data(
-    proj$refmodel$fit, newdata = dot_args$newdata, wrhs = weights,
-    orhs = dot_args$offset, extract_y = dot_args$extract_y_ind
+    proj$refmodel$fit, newdata = newdata, wrhs = weights,
+    orhs = offset, extract_y = extract_y_ind
   )
   ynew <- w_o$y
-  lpd_out <- compute_lpd(
-    ynew = ynew, mu = mu, proj = proj, weights = weights
-  )
-  pred_out <- if (!dot_args$transform) proj$refmodel$family$linkfun(mu) else mu
-  if (dot_args$integrated) {
+  lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
+                         weights = weights, transformed = transform)
+  if (integrated) {
     ## average over the posterior draws
-    pred_out <- structure(pred_out %*% proj$weights,
-                          nobs_orig = attr(pred_out, "nobs_orig"),
-                          class = oldClass(pred_out))
+    pred_sub <- structure(pred_sub %*% proj$weights,
+                          nobs_orig = attr(pred_sub, "nobs_orig"),
+                          class = oldClass(pred_sub))
     if (!is.null(lpd_out)) {
       lpd_out <- as.matrix(
         apply(lpd_out, 1, log_weighted_mean_exp, proj$weights)
@@ -252,15 +239,15 @@ proj_linpred_aux <- function(proj, mu, weights, ...) {
     }
   }
   if (inherits(pred_out, "augmat")) {
-    pred_out <- augmat2arr(pred_out, margin_draws = 1)
+    pred_sub <- augmat2arr(pred_sub, margin_draws = 1)
   } else {
-    pred_out <- t(pred_out)
+    pred_sub <- t(pred_sub)
   }
-  return(nlist(pred = pred_out,
+  return(nlist(pred = pred_sub,
                lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
-compute_lpd <- function(ynew, mu, proj, weights) {
+compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
@@ -278,7 +265,10 @@ compute_lpd <- function(ynew, mu, proj, weights) {
       # Re-assign the original levels because some levels might be missing:
       ynew <- factor(ynew, levels = proj$refmodel$family$cats)
     }
-    return(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights))
+    if (!transformed) {
+      pred_sub <- proj$refmodel$family$linkinv(pred_sub)
+    }
+    return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
   } else {
     return(NULL)
   }
@@ -286,9 +276,8 @@ compute_lpd <- function(ynew, mu, proj, weights) {
 
 #' @rdname pred-projection
 #' @export
-proj_predict <- function(object, newdata = NULL,
-                         offsetnew = NULL, weightsnew = NULL,
-                         filter_nterms = NULL,
+proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, filter_nterms = NULL,
                          nresample_clusters = 1000,
                          .seed = sample.int(.Machine$integer.max, 1), ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
@@ -308,19 +297,18 @@ proj_predict <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, mu, weights, ...) {
-  dot_args <- list(...)
+proj_predict_aux <- function(proj, newdata, offset, weights,
+                             nresample_clusters = 1000, ...) {
+  mu <- proj$refmodel$family$mu_fun(proj$submodl,
+                                    newdata = newdata,
+                                    offset = offset)
   if (proj$p_type) {
     # In this case, the posterior draws have been clustered.
-    stopifnot(!is.null(dot_args$nresample_clusters))
-    draw_inds <- sample(
-      x = seq_along(proj$weights), size = dot_args$nresample_clusters,
-      replace = TRUE, prob = proj$weights
-    )
+    draw_inds <- sample(x = seq_along(proj$weights), size = nresample_clusters,
+                        replace = TRUE, prob = proj$weights)
   } else {
     draw_inds <- seq_along(proj$weights)
   }
-
   return(structure(
     do.call(rbind, lapply(draw_inds, function(i) {
       proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)

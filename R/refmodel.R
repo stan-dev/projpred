@@ -728,14 +728,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     warning("The augmented-data projection is still experimental.")
   }
 
-  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL) {
+  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
+                            transform = TRUE) {
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
       stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
-    family$linkinv(proj_predfun(fits, newdata = newdata) + offset)
+    pred_sub <- proj_predfun(fits, newdata = newdata) + offset
+    if (transform) {
+      pred_sub <- family$linkinv(pred_sub)
+    }
+    return(pred_sub)
   }
 
   if (family$family == "categorical" && family$link != "logit") {
