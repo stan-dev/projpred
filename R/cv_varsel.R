@@ -481,9 +481,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
         refit_prj = refit_prj, ...
       )
-      summaries_sub <- .get_sub_summaries(
-        submodels = submodels, test_points = c(i), refmodel = refmodel
-      )
+      summaries_sub <- .get_sub_summaries(submodels = submodels,
+                                          refmodel = refmodel,
+                                          test_points = i)
       for (k in seq_along(summaries_sub)) {
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
         mu_sub[[k]][i] <- summaries_sub[[k]]$mu
@@ -602,10 +602,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Perform the evaluation of the submodels for each fold (and make sure to
   # combine the results from the K folds into a single results list):
   get_summaries_submodel_cv <- function(submodels, fold) {
-    .get_sub_summaries(
-      submodels = submodels, test_points = fold$d_test$omitted,
-      refmodel = refmodel
-    )
+    .get_sub_summaries(submodels = submodels,
+                       refmodel = refmodel,
+                       test_points = fold$d_test$omitted)
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
   if (is.null(dim(sub_cv_summaries))) {

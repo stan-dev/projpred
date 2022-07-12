@@ -202,8 +202,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   search_terms <- args$search_terms
 
   if (is.null(d_test)) {
-    d_test <- list(y = refmodel$y, data = NULL, weights = refmodel$wobs,
-                   type = "train", offset = refmodel$offset)
+    d_test <- list(type = "train", data = NULL, offset = refmodel$offset,
+                   weights = refmodel$wobs, y = refmodel$y)
   }
 
   ## reference distributions for selection and prediction after selection
@@ -225,11 +225,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ...
   )
-  sub <- .get_sub_summaries(
-    submodels = submodels, test_points = seq_along(d_test$y),
-    refmodel = refmodel, y = d_test$y, wobs = d_test$weights,
-    newdata = d_test$data, offset = d_test$offset
-  )
+  sub <- .get_sub_summaries(submodels = submodels,
+                            refmodel = refmodel,
+                            test_points = seq_along(d_test$y),
+                            newdata = d_test$data,
+                            offset = d_test$offset,
+                            wobs = d_test$weights,
+                            y = d_test$y)
 
   ## predictive statistics of the reference model on test data. if no test data
   ## are provided,
