@@ -516,12 +516,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
-  d_test <- list(
-    y = refmodel$y, type = "LOO",
-    test_points = seq_along(refmodel$y),
-    weights = refmodel$wobs,
-    data = NULL, offset = refmodel$offset
-  )
+  d_test <- list(y = refmodel$y, type = "LOO", weights = refmodel$wobs,
+                 data = NULL, offset = refmodel$offset)
 
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
@@ -643,7 +639,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   d_cv <- rbind2list(lapply(list_cv, function(fold) {
     list(y = fold$d_test$y,
          weights = fold$d_test$weights,
-         test_points = fold$d_test$omitted,
          offset = fold$d_test$offset)
   }))
 
