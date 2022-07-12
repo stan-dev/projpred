@@ -12,7 +12,8 @@
 #'   [get_refmodel()].
 #' @param d_test For internal use only. A `list` providing information about the
 #'   test set which is used for evaluating the predictive performance of the
-#'   reference model. If not provided, the training set is used.
+#'   submodels as well as of the reference model. If `NULL`, the training set is
+#'   used.
 #' @param method The method for the search part. Possible options are `"L1"` for
 #'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
 #'   `"L1"` is used, except if the reference model has multilevel or additive
@@ -227,8 +228,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ...
   )
   sub <- .get_sub_summaries(
-    submodels = submodels, test_points = seq_along(refmodel$y),
-    refmodel = refmodel
+    submodels = submodels, test_points = d_test$test_points,
+    refmodel = refmodel, y = d_test$y, wobs = d_test$weights,
+    newdata = d_test$data, offset = d_test$offset
   )
 
   ## predictive statistics of the reference model on test data. if no test data

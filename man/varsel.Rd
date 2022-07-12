@@ -42,7 +42,8 @@ the latter only if \code{refit_prj} is \code{TRUE}).}
 
 \item{d_test}{For internal use only. A \code{list} providing information about the
 test set which is used for evaluating the predictive performance of the
-reference model. If not provided, the training set is used.}
+submodels as well as of the reference model. If \code{NULL}, the training set is
+used.}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
