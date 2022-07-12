@@ -238,7 +238,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
       )
     }
   }
-  if (inherits(pred_out, "augmat")) {
+  if (inherits(pred_sub, "augmat")) {
     pred_sub <- augmat2arr(pred_sub, margin_draws = 1)
   } else {
     pred_sub <- t(pred_sub)
