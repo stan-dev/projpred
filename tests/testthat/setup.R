@@ -327,11 +327,18 @@ if (run_brms) {
   # Backend:
   if (identical(Sys.getenv("TESTS_BRMS_BACKEND"), "cmdstanr") &&
       requireNamespace("cmdstanr", quietly = TRUE) &&
+      # Relative file paths for cmdstanr's global option
+      # `cmdstanr_write_stan_file_dir` didn't work before cmdstanr PR #665.
+      # Using the workaround `file.path(getwd(), file_pth)` instead of only
+      # `file_pth` also doesn't work in `R CMD check` (it doesn't throw any
+      # exceptions, but recompilations take place, causing a huge increase in
+      # runtime). At the time of cmdstanr's PR #665, the (development) version
+      # number of cmdstanr was 0.5.2.1, so requiring >= 0.5.3 guarantees that
+      # the fix is included:
+      packageVersion("cmdstanr") >= "0.5.3" &&
       !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
     options(brms.backend = "cmdstanr")
-    # Relative file paths currently (UPDATE: fixed by cmdstanr PR #665) don't
-    # work for option `cmdstanr_write_stan_file_dir`, so use the full path:
-    options(cmdstanr_write_stan_file_dir = file.path(getwd(), file_pth))
+    options(cmdstanr_write_stan_file_dir = file_pth)
   }
 }
 pkg_nms <- setNames(nm = pkg_nms)
