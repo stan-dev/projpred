@@ -516,8 +516,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
-  d_test <- list(y = refmodel$y, type = "LOO", weights = refmodel$wobs,
-                 data = NULL, offset = refmodel$offset)
+  d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
+                 weights = refmodel$wobs, y = refmodel$y)
 
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
@@ -636,14 +636,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Combine the K separate test "datasets" (rather "information objects") into a
   # single list:
   d_cv <- rbind2list(lapply(list_cv, function(fold) {
-    list(y = fold$d_test$y,
+    list(offset = fold$d_test$offset,
          weights = fold$d_test$weights,
-         offset = fold$d_test$offset)
+         y = fold$d_test$y)
   }))
 
   return(nlist(solution_terms_cv,
                summaries = nlist(sub, ref),
-               d_test = c(d_cv, type = "kfold")))
+               d_test = c(list(type = "kfold", data = NULL), d_cv)))
 }
 
 # Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
