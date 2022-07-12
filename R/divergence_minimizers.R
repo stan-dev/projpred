@@ -470,13 +470,15 @@ predict.subfit <- function(subfit, newdata = NULL) {
   }
 }
 
+#' @noRd
+#' @export
 predict.gamm4 <- function(fit, newdata = NULL) {
   if (is.null(newdata)) {
     newdata <- model.frame(fit$mer)
   }
   formula <- fit$formula
   random <- fit$random
-  gamm_struct <- model.matrix.gamm4(delete.response(terms(formula)),
+  gamm_struct <- model.matrix_gamm4(delete.response(terms(formula)),
                                     random = random, data = newdata)
   ranef <- lme4::ranef(fit$mer) # TODO (GAMMs): Add `, condVar = FALSE` here?
   b <- gamm_struct$b

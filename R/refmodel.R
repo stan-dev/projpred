@@ -480,7 +480,7 @@ get_refmodel.stanreg <- function(object, ...) {
   # Formula -----------------------------------------------------------------
 
   if (inherits(object, "gamm4")) {
-    formula <- formula.gamm4(object)
+    formula <- formula_gamm4(object)
   } else {
     formula <- formula(object)
   }
