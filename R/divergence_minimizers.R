@@ -526,6 +526,8 @@ repair_re <- function(object, newdata) {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
 repair_re.merMod <- function(object, newdata) {
   stopifnot(!is.null(newdata))
   ranef_tmp <- lme4::ranef(object, condVar = FALSE)
