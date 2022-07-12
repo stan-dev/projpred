@@ -227,7 +227,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   )
   sub <- .get_sub_summaries(submodels = submodels,
                             refmodel = refmodel,
-                            test_points = seq_along(d_test$y),
+                            test_points = NULL,
                             newdata = d_test$data,
                             offset = d_test$offset,
                             wobs = d_test$weights,
