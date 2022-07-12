@@ -1023,6 +1023,8 @@ repair_re.merMod <- function(object, newdata) {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
 repair_re.clmm <- function(object, newdata) {
   stopifnot(!is.null(newdata))
   ranef_tmp <- ordinal::ranef(object)
@@ -1089,6 +1091,8 @@ repair_re.clmm <- function(object, newdata) {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
 repair_re.mmblogit <- function(object, newdata) {
   stopifnot(!is.null(newdata))
   vnms <- names(object$groups)
