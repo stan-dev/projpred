@@ -73,7 +73,11 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   }
 })
 
-test_that("`d_test` works", {
+## d_test -----------------------------------------------------------------
+
+test_that(paste(
+  "`d_test` set to the training data gives the same results as its default"
+), {
   skip_if_not(run_vs)
   tstsetups <- names(vss)
   ### Alternative with less test setups:
@@ -421,7 +425,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
   }
 })
 
-# search_terms ------------------------------------------------------------
+## search_terms -----------------------------------------------------------
 
 test_that(paste(
   "including all terms in `search_terms` gives the same results as the default",
@@ -564,6 +568,8 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   }
 })
 
+## nloo -------------------------------------------------------------------
+
 test_that("invalid `nloo` fails", {
   for (tstsetup in names(refmods)) {
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
@@ -646,6 +652,8 @@ test_that("setting `nloo` smaller than the number of observations works", {
     }
   }
 })
+
+## validate_search --------------------------------------------------------
 
 test_that("`validate_search` works", {
   skip_if_not(run_cvvs)
@@ -741,6 +749,8 @@ test_that("`validate_search` works", {
   sum_as_unexpected <- 2L
   expect_true(sum(!suggsize_cond, na.rm = TRUE) <= sum_as_unexpected)
 })
+
+## Arguments specific to K-fold CV ----------------------------------------
 
 test_that("invalid `K` fails", {
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1),
