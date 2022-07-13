@@ -613,7 +613,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     dim(sub_cv_summaries) <- rev(summ_dim)
   }
   sub <- apply(sub_cv_summaries, 1, rbind2list)
+  idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
+    fold$d_test$omitted
+  }))
   sub <- lapply(sub, function(summ) {
+    summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
+    summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
+
+    # Add weights (see GitHub issue #330 for why this needs to be clarified):
     summ$w <- rep(1, length(summ$mu))
     summ$w <- summ$w / sum(summ$w)
     return(summ)
@@ -632,6 +639,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       dis = fold$refmodel$dis
     )
   }))
+  ref$mu <- ref$mu[order(idxs_sorted_by_fold)]
+  ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
 
   # Combine the K separate test "datasets" (rather "information objects") into a
   # single list:
@@ -640,6 +649,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
          weights = fold$d_test$weights,
          y = fold$d_test$y)
   }))
+  d_cv <- as.list(
+    as.data.frame(d_cv)[order(idxs_sorted_by_fold), , drop = FALSE]
+  )
 
   return(nlist(solution_terms_cv,
                summaries = nlist(sub, ref),
