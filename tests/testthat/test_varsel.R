@@ -87,12 +87,10 @@ test_that("`d_test` works", {
     fam_crr <- args_vs_i$fam_nm
     refmod_crr <- refmods[[tstsetup_ref]]
     d_test_crr <- list(
-      y = refmod_crr$y,
-      test_points = seq_along(refmod_crr$y),
       data = dat,
+      offset = refmod_crr$offset,
       weights = refmod_crr$wobs,
-      type = "test",
-      offset = refmod_crr$offset
+      y = refmod_crr$y
     )
     vs_repr <- do.call(varsel, c(
       list(object = refmod_crr, d_test = d_test_crr),
@@ -105,7 +103,7 @@ test_that("`d_test` works", {
     vsel_tester(
       vs_repr,
       refmod_expected = refmod_crr,
-      dtest_expected = d_test_crr,
+      dtest_expected = c(list(type = "test"), d_test_crr),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,
@@ -115,10 +113,13 @@ test_that("`d_test` works", {
         all(grepl("\\+", args_vs_i$search_terms)),
       info_str = tstsetup
     )
-    expect_identical(vs_repr$d_test, d_test_crr, info = tstsetup)
-    expect_equal(vs_repr[setdiff(names(vs_repr), vsel_nms_dtest)],
-                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
-                                         vsel_nms_dtest)],
+    expect_equal(vs_repr[setdiff(names(vs_repr), "d_test")],
+                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
+                 info = tstsetup)
+    expect_equal(vs_repr$d_test[setdiff(names(vs_repr$d_test),
+                                        c("type", "data"))],
+                 vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
+                                                c("type", "data"))],
                  info = tstsetup)
   }
 })

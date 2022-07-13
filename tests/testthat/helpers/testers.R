@@ -1076,7 +1076,9 @@ pp_tester <- function(pp,
 # @param with_cv A single logical value indicating whether `vs` was created by
 #   cv_varsel() (`TRUE`) or not (`FALSE`).
 # @param refmod_expected The expected `vs$refmodel` object.
-# @param dtest_expected The expected `vs$d_test` object.
+# @param dtest_expected If `vs` was created with a non-`NULL` argument `d_test`
+#   (which is only possible for varsel()), then this needs to be the expected
+#   `vs$d_test` object. Otherwise, this needs to be `NULL`.
 # @param solterms_len_expected A single numeric value giving the expected number
 #   of solution terms (not counting the intercept, even for the intercept-only
 #   model).
@@ -1122,8 +1124,6 @@ vsel_tester <- function(
     info_str = ""
 ) {
   # Preparations:
-  dtest_type <- "train"
-  dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
     vsel_smmrs_sub_nms <- c("lppd", "mu", "w")
@@ -1136,13 +1136,7 @@ vsel_tester <- function(
       valsearch_expected <- TRUE
     }
 
-    dtest_type <- cv_method_expected
-    if (cv_method_expected == "LOO") {
-      # Re-order:
-      dtest_nms <- dtest_nms[c(1, 5, 2, 4, 3, 6)]
-    } else if (cv_method_expected == "kfold") {
-      # Re-order and remove `"data"`:
-      dtest_nms <- dtest_nms[c(1, 4, 2, 6, 5)]
+    if (cv_method_expected == "kfold") {
       # Re-order:
       vsel_smmrs_sub_nms[1:2] <- vsel_smmrs_sub_nms[2:1]
       vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
@@ -1263,21 +1257,16 @@ vsel_tester <- function(
   # d_test
   if (is.null(dtest_expected)) {
     expect_type(vs$d_test, "list")
-    expect_named(vs$d_test, dtest_nms, info = info_str)
-    if (identical(cv_method_expected, "kfold")) {
-      expect_identical(vs$d_test$y[order(vs$d_test$test_points)],
-                       vs$refmodel$y, info = info_str)
-      expect_identical(vs$d_test$test_points[order(vs$d_test$test_points)],
-                       seq_len(nobsv), info = info_str)
-      expect_identical(vs$d_test$weights[order(vs$d_test$test_points)],
-                       vs$refmodel$wobs, info = info_str)
-    } else {
-      expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
-      expect_identical(vs$d_test$test_points, seq_len(nobsv), info = info_str)
-      expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
+    expect_named(vs$d_test, nms_d_test(), info = info_str)
+    dtest_type <- cv_method_expected
+    if (length(dtest_type) == 0) {
+      dtest_type <- "train"
     }
-    expect_null(vs$d_test$data, info = info_str)
     expect_identical(vs$d_test$type, dtest_type, info = info_str)
+    expect_null(vs$d_test$data, info = info_str)
+    expect_identical(vs$d_test$offset, vs$refmodel$offset, info = info_str)
+    expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
+    expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)
   }

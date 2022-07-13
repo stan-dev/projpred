@@ -1227,8 +1227,6 @@ vsel_nms_cv <- c(
 vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
                    "summary")
 vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
-# Related to `d_test`:
-vsel_nms_dtest <- c("d_test", setdiff(vsel_nms_pred, c("solution_terms", "kl")))
 # Related to `nloo`:
 vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
                       "summary")
@@ -1239,8 +1237,8 @@ vsel_nms_cv_valsearch <- c("validate_search", "summaries",
                            "summary")
 vsel_nms_cv_valsearch_opt <- c("suggested_size")
 # Related to `cvfits`:
-vsel_nms_cv_cvfits <- c("refmodel", "d_test", "summaries",
-                        "pct_solution_terms_cv", "summary", "suggested_size")
+vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv",
+                        "summary", "suggested_size")
 vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
