@@ -10,10 +10,10 @@
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
 #'   [get_refmodel()].
-#' @param d_test For internal use only. A `list` providing information about the
-#'   test set which is used for evaluating the predictive performance of the
-#'   submodels as well as of the reference model. If `NULL`, the training set is
-#'   used.
+#' @param d_test A `list` of the structure outlined in section "Argument
+#'   `d_test`" below, providing test data for evaluating the predictive
+#'   performance of the submodels as well as of the reference model. If `NULL`,
+#'   the training data is used.
 #' @param method The method for the search part. Possible options are `"L1"` for
 #'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
 #'   `"L1"` is used, except if the reference model has multilevel or additive
@@ -82,6 +82,19 @@
 #' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
 #'   minimizer (during a forward search and also during the evaluation part, but
 #'   the latter only if `refit_prj` is `TRUE`).
+#'
+#' @details
+#'
+#' # Argument `d_test`
+#'
+#' If not `NULL`, then `d_test` needs to be a `list` with the following
+#' elements:
+#' * `data`: a `data.frame` containing the predictor variables for the test set.
+#' * `offset`: a numeric vector containing the offset values for the test set
+#' (if there is no offset, use a vector of zeros).
+#' * `weights`: a numeric vector containing the observation weights for the test
+#' set (if there are no observation weights, use a vector of ones).
+#' * `y`: a numeric vector containing the response values for the test set.
 #'
 #' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
 #'   are automatically truncated at the number of posterior draws in the
