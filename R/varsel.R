@@ -204,6 +204,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   if (is.null(d_test)) {
     d_test <- list(type = "train", data = NULL, offset = refmodel$offset,
                    weights = refmodel$wobs, y = refmodel$y)
+  } else {
+    d_test$type <- "test"
+    d_test <- d_test[nms_d_test()]
   }
 
   ## reference distributions for selection and prediction after selection
