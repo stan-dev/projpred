@@ -3,18 +3,18 @@
 ## Minor changes
 
 * Minor improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
-* At multiple places throughout the package: Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space.
+* At multiple places throughout the package: Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space. (GitHub: #337, #338)
 
 ## Bug fixes
 
 * Fix GitHub issue #324 (large `search_terms` caused the R session to crash).
 * Fix GitHub issue #204. (GitHub: #325)
 * In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
-* Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on.
+* Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on. (GitHub: #326)
 * Fix GitHub issue #329.
 * Fix GitHub issue #331.
 * `plot.vsel()` now draws the dashed red horizontal line for the reference model (and---if present---the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.
-* Fix GitHub issue #339.
+* Fix GitHub issue #339. (GitHub: #340)
 
 # projpred 2.1.2
 
