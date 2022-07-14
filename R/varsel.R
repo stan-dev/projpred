@@ -10,9 +10,10 @@
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
 #'   [get_refmodel()].
-#' @param d_test For internal use only. A `list` providing information about the
-#'   test set which is used for evaluating the predictive performance of the
-#'   reference model. If not provided, the training set is used.
+#' @param d_test A `list` of the structure outlined in section "Argument
+#'   `d_test`" below, providing test data for evaluating the predictive
+#'   performance of the submodels as well as of the reference model. If `NULL`,
+#'   the training data is used.
 #' @param method The method for the search part. Possible options are `"L1"` for
 #'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
 #'   `"L1"` is used, except if the reference model has multilevel or additive
@@ -81,6 +82,19 @@
 #' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
 #'   minimizer (during a forward search and also during the evaluation part, but
 #'   the latter only if `refit_prj` is `TRUE`).
+#'
+#' @details
+#'
+#' # Argument `d_test`
+#'
+#' If not `NULL`, then `d_test` needs to be a `list` with the following
+#' elements:
+#' * `data`: a `data.frame` containing the predictor variables for the test set.
+#' * `offset`: a numeric vector containing the offset values for the test set
+#' (if there is no offset, use a vector of zeros).
+#' * `weights`: a numeric vector containing the observation weights for the test
+#' set (if there are no observation weights, use a vector of ones).
+#' * `y`: a numeric vector containing the response values for the test set.
 #'
 #' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
 #'   are automatically truncated at the number of posterior draws in the
@@ -201,14 +215,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   search_terms <- args$search_terms
 
   if (is.null(d_test)) {
-    d_type <- "train"
-    test_points <- seq_len(NROW(refmodel$y))
-    d_test <- nlist(
-      y = refmodel$y, test_points, data = NULL, weights = refmodel$wobs,
-      type = d_type, offset = refmodel$offset
-    )
+    d_test <- list(type = "train", data = NULL, offset = refmodel$offset,
+                   weights = refmodel$wobs, y = refmodel$y)
   } else {
-    d_type <- d_test$type
+    d_test$type <- "test"
+    d_test <- d_test[nms_d_test()]
   }
 
   ## reference distributions for selection and prediction after selection
@@ -230,10 +241,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ...
   )
-  sub <- .get_sub_summaries(
-    submodels = submodels, test_points = seq_along(refmodel$y),
-    refmodel = refmodel
-  )
+  sub <- .get_sub_summaries(submodels = submodels,
+                            refmodel = refmodel,
+                            test_points = NULL,
+                            newdata = d_test$data,
+                            offset = d_test$offset,
+                            wobs = d_test$weights,
+                            y = d_test$y)
 
   ## predictive statistics of the reference model on test data. if no test data
   ## are provided,
@@ -244,7 +258,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ntest <- NROW(refmodel$y)
     ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
   } else {
-    if (d_type == "train") {
+    if (d_test$type == "train") {
       mu_test <- refmodel$mu
       if (!all(refmodel$offset == 0)) {
         mu_test <- refmodel$family$linkinv(

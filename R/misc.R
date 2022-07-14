@@ -4,6 +4,10 @@
   packageStartupMessage(msg)
 }
 
+nms_d_test <- function() {
+  c("type", "data", "offset", "weights", "y")
+}
+
 weighted.sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
