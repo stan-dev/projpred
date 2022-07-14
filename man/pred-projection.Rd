@@ -62,9 +62,9 @@ indicating whether the output should be averaged across the projected
 posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{.seed}{Pseudorandom number generation (PRNG) seed by which the same
-results can be obtained again if needed. If \code{NULL}, no seed is set and
-therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
-Here, this seed is used for drawing new group-level effects in case of a
+results can be obtained again if needed. Passed to argument \code{seed} of
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
+this seed is used for drawing new group-level effects in case of a
 multilevel submodel (however, not yet in case of a GAMM) and for drawing
 from the predictive distribution of the submodel(s) in case of
 \code{\link[=proj_predict]{proj_predict()}}. If a clustered projection was performed, then in

@@ -38,13 +38,13 @@
 #'   (the difference corresponds to the search degrees of freedom or the
 #'   effective number of parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
-#'   results can be obtained again if needed. If `NULL`, no seed is set and
-#'   therefore, the results are not reproducible. See [set.seed()] for details.
-#'   Here, this seed is used for clustering the reference model's posterior
-#'   draws (if `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo`
-#'   is smaller than the number of observations), for sampling the folds in
-#'   K-fold CV, and for drawing new group-level effects when predicting from a
-#'   multilevel submodel (however, not yet in case of a GAMM).
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
+#'   this seed is used for clustering the reference model's posterior draws (if
+#'   `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo` is smaller
+#'   than the number of observations), for sampling the folds in K-fold CV, and
+#'   for drawing new group-level effects when predicting from a multilevel
+#'   submodel (however, not yet in case of a GAMM).
 #'
 #' @inherit varsel details return
 #'
@@ -135,7 +135,7 @@ cv_varsel.refmodel <- function(
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   refmodel <- object
   # Needed to avoid a warning when calling varsel() later:

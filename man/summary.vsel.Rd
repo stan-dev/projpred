@@ -66,7 +66,8 @@ terms of \code{stats[1]}), respectively.}
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
 and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
-\code{sample.int(.Machine$integer.max, 1)}).}
+\code{sample.int(.Machine$integer.max, 1)}, but can also be \code{NA} to not call
+\code{\link[=set.seed]{set.seed()}} at all).}
 }
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or

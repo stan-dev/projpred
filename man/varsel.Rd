@@ -118,12 +118,11 @@ default \code{search_terms} considers all the terms in the reference model's
 formula.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
-results can be obtained again if needed. If \code{NULL}, no seed is set and
-therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
-Here, this seed is used for clustering the reference model's posterior
-draws (if \code{!is.null(nclusters)}) and for drawing new group-level effects
-when predicting from a multilevel submodel (however, not yet in case of a
-GAMM).}
+results can be obtained again if needed. Passed to argument \code{seed} of
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
+this seed is used for clustering the reference model's posterior draws (if
+\code{!is.null(nclusters)}) and for drawing new group-level effects when
+predicting from a multilevel submodel (however, not yet in case of a GAMM).}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
