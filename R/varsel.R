@@ -253,8 +253,18 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
         )
       }
     } else {
+      newdata_for_ref <- d_test$data
+      if (inherits(refmodel$fit, "stanreg") &&
+          length(refmodel$fit$offset) > 0) {
+        if ("projpred_internal_offs_stanreg" %in% names(newdata_for_ref)) {
+          stop("Need to write to column `projpred_internal_offs_stanreg` of ",
+               "`d_test$data`, but that column already exists. Please rename ",
+               "this column in `d_test$data` and try again.")
+        }
+        newdata_for_ref$projpred_internal_offs_stanreg <- d_test$offset
+      }
       mu_test <- refmodel$family$linkinv(
-        refmodel$ref_predfun(refmodel$fit, newdata = d_test$data) +
+        refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref) +
           d_test$offset
       )
     }
