@@ -103,13 +103,7 @@ test_that(paste(
       data = dat,
       offset = offs_crr,
       weights = wobs_crr,
-      y = dat_crr[[gsub(
-        "\\(|\\)",
-        "",
-        as.character(
-          rm_addresp(rm_cbind(formul_fit_crr))
-        )[2]
-      )]]
+      y = dat_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
     vs_repr <- do.call(varsel, c(
       list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
@@ -190,13 +184,7 @@ test_that(paste(
       data = dat_indep,
       offset = offs_crr,
       weights = wobs_crr,
-      y = dat_indep_crr[[gsub(
-        "\\(|\\)",
-        "",
-        as.character(
-          rm_addresp(rm_cbind(formul_fit_crr))
-        )[2]
-      )]]
+      y = dat_indep_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
     vs_indep <- do.call(varsel, c(
       list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
