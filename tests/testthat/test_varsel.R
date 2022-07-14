@@ -89,15 +89,33 @@ test_that(paste(
     pkg_crr <- args_vs_i$pkg_nm
     mod_crr <- args_vs_i$mod_nm
     fam_crr <- args_vs_i$fam_nm
-    refmod_crr <- refmods[[tstsetup_ref]]
+    if (!all(refmods[[tstsetup_ref]]$offset == 0)) {
+      offs_crr <- offs_tst
+    } else {
+      offs_crr <- rep(0, nobsv)
+    }
+    if (!all(refmods[[tstsetup_ref]]$wobs == 1)) {
+      wobs_crr <- wobs_tst
+    } else {
+      wobs_crr <- rep(1, nobsv)
+    }
+    formul_fit_crr <- args_fit[[args_vs_i$tstsetup_fit]]$formula
+    dat_crr <- get_dat_formul(formul_crr = formul_fit_crr,
+                              needs_adj = grepl("\\.spclformul", tstsetup))
     d_test_crr <- list(
       data = dat,
-      offset = refmod_crr$offset,
-      weights = refmod_crr$wobs,
-      y = refmod_crr$y
+      offset = offs_crr,
+      weights = wobs_crr,
+      y = dat_crr[[gsub(
+        "\\(|\\)",
+        "",
+        as.character(
+          rm_addresp(rm_cbind(formul_fit_crr))
+        )[2]
+      )]]
     )
     vs_repr <- do.call(varsel, c(
-      list(object = refmod_crr, d_test = d_test_crr),
+      list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
       excl_nonargs(args_vs_i)
     ))
     meth_exp_crr <- args_vs_i$method
@@ -106,7 +124,7 @@ test_that(paste(
     }
     vsel_tester(
       vs_repr,
-      refmod_expected = refmod_crr,
+      refmod_expected = refmods[[tstsetup_ref]],
       dtest_expected = c(list(type = "test"), d_test_crr),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
