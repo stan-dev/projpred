@@ -14,6 +14,7 @@
 * Fix GitHub issue #329.
 * Fix GitHub issue #331.
 * `plot.vsel()` now draws the dashed red horizontal line for the reference model (and---if present---the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.
+* Fix GitHub issue #339.
 
 # projpred 2.1.2
 
