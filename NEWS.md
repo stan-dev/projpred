@@ -2,8 +2,9 @@
 
 ## Minor changes
 
-* Minor improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
+* Several improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
 * At multiple places throughout the package: Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space. (GitHub: #337, #338)
+* All arguments `seed` and `.seed` are now allowed to be `NA` for not calling `set.seed()` internally at all.
 
 ## Bug fixes
 
