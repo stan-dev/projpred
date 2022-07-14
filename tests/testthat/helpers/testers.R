@@ -140,13 +140,13 @@ refmodel_tester <- function(
     formul_expected <- update(formul_expected,
                               . ~ . - offset(offs_col) + offset(offs_col))
   }
-  formul_expected <- rm_cbind(formul_expected)
-  formul_expected <- rm_addresp(formul_expected)
+  stdized_lhs <- stdize_lhs(formul_expected)
+  formul_expected <- stdized_lhs$fml
   if (with_spclformul) {
     # Reference models take arithmetic expressions on the left-hand side of
     # the formula into account:
-    y_spclformul <- as.character(formul_expected)[2]
-    y_spclformul_new <- gsub("\\(|\\)", "", y_spclformul)
+    y_spclformul <- stdized_lhs$y_nm_orig
+    y_spclformul_new <- stdized_lhs$y_nm
     formul_expected <- update(
       formul_expected,
       as.formula(paste(y_spclformul_new, "~ ."))
