@@ -80,9 +80,6 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- names(vss)
-  ### Alternative with less test setups:
-  # tstsetups <- grep("\\.glm\\.", names(vss), value = TRUE)
-  ###
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     tstsetup_ref <- args_vs_i$tstsetup_ref
@@ -144,6 +141,149 @@ test_that(paste(
                                                 c("type", "data"))],
                  info = tstsetup)
   }
+})
+
+test_that(paste(
+  "`d_test` set to actual test data gives `<vsel_object>summaries$sub` results",
+  "that can be reproduced by proj_linpred() and `<vsel_object>summaries$ref`",
+  "results that can be reproduced by posterior_epred() and log_lik()"
+), {
+  skip_if_not(run_vs)
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
+  tstsetups <- names(vss)
+  ### TODO (GAMMs): Currently, the following test setup leads to the error
+  ### ```
+  ### Error in t(as.matrix(b$reTrms$Zt[ii, ])) %*%
+  ### as.matrix(c(as.matrix(ranef[[i]]))) :
+  ###   non-conformable arguments
+  ### ```
+  ### thrown by predict.gamm4(). This needs to be fixed. For now, exclude this
+  ### test setup:
+  tstsetups <- grep("brms\\.gamm\\.binom", tstsetups, value = TRUE,
+                    invert = TRUE)
+  ###
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    tstsetup_ref <- args_vs_i$tstsetup_ref
+    pkg_crr <- args_vs_i$pkg_nm
+    mod_crr <- args_vs_i$mod_nm
+    fam_crr <- args_vs_i$fam_nm
+    if (!all(refmods[[tstsetup_ref]]$offset == 0)) {
+      offs_crr <- offs_indep
+    } else {
+      offs_crr <- rep(0, nobsv_indep)
+    }
+    if (!all(refmods[[tstsetup_ref]]$wobs == 1)) {
+      wobs_crr <- wobs_indep
+    } else {
+      wobs_crr <- rep(1, nobsv_indep)
+    }
+    formul_fit_crr <- args_fit[[args_vs_i$tstsetup_fit]]$formula
+    dat_indep_crr <- get_dat_formul(
+      formul_crr = formul_fit_crr,
+      needs_adj = grepl("\\.spclformul", tstsetup),
+      dat_crr = dat_indep
+    )
+    d_test_crr <- list(
+      data = dat_indep,
+      offset = offs_crr,
+      weights = wobs_crr,
+      y = dat_indep_crr[[gsub(
+        "\\(|\\)",
+        "",
+        as.character(
+          rm_addresp(rm_cbind(formul_fit_crr))
+        )[2]
+      )]]
+    )
+    vs_indep <- do.call(varsel, c(
+      list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
+      excl_nonargs(args_vs_i)
+    ))
+    meth_exp_crr <- args_vs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    }
+    vsel_tester(
+      vs_indep,
+      refmod_expected = refmods[[tstsetup_ref]],
+      dtest_expected = c(list(type = "test"), d_test_crr),
+      solterms_len_expected = args_vs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      nprjdraws_search_expected = args_vs_i$nclusters,
+      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
+      search_trms_empty_size =
+        length(args_vs_i$search_terms) &&
+        all(grepl("\\+", args_vs_i$search_terms)),
+      info_str = tstsetup
+    )
+
+    ### Summaries for the submodels -------------------------------------------
+
+    # For getting the correct seed in proj_linpred():
+    set.seed(args_vs_i$seed)
+    p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
+                                nclusters = vs_indep$nprjdraws_search)
+    # As soon as GitHub issues #168 and #211 are fixed, we can use `refit_prj =
+    # FALSE` here:
+    pl_indep <- proj_linpred(vs_indep,
+                             newdata = dat_indep_crr,
+                             offsetnew = d_test_crr$offset,
+                             weightsnew = d_test_crr$weights,
+                             transform = TRUE,
+                             integrated = TRUE,
+                             .seed = NA,
+                             nterms = c(0L, seq_along(vs_indep$solution_terms)),
+                             nclusters = args_vs_i$nclusters_pred,
+                             seed = NA)
+    summ_sub_ch <- lapply(pl_indep, function(pl_indep_k) {
+      names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
+      names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
+      pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
+      pl_indep_k$lppd <- drop(pl_indep_k$lppd)
+      return(pl_indep_k)
+    })
+    names(summ_sub_ch) <- NULL
+    expect_equal(vs_indep$summaries$sub, summ_sub_ch,
+                 tolerance = .Machine$double.eps, info = tstsetup)
+
+    ### Summaries for the reference model -------------------------------------
+
+    if (pkg_crr == "rstanarm") {
+      mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
+                                            newdata = dat_indep,
+                                            offset = d_test_crr$offset)
+      if (grepl("\\.without_wobs", tstsetup)) {
+        lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
+                                        newdata = dat_indep,
+                                        offset = d_test_crr$offset)
+      } else {
+        ### Currently, rstanarm issue #567 causes an error to be thrown when
+        ### calling log_lik(). Therefore, use the following dummy which
+        ### guarantees test success:
+        lppd_new <- matrix(vs_indep$summaries$ref$lppd,
+                           nrow = nrefdraws, ncol = nobsv_indep, byrow = TRUE)
+        ###
+      }
+    } else if (pkg_crr == "brms") {
+      mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
+                                            newdata = dat_indep)
+      lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
+                                      newdata = dat_indep)
+    }
+    summ_ref_ch <- list(
+      mu = unname(colMeans(mu_new)),
+      lppd = unname(apply(lppd_new, 2, log_sum_exp) - log(nrefdraws))
+    )
+    expect_equal(vs_indep$summaries$ref, summ_ref_ch,
+                 tolerance = 1e2 * .Machine$double.eps, info = tstsetup)
+    lppd_ref_ch2 <- unname(loo::elpd(lppd_new)$pointwise[, "elpd"])
+    expect_equal(vs_indep$summaries$ref$lppd, lppd_ref_ch2,
+                 tolerance = 1e2 * .Machine$double.eps, info = tstsetup)
+  }
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 ## Regularization ---------------------------------------------------------

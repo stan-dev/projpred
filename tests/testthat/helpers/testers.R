@@ -1281,10 +1281,14 @@ vsel_tester <- function(
       nloo_expected <- nobsv
     }
   }
+  nobsv_summ <- nobsv
+  if (!is.null(dtest_expected)) {
+    nobsv_summ <- nrow(dtest_expected$data)
+  }
   for (j in seq_along(vs$summaries$sub)) {
     expect_named(vs$summaries$sub[[!!j]], vsel_smmrs_sub_nms, info = info_str)
     expect_type(vs$summaries$sub[[!!j]]$mu, "double")
-    expect_length(vs$summaries$sub[[!!j]]$mu, nobsv)
+    expect_length(vs$summaries$sub[[!!j]]$mu, nobsv_summ)
     if (with_cv) {
       expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$mu)),
                        nloo_expected, info = info_str)
@@ -1292,7 +1296,7 @@ vsel_tester <- function(
       expect_true(all(!is.na(vs$summaries$sub[[!!j]]$mu)), info = info_str)
     }
     expect_type(vs$summaries$sub[[!!j]]$lppd, "double")
-    expect_length(vs$summaries$sub[[!!j]]$lppd, nobsv)
+    expect_length(vs$summaries$sub[[!!j]]$lppd, nobsv_summ)
     if (with_cv) {
       expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$lppd)),
                        nloo_expected, info = info_str)
@@ -1314,13 +1318,13 @@ vsel_tester <- function(
   }
   expect_type(vs$summaries$ref, "list")
   expect_named(vs$summaries$ref, vsel_smmrs_ref_nms, info = info_str)
-  expect_length(vs$summaries$ref$mu, nobsv)
+  expect_length(vs$summaries$ref$mu, nobsv_summ)
   if (!from_datafit) {
     expect_true(all(!is.na(vs$summaries$ref$mu)), info = info_str)
   } else {
     expect_true(all(is.na(vs$summaries$ref$mu)), info = info_str)
   }
-  expect_length(vs$summaries$ref$lppd, nobsv)
+  expect_length(vs$summaries$ref$lppd, nobsv_summ)
   if (!from_datafit) {
     expect_true(all(!is.na(vs$summaries$ref$lppd)), info = info_str)
   } else {
