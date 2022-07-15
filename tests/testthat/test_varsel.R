@@ -257,6 +257,15 @@ test_that(paste(
     } else if (pkg_crr == "brms") {
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
                                             newdata = dat_indep)
+      if (fam_crr == "binom") {
+        # Compared to rstanarm, brms uses a different convention for the
+        # binomial family: The values returned by posterior_epred() are not
+        # probabilities, but the expected values on the scale of the response
+        # (so the probabilities multiplied by the number of trials). Thus, we
+        # have to revert this here:
+        mu_new <- mu_new / matrix(wobs_indep, nrow = nrow(mu_new),
+                                  ncol = ncol(mu_new), byrow = TRUE)
+      }
       lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
                                       newdata = dat_indep)
     }
