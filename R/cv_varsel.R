@@ -658,8 +658,16 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
     fold$d_test$omitted
   }))
+  idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
+  if (refmodel$family$for_augdat) {
+    idxs_sorted_by_fold_aug <- as.vector(
+      do.call(rbind, lapply(idxs_sorted_by_fold_aug, function(idx_obs) {
+        idx_obs + (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y)
+      }))
+    )
+  }
   sub <- lapply(sub, function(summ) {
-    summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
+    summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
 
     # Add weights (see GitHub issue #330 for why this needs to be clarified):
@@ -681,7 +689,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       dis = fold$refmodel$dis
     )
   }))
-  ref$mu <- ref$mu[order(idxs_sorted_by_fold)]
+  ref$mu <- ref$mu[order(idxs_sorted_by_fold_aug)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
 
   # Combine the K separate test "datasets" (rather "information objects") into a
