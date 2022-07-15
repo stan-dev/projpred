@@ -115,6 +115,12 @@ test_that(paste(
       weights = wobs_crr,
       y = dat_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
+    if (prj_crr == "augdat") {
+      d_test_crr$y <- factor(
+        as.character(d_test_crr$y),
+        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs
+      )
+    }
     vs_repr <- do.call(varsel, c(
       list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
       excl_nonargs(args_vs_i)
@@ -174,6 +180,7 @@ test_that(paste(
     pkg_crr <- args_vs_i$pkg_nm
     mod_crr <- args_vs_i$mod_nm
     fam_crr <- args_vs_i$fam_nm
+    prj_crr <- args_vs_i$prj_nm
     if (!all(refmods[[tstsetup_ref]]$offset == 0)) {
       offs_crr <- offs_indep
     } else {
@@ -196,13 +203,20 @@ test_that(paste(
       weights = wobs_crr,
       y = dat_indep_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
+    if (prj_crr == "augdat") {
+      d_test_crr$y <- factor(
+        as.character(d_test_crr$y),
+        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs
+      )
+    }
     vs_indep <- do.call(varsel, c(
       list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
       excl_nonargs(args_vs_i)
     ))
     meth_exp_crr <- args_vs_i$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     vsel_tester(
       vs_indep,
@@ -241,6 +255,11 @@ test_that(paste(
       names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
       pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
       pl_indep_k$lppd <- drop(pl_indep_k$lppd)
+      if (prj_crr == "augdat") {
+        pl_indep_k$mu <- structure(as.vector(pl_indep_k$mu),
+                                   class = "augvec",
+                                   nobs_orig = nrow(pl_indep_k$mu))
+      }
       return(pl_indep_k)
     })
     names(summ_sub_ch) <- NULL
@@ -284,6 +303,11 @@ test_that(paste(
       mu = unname(colMeans(mu_new)),
       lppd = unname(apply(lppd_new, 2, log_sum_exp) - log(nrefdraws))
     )
+    if (prj_crr == "augdat" && fam_crr %in% c("brnll", "binom")) {
+      summ_ref_ch$mu <- structure(c(1 - summ_ref_ch$mu, summ_ref_ch$mu),
+                                  class = "augvec",
+                                  nobs_orig = length(summ_ref_ch$mu))
+    }
     expect_equal(vs_indep$summaries$ref, summ_ref_ch,
                  tolerance = 1e2 * .Machine$double.eps, info = tstsetup)
     lppd_ref_ch2 <- unname(loo::elpd(lppd_new)$pointwise[, "elpd"])
