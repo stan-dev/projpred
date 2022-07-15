@@ -37,13 +37,13 @@
 #'   (the difference corresponds to the search degrees of freedom or the
 #'   effective number of parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
-#'   results can be obtained again if needed. If `NULL`, no seed is set and
-#'   therefore, the results are not reproducible. See [set.seed()] for details.
-#'   Here, this seed is used for clustering the reference model's posterior
-#'   draws (if `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo`
-#'   is smaller than the number of observations), for sampling the folds in
-#'   K-fold CV, and for drawing new group-level effects when predicting from a
-#'   multilevel submodel (however, not yet in case of a GAMM).
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
+#'   this seed is used for clustering the reference model's posterior draws (if
+#'   `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo` is smaller
+#'   than the number of observations), for sampling the folds in K-fold CV, and
+#'   for drawing new group-level effects when predicting from a multilevel
+#'   submodel (however, not yet in case of a GAMM).
 #'
 #' @inherit varsel details return
 #'
@@ -134,7 +134,7 @@ cv_varsel.refmodel <- function(
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   refmodel <- object
   # Needed to avoid a warning when calling varsel() later:
@@ -427,9 +427,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## compute approximate LOO with PSIS weights
     inds_aug <- inds
     if (refmodel$family$for_augdat) {
-      inds_aug <- as.vector(do.call(rbind, lapply(inds_aug, function(i_aug) {
-        i_aug + (seq_along(refmodel$family$cats) - 1L) * n
-      })))
+      inds_aug <- inds_aug + rep(
+        (seq_along(refmodel$family$cats) - 1L) * n,
+        each = length(inds_aug)
+      )
     }
     log_lik_ref <- t(refmodel$family$ll_fun(
       p_pred$mu[inds_aug, , drop = FALSE], p_pred$dis, refmodel$y[inds],
@@ -521,9 +522,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
         refit_prj = refit_prj, ...
       )
-      summaries_sub <- .get_sub_summaries(
-        submodels = submodels, test_points = c(i), refmodel = refmodel
-      )
+      summaries_sub <- .get_sub_summaries(submodels = submodels,
+                                          refmodel = refmodel,
+                                          test_points = i)
       i_aug <- i
       if (refmodel$family$for_augdat) {
         i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
@@ -560,12 +561,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
-  d_test <- list(
-    y = refmodel$y, type = "LOO",
-    test_points = seq_along(refmodel$y),
-    weights = refmodel$wobs,
-    data = NULL, offset = refmodel$offset
-  )
+  d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
+                 weights = refmodel$wobs, y = refmodel$y)
 
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
@@ -650,10 +647,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Perform the evaluation of the submodels for each fold (and make sure to
   # combine the results from the K folds into a single results list):
   get_summaries_submodel_cv <- function(submodels, fold) {
-    .get_sub_summaries(
-      submodels = submodels, test_points = fold$d_test$omitted,
-      refmodel = refmodel
-    )
+    .get_sub_summaries(submodels = submodels,
+                       refmodel = refmodel,
+                       test_points = fold$d_test$omitted)
   }
   sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
   if (is.null(dim(sub_cv_summaries))) {
@@ -662,7 +658,21 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     dim(sub_cv_summaries) <- rev(summ_dim)
   }
   sub <- apply(sub_cv_summaries, 1, rbind2list)
+  idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
+    fold$d_test$omitted
+  }))
+  idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
+  if (refmodel$family$for_augdat) {
+    idxs_sorted_by_fold_aug <- idxs_sorted_by_fold_aug + rep(
+      (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y),
+      each = length(idxs_sorted_by_fold_aug)
+    )
+  }
   sub <- lapply(sub, function(summ) {
+    summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
+    summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
+
+    # Add weights (see GitHub issue #330 for why this needs to be clarified):
     summ$w <- rep(1, length(summ$lppd))
     summ$w <- summ$w / sum(summ$w)
     return(summ)
@@ -681,19 +691,23 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       dis = fold$refmodel$dis
     )
   }))
+  ref$mu <- ref$mu[order(idxs_sorted_by_fold_aug)]
+  ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
 
   # Combine the K separate test "datasets" (rather "information objects") into a
   # single list:
   d_cv <- rbind2list(lapply(list_cv, function(fold) {
-    list(y = fold$d_test$y,
+    list(offset = fold$d_test$offset,
          weights = fold$d_test$weights,
-         test_points = fold$d_test$omitted,
-         offset = fold$d_test$offset)
+         y = fold$d_test$y)
   }))
+  d_cv <- as.list(
+    as.data.frame(d_cv)[order(idxs_sorted_by_fold), , drop = FALSE]
+  )
 
   return(nlist(solution_terms_cv,
                summaries = nlist(sub, ref),
-               d_test = c(d_cv, type = "kfold")))
+               d_test = c(list(type = "kfold", data = NULL), d_cv)))
 }
 
 # Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch

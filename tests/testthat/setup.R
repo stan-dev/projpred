@@ -313,6 +313,49 @@ dat_offs_new <- within(dat, {
   offs_col_new <- seq(-2, 2, length.out = nobsv)
 })
 
+nobsv_indep <- tail(nobsv_tst, 1)
+dis_indep <- runif(1L, 1, 2)
+offs_indep <- rnorm(nobsv_indep)
+wobs_indep <- sample(1:4, nobsv_indep, replace = TRUE)
+idxs_indep <- sample.int(nobsv, size = nobsv_indep, replace = TRUE)
+dat_indep <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    pred_link <- get(paste0("eta_", mod_nm))
+    pred_link <- pred_link[idxs_indep, , drop = FALSE]
+    if (fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm")) {
+      # For the "brnll" `fam_nm`, offsets are simply not added to have some
+      # scenarios without offsets.
+      # For GAMs, offsets are not added because of rstanarm issue #546 (see
+      # also further below).
+      # For GAMMs, offsets are not added because of rstanarm issue #253 (see
+      # also further below).
+      pred_link <- pred_link + offs_indep
+    }
+    pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
+    if (fam_nm == "gauss") {
+      return(rnorm(nobsv_indep, mean = pred_resp, sd = dis_indep))
+    } else if (fam_nm == "brnll") {
+      return(rbinom(nobsv_indep, 1, pred_resp))
+    } else if (fam_nm == "binom") {
+      return(rbinom(nobsv_indep, wobs_indep, pred_resp))
+    } else if (fam_nm == "poiss") {
+      return(rpois(nobsv_indep, pred_resp))
+    } else {
+      stop("Unknown `fam_nm`.")
+    }
+  })
+})
+dat_indep <- unlist(dat_indep, recursive = FALSE)
+names(dat_indep) <- paste("y", gsub("\\.", "_", names(dat_indep)), sep = "_")
+dat_indep <- cbind(
+  as.data.frame(dat_indep),
+  dat[idxs_indep,
+      grep("^y_", names(dat), value = TRUE, invert = TRUE),
+      drop = FALSE]
+)
+dat_indep$wobs_col <- wobs_indep
+dat_indep$offs_col <- offs_indep
+
 # Fits --------------------------------------------------------------------
 
 ## Setup ------------------------------------------------------------------
@@ -621,7 +664,7 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
 
 ## Setup ------------------------------------------------------------------
 
-seed_tst <- 74341
+seed_tst <- 20411346
 seed2_tst <- 866028
 seed3_tst <- 1208499
 
@@ -1316,8 +1359,6 @@ vsel_nms_cv <- c(
 vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
                    "summary")
 vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
-# Related to `d_test`:
-vsel_nms_dtest <- c("d_test", setdiff(vsel_nms_pred, c("solution_terms", "kl")))
 # Related to `nloo`:
 vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
                       "summary")
@@ -1328,8 +1369,8 @@ vsel_nms_cv_valsearch <- c("validate_search", "summaries",
                            "summary")
 vsel_nms_cv_valsearch_opt <- c("suggested_size")
 # Related to `cvfits`:
-vsel_nms_cv_cvfits <- c("refmodel", "d_test", "summaries",
-                        "pct_solution_terms_cv", "summary", "suggested_size")
+vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv",
+                        "summary", "suggested_size")
 vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 

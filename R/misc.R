@@ -4,6 +4,10 @@
   packageStartupMessage(msg)
 }
 
+nms_d_test <- function() {
+  c("type", "data", "offset", "weights", "y")
+}
+
 weighted.sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
@@ -117,7 +121,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   seq_x <- seq_len(NROW(x))
   is_vector <- NCOL(x) == 1

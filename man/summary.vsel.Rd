@@ -38,7 +38,10 @@ traditional projection: \code{\link[=binomial]{binomial()}} family only; for the
 projection: all families).
 \item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family for the
 traditional projection only). For the corresponding standard error,
-bootstrapping is used.
+bootstrapping is used. In the "aggregated" binomial case (i.e., if there is
+more than one Bernoulli trial for at least one observation), \pkg{projpred}
+calculates the AUC by deaggregating the observations internally to a long
+dataset with only zeros and ones as response values.
 }}
 
 \item{type}{One or more items from \code{"mean"}, \code{"se"}, \code{"lower"}, \code{"upper"},
@@ -68,7 +71,8 @@ terms of \code{stats[1]}), respectively.}
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
 and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
-\code{sample.int(.Machine$integer.max, 1)}).}
+\code{sample.int(.Machine$integer.max, 1)}, but can also be \code{NA} to not call
+\code{\link[=set.seed]{set.seed()}} at all).}
 }
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
