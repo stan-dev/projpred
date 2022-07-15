@@ -361,7 +361,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Currently, the augmented-data projection may not be combined with ",
          "observation weights (other than 1).")
   }
-  if (inherits(object$fit, "stanreg") && length(object$offset) > 0) {
+  if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
     if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
            "`newdata`, but that column already exists. Please rename this ",

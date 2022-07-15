@@ -21,8 +21,8 @@ cv_ids(
 \item{K}{Number of folds. Must be at least 2 and not exceed \code{n}.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
-results can be obtained again if needed. If \code{NULL}, no seed is set and
-therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.}
+results can be obtained again if needed. Passed to argument \code{seed} of
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all.}
 
 \item{out}{Format of the output, either \code{"foldwise"} or \code{"indices"}. See
 below for details.}

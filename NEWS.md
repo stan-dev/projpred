@@ -6,18 +6,23 @@
 
 ## Minor changes
 
-* Minor improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
-* At multiple places throughout the package: Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space.
+* Several improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
+* At multiple places throughout the package: Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space. (GitHub: #337, #338)
+* All arguments `seed` and `.seed` are now allowed to be `NA` for not calling `set.seed()` internally at all.
+* Argument `d_test` of `varsel()` is not considered as an internal feature anymore. This was possible after fixing a bug for `d_test` (see below). (GitHub: #341)
+* The order of the observations in the subelements of `<vsel_object>$summaries` and `<vsel_object>$d_test` now corresponds to the order of the observations in the original dataset if `<vsel_object>` was created by a call to `cv_varsel([...], cv_method = "kfold")` (formerly, in that case, the observations in those subelements were ordered by fold). Thereby, the order of the observations in those subelements now always corresponds to the order of the observations in the original dataset, except if `<vsel_object>` was created by a call to `varsel([...], d_test = <non-NULL_d_test_object>)`, in which case the order of the observations in those subelements corresponds to the order of the observations in `<non-NULL_d_test_object>`. (GitHub: #341)
 
 ## Bug fixes
 
 * Fix GitHub issue #324 (large `search_terms` caused the R session to crash).
 * Fix GitHub issue #204. (GitHub: #325)
 * In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
-* Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on.
+* Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on. (GitHub: #326)
 * Fix GitHub issue #329.
 * Fix GitHub issue #331.
 * `plot.vsel()` now draws the dashed red horizontal line for the reference model (and---if present---the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.
+* Fix GitHub issue #339. (GitHub: #340)
+* Fix argument `d_test` of `varsel()`: Not only the predictive performance of the *reference model* needs to be evaluated on the test data, but also the predictive performance of the *submodels*. (GitHub: #341)
 
 # projpred 2.1.2
 

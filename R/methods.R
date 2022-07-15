@@ -31,9 +31,9 @@
 #'   the set of clustered posterior draws after projection (with this set being
 #'   determined by argument `nclusters` of [project()]).
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
-#'   results can be obtained again if needed. If `NULL`, no seed is set and
-#'   therefore, the results are not reproducible. See [set.seed()] for details.
-#'   Here, this seed is used for drawing new group-level effects in case of a
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
+#'   this seed is used for drawing new group-level effects in case of a
 #'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
 #'   from the predictive distribution of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
@@ -203,7 +203,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(.seed)
+  if (!is.na(.seed)) set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
@@ -285,7 +285,7 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(.seed)
+  if (!is.na(.seed)) set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
@@ -469,7 +469,10 @@ plot.vsel <- function(
 #'   projection: all families).
 #'   * `"auc"`: area under the ROC curve ([binomial()] family for the
 #'   traditional projection only). For the corresponding standard error,
-#'   bootstrapping is used.
+#'   bootstrapping is used. In the "aggregated" binomial case (i.e., if there is
+#'   more than one Bernoulli trial for at least one observation), \pkg{projpred}
+#'   calculates the AUC by deaggregating the observations internally to a long
+#'   dataset with only zeros and ones as response values.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
@@ -493,7 +496,8 @@ plot.vsel <- function(
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
 #'   and `seed` (see [set.seed()], defaulting to
-#'   `sample.int(.Machine$integer.max, 1)`).
+#'   `sample.int(.Machine$integer.max, 1)`, but can also be `NA` to not call
+#'   [set.seed()] at all).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -1339,8 +1343,8 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #' @param out Format of the output, either `"foldwise"` or `"indices"`. See
 #'   below for details.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
-#'   results can be obtained again if needed. If `NULL`, no seed is set and
-#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all.
 #'
 #' @return [cvfolds()] returns a vector of length `n` such that each element is
 #'   an integer between 1 and `k` denoting which fold the corresponding data
@@ -1372,7 +1376,7 @@ cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   ## create and shuffle the indices
   folds <- rep_len(seq_len(K), length.out = n)
@@ -1393,7 +1397,7 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   # shuffle the indices
   ind <- sample(seq_len(n), n, replace = FALSE)
