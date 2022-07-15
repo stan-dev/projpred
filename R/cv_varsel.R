@@ -425,9 +425,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## compute approximate LOO with PSIS weights
     inds_aug <- inds
     if (refmodel$family$for_augdat) {
-      inds_aug <- as.vector(do.call(rbind, lapply(inds_aug, function(i_aug) {
-        i_aug + (seq_along(refmodel$family$cats) - 1L) * n
-      })))
+      inds_aug <- inds_aug + rep(
+        (seq_along(refmodel$family$cats) - 1L) * n,
+        each = length(inds_aug)
+      )
     }
     log_lik_ref <- t(refmodel$family$ll_fun(
       p_pred$mu[inds_aug, , drop = FALSE], p_pred$dis, refmodel$y[inds],
@@ -660,10 +661,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }))
   idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
   if (refmodel$family$for_augdat) {
-    idxs_sorted_by_fold_aug <- as.vector(
-      do.call(rbind, lapply(idxs_sorted_by_fold_aug, function(idx_obs) {
-        idx_obs + (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y)
-      }))
+    idxs_sorted_by_fold_aug <- idxs_sorted_by_fold_aug + rep(
+      (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y),
+      each = length(idxs_sorted_by_fold_aug)
     )
   }
   sub <- lapply(sub, function(summ) {
