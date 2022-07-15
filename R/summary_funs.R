@@ -28,8 +28,8 @@
 #   containing the values for the quantities from the description above.
 .weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
   if (!is.matrix(mu)) {
-    stop("Unexpected structure for `mu`. Does the return value of ",
-         "`proj_predfun` have the correct structure?")
+    stop("Unexpected structure for `mu`. Do the return values of ",
+         "`proj_predfun` and `ref_predfun` have the correct structure?")
   }
   loglik <- family$ll_fun(mu, dis, y_test$y, y_test$weights)
   if (!is.matrix(loglik)) {
