@@ -656,7 +656,7 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
 
 ## Setup ------------------------------------------------------------------
 
-seed_tst <- 74341
+seed_tst <- 20411346
 seed2_tst <- 866028
 seed3_tst <- 1208499
 

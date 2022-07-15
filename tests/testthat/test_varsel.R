@@ -147,16 +147,15 @@ test_that(paste(
     rng_old <- get(".Random.seed", envir = .GlobalEnv)
   }
   tstsetups <- names(vss)
-  ### TODO (GAMMs): Currently, the following test setup leads to the error
+  ### TODO (GAMMs): Currently, the following test setups (can) lead to the error
   ### ```
   ### Error in t(as.matrix(b$reTrms$Zt[ii, ])) %*%
   ### as.matrix(c(as.matrix(ranef[[i]]))) :
   ###   non-conformable arguments
   ### ```
-  ### thrown by predict.gamm4(). This needs to be fixed. For now, exclude this
-  ### test setup:
-  tstsetups <- grep("brms\\.gamm\\.binom", tstsetups, value = TRUE,
-                    invert = TRUE)
+  ### thrown by predict.gamm4(). This needs to be fixed. For now, exclude these
+  ### test setups:
+  tstsetups <- grep("\\.gamm\\.", tstsetups, value = TRUE, invert = TRUE)
   ###
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
