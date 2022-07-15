@@ -34,7 +34,11 @@ bootstrapping is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy
 (\code{\link[=binomial]{binomial()}} family only).
 \item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only). For the
-corresponding standard error, bootstrapping is used.
+corresponding standard error, bootstrapping is used. In the "aggregated"
+binomial case (i.e., if there is more than one Bernoulli trial for at least
+one observation), \pkg{projpred} calculates the AUC by deaggregating the
+observations internally to a long dataset with only zeros and ones as
+response values.
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
