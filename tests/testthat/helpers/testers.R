@@ -1126,8 +1126,7 @@ vsel_tester <- function(
   # Preparations:
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
-    vsel_smmrs_sub_nms <- c("lppd", "mu", "w")
-    vsel_smmrs_ref_nms <- c("lppd", "mu")
+    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "w")
 
     if (is.null(cv_method_expected)) {
       cv_method_expected <- "LOO"
@@ -1136,7 +1135,7 @@ vsel_tester <- function(
       valsearch_expected <- TRUE
     }
 
-    if (cv_method_expected == "kfold") {
+    if (cv_method_expected == "LOO") {
       # Re-order:
       vsel_smmrs_sub_nms[1:2] <- vsel_smmrs_sub_nms[2:1]
       vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
