@@ -138,9 +138,10 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`d_test` set to actual test data gives `<vsel_object>summaries$sub` results",
-  "that can be reproduced by proj_linpred() and `<vsel_object>summaries$ref`",
-  "results that can be reproduced by posterior_epred() and log_lik()"
+  "`d_test` set to actual test data gives a `<vsel_object>$summaries$sub`",
+  "object that can be reproduced by proj_linpred() and a",
+  "`<vsel_object>$summaries$ref` object that can be reproduced by",
+  "posterior_epred() and log_lik()"
 ), {
   skip_if_not(run_vs)
   if (exists(".Random.seed", envir = .GlobalEnv)) {
