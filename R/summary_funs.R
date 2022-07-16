@@ -258,11 +258,15 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else if (stat == "auc") {
     y <- d_test$y
-    auc.data <- cbind(y, mu, weights)
+    # TODO (see GitHub issue #330): The auc() function seems to expect the
+    # observation weights (`d_test$weights`) in the third column. But what about
+    # get_stat()'s argument `weights`? Currently, this is not taken into account
+    # here in the `stat == "auc"` case.
+    auc.data <- cbind(y, mu, weights = d_test$weights)
     if (!is.null(mu.bs)) {
       mu.bs[is.na(mu)] <- NA # compute the relative auc using only those points
       mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
-      auc.data.bs <- cbind(y, mu.bs, weights)
+      auc.data.bs <- cbind(y, mu.bs, weights = d_test$weights)
       value <- auc(auc.data) - auc(auc.data.bs)
       value.bootstrap1 <- bootstrap(auc.data, auc, ...)
       value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
