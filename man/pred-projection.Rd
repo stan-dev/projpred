@@ -89,12 +89,14 @@ topic \link{refmodel-init-get} are used. Furthermore, let \eqn{C} denote either
 \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
 prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the call to \code{\link[=project]{project()}}):
 \itemize{
-\item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions) and
-\code{lpd} (log predictive densities). In case of the traditional projection,
-both elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
-case of the augmented-data projection, \code{pred} is an \eqn{S_{\mathrm{prj}}
-  \times N \times C}{S_prj x N x C} array and \code{lpd} is an
-\eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
+\item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions,
+i.e., the linear predictors, possibly transformed to response scale) and
+\code{lpd} (log predictive densities; only calculated if \code{newdata} contains
+response values). In case of the traditional projection, both elements are
+\eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of the
+augmented-data projection, \code{pred} is an \eqn{S_{\mathrm{prj}} \times N
+  \times C}{S_prj x N x C} array and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times
+  N}{S_prj x N} matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection. In case of the
@@ -110,13 +112,18 @@ each submodel (the names of this \code{list} being the numbers of solutions
 terms of the submodels when counting the intercept, too).
 }
 \description{
-After the projection of the reference model onto a submodel, \code{\link[=proj_linpred]{proj_linpred()}}
-gives the linear predictor (possibly transformed to response scale) for all
-projected draws of such a submodel. \code{\link[=proj_predict]{proj_predict()}} draws from the
-predictive distribution of such a submodel. If the projection has not been
-performed, both functions also perform the projection. Both functions can
-also handle multiple submodels at once (if the input \code{object} is of class
-\code{vsel}).
+After the projection of the reference model onto a submodel, the linear
+predictors (for the original dataset or new data) based on that submodel can
+be calculated by \code{\link[=proj_linpred]{proj_linpred()}}. The linear predictors can also be
+transformed to response scale. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the
+corresponding log predictive density values if the new dataset contains
+response values. The \code{\link[=proj_predict]{proj_predict()}} function draws from the predictive
+distribution of the submodel that the reference model has been projected
+onto. If the projection has not been performed yet, both functions call
+\code{\link[=project]{project()}} internally to perform the projection. Both functions can also
+handle multiple submodels at once (for \code{object}s of class \code{vsel} or \code{object}s
+returned by a \code{\link[=project]{project()}} call to an object of class \code{vsel}; see
+\code{\link[=project]{project()}}).
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
