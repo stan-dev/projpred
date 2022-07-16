@@ -70,6 +70,8 @@
 
   if (varsel$refmodel$family$family == "binomial" &&
       !all(varsel$d_test$weights == 1)) {
+    # This case should not occur (yet) for the augmented-data projection:
+    stopifnot(!varsel$refmodel$family$for_augdat)
     varsel$d_test$y_prop <- varsel$d_test$y / varsel$d_test$weights
   }
 
