@@ -52,6 +52,11 @@
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
 
+  if (varsel$refmodel$family$family == "binomial" &&
+      !all(varsel$d_test$weights == 1)) {
+    varsel$d_test$y_prop <- varsel$d_test$y / varsel$d_test$weights
+  }
+
   ## fetch the mu and lppd for the baseline model
   if (is.null(nfeat_baseline)) {
     ## no baseline model, i.e, compute the statistics on the actual
@@ -171,7 +176,11 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         sqrt(n_notna) * n_notna
     }
   } else if (stat == "mse") {
-    y <- d_test$y
+    if (is.null(d_test$y_prop)) {
+      y <- d_test$y
+    } else {
+      y <- d_test$y_prop
+    }
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
       value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, weights,
@@ -183,7 +192,11 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         sqrt(n_notna)
     }
   } else if (stat == "rmse") {
-    y <- d_test$y
+    if (is.null(d_test$y_prop)) {
+      y <- d_test$y
+    } else {
+      y <- d_test$y_prop
+    }
     if (!is.null(mu.bs)) {
       ## make sure the relative rmse is computed using only those points for
       ## which
@@ -219,6 +232,19 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else if (stat == "acc" || stat == "pctcorr") {
     y <- d_test$y
+    if (!is.null(d_test$y_prop)) {
+      y <- unlist(lapply(seq_along(y), function(i_short) {
+        c(rep(0L, d_test$weights[i_short] - y[i_short]),
+          rep(1L, y[i_short]))
+      }))
+      mu <- rep(mu, d_test$weights)
+      if (!is.null(mu.bs)) {
+        mu.bs <- rep(mu.bs, d_test$weights)
+      }
+      n_notna <- sum(d_test$weights)
+      weights <- rep(weights, d_test$weights)
+      weights <- n_notna * weights / sum(weights)
+    }
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((round(mu) == y) - (round(mu.bs) == y)),
                     na.rm = TRUE)
