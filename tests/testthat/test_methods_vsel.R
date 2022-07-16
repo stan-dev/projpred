@@ -301,10 +301,6 @@ test_that("`stat` works", {
                                  "binom" = "binom_stats",
                                  "common_stats"))
     stat_vec <- stats_tst[[stat_crr_nm]]$stats
-    if (fam_crr == "binom") {
-      # Due to issue #330:
-      stat_vec <- setdiff(stat_vec, "auc")
-    }
     for (stat_crr in stat_vec) {
       if (stat_crr %in% c("rmse", "auc")) {
         suggsize_seed <- seed3_tst

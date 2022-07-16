@@ -68,6 +68,13 @@
     varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
   }
 
+  if (varsel$refmodel$family$family == "binomial" &&
+      !all(varsel$d_test$weights == 1)) {
+    # This case should not occur (yet) for the augmented-data projection:
+    stopifnot(!varsel$refmodel$family$for_augdat)
+    varsel$d_test$y_prop <- varsel$d_test$y / varsel$d_test$weights
+  }
+
   ## fetch the mu and lppd for the baseline model
   if (is.null(nfeat_baseline)) {
     ## no baseline model, i.e, compute the statistics on the actual
@@ -188,7 +195,11 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         sqrt(n_notna) * n_notna
     }
   } else if (stat == "mse") {
-    y <- d_test$y
+    if (is.null(d_test$y_prop)) {
+      y <- d_test$y
+    } else {
+      y <- d_test$y_prop
+    }
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
       value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, weights,
@@ -200,7 +211,11 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         sqrt(n_notna)
     }
   } else if (stat == "rmse") {
-    y <- d_test$y
+    if (is.null(d_test$y_prop)) {
+      y <- d_test$y
+    } else {
+      y <- d_test$y_prop
+    }
     if (!is.null(mu.bs)) {
       ## make sure the relative rmse is computed using only those points for
       ## which
@@ -236,6 +251,19 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else if (stat == "acc" || stat == "pctcorr") {
     y <- d_test$y
+    if (!is.null(d_test$y_prop)) {
+      y <- unlist(lapply(seq_along(y), function(i_short) {
+        c(rep(0L, d_test$weights[i_short] - y[i_short]),
+          rep(1L, y[i_short]))
+      }))
+      mu <- rep(mu, d_test$weights)
+      if (!is.null(mu.bs)) {
+        mu.bs <- rep(mu.bs, d_test$weights)
+      }
+      n_notna <- sum(d_test$weights)
+      weights <- rep(weights, d_test$weights)
+      weights <- n_notna * weights / sum(weights)
+    }
 
     # Find out whether each observation was classified correctly or not:
     if (!is.factor(mu)) {
@@ -258,11 +286,15 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else if (stat == "auc") {
     y <- d_test$y
-    auc.data <- cbind(y, mu, weights)
+    # TODO (see GitHub issue #330): The auc() function seems to expect the
+    # observation weights (`d_test$weights`) in the third column. But what about
+    # get_stat()'s argument `weights`? Currently, this is not taken into account
+    # here in the `stat == "auc"` case.
+    auc.data <- cbind(y, mu, weights = d_test$weights)
     if (!is.null(mu.bs)) {
       mu.bs[is.na(mu)] <- NA # compute the relative auc using only those points
       mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
-      auc.data.bs <- cbind(y, mu.bs, weights)
+      auc.data.bs <- cbind(y, mu.bs, weights = d_test$weights)
       value <- auc(auc.data) - auc(auc.data.bs)
       value.bootstrap1 <- bootstrap(auc.data, auc, ...)
       value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)

@@ -24,6 +24,8 @@
 * `plot.vsel()` now draws the dashed red horizontal line for the reference model (and---if present---the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.
 * Fix GitHub issue #339. (GitHub: #340)
 * Fix argument `d_test` of `varsel()`: Not only the predictive performance of the *reference model* needs to be evaluated on the test data, but also the predictive performance of the *submodels*. (GitHub: #341)
+* Fix GitHub issue #342.
+* Fix GitHub issue #330, at least partly.
 
 # projpred 2.1.2
 

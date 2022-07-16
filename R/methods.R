@@ -1,12 +1,17 @@
 #' Predictions from a submodel (after projection)
 #'
-#' After the projection of the reference model onto a submodel, [proj_linpred()]
-#' gives the linear predictor (possibly transformed to response scale) for all
-#' projected draws of such a submodel. [proj_predict()] draws from the
-#' predictive distribution of such a submodel. If the projection has not been
-#' performed, both functions also perform the projection. Both functions can
-#' also handle multiple submodels at once (if the input `object` is of class
-#' `vsel`).
+#' After the projection of the reference model onto a submodel, the linear
+#' predictors (for the original dataset or new data) based on that submodel can
+#' be calculated by [proj_linpred()]. The linear predictors can also be
+#' transformed to response scale. Furthermore, [proj_linpred()] returns the
+#' corresponding log predictive density values if the new dataset contains
+#' response values. The [proj_predict()] function draws from the predictive
+#' distribution of the submodel that the reference model has been projected
+#' onto. If the projection has not been performed yet, both functions call
+#' [project()] internally to perform the projection. Both functions can also
+#' handle multiple submodels at once (for `object`s of class `vsel` or `object`s
+#' returned by a [project()] call to an object of class `vsel`; see
+#' [project()]).
 #'
 #' @name pred-projection
 #'
@@ -49,12 +54,14 @@
 #'   \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
 #'   !is.null(solution_terms)` in the call to [project()]):
-#'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
-#'   `lpd` (log predictive densities). In case of the traditional projection,
-#'   both elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
-#'   case of the augmented-data projection, `pred` is an \eqn{S_{\mathrm{prj}}
-#'   \times N \times C}{S_prj x N x C} array and `lpd` is an
-#'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
+#'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
+#'   i.e., the linear predictors, possibly transformed to response scale) and
+#'   `lpd` (log predictive densities; only calculated if `newdata` contains
+#'   response values). In case of the traditional projection, both elements are
+#'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of the
+#'   augmented-data projection, `pred` is an \eqn{S_{\mathrm{prj}} \times N
+#'   \times C}{S_prj x N x C} array and `lpd` is an \eqn{S_{\mathrm{prj}} \times
+#'   N}{S_prj x N} matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of the
@@ -640,6 +647,12 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat("Formula: ")
   print(x$formula, showEnv = FALSE)
   cat(paste0("Observations: ", x$nobs, "\n"))
+  if (x$family$for_augdat) {
+    prj_meth <- "augmented-data"
+  } else {
+    prj_meth <- "traditional"
+  }
+  cat("Projection method: ", prj_meth, "\n", sep = "")
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
