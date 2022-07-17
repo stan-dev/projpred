@@ -391,40 +391,13 @@ test_that(paste(
       smmry_cvvs_trad$selection[, c("size", "solution_terms")],
       info = tstsetup
     )
-    tol_smmry <- ifelse(args_smmry_cvvs[[tstsetup]]$mod_nm == "glmm",
+    # Note: The GLM K-fold case seems to depend strongly on `seed_tst` (a
+    # different `seed_tst` allowed to decrease the tolerance in that case down
+    # to 1e-5).
+    tol_smmry <- ifelse(args_smmry_cvvs[[tstsetup]]$mod_nm == "glmm" ||
+                          (args_smmry_cvvs[[tstsetup]]$mod_nm == "glm" &&
+                             grepl("\\.kfold\\.", tstsetup)),
                         1e-3, 1e-6)
-    args_cvvs_crr <- args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]
-    if (args_smmry_cvvs[[tstsetup]]$pkg_nm == "brms" &&
-        args_smmry_cvvs[[tstsetup]]$mod_nm == "glmm" &&
-        args_smmry_cvvs[[tstsetup]]$fam_nm == "brnll" &&
-        identical(args_cvvs_crr$cv_method, "kfold") &&
-        (is.null(args_cvvs_crr$nterms_max) || args_cvvs_crr$nterms_max >= 5)) {
-      # This is a special case with strange results for model size 5 (see
-      # `plot(cvvss[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]])`).
-      # Interestingly, the corresponding rstanarm K-fold CV behaves fine. The
-      # discrepancy between rstanarm and brms at `nterms_max = 5` might be
-      # caused by the small `K = 2` and `nobsv = 41` here in the tests, in
-      # combination with the way how these two packages perform prediction for
-      # new group levels in multilevel models: rstanarm treats all new levels as
-      # a single one which is not the case for brms (see
-      # `brms:::get_new_rdraws()`).
-      # Furthermore, when debugging kfold_varsel() in this case for the
-      # augmented-data and the traditional approach, one can see that although
-      # `refmodel$mu` is the same (apart from formatting) for the augmented-data
-      # and the traditional approach, the projected submodels in fold 1 (out of
-      # K = 2) differ (more strongly than for other submodels) between the
-      # augmented-data and the traditional approach. (Fold 1 leads to a solution
-      # path which includes the terms `(1 | z.1)` and `(xco.1 | z.1)`.) Thus,
-      # the difference between augmented-data and traditional approach could be
-      # caused by numerical inaccuracies in lme4::glmer() in this case.
-      # Because of all these peculiarities which don't seem be under our
-      # (projpred) control (apart from the rather extreme test settings),
-      # exclude model size 5 in this special case. Nevertheless, `tol_smmry`
-      # needs to be increased, too.
-      smmry_cvvs$selection <- subset(smmry_cvvs$selection, size <= 4)
-      smmry_cvvs_trad$selection <- subset(smmry_cvvs_trad$selection, size <= 4)
-      tol_smmry <- 1e-2
-    }
     expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
                  tolerance = tol_smmry, info = tstsetup)
   }
@@ -466,8 +439,14 @@ test_that(paste(
     smmry_cvvs_trad$selection <- smmry_cvvs_trad$selection[
       , -grep("mse\\.|auc\\.", names(smmry_cvvs_trad$selection)), drop = FALSE
     ]
+    # Note: The GLM K-fold case seems to depend strongly on `seed_tst` (a
+    # different `seed_tst` allowed to decrease the tolerance in that case down
+    # to 1e-5).
+    tol_smmry <- ifelse(args_smmry_cvvs[[tstsetup]]$mod_nm == "glm" &&
+                          grepl("\\.kfold\\.", tstsetup),
+                        1e-3, 1e-6)
     expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
-                 tolerance = 1e-6, info = tstsetup)
+                 tolerance = tol_smmry, info = tstsetup)
   }
 })
 
