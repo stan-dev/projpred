@@ -440,14 +440,12 @@ test_that(paste(
     # probably due to numerical overflow of probabilities (i.e., on exp scale)
     # towards 1 or underflow towards zero. Thus, compare on exp scale if the
     # comparison on log scale fails:
-    tryCatch(
-      expect_equal(summs_sub_lppd, summs_sub_lppd_trad, tolerance = tol_sub,
-                   info = tstsetup),
-      error = function(e) {
-        expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
-                     tolerance = tol_sub, info = tstsetup)
-      }
-    )
+    tryCatch(expect_equal(summs_sub_lppd, summs_sub_lppd_trad,
+                          tolerance = tol_sub, info = tstsetup),
+             error = function(e) {
+               expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
+                            tolerance = tol_sub, info = tstsetup)
+             })
     summs_ref <- cvvs$summaries$ref
     summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
@@ -484,15 +482,42 @@ test_that(paste(
       smmry_cvvs_trad$selection[, c("size", "solution_terms")],
       info = tstsetup
     )
-    # Note: The GLM K-fold case seems to depend strongly on `seed_tst` (a
-    # different `seed_tst` allowed to decrease the tolerance in that case down
-    # to 1e-5).
-    tol_smmry <- ifelse(args_smmry_cvvs[[tstsetup]]$mod_nm == "glmm" ||
-                          (args_smmry_cvvs[[tstsetup]]$mod_nm == "glm" &&
-                             grepl("\\.kfold\\.", tstsetup)),
-                        1e-3, 1e-6)
-    expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
-                 tolerance = tol_smmry, info = tstsetup)
+    if (identical(
+      args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]$cv_method,
+      "kfold"
+    )) {
+      tol_smmry <- 1e-5
+    } else {
+      tol_smmry <- 1e-6
+    }
+    compare_exp <- function(e) {
+      # Check that we have the default `stats` in this case, meaning only the
+      # ELPD:
+      stopifnot(is.null(args_smmry_cvvs[[tstsetup]]$stats))
+
+      smmry_pd <- smmry_cvvs$selection
+      smmry_pd[[grep("elpd", names(smmry_pd), value = TRUE)]] <- exp(
+        smmry_pd[[grep("elpd", names(smmry_pd), value = TRUE)]]
+      )
+      smmry_pd$lower <- exp(smmry_pd$lower)
+      smmry_pd$upper <- exp(smmry_pd$upper)
+
+      smmry_pd_trad <- smmry_cvvs_trad$selection
+      smmry_pd_trad[[grep("elpd", names(smmry_pd_trad), value = TRUE)]] <- exp(
+        smmry_pd_trad[[grep("elpd", names(smmry_pd_trad), value = TRUE)]]
+      )
+      smmry_pd_trad$lower <- exp(smmry_pd_trad$lower)
+      smmry_pd_trad$upper <- exp(smmry_pd_trad$upper)
+
+      expect_equal(smmry_pd[, setdiff(names(smmry_pd), "se")],
+                   smmry_pd_trad[, setdiff(names(smmry_pd_trad), "se")],
+                   tolerance = 1e-10, info = tstsetup)
+      expect_equal(smmry_pd$se, smmry_pd_trad$se, tolerance = 1e-1,
+                   info = tstsetup)
+    }
+    tryCatch(expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
+                          tolerance = tol_smmry, info = tstsetup),
+             error = compare_exp)
   }
 })
 
@@ -532,14 +557,43 @@ test_that(paste(
     smmry_cvvs_trad$selection <- smmry_cvvs_trad$selection[
       , -grep("mse\\.|auc\\.", names(smmry_cvvs_trad$selection)), drop = FALSE
     ]
-    # Note: The GLM K-fold case seems to depend strongly on `seed_tst` (a
-    # different `seed_tst` allowed to decrease the tolerance in that case down
-    # to 1e-5).
-    tol_smmry <- ifelse(args_smmry_cvvs[[tstsetup]]$mod_nm == "glm" &&
-                          grepl("\\.kfold\\.", tstsetup),
-                        1e-3, 1e-6)
-    expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
-                 tolerance = tol_smmry, info = tstsetup)
+    if (identical(
+      args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]$cv_method,
+      "kfold"
+    )) {
+      tol_smmry <- 1e-5
+    } else {
+      tol_smmry <- 1e-6
+    }
+    compare_exp <- function(e) {
+      smmry_pd <- smmry_cvvs$selection
+      se_cols <- grep("lpd\\.se$", names(smmry_pd), value = TRUE)
+      elpd_cols <- setdiff(grep("elpd", names(smmry_pd), value = TRUE),
+                           se_cols)
+      smmry_pd[elpd_cols] <- exp(smmry_pd[elpd_cols])
+      mlpd_cols <- setdiff(grep("mlpd", names(smmry_pd), value = TRUE),
+                           se_cols)
+
+      smmry_pd_trad <- smmry_cvvs_trad$selection
+      se_cols_trad <- grep("lpd\\.se$", names(smmry_pd_trad), value = TRUE)
+      elpd_cols_trad <- setdiff(grep("elpd", names(smmry_pd_trad), value = TRUE),
+                                se_cols_trad)
+      smmry_pd_trad[elpd_cols_trad] <- exp(smmry_pd_trad[elpd_cols_trad])
+      mlpd_cols_trad <- setdiff(grep("mlpd", names(smmry_pd_trad), value = TRUE),
+                                se_cols_trad)
+
+      expect_equal(smmry_pd[, setdiff(names(smmry_pd),
+                                      c(mlpd_cols, se_cols))],
+                   smmry_pd_trad[, setdiff(names(smmry_pd_trad),
+                                           c(mlpd_cols_trad, se_cols_trad))],
+                   tolerance = 1e-10, info = tstsetup)
+      expect_equal(smmry_pd[, c(mlpd_cols, se_cols)],
+                   smmry_pd_trad[, c(mlpd_cols_trad, se_cols_trad)],
+                   tolerance = 1e-3, info = tstsetup)
+    }
+    tryCatch(expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
+                          tolerance = tol_smmry, info = tstsetup),
+             error = compare_exp)
   }
 })
 
