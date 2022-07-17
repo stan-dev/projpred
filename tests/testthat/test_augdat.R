@@ -300,6 +300,44 @@ test_that(paste(
   "submodels fitted by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_vs)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(vss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
+                         tstsetup)
+    if (!tstsetup_trad %in% names(vss)) next
+
+    vs <- vss[[tstsetup]]
+    vs_trad <- vss[[tstsetup_trad]]
+
+    summs_sub <- vs$summaries$sub
+    summs_sub_mu <- do.call(cbind, lapply(summs_sub, "[[", "mu"))[
+      (nobsv + 1):(2 * nobsv), , drop = FALSE
+    ]
+    summs_sub_trad <- vs_trad$summaries$sub
+    summs_sub_mu_trad <- do.call(cbind, lapply(summs_sub_trad, "[[", "mu"))
+    expect_equal(summs_sub_mu, summs_sub_mu_trad, tolerance = 1e-6,
+                 info = tstsetup)
+    summs_sub_lppd <- do.call(cbind, lapply(summs_sub, "[[", "lppd"))
+    summs_sub_lppd_trad <- unname(
+      do.call(cbind, lapply(summs_sub_trad, "[[", "lppd"))
+    )
+    expect_equal(summs_sub_lppd, summs_sub_lppd_trad, tolerance = 1e-6,
+                 info = tstsetup)
+    summs_ref <- vs$summaries$ref
+    summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
+    summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
+    expect_equal(summs_ref, vs_trad$summaries$ref, tolerance = 1e-16,
+                 info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "summary.vsel() applied to varsel() output gives similar results for the",
+  "augmented-data and the traditional projection (in case of the `brnll`",
+  "family and the default `regul` for submodels fitted by",
+  "fit_glm_ridge_callback())"
+), {
+  skip_if_not(run_vs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(smmrys_vs), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
@@ -327,9 +365,10 @@ test_that(paste(
 # The `stats = "acc"` case is excluded in the test above, so test it separately
 # here:
 test_that(paste(
-  "varsel() gives similar results for the augmented-data and the traditional",
-  "projection when using `stats = \"acc\"` (in case of the `brnll` family and",
-  "the default `regul` for submodels fitted by fit_glm_ridge_callback())"
+  "summary.vsel() applied to varsel() output gives similar results for the",
+  "augmented-data and the traditional projection when using `stats = \"acc\"`",
+  "(in case of the `brnll` family and the default `regul` for submodels fitted",
+  "by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(smmrys_vs),
@@ -370,6 +409,60 @@ test_that(paste(
   "`regul` for submodels fitted by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_cvvs)
+  tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(cvvss), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
+                         tstsetup)
+    if (!tstsetup_trad %in% names(cvvss)) next
+
+    cvvs <- cvvss[[tstsetup]]
+    cvvs_trad <- cvvss[[tstsetup_trad]]
+
+    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      tol_sub <- 1e-5
+    } else {
+      tol_sub <- 1e-6
+    }
+
+    summs_sub <- cvvs$summaries$sub
+    summs_sub_mu <- do.call(cbind, lapply(summs_sub, "[[", "mu"))[
+      (nobsv + 1):(2 * nobsv), , drop = FALSE
+    ]
+    summs_sub_trad <- cvvs_trad$summaries$sub
+    summs_sub_mu_trad <- do.call(cbind, lapply(summs_sub_trad, "[[", "mu"))
+    expect_equal(summs_sub_mu, summs_sub_mu_trad, tolerance = tol_sub,
+                 info = tstsetup)
+    summs_sub_lppd <- do.call(cbind, lapply(summs_sub, "[[", "lppd"))
+    summs_sub_lppd_trad <- unname(
+      do.call(cbind, lapply(summs_sub_trad, "[[", "lppd"))
+    )
+    # Sometimes, there are seemingly large differences on log scale which are
+    # probably due to numerical overflow of probabilities (i.e., on exp scale)
+    # towards 1 or underflow towards zero. Thus, compare on exp scale if the
+    # comparison on log scale fails:
+    tryCatch(
+      expect_equal(summs_sub_lppd, summs_sub_lppd_trad, tolerance = tol_sub,
+                   info = tstsetup),
+      error = function(e) {
+        expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
+                     tolerance = tol_sub, info = tstsetup)
+      }
+    )
+    summs_ref <- cvvs$summaries$ref
+    summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
+    summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
+    expect_equal(summs_ref, cvvs_trad$summaries$ref, tolerance = 1e-13,
+                 info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "summary.vsel() applied to cv_varsel() output gives similar results for the",
+  "augmented-data and the traditional projection (in case of the `brnll`",
+  "family and the default `regul` for submodels fitted by",
+  "fit_glm_ridge_callback())"
+), {
+  skip_if_not(run_cvvs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(smmrys_cvvs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -406,10 +499,10 @@ test_that(paste(
 # The `stats = "acc"` case is excluded in the test above, so test it separately
 # here:
 test_that(paste(
-  "cv_varsel() gives similar results for the augmented-data and the",
-  "traditional projection when using `stats = \"acc\"` (in case of the `brnll`",
-  "family and the default `regul` for submodels fitted by",
-  "fit_glm_ridge_callback())"
+  "summary.vsel() applied to cv_varsel() output gives similar results for the",
+  "augmented-data and the traditional projection when using `stats = \"acc\"`",
+  "(in case of the `brnll` family and the default `regul` for submodels fitted",
+  "by fit_glm_ridge_callback())"
 ), {
   skip_if_not(run_cvvs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(smmrys_cvvs),
