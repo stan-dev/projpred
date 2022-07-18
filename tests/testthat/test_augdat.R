@@ -418,7 +418,8 @@ test_that(paste(
     cvvs <- cvvss[[tstsetup]]
     cvvs_trad <- cvvss[[tstsetup_trad]]
 
-    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+    is_kfold <- identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
+    if (is_kfold) {
       tol_sub <- 1e-5
     } else {
       tol_sub <- 1e-6
@@ -443,6 +444,7 @@ test_that(paste(
     tryCatch(expect_equal(summs_sub_lppd, summs_sub_lppd_trad,
                           tolerance = tol_sub, info = tstsetup),
              error = function(e) {
+               stopifnot(is_kfold)
                expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
                             tolerance = tol_sub, info = tstsetup)
              })
@@ -482,15 +484,17 @@ test_that(paste(
       smmry_cvvs_trad$selection[, c("size", "solution_terms")],
       info = tstsetup
     )
-    if (identical(
+    is_kfold <- identical(
       args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]$cv_method,
       "kfold"
-    )) {
+    )
+    if (is_kfold) {
       tol_smmry <- 1e-5
     } else {
       tol_smmry <- 1e-6
     }
     compare_exp <- function(e) {
+      stopifnot(is_kfold)
       # Check that we have the default `stats` in this case, meaning only the
       # ELPD:
       stopifnot(is.null(args_smmry_cvvs[[tstsetup]]$stats))
@@ -557,15 +561,18 @@ test_that(paste(
     smmry_cvvs_trad$selection <- smmry_cvvs_trad$selection[
       , -grep("mse\\.|auc\\.", names(smmry_cvvs_trad$selection)), drop = FALSE
     ]
-    if (identical(
+    is_kfold <- identical(
       args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]$cv_method,
       "kfold"
-    )) {
+    )
+    if (is_kfold) {
       tol_smmry <- 1e-5
     } else {
       tol_smmry <- 1e-6
     }
     compare_exp <- function(e) {
+      stopifnot(is_kfold)
+
       smmry_pd <- smmry_cvvs$selection
       se_cols <- grep("lpd\\.se$", names(smmry_pd), value = TRUE)
       elpd_cols <- setdiff(grep("elpd", names(smmry_pd), value = TRUE),
