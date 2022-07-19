@@ -398,15 +398,17 @@ plot.vsel <- function(
                           color = "darkred", linetype = 2)
   }
   if (baseline != "ref") {
-    # add the baseline result (if different from the reference model)
+    # add baseline model results (if different from the reference model)
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
                           data = stats_bs,
                           color = "black", linetype = 3)
   }
   pp <- pp +
+    # The submodel-specific graphical elements:
     geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
     geom_line(aes_string(y = "value")) +
     geom_point(aes_string(y = "value")) +
+    # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
