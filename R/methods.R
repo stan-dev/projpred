@@ -399,8 +399,9 @@ plot.vsel <- function(
 
   # Table of thresholds used in extended suggest_size() heuristics (only in
   # case of ELPD and MLPD):
+  nobs_test <- nrow(object$d_test$data %||% object$refmodel$fetch_data())
   thres_tab_basic <- data.frame(statistic = c("elpd", "mlpd"),
-                                thres = c(-4, -4 / NROW(object$refmodel$y)))
+                                thres = c(-4, -4 / nobs_test))
 
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
@@ -553,7 +554,8 @@ summary.vsel <- function(
   out <- list(
     formula = object$refmodel$formula,
     family = object$refmodel$family,
-    nobs = NROW(object$refmodel$fetch_data()),
+    nobs_train = nrow(object$refmodel$fetch_data()),
+    nobs_test = nrow(object$d_test$data),
     method = object$method,
     cv_method = object$cv_method,
     validate_search = object$validate_search,
@@ -654,7 +656,12 @@ print.vselsummary <- function(x, digits = 1, ...) {
   print(x$family)
   cat("Formula: ")
   print(x$formula, showEnv = FALSE)
-  cat(paste0("Observations: ", x$nobs, "\n"))
+  if (is.null(x$nobs_test)) {
+    cat(paste0("Observations: ", x$nobs_train, "\n"))
+  } else {
+    cat(paste0("Observations (training set): ", x$nobs_train, "\n"))
+    cat(paste0("Observations (test set): ", x$nobs_test, "\n"))
+  }
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
@@ -832,7 +839,7 @@ suggest_size.vsel <- function(
                         type = c("mean", "upper", "lower"),
                         deltas = TRUE,
                         ...)
-  nobs <- stats$nobs
+  nobs_test <- stats$nobs_test %||% stats$nobs_train
   stats <- stats$selection
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
@@ -843,7 +850,7 @@ suggest_size.vsel <- function(
     stats,
     (sgn * stats[, bound] >= util_cutoff) |
       (stat == "elpd" & stats[, paste0(stat, suffix)] > -4) |
-      (stat == "mlpd" & stats[, paste0(stat, suffix)] > -4 / nobs),
+      (stat == "mlpd" & stats[, paste0(stat, suffix)] > -4 / nobs_test),
     "size"
   )
 
