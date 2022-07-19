@@ -695,8 +695,8 @@ print.vsel <- function(x, ...) {
 #'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})}{pct * (u_0 - u_base)}
 #'   where \eqn{u_0} denotes the null model's estimated utility and
 #'   \eqn{u_{\mathrm{base}}}{u_base} the baseline model's estimated utility. The
-#'   baseline is either the reference model or the best submodel found (see
-#'   argument `baseline` of [summary.vsel()]).
+#'   baseline model is either the reference model or the best submodel found
+#'   (see argument `baseline` of [summary.vsel()]).
 #'
 #'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
 #'   select the smallest model size for which the upper bound of the 68%
