@@ -67,6 +67,11 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}).
 }
+\details{
+As long as the reference model's performance is computable, it is
+always shown in the plot as a dashed red horizontal line. If \code{baseline = "best"}, the baseline model's performance is shown as a dotted black
+horizontal line.
+}
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
   # Data:

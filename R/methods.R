@@ -297,6 +297,11 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #'
+#' @details As long as the reference model's performance is computable, it is
+#'   always shown in the plot as a dashed red horizontal line. If `baseline =
+#'   "best"`, the baseline model's performance is shown as a dotted black
+#'   horizontal line.
+#'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:
