@@ -1,12 +1,17 @@
 #' Predictions from a submodel (after projection)
 #'
-#' After the projection of the reference model onto a submodel, [proj_linpred()]
-#' gives the linear predictor (possibly transformed to response scale) for all
-#' projected draws of such a submodel. [proj_predict()] draws from the
-#' predictive distribution of such a submodel. If the projection has not been
-#' performed, both functions also perform the projection. Both functions can
-#' also handle multiple submodels at once (if the input `object` is of class
-#' `vsel`).
+#' After the projection of the reference model onto a submodel, the linear
+#' predictors (for the original dataset or new data) based on that submodel can
+#' be calculated by [proj_linpred()]. The linear predictors can also be
+#' transformed to response scale. Furthermore, [proj_linpred()] returns the
+#' corresponding log predictive density values if the new dataset contains
+#' response values. The [proj_predict()] function draws from the predictive
+#' distribution of the submodel that the reference model has been projected
+#' onto. If the projection has not been performed yet, both functions call
+#' [project()] internally to perform the projection. Both functions can also
+#' handle multiple submodels at once (for `object`s of class `vsel` or `object`s
+#' returned by a [project()] call to an object of class `vsel`; see
+#' [project()]).
 #'
 #' @name pred-projection
 #'
@@ -31,9 +36,9 @@
 #'   the set of clustered posterior draws after projection (with this set being
 #'   determined by argument `nclusters` of [project()]).
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
-#'   results can be obtained again if needed. If `NULL`, no seed is set and
-#'   therefore, the results are not reproducible. See [set.seed()] for details.
-#'   Here, this seed is used for drawing new group-level effects in case of a
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
+#'   this seed is used for drawing new group-level effects in case of a
 #'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
 #'   from the predictive distribution of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
@@ -47,9 +52,11 @@
 #'   and \eqn{N} the number of observations. Then, if the prediction is done for
 #'   one submodel only (i.e., `length(nterms) == 1 || !is.null(solution_terms)`
 #'   in the call to [project()]):
-#'   * [proj_linpred()] returns a `list` with elements `pred` (predictions) and
-#'   `lpd` (log predictive densities). Both elements are \eqn{S_{\mathrm{prj}}
-#'   \times N}{S_prj x N} matrices.
+#'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
+#'   i.e., the linear predictors, possibly transformed to response scale) and
+#'   `lpd` (log predictive densities; only calculated if `newdata` contains
+#'   response values). Both elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x
+#'   N} matrices.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection.
@@ -92,11 +99,8 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata,
-                        offsetnew, weightsnew,
-                        onesub_fun, filter_nterms = NULL,
-                        transform = NULL, integrated = NULL,
-                        nresample_clusters = NULL, ...) {
+proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
+                        filter_nterms = NULL, ...) {
   if (inherits(object, "projection") || .is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!.is_proj_list(object)) {
@@ -175,13 +179,8 @@ proj_helper <- function(object, newdata,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata))
     }
-    mu <- proj$refmodel$family$mu_fun(proj$submodl,
-                                      newdata = newdata, offset = offsetnew)
-    onesub_fun(proj, mu, weightsnew,
-               offset = offsetnew, newdata = newdata,
-               extract_y_ind = extract_y_ind,
-               transform = transform, integrated = integrated,
-               nresample_clusters = nresample_clusters)
+    onesub_fun(proj, newdata = newdata, offset = offsetnew,
+               weights = weightsnew, extract_y_ind = extract_y_ind, ...)
   })
 
   return(.unlist_proj(preds))
@@ -189,9 +188,8 @@ proj_helper <- function(object, newdata,
 
 #' @rdname pred-projection
 #' @export
-proj_linpred <- function(object, newdata = NULL,
-                         offsetnew = NULL, weightsnew = NULL,
-                         filter_nterms = NULL,
+proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, filter_nterms = NULL,
                          transform = FALSE, integrated = FALSE,
                          .seed = sample.int(.Machine$integer.max, 1), ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
@@ -199,7 +197,7 @@ proj_linpred <- function(object, newdata = NULL,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(.seed)
+  if (!is.na(.seed)) set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
@@ -211,42 +209,41 @@ proj_linpred <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
-proj_linpred_aux <- function(proj, mu, weights, ...) {
-  dot_args <- list(...)
-  stopifnot(!is.null(dot_args$transform))
-  stopifnot(!is.null(dot_args$integrated))
-  stopifnot(!is.null(dot_args$newdata))
-  stopifnot(!is.null(dot_args$offset))
-  stopifnot(!is.null(dot_args$extract_y_ind))
+proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
+                             integrated = FALSE, extract_y_ind = TRUE, ...) {
+  pred_sub <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
+                                          offset = offset,
+                                          transform = transform)
   w_o <- proj$refmodel$extract_model_data(
-    proj$refmodel$fit, newdata = dot_args$newdata, wrhs = weights,
-    orhs = dot_args$offset, extract_y = dot_args$extract_y_ind
+    proj$refmodel$fit, newdata = newdata, wrhs = weights,
+    orhs = offset, extract_y = extract_y_ind
   )
   ynew <- w_o$y
-  lpd_out <- compute_lpd(
-    ynew = ynew, mu = mu, proj = proj, weights = weights
-  )
-  pred_out <- if (!dot_args$transform) proj$refmodel$family$linkfun(mu) else mu
-  if (dot_args$integrated) {
+  lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
+                         weights = weights, transformed = transform)
+  if (integrated) {
     ## average over the posterior draws
-    pred_out <- pred_out %*% proj$weights
+    pred_sub <- pred_sub %*% proj$weights
     if (!is.null(lpd_out)) {
       lpd_out <- as.matrix(
         apply(lpd_out, 1, log_weighted_mean_exp, proj$weights)
       )
     }
   }
-  return(nlist(pred = t(pred_out),
+  return(nlist(pred = t(pred_sub),
                lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
-compute_lpd <- function(ynew, mu, proj, weights) {
+compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    return(proj$refmodel$family$ll_fun(mu, proj$dis, ynew, weights))
+    if (!transformed) {
+      pred_sub <- proj$refmodel$family$linkinv(pred_sub)
+    }
+    return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
   } else {
     return(NULL)
   }
@@ -254,9 +251,8 @@ compute_lpd <- function(ynew, mu, proj, weights) {
 
 #' @rdname pred-projection
 #' @export
-proj_predict <- function(object, newdata = NULL,
-                         offsetnew = NULL, weightsnew = NULL,
-                         filter_nterms = NULL,
+proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
+                         weightsnew = NULL, filter_nterms = NULL,
                          nresample_clusters = 1000,
                          .seed = sample.int(.Machine$integer.max, 1), ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
@@ -264,7 +260,7 @@ proj_predict <- function(object, newdata = NULL,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(.seed)
+  if (!is.na(.seed)) set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
@@ -276,19 +272,18 @@ proj_predict <- function(object, newdata = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, mu, weights, ...) {
-  dot_args <- list(...)
+proj_predict_aux <- function(proj, newdata, offset, weights,
+                             nresample_clusters = 1000, ...) {
+  mu <- proj$refmodel$family$mu_fun(proj$submodl,
+                                    newdata = newdata,
+                                    offset = offset)
   if (proj$p_type) {
     # In this case, the posterior draws have been clustered.
-    stopifnot(!is.null(dot_args$nresample_clusters))
-    draw_inds <- sample(
-      x = seq_along(proj$weights), size = dot_args$nresample_clusters,
-      replace = TRUE, prob = proj$weights
-    )
+    draw_inds <- sample(x = seq_along(proj$weights), size = nresample_clusters,
+                        replace = TRUE, prob = proj$weights)
   } else {
     draw_inds <- seq_along(proj$weights)
   }
-
   return(do.call(rbind, lapply(draw_inds, function(i) {
     proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
   })))
@@ -493,7 +488,11 @@ plot.vsel <- function(
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
 #'   ([binomial()] family only).
 #'   * `"auc"`: area under the ROC curve ([binomial()] family only). For the
-#'   corresponding standard error, bootstrapping is used.
+#'   corresponding standard error, bootstrapping is used. In the "aggregated"
+#'   binomial case (i.e., if there is more than one Bernoulli trial for at least
+#'   one observation), \pkg{projpred} calculates the AUC by deaggregating the
+#'   observations internally to a long dataset with only zeros and ones as
+#'   response values.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
@@ -517,7 +516,8 @@ plot.vsel <- function(
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
 #'   and `seed` (see [set.seed()], defaulting to
-#'   `sample.int(.Machine$integer.max, 1)`).
+#'   `sample.int(.Machine$integer.max, 1)`, but can also be `NA` to not call
+#'   [set.seed()] at all).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -1213,8 +1213,8 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #' @param out Format of the output, either `"foldwise"` or `"indices"`. See
 #'   below for details.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
-#'   results can be obtained again if needed. If `NULL`, no seed is set and
-#'   therefore, the results are not reproducible. See [set.seed()] for details.
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all.
 #'
 #' @return [cvfolds()] returns a vector of length `n` such that each element is
 #'   an integer between 1 and `k` denoting which fold the corresponding data
@@ -1246,7 +1246,7 @@ cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   ## create and shuffle the indices
   folds <- rep_len(seq_len(K), length.out = n)
@@ -1267,7 +1267,7 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   # shuffle the indices
   ind <- sample(seq_len(n), n, replace = FALSE)

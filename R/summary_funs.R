@@ -1,13 +1,14 @@
-.get_sub_summaries <- function(submodels, test_points, refmodel) {
+.get_sub_summaries <- function(submodels, refmodel, test_points, newdata = NULL,
+                               offset = refmodel$offset[test_points],
+                               wobs = refmodel$wobs[test_points],
+                               y = refmodel$y[test_points]) {
   lapply(submodels, function(model) {
     .weighted_summary_means(
-      y_test = list(y = refmodel$y[test_points],
-                    weights = refmodel$wobs[test_points]),
+      y_test = list(y = y, weights = wobs),
       family = refmodel$family,
       wsample = model$weights,
-      mu = refmodel$family$mu_fun(model$submodl,
-                                  obs = test_points,
-                                  offset = refmodel$offset[test_points]),
+      mu = refmodel$family$mu_fun(model$submodl, obs = test_points,
+                                  newdata = newdata, offset = offset),
       dis = model$dis
     )
   })
@@ -27,8 +28,8 @@
 #   containing the values for the quantities from the description above.
 .weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
   if (!is.matrix(mu)) {
-    stop("Unexpected structure for `mu`. Does the return value of ",
-         "`proj_predfun` have the correct structure?")
+    stop("Unexpected structure for `mu`. Do the return values of ",
+         "`proj_predfun` and `ref_predfun` have the correct structure?")
   }
   loglik <- family$ll_fun(mu, dis, y_test$y, y_test$weights)
   if (!is.matrix(loglik)) {
@@ -50,6 +51,11 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
+
+  if (varsel$refmodel$family$family == "binomial" &&
+      !all(varsel$d_test$weights == 1)) {
+    varsel$d_test$y_prop <- varsel$d_test$y / varsel$d_test$weights
+  }
 
   ## fetch the mu and lppd for the baseline model
   if (is.null(nfeat_baseline)) {
@@ -170,7 +176,11 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         sqrt(n_notna) * n_notna
     }
   } else if (stat == "mse") {
-    y <- d_test$y
+    if (is.null(d_test$y_prop)) {
+      y <- d_test$y
+    } else {
+      y <- d_test$y_prop
+    }
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
       value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, weights,
@@ -182,7 +192,11 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         sqrt(n_notna)
     }
   } else if (stat == "rmse") {
-    y <- d_test$y
+    if (is.null(d_test$y_prop)) {
+      y <- d_test$y
+    } else {
+      y <- d_test$y_prop
+    }
     if (!is.null(mu.bs)) {
       ## make sure the relative rmse is computed using only those points for
       ## which
@@ -218,6 +232,19 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else if (stat == "acc" || stat == "pctcorr") {
     y <- d_test$y
+    if (!is.null(d_test$y_prop)) {
+      y <- unlist(lapply(seq_along(y), function(i_short) {
+        c(rep(0L, d_test$weights[i_short] - y[i_short]),
+          rep(1L, y[i_short]))
+      }))
+      mu <- rep(mu, d_test$weights)
+      if (!is.null(mu.bs)) {
+        mu.bs <- rep(mu.bs, d_test$weights)
+      }
+      n_notna <- sum(d_test$weights)
+      weights <- rep(weights, d_test$weights)
+      weights <- n_notna * weights / sum(weights)
+    }
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((round(mu) == y) - (round(mu.bs) == y)),
                     na.rm = TRUE)
@@ -231,11 +258,15 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else if (stat == "auc") {
     y <- d_test$y
-    auc.data <- cbind(y, mu, weights)
+    # TODO (see GitHub issue #330): The auc() function seems to expect the
+    # observation weights (`d_test$weights`) in the third column. But what about
+    # get_stat()'s argument `weights`? Currently, this is not taken into account
+    # here in the `stat == "auc"` case.
+    auc.data <- cbind(y, mu, weights = d_test$weights)
     if (!is.null(mu.bs)) {
       mu.bs[is.na(mu)] <- NA # compute the relative auc using only those points
       mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
-      auc.data.bs <- cbind(y, mu.bs, weights)
+      auc.data.bs <- cbind(y, mu.bs, weights = d_test$weights)
       value <- auc(auc.data) - auc(auc.data.bs)
       value.bootstrap1 <- bootstrap(auc.data, auc, ...)
       value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)

@@ -4,6 +4,10 @@
   packageStartupMessage(msg)
 }
 
+nms_d_test <- function() {
+  c("type", "data", "offset", "weights", "y")
+}
+
 weighted.sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
@@ -89,7 +93,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   seq_x <- seq_len(NROW(x))
   is_vector <- NCOL(x) == 1
@@ -239,11 +243,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
     } else if (nclusters == 1) {
       # special case, only one cluster
       cl <- rep(1, S)
-      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
+                            eta = refmodel$eta, dis = refmodel$dis,
                             wobs = refmodel$wobs, cl = cl)
     } else {
       # several clusters
-      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
+                            eta = refmodel$eta, dis = refmodel$dis,
                             wobs = refmodel$wobs, nclusters = nclusters)
     }
   } else {
@@ -273,7 +279,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 }
 
 # Function for clustering the parameter draws:
-.get_p_clust <- function(family, mu, dis, nclusters = 10,
+.get_p_clust <- function(family, mu, eta, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
                          wsample = rep(1, dim(mu)[2]), cl = NULL) {
   # cluster the samples in the latent space if no clustering provided
@@ -281,8 +287,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     # Note: A seed is not set here because this function is not exported and has
     # a calling stack at the beginning of which a seed is set.
 
-    f <- family$linkfun(mu)
-    out <- kmeans(t(f), nclusters, iter.max = 50)
+    out <- kmeans(t(eta), nclusters, iter.max = 50)
     cl <- out$cluster # cluster indices for each sample
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices

@@ -294,7 +294,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (length(offsetnew) == 0) {
     offsetnew <- rep(0, length(w_o$y))
   }
-  if (inherits(object$fit, "stanreg") && length(object$offset) > 0) {
+  if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
     if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
            "`newdata`, but that column already exists. Please rename this ",
@@ -591,14 +591,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     family <- extend_family(family)
   }
 
-  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL) {
+  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
+                            transform = TRUE) {
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
       stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
-    family$linkinv(proj_predfun(fits, newdata = newdata) + offset)
+    pred_sub <- proj_predfun(fits, newdata = newdata) + offset
+    if (transform) {
+      pred_sub <- family$linkinv(pred_sub)
+    }
+    return(pred_sub)
   }
 
   # Special case: `datafit` -------------------------------------------------
@@ -762,6 +767,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       mu <- y / weights
     }
     mu <- matrix(mu)
+    eta <- family$linkfun(mu)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -800,9 +806,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, dis, y, loglik, intercept,
-    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
-    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder
+    fit = object, formula, div_minimizer, family, mu, eta, dis, y, loglik,
+    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
+    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
+    cvrefbuilder
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

@@ -40,9 +40,10 @@ varsel(object, ...)
 minimizer (during a forward search and also during the evaluation part, but
 the latter only if \code{refit_prj} is \code{TRUE}).}
 
-\item{d_test}{For internal use only. A \code{list} providing information about the
-test set which is used for evaluating the predictive performance of the
-reference model. If not provided, the training set is used.}
+\item{d_test}{A \code{list} of the structure outlined in section "Argument
+\code{d_test}" below, providing test data for evaluating the predictive
+performance of the submodels as well as of the reference model. If \code{NULL},
+the training data is used.}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
@@ -118,12 +119,11 @@ default \code{search_terms} considers all the terms in the reference model's
 formula.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
-results can be obtained again if needed. If \code{NULL}, no seed is set and
-therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
-Here, this seed is used for clustering the reference model's posterior
-draws (if \code{!is.null(nclusters)}) and for drawing new group-level effects
-when predicting from a multilevel submodel (however, not yet in case of a
-GAMM).}
+results can be obtained again if needed. Passed to argument \code{seed} of
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
+this seed is used for clustering the reference model's posterior draws (if
+\code{!is.null(nclusters)}) and for drawing new group-level effects when
+predicting from a multilevel submodel (however, not yet in case of a GAMM).}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
@@ -184,6 +184,19 @@ two candidates. At the last model size of 4, \code{y ~ x1 + x2 + x3} would be
 the only candidate. As another example, to exclude \code{x1} from the search,
 specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 }
+\section{Argument \code{d_test}}{
+If not \code{NULL}, then \code{d_test} needs to be a \code{list} with the following
+elements:
+\itemize{
+\item \code{data}: a \code{data.frame} containing the predictor variables for the test set.
+\item \code{offset}: a numeric vector containing the offset values for the test set
+(if there is no offset, use a vector of zeros).
+\item \code{weights}: a numeric vector containing the observation weights for the test
+set (if there are no observation weights, use a vector of ones).
+\item \code{y}: a numeric vector containing the response values for the test set.
+}
+}
+
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
   # Data:

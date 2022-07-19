@@ -140,13 +140,13 @@ refmodel_tester <- function(
     formul_expected <- update(formul_expected,
                               . ~ . - offset(offs_col) + offset(offs_col))
   }
-  formul_expected <- rm_cbind(formul_expected)
-  formul_expected <- rm_addresp(formul_expected)
+  stdized_lhs <- stdize_lhs(formul_expected)
+  formul_expected <- stdized_lhs$fml
   if (with_spclformul) {
     # Reference models take arithmetic expressions on the left-hand side of
     # the formula into account:
-    y_spclformul <- as.character(formul_expected)[2]
-    y_spclformul_new <- gsub("\\(|\\)", "", y_spclformul)
+    y_spclformul <- stdized_lhs$y_nm_orig
+    y_spclformul_new <- stdized_lhs$y_nm
     formul_expected <- update(
       formul_expected,
       as.formula(paste(y_spclformul_new, "~ ."))
@@ -166,9 +166,10 @@ refmodel_tester <- function(
 
   # Test the general structure of the object:
   refmod_nms <- c(
-    "fit", "formula", "div_minimizer", "family", "mu", "dis", "y", "loglik",
-    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
-    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder"
+    "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
+    "loglik", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample",
+    "offset", "cvfun", "cvfits", "extract_model_data", "ref_predfun",
+    "cvrefbuilder"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -284,6 +285,20 @@ refmodel_tester <- function(
                        info = info_str)
     }
   }
+
+  # eta
+  eta_cut <- refmod$eta
+  mu_cut <- refmod$mu
+  if (refmod$family$family %in% c("binomial")) {
+    # To avoid failing tests due to numerical inaccuracies for extreme
+    # values:
+    tol_ex <- 1e-12
+    eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
+    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <- f_binom$linkfun(1 - tol_ex)
+    mu_cut[mu_cut < tol_ex] <- tol_ex
+    mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
+  }
+  expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
 
   # dis
   if (refmod$family$family == "gaussian") {
@@ -1061,7 +1076,9 @@ pp_tester <- function(pp,
 # @param with_cv A single logical value indicating whether `vs` was created by
 #   cv_varsel() (`TRUE`) or not (`FALSE`).
 # @param refmod_expected The expected `vs$refmodel` object.
-# @param dtest_expected The expected `vs$d_test` object.
+# @param dtest_expected If `vs` was created with a non-`NULL` argument `d_test`
+#   (which is only possible for varsel()), then this needs to be the expected
+#   `vs$d_test` object. Otherwise, this needs to be `NULL`.
 # @param solterms_len_expected A single numeric value giving the expected number
 #   of solution terms (not counting the intercept, even for the intercept-only
 #   model).
@@ -1107,12 +1124,9 @@ vsel_tester <- function(
     info_str = ""
 ) {
   # Preparations:
-  dtest_type <- "train"
-  dtest_nms <- c("y", "test_points", "data", "weights", "type", "offset")
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
-    vsel_smmrs_sub_nms <- c("lppd", "mu", "w")
-    vsel_smmrs_ref_nms <- c("lppd", "mu")
+    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "w")
 
     if (is.null(cv_method_expected)) {
       cv_method_expected <- "LOO"
@@ -1121,13 +1135,7 @@ vsel_tester <- function(
       valsearch_expected <- TRUE
     }
 
-    dtest_type <- cv_method_expected
     if (cv_method_expected == "LOO") {
-      # Re-order:
-      dtest_nms <- dtest_nms[c(1, 5, 2, 4, 3, 6)]
-    } else if (cv_method_expected == "kfold") {
-      # Re-order and remove `"data"`:
-      dtest_nms <- dtest_nms[c(1, 4, 2, 6, 5)]
       # Re-order:
       vsel_smmrs_sub_nms[1:2] <- vsel_smmrs_sub_nms[2:1]
       vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
@@ -1248,21 +1256,16 @@ vsel_tester <- function(
   # d_test
   if (is.null(dtest_expected)) {
     expect_type(vs$d_test, "list")
-    expect_named(vs$d_test, dtest_nms, info = info_str)
-    if (identical(cv_method_expected, "kfold")) {
-      expect_identical(vs$d_test$y[order(vs$d_test$test_points)],
-                       vs$refmodel$y, info = info_str)
-      expect_identical(vs$d_test$test_points[order(vs$d_test$test_points)],
-                       seq_len(nobsv), info = info_str)
-      expect_identical(vs$d_test$weights[order(vs$d_test$test_points)],
-                       vs$refmodel$wobs, info = info_str)
-    } else {
-      expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
-      expect_identical(vs$d_test$test_points, seq_len(nobsv), info = info_str)
-      expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
+    expect_named(vs$d_test, nms_d_test(), info = info_str)
+    dtest_type <- cv_method_expected
+    if (length(dtest_type) == 0) {
+      dtest_type <- "train"
     }
-    expect_null(vs$d_test$data, info = info_str)
     expect_identical(vs$d_test$type, dtest_type, info = info_str)
+    expect_null(vs$d_test$data, info = info_str)
+    expect_identical(vs$d_test$offset, vs$refmodel$offset, info = info_str)
+    expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
+    expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)
   }
@@ -1277,10 +1280,14 @@ vsel_tester <- function(
       nloo_expected <- nobsv
     }
   }
+  nobsv_summ <- nobsv
+  if (!is.null(dtest_expected)) {
+    nobsv_summ <- nrow(dtest_expected$data)
+  }
   for (j in seq_along(vs$summaries$sub)) {
     expect_named(vs$summaries$sub[[!!j]], vsel_smmrs_sub_nms, info = info_str)
     expect_type(vs$summaries$sub[[!!j]]$mu, "double")
-    expect_length(vs$summaries$sub[[!!j]]$mu, nobsv)
+    expect_length(vs$summaries$sub[[!!j]]$mu, nobsv_summ)
     if (with_cv) {
       expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$mu)),
                        nloo_expected, info = info_str)
@@ -1288,7 +1295,7 @@ vsel_tester <- function(
       expect_true(all(!is.na(vs$summaries$sub[[!!j]]$mu)), info = info_str)
     }
     expect_type(vs$summaries$sub[[!!j]]$lppd, "double")
-    expect_length(vs$summaries$sub[[!!j]]$lppd, nobsv)
+    expect_length(vs$summaries$sub[[!!j]]$lppd, nobsv_summ)
     if (with_cv) {
       expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$lppd)),
                        nloo_expected, info = info_str)
@@ -1310,13 +1317,13 @@ vsel_tester <- function(
   }
   expect_type(vs$summaries$ref, "list")
   expect_named(vs$summaries$ref, vsel_smmrs_ref_nms, info = info_str)
-  expect_length(vs$summaries$ref$mu, nobsv)
+  expect_length(vs$summaries$ref$mu, nobsv_summ)
   if (!from_datafit) {
     expect_true(all(!is.na(vs$summaries$ref$mu)), info = info_str)
   } else {
     expect_true(all(is.na(vs$summaries$ref$mu)), info = info_str)
   }
-  expect_length(vs$summaries$ref$lppd, nobsv)
+  expect_length(vs$summaries$ref$lppd, nobsv_summ)
   if (!from_datafit) {
     expect_true(all(!is.na(vs$summaries$ref$lppd)), info = info_str)
   } else {
