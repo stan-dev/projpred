@@ -122,12 +122,12 @@ The first step after running the variable selection should be the decision for a
 plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
 ```
 
-Based on that plot, we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (this is also affected by `validate_search = FALSE`).
+Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (note that since the plot is affected by `validate_search = FALSE`, this manual decision based on the plot is affected, too):
 ```{r}
 modsize_decided <- 6
 ```
 
-Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`).
+Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r}
 suggest_size(cvvs)
 ```
@@ -191,7 +191,7 @@ as.data.frame(summarize_draws(
 ))
 ```
 
-A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function.
+A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function:
 ```{r}
 library(bayesplot)
 bayesplot_theme_set(ggplot2::theme_bw())
@@ -228,7 +228,7 @@ cbind(dat_gauss_new, linpred = as.vector(prj_linpred$pred))
 ```
 If `dat_gauss_new` also contained response values (i.e., `y` values in this example), then `proj_linpred()` would also evaluate the log predictive density at these.
 
-With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response.^[In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.] This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projection predictive check (PPPC) here.
+With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response.^[In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.] This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projection predictive check (PPPC) here:
 ```{r}
 prj_predict <- proj_predict(prj, .seed = 762805)
 # Using the 'bayesplot' package:

@@ -332,6 +332,11 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #'
+#' @details As long as the reference model's performance is computable, it is
+#'   always shown in the plot as a dashed red horizontal line. If `baseline =
+#'   "best"`, the baseline model's performance is shown as a dotted black
+#'   horizontal line.
+#'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:
@@ -433,15 +438,17 @@ plot.vsel <- function(
                           color = "darkred", linetype = 2)
   }
   if (baseline != "ref") {
-    # add the baseline result (if different from the reference model)
+    # add baseline model results (if different from the reference model)
     pp <- pp + geom_hline(aes_string(yintercept = "value"),
                           data = stats_bs,
                           color = "black", linetype = 3)
   }
   pp <- pp +
+    # The submodel-specific graphical elements:
     geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
     geom_line(aes_string(y = "value")) +
     geom_point(aes_string(y = "value")) +
+    # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks))
@@ -463,8 +470,9 @@ plot.vsel <- function(
 #'   calculated. Note that `nterms_max` does not count the intercept, so use
 #'   `nterms_max = 0` for the intercept-only model. For [plot.vsel()],
 #'   `nterms_max` must be at least `1`.
-#' @param stats One or more character strings determining which statistics to
-#'   calculate. Available statistics are:
+#' @param stats One or more character strings determining which performance
+#'   statistics (i.e., utilities or losses) to calculate. Available statistics
+#'   are:
 #'   * `"elpd"`: (expected) sum of log predictive densities.
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
@@ -709,8 +717,8 @@ print.vsel <- function(x, ...) {
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
-#' @param stat Statistic used for the decision. See argument `stats` of
-#'   [summary.vsel()] for possible choices.
+#' @param stat Performance statistic (i.e., utility or loss) used for the
+#'   decision. See argument `stats` of [summary.vsel()] for possible choices.
 #' @param pct A number giving the relative proportion (*not* percents) between
 #'   baseline model and null model utilities one is willing to sacrifice. See
 #'   section "Details" below for more information.
@@ -726,7 +734,7 @@ print.vsel <- function(x, ...) {
 #'   passed here.
 #'
 #' @details The suggested model size is the smallest model size \eqn{k \in \{0,
-#'   1, ..., \texttt{nterms\_max\}}}{k = 0, 1, ..., nterms_max} for which either
+#'   1, ..., \texttt{nterms\_max}\}}{k = 0, 1, ..., nterms_max} for which either
 #'   the lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
 #'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
@@ -736,8 +744,8 @@ print.vsel <- function(x, ...) {
 #'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})}{pct * (u_0 - u_base)}
 #'   where \eqn{u_0} denotes the null model's estimated utility and
 #'   \eqn{u_{\mathrm{base}}}{u_base} the baseline model's estimated utility. The
-#'   baseline is either the reference model or the best submodel found (see
-#'   argument `baseline` of [summary.vsel()]).
+#'   baseline model is either the reference model or the best submodel found
+#'   (see argument `baseline` of [summary.vsel()]).
 #'
 #'   For example, `alpha = 0.32`, `pct = 0`, and `type = "upper"` means that we
 #'   select the smallest model size for which the upper bound of the 68%

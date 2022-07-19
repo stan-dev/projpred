@@ -265,8 +265,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   if (inherits(refmodel, "datafit")) {
     ## no actual reference model, so we don't know how to predict test
     ## observations
-    ntest <- NROW(refmodel$y)
-    ref <- list(mu = rep(NA, ntest), lppd = rep(NA, ntest))
+    nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
+    ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
   } else {
     if (d_test$type == "train") {
       mu_test <- refmodel$mu
