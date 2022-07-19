@@ -428,8 +428,9 @@ plot.vsel <- function(
 #'   calculated. Note that `nterms_max` does not count the intercept, so use
 #'   `nterms_max = 0` for the intercept-only model. For [plot.vsel()],
 #'   `nterms_max` must be at least `1`.
-#' @param stats One or more character strings determining which statistics to
-#'   calculate. Available statistics are:
+#' @param stats One or more character strings determining which performance
+#'   statistics (i.e., utilities or losses) to calculate. Available statistics
+#'   are:
 #'   * `"elpd"`: (expected) sum of log predictive densities.
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
@@ -667,8 +668,8 @@ print.vsel <- function(x, ...) {
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
-#' @param stat Statistic used for the decision. See argument `stats` of
-#'   [summary.vsel()] for possible choices.
+#' @param stat Performance statistic (i.e., utility or loss) used for the
+#'   decision. See argument `stats` of [summary.vsel()] for possible choices.
 #' @param pct A number giving the relative proportion (*not* percents) between
 #'   baseline model and null model utilities one is willing to sacrifice. See
 #'   section "Details" below for more information.
