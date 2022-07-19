@@ -22,8 +22,9 @@ calculated. Note that \code{nterms_max} does not count the intercept, so use
 \code{nterms_max = 0} for the intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}},
 \code{nterms_max} must be at least \code{1}.}
 
-\item{stats}{One or more character strings determining which statistics to
-calculate. Available statistics are:
+\item{stats}{One or more character strings determining which performance
+statistics (i.e., utilities or losses) to calculate. Available statistics
+are:
 \itemize{
 \item \code{"elpd"}: (expected) sum of log predictive densities.
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
@@ -66,6 +67,11 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}).
+}
+\details{
+As long as the reference model's performance is computable, it is
+always shown in the plot as a dashed red horizontal line. If \code{baseline = "best"}, the baseline model's performance is shown as a dotted black
+horizontal line.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

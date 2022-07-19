@@ -219,6 +219,12 @@ specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 The case \code{cv_method == "LOO" && !validate_search} constitutes an
 exception where the search part is not cross-validated. In that case, the
 evaluation part is based on a PSIS-LOO CV.
+
+For all PSIS-LOO CVs, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} with \code{r_eff = NA}.
+This is only a problem if there was extreme autocorrelation between the
+MCMC iterations when the reference model was built. In those cases however,
+the reference model should not have been used anyway, so we don't expect
+\pkg{projpred}'s \code{r_eff = NA} to be a problem.
 }
 \examples{
 \dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
