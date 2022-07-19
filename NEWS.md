@@ -2,7 +2,7 @@
 
 ## Major changes
 
-* `suggest_size()` now considers a submodel with an ELPD difference (taking the submodel's ELPD minus the baseline model's ELPD) greater than -4 as having a performance close enough to (or higher than) the baseline model's performance. An equivalent rule has been added for the MLPD difference. See `?suggest_size` for details. `plot.vsel()` has been updated accordingly: It now shows these new thresholds as a dot-dashed gray horizontal line for the reference model and as a long-dashed green horizontal line for the baseline model (if the latter is different from the reference model).
+* By default, `suggest_size()` now considers a submodel with an ELPD difference (taking the submodel's ELPD minus the baseline model's ELPD) greater than -4 as having a performance close enough to (or higher than) the baseline model's performance. An equivalent rule has been added for the MLPD difference. See the new argument `thres_elpd` of `suggest_size()` for details. `plot.vsel()` has been updated accordingly: It now shows the new threshold as a dot-dashed gray horizontal line for the reference model and as a long-dashed green horizontal line for the baseline model (if the latter is different from the reference model).
 
 ## Minor changes
 

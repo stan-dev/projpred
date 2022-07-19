@@ -11,6 +11,7 @@
   deltas = FALSE,
   alpha = 0.32,
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
+  thres_elpd = -4,
   ...
 )
 }
@@ -55,6 +56,13 @@ For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} 
 whether the baseline is the reference model or the best submodel found (in
 terms of \code{stats[1]}), respectively.}
 
+\item{thres_elpd}{Only relevant if \code{any(stats \%in\% c("elpd", "mlpd"))}. The
+threshold for the ELPD difference (taking the submodel's ELPD minus the
+baseline model's ELPD) above which the submodel's ELPD is considered to be
+close enough to the reference model's ELPD. An equivalent rule is applied
+to the MLPD. See \code{\link[=suggest_size]{suggest_size()}} for a formalization. To deactivate this,
+use \code{NA}.}
+
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
@@ -69,11 +77,10 @@ This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned
 \details{
 As long as the reference model's performance is computable, it is
 always shown in the plot as a dashed red horizontal line. If \code{baseline = "best"}, the baseline model's performance is shown as a dotted black
-horizontal line. If \code{"elpd" \%in\% stats} or \code{"mlpd" \%in\% stats}, the
-threshold used for the corresponding extension of the \code{\link[=suggest_size]{suggest_size()}}
-heuristic is shown as a dot-dashed gray horizontal line for the reference
-model and, if \code{baseline = "best"}, as a long-dashed green horizontal line
-for the baseline model.
+horizontal line. If \code{"elpd" \%in\% stats} or \code{"mlpd" \%in\% stats} (and
+\code{!is.na(thres_elpd)}), the threshold used for the corresponding extension
+of the \code{\link[=suggest_size]{suggest_size()}} heuristic (see argument \code{thres_elpd}) is shown as a
+dot-dashed gray horizontal line for the reference model and, if \code{baseline = "best"}, as a long-dashed green horizontal line for the baseline model.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

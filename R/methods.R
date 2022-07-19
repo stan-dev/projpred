@@ -296,15 +296,21 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
+#' @param thres_elpd Only relevant if `any(stats %in% c("elpd", "mlpd"))`. The
+#'   threshold for the ELPD difference (taking the submodel's ELPD minus the
+#'   baseline model's ELPD) above which the submodel's ELPD is considered to be
+#'   close enough to the reference model's ELPD. An equivalent rule is applied
+#'   to the MLPD. See [suggest_size()] for a formalization. To deactivate this,
+#'   use `NA`.
 #'
 #' @details As long as the reference model's performance is computable, it is
 #'   always shown in the plot as a dashed red horizontal line. If `baseline =
 #'   "best"`, the baseline model's performance is shown as a dotted black
-#'   horizontal line. If `"elpd" %in% stats` or `"mlpd" %in% stats`, the
-#'   threshold used for the corresponding extension of the [suggest_size()]
-#'   heuristic is shown as a dot-dashed gray horizontal line for the reference
-#'   model and, if `baseline = "best"`, as a long-dashed green horizontal line
-#'   for the baseline model.
+#'   horizontal line. If `"elpd" %in% stats` or `"mlpd" %in% stats` (and
+#'   `!is.na(thres_elpd)`), the threshold used for the corresponding extension
+#'   of the [suggest_size()] heuristic (see argument `thres_elpd`) is shown as a
+#'   dot-dashed gray horizontal line for the reference model and, if `baseline =
+#'   "best"`, as a long-dashed green horizontal line for the baseline model.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -335,6 +341,7 @@ plot.vsel <- function(
     deltas = FALSE,
     alpha = 0.32,
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
+    thres_elpd = -4,
     ...
 ) {
   object <- x
@@ -397,11 +404,13 @@ plot.vsel <- function(
     NULL
   }
 
-  # Table of thresholds used in extended suggest_size() heuristics (only in
-  # case of ELPD and MLPD):
-  nobs_test <- nrow(object$d_test$data %||% object$refmodel$fetch_data())
-  thres_tab_basic <- data.frame(statistic = c("elpd", "mlpd"),
-                                thres = c(-4, -4 / nobs_test))
+  if (!is.na(thres_elpd)) {
+    # Table of thresholds used in extended suggest_size() heuristics (only in
+    # case of ELPD and MLPD):
+    nobs_test <- nrow(object$d_test$data %||% object$refmodel$fetch_data())
+    thres_tab_basic <- data.frame(statistic = c("elpd", "mlpd"),
+                                  thres = c(thres_elpd, thres_elpd / nobs_test))
+  }
 
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
@@ -409,42 +418,44 @@ plot.vsel <- function(
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
 
-    # Incorporate the value for the reference model's statistic into the
-    # thresholds used in extended suggest_size() heuristics:
-    thres_tab_ref <- merge(thres_tab_basic,
-                           stats_ref[, c("statistic", "value")],
-                           by = "statistic")
-    thres_tab_ref$thres <- thres_tab_ref$value + thres_tab_ref$thres
-
     pp <- pp +
       # The reference model's dashed red horizontal line:
       geom_hline(aes_string(yintercept = "value"),
                  data = stats_ref,
-                 color = "darkred", linetype = 2) +
+                 color = "darkred", linetype = 2)
+
+    if (!is.na(thres_elpd)) {
       # The thresholds used in extended suggest_size() heuristics:
-      geom_hline(aes_string(yintercept = "thres"),
-                 data = thres_tab_ref,
-                 color = "gray50", linetype = "dotdash")
+      thres_tab_ref <- merge(thres_tab_basic,
+                             stats_ref[, c("statistic", "value")],
+                             by = "statistic")
+      thres_tab_ref$thres <- thres_tab_ref$value + thres_tab_ref$thres
+      pp <- pp +
+        geom_hline(aes_string(yintercept = "thres"),
+                   data = thres_tab_ref,
+                   color = "gray50", linetype = "dotdash")
+    }
   }
   if (baseline != "ref") {
     # add baseline model results (if different from the reference model)
-
-    # Incorporate the value for the baseline model's statistic into the
-    # thresholds used in extended suggest_size() heuristics:
-    thres_tab_bs <- merge(thres_tab_basic,
-                          stats_bs[, c("statistic", "value")],
-                          by = "statistic")
-    thres_tab_bs$thres <- thres_tab_bs$value + thres_tab_bs$thres
 
     pp <- pp +
       # The baseline model's dotted black horizontal line:
       geom_hline(aes_string(yintercept = "value"),
                  data = stats_bs,
-                 color = "black", linetype = 3) +
+                 color = "black", linetype = 3)
+
+    if (!is.na(thres_elpd)) {
       # The thresholds used in extended suggest_size() heuristics:
-      geom_hline(aes_string(yintercept = "thres"),
-                 data = thres_tab_bs,
-                 color = "darkgreen", linetype = "longdash")
+      thres_tab_bs <- merge(thres_tab_basic,
+                            stats_bs[, c("statistic", "value")],
+                            by = "statistic")
+      thres_tab_bs$thres <- thres_tab_bs$value + thres_tab_bs$thres
+      pp <- pp +
+        geom_hline(aes_string(yintercept = "thres"),
+                   data = thres_tab_bs,
+                   color = "darkgreen", linetype = "longdash")
+    }
   }
   pp <- pp +
     # The submodel-specific graphical elements:
@@ -726,6 +737,12 @@ print.vsel <- function(x, ...) {
 #' @param type Either `"upper"` or `"lower"` determining whether the decision is
 #'   based on the upper or lower confidence interval bound, respectively. See
 #'   section "Details" below for more information.
+#' @param thres_elpd Only relevant if `stat %in% c("elpd", "mlpd")`. The
+#'   threshold for the ELPD difference (taking the submodel's ELPD minus the
+#'   baseline model's ELPD) above which the submodel's ELPD is considered to be
+#'   close enough to the reference model's ELPD. An equivalent rule is applied
+#'   to the MLPD. See section "Details" for a formalization. To deactivate this,
+#'   use `NA`.
 #' @param warnings Mainly for internal use. A single logical value indicating
 #'   whether to throw warnings if automatic suggestion fails. Usually there is
 #'   no reason to set this to `FALSE`.
@@ -736,7 +753,7 @@ print.vsel <- function(x, ...) {
 #'
 #' @details In general (beware of special extensions below), the suggested model
 #'   size is the smallest model size \eqn{k \in \{0, 1, ...,
-#'   \texttt{nterms\_max\}}}{k = 0, 1, ..., nterms_max} for which either the
+#'   \texttt{nterms\_max}\}}{k = 0, 1, ..., nterms_max} for which either the
 #'   lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
 #'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
@@ -749,13 +766,14 @@ print.vsel <- function(x, ...) {
 #'   baseline model is either the reference model or the best submodel found
 #'   (see argument `baseline` of [summary.vsel()]).
 #'
-#'   In case of `stat = "elpd"`, the decision rule above is extended: The
-#'   suggested model size is then the smallest model size \eqn{k} fulfilling the
-#'   rule above *or* \eqn{u_k - u_{\mathrm{base}} > -4}{u_k - u_base > -4}.
-#'   Correspondingly, in case of `stat = "mlpd"`, the suggested model size is
+#'   In case of `stat = "elpd"` (and `!is.na(thres_elpd)`), the decision rule
+#'   above is extended: The suggested model size is then the smallest model size
+#'   \eqn{k} fulfilling the rule above *or* \eqn{u_k - u_{\mathrm{base}} >
+#'   \texttt{thres\_elpd}}{u_k - u_base > thres_elpd}. Correspondingly, in case
+#'   of `stat = "mlpd"` (and `!is.na(thres_elpd)`), the suggested model size is
 #'   the smallest model size \eqn{k} fulfilling the rule above *or* \eqn{u_k -
-#'   u_{\mathrm{base}} > -\frac{4}{N}}{u_k - u_base > -4 / N} with \eqn{N}
-#'   denoting the number of observations.
+#'   u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_k - u_base >
+#'   thres_elpd / N} with \eqn{N} denoting the number of observations.
 #'
 #'   For example (disregarding the special extensions in case of `stat = "elpd"`
 #'   or `stat = "mlpd"`), `alpha = 0.32`, `pct = 0`, and `type = "upper"` means
@@ -810,6 +828,7 @@ suggest_size.vsel <- function(
     stat = "elpd",
     pct = 0,
     type = "upper",
+    thres_elpd = -4,
     warnings = TRUE,
     ...
 ) {
@@ -846,11 +865,14 @@ suggest_size.vsel <- function(
     paste0(stat, suffix)
   )))
   util_cutoff <- pct * util_null
+  if (is.na(thres_elpd)) {
+    thres_elpd <- Inf
+  }
   res <- subset(
     stats,
     (sgn * stats[, bound] >= util_cutoff) |
-      (stat == "elpd" & stats[, paste0(stat, suffix)] > -4) |
-      (stat == "mlpd" & stats[, paste0(stat, suffix)] > -4 / nobs_test),
+      (stat == "elpd" & stats[, paste0(stat, suffix)] > thres_elpd) |
+      (stat == "mlpd" & stats[, paste0(stat, suffix)] > thres_elpd / nobs_test),
     "size"
   )
 
