@@ -24,8 +24,9 @@ calculated. Note that \code{nterms_max} does not count the intercept, so use
 \code{nterms_max = 0} for the intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}},
 \code{nterms_max} must be at least \code{1}.}
 
-\item{stats}{One or more character strings determining which statistics to
-calculate. Available statistics are:
+\item{stats}{One or more character strings determining which performance
+statistics (i.e., utilities or losses) to calculate. Available statistics
+are:
 \itemize{
 \item \code{"elpd"}: (expected) sum of log predictive densities.
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the

@@ -26,8 +26,8 @@ suggest_size(object, ...)
 See section "Details" below for some important arguments which may be
 passed here.}
 
-\item{stat}{Statistic (i.e., utility or loss) used for the decision. See
-argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} for possible choices.}
+\item{stat}{Performance statistic (i.e., utility or loss) used for the
+decision. See argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} for possible choices.}
 
 \item{pct}{A number giving the relative proportion (\emph{not} percents) between
 baseline model and null model utilities one is willing to sacrifice. See
