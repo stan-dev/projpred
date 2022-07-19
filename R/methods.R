@@ -289,11 +289,6 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   })))
 }
 
-# Needed to avoid a NOTE in `R CMD check`:
-if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("value")
-}
-
 #' Plot summary statistics of a variable selection
 #'
 #' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
@@ -418,7 +413,7 @@ plot.vsel <- function(
     thres_tab_ref <- merge(thres_tab_basic,
                            stats_ref[, c("statistic", "value")],
                            by = "statistic")
-    thres_tab_ref <- within(thres_tab_ref, thres <- value + thres)
+    thres_tab_ref$thres <- thres_tab_ref$value + thres_tab_ref$thres
 
     pp <- pp +
       # The reference model's dashed red horizontal line:
@@ -438,7 +433,7 @@ plot.vsel <- function(
     thres_tab_bs <- merge(thres_tab_basic,
                           stats_bs[, c("statistic", "value")],
                           by = "statistic")
-    thres_tab_bs <- within(thres_tab_bs, thres <- value + thres)
+    thres_tab_bs$thres <- thres_tab_bs$value + thres_tab_bs$thres
 
     pp <- pp +
       # The baseline model's dotted black horizontal line:
