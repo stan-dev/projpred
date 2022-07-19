@@ -49,7 +49,7 @@ final decision based on what is most appropriate for the problem at hand.
 }
 \details{
 The suggested model size is the smallest model size \eqn{k \in \{0,
-  1, ..., \texttt{nterms\_max\}}}{k = 0, 1, ..., nterms_max} for which either
+  1, ..., \texttt{nterms\_max}\}}{k = 0, 1, ..., nterms_max} for which either
 the lower or upper bound (depending on argument \code{type}) of the
 normal-approximation confidence interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of \code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_k -
   U_{\mathrm{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
