@@ -153,15 +153,20 @@ extend_family <- function(family,
       }
       return(do.call(rbind, lapply(seq_len(n_obs), function(i_obs) {
         do.call(c, lapply(seq_len(n_prjdraws), function(i_prjdraws) {
+          prbs_ref <- mu_ref_arr[i_obs, , i_prjdraws]
+          prbs_sub <- mu_sub_arr[i_obs, , i_prjdraws]
+          # Assign some nonzero value to have a finite log() value (the specific
+          # value doesn't matter for `prbs_ref` because of the multiplication
+          # with zero):
+          prbs_ref[prbs_ref == 0] <- .Machine$double.eps
+          # Assign some nonzero value to have a finite log() value (for
+          # `prbs_sub`, the specific value matters, in contrast to `prbs_ref`):
+          prbs_sub[prbs_sub == 0] <- .Machine$double.eps
           # In analogy to `extend_family(binomial())$kl()`,
           # `extend_family(poisson())$kl()`, and
           # `extend_family(gaussian())$kl()`, multiply by the observation
           # weight:
-          return(w_obs[i_obs] * sum(
-            mu_ref_arr[i_obs, , i_prjdraws] *
-              (log(mu_ref_arr[i_obs, , i_prjdraws]) -
-                 log(mu_sub_arr[i_obs, , i_prjdraws]))
-          ))
+          return(w_obs[i_obs] * sum(prbs_ref * (log(prbs_ref) - log(prbs_sub))))
         }))
       })))
     }
