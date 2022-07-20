@@ -166,11 +166,7 @@ extend_family <- function(family,
           # `extend_family(poisson())$kl()`, and
           # `extend_family(gaussian())$kl()`, multiply by the observation
           # weight:
-          return(w_obs[i_obs] * sum(
-            prbs_ref *
-              (log(prbs_ref) -
-                 log(prbs_sub))
-          ))
+          return(w_obs[i_obs] * sum(prbs_ref * (log(prbs_ref) - log(prbs_sub))))
         }))
       })))
     }
