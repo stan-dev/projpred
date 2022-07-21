@@ -497,6 +497,30 @@ fit_cumul <- function(formula, data, family, weights, ...) {
       dot_args
     )), silent = TRUE)
   }, type = "message")
+  if (inherits(fitobj, "try-error") &&
+      grepl("initial value in 'vmmin' is not finite",
+            attr(fitobj, "condition")$message)) {
+    # Try to fix this automatically by specifying `start` values.
+    ncoefs <- count_terms_in_formula(formula) -
+      attr(terms(formula), "intercept")
+    start_coefs <- rep(0, ncoefs)
+    ncats <- length(unique(eval(formula[[2]], data, environment(formula))))
+    nthres <- ncats - 1L
+    # Start with thresholds which imply equal probabilities for the response
+    # categories:
+    start_thres <- linkfun_raw(seq_len(nthres) / ncats, link_nm = link_nm)
+    warn_capt <- utils::capture.output({
+      fitobj <- try(do.call(MASS::polr, c(
+        list(formula = formula,
+             data = data,
+             weights = quote(projpred_internal_w_aug),
+             model = FALSE,
+             method = link_nm,
+             start = c(start_coefs, start_thres)),
+        dot_args
+      )), silent = TRUE)
+    }, type = "message")
+  }
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
   }
