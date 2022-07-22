@@ -83,15 +83,16 @@ pois <- generate_fake_poisson_data()
 
 We begin by fitting some reference model we believe to be a good fit to the data in BRMS.
 
-```{r}
-# build complete reference model on the variate
-poisson_priors <- set_prior("normal(0, 1)", class = "b")
-poisson_formula <- y ~ 1 + x1 + x2
+```{r, cache=TRUE, cache.lazy=FALSE}
+# build reference model
 model_poisson <- brm(
-  formula = poisson_formula,
+  formula = y ~ 1 + x1 + x2,
   data = pois,
   family = poisson(),
-  prior = poisson_priors,
+  prior = set_prior("normal(0, 1)", class = "b"),
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2, iter = 500,
+  ###
   seed = 300416, refresh = 0
 )
 ```
@@ -154,18 +155,17 @@ xtags <- data %>%
 
 We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor) and fit it accordingly in BRMS.
 
-```{r}
-# build model formula of the form
-formula <- formula(paste("time | cens(2 - status) ~",
-                         paste0(xtags, collapse = " + ")))
-# define prior assumption of variate
-prior <- set_prior("normal(0, 1)", class = "b")
-# fit covariate GLM model with BRMS, expliciting a non-exponential family
+```{r, cache=TRUE, cache.lazy=FALSE}
+# fit GLM model with BRMS, expliciting a non-exponential family
 fit <- brm(
-  formula,
+  formula = formula(paste("time | cens(2 - status) ~",
+                          paste0(xtags, collapse = " + "))),
   data = data,
-  prior = prior,
-  family = weibull,
+  family = weibull(),
+  prior = set_prior("normal(0, 1)", class = "b"),
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2, iter = 500,
+  ###
   seed = 300416, refresh = 0
 )
 ```
