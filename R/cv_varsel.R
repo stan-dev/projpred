@@ -403,8 +403,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     ## compute approximate LOO with PSIS weights
+    if (refit_prj) {
+      refdist_eval <- p_pred
+    } else {
+      refdist_eval <- p_sel
+    }
     log_lik_ref <- t(refmodel$family$ll_fun(
-      p_pred$mu[inds, , drop = FALSE], p_pred$dis, refmodel$y[inds],
+      refdist_eval$mu[inds, , drop = FALSE], refdist_eval$dis, refmodel$y[inds],
       refmodel$wobs[inds]
     ))
     for (k in seq_along(submodels)) {
@@ -419,7 +424,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       )
       lw_sub <- suppressWarnings(weights(sub_psisloo))
       # Take into account that clustered draws usually have different weights:
-      lw_sub <- lw_sub + log(p_pred$weights)
+      lw_sub <- lw_sub + log(refdist_eval$weights)
       # This re-weighting requires a re-normalization (as.array() is applied to
       # have stricter consistency checks, see `?sweep`):
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
@@ -446,9 +451,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
                  solution_terms = search_path$solution_terms,
                  clust_used_search = p_sel$clust_used,
-                 clust_used_eval = p_pred$clust_used,
+                 clust_used_eval = refdist_eval$clust_used,
                  nprjdraws_search = NCOL(p_sel$mu),
-                 nprjdraws_eval = NCOL(p_pred$mu))
+                 nprjdraws_eval = NCOL(refdist_eval$mu))
   } else {
     if (verbose) {
       print(msg)
