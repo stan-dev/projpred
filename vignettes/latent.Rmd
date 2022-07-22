@@ -21,7 +21,6 @@ This vignette shows how to implement the latent projection predictive inference 
 
 ```{r}
 # Attach packages that are needed for this vignette:
-library(magrittr)
 library(brms)
 library(projpred)
 # Set this manually if desired:
@@ -31,6 +30,12 @@ ncores <- parallel::detectCores(logical = FALSE)
 ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
+```
+
+```{r, echo=FALSE}
+# Building the vignette fails in `R CMD check` if we use the rstan backend, so
+# use the cmdstanr backend:
+options(brms.backend = "cmdstanr")
 ```
 
 ## General idea
