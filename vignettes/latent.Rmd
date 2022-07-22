@@ -22,8 +22,13 @@ This vignette shows how to implement the latent projection predictive inference 
 library(magrittr)
 library(brms)
 library(projpred)
-# set number of cores
-options(mc.cores = parallel::detectCores(logical = FALSE))
+# Set this manually if desired:
+ncores <- parallel::detectCores(logical = FALSE)
+### Only for technical reasons in this vignette (you can omit this when running
+### the code yourself):
+ncores <- min(ncores, 2L)
+###
+options(mc.cores = ncores)
 ```
 
 ## General idea
