@@ -147,8 +147,7 @@ We first process our data as follows.
 # read data from `survival` library
 data("cancer", package = "survival")
 # build dataset
-data <- cancer %>%
-  tidyr::drop_na()
+data <- na.omit(cancer)
 # identify covariate labels
 xtags <- data %>%
   dplyr::select(-status, -time) %>%
