@@ -18,7 +18,6 @@ params:
 This vignette shows how to implement the latent projection predictive inference from @latent-projpred in `projpred`.
 
 ```{r, message=FALSE, warning=FALSE}
-devtools::install_github("stan-dev/projpred", ref = "latent_projection")
 # import necessary libraries for the vignette
 library(magrittr)
 library(brms)
