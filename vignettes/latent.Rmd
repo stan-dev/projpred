@@ -3,21 +3,23 @@ title: "Latent projection predictive inference with projpred"
 date: "`r Sys.Date()`"
 bibliography: latent.bib
 output:
-  html_vignette
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 4
 params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Latent projection predictive inference with projpred}
+  %\VignetteEncoding{UTF-8}
 ---
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Latent projection predictive inference with projpred}
-\usepackage[utf8]{inputenc}
--->
-```{r, child="children/SETTINGS-knitr.txt"}
+
+```{r child="children/SETTINGS-knitr.txt"}
 ```
 
 This vignette shows how to implement the latent projection predictive inference from @latent-projpred in `projpred`.
 
-```{r, message=FALSE, warning=FALSE}
+```{r}
 # Attach packages that are needed for this vignette:
 library(magrittr)
 library(brms)
@@ -81,7 +83,7 @@ pois <- generate_fake_poisson_data()
 
 We begin by fitting some reference model we believe to be a good fit to the data in BRMS.
 
-```{r, message=FALSE, warning=FALSE}
+```{r}
 # build complete reference model on the variate
 poisson_priors <- set_prior("normal(0, 1)", class = "b")
 poisson_formula <- y ~ 1 + x1 + x2
@@ -90,7 +92,7 @@ model_poisson <- brm(
   data = pois,
   family = poisson(),
   prior = poisson_priors,
-  seed = 300416
+  seed = 300416, refresh = 0
 )
 ```
 
@@ -152,7 +154,7 @@ xtags <- data %>%
 
 We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor) and fit it accordingly in BRMS.
 
-```{r, message=FALSE, warning=FALSE}
+```{r}
 # build model formula of the form
 formula <- formula(paste("time | cens(2 - status) ~",
                          paste0(xtags, collapse = " + ")))
@@ -164,7 +166,7 @@ fit <- brm(
   data = data,
   prior = prior,
   family = weibull,
-  seed = 300416
+  seed = 300416, refresh = 0
 )
 ```
 
