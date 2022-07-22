@@ -18,7 +18,7 @@ params:
 This vignette shows how to implement the latent projection predictive inference from @latent-projpred in `projpred`.
 
 ```{r, message=FALSE, warning=FALSE}
-# import necessary libraries for the vignette
+# Attach packages that are needed for this vignette:
 library(magrittr)
 library(brms)
 library(projpred)
