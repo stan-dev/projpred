@@ -90,9 +90,6 @@ model_poisson <- brm(
   data = pois,
   family = poisson(),
   prior = set_prior("normal(0, 1)", class = "b"),
-  ### Only for the sake of speed (not recommended in general):
-  chains = 2, iter = 500,
-  ###
   seed = 300416, refresh = 0
 )
 ```
@@ -163,9 +160,6 @@ fit <- brm(
   data = data,
   family = weibull(),
   prior = set_prior("normal(0, 1)", class = "b"),
-  ### Only for the sake of speed (not recommended in general):
-  chains = 2, iter = 500,
-  ###
   seed = 300416, refresh = 0
 )
 ```
