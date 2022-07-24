@@ -498,7 +498,9 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     )), silent = TRUE)
   }, type = "message")
   if (inherits(fitobj, "try-error") &&
-      grepl("initial value in 'vmmin' is not finite",
+      grepl(paste("initial value in 'vmmin' is not finite",
+                  "attempt to find suitable starting values failed",
+                  sep = "|"),
             attr(fitobj, "condition")$message)) {
     # Try to fix this automatically by specifying `start` values.
     ncoefs <- count_terms_in_formula(formula) -
