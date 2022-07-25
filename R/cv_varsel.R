@@ -628,7 +628,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
 
-    # Add weights (see GitHub issue #330 for why this needs to be clarified):
+    # Add fold-specific weights (see the discussion at GitHub issue #94 for why
+    # this might have to be changed):
     summ$w <- rep(1, length(summ$mu))
     summ$w <- summ$w / sum(summ$w)
     return(summ)

@@ -140,6 +140,15 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   ## used as a baseline for computing the difference in the given statistic,
   ## for example the relative elpd. If these arguments are not given (NULL) then
   ## the actual (non-relative) value is computed.
+  ## NOTE: Element `weights[i]` (with i = 1, ..., N and N denoting the number of
+  ## observations) contains the weight of the CV fold that observation i is in.
+  ## In case of varsel() output, this is `NULL`. Currently, these `weights` are
+  ## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
+  ## observation weights (specified by the user) are contained in
+  ## `d_test$weights`. These are already taken into account by
+  ## `<refmodel_object>$family$ll_fun()` and are thus already taken into account
+  ## in `lppd`. However, `mu` does not take them into account, so some further
+  ## adjustments are necessary below.
 
   n <- length(mu)
   if (stat %in% c("mlpd", "elpd")) {
@@ -155,6 +164,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   ## ensure the weights sum to n_notna
   weights <- n_notna * weights / sum(weights)
 
+  # TODO: Simplify by taking code parts that are common to multiple `stat`s out
+  # of the following `if ()` parts and moving them up here.
   if (stat == "mlpd") {
     if (!is.null(lppd.bs)) {
       value <- mean((lppd - lppd.bs) * weights, na.rm = TRUE)
@@ -181,6 +192,10 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     } else {
       y <- d_test$y_prop
     }
+    if (!all(d_test$weights == 1)) {
+      weights <- weights * d_test$weights
+      weights <- n_notna * weights / sum(weights)
+    }
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
       value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, weights,
@@ -196,6 +211,10 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       y <- d_test$y
     } else {
       y <- d_test$y_prop
+    }
+    if (!all(d_test$weights == 1)) {
+      weights <- weights * d_test$weights
+      weights <- n_notna * weights / sum(weights)
     }
     if (!is.null(mu.bs)) {
       ## make sure the relative rmse is computed using only those points for
@@ -244,6 +263,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       n_notna <- sum(d_test$weights)
       weights <- rep(weights, d_test$weights)
       weights <- n_notna * weights / sum(weights)
+    } else {
+      stopifnot(all(d_test$weights == 1))
     }
     if (!is.null(mu.bs)) {
       value <- mean(weights * ((round(mu) == y) - (round(mu.bs) == y)),
@@ -258,15 +279,11 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else if (stat == "auc") {
     y <- d_test$y
-    # TODO (see GitHub issue #330): The auc() function seems to expect the
-    # observation weights (`d_test$weights`) in the third column. But what about
-    # get_stat()'s argument `weights`? Currently, this is not taken into account
-    # here in the `stat == "auc"` case.
-    auc.data <- cbind(y, mu, weights = d_test$weights)
+    auc.data <- cbind(y, mu, weights = d_test$weights, wcv = weights)
     if (!is.null(mu.bs)) {
       mu.bs[is.na(mu)] <- NA # compute the relative auc using only those points
       mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
-      auc.data.bs <- cbind(y, mu.bs, weights = d_test$weights)
+      auc.data.bs <- cbind(y, mu.bs, weights = d_test$weights, wcv = weights)
       value <- auc(auc.data) - auc(auc.data.bs)
       value.bootstrap1 <- bootstrap(auc.data, auc, ...)
       value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)

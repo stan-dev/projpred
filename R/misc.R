@@ -34,8 +34,9 @@ auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
   weights <- x[, 3]
+  wcv <- x[, 4]
   n <- nrow(x)
-  if (!all(weights == 1)) {
+  if (!all(weights == 1)) { # TODO: Move this out of auc() to get_stat() and then simplify get_stat() as far as possible (e.g., `weights` shouldn't be needed anymore).
     # Several checks which should in fact not be necessary because auc() is only
     # used in case of the binomial family:
     if (!all(.is.wholenumber(weights))) {
@@ -54,17 +55,20 @@ auc <- function(x) {
       cbind(c(rep(0L, weights[i_short] - resp[i_short]),
               rep(1L, resp[i_short])),
             pred[i_short],
-            1)
+            1,
+            wcv[i_short])
     }))
     resp <- x[, 1]
     pred <- x[, 2]
     weights <- x[, 3]
+    wcv <- x[, 4]
     n <- nrow(x)
   }
   ord <- order(pred, decreasing = TRUE)
   resp <- resp[ord]
   pred <- pred[ord]
-  w0 <- w1 <- rep(1, n)
+  wcv <- wcv[ord]
+  w0 <- w1 <- wcv
   stopifnot(all(resp %in% c(0, 1)))
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
   w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)
