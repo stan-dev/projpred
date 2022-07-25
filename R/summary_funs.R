@@ -150,7 +150,7 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
 
   if (is.null(weights)) {
     ## set default weights if not given
-    weights <- rep(1 / n_notna, n)
+    weights <- rep(1, n)
   }
   ## ensure the weights sum to n_notna
   weights <- n_notna * weights / sum(weights)
