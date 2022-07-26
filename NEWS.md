@@ -1,3 +1,7 @@
+# Note
+
+If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
+
 # projpred 2.1.2.9000
 
 ## Major changes
