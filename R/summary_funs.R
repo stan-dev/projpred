@@ -178,7 +178,7 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       value <- value / n_notna
       value.se <- value.se / n_notna
     }
-  } else if (stat == "mse") {
+  } else if (stat %in% c("mse", "rmse")) {
     if (is.null(d_test$y_prop)) {
       y <- d_test$y
     } else {
@@ -188,58 +188,51 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       weights <- weights * d_test$weights
       weights <- n_notna * weights / sum(weights)
     }
-    if (!is.null(mu.bs)) {
-      value <- mean(weights * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
-      value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, weights,
-                              na.rm = TRUE) /
-        sqrt(n_notna)
-    } else {
-      value <- mean(weights * (mu - y)^2, na.rm = TRUE)
-      value.se <- weighted.sd((mu - y)^2, weights, na.rm = TRUE) /
-        sqrt(n_notna)
-    }
-  } else if (stat == "rmse") {
-    if (is.null(d_test$y_prop)) {
-      y <- d_test$y
-    } else {
-      y <- d_test$y_prop
-    }
-    if (!all(d_test$weights == 1)) {
-      weights <- weights * d_test$weights
-      weights <- n_notna * weights / sum(weights)
-    }
-    if (!is.null(mu.bs)) {
-      ## make sure the relative rmse is computed using only those points for
-      ## which
-      mu.bs[is.na(mu)] <- NA
-      mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
-      value <- sqrt(mean(weights * (mu - y)^2, na.rm = TRUE)) -
-        sqrt(mean(weights * (mu.bs - y)^2, na.rm = TRUE))
-      value.bootstrap1 <- bootstrap(
-        (mu - y)^2,
-        function(resid2) {
-          sqrt(mean(weights * resid2, na.rm = TRUE))
-        },
-        ...
-      )
-      value.bootstrap2 <- bootstrap(
-        (mu.bs - y)^2,
-        function(resid2) {
-          sqrt(mean(weights * resid2, na.rm = TRUE))
-        },
-        ...
-      )
-      value.se <- sd(value.bootstrap1 - value.bootstrap2)
-    } else {
-      value <- sqrt(mean(weights * (mu - y)^2, na.rm = TRUE))
-      value.bootstrap <- bootstrap(
-        (mu - y)^2,
-        function(resid2) {
-          sqrt(mean(weights * resid2, na.rm = TRUE))
-        },
-        ...
-      )
-      value.se <- sd(value.bootstrap)
+    if (stat == "mse") {
+      if (!is.null(mu.bs)) {
+        value <- mean(weights * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
+        value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, weights,
+                                na.rm = TRUE) /
+          sqrt(n_notna)
+      } else {
+        value <- mean(weights * (mu - y)^2, na.rm = TRUE)
+        value.se <- weighted.sd((mu - y)^2, weights, na.rm = TRUE) /
+          sqrt(n_notna)
+      }
+    } else if (stat == "rmse") {
+      if (!is.null(mu.bs)) {
+        ## make sure the relative rmse is computed using only those points for
+        ## which
+        mu.bs[is.na(mu)] <- NA
+        mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
+        value <- sqrt(mean(weights * (mu - y)^2, na.rm = TRUE)) -
+          sqrt(mean(weights * (mu.bs - y)^2, na.rm = TRUE))
+        value.bootstrap1 <- bootstrap(
+          (mu - y)^2,
+          function(resid2) {
+            sqrt(mean(weights * resid2, na.rm = TRUE))
+          },
+          ...
+        )
+        value.bootstrap2 <- bootstrap(
+          (mu.bs - y)^2,
+          function(resid2) {
+            sqrt(mean(weights * resid2, na.rm = TRUE))
+          },
+          ...
+        )
+        value.se <- sd(value.bootstrap1 - value.bootstrap2)
+      } else {
+        value <- sqrt(mean(weights * (mu - y)^2, na.rm = TRUE))
+        value.bootstrap <- bootstrap(
+          (mu - y)^2,
+          function(resid2) {
+            sqrt(mean(weights * resid2, na.rm = TRUE))
+          },
+          ...
+        )
+        value.se <- sd(value.bootstrap)
+      }
     }
   } else if (stat == "acc" || stat == "pctcorr") {
     y <- d_test$y
