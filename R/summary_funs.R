@@ -164,27 +164,19 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   ## ensure the weights sum to n_notna
   weights <- n_notna * weights / sum(weights)
 
-  # TODO: Simplify by taking code parts that are common to multiple `stat`s out
-  # of the following `if ()` parts and moving them up here.
-  if (stat == "mlpd") {
-    if (!is.null(lppd.bs)) {
-      value <- mean((lppd - lppd.bs) * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd - lppd.bs, weights, na.rm = TRUE) /
-        sqrt(n_notna)
-    } else {
-      value <- mean(lppd * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd, weights, na.rm = TRUE) /
-        sqrt(n_notna)
-    }
-  } else if (stat == "elpd") {
+  if (stat %in% c("mlpd", "elpd")) {
     if (!is.null(lppd.bs)) {
       value <- sum((lppd - lppd.bs) * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd - lppd.bs, weights, na.rm = TRUE) /
-        sqrt(n_notna) * n_notna
+      value.se <- weighted.sd(lppd - lppd.bs, weights, na.rm = TRUE) *
+        sqrt(n_notna)
     } else {
       value <- sum(lppd * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd, weights, na.rm = TRUE) /
-        sqrt(n_notna) * n_notna
+      value.se <- weighted.sd(lppd, weights, na.rm = TRUE) *
+        sqrt(n_notna)
+    }
+    if (stat == "mlpd") {
+      value <- value / n_notna
+      value.se <- value.se / n_notna
     }
   } else if (stat == "mse") {
     if (is.null(d_test$y_prop)) {
