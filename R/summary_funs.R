@@ -132,24 +132,22 @@
   return(stat_tab)
 }
 
+## Calculates given statistic stat with standard error and confidence bounds.
+## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
+## used as a baseline for computing the difference in the given statistic,
+## for example the relative elpd. If these arguments are not given (NULL) then
+## the actual (non-relative) value is computed.
+## NOTE: Element `wcv[i]` (with i = 1, ..., N and N denoting the number of
+## observations) contains the weight of the CV fold that observation i is in.
+## In case of varsel() output, this is `NULL`. Currently, these `wcv` are
+## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
+## observation weights (specified by the user) are contained in
+## `d_test$weights`. These are already taken into account by
+## `<refmodel_object>$family$ll_fun()` and are thus already taken into account
+## in `lppd`. However, `mu` does not take them into account, so some further
+## adjustments are necessary below.
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
-  ##
-  ## Calculates given statistic stat with standard error and confidence bounds.
-  ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
-  ## used as a baseline for computing the difference in the given statistic,
-  ## for example the relative elpd. If these arguments are not given (NULL) then
-  ## the actual (non-relative) value is computed.
-  ## NOTE: Element `wcv[i]` (with i = 1, ..., N and N denoting the number of
-  ## observations) contains the weight of the CV fold that observation i is in.
-  ## In case of varsel() output, this is `NULL`. Currently, these `wcv` are
-  ## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
-  ## observation weights (specified by the user) are contained in
-  ## `d_test$weights`. These are already taken into account by
-  ## `<refmodel_object>$family$ll_fun()` and are thus already taken into account
-  ## in `lppd`. However, `mu` does not take them into account, so some further
-  ## adjustments are necessary below.
-
   n <- length(mu)
   if (stat %in% c("mlpd", "elpd")) {
     n_notna <- sum(!is.na(lppd))
@@ -273,7 +271,7 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     } else if (stat == "auc") {
       auc.data <- cbind(y, mu, wcv)
       if (!is.null(mu.bs)) {
-        mu.bs[is.na(mu)] <- NA # compute the relative auc using only those points
+        mu.bs[is.na(mu)] <- NA # compute the AUCs using only those points
         mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
         auc.data.bs <- cbind(y, mu.bs, wcv)
         value <- auc(auc.data) - auc(auc.data.bs)
