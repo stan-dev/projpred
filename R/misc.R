@@ -33,37 +33,8 @@ log_sum_exp <- function(x) {
 auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
-  weights <- x[, 3]
-  wcv <- x[, 4]
+  wcv <- x[, 3]
   n <- nrow(x)
-  if (!all(weights == 1)) { # TODO: Move this out of auc() to get_stat() and then simplify get_stat() as far as possible (e.g., `weights` shouldn't be needed anymore).
-    # Several checks which should in fact not be necessary because auc() is only
-    # used in case of the binomial family:
-    if (!all(.is.wholenumber(weights))) {
-      stop("Currently, projpred:::auc() does not support non-integer ",
-           "observation weights.")
-    }
-    if (!all(.is.wholenumber(resp))) {
-      stop("Currently, projpred:::auc() does not support non-integer response ",
-           "values in case of nontrivial observation weights.")
-    }
-    if (!all(0 <= resp & resp <= weights)) {
-      stop("Currently, projpred:::auc() does not support response values ",
-           "smaller than zero or larger than the observation weights.")
-    }
-    x <- do.call(rbind, lapply(seq_len(n), function(i_short) {
-      cbind(c(rep(0L, weights[i_short] - resp[i_short]),
-              rep(1L, resp[i_short])),
-            pred[i_short],
-            1,
-            wcv[i_short])
-    }))
-    resp <- x[, 1]
-    pred <- x[, 2]
-    weights <- x[, 3]
-    wcv <- x[, 4]
-    n <- nrow(x)
-  }
   ord <- order(pred, decreasing = TRUE)
   resp <- resp[ord]
   pred <- pred[ord]

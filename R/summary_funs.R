@@ -234,9 +234,16 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- sd(value.bootstrap)
       }
     }
-  } else if (stat == "acc" || stat == "pctcorr") {
+  } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- d_test$y
     if (!is.null(d_test$y_prop)) {
+      # In fact, the following stopifnot() checks should not be necessary
+      # because this case should only occur for the binomial family (where
+      # `d_test$weights` contains the numbers of trials) with more than 1 trial
+      # for at least one observation:
+      stopifnot(all(.is.wholenumber(d_test$weights)))
+      stopifnot(all(.is.wholenumber(y)))
+      stopifnot(all(0 <= y & y <= d_test$weights))
       y <- unlist(lapply(seq_along(y), function(i_short) {
         c(rep(0L, d_test$weights[i_short] - y[i_short]),
           rep(1L, y[i_short]))
@@ -251,32 +258,33 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     } else {
       stopifnot(all(d_test$weights == 1))
     }
-    if (!is.null(mu.bs)) {
-      value <- mean(weights * ((round(mu) == y) - (round(mu.bs) == y)),
-                    na.rm = TRUE)
-      value.se <- weighted.sd((round(mu) == y) - (round(mu.bs) == y), weights,
-                              na.rm = TRUE) /
-        sqrt(n_notna)
-    } else {
-      value <- mean(weights * (round(mu) == y), na.rm = TRUE)
-      value.se <- weighted.sd(round(mu) == y, weights, na.rm = TRUE) /
-        sqrt(n_notna)
-    }
-  } else if (stat == "auc") {
-    y <- d_test$y
-    auc.data <- cbind(y, mu, weights = d_test$weights, wcv = weights)
-    if (!is.null(mu.bs)) {
-      mu.bs[is.na(mu)] <- NA # compute the relative auc using only those points
-      mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
-      auc.data.bs <- cbind(y, mu.bs, weights = d_test$weights, wcv = weights)
-      value <- auc(auc.data) - auc(auc.data.bs)
-      value.bootstrap1 <- bootstrap(auc.data, auc, ...)
-      value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
-      value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
-    } else {
-      value <- auc(auc.data)
-      value.bootstrap <- bootstrap(auc.data, auc, ...)
-      value.se <- sd(value.bootstrap, na.rm = TRUE)
+    if (stat %in% c("acc", "pctcorr")) {
+      if (!is.null(mu.bs)) {
+        value <- mean(weights * ((round(mu) == y) - (round(mu.bs) == y)),
+                      na.rm = TRUE)
+        value.se <- weighted.sd((round(mu) == y) - (round(mu.bs) == y), weights,
+                                na.rm = TRUE) /
+          sqrt(n_notna)
+      } else {
+        value <- mean(weights * (round(mu) == y), na.rm = TRUE)
+        value.se <- weighted.sd(round(mu) == y, weights, na.rm = TRUE) /
+          sqrt(n_notna)
+      }
+    } else if (stat == "auc") {
+      auc.data <- cbind(y, mu, wcv = weights)
+      if (!is.null(mu.bs)) {
+        mu.bs[is.na(mu)] <- NA # compute the relative auc using only those points
+        mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
+        auc.data.bs <- cbind(y, mu.bs, wcv = weights)
+        value <- auc(auc.data) - auc(auc.data.bs)
+        value.bootstrap1 <- bootstrap(auc.data, auc, ...)
+        value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
+        value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
+      } else {
+        value <- auc(auc.data)
+        value.bootstrap <- bootstrap(auc.data, auc, ...)
+        value.se <- sd(value.bootstrap, na.rm = TRUE)
+      }
     }
   }
 
