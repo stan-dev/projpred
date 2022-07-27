@@ -1363,7 +1363,7 @@ vsel_tester <- function(
   # Preparations:
   if (with_cv) {
     vsel_nms <- vsel_nms_cv
-    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "w")
+    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "wcv")
 
     if (is.null(cv_method_expected)) {
       cv_method_expected <- "LOO"

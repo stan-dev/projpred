@@ -484,10 +484,7 @@ plot.vsel <- function(
 #'   projection: all families).
 #'   * `"auc"`: area under the ROC curve ([binomial()] family for the
 #'   traditional projection only). For the corresponding standard error,
-#'   bootstrapping is used. In the "aggregated" binomial case (i.e., if there is
-#'   more than one Bernoulli trial for at least one observation), \pkg{projpred}
-#'   calculates the AUC by deaggregating the observations internally to a long
-#'   dataset with only zeros and ones as response values.
+#'   bootstrapping is used.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
