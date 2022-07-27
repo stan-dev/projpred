@@ -562,7 +562,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], w = validset$w)
+    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
   })
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   summaries <- list(sub = summ_sub, ref = summ_ref)
@@ -678,9 +678,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
 
-    # Add weights (see GitHub issue #330 for why this needs to be clarified):
-    summ$w <- rep(1, length(summ$lppd))
-    summ$w <- summ$w / sum(summ$w)
+    # Add fold-specific weights (see the discussion at GitHub issue #94 for why
+    # this might have to be changed):
+    summ$wcv <- rep(1, length(summ$lppd))
+    summ$wcv <- summ$wcv / sum(summ$wcv)
     return(summ)
   })
 
@@ -793,20 +794,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #
 #     ## assign the weights corresponding to this stratification (for example, the
 #     ## 'bad' values are likely to be overpresented in the sample)
-#     w <- rep(0, n)
-#     w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
-#     w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
-#     w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
+#     wcv <- rep(0, n)
+#     wcv[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
+#     wcv[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
+#     wcv[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
 #   } else {
 #     ## all points used
 #     inds <- seq_len(n)
-#     w <- rep(1, n)
+#     wcv <- rep(1, n)
 #   }
 #
 #   ## ensure weights are normalized
-#   w <- w / sum(w)
+#   wcv <- wcv / sum(wcv)
 #
-#   return(nlist(inds, w))
+#   return(nlist(inds, wcv))
 # }
 
 ## decide which points to go through in the validation based on
@@ -822,12 +823,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("Argument `nloo` must not be larger than the number of observations.")
   } else if (nloo == length(lppd)) {
     inds <- seq_len(nloo)
-    w <- rep(1, nloo)
+    wcv <- rep(1, nloo)
   } else if (nloo < length(lppd)) {
-    w <- exp(lppd - max(lppd))
-    inds <- sample(seq_along(lppd), size = nloo, prob = w)
+    wcv <- exp(lppd - max(lppd))
+    inds <- sample(seq_along(lppd), size = nloo, prob = wcv)
   }
-  w <- w / sum(w)
+  wcv <- wcv / sum(wcv)
 
-  return(nlist(inds, w))
+  return(nlist(inds, wcv))
 }

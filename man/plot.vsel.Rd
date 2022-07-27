@@ -37,10 +37,7 @@ traditional projection: \code{\link[=binomial]{binomial()}} family only; for the
 projection: all families).
 \item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family for the
 traditional projection only). For the corresponding standard error,
-bootstrapping is used. In the "aggregated" binomial case (i.e., if there is
-more than one Bernoulli trial for at least one observation), \pkg{projpred}
-calculates the AUC by deaggregating the observations internally to a long
-dataset with only zeros and ones as response values.
+bootstrapping is used.
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences

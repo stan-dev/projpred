@@ -1,7 +1,12 @@
+# Note
+
+If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
+
 # projpred 2.1.2.9000
 
 ## Major changes
 
+* Some severe bugs (GitHub issues #329, #330, and #342) have been fixed, concerning the performance evaluation of models with nontrivial observation weights (i.e., models where at least one observation had a weight differing from 1). Concerned performance statistics were `"mse"`, `"rmse"`, `"acc"` (= `"pctcorr"`), and `"auc"` (i.e., all performance statistics except for `"elpd"` and `"mlpd"`).
 * Introduction of the augmented-data projection which adds support for the `brms::categorical()` and `brms::cumulative()` response families as well as `rstanarm::stan_polr()` fits. More **brms** families might be supported in the future. The augmented-data projection may also be used for the `binomial()` or the `brms::bernoulli()` family (see `?extend_family` as well as `?augdat_link_binom` and `?augdat_ilink_binom`). Note that the augmented-data projection is currently considered as an experimental feature since it has not been tested thoroughly yet and is also subject to some more theoretical investigations. For the augmented-data projection based on a **brms** reference model, **brms** version 2.17.0 or later is needed. (GitHub: #70, #322)
 
 ## Minor changes
@@ -24,7 +29,7 @@
 * Fix GitHub issue #339. (GitHub: #340)
 * Fix argument `d_test` of `varsel()`: Not only the predictive performance of the *reference model* needs to be evaluated on the test data, but also the predictive performance of the *submodels*. (GitHub: #341)
 * Fix GitHub issue #342.
-* Fix GitHub issue #330, at least partly.
+* Fix GitHub issue #330. (GitHub: #344, commit 23e7101)
 
 # projpred 2.1.2
 
