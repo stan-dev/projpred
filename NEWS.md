@@ -1,5 +1,9 @@
 # projpred 2.1.2.9000
 
+## Major changes
+
+* Some severe bugs (GitHub issues #329, #330, and #342) have been fixed, concerning the performance evaluation of models with nontrivial observation weights (i.e., models where at least one observation had a weight differing from 1). Concerned performance statistics were `"mse"`, `"rmse"`, `"acc"` (= `"pctcorr"`), and `"auc"` (i.e., all performance statistics except for `"elpd"` and `"mlpd"`).
+
 ## Minor changes
 
 * Several improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
@@ -20,7 +24,7 @@
 * Fix GitHub issue #339. (GitHub: #340)
 * Fix argument `d_test` of `varsel()`: Not only the predictive performance of the *reference model* needs to be evaluated on the test data, but also the predictive performance of the *submodels*. (GitHub: #341)
 * Fix GitHub issue #342.
-* Fix GitHub issue #330, at least partly.
+* Fix GitHub issue #330. (GitHub: #344, commit 23e7101)
 
 # projpred 2.1.2
 
